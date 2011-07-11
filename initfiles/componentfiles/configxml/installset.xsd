@@ -1,0 +1,45 @@
+<!--
+
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+-->
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSPY v5 rel. 2 U (http://www.xmlspy.com) by Rajeev Moondhra (Seisint, Inc.) -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:element name="InstallSet">
+        <xs:annotation>
+            <xs:documentation>Defines the files that must be installed to properly execute a given program.</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="SettingsBase">
+                    <xs:sequence>
+                        <xs:element name="File" maxOccurs="unbounded">
+                            <xs:annotation>
+                                <xs:documentation>Defines the files that are included in the given InstallSet/Version.</xs:documentation>
+                            </xs:annotation>
+                            <xs:complexType>
+                                <xs:attribute name="name" type="xs:string" use="required"/>
+                                <xs:attribute name="srcPath" type="xs:string" use="optional"/>
+                                <xs:attribute name="destPath" type="xs:string" use="optional" default="."/>
+                                <xs:attribute name="destName" type="xs:string" use="optional"/>
+                                <xs:attribute name="method" type="xs:string" use="optional" default="copy"/>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+        <xs:unique name="installSetVersionUnique">
+            <xs:selector xpath="Version"/>
+            <xs:field xpath="@name"/>
+        </xs:unique>
+    </xs:element>
+    <xs:complexType name="SettingsBase">
+        <xs:attributeGroup ref="BaseAttributes"/>
+    </xs:complexType>
+    <xs:attributeGroup name="BaseAttributes">
+        <xs:attribute name="include" type="xs:string"/>
+        <xs:attribute name="name" type="xs:string"/>
+    </xs:attributeGroup>
+</xs:schema>

@@ -1,0 +1,1133 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+#include "xslprocessor.hpp" 
+//  ===========================================================================
+
+ESPStruct [nil_remove] ECLException
+{
+    string Source;
+    string Severity;
+    int Code;
+    string Message;
+    string FileName;
+    int LineNo;
+    int Column;
+};
+//  ===========================================================================
+ESPStruct [nil_remove] ECLSchemaItem
+{
+    string ColumnName;
+    string ColumnType;
+    int    ColumnTypeCode;
+    bool   isConditional(false);
+};
+//  ===========================================================================
+ESPStruct [nil_remove] ECLResult
+{
+    string Name;
+    int    Sequence;
+    string Value;
+    string Link;
+    string FileName;
+    bool   IsSupplied;
+    bool   ShowFileContent(true);
+    int64  Total;
+
+    ESParray<ESPstruct ECLSchemaItem>    ECLSchemas;
+};
+//  ===========================================================================
+ESPStruct [nil_remove] ECLTimingData
+{
+    string Name;
+    int GraphNum;
+    int SubGraphNum;
+    int GID;
+    int Min;
+    int MS;
+};
+//  ===========================================================================
+ESPStruct [nil_remove] ECLGraph
+{
+    string Name;
+    string Label;
+    string Type;
+    bool Running;
+    [min_ver("1.09")] bool Complete;
+    [min_ver("1.14")] bool Failed;
+    int64 RunningId;
+};
+//  ===========================================================================
+ESPStruct [nil_remove] ECLGraphEx
+{
+    string Name;
+    string Label;
+    string Type;
+    string Graph;
+    bool Running;
+    int64 RunningId;
+    [min_ver("1.21")] bool Complete;
+    [min_ver("1.21")] bool Failed;
+};
+//  ===========================================================================
+ESPStruct [nil_remove] ECLSourceFile
+{
+    [min_ver("1.01")] string FileCluster;
+    string Name;
+    [min_ver("1.12")] bool IsSuperFile;
+    [min_ver("1.27")] int Subs;
+    int Count;
+
+   [min_ver("1.27")] ESParray<ESPstruct ECLSourceFile>    ECLSourceFiles;
+};
+//  ===========================================================================
+ESPStruct [nil_remove] ECLTimer
+{
+    string Name;
+    string Value;
+    int count;
+    [min_ver("1.20")] string GraphName;
+    [min_ver("1.20")] int SubGraphId;
+};
+
+//  ===========================================================================
+ESPStruct [nil_remove] ECLHelpFile
+{
+    string Name;
+    string Type;
+    [min_ver("1.32")] string IPAddress;
+    [min_ver("1.32")] string Description;
+};
+
+//  ===========================================================================
+ESPStruct [nil_remove] ECLQuery
+{
+    string Text;
+    string Cpp;
+    string ResTxt;
+    string Dll;
+    string ThorLog;
+};
+//  ===========================================================================
+
+ESPStruct [nil_remove] DebugValue
+{
+    string Name;
+    string Value;
+};
+
+ESPStruct [nil_remove] WUActionResult
+{
+    string Wuid;
+    string Action;
+    string Result;
+};
+
+ESPStruct [nil_remove] ApplicationValue
+{
+    string Application;
+    string Name;
+    string Value;
+};
+
+ESPStruct [nil_remove] ECLWorkflow
+{
+    string WFID;
+    string EventName("");
+    string EventText("");
+    int Count(-1);
+    int CountRemaining(-1);
+};
+
+ESPStruct [nil_remove] ECLWorkunit
+{
+    string Wuid;
+    string Owner;
+    string Cluster;
+    [min_ver("1.07")] string RoxieCluster;
+    string Jobname;
+    string Queue;
+    int StateID;    //Equiv to workunit::state
+    string State;   //Equiv to workunit::stateDesc
+    string StateEx;
+    string Description;
+    bool Protected;
+    bool Active;
+    //bool Aborting;
+    int Action;
+    xsdDateTime DateTimeScheduled;
+    int PriorityClass;
+    int PriorityLevel;
+    string Scope;
+    string Snapshot;
+    int    ResultLimit; 
+    [min_ver("1.01")] bool Archived;
+    [min_ver("1.30")] bool IsPausing(false);
+    [min_ver("1.30")] bool ThorLCR(false);
+    [min_ver("1.01")] int EventSchedule;
+    [min_ver("1.02")] bool HaveSubGraphTimings;
+    [min_ver("1.28")] string TotalThorTime;
+
+    ESPstruct ECLQuery Query;
+    [min_ver("1.03")] ESParray<ESPstruct ECLHelpFile> Helpers;
+    ESParray<ESPstruct ECLException>    Exceptions;
+    ESParray<ESPstruct ECLGraph>        Graphs;
+    ESParray<ESPstruct ECLSourceFile>   SourceFiles;
+    ESParray<ESPstruct ECLResult>       Results;
+    ESParray<ESPstruct ECLResult>       Variables;
+    ESParray<ESPstruct ECLTimer>        Timers;
+    ESParray<ESPstruct DebugValue>      DebugValues;
+    ESParray<ESPstruct ApplicationValue> ApplicationValues;
+    [min_ver("1.01")] ESParray<ESPstruct ECLWorkflow> Workflows;
+    [min_ver("1.02")] ESParray<ESPstruct ECLTimingData> TimingData;
+    [min_ver("1.05")] ESParray<string, AllowedCluster> AllowedClusters;
+    [min_ver("1.17")] int ErrorCount;
+    [min_ver("1.17")] int WarningCount;
+    [min_ver("1.17")] int InfoCount;
+    [min_ver("1.17")] int GraphCount;
+    [min_ver("1.17")] int SourceFileCount;
+    [min_ver("1.17")] int ResultCount;
+    [min_ver("1.17")] int VariableCount;
+    [min_ver("1.17")] int TimerCount;
+    [min_ver("1.17")] bool HasDebugValue;
+    [min_ver("1.17")] int ApplicationValueCount;
+    [min_ver("1.22")] string XmlParams;
+    [min_ver("1.23")] int AccessFlag;
+    [min_ver("1.24")] int ClusterFlag;
+    [min_ver("1.29")] string HelpersDesc;
+    [min_ver("1.29")] string GraphsDesc;
+    [min_ver("1.29")] string SourceFilesDesc;
+    [min_ver("1.29")] string ResultsDesc;
+    [min_ver("1.29")] string VariablesDesc;
+    [min_ver("1.29")] string TimersDesc;
+    [min_ver("1.29")] string DebugValuesDesc;
+    [min_ver("1.29")] string ApplicationValuesDesc;
+    [min_ver("1.29")] string WorkflowsDesc;
+    [min_ver("1.31")] bool HasArchiveQuery(false);
+
+};
+
+ESPStruct [nil_remove] WUECLAttribute
+{
+    string ModuleName;
+    string AttributeName;
+    bool IsLocked;
+    bool IsCheckedOut;
+    bool IsSandbox;
+    bool IsOrphaned;
+};
+
+//  ===========================================================================
+ESPStruct NetworkNode
+{
+    int Category;
+    string id;
+};
+
+ESPStruct LogicalFileUpload
+{
+    int     Type;
+    string  Source;
+    string  Destination;
+    string  EventTag;
+};
+
+//  ===========================================================================
+
+ESPStruct [nil_remove] ECLJob
+{
+    string Wuid;
+    string Graph;
+    string State;
+    string StartedDate;
+    string FinishedDate;
+    string Cluster;
+    [min_ver("1.06")] string GraphNum;
+    [min_ver("1.06")] string SubGraphNum;
+    [min_ver("1.06")] string NumOfRuns;
+    [min_ver("1.06")] int Duration;
+};
+
+ESPStruct [nil_remove] ThorQueue
+{
+    string DT;
+    string RunningWUs;
+    string QueuedWUs;
+    string WaitingThors;
+    string ConnectedThors;
+    string IdledThors;
+    string RunningWU1;
+    string RunningWU2;
+};
+
+ESPrequest [nil_remove] WUCreateRequest
+{
+};
+
+ESPresponse [exceptions_inline] WUCreateResponse
+{
+    ESPstruct ECLWorkunit Workunit;
+};
+
+ESPrequest [nil_remove] WUQueryRequest
+{
+    string Wuid;
+    [min_ver("1.01")] string Type;  //archieved or non-archieved
+    string Cluster;
+    [min_ver("1.08")] string RoxieCluster;
+    string Owner;
+    string State;
+    string StartDate;
+    string EndDate;
+    string ECL;
+    string Jobname;
+    string LogicalFile;
+    string LogicalFileSearchType("");
+
+    string ApplicationName;
+    string ApplicationKey;
+    string ApplicationData;
+
+    string After;
+    string Before;
+    int Count;
+    [min_ver("1.03")] int64 PageSize(0);
+    [min_ver("1.03")] int64 PageStartFrom(0);
+    [min_ver("1.03")] int64 PageEndAt;
+    [min_ver("1.26")] int LastNDays;
+
+    string Sortby;
+    bool Descending(false);
+};
+
+
+ESPresponse [nil_remove, exceptions_inline] WUQueryResponse
+{
+    [min_ver("1.01")] string Type("");  //archieved or non-archieved
+    string Cluster;
+    [min_ver("1.08")] string RoxieCluster;
+    string Owner;
+    string State;
+    string StartDate;
+    string EndDate;
+    string ECL;
+    string Jobname;
+    [min_ver("1.01")] string LogicalFile;
+    [min_ver("1.01")] string LogicalFileSearchType("");
+
+    string Current;
+    string Next;
+    int Count(0);
+
+    [min_ver("1.03")] int64 PageSize(0);
+    [min_ver("1.03")] int64 PrevPage;
+    [min_ver("1.03")] int64 NextPage;
+    [min_ver("1.03")] int64 LastPage(-1);
+
+    int NumWUs;
+    bool First(true);
+    [min_ver("1.03")] int64 PageStartFrom(-1);
+    [min_ver("1.03")] int64 PageEndAt;
+    [min_ver("1.26")] int LastNDays;
+
+    string Sortby;
+    bool Descending(false);
+    string BasicQuery;
+    string Filters;
+    
+    ESParray<ESPstruct ECLWorkunit> Workunits;
+};
+
+
+ESPrequest [nil_remove] WUUpdateRequest
+{
+    string Wuid;
+    int    State;
+    int    StateOrig;
+    string Jobname;
+    string JobnameOrig;
+    string QueryText;
+    int    Action;
+    string Description;
+    string DescriptionOrig;
+    bool   AddDrilldownFields;
+    int    ResultLimit; //unsigned?
+    [http_nillable(0)] bool   Protected;
+    [http_nillable(0)] bool   ProtectedOrig;
+    int    PriorityClass;
+    int    PriorityLevel;
+    string Scope;
+    string ScopeOrig;
+    [min_ver("1.05")] string ClusterSelection;
+    [min_ver("1.05")] string ClusterOrig;
+    [min_ver("1.22")] string XmlParams;
+    [min_ver("1.25")] string ThorSlaveIP;
+
+    ESParray<ESPstruct DebugValue>       DebugValues;
+    ESParray<ESPstruct ApplicationValue> ApplicationValues;
+};
+
+ESPresponse [exceptions_inline] WUUpdateResponse
+{
+    ESPstruct ECLWorkunit Workunit;
+};
+
+ESPrequest WUDeleteRequest
+{
+    ESParray<string> Wuids;
+    [min_ver("1.02")] int BlockTillFinishTimer(0);
+};
+
+ESPresponse [exceptions_inline] WUDeleteResponse
+{
+    ESParray<ESPstruct WUActionResult> ActionResults;
+};
+
+/* html */
+ESPrequest [nil_remove] WUActionRequest
+{
+    ESParray<string> Wuids;
+    string ActionType;
+
+    string Cluster;
+    string Owner;
+    string State;
+    string StartDate;
+    string EndDate;
+    string ECL;
+    string Jobname;
+    string Test; 
+    string CurrentPage("");
+    [min_ver("1.03")] string PageSize("");
+    string Sortby;
+    bool Descending(false);
+    //[min_ver("1.01")] string SashaNetAddress;  
+    [min_ver("1.01")] string EventServer("");
+    [min_ver("1.01")] string EventName("");
+    //[min_ver("1.01")] string EventText("");
+    [min_ver("1.01")] string PageFrom("");
+    [min_ver("1.02")] int BlockTillFinishTimer(0);
+};
+
+ESPresponse [exceptions_inline] WUActionResponse
+{
+    ESParray<ESPstruct WUActionResult> ActionResults;
+};
+
+ESPrequest WUAbortRequest
+{
+    ESParray<string> Wuids;
+    [min_ver("1.02")] int BlockTillFinishTimer(0);
+};
+
+ESPresponse [exceptions_inline] WUAbortResponse
+{
+    ESParray<ESPstruct WUActionResult> ActionResults;
+};
+
+ESPrequest WUProtectRequest
+{
+    ESParray<string> Wuids;
+    bool Protect(true);
+};
+
+ESPresponse [exceptions_inline] WUProtectResponse
+{
+    ESParray<ESPstruct WUActionResult> ActionResults;
+};
+
+ESPrequest WUResubmitRequest 
+{
+    ESParray<string> Wuids;
+    [max_ver("1.30")] bool Recompile;
+    [min_ver("1.02")] int BlockTillFinishTimer(0);
+    bool ResetWorkflow;
+    bool CloneWorkunit;
+};
+
+ESPresponse [exceptions_inline] WUResubmitResponse
+{
+};
+
+ESPrequest WUSubmitRequest
+{
+    string Wuid;
+    string Cluster;
+    string Queue;
+    string Snapshot;
+    int    MaxRunTime;
+    [min_ver("1.02")] int BlockTillFinishTimer(0);
+    [min_ver("1.19")] bool SyntaxCheck(false);
+};
+
+ESPresponse [exceptions_inline] WUSubmitResponse
+{
+};
+
+ESPrequest WUScheduleRequest
+{
+    string Wuid;
+    string Cluster;
+    string Queue;
+    string Snapshot;
+    xsdDateTime When;
+    int    MaxRunTime;
+};
+
+ESPresponse [exceptions_inline] WUScheduleResponse
+{
+};
+
+ESPrequest [nil_remove] WUPushEventRequest
+{
+    string EventName("");
+    string EventText("");
+};
+
+ESPresponse [exceptions_inline] WUPushEventResponse
+{
+};
+
+SCMenum WUINFOType
+{
+    WUGRAPHS,
+    WUTIMINGS,
+    WUACTIONS,
+    WURESULTS
+};
+
+
+ESPrequest WUInfoRequest
+{
+    string Wuid;
+    bool TruncateEclTo64k(true);
+    [min_ver("1.01")] string Type;  //archieved or non-archieved
+    [min_ver("1.16")] bool IncludeExceptions(true);
+    [min_ver("1.16")] bool IncludeGraphs(true);
+    [min_ver("1.16")] bool IncludeSourceFiles(true);
+    [min_ver("1.16")] bool IncludeResults(true);
+    [min_ver("1.16")] bool IncludeVariables(true);
+    [min_ver("1.16")] bool IncludeTimers(true);
+    [min_ver("1.16")] bool IncludeDebugValues(true);
+    [min_ver("1.16")] bool IncludeApplicationValues(true);
+    [min_ver("1.16")] bool IncludeWorkflows(true);
+    [min_ver("1.16")] bool SuppressResultSchemas(false);
+   [min_ver("1.25")] string ThorSlaveIP;
+};
+
+
+ESPresponse [exceptions_inline] WUInfoResponse
+{
+    ESPstruct ECLWorkunit Workunit;
+    int  AutoRefresh(0);
+   bool CanCompile;
+   [min_ver("1.25")] string ThorSlaveIP;
+}; 
+
+ESPrequest WUResultSummaryRequest
+{
+    string Wuid;
+    int    Sequence;
+};
+
+ESPresponse [exceptions_inline] WUResultSummaryResponse
+{
+    string  Wuid;
+    int     Sequence;
+    int     Format;
+    ESPStruct ECLResult Result;
+};
+
+/* html */
+ESPrequest WULogFileRequest
+{
+    string Name;
+    string Wuid;
+    string Type;
+    int Option;
+    [min_ver("1.10")] string SlaveIP;
+    [min_ver("1.32")] string IPAddress;
+    [min_ver("1.32")] string Description;
+    string PlainText;
+};
+
+ESPresponse [exceptions_inline] WULogFileResponse
+{
+    [http_content("application/octet-stream")] binary thefile;
+};
+
+ESPrequest WUResultBinRequest
+{
+    string LogicalName;
+    string Wuid;
+    string ResultName;
+    int    Sequence;
+    string Format("raw");
+
+    int64 Start(0);
+    int Count;
+}; 
+
+ESPresponse [exceptions_inline] WUResultBinResponse
+{
+    string Wuid;
+    int Sequence;
+    string Name;
+
+    int64 Start;
+    int Count;
+    int Requested;
+    int64 Total;
+    [http_content("application/octet-stream")] binary Result;
+
+    string Format;
+
+};
+
+ESPrequest WUResultRequest
+{
+    string Wuid;
+    int    Sequence;
+    string ResultName;
+    string LogicalName;
+    string Cluster;
+
+    int64 Start(0);
+    int Count;
+}; 
+
+ESPresponse [exceptions_inline,http_encode(0)] WUResultResponse
+{
+    string Wuid;
+    int    Sequence;
+    string LogicalName;
+    string Cluster;
+    string Name;
+
+    int64 Start;
+    int Requested;
+    int Count;
+    int64 Total;
+
+    string Result;
+};
+
+ESPrequest WUClusterJobQueueXLSRequest
+{
+    string Cluster;
+   string StartDate;
+   string EndDate;
+    string ShowType;
+}; 
+
+ESPresponse [exceptions_inline] WUClusterJobQueueXLSResponse
+{
+    [http_content("application/octet-stream")] binary Result;
+};
+
+ESPrequest [nil_remove] WUClusterJobQueueLOGRequest
+{
+    string Cluster;
+   string StartDate;
+   string EndDate;
+};
+
+ESPresponse [exceptions_inline] WUClusterJobQueueLOGResponse
+{
+    [http_content("text/xml")] binary thefile;
+};
+
+ESPrequest WUClusterJobXLSRequest
+{
+    string Cluster;
+    string StartDate;
+    string EndDate;
+    bool ShowAll;
+    string BusinessStartTime;
+    string BusinessEndTime;
+}; 
+
+ESPresponse [exceptions_inline] WUClusterJobXLSResponse
+{
+    [http_content("application/octet-stream")] binary Result;
+};
+
+
+ESPrequest WUClusterJobSummaryXLSRequest
+{
+    string Cluster;
+    string StartDate;
+    string EndDate;
+    bool ShowAll;
+    string BusinessStartTime;
+    string BusinessEndTime;
+}; 
+
+ESPresponse [exceptions_inline] WUClusterJobSummaryXLSResponse
+{
+    [http_content("application/octet-stream")] binary Result;
+};
+
+ESPrequest GVCAjaxGraphRequest
+{
+    string Name;
+    string GraphName;
+   [min_ver("1.20")] int SubGraphId;
+   [min_ver("1.21")] bool SubGraphOnly;
+};
+
+ESPresponse GVCAjaxGraphResponse
+{
+    string Name;
+    string GraphName;
+    string GraphType;
+   [min_ver("1.20")] int SubGraphId;
+   [min_ver("1.21")] bool SubGraphOnly;
+};
+
+ESPrequest [nil_remove] WUGraphInfoRequest
+{
+    string Wuid;
+    string Name;
+    [min_ver("1.02")] string GID;
+   [min_ver("1.15")] int BatchWU;
+};
+ESPresponse [exceptions_inline] WUGraphInfoResponse
+{
+    string Wuid;
+    string Name;
+    [min_ver("1.02")] string GID;
+   [min_ver("1.15")] int BatchWU;
+    bool Running;
+};
+
+ESPrequest [nil_remove] WUGVCGraphInfoRequest
+{
+    string Wuid;
+    string Name;
+    string GID;
+   [min_ver("1.15")] int BatchWU;
+   [min_ver("1.18")] int SubgraphId;
+};
+ESPresponse [exceptions_inline, http_encode(0)] WUGVCGraphInfoResponse
+{
+    string Wuid;
+    string Name;
+    string GID;
+    bool Running;
+    string TheGraph;
+   [min_ver("1.15")] int BatchWU;
+};
+
+
+ESPrequest WUGraphTimingRequest
+{
+    string Wuid;
+};
+
+ESPresponse [exceptions_inline] WUGraphTimingResponse
+{
+    ESPstruct ECLWorkunit Workunit;
+};
+
+ESPrequest WUProcessGraphRequest
+{
+    string Wuid;
+    string Name;
+};
+
+ESPresponse [encode(0), exceptions_inline] WUProcessGraphResponse
+{
+    string theGraph;
+};
+
+ESPrequest WUGetGraphRequest
+{
+    string Wuid;
+    [min_ver("1.19")] string GraphName; 
+    [min_version("1.21")] string SubGraphId;
+};
+
+ESPresponse [exceptions_inline] WUGetGraphResponse
+{
+    ESParray<ESPstruct ECLGraphEx> Graphs;
+};
+
+ESPrequest WUExportRequest
+{
+    string Cluster;
+    string Owner;
+    string State;
+    string StartDate;
+    string EndDate;
+    string ECL;
+    string Jobname;
+};
+ESPresponse [exceptions_inline] WUExportResponse
+{
+    [http_content("text/xml")] binary ExportData;
+};
+
+
+ESPrequest WUWaitRequest
+{
+    string Wuid;
+    int Wait(-1);
+    bool ReturnOnWait(false);
+};
+
+ESPresponse [exceptions_inline] WUWaitResponse
+{
+    int StateID;
+};
+
+
+ESPrequest WUSyntaxCheckRequest
+{
+    string ECL;
+    string ModuleName;
+    string AttributeName;
+    string Queue;
+    string Cluster;
+    string Snapshot;
+    int    TimeToWait(60000);
+
+    [min_ver("1.04")] ESParray<ESPstruct DebugValue>       DebugValues;
+};
+
+ESPresponse [exceptions_inline] WUSyntaxCheckResponse
+{
+    ESParray<ESPstruct ECLException> Errors;
+};
+
+
+ESPrequest WUCompileECLRequest
+{
+    string ECL;
+    string ModuleName;
+    string AttributeName;
+    string Queue;
+    string Cluster;
+    string Snapshot;
+
+    bool IncludeDependencies(false);
+    bool IncludeComplexity;
+    int  TimeToWait(60000);
+};
+
+ESPresponse [exceptions_inline] WUCompileECLResponse
+{
+    string Complexity;
+    ESParray<ESPstruct ECLException> Errors;
+    ESParray<ESPstruct WUECLAttribute, ECLAttribute> Dependencies;
+};
+
+
+ESPrequest WUJobListRequest
+{
+    string Cluster;
+    string StartDate;
+    string EndDate;
+    bool ShowAll;
+    int BusinessStartHour;
+    int BusinessEndHour;
+};
+
+ESPresponse [exceptions_inline] WUJobListResponse
+{
+    string StartDate;
+    string EndDate;
+    ESParray<ESPstruct ECLJob> Jobs;
+};
+
+ESPrequest [nil_remove] WUShowScheduledRequest
+{
+    string Cluster("");
+    string EventName("");
+    string PushEventName("");
+    string PushEventText("");
+};
+
+ESPStruct [nil_remove] ScheduledWU
+{
+    string Wuid;
+    string Cluster("");
+    string EventName("");
+    string EventText("");
+    string JobName("");
+};
+
+ESPStruct [nil_remove] ServerInfo
+{
+    string Name("");
+    string NetAddress("");
+};
+
+ESPresponse [nil_remove, exceptions_inline] WUShowScheduledResponse
+{
+    int ClusterSelected(0);
+    string EventName("");
+    string PushEventName("");
+    string PushEventText("");
+    string Query("");
+    ESParray<ESPstruct ServerInfo> Clusters;
+    ESParray<ESPstruct ScheduledWU> Workunits;
+};
+
+ESPrequest WUGetDependancyTreesRequest
+{
+    string Cluster;
+    string Queue;
+    string Snapshot;
+    string Items;
+    [min_ver("1.12")] string TimeoutMilliSec;
+};
+
+ESPresponse [nil_remove, exceptions_inline] WUGetDependancyTreesResponse
+{
+    ESParray<ESPstruct ECLException> Errors;
+    [http_content("text/xml")] binary DependancyTrees;
+};
+
+ESPrequest WUListLocalFileRequiredRequest
+{
+    string Wuid;
+};
+
+ESPresponse [nil_remove, exceptions_inline] WUListLocalFileRequiredResponse
+{
+    ESParray<ESPstruct LogicalFileUpload> LocalFileUploads;
+};
+
+ESPrequest WUAddLocalFileToWorkunitRequest
+{
+    string Wuid;
+    string Name;
+
+    string Val;
+    string DefVal;
+    int Type;
+    int Length;
+};
+
+ESPresponse [nil_remove, exceptions_inline] WUAddLocalFileToWorkunitResponse
+{
+    string Wuid;
+    string Name;
+    string Result;
+};
+
+ESPrequest WUDebugRequest
+{
+    string Wuid;
+    string Command;
+};
+
+ESPresponse [exceptions_inline] WUDebugResponse
+{
+    string Result;
+};
+
+ESPrequest WUDeployWorkunitRequest
+{
+    string Wuid;
+    string JobName;
+    int Activate;
+
+};
+
+ESPresponse [exceptions_inline] WUDeployWorkunitResponse
+{
+    string Result;
+};
+
+
+ESPStruct QuerySet
+{
+    string  QuerySetName;
+};
+
+ESPrequest WUQuerysetsRequest
+{
+    bool test;
+};
+
+ESPresponse [exceptions_inline] WUQuerysetsResponse
+{
+    ESParray<ESPstruct QuerySet> Querysets;
+};
+
+ESPStruct QuerySetQuery
+{
+    string Id;
+    string Name;
+    string Wuid;
+    string Dll;
+    bool Suspended;
+};
+
+ESPStruct QuerySetAlias
+{
+    string Id;
+    string Name;
+};
+
+ESPrequest WUQuerySetDetailsRequest
+{
+    string  QuerySetName;
+};
+
+ESPresponse [exceptions_inline] WUQuerySetDetailsResponse
+{
+    string  QuerySetName;
+    ESParray<ESPstruct QuerySetQuery> QuerysetQueries;
+    ESParray<ESPstruct QuerySetAlias> QuerysetAliases;
+};
+
+ESPStruct QuerySetQueryAction
+{
+    string Id;
+    string Name;
+    bool Suspended;
+    string Status;
+};
+
+ESPrequest WUQuerySetActionQueriesRequest
+{
+    string  QuerySetName;
+    bool Remove(false);
+    bool ToggleSuspend(false);
+    ESParray<ESPstruct QuerySetQueryAction> QuerysetQueryActions;
+};
+
+ESPresponse [exceptions_inline] WUQuerySetActionQueriesResponse
+{
+    string  QuerySetName;
+    bool Remove;
+    bool ToggleSuspend;
+    ESParray<ESPstruct QuerySetQueryAction> QuerysetQueryActions;
+};
+
+ESPStruct QuerySetAliasAction
+{
+    string Id;
+    string Name;
+    string Status;
+};
+
+ESPrequest WUQuerySetActionAliasesRequest
+{
+    string  QuerySetName;
+    bool Remove(false);
+    ESParray<ESPstruct QuerySetAliasAction> QuerysetAliasActions;
+};
+
+ESPresponse [exceptions_inline] WUQuerySetActionAliasesResponse
+{
+    string  QuerySetName;
+    bool Remove;
+    ESParray<ESPstruct QuerySetAliasAction> QuerysetAliasActions;
+};
+
+
+ESPservice [
+    version("1.32"), default_client_version("1.32"),
+    noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
+{
+    ESPuses ESPStruct ECLException;
+    ESPuses ESPStruct ECLResult;
+    ESPuses ESPStruct ECLGraph;
+    ESPuses ESPStruct ECLGraphEx;
+    ESPuses ESPStruct ECLTimer; 
+    ESPuses ESPStruct ECLHelpFile; 
+    ESPuses ESPStruct ECLQuery;
+    ESPuses ESPStruct ECLWorkunit;
+    ESPuses ESPStruct ECLSourceFile;
+    ESPuses ESPStruct WUECLAttribute;
+    ESPuses ESPStruct DebugValue;
+    ESPuses ESPStruct ApplicationValue;
+    ESPuses ESPStruct ECLJob;
+    ESPuses ESPStruct QuerySet;
+    ESPuses ESPStruct QuerySetQueryAction;
+    ESPuses ESPStruct QuerySetAliasAction;
+
+    ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/wuid.xslt")]     WUInfo(WUInfoRequest, WUInfoResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/wuiddetails.xslt")]     WUInfoDetails(WUInfoRequest, WUInfoResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/wuid.xslt")]     WUGraphTiming(WUGraphTimingRequest, WUGraphTimingResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/graph.xslt")]         WUGraphInfo(WUGraphInfoRequest, WUGraphInfoResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/graph_gvc.xslt")]     WUGVCGraphInfo(WUGVCGraphInfoRequest, WUGVCGraphInfoResponse);
+    ESPmethod[description("Stub for Ajax GVC Graph."), help(""), resp_xsl_default("/esp/xslt/GvcGraph.xslt")] GVCAjaxGraph(GVCAjaxGraphRequest, GVCAjaxGraphResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/result.xslt")]        WUResult(WUResultRequest, WUResultResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/wuid_jobs.xslt")]     WUJobList(WUJobListRequest, WUJobListResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/wuaction_results.xslt")] WUAction(WUActionRequest, WUActionResponse); 
+    ESPmethod [resp_xsl_default("/esp/xslt/scheduledwus.xslt")] WUShowScheduled(WUShowScheduledRequest, WUShowScheduledResponse); 
+
+    ESPmethod WUResultSummary(WUResultSummaryRequest, WUResultSummaryResponse);
+
+    ESPmethod WUResultBin(WUResultBinRequest, WUResultBinResponse);
+    ESPmethod WUClusterJobQueueXLS(WUClusterJobQueueXLSRequest, WUClusterJobQueueXLSResponse);
+    ESPmethod WUClusterJobQueueLOG(WUClusterJobQueueLOGRequest, WUClusterJobQueueLOGResponse);
+    ESPmethod WUClusterJobXLS(WUClusterJobXLSRequest, WUClusterJobXLSResponse);
+    ESPmethod WUClusterJobSummaryXLS(WUClusterJobSummaryXLSRequest, WUClusterJobSummaryXLSResponse);
+
+    ESPmethod WUCreate(WUCreateRequest, WUCreateResponse);
+    ESPmethod WUCreateAndUpdate(WUUpdateRequest, WUUpdateResponse);
+    ESPmethod WUUpdate(WUUpdateRequest, WUUpdateResponse);
+    ESPmethod WUDelete(WUDeleteRequest, WUDeleteResponse);
+    ESPmethod WUSubmit(WUSubmitRequest, WUSubmitResponse);
+    ESPmethod WUSchedule(WUScheduleRequest, WUScheduleResponse);
+    ESPmethod WUPushEvent(WUPushEventRequest, WUPushEventResponse);
+
+    ESPmethod WUAbort(WUAbortRequest, WUAbortResponse);
+    ESPmethod WUProtect(WUProtectRequest, WUProtectResponse);
+    ESPmethod WUResubmit(WUResubmitRequest, WUResubmitResponse); //????
+
+    ESPmethod WUExport(WUExportRequest, WUExportResponse);
+
+    ESPmethod WUWaitCompiled(WUWaitRequest, WUWaitResponse);
+    ESPmethod WUWaitComplete(WUWaitRequest, WUWaitResponse);
+    
+    ESPmethod WUSyntaxCheckECL(WUSyntaxCheckRequest, WUSyntaxCheckResponse);
+    ESPmethod WUCompileECL(WUCompileECLRequest, WUCompileECLResponse);
+    
+    //ESPmethod WUAction(WUActionRequest, WUActionResponse); 
+    ESPmethod WUFile(WULogFileRequest, WULogFileResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/graphStats.xslt")] WUProcessGraph(WUProcessGraphRequest, WUProcessGraphResponse); 
+    ESPmethod WUGetGraph(WUGetGraphRequest, WUGetGraphResponse);
+    ESPmethod WUGetDependancyTrees(WUGetDependancyTreesRequest, WUGetDependancyTreesResponse);
+
+    ESPmethod WUListLocalFileRequired(WUListLocalFileRequiredRequest, WUListLocalFileRequiredResponse);
+    ESPmethod WUAddLocalFileToWorkunit(WUAddLocalFileToWorkunitRequest, WUAddLocalFileToWorkunitResponse);
+
+    ESPmethod WUCDebug(WUDebugRequest, WUDebugResponse);
+    
+    ESPmethod WUDeployWorkunit(WUDeployWorkunitRequest, WUDeployWorkunitResponse);
+    
+    ESPmethod [resp_xsl_default("/esp/xslt/WUQuerysets.xslt")] WUQuerysets(WUQuerysetsRequest, WUQuerysetsResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/WUQuerysetQueries.xslt")] WUQuerysetDetails(WUQuerySetDetailsRequest, WUQuerySetDetailsResponse);
+    ESPmethod WUQuerysetActionQueries(WUQuerySetActionQueriesRequest, WUQuerySetActionQueriesResponse);
+    ESPmethod WUQuerysetActionAliases(WUQuerySetActionAliasesRequest, WUQuerySetActionAliasesResponse);
+    
+};
+
+
+SCMexportdef(WSWU);
+
+SCMapi(WSWU) IClientWsWorkunits *createWsWorkunitsClient();
+

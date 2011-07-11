@@ -1,0 +1,155 @@
+<!--
+
+    Copyright (C) 2011 HPCC Systems.
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="Generator" content="runregress HTML report"/>
+    <title>Regression suite report for [% name | html %]</title>
+    <style type="text/css">
+      [% INSERT $stylesheetfile %]
+    </style>
+  </head>
+  <body>
+    <h1>Regression suite report for [% name | html %]</h1>
+    <div class="settings">
+      <h2>Settings &amp; Values</h2>
+      <table>
+        [% FOREACH setting = settings %]
+        <tr><td class="settingkey">[% setting.key | html %]</td><td class="settingval">[% setting.value | html %]</td></tr>
+        [% END %]
+      </table>
+      [% IF runsettings %]
+      <h2>Settings &amp; Values when suite was run, where different</h2>
+      <table>
+        [% FOREACH setting = runsettings %]
+        <tr><td class="settingkey">[% setting.key | html %]</td><td class="settingval">[% setting.value | html %]</td></tr>
+        [% END %]
+      </table>
+      [% END %]
+    </div>
+    <div class="summary">
+      <h2>Summary</h2>
+      <ul>
+        [% FOREACH count = counts %]
+        <li>[% IF count.tag %]<a href="#[% count.tag %]">[% END %][% count.count | html %] [%+ count.label | html %][% IF count.tag %]</a>[% END %]</li>
+        [% END %]
+      </ul>
+    </div>
+    <div class="wrong">
+      [% IF failures %]
+      <div class="failures">
+        <h2><a name="fail">Failures</a></h2>
+        [% FOREACH failure = failures %]
+        <h3>[% failure.query | html %][% IF failure.variant %] / [% failure.variant | html %][% END %][% IF failure.wuid %] ([% IF wuidurl %]<a href="[% wuidurl | html %][% failure.wuid | uri | html %]">[% END %][% failure.wuid | html %][% IF wuidurl %]</a>[% END %])[% END %]</h3>
+        <div class="failure"><span class="errors">[% failure.text | html %]</span></div>
+        [% END %]       
+      </div>
+      [% END %]
+      [% IF mismatches %]
+      <div class="diffs">
+        <h2><a name="mismatch">Mismatches</a></h2>
+        [% FOREACH mismatch = mismatches %]
+        <h3>[% mismatch.query | html %][% IF mismatch.variant %] / [% mismatch.variant | html %][% END %][% IF mismatch.wuid %] ([% IF wuidurl %]<a href="[% wuidurl | html %][% mismatch.wuid | uri | html %]">[% END %][% mismatch.wuid | html %][% IF wuidurl %]</a>[% END %])[% END %]</h3>
+        <div class="mismatch">[% mismatch.diff %]</div>
+        [% END %]       
+      </div>
+      [% END %]
+      [% IF tbd %]
+      <div class="tbd">
+        <h2><a name="tbd">Skipped as TBD</a></h2>
+        <ul>
+          [% FOREACH skipset = tbd %]
+          <li>
+            <span class="skipreason">[% skipset.key | html %]</span>: 
+            [% FOREACH skip = skipset.value %][% skip.query | html %][% IF skip.variant %] / [% skip.variant | html %][% END %][% IF !loop.last() %]; [% END %][% END %]
+          </li>
+          [% END %]
+        </ul>
+      </div>
+      [% END %]
+      [% IF notrun %]
+      <div class="notrun">
+        <h2><a name="notrun">Queries not run</a></h2>
+        <ul>
+          [% FOREACH nr = notrun %]
+          <li>[% nr.query | html %][% IF nr.variant %] / [% nr.variant | html %][% END %]</li>
+          [% END %]     
+        </ul>
+      </div>
+      [% END %]
+      [% IF missing %]
+      <div class="missing">
+        <h2><a name="missing">Missing result files</a></h2>
+        <ul>
+          [% FOREACH miss = missing %]
+          <li>[% miss.query | html %][% IF miss.variant %] / [% miss.variant | html %][% END %][% IF miss.wuid %] ([% IF wuidurl %]<a href="[% wuidurl | html %][% miss.wuid | uri | html %]">[% END %][% miss.wuid | html %][% IF wuidurl %]</a>[% END %])[% END %]</li>
+          [% END %]     
+        </ul>
+      </div>
+      [% END %]
+      [% IF unexpected %]
+      <div class="unexpected">
+        <h2><a name="unexpected">Unexpected result files</a></h2>
+        <ul>
+          [% FOREACH unex = unexpected %]
+          <li>[% unex.outfile | html %]</li>
+          [% END %]     
+        </ul>
+      </div>
+      [% END %]
+    </div>
+    <div class="right">
+      [% IF matches %]
+      <div class="matches">
+        <h2><a name="match">Matches</a></h2>
+        <ul><li>
+          [% FOREACH match = matches %]
+          <span class="inlineitem">[% IF wuidurl && match.wuid %]<a href="[% wuidurl | html %][% match.wuid %]">[% END %][% match.query | html %][% IF match.variant %] / [% match.variant | html %][% END %][% IF wuidurl && match.wuid %]</a>[% END %]</span>[% IF !loop.last() %], [% END %]
+          [% END %]
+        </li></ul>
+      </div>
+      [% END %]
+      [% IF nocmps %]
+      <div class="nocmp">
+        <h2><a name="nocmp">Completed without error</a></h2>
+        <ul><li>
+          [% FOREACH nocmp = nocmps %]
+          <span class="inlineitem">[% IF wuidurl && nocmp.wuid %]<a href="[% wuidurl | html %][% nocmp.wuid %]">[% END %][% nocmp.query | html %][% IF nocmp.variant %] / [% nocmp.variant | html %][% END %][% IF wuidurl && nocmp.wuid %]</a>[% END %]</span>[% IF !loop.last() %], [% END %]
+          [% END %]
+        </li></ul>
+      </div>
+      [% END %]
+      [% IF skipped %]
+      <div class="skipped">
+        <h2><a name="skipped">Skipped</a></h2>
+        <ul>
+          [% FOREACH skipset = skipped %]
+          <li>
+            <span class="skipreason">[% skipset.key | html %]</span>: 
+            [% FOREACH skip = skipset.value %][% skip.query | html %][% IF skip.variant %] / [% skip.variant | html %][% END %][% IF !loop.last() %]; [% END %][% END %]
+          </li>
+          [% END %]
+        </ul>
+      </div>
+      [% END %]
+    </div>
+  </body>
+</html>

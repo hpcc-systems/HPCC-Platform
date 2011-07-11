@@ -1,0 +1,351 @@
+<!--
+
+    Copyright (C) 2011 HPCC Systems.
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>runregress - Runs the regression suite and generates reports</title>
+<link rev="made" href="mailto:gerrit@familiehaase.de" />
+</head>
+
+<body style="background-color: white">
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+    <li><a href="#name">NAME</a></li>
+    <li><a href="#synopsis">SYNOPSIS</a></li>
+    <li><a href="#options">OPTIONS</a></li>
+    <li><a href="#configuration">CONFIGURATION</a></li>
+    <li><a href="#description">DESCRIPTION</a></li>
+    <ul>
+
+        <li><a href="#preparing_a_suite">Preparing a suite</a></li>
+        <li><a href="#running_a_suite">Running a suite</a></li>
+        <li><a href="#generating_reports">Generating reports</a></li>
+    </ul>
+
+    <li><a href="#queries__variants__and_skipping">QUERIES, VARIANTS, AND SKIPPING</a></li>
+    <li><a href="#postfilters">POST-FILTERS</a></li>
+    <li><a href="#child_processes">CHILD PROCESSES</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<p>runregress - Runs the regression suite and generates reports</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<p>runregress [<em>options</em>] <em>configuration_name</em> [<em>options</em>]</p>
+<p>runregress [<em>options</em>] <strong>-setup_generate</strong>|<strong>-setup</strong> [<em>options</em>]</p>
+<p>runregress <strong>-help</strong>|<strong>-h</strong>|<strong>-?</strong></p>
+<p>runregress <strong>-listreports</strong>|<strong>-lr</strong></p>
+<p>
+</p>
+<hr />
+<h1><a name="options">OPTIONS</a></h1>
+<dl>
+<dt><strong><a name="item__2dsetup_generate_7c_2dsetup_7c_2dse"><strong>-setup_generate</strong>|<strong>-setup</strong>|<strong>-se</strong></a></strong><br />
+</dt>
+<dd>
+Runs the setup queries rather than the test queries. May not be used with the options <strong>-class</strong>, <strong>-query</strong>, or <strong>-norun</strong>.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dsuite_7c_2ds_suite"><strong>-suite</strong>|<strong>-s</strong> <em>suite</em></a></strong><br />
+</dt>
+<dd>
+Names the suite, i.e. the directory where the tests are generated and run
+</dd>
+<p></p>
+<dt><strong><a name="item__2dquery_7c_2dq_query"><strong>-query</strong>|<strong>-q</strong> <em>query</em></a></strong><br />
+</dt>
+<dd>
+Names specific queries from the test directory to run, as a comma- or space-separated list. You may use wildcards, but will often need to use quotes to stop your shell expanding them. If this option is absent, all queries in the test directory are run. (See also the <strong>-class</strong> option.) In conjunction with <strong>-norun</strong>, causes reports to be generated on a subset of the queries it was run on (where report type supports this feature).
+</dd>
+<p></p>
+<dt><strong><a name="item__2dvariant_variant"><strong>-variant</strong> <em>variant</em></a></strong><br />
+</dt>
+<dd>
+Names the specific variant or variants of queries to run, as a comma- or space-separated list. Intended mainly for developer testing. In conjunction with <strong>-norun</strong>, causes reports to be generated on a subset of the queries it was run on (where report type supports this feature).
+</dd>
+<p></p>
+<dt><strong><a name="item__2dclass_7c_2dc_class"><strong>-class</strong>|<strong>-c</strong> <em>class</em></a></strong><br />
+</dt>
+<dd>
+Specifies that queries of this class, and only queries of this class, should be run (see <a href="#preparing_a_suite">Preparing a suite</a> in the help).
+</dd>
+<p></p>
+<dt><strong><a name="item__2dparallel_queries_7c_2dpq_n"><strong>-parallel_queries</strong>|<strong>-pq</strong> <em>n</em></a></strong><br />
+</dt>
+<dd>
+Specifies number of parallel queries to send, e.g. 2 to take advantage of dual-thor.
+</dd>
+<p></p>
+<dt><strong><a name="item__2decloption_7c_2de_name_3dvalue"><strong>-ecloption</strong>|<strong>-e</strong> <em>name</em>=<em>value</em></a></strong><br />
+</dt>
+<dd>
+Specifies that the ECL option <em>name</em> should be set to <em>value</em>. If <em>value</em> is a string, it should be single-quoted (and remember you may need to protect these quotes from your shell). This prepends <code>#option('name', value);</code> to each query.
+</dd>
+<p></p>
+<dt><strong><a name="item__2ddeploy_roxie_queries_7c_2ddrq_7c_2dd_roxie_2dde"><strong>-deploy_roxie_queries</strong>|<strong>-drq</strong>|<strong>-d</strong> <em>roxie-deploy-style</em></a></strong><br />
+</dt>
+<dd>
+Determines the method for deploying and executing roxie queries. If <code>run</code>, roxieconfig is executed in RunECLFile mode. If <code>yes</code>, roxieconfig is executed in DeployECLFile mode and then testsocket is run. Otherwise, testsocket is run (the queries are assumed to be deployed already). Defaults to <code>yes</code>.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dreport_7c_2dr_report_2dstyle"><strong>-report</strong>|<strong>-r</strong> <em>report-style</em></a></strong><br />
+</dt>
+<dd>
+Specifies the type or types of report to generate, as a comma- or space-separated list. To see a list of available types, use the <strong>-listreports</strong> option. This is ignored on a setup run.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dnorun_7c_2dn"><strong>-norun</strong>|<strong>-n</strong></a></strong><br />
+</dt>
+<dd>
+Skips the preparation and execution of the suite, so that reports may be generated on a suite which has already been run.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dpreview_7c_2dpre"><strong>-preview</strong>|<strong>-pre</strong></a></strong><br />
+</dt>
+<dd>
+Stops after the preparation of the suite. Shows what queries would be run, skipped, etc.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dsetup_clusters"><strong>-setup_clusters</strong></a></strong><br />
+</dt>
+<dd>
+During a setup run, specifies the clusters to use, as a comma- or space-separated list. During a test run, specifies the setup clusters to run against. Defaults to value of cluster if not specified.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dtestdir_7c_2dt_directory"><strong>-testdir</strong>|<strong>-t</strong> <em>directory</em></a></strong><br />
+</dt>
+<dd>
+Specifies the directory from which queries are taken. Defaults to the current directory.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dlogfile_7c_2dl_filename"><strong>-logfile</strong>|<strong>-l</strong> <em>filename</em></a></strong><br />
+</dt>
+<dd>
+Specifies a logfile to which warnings and errors will be written. Will be deleted at the start of the run (so use unique names if running the suite more than once, simultaneiously, from the same directory). Defaults to a logfile named for the configuration specified as the argument to runregress with <code>.log</code> appended, or to <code>setup_generate.log</code> where that argument is omitted by the option <strong>-setup</strong> is used.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dverbose_7c_2dv"><strong>-verbose</strong>|<strong>-v</strong></a></strong><br />
+</dt>
+<dd>
+Makes the script produce more output. It reports and logs the external commands it executes to run queries (eclplus, roxieconfig, and testsocket), and their output when it does not contain the results (so output is reported and logged for eclplus, and for roxieconfig when <strong>deploy_roxie_queries</strong> is <code>yes</code>; for roxieconfig when <strong>deploy_roxie_queries</strong> is <code>run</code> or for testsocket, the output contains the results and is captured).
+</dd>
+<p></p>
+<dt><strong><a name="item__2dconfig_7c_2dco_config_2dfile"><strong>-config</strong>|<strong>-co</strong> <em>config-file</em></a></strong><br />
+</dt>
+<dd>
+Specifies the configuration file or files. This may be a comma-separated list, in which case all files are read, with values from the earlier named files taking priority. If any filename is followed by a ?, it is optional. Otherwise, the file must exist and must contain a section corresponding to the configuration named as the argument to the command. The default behaviour is to read an optional file <code>local.ini</code> and a non-optional file <code>regress.ini</code>, with <code>local.ini</code> taking priority (allowing users to set local overrides or additions to a centrally deployed base configuration). See <a href="#configuration">CONFIGURATION</a> for more details.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dlistconfigs_7c_2dlc"><strong>-listconfigs</strong>|<strong>-lc</strong></a></strong><br />
+</dt>
+<dd>
+Causes runregress to load its configuration files, list the configurations they provide, and exit.
+</dd>
+<p></p>
+<dt><strong><a name="item__2ddescribeonly_7c_2ddesc"><strong>-describeonly</strong>|<strong>-desc</strong></a></strong><br />
+</dt>
+<dd>
+Causes the script to describe its configuration and options as normal and then exit.
+</dd>
+<p></p></dl>
+<p>All of these may be used (in their long forms) as configuration variables too (see below). A configuration variable overrides the built-in default, but is overridden by a command line option.</p>
+<p>A note on space-separated lists. To use these on the command line, you will need to prevent your shell from interpreting the space as a break between options (normally by escaping it with a backslash or enclosing the value in quotes). Using the alternative of comma-separated lists may be preferred. The option of space-separated lists is mainly intended when giving the value in a configuration variable instead.</p>
+<p>
+</p>
+<hr />
+<h1><a name="configuration">CONFIGURATION</a></h1>
+<p>Configuration for the runregress tool is via configuration files (see <a href="#options">OPTIONS</a> above). In each file, values are specified in a block corresponding to the specified configuration name, and optionally in a global block named <code>*</code>. The blocks are started by <code>[configuration_name]</code> and <code>[*]</code>, and the values are specifed as <code>name=value</code>. Earlier named configuration files take priority over later ones; within each file, the named block takes priority over the global <code>*</code> block. The following configuration variables are understood. Note that additional configuration files for the tools invoked will be read, e.g. <code>eclplus.ini</code>.</p>
+<p>If you specify the option <strong>-setup_generate</strong> (aka <strong>-setup</strong>) then you can omit the name of the configuration to use. In that case, only global blocks are loaded, which is okay provided every variable required (including <strong>setup_clusters</strong>) is specified in the global blocks.</p>
+<p>Note that, although the global and named blocks are the only ones loaded, the other blocks in the configuration files will be scanned. This is done to determine the types of the clusters listed in the configuration variable <strong>setup_clusters</strong>. It is an error for different configurations to specify different types for the same cluster. If a cluster is only ever used for setup (i.e. no configuration names it as its active cluster) it is assumed to be thor (and a warning is issued).</p>
+<dl>
+<dt><strong><a name="item_server"><strong>server</strong></a></strong><br />
+</dt>
+<dd>
+Gives the <strong>server</strong> option for eclplus, i.e. the location of eclwatch. Not required for roxie.
+</dd>
+<p></p>
+<dt><strong><a name="item_roxieconfigaddress"><strong>roxieconfigaddress</strong></a></strong><br />
+</dt>
+<dd>
+Gives the <strong>roxieconfigaddress</strong> option for roxieconfig, i.e. the location of roxieconfig. Required only for roxie and if <strong>deploy_roxie_queries</strong> is <code>yes</code> or <code>run</code>.
+</dd>
+<p></p>
+<dt><strong><a name="item_roxieserver"><strong>roxieserver</strong></a></strong><br />
+</dt>
+<dd>
+Gives the <strong>roxieserver</strong> option for testsocket, i.e. the location of roxie. Required only for roxie and if <strong>deploy_roxie_queries</strong> is not <code>run</code>.
+</dd>
+<p></p>
+<dt><strong><a name="item_owner"><strong>owner</strong></a></strong><br />
+</dt>
+<dd>
+Specifies <strong>owner</strong> option for eclplus or the <strong>owner</strong> option for roxieconfig. Not required for roxie if <strong>deploy_roxie_queries</strong> is neither <code>yes</code> nor <code>run</code>.
+</dd>
+<p></p>
+<dt><strong><a name="item_password"><strong>password</strong></a></strong><br />
+</dt>
+<dd>
+Specifies <strong>password</strong> option for eclplus or roxieconfig. Not required for roxie if <strong>deploy_roxie_queries</strong> is neither <code>yes</code> nor <code>run</code>.
+</dd>
+<p></p>
+<dt><strong><a name="item_cluster"><strong>cluster</strong></a></strong><br />
+</dt>
+<dd>
+During a test run, specifies the <strong>cluster</strong> option to eclplus, i.e. the cluster to run on. During a setup run, ignored (except as the default for <strong>setup_clusters</strong>). Not required for roxie.
+</dd>
+<p></p>
+<dt><strong><a name="item_type"><strong>type</strong></a></strong><br />
+</dt>
+<dd>
+Specifies the type of cluster (thor, hthor, or roxie). This changes the execution procedure, and may add or skip queries and override key results. It is required for roxie, and is recommended for hthor and thor to ensure that the correct tests are run.
+</dd>
+<p></p>
+<dt><strong><a name="item_os"><strong>os</strong></a></strong><br />
+</dt>
+<dd>
+Specifies a particular type of OS. This may add or skip queries and override key results. It is optional, but recommended to ensure that the correct tests are run.
+</dd>
+<p></p>
+<dt><strong><a name="item_purge"><strong>purge</strong></a></strong><br />
+</dt>
+<dd>
+If this has the value <code>move</code>, then the previous suite directory is moved to a <code>.bak</code> directory at the start of a run, instead of being removed. This can be used to compare two result sets, or to back up the previous result set in case of problems. Note that only one back up is kept: mess up twice (with restoring or backing up yourself) and you will have lost your results.
+</dd>
+<p></p>
+<dt><strong><a name="item_eclpluscmd"><strong>eclpluscmd</strong></a></strong><br />
+</dt>
+<dd>
+Specifies the path of a command to substitute for eclplus, e.g. ./eclminus.
+</dd>
+<p></p>
+<dt><strong><a name="item_eclplus"><strong>eclplus</strong></a></strong><br />
+</dt>
+<dd>
+A synonym of <strong>eclpluscmd</strong>.
+</dd>
+<p></p>
+<dt><strong><a name="item_roxieconfigcmd"><strong>roxieconfigcmd</strong></a></strong><br />
+</dt>
+<dd>
+Specifies the path of a command to substitute for roxieconfig.
+</dd>
+<p></p>
+<dt><strong><a name="item_testsocketcmd"><strong>testsocketcmd</strong></a></strong><br />
+</dt>
+<dd>
+Specifies the path of a command to substitute for testsocket.
+</dd>
+<p></p></dl>
+<p>Additionally, configuration variables with the same names as any the long forms of the command line options may be used, with the same effect. These provide defaults, which are overridden by the command line options if present. These include: <strong>suite</strong>, <strong>setup_generate</strong>, <strong>parallel_queries</strong>, <strong>deploy_roxie_queries</strong>, <strong>report</strong>, and <strong>logfile</strong>. For on/off command line options (<strong>setup_generate</strong>), turn on using a non-empty, non-zero string.</p>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>By default, this tool prepares a suite of test queries, runs it, and generates reports on the results. If the <strong>-norun</strong> option is given (or the <strong>setup_generate</strong> config value is non-empty), the first two stages are omitted, so that reports can be generated for a previous run suite. If the <strong>-setup</strong> options is given, the tool prepares and runs a suite of queries which generate datasets and indexes used in the test queries, and reports on the success of these queries. If the <strong>-listreports</strong> option is given then the tool just lists the available report formats and exits. If the <strong>-help</strong> option is given then the tool displays its documentation and exits.</p>
+<p>
+</p>
+<h2><a name="preparing_a_suite">Preparing a suite</a></h2>
+<p>The queries and results go into a directory named for the suite. In a test run, the suite name is specified by the <strong>-suite</strong> option if used, otherwise it the configuration name is used. In a setup run, the suite is always called <code>setup_generate</code>.</p>
+<p>By default, if the suite directory exists then it is removed at the start of a new run. The <strong>purge</strong> configuration variable changes this behaviour.</p>
+<p>During a setup run, queries are taken from the <code>setup</code> subdirectory of the test directory. All queries are used, in four variants (regular, local, payload, and varload) for each setup cluster.</p>
+<p>During a test run, queries are taken from the test directory, and from the subdirectory named for the cluster type. All queries are considered unless the <strong>-query</strong> option is used. Some queries may be skipped, and some queries may appear in several variants, as described in <a href="#queries__variants__and_skipping">QUERIES, VARIANTS, AND SKIPPING</a> (below).</p>
+<p>During a test run, key results are taken from the <code>key</code> subdirectory of the test directory, except that when results exist in a key subdirectory of a type or os subdirectory those are used instead (the type subdirectory taking priority).</p>
+<p>During a setup run, the queries go into a <code>setup</code> subdirectory of the suite directory. During a test run, they go directly into the suite directory, and key results go into the <code>key</code> subdirectory.</p>
+<p>Four additional files are created in the suite directory.</p>
+<dl>
+<dt><strong><a name="item_manifest_2ecsv"><code>manifest.csv</code></a></strong><br />
+</dt>
+<dd>
+A CSV file listing the queries to be run, with four fields: the query name, the variant (blank indicates that the query does not have multiple variants), the path to the key file (blank indicates that this is a setup query with no key file), and the path to the output.
+</dd>
+<p></p>
+<dt><strong><a name="item_skipped_2ecsv"><code>skipped.csv</code></a></strong><br />
+</dt>
+<dd>
+A CSV file listing the queries which will be skipped, with three fields: the query name, the variant (blank indicates that all variants are skipped), and the reason it will be skipped.
+</dd>
+<p></p>
+<dt><strong><a name="item_tbd_2ecsv"><code>tbd.csv</code></a></strong><br />
+</dt>
+<dd>
+As <a href="#item_skipped_2ecsv"><code>skipped.csv</code></a>, but only includes those queries which are skipped because of lines flagged <code>TBD</code>.
+</dd>
+<p></p>
+<dt><strong><a name="item_wuids_2ecsv"><code>wuids.csv</code></a></strong><br />
+</dt>
+<dd>
+A CSV file listing the queries which actually were run, with four fields: the query name, the variant (black indicates that the query does not have multiple variants), and the WUID of the workunit where available.
+</dd>
+<p></p>
+<dt><strong><a name="item_settings_2eini"><code>settings.ini</code></a></strong><br />
+</dt>
+<dd>
+An ini file storing the settings and values used (for descriptive purposes).
+</dd>
+<p></p></dl>
+<p>
+</p>
+<h2><a name="running_a_suite">Running a suite</a></h2>
+<p>All queries generated during the preparation stage are executed. For roxie queries, roxieconfig and/or testsocket are used, as described under the <strong>deploy_roxie_queries</strong> configuration variable above. For other queries, eclplus is used, unless an alternative has been specified by the <strong>eclplus</strong> configuration variable. Arguments can be altered using various configuarion variables.</p>
+<p>During a setup run, the results go into the <code>setup</code> subdirectory of the suite directory. During a test run, they go into a <code>out</code> subdirectory.</p>
+<p>One additional file is created in the suite directory: <a href="#item_wuids_2ecsv"><code>wuids.csv</code></a> is a CSV file which lists the queries which have been run, and has three fields: the query name (blank indicates that this query does not have multiple variants), and the WUID (blank indicates that the WUID could not be determined). It should be possible to determine the WUIDs for non-roxie, provided eclplus outputs it as expected; roxieconfig does not report the WUID (and it would be less useful anyway).</p>
+<p>
+</p>
+<h2><a name="generating_reports">Generating reports</a></h2>
+<p>This script can generate any number of arbitrary reports, provided by perl modules. These reports are based only on configuration data and information from files in the suite directory: the output, the key results, and the files <a href="#item_manifest_2ecsv"><code>manifest.csv</code></a>, <a href="#item_skipped_2ecsv"><code>skipped.csv</code></a>, and <a href="#item_tbd_2ecsv"><code>tbd.csv</code></a>. Because of this, the report generation stage can be done separately from the preparation and running stages, using the <strong>-norun</strong> option. The <strong>-report</strong> option or <strong>report</strong> configuration variable determines which reports are generated.</p>
+<p>Possible things a report could do include: describing the results on standard output; generating a file showing the results (e.g. in HTML); or invoking an external diff tool (e.g. Beyond Compare or xxdiff). The default behaviour is to summarize the result on standard output.</p>
+<p>During a setup run, the values of the <strong>-report</strong> option and <strong>report</strong> configuration variable are ignored: the script always just summarizes the results. Because there is no key output for setup queries, all it does is check the output for errors.</p>
+<p>
+</p>
+<hr />
+<h1><a name="queries__variants__and_skipping">QUERIES, VARIANTS, AND SKIPPING</a></h1>
+<p>If the ECL contains a comment <code>//UseStandardFiles</code>, the query is generated in a variant for each setup cluster; or, on roxie, two variants, one using dynamic filenames. If it contains a comment <code>//UseIndexes</code>, it is generated in several variants for each setup cluster: there is a regular one, a payload one, a varload one (using blobs), and for multipart indexes (where the setup cluster was thor rather than hthor) a local one (using <code>noroot</code>); except when running on thor, these each also come in a trans variant (using record layout translation); and, on roxie, these each also come in a dynamic filename variant.</p>
+<p>A comment <code>//class=...</code> in the ECL puts the query in a class. If the <code>-class</code> option is used then queries not in that class are skipped. Otherwise, queries in any class are skipped.</p>
+<p>Queries with a comment <code>//nohthor</code>, <code>//nothor</code>, or <code>//noroxie</code> are skipped when the <a href="#item_type"><code>type</code></a> configuration variable has the appropriate value.</p>
+<p>Queries with a comment <code>//nowindows</code>, or <code>//nolinux</code> are skipped when the <a href="#item_os"><code>os</code></a> configuration variable has the appropriate value.</p>
+<p>If the query contains a comment <code>//nolocal</code>, the local variant is skipped.</p>
+<p>More generally, a query can be skipped using a comment starting <code>//skip</code>, or some variants can be skipped using a comment starting <code>//varskip</code>. In either case, the rest of the line consists of a condition, or multiple conditions combined by <code>&amp;&amp;</code>. Each condition may be <code>name==value</code> (tests for equality), <code>name!=value</code> (tests for inequality), <code>name</code> (tests for a true value), or <code>!name</code> (tests for a false value). In <code>//skip</code>, the tests may be against any configuration variable (including <a href="#item_type"><code>type</code></a>, <a href="#item_os"><code>os</code></a>, etc.). In <code>//varskip</code>, tests may be against any configuration variable or against <code>local</code>, <code>payload</code>, <code>varload</code>, <code>trans</code>, and <code>dynamic</code> (which have true values if this variant has the named properties) or <code>setuptype</code> (which gives the type of the cluster used for setup (assumes thor if not known)). So, for example, <code>//skip type==thor</code> is equivalent to <code>//nothor</code>, and <code>//varskip type==roxie &amp;&amp; setuptype==thor &amp;&amp; !local</code> skips non-local variants running against thor indexes on roxie.</p>
+<p>The characters <code>TBD</code> may be added at the end of any line specifying a skip. That will cause this skip to be displayed under a separate (and more prominent) section in reports.</p>
+<p>
+</p>
+<hr />
+<h1><a name="postfilters">POST-FILTERS</a></h1>
+<p>It is possible to apply filters to the key and output results, to normalize them in some way. Currently, one such filter is available, to round floating point values: a comment <code>//normalizeFP 10</code> causes all floating point values spotted in the result set to be rounded to 10 d.p. (and anything within 10^-10 of zero to be replaced by 0, to fix the -0 problem).</p>
+<p>
+</p>
+<hr />
+<h1><a name="child_processes">CHILD PROCESSES</a></h1>
+<p>This script runs eclplus, roxieconfig, and testsocket as child processes. There are four possible outcomes: the process terminates normally with a zero return status (success); the process terminates normally with a nonzero return status (failure); the process was terminated by a signal; or the process failed to start at all (e.g. the executable was not found). The intention is that the all of these except success will be logged as a warning to standard error, and that none of them should prevent the script continuing.</p>
+<p>This intention is not quite achieved on Win32, which does not have real signals. It seems that using pskill to terminate a child process (with or without the <strong>-c</strong> option) abruptly kills the script itself; while using the windows task manager to terminate a child process correctly allows the script to continue, but incorrectly appears as if the process had terminated with a return status of 1. As far as I know, this behaviour is outside our control (it is in the perl module <a href="/IPC/Run.html">the IPC::Run manpage</a>).</p>
+<p>Some report types (e.g. <strong>BC2</strong>, <strong>xxdiff</strong>) launch diff viewers as child processes. The script starts these but does not wait for them to finish, and so does not care if they receive signals or return a nonzero status. A failure to start will be logged as a warning to standard error.</p>
+
+</body>
+
+</html>

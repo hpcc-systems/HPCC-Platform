@@ -1,0 +1,517 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+#include "seclib.hpp"
+#include "esplog.hpp"
+#include "mapinfo.hpp"
+
+SCMinterface IEspStringIntMap(IInterface)
+{
+    int queryValue(const char *key);
+    void setValue(const char *key, int value);
+};
+
+typedef MapBetween<int, int, StringAttr, const char *> MapIntToStr;
+typedef MapStringTo<StringBuffer, StringBuffer&> MapStrToBuf;
+
+#define PIX_PROTOCOL 1
+#define HTTP_PROTOCOL 2
+
+#if defined(ESP_TIMING)
+#define ESP_TIME_SECTION(str) TIME_SECTION(str)
+#else
+#define ESP_TIME_SECTION(str)
+#endif
+
+typedef MapStringTo<bool> BoolHash;
+
+SCMinterface IHttpMessage (IInterface)
+{
+    int receive(IMultiException *me);
+    int receive(bool alwaysReadContent, IMultiException *me);
+    int send();
+    StringBuffer& getContent(StringBuffer& buf);
+};
+
+/*
+XSCMinterface IEspContext(IInterface)
+{
+    void setUserID(const char* userid);
+    StringBuffer& getUserID(StringBuffer& userid);
+    const char *queryUserId();
+
+    void setPassword(const char* password);
+    StringBuffer& getPassword(StringBuffer& password);
+    const char *queryPassword();
+
+    void setRealm(const char* realm);
+    StringBuffer& getRealm(StringBuffer& realm);
+    const char *queryRealm();
+
+    void setUser(ISecUser* user);
+    ISecUser* queryUser();
+
+    void setResources(ISecResourceList* rlist);
+    ISecResourceList* queryResources();
+
+    void setSecManger(ISecManager* mgr);
+    ISecManager* querySecManager();
+
+    void setContextPath(const char *path);
+    const char * getContextPath();
+
+    void setBindingValue(void *value);
+    void * getBindingValue();
+
+    void setServiceValue(void *value);
+    void * getServiceValue();
+
+    void setToBeAuthenticated(bool val);
+    bool toBeAuthenticated();
+
+    void setPeer(const char* peer);
+    StringBuffer& getPeer(StringBuffer& peer);
+    void setFeatureAuthMap(IAuthMap* map);
+
+
+    IAuthMap* queryAuthMap();
+
+    bool authorizeFeature(const char* pszFeatureUrl, SecAccessFlags& access);
+    bool authorizeFeatures(StringArray& features, IEspStringIntMap& pmap);
+    
+
+    bool validateFeatureAccess(const char* pszFeatureUrl, unsigned required, bool throwExcpt);
+    void setServAddress(const char *host, short port);
+    void getServAddress(StringBuffer& host, short &port);
+    void AuditMessage(AuditType type, const char *filterType, const char *title, const char *parms);
+
+};
+*/
+
+#define ESPCTX_NO_NAMESPACES    0x00000001
+#define ESPCTX_WSDL             0x00000010
+#define ESPCTX_WSDL_EXT         0x00000100
+#define ESPCTX_NO_ANNOTATION    0x00001000
+#define ESPCTX_ALL_ANNOTATION   0x00010000
+
+interface IEspContext : extends IInterface
+{
+    virtual void setUserID(const char * userid) = 0;
+    virtual StringBuffer & getUserID(StringBuffer & userid) = 0;
+    virtual const char * queryUserId() = 0;
+    virtual void setPassword(const char * password) = 0;
+    virtual StringBuffer & getPassword(StringBuffer & password) = 0;
+    virtual const char * queryPassword() = 0;
+    virtual void setRealm(const char * realm) = 0;
+    virtual StringBuffer & getRealm(StringBuffer & realm) = 0;
+    virtual const char * queryRealm() = 0;
+    virtual void setUser(ISecUser * user) = 0;
+    virtual ISecUser * queryUser() = 0;
+    virtual void setResources(ISecResourceList * rlist) = 0;
+    virtual ISecResourceList * queryResources() = 0;
+    virtual void setSecManger(ISecManager * mgr) = 0;
+    virtual ISecManager * querySecManager() = 0;
+    virtual void setContextPath(const char * path) = 0;
+    virtual const char * getContextPath() = 0;
+    virtual void setBindingValue(void * value) = 0;
+    virtual void * getBindingValue() = 0;
+    virtual void setServiceValue(void * value) = 0;
+    virtual void * getServiceValue() = 0;
+    virtual void setToBeAuthenticated(bool val) = 0;
+    virtual bool toBeAuthenticated() = 0;
+    virtual void setPeer(const char * peer) = 0;
+    virtual StringBuffer & getPeer(StringBuffer & peer) = 0;
+    virtual void setUseragent(const char * useragent) = 0;
+    virtual StringBuffer & getUseragent(StringBuffer & useragent) = 0;
+    virtual void setFeatureAuthMap(IAuthMap * map) = 0;
+    virtual IAuthMap * queryAuthMap() = 0;
+
+    virtual void setSecuritySettings(ISecPropertyList * slist) = 0;
+    virtual ISecPropertyList * querySecuritySettings() = 0;
+
+    virtual bool authorizeFeature(const char * pszFeatureUrl, SecAccessFlags & access) = 0;
+    virtual bool authorizeFeatures(StringArray & features, IEspStringIntMap & pmap) = 0;
+    virtual bool authorizeFeature(const char * pszFeatureUrl, const char* UserID, const char* CompanyID, SecAccessFlags & access) = 0;
+
+    virtual bool authorizeFeature(const char * pszFeatureUrl, const char* UserID, const char* CompanyID, SecAccessFlags & access,bool bCheckTrial ,int DebitUnits,  SecUserStatus& user_status) = 0;
+
+    virtual bool validateFeatureAccess(const char * pszFeatureUrl, unsigned required, bool throwExcpt) = 0;
+    virtual void setServAddress(const char * host, short port) = 0;
+    virtual void getServAddress(StringBuffer & host, short & port) = 0;
+    virtual void AuditMessage(AuditType type, const char * filterType, const char * title, const char * parms, ...) = 0;
+
+    virtual void setServiceName(const char *name)=0;
+    virtual const char * queryServiceName(const char *name)=0;
+
+    virtual IProperties *   queryRequestParameters()=0;
+    virtual void            setRequestParameters(IProperties * Parameters)=0;
+
+    virtual IProperties * queryXslParameters()=0;
+    virtual void addOptions(unsigned opts)=0;
+    virtual void removeOptions(unsigned opts)=0;
+    virtual unsigned queryOptions()=0;
+
+    // versioning
+    virtual double getClientVersion()=0;
+    virtual void setClientVersion(double ver)=0;
+
+    virtual bool checkMinVer(double minver) = 0;
+    virtual bool checkMaxVer(double maxver) = 0;
+    virtual bool checkMinMaxVer(double minver, double maxver) = 0;
+    virtual bool checkOptional(const char*) = 0;
+    virtual bool isMethodAllowed(double version, const char* optional, const char* security, double minver, double maxver)=0;
+//  virtual void setMapInfo(IMapInfo*) = 0;
+    virtual IMapInfo& queryMapInfo() = 0;
+    virtual bool suppressed(const char* structName, const char* fieldName) = 0;
+
+    virtual void addOptGroup(const char* optGroup) = 0;
+    virtual BoolHash& queryOptGroups() = 0;
+    
+    virtual StringArray& queryCustomHeaders() = 0;
+    virtual void addCustomerHeader(const char* name, const char* val) = 0;
+};
+
+
+typedef unsigned LogLevel;
+#define LogNone   0
+#define LogMin    1
+#define LogNormal 5
+#define LogMax    10
+
+interface IEspContainer : extends IInterface
+{
+    virtual void exitESP() = 0;
+    virtual void setLogLevel(LogLevel level) = 0;
+    virtual LogLevel getLogLevel() = 0;
+    virtual bool getLogRequests() = 0;
+    virtual bool getLogResponses() = 0;
+    virtual void log(LogLevel level, const char*,...) = 0;
+    virtual void setFrameTitle(const char* title) = 0;
+    virtual const char* getFrameTitle() = 0;
+    virtual void sendSnmpMessage(const char* msg) = 0;
+};
+
+interface IEspRpcBinding;
+
+SCMenum miqType
+{
+   miqAll,
+   miqSequence,
+   miqDateRange
+};
+
+
+SCMinterface IEspPlugin(IInterface)
+{
+   bool isLoaded();
+
+   bool load();
+   void unload();
+
+   void *getProcAddress(const char *name);
+   const char* getName();
+};
+
+
+SCMinterface IEspProtocol(IInterface)
+{
+   const char * getProtocolName();
+   void addBindingMap(ISocket *sock, IEspRpcBinding* binding, bool isdefault);
+   void clearBindingMap();
+   void init(IPropertyTree *cfg, const char *process, const char *protocol);
+   void setContainer(IEspContainer *container);
+};
+
+
+SCMinterface IEspStruct(IInterface)
+{
+    //void serializeXml(StringBuffer& buffer, const char *name);
+};
+
+SCMinterface IEspRequest(IEspStruct)
+{
+};
+
+
+SCMinterface IEspResponse(IEspStruct)
+{
+    void  setRedirectUrl(const char *url);
+    const IMultiException& getExceptions();
+    void  noteException(IException& e);
+};
+
+
+SCMinterface IEspService(IInterface)
+{
+    const char * getServiceType();
+    bool init(const char *name, const char *type, IPropertyTree *cfg, const char *process);
+    void setContainer(IEspContainer *container);
+};
+
+
+
+SCMinterface IEspServiceRequest(IInterface)
+{
+    unsigned long getClientIP() const; 
+    const char *getUserName() const; 
+    const char *getPasswordHash() const; 
+};
+
+
+SCMinterface IEspServiceResponse(IInterface)
+{
+};
+
+
+SCMinterface IEspRpcBinding(IInterface)
+{
+    const char * getRpcType();
+    const char * getTransportType();
+    void addService(const char * name, const char * host, unsigned short port, IEspService & service);
+    void addProtocol(const char* name, IEspProtocol& prot);
+    void getNavigationData(IEspContext &context, IPropertyTree &data);
+    void getDynNavData(IEspContext &context, IProperties *params, IPropertyTree &data);
+    int onGetNavEvent(IEspContext &context, IHttpMessage *req, IHttpMessage *resp);
+
+    ISocketSelectNotify * queryListener();
+    //ISocketSelectNotify * getListener(unsigned int prototype);
+    bool isValidServiceName(IEspContext &context, const char *name);
+    bool qualifyServiceName(IEspContext &context, const char *servname, const char *methname, StringBuffer &servQName, StringBuffer *methQName);
+
+    int run();
+    int stop();
+
+    void setContainer(IEspContainer *ic);
+    void setXslProcessor(IInterface *xslp);
+    IEspContainer* queryContainer();
+};
+
+SCMinterface IEspUriMap(IInterface)
+{
+    void addBinding(const char * name, const char * host, unsigned short port, IEspService & service);
+    void addProtocol(const char* name, IEspProtocol& prot);
+
+   ISocketSelectNotify * getListener();
+   //ISocketSelectNotify * getListener(unsigned int prototype);
+
+   int run();
+   int stop();
+};
+
+SCMinterface IEspServer(IInterface)
+{
+   void addProtocol(IEspProtocol &prot);
+   void addBinding(const char * name, const char * host, unsigned short port, IEspProtocol &prot, IEspRpcBinding &bind, bool isdefault, IPropertyTree* cfgtree);
+};
+
+SCMinterface IEspServiceCfg(IInterface)
+{
+   void init(IPropertyTree &env, const char *proc, const char *service);
+  
+   bool refresh();
+};
+
+SCMinterface IEspBindingCfg(IInterface)
+{
+   void init(IPropertyTree &env, const char *proc, const char *service, const char *binding);
+  
+   bool refresh();
+};
+
+SCMinterface IEspProtocolCfg(IInterface)
+{
+   void init(IPropertyTree &env, const char *proc, const char *service, const char *binding);
+  
+   bool refresh();
+};
+
+SCMinterface IEspServiceEntry(IInterface)
+{
+   void addRpcBinding(IEspRpcBinding &binding, const char *host, unsigned short port);
+   int run();
+    int stop();
+};
+
+
+//Quick and Dirty Montioring support
+
+SCMenum QuickMonStatus
+{
+   qmsUnknown,
+   qmsOK,
+   qmsGeneralError
+};
+
+SCMinterface IEspQuickMonRequest(IEspServiceRequest)
+{
+    void tbd() const;
+};
+
+SCMinterface IEspQuickMonResponse(IEspServiceResponse)
+{
+    void setStatus(QuickMonStatus status, const char *descr);
+};
+
+SCMinterface IEspQuickMonService(IEspService)
+{
+    bool onGetStatus(IEspQuickMonRequest& request, IEspQuickMonResponse& results);
+};
+
+
+
+//SIMPLE (generic) DATA SERVICES
+
+SCMinterface IEspSimpleDataRequest(IInterface)
+{
+    const char *getPath();
+    const char *getService();
+    const char *getScrubbedXML();
+    bool getSaveWorkunit();
+    bool getLimitResults();
+    bool getIncludeGraph();
+    bool getIncludeResultSchemas();
+    bool getEncodeDataset();
+    MapStrToBuf *getDataAttachments();  
+    const char *getClusterName();
+    int getWuTimeout();
+    bool getNoWuAbort();
+    bool getAsync();
+    bool getTrimXml();
+    bool getRawXml();
+};
+
+SCMinterface IEspSimpleDataResponse(IInterface)
+{
+    StringBuffer &updateResultsXML();
+    void setWorkunitId(const char * wuid);
+    void setMessageXML(const char *xml);
+    void setResultsXML(const char *xml);
+    void setEclWatchAddress(const char *addr);
+    void setAsync(bool isasync);
+    void addGraphXGMML(const char *xgmml, const char *graphname);
+};
+
+SCMinterface IEspSimpleDataRefResponse(IInterface)
+{
+    void setMessageXML(const char *xml);
+    void setResultsPath(const char *path);
+};
+
+SCMinterface IEspSimpleDataRetrievalRequest(IInterface)
+{
+    const char *getResultsPath();
+};
+
+
+SCMinterface IEspSimpleDataService(IEspService)
+{
+    bool getUseModName();
+    bool getUseModInWsdl();
+    bool encodeResultsXml();
+    int onSimpleDataRequest(IEspContext &context, IPropertyTree *partsTree, IEspSimpleDataRequest &req, IEspSimpleDataResponse &resp);
+};
+
+SCMinterface IEspSimpleDataRetrievalService(IEspService)
+{
+    int onSimpleDataByRefRequest(IEspContext &context, IEspSimpleDataRequest &req, IEspSimpleDataRefResponse &resp);
+    int onSimpleDataRetrieval(IEspContext &context, IEspSimpleDataRetrievalRequest &req, IEspSimpleDataResponse &resp);
+};
+
+
+//WSDL Support
+
+SCMinterface IEspWebService(IInterface)
+{
+    bool isValidWsName(IEspContext & context,const char *servname);
+    bool qualifyWsName(IEspContext & context,const char *servname, const char *methname, StringBuffer &servQName, StringBuffer *methQName);
+    bool fixCase(IEspContext & context, StringBuffer &service, StringBuffer &method);
+    bool getWsModules(IEspContext & context, StringArray &wsModules, StringBuffer &mode);
+    bool getWsQueries(IEspContext & context, const char *path, bool aliasOnly, IPropertyTree *wsQueryInfo);
+    bool getWSDL(IEspContext & context, const char *path, const char *method, StringBuffer &wsdlMsg);
+    bool getWSDL_Message(IEspContext & context, const char *path, const char *method, StringBuffer &wsdlMsg);
+    bool getWSDL_Schema(IEspContext & context, const char *path, const char *method, StringBuffer &wsdlSchema);
+    bool getResults_Schema(IEspContext & context, const char *path, const char *method, StringBuffer &dataSchema);
+    const char *translateXsdType(const char *);
+    bool getResultXsd(IEspContext & context, const char *service, const char *method, const char *resultName, StringBuffer & dataSchema);
+
+};
+
+
+//HTML Forms Support
+
+SCMinterface IEspHtmlForm(IInterface)
+{
+    bool getHtmlForm(IEspContext & context, const char *path, const char *method, StringBuffer &formStr);
+    bool getMetaBlock(IEspContext & context, const char *name, const char * service, const char * method, StringBuffer & blockStr);
+    bool getParametersXml(IEspContext & context, const char *path, const char *method, StringBuffer &formStr);
+    bool getDescriptiveXml(IEspContext & context, const char *path, const char *method, StringBuffer &xmlStr);
+    bool getHtmlResults_Xslt(IEspContext & context, const char *path, const char *method, StringBuffer &xsltStr);
+    bool applyXslAttribute(IEspContext & context, const char * path, const char * method, const char * sectionName, const char * input, const char *fullPath, StringBuffer & ret, bool nodefault);
+    bool getOTX(IEspContext & context, const char *path, const char *method, StringBuffer &xmlStr);
+    bool getCacheInfo(IEspContext & context, const char *name, StringBuffer & blockStr);
+};
+
+SCMinterface IEspFileService(IInterface)
+{
+    bool getFile(IEspContext & context, const char *path, MemoryBuffer &data);
+    bool putFile(IEspContext & context, const char *path, void *data, unsigned len);
+};
+
+SCMinterface IEspNgParameter(IInterface)
+{
+    const char *queryName();
+    const char *queryValue();
+    void setValue(const char *val);
+    unsigned getMaxLength();
+    bool isNull();
+    void setNull();
+};
+
+SCMinterface IEspNgParameterIterator(IInterface)
+{
+    bool first();
+    bool next();
+    bool isValid();
+
+    IEspNgParameter *query();
+};
+
+SCMinterface IEspNgComplexType(IInterface)
+{
+    const char *queryName();
+    IEspNgParameterIterator *getParameterIterator();
+};
+
+SCMinterface IEspNgRequest(IEspNgComplexType)
+{
+};
+
+SCMinterface IEspNgResponse(IEspNgComplexType)
+{
+};
+
+SCMinterface IEspNgServiceBinding(IInterface)
+{
+    IEspNgRequest* createRequest(const char *type_name);
+    IEspNgResponse* createResponse(const char *type_name);
+    int processRequest(IEspContext &context, const char *method_name, IEspNgRequest* req, IEspNgResponse* resp);
+    void populateContext(IEspContext & ctx);
+    bool basicAuth(IEspContext* ctx);
+
+
+};

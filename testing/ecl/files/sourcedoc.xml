@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd">
+<section>
+    <title>testing/ecl/files</title>
+
+    <para>
+        The testing/ecl/files directory contains the sources for the testing/ecl/files library.
+    </para>
+</section>

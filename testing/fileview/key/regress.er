@@ -1,0 +1,895 @@
+<xgmml>
+<graph>
+ <node id="1" label="regress::hthor::book"><att>
+ <graph>
+ <node id="1_0" label="id">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="1_1" label="name">
+<attr name="type" value="string"/>
+ </node>
+ <node id="1_2" label="author">
+<attr name="type" value="string"/>
+ </node>
+ <node id="1_3" label="rating100">
+<attr name="type" value="unsigned1"/>
+ </node>
+ <node id="1_4" label="price">
+<attr name="type" value="udecimal8_2"/>
+ </node>
+ <node id="1_5" label="personid">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="1_6" label="{virtual(fileposition)}">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="2" label="regress::hthor::person"><att>
+ <graph>
+ <node id="2_0" label="id">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="2_1" label="forename">
+<attr name="type" value="string"/>
+ </node>
+ <node id="2_2" label="surname">
+<attr name="type" value="string"/>
+ </node>
+ <node id="2_3" label="dob">
+<attr name="type" value="udecimal8"/>
+ </node>
+ <node id="2_4" label="booklimit">
+<attr name="type" value="udecimal8"/>
+ </node>
+ <node id="2_5" label="aage">
+<attr name="type" value="unsigned2"/>
+ </node>
+ <node id="2_6" label="houseid">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="2_7" label="{virtual(fileposition)}">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="3" label="regress::hthor::house"><att>
+ <graph>
+ <node id="3_0" label="id">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="3_1" label="addr">
+<attr name="type" value="string"/>
+ </node>
+ <node id="3_2" label="postcode">
+<attr name="type" value="string10"/>
+ </node>
+ <node id="3_3" label="yearbuilt">
+<attr name="type" value="unsigned2"/>
+ </node>
+ <node id="3_4" label="{virtual(fileposition)}">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="5" label="regress::hthor::housepersonbook"><att>
+ <graph>
+ <node id="5_0" label="id">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="5_1" label="addr">
+<attr name="type" value="string"/>
+ </node>
+ <node id="5_2" label="postcode">
+<attr name="type" value="string10"/>
+ </node>
+ <node id="5_3" label="yearbuilt">
+<attr name="type" value="unsigned2"/>
+ </node>
+ <node id="5_4" label="persons">
+<attr name="type" value="dataset"/>
+ </node>
+ <node id="5_5" label="{virtual(fileposition)}">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="7" label="regress::hthor::personbook"><att>
+ <graph>
+ <node id="7_0" label="id">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="7_1" label="forename">
+<attr name="type" value="string"/>
+ </node>
+ <node id="7_2" label="surname">
+<attr name="type" value="string"/>
+ </node>
+ <node id="7_3" label="dob">
+<attr name="type" value="udecimal8"/>
+ </node>
+ <node id="7_4" label="booklimit">
+<attr name="type" value="udecimal8"/>
+ </node>
+ <node id="7_5" label="aage">
+<attr name="type" value="unsigned2"/>
+ </node>
+ <node id="7_6" label="books">
+<attr name="type" value="dataset"/>
+ </node>
+ <node id="7_7" label="houseid">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="7_8" label="{virtual(fileposition)}">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="9" label="regress::hthor::houseindexid"><att>
+ <graph>
+ <node id="9_0" label="id">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="9_1" label="addr">
+<attr name="type" value="string"/>
+ </node>
+ <node id="9_2" label="filepos">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="12" label="regress::hthor::houseindex"><att>
+ <graph>
+ <node id="12_0" label="addr">
+<attr name="type" value="string40"/>
+ </node>
+ <node id="12_1" label="postcode">
+<attr name="type" value="string10"/>
+ </node>
+ <node id="12_2" label="filepos">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="16" label="regress::hthor::personindexid"><att>
+ <graph>
+ <node id="16_0" label="id">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="16_1" label="filepos">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="19" label="regress::hthor::personindex"><att>
+ <graph>
+ <node id="19_0" label="forename">
+<attr name="type" value="string40"/>
+ </node>
+ <node id="19_1" label="surname">
+<attr name="type" value="string40"/>
+ </node>
+ <node id="19_2" label="id">
+<attr name="type" value="unsigned4"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="22" label="regress::hthor::bookindexid"><att>
+ <graph>
+ <node id="22_0" label="id">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="22_1" label="filepos">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="25" label="regress::hthor::bookindex"><att>
+ <graph>
+ <node id="25_0" label="name">
+<attr name="type" value="string40"/>
+ </node>
+ <node id="25_1" label="author">
+<attr name="type" value="string40"/>
+ </node>
+ <node id="25_2" label="id">
+<attr name="type" value="unsigned4"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="28" label="regress::hthor::dg_accountxml"><att>
+ <graph>
+ <node id="28_0" label="line">
+<attr name="type" value="unicode"/>
+ </node>
+ <node id="28_1" label="{virtual(fileposition)}">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="29" label="regress::hthor::dg_child.d00"><att>
+ <graph>
+ <node id="29_0" label="dg_parentid">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="29_1" label="dg_childid">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="29_2" label="dg_firstname">
+<attr name="type" value="string10"/>
+ </node>
+ <node id="29_3" label="dg_lastname">
+<attr name="type" value="string10"/>
+ </node>
+ <node id="29_4" label="dg_prange">
+<attr name="type" value="unsigned1"/>
+ </node>
+ <node id="29_5" label="{virtual(fileposition)}">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="30" label="regress::hthor::dg_parent.d00"><att>
+ <graph>
+ <node id="30_0" label="dg_parentid">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="30_1" label="dg_firstname">
+<attr name="type" value="string10"/>
+ </node>
+ <node id="30_2" label="dg_lastname">
+<attr name="type" value="string10"/>
+ </node>
+ <node id="30_3" label="dg_prange">
+<attr name="type" value="unsigned1"/>
+ </node>
+ <node id="30_4" label="{virtual(fileposition)}">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="32" label="regress::hthor::dg_csv"><att>
+ <graph>
+ <node id="32_0" label="line">
+<attr name="type" value="unicode"/>
+ </node>
+ <node id="32_1" label="{virtual(fileposition)}">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="34" label="regress::hthor::dg_xml"><att>
+ <graph>
+ <node id="34_0" label="line">
+<attr name="type" value="unicode"/>
+ </node>
+ <node id="34_1" label="{virtual(fileposition)}">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="36" label="regress::hthor::dg_grandchild.d00"><att>
+ <graph>
+ <node id="36_0" label="dg_parentid">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="36_1" label="dg_childid">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="36_2" label="dg_firstname">
+<attr name="type" value="string10"/>
+ </node>
+ <node id="36_3" label="dg_lastname">
+<attr name="type" value="string10"/>
+ </node>
+ <node id="36_4" label="dg_prange">
+<attr name="type" value="unsigned1"/>
+ </node>
+ <node id="36_5" label="{virtual(fileposition)}">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="38" label="regress::hthor::dg_fetchfile"><att>
+ <graph>
+ <node id="38_0" label="sequence">
+<attr name="type" value="integer8"/>
+ </node>
+ <node id="38_1" label="state">
+<attr name="type" value="string2"/>
+ </node>
+ <node id="38_2" label="city">
+<attr name="type" value="string20"/>
+ </node>
+ <node id="38_3" label="lname">
+<attr name="type" value="string25"/>
+ </node>
+ <node id="38_4" label="fname">
+<attr name="type" value="string15"/>
+ </node>
+ <node id="38_5" label="{virtual(fileposition)}">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="39" label="regress::hthor::dg_fetchfilepreload"><att>
+ <graph>
+ <node id="39_0" label="sequence">
+<attr name="type" value="integer8"/>
+ </node>
+ <node id="39_1" label="state">
+<attr name="type" value="string2"/>
+ </node>
+ <node id="39_2" label="city">
+<attr name="type" value="string20"/>
+ </node>
+ <node id="39_3" label="lname">
+<attr name="type" value="string25"/>
+ </node>
+ <node id="39_4" label="fname">
+<attr name="type" value="string15"/>
+ </node>
+ <node id="39_5" label="{virtual(fileposition)}">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="41" label="regress::hthor::dg_fetchfilepreloadindexed"><att>
+ <graph>
+ <node id="41_0" label="sequence">
+<attr name="type" value="integer8"/>
+ </node>
+ <node id="41_1" label="state">
+<attr name="type" value="string2"/>
+ </node>
+ <node id="41_2" label="city">
+<attr name="type" value="string20"/>
+ </node>
+ <node id="41_3" label="lname">
+<attr name="type" value="string25"/>
+ </node>
+ <node id="41_4" label="fname">
+<attr name="type" value="string15"/>
+ </node>
+ <node id="41_5" label="{virtual(fileposition)}">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="43" label="regress::hthor::dg_fetchindex1"><att>
+ <graph>
+ <node id="43_0" label="lname">
+<attr name="type" value="string25"/>
+ </node>
+ <node id="43_1" label="fname">
+<attr name="type" value="string15"/>
+ </node>
+ <node id="43_2" label="__filepos">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="46" label="regress::hthor::dg_fetchindex2"><att>
+ <graph>
+ <node id="46_0" label="lname">
+<attr name="type" value="string25"/>
+ </node>
+ <node id="46_1" label="fname">
+<attr name="type" value="string15"/>
+ </node>
+ <node id="46_2" label="__filepos">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="49" label="regress::hthor::dg_flat"><att>
+ <graph>
+ <node id="49_0" label="dg_parentid">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="49_1" label="dg_firstname">
+<attr name="type" value="string10"/>
+ </node>
+ <node id="49_2" label="dg_lastname">
+<attr name="type" value="string10"/>
+ </node>
+ <node id="49_3" label="dg_prange">
+<attr name="type" value="unsigned1"/>
+ </node>
+ <node id="49_4" label="{virtual(fileposition)}">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="50" label="regress::hthor::dg_index"><att>
+ <graph>
+ <node id="50_0" label="dg_firstname">
+<attr name="type" value="string10"/>
+ </node>
+ <node id="50_1" label="dg_lastname">
+<attr name="type" value="string10"/>
+ </node>
+ <node id="50_2" label="dg_prange">
+<attr name="type" value="unsigned1"/>
+ </node>
+ <node id="50_3" label="filepos">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="53" label="regress::hthor::dg_flat_evens"><att>
+ <graph>
+ <node id="53_0" label="dg_parentid">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="53_1" label="dg_firstname">
+<attr name="type" value="string10"/>
+ </node>
+ <node id="53_2" label="dg_lastname">
+<attr name="type" value="string10"/>
+ </node>
+ <node id="53_3" label="dg_prange">
+<attr name="type" value="unsigned1"/>
+ </node>
+ <node id="53_4" label="{virtual(fileposition)}">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="54" label="regress::hthor::dg_index_evens"><att>
+ <graph>
+ <node id="54_0" label="dg_firstname">
+<attr name="type" value="string10"/>
+ </node>
+ <node id="54_1" label="dg_lastname">
+<attr name="type" value="string10"/>
+ </node>
+ <node id="54_2" label="dg_prange">
+<attr name="type" value="unsigned1"/>
+ </node>
+ <node id="54_3" label="filepos">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="57" label="regress::hthor::dg_integerfile"><att>
+ <graph>
+ <node id="57_0" label="i6">
+<attr name="type" value="integer6"/>
+ </node>
+ <node id="57_1" label="nested">
+<attr name="type" value="record"/>
+ </node>
+ <node id="57_2" label="i4">
+<attr name="type" value="integer4"/>
+ </node>
+ <node id="57_3" label="u3">
+<attr name="type" value="unsigned3"/>
+ </node>
+ <node id="57_5" label="i5">
+<attr name="type" value="integer5"/>
+ </node>
+ <node id="57_6" label="i3">
+<attr name="type" value="integer3"/>
+ </node>
+ <node id="57_7" label="{virtual(fileposition)}">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="58" label="regress::hthor::dg_integerindex"><att>
+ <graph>
+ <node id="58_0" label="i6">
+<attr name="type" value="integer6"/>
+ </node>
+ <node id="58_1" label="nested">
+<attr name="type" value="record"/>
+ </node>
+ <node id="58_2" label="i4">
+<attr name="type" value="integer4"/>
+ </node>
+ <node id="58_3" label="u3">
+<attr name="type" value="unsigned3"/>
+ </node>
+ <node id="58_5" label="i5">
+<attr name="type" value="integer5"/>
+ </node>
+ <node id="58_6" label="i3">
+<attr name="type" value="integer3"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="59" label="regress::hthor::dg_memfile"><att>
+ <graph>
+ <node id="59_0" label="u2">
+<attr name="type" value="unsigned2"/>
+ </node>
+ <node id="59_1" label="u3">
+<attr name="type" value="unsigned3"/>
+ </node>
+ <node id="59_2" label="bu2">
+<attr name="type" value="big_endian unsigned integer2"/>
+ </node>
+ <node id="59_3" label="bu3">
+<attr name="type" value="big_endian unsigned integer3"/>
+ </node>
+ <node id="59_4" label="i2">
+<attr name="type" value="integer2"/>
+ </node>
+ <node id="59_5" label="i3">
+<attr name="type" value="integer3"/>
+ </node>
+ <node id="59_6" label="bi2">
+<attr name="type" value="big_endian integer2"/>
+ </node>
+ <node id="59_7" label="bi3">
+<attr name="type" value="big_endian integer3"/>
+ </node>
+ <node id="59_8" label="{virtual(fileposition)}">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="60" label="regress::hthor::dg_var"><att>
+ <graph>
+ <node id="60_0" label="dg_parentid">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="60_1" label="dg_firstname">
+<attr name="type" value="string10"/>
+ </node>
+ <node id="60_2" label="dg_lastname">
+<attr name="type" value="string10"/>
+ </node>
+ <node id="60_3" label="dg_prange">
+<attr name="type" value="unsigned1"/>
+ </node>
+ <node id="60_5" label="extrafield">
+<attr name="type" value="string"/>
+ </node>
+ <node id="60_7" label="{virtual(fileposition)}">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="61" label="regress::hthor::dg_varindex"><att>
+ <graph>
+ <node id="61_0" label="dg_firstname">
+<attr name="type" value="string10"/>
+ </node>
+ <node id="61_1" label="dg_lastname">
+<attr name="type" value="string10"/>
+ </node>
+ <node id="61_2" label="__filepos">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="64" label="regress::hthor::dg_varvarindex"><att>
+ <graph>
+ <node id="64_0" label="dg_firstname">
+<attr name="type" value="string10"/>
+ </node>
+ <node id="64_1" label="dg_lastname">
+<attr name="type" value="string10"/>
+ </node>
+ <node id="64_2" label="__filepos">
+<attr name="type" value="unsigned8"/>
+ </node>
+ <node id="64_3" label="temp_blob1">
+<attr name="type" value="string"/>
+ </node>
+ <node id="64_4" label="temp_blob2">
+<attr name="type" value="string10000"/>
+ </node>
+ <node id="64_5" label="__internal_fpos__">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="67" label="regress::hthor::hhfile"><att>
+ <graph>
+ <node id="67_0" label="hhid">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="67_1" label="state">
+<attr name="type" value="string2"/>
+ </node>
+ <node id="67_2" label="zip">
+<attr name="type" value="string5"/>
+ </node>
+ <node id="67_3" label="city">
+<attr name="type" value="string20"/>
+ </node>
+ <node id="67_4" label="street">
+<attr name="type" value="string40"/>
+ </node>
+ <node id="67_5" label="housenumber">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="67_6" label="{virtual(fileposition)}">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="68" label="regress::hthor::personfile"><att>
+ <graph>
+ <node id="68_0" label="hhid">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="68_1" label="personid">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="68_2" label="firstname">
+<attr name="type" value="string20"/>
+ </node>
+ <node id="68_3" label="lastname">
+<attr name="type" value="string20"/>
+ </node>
+ <node id="68_4" label="middlename">
+<attr name="type" value="string20"/>
+ </node>
+ <node id="68_5" label="age">
+<attr name="type" value="unsigned1"/>
+ </node>
+ <node id="68_6" label="ssn">
+<attr name="type" value="unsigned8"/>
+ </node>
+ <node id="68_7" label="{virtual(fileposition)}">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="70" label="regress::hthor::tradesfile"><att>
+ <graph>
+ <node id="70_0" label="personid">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="70_1" label="tradeid">
+<attr name="type" value="string20"/>
+ </node>
+ <node id="70_2" label="amount">
+<attr name="type" value="real4"/>
+ </node>
+ <node id="70_3" label="date">
+<attr name="type" value="string8"/>
+ </node>
+ <node id="70_4" label="{virtual(fileposition)}">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="72" label="regress::hthor::simplepersonbook"><att>
+ <graph>
+ <node id="72_0" label="surname">
+<attr name="type" value="string20"/>
+ </node>
+ <node id="72_1" label="forename">
+<attr name="type" value="string10"/>
+ </node>
+ <node id="72_2" label="dob">
+<attr name="type" value="udecimal8"/>
+ </node>
+ <node id="72_3" label="limit">
+<attr name="type" value="record"/>
+ </node>
+ <node id="72_4" label="booklimit">
+<attr name="type" value="udecimal8"/>
+ </node>
+ <node id="72_6" label="aage">
+<attr name="type" value="unsigned1"/>
+ </node>
+ <node id="72_7" label="books">
+<attr name="type" value="dataset"/>
+ </node>
+ <node id="72_8" label="{virtual(fileposition)}">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="73" label="regress::hthor::simplepersonbookindex"><att>
+ <graph>
+ <node id="73_0" label="surname">
+<attr name="type" value="string20"/>
+ </node>
+ <node id="73_1" label="forename">
+<attr name="type" value="string10"/>
+ </node>
+ <node id="73_2" label="aage">
+<attr name="type" value="unsigned1"/>
+ </node>
+ <node id="73_3" label="dob">
+<attr name="type" value="udecimal8"/>
+ </node>
+ <node id="73_4" label="limit">
+<attr name="type" value="record"/>
+ </node>
+ <node id="73_5" label="booklimit">
+<attr name="type" value="udecimal8"/>
+ </node>
+ <node id="73_7" label="books">
+<attr name="type" value="dataset"/>
+ </node>
+ <node id="73_8" label="filepos">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="76" label="regress::hthor::ts_searchindex"><att>
+ <graph>
+ <node id="76_0" label="kind">
+<attr name="type" value="unsigned1"/>
+ </node>
+ <node id="76_1" label="word">
+<attr name="type" value="string20"/>
+ </node>
+ <node id="76_2" label="doc">
+<attr name="type" value="unsigned8"/>
+ </node>
+ <node id="76_3" label="segment">
+<attr name="type" value="unsigned1"/>
+ </node>
+ <node id="76_4" label="wpos">
+<attr name="type" value="unsigned8"/>
+ </node>
+ <node id="76_5" label="wip">
+<attr name="type" value="unsigned1"/>
+ </node>
+ <node id="76_6" label="flags">
+<attr name="type" value="unsigned1"/>
+ </node>
+ <node id="76_7" label="original">
+<attr name="type" value="string20"/>
+ </node>
+ <node id="76_8" label="dpos">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="77" label="regress::hthor::ts_wordindex"><att>
+ <graph>
+ <node id="77_0" label="kind">
+<attr name="type" value="unsigned1"/>
+ </node>
+ <node id="77_1" label="word">
+<attr name="type" value="string20"/>
+ </node>
+ <node id="77_2" label="doc">
+<attr name="type" value="unsigned8"/>
+ </node>
+ <node id="77_3" label="segment">
+<attr name="type" value="unsigned1"/>
+ </node>
+ <node id="77_4" label="wpos">
+<attr name="type" value="unsigned8"/>
+ </node>
+ <node id="77_5" label="wip">
+<attr name="type" value="unsigned1"/>
+ </node>
+ <node id="77_6" label="flags">
+<attr name="type" value="unsigned1"/>
+ </node>
+ <node id="77_7" label="original">
+<attr name="type" value="string20"/>
+ </node>
+ <node id="77_8" label="dpos">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+  <edge id="4" source="2_6" target="3_0">
+<attr name="cardinality" value="M:1"/>
+  </edge>
+  <edge id="6" source="5_0" target="3_0">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="8" source="7_7" target="3_0">
+<attr name="cardinality" value="M:1"/>
+  </edge>
+  <edge id="10" source="9_0" target="3_0" label="view of">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="11" source="9_2" target="3_4">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="13" source="12_0" target="3_0" label="view of">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="14" source="12_2" target="3_4">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="15" source="1_5" target="2_0">
+<attr name="cardinality" value="M:1"/>
+  </edge>
+  <edge id="17" source="16_0" target="2_0" label="view of">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="18" source="16_1" target="2_7">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="20" source="19_0" target="2_0" label="view of">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="21" source="19_2" target="16_0">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="23" source="22_0" target="1_0" label="view of">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="24" source="22_1" target="1_6">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="26" source="25_0" target="1_0" label="view of">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="27" source="25_2" target="22_0">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="31" source="29_0" target="30_0">
+<attr name="cardinality" value="M:1"/>
+  </edge>
+  <edge id="33" source="32_0" target="30_0" label="view of">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="35" source="34_0" target="30_0" label="view of">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="37" source="36_0" target="29_0">
+<attr name="cardinality" value="M:1"/>
+  </edge>
+  <edge id="40" source="39_0" target="38_0" label="view of">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="42" source="41_0" target="38_0" label="view of">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="44" source="43_0" target="38_0" label="view of">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="45" source="43_2" target="38_5">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="47" source="46_0" target="38_0" label="view of">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="48" source="46_2" target="38_5">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="51" source="50_0" target="49_0" label="view of">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="52" source="50_3" target="49_4">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="55" source="54_0" target="53_0" label="view of">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="56" source="54_3" target="53_4">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="62" source="61_0" target="60_0" label="view of">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="63" source="61_2" target="60_7">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="65" source="64_0" target="60_0" label="view of">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="66" source="64_2" target="60_7">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="69" source="68_0" target="67_0">
+<attr name="cardinality" value="M:1"/>
+  </edge>
+  <edge id="71" source="70_0" target="68_1">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="74" source="73_0" target="72_0" label="view of">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="75" source="73_8" target="72_8">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+</graph>
+</xgmml>

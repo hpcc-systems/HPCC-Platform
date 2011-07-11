@@ -1,0 +1,322 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+The following provides some details of the different transformations that are done to the expression tree, and functions which call lockTransformMutex()
+
+* Walk back and add in any dependencies.
+****Go through and work out which could be combined ***
+*** Which could be short-circuited?  And what flags would be needed to acheive that? ***
+*** How do I cope with references in selects to parent datasets that cause problems when transformed ***
+
+NOTE: All transforms derived from NestedHqlTransformer don't work inside a library, so it would be sensible to try and remove them.
+
+ParameterBindTransfomer : QuickHqlTransformer
+"Used for binding parameters to their real values when the hql expressions are being parsed."
+- Also used in code generation for binding to library functions
+- Could possibly delay until later, would be useful to have a functional attribute which was generated as a function.
+- Also does trivial constant folding if parameter replacement causes an IF() condition to become constant
+
+checkOutputRecord() - inline
+"Check record that defines a transform for a selectfields etc.  Ensure that "self" isn't used as the selector."
+
+* Could use the same mutex for multiple fields.
+* Possibly traverses the tree too far for complicated expressions?
+* Could also special case a single select - the most common case.
+
+ScopeChecker - ScopedTransformer->NewHqlTransformer
+"Checks that references to datasets without a [n] row selector etc are actually in scope"
+- only calls analyse, not transform()
+- fairly expensive code to maintain the active scope to ensure that scope checking of an expression is done in all contexts.
+* Probably duplicates the work that the scope normalisation code does - it we could retain enough location information to report errors correctly
+* Would it be better using similar code to the merging transform instead??
+* Could move the scope checking so done on an entire tree in one go - once expresssion tree is parsed - may be significantly more efficient.
+* Doesn't check the scope of expressions for SUCCESS() etc.
+
+WarningCollector - QuickHqlTransformer
+"very quick traversal to find matches, and report warnings."
+- So that warnings about sandboxed fields aren't lost.
+
+GatherOptions()
+"Walk graph to find all #constant/#stored"
+* Possily walks too far down the tree, but not if no_setmeta can be attached at any level.
+
+NewThorStoredReplacer : QuickHqlTransformer
+"Replace #stored, #constant in the expression tree"
+- Done very early, so that types of records get normalized correctly later on.
+
+HqlLibraryTransformer : QuickHqlTransformer
+"Split libraries apart into i) main query ii) libraries to embed iii) libraries to create a separate wu"
+- May well be moved out to a separate phase before buildCpp()
+* Could possibly short circuit with an appropriate flag, but probably fairly quick.
+
+
+HqlTreeNormalizer : NewHqlTransformer
+"Convert the parse tree into a format that is suitable for subsequent processing",
+- in particular
+  - remove values from fields in records (otherwise transforming a default value causes the field to change)
+  - convert records used as transforms (e.g., table) to internal transforms. (since values lost above)
+  - normalize the number of named symbols.  (Othewise it can cause confusion)
+  - optimize the way trim() is represented
+  - process inline datasets into their internal representation (makes errors easier to catch now, and internal structure much easier to process)
+  - convert EVALUATE() to an non ambiguous form
+  - spot self joins
+  - remove sorted()/distributed that aren't actually being tested.
+  - check values are really constant that claim to be, but couldn't be checked at parse time (e.g., parameters)
+  - normalize forward references within patterns
+  - convert x : global to global(x)
+  - remove location information from private symbols - to improve ability to common up expressions defined in macros.  
+  - Normalize aggregates - e.g., AVE(x) = SUM(x)/COUNT(x)
+
+HqlScopeTagger : ScopedDependentTransformer->ScopedTransformer->NewHqlTransformer
+"Annotate the graph information about whether datasets are in scope, or being introduced"
+- abc.def  is abc an active dataset (or a scope error)
+- <some-dataset> - is it a global dataset, or a row of an inscope parent dataset
+- Quite painful because it traverses subqueries independently.  If this could be limited so they were not done speparately it may speed things up significantly.
+* Could childScope be replaced with a stack of unique ids?  Probably no advantages, and probably loss.
+
+IndexDatasetTransformer : NewHqlTransformer
+"Replace parameters to no_index with null datasets to reduce the expression tree"
+- only done if an index definition is seen when normalizing
+** Why can't this be done in the HqlTreeNormalizer code?
+
+LocalUploadTransfomer : NewHqlTransfomer
+"Extract information about local files that are uploaded before running the query"
+- Faily simple code
+- Only done if a local uploaded is spotted in the normalizer
+* Could probably be combined with the normalization, but uncommon, so not worth it.
+
+ForceLocalTransformer : NewHqlTransformer  depend[insideForceLocal,insideAllNodes]
+"Process LOCAL(x) and NOLOCAL(x) so that LOCAL attributes are added to the appropriate activities"
+- Also checks ALLNODES/THISNODES
+- Again only done if present, unlikely to be painful
+- Dependencies mean it is unlikely to be worth combining with other transforms.
+
+Unused: LeftRightSelectorNormalizer -
+"optimize expression trees if non-ambiguous selectors are being used."
+- Not currenly used because generating unambiguous trees is too costly for the theoretical benefit.  (We haven't hit any queries that really need it.)
+
+Wip: NestedSelectorNormalizer
+"Convert implicit normalize to normalize.  E.g., count(a.b) becomes (count(normalize(a,left.b))"
+- Needs to also migrate any parent fields that are required down the tree
+- Need to ensure that compound source code correctly handles it as well.
+
+SequenceNumberAlllocator : NewHqlTransformer
+"Allocate sequence numbers to all results that are generated from the work unit"
+- Ensure duplicate outputs get different sequence numbers, so not quite standard transform
+- Also allocate sequence numbers to side-effects of workflow actions (e.g, success)
+** I'm not completely convinced the code to ensure workflow actions receive a unique id will always work (e.g., if it was a PARALEL() containing multiple outputs).
+
+subsituteClusterSize() ClusterSubsituteTransfomer : NewHqlTransformer
+"Replace keyword CLUSTERSIZE with actuall size"
+- Copes with persists/globals being sent to different clusters, by calling itself recursively.
+
+CExprFolderTransfomer : MergingHqlTransforer : NewHqlTransfomer
+"Perform constant folding on the expression tree"
+- Typical constant expressions.
+- Filters/projects etc. of null datasets
+- filter of a shared project that evaluates to a constant expression
+- Optimize nested casts  e..g,  (unsigned4)(unsigned8)unsigned1value -> (unsigned4)unsigned1value
+- IF(cond, x, true) -> !cond || x
+- Some complex dms hole optimizations
+
+*** Why is it a merging transform????  Normally needed if inserts an element info the tree
+* claims to be 15/8/05 because otherwise it could cause dataset not found errors.
+* May be worth retesting and wpr
+***Lookup in svn when it happened
+
+NestedCompoundTransformer : NestedHqlTransformer : NewHqlTransformer
+"Move side-effects from the definitions they were attached to a position they can be evaluated"
+- Needs to be done globally after the constant folding, otherwise side-effects that are no longer included may be evaluated.
+- also called after a graph has been resourced
+* Does it need extra stuff for allnodes()?
+
+WorkflowTransformer : NewHqlTransformer
+"Extract the workflow information, and generate a set of independent workflow actions"
+- Fairly complicated because it optimizes SEQUNTIAL with child workflow items etc.
+* Could short-circuit if I knew that an expression didn't contain any workflow items (including references in selects)
+
+DependencyGatherer::gatherDependencies()
+"Used to work out what results/files an expression reads/writes so that dependencies can be checked"
+- Called from various places.
+* Minor short circuit possible on no_record, no_select (only 1st), and possibly others
+* Could short circuit if a flag indicated no point in recursing....
+
+OptimizeActivityTransformer : NewHqlTransformer
+"Generate optimized versions of (unshared) activities"
+- count(x) <compare> value -> count(choosen(x)) <compare> value
+- sort(ds, x)[n] -> topn(ds, n, x)[n]
+* Would possibly be done better later, but the link with the comparison is lost by that point.
+
+ExplicitGlobalTransformer : NestedHqlTransformer : NewHqlTransformer
+"Move GLOBAL(x) so it is evaluated globally"
+- Nested so that it handles globals inside sequential correctly.
+- Also handles nothor() which seems to imply global()
+* Should be possible to use the resourcer instead - although that means that items shared between graphs won't get shared,
+* Should be able to short circuit evaluation with a contains-global flag.
+
+newScopeMigrateTransfomer : NestedHqlTransformer : NewHqlTransformer
+"Move some expressions so they are more efficiently evaluated globally"
+- e.g., createset
+- complexDataRow.someField - evaluate globally..
+- aggregate(ds)
+*** Got to be a good candidate for deleting.  None of these should be necessary, and should be handled by the resourcing.
+
+HqlHoleBoundaryTransformer : ScopedTransformer : NewHqTransformer
+"Work out which parts of the query should be evaluated in HOLe"
+- Probably not very time consuming
+- code looks a bit weird - e.g., can't really call HOLe from a subquery.
+* A flag to indicate that an expression contained a HOLe dataset could short-circuit the whole processing
+
+HqlThorBoundaryTransfomer : NestedHqlTransformer : NewHqlTransformer
+"Tag extend of operations that should be evaluated inside THOR"
+* Doesn't actually need to be nested => remove it.
+
+ImplicitProjectTransformer : MergingHqlTransformer : NewHqlTransformer
+"Minimise the number of fields that are used in temporary datasets throughout the system"
+- Probably the most complex transformer there is, and can take a quite a bit of time
+* Define candidate for closer inspection of the code to see if anything can be sped up/short-circuited.
+
+HqlResultTransfomer : NestedHqlTransformer : NewHqlTransformer    [isConditional, insideThor, insideCondition]
+"Move global aggregates and other expressions so they are evaluated via get/set result"
+* Another candidate for deleting - should be handled by resourcing
+* May still need to do the setresult(thor) -> thor(setresult) transformation somewhere else. - e.g., in thor transformer.
+
+AutoScopeMigrateTransform : MergingHqlTransformer : NewHqlTransformer
+"Ensure any unconditional expression contained in more than one graph is extracted and evaluated globally"
+
+removeTrivialGraphs() : TrivialGraphRemover : NewHqlTransformer
+"Remove thor graphs where the only contents is setresult(getresult)"
+- Needs to occur after thor graphs have been merged.
+- Traverses a very small proportion of the graph, negligable effect
+* Could also short-circuite no_hole
+
+convertLogicalToActivities() : ThorHqlTransformer : MergingHqlTransfomer : NewHqlTransformer
+"Convert logical activities to their actual implementations.  Also optimizes activities based on existing grouping/sort orders"
+- dedup(all) to hash or sorted,grouped dedup
+- rollup - try and create groups
+- sort by (a+b+c) -> sort by a,b,c
+- buildindex, create the sort
+- group->group(,local)
+- sort join inputs (roxie/hthor)
+- normalize the representation of aggregates
+- choosen(sort) -> topn()
+- group aggregate
+* Not completely sure why it is a mergingHqlTransformer - should investigate and remove
+
+replaceSelector() : HqlMapSelectorTransformer : HqlMapTransformer : NewHqlTransformer
+- Used all over the place to replace one dataset selector with another.
+* Could optimize it being called multiple times in the same context e.g.,
+  * replaceAssignSelector()
+* optimized: no_sizeof
+
+optimizeCompoundSource(): CompoundSourceTransfomer : NewHqlTransformer
+- Combined projects, filters, group aggregates into a single "compound" activity
+
+optimizeHqlExpression() : CTreeOptimizer : MergingHqlTransformer : NewHqlTransformer
+"Reorder the operations so they can be done more efficiently"
+- swap filter and projects/joins etc.
+- combine projects with other expressions that take a transform
+- Combine filters/projects into compound source operators.
+- filters before sorts etc.
+- remove sorts from aggregates
+* Test INCLUDE_FOLD_CONSTANT_TRANSFORMER - including change so that foldHqlExpression() called transform() instead of the global function.
+  - But folding doesn't need to be nested so may be slower....
+
+EclResourcer
+"Split a graph into subgraphs ensuring everything can be resourced for thor, and dependencies are handled correctly"
+
+EclHoistLocator : NewHqlTransformer
+"Used inside the resourcer to hoist expressions that should be evaluated at this level."
+- Short circuited to avoid walking common cases.
+
+addChildDependencies()
+"Adds dependencies information within the resource"
+* Could short circuit on some common nodes - e.g, no_record
+* Not so sure about stopping for no_attr_expr
+* Again a containsDependencySource/Target() could short-circuit traversal
+
+scopedReplaceSelector()
+"Similar to replaceSelector(), except it doesn't replace LEFT() inside child queries that also use it."
+
+newProjectMapper::expandFields()
+"Used to map outputs from a transform to the inputs"
+
+spotTableInvariant() : TableInvariantTransformer : NewHqlTransformer
+"Spot expressions which can/should be evaluated once globally, rather than many times inside a child activity/transform"
+* Could short circuit createTransform() if createAlias is not set
+* Surely could remove the whole transform and do it later in optimizeActivityAliasReferences
+
+
+replaceExpression() : HqlMapTransformer : NewHqlTransformer
+"Replace a branch of an expression tree - e.g., when replacing a logical dataset with a physical dataset"
+
+optimizeActivityAliasReferences
+"Simplify aliases so that global aliases that are only referenced by other aliases witin this activity are removed"
+
+getExprECL()
+"Get ECL for a simple expression"
+- Called a reasonable number of times (once for each activity)"
+
+removeVirtualAttributes()
+"remove virtual attributes from records, prior to outputing meta information to the schema"
+
+replaceChildDataset() 
+"similar to replaceExpression"
+
+spotScalarCSE() : CSESpotter : NewHqlTransfomer
+"Spot scalar cses within transforms/filters etc."
+* I've toyed with spotting the aliases dynamically, but performance dies on very complex queries.
+
+
+ConjunctionTransformer
+"Used by spotScalarCSE() to convert "(a AND b) AND c" to (a AND b) AND c"
+- allows aliases to be placed more accurately
+
+CseScopeTransformer
+"used by spotScalarCSE() to tag where the aliases should be evaluated in the tree"
+
+getRecordECL()
+"Get the ECL text for a record"
+- Could cache it - it may be worth it if it is generated for spill files etc.
+
+GraphIndependenceChecker
+"Find out if an expression is dependent on another result from the graph"
+* Could convert to a more efficient QuickHqlTransformer? if QuickHqlTransformer had an option for walking including new information
+
+GraphLoopReplacer
+"Used for replacing the inputs to a the GRAPH() expression's iteration graph"
+
+FilterExtractor
+"Extract values required to be supplied to count index"
+- Deprecated should be using a count index [child] query now.
+
+SelectSpotter
+- Unused
+
+FetchRhsReplacer
+"For replacing the rhs of a fetc, prior to optimizing"
+
+SplitterVerifier
+"Used to check splitters have correctly kept track of the number of uses"
+- Currently unused, there for debugging
+
+**Misc optimizations...**
+binder - optimize ensureExprType() in bind when types match
+createBoundSymbol() could take ownership of parameters
+createRow() could remove unwindList()) if not a comma
+call ensureExprType() when assignment created, not in addTransformMapping() { assert instead }
+Look at calls to unwindChildren() and see if they can be changed to unwindChildrenCopy(x)

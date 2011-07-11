@@ -1,0 +1,27 @@
+#!/bin/bash
+################################################################################
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+################################################################################
+
+
+echo -------------------------
+echo Enter username:
+read THORUSER
+if [ $THORUSER = "" ]; then
+    THORUSER=(thor)
+fi
+echo Enter password:
+stty -echo
+read THORPASSWD
+stty echo
+
+echo
+echo -------------------------
+COUNTER=1
+for slave in $(cat slaves); do
+    echo scping slave $COUNTER - $slave:
+    echo pscp -o StrictHostKeyChecking=no -o password=$THORPASSWD  "$1" $THORUSER@$slave:"$2"
+    pscp -o password=$THORPASSWD  "$1" $THORUSER@$slave:"$2"
+    let COUNTER=COUNTER+1
+done
+

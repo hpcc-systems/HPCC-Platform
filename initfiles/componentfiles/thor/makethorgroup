@@ -1,0 +1,24 @@
+#!/bin/bash
+################################################################################
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+################################################################################
+
+
+if [ -z "$localthorportbase" ]; then
+  export localthorportbase=$THORSLAVEPORT
+fi
+if [ -z "$localthorportinc" ]; then
+  export localthorportinc=2000
+fi
+rm -f thorgroup
+lastslave=nop
+for slave in $(cat slaves); do
+ if [ "$slave" != "$lastslave" ]; then
+  let "base = $localthorportbase";
+ else
+  let "base += $localthorportinc";
+ fi;
+ echo $slave:$base >> thorgroup
+ lastslave=$slave;
+done
+

@@ -1,0 +1,11 @@
+<Dataset name='Result 1'>
+ <Row><id>P101</id><fullname>JOHN SMITH</fullname><title>Mr.</title><passport><id>W12468</id><idtype>pp</idtype><issuer>JAPAN PASSPORTAUTHORITY</issuer><country>L202</country><age>0</age></passport><line>&lt;ENTITY eid=&quot;P101&quot; type=&quot;PERSON&quot; subtype=&quot;MILITARY&quot;&gt;&lt;ATTRIBUTE name=&quot;fullname&quot;&gt;JOHN SMITH&lt;/ATTRIBUTE&gt;&lt;ATTRIBUTE name=&quot;honorific&quot;&gt;Mr.&lt;/ATTRIBUTE&gt;&lt;ATTRIBUTEGROUP descriptor=&quot;passport&quot;&gt;  &lt;ATTRIBUTE name=&quot;idNumber&quot;&gt;W12468&lt;/ATTRIBUTE&gt;  &lt;ATTRIBUTE name=&quot;idType&quot;&gt;pp&lt;/ATTRIBUTE&gt;  &lt;ATTRIBUTE name=&quot;issuingAuthority&quot;&gt;JAPAN PASSPORTAUTHORITY&lt;/ATTRIBUTE&gt;  &lt;ATTRIBUTE name=&quot;country&quot; value=&quot;L202&quot;/&gt;&lt;/ATTRIBUTEGROUP&gt;&lt;/ENTITY&gt;</line></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><id>afasdf</id><forename>Gavin</forename><surname>Halliday</surname><age>33</age><line>&lt;QLRecord qlrid=&quot;afasdf&quot;&gt;&lt;Name&gt;&lt;Forename&gt;Gavin&lt;/Forename&gt;&lt;surname&gt;Halliday&lt;/surname&gt;&lt;/Name&gt;&lt;age&gt;33&lt;/age&gt;&lt;/QLRecord&gt;</line></Row>
+ <Row><id>afavsdf</id><forename>David</forename><surname>Bayliss</surname><age>35</age><line>&lt;QLRecord qlrid=&quot;afavsdf&quot;&gt;&lt;Name&gt;&lt;Forename&gt;David&lt;/Forename&gt;&lt;surname&gt;Bayliss&lt;/surname&gt;&lt;/Name&gt;&lt;age&gt;35&lt;/age&gt;&lt;/QLRecord&gt;</line></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><text>&lt;QLRecord qlrid=&quot;afasdf&quot;&gt;&lt;Name&gt;&lt;Forename&gt;Gavin&lt;/Forename&gt;&lt;surname&gt;Halliday&lt;/surname&gt;&lt;/Name&gt;&lt;age&gt;33&lt;/age&gt;&lt;/QLRecord&gt;</text></Row>
+ <Row><text>&lt;QLRecord qlrid=&quot;afavsdf&quot;&gt;&lt;Name&gt;&lt;Forename&gt;David&lt;/Forename&gt;&lt;surname&gt;Bayliss&lt;/surname&gt;&lt;/Name&gt;&lt;age&gt;35&lt;/age&gt;&lt;/QLRecord&gt;</text></Row>
+</Dataset>

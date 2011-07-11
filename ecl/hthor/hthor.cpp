@@ -1,0 +1,9677 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+#include <algorithm>
+#include "hthor.ipp"
+#include "jexcept.hpp"
+#include "jmisc.hpp"
+#include "jthread.hpp"
+#include "jsocket.hpp"
+#include "jprop.hpp"
+#include "jdebug.hpp"
+#include "jlzw.hpp"
+#include "roxiedebug.hpp"
+#include "eclhelper.hpp"
+#include "workunit.hpp"
+#include "jfile.hpp"
+#include "keybuild.hpp"
+
+#include "hrpc.hpp"
+#include "hrpcsock.hpp"
+
+#include "dafdesc.hpp"
+#include "dautils.hpp"
+#include "dasess.hpp"
+#include "dadfs.hpp"
+#include "thorfile.hpp"
+#include "thorparse.ipp"
+#include "thorxmlwrite.hpp"
+#include "jsmartsock.hpp"
+#include "thorstep.hpp"
+
+#define EMPTY_LOOP_LIMIT 1000
+
+static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hthor/hthor.cpp $ $Id: hthor.cpp 66008 2011-07-06 09:31:54Z rchapman $");
+
+static unsigned const hthorReadBufferSize = 0x10000;
+static memsize_t const defaultHThorSpillThreshold = 512*1024*1024;  // MORE - should increase on 64-bit platform?
+static offset_t const defaultHThorDiskWriteSizeLimit = I64C(10*1024*1024*1024); //10 GB, per Nigel
+static size32_t const spillStreamBufferSize = 0x10000;
+static int const defaultWorkUnitWriteLimit = 10; //10MB as thor
+static unsigned const hthorPipeWaitTimeout = 100; //100ms - fairly arbitrary choice
+static char const * const defaultSortAlgorithm = "stablequick";
+
+using roxiemem::IRowManager;
+using roxiemem::OwnedRoxieRow;
+using roxiemem::OwnedConstRoxieRow;
+
+IRowManager * theRowManager;
+
+void setHThorRowManager(IRowManager * manager)
+{
+    theRowManager = manager;
+}
+
+IRowManager * queryRowManager()
+{
+    return theRowManager;
+}
+
+void throwOOMException(size_t size, char const * label)
+{
+    throw MakeStringException(0, "Out of Memory in hthor: trying to allocate %u bytes for %s", size, label);
+}
+
+void * checked_malloc(size_t size, char const * label)
+{
+    void * ret = malloc(size);
+    if(!ret)
+        throwOOMException(size, label);
+    return ret;
+}
+
+void * checked_calloc(size_t size, size_t num, char const * label)
+{
+    void * ret = calloc(size, num);
+    if(!ret)
+        throwOOMException(size*num, label);
+    return ret;
+}
+
+inline bool checkIsCompressed(unsigned int flags, size32_t fixedSize, bool grouped)
+{
+    return ((flags & TDWnewcompress) || ((flags & TDXcompress) && (fixedSize+(grouped?1:0) >= MIN_ROWCOMPRESS_RECSIZE)));
+}
+
+//=====================================================================================================
+
+StringBuffer & mangleHelperFileName(StringBuffer & out, const char * in, IAgentContext &agent, unsigned int flags)
+{
+    out = in;
+    if (flags & (TDXtemporary | TDXjobtemp))
+    {
+        char * wuid = agent.queryCodeContext()->getWuid();
+        out.append("__").append(wuid);
+        free(wuid);
+    }
+    return out;
+}
+
+
+StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fname, IAgentContext &agent)
+{
+    if (fname[0]=='~')
+        logicalName.append(fname+1);
+    else if (agent.queryResolveFilesLocally() && strchr(fname,(int)PATHSEPCHAR))
+        logicalName.append(fname);
+    else
+    {
+        SCMStringBuffer lfn;
+        agent.queryWorkUnit()->getScope(lfn);
+        if(lfn.length())
+            logicalName.append(lfn.s).append("::");
+        logicalName.append(fname);
+    }
+    return logicalName;
+}
+
+StringBuffer & mangleLocalTempFilename(StringBuffer & out, char const * in)
+{
+    char const * start = in;
+    while(true)
+    {
+        char const * end = strstr(start, "::");
+        if(end)
+        {
+            out.append(end-start, start).append("__scope__");
+            start = end + 2;
+        }
+        else
+        {
+            out.append(start);
+            break;
+        }
+    }
+    return out;
+}
+
+//=====================================================================================================
+
+CRowBuffer::CRowBuffer(IRecordSize * _recsize, bool _grouped) : recsize(_recsize), grouped(_grouped)
+{
+    fixsize = recsize->getFixedSize();
+    count = 0;
+    index = 0;
+}
+
+void CRowBuffer::insert(const void * next)
+{
+    buff.append(next);
+    count++;
+}
+
+bool CRowBuffer::pull(IHThorInput * input, unsigned __int64 rowLimit)
+{
+    while(true)
+    {
+        OwnedConstHThorRow next(input->nextInGroup());
+        if(!next)
+        {
+            next.setown(input->nextInGroup());
+            if(!next)
+                break;
+            if(grouped)
+                buff.append(NULL);
+        }
+        insert(next.getClear());
+        if(count > rowLimit)
+            return false;
+    }
+    return true;
+}
+
+void CRowBuffer::clear()
+{
+    buff.clear();
+    index = 0;
+    count = 0;
+}
+
+const void * CRowBuffer::next()
+{
+    if(buff.isItem(index))
+        return buff.itemClear(index++);
+    else
+        return NULL;
+}
+
+//=====================================================================================================
+
+CHThorActivityBase::CHThorActivityBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _help, ThorActivityKind _kind) : agent(_agent), help(_help),  outputMeta(help.queryOutputMeta()), kind(_kind), activityId(_activityId), subgraphId(_subgraphId)
+{
+    input = NULL;
+    processed = 0;
+    rowAllocator = NULL;    
+}
+
+void CHThorActivityBase::setInput(unsigned index, IHThorInput *_input)
+{
+    assertex(index == 0);
+    input = _input;
+}
+
+IHThorInput *CHThorActivityBase::queryOutput(unsigned index)
+{
+    agent.fail(255, "internal logic error: CHThorActivityBase::queryOutput");
+    // never returns....
+    return NULL;
+}
+
+void CHThorActivityBase::ready()
+{
+    if (input)
+        input->ready();
+    if (needsAllocator())       
+        createRowAllocator();   
+    initialProcessed = processed;
+}
+
+CHThorActivityBase::~CHThorActivityBase()
+{
+    ::Release(rowAllocator);
+}
+void CHThorActivityBase::createRowAllocator()
+{
+    if (!rowAllocator) 
+        rowAllocator = agent.queryCodeContext()->getRowAllocator(outputMeta.queryOriginal(), activityId);
+}
+
+__int64 CHThorActivityBase::getCount()
+{
+    throw MakeStringException(2, "Internal error: CHThorActivityBase::count");
+    return 0;
+}
+
+void CHThorActivityBase::execute()
+{
+    agent.fail(255, "internal logic error: CHThorActivityBase::execute");
+}
+
+void CHThorActivityBase::extractResult(unsigned & len, void * & ret)
+{
+    agent.fail(255, "internal logic error: CHThorActivityBase::extractResult");
+}
+
+void CHThorActivityBase::done()
+{
+    if (input)
+        input->done();
+}
+
+void CHThorActivityBase::updateProgress(IWUGraphProgress &progress) const
+{
+    updateProgressForOther(progress, activityId, subgraphId);
+    if (input)
+        input->updateProgress(progress);
+}
+
+void CHThorActivityBase::updateProgressForOther(IWUGraphProgress &progress, unsigned otherActivity, unsigned otherSubgraph) const
+{
+    updateProgressForOther(progress, otherActivity, otherSubgraph, 0, processed);
+}
+
+void CHThorActivityBase::updateProgressForOther(IWUGraphProgress &progress, unsigned otherActivity, unsigned otherSubgraph, unsigned whichOutput, unsigned __int64 numProcessed) const
+{
+    StringBuffer path;
+    path.append(otherActivity).append("_").append(whichOutput);
+    IPropertyTree &edge = progress.updateEdge(otherSubgraph, path.str());
+    edge.setPropInt64("@count", numProcessed);
+    edge.setPropBool("@started", true);
+    edge.setPropBool("@stopped", true);
+    edge.setPropInt64("@slaves", 1);
+}
+
+ILocalGraphEx * CHThorActivityBase::resolveLocalQuery(__int64 graphId)
+{
+    return static_cast<ILocalGraphEx *>(agent.queryCodeContext()->resolveLocalQuery(graphId));
+}
+
+IException * CHThorActivityBase::makeWrappedException(IException * e) const
+{
+    if(dynamic_cast<IHThorException *>(e) ||  dynamic_cast<IUserException *>(e))
+        return e;
+    else
+        return makeHThorException(kind, activityId, subgraphId, e);
+}
+
+IException * CHThorActivityBase::makeWrappedException(IException * e, char const * extra) const
+{
+    if(dynamic_cast<IHThorException *>(e) ||  dynamic_cast<IUserException *>(e))
+        return e;
+    else
+        return makeHThorException(kind, activityId, subgraphId, e, extra);
+}
+
+bool CHThorActivityBase::isPassThrough()
+{
+    return false;
+}
+
+//=====================================================================================================
+
+CHThorSimpleActivityBase::CHThorSimpleActivityBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _help, ThorActivityKind _kind) : CHThorActivityBase(_agent, _activityId, _subgraphId, _help, _kind)
+{
+}
+
+IHThorInput * CHThorSimpleActivityBase::queryOutput(unsigned index) 
+{ 
+    assertex(index == 0);
+    return this; 
+}
+
+bool CHThorSimpleActivityBase::isGrouped()
+{ 
+    return input ? input->isGrouped() : outputMeta.isGrouped();
+}
+
+IOutputMetaData * CHThorSimpleActivityBase::queryOutputMeta() const
+{
+    return outputMeta;
+}
+
+//=====================================================================================================
+
+class CHThorClusterWriteHandler : public ClusterWriteHandler
+{
+    IAgentContext &agent;
+public:
+    CHThorClusterWriteHandler(char const * _logicalName, char const * _activityType, IAgentContext &_agent) 
+        : agent(_agent), ClusterWriteHandler(_logicalName, _activityType)
+    {
+    }
+
+private:
+    virtual void getTempFilename(StringAttr & out) const
+    {
+        StringBuffer buff;
+        agent.getTempfileBase(buff).appendf(".cluster_write_%p.%"I64F"d_%u", this, (__int64)GetCurrentThreadId(), GetCurrentProcessId());
+        out.set(buff.str());
+    }
+};
+
+ClusterWriteHandler *createClusterWriteHandler(IAgentContext &agent, IHThorIndexWriteArg *iwHelper, IHThorDiskWriteArg *dwHelper, const char * lfn, StringAttr &fn, bool extend)
+{
+    Owned<CHThorClusterWriteHandler> clusterHandler;
+    unsigned clusterIdx = 0;
+    while(true)
+    {
+        char const * cluster = iwHelper ? iwHelper->queryCluster(clusterIdx++) : dwHelper->queryCluster(clusterIdx++);
+        if(!cluster)
+            break;
+        if(!clusterHandler)
+        {
+            if(extend)
+                throw MakeStringException(0, "Cannot combine EXTEND and CLUSTER flags on disk write of file %s", lfn);
+            clusterHandler.setown(new CHThorClusterWriteHandler(lfn, "OUTPUT", agent));
+        }
+        clusterHandler->addCluster(cluster);
+    }
+    if(clusterHandler)
+    {
+        clusterHandler->getLocalPhysicalFilename(fn);
+    }
+    else if (!agent.queryResolveFilesLocally())
+    {
+        StringBuffer filenameText;
+        bool wasDFS;
+        makeSinglePhysicalPartName(lfn, filenameText, true, wasDFS);
+        fn.set(filenameText.str());
+    }
+    else
+    {
+        fn.set(lfn);
+    }
+    StringBuffer dir;
+    splitFilename(fn, &dir, &dir, NULL, NULL);
+    recursiveCreateDirectory(dir.str());
+    return clusterHandler.getClear();
+}
+
+//=====================================================================================================
+
+CHThorDiskWriteActivity::CHThorDiskWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskWriteArg &_arg, ThorActivityKind _kind) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+    incomplete = false;
+}
+
+CHThorDiskWriteActivity::~CHThorDiskWriteActivity()
+{
+    diskout.clear();
+    if(incomplete)
+    {
+        PROGLOG("Disk write incomplete, deleting physical file: %s", filename.get());
+        diskout.clear();
+        outSeq.clear();
+        file->remove();
+    }
+}
+
+void CHThorDiskWriteActivity::ready()       
+{ 
+    CHThorActivityBase::ready(); 
+    grouped = (helper.getFlags() & TDXgrouped) != 0;
+    extend = ((helper.getFlags() & TDWextend) != 0);
+    overwrite = ((helper.getFlags() & TDWoverwrite) != 0);
+    resolve();
+    uncompressedBytesWritten = 0;
+    numRecords = 0;
+    sizeLimit = agent.queryWorkUnit()->getDebugValueInt64("hthorDiskWriteSizeLimit", defaultHThorDiskWriteSizeLimit);
+    rowSerializer.setown(input->queryOutputMeta()->createRowSerializer(agent.queryCodeContext(), activityId));
+    open();
+}
+
+void CHThorDiskWriteActivity::execute()
+{
+    // Loop thru the results
+    numRecords = 0;
+    while (next()) 
+        numRecords++;
+    finishOutput();
+}
+
+void CHThorDiskWriteActivity::done()
+{
+    outSeq->flush();
+    if(blockcompressed)
+        uncompressedBytesWritten = outSeq->getPosition();
+    updateWorkUnitResult(numRecords);
+    close();
+    if((helper.getFlags() & TDXtemporary) == 0 && !agent.queryResolveFilesLocally())
+        publish();
+    incomplete = false;
+    if(clusterHandler)
+        clusterHandler->finish(file);
+    CHThorActivityBase::done();
+}
+
+void CHThorDiskWriteActivity::resolve()
+{
+    mangleHelperFileName(mangledHelperFileName, helper.getFileName(), agent, helper.getFlags());
+    assertex(mangledHelperFileName.str());
+    if((helper.getFlags() & TDXtemporary) == 0)
+    {
+        Owned<ILocalOrDistributedFile> f = agent.resolveLFN(mangledHelperFileName.str(),"Cannot write, invalid logical name",true,false,true,&lfn);
+        if (f) { // already exists or special/local/external
+            if (!f->queryDistributedFile()) { // special/local/external
+                if (f->numParts()!=1)
+                    throw MakeStringException(99, "Cannot write %s, external file has multiple parts)", lfn.str());
+                RemoteFilename rfn;
+                f->getPartFilename(rfn,0);
+                StringBuffer full;
+                if (rfn.isLocal())
+                    rfn.getLocalPath(full);
+                else
+                    rfn.getRemotePath(full);
+                filename.set(full);
+                if (isSpecialPath(filename)) {
+                    PROGLOG("Writing to query %s", filename.get());
+                    return;
+                }
+                if (stdIoHandle(filename)>=0) {
+                    PROGLOG("Writing to %s", filename.get());
+                    return;
+                }
+                Owned<IFile> file = createIFile(filename);
+                if (file->exists()) {
+                    if (!overwrite) 
+                        throw MakeStringException(99, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", full.str());
+                    file->remove();
+                }
+                PROGLOG("Writing to file %s", filename.get());
+            }
+            else {
+                if(extend) 
+                    agent.logFileAccess(f->queryDistributedFile(), "HThor", "EXTENDED");
+                else if(overwrite) {
+                    PrintLog("Removing %s from DFS", lfn.str());
+                    agent.logFileAccess(f->queryDistributedFile(), "HThor", "DELETED");
+                    if (!agent.queryResolveFilesLocally())
+                        f->queryDistributedFile()->detach();
+                    else
+                    {
+                        Owned<IFile> file = createIFile(lfn);
+                        if (file->exists())
+                            file->remove();
+                    }
+                }
+                else 
+                    throw MakeStringException(99, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", lfn.str());
+            }
+            f.clear();
+        }
+        if (filename.isEmpty())  // wasn't local or special (i.e. DFS file)
+        {
+            CDfsLogicalFileName dfsLogicalName;
+            dfsLogicalName.allowOsPath(agent.queryResolveFilesLocally());
+            if (!dfsLogicalName.setValidate(lfn.str()))
+            {
+                throw MakeStringException(99, "Could not resolve DFS Logical file %s", lfn.str());
+            }
+
+            clusterHandler.setown(createClusterWriteHandler(agent, NULL, &helper, dfsLogicalName.get(), filename, extend));
+        }
+    }
+    else
+    {
+        StringBuffer mangledName;
+        mangleLocalTempFilename(mangledName, mangledHelperFileName.str());
+        filename.set(agent.noteTemporaryFile(mangledName.str()));
+        PROGLOG("DISKWRITE: using temporary filename %s", filename.get());
+    }
+}
+
+void CHThorDiskWriteActivity::open()
+{
+    // Open an output file...
+    file.setown(createIFile(filename));
+    inputMeta.set(input->queryOutputMeta());
+    serializedOutputMeta.set(input->queryOutputMeta()->querySerializedMeta());//returns outputMeta if serialization not needed
+
+    Linked<IRecordSize> groupedMeta = input->queryOutputMeta()->querySerializedMeta();
+    if(grouped)
+        groupedMeta.setown(createDeltaRecordSize(groupedMeta, +1));
+    blockcompressed = checkIsCompressed(helper.getFlags(), serializedOutputMeta.getFixedSize(), grouped);//TDWnewcompress for new compression, else check for row compression
+    void *ekey;
+    size32_t ekeylen;
+    helper.getEncryptKey(ekeylen,ekey);
+    encrypted = false;
+    Owned<ICompressor> ecomp;
+    if (ekeylen!=0) {
+        ecomp.setown(createAESCompressor256(ekeylen,ekey));
+        memset(ekey,0,ekeylen);
+        rtlFree(ekey);
+        encrypted = true;
+        blockcompressed = true;
+    }
+    Owned<IFileIO> io;
+    if(blockcompressed)
+        io.setown(createCompressedFileWriter(file, groupedMeta->getFixedSize(), extend, true, ecomp));
+    else
+        io.setown(file->open(extend ? IFOwrite : IFOcreate));
+    if(!io)
+        throw MakeStringException(errno, "Failed to create%s file %s for writing", (encrypted ? " encrypted" : (blockcompressed ? " compressed" : "")), filename.get());
+    incomplete = true;
+    
+    diskout.setown(createBufferedIOStream(io));
+    if(extend)
+        diskout->seek(0, IFSend);
+
+    bool tallycrc = !agent.queryWorkUnit()->getDebugValueBool("skipFileFormatCrcCheck", false) && !(helper.getFlags() & TDRnocrccheck);
+    IExtRowWriter * writer = createRowWriter(diskout, rowSerializer, rowAllocator, grouped, tallycrc, true );
+    outSeq.setown(writer);
+
+}
+
+
+const void * CHThorDiskWriteActivity::getNext()
+{   // through operation (writes and returns row)
+    // needs a one row lookahead to preserve group
+    if (!nextrow.get()) 
+    {
+        nextrow.setown(input->nextInGroup());
+        if (!nextrow.get())
+        {
+            nextrow.setown(input->nextInGroup());
+            if (nextrow.get()&&grouped)  // only write eog if not at eof
+                outSeq->putRow(NULL);
+            return NULL;
+        }
+    }
+    outSeq->putRow(nextrow.getLink());
+    checkSizeLimit();
+    return nextrow.getClear();
+}
+
+bool CHThorDiskWriteActivity::next()
+{
+    if (!nextrow.get())
+    {
+        OwnedConstHThorRow row(input->nextInGroup());
+        if (!row.get()) 
+        {
+            row.setown(input->nextInGroup());
+            if (!row.get())
+                return false; // we are done        
+            if (grouped)
+                outSeq->putRow(NULL);
+        }
+        outSeq->putRow(row.getClear());
+    }
+    else
+        outSeq->putRow(nextrow.getClear());
+    checkSizeLimit();
+    return true;
+}
+
+
+void CHThorDiskWriteActivity::finishOutput()
+{
+}
+
+
+void CHThorDiskWriteActivity::close()
+{
+    diskout.clear();
+    outSeq.clear();
+    if(clusterHandler)
+        clusterHandler->copyPhysical(file, agent.queryWorkUnit()->getDebugValueBool("__output_cluster_no_copy_physical", false));
+}
+
+void CHThorDiskWriteActivity::publish()
+{
+    StringBuffer dir,base;
+    offset_t fileSize = file->size();
+    if(clusterHandler)
+        clusterHandler->splitPhysicalFilename(dir, base);
+    else
+        splitFilename(filename, &dir, &dir, &base, &base);
+
+    Owned<IFileDescriptor> desc = createFileDescriptor();
+    desc->setDefaultDir(dir.str());
+
+    Owned<IPropertyTree> attrs;
+    if(clusterHandler) 
+        attrs.setown(createPTree("Part", false)); // clusterHandler is going to set attributes
+    else 
+    {
+        // add cluster
+        StringBuffer mygroupname;
+        Owned<IGroup> mygrp = agent.getHThorGroup(mygroupname);
+        ClusterPartDiskMapSpec partmap; // will get this from group at some point
+        desc->setNumParts(1);
+        desc->setPartMask(base.str());
+        desc->addCluster(mygroupname.str(),mygrp, partmap);
+        attrs.set(&desc->queryPart(0)->queryProperties());
+    }
+    //properties of the first file part.
+    if(blockcompressed)
+    {
+        attrs->setPropInt64("@size", uncompressedBytesWritten);
+        attrs->setPropInt64("@compressedSize", fileSize);
+    }
+    else
+        attrs->setPropInt64("@size", fileSize);
+    CDateTime createTime, modifiedTime, accessedTime;
+    file->getTime(&createTime, &modifiedTime, &accessedTime);
+    // round file time down to nearest sec. Nanosec accurancy is not preserved elsewhere and can lead to mismatch later.
+    unsigned hour, min, sec, nanosec;
+    modifiedTime.getTime(hour, min, sec, nanosec);
+    modifiedTime.setTime(hour, min, sec, 0);
+    StringBuffer timestr;
+    modifiedTime.getString(timestr);
+    if(timestr.length())
+        attrs->setProp("@modified", timestr.str());
+    if(clusterHandler)
+        clusterHandler->setDescriptorParts(desc, base.str(), attrs);
+
+    // properties of the logical file
+    IPropertyTree & properties = desc->queryProperties();
+    properties.setPropInt64("@size", (blockcompressed) ? uncompressedBytesWritten : fileSize);
+    if (encrypted)
+        properties.setPropBool("@encrypted", true);
+    if (blockcompressed)
+        properties.setPropBool("@blockCompressed", true);
+    if (helper.getFlags() & TDWpersist)
+        properties.setPropBool("@persistent", true);
+    if (grouped)
+        properties.setPropBool("@grouped", true);
+    properties.setPropInt64("@recordCount", numRecords);
+    SCMStringBuffer info;
+    properties.setProp("@owner", agent.queryWorkUnit()->getUser(info).str());
+    info.clear();
+    if (helper.getFlags() & (TDWowned|TDXjobtemp|TDXtemporary))
+        properties.setPropBool("@owned", true);
+    if (helper.getFlags() & TDWresult)
+        properties.setPropBool("@result", true);
+
+    properties.setProp("@workunit", agent.queryWorkUnit()->getWuid(info).str());
+    info.clear();
+    properties.setProp("@job", agent.queryWorkUnit()->getJobName(info).str());
+    setFormat(desc);
+
+    setExpiryTime(properties, helper.getExpiryDays());
+    if (helper.getFlags() & TDWupdate)
+    {
+        unsigned eclCRC;
+        unsigned __int64 totalCRC;
+        helper.getUpdateCRCs(eclCRC, totalCRC);
+        properties.setPropInt("@eclCRC", eclCRC);
+        properties.setPropInt64("@totalCRC", totalCRC);
+    }
+    properties.setPropInt("@formatCrc", helper.getFormatCrc());
+
+    StringBuffer lfn;
+    expandLogicalFilename(lfn, mangledHelperFileName.str(), agent);
+    CDfsLogicalFileName logicalName;
+    if (agent.queryResolveFilesLocally())
+        logicalName.allowOsPath(true);
+    if (!logicalName.setValidate(lfn.str()))
+        throw MakeStringException(99, "Cannot publish %s, invalid logical name", lfn.str());
+    if (!logicalName.isExternal()) { // no need to publish externals
+        Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(desc);
+        if((helper.getFlags() & TDWpersist) && file->getModificationTime(modifiedTime))
+            file->setAccessedTime(modifiedTime);
+        file->attach(logicalName.get(), NULL, agent.queryCodeContext()->queryUserDescriptor());
+        agent.logFileAccess(file, "HThor", "CREATED");
+    }
+}
+
+void CHThorDiskWriteActivity::updateWorkUnitResult(unsigned __int64 reccount)
+{
+    WorkunitUpdate wu = agent.updateWorkUnit();
+    unsigned flags = helper.getFlags();
+    WUFileKind fileKind;
+    if (TDXtemporary & flags)
+        fileKind = WUFileTemporary;
+    else if(TDXjobtemp & flags)
+        fileKind = WUFileJobOwned;
+    else if(TDWowned & flags)
+        fileKind = WUFileOwned;
+    else
+        fileKind = WUFileStandard;
+    if(lfn.length()) //this is required as long as temp files don't get a name which can be stored in the WU and automatically deleted by the WU
+    {
+        StringArray clusters;
+        if (clusterHandler)
+            clusterHandler->getClusters(clusters);
+        else
+        {
+            SCMStringBuffer tgtCluster;
+            wu->getClusterName(tgtCluster);
+            clusters.append(tgtCluster.str());
+        }
+        if (!agent.queryResolveFilesLocally())
+            wu->addFile(lfn.str(), &clusters, helper.getTempUsageCount(), fileKind, NULL);
+        else if (TDXtemporary & flags)          
+            agent.noteTemporaryFilespec(filename);//note for later deletion
+        if (!(flags & TDXtemporary) && helper.getSequence() >= 0)
+        {
+            Owned<IWUResult> result = wu->updateResultBySequence(helper.getSequence());
+            if (result)
+            {
+                result->setResultTotalRowCount(reccount); 
+                result->setResultStatus(ResultStatusCalculated);
+                if (helper.getFlags() & TDWresult)
+                    result->setResultFilename(lfn.str());
+                else
+                    result->setResultLogicalName(lfn.str());
+            }
+        }
+    }
+}
+
+void CHThorDiskWriteActivity::setFormat(IFileDescriptor * desc)
+{
+    if ((serializedOutputMeta.isFixedSize()) && !isOutputTransformed())
+        desc->queryProperties().setPropInt("@recordSize", serializedOutputMeta.getFixedSize() + (grouped ? 1 : 0));
+
+    const char *recordECL = helper.queryRecordECL();
+    if (recordECL && *recordECL)
+        desc->queryProperties().setProp("ECL", recordECL);
+}
+
+void CHThorDiskWriteActivity::checkSizeLimit()
+{
+    if(sizeLimit && outSeq && (outSeq->getPosition() > sizeLimit))
+    {
+        StringBuffer msg;
+        msg.append("Exceeded disk write size limit of ").append(sizeLimit).append(" while writing file ").append(mangledHelperFileName.str());
+        throw MakeStringException(0, msg.str());
+    }
+}
+
+//=====================================================================================================
+
+CHThorSpillActivity::CHThorSpillActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSpillArg &_arg, ThorActivityKind _kind) : CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, _arg, _kind)
+{
+}
+
+void CHThorSpillActivity::setInput(unsigned index, IHThorInput *_input)
+{
+    CHThorActivityBase::setInput(index, _input);
+
+}
+
+void CHThorSpillActivity::ready()
+{
+    CHThorDiskWriteActivity::ready();
+}
+
+void CHThorSpillActivity::execute()
+{
+    UNIMPLEMENTED;
+}
+
+const void *CHThorSpillActivity::nextInGroup()
+{
+    const void *nextrec = getNext();
+    if (nextrec)
+    {
+        numRecords++;
+        processed++;
+    }
+    return nextrec;
+}
+
+void CHThorSpillActivity::done()
+{
+    loop 
+    {
+        OwnedConstHThorRow nextrec(nextInGroup());
+        if (!nextrec) 
+        {
+            nextrec.setown(nextInGroup());
+            if (!nextrec)
+                break;
+        }   
+    }
+    finishOutput();
+    CHThorDiskWriteActivity::done();
+}
+
+//=====================================================================================================
+
+
+CHThorCsvWriteActivity::CHThorCsvWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCsvWriteArg &_arg, ThorActivityKind _kind) : CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+    csvOutput.init(helper.queryCsvParameters(),agent.queryWorkUnit()->getDebugValueBool("oldCSVoutputFormat", false));
+}
+
+void CHThorCsvWriteActivity::execute()
+{
+    const char * header = helper.queryCsvParameters()->queryHeader();
+    if (header) {
+        csvOutput.beginLine();
+        csvOutput.writeHeaderLn(strlen(header), header);
+        diskout->write(csvOutput.length(), csvOutput.str());
+    }
+
+    // Loop thru the results
+    numRecords = 0;
+    loop
+    {
+        OwnedConstHThorRow nextrec(input->nextInGroup());
+        if (!nextrec)
+        {
+            nextrec.setown(input->nextInGroup());
+            if (!nextrec)
+                break;
+        }
+
+        try
+        {
+            csvOutput.beginLine();
+            helper.writeRow((const byte *)nextrec.get(), &csvOutput);
+            csvOutput.endLine();
+        }
+        catch(IException * e)
+        {
+            throw makeWrappedException(e);
+        }
+        diskout->write(csvOutput.length(), csvOutput.str());
+        numRecords++;
+    }
+
+    const char * footer = helper.queryCsvParameters()->queryFooter();
+    if (footer) {
+        csvOutput.beginLine();
+        csvOutput.writeHeaderLn(strlen(footer), footer);
+        diskout->write(csvOutput.length(), csvOutput.str());
+    }
+}
+
+void CHThorCsvWriteActivity::setFormat(IFileDescriptor * desc)
+{
+    // MORE - should call parent's setFormat too?
+    desc->queryProperties().setProp("@format","utf8n");
+}
+
+//=====================================================================================================
+
+CHThorXmlWriteActivity::CHThorXmlWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlWriteArg &_arg, ThorActivityKind _kind) : CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+    const char * path = helper.queryIteratorPath();
+    if (!path)
+        rowTag.append("Row");
+    else
+    {
+        if (*path == '/') path++;
+        if (strchr(path, '/')) UNIMPLEMENTED;               // more what do we do with /mydata/row
+        rowTag.append(path);
+    }
+}
+
+void CHThorXmlWriteActivity::execute()
+{
+    // Loop thru the results
+    numRecords = 0;
+    const char * header = helper.queryHeader();
+    if (!header) header = "<Dataset>\n";
+    diskout->write(strlen(header), header);
+
+    CommonXmlWriter xmlOutput(helper.getXmlFlags());
+    loop
+    {
+        OwnedConstHThorRow nextrec(input->nextInGroup());
+        if (!nextrec)
+        {
+            nextrec.setown(input->nextInGroup());
+            if (!nextrec)
+                break;
+        }
+
+        try
+        {
+            xmlOutput.clear().outputBeginNested(rowTag, false);
+            helper.toXML((const byte *)nextrec.get(), xmlOutput);
+            xmlOutput.outputEndNested(rowTag);
+        }
+        catch(IException * e)
+        {
+            throw makeWrappedException(e);
+        }
+
+        diskout->write(xmlOutput.length(), xmlOutput.str());
+        numRecords++;
+    }
+    const char * footer = helper.queryFooter();
+    if (!footer) footer = "</Dataset>\n";
+    diskout->write(strlen(footer), footer);
+}
+
+void CHThorXmlWriteActivity::setFormat(IFileDescriptor * desc)
+{
+    desc->queryProperties().setProp("@format","utf8n");
+    desc->queryProperties().setProp("@rowTag",rowTag.str());
+}
+
+//=====================================================================================================
+
+void throwPipeProcessError(unsigned err, char const * preposition, char const * program, IPipeProcess * pipe)
+{
+    StringBuffer msg;
+    msg.append("Error piping ").append(preposition).append(" (").append(program).append("): process failed with code ").append(err);
+    if(pipe->hasError())
+    {
+        try
+        {
+            char error[512];
+            size32_t sz = pipe->readError(sizeof(error), error);
+            if(sz && sz!=(size32_t)-1)
+            msg.append(", stderr: '").append(sz, error).append("'");
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e, "Error reading pipe stderr");
+            e->Release();
+        }
+    }
+    throw MakeStringException(2, msg.str());
+}
+
+CHThorPipeWriteActivity::CHThorPipeWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorPipeWriteArg &_arg, ThorActivityKind _kind) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorPipeWriteActivity::ready()
+{
+    CHThorActivityBase::ready();
+    pipe.setown(createPipeProcess(agent.queryAllowedPipePrograms()));
+    writer.setown(new PipeWriter(this, pipe, false, false, helper.recreateEachRow()));
+    inputMeta.set(input->queryOutputMeta());
+    rowSerializer.setown(inputMeta.createRowSerializer(agent.queryCodeContext(), activityId));
+    xformHelper.setown(createPipeWriteXformHelper(helper.getPipeFlags(), helper.queryXmlOutput(), helper.queryCsvOutput(), rowSerializer));
+    xformHelper->ready();
+    writer->ready();
+}
+
+void CHThorPipeWriteActivity::execute()
+{
+    writer->run();
+    if (helper.getSequence() >= 0)
+    {
+        WorkunitUpdate wu = agent.updateWorkUnit();
+        Owned<IWUResult> result = wu->updateResultBySequence(helper.getSequence());
+        if (result)
+        {
+            result->setResultTotalRowCount(writer->queryRecCount()); 
+            result->setResultStatus(ResultStatusCalculated);
+        }
+    }
+}
+
+void CHThorPipeWriteActivity::openPipe(const void * row, bool displayTitle)
+{
+    if(row)
+        pipeCommand.setown(helper.getNameFromRow(row));
+    else
+        pipeCommand.setown(helper.getPipeProgram());
+    if(!pipe->run(displayTitle ? "PipeWrite" : NULL, pipeCommand.get(), ".", true, false, true, 0x10000)) // 64K error buffer
+    {
+        StringBuffer msg;
+        msg.append("Could not pipe to process (").append(pipeCommand.get()).append(")");
+        agent.fail(2, msg.str());
+    }
+    xformHelper->writeHeader(pipe);
+}
+
+const void * CHThorPipeWriteActivity::nextInput(size32_t & inputSize)
+{
+    const void * ret = input->nextInGroup();
+    if(ret == NULL)
+        ret = input->nextInGroup();
+    if(ret == NULL)
+        return NULL;
+    inputSize = inputMeta.getRecordSize(ret);
+    return ret;
+}
+
+void CHThorPipeWriteActivity::closePipe()
+{
+    xformHelper->writeFooter(pipe);
+    pipe->closeInput();
+    unsigned err = pipe->wait();
+    if(err)
+        throwPipeProcessError(err, "to", pipeCommand.get(), pipe);
+}
+
+//=====================================================================================================
+
+CHThorIndexWriteActivity::CHThorIndexWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexWriteArg &_arg, ThorActivityKind _kind) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+    incomplete = false;
+    StringBuffer lfn;
+    Owned<ILocalOrDistributedFile> ldf = agent.resolveLFN(helper.getFileName(),"Cannot write, invalid logical name",true,false,true,&lfn);
+    if (!agent.queryResolveFilesLocally())
+    {
+        Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(lfn, agent.queryCodeContext()->queryUserDescriptor(), true);
+
+        if (f)
+        {
+            if (TIWoverwrite & helper.getFlags()) 
+            {
+                PrintLog("Removing %s from DFS", lfn.str());
+                agent.logFileAccess(f, "HThor", "DELETED");
+                f->detach();
+            }
+            else // not quite sure about raising exceptions in constructors
+                throw MakeStringException(99, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", lfn.str());
+        }
+    }
+    clusterHandler.setown(createClusterWriteHandler(agent, &helper, NULL, lfn, filename, false));
+    sizeLimit = agent.queryWorkUnit()->getDebugValueInt64("hthorDiskWriteSizeLimit", defaultHThorDiskWriteSizeLimit);
+    bool isVariable = helper.queryDiskRecordSize()->isVariableSize();
+    maxDiskRecordSize = isVariable ? 4096 : helper.queryDiskRecordSize()->getFixedSize();
+}
+
+CHThorIndexWriteActivity::~CHThorIndexWriteActivity()
+{
+    if(incomplete)
+    {
+        PROGLOG("Index write incomplete, deleting physical file: %s", filename.get());
+        file->remove();
+    }
+}
+
+void CHThorIndexWriteActivity::execute()
+{
+
+    // Loop thru the results
+    unsigned __int64 reccount = 0;
+    char *rowBuffer = (char *) alloca(maxDiskRecordSize);
+    memset(rowBuffer, 0, maxDiskRecordSize);
+    unsigned __int64 fileSize = 0;
+    if (helper.getDatasetName())
+    {
+        Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(helper.getDatasetName(),"IndedWrite::execute",false,true,true);
+        if (ldFile)
+        {
+            IDistributedFile * dFile = ldFile->queryDistributedFile();
+            fileSize = dFile ? dFile->queryProperties().getPropInt64("@size", 0) : ldFile->getPartFileSize(0);//MORE: is local part correct?
+        }
+    }
+    unsigned int fileCrc = -1;
+    file.setown(createIFile(filename.get()));
+    {
+        OwnedIFileIO io;
+        try
+        {
+            io.setown(file->open(IFOcreate));
+        }
+        catch(IException * e)
+        {
+            e->Release();
+            clearKeyStoreCache(false);
+            io.setown(file->open(IFOcreate));
+        }
+        incomplete = true;
+        Owned<IFileIOStream> out = createIOStream(io);
+        bool isVariable = helper.queryDiskRecordSize()->isVariableSize();
+        unsigned flags = COL_PREFIX | HTREE_FULLSORT_KEY;
+        if (helper.getFlags() & TIWrowcompress)
+            flags |= HTREE_COMPRESSED_KEY|HTREE_QUICK_COMPRESSED_KEY;
+        else if (!(helper.getFlags() & TIWnolzwcompress))
+            flags |= HTREE_COMPRESSED_KEY;
+        if (isVariable)
+            flags |= HTREE_VARSIZE;
+        Owned<IPropertyTree> metadata;
+        buildUserMetadata(metadata);
+        buildLayoutMetadata(metadata);
+        unsigned nodeSize = metadata ? metadata->getPropInt("_nodeSize", NODESIZE) : NODESIZE;
+        Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, maxDiskRecordSize, fileSize, nodeSize, helper.getKeyedSize(), 0); 
+        class BcWrapper : implements IBlobCreator
+        {
+            IKeyBuilder *builder;
+        public:
+            BcWrapper(IKeyBuilder *_builder) : builder(_builder) {}
+            virtual unsigned __int64 createBlob(size32_t size, const void * ptr)
+            {
+                return builder->createBlob(size, (const char *) ptr);
+            }
+        } bc(builder);
+        loop
+        {
+            OwnedConstHThorRow nextrec(input->nextInGroup());
+            if (!nextrec)
+            {
+                nextrec.setown(input->nextInGroup());
+                if (!nextrec)
+                    break;
+            }
+            try
+            {
+                unsigned __int64 fpos;
+                RtlStaticRowBuilder rowBuilder(rowBuffer, maxDiskRecordSize);
+                size32_t thisSize = helper.transform(rowBuilder, nextrec, &bc, fpos);
+                builder->processKeyData(rowBuffer, fpos, thisSize);
+            }
+            catch(IException * e)
+            {
+                throw makeWrappedException(e);
+            }
+            if(sizeLimit && (out->tell() > sizeLimit))
+            {
+                StringBuffer msg;
+                msg.append("Exceeded disk write size limit of ").append(sizeLimit).append(" while writing index ").append(helper.getFileName());
+                throw MakeStringException(0, msg.str());
+            }
+            reccount++;
+        }
+        if(metadata)
+            builder->finish(metadata,&fileCrc);
+        else
+            builder->finish(&fileCrc);
+        out->flush();
+        out.clear();
+    }
+
+    if(clusterHandler)
+        clusterHandler->copyPhysical(file, agent.queryWorkUnit()->getDebugValueBool("__output_cluster_no_copy_physical", false));
+
+    // Now publish to name services
+    StringBuffer dir,base;
+    offset_t indexFileSize = file->size();
+    if(clusterHandler)
+        clusterHandler->splitPhysicalFilename(dir, base);
+    else
+        splitFilename(filename, &dir, &dir, &base, &base);
+
+    Owned<IFileDescriptor> desc = createFileDescriptor();
+    desc->setDefaultDir(dir.str());
+
+    //properties of the first file part.
+    Owned<IPropertyTree> attrs;
+    if(clusterHandler) 
+        attrs.setown(createPTree("Part", false));  // clusterHandler is going to set attributes
+    else 
+    {
+        // add cluster
+        StringBuffer mygroupname;
+        Owned<IGroup> mygrp = NULL;
+        if (!agent.queryResolveFilesLocally())
+            mygrp.setown(agent.getHThorGroup(mygroupname));
+        ClusterPartDiskMapSpec partmap; // will get this from group at some point
+        desc->setNumParts(1);
+        desc->setPartMask(base.str());
+        desc->addCluster(mygroupname.str(),mygrp, partmap);
+        attrs.set(&desc->queryPart(0)->queryProperties());
+    }
+    attrs->setPropInt64("@size", indexFileSize);
+
+    CDateTime createTime, modifiedTime, accessedTime;
+    file->getTime(&createTime, &modifiedTime, &accessedTime);
+    // round file time down to nearest sec. Nanosec accurancy is not preserved elsewhere and can lead to mismatch later.
+    unsigned hour, min, sec, nanosec;
+    modifiedTime.getTime(hour, min, sec, nanosec);
+    modifiedTime.setTime(hour, min, sec, 0);
+    StringBuffer timestr;
+    modifiedTime.getString(timestr);
+    if(timestr.length())
+        attrs->setProp("@modified", timestr.str());
+
+    if(clusterHandler)
+        clusterHandler->setDescriptorParts(desc, base.str(), attrs);
+
+    // properties of the logical file
+    IPropertyTree & properties = desc->queryProperties();
+    properties.setProp("@kind", "key");
+    properties.setPropInt64("@size", indexFileSize);
+    properties.setPropInt64("@recordCount", reccount);
+    SCMStringBuffer info;
+    properties.setProp("@owner", agent.queryWorkUnit()->getUser(info).str());
+    info.clear();
+    properties.setProp("@workunit", agent.queryWorkUnit()->getWuid(info).str());
+    info.clear();
+    properties.setProp("@job", agent.queryWorkUnit()->getJobName(info).str());
+#if 0
+    IRecordSize * irecsize = helper.queryDiskRecordSize();
+    if(irecsize && (irecsize->isFixedSize()))
+        properties.setPropInt("@recordSize", irecsize->getFixedSize());
+#endif
+    char const * rececl = helper.queryRecordECL();
+    if(rececl && *rececl)
+        properties.setProp("ECL", rececl);
+    
+
+    setExpiryTime(properties, helper.getExpiryDays());
+    if (helper.getFlags() & TIWupdate)
+    {
+        unsigned eclCRC;
+        unsigned __int64 totalCRC;
+        helper.getUpdateCRCs(eclCRC, totalCRC);
+        properties.setPropInt("@eclCRC", eclCRC);
+        properties.setPropInt64("@totalCRC", totalCRC);
+    }
+
+    properties.setPropInt("@fileCrc", fileCrc);
+    properties.setPropInt("@formatCrc", helper.getFormatCrc());
+    void * layoutMetaBuff;
+    size32_t layoutMetaSize;
+    if(helper.getIndexLayout(layoutMetaSize, layoutMetaBuff))
+    {
+        properties.setPropBin("_record_layout", layoutMetaSize, layoutMetaBuff);
+        rtlFree(layoutMetaBuff);
+    }
+    StringBuffer lfn;
+    Owned<IDistributedFile> dfile = NULL;
+    if (!agent.queryResolveFilesLocally())
+    {
+        dfile.setown(queryDistributedFileDirectory().createNew(desc));
+        expandLogicalFilename(lfn, helper.getFileName(), agent);
+        dfile->attach(lfn.str(),NULL, agent.queryCodeContext()->queryUserDescriptor());
+        agent.logFileAccess(dfile, "HThor", "CREATED");
+    }
+    else
+        lfn = filename;
+
+    incomplete = false;
+
+    if(clusterHandler)
+        clusterHandler->finish(file);
+
+    // and update wu info
+    if (helper.getSequence() >= 0)
+    {
+        WorkunitUpdate wu = agent.updateWorkUnit();
+        Owned<IWUResult> result = wu->updateResultBySequence(helper.getSequence());
+        if (result)
+        {
+            result->setResultTotalRowCount(reccount); 
+            result->setResultStatus(ResultStatusCalculated);
+            result->setResultLogicalName(lfn.str());
+        }
+    }
+}
+
+void CHThorIndexWriteActivity::buildUserMetadata(Owned<IPropertyTree> & metadata)
+{
+    size32_t nameLen;
+    char * nameBuff;
+    size32_t valueLen;
+    char * valueBuff;
+    unsigned idx = 0;
+    while(helper.getIndexMeta(nameLen, nameBuff, valueLen, valueBuff, idx++))
+    {
+        StringBuffer name(nameLen, nameBuff);
+        StringBuffer value(valueLen, valueBuff);
+        if(*nameBuff == '_' && strcmp(name, "_nodeSize") != 0)
+            throw MakeStringException(0, "Invalid name %s in user metadata for index %s (names beginning with underscore are reserved)", name.str(), helper.getFileName());
+        if(!validateXMLTag(name.str()))
+            throw MakeStringException(0, "Invalid name %s in user metadata for index %s (not legal XML element name)", name.str(), helper.getFileName());
+        if(!metadata) metadata.setown(createPTree("metadata", false));
+        metadata->setProp(name.str(), value.str());
+    }
+}
+
+void CHThorIndexWriteActivity::buildLayoutMetadata(Owned<IPropertyTree> & metadata)
+{
+    if(!metadata) metadata.setown(createPTree("metadata", false));
+    metadata->setProp("_record_ECL", helper.queryRecordECL());
+
+    void * layoutMetaBuff;
+    size32_t layoutMetaSize;
+    if(helper.getIndexLayout(layoutMetaSize, layoutMetaBuff))
+    {
+        metadata->setPropBin("_record_layout", layoutMetaSize, layoutMetaBuff);
+        rtlFree(layoutMetaBuff);
+    }
+}
+
+//=====================================================================================================
+
+void PipeWriter::run()
+{
+    if(syncsAtStart)
+        readyForWrite.wait();
+    if(aborted)
+    {
+        finished = true;
+        return;
+    }
+    try
+    {
+        if(!recreate)
+        {
+            owner->openPipe(NULL,true);
+            started = true;
+            if(syncsAtStart)
+                readyForRead.signal();
+        }
+        while(!aborted)
+        {
+            size32_t inputSize;
+            OwnedConstHThorRow next(owner->nextInput(inputSize));
+            if(!next)
+                break;
+            if(recreate)
+                owner->openPipe(next,reccount==0);
+            if(syncs)
+                readyForRead.signal();
+            owner->writeTranslatedText(next);
+            reccount++;
+
+            if(recreate)
+                owner->closePipe();
+            if(syncs)
+                readyForWrite.wait();
+        }
+        finished = true;
+        if(syncs && !aborted)
+            readyForRead.signal();
+        if(!recreate)
+            owner->closePipe();
+    }
+    catch (IException *)
+    {
+        finished = true;
+        if(syncs || (syncsAtStart && !started))
+            readyForRead.signal();
+        throw;
+    }
+}
+
+void PipeWriter::abort()
+{
+    aborted = true;
+    if(!finished && (syncs || (syncsAtStart && !started)))
+        readyForWrite.signal();
+}
+
+//=====================================================================================================
+
+PipeReader::PipeReader(IPipeProcess * _pipe, bool _syncsAtStart, bool _syncs, PipeWriter * _writer, IReadRowStream * _xformer, bool _grouped)
+    : pipe(_pipe), syncsAtStart(_syncsAtStart), syncs(_syncs), writer(_writer), xformer(_xformer), grouped(_grouped)
+{
+    started = false;
+}
+
+bool PipeReader::moreInputAvailable()
+{
+    return !xformer->eos();
+}
+
+const void *PipeReader::read()
+{
+    if(!started)
+    {
+        if(syncs)
+            finished = !sync();
+        else if(syncsAtStart)
+            finished = !sync();
+        else
+            setStream();
+        started = true;
+    }
+    while(!finished && !moreInputAvailable())
+    {
+        if(syncs)
+        {
+            finished = !sync();
+            if (grouped)
+                return NULL;
+        }
+        else
+            finished = true;
+    }
+    if (finished)
+        return NULL;
+    return xformer->next();
+}
+
+void PipeReader::done()
+{
+    xformer->setStream(NULL);
+}
+
+
+void PipeReader::setStream()
+{
+    Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
+    xformer->setStream(pipeReader);
+}
+
+bool PipeReader::sync()
+{
+    bool ret = writer->sync();
+    setStream();
+    return ret;
+}
+
+unsigned PipeReader::wait()
+{
+    if(started && !finished)
+    {
+        try
+        {
+            moreInputAvailable();
+        }
+        catch(IException * e)
+        {
+            e->Release();
+        }
+    }
+    unsigned ret = pipe->wait();
+    //Only return the error code if we've previously finished, otherwise the 
+    if (finished)
+        return ret;
+    return 0;
+}
+
+unsigned PipeReader::tryWait(unsigned timeoutms)
+{
+    bool timedout;
+    unsigned err = pipe->wait(timeoutms, timedout);
+    if(timedout)
+        return 0;
+    else
+        return err;
+}
+
+
+//=====================================================================================================
+
+CHThorPipeReadActivity::CHThorPipeReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorPipeReadArg &_arg, ThorActivityKind _kind)
+    : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorPipeReadActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    rowDeserializer.setown(rowAllocator->createRowDeserializer(agent.queryCodeContext()));
+    pipe.setown(createPipeProcess(agent.queryAllowedPipePrograms()));
+
+    unsigned pipeFlags = helper.getPipeFlags();
+    Owned<IReadRowStream> readXformer = createReadRowStream(rowAllocator, rowDeserializer, helper.queryXmlTransformer(), helper.queryCsvTransformer(), helper.queryXmlIteratorPath(), pipeFlags);
+    reader.setown(new PipeReader(pipe, false, false, NULL, readXformer, (pipeFlags & TPFgroupeachrow) != 0));
+    
+    if(!pipe->run("PipeRead", helper.getPipeProgram(), ".", false, true, true, 0x10000)) // 64K error buffer
+    {
+        StringBuffer msg;
+        msg.append("Could not pipe from process (").append(helper.getPipeProgram()).append(")");
+        agent.fail(2, msg.str());
+    }
+    reader->ready();
+}
+
+void CHThorPipeReadActivity::done()
+{
+    //Need to close the output (or read it in its entirety), otherwise we might wait forever for the
+    //program to finish
+    pipe->closeOutput();
+    unsigned err = reader->wait();
+    if(err)
+        throwPipeProcessError(err, "from", helper.getPipeProgram(), pipe);
+    reader->done();
+    CHThorSimpleActivityBase::done();
+}
+
+
+const void * CHThorPipeReadActivity::nextInGroup()
+{
+    const void * row;
+    try
+    {
+        row = reader->read();
+    }
+    catch(IException * e)
+    {
+        throw makeWrappedException(e);
+    }
+    if(!row)
+        return NULL;
+    processed++;
+    return row;
+}
+
+//=====================================================================================================
+
+CHThorPipeThroughActivity::CHThorPipeThroughActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorPipeThroughArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorPipeThroughActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    bool recreate = helper.recreateEachRow();
+    unsigned pipeFlags = helper.getPipeFlags();
+    pipe.setown(createPipeProcess(agent.queryAllowedPipePrograms()));
+    writer.setown(new PipeWriter(this, pipe, true, recreate, recreate));
+    writerThread.setown(new WriterThread(writer, this));
+
+    inputMeta.set(input->queryOutputMeta());
+    rowSerializer.setown(inputMeta.createRowSerializer(agent.queryCodeContext(), activityId));
+    rowDeserializer.setown(rowAllocator->createRowDeserializer(agent.queryCodeContext()));  
+
+    Owned<IReadRowStream> readXformer = createReadRowStream(rowAllocator, rowDeserializer, helper.queryXmlTransformer(), helper.queryCsvTransformer(), helper.queryXmlIteratorPath(), pipeFlags);
+    reader.setown(new PipeReader(pipe, true, recreate, writer, readXformer, (pipeFlags & TPFgroupeachrow) != 0));
+    xformHelper.setown(createPipeWriteXformHelper(helper.getPipeFlags(), helper.queryXmlOutput(), helper.queryCsvOutput(), rowSerializer));
+    xformHelper->ready();
+    writer->ready();
+    reader->ready();
+    writerThread->start();
+}
+
+void CHThorPipeThroughActivity::done()
+{
+    checkThreadException();  // We don't want to report exceptions that result from us closing the reader before consuming all data. Checking for exceptions before closing helps avoid this
+    writer->abort();
+    pipe->closeOutput();
+    unsigned err = reader->wait();
+    if(err)
+        throwPipeProcessError(err, "from", helper.getPipeProgram(), pipe);
+    writerThread->join();
+    reader->done();
+    CHThorSimpleActivityBase::done();
+}
+
+
+const void * CHThorPipeThroughActivity::nextInGroup()
+{
+    checkThreadException();
+    const void * row = reader->read();
+    if(!row)
+        return NULL;
+    processed++;
+    return row;
+}
+
+void CHThorPipeThroughActivity::openPipe(const void * row, bool displayTitle)
+{
+    if(row)
+        pipeCommand.setown(helper.getNameFromRow(row));
+    else
+        pipeCommand.setown(helper.getPipeProgram());
+    if(!pipe->run(displayTitle ? "PipeThrough" : NULL, pipeCommand.get(), ".", true, true, true, 0x10000)) // 64K error buffer
+    {
+        StringBuffer msg;
+        msg.append("Could not pipe through process (").append(pipeCommand.get()).append(")");
+        agent.fail(2, msg.str());
+    }
+    xformHelper->writeHeader(pipe);
+}
+
+const void * CHThorPipeThroughActivity::nextInput(size32_t & inputSize)
+{
+    const void * ret = input->nextInGroup();
+    if(ret == NULL)
+        ret = input->nextInGroup();
+    if(ret == NULL)
+        return NULL;
+    inputSize = inputMeta.getRecordSize(ret);
+    return ret;
+}
+
+void CHThorPipeThroughActivity::closePipe()
+{
+    xformHelper->writeFooter(pipe);
+    pipe->closeInput();
+    unsigned err = pipe->wait();
+    if(err)
+        throwPipeProcessError(err, "through", pipeCommand.get(), pipe);
+}
+
+bool CHThorPipeThroughActivity::isGrouped()
+{ 
+    return outputMeta.isGrouped();
+}
+
+int CHThorPipeThroughActivity::WriterThread::run()
+{
+    try
+    {
+        writer->run();
+    }
+    catch(IException * e)
+    {
+        owner->noteThreadException(e);
+    }
+    return 0;
+}
+
+//=====================================================================================================
+
+CHThorIterateActivity::CHThorIterateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIterateArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorIterateActivity::done()
+{
+    CHThorSimpleActivityBase::done();
+    right.clear();
+    left.clear();
+}
+
+void CHThorIterateActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    if (!defaultRecord)
+    {
+        RtlDynamicRowBuilder rowBuilder(rowAllocator);
+        size32_t thisSize = helper.createDefault(rowBuilder);
+        defaultRecord.setown(rowBuilder.finalizeRowClear(thisSize));
+    }
+    counter = 0;
+}
+
+const void *CHThorIterateActivity::nextInGroup()
+{
+    loop
+    {
+        right.setown(input->nextInGroup());
+        if(!right)
+        {
+            bool skippedGroup = (!left) && (counter > 0); //we have just skipped entire group, but shouldn't output a double null
+            left.clear();
+            counter = 0;
+            if(skippedGroup) continue;
+            return NULL;
+        }
+        try
+        {
+            RtlDynamicRowBuilder rowBuilder(rowAllocator);
+            unsigned outSize = helper.transform(rowBuilder, left ? left : defaultRecord, right, ++counter);
+            if (outSize)
+            {
+                left.setown(rowBuilder.finalizeRowClear(outSize));  
+                processed++;
+                return left.getLink();
+            }
+        }
+        catch(IException * e)
+        {
+            throw makeWrappedException(e);
+        }
+    }
+}
+
+//=====================================================================================================
+
+CHThorProcessActivity::CHThorProcessActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorProcessArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+CHThorProcessActivity::~CHThorProcessActivity()
+{
+}
+
+
+void CHThorProcessActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    rightRowAllocator.setown(agent.queryCodeContext()->getRowAllocator( helper.queryRightRecordSize(), activityId));
+
+    RtlDynamicRowBuilder rowBuilder(rightRowAllocator);
+    size32_t thisSize = helper.createInitialRight(rowBuilder);
+    initialRight.setown(rowBuilder.finalizeRowClear(thisSize));
+
+    curRight.set(initialRight);
+    counter = 0;
+}
+
+const void *CHThorProcessActivity::nextInGroup()
+{
+    try
+    {
+        loop
+        {
+            OwnedConstHThorRow next(input->nextInGroup());
+            if (!next)
+            {
+                bool eog = (curRight != initialRight);          // processed any records?
+                counter = 0;
+                curRight.set(initialRight);
+                if (eog)
+                    return NULL;
+                next.setown(input->nextInGroup());
+                if (!next)
+                    return NULL;
+            }
+
+            RtlDynamicRowBuilder rowBuilder(rowAllocator);
+            RtlDynamicRowBuilder rightRowBuilder(rightRowAllocator);
+            size32_t outSize = helper.transform(rowBuilder, rightRowBuilder, next, curRight, ++counter);
+
+            if (outSize)
+            {
+                size32_t rightSize = rightRowAllocator->queryOutputMeta()->getRecordSize(rightRowBuilder.getSelf());    // yuk
+                curRight.setown(rightRowBuilder.finalizeRowClear(rightSize));
+                processed++;
+                return rowBuilder.finalizeRowClear(outSize);
+            }
+        }
+    }
+    catch(IException * e)
+    {
+        throw makeWrappedException(e);
+    }
+}
+
+//=====================================================================================================
+
+CHThorNormalizeActivity::CHThorNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNormalizeArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+    // JF: bug - use of null pointer 
+    IRecordSize* recSize = outputMeta;
+    if (recSize == NULL)
+        throw MakeStringException(2, "Unexpect null pointer from helper.queryOutputMeta()");
+}
+
+CHThorNormalizeActivity::~CHThorNormalizeActivity()
+{
+}
+
+void CHThorNormalizeActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    numThisRow = 0;
+    curRow = 0;
+    numProcessedLastGroup = processed;
+}
+
+const void *CHThorNormalizeActivity::nextInGroup()
+{
+    loop
+    {
+        while (curRow == numThisRow)
+        {
+            inbuff.setown(input->nextInGroup());
+            if (!inbuff && (processed == numProcessedLastGroup))
+                inbuff.setown(input->nextInGroup());
+            if (!inbuff)
+            {
+                numProcessedLastGroup = processed;
+                return NULL;
+            }
+
+            curRow = 0;
+            numThisRow = helper.numExpandedRows(inbuff);
+        }
+
+
+        try
+        {
+            RtlDynamicRowBuilder rowBuilder(rowAllocator);
+            memsize_t thisSize = helper.transform(rowBuilder, inbuff, ++curRow);
+            if(thisSize != 0)
+            {
+                processed++;
+                return rowBuilder.finalizeRowClear(thisSize);
+            }
+        }
+        catch(IException * e)
+        {
+            throw makeWrappedException(e);
+        }
+    }
+}
+
+
+//=====================================================================================================
+
+CHThorNormalizeChildActivity::CHThorNormalizeChildActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNormalizeChildArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+CHThorNormalizeChildActivity::~CHThorNormalizeChildActivity()
+{
+}
+
+bool CHThorNormalizeChildActivity::advanceInput()
+{
+    loop
+    {
+        inbuff.setown(input->nextInGroup());
+        if (!inbuff && (processed == numProcessedLastGroup))
+            inbuff.setown(input->nextInGroup());
+        if (!inbuff)
+        {
+            numProcessedLastGroup = processed;
+            return false;
+        }
+
+        curChildRow = cursor->first(inbuff);
+        if (curChildRow)
+        {
+            curRow = 0;
+            return true;
+        }
+    }
+}
+
+void CHThorNormalizeChildActivity::done()
+{
+    inbuff.clear();
+    CHThorSimpleActivityBase::done();
+}
+
+void CHThorNormalizeChildActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    curRow = 0;
+    numProcessedLastGroup = processed;
+    cursor = helper.queryIterator();
+    curChildRow = NULL;
+}
+
+const void *CHThorNormalizeChildActivity::nextInGroup()
+{
+    loop
+    {
+        if (!inbuff)
+        {
+            if (!advanceInput())
+                return NULL;
+        }
+
+        try
+        {
+            RtlDynamicRowBuilder rowBuilder(rowAllocator);
+            size32_t outSize = helper.transform(rowBuilder, inbuff, curChildRow, ++curRow);
+            curChildRow = cursor->next();
+            if (!curChildRow)
+                inbuff.clear();
+            if (outSize != 0)
+            {
+                processed++;
+                return rowBuilder.finalizeRowClear(outSize);
+            }
+        }
+        catch(IException * e)
+        {
+            throw makeWrappedException(e);
+        }
+    }
+}
+
+//=================================================================================
+bool CHThorNormalizeLinkedChildActivity::advanceInput()
+{
+    loop
+    {
+        curParent.setown(input->nextInGroup());
+        if (!curParent && (processed == numProcessedLastGroup))
+            curParent.setown(input->nextInGroup());
+        if (!curParent)
+        {
+            numProcessedLastGroup = processed;
+            return false;
+        }
+
+        curChild.set(helper.first(curParent));
+        if (curChild)
+            return true;
+    }
+}
+
+CHThorNormalizeLinkedChildActivity::CHThorNormalizeLinkedChildActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNormalizeLinkedChildArg &_arg, ThorActivityKind _kind) 
+    : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+CHThorNormalizeLinkedChildActivity::~CHThorNormalizeLinkedChildActivity()
+{
+}
+
+void CHThorNormalizeLinkedChildActivity::ready()
+{
+    numProcessedLastGroup = 0;
+    CHThorSimpleActivityBase::ready();
+}
+
+void CHThorNormalizeLinkedChildActivity::done()
+{
+    curParent.clear();
+    curChild.clear();
+    CHThorSimpleActivityBase::done(); 
+}
+
+const void * CHThorNormalizeLinkedChildActivity::nextInGroup()
+{
+    loop
+    {
+        if (!curParent)
+        {
+            if (!advanceInput())
+                return NULL;
+        }
+        try
+        {
+            const void *ret = curChild.getClear();
+            curChild.set(helper.next());
+            if (!curChild)
+                curParent.clear();
+            if (ret)
+            {
+                processed++;
+                return ret;
+            }
+        }
+        catch (IException *E)
+        {
+            throw makeWrappedException(E);
+        }
+    }
+}
+
+//=====================================================================================================
+CHThorProjectActivity::CHThorProjectActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorProjectArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+CHThorProjectActivity::~CHThorProjectActivity()
+{
+}
+
+void CHThorProjectActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    numProcessedLastGroup = processed;
+}
+
+
+const void * CHThorProjectActivity::nextInGroup()
+{
+    loop
+    {
+        OwnedConstHThorRow in(input->nextInGroup());
+        if (!in)
+        {
+            if (numProcessedLastGroup == processed)
+                in.setown(input->nextInGroup());
+            if (!in)
+            {
+                numProcessedLastGroup = processed;
+                return NULL;
+            }
+        }
+
+        try
+        {
+            RtlDynamicRowBuilder rowBuilder(rowAllocator);
+            size32_t outSize = helper.transform(rowBuilder, in);
+            if (outSize)
+            {
+                processed++;
+                return rowBuilder.finalizeRowClear(outSize);
+            }
+        }
+        catch(IException * e)
+        {
+            throw makeWrappedException(e);
+        }
+    }
+}
+
+//=====================================================================================================
+CHThorPrefetchProjectActivity::CHThorPrefetchProjectActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorPrefetchProjectArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorPrefetchProjectActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    recordCount = 0;
+    numProcessedLastGroup = processed;
+    eof = !helper.canMatchAny();
+    child = helper.queryChild();
+}
+
+const void * CHThorPrefetchProjectActivity::nextInGroup()
+{
+    if (eof)
+        return NULL;
+    loop
+    {
+        try
+        {
+            OwnedConstHThorRow row(input->nextInGroup());
+            if (!row)
+            {
+                if (numProcessedLastGroup == processed)
+                    row.setown(input->nextInGroup());
+                if (!row)
+                {
+                    numProcessedLastGroup = processed;
+                    return NULL;
+                }
+            }
+
+            ++recordCount;
+            rtlRowBuilder extract;
+            if (helper.preTransform(extract,row,recordCount))
+            {
+                Owned<IEclGraphResults> results;
+                if (child)
+                {
+                    results.setown(child->evaluate(extract.size(), extract.getbytes()));
+                }
+                RtlDynamicRowBuilder rowBuilder(rowAllocator);
+                size32_t outSize = helper.transform(rowBuilder, row, results, recordCount);
+                if (outSize)
+                {
+                    processed++;
+                    return rowBuilder.finalizeRowClear(outSize);
+                }
+            }
+        }
+        catch(IException * e)
+        {
+            throw makeWrappedException(e);
+        }
+    }
+}
+
+//=====================================================================================================
+CHThorFilterProjectActivity::CHThorFilterProjectActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorFilterProjectArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+CHThorFilterProjectActivity::~CHThorFilterProjectActivity()
+{
+}
+
+void CHThorFilterProjectActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    recordCount = 0;
+    numProcessedLastGroup = processed;
+    eof = !helper.canMatchAny();
+}
+
+
+const void * CHThorFilterProjectActivity::nextInGroup()
+{
+    if (eof)
+        return NULL;
+    loop
+    {
+        OwnedConstHThorRow in = input->nextInGroup();
+        if (!in)
+        {
+            recordCount = 0;
+            if (numProcessedLastGroup == processed)
+                in.setown(input->nextInGroup());
+            if (!in)
+            {
+                numProcessedLastGroup = processed;
+                return NULL;
+            }
+        }
+
+        try
+        {
+            RtlDynamicRowBuilder rowBuilder(rowAllocator);
+            size32_t outSize = helper.transform(rowBuilder, in, ++recordCount);
+            if (outSize)
+            {
+                processed++;
+                return rowBuilder.finalizeRowClear(outSize);    
+            }
+        }
+        catch(IException * e)
+        {
+            throw makeWrappedException(e);
+        }
+    }
+}
+//=====================================================================================================
+
+CHThorCountProjectActivity::CHThorCountProjectActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCountProjectArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+CHThorCountProjectActivity::~CHThorCountProjectActivity()
+{
+}
+
+void CHThorCountProjectActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    recordCount = 0;
+    numProcessedLastGroup = processed;
+}
+
+
+const void * CHThorCountProjectActivity::nextInGroup()
+{
+    loop
+    {
+        OwnedConstHThorRow in = input->nextInGroup();
+        if (!in)
+        {
+            recordCount = 0;
+            if (numProcessedLastGroup == processed)
+                in.setown(input->nextInGroup());
+            if (!in)
+            {
+                numProcessedLastGroup = processed;
+                return NULL;
+            }
+        }
+
+        try
+        {
+            RtlDynamicRowBuilder rowBuilder(rowAllocator);
+            size32_t outSize = helper.transform(rowBuilder, in, ++recordCount);
+            if (outSize)
+            {
+                processed++;
+                return rowBuilder.finalizeRowClear(outSize);
+            }
+        }
+        catch(IException * e)
+        {
+            throw makeWrappedException(e);
+        }
+    }
+}
+
+//=====================================================================================================
+
+CHThorRollupActivity::CHThorRollupActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorRollupArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+CHThorRollupActivity::~CHThorRollupActivity()
+{
+}
+
+void CHThorRollupActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    left.setown(input->nextInGroup());
+}
+
+void CHThorRollupActivity::done()
+{
+    left.clear();
+    right.clear();
+    CHThorSimpleActivityBase::done();
+}
+
+const void *CHThorRollupActivity::nextInGroup()
+{
+    loop
+    {
+        right.setown(input->nextInGroup());
+        if(!left || !right || !helper.matches(left,right))
+        {
+            const void * ret = left.getClear();
+            if(ret)
+            {
+                processed++;
+            }
+            left.setown(right.getClear());
+            return ret;
+        }
+        try
+        {
+            //MORE: could optimise by reusing buffer, but would have to make sure to call destructor on previous contents before overwriting
+            RtlDynamicRowBuilder rowBuilder(rowAllocator);
+            if(unsigned outSize = helper.transform(rowBuilder, left, right))
+            {
+                left.setown(rowBuilder.finalizeRowClear(outSize));
+            }
+        }
+        catch(IException * e)
+        {
+            throw makeWrappedException(e);
+        }
+    }
+}
+
+//=====================================================================================================
+
+CHThorGroupDedupActivity::CHThorGroupDedupActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDedupArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorGroupDedupActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    keepLeft = helper.keepLeft();
+    numToKeep = helper.numToKeep();
+    assertex(keepLeft || numToKeep==1);
+    numKept = 0;
+    firstDone = false;
+}
+
+void CHThorGroupDedupActivity::done()
+{
+    kept.clear();
+    CHThorSimpleActivityBase::done();
+}
+
+const void *CHThorGroupDedupActivity::nextInGroup()
+{
+    if (!firstDone)
+    {
+        firstDone = true;
+        kept.setown(input->nextInGroup());
+    }
+
+    OwnedConstHThorRow next;
+    loop
+    {
+        next.setown(input->nextInGroup());
+        if (!kept || !next || !helper.matches(kept,next))
+        {
+            numKept = 0;
+            break;
+        }
+
+        if (numKept < numToKeep-1)
+        {
+            numKept++;
+            break;
+        }
+
+        if (keepLeft)
+        {
+            next.clear();
+        }
+        else
+        {
+            kept.setown(next.getClear());
+        }
+    }
+
+    const void * ret = kept.getClear();
+    kept.setown(next.getClear());
+    if(ret) 
+        processed++;
+    return ret;
+}
+
+//=====================================================================================================
+
+CHThorGroupDedupAllActivity::CHThorGroupDedupAllActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDedupArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorGroupDedupAllActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    keepLeft = helper.keepLeft();
+    primaryCompare = helper.queryComparePrimary();
+    assertex(helper.numToKeep() == 1);
+    firstDone = false;
+    survivorIndex = 0;
+}
+
+void CHThorGroupDedupAllActivity::done()
+{
+    survivors.clear();
+    CHThorSimpleActivityBase::done();
+}
+
+bool CHThorGroupDedupAllActivity::calcNextDedupAll()
+{
+    survivors.clear();
+    survivorIndex = 0;
+
+    OwnedRowArray group;
+    const void * next;
+    while((next = input->nextInGroup()) != NULL)
+        group.append(next);
+    if(group.ordinality() == 0)
+        return false;
+
+    unsigned max = group.ordinality();
+    if (primaryCompare)
+    {
+        //hard, if not impossible, to hit this code once optimisations in place
+        MemoryAttr indexbuff(max*sizeof(void **));
+        void *** index = (void ***)indexbuff.bufferBase();
+        qsortvecstable((void * *)group.getArray(), max, *primaryCompare, index);
+        unsigned first = 0;
+        for (unsigned idx = 1; idx < max; idx++)
+        {
+            if (primaryCompare->docompare(*(index[first]), *(index[idx])) != 0)
+            {
+                dedupRangeIndirect(first, idx, index);
+                first = idx;
+            }
+        }
+        dedupRangeIndirect(first, max, index);
+
+        for(unsigned idx2=0; idx2<max; ++idx2)
+        {
+            void * * cur = index[idx2];
+            if(cur)
+            {
+                linkHThorRow(*cur);
+                survivors.append(*cur);
+            }
+        }
+    }
+    else
+    {
+        dedupRange(0, max, group);
+        for(unsigned idx=0; idx<max; ++idx)
+        {
+            const void * cur = group.itemClear(idx);
+            if(cur)
+                survivors.append(cur);
+        }
+    }
+
+    return true;
+}
+
+void CHThorGroupDedupAllActivity::dedupRange(unsigned first, unsigned last, OwnedRowArray & group)
+{
+    for (unsigned idxL = first; idxL < last; idxL++)
+    {
+        const void * left = group.item(idxL);
+        if (left)
+        {
+            for (unsigned idxR = first; idxR < last; idxR++)
+            {
+                const void * right = group.item(idxR);
+                if ((idxL != idxR) && right)
+                {
+                    if (helper.matches(left, right))
+                    {
+                        if (keepLeft)
+                        {
+                            group.replace(NULL, idxR);
+                        }
+                        else
+                        {
+                            group.replace(NULL, idxL);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void CHThorGroupDedupAllActivity::dedupRangeIndirect(unsigned first, unsigned last, void *** index)
+{
+    for (unsigned idxL = first; idxL < last; idxL++)
+    {
+        if (index[idxL])
+        {
+            for (unsigned idxR = first; idxR < last; idxR++)
+            {
+                if ((idxL != idxR) && index[idxR])
+                {
+                    if (helper.matches(*(index[idxL]), *(index[idxR])))
+                    {
+                        if (keepLeft)
+                        {
+                            index[idxR] = NULL;
+                        }
+                        else
+                        {
+                            index[idxL] = NULL;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+const void *CHThorGroupDedupAllActivity::nextInGroup()
+{
+    if (!firstDone)
+    {
+        firstDone = true;
+        calcNextDedupAll();
+    }
+
+    if(survivors.isItem(survivorIndex))
+    {
+        processed++;
+        return survivors.itemClear(survivorIndex++);
+    }
+    calcNextDedupAll();
+    return NULL;
+}
+
+//=====================================================================================================
+bool HashDedupTable::insert(const void * row)
+{
+    unsigned hash = helper.queryHash()->hash(row);
+    RtlDynamicRowBuilder keyRowBuilder(keyRowAllocator, true);
+    size32_t thisKeySize = helper.recordToKey(keyRowBuilder, row);
+    OwnedConstHThorRow keyRow = keyRowBuilder.finalizeRowClear(thisKeySize);
+    if (find(hash, keyRow.get()))
+        return false;
+    addNew(new HashDedupElement(hash, keyRow.getClear()), hash);
+    return true;
+}
+
+CHThorHashDedupActivity::CHThorHashDedupActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorHashDedupArg & _arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), table(_arg, activityId)
+{
+}
+
+void CHThorHashDedupActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    table.setRowAllocator(agent.queryCodeContext()->getRowAllocator(helper.queryKeySize(), activityId));
+}
+
+void CHThorHashDedupActivity::done()
+{
+    table.kill();
+    CHThorSimpleActivityBase::done();
+}
+
+const void * CHThorHashDedupActivity::nextInGroup()
+{
+    while(true)
+    {
+        OwnedConstHThorRow next(input->nextInGroup());
+        if(!next)
+            next.setown(input->nextInGroup());
+        if(!next)
+            return NULL;
+        if(table.insert(next))
+            return next.getClear();
+    }
+}
+
+//=====================================================================================================
+
+CHThorSteppableActivityBase::CHThorSteppableActivityBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _help, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _help, _kind)
+{
+    inputStepping = NULL;
+    stepCompare = NULL;
+}
+
+void CHThorSteppableActivityBase::setInput(unsigned index, IHThorInput *_input)
+{
+    CHThorSimpleActivityBase::setInput(index, _input);
+    if (input && index == 0)
+    {
+        inputStepping = input->querySteppingMeta();
+        if (inputStepping)
+            stepCompare = inputStepping->queryCompare();
+    }
+}
+
+IInputSteppingMeta * CHThorSteppableActivityBase::querySteppingMeta()
+{
+    return inputStepping;
+}
+
+//=====================================================================================================
+
+CHThorFilterActivity::CHThorFilterActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorFilterArg &_arg, ThorActivityKind _kind) : CHThorSteppableActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorFilterActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    anyThisGroup = false;
+    eof = !helper.canMatchAny();
+}
+
+const void * CHThorFilterActivity::nextInGroup()
+{
+    if (eof)
+        return NULL;
+
+    loop
+    {
+        OwnedConstHThorRow ret(input->nextInGroup());
+        if (!ret)
+        {
+            //stop returning two NULLs in a row.
+            if (anyThisGroup)
+            {
+                anyThisGroup = false;
+                return NULL;
+            }
+            ret.setown(input->nextInGroup());
+            if (!ret)
+                return NULL;                // eof...
+        }
+
+        if (helper.isValid(ret))
+        {
+            anyThisGroup = true;
+            processed++;
+            return ret.getClear();
+        }
+    }
+}
+
+const void * CHThorFilterActivity::nextGE(const void * seek, unsigned numFields)
+{
+    if (eof)
+        return NULL;
+
+    OwnedConstHThorRow ret(input->nextGE(seek, numFields));
+    if (!ret)
+        return NULL;
+
+    if (helper.isValid(ret))
+    {
+        anyThisGroup = true;
+        processed++;
+        return ret.getClear();
+    }
+
+    return nextUngrouped(this);
+}
+
+bool CHThorFilterActivity::gatherConjunctions(ISteppedConjunctionCollector & collector) 
+{ 
+    return input->gatherConjunctions(collector); 
+}
+
+void CHThorFilterActivity::resetEOF() 
+{ 
+    //Sometimes the smart stepping code returns a premature eof indicator (two nulls) and will
+    //therefore call resetEOF so the activity can reset its eof without resetting the activity itself.
+    //Note that resetEOF only needs to be implemented by activities that implement gatherConjunctions()
+    //and that cache eof.
+    eof = false;
+    anyThisGroup = false;
+    input->resetEOF(); 
+}
+
+//=====================================================================================================
+
+CHThorFilterGroupActivity::CHThorFilterGroupActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorFilterGroupArg &_arg, ThorActivityKind _kind) : CHThorSteppableActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorFilterGroupActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    eof = !helper.canMatchAny();
+    nextIndex = 0;
+}
+
+void CHThorFilterGroupActivity::done()
+{
+    CHThorSimpleActivityBase::done();
+    pending.clear();
+}
+
+const void * CHThorFilterGroupActivity::nextInGroup()
+{
+    loop
+    {
+        if (eof)
+            return NULL;
+
+        if (pending.ordinality())
+        {
+            if (pending.isItem(nextIndex))
+            {
+                processed++;
+                return pending.itemClear(nextIndex++);
+            }
+            nextIndex = 0;
+            pending.clear();
+            return NULL;
+        }
+
+        const void * ret = input->nextInGroup();
+        while (ret)
+        {
+            pending.append(ret);
+            ret = input->nextInGroup();
+        }
+
+        unsigned num = pending.ordinality();
+        if (num != 0)
+        {
+            if (!helper.isValid(num, (const void * *)pending.getArray()))
+                pending.clear();        // read next group
+        }
+        else
+            eof = true;
+    }
+}
+
+const void * CHThorFilterGroupActivity::nextGE(const void * seek, unsigned numFields)
+{
+    if (eof)
+        return NULL;
+
+    if (pending.ordinality())
+    {
+        while (pending.isItem(nextIndex))
+        {
+            OwnedConstHThorRow ret(pending.itemClear(nextIndex++));
+            if (stepCompare->docompare(ret, seek, numFields) >= 0)
+            {
+                processed++;
+                return ret.getClear();
+            }
+        }
+        nextIndex = 0;
+        pending.clear();
+    }
+
+    const void * ret = input->nextGE(seek, numFields);
+    while (ret)
+    {
+        pending.append(ret);
+        ret = input->nextInGroup();
+    }
+
+    unsigned num = pending.ordinality();
+    if (num != 0)
+    {
+        if (!helper.isValid(num, (const void * *)pending.getArray()))
+            pending.clear();        // read next group
+    }
+    else
+        eof = true;
+
+    return nextUngrouped(this);
+}
+
+
+//=====================================================================================================
+
+CHThorLimitActivity::CHThorLimitActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLimitArg &_arg, ThorActivityKind _kind) : CHThorSteppableActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorLimitActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    rowLimit = helper.getRowLimit();
+    numGot = 0;
+}
+
+const void * CHThorLimitActivity::nextInGroup()
+{
+    OwnedConstHThorRow ret(input->nextInGroup());
+    if (ret)
+    {
+        if (++numGot > rowLimit)
+        {
+            if ( agent.queryCodeContext()->queryDebugContext())
+                agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
+            helper.onLimitExceeded();
+            return NULL;
+        }
+        processed++;
+    }
+    
+    return ret.getClear();
+}
+
+const void * CHThorLimitActivity::nextGE(const void * seek, unsigned numFields)
+{
+    OwnedConstHThorRow ret(input->nextGE(seek, numFields));
+    if (ret)
+    {
+        if (++numGot > rowLimit)
+        {
+            if ( agent.queryCodeContext()->queryDebugContext())
+                agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
+            helper.onLimitExceeded();
+            return NULL;
+        }
+        processed++;
+    }
+    
+    return ret.getClear();
+}
+
+//=====================================================================================================
+
+CHThorSkipLimitActivity::CHThorSkipLimitActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLimitArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorSkipLimitActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    rowLimit = helper.getRowLimit();
+}
+
+void CHThorSkipLimitActivity::done()
+{
+    CHThorSimpleActivityBase::done();
+    buffer.clear();
+}
+
+const void * CHThorSkipLimitActivity::nextInGroup()
+{
+    if(!buffer)
+    {
+        buffer.setown(new CRowBuffer(input->queryOutputMeta(), true));
+        if(!buffer->pull(input, rowLimit))
+        {
+            if ( agent.queryCodeContext()->queryDebugContext())
+                agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
+            onLimitExceeded();
+        }
+    }
+    const void * next = buffer->next();
+    if(next)
+        processed++;
+    return next;
+}
+
+//=====================================================================================================
+
+CHThorCatchActivity::CHThorCatchActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCatchArg &_arg, ThorActivityKind _kind) : CHThorSteppableActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+const void * CHThorCatchActivity::nextInGroup()
+{
+    try
+    {
+        OwnedConstHThorRow ret(input->nextInGroup());
+        if (ret)
+            processed++;
+        return ret.getClear();
+    }
+    catch (IException *E)
+    {
+        E->Release();
+        helper.onExceptionCaught();
+    }
+    catch (...)
+    {
+        helper.onExceptionCaught();
+    }
+    throwUnexpected(); // onExceptionCaught should have thrown something
+}
+
+const void * CHThorCatchActivity::nextGE(const void * seek, unsigned numFields)
+{
+    try
+    {
+        OwnedConstHThorRow ret(input->nextGE(seek, numFields));
+        if (ret)
+            processed++;
+        return ret.getClear();
+    }
+    catch (IException *E)
+    {
+        E->Release();
+        helper.onExceptionCaught();
+    }
+    catch (...)
+    {
+        helper.onExceptionCaught();
+    }
+    throwUnexpected(); // onExceptionCaught should have thrown something
+}
+
+//=====================================================================================================
+
+CHThorSkipCatchActivity::CHThorSkipCatchActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCatchArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorSkipCatchActivity::done()
+{
+    CHThorSimpleActivityBase::done();
+    buffer.clear();
+}
+
+void CHThorSkipCatchActivity::onException(IException *E)
+{
+    buffer->clear();
+    if (kind == TAKcreaterowcatch)
+    {
+        createRowAllocator();
+        RtlDynamicRowBuilder rowBuilder(rowAllocator);
+        size32_t newSize = helper.transformOnExceptionCaught(rowBuilder, E);
+        if (newSize)
+            buffer->insert(rowBuilder.finalizeRowClear(newSize));
+    }
+    E->Release();
+}
+
+
+const void * CHThorSkipCatchActivity::nextInGroup()
+{
+    if(!buffer)
+    {
+        buffer.setown(new CRowBuffer(input->queryOutputMeta(), true));
+        try
+        {
+            buffer->pull(input, (unsigned __int64) -1);
+        }
+        catch (IException *E)
+        {
+            onException(E);
+        }
+        catch (...)
+        {
+            onException(MakeStringException(2, "Unknown exception caught"));
+        }
+    }
+    const void * next = buffer->next();
+    if(next)
+        processed++;
+    return next;
+}
+
+//=====================================================================================================
+
+CHThorOnFailLimitActivity::CHThorOnFailLimitActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLimitArg &_arg, ThorActivityKind _kind) : CHThorSkipLimitActivity(_agent, _activityId, _subgraphId, _arg, _kind)
+{
+    transformExtra = static_cast<IHThorLimitTransformExtra *>(helper.selectInterface(TAIlimittransformextra_1));
+    assertex(transformExtra);
+}
+
+void CHThorOnFailLimitActivity::onLimitExceeded() 
+{ 
+    buffer->clear(); 
+
+    RtlDynamicRowBuilder rowBuilder(rowAllocator);
+    size32_t newSize = transformExtra->transformOnLimitExceeded(rowBuilder);
+    if (newSize)
+        buffer->insert(rowBuilder.finalizeRowClear(newSize));
+}
+
+//=====================================================================================================
+
+CHThorIfActivity::CHThorIfActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIfArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+    inputTrue = NULL;
+    inputFalse = NULL;
+    selectedInput = NULL;
+}
+
+
+void CHThorIfActivity::done()
+{
+    if (selectedInput)
+        selectedInput->done();
+    CHThorSimpleActivityBase::done();
+}
+
+
+void CHThorIfActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    selectedInput = helper.getCondition() ? inputTrue : inputFalse;
+    if (selectedInput)
+        selectedInput->ready();
+}
+
+
+void CHThorIfActivity::setInput(unsigned index, IHThorInput *_input)
+{
+    if (index==0)
+        inputTrue = _input;
+    else if (index == 1)
+        inputFalse = _input;
+    else
+        CHThorActivityBase::setInput(index, _input);
+}
+
+const void * CHThorIfActivity::nextInGroup()
+{
+    if (!selectedInput)
+        return NULL;
+
+    const void *ret = selectedInput->nextInGroup();
+    if (ret)
+        processed++;
+    return ret;
+}
+
+//=====================================================================================================
+
+CHThorCaseActivity::CHThorCaseActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCaseArg &_arg, ThorActivityKind _kind) : CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorCaseActivity::ready()
+{
+    //Evaluate the condition here to avoid calling ready() on the unused branch?
+    initialProcessed = processed;
+    selectedInput = NULL;
+    unsigned whichBranch = helper.getBranch();
+    if (inputs.isItem(whichBranch))
+    {
+        selectedInput = inputs.item(whichBranch);
+        selectedInput->ready();
+    }
+}
+
+void CHThorCaseActivity::done()
+{
+    if (selectedInput)
+        selectedInput->done();
+}
+
+const void *CHThorCaseActivity::nextInGroup()
+{
+    if (!selectedInput)
+        return NULL;
+
+    const void *ret = selectedInput->nextInGroup();
+    if (ret)
+        processed++;
+    return ret;
+}
+
+
+//=====================================================================================================
+
+CHThorSampleActivity::CHThorSampleActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSampleArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorSampleActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    numSamples = helper.getProportion();
+    whichSample = helper.getSampleNumber();
+    numToSkip = (whichSample ? whichSample-1 : 0);
+    anyThisGroup = false;
+}
+
+const void * CHThorSampleActivity::nextInGroup()
+{
+    loop
+    {
+        OwnedConstHThorRow ret(input->nextInGroup());
+        if (!ret)
+        {
+            //this does work with groups - may or may not be useful...
+            //reset the sample for each group.... probably best.
+            numToSkip = (whichSample ? whichSample-1 : 0);
+            if (anyThisGroup)
+            {
+                anyThisGroup = false;
+                return NULL;
+            }
+            ret.setown(input->nextInGroup());
+            if (!ret)
+                return NULL;                // eof...
+        }
+
+        if (numToSkip == 0)
+        {
+            anyThisGroup = true;
+            numToSkip = numSamples-1;
+            processed++;
+            return ret.getClear();
+        }
+        numToSkip--;
+    }
+}
+
+//=====================================================================================================
+
+CHThorAggregateActivity::CHThorAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorAggregateArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorAggregateActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    eof = false;
+}
+
+const void * CHThorAggregateActivity::nextInGroup()
+{
+    if (eof)
+        return NULL;
+    unsigned count = 0;
+    const void * next = input->nextInGroup();
+    if (!next && input->isGrouped())
+    {
+        eof = true;
+        return NULL;
+    }
+    
+    RtlDynamicRowBuilder rowBuilder(rowAllocator);
+    helper.clearAggregate(rowBuilder);
+    
+    if (next)
+    {
+        helper.processFirst(rowBuilder, next);
+        releaseHThorRow(next);
+        
+        loop
+        {
+            next = input->nextInGroup();
+            if (!next)
+                break;
+            
+            helper.processNext(rowBuilder, next);
+            releaseHThorRow(next);
+        }
+    }
+    
+    if (!input->isGrouped())        // either read all, or aborted early
+        eof = true;
+    
+    count++;
+    size32_t finalSize = outputMeta.getRecordSize(rowBuilder.getSelf());
+    return rowBuilder.finalizeRowClear(finalSize);
+}
+
+//=====================================================================================================
+
+CHThorHashAggregateActivity::CHThorHashAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorHashAggregateArg &_arg, ThorActivityKind _kind) 
+: CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), aggregated(_arg, _arg)
+{
+}
+
+void CHThorHashAggregateActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    eof = false;
+    gathered = false;
+    aggregated.start(rowAllocator);
+}
+
+void CHThorHashAggregateActivity::done()
+{
+    aggregated.reset();
+    CHThorSimpleActivityBase::done();
+}
+
+
+const void * CHThorHashAggregateActivity::nextInGroup()
+{
+    if (eof)
+        return NULL;
+
+    if (!gathered)
+    {
+        loop
+        {
+            OwnedConstHThorRow next(input->nextInGroup());
+            if (!next)
+            {
+                next.setown(input->nextInGroup());
+                if (!next)
+                    break;
+            }
+
+            try
+            {
+                aggregated.addRow(next);
+            }
+            catch(IException * e)
+            {
+                throw makeWrappedException(e);
+            }
+        }
+        gathered = true;
+    }
+
+    Owned<AggregateRowBuilder> next = aggregated.nextResult();
+    if (next)
+    {
+        processed++;
+        return next->finalizeRowClear();
+    }
+    eof = true;
+    return NULL;
+}
+
+//=====================================================================================================
+
+CHThorSelectNActivity::CHThorSelectNActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSelectNArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+const void * CHThorSelectNActivity::defaultRow()
+{
+    if (!rowAllocator)                  
+        createRowAllocator();            //We delay as often not needed...
+    RtlDynamicRowBuilder rowBuilder(rowAllocator);
+    size32_t thisSize = helper.createDefault(rowBuilder);
+    return rowBuilder.finalizeRowClear(thisSize);
+}
+
+void CHThorSelectNActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    finished = false;
+}
+
+const void * CHThorSelectNActivity::nextInGroup()
+{
+    if (finished)
+        return NULL;
+
+    finished = true;
+    unsigned __int64 index = helper.getRowToSelect();
+    while (--index)
+    {
+        OwnedConstHThorRow next(input->nextInGroup());
+        if (!next)
+            next.setown(input->nextInGroup());
+        if (!next)
+        {
+            processed++;
+            return defaultRow();
+        }
+    }
+
+    OwnedConstHThorRow next(input->nextInGroup());
+    if (!next)
+        next.setown(input->nextInGroup());
+    if (!next)
+        next.setown(defaultRow());
+
+    processed++;
+    return next.getClear();
+}
+
+//=====================================================================================================
+
+CHThorFirstNActivity::CHThorFirstNActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorFirstNArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+    grouped = outputMeta.isGrouped();
+}
+
+void CHThorFirstNActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    skip = helper.numToSkip();
+    limit = helper.getLimit();
+    doneThisGroup = 0;
+    finished = (limit == 0);
+    if (limit + skip >= limit)
+        limit += skip;
+}
+
+const void * CHThorFirstNActivity::nextInGroup()
+{
+    if (finished)
+        return NULL;
+
+    OwnedConstHThorRow ret;
+    loop
+    {
+        ret.setown(input->nextInGroup());
+        if (!ret)
+        {
+            if (grouped)
+            {
+                if (doneThisGroup > skip)
+                {
+                    doneThisGroup = 0;
+                    return NULL;
+                }
+                doneThisGroup = 0;
+            }
+
+            ret.setown(input->nextInGroup());
+            if (!ret)
+            {
+                finished = true;
+                return NULL;
+            }
+
+        }
+        doneThisGroup++;
+        if (doneThisGroup > skip)
+            break;
+    }
+
+    if (doneThisGroup <= limit)
+    {
+        processed++;
+        return ret.getClear();
+    }
+
+    if (grouped)
+    {
+        ret.setown(input->nextInGroup());
+        while (ret)
+            ret.setown(input->nextInGroup());
+        doneThisGroup = 0;
+    }
+    else
+        finished = true;
+    return NULL;
+}
+
+//=====================================================================================================
+
+CHThorChooseSetsActivity::CHThorChooseSetsActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChooseSetsArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+    numSets = helper.getNumSets();
+    setCounts = new unsigned[numSets];
+}
+
+CHThorChooseSetsActivity::~CHThorChooseSetsActivity()
+{
+    delete [] setCounts;
+}
+
+void CHThorChooseSetsActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    finished = false;
+    memset(setCounts, 0, sizeof(unsigned)*numSets);
+    helper.setCounts(setCounts);
+}
+
+const void * CHThorChooseSetsActivity::nextInGroup()
+{
+    if (finished)
+        return NULL;
+
+    loop
+    {
+        OwnedConstHThorRow ret(input->nextInGroup());
+        if (!ret)
+        {
+            ret.setown(input->nextInGroup());
+            if (!ret)
+                return NULL;
+        }
+        processed++;
+        switch (helper.getRecordAction(ret))
+        {
+        case 2:
+            finished = true;
+            return ret.getClear();
+        case 1:
+            return ret.getClear();
+        }
+    }
+}
+
+//=====================================================================================================
+
+CHThorChooseSetsExActivity::CHThorChooseSetsExActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChooseSetsExArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+    numSets = helper.getNumSets();
+    setCounts = new unsigned[numSets];
+    memset(setCounts, 0, sizeof(unsigned)*numSets);
+    limits = (count_t *)checked_calloc(sizeof(count_t), numSets, "choose sets ex");
+    helper.getLimits(limits);
+}
+
+CHThorChooseSetsExActivity::~CHThorChooseSetsExActivity()
+{
+    delete [] setCounts;
+    free(limits);
+}
+
+void CHThorChooseSetsExActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    finished = false;
+    curIndex = 0;
+    memset(setCounts, 0, sizeof(unsigned)*numSets);
+}
+
+void CHThorChooseSetsExActivity::done()
+{
+    gathered.clear();
+    CHThorSimpleActivityBase::done();
+}
+
+const void * CHThorChooseSetsExActivity::nextInGroup()
+{
+    if (gathered.ordinality() == 0)
+    {
+        curIndex = 0;
+        const void * next = input->nextInGroup();
+        while(next)
+        {
+            gathered.append(next);
+            next = input->nextInGroup();
+        }
+        if(gathered.ordinality() == 0)
+        {
+            finished = true;
+            return NULL;
+        }
+
+        ForEachItemIn(idx1, gathered)
+        {
+            unsigned category = helper.getCategory(gathered.item(idx1));
+            if (category)
+                setCounts[category-1]++;
+        }
+        calculateSelection();
+    }
+
+    while (gathered.isItem(curIndex))
+    {
+        OwnedConstHThorRow row(gathered.itemClear(curIndex++));
+        if (includeRow(row))
+        {
+            processed++;
+            return row.getClear();
+        }
+    }
+
+    gathered.clear();
+    return NULL;
+}
+
+
+//=====================================================================================================
+
+CHThorChooseSetsLastActivity::CHThorChooseSetsLastActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChooseSetsExArg &_arg, ThorActivityKind _kind) : CHThorChooseSetsExActivity(_agent, _activityId, _subgraphId, _arg, _kind)
+{ 
+    numToSkip = (unsigned *)checked_calloc(sizeof(unsigned), numSets, "choose sets last");
+}
+
+CHThorChooseSetsLastActivity::~CHThorChooseSetsLastActivity() 
+{ 
+    free(numToSkip); 
+}
+
+void CHThorChooseSetsLastActivity::ready()
+{
+    CHThorChooseSetsExActivity::ready();
+    memset(numToSkip, 0, sizeof(unsigned) * numSets);
+}
+
+void CHThorChooseSetsLastActivity::calculateSelection()
+{
+    for (unsigned idx=0; idx < numSets; idx++)
+    {
+        if (setCounts[idx] < limits[idx])
+            numToSkip[idx] = 0;
+        else
+            numToSkip[idx] = (unsigned)(setCounts[idx] - limits[idx]);
+    }
+}
+
+
+bool CHThorChooseSetsLastActivity::includeRow(const void * row)
+{
+    unsigned category = helper.getCategory(row);
+    if (category)
+    {
+        if (numToSkip[category-1] == 0)
+            return true;
+        numToSkip[category-1]--;
+    }
+    return false;       
+}
+
+
+//=====================================================================================================
+
+CHThorChooseSetsEnthActivity::CHThorChooseSetsEnthActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChooseSetsExArg &_arg, ThorActivityKind _kind) : CHThorChooseSetsExActivity(_agent, _activityId, _subgraphId, _arg, _kind)
+{ 
+    counter = (unsigned __int64 *)checked_calloc(sizeof(unsigned __int64), numSets, "choose sets enth");
+}
+
+CHThorChooseSetsEnthActivity::~CHThorChooseSetsEnthActivity() 
+{ 
+    free(counter); 
+}
+
+void CHThorChooseSetsEnthActivity::ready()
+{
+    CHThorChooseSetsExActivity::ready();
+    memset(counter, 0, sizeof(unsigned __int64) * numSets);
+}
+
+void CHThorChooseSetsEnthActivity::calculateSelection()
+{
+}
+
+
+bool CHThorChooseSetsEnthActivity::includeRow(const void * row)
+{
+    unsigned category = helper.getCategory(row);
+    if (category)
+    {
+        counter[category-1] += limits[category-1];
+        if(counter[category-1] >= setCounts[category-1])
+        {
+            counter[category-1] -= setCounts[category-1];
+            return true;
+        }       
+    }
+    return false;       
+}
+
+
+//=====================================================================================================
+
+CHThorDegroupActivity::CHThorDegroupActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDegroupArg &_arg, ThorActivityKind _kind) : CHThorSteppableActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+const void * CHThorDegroupActivity::nextInGroup()
+{
+    const void * ret = nextUngrouped(input);
+    if (ret)
+        processed++;
+    return ret;
+}
+
+const void * CHThorDegroupActivity::nextGE(const void * seek, unsigned numFields)
+{
+    const void * ret = input->nextGE(seek, numFields);
+    if (ret)
+        processed++;
+    return ret;
+}
+
+
+bool CHThorDegroupActivity::isGrouped()
+{
+    return false;
+}
+
+//=====================================================================================================
+
+CHThorGroupActivity::CHThorGroupActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGroupArg &_arg, ThorActivityKind _kind) : CHThorSteppableActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+bool CHThorGroupActivity::isGrouped()
+{
+    return true;
+}
+
+void CHThorGroupActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    next.clear();
+    endPending = false;
+    firstDone = false;
+}
+
+void CHThorGroupActivity::done()
+{
+    CHThorSimpleActivityBase::done();
+    next.clear();
+}
+
+const void *CHThorGroupActivity::nextInGroup()
+{
+    if (!firstDone)
+    {
+        firstDone = true;
+        next.setown(input->nextInGroup());
+    }
+
+    if (endPending)
+    {
+        endPending = false;
+        return NULL;
+    }
+
+    OwnedConstHThorRow prev(next.getClear());
+    next.setown(input->nextInGroup());
+    if (!next)  // skip incoming groups. (should it sub-group??)
+        next.setown(input->nextInGroup());
+
+    if (next)
+    {
+        assertex(prev);  // If this fails, you have an initial empty group. That is not legal.
+        if (!helper.isSameGroup(prev, next))
+            endPending = true;
+    }
+    if (prev)
+        processed++;
+    return prev.getClear();
+}
+
+const void * CHThorGroupActivity::nextGE(const void * seek, unsigned numFields)
+{
+    if (firstDone)
+    {
+        if (next)
+        {
+            if (stepCompare->docompare(next, seek, numFields) >= 0)
+                return nextInGroup();
+        }
+    }
+    next.setown(input->nextGE(seek, numFields));
+    firstDone = true;
+    return nextInGroup();
+}
+
+//=====================================================================================================
+
+CHThorGroupSortActivity::CHThorGroupSortActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSortArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+    gotSorted = false;
+}
+
+void CHThorGroupSortActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    eof = false;
+    spillThreshold = (memsize_t)agent.queryWorkUnit()->getDebugValueInt64("hthorSpillThreshold", defaultHThorSpillThreshold);
+    memsize_t totalMemoryLimit = roxiemem::getTotalMemoryLimit() * 1024 * 1024;
+    spillThreshold = (memsize_t)std::min(spillThreshold, totalMemoryLimit / 3);
+    if(!sorter)
+        createSorter();
+}
+
+void CHThorGroupSortActivity::done()
+{
+    if(sorter)
+        if(sorterIsConst)
+            sorter->killSorted();
+        else
+            sorter.clear();
+    gotSorted = false;
+    diskReader.clear();
+    CHThorSimpleActivityBase::done();
+}
+
+const void *CHThorGroupSortActivity::nextInGroup()
+{
+    if(!gotSorted)
+        getSorted();
+    if(eof)
+        return NULL;
+
+    if(diskReader)
+    {
+        const void *row = diskReader->nextRow();
+        if (row)
+            return row;
+        diskReader.clear();
+    }
+    else
+    {
+        const void * ret = sorter->getNextSorted();
+        if(ret)
+        {
+            processed++;
+            return ret;
+        }
+    }
+    sorter->killSorted();
+    gotSorted = false;
+    return NULL;
+}
+
+void CHThorGroupSortActivity::createSorter()
+{
+    sorterIsConst = true;
+    IHThorAlgorithm * algo = static_cast<IHThorAlgorithm *>(helper.selectInterface(TAIalgorithm_1));
+    if(!algo)
+    {
+        sorter.setown(new CHeapSorter(helper.queryCompare()));
+        return;
+    }
+    unsigned flags = algo->getAlgorithmFlags();
+    sorterIsConst = ((flags & TAFconstant) != 0);
+    char const * algoname = algo->queryAlgorithm();
+    if(!algoname)
+    {
+        if((flags & TAFunstable) != 0)
+            sorter.setown(new CQuickSorter(helper.queryCompare()));
+        else
+            sorter.setown(new CHeapSorter(helper.queryCompare()));
+        return;
+    }
+    if(stricmp(algoname, "quicksort") == 0)
+        if((flags & TAFstable) != 0)
+            sorter.setown(new CStableQuickSorter(helper.queryCompare()));
+        else
+            sorter.setown(new CQuickSorter(helper.queryCompare()));
+    else if(stricmp(algoname, "heapsort") == 0)
+        sorter.setown(new CHeapSorter(helper.queryCompare()));
+    else if(stricmp(algoname, "insertionsort") == 0)
+        if((flags & TAFstable) != 0)
+            sorter.setown(new CStableInsertionSorter(helper.queryCompare()));
+        else
+            sorter.setown(new CInsertionSorter(helper.queryCompare()));
+    else
+        throw MakeStringException(0, "Requested sort algorithm %s which is not provided by hthor", algoname);
+}
+
+void CHThorGroupSortActivity::getSorted()
+{
+    diskMerger.clear();
+    diskReader.clear();
+    memsize_t grpSize = 0;
+    const void * next;
+    while((next = input->nextInGroup()) != NULL)
+    {
+        size32_t nextSize = input->queryOutputMeta()->getRecordSize(next);
+        if((grpSize+nextSize) > spillThreshold) //Spill ??
+        {
+            if(!diskMerger)
+            {
+                StringBuffer fbase;
+                agent.getTempfileBase(fbase).appendf(".spill_sort_%p", this);
+                PROGLOG("SORT: spilling to disk, filename base %s", fbase.str());
+                class CHThorRowLinkCounter : public CSimpleInterface, implements IRowLinkCounter
+                {
+                public:
+                    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+                    virtual void releaseRow(const void *row)
+                    {
+                        releaseHThorRow(row);
+                    }
+                    virtual void linkRow(const void *row)
+                    {
+                        linkHThorRow(row);
+                    }
+                };
+                Owned<IRowLinkCounter> linker = new CHThorRowLinkCounter();
+                Owned<IRowInterfaces> rowInterfaces = createRowInterfaces(input->queryOutputMeta(), activityId, agent.queryCodeContext());
+                diskMerger.setown(createDiskMerger(rowInterfaces, linker, fbase.str()));
+            }
+            sorter->performSort();
+            sorter->spillSortedToDisk(diskMerger);
+            grpSize = 0;
+        }
+        sorter->addRow(next);
+        grpSize += nextSize;
+    }
+
+    if(diskMerger)
+    {
+        sorter->performSort();
+        sorter->spillSortedToDisk(diskMerger);
+        ICompare *compare = helper.queryCompare();
+        assertex(compare);
+        diskReader.setown(diskMerger->merge(compare));
+    }
+    else if(grpSize)
+    {
+        sorter->performSort();
+    }
+    else
+    {
+        eof = true;
+    }
+    gotSorted = true;
+}
+
+// Base for Quick sort and both Insertion sorts
+
+void CSimpleSorterBase::spillSortedToDisk(IDiskMerger * merger)
+{
+    Owned<IRowWriter> out = merger->createWriteBlock();
+    loop
+    {
+        const void *row = getNextSorted();
+        if (!row)
+            break;
+        linkHThorRow(row);
+        out->putRow(row);
+    }
+    ForEachItemIn(idxx, rows)
+        releaseHThorRow(rows.item(idxx));
+    rows.kill();
+}
+
+const void * CSimpleSorterBase::getNextSorted()
+{
+    if(finger < rows.ordinality())
+        return rows.item(finger++);
+    else
+        return NULL;
+}
+
+void CSimpleSorterBase::killSorted()
+{
+    while(rows.isItem(finger))
+        releaseHThorRow(rows.item(finger++));
+    rows.kill();
+}
+
+// Quick sort
+
+void CQuickSorter::performSort()
+{
+    qsortvec((void * *)rows.getArray(), rows.ordinality(), *compare);
+    finger = 0;
+}
+
+// StableQuick sort
+
+void CStableQuickSorter::performSort()
+{
+    index = (void ***)realloc(index, rows.ordinality()*sizeof(void**));
+    qsortvecstable((void * *)rows.getArray(), rows.ordinality(), *compare, index);
+    finger = 0;
+}
+
+const void * CStableQuickSorter::getNextSorted()
+{
+    if(finger < rows.ordinality())
+        return *(index[finger++]);
+    else
+        return NULL;
+}
+
+void CStableQuickSorter::killSorted()
+{
+    while(finger < rows.ordinality())
+        releaseHThorRow(*(index[finger++]));
+    rows.kill();
+    free(index);
+    index = NULL;
+}
+
+// Heap sort
+
+void CHeapSorter::addRow(const void * next)
+{
+    heap.append(heapsize);
+    rows.append(next);
+    heap_push_up(heapsize, heap.getArray(), rows.getArray(), compare);
+    ++heapsize;
+}
+
+void CHeapSorter::spillSortedToDisk(IDiskMerger * merger)
+{
+    CSimpleSorterBase::spillSortedToDisk(merger);
+    heap.kill();
+    heapsize = 0;
+}
+
+const void * CHeapSorter::getNextSorted()
+{
+    if(heapsize)
+    {
+        unsigned top = heap.item(0);
+        --heapsize;
+        heap.replace(heap.item(heapsize), 0);
+        heap_push_down(0, heapsize, heap.getArray(), rows.getArray(), compare);
+        return rows.item(top);
+    }
+    else
+    {
+        return NULL;
+    }
+}
+
+void CHeapSorter::killSorted()
+{
+    for(unsigned i=0; i<heapsize; ++i)
+        releaseHThorRow(rows.item(heap.item(i)));
+    rows.kill();
+    heap.kill();
+    heapsize = 0;
+}
+
+// Insertion sorts
+
+void CInsertionSorter::addRow(const void * next)
+{
+    rows.append(NULL);
+    binary_vec_insert(next, rows.getArray(), rows.ordinality()-1, *compare);
+}
+
+void CStableInsertionSorter::addRow(const void * next)
+{
+    rows.append(NULL);
+    binary_vec_insert_stable(next, rows.getArray(), rows.ordinality()-1, *compare);
+}
+
+//=====================================================================================================
+
+CHThorGroupedActivity::CHThorGroupedActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGroupedArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorGroupedActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    firstDone = false;
+    nextRowIndex = 0;
+}
+
+void CHThorGroupedActivity::done()
+{
+    CHThorSimpleActivityBase::done();
+    next[0].clear();
+    next[1].clear();
+    next[2].clear();
+}
+
+const void *CHThorGroupedActivity::nextInGroup()
+{
+    if (!firstDone)
+    {
+        next[0].setown(input->nextInGroup());
+        next[1].setown(input->nextInGroup());
+        nextRowIndex = 0;
+    }
+
+    unsigned nextToCompare = (nextRowIndex + 1) % 3;
+    unsigned nextToFill  = (nextRowIndex + 2) % 3;
+    next[nextToFill].setown(input->nextInGroup());
+
+    OwnedConstHThorRow ret(next[nextRowIndex].getClear());
+    if (ret)
+    {
+        if (next[nextToCompare]) 
+        {
+            if (!helper.isSameGroup(ret, next[nextToCompare]))
+                throw MakeStringException(100, "GROUPED(%u), expected a group break between adjacent rows (rows %" I64F "d, %" I64F "d) ", activityId, processed+1, processed+2);
+        }
+        else if (next[nextToFill])
+        {
+            if (helper.isSameGroup(ret, next[nextToFill]))
+                throw MakeStringException(100, "GROUPED(%u), unexpected group break found between rows %" I64F "d and %" I64F "d)", activityId, processed+1, processed+2);
+        }
+        processed++;
+    }
+    nextRowIndex = nextToCompare;
+    return ret.getClear();
+}
+
+//=====================================================================================================
+
+CHThorSortedActivity::CHThorSortedActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSortedArg &_arg, ThorActivityKind _kind) : CHThorSteppableActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+    //MORE: Should probably have a inter group and intra group sort functions
+    compare = helper.queryCompare();
+}
+
+void CHThorSortedActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    firstDone = false;
+}
+
+void CHThorSortedActivity::done()
+{
+    CHThorSimpleActivityBase::done();
+    next.clear();
+}
+
+const void *CHThorSortedActivity::nextInGroup()
+{
+    if (!firstDone)
+    {
+        firstDone = true;
+        next.setown(input->nextInGroup());
+    }
+
+    OwnedConstHThorRow prev(next.getClear());
+    next.setown(input->nextInGroup());
+    if (prev && next)
+        if (compare->docompare(prev, next) > 0)
+            throw MakeStringException(100, "SORTED(%u) detected incorrectly sorted rows  (row %" I64F "d,  %" I64F "d))", activityId, processed+1, processed+2);
+    if (prev)
+        processed++;
+    return prev.getClear();
+}
+
+const void * CHThorSortedActivity::nextGE(const void * seek, unsigned numFields)
+{
+    if (next)
+    {
+        if (stepCompare->docompare(next, seek, numFields) >= 0)
+            return nextInGroup();
+    }
+
+    firstDone = true;
+    next.setown(input->nextGE(seek, numFields));
+    return nextInGroup();
+}
+
+
+//=====================================================================================================
+
+void getLimitType(unsigned flags, bool & limitFail, bool & limitOnFail)
+{
+    if((flags & JFmatchAbortLimitSkips) != 0)
+    {
+        limitFail = false;
+        limitOnFail = false;
+    }
+    else
+    {
+        limitOnFail = ((flags & JFonfail) != 0);
+        limitFail = !limitOnFail;
+    }
+}
+
+CHThorJoinActivity::CHThorJoinActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorJoinArg &_arg, ThorActivityKind _kind) 
+                : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), outBuilder(NULL)
+{
+}
+
+void CHThorJoinActivity::ready()
+{
+    CHThorActivityBase::ready();
+    input1->ready();
+
+    outBuilder.setAllocator(rowAllocator);
+    leftOuterJoin = (helper.getJoinFlags() & JFleftouter) != 0;
+    rightOuterJoin = (helper.getJoinFlags() & JFrightouter) != 0;
+    exclude = (helper.getJoinFlags() & JFexclude) != 0;
+    getLimitType(helper.getJoinFlags(), limitFail, limitOnFail);
+    if (rightOuterJoin && !defaultLeft)
+        createDefaultLeft();    
+    if ((leftOuterJoin || limitOnFail) && !defaultRight)
+        createDefaultRight();   
+    betweenjoin = ((helper.getJoinFlags() & JFslidingmatch) != 0);
+    assertex(!(betweenjoin && rightOuterJoin));
+
+    keepLimit = helper.getKeepLimit();
+    if (keepLimit == 0)
+        keepLimit = (unsigned)-1;
+    atmostLimit = helper.getJoinLimit();
+    if(atmostLimit == 0)
+        atmostLimit = (unsigned)-1;
+    else
+        assertex(!rightOuterJoin && !betweenjoin);
+    abortLimit = helper.getMatchAbortLimit();
+    if (abortLimit == 0) 
+        abortLimit = (unsigned)-1;
+
+    assertex((helper.getJoinFlags() & (JFfirst | JFfirstleft | JFfirstright)) == 0); // no longer supported
+
+    if(betweenjoin)
+    {
+        collate = helper.queryCompareLeftRightLower();
+        collateupper = helper.queryCompareLeftRightUpper();
+    }
+    else
+    {
+        collate = collateupper = helper.queryCompareLeftRight();
+    }
+
+    rightIndex = 0;
+    failingLimit.clear();
+    state = JSfill;
+    if ((helper.getJoinFlags() & JFlimitedprefixjoin) && helper.getJoinLimit()) 
+    {   //Limited Match Join (s[1..n])
+        limitedhelper.setown(createRHLimitedCompareHelper());
+        limitedhelper->init( helper.getJoinLimit(), input1, collate, helper.queryPrefixCompare() );
+    }
+}
+
+void CHThorJoinActivity::done()
+{
+    outBuilder.clear();
+    right.clear();
+    left.clear();
+    pendingRight.clear();
+    CHThorActivityBase::done();
+    input1->done();
+}
+
+void CHThorJoinActivity::setInput(unsigned index, IHThorInput *_input)
+{
+    if (index==1)
+        input1 = _input;
+    else
+        CHThorActivityBase::setInput(index, _input);
+}
+
+void CHThorJoinActivity::createDefaultLeft()
+{
+    if (!defaultLeft)
+    {
+        if (!defaultLeftAllocator)
+            defaultLeftAllocator.setown(agent.queryCodeContext()->getRowAllocator(input->queryOutputMeta(), activityId));
+
+        RtlDynamicRowBuilder rowBuilder(defaultLeftAllocator);
+        size32_t thisSize = helper.createDefaultLeft(rowBuilder);
+        defaultLeft.setown(rowBuilder.finalizeRowClear(thisSize));
+    }
+}
+
+void CHThorJoinActivity::createDefaultRight()
+{
+    if (!defaultRight)
+    {
+        if (!defaultRightAllocator)
+            defaultRightAllocator.setown(agent.queryCodeContext()->getRowAllocator(input1->queryOutputMeta(), activityId));
+
+        RtlDynamicRowBuilder rowBuilder(defaultRightAllocator);
+        size32_t thisSize = helper.createDefaultRight(rowBuilder);
+        defaultRight.setown(rowBuilder.finalizeRowClear(thisSize));
+    }
+}
+
+
+void CHThorJoinActivity::fillLeft()
+{
+    matchedLeft = false;
+    left.setown(input->nextInGroup());
+    if (!left)
+        left.setown(input->nextInGroup());
+    if(betweenjoin && left && pendingRight && (collate->docompare(left, pendingRight) >= 0))
+        fillRight();
+    if (limitedhelper && 0==rightIndex)
+    {
+        rightIndex = 0;
+        right.clear();
+        matchedRight.kill();
+        if (left)
+        {
+            limitedhelper->getGroup(right,left);
+            ForEachItemIn(idx, right)
+                matchedRight.append(false);
+        }
+    }
+}
+
+void CHThorJoinActivity::fillRight()
+{
+    if (limitedhelper)
+        return;
+    failingLimit.clear();
+    if(betweenjoin && left)
+    {
+        aindex_t start = 0;
+        while(right.isItem(start) && (collateupper->docompare(left, right.item(start)) > 0))
+            start++;
+        if(start>0)
+            right.clearPart(0, start);
+    }
+    else
+        right.clear();
+    rightIndex = 0;
+    unsigned groupCount = 0;
+    while(true)
+    {
+        OwnedConstHThorRow next;
+        if(pendingRight)
+        {
+            next.setown(pendingRight.getClear());
+        }
+        else
+        {
+            next.setown(input1->nextInGroup());
+        }
+        if(!rightOuterJoin && next && (!left || (collateupper->docompare(left, next) > 0))) // if right is less than left, and not right outer, can skip group
+        {
+            while(next) 
+                next.setown(input1->nextInGroup());
+            continue;
+        }
+        while(next)
+        {
+            if(groupCount==abortLimit)
+            {
+                if(limitFail)
+                    failLimit();
+                if ( agent.queryCodeContext()->queryDebugContext())
+                    agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
+                if(limitOnFail)
+                {
+                    assertex(!failingLimit);
+                    try
+                    {
+                        failLimit();
+                    }
+                    catch(IException * except)
+                    {
+                        failingLimit.setown(except);
+                    }
+                    assertex(failingLimit);
+                }
+                right.append(next.getClear());
+                do
+                {
+                    next.setown(input1->nextInGroup());
+                } while(next);
+                break;
+            }
+            else if(groupCount==atmostLimit)
+            {
+                right.clear();
+                groupCount = 0;
+                while(next) 
+                {
+                    next.setown(input1->nextInGroup());
+                }
+            }
+            else
+            {
+                right.append(next.getClear());
+                groupCount++;
+            }
+            next.setown(input1->nextInGroup());
+            
+        }
+        // normally only want to read one right group, but if is between join and next right group is in window for left, need to continue
+        if(betweenjoin && left)
+        {
+            pendingRight.setown(input1->nextInGroup());
+            if(!pendingRight || (collate->docompare(left, pendingRight) < 0))
+                break;
+        }
+        else
+            break;
+    }
+
+    matchedRight.kill();
+    ForEachItemIn(idx, right)
+        matchedRight.append(false);
+}
+
+const void * CHThorJoinActivity::joinRecords(const void * curLeft, const void * curRight)
+{
+    try
+    {
+        outBuilder.ensureRow();
+        size32_t thisSize = helper.transform(outBuilder, curLeft, curRight);
+        if(thisSize)
+            return outBuilder.finalizeRowClear(thisSize);
+        else
+            return NULL;
+    }
+    catch(IException * e)
+    {
+        throw makeWrappedException(e);
+    }
+}
+
+const void * CHThorJoinActivity::groupDenormalizeRecords(const void * curLeft, ConstPointerArray & rows)
+{
+    try
+    {
+        outBuilder.ensureRow();
+        unsigned numRows = rows.ordinality();
+        const void * rhs = numRows ? rows.item(0) : defaultRight.get();
+        memsize_t thisSize = helper.transform(outBuilder, curLeft, rhs, numRows, (const void * *)rows.getArray());
+        if(thisSize)
+            return outBuilder.finalizeRowClear(thisSize);
+        else
+            return NULL;
+    }
+    catch(IException * e)
+    {
+        throw makeWrappedException(e);
+    }
+}
+
+const void * CHThorJoinActivity::joinException(const void * curLeft, IException * except)
+{
+    try
+    {
+        outBuilder.ensureRow();
+        size32_t thisSize = helper.onFailTransform(outBuilder, curLeft, defaultRight, except);
+        if(thisSize)
+            return outBuilder.finalizeRowClear(thisSize);
+        else
+            return NULL;
+    }
+    catch(IException * e)
+    {
+        throw makeWrappedException(e);
+    }
+}
+
+void CHThorJoinActivity::failLimit()
+{
+    helper.onMatchAbortLimitExceeded();
+    CommonXmlWriter xmlwrite(0);
+    if (input->queryOutputMeta() && input->queryOutputMeta()->hasXML())
+    {
+        input->queryOutputMeta()->toXML((byte *)left.get(), xmlwrite);
+    }
+    throw MakeStringException(0, "More than %d match candidates in join for row %s", abortLimit, xmlwrite.str());
+}
+
+const void *CHThorJoinActivity::nextInGroup()
+{
+    loop
+    {
+        switch (state)
+        {
+        case JSfill:
+            fillLeft();
+            state = JSfillright;
+            break;
+
+        case JSfillright:
+            fillRight();
+            state = JScollate;
+            break;
+
+        case JSfillleft:
+            fillLeft();
+            state = JScollate;
+            break;
+
+        case JScollate:
+            if (right.ordinality() == 0)
+            {
+                if (!left)
+                    return NULL;
+                state = JSleftonly;
+            }
+            else
+            {
+                if (!left)
+                    state = JSrightonly;
+                else
+                {
+                    int diff;
+                    if(betweenjoin)
+                        diff = ((collate->docompare(left, right.item(0)) < 0) ? -1 : ((collateupper->docompare(left, right.item(right.ordinality()-1)) > 0) ? +1 : 0));
+                    else
+                        diff = collate->docompare(left, right.item(0));
+                    bool limitExceeded =  right.ordinality()>abortLimit;
+                    if (diff == 0)
+                    {
+                        if (limitExceeded)
+                        {
+                            const void * ret = NULL;
+                            if(failingLimit)
+                            {
+                                if ( agent.queryCodeContext()->queryDebugContext())
+                                    agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
+                                ret = joinException(left, failingLimit);
+                            }
+                            left.clear();
+                            state = JSfillleft;
+                            ForEachItemIn(idx, right)
+                                matchedRight.replace(true, idx);
+                            if(ret)
+                            {
+                                processed++;
+                                return ret;
+                            }
+                        }
+                        else
+                        {
+                            state = JScompare;
+                            joinLimit = keepLimit;
+                        }
+                    }
+                    else if (diff < 0)
+                        state = JSleftonly;
+                    else if (limitExceeded)
+                    {
+                        // MORE - Roxie code seems to think there should be a destroyRowset(right) here....
+                        state = JSfillright;
+                    }
+                    else
+                        state = JSrightonly;
+                }
+            }
+            break;
+
+        case JSrightonly:
+            if (rightOuterJoin)
+            {
+                switch (kind)
+                {
+                case TAKjoin:
+                    {
+                        while (right.isItem(rightIndex))
+                        {
+                            if (!matchedRight.item(rightIndex))
+                            {
+                                const void * rhs = right.item(rightIndex++);
+                                const void * ret = joinRecords(defaultLeft, rhs);
+                                if (ret)
+                                {
+                                    processed++;
+                                    return ret;
+                                }
+                            }
+                            rightIndex++;
+                        }
+                        break;
+                    }
+                //Probably excessive to implement the following, but possibly useful
+                case TAKdenormalize:
+                    {
+                        OwnedConstHThorRow newLeft(defaultLeft.getLink());
+                        unsigned rowSize = 0;
+                        unsigned leftCount = 0;
+                        while (right.isItem(rightIndex))
+                        {
+                            if (!matchedRight.item(rightIndex))
+                            {
+                                const void * rhs = right.item(rightIndex);
+                                try
+                                {
+                                    RtlDynamicRowBuilder rowBuilder(rowAllocator);
+                                    size32_t thisSize = helper.transform(rowBuilder, newLeft, rhs, ++leftCount);
+                                    if (thisSize)
+                                    {
+                                        rowSize = thisSize;
+                                        newLeft.setown(rowBuilder.finalizeRowClear(rowSize));
+                                    }
+                                }
+                                catch(IException * e)
+                                {
+                                    throw makeWrappedException(e);
+                                }
+                            }
+                            rightIndex++;
+                        }
+                        state = JSfillright;
+                        if (rowSize)
+                        {
+                            processed++;
+                            return newLeft.getClear();
+                        }
+                        break;
+                    }
+                case TAKdenormalizegroup:
+                    {
+                        filteredRight.kill();
+                        while (right.isItem(rightIndex))
+                        {
+                            if (!matchedRight.item(rightIndex))
+                                filteredRight.append(right.item(rightIndex));
+                            rightIndex++;
+                        }
+                        state = JSfillright;
+                        if (filteredRight.ordinality())
+                        {
+                            const void * ret = groupDenormalizeRecords(defaultLeft, filteredRight);
+                            filteredRight.kill();
+
+                            if (ret)
+                            {
+                                processed++;
+                                return ret;
+                            }
+                        }
+                        break;
+                    }
+                default:
+                    throwUnexpected();
+                }
+            }
+            state = JSfillright;
+            break;
+            
+        case JSleftonly:
+        {
+            const void * ret = NULL;
+            if (!matchedLeft && leftOuterJoin)
+            {
+                switch (kind)
+                {
+                case TAKjoin:
+                    ret = joinRecords(left, defaultRight);
+                    break;
+                case TAKdenormalize:
+                    ret = left.getClear();
+                    break;
+                case TAKdenormalizegroup:
+                    filteredRight.kill();
+                    ret = groupDenormalizeRecords(left, filteredRight);
+                    break;
+                default:
+                    throwUnexpected();
+                }
+            }
+            left.clear();
+            state = JSfillleft;
+            if (ret)
+            {
+                processed++;
+                return ret;
+            }
+            break;
+        }
+
+        case JScompare:
+            if (joinLimit != 0)
+            {
+                switch (kind)
+                {
+                case TAKjoin:
+                    {
+                        while (right.isItem(rightIndex))
+                        {
+                            const void * rhs = right.item(rightIndex++);
+                            if (helper.match(left, rhs))
+                            {
+                                matchedRight.replace(true, rightIndex-1);
+                                matchedLeft = true;
+                                if (!exclude)
+                                {
+                                    const void *ret = joinRecords(left, rhs);
+                                    if (ret)
+                                    {
+                                        processed++;
+                                        joinLimit--;
+                                        return ret;
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    }
+                case TAKdenormalize:
+                    {
+                        OwnedConstHThorRow newLeft;
+                        newLeft.set(left);
+                        unsigned rowSize = 0;
+                        unsigned leftCount = 0;
+                        while (right.isItem(rightIndex) && joinLimit)
+                        {
+                            const void * rhs = right.item(rightIndex++);
+                            if (helper.match(left, rhs))
+                            {
+                                matchedRight.replace(true, rightIndex-1);
+                                matchedLeft = true;
+                                if (!exclude)
+                                {
+                                    try
+                                    {
+                                        RtlDynamicRowBuilder rowBuilder(rowAllocator);
+                                        unsigned thisSize = helper.transform(rowBuilder, newLeft, rhs, ++leftCount);
+                                        if (thisSize)
+                                        {
+                                            rowSize = thisSize;
+                                            newLeft.setown(rowBuilder.finalizeRowClear(rowSize));
+                                            joinLimit--;
+                                        }
+                                    }
+                                    catch(IException * e)
+                                    {
+                                        throw makeWrappedException(e);
+                                    }
+                                }
+                            }
+                        }
+                        state = JSleftonly;
+                        rightIndex = 0;
+                        if (rowSize)
+                        {
+                            processed++;
+                            return newLeft.getClear();
+                        }
+                        break;
+                    }
+                case TAKdenormalizegroup:
+                    {
+                        filteredRight.kill();
+                        while (right.isItem(rightIndex))
+                        {
+                            const void * rhs = right.item(rightIndex++);
+                            if (helper.match(left, rhs))
+                            {
+                                matchedRight.replace(true, rightIndex-1);
+                                filteredRight.append(rhs);
+                                matchedLeft = true;
+                                if (filteredRight.ordinality()==joinLimit)
+                                    break;
+                            }
+                        }
+                        state = JSleftonly;
+                        rightIndex = 0;
+
+                        if (!exclude && filteredRight.ordinality())
+                        {
+                            const void * ret = groupDenormalizeRecords(left, filteredRight);
+                            filteredRight.kill();
+
+                            if (ret)
+                            {
+                                processed++;
+                                return ret;
+                            }
+                        }
+                        break;
+                    }
+                default:
+                    throwUnexpected();
+                }
+            }
+            state = JSleftonly;
+            rightIndex = 0;
+            break;
+        }
+    }
+}
+
+bool CHThorJoinActivity::isGrouped()
+{
+    return false;
+}
+
+//=====================================================================================================
+
+CHThorSelfJoinActivity::CHThorSelfJoinActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorJoinArg &_arg, ThorActivityKind _kind) 
+        : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), outBuilder(NULL)
+{
+}
+
+void CHThorSelfJoinActivity::ready()
+{
+    CHThorActivityBase::ready();
+    outBuilder.setAllocator(rowAllocator);
+
+    leftOuterJoin = (helper.getJoinFlags() & JFleftouter) != 0;
+    rightOuterJoin = (helper.getJoinFlags() & JFrightouter) != 0;
+    exclude = (helper.getJoinFlags() & JFexclude) != 0;
+    getLimitType(helper.getJoinFlags(), limitFail, limitOnFail);
+    if (rightOuterJoin && !defaultLeft)
+    {
+        if (!defaultAllocator)                          
+            defaultAllocator.setown(agent.queryCodeContext()->getRowAllocator(input->queryOutputMeta(), activityId));
+
+        RtlDynamicRowBuilder rowBuilder(defaultAllocator);
+        size32_t thisSize = helper.createDefaultLeft(rowBuilder);
+        defaultLeft.setown(rowBuilder.finalizeRowClear(thisSize));
+    }
+    if ((leftOuterJoin || limitOnFail) && !defaultRight)
+    {
+        if (!defaultAllocator)                          
+            defaultAllocator.setown(agent.queryCodeContext()->getRowAllocator(input->queryOutputMeta(), activityId));
+
+        RtlDynamicRowBuilder rowBuilder(defaultAllocator);
+        size32_t thisSize = helper.createDefaultRight(rowBuilder);
+        defaultRight.setown(rowBuilder.finalizeRowClear(thisSize));
+    }
+
+    if((helper.getJoinFlags() & JFslidingmatch) != 0)
+        throw MakeStringException(99, "Sliding self join not supported");
+    keepLimit = helper.getKeepLimit();
+    if(keepLimit == 0)
+        keepLimit = (unsigned)-1;
+    atmostLimit = helper.getJoinLimit();
+    if(atmostLimit == 0)
+        atmostLimit = (unsigned)-1;
+    else
+        assertex(!rightOuterJoin);
+    abortLimit = helper.getMatchAbortLimit();
+    if (abortLimit == 0) 
+        abortLimit = (unsigned)-1;
+
+    assertex((helper.getJoinFlags() & (JFfirst | JFfirstleft | JFfirstright)) == 0); // no longer supported
+
+    collate = helper.queryCompareLeftRight();
+
+    eof = false;
+    doneFirstFill = false;
+    failingLimit.clear();
+    if ((helper.getJoinFlags() & JFlimitedprefixjoin) && helper.getJoinLimit()) 
+    {   //Limited Match Join (s[1..n])
+        dualcache.setown(new CRHDualCache());
+        dualcache->init(input);
+        setInput(0, (IHThorInput *)dualcache->queryOut1());
+        failingOuterAtmost = false;
+        matchedLeft = false;
+        leftIndex = 0;
+        rightOuterIndex = 0;
+
+        limitedhelper.setown(createRHLimitedCompareHelper());
+        limitedhelper->init( helper.getJoinLimit(), dualcache->queryOut2(), collate, helper.queryPrefixCompare() );
+    }
+}
+
+void CHThorSelfJoinActivity::done()
+{
+    outBuilder.clear();
+    group.clear();
+    if (limitedhelper)
+        input = (IHThorInput*)dualcache->input();
+    CHThorActivityBase::done();
+}
+
+bool CHThorSelfJoinActivity::fillGroup()
+{
+    group.clear();
+    matchedLeft = false;
+    matchedRight.kill();
+    failingOuterAtmost = false;
+    OwnedConstHThorRow next;
+    unsigned groupCount = 0;
+    next.setown(input->nextInGroup());
+    while(next)
+    {
+        if(groupCount==abortLimit)
+        {
+            if(limitFail)
+                failLimit(next);
+            if ( agent.queryCodeContext()->queryDebugContext())
+                agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
+            if(limitOnFail)
+            {
+                assertex(!failingLimit);
+                try
+                {
+                    failLimit(next);
+                }
+                catch(IException * except)
+                {
+                    failingLimit.setown(except);
+                }
+                assertex(failingLimit);
+                group.append(next.getClear());
+                groupCount++;
+                break;
+            }
+            group.clear();
+            groupCount = 0;
+            while(next) 
+                next.setown(input->nextInGroup());
+        }
+        else if(groupCount==atmostLimit)
+        {
+            if(leftOuterJoin)
+            {
+                group.append(next.getClear());
+                groupCount++;
+                failingOuterAtmost = true;
+                break;
+            }
+            else
+            {
+                group.clear();
+                groupCount = 0;
+                while(next) 
+                    next.setown(input->nextInGroup());
+            }
+        }
+        else
+        {
+            group.append(next.getClear());
+            groupCount++;
+        }
+        next.setown(input->nextInGroup());
+    }
+    if(group.ordinality()==0)
+    {
+        eof = true;
+        return false;
+    }
+    leftIndex = 0;
+    rightIndex = 0;
+    rightOuterIndex = 0;
+    joinLimit = keepLimit;
+    ForEachItemIn(idx, group)
+        matchedRight.append(false);
+    return true;
+}
+
+const void * CHThorSelfJoinActivity::nextInGroup()
+{
+    if (limitedhelper)  {
+        while(!eof) //limited match join
+        {
+            if (!group.isItem(rightIndex))
+            {
+                lhs.setown(input->nextInGroup());   //get from dualcache
+                if (lhs)
+                {
+                    rightIndex = 0;
+                    group.clear();
+                    limitedhelper->getGroup(group,lhs);
+                }
+                else 
+                    eof = true;
+            }
+
+            if (group.isItem(rightIndex))
+            {
+                const void * rhs = group.item(rightIndex++);
+                if(helper.match(lhs, rhs))
+                {
+                    const void * ret = joinRecords(lhs, rhs);
+                    return ret;
+                }
+            }
+        }
+        return NULL;
+    }
+
+    if(!doneFirstFill)
+    {
+        fillGroup();
+        doneFirstFill = true;
+    }
+    while(!eof)
+    {
+        if(failingOuterAtmost)
+            while(group.isItem(leftIndex))
+            {
+                const void * ret = joinRecords(group.item(leftIndex++), defaultRight);
+                if(ret)
+                {
+                    processed++;
+                    return ret;
+                }
+            }
+        if((joinLimit == 0) || !group.isItem(rightIndex))
+        {
+            if(leftOuterJoin && !matchedLeft && !failingLimit)
+            {
+                const void * ret = joinRecords(group.item(leftIndex), defaultRight);
+                if(ret)
+                {
+                    matchedLeft = true;
+                    processed++;
+                    return ret;
+                }
+            }
+            leftIndex++;
+            matchedLeft = false;
+            rightIndex = 0;
+            joinLimit = keepLimit;
+        }
+        if(!group.isItem(leftIndex))
+        {
+            if(failingLimit || failingOuterAtmost)
+            {
+                OwnedConstHThorRow lhs(input->nextInGroup());
+                while(lhs)
+                {
+                    const void * ret = joinRecords(lhs, defaultRight, failingLimit);
+                    if(ret)
+                    {
+                        processed++;
+                        return ret;
+                    }
+                    lhs.setown(input->nextInGroup());
+                }
+                failingLimit.clear();
+            }
+            if(rightOuterJoin && !failingLimit)
+                while(group.isItem(rightOuterIndex))
+                    if(!matchedRight.item(rightOuterIndex++))
+                    {
+                        const void * ret = joinRecords(defaultLeft, group.item(rightOuterIndex-1));
+                        if(ret)
+                        {
+                            processed++;
+                            return ret;
+                        }
+                    }
+            if(!fillGroup())
+                return NULL;
+            continue;
+        }
+        const void * lhs = group.item(leftIndex);
+        if(failingLimit)
+        {
+            leftIndex++;
+            const void * ret = joinRecords(lhs, defaultRight, failingLimit);
+            if(ret)
+            {
+                processed++;
+                return ret;
+            }
+        }
+        else
+        {
+            const void * rhs = group.item(rightIndex++);
+            if(helper.match(lhs, rhs))
+            {
+                matchedLeft = true;
+                matchedRight.replace(true, rightIndex-1);
+                if(!exclude)
+                {
+                    const void * ret = joinRecords(lhs, rhs);
+                    if(ret)
+                    {
+                        processed++;
+                        joinLimit--;
+                        return ret;
+                    }
+                }
+            }
+        }
+    }
+    return NULL;
+}
+
+const void * CHThorSelfJoinActivity::joinRecords(const void * curLeft, const void * curRight, IException * except)
+{
+    outBuilder.ensureRow();
+    try
+    {
+            size32_t thisSize = (except ? helper.onFailTransform(outBuilder, curLeft, curRight, except) : helper.transform(outBuilder, curLeft, curRight));
+            if(thisSize){
+                return outBuilder.finalizeRowClear(thisSize);   
+            }
+            else
+                return NULL;
+    }
+    catch(IException * e)
+    {
+        throw makeWrappedException(e);
+    }
+}
+
+void CHThorSelfJoinActivity::failLimit(const void * next)
+{
+    helper.onMatchAbortLimitExceeded();
+    CommonXmlWriter xmlwrite(0);
+    if (input->queryOutputMeta() && input->queryOutputMeta()->hasXML())
+    {
+        input->queryOutputMeta()->toXML((byte *) next, xmlwrite);
+    }
+    throw MakeStringException(0, "More than %d match candidates in self-join for row %s", abortLimit, xmlwrite.str());
+}
+
+bool CHThorSelfJoinActivity::isGrouped()
+{
+    return false;
+}
+
+//=====================================================================================================
+
+CHThorLookupJoinActivity::LookupTable::LookupTable(unsigned _size, ICompare * _leftRightCompare, ICompare * _rightCompare, IHash * _leftHash, IHash * _rightHash, bool _dedupOnAdd)
+    : leftRightCompare(_leftRightCompare), rightCompare(_rightCompare), leftHash(_leftHash), rightHash(_rightHash), dedupOnAdd(_dedupOnAdd)
+{
+    unsigned minsize = (4*_size)/3;
+    size = 2;
+    while((minsize >>= 1) > 0)
+        size <<= 1;
+    mask = size - 1;
+    table = new OwnedConstHThorRow[size];
+    findex = BadIndex;
+}
+
+CHThorLookupJoinActivity::LookupTable::~LookupTable()
+{
+    delete [] table;
+}
+
+bool CHThorLookupJoinActivity::LookupTable::add(const void * _right)
+{
+    OwnedConstHThorRow right(_right);
+    findex = BadIndex;
+    unsigned start = rightHash->hash(right) & mask;
+    unsigned index = start;
+    while(table[index])
+    {
+        if(dedupOnAdd && (rightCompare->docompare(table[index], right) == 0))
+            return false;
+        index++;
+        if(index==size)
+            index = 0;
+        if(index==start)
+            return false; //table is full, should never happen
+    }
+    table[index].setown(right.getClear());
+    return true;
+}
+
+const void * CHThorLookupJoinActivity::LookupTable::find(const void * left) const
+{
+    fstart = leftHash->hash(left) & mask;
+    findex = fstart;
+    return doFind(left);
+}
+
+const void * CHThorLookupJoinActivity::LookupTable::findNext(const void * left) const
+{
+    if(findex == BadIndex)
+        return NULL;
+    advance();
+    return doFind(left);
+}
+
+void CHThorLookupJoinActivity::LookupTable::advance() const
+{
+    findex++;
+    if(findex==size)
+        findex = 0;
+    if(findex==fstart)
+        throw MakeStringException(0, "Internal error hthor lookup join activity (hash table full on lookup)");
+}
+
+const void * CHThorLookupJoinActivity::LookupTable::doFind(const void * left) const
+{
+    while(table[findex])
+    {
+        if(leftRightCompare->docompare(left, table[findex]) == 0)
+            return table[findex];
+        advance();
+    }
+    findex = BadIndex;
+    return NULL;
+}
+
+CHThorLookupJoinActivity::CHThorLookupJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorHashJoinArg &_arg, ThorActivityKind _kind) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), table(0), outBuilder(NULL)
+{
+}
+
+void CHThorLookupJoinActivity::ready()
+{
+    CHThorActivityBase::ready();
+    input1->ready();
+    outBuilder.setAllocator(rowAllocator);
+
+    leftOuterJoin = (helper.getJoinFlags() & JFleftouter) != 0;
+    assertex((helper.getJoinFlags() & JFrightouter) == 0);
+    exclude = (helper.getJoinFlags() & JFexclude) != 0;
+    many = (helper.getJoinFlags() & JFmanylookup) != 0;
+    dedupRHS = (helper.getJoinFlags() & (JFmanylookup | JFmatchrequired | JFtransformMaySkip)) == 0; // optimisation: can implicitly dedup RHS unless is many lookup, or match required, or transform may skip
+    if((helper.getJoinFlags() & (JFfirst | JFfirstleft | JFfirstright | JFslidingmatch)) != 0)
+        throwUnexpected();  // compiler should have rejected
+
+    keepLimit = helper.getKeepLimit();
+    if(keepLimit==0)
+        keepLimit = static_cast<unsigned>(-1);
+    atmostLimit = helper.getJoinLimit();
+    limitLimit = helper.getMatchAbortLimit();
+    hasGroupLimit = ((atmostLimit > 0) || (limitLimit > 0));
+    if(atmostLimit==0)
+        atmostLimit = static_cast<unsigned>(-1);
+    if(limitLimit==0)
+        limitLimit = static_cast<unsigned>(-1);
+    getLimitType(helper.getJoinFlags(), limitFail, limitOnFail);
+
+    if((leftOuterJoin || limitOnFail) && !defaultRight)
+        createDefaultRight();   
+    eog = false;
+    matchedGroup = false;
+}
+
+void CHThorLookupJoinActivity::done()
+{
+    outBuilder.clear();
+    left.clear();
+    table.clear();
+    CHThorActivityBase::done();
+    input1->done();
+}
+
+void CHThorLookupJoinActivity::createDefaultRight()
+{
+    if (!defaultRight)
+    {
+        if (!defaultRightAllocator)
+            defaultRightAllocator.setown(agent.queryCodeContext()->getRowAllocator(input1->queryOutputMeta(), activityId));
+
+        RtlDynamicRowBuilder rowBuilder(defaultRightAllocator);
+        size32_t thisSize = helper.createDefaultRight(rowBuilder);
+        defaultRight.setown(rowBuilder.finalizeRowClear(thisSize));
+    }
+}
+
+void CHThorLookupJoinActivity::loadRight()
+{
+    OwnedRowArray rightset;
+    const void * next;
+    while(true)
+    {
+        next = input1->nextInGroup();
+        if(!next)
+            next = input1->nextInGroup();
+        if(!next)
+            break;
+        rightset.append(next);
+    }
+
+    unsigned rightord = rightset.ordinality();
+    table.setown(new LookupTable(rightord, helper.queryCompareLeftRight(), helper.queryCompareRight(), helper.queryHashLeft(), helper.queryHashRight(), dedupRHS));
+
+    unsigned i;
+    for(i=0; i<rightord; i++)
+        table->add(rightset.itemClear(i));
+};
+
+void CHThorLookupJoinActivity::setInput(unsigned index, IHThorInput * _input)
+{
+    if (index==1)
+        input1 = _input;
+    else
+        CHThorActivityBase::setInput(index, _input);
+}
+
+//following are all copied from CHThorJoinActivity - should common up.
+const void * CHThorLookupJoinActivity::joinRecords(const void * left, const void * right)
+{
+    try
+    {
+        outBuilder.ensureRow();
+        size32_t thisSize = helper.transform(outBuilder, left, right);
+        if(thisSize)
+            return outBuilder.finalizeRowClear(thisSize);
+        else
+            return NULL;
+    }
+    catch(IException * e)
+    {
+        throw makeWrappedException(e);
+    }
+}
+
+const void * CHThorLookupJoinActivity::joinException(const void * left, IException * except)
+{
+    try
+    {
+        outBuilder.ensureRow();
+        memsize_t thisSize = helper.onFailTransform(outBuilder, left, defaultRight, except);
+        if(thisSize)
+            return outBuilder.finalizeRowClear(thisSize);
+        else
+            return NULL;
+    }
+    catch(IException * e)
+    {
+        throw makeWrappedException(e);
+    }
+}
+
+const void * CHThorLookupJoinActivity::groupDenormalizeRecords(const void * left, ConstPointerArray & rows)
+{
+    try
+    {
+        outBuilder.ensureRow();
+        unsigned numRows = rows.ordinality();
+        const void * right = numRows ? rows.item(0) : defaultRight.get();
+        memsize_t thisSize = helper.transform(outBuilder, left, right, numRows, (const void * *)rows.getArray());
+        if(thisSize)
+            return outBuilder.finalizeRowClear(thisSize);
+        else
+            return NULL;
+    }
+    catch(IException * e)
+    {
+        throw makeWrappedException(e);
+    }
+}
+
+const void * CHThorLookupJoinActivity::nextInGroup()
+{
+    if(!table)
+        loadRight();
+    switch (kind)
+    {
+    case TAKlookupjoin:
+        return nextInGroupJoin();
+    case TAKlookupdenormalize:
+    case TAKlookupdenormalizegroup:
+        return nextInGroupDenormalize();
+    }
+    throwUnexpected();
+}
+
+const void * CHThorLookupJoinActivity::nextInGroupJoin()
+{
+    while(true)
+    {
+        const void * right = NULL;
+        if(!left)
+        {
+            left.setown(input->nextInGroup());
+            keepCount = keepLimit;
+            if(!left)
+            {
+                if(matchedGroup || eog)
+                {
+                    matchedGroup = false;
+                    eog = true;
+                    return NULL;
+                }
+                eog = true;
+                continue;
+            }
+            eog = false;
+            gotMatch = false;
+            right = getRightFirst();
+        }
+        else
+            right = getRightNext();
+        const void * ret = NULL;
+        if(failingLimit)
+        {
+            ret = joinException(left, failingLimit);
+        }
+        else
+        {
+            while(right)
+            {
+                if(helper.match(left, right))
+                {
+                    gotMatch = true;
+                    if(exclude)
+                        break;
+                    ret = joinRecords(left, right);
+                    if(ret)
+                        break;
+                }
+                right = getRightNext();
+                ret = NULL;
+            }
+            if(leftOuterJoin && !gotMatch)
+            {
+                ret = joinRecords(left, defaultRight);
+                gotMatch = true;
+            }
+        }
+        if(ret)
+        {
+            matchedGroup = true;
+            processed++;
+            if(!many || (--keepCount == 0) || failingLimit)
+            {
+                left.clear();
+                failingLimit.clear();
+            }
+            return ret;
+        }
+        left.clear();
+    }
+}
+
+const void * CHThorLookupJoinActivity::nextInGroupDenormalize()
+{
+    while(true)
+    {
+        left.setown(input->nextInGroup());
+        if(!left)
+        {
+            if (!matchedGroup)
+                left.setown(input->nextInGroup());
+
+            if (!left)
+            {
+                matchedGroup = false;
+                return NULL;
+            }
+        }
+        gotMatch = false;
+
+        const void * right = getRightFirst();
+        const void * ret = NULL;
+        if (failingLimit)
+            ret = joinException(left, failingLimit);
+        else if (kind == TAKlookupdenormalize)
+        {
+            OwnedConstHThorRow newLeft(left.getLink());
+            unsigned rowSize = 0;
+            unsigned leftCount = 0;
+            keepCount = keepLimit;
+            while (right)
+            {
+                if (helper.match(left, right))
+                {
+                    gotMatch = true;
+                    if (exclude)
+                        break;
+
+                    try
+                    {
+                        RtlDynamicRowBuilder rowBuilder(rowAllocator);
+                        unsigned thisSize = helper.transform(rowBuilder, newLeft, right, ++leftCount);
+                        if (thisSize)
+                        {
+                            rowSize = thisSize;
+                            newLeft.setown(rowBuilder.finalizeRowClear(rowSize));
+                        }
+                    }
+                    catch(IException * e)
+                    {
+                        throw makeWrappedException(e);
+                    }
+                    if(!many || (--keepCount == 0))
+                        break;
+                }
+                right = getRightNext();
+            }
+            //Is this rowSize test correct??  Is there any situation where it shouldn't just return newLeft?
+            if (rowSize)
+                ret = newLeft.getClear();
+            else if (leftOuterJoin && !gotMatch)
+                ret = left.getClear();
+        }
+        else
+        {
+            filteredRight.kill();
+            keepCount = keepLimit;
+            while (right)
+            {
+                if (helper.match(left, right))
+                {
+                    gotMatch = true;
+                    if(exclude)
+                        break;
+                    filteredRight.append(right);
+                    if(!many || (--keepCount == 0))
+                        break;
+                }
+                right = getRightNext();
+            }
+
+            if((filteredRight.ordinality() > 0) || (leftOuterJoin && !gotMatch))
+                ret = groupDenormalizeRecords(left, filteredRight);
+            filteredRight.kill();
+        }
+        left.clear();
+        failingLimit.clear();
+        if(ret)
+        {
+            matchedGroup = true;
+            processed++;
+            return ret;
+        }
+    }
+}
+
+
+bool CHThorLookupJoinActivity::isGrouped()
+{
+    return input ? input->isGrouped() : false;
+}
+
+const void * CHThorLookupJoinActivity::fillRightGroup()
+{
+    rightGroup.kill();
+    for(const void * right = table->find(left); right; right = table->findNext(left))
+    {
+        rightGroup.append(right);
+        if(rightGroup.ordinality() > limitLimit)
+        {
+            if(limitFail)
+                failLimit();
+            if ( agent.queryCodeContext()->queryDebugContext())
+                agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
+            gotMatch = true;
+            if(limitOnFail)
+            {
+                assertex(!failingLimit);
+                try
+                {
+                    failLimit();
+                }
+                catch(IException * e)
+                {
+                    failingLimit.setown(e);
+                }
+                assertex(failingLimit);
+            }
+            else
+            {
+                rightGroup.kill();
+            }
+            break;
+        }
+        if(rightGroup.ordinality() > atmostLimit)
+        {
+            rightGroup.kill();
+            break;
+        }
+    }
+    rightGroupIndex = 0;
+    return readRightGroup();
+}
+
+void CHThorLookupJoinActivity::failLimit()
+{
+    helper.onMatchAbortLimitExceeded();
+    CommonXmlWriter xmlwrite(0);
+    if(input->queryOutputMeta() && input->queryOutputMeta()->hasXML())
+    {
+        input->queryOutputMeta()->toXML(static_cast<const unsigned char *>(left.get()), xmlwrite);
+    }
+    throw MakeStringException(0, "More than %u match candidates in join for row %s", limitLimit, xmlwrite.str());
+}
+
+unsigned const CHThorLookupJoinActivity::LookupTable::BadIndex(static_cast<unsigned>(-1));
+
+//=====================================================================================================
+
+CHThorAllJoinActivity::CHThorAllJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorAllJoinArg &_arg, ThorActivityKind _kind) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), outBuilder(NULL)
+{
+}
+
+void CHThorAllJoinActivity::ready()
+{
+    CHThorActivityBase::ready();
+    input1->ready();
+    outBuilder.setAllocator(rowAllocator);
+
+    leftOuterJoin = (helper.getJoinFlags() & JFleftouter) != 0;
+    exclude = (helper.getJoinFlags() & JFexclude) != 0;
+    if(leftOuterJoin && !defaultRight)
+        createDefaultRight();   
+    if((helper.getJoinFlags() & (JFrightouter | JFfirst | JFfirstleft | JFfirstright)) != 0)
+        throwUnexpected();
+
+    keepLimit = helper.getKeepLimit();
+    if(keepLimit==0)
+        keepLimit = (unsigned)-1;
+
+    started = false;
+    countForLeft = keepLimit;
+    matchedLeft = false;
+    matchedGroup = false;
+    eog = false;
+    eos = false;
+}
+
+void CHThorAllJoinActivity::done()
+{
+    outBuilder.clear();
+    left.clear();
+    rightset.clear();
+    matchedRight.kill();
+    CHThorActivityBase::done();
+    input1->done();
+}
+
+void CHThorAllJoinActivity::createDefaultRight()
+{
+    if (!defaultRight)
+    {
+        if (!defaultRightAllocator)
+            defaultRightAllocator.setown(agent.queryCodeContext()->getRowAllocator(input1->queryOutputMeta(), activityId));
+
+        RtlDynamicRowBuilder rowBuilder(defaultRightAllocator);
+        size32_t thisSize = helper.createDefaultRight(rowBuilder);
+        defaultRight.setown(rowBuilder.finalizeRowClear(thisSize));
+    }
+}
+
+void CHThorAllJoinActivity::loadRight()
+{
+    const void * next;
+    while(true)
+    {
+        next = input1->nextInGroup();
+        if(!next)
+            next = input1->nextInGroup();
+        if(!next)
+            break;
+        rightset.append(next);
+        matchedRight.append(false);
+    }
+    rightIndex = 0;
+    rightOrdinality = rightset.ordinality();
+}
+
+const void * CHThorAllJoinActivity::joinRecords(const void * left, const void * right)
+{
+    try
+    {
+        outBuilder.ensureRow();
+        memsize_t thisSize = helper.transform(outBuilder, left, right);
+        if(thisSize)
+            return outBuilder.finalizeRowClear(thisSize);
+        else
+            return NULL;
+    }
+    catch(IException * e)
+    {
+        throw makeWrappedException(e);
+    }
+}
+
+const void * CHThorAllJoinActivity::groupDenormalizeRecords(const void * curLeft, ConstPointerArray & rows)
+{
+    try
+    {
+        outBuilder.ensureRow();
+        unsigned numRows = rows.ordinality();
+        const void * right = numRows ? rows.item(0) : defaultRight.get();
+        memsize_t thisSize = helper.transform(outBuilder, curLeft, right, numRows, (const void * *)rows.getArray());
+        if(thisSize)
+            return outBuilder.finalizeRowClear(thisSize);
+        else
+            return NULL;
+    }
+    catch(IException * e)
+    {
+        throw makeWrappedException(e);
+    }
+}
+
+void CHThorAllJoinActivity::setInput(unsigned index, IHThorInput * _input)
+{
+    if (index==1)
+        input1 = _input;
+    else
+    {
+        CHThorActivityBase::setInput(index, _input);
+        leftIsGrouped = true; // input->isGrouped() is unreliable and it is just as good to always behave as if input is grouped
+    }
+}
+
+const void * CHThorAllJoinActivity::nextInGroup()
+{
+    if(!started)
+    {
+        started = true;
+        left.setown(input->nextInGroup());
+        matchedLeft = false;
+        countForLeft = keepLimit;
+        if(!left)
+        {
+            eos = true;
+            return NULL;
+        }
+        loadRight();
+    }
+
+    const void * ret;   
+    const void * right;
+    if(eos)
+        return NULL;
+
+    while(true)
+    {
+        ret = NULL;
+
+        if((rightIndex == rightOrdinality) || (countForLeft==0))
+        {
+            if(leftOuterJoin && left && !matchedLeft)
+            {
+                switch(kind)
+                {
+                case TAKalljoin:
+                    ret = joinRecords(left, defaultRight);
+                    break;
+                case TAKalldenormalize:
+                    ret = left.getClear();
+                    break;
+                case TAKalldenormalizegroup:
+                    filteredRight.kill();
+                    ret = groupDenormalizeRecords(left, filteredRight);
+                    break;
+                default:
+                    throwUnexpected();
+                }
+            }
+            rightIndex = 0;
+            left.clear();
+            if(ret)
+            {
+                matchedGroup = true;
+                processed++;
+                return ret;
+            }
+        }
+
+        if(!left)
+        {
+            left.setown(input->nextInGroup());
+            matchedLeft = false;
+            countForLeft = keepLimit;
+        }
+        if(!left)
+        {
+            if(eog)
+            {
+                eos = true;
+                matchedGroup = false;
+                return NULL;
+            }
+            eog = true;
+            if(matchedGroup && leftIsGrouped)
+            {
+                matchedGroup = false;
+                return NULL;
+            }
+            matchedGroup = false;
+            continue;
+        }
+
+        eog = false;
+        switch(kind)
+        {
+        case TAKalljoin:
+            while(rightIndex < rightOrdinality)
+            {
+                right = rightset.item(rightIndex);
+                if(helper.match(left, right))
+                {
+                    matchedLeft = true;
+                    matchedRight.replace(true, rightIndex);
+                    if(!exclude)
+                        ret = joinRecords(left, right);
+                }
+                rightIndex++;
+                if(ret)
+                {
+                    countForLeft--;
+                    matchedGroup = true;
+                    processed++;
+                    return ret;
+                }
+            }
+        case TAKalldenormalize:
+            {
+                OwnedConstHThorRow newLeft;
+                newLeft.set(left);
+                unsigned rowSize = 0;
+                unsigned leftCount = 0;
+                while((rightIndex < rightOrdinality) && countForLeft)
+                {
+                    right = rightset.item(rightIndex);
+                    if(helper.match(left, right))
+                    {
+                        matchedLeft = true;
+                        matchedRight.replace(true, rightIndex);
+                        if(!exclude)
+                        {
+                            try
+                            {
+                                RtlDynamicRowBuilder rowBuilder(rowAllocator);
+                                unsigned thisSize = helper.transform(rowBuilder, newLeft, right, ++leftCount);
+                                if(thisSize)
+                                {
+                                    rowSize = thisSize;
+                                    newLeft.setown(rowBuilder.finalizeRowClear(rowSize));
+                                    --countForLeft;
+                                }
+                            }
+                            catch(IException * e)
+                            {
+                                throw makeWrappedException(e);
+                            }
+                        }
+                    }
+                    rightIndex++;
+                }
+                if(rowSize)
+                {
+                    processed++;
+                    return newLeft.getClear();
+                }
+            }
+            break;
+        case TAKalldenormalizegroup:
+            filteredRight.kill();
+            while((rightIndex < rightOrdinality) && countForLeft)
+            {
+                right = rightset.item(rightIndex);
+                if(helper.match(left, right))
+                {
+                    matchedLeft = true;
+                    matchedRight.replace(true, rightIndex);
+                    filteredRight.append(right);
+                    --countForLeft;
+                }
+                ++rightIndex;
+            }
+            if(!exclude && filteredRight.ordinality())
+            {
+                const void * ret = groupDenormalizeRecords(left, filteredRight);
+                filteredRight.kill();
+                if(ret)
+                {
+                    processed++;
+                    return ret;
+                }
+            }
+            break;
+        default:
+            throwUnexpected();
+        }
+    }
+}
+
+bool CHThorAllJoinActivity::isGrouped()
+{
+    return input ? input->isGrouped() : false;
+}
+
+//=====================================================================================================
+//=====================================================================================================
+
+CHThorWorkUnitWriteActivity::CHThorWorkUnitWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorWorkUnitWriteArg &_arg, ThorActivityKind _kind)
+ : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorWorkUnitWriteActivity::execute()
+{
+    grouped = (POFgrouped & helper.getFlags()) != 0;
+    size32_t outputLimit = agent.queryWorkUnit()->getDebugValueInt("outputLimit", defaultWorkUnitWriteLimit) * 0x100000;
+    MemoryBuffer rowdata;
+    __int64 rows = 0;
+    IRecordSize * inputMeta = input->queryOutputMeta();
+    if (0 != (POFextend & helper.getFlags()))
+    {
+        WorkunitUpdate w = agent.updateWorkUnit();
+        Owned<IWUResult> result = updateWorkUnitResult(w, helper.queryName(), helper.getSequence());
+        rows = result->getResultRowCount();
+    }
+    __int64 initialRows = rows;
+
+    Owned<IOutputRowSerializer> rowSerializer;
+    if (input->queryOutputMeta()->getMetaFlags() & MDFneedserialize)
+        rowSerializer.setown( input->queryOutputMeta()->createRowSerializer(agent.queryCodeContext(), activityId) );
+
+    int seq = helper.getSequence();
+    bool toStdout = (seq >= 0) && agent.queryWriteResultsToStdout();
+    Owned<SimpleOutputWriter> writer;
+    if (toStdout)
+        writer.setown(new SimpleOutputWriter);
+
+    if (agent.queryOutputFmt() == ofXML  && seq >= 0)
+    {
+        StringBuffer sb;
+        const char *name = helper.queryName();
+        if (name && *name)
+            sb.appendf("<Dataset name='%s'>", name);
+        else
+            sb.appendf("<Dataset name='Result %d'>", seq+1);
+        agent.queryOutputSerializer()->fwrite(seq, (const void*)sb.str(), 1, sb.length());
+    }
+    CommonXmlWriter xmlwrite(0,1);
+    loop
+    {
+        if ((unsigned __int64)rows >= agent.queryStopAfter())
+            break;
+        OwnedConstHThorRow nextrec(input->nextInGroup());
+        if (grouped && (rows != initialRows))
+            rowdata.append(nextrec == NULL);
+        if (!nextrec)
+        {
+            nextrec.setown(input->nextInGroup());
+            if (!nextrec)
+                break;
+        }
+        size32_t thisSize = inputMeta->getRecordSize(nextrec);
+        if(outputLimit && ((rowdata.length() + thisSize) > outputLimit))
+            throw MakeStringException(0, "Dataset too large to output to workunit (limit %d megabytes)", outputLimit/0x100000);
+        if (rowSerializer)
+        {
+            CThorDemoRowSerializer serializerTarget(rowdata);
+            rowSerializer->serialize(serializerTarget, (const byte *) nextrec.get() );
+        }
+        else
+            rowdata.append(thisSize, nextrec);
+        if (toStdout && seq >= 0)
+        {
+            if (agent.queryOutputFmt() == ofSTD)
+            {
+                helper.serializeXml((byte *) nextrec.get(), *writer);
+                writer->newline();
+                agent.queryOutputSerializer()->fwrite(seq, (const void*)writer->str(), 1, writer->length());
+                writer->clear();
+            }
+            else if (agent.queryOutputFmt() == ofXML)
+            {
+                xmlwrite.outputBeginNested("Row", false);
+                helper.serializeXml((byte *) nextrec.get(), xmlwrite);
+                xmlwrite.outputEndNested("Row");
+                agent.queryOutputSerializer()->fwrite(seq, (const void*)xmlwrite.str(), 1, xmlwrite.length());
+                xmlwrite.clear();
+            }
+        }
+        rows++;
+    }
+    WorkunitUpdate w = agent.updateWorkUnit();
+    Owned<IWUResult> result = updateWorkUnitResult(w, helper.queryName(), helper.getSequence());
+    if (0 != (POFextend & helper.getFlags()))
+        result->addResultRaw(rowdata.length(), rowdata.toByteArray(), ResultFormatRaw);
+    else
+        result->setResultRaw(rowdata.length(), rowdata.toByteArray(), ResultFormatRaw);
+    result->setResultStatus(ResultStatusCalculated);
+    result->setResultRowCount(rows);
+    result->setResultTotalRowCount(rows); // Is this right??
+    if (toStdout && seq >= 0)
+    {
+        if (agent.queryOutputFmt() == ofXML)
+        {
+            StringBuffer sb;
+            sb.appendf("</Dataset>");
+            agent.queryOutputSerializer()->fwrite(seq, (const void*)sb.str(), 1, sb.length());
+        }
+        else if (agent.queryOutputFmt() != ofSTD)
+            agent.outputFormattedResult(helper.queryName(), seq, false);
+
+        if (!(POFextend & helper.getFlags()))//POextend results will never get closed, so wont flush until serializer dtor
+            agent.queryOutputSerializer()->close(seq, false);
+    }
+}
+
+//=====================================================================================================
+
+CHThorCountActivity::CHThorCountActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCountArg &_arg, ThorActivityKind _kind)
+ : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+__int64 CHThorCountActivity::getCount()
+{
+    __int64 count = 0;
+    loop
+    {
+        OwnedConstHThorRow nextrec(input->nextInGroup());
+        if (!nextrec)
+        {
+            nextrec.setown(input->nextInGroup());
+            if (!nextrec)
+                break;
+        }
+        count++;
+    }
+    return count;
+}
+
+//=====================================================================================================
+
+
+CHThorRemoteResultActivity::CHThorRemoteResultActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorRemoteResultArg &_arg, ThorActivityKind _kind)
+ : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorRemoteResultActivity::execute()
+{
+    OwnedConstHThorRow result(input->nextInGroup());
+#if 0
+    //This isn't correct - it can have a null input - at least until TAKaction is generated for that case.
+    if(!result)
+    {
+        char const * msg = "Remote Result activity had null input, not sending result";
+        WARNLOG(msg);
+        agent.addWuException(msg, 0, ExceptionSeverityWarning, "hthor");
+        return;
+    }
+#endif
+    helper.sendResult(result);
+}
+
+
+//=====================================================================================================
+
+CHThorTempTableActivity::CHThorTempTableActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorTempTableArg &_arg, ThorActivityKind _kind) :
+                 CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorTempTableActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    eof = false;
+    curRow = 0;
+}
+
+
+const void *CHThorTempTableActivity::nextInGroup()
+{
+    if (!eof)
+    {
+        RtlDynamicRowBuilder rowBuilder(rowAllocator);
+        size32_t size = helper.getRow(rowBuilder, curRow++);
+        if (size)
+        {
+            processed++;
+            return rowBuilder.finalizeRowClear(size);
+        }
+    }
+    eof = true;
+    return NULL;
+}
+
+//=====================================================================================================
+
+CHThorNullActivity::CHThorNullActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+const void *CHThorNullActivity::nextInGroup()
+{
+    return NULL;
+}
+
+//=====================================================================================================
+
+CHThorActionActivity::CHThorActionActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorActionArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorActionActivity::execute()
+{
+    helper.action();
+}
+
+const void *CHThorActionActivity::nextInGroup()
+{
+    return NULL;
+}
+//=====================================================================================================
+
+CHThorSideEffectActivity::CHThorSideEffectActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSideEffectArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+const void *CHThorSideEffectActivity::nextInGroup()
+{
+    try
+    {
+        helper.action();
+    }
+    catch(IException * e)
+    {
+        throw makeWrappedException(e);
+    }
+
+    return NULL;
+}
+
+//=====================================================================================================
+
+CHThorDummyActivity::CHThorDummyActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind)
+{
+}
+
+void CHThorDummyActivity::execute()
+{
+}
+
+const void *CHThorDummyActivity::nextInGroup()
+{
+    return input ? input->nextInGroup() : NULL;
+}
+
+//=====================================================================================================
+
+CHThorMultiInputActivity::CHThorMultiInputActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind)
+{
+}
+
+void CHThorMultiInputActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    ForEachItemIn(idx, inputs)
+        inputs.item(idx)->ready();
+}
+
+void CHThorMultiInputActivity::done()
+{
+    CHThorSimpleActivityBase::done();
+    ForEachItemIn(idx, inputs)
+        inputs.item(idx)->done();
+}
+
+void CHThorMultiInputActivity::setInput(unsigned index, IHThorInput *_input)
+{
+    if (index==inputs.length())
+    {
+        inputs.append(_input);
+    }
+    else
+    {
+        while (!inputs.isItem(index))
+            inputs.append(NULL);
+        inputs.replace(_input, index);
+    }
+}
+
+void CHThorMultiInputActivity::updateProgress(IWUGraphProgress &progress) const
+{
+    CHThorSimpleActivityBase::updateProgress(progress);
+    ForEachItemIn(idx, inputs)
+    {
+        IHThorInput *i = inputs.item(idx);
+        if (i)
+            i->updateProgress(progress);
+    }
+}   
+
+//=====================================================================================================
+
+CHThorConcatActivity::CHThorConcatActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorFunnelArg &_arg, ThorActivityKind _kind) : CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorConcatActivity::ready()
+{
+    grouped = helper.queryOutputMeta()->isGrouped();
+    inputIdx = 0;
+    curInput = inputs.item(inputIdx);
+    eogSeen = false;
+    anyThisGroup = false;
+    CHThorMultiInputActivity::ready();
+}
+
+const void *CHThorConcatActivity::nextInGroup()
+{
+    if (!curInput)
+        return NULL;  // eof
+    const void * next = curInput->nextInGroup();
+    if (next)
+    {
+        anyThisGroup = true;
+        eogSeen = false;
+        processed++;
+        return next;
+    }
+    else if (!eogSeen)
+    {
+        eogSeen = true;
+        if (grouped)
+        {
+            if (anyThisGroup)
+            {
+                anyThisGroup = false;
+                return NULL;
+            }
+            else
+                return nextInGroup();
+        }
+        else
+            return nextInGroup();
+    }
+    else if (inputIdx < inputs.length()-1)
+    {
+        inputIdx++;
+        curInput = inputs.item(inputIdx);
+        eogSeen = false;
+        anyThisGroup = false;
+        return nextInGroup();
+    }
+    else
+    {
+        curInput = NULL;
+        return NULL;
+    }
+}
+
+
+//=====================================================================================================
+
+CHThorNonEmptyActivity::CHThorNonEmptyActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNonEmptyArg &_arg, ThorActivityKind _kind) : CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorNonEmptyActivity::ready()
+{
+    grouped = helper.queryOutputMeta()->isGrouped();
+    selectedInput = NULL;
+    CHThorMultiInputActivity::ready();
+}
+
+const void *CHThorNonEmptyActivity::nextInGroup()
+{
+    if (!selectedInput)
+    {
+        ForEachItemIn(i, inputs)
+        {
+            IHThorInput * cur = inputs.item(i);
+            const void * next = cur->nextInGroup();
+            if (next)
+            {
+                selectedInput = cur;
+                processed++;
+                return next;
+            }
+        }
+        return NULL;
+    }
+    const void * next = selectedInput->nextInGroup();
+    if (next)
+        processed++;
+    return next;
+}
+
+
+//=====================================================================================================
+
+CHThorRegroupActivity::CHThorRegroupActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorRegroupArg &_arg, ThorActivityKind _kind) : CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorRegroupActivity::ready()
+{
+    inputIndex = 0;
+    eof = false;
+    numProcessedLastGroup = processed;
+    CHThorMultiInputActivity::ready();
+}
+
+
+const void * CHThorRegroupActivity::nextFromInputs()
+{
+    unsigned initialInput = inputIndex;
+    while (inputs.isItem(inputIndex))
+    {
+        OwnedConstHThorRow next(inputs.item(inputIndex)->nextInGroup());
+        if (next)
+        {
+            if ((inputIndex != initialInput) && (inputIndex != initialInput+1))
+            {
+                throw MakeStringException(100, "Mismatched groups supplied to regroup %u", activityId);
+            }
+            return next.getClear();
+        }
+        inputIndex++;
+    }
+
+    if ((initialInput != 0) && (initialInput+1 != inputs.ordinality()))
+        throw MakeStringException(100, "Mismatched groups supplied to Regroup Activity(%u)", activityId);
+
+    inputIndex = 0;
+    return NULL;
+}
+
+const void * CHThorRegroupActivity::nextInGroup()
+{
+    if (eof)
+        return NULL;
+
+    const void * ret = nextFromInputs();
+    if (ret)
+    {
+        processed++;
+        return ret;
+    }
+
+    if (numProcessedLastGroup != processed)
+    {
+        numProcessedLastGroup = processed;
+        return NULL;
+    }
+
+    eof = true;
+    return NULL;
+}
+
+//=====================================================================================================
+
+CHThorRollupGroupActivity::CHThorRollupGroupActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorRollupGroupArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorRollupGroupActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    eof = false;
+}
+
+
+const void * CHThorRollupGroupActivity::nextInGroup()
+{
+    if (eof)
+        return NULL;
+
+    loop
+    {
+        OwnedRowArray group;
+
+        loop
+        {
+            const void * in = input->nextInGroup();
+            if (!in)
+                break;
+            group.append(in);
+        }
+
+        if (group.ordinality() == 0)
+        {
+            eof = true;
+            return NULL;
+        }
+
+        try
+        {
+            RtlDynamicRowBuilder rowBuilder(rowAllocator);
+            size32_t outSize = helper.transform(rowBuilder, group.ordinality(), (const void * *)group.getArray());
+            if (outSize)
+            {
+                processed++;
+                return rowBuilder.finalizeRowClear(outSize);
+            }
+        }
+        catch(IException * e)
+        {
+            throw makeWrappedException(e);
+        }
+    }
+}
+
+//=====================================================================================================
+
+CHThorCombineActivity::CHThorCombineActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCombineArg &_arg, ThorActivityKind _kind) : CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorCombineActivity::ready()
+{
+    numProcessedLastGroup = processed;
+    CHThorMultiInputActivity::ready();
+}
+
+void CHThorCombineActivity::nextInputs(OwnedRowArray & out)
+{
+    ForEachItemIn(i, inputs)
+    {
+        const void * next = inputs.item(i)->nextInGroup();
+        if (next)
+            out.append(next);
+    }
+}
+
+
+const void *CHThorCombineActivity::nextInGroup()
+{
+    loop
+    {
+        OwnedRowArray group;
+        nextInputs(group);
+        if ((group.ordinality() == 0) && (numProcessedLastGroup == processed))
+            nextInputs(group);
+        if (group.ordinality() == 0)
+        {
+            numProcessedLastGroup = processed;
+            return NULL;
+        }
+        else if (group.ordinality() != inputs.ordinality())
+        {
+            throw MakeStringException(101, "Mismatched group input for Combine Activity(%u)", activityId);
+        }
+
+        try
+        {
+            RtlDynamicRowBuilder rowBuilder(rowAllocator);
+            size32_t outSize = helper.transform(rowBuilder, group.ordinality(), (const void * *)group.getArray());
+            if (outSize)
+            {
+                processed++;
+                return rowBuilder.finalizeRowClear(outSize);
+            }
+        }
+        catch(IException * e)
+        {
+            throw makeWrappedException(e);
+        }
+    }
+}
+
+//=====================================================================================================
+
+CHThorCombineGroupActivity::CHThorCombineGroupActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCombineGroupArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorCombineGroupActivity::ready()
+{
+    numProcessedLastGroup = processed;
+    CHThorSimpleActivityBase::ready();
+    input1->ready();
+}
+
+void CHThorCombineGroupActivity::done()
+{
+    CHThorSimpleActivityBase::done();
+    input1->done();
+}
+
+void CHThorCombineGroupActivity::setInput(unsigned index, IHThorInput *_input)
+{
+    if (index==1)
+        input1 = _input;
+    else
+        CHThorSimpleActivityBase::setInput(index, _input);
+}
+
+
+const void *CHThorCombineGroupActivity::nextInGroup()
+{
+    loop
+    {
+        OwnedConstHThorRow left(input->nextInGroup());
+        if (!left && (numProcessedLastGroup == processed))
+            left.setown(input->nextInGroup());
+
+        if (!left)
+        {
+            if (numProcessedLastGroup == processed)
+            {
+                OwnedConstHThorRow nextRight(input1->nextInGroup());
+                if (nextRight)
+                    throw MakeStringException(101, "Missing LEFT record for Combine group Activity(%u)", activityId);
+            }
+            else
+                numProcessedLastGroup = processed;
+            return NULL;
+        }
+
+        OwnedRowArray group;
+        loop
+        {
+            const void * in = input1->nextInGroup();
+            if (!in)
+                break;
+            group.append(in);
+        }
+
+        if (group.ordinality() == 0)
+        {
+            throw MakeStringException(101, "Missing RIGHT group for Combine Group Activity(%u)", activityId);
+        }
+
+        try
+        {
+            RtlDynamicRowBuilder rowBuilder(rowAllocator);
+            size32_t outSize = helper.transform(rowBuilder, left, group.ordinality(), (const void * *)group.getArray());
+            if (outSize)
+            {
+                processed++;
+                return rowBuilder.finalizeRowClear(outSize);
+            }
+        }
+        catch(IException * e)
+        {
+            throw makeWrappedException(e);
+        }
+    }
+}
+
+//=====================================================================================================
+
+CHThorApplyActivity::CHThorApplyActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorApplyArg &_arg, ThorActivityKind _kind) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorApplyActivity::execute()
+{
+    try
+    {
+        helper.start();
+        loop
+        {
+            OwnedConstHThorRow next(input->nextInGroup());
+            if (!next)
+            {
+                next.setown(input->nextInGroup());
+                if (!next)
+                    break;
+            }
+            helper.apply(next);
+        }
+        helper.end();
+    }
+    catch (IException *e)
+    {
+        throw makeWrappedException(e);
+    }
+}
+
+//=====================================================================================================
+
+CHThorDistributionActivity::CHThorDistributionActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDistributionArg &_arg, ThorActivityKind _kind)
+ : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+
+void CHThorDistributionActivity::execute()
+{
+    IRecordSize *m = helper.queryInternalRecordSize();
+    IDistributionTable * * accumulator = (IDistributionTable * *)rowAllocator->createRow();  //meta: PG MORE --- distribution --- helper.queryInternalRecordSize()
+    helper.clearAggregate(accumulator); 
+
+    OwnedConstHThorRow nextrec(input->nextInGroup());
+    loop
+    {
+        if (!nextrec)
+        {
+            nextrec.setown(input->nextInGroup());
+            if (!nextrec)
+                break;
+        }
+        helper.process(accumulator, nextrec);
+        nextrec.setown(input->nextInGroup());
+    }
+    StringBuffer result;
+    result.append("<XML>");
+    helper.gatherResult(accumulator, result);
+    result.append("</XML>");
+    helper.sendResult(result.length(), result.str());
+    helper.destruct(accumulator);
+    rowAllocator->releaseRow(accumulator);
+}
+
+//---------------------------------------------------------------------------
+
+CHThorWorkunitReadActivity::CHThorWorkunitReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorWorkunitReadArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+    first = true;
+    bufferStream.setown(createMemoryBufferSerialStream(resultBuffer));
+    deserializer.setStream(bufferStream);
+}
+
+CHThorWorkunitReadActivity::~CHThorWorkunitReadActivity()
+{
+}
+
+void CHThorWorkunitReadActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+
+    rowDeserializer.setown(rowAllocator->createRowDeserializer(agent.queryCodeContext()));
+
+    if(first)
+    {
+        checkForDiskRead();
+        first = false;
+    }
+    if(diskread)
+    {
+        diskread->ready();
+        return;
+    }
+
+    grouped = outputMeta.isGrouped();
+    unsigned lenData;
+    void * tempData;
+    const char * wuid = helper.queryWUID();
+    ICsvToRowTransformer * csvTransformer = helper.queryCsvTransformer();
+    IXmlToRowTransformer * xmlTransformer = helper.queryXmlTransformer();
+    if (wuid)
+        agent.queryCodeContext()->getExternalResultRaw(lenData, tempData, wuid, helper.queryName(), helper.querySequence(), xmlTransformer, csvTransformer);
+    else
+        agent.queryCodeContext()->getResultRaw(lenData, tempData, helper.queryName(), helper.querySequence(), xmlTransformer, csvTransformer);
+    resultBuffer.setBuffer(lenData, tempData, true);
+    eogPending = false;
+}
+
+void CHThorWorkunitReadActivity::checkForDiskRead()
+{
+    StringBuffer diskFilename;
+    if(agent.getWorkunitResultFilename(diskFilename, helper.queryWUID(), helper.queryName(), helper.querySequence()))
+    {
+        diskreadHelper.setown(createWorkUnitReadArg(diskFilename.str(), &helper));
+        try
+        {
+            diskreadHelper->onCreate(agent.queryCodeContext(), NULL, NULL);
+        }
+        catch(IException * e)
+        {
+            throw makeWrappedException(e);
+        }
+        diskread.setown(new CHThorDiskReadActivity(agent, activityId, subgraphId, *diskreadHelper, TAKdiskread));
+    }
+}
+
+void CHThorWorkunitReadActivity::done()
+{
+    if(diskread)
+        diskread->done();
+    resultBuffer.resetBuffer();
+    CHThorSimpleActivityBase::done();
+}
+
+
+const void *CHThorWorkunitReadActivity::nextInGroup()
+{
+    if(diskread)
+    {
+        const void * ret = diskread->nextInGroup();
+        processed = diskread->queryProcessed();
+        return ret;
+    }
+    if (deserializer.eos()) 
+        return NULL;                    
+
+    if (eogPending)
+    {
+        eogPending = false;
+        return NULL;
+    }
+    RtlDynamicRowBuilder rowBuilder(rowAllocator);
+    size32_t newSize = rowDeserializer->deserialize(rowBuilder, deserializer);
+    
+    if (grouped)
+        deserializer.read(sizeof(bool), &eogPending);
+
+    processed++;
+    return rowBuilder.finalizeRowClear(newSize);                
+}
+
+//=====================================================================================================
+
+CHThorParseActivity::CHThorParseActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorParseArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+    //DebugBreak();
+    anyThisGroup = false;
+    curSearchTextLen = 0;
+    curSearchText = NULL;
+
+    algorithm = createThorParser(agent.queryCodeContext(), helper);
+    parser = algorithm->createParser(agent.queryCodeContext(), activityId, helper.queryHelper(), &helper);
+    rowIter = parser->queryResultIter();
+}
+
+CHThorParseActivity::~CHThorParseActivity()
+{
+    if (curSearchText && helper.searchTextNeedsFree())
+        rtlFree(curSearchText);
+    parser->Release();
+    algorithm->Release();
+}
+
+void CHThorParseActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    anyThisGroup = false;
+    parser->reset();
+}
+
+void CHThorParseActivity::done()
+{
+    CHThorSimpleActivityBase::done();
+    if (curSearchText && helper.searchTextNeedsFree())
+        rtlFree(curSearchText);
+    curSearchText = NULL;
+    in.clear();
+}
+
+bool CHThorParseActivity::processRecord(const void * in)
+{
+    if (curSearchText && helper.searchTextNeedsFree())
+        rtlFree(curSearchText);
+
+    curSearchTextLen = 0;
+    curSearchText = NULL;
+    helper.getSearchText(curSearchTextLen, curSearchText, in);
+
+    return parser->performMatch(*this, in, curSearchTextLen, curSearchText);
+}
+
+
+unsigned CHThorParseActivity::onMatch(ARowBuilder & self, const void * curRecord, IMatchedResults * results, IMatchWalker * walker)
+{
+    try
+    {
+        return helper.transform(self, curRecord, results, walker);
+    }
+    catch(IException * e)
+    {
+        throw makeWrappedException(e);
+    }
+}
+
+
+const void * CHThorParseActivity::nextInGroup()
+{
+    loop
+    {
+        if (rowIter->isValid())
+        {
+            anyThisGroup = true;
+            OwnedConstHThorRow out = rowIter->getRow();
+            rowIter->next();
+            processed++;
+            return out.getClear();
+        }
+
+        in.setown(input->nextInGroup());
+        if (!in)
+        {
+            if (anyThisGroup)
+            {
+                anyThisGroup = false;
+                return NULL;
+            }
+            in.setown(input->nextInGroup());
+            if (!in)
+                return NULL;
+        }
+
+        processRecord(in);
+        rowIter->first();
+    }
+}
+
+//=====================================================================================================
+
+CHThorEnthActivity::CHThorEnthActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorEnthArg & _arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), outBuilder(NULL)
+{
+}
+
+void CHThorEnthActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    outBuilder.setAllocator(rowAllocator);
+    numerator = helper.getProportionNumerator();
+    denominator = helper.getProportionDenominator();
+    started = false;
+}
+
+void CHThorEnthActivity::done()
+{
+    outBuilder.clear();
+}
+
+void CHThorEnthActivity::start()
+{
+    if(denominator == 0) denominator = 1;
+    counter = (helper.getSampleNumber()-1) * greatestCommonDivisor(numerator, denominator);
+    if (counter >= denominator)
+        counter %= denominator;
+    started = true;
+}
+
+const void * CHThorEnthActivity::nextInGroup()
+{
+    if(!started)
+        start();
+    OwnedConstHThorRow ret;
+    loop
+    {
+        ret.setown(input->nextInGroup());
+        if(!ret) //end of group
+            ret.setown(input->nextInGroup());
+        if(!ret) //eof
+            return NULL;
+        if (wanted())
+        {
+            processed++;
+            return ret.getClear();
+        }
+    }
+}
+
+//=====================================================================================================
+
+CHThorTopNActivity::CHThorTopNActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorTopNArg & _arg, ThorActivityKind _kind)
+    : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), compare(*helper.queryCompare())
+{
+    limit = helper.getLimit();
+    assertex(limit == (size_t)limit);
+    sorted = (const void * *)checked_calloc((size_t)(limit+1), sizeof(void *), "topn");
+    hasBest = helper.hasBest();
+    grouped = outputMeta.isGrouped();
+    curIndex = 0;
+    sortedCount = 0;
+}
+
+CHThorTopNActivity::~CHThorTopNActivity()
+{
+    while(curIndex < sortedCount)
+        releaseHThorRow(sorted[curIndex++]);
+    free(sorted);
+}
+
+void CHThorTopNActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    sortedCount = 0;
+    curIndex = 0;
+    eof = false;
+    eoi = false;
+}
+
+void CHThorTopNActivity::done()
+{
+    CHThorSimpleActivityBase::done();
+    while(curIndex < sortedCount)
+        releaseHThorRow(sorted[curIndex++]);
+}
+
+const void * CHThorTopNActivity::nextInGroup()
+{
+    if(eof)
+        return NULL;
+    if(curIndex >= sortedCount)
+    {
+        bool eog = sortedCount != 0;
+        getSorted();
+        if(sortedCount == 0)
+        {
+            eof = true;
+            return NULL;
+        }
+        if (eog)
+            return NULL;
+    }
+    processed++;
+    return sorted[curIndex++];
+}
+
+bool CHThorTopNActivity::abortEarly()
+{
+    if (hasBest && (sortedCount == limit))
+    {
+        int compare = helper.compareBest(sorted[sortedCount-1]);
+        if (compare == 0)
+        {
+            if (grouped)
+            {
+                //MORE: This would be more efficient if we had a away of skipping to the end of the incomming group.
+                OwnedConstHThorRow next;
+                do
+                {
+                    next.setown(input->nextInGroup());
+                } while(next);
+            }
+            else
+                eoi = true;
+            return true;
+        }
+
+        //This only checks the lowest element - we could check all elements inserted, but it would increase the number of compares
+        if (compare < 0)
+            throw MakeStringException(0, "TOPN: row found that exceeds the best value");
+    }
+    return false;
+}
+
+
+void CHThorTopNActivity::getSorted()
+{
+    curIndex = 0;
+    sortedCount = 0;
+
+    if (eoi)
+        return;
+
+    OwnedConstHThorRow next(input->nextInGroup());
+    while(next)
+    {
+        if(sortedCount < limit)
+        {
+            binary_vec_insert_stable(next.getClear(), sorted, sortedCount, compare);
+            sortedCount++;
+            if (abortEarly())
+                return;
+        }
+        else
+        {
+            // do not bother with insertion sort if we know next will fall off the end
+            if(limit && compare.docompare(sorted[sortedCount-1], next) > 0)
+            {
+                binary_vec_insert_stable(next.getClear(), sorted, sortedCount, compare);
+                releaseHThorRow(sorted[sortedCount]);
+                if (abortEarly())
+                    return;
+            }
+        }
+        next.setown(input->nextInGroup());
+    }
+}
+
+//=====================================================================================================
+
+CHThorXmlParseActivity::CHThorXmlParseActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlParseArg & _arg, ThorActivityKind _kind)
+    : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+    srchStrNeedsFree = helper.searchTextNeedsFree();
+    srchStr = NULL;
+}
+
+CHThorXmlParseActivity::~CHThorXmlParseActivity()
+{
+    if(srchStrNeedsFree) rtlFree(srchStr);
+}
+
+void CHThorXmlParseActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    numProcessedLastGroup = processed;
+}
+
+void CHThorXmlParseActivity::done()
+{
+    CHThorSimpleActivityBase::done();
+    if(srchStrNeedsFree) rtlFree(srchStr);
+    srchStr = NULL;
+    in.clear();
+}
+
+
+const void * CHThorXmlParseActivity::nextInGroup()
+{
+    loop
+    {
+        if(xmlParser)
+        {
+            loop
+            {
+                bool gotNext = false;
+                try
+                {
+                    gotNext = xmlParser->next();
+                }
+                catch(IException * e)
+                {
+                    throw makeWrappedException(e);
+                }
+                if(!gotNext)
+                {
+                    if(srchStrNeedsFree)
+                    {
+                        rtlFree(srchStr);
+                        srchStr = NULL;
+                    }
+                    xmlParser.clear();
+                    break;
+                }
+                if(lastMatch)
+                {
+                    try
+                    {
+                        RtlDynamicRowBuilder rowBuilder(rowAllocator);
+                        unsigned sizeGot = helper.transform(rowBuilder, in, lastMatch);
+                        lastMatch.clear();
+                        if (sizeGot)
+                        {
+                            processed++;
+                            return rowBuilder.finalizeRowClear(sizeGot);
+                        }
+                    }
+                    catch(IException * e)
+                    {
+                        throw makeWrappedException(e);
+                    }
+                }
+            }
+        }
+        in.setown(input->nextInGroup());
+        if(!in)
+        {
+            if(numProcessedLastGroup == processed)
+                in.setown(input->nextInGroup());
+            if(!in)
+            {
+                numProcessedLastGroup = processed;
+                return NULL;
+            }
+        }
+        size32_t srchLen;
+        helper.getSearchText(srchLen, srchStr, in);
+        xmlParser.setown(createXMLParse(srchStr, srchLen, helper.queryIteratorPath(), *this, xr_noRoot, helper.requiresContents()));
+    }
+}
+
+//=====================================================================================================
+
+class CHThorMergeActivity : public CHThorMultiInputActivity
+{
+protected:
+    IHThorMergeArg &helper;
+    CHThorStreamMerger merger;
+
+public:
+    CHThorMergeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorMergeArg &_arg, ThorActivityKind _kind) : CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+    {
+        merger.init(helper.queryCompare(), helper.dedup(), NULL);       // can mass null for range because merger.nextGE() never called
+    }
+
+    ~CHThorMergeActivity()
+    {
+        merger.cleanup();
+    }
+
+    virtual void ready()
+    {
+        CHThorMultiInputActivity::ready();
+        merger.initInputs(inputs.length(), inputs.getArray());
+    }
+
+    virtual void done() 
+    {
+        merger.done();
+        CHThorMultiInputActivity::done(); 
+    }
+
+    virtual const void * nextInGroup()
+    {
+        const void * ret = merger.nextRow();
+        if (ret)
+            processed++;
+        return ret;
+    }
+};
+
+//=====================================================================================================
+//Web Service Call base
+CHThorWSCBaseActivity::CHThorWSCBaseActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorWebServiceCallArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+    callHelper = &_arg;
+    init();
+}
+
+CHThorWSCBaseActivity::CHThorWSCBaseActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorWebServiceCallActionArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+    callHelper = NULL;
+    init();
+}
+
+void CHThorWSCBaseActivity::done()
+{
+    WSChelper.clear();//doesn't return until helper threads terminate
+    CHThorSimpleActivityBase::done();
+}
+
+void CHThorWSCBaseActivity::init()
+{
+    // Build authentication token
+    StringBuffer uidpair;
+    Owned <IUserDescriptor> userDesc = agent.queryWorkUnit()->getUserDescriptor();
+    userDesc->getUserName(uidpair);
+    uidpair.append(":");
+    userDesc->getPassword(uidpair);
+    JBASE64_Encode(uidpair.str(), uidpair.length(), authToken);
+    soapTraceLevel = agent.queryWorkUnit()->getDebugValueInt("soapTraceLevel", 1);
+}
+
+//---------------------------------------------------------------------------
+
+CHThorWSCRowCallActivity::CHThorWSCRowCallActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorWebServiceCallArg &_arg, ThorActivityKind _kind) : CHThorWSCBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind)
+{
+}
+
+const void *CHThorWSCRowCallActivity::nextInGroup()
+{
+    try
+    {
+        assertex(WSChelper);
+        OwnedConstHThorRow ret = WSChelper->getRow();
+        if (!ret)
+            return NULL;
+        ++processed;
+        return ret.getClear();
+    }
+    catch(IException * e)
+    {
+        throw makeWrappedException(e);
+    }
+}
+
+//---------------------------------------------------------------------------
+
+const void *CHThorHttpRowCallActivity::nextInGroup()
+{
+    try
+    {
+        if (WSChelper == NULL)
+        {
+            WSChelper.setown(createHttpCallHelper(this, rowAllocator, authToken.str(), SCrow, NULL, queryDummyContextLogger(),NULL));
+            WSChelper->start();
+        }
+        return CHThorWSCRowCallActivity::nextInGroup();
+    }
+    catch(IException * e)
+    {
+        throw makeWrappedException(e);
+    }
+}
+
+//---------------------------------------------------------------------------
+
+const void *CHThorSoapRowCallActivity::nextInGroup()
+{
+    try
+    {
+        if (WSChelper == NULL)
+        {
+            WSChelper.setown(createSoapCallHelper(this, rowAllocator, authToken.str(), SCrow, NULL, queryDummyContextLogger(),NULL));
+            WSChelper->start();
+        }
+        return CHThorWSCRowCallActivity::nextInGroup();
+    }
+    catch(IException * e)
+    {
+        throw makeWrappedException(e);
+    }
+}
+
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+
+CHThorSoapRowActionActivity::CHThorSoapRowActionActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSoapActionArg &_arg, ThorActivityKind _kind) : CHThorWSCBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind)
+{
+}
+
+void CHThorSoapRowActionActivity::execute()
+{
+    try
+    {
+        WSChelper.setown(createSoapCallHelper(this, NULL, authToken.str(), SCrow, NULL, queryDummyContextLogger(),NULL));
+        WSChelper->start();
+        WSChelper->waitUntilDone();
+    }
+    catch(IException * e)
+    {
+        throw makeWrappedException(e);
+    }
+    IException *e = WSChelper->getError();
+    if(e)
+        throw makeWrappedException(e);
+}
+
+//---------------------------------------------------------------------------
+
+CHThorSoapDatasetCallActivity::CHThorSoapDatasetCallActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSoapCallArg &_arg, ThorActivityKind _kind) : CHThorWSCBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind)
+{
+}
+
+
+const void * CHThorSoapDatasetCallActivity::nextInGroup()
+{
+    try
+    {
+        if (WSChelper == NULL)
+        {
+            WSChelper.setown(createSoapCallHelper(this, rowAllocator, authToken.str(), SCdataset, NULL, queryDummyContextLogger(),NULL));
+            WSChelper->start();
+        }
+        OwnedConstHThorRow ret = WSChelper->getRow();
+        if (!ret)
+            return NULL;
+        ++processed;
+        return ret.getClear();
+    }
+    catch(IException * e)
+    {
+        throw makeWrappedException(e);
+    }
+}
+
+const void * CHThorSoapDatasetCallActivity::getNextRow()
+{
+    CriticalBlock b(crit);
+
+    const void *nextrec = input->nextInGroup();
+    if (!nextrec)
+    {
+        nextrec = input->nextInGroup();
+    }
+
+    return nextrec;
+};
+
+//---------------------------------------------------------------------------
+
+CHThorSoapDatasetActionActivity::CHThorSoapDatasetActionActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSoapActionArg &_arg, ThorActivityKind _kind) : CHThorWSCBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind)
+{
+}
+
+void CHThorSoapDatasetActionActivity::execute()
+{
+    try
+    {
+        WSChelper.setown(createSoapCallHelper(this, NULL, authToken.str(), SCdataset, NULL, queryDummyContextLogger(),NULL));
+        WSChelper->start();
+        WSChelper->waitUntilDone();
+    }
+    catch(IException * e)
+    {
+        throw makeWrappedException(e);
+    }
+    IException *e = WSChelper->getError();
+    if(e)
+        throw makeWrappedException(e);
+}
+
+const void * CHThorSoapDatasetActionActivity::getNextRow()
+{
+    CriticalBlock b(crit);
+
+    const void *nextrec = input->nextInGroup();
+    if (!nextrec)
+    {
+        nextrec = input->nextInGroup();
+    }
+    if (nextrec)
+    {
+        processed++;
+    }
+
+    return nextrec;
+};
+
+//=====================================================================================================
+
+CHThorResultActivity::CHThorResultActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, ThorActivityKind _kind)
+ : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind)
+{
+}
+
+void CHThorResultActivity::extractResult(unsigned & retSize, void * & ret)
+{
+    unsigned len = rowdata.length();
+    retSize = len;
+    if (len)
+    {
+        void * temp = rtlMalloc(len);
+        memcpy(temp, rowdata.toByteArray(), len);
+        ret = temp;
+    }
+    else
+        ret = NULL;
+}
+
+//=====================================================================================================
+
+CHThorDatasetResultActivity::CHThorDatasetResultActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDatasetResultArg &_arg, ThorActivityKind _kind)
+ : CHThorResultActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorDatasetResultActivity::execute()
+{
+    rowdata.clear();
+    IRecordSize * inputMeta = input->queryOutputMeta();
+    loop
+    {
+        OwnedConstHThorRow nextrec(input->nextInGroup());
+        if (!nextrec)
+        {
+            nextrec.setown(input->nextInGroup());
+            if (!nextrec)
+                break;
+        }
+        rowdata.append(inputMeta->getRecordSize(nextrec), nextrec);
+    }
+}
+
+
+//=====================================================================================================
+
+CHThorRowResultActivity::CHThorRowResultActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorRowResultArg &_arg, ThorActivityKind _kind)
+ : CHThorResultActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorRowResultActivity::execute()
+{
+    OwnedConstHThorRow nextrec(input->nextInGroup());
+    assertex(nextrec);
+    IRecordSize * inputMeta = input->queryOutputMeta();
+    unsigned length = inputMeta->getRecordSize(nextrec);
+    rowdata.clear().append(length, nextrec);
+}
+
+//=====================================================================================================
+
+CHThorChildIteratorActivity::CHThorChildIteratorActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChildIteratorArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+
+const void *CHThorChildIteratorActivity::nextInGroup()
+{
+    if (eof)
+        return NULL;
+
+    bool ok;
+    if (!started)
+    {
+        ok = helper.first();
+        started = true;
+    }
+    else
+        ok = helper.next();
+
+    try
+    {
+        while(ok)
+        {
+            RtlDynamicRowBuilder rowBuilder(rowAllocator);
+            size32_t outSize = helper.transform(rowBuilder);
+            if(outSize)
+            {
+                processed++;
+                return rowBuilder.finalizeRowClear(outSize);
+            }
+            ok = helper.next();
+        }
+    }
+    catch(IException * e)
+    {
+        throw makeWrappedException(e);
+    }
+
+    eof = true;
+    return NULL;
+}
+
+void CHThorChildIteratorActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    started = false;
+    eof = false;
+}
+
+//=====================================================================================================
+
+CHThorRawIteratorActivity::CHThorRawIteratorActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorRawIteratorArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), recordSize(outputMeta)
+{
+    bufferStream.setown(createMemoryBufferSerialStream(resultBuffer));
+    rowSource.setStream(bufferStream);
+}
+
+void CHThorRawIteratorActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    grouped = outputMeta.isGrouped();
+    size32_t lenData = 0;
+    const void * data = NULL;
+    helper.queryDataset(lenData, data);
+    resultBuffer.setBuffer(lenData, const_cast<void *>(data), false);
+    eogPending = false;
+    rowDeserializer.setown(rowAllocator->createRowDeserializer(agent.queryCodeContext()));
+}
+
+void CHThorRawIteratorActivity::done()
+{
+    resultBuffer.resetBuffer();
+    CHThorSimpleActivityBase::done();
+}
+
+
+const void * CHThorRawIteratorActivity::nextInGroup()
+{
+    if (rowSource.eos())
+        return NULL;
+    if (eogPending)
+    {
+        eogPending = false;
+        return NULL;
+    }
+    RtlDynamicRowBuilder rowBuilder(rowAllocator);
+    size32_t newSize = rowDeserializer->deserialize(rowBuilder, rowSource); 
+    
+    if (outputMeta.isGrouped())
+        rowSource.read(sizeof(bool), &eogPending);
+    processed++;
+    return rowBuilder.finalizeRowClear(newSize);                
+}
+//=====================================================================================================
+CHThorLinkedRawIteratorActivity::CHThorLinkedRawIteratorActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLinkedRawIteratorArg &_arg, ThorActivityKind _kind) 
+    : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+const void *CHThorLinkedRawIteratorActivity::nextInGroup()
+{
+    const void *ret =helper.next();
+    if (ret)
+    {
+        linkHThorRow(ret);
+        processed++;
+    }
+    return ret;
+}
+//=====================================================================================================
+
+//=====================================================================================================
+//== New implementations - none are currently used, created or tested =================================
+//=====================================================================================================
+
+CHThorChildNormalizeActivity::CHThorChildNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChildNormalizeArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+
+const void *CHThorChildNormalizeActivity::nextInGroup()
+{
+    if (eof)
+        return NULL;
+
+    bool ok;
+    if (!started)
+    {
+        ok = helper.first();
+        started = true;
+    }
+    else
+        ok = helper.next();
+
+    try
+    {
+        if (ok)
+        {
+            RtlDynamicRowBuilder rowBuilder(rowAllocator);
+            do {
+                unsigned thisSize = helper.transform(rowBuilder);
+                if (thisSize)
+                {
+                    processed++;
+                    return rowBuilder.finalizeRowClear(thisSize);
+                }
+                ok = helper.next();
+            }
+            while (ok);
+        }
+    }
+    catch(IException * e)
+    {
+        throw makeWrappedException(e);
+    }
+
+    eof = true;
+    return NULL;
+}
+
+void CHThorChildNormalizeActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    started = false;
+    eof = false;
+}
+
+//=====================================================================================================
+
+CHThorChildAggregateActivity::CHThorChildAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChildAggregateArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+
+const void *CHThorChildAggregateActivity::nextInGroup()
+{
+    if (eof)
+        return NULL;
+
+    eof = true;
+    processed++;
+    try
+    {
+        RtlDynamicRowBuilder rowBuilder(rowAllocator);
+        helper.clearAggregate(rowBuilder);
+        helper.processRows(rowBuilder);
+        size32_t finalSize = outputMeta.getRecordSize(rowBuilder.getSelf());
+        return rowBuilder.finalizeRowClear(finalSize);
+    }
+    catch(IException * e)
+    {
+        throw makeWrappedException(e);
+    }
+}
+
+void CHThorChildAggregateActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    eof = false;
+}
+
+//=====================================================================================================
+
+CHThorChildGroupAggregateActivity::CHThorChildGroupAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChildGroupAggregateArg &_arg, ThorActivityKind _kind) 
+  : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), 
+    helper(_arg), 
+    aggregated(_arg, _arg)
+{
+}
+
+void CHThorChildGroupAggregateActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    eof = false;
+    gathered = false;
+    aggregated.start(rowAllocator);
+}
+
+void CHThorChildGroupAggregateActivity::done()
+{
+    aggregated.reset();
+    CHThorSimpleActivityBase::done();
+}
+
+
+void CHThorChildGroupAggregateActivity::processRow(const void * next)
+{
+    aggregated.addRow(next);
+}
+        
+
+const void * CHThorChildGroupAggregateActivity::nextInGroup()
+{
+    if (eof)
+        return NULL;
+
+    if (!gathered)
+    {
+        helper.processRows(this);
+        gathered = true;
+    }
+
+    Owned<AggregateRowBuilder> next = aggregated.nextResult();
+    if (next)
+    {
+        processed++;
+        return next->finalizeRowClear();
+    }
+    eof = true;
+    return NULL;
+}
+
+
+//=====================================================================================================
+
+CHThorChildThroughNormalizeActivity::CHThorChildThroughNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChildThroughNormalizeArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), outBuilder(NULL)
+{
+}
+
+void CHThorChildThroughNormalizeActivity::done()
+{
+    outBuilder.clear();
+    lastInput.clear();
+    CHThorSimpleActivityBase::done();
+}
+
+void CHThorChildThroughNormalizeActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    outBuilder.setAllocator(rowAllocator);
+    numProcessedLastGroup = processed;
+    ok = false;
+}
+
+
+const void *CHThorChildThroughNormalizeActivity::nextInGroup()
+{
+    try
+    {
+        loop
+        {
+            if (ok)
+                ok = helper.next();
+
+            while (!ok)
+            {
+                lastInput.setown(input->nextInGroup());
+                if (!lastInput)
+                {
+                    if (numProcessedLastGroup != processed)
+                    {
+                        numProcessedLastGroup = processed;
+                        return NULL;
+                    }
+                    lastInput.setown(input->nextInGroup());
+                    if (!lastInput)
+                        return NULL;
+                }
+
+                ok = helper.first(lastInput);
+            }
+            
+            outBuilder.ensureRow();
+            do 
+            {
+                size32_t thisSize = helper.transform(outBuilder);
+                if (thisSize)
+                {
+                    processed++;
+                    return outBuilder.finalizeRowClear(thisSize);
+                }
+                ok = helper.next();
+            } while (ok);
+        }
+    }
+    catch(IException * e)
+    {
+        throw makeWrappedException(e);
+    }
+}
+
+//=====================================================================================================
+
+CHThorDiskReadBaseActivity::CHThorDiskReadBaseActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, ThorActivityKind _kind) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+    helper.setCallback(this);
+}
+
+CHThorDiskReadBaseActivity::~CHThorDiskReadBaseActivity()
+{
+    close();
+}
+
+void CHThorDiskReadBaseActivity::ready()        
+{ 
+    CHThorActivityBase::ready(); 
+
+    grouped = false;
+    recordsize = 0;
+    fixedDiskRecordSize = 0;
+    eofseen = false;
+    opened = false;
+    compressed = false;
+    rowcompressed = false;
+    blockcompressed = false;
+    persistent = false;
+    localOffset = 0;
+    offsetOfPart = 0;
+    partNum = (unsigned)-1;
+
+    resolve();
+}
+
+void CHThorDiskReadBaseActivity::done()
+{
+    close();
+    CHThorActivityBase::done();
+}
+
+void CHThorDiskReadBaseActivity::resolve()
+{
+    mangleHelperFileName(mangledHelperFileName, helper.getFileName(), agent, helper.getFlags());
+    if (helper.getFlags() & TDXtemporary)
+    {
+        StringBuffer mangledFilename;
+        mangleLocalTempFilename(mangledFilename, mangledHelperFileName.str());
+        tempFileName.set(agent.queryTemporaryFile(mangledFilename.str()));
+        gatherInfo(NULL);
+    }
+    else
+    {
+        ldFile.setown(agent.resolveLFN(mangledHelperFileName.str(), "Read", 0 != (helper.getFlags() & TDRoptional)));
+        if (ldFile)
+        {
+            Owned<IFileDescriptor> fdesc;
+            fdesc.setown(ldFile->getFileDescriptor());
+            gatherInfo(fdesc);
+            IDistributedFile *dFile = ldFile->queryDistributedFile();
+            if (dFile)  //only makes sense for distributed (non local) files
+            {
+                persistent = dFile->queryProperties().getPropBool("@persistent");
+                dfsParts.setown(dFile->getIterator());
+                if((helper.getFlags() & TDXtemporary) == 0)
+                    agent.logFileAccess(dFile, "HThor", "READ");
+                if(!agent.queryWorkUnit()->getDebugValueBool("skipFileFormatCrcCheck", false) && !(helper.getFlags() & TDRnocrccheck))
+                    verifyRecordFormatCrc();
+            }
+        }
+        if (!ldFile)
+        {
+            StringBuffer buff;
+            buff.append("Skipping OPT disk read of nonexistent file ").append(mangledHelperFileName.str());
+            WARNLOG("%s", buff.str());
+            agent.addWuException(buff.str(), 0, ExceptionSeverityWarning, "hthor");
+        }
+    }
+}
+
+void CHThorDiskReadBaseActivity::gatherInfo(IFileDescriptor * fileDesc)
+{
+    if(fileDesc)
+    {
+        if (!agent.queryResolveFilesLocally())
+        {
+            grouped = fileDesc->isGrouped();
+            if(grouped != ((helper.getFlags() & TDXgrouped) != 0))
+            {
+                StringBuffer msg;
+                msg.append("DFS and code generated group info. differs: DFS(").append(grouped ? "grouped" : "ungrouped").append("), CodeGen(").append(grouped ? "ungrouped" : "grouped").append("), using DFS info");
+                WARNLOG(msg.str());
+                agent.addWuException(msg.str(), 0, ExceptionSeverityWarning, "hthor");
+            }
+        }
+        else
+            grouped = ((helper.getFlags() & TDXgrouped) != 0);
+    }
+    else
+    {
+        grouped = ((helper.getFlags() & TDXgrouped) != 0);
+    }
+
+    diskMeta.set(helper.queryDiskRecordSize()->querySerializedMeta());
+    if (grouped)
+        diskMeta.setown(new CSuffixedOutputMeta(+1, diskMeta));
+    if (outputMeta.isFixedSize())
+    {
+        recordsize = outputMeta.getFixedSize();
+        if (grouped)
+            recordsize++;
+    }
+    else
+        recordsize = 0;
+    calcFixedDiskRecordSize();
+
+    if(fileDesc)
+    {
+        compressed = fileDesc->isCompressed(&blockcompressed); //try new decompression, fall back to old unless marked as block
+        if(fixedDiskRecordSize)
+        {
+            size32_t dfsSize = fileDesc->queryProperties().getPropInt("@recordSize");
+            if(!((dfsSize == 0) || (dfsSize == fixedDiskRecordSize) || (grouped && (dfsSize+1 == fixedDiskRecordSize)))) //third option for backwards compatibility, as hthor used to publish @recordSize not including the grouping byte
+                throw MakeStringException(0, "Published record size %d for file %s does not match coded record size %d", dfsSize, mangledHelperFileName.str(), fixedDiskRecordSize);
+            if (!compressed && (((helper.getFlags() & TDXcompress) != 0) && (fixedDiskRecordSize >= MIN_ROWCOMPRESS_RECSIZE)))
+            {
+                StringBuffer msg;
+                msg.append("Ignoring compression attribute on file ").append(mangledHelperFileName.str()).append(", which is not published as compressed");
+                WARNLOG(msg.str());
+                agent.addWuException(msg.str(), 0, ExceptionSeverityWarning, "hthor");
+                compressed = true;
+            }
+        }
+    }
+    else
+    {
+        compressed = checkIsCompressed(helper.getFlags(), fixedDiskRecordSize, false);//grouped=FALSE because fixedDiskRecordSize already includes grouped
+    }
+    void *k;
+    size32_t kl;
+    helper.getEncryptKey(kl,k);
+    encryptionkey.setOwn(kl,k);
+
+    if (encryptionkey.length()!=0) 
+    {
+        blockcompressed = true;
+        compressed = true;
+    }
+}
+
+void CHThorDiskReadBaseActivity::close()
+{
+    closepart();
+    tempFileName.clear();
+    dfsParts.clear();
+    if(ldFile)
+    {
+        IDistributedFile * dFile = ldFile->queryDistributedFile();
+        if(dFile&&persistent) 
+            dFile->setAccessed();
+        ldFile.clear();
+    }
+}
+
+unsigned __int64 CHThorDiskReadBaseActivity::getFilePosition(const void * row)
+{
+    return localOffset + offsetOfPart;
+}
+
+unsigned __int64 CHThorDiskReadBaseActivity::getLocalFilePosition(const void * row)
+{
+    return makeLocalFposOffset(partNum-1, localOffset);
+}
+
+void CHThorDiskReadBaseActivity::closepart()
+{
+    inputstream.clear();
+    inputfileio.clear();
+    inputfile.clear();
+}
+
+bool CHThorDiskReadBaseActivity::openNext()
+{
+    offsetOfPart += localOffset;
+    localOffset = 0;
+    saveOpenExc.clear();
+
+    if (dfsParts||ldFile)
+    {
+        // open next part of a multipart, if there is one
+        while ((dfsParts&&dfsParts->isValid())||
+              (!dfsParts&&(partNum<ldFile->numParts())))
+        {
+            IDistributedFilePart * curPart = dfsParts?&dfsParts->query():NULL;
+
+            unsigned numCopies = curPart?curPart->numCopies():ldFile->numPartCopies(partNum);
+            //MORE: Order of copies should be optimized at this point....
+            StringBuffer file, filelist;
+            closepart();
+            for (unsigned copy=0; copy < numCopies; copy++)
+            {
+                RemoteFilename rfilename;
+                if (curPart)
+                    curPart->getFilename(rfilename,copy);
+                else
+                    ldFile->getPartFilename(rfilename,partNum,copy);
+                rfilename.getPath(file.clear());
+                filelist.append('\n').append(file);
+                try
+                {
+                    inputfile.setown(createIFile(rfilename));   
+                    if(compressed)
+                    {
+                        Owned<IExpander> eexp;
+                        if (encryptionkey.length()!=0) 
+                            eexp.setown(createAESExpander256(encryptionkey.length(),encryptionkey.bufferBase()));
+                        inputfileio.setown(createCompressedFileReader(inputfile,eexp));
+                        if(!inputfileio && !blockcompressed) //fall back to old decompression, unless dfs marked as new
+                        {
+                            inputfileio.setown(inputfile->open(IFOread));
+                            if(inputfileio)
+                                rowcompressed = true;
+                        }
+                    }
+                    else
+                        inputfileio.setown(inputfile->open(IFOread));
+                    if (inputfileio)
+                        break;
+                }
+                catch (IException *E)
+                {
+                    if (saveOpenExc.get())
+                        E->Release();
+                    else
+                        saveOpenExc.setown(E);
+                }
+                closepart();
+            }
+
+            if (dfsParts)
+                dfsParts->next();
+            partNum++;
+            if (checkOpenedFile(file.str(), filelist.str()))
+            {
+                opened = true;
+                return true;
+            }
+        }
+        return false;
+    }
+    else if (!tempFileName.isEmpty())
+    {
+        StringBuffer file(tempFileName.get());
+        tempFileName.clear();
+        closepart();
+        try
+        {
+            inputfile.setown(createIFile(file.str()));
+            if(compressed)
+            {
+                Owned<IExpander> eexp;
+                if (encryptionkey.length()) 
+                    eexp.setown(createAESExpander256(encryptionkey.length(),encryptionkey.bufferBase()));
+                inputfileio.setown(createCompressedFileReader(inputfile,eexp));
+                if(!inputfileio && !blockcompressed) //fall back to old decompression, unless dfs marked as new
+                {
+                    inputfileio.setown(inputfile->open(IFOread));
+                    if(inputfileio)
+                        rowcompressed = true;
+                }
+            }
+            else
+                inputfileio.setown(inputfile->open(IFOread));
+        }
+        catch (IException *E)
+        {
+            closepart();
+            StringBuffer msg;
+            WARNLOG("%s", E->errorMessage(msg).str());
+            if (saveOpenExc.get())
+                E->Release();
+            else
+                saveOpenExc.setown(E);
+        }
+        partNum++;
+        if (checkOpenedFile(file.str(), NULL))
+        {
+            opened = true;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool CHThorDiskReadBaseActivity::checkOpenedFile(char const * filename, char const * filenamelist)
+{
+    unsigned __int64 filesize = 0;
+    if (!inputfileio) 
+    {
+        if (!(helper.getFlags() & TDRoptional))
+        {
+            StringBuffer s;
+            if(filenamelist) {
+                if (saveOpenExc.get())
+                {
+                    if (strstr(mangledHelperFileName.str(),"::>")!=NULL) // if a 'special' filename just use saved exception 
+                        saveOpenExc->errorMessage(s);
+                    else 
+                    {
+                        s.append("Could not open logical file ").append(mangledHelperFileName.str()).append(" in any of these locations:").append(filenamelist).append(" (");
+                        saveOpenExc->errorMessage(s).append(")");
+                    }
+                }
+                else
+                    s.append("Could not open logical file ").append(mangledHelperFileName.str()).append(" in any of these locations:").append(filenamelist).append(" (").append((unsigned)GetLastError()).append(")");
+            }
+            else
+                s.append("Could not open local physical file ").append(filename).append(" (").append((unsigned)GetLastError()).append(")");
+            agent.fail(1, s.toCharArray());
+        }
+    }
+    else
+        filesize = inputfileio->size();
+    saveOpenExc.clear();
+    if (filesize)
+    {
+        if (!compressed && fixedDiskRecordSize && (filesize % fixedDiskRecordSize) != 0)
+        {
+            StringBuffer s;
+            s.append("File ").append(filename).append(" size is ").append(filesize).append(" which is not a multiple of ").append(fixedDiskRecordSize);
+            agent.fail(1, s.toCharArray());
+        }
+
+        unsigned readBufferSize = queryReadBufferSize();
+        inputstream.setown(createFileSerialStream(inputfileio, 0, filesize, readBufferSize));
+
+        StringBuffer report("Reading file ");
+        report.append(inputfile->queryFilename());
+        agent.reportProgress(report.str());
+    }
+
+    return (filesize != 0);
+}
+
+void CHThorDiskReadBaseActivity::open()
+{
+    assertex(!opened);
+    partNum = 0;
+    if (dfsParts)
+        eofseen = !dfsParts->first() || !openNext();
+    else if (ldFile||tempFileName.length())
+        eofseen = !openNext();
+    else
+        eofseen = true;
+    opened = true;
+}
+
+//=====================================================================================================
+
+CHThorBinaryDiskReadBase::CHThorBinaryDiskReadBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, IHThorCompoundBaseArg & _segHelper, ThorActivityKind _kind)
+: CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind), segHelper(_segHelper), prefetchBuffer(NULL)
+{
+}
+
+void CHThorBinaryDiskReadBase::calcFixedDiskRecordSize()
+{
+    fixedDiskRecordSize = diskMeta->getFixedSize();
+}
+
+void CHThorBinaryDiskReadBase::append(IKeySegmentMonitor *segment)
+{
+    if (segment->isWild())
+        segment->Release();
+    else
+        segMonitors.append(*segment);
+}
+
+void CHThorBinaryDiskReadBase::setMergeBarrier(unsigned barrierOffset)
+{
+    // nothing to do - we don't merge...
+}
+
+unsigned CHThorBinaryDiskReadBase::ordinality() const
+{
+    return segMonitors.length();
+}
+
+IKeySegmentMonitor *CHThorBinaryDiskReadBase::item(unsigned idx) const
+{
+    if (segMonitors.isItem(idx))
+        return &segMonitors.item(idx);
+    else
+        return NULL;
+}
+
+void CHThorBinaryDiskReadBase::ready()      
+{ 
+    CHThorDiskReadBaseActivity::ready(); 
+    if (!diskMeta)
+        diskMeta.set(outputMeta);
+    segMonitors.kill();
+    segHelper.createSegmentMonitors(this);
+    prefetcher.setown(diskMeta->createRowPrefetcher(agent.queryCodeContext(), activityId));
+    deserializer.setown(diskMeta->createRowDeserializer(agent.queryCodeContext(), activityId));
+}
+
+bool CHThorBinaryDiskReadBase::openNext()
+{
+    if (CHThorDiskReadBaseActivity::openNext())
+    {
+        if(rowcompressed && fixedDiskRecordSize)
+        {
+            throwUnexpected();
+            //MORE: What happens here
+            PROGLOG("Disk read falling back to legacy decompression routine");
+            //in.setown(createRowCompReadSeq(*inputfileiostream, 0, fixedDiskRecordSize));
+        }
+
+        //Only one of these will actually be used.
+        prefetchBuffer.setStream(inputstream);
+        deserializeSource.setStream(inputstream);
+        return true;
+    }
+    return false;
+}
+
+void CHThorBinaryDiskReadBase::closepart()
+{
+    prefetchBuffer.clearStream();
+    deserializeSource.clearStream();
+    CHThorDiskReadBaseActivity::closepart();
+}
+
+unsigned CHThorBinaryDiskReadBase::queryReadBufferSize()
+{
+    return hthorReadBufferSize;
+}
+
+void CHThorBinaryDiskReadBase::open()
+{
+    if (!segHelper.canMatchAny())
+    {
+        eofseen = true;
+        opened = true;
+    }
+    else
+        CHThorDiskReadBaseActivity::open();
+}
+
+
+//=====================================================================================================
+
+CHThorDiskReadActivity::CHThorDiskReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadArg &_arg, ThorActivityKind _kind) : CHThorBinaryDiskReadBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind), helper(_arg), outBuilder(NULL)
+{
+    needTransform = false;
+    eogPending = 0;
+    lastGroupProcessed = 0;
+}
+
+void CHThorDiskReadActivity::ready()        
+{ 
+    PARENT::ready(); 
+    outBuilder.setAllocator(rowAllocator);
+    eogPending = false;
+    lastGroupProcessed = processed;
+    needTransform = helper.needTransform() || segMonitors.length();
+    limit = helper.getRowLimit();
+    if (helper.getFlags() & TDRlimitskips)
+        limit = (unsigned __int64) -1;
+    stopAfter = helper.getChooseNLimit();
+}
+
+
+void CHThorDiskReadActivity::done()
+{ 
+    outBuilder.clear();
+    PARENT::done(); 
+}
+
+
+const void *CHThorDiskReadActivity::nextInGroup()
+{
+    if (!opened) open();
+    if (eogPending && (lastGroupProcessed != processed))
+    {
+        eogPending = false;
+        lastGroupProcessed = processed;
+        return NULL;
+    }
+
+    try
+    {
+        if (needTransform || grouped)
+        {
+            while (!eofseen && ((stopAfter == 0) || ((processed - initialProcessed) < stopAfter)))
+            {
+                queryUpdateProgress();
+                while (!prefetchBuffer.eos())
+                {
+                    queryUpdateProgress();
+
+                    prefetcher->readAhead(prefetchBuffer);
+                    const byte * next = prefetchBuffer.queryRow();
+                    size32_t sizeRead = prefetchBuffer.queryRowSize();
+                    size32_t thisSize;
+                    if (segMonitorsMatch(next))
+                    {
+                        thisSize = helper.transform(outBuilder.ensureRow(), next);
+                    }
+                    else
+                        thisSize = 0;
+
+                    bool eog = grouped && next[sizeRead-1];
+                    prefetchBuffer.finishedRow();
+
+                    localOffset += sizeRead;
+                    if (thisSize)
+                    {
+                        if (grouped)
+                            eogPending = eog;
+                        if ((processed - initialProcessed) >=limit)
+                        {
+                            outBuilder.clear();
+                            if ( agent.queryCodeContext()->queryDebugContext())
+                                agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
+                            helper.onLimitExceeded();
+                            return NULL;
+                        }
+                        processed++;
+                        return outBuilder.finalizeRowClear(thisSize);
+                    }
+                    if (eog && (lastGroupProcessed != processed))
+                    {
+                        lastGroupProcessed = processed;
+                        return NULL;
+                    }
+                }
+                eofseen = !openNext();
+            }
+        }
+        else
+        {
+            assertex(outputMeta == diskMeta);
+            while(!eofseen && ((stopAfter == 0) || (processed - initialProcessed) < stopAfter)) 
+            {
+                queryUpdateProgress();
+
+                if (!inputstream->eos())
+                {
+                    size32_t sizeRead = deserializer->deserialize(outBuilder.ensureRow(), deserializeSource);
+                    //In this case size read from disk == size created in memory
+                    localOffset += sizeRead;
+                    if ((processed - initialProcessed)>=limit)
+                    {
+                        outBuilder.clear();
+                        if ( agent.queryCodeContext()->queryDebugContext())
+                            agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
+                        helper.onLimitExceeded();
+                        return NULL;
+                    }
+                    processed++;
+                    return outBuilder.finalizeRowClear(sizeRead);
+                }
+                eofseen = !openNext();
+            }
+        }
+        close();
+    }
+    catch(IException * e)
+    {
+        throw makeWrappedException(e);
+    }
+    return NULL;
+}
+
+//=====================================================================================================
+
+CHThorDiskNormalizeActivity::CHThorDiskNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskNormalizeArg &_arg, ThorActivityKind _kind) : CHThorBinaryDiskReadBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind), helper(_arg), outBuilder(NULL)
+{
+}
+
+void CHThorDiskNormalizeActivity::done()        
+{ 
+    outBuilder.clear();
+    PARENT::done(); 
+}
+
+void CHThorDiskNormalizeActivity::ready()       
+{ 
+    PARENT::ready(); 
+    outBuilder.setAllocator(rowAllocator);
+    limit = helper.getRowLimit();
+    if (helper.getFlags() & TDRlimitskips)
+        limit = (unsigned __int64) -1;
+    stopAfter = helper.getChooseNLimit();
+    lastSizeRead = 0;
+    expanding = false;
+}
+
+void CHThorDiskNormalizeActivity::gatherInfo(IFileDescriptor * fd)
+{
+    PARENT::gatherInfo(fd);
+    assertex(!grouped);
+}
+
+const void *CHThorDiskNormalizeActivity::nextInGroup()
+{
+    if (!opened) open();
+    loop
+    {
+        if (eofseen || (stopAfter && (processed - initialProcessed) >= stopAfter)) 
+            break;
+
+        loop
+        {
+            if (expanding)
+            {
+                loop
+                {
+                    expanding = helper.next();
+                    if (!expanding)
+                        break;
+
+                    const void * ret = createNextRow();
+                    if (ret)
+                        return ret;
+                }
+            }
+
+            localOffset += lastSizeRead;
+            prefetchBuffer.finishedRow();
+
+            if (inputstream->eos())
+            {
+                lastSizeRead = 0;
+                break;
+            }
+
+            prefetcher->readAhead(prefetchBuffer);
+            const byte * next = prefetchBuffer.queryRow();
+            lastSizeRead = prefetchBuffer.queryRowSize();
+
+            queryUpdateProgress();
+            if (segMonitorsMatch(next))
+            {
+                try
+                {
+                    expanding = helper.first(next);
+                }
+                catch(IException * e)
+                {
+                    throw makeWrappedException(e);
+                }
+                if (expanding)
+                {
+                    const void * ret = createNextRow();
+                    if (ret)
+                        return ret;
+                }
+            }
+        }
+        eofseen = !openNext();
+    }
+    close();
+    return NULL;
+}
+
+
+const void * CHThorDiskNormalizeActivity::createNextRow()
+{
+    try
+    {
+        size32_t thisSize = helper.transform(outBuilder.ensureRow());
+        if (thisSize == 0)
+            return NULL;
+
+        if ((processed - initialProcessed) >=limit)
+        {
+            outBuilder.clear();
+            if ( agent.queryCodeContext()->queryDebugContext())
+                agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
+            helper.onLimitExceeded();
+            return NULL;
+        }
+        processed++;
+        return outBuilder.finalizeRowClear(thisSize);
+    }
+    catch(IException * e)
+    {
+        throw makeWrappedException(e);
+    }
+}
+
+//=====================================================================================================
+
+CHThorDiskAggregateActivity::CHThorDiskAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskAggregateArg &_arg, ThorActivityKind _kind) : CHThorBinaryDiskReadBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind), helper(_arg), outBuilder(NULL)
+{
+}
+
+void CHThorDiskAggregateActivity::done()        
+{ 
+    outBuilder.clear();
+    PARENT::done(); 
+}
+
+void CHThorDiskAggregateActivity::ready()       
+{ 
+    PARENT::ready(); 
+    outBuilder.setAllocator(rowAllocator);
+    finished = false;
+}
+
+void CHThorDiskAggregateActivity::gatherInfo(IFileDescriptor * fd)
+{
+    PARENT::gatherInfo(fd);
+    assertex(!grouped);
+}
+
+
+const void *CHThorDiskAggregateActivity::nextInGroup()
+{
+    if (finished) return NULL;
+    try
+    {
+        if (!opened) open();
+        outBuilder.ensureRow();
+        helper.clearAggregate(outBuilder);
+        while (!eofseen)
+        {
+            while (!inputstream->eos())
+            {
+                queryUpdateProgress();
+
+                prefetcher->readAhead(prefetchBuffer);
+                const byte * next = prefetchBuffer.queryRow();
+                size32_t sizeRead = prefetchBuffer.queryRowSize();
+                if (segMonitorsMatch(next))
+                    helper.processRow(outBuilder, next);
+                prefetchBuffer.finishedRow();
+                localOffset += sizeRead;
+            }
+            eofseen = !openNext();
+        }
+        close();
+
+        processed++;
+        finished = true;
+        unsigned retSize = outputMeta.getRecordSize(outBuilder.getSelf());
+        return outBuilder.finalizeRowClear(retSize);
+    }
+    catch(IException * e)
+    {
+        throw makeWrappedException(e);
+    }
+}
+
+//=====================================================================================================
+
+CHThorDiskCountActivity::CHThorDiskCountActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskCountArg &_arg, ThorActivityKind _kind) : CHThorBinaryDiskReadBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind), helper(_arg)
+{
+    finished = true;
+}
+
+CHThorDiskCountActivity::~CHThorDiskCountActivity()
+{
+}
+
+void CHThorDiskCountActivity::ready()       
+{ 
+    PARENT::ready(); 
+    finished = false;
+    stopAfter = helper.getChooseNLimit();
+}
+
+void CHThorDiskCountActivity::gatherInfo(IFileDescriptor * fd)
+{
+    PARENT::gatherInfo(fd);
+    assertex(!grouped);
+}
+
+
+const void *CHThorDiskCountActivity::nextInGroup()
+{
+    if (finished) return NULL;
+
+    unsigned __int64 totalCount = 0;
+    if ((segMonitors.ordinality() == 0) && !helper.hasFilter() && (fixedDiskRecordSize != 0) && !(helper.getFlags() & TDXtemporary)
+        && !((helper.getFlags() & TDXcompress) && agent.queryResolveFilesLocally()) )
+    {
+        resolve();
+        if (segHelper.canMatchAny() && ldFile)
+        {
+            unsigned __int64 size = ldFile->getFileSize();
+            if (size % fixedDiskRecordSize)
+                throw MakeStringException(0, "Physical file %s has size %"I64F"d which is not a multiple of record size %d", ldFile->queryLogicalName(), size, fixedDiskRecordSize);
+            totalCount = size / fixedDiskRecordSize;
+        }
+    }
+    else
+    {
+        if (!opened) open();
+
+        loop
+        {
+            if (eofseen) 
+                break;
+            while (!inputstream->eos())
+            {
+                queryUpdateProgress();
+
+                prefetcher->readAhead(prefetchBuffer);
+                const byte * next = prefetchBuffer.queryRow();
+                size32_t sizeRead = prefetchBuffer.queryRowSize();
+                if (segMonitorsMatch(next))
+                    totalCount += helper.numValid(next);
+                prefetchBuffer.finishedRow();
+                localOffset += sizeRead;
+                if (totalCount > stopAfter)
+                    break;
+            }
+            if (totalCount > stopAfter)
+                break;
+            eofseen = !openNext();
+        }
+        close();
+    }
+
+    if (totalCount > stopAfter)
+        totalCount = stopAfter;
+    finished = true;
+    processed++;
+
+    size32_t outSize = outputMeta.getFixedSize();
+    void * ret = rowAllocator->createRow();
+    if (outSize == 1)
+    {
+        assertex(stopAfter == 1);
+        *(byte *)ret = (byte)totalCount;
+    }
+    else
+    {
+        assertex(outSize == sizeof(unsigned __int64));
+        *(unsigned __int64 *)ret = totalCount;
+    }
+    return rowAllocator->finalizeRow(outSize, ret, outSize);
+}
+
+//=====================================================================================================
+
+CHThorDiskGroupAggregateActivity::CHThorDiskGroupAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskGroupAggregateArg &_arg, ThorActivityKind _kind) 
+  : CHThorBinaryDiskReadBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind), 
+    helper(_arg), 
+    aggregated(_arg, _arg)
+{
+}
+
+void CHThorDiskGroupAggregateActivity::ready()      
+{ 
+    PARENT::ready(); 
+    eof = false;
+    gathered = false;
+}
+
+void CHThorDiskGroupAggregateActivity::gatherInfo(IFileDescriptor * fd)
+{
+    PARENT::gatherInfo(fd);
+    assertex(!grouped);
+    aggregated.start(rowAllocator);
+}
+
+void CHThorDiskGroupAggregateActivity::processRow(const void * next)
+{
+    aggregated.addRow(next);
+}
+
+
+const void *CHThorDiskGroupAggregateActivity::nextInGroup()
+{
+    if (eof)
+        return NULL;
+
+    try
+    {
+        if (!gathered)
+        {
+            if (!opened) open();
+            while (!eofseen)
+            {
+                while (!inputstream->eos())
+                {
+                    queryUpdateProgress();
+
+                    prefetcher->readAhead(prefetchBuffer);
+                    const byte * next = prefetchBuffer.queryRow();
+                    size32_t sizeRead = prefetchBuffer.queryRowSize();
+
+                        //helper.processRows(sizeRead, next, this);
+                    helper.processRow(next, this);
+
+                    prefetchBuffer.finishedRow();
+                    localOffset += sizeRead;
+                }
+                eofseen = !openNext();
+            }
+            close();
+            gathered = true;
+        }
+    }
+    catch(IException * e)
+    {
+        throw makeWrappedException(e);
+    }
+
+    Owned<AggregateRowBuilder> next = aggregated.nextResult();
+    if (next)
+    {
+        processed++;
+        return next->finalizeRowClear();
+    }
+    eof = true;
+    return NULL;
+}
+
+//=====================================================================================================
+
+CHThorCsvReadActivity::CHThorCsvReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCsvReadArg &_arg, ThorActivityKind _kind) : CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+CHThorCsvReadActivity::~CHThorCsvReadActivity()
+{
+}
+
+void CHThorCsvReadActivity::ready()
+{
+    PARENT::ready();
+}
+
+void CHThorCsvReadActivity::done()
+{
+    csvSplitter.reset();
+    PARENT::done();
+}
+
+void CHThorCsvReadActivity::gatherInfo(IFileDescriptor * fd)
+{
+    PARENT::gatherInfo(fd);
+
+    ICsvParameters * csvInfo = helper.queryCsvParameters();
+
+    headerLines = csvInfo->queryHeaderLen();
+    maxDiskSize = csvInfo->queryMaxSize();
+    limit = helper.getRowLimit();
+    if (helper.getFlags() & TDRlimitskips)
+        limit = (unsigned __int64) -1;
+    stopAfter = helper.getChooseNLimit();
+
+    const char * quotes = NULL;
+    const char * separators = NULL;
+    const char * terminators = NULL;
+    IDistributedFile * dFile = ldFile?ldFile->queryDistributedFile():NULL;
+    if (dFile)  //only makes sense for distributed (non local) files
+    {
+        IPropertyTree & options = dFile->queryProperties();
+        quotes = options.queryProp("@csvQuote");
+        separators = options.queryProp("@csvSeparate");
+        terminators = options.queryProp("@csvTerminate");
+    }
+    csvSplitter.init(helper.getMaxColumns(), csvInfo, quotes, separators, terminators);
+}
+
+void CHThorCsvReadActivity::calcFixedDiskRecordSize()
+{
+    fixedDiskRecordSize = 0;
+}
+
+const void *CHThorCsvReadActivity::nextInGroup()
+{
+    while (!stopAfter || (processed - initialProcessed) < stopAfter)
+    {
+        checkOpenNext();
+        if (eofseen)
+            break;
+        if (!inputstream->eos())
+        {
+            size32_t rowSize = 4096; // MORE - make configurable
+            size32_t maxRowSize = 10*1024*1024; // MORE - make configurable
+            size32_t thisLineLength;
+            loop
+            {
+                size32_t avail;
+                const void *peek = inputstream->peek(rowSize, avail);
+                thisLineLength = csvSplitter.splitLine(avail, (const byte *)peek);
+                if (thisLineLength < rowSize || avail < rowSize)
+                    break;
+                if (rowSize == maxRowSize)
+                    throw MakeStringException(99, "File %s contained a line of length greater than %d bytes.", helper.getFileName(), rowSize);
+                if (rowSize >= maxRowSize/2)
+                    rowSize = maxRowSize;
+                else
+                    rowSize += rowSize;
+            }
+
+            RtlDynamicRowBuilder rowBuilder(rowAllocator);
+            unsigned thisSize;
+            try
+            {
+                thisSize = helper.transform(rowBuilder, csvSplitter.queryLengths(), (const char * *)csvSplitter.queryData());
+            }
+            catch(IException * e)
+            {
+                throw makeWrappedException(e);
+            }
+            inputstream->skip(thisLineLength);
+            localOffset += thisLineLength;
+            if (thisSize)
+            {
+                OwnedConstHThorRow ret = rowBuilder.finalizeRowClear(thisSize);
+                if ((processed - initialProcessed) >= limit)
+                {
+                    if ( agent.queryCodeContext()->queryDebugContext())
+                        agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
+                    helper.onLimitExceeded();
+                    return NULL;
+                }
+                processed++;
+                return ret.getClear();
+            }
+        }
+    }
+    close();
+    return NULL;
+}
+
+
+bool CHThorCsvReadActivity::openNext()
+{
+    if (CHThorDiskReadBaseActivity::openNext())
+    {
+        unsigned lines = headerLines;
+        while (lines-- && !inputstream->eos())
+        {
+            size32_t numAvailable;
+            const void * next = inputstream->peek(maxDiskSize, numAvailable);
+            inputstream->skip(csvSplitter.splitLine(numAvailable, (const byte *)next));
+        }
+        // only skip header in the first file - since spray doesn't duplicate the header.
+        headerLines = 0;        
+        return true;
+    }
+    return false;
+}
+
+void CHThorCsvReadActivity::checkOpenNext()
+{
+    agent.reportProgress(NULL);
+    if (!opened)
+    {
+        agent.reportProgress(NULL);
+        open();
+    }
+
+    loop
+    {
+        if (eofseen || !inputstream->eos())
+            return;
+
+        eofseen = !openNext();
+    }
+}
+
+//=====================================================================================================
+
+CHThorXmlReadActivity::CHThorXmlReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlReadArg &_arg, ThorActivityKind _kind) : CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorXmlReadActivity::ready()
+{
+    CHThorDiskReadBaseActivity::ready();
+    rowTransformer.set(helper.queryTransformer());
+    localOffset = 0;
+    limit = helper.getRowLimit();
+    if (helper.getFlags() & TDRlimitskips)
+        limit = (unsigned __int64) -1;
+    stopAfter = helper.getChooseNLimit();
+}
+
+void CHThorXmlReadActivity::done()
+{
+    xmlParser.clear();
+    CHThorDiskReadBaseActivity::done();
+}
+
+void CHThorXmlReadActivity::gatherInfo(IFileDescriptor * fd)
+{
+    PARENT::gatherInfo(fd);
+}
+
+void CHThorXmlReadActivity::calcFixedDiskRecordSize()
+{
+    fixedDiskRecordSize = 0;
+}
+
+const void *CHThorXmlReadActivity::nextInGroup()
+{
+    if(!opened) open();
+    while (!eofseen && (!stopAfter  || (processed - initialProcessed) < stopAfter))
+    {
+        agent.reportProgress(NULL);
+        //call to next() will callback on the IXmlSelect interface
+        bool gotNext = false;
+        try
+        {
+            gotNext = xmlParser->next();
+        }
+        catch(IException * e)
+        {
+            throw makeWrappedException(e, inputfile->queryFilename());
+        }
+        if(!gotNext)
+            eofseen = !openNext();
+        else if (lastMatch)
+        {
+            RtlDynamicRowBuilder rowBuilder(rowAllocator);
+            unsigned sizeGot;
+            try
+            {
+                sizeGot = rowTransformer->transform(rowBuilder, lastMatch, this);
+            }
+            catch(IException * e)
+            {
+                throw makeWrappedException(e);
+            }
+            lastMatch.clear();
+            localOffset = 0;
+            if (sizeGot)
+            {
+                OwnedConstHThorRow ret = rowBuilder.finalizeRowClear(sizeGot);
+                if ((processed - initialProcessed) >= limit)
+                {
+                    if ( agent.queryCodeContext()->queryDebugContext())
+                        agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
+                    helper.onLimitExceeded();
+                    return NULL;
+                }
+                processed++;
+                return ret.getClear();
+            }
+        }
+    }
+    return NULL;
+}
+
+
+bool CHThorXmlReadActivity::openNext()
+{
+    if (inputfileio)
+        offsetOfPart += inputfileio->size();
+    localOffset = 0;
+    if (CHThorDiskReadBaseActivity::openNext())
+    {
+        unsigned readBufferSize = queryReadBufferSize();
+        OwnedIFileIOStream inputfileiostream;
+        if(readBufferSize)
+            inputfileiostream.setown(createBufferedIOStream(inputfileio, readBufferSize));
+        else
+            inputfileiostream.setown(createIOStream(inputfileio));
+
+        xmlParser.setown(createXMLParse(*inputfileiostream, helper.queryIteratorPath(), *this, (0 != (TDRxmlnoroot & helper.getFlags()))?xr_noRoot:xr_none, (helper.getFlags() & TDRusexmlcontents) != 0));
+        return true;
+    }
+    return false;
+}
+
+void CHThorXmlReadActivity::closepart()
+{
+    xmlParser.clear();
+    CHThorDiskReadBaseActivity::closepart();
+}
+
+//---------------------------------------------------------------------------
+
+CHThorLocalResultReadActivity::CHThorLocalResultReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLocalResultReadArg &_arg, ThorActivityKind _kind, __int64 graphId) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+    physicalRecordSize = outputMeta;
+    grouped = outputMeta.isGrouped();
+    graph = resolveLocalQuery(graphId);
+    result = NULL;
+}
+
+void CHThorLocalResultReadActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    result = graph->queryResult(helper.querySequence());
+    curRow = 0;
+}
+
+
+const void *CHThorLocalResultReadActivity::nextInGroup()
+{
+    const void * next = result->queryRow(curRow++);
+    if (next)
+    {
+        processed++;
+        linkHThorRow(next);
+        return next;
+    }
+    return NULL;
+}
+
+//=====================================================================================================
+
+CHThorLocalResultWriteActivity::CHThorLocalResultWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLocalResultWriteArg &_arg, ThorActivityKind _kind, __int64 graphId)
+ : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+    graph = resolveLocalQuery(graphId);
+}
+
+void CHThorLocalResultWriteActivity::execute()
+{
+    IHThorGraphResult * result = graph->createResult(helper.querySequence(), agent.queryCodeContext()->getRowAllocator(input->queryOutputMeta(), activityId));
+    loop
+    {
+        const void *nextrec = input->nextInGroup();
+        if (!nextrec)
+        {
+            nextrec = input->nextInGroup();
+            if (!nextrec)
+                break;
+            result->addRowOwn(NULL);
+        }
+        result->addRowOwn(nextrec);
+    }
+}
+
+//=====================================================================================================
+
+CHThorLocalResultSpillActivity::CHThorLocalResultSpillActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLocalResultSpillArg &_arg, ThorActivityKind _kind, __int64 graphId)
+ : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+    result = NULL;
+    nullPending = false;
+    graph = resolveLocalQuery(graphId);
+    assertex(graph);
+}
+
+void CHThorLocalResultSpillActivity::ready()
+{
+    CHThorSimpleActivityBase::ready(); 
+    result = graph->createResult(helper.querySequence(), agent.queryCodeContext()->getRowAllocator(outputMeta.queryOriginal(), activityId));
+    nullPending = false;
+}
+
+
+const void * CHThorLocalResultSpillActivity::nextInGroup()
+{
+    const void * ret = input->nextInGroup();
+    if (ret)
+    {
+        if (nullPending)
+        {
+            result->addRowOwn(NULL);
+            nullPending = false;
+        }
+        linkHThorRow(ret);
+        result->addRowOwn(ret);
+        processed++;
+    }
+    else
+        nullPending = true;
+
+    return ret;
+}
+
+void CHThorLocalResultSpillActivity::done()
+{
+    loop
+    {
+        const void * ret = input->nextInGroup();
+        if (!ret)
+        {
+            if (nullPending)
+                break;
+            nullPending = true;
+        }
+        else
+        {
+            if (nullPending)
+            {
+                result->addRowOwn(NULL);
+                nullPending = false;
+            }
+            result->addRowOwn(ret);
+        }
+    }
+    CHThorSimpleActivityBase::done(); 
+}
+
+
+//=====================================================================================================
+
+CHThorLoopActivity::CHThorLoopActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLoopArg &_arg, ThorActivityKind _kind)
+ : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+    flags = helper.getFlags();
+    maxIterations = 0;
+}
+
+CHThorLoopActivity::~CHThorLoopActivity()
+{
+    ForEachItemIn(idx, loopPending)
+        releaseHThorRow(loopPending.item(idx));
+}
+
+void CHThorLoopActivity::ready()
+{
+    curInput = input;
+    eof = false;
+    loopCounter = 1;
+    CHThorSimpleActivityBase::ready(); 
+    maxIterations = helper.numIterations();
+    if ((int)maxIterations < 0) maxIterations = 0;
+    finishedLooping = ((kind == TAKloopcount) && (maxIterations == 0));
+    extractBuilder.clear();
+    helper.createParentExtract(extractBuilder);
+}
+
+
+const void * CHThorLoopActivity::nextInGroup()
+{
+    if (eof)
+        return NULL;
+
+    unsigned emptyIterations = 0;
+    loop
+    {
+        loop
+        {
+            const void * ret = curInput->nextInGroup();
+            if (!ret)
+            {
+                ret = curInput->nextInGroup();      // more cope with groups somehow....
+                if (!ret)
+                {
+                    if (finishedLooping)
+                    {
+                        eof = true;
+                        return NULL;
+                    }
+                    break;
+                }
+            }
+
+            if (finishedLooping || 
+                ((flags & IHThorLoopArg::LFfiltered) && !helper.sendToLoop(loopCounter, ret)))
+            {
+                processed++;
+                return ret;
+            }
+            loopPending.append(ret);
+        }
+
+        switch (kind)
+        {
+        case TAKloopdataset:
+            if (!helper.loopAgain(loopCounter, loopPending.ordinality(), (const void * *)loopPending.getArray()))
+            {
+                if (loopPending.ordinality() == 0)
+                {
+                    eof = true;
+                    return NULL;
+                }
+
+                arrayInput.init(&loopPending);
+                curInput = &arrayInput;
+                finishedLooping = true;
+                continue;       // back to the input loop again
+            }
+            break;
+        case TAKlooprow:
+            if (loopPending.empty())
+            {
+                finishedLooping = true;
+                eof = true;
+                return NULL;
+            }
+            break;
+        }
+
+        if (loopPending.ordinality())
+            emptyIterations = 0;
+        else
+        {
+            //note: any outputs which didn't go around the loop again, would return the record, reinitializing emptyIterations
+            emptyIterations++;
+            if (emptyIterations > EMPTY_LOOP_LIMIT)
+                throw MakeStringException(0, "Executed LOOP with empty input and output %u times", emptyIterations);
+            if (emptyIterations % 32 == 0)
+                DBGLOG("Executing LOOP with empty input and output %u times", emptyIterations);
+        }
+
+        void * counterRow = NULL;
+        if (flags & IHThorLoopArg::LFcounter)
+        {
+            counterRow = queryRowManager()->allocate(sizeof(thor_loop_counter_t), activityId);
+            *((thor_loop_counter_t *)counterRow) = loopCounter;
+        }
+
+        Owned<IHThorGraphResult> curResult = loopGraph->execute(counterRow, loopPending, extractBuilder.getbytes());
+        resultInput.init(curResult);
+        curInput = &resultInput;
+
+        loopCounter++;
+        if ((kind == TAKloopcount) && (loopCounter > maxIterations))
+            finishedLooping = true;
+    }
+}
+
+
+void CHThorLoopActivity::done()
+{
+    ForEachItemIn(idx, loopPending)
+        releaseHThorRow(loopPending.item(idx));
+    loopPending.kill();
+    CHThorSimpleActivityBase::done(); 
+}
+
+//---------------------------------------------------------------------------
+
+CHThorGraphLoopResultReadActivity::CHThorGraphLoopResultReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGraphLoopResultReadArg &_arg, ThorActivityKind _kind, __int64 graphId) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(&_arg)
+{
+    physicalRecordSize = outputMeta;
+    grouped = outputMeta.isGrouped();
+    result = NULL;
+    graph = resolveLocalQuery(graphId);
+}
+
+CHThorGraphLoopResultReadActivity::CHThorGraphLoopResultReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _arg, ThorActivityKind _kind, __int64 graphId, unsigned _sequence, bool _grouped) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(NULL)
+{
+    physicalRecordSize = outputMeta;
+    sequence = _sequence;
+    grouped = _grouped;
+    result = NULL;
+    graph = resolveLocalQuery(graphId);
+}
+
+void CHThorGraphLoopResultReadActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    if (helper)
+        sequence = helper->querySequence();
+    if ((int)sequence >= 0)
+        result = graph->queryGraphLoopResult(sequence);
+    else
+        result = NULL;
+    curRow = 0;
+}
+
+
+const void *CHThorGraphLoopResultReadActivity::nextInGroup()
+{
+    if (result)
+    {
+        const void * next = result->queryRow(curRow++);
+        if (next)
+        {
+            processed++;
+            linkHThorRow(next);
+            return (void *)next;
+        }
+    }
+    return NULL;
+}
+
+//=====================================================================================================
+
+CHThorGraphLoopResultWriteActivity::CHThorGraphLoopResultWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGraphLoopResultWriteArg &_arg, ThorActivityKind _kind, __int64 graphId)
+ : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+    graph = resolveLocalQuery(graphId);
+}
+
+void CHThorGraphLoopResultWriteActivity::execute()
+{
+    IHThorGraphResult * result = graph->createGraphLoopResult(agent.queryCodeContext()->getRowAllocator(input->queryOutputMeta(), activityId));
+    loop
+    {
+        const void *nextrec = input->nextInGroup();
+        if (!nextrec)
+        {
+            nextrec = input->nextInGroup();
+            if (!nextrec)
+                break;
+            result->addRowOwn(NULL);
+        }
+        result->addRowOwn(nextrec);
+    }
+}
+
+//=====================================================================================================
+
+class CCounterMeta : public CInterface, implements IOutputMetaData
+{
+public:
+    IMPLEMENT_IINTERFACE
+
+    virtual size32_t getRecordSize(const void *rec)         { return sizeof(thor_loop_counter_t); }
+    virtual size32_t getMinRecordSize() const               { return sizeof(thor_loop_counter_t); }
+    virtual size32_t getFixedSize() const                   { return sizeof(thor_loop_counter_t); }
+    virtual void toXML(const byte * self, IXmlWriter & out) { }
+    virtual unsigned getVersion() const                     { return OUTPUTMETADATA_VERSION; }
+    virtual unsigned getMetaFlags()                         { return 0; }
+    virtual void destruct(byte * self)  {}
+    virtual IOutputRowSerializer * createRowSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual IOutputRowDeserializer * createRowDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual ISourceRowPrefetcher * createRowPrefetcher(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual IOutputMetaData * querySerializedMeta() { return this; }
+    virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) {}
+};
+
+//=====================================================================================================
+
+CHThorGraphLoopActivity::CHThorGraphLoopActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGraphLoopArg &_arg, ThorActivityKind _kind)
+ : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+    flags = helper.getFlags();
+    maxIterations = 0;
+    counterMeta.setown(new CCounterMeta);
+}
+
+void CHThorGraphLoopActivity::ready()
+{
+    executed = false;
+    resultIndex = 0;
+    CHThorSimpleActivityBase::ready(); 
+    maxIterations = helper.numIterations();
+    if ((int)maxIterations < 0) maxIterations = 0;
+    loopResults.setown(agent.createGraphLoopResults());
+    extractBuilder.clear();
+    helper.createParentExtract(extractBuilder);
+    rowAllocator.setown(agent.queryCodeContext()->getRowAllocator(queryOutputMeta(), activityId));
+    rowAllocatorCounter.setown(agent.queryCodeContext()->getRowAllocator(counterMeta, activityId));
+}
+
+
+const void * CHThorGraphLoopActivity::nextInGroup()
+{
+    if (!executed)
+    {
+        executed = true;
+
+        IHThorGraphResult * inputResult = loopResults->createResult(0, LINK(rowAllocator));
+        loop
+        {
+            const void * ret = input->nextInGroup();
+            if (!ret)
+            {
+                ret = input->nextInGroup();
+                if (!ret)
+                    break;
+                inputResult->addRowOwn(NULL);
+            }
+            inputResult->addRowOwn(ret);
+        }
+
+        for (unsigned loopCounter = 1; loopCounter <= maxIterations; loopCounter++)
+        {
+            void * counterRow = NULL;
+            if (flags & IHThorGraphLoopArg::GLFcounter)
+            {
+                counterRow = rowAllocatorCounter->createRow();
+                *((thor_loop_counter_t *)counterRow) = loopCounter;
+                counterRow = rowAllocatorCounter->finalizeRow(sizeof(thor_loop_counter_t), counterRow, sizeof(thor_loop_counter_t));
+            }
+            loopGraph->execute(counterRow, loopResults, extractBuilder.getbytes());
+        }
+
+        int iNumResults = loopResults->ordinality();
+        finalResult = loopResults->queryResult(iNumResults-1); //Get the last result, which isnt necessarily 'maxIterations'
+    }
+
+    const void * next = finalResult->getOwnRow(resultIndex++);
+    if (next)
+        processed++;
+    return next;
+}
+
+
+void CHThorGraphLoopActivity::done()
+{
+    rowAllocator.clear();
+    finalResult = NULL;
+    loopResults.clear();
+    CHThorSimpleActivityBase::done(); 
+}
+
+//=====================================================================================================
+
+CHThorParallelGraphLoopActivity::CHThorParallelGraphLoopActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGraphLoopArg &_arg, ThorActivityKind _kind)
+ : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+    flags = helper.getFlags();
+    maxIterations = 0;
+}
+
+void CHThorParallelGraphLoopActivity::ready()
+{
+    executed = false;
+    resultIndex = 0;
+    CHThorSimpleActivityBase::ready(); 
+    maxIterations = helper.numIterations();
+    if ((int)maxIterations < 0) maxIterations = 0;
+    loopResults.setown(agent.createGraphLoopResults());
+    extractBuilder.clear();
+    helper.createParentExtract(extractBuilder);
+    rowAllocator.setown(agent.queryCodeContext()->getRowAllocator(queryOutputMeta(), activityId));
+}
+
+
+const void * CHThorParallelGraphLoopActivity::nextInGroup()
+{
+    if (!executed)
+    {
+        executed = true;
+
+        IHThorGraphResult * inputResult = loopResults->createResult(0, LINK(rowAllocator));
+        loop
+        {
+            const void * ret = input->nextInGroup();
+            if (!ret)
+            {
+                ret = input->nextInGroup();
+                if (!ret)
+                    break;
+                inputResult->addRowOwn(NULL);
+            }
+            inputResult->addRowOwn(ret);
+        }
+
+//      The lack of separation between pre-creation and creation means this would require cloning lots of structures.
+//      not implemented for the moment.
+//      loopGraph->executeParallel(loopResults, extractBuilder.getbytes(), maxIterations);
+
+        finalResult = loopResults->queryResult(maxIterations);
+    }
+
+    const void * next = finalResult->getOwnRow(resultIndex++);
+    if (next)
+        processed++;
+    return next;
+}
+
+
+void CHThorParallelGraphLoopActivity::done()
+{
+    rowAllocator.clear();
+    finalResult = NULL;
+    loopResults.clear();
+    CHThorSimpleActivityBase::done(); 
+}
+
+//=====================================================================================================
+
+LibraryCallOutput::LibraryCallOutput(CHThorLibraryCallActivity * _owner, unsigned _output, IOutputMetaData * _meta) : owner(_owner), output(_output), meta(_meta)
+{
+    processed = 0;
+}
+
+const void * LibraryCallOutput::nextInGroup()
+{
+    if (!gotRows)
+    {
+        result.set(owner->getResultRows(output));
+        gotRows = true;
+    }
+
+    const void * ret = result->getOwnRow(curRow++);
+    if (ret)
+        processed++;
+    return ret;
+}
+
+bool LibraryCallOutput::isGrouped()
+{
+    return meta->isGrouped();
+}
+
+IOutputMetaData * LibraryCallOutput::queryOutputMeta() const
+{
+    return meta;
+}
+
+void LibraryCallOutput::ready()
+{
+    owner->ready();
+    gotRows = false;
+    result.clear();
+    curRow = 0;
+}
+
+void LibraryCallOutput::done()
+{
+    owner->done();
+    result.clear();
+}
+
+void LibraryCallOutput::updateProgress(IWUGraphProgress &progress) const
+{
+    owner->updateOutputProgress(progress, *this, processed);
+}
+
+
+CHThorLibraryCallActivity::CHThorLibraryCallActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLibraryCallArg &_arg, ThorActivityKind _kind, IPropertyTree * node)
+ : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+    libraryName.set(node->queryProp("att[@name=\"libname\"]/@value"));
+    interfaceHash = node->getPropInt("att[@name=\"_interfaceHash\"]/@value", 0);
+    embedded = node->getPropBool("att[@name=\"embedded\"]/@value", false) ;
+
+    Owned<IPropertyTreeIterator> iter = node->getElements("att[@name=\"_outputUsed\"]");
+    ForEach(*iter)
+    {
+        unsigned whichOutput = iter->query().getPropInt("@value");
+        IOutputMetaData * meta = helper.queryOutputMeta(whichOutput);
+        outputs.append(*new LibraryCallOutput(this, whichOutput, meta));
+    }
+
+    state = StateCreated;
+}
+
+IHThorGraphResult * CHThorLibraryCallActivity::getResultRows(unsigned whichOutput)
+{
+    CriticalBlock procedure(cs);
+
+    if (!results)
+    {
+        if (libraryName.length() == 0)
+            libraryName.setown(helper.getLibraryName());
+        helper.createParentExtract(extractBuilder);
+        results.setown(agent.executeLibraryGraph(libraryName, interfaceHash, activityId, embedded, extractBuilder.getbytes()));
+    }
+
+    return results->queryResult(whichOutput);
+}
+
+
+IHThorInput * CHThorLibraryCallActivity::queryOutput(unsigned idx)
+{
+    assert(outputs.isItem(idx));
+    return &outputs.item(idx);
+}
+
+void CHThorLibraryCallActivity::updateOutputProgress(IWUGraphProgress &progress, const LibraryCallOutput & _output, unsigned __int64 numProcessed) const
+{
+    LibraryCallOutput & output = const_cast<LibraryCallOutput &>(_output);
+    updateProgressForOther(progress, activityId, subgraphId, outputs.find(output), numProcessed);
+}
+
+
+void CHThorLibraryCallActivity::ready()
+{
+    CriticalBlock procedure(cs);
+    if (state != StateReady)
+    {
+        results.clear();
+        CHThorSimpleActivityBase::ready();
+        state = StateReady;
+    }
+}
+
+
+const void * CHThorLibraryCallActivity::nextInGroup()
+{
+    throwUnexpected();
+}
+
+
+void CHThorLibraryCallActivity::done()
+{
+    CriticalBlock procedure(cs);
+    if (state != StateDone)
+    {
+        results.clear();
+        CHThorSimpleActivityBase::done(); 
+    }
+}
+
+
+//=====================================================================================================
+
+class CHThorNWayInputActivity : public CHThorSimpleActivityBase, implements IHThorNWayInput
+{
+    IHThorNWayInputArg & helper;
+    InputArrayType inputs;
+    InputArrayType selectedInputs;
+
+public:
+    CHThorNWayInputActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayInputArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+    {
+    }
+
+    virtual void ready()
+    {
+        bool selectionIsAll;
+        size32_t selectionLen;
+        rtlDataAttr selection;
+        helper.getInputSelection(selectionIsAll, selectionLen, selection.refdata());
+        selectedInputs.kill();
+        if (selectionIsAll)
+        {
+            ForEachItemIn(i, inputs)
+                selectedInputs.append(inputs.item(i));
+        }
+        else
+        {
+            const size32_t * selections = (const size32_t *)selection.getdata();
+            unsigned max = selectionLen/sizeof(size32_t);
+            for (unsigned i = 0; i < max; i++)
+            {
+                unsigned nextIndex = selections[i];
+                //Check there are no duplicates.....  Assumes there are a fairly small number of inputs, so n^2 search is ok.
+                for (unsigned j=i+1; j < max; j++)
+                {
+                    if (nextIndex == selections[j])
+                        throw MakeStringException(100, "Selection list for nway input can not contain duplicates");
+                }
+                if (!inputs.isItem(nextIndex-1))
+                    throw MakeStringException(100, "Index %d in RANGE selection list is out of range", nextIndex);
+
+                selectedInputs.append(inputs.item(nextIndex-1));
+            }
+        }
+
+        ForEachItemIn(i2, selectedInputs)
+            selectedInputs.item(i2)->ready();
+    }
+
+    virtual void setInput(unsigned idx, IHThorInput *_in)
+    {
+        assertex(idx == inputs.ordinality());
+        inputs.append(_in);
+    }
+
+    virtual const void * nextInGroup()
+    {
+        throwUnexpected();
+    }
+
+    virtual void updateProgress(IWUGraphProgress &progress) const
+    {
+//      CHThorSimpleActivityBase::updateProgress(progress);
+        ForEachItemIn(i, inputs)
+            inputs.item(i)->updateProgress(progress);
+    }
+
+    virtual unsigned numConcreteOutputs() const
+    {
+        return selectedInputs.ordinality();
+    }
+
+    virtual IHThorInput * queryConcreteInput(unsigned idx) const
+    {
+        if (selectedInputs.isItem(idx))
+            return selectedInputs.item(idx);
+        return NULL;
+    }
+};
+
+//=====================================================================================================
+
+class CHThorNWayGraphLoopResultReadActivity : public CHThorSimpleActivityBase, implements IHThorNWayInput
+{
+    IHThorNWayGraphLoopResultReadArg & helper;
+    CIArrayOf<CHThorActivityBase> inputs;
+    __int64 graphId;
+    bool grouped;
+
+public:
+    CHThorNWayGraphLoopResultReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayGraphLoopResultReadArg &_arg, ThorActivityKind _kind, __int64 _graphId) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+    {
+        grouped = helper.isGrouped();
+        graphId = _graphId;
+    }
+
+    virtual bool isGrouped() 
+    { 
+        return grouped; 
+    }
+
+    virtual void ready()
+    {
+        bool selectionIsAll;
+        size32_t selectionLen;
+        rtlDataAttr selection;
+        helper.getInputSelection(selectionIsAll, selectionLen, selection.refdata());
+        if (selectionIsAll)
+            throw MakeStringException(100, "ALL not yet supported for NWay graph inputs");
+
+        unsigned max = selectionLen / sizeof(size32_t);
+        const size32_t * selections = (const size32_t *)selection.getdata();
+        for (unsigned i = 0; i < max; i++)
+        {
+            CHThorActivityBase * resultInput = new CHThorGraphLoopResultReadActivity(agent, activityId, subgraphId, helper, kind, graphId, selections[i], grouped);
+            inputs.append(*resultInput);
+            resultInput->ready();
+        }
+    }
+
+    virtual void done()
+    {
+        inputs.kill();
+    }
+
+    virtual void setInput(unsigned idx, IHThorInput *_in)
+    {
+        throwUnexpected();
+    }
+
+    virtual const void * nextInGroup()
+    {
+        throwUnexpected();
+    }
+
+    virtual unsigned numConcreteOutputs() const
+    {
+        return inputs.ordinality();
+    }
+
+    virtual IHThorInput * queryConcreteInput(unsigned idx) const
+    {
+        if (inputs.isItem(idx))
+            return &inputs.item(idx);
+        return NULL;
+    }
+};
+
+//=====================================================================================================
+
+CHThorNWaySelectActivity::CHThorNWaySelectActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNWaySelectArg &_arg, ThorActivityKind _kind) : CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+    selectedInput = NULL;
+}
+
+void CHThorNWaySelectActivity::done()
+{
+    selectedInput = NULL;
+    CHThorMultiInputActivity::done();
+}
+
+void CHThorNWaySelectActivity::ready()
+{
+    CHThorMultiInputActivity::ready();
+    unsigned whichInput = helper.getInputIndex();
+
+    selectedInput = NULL;
+    if (whichInput--)
+    {
+        ForEachItemIn(i, inputs)
+        {
+            IHThorInput * cur = inputs.item(i);
+            IHThorNWayInput * nWayInput = dynamic_cast<IHThorNWayInput *>(cur);
+            if (nWayInput)
+            {
+                unsigned numRealInputs = nWayInput->numConcreteOutputs();
+                if (whichInput < numRealInputs)
+                    selectedInput = nWayInput->queryConcreteInput(whichInput);
+                whichInput -= numRealInputs;
+            }
+            else
+            {
+                if (whichInput == 0)
+                    selectedInput = cur;
+                whichInput -= 1;
+            }
+            if (selectedInput)
+                break;
+        }
+    }
+}
+
+const void * CHThorNWaySelectActivity::nextInGroup()
+{
+    if (!selectedInput)
+        return NULL;
+    return selectedInput->nextInGroup();
+}
+
+
+const void * CHThorNWaySelectActivity::nextGE(const void * seek, unsigned numFields)
+{
+    if (!selectedInput)
+        return NULL;
+    return selectedInput->nextGE(seek, numFields);
+}
+
+IInputSteppingMeta * CHThorNWaySelectActivity::querySteppingMeta()
+{
+    if (selectedInput)
+        return selectedInput->querySteppingMeta();
+    return NULL;
+}
+
+//=====================================================================================================
+CHThorStreamedIteratorActivity::CHThorStreamedIteratorActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorStreamedIteratorArg &_arg, ThorActivityKind _kind) 
+    : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorStreamedIteratorActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    rows.setown(helper.createInput());
+}
+
+const void *CHThorStreamedIteratorActivity::nextInGroup()
+{
+    assertex(rows);
+    const void * next = rows->nextRow();
+    if (next)
+        processed++;
+    return next;
+}
+
+void CHThorStreamedIteratorActivity::done()
+{
+    if (rows)
+    {
+        rows->stop();
+        rows.clear();
+    }
+}
+
+
+//=====================================================================================================
+
+CHThorExternalActivity::CHThorExternalActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorExternalArg &_arg, ThorActivityKind _kind, IPropertyTree * _graphNode) 
+: CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), graphNode(_graphNode)
+{
+}
+
+void CHThorExternalActivity::ready()
+{
+    CHThorMultiInputActivity::ready();
+    //must be called after onStart()
+    processor.setown(helper.createProcessor());
+    processor->onCreate(agent.queryCodeContext(), graphNode);
+    ForEachItemIn(idx, inputs)
+    {
+        Owned<CHThorInputAdaptor> adaptedInput = new CHThorInputAdaptor(inputs.item(idx));
+        processor->addInput(idx, adaptedInput);
+    }
+    processor->start();
+    if (outputMeta.getMinRecordSize() > 0)
+        rows.setown(processor->createOutput(0));
+}
+
+const void *CHThorExternalActivity::nextInGroup()
+{
+    assertex(rows);
+    const void * next = rows->nextRow();
+    if (next)
+        processed++;
+    return next;
+}
+
+void CHThorExternalActivity::execute()
+{
+    assertex(!rows);
+    processor->execute();
+}
+
+void CHThorExternalActivity::reset()
+{
+    rows.clear();
+    processor->reset();
+    processor.clear();
+}
+
+void CHThorExternalActivity::done()
+{
+    if (rows)
+    {
+        rows->stop();
+        rows.clear();
+    }
+    processor->stop();
+}
+
+
+//=====================================================================================================
+
+MAKEFACTORY(DiskWrite);
+MAKEFACTORY(Iterate);
+MAKEFACTORY(Filter);
+MAKEFACTORY(Aggregate);
+MAKEFACTORY(Rollup);
+MAKEFACTORY(Project);
+MAKEFACTORY(PrefetchProject);
+MAKEFACTORY(FilterProject);
+
+extern HTHOR_API IHThorActivity * createGroupDedupActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorDedupArg & arg, ThorActivityKind kind)
+{
+    if(arg.compareAll())
+        return new CHThorGroupDedupAllActivity(_agent, _activityId, _subgraphId, arg, kind);
+    else
+        return new CHThorGroupDedupActivity(_agent, _activityId, _subgraphId, arg, kind);
+}
+
+MAKEFACTORY(HashDedup);
+MAKEFACTORY(Group);
+MAKEFACTORY(Degroup);
+MAKEFACTORY_ARG(GroupSort, Sort);
+MAKEFACTORY(Join);
+MAKEFACTORY_ARG(SelfJoin, Join);
+MAKEFACTORY_ARG(LookupJoin, HashJoin);
+MAKEFACTORY(AllJoin);
+MAKEFACTORY(WorkUnitWrite);
+MAKEFACTORY(FirstN);
+MAKEFACTORY(Count);
+MAKEFACTORY(TempTable);
+MAKEFACTORY_ARG(Concat, Funnel);
+MAKEFACTORY(Apply);
+MAKEFACTORY(Sample);
+MAKEFACTORY(Normalize);
+MAKEFACTORY(NormalizeChild);
+MAKEFACTORY(NormalizeLinkedChild);
+MAKEFACTORY(Distribution);
+MAKEFACTORY(RemoteResult);
+MAKEFACTORY(ChooseSets);
+MAKEFACTORY_ARG(ChooseSetsLast, ChooseSetsEx);
+MAKEFACTORY_ARG(ChooseSetsEnth, ChooseSetsEx);
+MAKEFACTORY(WorkunitRead);
+MAKEFACTORY(PipeRead);
+MAKEFACTORY(PipeWrite);
+MAKEFACTORY(CsvWrite);
+MAKEFACTORY(XmlWrite);
+MAKEFACTORY(PipeThrough);
+MAKEFACTORY(If);
+
+extern HTHOR_API IHThorActivity *createChildIfActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIfArg &arg, ThorActivityKind kind)
+{
+    return new CHThorIfActivity(_agent, _activityId, _subgraphId, arg, kind);
+}
+
+MAKEFACTORY(HashAggregate);
+MAKEFACTORY(Null);
+MAKEFACTORY(SideEffect);
+MAKEFACTORY(Action);
+MAKEFACTORY(SelectN);
+MAKEFACTORY(Spill);
+MAKEFACTORY(Limit);
+MAKEFACTORY_ARG(SkipLimit, Limit);
+MAKEFACTORY_ARG(OnFailLimit, Limit);
+MAKEFACTORY(Catch);
+MAKEFACTORY_ARG(SkipCatch, Catch);
+MAKEFACTORY(CountProject);
+MAKEFACTORY(IndexWrite);
+MAKEFACTORY(Parse);
+MAKEFACTORY(Enth);
+MAKEFACTORY(TopN);
+MAKEFACTORY(XmlParse);
+MAKEFACTORY(Merge);
+MAKEFACTORY_ARG(HttpRowCall, HttpCall);
+MAKEFACTORY_ARG(SoapRowCall, SoapCall);
+MAKEFACTORY_ARG(SoapRowAction, SoapAction);
+MAKEFACTORY_ARG(SoapDatasetCall, SoapCall);
+MAKEFACTORY_ARG(SoapDatasetAction, SoapAction);
+MAKEFACTORY(DatasetResult);
+MAKEFACTORY(RowResult);
+MAKEFACTORY(ChildIterator);
+
+extern HTHOR_API IHThorActivity *createDummyActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &arg, ThorActivityKind kind)
+{
+    return new CHThorDummyActivity(_agent, _activityId, _subgraphId, arg, kind);
+}
+
+MAKEFACTORY_EXTRA(LibraryCall, IPropertyTree *)
+MAKEFACTORY(ChildNormalize)
+MAKEFACTORY(ChildAggregate)
+MAKEFACTORY(ChildGroupAggregate)
+MAKEFACTORY(ChildThroughNormalize)
+
+MAKEFACTORY(DiskRead)
+MAKEFACTORY(DiskNormalize)
+MAKEFACTORY(DiskAggregate)
+MAKEFACTORY(DiskCount)
+MAKEFACTORY(DiskGroupAggregate)
+MAKEFACTORY(CsvRead)
+MAKEFACTORY(XmlRead)
+
+MAKEFACTORY_EXTRA(LocalResultRead, __int64)
+MAKEFACTORY_EXTRA(LocalResultWrite, __int64)
+MAKEFACTORY_EXTRA(LocalResultSpill, __int64)
+MAKEFACTORY_EXTRA(GraphLoopResultRead, __int64)
+MAKEFACTORY_EXTRA(GraphLoopResultWrite, __int64)
+MAKEFACTORY_EXTRA(NWayGraphLoopResultRead, __int64)
+
+MAKEFACTORY(Combine)
+MAKEFACTORY(RollupGroup)
+MAKEFACTORY(Regroup)
+MAKEFACTORY(CombineGroup)
+MAKEFACTORY(Case)
+MAKEFACTORY(RawIterator)
+MAKEFACTORY(LinkedRawIterator)
+MAKEFACTORY(GraphLoop)
+MAKEFACTORY(Loop)
+MAKEFACTORY(Process)
+MAKEFACTORY(Grouped)
+MAKEFACTORY(Sorted)
+MAKEFACTORY(NWayInput)
+MAKEFACTORY(NWaySelect)
+MAKEFACTORY(NonEmpty)
+MAKEFACTORY(FilterGroup);
+MAKEFACTORY(StreamedIterator);
+MAKEFACTORY_EXTRA(External, IPropertyTree *);
+
+IHThorException * makeHThorException(ThorActivityKind kind, unsigned activityId, unsigned subgraphId, int code, char const * format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    IHThorException * ret = new CHThorException(code, format, args, MSGAUD_user, kind, activityId, subgraphId);
+    va_end(args);
+    return ret;
+}
+
+IHThorException * makeHThorException(ThorActivityKind kind, unsigned activityId, unsigned subgraphId, IException * exc)
+{
+    return new CHThorException(exc, kind, activityId, subgraphId);
+}
+
+IHThorException * makeHThorException(ThorActivityKind kind, unsigned activityId, unsigned subgraphId, IException * exc, char const * extra)
+{
+    return new CHThorException(exc, extra, kind, activityId, subgraphId);
+}
+
+extern HTHOR_API IEngineRowAllocator * createHThorRowAllocator(IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId)
+{
+    return new HThorEngineRowAllocator(_rowManager, _meta, _activityId, _allocatorId);  
+}
+
+static class RowCallbackHook : implements IRtlRowCallback
+{
+public:
+    virtual void releaseRow(const void * row) const
+    {
+        releaseHThorRow(row);
+    }
+    virtual void releaseRowset(unsigned count, byte * * rowset) const
+    {
+        if (rowset)
+        {
+            if (!roxiemem::HeapletBase::isShared(rowset))
+            {
+                byte * * finger = rowset;
+                while (count--)
+                    releaseHThorRow(*finger++);
+            }
+            releaseHThorRow(rowset);
+        }
+    }
+    virtual void * linkRow(const void * row) const
+    {
+        if (row) 
+            linkHThorRow(row);
+        return const_cast<void *>(row);
+    }
+    virtual byte * * linkRowset(byte * * rowset) const
+    {
+        if (rowset)
+            linkHThorRow(rowset);
+        return const_cast<byte * *>(rowset);
+    }
+} callbackHook;
+
+extern HTHOR_API IRtlRowCallback * queryHThorRtlRowCallback() { return &callbackHook; }

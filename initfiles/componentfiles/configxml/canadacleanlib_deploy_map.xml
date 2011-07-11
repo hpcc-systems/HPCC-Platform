@@ -1,0 +1,15 @@
+<!--
+
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+-->
+
+<?xml version='1.0' encoding='UTF-8'?>   
+<!-- Plugins/CanadaCleanLib install set -->          
+<InstallSet xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' 
+xsi:noNamespaceSchemaLocation='InstallSet.xsd' 
+processName='PluginProcess'             
+schema='plugin.xsd' deployable='no'>    
+<File name='deploy_map.xml'/>           
+<File name='plugin.xsd' method='schema'/>
+<File name='libcanadacleanlib.so' srcPath='..\..\libs'/>
+</InstallSet>                           

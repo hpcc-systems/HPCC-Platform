@@ -1,0 +1,42 @@
+<Dataset name='Result 1'>
+ <Row><numpeoplewithauthoredbooks>3</numpeoplewithauthoredbooks><numpeople>3</numpeople></Row>
+ <Row><numpeoplewithauthoredbooks>2</numpeoplewithauthoredbooks><numpeople>2</numpeople></Row>
+ <Row><numpeoplewithauthoredbooks>1</numpeoplewithauthoredbooks><numpeople>2</numpeople></Row>
+ <Row><numpeoplewithauthoredbooks>1</numpeoplewithauthoredbooks><numpeople>1</numpeople></Row>
+ <Row><numpeoplewithauthoredbooks>2</numpeoplewithauthoredbooks><numpeople>2</numpeople></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><_unnamed_1>2</_unnamed_1><_unnamed_2>3</_unnamed_2></Row>
+ <Row><_unnamed_1>2</_unnamed_1><_unnamed_2>2</_unnamed_2></Row>
+ <Row><_unnamed_1>1</_unnamed_1><_unnamed_2>2</_unnamed_2></Row>
+ <Row><_unnamed_1>1</_unnamed_1><_unnamed_2>1</_unnamed_2></Row>
+ <Row><_unnamed_1>2</_unnamed_1><_unnamed_2>2</_unnamed_2></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><_unnamed_1>3</_unnamed_1></Row>
+ <Row><_unnamed_1>2</_unnamed_1></Row>
+ <Row><_unnamed_1>1</_unnamed_1></Row>
+ <Row><_unnamed_1>1</_unnamed_1></Row>
+ <Row><_unnamed_1>2</_unnamed_1></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><_unnamed_1>1</_unnamed_1><_unnamed_2>3</_unnamed_2></Row>
+ <Row><_unnamed_1>1</_unnamed_1><_unnamed_2>2</_unnamed_2></Row>
+ <Row><_unnamed_1>0</_unnamed_1><_unnamed_2>2</_unnamed_2></Row>
+ <Row><_unnamed_1>0</_unnamed_1><_unnamed_2>1</_unnamed_2></Row>
+ <Row><_unnamed_1>2</_unnamed_1><_unnamed_2>2</_unnamed_2></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><_unnamed_1>2</_unnamed_1><_unnamed_2>3</_unnamed_2></Row>
+ <Row><_unnamed_1>2</_unnamed_1><_unnamed_2>2</_unnamed_2></Row>
+ <Row><_unnamed_1>1</_unnamed_1><_unnamed_2>2</_unnamed_2></Row>
+ <Row><_unnamed_1>1</_unnamed_1><_unnamed_2>1</_unnamed_2></Row>
+ <Row><_unnamed_1>2</_unnamed_1><_unnamed_2>2</_unnamed_2></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><_unnamed_1>3</_unnamed_1><_unnamed_2>3</_unnamed_2></Row>
+ <Row><_unnamed_1>2</_unnamed_1><_unnamed_2>2</_unnamed_2></Row>
+ <Row><_unnamed_1>1</_unnamed_1><_unnamed_2>2</_unnamed_2></Row>
+ <Row><_unnamed_1>1</_unnamed_1><_unnamed_2>1</_unnamed_2></Row>
+ <Row><_unnamed_1>2</_unnamed_1><_unnamed_2>2</_unnamed_2></Row>
+</Dataset>

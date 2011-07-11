@@ -1,0 +1,13 @@
+<Dataset name='Result 1'>
+</Dataset>
+<Dataset name='Result 2'>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><dl>id2                 </dl><seq>0</seq><date>20030910</date><num>2</num><imglength>3</imglength><_fpos>35</_fpos></Row>
+ <Row><dl>id2                 </dl><seq>1</seq><date>20030905</date><num>2</num><imglength>3</imglength><_fpos>68</_fpos></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><dl>id2                 </dl><seq>0</seq><date>20030910</date><num>2</num><imglength>3</imglength><_fpos>35</_fpos></Row>
+</Dataset>
+<Dataset name='Result 5'>
+</Dataset>

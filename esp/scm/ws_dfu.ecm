@@ -1,0 +1,659 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+#include "xslprocessor.hpp" 
+//  ===========================================================================
+
+ESPStruct SpaceItem
+{
+    string Name;
+    string LargestFile;
+    string SmallestFile;
+    int64 NumOfFilesInt;
+    int64 NumOfFilesIntUnknown;
+    int64 TotalSizeInt;
+    int64 LargestSizeInt;
+    int64 SmallestSizeInt;
+};
+
+ESPStruct DFULogicalFile
+{
+    string Prefix;      
+    string ClusterName; 
+    string Directory;
+    string Description;
+    string Parts;
+    string Name;
+    string Owner;
+    string Totalsize;
+    string RecordCount;
+    string Modified;
+    string LongSize;
+    string LongRecordCount;
+    bool   isSuperfile;
+    bool   isZipfile;
+    bool   isDirectory(false);
+    bool   Replicate(false);
+    [min_ver("1.01")] int64 IntSize;
+    [min_ver("1.01")] int64 IntRecordCount;
+    [min_ver("1.02")] bool FromRoxieCluster;
+    [min_ver("1.03")] bool BrowseData;
+    [min_ver("1.14")] bool IsKeyFile;
+};
+
+ESPStruct DFUPart
+{
+    int Id;
+    int Copy;
+    string ActualSize;
+    string Ip;
+    string Partsize;
+};
+
+ESPStruct DFUFileStat
+{
+    string MinSkew;
+    string MaxSkew;
+};
+
+ESPStruct DFUFileDetail
+{
+    string Name;
+    string Filename;
+    string Description;
+    string Dir;
+    string PathMask;
+    string Filesize;
+    string ActualSize;
+    string RecordSize;
+    string RecordCount;
+    string Wuid;
+    string Owner;
+    string Cluster;
+    string JobName;
+    string Persistent;
+    string Format;
+    string MaxRecordSize;
+    string CsvSeparate;
+    string CsvQuote;
+    string CsvTerminate;
+    string Modified;
+    string Ecl;
+    bool ZipFile(false);
+    ESPstruct DFUFileStat Stat;
+    ESParray<ESPstruct DFUPart> DFUFileParts;
+    bool isSuperfile(false);
+    bool ShowFileContent(true);
+    ESParray<string> subfiles;
+    [min_ver("1.01")] ESParray<ESPStruct DFULogicalFile> Superfiles;
+    [min_ver("1.06")] bool FromRoxieCluster;
+    [min_ver("1.07")] ESParray<string, ECLGraph> Graphs;
+    [min_ver("1.09")] string UserPermission;
+};
+
+ESPStruct DFUSpaceItem
+{
+    string Name;
+    string NumOfFiles;
+    string NumOfFilesUnknown;
+    string TotalSize;
+    string LargestFile;
+    string LargestSize;
+    string SmallestFile;
+    string SmallestSize;
+};
+
+ESPrequest 
+[
+]
+DFUQueryRequest
+{
+    string Prefix;
+    string ClusterName;
+    string LogicalName;
+    string Description;
+    string Owner;
+    string StartDate;
+    string EndDate;
+    string FileType;
+    int64 FileSizeFrom(-1);
+    int64 FileSizeTo(-1);
+    int FirstN(-1);
+    string FirstNType;
+
+    int PageSize;
+    int PageStartFrom;
+    //int CurrentPage;
+    string Sortby;
+    bool Descending(false);
+
+    bool OneLevelDirFileReturn(false);
+};
+
+ESPresponse 
+[
+   exceptions_inline
+]
+DFUQueryResponse
+{
+    ESParray<ESPstruct DFULogicalFile> DFULogicalFiles;
+
+    string Prefix;
+    string ClusterName;
+    string LogicalName;
+    string Description;
+    string Owner;
+    string StartDate;
+    string EndDate;
+    string FileType;
+    int64 FileSizeFrom(-1);
+    int64 FileSizeTo(-1);
+    int FirstN(-1);
+    string FirstNType;
+
+    int PageSize(20);
+    int64 PageStartFrom(1);
+    int64 LastPageFrom(-1);
+    int64 PageEndAt;
+    int64 PrevPageFrom(-1);
+    int64 NextPageFrom(-1);
+    int64 NumFiles;
+    //bool First(true);
+    string Sortby;
+    bool Descending(false);
+    string BasicQuery;
+    string ParametersForPaging;
+    string Filters;
+};
+
+ESPrequest 
+[
+]
+DFUSearchRequest
+{
+    string ShowExample;
+};
+
+ESPresponse 
+[
+   exceptions_inline
+]
+DFUSearchResponse
+{
+    string ShowExample;
+    ESParray<string, ClusterName> ClusterNames;
+    ESParray<string, FileType> FileTypes;
+};
+
+ESPrequest
+[
+]
+DFUArrayActionRequest
+{
+    DFUActionType Type;
+    bool NoDelete;
+    [min_ver("1.04")] string BackToPage;
+    ESParray<string> LogicalFiles;
+};
+
+ESPresponse 
+[
+    exceptions_inline,
+    encode(0)
+] 
+DFUArrayActionResponse
+{
+    [min_ver("1.04")] string BackToPage;
+    [min_ver("1.18")] string RedirectTo;
+    string DFUArrayActionResult;
+};
+
+ESPrequest 
+[
+]
+DFUInfoRequest
+{
+    string Name;
+    string Cluster;
+    //string NewDescription;
+    bool UpdateDescription(false);
+    string FileName;
+    string FileDesc;
+};
+
+ESPresponse 
+[
+    exceptions_inline
+]
+DFUInfoResponse
+{
+    ESPstruct DFUFileDetail FileDetail;
+};
+
+ESPrequest []
+DFUDefFileRequest
+{
+    string Name;
+    string Format;
+};
+
+ESPresponse 
+[
+    exceptions_inline
+]
+DFUDefFileResponse
+{
+    [http_content("application/octet-stream")] binary defFile;
+};
+
+ESPrequest SuperfileActionRequest
+{
+    string action;
+    string superfile;
+    ESParray<string> subfiles;
+    string before;
+    bool delete;
+};
+
+ESPresponse [exceptions_inline, nil_remove] SuperfileActionResponse
+{
+    string superfile;
+    int    retcode;
+};
+
+ESPrequest AddtoSuperfileRequest
+{
+    string Superfile;
+    string Subfiles;
+    ESParray<string> names;
+    bool ExistingFile(false);
+    [min_ver("1.18")] string BackToPage;
+};
+
+ESPresponse [exceptions_inline, nil_remove] AddtoSuperfileResponse
+{
+    string Subfiles;
+    [min_ver("1.18")] string BackToPage;
+    [min_ver("1.16")] ESParray<string, SubfileName> SubfileNames;
+};
+
+ESPrequest SuperfileListRequest
+{
+    string superfile;
+};
+
+ESPresponse [exceptions_inline, nil_remove] SuperfileListResponse
+{
+    string superfile;
+    ESParray<string> subfiles;
+};
+
+ESPrequest SuperfileAddRawRequest
+{
+    string superfile;
+    string subfiles;
+    string before;
+};
+
+ESPresponse [exceptions_inline, nil_remove] SuperfileAddRawResponse
+{
+    string superfile;
+    int retcode;
+};
+
+ESPrequest SavexmlRequest
+{
+    string name;
+};
+
+ESPresponse [exceptions_inline, nil_remove] SavexmlResponse
+{
+    [http_content("text/xml")] binary xmlmap;
+};
+
+ESPrequest AddRequest
+{
+    string dstname;
+    [http_content("text/xml")] binary xmlmap;
+};
+
+ESPresponse [exceptions_inline, nil_remove] AddResponse
+{
+};
+
+ESPrequest AddRemoteRequest
+{
+    string dstname;
+    string srcname;
+    string srcdali;
+    string srcusername;
+    string srcpassword;
+};
+
+ESPresponse [exceptions_inline, nil_remove] AddRemoteResponse
+{
+};
+
+ESPrequest 
+[
+]
+DFUSpaceRequest
+{
+    string CountBy;
+    string ScopeUnder;
+    string OwnerUnder;
+    string Interval;
+    string StartDate;
+    string EndDate;
+};
+
+ESPresponse 
+[
+   exceptions_inline
+]
+DFUSpaceResponse
+{
+    string CountBy;
+    string ScopeUnder;
+    string OwnerUnder;
+    string Interval;
+    string StartDate;
+    string EndDate;
+
+    ESParray<ESPstruct DFUSpaceItem> DFUSpaceItems;
+};
+
+ESPrequest DFUFileViewRequest
+{
+    string Scope;
+};
+
+ESPresponse [exceptions_inline] DFUFileViewResponse
+{
+    string Scope;
+    int NumFiles(0);
+    ESParray<ESPstruct DFULogicalFile> DFULogicalFiles;
+};
+
+ESPStruct DFUDataColumn
+{
+    string ColumnLabel;
+    string ColumnType;
+    [min_ver("1.05")] string ColumnValue;
+    int ColumnSize;
+    int MaxSize;
+};
+
+ESPrequest DFUGetDataColumnsRequest
+{
+    string OpenLogicalName;
+    string LogicalName;
+    [min_ver("1.05")] string FilterBy;
+    [min_ver("1.05")] string ShowColumns;
+    [min_ver("1.10")] int   ChooseFile(0);
+   [min_ver("1.12")] string Cluster;
+    [min_ver("1.12")] string ClusterType;
+    int64 StartIndex(0);
+    int64 EndIndex(0);
+};
+
+ESPresponse [exceptions_inline, nil_remove] DFUGetDataColumnsResponse
+{
+    string LogicalName;
+    int64 StartIndex;
+    int64 EndIndex;
+
+    ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns1;
+    ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns2;
+    ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns3;
+    ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns4;
+    ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns5;
+    ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns6;
+    ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns7;
+    ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns8;
+    ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns9;
+    ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns10;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns11;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns12;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns13;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns14;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns15;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns16;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns17;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns18;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns19;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns20;
+    ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns1;
+    ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns2;
+    ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns3;
+    ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns4;
+    ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns5;
+    ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns6;
+    ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns7;
+    ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns8;
+    ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns9;
+    ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns10;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns11;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns12;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns13;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns14;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns15;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns16;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns17;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns18;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns19;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns20;
+    int64 RowCount;
+    [min_ver("1.05")] string ShowColumns;
+    [min_ver("1.10")] int   ChooseFile(0);
+   [min_ver("1.12")] string Cluster;
+    [min_ver("1.12")] string ClusterType;
+};
+
+ESPrequest DFUBrowseDataRequest
+{
+    string LogicalName;
+    string FilterBy;
+    [min_ver("1.05")] string ShowColumns;
+    [min_ver("1.11")] bool SchemaOnly(false);
+    [min_ver("1.05")] int64 StartForGoback(0);;
+    [min_ver("1.05")] int CountForGoback;
+    [min_ver("1.10")] int ChooseFile(0);
+   [min_ver("1.12")] string Cluster;
+    [min_ver("1.12")] string ClusterType;
+    [min_ver("1.13")] string ParentName;
+    int64 Start(0);
+    int Count;
+    [min_ver("1.17")] bool DisableUppercaseTranslation;
+};
+
+ESPresponse [exceptions_inline, nil_remove, http_encode(0)] DFUBrowseDataResponse
+{
+    string Name;
+    string LogicalName;
+    string FilterBy;
+    [min_ver("1.05")] string FilterForGoBack;
+    [min_ver("1.05")] ESParray<ESPstruct DFUDataColumn, ColumnHidden> ColumnsHidden;
+    [min_ver("1.05")] int ColumnCount;
+    [min_ver("1.05")] int64 StartForGoback(0);;
+    [min_ver("1.05")] int CountForGoback;
+    [min_ver("1.10")] int ChooseFile(0);
+    [min_ver("1.11")] bool SchemaOnly(false);
+   [min_ver("1.12")] string Cluster;
+    [min_ver("1.12")] string ClusterType;
+    [min_ver("1.13")] string ParentName;
+
+    int64 Start;
+    int64 Count;
+    int64 PageSize;
+    int64 Total;
+
+    string Result;
+    [min_ver("1.08")] string MsgToDisplay;
+    [min_ver("1.17")] bool DisableUppercaseTranslation;
+};
+
+ESPStruct DFUData
+{
+    string  Name;
+    string  Data;
+   int64        NumRows;
+};
+
+ESPrequest DFUSearchDataRequest
+{
+    string Cluster;
+    string ClusterType;
+    string OpenLogicalName;
+    string FilterBy;
+    string ShowColumns;
+    int   ChooseFile(0);
+    int64 StartIndex(0);
+    int64 EndIndex(0);
+
+    string LogicalName;
+    string ParentName;
+    int64 StartForGoback(0);;
+    int CountForGoback;
+    int64 Start(0);
+    int Count;
+
+    string File;
+    string Key;
+    bool SchemaOnly(true);
+    [min_ver("1.17")] bool RoxieSelections(true);
+    [min_ver("1.17")] bool DisableUppercaseTranslation;
+    [min_ver("1.19")] string SelectedKey;
+};
+
+ESPresponse [exceptions_inline, nil_remove, http_encode(0)] DFUSearchDataResponse
+{
+    string OpenLogicalName;
+    string LogicalName;
+    string ParentName;
+    int64 StartIndex;
+    int64 EndIndex;
+
+    ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns1;
+    ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns2;
+    ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns3;
+    ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns4;
+    ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns5;
+    ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns6;
+    ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns7;
+    ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns8;
+    ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns9;
+    ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns10;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns11;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns12;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns13;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns14;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns15;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns16;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns17;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns18;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns19;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataKeyedColumns20;
+    ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns1;
+    ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns2;
+    ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns3;
+    ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns4;
+    ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns5;
+    ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns6;
+    ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns7;
+    ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns8;
+    ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns9;
+    ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns10;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns11;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns12;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns13;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns14;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns15;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns16;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns17;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns18;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns19;
+    [min_ver("1.15")] ESParray<ESPstruct DFUDataColumn> DFUDataNonKeyedColumns20;
+    int64 RowCount;
+    string ShowColumns;
+    int   ChooseFile(0);
+
+    string Name;
+    string FilterBy;
+    string FilterForGoBack;
+    ESParray<ESPstruct DFUDataColumn, ColumnHidden> ColumnsHidden;
+    int ColumnCount;
+    int64 StartForGoback(0);;
+    int CountForGoback;
+
+    int64 Start;
+    int64 Count;
+    int64 PageSize;
+    int64 Total;
+
+    string Result;
+    string MsgToDisplay;
+
+    string Cluster;
+    string ClusterType;
+    string File;
+    string Key;
+    bool SchemaOnly;
+    [min_ver("1.17")] bool RoxieSelections;
+    [min_ver("1.17")] bool DisableUppercaseTranslation;
+    [min_ver("1.17")] bool AutoUppercaseTranslation;
+    [min_ver("1.19")] string SelectedKey;
+
+};
+
+
+//  ===========================================================================
+ESPservice [
+    version("1.19"), default_client_version("1.19"),
+    noforms, 
+    exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
+{
+    ESPuses ESPStruct DFULogicalFile;
+    ESPuses ESPStruct DFUPart;
+    ESPuses ESPStruct DFUFileStat;
+    ESPuses ESPStruct DFUFileDetail;
+    ESPuses ESPStruct DFUDataColumn;
+
+    ESPmethod [resp_xsl_default("/esp/xslt/dfu_fileview.xslt")] DFUFileView(DFUFileViewRequest, DFUFileViewResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/dfu_search.xslt")] DFUSearch(DFUSearchRequest, DFUSearchResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/dfu.xslt")] DFUQuery(DFUQueryRequest, DFUQueryResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/action.xslt")] DFUArrayAction(DFUArrayActionRequest, DFUArrayActionResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/dfu_file.xslt")] DFUInfo(DFUInfoRequest, DFUInfoResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/dfu_file_space.xslt")] DFUSpace(DFUSpaceRequest, DFUSpaceResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/dfu_getdatacolumns.xslt")] DFUGetDataColumns(DFUGetDataColumnsRequest, DFUGetDataColumnsResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/dfu_viewdata.xslt")] DFUBrowseData(DFUBrowseDataRequest, DFUBrowseDataResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/dfu_searchdata.xslt")] DFUSearchData(DFUSearchDataRequest, DFUSearchDataResponse);
+    ESPmethod DFUDefFile(DFUDefFileRequest, DFUDefFileResponse);
+
+    ESPmethod [resp_xsl_default("/esp/xslt/addto_superfile.xslt")] AddtoSuperfile(AddtoSuperfileRequest, AddtoSuperfileResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/dfu_superedit.xslt")] SuperfileList(SuperfileListRequest, SuperfileListResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/dfu_superresult.xslt")] SuperfileAddRaw(SuperfileAddRawRequest, SuperfileAddRawResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/dfu_superresult.xslt")] SuperfileAction(SuperfileActionRequest, SuperfileActionResponse);
+    
+    ESPmethod Savexml(SavexmlRequest, SavexmlResponse);
+    ESPmethod Add(AddRequest, AddResponse);
+    ESPmethod AddRemote(AddRemoteRequest, AddRemoteResponse);
+};
+
+SCMexportdef(WSDFU);
+SCMapi(WSDFU) IClientWsDfu *createWsDfuClient();

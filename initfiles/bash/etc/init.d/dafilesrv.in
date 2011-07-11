@@ -1,0 +1,165 @@
+#!/bin/bash
+##
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+##
+## version v0.1
+## author Philip Schwartz <philip.schwartz@lexisnexis.com>
+##
+##
+##########################################################################
+##                                                                       #
+##                          System Flow                                  #
+##                                                                       #
+##########################################################################
+##                                                                       #
+##      1. Parse Passed In arguments                                     #
+##      2. Get the component and specific information                    #
+##      3. Generate component related config files (runtime directory)   #
+##      4. CD to the runtime Directory                                   #
+##      5. Start the component                                           #
+##                                                                       #
+##########################################################################
+
+###PATH_PRE=`type -path hpcc_setenv`
+#source ${PATH_PRE}
+
+###<REPLACE>###
+
+function print_usage {
+    echo >&2 "Usage: $0 {start|stop|restart|status|setup}
+        $0 [-h] [--help]"
+    exit 0
+}
+
+source  ${INSTALL_DIR}/etc/init.d/lock.sh
+source  ${INSTALL_DIR}/etc/init.d/pid.sh
+source  ${INSTALL_DIR}/etc/init.d/hpcc_common
+source  ${INSTALL_DIR}/etc/init.d/init-functions
+source  ${INSTALL_DIR}/etc/init.d/export-path
+
+## Debug variable allowing verbose debug output
+##
+DEBUG=${DEBUG:-NO_DEBUG}
+TRACE=${TRACE:-0}
+VERBOSE=${VERBOSE:-0}
+
+configgen_path=${INSTALL_DIR}/sbin
+basepath=`pwd`
+daemon_path="${INSTALL_DIR}/bin"
+set_envrionmentvars 
+envfile=$configs/$environment
+bin_path=${INSTALL_DIR}/bin
+
+component=""
+runSetupOnly=0
+source ${configgen_path}/hpcc_setenv
+
+is_root
+which_service
+get_commondirs
+
+#Check for existance of user
+check_user ${user}
+if [ $? -ne 1 ];then
+   echo "$user user does not exits on the system. Exiting ....."
+   exit 3
+fi
+
+groupNum=`grep -w ${user} /etc/passwd  | cut -d ':' -f 4`
+group=`grep -w ${groupNum} /etc/group | cut -d ':' -f 1`
+
+check_group ${group}
+if [ $? -ne 1 ];then
+   echo "Group for user ${user} does not exist on the system. Exiting....."
+   exit 3
+fi 
+
+
+COMPS=`${configgen_path}/configgen -env ${envfile} -ip "127.0.0.1" -list`
+
+comp.parser ${COMPS}
+for i in ${compArray[@]}; do
+    compName=`echo $i | awk -F"_" '{print $2}'`
+    comp.getByName ${compName}
+    compType=`echo $comp_return | cut -d ' ' -f 1 | cut -d '=' -f 2 `
+    if strstr ${compType} "dafilesrv" ;
+    then
+        component=${compName}
+        break
+    fi
+done
+
+
+##################################################################################
+#                        Beginning of the Option Parsing                         #
+##################################################################################
+
+# Checking if start-stop-deamon exists
+if [ ! -e ${path}/bin/start-stop-daemon ]; then
+    result=$(which start-stop-daemon)
+    if [ "$?" -ne 0 ]; then
+        echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+        echo "You don't have start-stop-deamon isntalled"
+        echo "YOU CAN'T RUN THIS SYSTEM - SORRY"
+        echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+        exit 0
+    else
+        daemon_path=$(echo $result | tr '/' '\n' | grep -v start-stop-daemon | tr '\n' '/')
+    fi
+fi  
+
+
+if [ -z "${component}" ] ; then
+    log_msg_failure "dafilesrv is not configured to run on this node"
+    exit 3
+fi
+
+TEMP=`/usr/bin/getopt -o h --long help -n 'dafilesrv' -- "$@"`
+if [ $? != 0 ] ; then echo "Failure to parse commandline." >&2 ; exit 1 ; fi
+eval set -- "$TEMP"
+while true ; do
+    case "$1" in
+        -h|--help) print_usage
+                   shift ;;
+        --) shift ; break ;;
+        *) print_usage ;;
+    esac
+done
+for arg do arg=$arg; done
+
+if [ -z $arg ]; then
+    print_usage
+fi
+
+case "$arg" in
+    status|start|restart|stop|setup)
+        cmd=$arg
+        ;;
+    *) print_usage
+        ;;
+esac
+
+
+unset IFS
+
+for C in ${component} ; do
+    set_componentvars ${C}
+    if [ "${cmd}" == "start" ];then
+       xcmd="${cmd}_dafilesrv ${C}"
+    else
+       xcmd="${cmd}_component ${C}"
+    fi
+    if [ ${DEBUG} != "NO_DEBUG" ]; then
+        echo $xcmd
+    fi
+    eval $xcmd
+    STATUS=$?
+done 
+exit ${STATUS}
+
+
+
+
+
+
+

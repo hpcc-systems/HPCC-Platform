@@ -1,0 +1,130 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+//  ===========================================================================
+ESPStruct LogInfo
+{
+    string Name;
+    string Value;
+    string Data;
+};
+
+////////////////////////////////////////////////////////////
+
+ESPstruct ReasonCodeLogInfo
+{
+    string Value;
+    int Sequence;
+    string Description;
+};
+
+ESPstruct ScoreLogInfo
+{
+    string Name;
+    int Value;
+    int LogIdentifier;
+    int Sequence;
+    ESParray<ESPstruct ReasonCodeLogInfo, ReasonCode> ReasonCodes;
+};
+
+ESPstruct AttributeLogInfo
+{
+    string Name;
+    string Value;
+};
+
+ESPstruct AttributeGroupLogInfo 
+{
+    string Name;
+    int LogIdentifier;
+    ESParray<ESPstruct AttributeLogInfo, Attribute> Attributes;
+};
+
+ESPstruct ModelLogInfo
+{
+    string Name;
+    ESParray<ESPstruct ScoreLogInfo, Score> Scores;
+};
+
+
+ESPstruct ModelLogInformation
+{
+    ESParray<ESPstruct ModelLogInfo, Model> Models;
+    ESParray<ESPstruct AttributeGroupLogInfo, AttributeGroup> AttributeGroups;
+};
+
+
+ESPrequest
+[
+
+]
+LOGServiceUpdateRequest
+{
+    string ServiceName;
+    string UserName;
+    string DomainName;
+    string IP;
+    int RecordCount;
+    string GUID;
+    bool BlindLogging;
+    bool EncryptedLogging;
+    string RawLogInformation;
+    ESParray<ESPstruct LogInfo> LogInformation;
+};
+
+ESPrequest[] LOGServiceUpdateModelRequest : LOGServiceUpdateRequest
+{
+    ESPstruct ModelLogInformation ModelLogInformation;  
+};
+
+
+ESPresponse
+[
+    encode(0),
+    ns_var("")
+] 
+LOGServiceUpdateResponse
+{
+    int UpdateLogStatus;
+    string GUID;
+};
+
+ESPrequest[]
+TransactionSeedRequest
+{
+};
+
+ESPresponse[]
+TransactionSeedResponse
+{
+    string SeedId;
+    bool SeedAvailable;
+};
+
+ESPService [noforms] WsLogService
+{
+    ESPuses ESPStruct LogInfo;
+    ESPmethod UpdateLogService(LOGServiceUpdateRequest, LOGServiceUpdateResponse);
+    ESPmethod UpdateModelLogService(LOGServiceUpdateModelRequest, LOGServiceUpdateResponse);
+    ESPmethod TransactionSeed(TransactionSeedRequest,TransactionSeedResponse);
+};
+
+
+SCMexportdef(WSLOG);
+
+SCMapi(WSLOG) IClientWsLogService *createWsLogServiceClient();

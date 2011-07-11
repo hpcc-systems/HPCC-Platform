@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd">
+<section>
+    <title>esp</title>
+
+    <para>
+        The esp directory contains the sources for the ESP framework.
+    </para>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="bindings/sourcedoc.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="clients/sourcedoc.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="eclwatch/sourcedoc.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="esdl/sourcedoc.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="esplib/sourcedoc.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="files/sourcedoc.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="platform/sourcedoc.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="protocols/sourcedoc.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="scm/sourcedoc.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="services/sourcedoc.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="smc/sourcedoc.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="test/sourcedoc.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="tools/sourcedoc.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="xslt/sourcedoc.xml"/>
+</section>

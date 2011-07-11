@@ -1,0 +1,419 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+-->
+<Environment>
+<Software>
+    <Directories name="${DIR_NAME}">
+      <Category dir="${EXEC_PREFIX}/log/[NAME]/[INST]" name="log"/>
+      <Category dir="${EXEC_PREFIX}/lib/[NAME]/[INST]" name="run"/>
+      <Category dir="${CONFIG_PREFIX}/[NAME]/[INST]" name="conf"/>
+      <Category dir="${EXEC_PREFIX}/lib/[NAME]/[INST]/temp" name="temp"/>
+      <Category dir="${EXEC_PREFIX}/lib/[NAME]/hpcc-data/[COMPONENT]" name="data"/>
+      <Category dir="${EXEC_PREFIX}/lib/[NAME]/hpcc-data2/[COMPONENT]" name="data2"/>
+      <Category dir="${EXEC_PREFIX}/lib/[NAME]/hpcc-data3/[COMPONENT]" name="data3"/>
+      <Category dir="${EXEC_PREFIX}/lib/[NAME]/hpcc-mirror/[COMPONENT]" name="mirror"/>
+      <Category dir="${EXEC_PREFIX}/lib/[NAME]/queries/[INST]" name="query"/>
+      <Category dir="${EXEC_PREFIX}/lock/[NAME]/[INST]" name="lock"/>
+    </Directories>  
+</Software>
+<Programs>
+  <Build name="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}" url="${PREFIX}/${DIR_NAME}">
+   <BuildSet installSet="deploy_map.xml"
+             name="dafilesrv"
+             path="componentfiles/dafilesrv"
+             processName="DafilesrvProcess"
+             schema="dafilesrv.xsd"/>
+   <BuildSet installSet="deploy_map.xml"
+             name="dali"
+             path="componentfiles/dali"
+             processName="DaliServerProcess"
+             schema="dali.xsd"/>
+   <BuildSet installSet="deploy_map.xml"
+             name="dfuplus"
+             path="componentfiles/dfuplus"
+             processName="DfuplusProcess"
+             schema="dfuplus.xsd"
+             overide="no"/>
+   <BuildSet installSet="deploy_map.xml"
+             name="dfuserver"
+             path="componentfiles/dfuserver"
+             processName="DfuServerProcess"
+             schema="dfuserver.xsd"/>
+   <BuildSet deployable="no"
+             installSet="deploy_map.xml"
+             name="DropZone"
+             path="componentfiles/DropZone"
+             processName="DropZone"
+             schema="dropzone.xsd"/>
+   <BuildSet installSet="deploy_map.xml"
+             name="eclagent"
+             path="componentfiles/eclagent"
+             processName="EclAgentProcess"
+             schema="eclagent_config.xsd"/>
+   <BuildSet installSet="deploy_map.xml" 
+             name="eclminus" 
+             path="componentfiles/eclminus"
+             overide="no"/>
+   <BuildSet installSet="deploy_map.xml"
+             name="eclplus"
+             path="componentfiles/eclplus"
+             processName="EclPlusProcess"
+             schema="eclplus.xsd"
+             overide="no"/>
+   <BuildSet installSet="eclccserver_deploy_map.xml"
+             name="eclccserver"
+             path="componentfiles/configxml"
+             processName="EclCCServerProcess"
+             schema="eclccserver.xsd"/>
+   <BuildSet installSet="eclscheduler_deploy_map.xml"
+             name="eclscheduler"
+             path="componentfiles/configxml"
+             processName="EclSchedulerProcess"
+             schema="eclscheduler.xsd"/>
+   <BuildSet installSet="deploy_map.xml"
+             name="esp"
+             path="componentfiles/esp"
+             processName="EspProcess"
+             schema="esp.xsd"/>
+   <BuildSet deployable="no"
+             installSet="deploy_map.xml"
+             name="espsmc"
+             path="componentfiles/espsmc"
+             processName="EspService"
+             schema="espsmcservice.xsd">
+    <Properties defaultPort="8010"
+                defaultResourcesBasedn="ou=SMC,ou=EspServices,ou=ecl"
+                defaultSecurePort="18010"
+                type="WsSMC">
+     <Authenticate access="Read"
+                   description="Root access to SMC service"
+                   path="/"
+                   required="Read"
+                   resource="SmcAccess"/>
+     <AuthenticateFeature description="Access to SMC service"
+                          path="SmcAccess"
+                          resource="SmcAccess"
+                          service="ws_smc"/>
+     <AuthenticateFeature description="Access to thor queues"
+                          path="ThorQueueAccess"
+                          resource="ThorQueueAccess"
+                          service="ws_smc"/>
+     <AuthenticateFeature description="Access to super computer environment"
+                          path="ConfigAccess"
+                          resource="ConfigAccess"
+                          service="ws_config"/>
+     <AuthenticateFeature description="Access to DFU"
+                          path="DfuAccess"
+                          resource="DfuAccess"
+                          service="ws_dfu"/>
+     <AuthenticateFeature description="Access to DFU XRef"
+                          path="DfuXrefAccess"
+                          resource="DfuXrefAccess"
+                          service="ws_dfuxref"/>
+     <AuthenticateFeature description="Access to machine information"
+                          path="MachineInfoAccess"
+                          resource="MachineInfoAccess"
+                          service="ws_machine"/>
+     <AuthenticateFeature description="Access to SNMP metrics information"
+                          path="MetricsAccess"
+                          resource="MetricsAccess"
+                          service="ws_machine"/>
+     <AuthenticateFeature description="Access to remote execution"
+                          path="ExecuteAccess"
+                          resource="ExecuteAccess"
+                          service="ws_machine"/>
+     <AuthenticateFeature description="Access to DFU workunits"
+                          path="DfuWorkunitsAccess"
+                          resource="DfuWorkunitsAccess"
+                          service="ws_fs"/>
+     <AuthenticateFeature description="Access to DFU exceptions"
+                          path="DfuExceptionsAccess"
+                          resource="DfuExceptions"
+                          service="ws_fs"/>
+     <AuthenticateFeature description="Access to spraying files"
+                          path="FileSprayAccess"
+                          resource="FileSprayAccess"
+                          service="ws_fs"/>
+     <AuthenticateFeature description="Access to despraying of files"
+                          path="FileDesprayAccess"
+                          resource="FileDesprayAccess"
+                          service="ws_fs"/>
+     <AuthenticateFeature description="Access to dkcing of key files"
+                          path="FileDkcAccess"
+                          resource="FileDkcAccess"
+                          service="ws_fs"/>
+     <AuthenticateFeature description="Access to files in dropzone"
+                          path="FileIOAccess"
+                          resource="FileIOAccess"
+                          service="ws_fileio"/>
+     <AuthenticateFeature description="Access to WS ECL service"
+                          path="WsEclAccess"
+                          resource="WsEclAccess"
+                          service="ws_ecl"/>
+     <AuthenticateFeature description="Access to Roxie queries and files"
+                          path="RoxieQueryAccess"
+                          resource="RoxieQueryAccess"
+                          service="ws_roxiequery"/>
+     <AuthenticateFeature description="Access to cluster topology"
+                          path="ClusterTopologyAccess"
+                          resource="ClusterTopologyAccess"
+                          service="ws_topology"/>
+     <AuthenticateFeature description="Access to own workunits"
+                          path="OwnWorkunitsAccess"
+                          resource="OwnWorkunitsAccess"
+                          service="ws_workunits"/>
+     <AuthenticateFeature description="Access to others&apos; workunits"
+                          path="OthersWorkunitsAccess"
+                          resource="OthersWorkunitsAccess"
+                          service="ws_workunits"/>
+     <AuthenticateFeature description="Access to ECL direct service"
+                          path="EclDirectAccess"
+                          resource="EclDirectAccess"
+                          service="ecldirect"/>
+     <ProcessFilters>
+      <Platform name="Windows">
+       <ProcessFilter name="any">
+        <Process name="dafilesrv"/>
+       </ProcessFilter>
+       <ProcessFilter name="AttrServerProcess">
+        <Process name="attrserver"/>
+       </ProcessFilter>
+       <ProcessFilter name="DaliProcess">
+        <Process name="daserver"/>
+       </ProcessFilter>
+       <ProcessFilter multipleInstances="true" name="DfuServerProcess">
+        <Process name="dfuserver"/>
+       </ProcessFilter>
+       <ProcessFilter multipleInstances="true" name="EclCCServerProcess">
+        <Process name="eclccserver"/>
+       </ProcessFilter>
+       <ProcessFilter multipleInstances="true" name="EspProcess">
+        <Process name="esp"/>
+        <Process name="dafilesrv" remove="true"/>
+       </ProcessFilter>
+       <ProcessFilter name="FTSlaveProcess">
+        <Process name="ftslave"/>
+       </ProcessFilter>
+       <ProcessFilter name="RoxieServerProcess">
+        <Process name="ccd"/>
+       </ProcessFilter>
+       <ProcessFilter name="RoxieSlaveProcess">
+        <Process name="ccd"/>
+       </ProcessFilter>
+       <ProcessFilter name="SchedulerProcess">
+        <Process name="scheduler"/>
+       </ProcessFilter>
+       <ProcessFilter name="ThorMasterProcess">
+        <Process name="thormaster"/>
+       </ProcessFilter>
+       <ProcessFilter name="ThorSlaveProcess">
+        <Process name="thorslave"/>
+       </ProcessFilter>
+       <ProcessFilter name="SashaServerProcess">
+        <Process name="saserver"/>
+       </ProcessFilter>
+      </Platform>
+      <Platform name="Linux">
+       <ProcessFilter name="any">
+        <Process name="dafilesrv"/>
+       </ProcessFilter>
+       <ProcessFilter name="AttrServerProcess">
+        <Process name="attrserver"/>
+       </ProcessFilter>
+       <ProcessFilter name="DaliProcess">
+        <Process name="daserver"/>
+       </ProcessFilter>
+       <ProcessFilter multipleInstances="true" name="DfuServerProcess">
+        <Process name="."/>
+       </ProcessFilter>
+       <ProcessFilter multipleInstances="true" name="EclCCServerProcess">
+        <Process name="."/>
+       </ProcessFilter>
+       <ProcessFilter multipleInstances="true" name="EspProcess">
+        <Process name="."/>
+        <Process name="dafilesrv" remove="true"/>
+       </ProcessFilter>
+       <ProcessFilter name="FTSlaveProcess">
+        <Process name="ftslave"/>
+       </ProcessFilter>
+       <ProcessFilter name="GenesisServerProcess">
+        <Process name="httpd"/>
+        <Process name="atftpd"/>
+        <Process name="dhcpd"/>
+       </ProcessFilter>
+       <ProcessFilter name="RoxieServerProcess">
+        <Process name="ccd"/>
+       </ProcessFilter>
+       <ProcessFilter name="RoxieSlaveProcess">
+        <Process name="ccd"/>
+       </ProcessFilter>
+       <ProcessFilter name="SchedulerProcess">
+        <Process name="scheduler"/>
+       </ProcessFilter>
+       <ProcessFilter name="ThorMasterProcess">
+        <Process name="thormaster"/>
+       </ProcessFilter>
+       <ProcessFilter name="ThorSlaveProcess">
+        <Process name="thorslave"/>
+       </ProcessFilter>
+       <ProcessFilter name="SashaServerProcess">
+        <Process name="saserver"/>
+       </ProcessFilter>
+      </Platform>
+     </ProcessFilters>
+    </Properties>
+   </BuildSet>
+   <BuildSet installSet="deploy_map.xml"
+             name="ftslave"
+             path="componentfiles/ftslave"
+             processName="FTSlaveProcess"
+             schema="ftslave_linux.xsd"/>
+   <BuildSet installSet="deploy_map.xml"
+             name="hqltest"
+             path="componentfiles/hqltest"
+             processName="HqlTestProcess"
+             overide="no"/>
+    <BuildSet deployable="no"
+              installSet="deploy_map.xml"
+              name="ldapServer"
+              path="componentfiles/ldapServer"
+              processName="LDAPServerProcess"
+              schema="ldapserver.xsd"/>
+    <BuildSet deployable="no"
+             installSet="auditlib_deploy_map.xml"
+             name="plugins_auditlib"
+             path="componentfiles/configxml"
+             processName="PluginProcess"
+             schema="plugin.xsd"/>
+   <BuildSet deployable="no"
+             installSet="debugservices_deploy_map.xml"
+             name="plugins_debugservices"
+             path="componentfiles/configxml"
+             processName="PluginProcess"
+             schema="plugin.xsd"/>
+   <BuildSet deployable="no"
+             installSet="fileservices_deploy_map.xml"
+             name="plugins_fileservices"
+             path="componentfiles/configxml"
+             processName="PluginProcess"
+             schema="plugin.xsd"/>
+   <BuildSet deployable="no"
+             installSet="logging_deploy_map.xml"
+             name="plugins_logging"
+             path="componentfiles/configxml"
+             processName="PluginProcess"
+             schema="plugin.xsd"/>
+   <BuildSet deployable="no"
+             installSet="parselib_deploy_map.xml"
+             name="plugins_parselib"
+             path="componentfiles/configxml"
+             processName="PluginProcess"
+             schema="plugin.xsd"/>
+   <BuildSet deployable="no"
+             installSet="stringlib_deploy_map.xml"
+             name="plugins_stringlib"
+             path="componentfiles/configxml"
+             processName="PluginProcess"
+             schema="plugin.xsd"/>
+   <BuildSet deployable="no"
+             installSet="unicodelib_deploy_map.xml"
+             name="plugins_unicodelib"
+             path="componentfiles/configxml"
+             processName="PluginProcess"
+             schema="plugin.xsd"/>
+   <BuildSet deployable="no"
+             installSet="workunitservices_deploy_map.xml"
+             name="plugins_workunitservices"
+             path="componentfiles/configxml"
+             processName="PluginProcess"
+             schema="plugin.xsd"/>    
+   <BuildSet installSet="roxie_deploy_map.xml"
+             name="roxie"
+             path="componentfiles/configxml"
+             processName="RoxieCluster"
+             schema="roxie.xsd"/>
+   <BuildSet installSet="deploy_map.xml" 
+             name="roxieconfig" 
+             path="componentfiles/roxieconfig"
+             overide="no"/>
+   <BuildSet installSet="deploy_map.xml"
+             name="sasha"
+             path="componentfiles/sasha"
+             processName="SashaServerProcess"
+             schema="sasha.xsd"/>
+   <BuildSet deployable="no"
+             installSet="deploy_map.xml"
+             name="SiteCertificate"
+             path="componentfiles/SiteCertificate"
+             processName="SiteCertificate"
+             schema="SiteCertificate.xsd"
+             overide="no"/>
+   <BuildSet installSet="deploy_map.xml"
+             name="soapplus"
+             path="componentfiles/soapplus"
+             processName="SoapPlusProcess"
+             schema="soapplus.xsd"
+             overide="no"/>
+   <BuildSet installSet="deploy_map.xml"
+             name="thor"
+             path="componentfiles/thor"
+             processName="ThorCluster"
+             schema="thor.xsd"/>
+   <BuildSet deployable="no"
+             installSet="deploy_map.xml"
+             name="topology"
+             path="componentfiles/topology"
+             processName="Topology"
+             schema="topology.xsd"/>
+    <BuildSet deployable="no"
+              installSet="deploy_map.xml"
+              name="ws_ecl"
+              path="componentfiles/ws_ecl"
+              processName="EspService"
+              schema="esp_service_wsecl2.xsd">
+      <Properties bindingType="ws_eclSoapBinding"
+                  defaultPort="8002"
+                  defaultResourcesBasedn="ou=WsEcl,ou=EspServices,ou=ecl"
+                  defaultSecurePort="18002"
+                  plugin="ws_ecl"
+                  type="ws_ecl">
+        <Authenticate access="Read"
+                      description="Root access to WS ECL service"
+                      path="/"
+                      required="Read"
+                      resource="WsEclAccess"/>
+        <AuthenticateFeature description="Access to WS ECL service"
+                             path="WsEclAccess"
+                             resource="WsEclAccess"
+                             service="ws_ecl"/>
+      </Properties>
+    </BuildSet>
+   <BuildSet deployable="no"
+             installSet="deploy_map.xml"
+             name="ecldirect"
+             path="componentfiles/ecldirect"
+             processName="EspService"
+             schema="esp_service_ecldirect.xsd">
+    <Properties bindingType="EclDirectSoapBinding"
+                defaultPort="8008"
+                defaultResourcesBasedn="ou=EclDirectAccess,ou=EspServices,ou=ecl"
+                defaultSecurePort="18008"
+                plugin="ecldirect"
+                type="ecldirect">
+     <Authenticate access="Read"
+                   description="Root access to ECL Direct service"
+                   path="/"
+                   required="Read"
+                   resource="EclDirectAccess"/>
+     <AuthenticateFeature description="Access to ECL Direct service"
+                          path="EclDirectAccess"
+                          resource="EclDirectAccess"
+                          service="ecldirect"/>
+    </Properties>
+   </BuildSet>
+  </Build>
+</Programs>
+</Environment>
+ 

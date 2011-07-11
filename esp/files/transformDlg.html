@@ -1,0 +1,68 @@
+<!--
+
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+-->
+
+<html>
+<head>
+<title>XSL Transformer</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+
+<script type="text/javascript">
+
+function generateDocument()
+{
+   var args = window.dialogArguments;
+
+   //set document's title as "$argument [$command]"
+   //
+   //document.title = args['arg'] + ' [' + args['cmd'] + ']';
+
+   //load xml document
+   //
+   var xmlDoc = new ActiveXObject("Msxml2.DOMDocument");
+   xmlDoc.async = false;
+   xmlDoc.load("/esp/files_/components.xml");
+
+   //load xsl document (stylesheet) - must be a free threaded DOM document
+   //
+   var xslDoc = new ActiveXObject("Msxml2.FreeThreadedDOMDocument");
+   xslDoc.async = false;
+   xslDoc.validateOnParse = false;
+   xslDoc.load("/esp/files_/tabularForm.xslt");
+
+   //create an instance of a stylesheet object - to be used by an XSLT processor later
+   var xslt   = new ActiveXObject("Msxml2.XSLTemplate");
+   xslt.stylesheet = xslDoc;
+
+   //create an instance of XSLT processor
+   var xslProcessor;
+   xslProcessor = xslt.createProcessor();
+   xslProcessor.input = xmlDoc;
+   
+   //assign parameters to be passed to the stylesheet
+   xslProcessor.addParameter("Component", args['comp']);
+   xslProcessor.addParameter("Command",   args['cmd']);
+   xslProcessor.addParameter("ArgsNodeName", args['arg']);
+   xslProcessor.addParameter("ModalDlg", '1');
+   //xslProcessor.addParameter("Operation", args['op']);
+
+   //do the xsl transformation   
+   xslProcessor.transform();
+
+   //write out the output as contents for the document
+   //
+   //todo: this makes the browser lose history so you can't go back!!  
+   //however, we don't care for this at this time since we are launching a modal dlg anyway    
+   //--
+   document.write(xslProcessor.output); 
+
+   //we need to invoke the onLoadDlg() method of the new document until we figure out 
+   //which is a better notification to exploit there for initializing since document.write 
+   //does not reload the document.
+   onLoadDlg();
+}    
+</script>   
+</head>
+<body bgcolor="#FFFFFF" bgproperties="fixed" onload="generateDocument()">
+</body>

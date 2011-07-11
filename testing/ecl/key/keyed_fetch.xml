@@ -1,0 +1,45 @@
+<Dataset name='Result 1'>
+ <Row><sequence>3500</sequence><state>FL</state><city>Boca Raton          </city><lname>Anderson                 </lname><fname>Jane           </fname><__filepos>0</__filepos></Row>
+ <Row><sequence>3500</sequence><state>FL</state><city>Boca Raton          </city><lname>Anderson                 </lname><fname>Joe            </fname><__filepos>0</__filepos></Row>
+ <Row><sequence>3500</sequence><state>FL</state><city>Boca Raton          </city><lname>Anderson                 </lname><fname>John           </fname><__filepos>0</__filepos></Row>
+ <Row><sequence>3500</sequence><state>FL</state><city>Boca Raton          </city><lname>Anderson                 </lname><fname>Larry          </fname><__filepos>0</__filepos></Row>
+ <Row><sequence>3500</sequence><state>FL</state><city>Boca Raton          </city><lname>Anderson                 </lname><fname>Sue            </fname><__filepos>0</__filepos></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><sequence>3500</sequence><state>FL</state><city>Boca Raton          </city><lname>Johnson                  </lname><fname>Jane           </fname><__filepos>0</__filepos></Row>
+ <Row><sequence>3500</sequence><state>FL</state><city>Boca Raton          </city><lname>Johnson                  </lname><fname>Joe            </fname><__filepos>0</__filepos></Row>
+ <Row><sequence>3500</sequence><state>FL</state><city>Boca Raton          </city><lname>Johnson                  </lname><fname>John           </fname><__filepos>0</__filepos></Row>
+ <Row><sequence>3500</sequence><state>FL</state><city>Boca Raton          </city><lname>Johnson                  </lname><fname>Larry          </fname><__filepos>0</__filepos></Row>
+ <Row><sequence>3500</sequence><state>FL</state><city>Boca Raton          </city><lname>Johnson                  </lname><fname>Sue            </fname><__filepos>0</__filepos></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><sequence>35</sequence><state>FL</state><city>Boca Raton          </city><lname>Smith                    </lname><fname>Frank          </fname><__filepos>0</__filepos></Row>
+ <Row><sequence>235</sequence><state>FL</state><city>Boca Raton          </city><lname>Smith                    </lname><fname>Fred           </fname><__filepos>0</__filepos></Row>
+ <Row><sequence>135</sequence><state>FL</state><city>Boca Raton          </city><lname>Smith                    </lname><fname>Nancy          </fname><__filepos>0</__filepos></Row>
+ <Row><sequence>50</sequence><state>FL</state><city>Boca Raton          </city><lname>Smith                    </lname><fname>Sue            </fname><__filepos>0</__filepos></Row>
+ <Row><sequence>30</sequence><state>FL</state><city>Boca Raton          </city><lname>Smith                    </lname><fname>Zeek           </fname><__filepos>0</__filepos></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><sequence>3500</sequence><state>FL</state><city>Boca Raton          </city><lname>Doe                      </lname><fname>Jane           </fname><__filepos>0</__filepos></Row>
+ <Row><sequence>3500</sequence><state>FL</state><city>Boca Raton          </city><lname>Doe                      </lname><fname>Joe            </fname><__filepos>0</__filepos></Row>
+ <Row><sequence>3500</sequence><state>FL</state><city>Boca Raton          </city><lname>Doe                      </lname><fname>John           </fname><__filepos>0</__filepos></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><sequence>3500</sequence><state>FL</state><city>Boca Raton          </city><lname>Jones                    </lname><fname>Frank          </fname><__filepos>0</__filepos></Row>
+ <Row><sequence>35</sequence><state>FL</state><city>Boca Raton          </city><lname>Smith                    </lname><fname>Frank          </fname><__filepos>0</__filepos></Row>
+ <Row><sequence>335</sequence><state>FL</state><city>Boca Raton          </city><lname>Taylor                   </lname><fname>Frank          </fname><__filepos>0</__filepos></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><sequence>3500</sequence><state>FL</state><city>Boca Raton          </city><lname>Anderson                 </lname><fname>Sue            </fname><__filepos>0</__filepos></Row>
+ <Row><sequence>3500</sequence><state>FL</state><city>Boca Raton          </city><lname>Johnson                  </lname><fname>Sue            </fname><__filepos>0</__filepos></Row>
+ <Row><sequence>50</sequence><state>FL</state><city>Boca Raton          </city><lname>Smith                    </lname><fname>Sue            </fname><__filepos>0</__filepos></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><sequence>3500</sequence><state>FL</state><city>Boca Raton          </city><lname>Anderson                 </lname><fname>Jane           </fname><__filepos>0</__filepos></Row>
+ <Row><sequence>3500</sequence><state>FL</state><city>Boca Raton          </city><lname>Doe                      </lname><fname>Jane           </fname><__filepos>0</__filepos></Row>
+ <Row><sequence>3500</sequence><state>FL</state><city>Boca Raton          </city><lname>Johnson                  </lname><fname>Jane           </fname><__filepos>0</__filepos></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><sequence>3500</sequence><state>FL</state><city>Boca Raton          </city><lname>Anderson                 </lname><fname>Larry          </fname><__filepos>0</__filepos></Row>
+ <Row><sequence>3500</sequence><state>FL</state><city>Boca Raton          </city><lname>Johnson                  </lname><fname>Larry          </fname><__filepos>0</__filepos></Row>
+</Dataset>

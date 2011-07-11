@@ -1,0 +1,13 @@
+<!--
+
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+-->
+
+<?xml version="1.0" encoding="UTF-8"?>
+<Configurations>
+    <Normal>
+        <Configuration name="GetStatusAndResultsWebService" path="ws/cpCRRGCommonV2.Results:getStatusAndResultsWebServiceV1" queryname=""/>
+        <Configuration name="CommonWebServices" path="ws/cpCRRGCommonV2.ws:CommonWebServicesV2" queryname=""/>
+    </Normal>
+    <ESDL/>
+</Configurations>

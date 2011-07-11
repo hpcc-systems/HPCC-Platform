@@ -1,0 +1,54 @@
+################################################################################
+#    Copyright (C) 2011 HPCC Systems.
+#
+#    All rights reserved. This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License as
+#    published by the Free Software Foundation, either version 3 of the
+#    License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+
+DESTDIR=`dirname $0`
+cd $DESTDIR
+
+build=`grep build esp.xml | sed "s/.* build=\"\([^\"]*\).*/\1/"`
+
+# core=`find . -newer esp_sentinel.txt -name "core*" | head -n 1`
+core=`ls -lt core* | awk '{print $9}' | head -n 1`
+if [ "$core" == "" ]; then exit 0; fi
+
+echo Core file: $core
+echo ESP Build detected: $build
+
+coredt=`ls $core | awk '{printf("%s %s %s", $6, $7, $8); }'`
+
+
+bldserver=brpsnt082c.br.seisint.com
+echo Enter userid for the bldserver [$bldserver]
+read bldlogin
+echo Enter password for the bldserver
+stty -echo
+read bldpswd
+stty echo
+
+mkdir .debug 2> /dev/null
+smbclient //$bldserver/linuxbuilds2 $bldpswd -U br/$bldlogin -D $build/release/symbols -c 'prompt off; lcd .debug; mget *.sm'
+export LD_LIBRARY_PATH=.
+rm -f gdb.out
+echo CORE DUMP ANALYSIS: > gdb.out
+hostname > gdb.out
+echo $DESTDIR >> gdb.out
+echo $core >> gdb.out
+echo $build >> gdb.out
+echo where > gdbcmds
+#scp build_man@scdev02.br.seisint.com:/home/build_man/gdb6.8_64bit gdb
+gdb --batch --command=gdbcmds ./esp $core 2>&1 >> gdb.out
+rm gdbcmds
+cat gdb.out

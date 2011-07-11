@@ -1,0 +1,42 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+
+This file contains a list of numbers used to indentify components to
+jlog. You should #define LOGMSGCOMPONENT as the appropriate value (or
+use the project settings or makefile to do this).
+
+(Naturally, since removing or changing existing numbers could break
+existing code, you should be careful about doing so.)
+
+If you exceed MSGCOMP_NUMBER components (i.e. if the highest number
+used equals this value) then you will need to edit that #define in
+system/jlib/jlog.cpp.
+
+Current value of MSGCOMP_NUMBER: 1000
+
+NAME OF COMPONENT       NUMBER      COMMENT
+
+Unknown                 0           The default if no LOGMSGCOMPONENT
+                                    defined before including jlog.hpp
+jlib                       1
+mp                         2
+dalibase                   3
+esp platform         100-200     Each service would have its own LOGMSGCOMPONENT
+Odin core            900-929     Each source module has its own LOGMSGCOMPONENT
+

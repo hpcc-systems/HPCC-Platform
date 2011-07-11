@@ -1,0 +1,65 @@
+#!/bin/bash
+################################################################################
+#
+#    Copyright (C) 2011 HPCC Systems.
+#
+#    All rights reserved. This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License as
+#    published by the Free Software Foundation, either version 3 of the
+#    License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#################################################################################
+
+
+declare -a arr0
+declare -a arr1
+declare -a arr2
+i=0
+if [ $# -lt 2 ]; then
+        echo usage: $0 dir command
+        exit 1
+fi
+#full=$1/$2
+#pid=`ps -ef | grep $full | grep -v grep | awk '{print $2}'`
+full=$1/$2.pid
+pid=`cat $full`
+echo ProcessID: $pid
+elapsed=`ps -o etime $pid | sed -e '1d' | tail -n 1`
+echo ProcessUpTime: $elapsed
+mem=`free | head -n 3 | tail -n 1 | awk '{print $3,$4}'`
+cpu=`vmstat 1 2 | tail -n 1 | awk '{print $15}'`
+echo CPU-Idle: $cpu%
+cuptime=`uptime | cut -f 1,2 -d ','`
+echo ComputerUpTime: $cuptime
+echo ---SpaceUsedAndFree---
+swap=`free | tail -n 1 | awk '{print $3,$4}'`
+echo Physical Memory: $mem
+echo Virtual Memory: $swap
+for name in `df -l | tail -n +2 | awk '{if(NF>=4) print $NF}'`
+do
+arr0[i]=$name
+i=$((i+1))
+done
+i=0
+for used in `df -l | tail -n +2 | awk '{if(NF>=4) print $(NF-3)}'`
+do
+arr1[i]=$used
+i=$((i+1))
+done
+i=0
+for free in `df -l | tail -n +2 | awk '{if(NF>=4) print $(NF-2)}'`
+do
+arr2[i]=$free
+i=$((i+1))
+done
+for j in $(seq 0 $((i-1)))
+do
+echo ${arr0[$j]}: ${arr1[$j]} ${arr2[$j]}
+done

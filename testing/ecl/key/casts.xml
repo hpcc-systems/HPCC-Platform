@@ -1,0 +1,96 @@
+<Dataset name='trueval'>
+ <Row><trueval>true</trueval></Row>
+</Dataset>
+<Dataset name='falseval'>
+ <Row><falseval>false</falseval></Row>
+</Dataset>
+<Dataset name='trueval2'>
+ <Row><trueval2>true</trueval2></Row>
+</Dataset>
+<Dataset name='falseval2'>
+ <Row><falseval2>false</falseval2></Row>
+</Dataset>
+<Dataset name='false_3'>
+ <Row><false_3>false</false_3></Row>
+</Dataset>
+<Dataset name='true_3'>
+ <Row><true_3>true</true_3></Row>
+</Dataset>
+<Dataset name='false_4'>
+ <Row><false_4>false</false_4></Row>
+</Dataset>
+<Dataset name='true_4'>
+ <Row><true_4>true</true_4></Row>
+</Dataset>
+<Dataset name='false_5'>
+ <Row><false_5>false</false_5></Row>
+</Dataset>
+<Dataset name='true_5'>
+ <Row><true_5>true</true_5></Row>
+</Dataset>
+<Dataset name='false_6'>
+ <Row><false_6>false</false_6></Row>
+</Dataset>
+<Dataset name='true_6'>
+ <Row><true_6>true</true_6></Row>
+</Dataset>
+<Dataset name='true_7'>
+ <Row><true_7>true</true_7></Row>
+</Dataset>
+<Dataset name='false_7'>
+ <Row><false_7>false</false_7></Row>
+</Dataset>
+<Dataset name='true_8'>
+ <Row><true_8>true</true_8></Row>
+</Dataset>
+<Dataset name='false_8'>
+ <Row><false_8>false</false_8></Row>
+</Dataset>
+<Dataset name='true_9'>
+ <Row><true_9>true</true_9></Row>
+</Dataset>
+<Dataset name='false_9'>
+ <Row><false_9>false</false_9></Row>
+</Dataset>
+<Dataset name='true_10'>
+ <Row><true_10>true</true_10></Row>
+</Dataset>
+<Dataset name='false_10'>
+ <Row><false_10>false</false_10></Row>
+</Dataset>
+<Dataset name='falsex_1'>
+ <Row><falsex_1>false</falsex_1></Row>
+</Dataset>
+<Dataset name='falsex_2'>
+ <Row><falsex_2>false</falsex_2></Row>
+</Dataset>
+<Dataset name='falsex_3'>
+ <Row><falsex_3>false</falsex_3></Row>
+</Dataset>
+<Dataset name='falsex_4'>
+ <Row><falsex_4>false</falsex_4></Row>
+</Dataset>
+<Dataset name='truex_1'>
+ <Row><truex_1>true</truex_1></Row>
+</Dataset>
+<Dataset name='truex_2'>
+ <Row><truex_2>true</truex_2></Row>
+</Dataset>
+<Dataset name='truex_3'>
+ <Row><truex_3>true</truex_3></Row>
+</Dataset>
+<Dataset name='truex_4'>
+ <Row><truex_4>true</truex_4></Row>
+</Dataset>
+<Dataset name='truex_5'>
+ <Row><truex_5>true</truex_5></Row>
+</Dataset>
+<Dataset name='falsex_5'>
+ <Row><falsex_5>false</falsex_5></Row>
+</Dataset>
+<Dataset name='truex_6'>
+ <Row><truex_6>true</truex_6></Row>
+</Dataset>
+<Dataset name='falsex_6'>
+ <Row><falsex_6>false</falsex_6></Row>
+</Dataset>

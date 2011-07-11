@@ -1,0 +1,400 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+
+#include "jiface.hpp"
+#include "jprop.hpp"
+#include "jhash.hpp"
+#include "jhash.ipp"
+#include "jexcept.hpp"
+#include "jiter.ipp"
+#include "jregexp.hpp"
+#include <stdio.h>
+#ifdef _WIN32
+ #include <stdlib.h>
+#elif defined(__linux__) || defined(__FreeBSD__)
+ extern char **environ;
+#endif
+
+static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jprop.cpp $ $Id: jprop.cpp 62965 2011-03-04 12:34:40Z ghalliday $");
+
+const char *conv2char_ptr(const char *p) { return p; }
+const char *convchar_ptr2(const char *p) { return p; }
+const char *tokvchar_ptr(const void *p) { return (const char *)p; }
+
+
+template <class PTYPE, class PITER>
+class PropertyIteratorOf : public CInterface, implements PITER
+{
+protected:
+    HashIterator *piter;
+    HashTable &properties;
+
+public:
+    IMPLEMENT_IINTERFACE; 
+
+    PropertyIteratorOf(HashTable &_properties) : properties(_properties)
+    {
+        properties.Link();
+        piter = new HashIterator(properties);
+    }
+    ~PropertyIteratorOf()
+    {
+        properties.Release();
+        piter->Release();
+    }
+    virtual bool first()
+    {
+        return piter->first();
+    }
+    virtual bool next()
+    {
+        return piter->next();
+    }
+    virtual bool isValid()
+    {
+        return piter->isValid();
+    }
+    virtual PTYPE getPropKey() = 0;
+};
+
+typedef IPropertyIterator char_ptrIPropertyIterator;
+class char_ptrPropertyIterator : public PropertyIteratorOf<const char *, char_ptrIPropertyIterator>
+{
+public:
+    char_ptrPropertyIterator(HashTable &_properties) : PropertyIteratorOf<const char *, char_ptrIPropertyIterator>(_properties) { }
+    virtual const char *getPropKey()
+    {
+        IMapping &cur = piter->query();
+        const char *key = (const char *) (cur.getKey());
+        return key;
+    }
+};
+
+template <class PTYPE, class MAPPING, class IPROP, class IPROPITER, class PROPITER>
+class CPropertiesBase : public CInterface, implements IPROP
+{
+private:
+    MAPPING properties;
+
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CPropertiesBase(bool nocase) : properties(nocase)
+    {
+    }
+    virtual ~CPropertiesBase()
+    {
+        properties.kill();
+    }
+    void loadProp(const char *finger)
+    {
+        StringBuffer prop, val;
+        while (*finger && *finger != '=')
+            prop.append(*finger++);
+        if (*finger)
+        {
+            finger++;
+            while (isspace(*finger))
+                finger++;
+            while (*finger)
+                val.append(*finger++);
+            prop.clip();
+            val.clip();
+            if (prop.length())
+                setProp(toPType(prop.toCharArray()), val.toCharArray());
+        }
+    }
+    void loadProp(const char *finger, int dft)
+    {
+        if (strchr(finger, '='))
+            loadProp(finger);
+        else
+            setProp(toPType(finger), dft);
+    }
+    void loadProp(const char *finger, bool dft)
+    {
+        if (strchr(finger, '='))
+            loadProp(finger);
+        else
+            setProp(toPType(finger), dft);
+    }
+    void loadProp(const char *finger, const char * dft)
+    {
+        if (strchr(finger, '='))
+            loadProp(finger);
+        else
+            setProp(toPType(finger), dft);
+    }
+    void loadSystem()
+    {
+#ifdef _WIN32
+        char **e = _environ;
+#else
+        char **e = environ;
+#endif
+        while (*e)
+        {
+            loadProp (*e);
+            e++;
+        }
+    }
+    void loadFile(const char *filename)
+    {
+        FILE *inFile = fopen(filename, "r"TEXT_TRANS);
+        if (inFile)
+        {
+            StringBuffer sbuff; 
+            char buf[1024];
+            while (fgets(buf,1024,inFile))
+            {
+                const char *s=buf;
+                do // handle lines longer than 1024 (bit kludgy)
+                {
+                    size32_t l=(size32_t)strlen(buf);
+                    if (!l || (buf[l-1]=='\n')) // should end in \n unless overflowed
+                        break;
+                    s = sbuff.append(buf).str();
+                } while (fgets(buf,1024,inFile));
+
+                if (*s == '#')
+                    continue;
+                char *comment = (char *) strstr(s, "#");
+                if (comment != NULL)
+                    *comment = 0;
+                loadProp(s);
+                sbuff.setLength(0);
+            }
+            fclose(inFile);
+        }
+    }
+    void loadProps(const char *finger)
+    {
+        while (*finger)
+        {
+            StringBuffer prop, val;
+            while (*finger && *finger != '\n' && *finger != '=')
+                prop.append(*finger++);
+            if (*finger && *finger != '\n')
+            {
+                finger++;
+                while (isspace(*finger) && *finger != '\n')
+                    finger++;
+                while (*finger && *finger != '\n')
+                    val.append(*finger++);
+                prop.clip();
+                val.clip();
+                if (prop.length())
+                    setProp(toPType(prop.toCharArray()), val.toCharArray());
+            }
+            if (*finger)
+                finger++;
+        }
+    }
+    virtual PTYPE toPType(const char *p) = 0;
+    virtual const char *fromPType(PTYPE p) = 0;
+    virtual PTYPE toKeyVal(const void *) = 0;
+    virtual int getPropInt(PTYPE propname, int dft)
+    {
+        if (propname)
+        {
+            const char *val = queryProp(propname);
+            if (val)
+                return (int)_atoi64(val);
+        }
+        return dft;
+    }
+    virtual bool getPropBool(PTYPE propname, bool dft) 
+    {
+        if (propname)
+        {
+            const char *val = queryProp(propname);
+            if (val&&*val)
+                return strToBool(val);
+        }
+        return dft;
+    }
+    virtual bool getProp(PTYPE propname, StringBuffer &ret)
+    {
+        if (propname)
+        {
+            StringAttr * match = properties.getValue(propname);
+            if (match)
+            {
+                ret.append(*match);
+                return true;
+            }
+        }
+        return false;
+    }
+    virtual const char *queryProp(PTYPE propname)
+    {
+        if (propname)
+        {
+            StringAttr * match = properties.getValue(propname);
+            if (match)
+                return(*match);
+        }
+        return NULL;
+    }
+    virtual void saveFile(const char *filename)
+    {
+        FILE *outFile = fopen(filename, "w"TEXT_TRANS);
+        if (outFile)
+        {
+            HashIterator it(properties);
+            StringBuffer line;
+
+            for (it.first();it.isValid();it.next())
+            {
+                IMapping &cur = it.query();
+                PTYPE key = toKeyVal(cur.getKey());
+                StringAttr &attr = * (StringAttr *) properties.getValue(key);
+                line.clear().append(key).append('=').append(attr).newline();
+                fwrite(line.str(),line.length(),1,outFile);
+            }
+            fclose(outFile);
+        }
+    }
+    virtual void setProp(PTYPE propname, int val)
+    {
+        char buf[15];
+        sprintf(buf, "%d", val);
+        setProp(propname, buf);
+    }
+    virtual void setProp(PTYPE propname, const char *val)
+    {
+        if (propname)
+        {
+            if (val)
+                properties.setValue(propname, val);
+            else
+                properties.remove(propname);
+        }
+    }
+    virtual bool removeProp(PTYPE propname)
+    {
+        if (propname)
+            return properties.remove(propname);
+        return false;
+    }
+    virtual bool hasProp(PTYPE propname)
+    {
+        if (propname)
+        {
+            StringAttr * match = properties.getValue(propname);
+            if (match)
+                return true;
+        }
+        return false;
+    }
+
+// serializable impl.
+    virtual void serialize(MemoryBuffer &tgt)
+    {
+        HashIterator it(properties);
+
+        tgt.append((unsigned) properties.count());
+        it.first();
+        while (it.isValid())
+        {
+            IMapping &cur = it.query();
+            PTYPE key = toKeyVal(cur.getKey());
+            StringAttr &attr = * (StringAttr *) properties.getValue(key);
+            char_ptr cp = fromPType(key);
+            tgt.append((size32_t) strlen(cp)+1);
+            tgt.append(cp);
+            tgt.append(attr);
+            it.next();
+        }
+    }
+    virtual void deserialize(MemoryBuffer &src)
+    {
+        unsigned count;
+        src.read(count);
+        for (; count>0; count--)
+        {
+            char *key;
+            StringAttr value;
+            size32_t sz;
+            src.read(sz);
+            key = (char *) alloca(sz);
+            src.read(sz, key);
+            src.read(value);
+            PTYPE ptype = toPType(key);
+            setProp(ptype, value);
+        }
+    }
+    virtual IPROPITER *getIterator()
+    {
+        return new PROPITER(properties);
+    }
+};
+
+#define MAKECPropertyOf(PHTYPE, PTYPE, MAPPING, PCLASS) \
+class PCLASS : public CPropertiesBase<PTYPE, MAPPING, PTYPE##IProperties, PTYPE##IPropertyIterator, PTYPE##PropertyIterator>                            \
+{                                                                                                       \
+public:                                                                                                 \
+    PCLASS(const char *filename, bool nocase) : CPropertiesBase<PTYPE, MAPPING, PTYPE##IProperties, PTYPE##IPropertyIterator, PTYPE##PropertyIterator>(nocase) { loadFile(filename); } \
+    PCLASS(bool nocase) : CPropertiesBase<PTYPE, MAPPING, PTYPE##IProperties, PTYPE##IPropertyIterator, PTYPE##PropertyIterator>(nocase)    { }         \
+    virtual PTYPE toPType(const char *p) { return conv2##PTYPE(p); }                                    \
+    virtual const char *fromPType(PTYPE p) { return conv##PTYPE##2(p); }                                \
+    virtual PTYPE toKeyVal(const void *p) { return tokv##PTYPE(p); }                                \
+};
+typedef IProperties char_ptrIProperties;
+MAKECPropertyOf(Atom, char_ptr, StringAttrMapping, CProperties);
+
+extern jlib_decl IProperties *createProperties(bool nocase)
+{
+    return new CProperties(nocase);
+}
+extern jlib_decl IProperties *createProperties(const char *filename, bool nocase)
+{
+    if (filename)
+        return new CProperties(filename, nocase);
+    else
+        return new CProperties(nocase);
+}
+static CProperties *sysProps = NULL;
+
+extern jlib_decl IProperties *querySystemProperties()
+{
+    if (!sysProps)
+    {
+        sysProps = new CProperties(false);
+        sysProps->loadSystem();
+    }
+    return sysProps;
+}
+
+extern jlib_decl IProperties *getSystemProperties()
+{
+    IProperties *p = querySystemProperties();
+    p->Link();
+    return p;
+}
+
+MODULE_INIT(INIT_PRIORITY_JPROP)
+{
+    return true;
+}
+
+MODULE_EXIT()
+{
+    ::Release(sysProps);
+}

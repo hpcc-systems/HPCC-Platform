@@ -1,0 +1,8 @@
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+
+[components]
+configmgr=esp;${CONFIG_DIR}/configmgr
+brokenconntimeout=60
+buildset=buildset.xml
+wizardalgorithm=genenvrules.conf
+autodetectipscript=${ADMIN_PATH}/get_ip_address_wiz.sh

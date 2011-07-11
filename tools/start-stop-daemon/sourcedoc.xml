@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd">
+<section>
+    <title>tools/start-stop-daemon</title>
+
+    <para>
+        The tools/start-stop-daemon directory contains the sources for the tools/start-stop-daemon library.
+    </para>
+</section>

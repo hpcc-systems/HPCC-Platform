@@ -1,0 +1,73 @@
+################################################################################
+#    Copyright (C) 2011 HPCC Systems.
+#
+#    This program is free software: you can redistribute it and/or All rights reserved. This program is NOT PRESENTLY free software: you can NOT redistribute
+#    it under the terms of the GNU Affero General Public License as
+#    published by the Free Software Foundation, either version 3 of the
+#    License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+
+# thor Supplementals
+# SCHEMA: name=thor.xsd method=schema
+### name=thor.xsl method=xslt destName=thor.ini
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/configxml/thor.xsl DESTINATION ${OSSDIR}/componentfiles/configxml
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=setvars_linux.xsl method=xslt destName=setvars
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/configxml/setvars_linux.xsl DESTINATION ${OSSDIR}/componentfiles/configxml
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=get_thor_options
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/thor/get_thor_options DESTINATION ${OSSDIR}/bin
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=makethorgroup
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/thor/makethorgroup DESTINATION ${OSSDIR}/bin
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=multiscp
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/thor/multiscp DESTINATION ${OSSDIR}/bin
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=multissh
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/thor/multissh DESTINATION ${OSSDIR}/bin
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=scpslaves
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/thor/scpslaves DESTINATION ${OSSDIR}/bin
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=setup_nfs
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/thor/setup_nfs DESTINATION ${OSSDIR}/bin
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=setup_one_nfs
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/thor/setup_one_nfs DESTINATION ${OSSDIR}/bin
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=sshslaves
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/thor/sshslaves DESTINATION ${OSSDIR}/bin
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=start_backupnode
+Install ( FILES ${CMAKE_BINARY_DIR}/initfiles/componentfiles/thor/start_backupnode DESTINATION ${OSSDIR}/bin
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=start_slave
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/thor/start_slave DESTINATION ${OSSDIR}/bin
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=start_slaves
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/thor/start_slaves DESTINATION ${OSSDIR}/bin
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=start_thor
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/thor/start_thor DESTINATION ${OSSDIR}/bin
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=run_thor
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/thor/run_thor DESTINATION ${OSSDIR}/bin
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=stop_thor
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/thor/stop_thor DESTINATION ${OSSDIR}/bin
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/thor/init_start_thor DESTINATION ${OSSDIR}/bin
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/thor/init_stop_thor DESTINATION ${OSSDIR}/bin
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )

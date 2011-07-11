@@ -1,0 +1,3 @@
+id name author rating100 price personid __fileposition__
+8 David and Goliath  20 2.99 2 334
+10 The Life of Pi Yan Martel 90 0 3 411

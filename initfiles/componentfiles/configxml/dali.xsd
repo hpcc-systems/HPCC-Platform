@@ -1,0 +1,338 @@
+<!--
+
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+-->
+
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:include schemaLocation="environment.xsd"/>
+  <xs:element name="DaliServerProcess">
+    <xs:annotation>
+      <xs:documentation>Describes a Dali server installation</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="Instance" maxOccurs="unbounded">
+          <xs:annotation>
+            <xs:appinfo>
+              <viewType>instance</viewType>
+            </xs:appinfo>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:attribute name="computer" type="computerType" use="required">
+              <xs:annotation>
+                <xs:appinfo>
+                  <colIndex>1</colIndex>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="netAddress" type="xs:string" use="optional">
+              <xs:annotation>
+                <xs:appinfo>
+                  <viewType>readonly</viewType>
+                                    <colIndex>2</colIndex>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="directory" type="absolutePath" use="optional">
+              <xs:annotation>
+                <xs:appinfo>
+                  <viewType>hidden</viewType>
+                  <required>true</required>
+                                    <colIndex>3</colIndex>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="port" type="xs:string" use="optional" default="7070">
+              <xs:annotation>
+                <xs:appinfo>
+                  <required>true</required>
+                                    <colIndex>4</colIndex>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Notes" maxOccurs="unbounded">
+          <xs:annotation>
+            <xs:appinfo>
+              <viewChildNodes>true</viewChildNodes>
+            </xs:appinfo>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Note" type="xs:string" minOccurs="0" maxOccurs="1"/>
+            </xs:sequence>
+            <xs:attribute name="severity" use="optional" default="Minor">
+              <xs:annotation>
+                <xs:appinfo>
+                  <tooltip>Significance of this note.</tooltip>
+                  <title>Severity</title>
+                                    <colIndex>1</colIndex>                  
+                </xs:appinfo>
+              </xs:annotation>
+              <xs:simpleType>
+                <xs:restriction base="xs:string">
+                  <xs:enumeration value="Minor"/>
+                  <xs:enumeration value="Normal"/>
+                  <xs:enumeration value="Critical"/>
+                </xs:restriction>
+              </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="date" type="AutoTimeStampType" use="optional">
+              <xs:annotation>
+                <xs:appinfo>
+                  <title>Date / Time</title>
+                  <tooltip>Date and time this note was entered</tooltip>
+                  <viewType>readonly</viewType>
+                  <width>120</width>
+                                    <colIndex>2</colIndex>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="computer" type="AutoComputerType" use="optional">
+              <xs:annotation>
+                <xs:appinfo>
+                  <title>Computer</title>
+                  <tooltip>Computer from which this note was entered</tooltip>
+                  <viewType>readonly</viewType>
+                                    <colIndex>3</colIndex>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="user" type="AutoUseridType" use="optional">
+              <xs:annotation>
+                <xs:appinfo>
+                  <title>User</title>
+                  <tooltip>User account from which this note was entered</tooltip>
+                  <viewType>readonly</viewType>
+                                    <colIndex>4</colIndex>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attributeGroup ref="Store"/>
+      <xs:attributeGroup ref="Backup"/>
+      <xs:attributeGroup ref="LDAP"/>
+      <xs:attribute name="build" type="buildType" use="required">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>The build name to be deployed</tooltip>
+            <viewType>hidden</viewType>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="buildSet" type="buildSetType" use="required">
+        <xs:annotation>
+          <xs:appinfo>
+            <viewType>hidden</viewType>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="name" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Name for this process</tooltip>
+            <required>true</required>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="description" type="xs:string" use="optional" default="Dali Server process">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Description for this process</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="msgLevel" type="xs:nonNegativeInteger" use="optional" default="100">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Severity threshold for reporting errors in log file</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="dataPath" type="absolutePath" use="optional">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Directory in which dali's data files will be written to</tooltip>
+            <onchange>
+              <message>
+                Warn:This is the path for critical data for the Dali server and must be changed with care! Please refer to the documentation for more details.
+              </message>
+            </onchange>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="LogDir" type="absolutePath" use="optional">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Directory in which to store server log files </tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="AuditLogDir" type="absolutePath" use="optional">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Directory in which to store audit log files</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="environment" type="absolutePath">
+        <xs:annotation>
+          <xs:appinfo>
+            <autogenforwizard>1</autogenforwizard>
+            <autogendefaultvalue>$defaultenvfile</autogendefaultvalue>
+            <tooltip>Path to an xml file containing an Environment to use</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="Store">
+    <xs:attribute name="lightweightCoalesce" type="xs:boolean" use="optional" default="true">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Enable non memory loaded consolidation of store</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="IdlePeriod" type="xs:nonNegativeInteger" use="optional" default="600">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Period of client to server quiet time to trigger store save</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="IdleRate" type="xs:nonNegativeInteger" use="optional" default="10">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Number of transaction per minute to be considered quiet time</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="MinTime" type="xs:nonNegativeInteger" use="optional" default="86400">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Minimum amount of time between lightweight store saves</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="StartTime" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Start time of lightweight coalesce checking</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="EndTime" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>End time of lightweight coalesce checking</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="keepStores" type="xs:nonNegativeInteger" use="optional" default="100">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Number of old saved stores to keep</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="recoverFromIncErrors" type="xs:boolean" default="true">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Switch on to auto recover from corruption to delta files on load</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:attributeGroup name="Backup">
+    <xs:attribute name="backupComputer" type="computerType" use="optional">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Backup computer</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="asyncBackup" type="xs:boolean" use="optional" default="true">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Asynchronous backup of transactions</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="useNFSBackupMount" type="xs:boolean" use="optional" default="false">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Create and use a NFS mount point for backups</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+   <xs:attributeGroup name="LDAP">
+    <xs:attribute name="ldapServer" type="ldapServerType" use="optional">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>The ldap server to be used for authentication.</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="ldapProtocol" use="optional" default="ldap">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>The protocol to use - standard ldap or ldap over SSL.</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="ldap"/>
+          <xs:enumeration value="ldaps"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="authMethod" use="optional" default="kerberos">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>The protocol to use for LDAP authentication.</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="kerberos"/>
+          <xs:enumeration value="simple"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="filesBasedn" type="xs:string" use="optional" default="ou=Files,ou=ecl">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>base location for ldap file scopes</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="filesDefaultUser" use="optional" type="xs:string">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>The default username for Files access (ActiveDirectory).</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="filesDefaultPassword" use="optional" type="xs:string">
+      <xs:annotation>
+        <xs:appinfo>
+          <viewType>password</viewType>
+          <tooltip>The default password for filesDefaultUser.</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="checkScopeScans" type="xs:boolean" use="optional" default="true">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Enable LDAP checking for all logical file listings</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+</xs:schema>

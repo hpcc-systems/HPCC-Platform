@@ -1,0 +1,15 @@
+<Dataset name='Result 1'>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><surname>Halliday            </surname><forename>Gavin     </forename><age>35</age></Row>
+ <Row><surname>Smith               </surname><forename>John      </forename><age>57</age></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><Result_3>2</Result_3></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><Result_4>2</Result_4></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><Result_5>2</Result_5></Row>
+</Dataset>

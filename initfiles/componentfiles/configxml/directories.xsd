@@ -1,0 +1,83 @@
+<!--
+
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+-->
+
+<?xml version="1.0" encoding="utf-8"?>
+<!-- edited with XMLSPY v5 rel. 4 U (http://www.xmlspy.com) by Rajeev Moondhra (Seisint, Inc.) -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+  <xs:include schemaLocation="environment.xsd"/>
+  <xs:element name="Directories">
+    <xs:annotation>
+      <xs:appinfo>
+        <title>Common Directories</title>
+      </xs:appinfo>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="Category" maxOccurs="unbounded">
+          <xs:annotation>
+            <xs:appinfo>
+              <title>Common</title>
+            </xs:appinfo>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Override" minOccurs="0" maxOccurs="unbounded">
+                <xs:annotation>
+                  <xs:appinfo>
+                    <viewType>list</viewType>
+                    <title>Overrides</title>
+                  </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:attribute name="component" type="commonDirsCompType" use="optional">
+                    <xs:annotation>
+                      <xs:appinfo>
+                        <title>Type</title>
+                        <colIndex>1</colIndex>
+                      </xs:appinfo>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="instance" type="commonDirsInstType" use="optional">
+                    <xs:annotation>
+                      <xs:appinfo>
+                        <title>Component</title>
+                        <colIndex>2</colIndex>
+                      </xs:appinfo>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="dir" type="xs:string" use="optional">
+                    <xs:annotation>
+                      <xs:appinfo>
+                        <title>Directory</title>
+                        <colIndex>3</colIndex>
+                      </xs:appinfo>
+                    </xs:annotation>
+                  </xs:attribute>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute name="name" type="xs:string" use="required">
+              <xs:annotation>
+                <xs:appinfo>
+                  <title>Name</title>
+                  <viewType>readonly</viewType>
+                  <colIndex>1</colIndex>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="dir" type="xs:string" use="required">
+              <xs:annotation>
+                <xs:appinfo>
+                  <title>Directory</title>
+                  <colIndex>2</colIndex>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

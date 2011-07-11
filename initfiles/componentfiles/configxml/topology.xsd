@@ -1,0 +1,17 @@
+<!--
+
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+-->
+
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:include schemaLocation="environment.xsd"/>
+    <xs:element name="Topology">
+        <xs:annotation>
+            <xs:appinfo>
+                <viewType>topology</viewType>
+            </xs:appinfo>
+            <xs:documentation>Describes the Topology of the environment</xs:documentation>
+        </xs:annotation>
+    </xs:element>
+</xs:schema>

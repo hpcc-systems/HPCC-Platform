@@ -1,0 +1,5 @@
+<Dataset name='Result 1'>
+ <Row><value1>A</value1><occurrences>2</occurrences></Row>
+ <Row><value1>B</value1><occurrences>1</occurrences></Row>
+ <Row><value1>C</value1><occurrences>2</occurrences></Row>
+</Dataset>

@@ -1,0 +1,376 @@
+//Microsoft Developer Studio generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ABOUTBOX DIALOG DISCARDABLE  0, 0, 209, 54
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "About Property Tree Inspector"
+FONT 8, "MS Sans Serif"
+BEGIN
+    ICON            IDR_MAINFRAME,IDC_STATIC,7,7,20,20
+    LTEXT           "Property Tree Inspector Version 1.66",IDC_STATIC,33,7,
+                    119,8,SS_NOPREFIX
+    LTEXT           "Copyright (C) 2001 Seisint Limited. All rights reserved.",
+                    IDC_STATIC,33,21,169,8
+    DEFPUSHBUTTON   "OK",IDOK,152,33,50,14,WS_GROUP
+END
+
+IDD_TREEVIEW_DIALOG DIALOGEX 0, 0, 398, 201
+STYLE DS_3DLOOK | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_POPUP | WS_VISIBLE | 
+    WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
+EXSTYLE WS_EX_CONTEXTHELP | WS_EX_CONTROLPARENT | WS_EX_APPWINDOW
+CAPTION "Property Tree Inspector"
+MENU IDR_MENU
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    PUSHBUTTON      "E&xit",IDC_EXIT,341,179,50,14
+    CONTROL         "Custom1",IDC_INSPECTOR,"PROPERTY_INSPECTOR_CTRL",0x0,7,
+                    7,384,168
+END
+
+IDD_REMOTE_SERVER DIALOG DISCARDABLE  0, 0, 210, 106
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION
+CAPTION "Remote Connection Details"
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "Specify one or more load balanced Dali Servers to connect to:",
+                    IDC_SERVER_STATIC,7,7,196,11
+    LISTBOX         IDC_SERVERS_LIST,23,20,139,59,NOT LBS_NOTIFY | 
+                    LBS_NOINTEGRALHEIGHT | LBS_NOSEL | WS_VSCROLL | 
+                    WS_TABSTOP
+    PUSHBUTTON      "&Remove",IDC_REMOVESERVER_BUTTON,167,51,36,14
+    PUSHBUTTON      "&Add",IDC_ADDSERVER_BUTTON,167,34,36,14
+    DEFPUSHBUTTON   "Connect With All",IDOK,44,85,70,14
+    PUSHBUTTON      "Cancel",IDCANCEL,119,85,46,14
+END
+
+IDD_ENDPOINT_DIALOG DIALOG DISCARDABLE  0, 0, 152, 68
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION
+CAPTION "Server Endpoint Details"
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "&Server IP:",IDC_STATIC,7,14,32,8
+    EDITTEXT        IDC_SERVER_IP_EDIT,45,7,100,14,ES_AUTOHSCROLL
+    LTEXT           "&Port:",IDC_STATIC,7,31,16,8
+    EDITTEXT        IDC_SERVER_PORT_EDIT,45,26,40,14,ES_AUTOHSCROLL | 
+                    ES_NUMBER
+    DEFPUSHBUTTON   "OK",IDOK,41,47,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,95,46,50,14
+END
+
+IDD_NEWVALUE DIALOG DISCARDABLE  0, 0, 186, 66
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Dialog"
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "&Name:",IDC_STATIC,7,11,22,8
+    EDITTEXT        IDC_NEWNAMEEDIT,37,7,142,14,ES_AUTOHSCROLL
+    LTEXT           "&Value:",IDC_STATIC,7,29,21,8
+    EDITTEXT        IDC_NEWVALUEEDIT,37,24,142,14,ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "OK",IDOK,76,45,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,129,45,50,14
+END
+
+
+#ifndef _MAC
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,1
+ PRODUCTVERSION 1,0,0,1
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "CompanyName", "\0"
+            VALUE "FileDescription", "treeview MFC Application\0"
+            VALUE "FileVersion", "1, 0, 0, 1\0"
+            VALUE "InternalName", "treeview\0"
+            VALUE "LegalCopyright", "Copyright (C) 2001\0"
+            VALUE "LegalTrademarks", "\0"
+            VALUE "OriginalFilename", "treeview.EXE\0"
+            VALUE "ProductName", "treeview Application\0"
+            VALUE "ProductVersion", "1, 0, 0, 1\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+#endif    // !_MAC
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO DISCARDABLE 
+BEGIN
+    IDD_ABOUTBOX, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 202
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 47
+    END
+
+    IDD_TREEVIEW_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 391
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 193
+    END
+
+    IDD_REMOTE_SERVER, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 203
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 99
+    END
+
+    IDD_ENDPOINT_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 145
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 61
+    END
+
+    IDD_NEWVALUE, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 179
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 59
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDR_MENU MENU DISCARDABLE 
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "&Open...\tCtrl+O",            IDM_LOAD
+        MENUITEM "&Save...\tCtrl+S",            IDM_SAVE
+        MENUITEM SEPARATOR
+        MENUITEM "Connect &Remote...\tCtrl+R",  IDM_CONNECTREMOTE
+        MENUITEM "&Reconnect...\tF5",           IDM_RECONNECT
+        MENUITEM SEPARATOR
+        MENUITEM "E&xit",                       IDM_EXIT
+    END
+    POPUP "&Edit"
+    BEGIN
+        MENUITEM "&Delete",                     IDM_DELETECONFIRM
+        MENUITEM "Find\tCtrl+F",                IDM_FIND
+        MENUITEM SEPARATOR
+        MENUITEM "X Fi&nd\tCtrl+G",             IDM_XFIND
+        MENUITEM SEPARATOR
+        MENUITEM "&Commit\tCtrl+M",             IDM_COMMIT
+    END
+    POPUP "&View"
+    BEGIN
+        MENUITEM "&Refesh",                     IDM_REFRESH
+        MENUITEM SEPARATOR
+        MENUITEM "Show &Attributes on Properties", IDM_SHOWATTRIBS, CHECKED
+        MENUITEM "Show &Qualified Names",       IDM_SHOWQUALIFIED
+        MENUITEM SEPARATOR
+        MENUITEM "&Contract All",               IDM_CONTRACT
+        MENUITEM "&Expand Level",               IDM_EXPAND
+    END
+    POPUP "&Help"
+    BEGIN
+        MENUITEM "&About...",                   IDM_ABOUT
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDS_ABOUTBOX            "&About treeview..."
+    IDS_READY               "Ready"
+END
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.K.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENG)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_UK
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDR_POPUPMENUS MENU DISCARDABLE 
+BEGIN
+    POPUP "Popup_Menu_1"
+    BEGIN
+        MENUITEM "Add &Property...",            IDMP_ADDPROPERTY
+        MENUITEM "Add &Attribute...",           IDMP_ADDATTRIBUTE
+        MENUITEM SEPARATOR
+        MENUITEM "&Delete",                     IDMP_DELETE
+        MENUITEM SEPARATOR
+        MENUITEM "Set as &Root",                IDMP_SETASROOT
+    END
+END
+
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#define _AFX_NO_SPLITTER_RESOURCES\r\n"
+    "#define _AFX_NO_OLE_RESOURCES\r\n"
+    "#define _AFX_NO_TRACKER_RESOURCES\r\n"
+    "#define _AFX_NO_PROPERTY_RESOURCES\r\n"
+    "\r\n"
+    "#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)\r\n"
+    "#ifdef _WIN32\r\n"
+    "LANGUAGE 9, 1\r\n"
+    "#pragma code_page(1252)\r\n"
+    "#endif //_WIN32\r\n"
+    "#include ""res\\treeview.rc2""  // non-Microsoft Visual C++ edited resources\r\n"
+    "#include ""afxres.rc""         // Standard components\r\n"
+    "#endif\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDR_MAINFRAME           ICON    DISCARDABLE     "res\\treeview.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+IDR_ACCELERATOR1 ACCELERATORS DISCARDABLE 
+BEGIN
+    "A",            IDM_ABOUT,              VIRTKEY, ALT, NOINVERT
+    "F",            IDM_FIND,               VIRTKEY, CONTROL, NOINVERT
+    "G",            IDM_XFIND,              VIRTKEY, CONTROL, NOINVERT
+    "L",            IDM_LOAD,               VIRTKEY, ALT, NOINVERT
+    "M",            IDM_COMMIT,             VIRTKEY, CONTROL, NOINVERT
+    "O",            IDM_LOAD,               VIRTKEY, CONTROL, NOINVERT
+    "R",            IDM_CONNECTREMOTE,      VIRTKEY, CONTROL, NOINVERT
+    "S",            IDM_SAVE,               VIRTKEY, CONTROL, NOINVERT
+    "S",            IDM_SAVE,               VIRTKEY, ALT, NOINVERT
+    VK_DELETE,      IDM_DELETECONFIRM,      VIRTKEY, NOINVERT
+    VK_DELETE,      IDM_DELETE,             VIRTKEY, SHIFT, NOINVERT
+    VK_F5,          IDM_RECONNECT,          VIRTKEY, NOINVERT
+    VK_TAB,         IDD_NEXT_FIELD,         VIRTKEY, NOINVERT
+    VK_TAB,         IDD_PREV_FIELD,         VIRTKEY, SHIFT, NOINVERT
+    "X",            IDC_EXIT,               VIRTKEY, ALT, NOINVERT
+END
+
+#endif    // English (U.K.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+#define _AFX_NO_SPLITTER_RESOURCES
+#define _AFX_NO_OLE_RESOURCES
+#define _AFX_NO_TRACKER_RESOURCES
+#define _AFX_NO_PROPERTY_RESOURCES
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE 9, 1
+#pragma code_page(1252)
+#endif //_WIN32
+#include "res\treeview.rc2"  // non-Microsoft Visual C++ edited resources
+#include "afxres.rc"         // Standard components
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

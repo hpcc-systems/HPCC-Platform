@@ -1,0 +1,585 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+ESPstruct Task
+{
+    string Caption;
+    string FileName;
+    string TargetPath;
+    string SourcePath;
+    int    Status;
+    string Message;
+};
+
+ESPstruct Component
+{
+    string Type;
+    string DisplayType;
+    string Name;
+    string Build;
+    string Computer;
+    string Instance;
+    string InstanceType;
+    ESParray<ESPstruct Task> Tasks;
+};
+
+ESPstruct DeployOptions
+{
+    bool   Compare;
+    bool   ConfigFiles;
+    bool   BuildFiles;
+    bool   UpgradeBuildFiles;
+    bool   Start;
+    bool   Stop;
+    bool   BackupRename;
+    bool   BackupCopy;
+    bool   ArchiveEnv;
+    bool   Log;
+    string ArchivePath;
+};
+
+ESPstruct WsDeployReqInfo
+{
+    string FileName;
+    string UserId;
+};
+
+ESPstruct DeployInfo
+{
+    ESParray<ESPstruct Component> Components;
+    ESPstruct DeployOptions Options;
+    string    Status;
+};
+
+ESPstruct DaliInfo
+{
+    string DaliIp;
+    string DaliName;
+};
+
+ESPrequest EmptyRequest
+{
+};
+
+ESPresponse [exceptions_inline, encode(0)] InitResponse
+{
+    string Component;
+    string Command;
+};
+
+
+ESPrequest DeployRequest
+{
+    ESPstruct DeployInfo Deploy;
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] DeployResponse
+{
+    string Component;
+    string Command;
+    //ESPstruct DeployInfo Deploy;
+    string Deploy;
+    string Status;
+};
+
+ESPresponse [exceptions_inline, encode(0)] GraphResponse
+{
+    string GraphContainer;
+};
+
+
+ESPrequest NavMenuEventRequest
+{
+    string Cmd;
+    string XmlArgs;
+    ESPstruct WsDeployReqInfo ReqInfo;  
+};
+
+ESPresponse [exceptions_inline, encode(0)] NavMenuEventResponse
+{
+    string Component;
+    string Command;
+    string XmlArgs;
+    string LastSaved;
+};
+
+ESPrequest DisplaySettingsRequest
+{
+    string Cmd;
+    string XmlArgs;
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] DisplaySettingsResponse
+{
+    string Component;
+    string CompDefn;
+    string ViewChildNodes;
+    string MultiRowNodes;
+    string XmlArgs;
+};
+
+ESPrequest SaveSettingRequest
+{
+    string XmlArgs;
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] SaveSettingResponse
+{
+    string UpdateAttr;
+    string UpdateValue;
+    string PrevValue;
+    string IsSaved;
+    string Refresh;
+};
+
+ESPrequest GetBuildSetInfoRequest
+{
+    string Cmd;
+    string XmlArgs;
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] GetBuildSetInfoResponse
+{
+    string Component;
+    string XmlArgs;
+};
+
+ESPrequest GetDeployableCompsRequest
+{
+    string Cmd;
+    string XmlArgs;
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] GetDeployableCompsResponse
+{
+    string Component;
+    string XmlArgs;
+};
+
+ESPrequest StartDeploymentRequest
+{
+    string SelComps;
+    ESPstruct DeployOptions Options;
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] StartDeploymentResponse
+{
+    string Status;
+};
+
+ESPrequest GetBuildServerDirsRequest
+{
+    string Cmd;
+    string XmlArgs;
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] GetBuildServerDirsResponse
+{
+    string Component;
+    string XmlArgs;
+};
+
+ESPrequest ImportBuildRequest
+{
+    string BuildName;
+    string BuildUrl;
+    string BuildSets;
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] ImportBuildResponse
+{
+    string Status;
+};
+
+ESPrequest GetComputersForRoxieRequest
+{
+    string Cmd;
+    string XmlArgs;
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] GetComputersForRoxieResponse
+{
+    string Computers;
+    string Filters;
+};
+
+ESPrequest HandleRoxieOperationRequest
+{
+    string Cmd;
+    string XmlArgs;
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] HandleRoxieOperationResponse
+{
+    string Status;
+};
+
+ESPrequest HandleThorTopologyRequest
+{
+    string Operation;
+    string XmlArgs;
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] HandleThorTopologyResponse
+{
+    string Status;
+    string CompName;
+};
+
+ESPrequest HandleComponentRequest
+{
+    string Operation;
+    string XmlArgs;
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] HandleComponentResponse
+{
+    string Status;
+    string CompName;
+};
+
+ESPrequest HandleInstanceRequest
+{
+    string Operation;
+    string XmlArgs;
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] HandleInstanceResponse
+{
+    string Status;
+    string NewName;
+    string Duplicates;
+};
+
+ESPrequest HandleEspServiceBindingsRequest
+{
+    string Operation;
+    string XmlArgs;
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] HandleEspServiceBindingsResponse
+{
+    string Status;
+    string NewName; 
+};
+
+ESPrequest HandleComputerRequest
+{
+    string Operation;
+    string XmlArgs;
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] HandleComputerResponse
+{
+    string Status;
+    string CompName;
+};
+
+ESPrequest HandleTopologyRequest
+{
+    string Operation;
+    string XmlArgs;
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] HandleTopologyResponse
+{
+    string Status;
+};
+
+ESPrequest HandleRowsRequest
+{
+    string Operation;
+    string XmlArgs;
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] HandleRowsResponse
+{
+    string Status;
+    string CompName;
+};
+
+ESPrequest GetNavTreeDefnRequest
+{
+    string XmlArgs;
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] GetNavTreeDefnResponse
+{
+    string CompDefn;
+    string ReadOnly;
+    string LastSaved;
+    string LastStarted;
+    string Message;
+};
+
+ESPrequest GetValueRequest
+{
+    string Params;
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] GetValueResponse
+{
+    string Status;
+    string ReqValue;
+};
+
+ESPrequest UnlockUserRequest
+{
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] UnlockUserResponse
+{
+    string Status;
+};
+
+ESPrequest ClientAliveRequest
+{
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] ClientAliveResponse
+{
+    string LastSaved;
+    string LastStarted;
+    string RefreshClient;
+};
+
+ESPrequest GetEnvironmentRequest
+{
+};
+
+ESPresponse [exceptions_inline, encode(0)] GetEnvironmentResponse
+{
+    string EnvXml;
+};
+
+ESPrequest SetEnvironmentRequest
+{
+    string EnvXml;
+};
+
+ESPresponse [exceptions_inline, encode(0)] SetEnvironmentResponse
+{
+    int ReturnCode;
+    string ErrorMsg;
+};
+
+ESPrequest LockEnvironmentForCloudRequest
+{
+    string Ip;
+    string UserName;
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] LockEnvironmentForCloudResponse
+{
+    string Msg;
+    int ReturnCode;
+};
+
+ESPrequest UnlockEnvironmentForCloudRequest
+{
+    string Ip;
+    string UserName;
+    string NewEnvXml;
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] UnlockEnvironmentForCloudResponse
+{
+    string Msg;
+    int ReturnCode;
+};
+
+ESPrequest SaveEnvironmentForCloudRequest
+{
+    string Ip;
+    string UserName;
+    string NewEnv;
+    string Id;
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] SaveEnvironmentForCloudResponse
+{
+    string Msg;
+    int ReturnCode;
+};
+
+ESPrequest RollbackEnvironmentForCloudRequest
+{
+    string Ip;
+    string UserName;
+    string Id;
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] RollbackEnvironmentForCloudResponse
+{
+    string Msg;
+    int ReturnCode;
+};
+
+ESPrequest NotifyInitSystemSaveEnvForCloudRequest
+{
+    string Ip;
+    string UserName;
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] NotifyInitSystemSaveEnvForCloudResponse
+{
+    string Msg;
+    int ReturnCode;
+};
+
+ESPrequest BuildEnvironmentRequest
+{
+    string XmlArgs;
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] BuildEnvironmentResponse
+{
+    string Status;
+    string Message;
+};
+
+ESPrequest GetSubnetIPAddrRequest
+{
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] GetSubnetIPAddrResponse 
+{
+    string IPList;
+    string Message;
+};
+
+ESPrequest GetSummaryRequest
+{
+    bool PrepareLinkFlag;
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] GetSummaryResponse
+{
+    string Status;
+    string XmlStr;
+};
+
+ESPservice [exceptions_inline("xslt/exceptions.xslt")] WsDeploy
+{
+    ESPuses ESPstruct Task;
+    ESPuses ESPstruct Component;
+    ESPuses ESPstruct DeployOptions;
+    ESPuses ESPstruct DeployInfo;
+
+    ESPmethod[description("Initial display"), help(""), resp_xsl_default("xslt/ui_engine.xslt")] 
+        Init(EmptyRequest, InitResponse);
+    ESPmethod[description("Compare or deploy components"), help(""), resp_xsl_default("xslt/ui_engine.xslt")] 
+        Deploy(DeployRequest, DeployResponse);
+    ESPmethod[description("Handle an event from the navigation tree menu"), help("")] 
+        NavMenuEvent(NavMenuEventRequest, NavMenuEventResponse);    
+    ESPmethod[description("Dependency graph"), help(""), resp_xsl_default("xslt/graph_display.xsl")] 
+        Graph(EmptyRequest, GraphResponse);
+    ESPmethod[description("Display Component Settings"), help(""), resp_xsl_default("xslt/ui_configmgr.xslt")] 
+        DisplaySettings(DisplaySettingsRequest, DisplaySettingsResponse);       
+    ESPmethod[description("Save Component Setting"), help("")] 
+        SaveSetting(SaveSettingRequest, SaveSettingResponse);       
+    ESPmethod[description("Get BuildSet Info"), help("")] 
+        GetBuildSetInfo(GetBuildSetInfoRequest, GetBuildSetInfoResponse);
+    ESPmethod[description("Get Deployable Components"), help(""), resp_xsl_default("xslt/ui_configmgr.xslt")] 
+        GetDeployableComps(GetDeployableCompsRequest, GetDeployableCompsResponse);      
+    ESPmethod[description("Start Deployment"), help("")] 
+        StartDeployment(StartDeploymentRequest, StartDeploymentResponse);
+    ESPmethod[description("Get Build Server Directories"), help("")] 
+        GetBuildServerDirs(GetBuildServerDirsRequest, GetBuildServerDirsResponse);              
+    ESPmethod[description("Import Build"), help("")] 
+        ImportBuild(ImportBuildRequest, ImportBuildResponse);
+    ESPmethod[description("Get computers for Roxie components"), help("")] 
+        GetComputersForRoxie(GetComputersForRoxieRequest, GetComputersForRoxieResponse);
+    ESPmethod[description("Add computers to Roxie"), help("")] 
+        HandleRoxieOperation(HandleRoxieOperationRequest, HandleRoxieOperationResponse);
+    ESPmethod[description("Add computers to Thor topology"), help("")] 
+        HandleThorTopology(HandleThorTopologyRequest, HandleThorTopologyResponse);
+    ESPmethod[description("Handle new component operations like add & delete in the environment"), help("")] 
+        HandleComponent(HandleComponentRequest, HandleComponentResponse);
+    ESPmethod[description("Handle new instance operations like add & delete in the environment"), help("")] 
+        HandleInstance(HandleInstanceRequest, HandleInstanceResponse);
+    ESPmethod[description("Handle new Esp Service binding operations like add & delete "), help("")] 
+        HandleEspServiceBindings(HandleEspServiceBindingsRequest, HandleEspServiceBindingsResponse);
+    ESPmethod[description("Handle new hardware operations like add & delete computer e.t.c"), help("")] 
+        HandleComputer(HandleComputerRequest, HandleComputerResponse);
+    ESPmethod[description("Handle Topology  operations like add & delete e.t.c"), help("")] 
+        HandleTopology(HandleTopologyRequest, HandleTopologyResponse);
+    ESPmethod[description("Handle row operations like add & delete e.t.c"), help("")] 
+        HandleRows(HandleRowsRequest, HandleRowsResponse);
+    ESPmethod[description("Return nav tree definition for display purposes"), help("")]         
+        GetNavTreeDefn(GetNavTreeDefnRequest, GetNavTreeDefnResponse);
+    ESPmethod[description("Returns the value for the requested field"), help("")]       
+        GetValue(GetValueRequest, GetValueResponse);    
+    ESPmethod[description("Unlocks a user that is already connected"), help("")]        
+        UnlockUser(UnlockUserRequest, UnlockUserResponse);          
+    ESPmethod[description("Send a signal back to the service that the client is alive"), help("")]      
+        ClientAlive(ClientAliveRequest, ClientAliveResponse);
+    ESPmethod[description("Get the environment as an xml string"), help("")]        
+        GetEnvironment(GetEnvironmentRequest, GetEnvironmentResponse);
+    ESPmethod[description("Validate, update Dali and set the environment that is passed in as an xml string"), help("")]        
+        SetEnvironment(SetEnvironmentRequest, SetEnvironmentResponse);
+    ESPmethod[description("Lock the environment. Only valid as a soapcall in Cloud Environments"), help("")]        
+        LockEnvironmentForCloud(LockEnvironmentForCloudRequest, LockEnvironmentForCloudResponse);
+    ESPmethod[description("Unlock the environment. Only valid as a soapcall in Cloud Environments"), help("")]      
+        UnlockEnvironmentForCloud(UnlockEnvironmentForCloudRequest, UnlockEnvironmentForCloudResponse);
+    ESPmethod[description("Save the environment. Only valid as a soapcall in Cloud Environments"), help("")]        
+        SaveEnvironmentForCloud(SaveEnvironmentForCloudRequest, SaveEnvironmentForCloudResponse);
+    ESPmethod[description("Rollback the environment. Only valid as a soapcall in Cloud Environments"), help("")]        
+        RollbackEnvironmentForCloud(RollbackEnvironmentForCloudRequest, RollbackEnvironmentForCloudResponse);   
+    ESPmethod[description("Rollback the environment. Only valid as a soapcall in Cloud Environments"), help("")]        
+        NotifyInitSystemSaveEnvForCloud(NotifyInitSystemSaveEnvForCloudRequest, NotifyInitSystemSaveEnvForCloudResponse);   
+    ESPmethod[description("To Build the environment from wizard by providing xml"), help("")]
+        BuildEnvironment(BuildEnvironmentRequest, BuildEnvironmentResponse);
+    ESPmethod[description("To get the List IP Addresses in cloud environment by executing auto discovery script."), help("")]
+        GetSubnetIPAddr(GetSubnetIPAddrRequest, GetSubnetIPAddrResponse);
+    ESPmethod[description("To get the environment summary"), help("")]
+            GetSummary(GetSummaryRequest, GetSummaryResponse);
+};
+
+SCMexportdef(WsDeploy);
+
+SCMapi(WsDeploy) IClientWsDeploy *createWsDeployClient();

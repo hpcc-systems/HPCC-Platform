@@ -1,0 +1,32 @@
+#!/bin/bash
+################################################################################
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+################################################################################
+
+
+export PATH=$PATH:.
+echo Enter the address nfsserver: 
+read NFSSERVER 
+if [ $NFSSERVER =  ]; then
+    echo Please input nfsserver
+    exit
+fi
+echo NFSSERVER=$NFSSERVER
+
+echo -------------------------
+echo Enter root password:
+stty -echo
+read ROOTPASSWD
+stty echo
+
+echo --------------------------
+echo setup nfs for all thorslaves, continue? [n/y]
+read yesno
+if [ $yesno = 'y' ]; then
+    for slave in $(cat slaves); do
+        echo --------------------------
+        echo slave $slave:
+        setup_one_nfs $slave $ROOTPASSWD $NFSSERVER 
+    done
+fi
+

@@ -1,0 +1,228 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+#include "xslprocessor.hpp" 
+//  ===========================================================================
+ESPrequest 
+[
+
+]
+DFUXRefListRequest
+{
+};
+
+ESPresponse 
+[
+    encode(0)   
+]
+DFUXRefListResponse
+{
+    string DFUXRefListResult;
+};
+
+ESPrequest 
+[
+    
+]
+DFUXRefBuildRequest
+{
+    string Cluster;
+};
+
+ESPresponse 
+[
+    encode(0)
+]
+DFUXRefBuildResponse
+{
+    string DFUXRefActionResult;
+};
+
+
+ESPrequest 
+[
+
+]
+DFUXRefLostFilesQueryRequest
+{
+    string Cluster;
+};
+
+ESPresponse 
+[
+    encode(0)   
+]
+DFUXRefLostFilesQueryResponse
+{
+    string DFUXRefLostFilesQueryResult;
+};
+
+
+ESPrequest 
+[
+    
+]
+DFUXRefOrphanFilesQueryRequest
+{
+    string Cluster;
+};
+
+ESPresponse 
+[
+    encode(0)   
+]
+DFUXRefOrphanFilesQueryResponse
+{
+    string DFUXRefOrphanFilesQueryResult;
+};
+
+
+ESPrequest 
+[
+    
+]
+DFUXRefMessagesQueryRequest
+{
+    string Cluster;
+};
+
+ESPresponse 
+[
+    encode(0)   
+]
+DFUXRefMessagesQueryResponse
+{
+    string DFUXRefMessagesQueryResult;
+};
+
+/*ESPstruct [nil_remove] Directory
+{
+    string Name;
+    string DirSize;
+    string MaxIP;
+    string MaxSize;
+    string MinIP;
+    string MinSize;
+    string Skew;
+};*/
+
+ESPrequest 
+[
+    
+]
+DFUXRefDirectoriesQueryRequest
+{
+    string Cluster;
+};
+
+ESPresponse 
+[
+    encode(0)   
+]
+DFUXRefDirectoriesQueryResponse
+{
+    string DFUXRefDirectoriesQueryResult;
+    //ESParray<ESPstruct Directory> Directories;
+};
+
+
+ESPrequest 
+[
+    
+]
+DFUXRefFoundFilesQueryRequest
+{
+    string Cluster;
+};
+
+ESPresponse 
+[
+    encode(0)   
+]
+DFUXRefFoundFilesQueryResponse
+{
+    string DFUXRefFoundFilesQueryResult;
+};
+
+ESPrequest
+[
+    
+]
+DFUXRefArrayActionRequest
+{
+    string Type;
+    string Cluster;
+    string Action;
+    ESParray<string> XRefFiles;
+};
+
+ESPresponse 
+[
+    encode(0)
+] 
+DFUXRefArrayActionResponse
+{
+    string DFUXRefArrayActionResult;
+};
+
+ESPrequest 
+[
+
+]
+DFUXRefBuildCancelRequest
+{
+
+};
+
+ESPresponse 
+[
+    encode(0)   
+]
+DFUXRefBuildCancelResponse
+{
+    string DFUXRefBuildCancelResult;
+};
+
+ESPrequest DFUXRefCleanDirectoriesRequest
+{
+    string Cluster;
+};
+
+ESPresponse [exceptions_inline] DFUXRefCleanDirectoriesResponse
+{
+};
+
+
+//  ===========================================================================
+ESPservice [exceptions_inline("./smc_xslt/exceptions.xslt")] WsDFUXRef
+{
+    ///ESPmethod [resp_xsl_default("./smc_xslt/xref_main.xslt")] DFUXRefList(DFUXRefListRequest, DFUXRefListResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/xref_main.xslt")] DFUXRefList(DFUXRefListRequest, DFUXRefListResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/action.xslt")] DFUXRefBuild(DFUXRefBuildRequest, DFUXRefBuildResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/xref_lost.xslt")] DFUXRefLostFiles(DFUXRefLostFilesQueryRequest, DFUXRefLostFilesQueryResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/xref_found.xslt")] DFUXRefFoundFiles(DFUXRefFoundFilesQueryRequest, DFUXRefFoundFilesQueryResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/xref_orphan.xslt")] DFUXRefOrphanFiles(DFUXRefOrphanFilesQueryRequest, DFUXRefOrphanFilesQueryResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/xref_errwarn.xslt")] DFUXRefMessages(DFUXRefMessagesQueryRequest, DFUXRefMessagesQueryResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/xref_directories.xslt")] DFUXRefDirectories(DFUXRefDirectoriesQueryRequest, DFUXRefDirectoriesQueryResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/action.xslt")] DFUXRefArrayAction(DFUXRefArrayActionRequest, DFUXRefArrayActionResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/action.xslt")] DFUXRefBuildCancel(DFUXRefBuildCancelRequest, DFUXRefBuildCancelResponse);
+    ESPmethod DFUXRefCleanDirectories(DFUXRefCleanDirectoriesRequest, DFUXRefCleanDirectoriesResponse);
+};
+
+SCMexportdef(WSDFUXREF);
+SCMapi(WSDFUXREF) IClientWsDFUXRef *createWsDfuXRefClient();

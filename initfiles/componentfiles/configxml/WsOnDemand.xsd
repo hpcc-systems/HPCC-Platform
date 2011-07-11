@@ -1,0 +1,211 @@
+<!--
+
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+-->
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSPY v5 rel. 4 U (http://www.xmlspy.com) by Dermot (Seisint, Inc.) -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+    <xs:include schemaLocation="environment.xsd"/>
+    <xs:element name="EspService">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="RemoteNScfg" minOccurs="0" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:appinfo>
+                            <title>RemoteNS Local</title>
+                        </xs:appinfo>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="Configuration" minOccurs="0" maxOccurs="unbounded">
+                                <xs:annotation>
+                                    <xs:appinfo>
+                                        <viewType>list</viewType>
+                                        <title>Service Method Configuration</title>
+                                    </xs:appinfo>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:attribute name="name" use="required">
+                                        <xs:annotation>
+                                            <xs:appinfo>
+                                                <title>Service Name</title>
+                                                <onchange>
+                                                    <xslt>WsOnDemandServices.xslt</xslt>
+                                                </onchange>
+                                            </xs:appinfo>
+                                        </xs:annotation>
+                                        <xs:simpleType>
+                                            <xs:restriction base="xs:string">
+                                                <xs:enumeration value="CommonWebServices"/>
+                                                <xs:enumeration value="GetStatusAndResultsWebService"/>
+                                            </xs:restriction>
+                                        </xs:simpleType>
+                                    </xs:attribute>
+                                    <xs:attribute name="mode" use="optional" default="Normal">
+                                        <xs:annotation>
+                                            <xs:appinfo>
+                                                <viewType>hidden</viewType>
+                                            </xs:appinfo>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="path" type="xs:string" use="optional">
+                                        <xs:annotation>
+                                            <xs:appinfo>
+                                                <title>Server Path</title>
+                                                <tooltip>Specifies the server path. Leave blank if you would like to use the default path.</tooltip>
+                                            </xs:appinfo>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="queryname" type="xs:string" use="optional">
+                                        <xs:annotation>
+                                            <xs:appinfo>
+                                                <viewType>hidden</viewType>
+                                            </xs:appinfo>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="status" use="required" default="available">
+                                        <xs:annotation>
+                                            <xs:appinfo>
+                                                <viewType>hidden</viewType>
+                                            </xs:appinfo>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="optional1" type="xs:string">
+                                        <xs:annotation>
+                                            <xs:appinfo>
+                                                <title>Optional 1</title>
+                                                <tooltip/>
+                                            </xs:appinfo>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="optional2" type="xs:string">
+                                        <xs:annotation>
+                                            <xs:appinfo>
+                                                <title>Optional 2</title>
+                                                <tooltip/>
+                                            </xs:appinfo>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                        <xs:attribute name="netAddress" type="xs:string" use="optional" default="http://alaldbox001.choicepoint.net:5566">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <title>URL</title>
+                                    <tooltip>URL for the server.</tooltip>
+                                    <required>true</required>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="username" type="xs:string" use="optional">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <title>User Name</title>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="password" type="xs:string" use="optional">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <viewType>password</viewType>
+                                    <title>Password</title>
+                                    <tooltip>Specifies the user's password for accessing the server.</tooltip>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+            <xs:attribute name="build" type="buildType" use="required">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>The build name to be deployed</tooltip>
+                        <viewType>hidden</viewType>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="buildSet" type="buildSetType" use="required">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <viewType>hidden</viewType>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="name" type="xs:string" use="optional" default="wsondemand">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <required>true</required>
+                        <tooltip>Name for this component</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="description" type="xs:string" use="optional" default="Web service interface to OnDemand">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Web service interface to OnDemand</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="loggingServer" type="xs:string" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>The logging server URL.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="MaxLoggingThreads" type="xs:string" use="optional" default="50">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>logging thread pool size, it defines the maximum concurrent logging threads</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="failSafe" type="xs:boolean" use="optional" default="true">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Whether the logging server is fail safe.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="MaxLogQueueLength" type="xs:string" use="optional" default="10000">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Will stop accepting connections after this many items have been added to the queue</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="QueueSizeSignal" type="xs:string" use="optional" default="1000">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Will signal monitoring every time the queue grows by this number of records</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="adlserverid" type="xs:string" use="optional" default="BulkUpService">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <title>ADL Bulkup Server</title>
+                        <tooltip>Specifies the server path of the ADL Bulkup server. This can be blank if no bulkup required.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="location" type="xs:string" use="optional" default="">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <viewType>hidden</viewType>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="configuration" use="optional" default="local">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <required>true</required>
+                        <viewType>hidden</viewType>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

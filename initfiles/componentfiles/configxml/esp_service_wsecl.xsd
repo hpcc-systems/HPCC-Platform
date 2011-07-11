@@ -1,0 +1,163 @@
+<!--
+
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+-->
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSPY v5 rel. 4 U (http://www.xmlspy.com) by Rajeev Moondhra (Seisint, Inc.) -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+    <xs:include schemaLocation="environment.xsd"/>
+    <xs:element name="EspService">
+        <xs:complexType>
+            <xs:attributeGroup ref="EclServer"/>
+            <xs:attributeGroup ref="Roxie"/>
+            <xs:attributeGroup ref="Logging"/>
+            <xs:attribute name="build" type="buildType" use="required">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>The build name to be deployed</tooltip>
+                        <viewType>hidden</viewType>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="buildSet" type="buildSetType" use="required">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <viewType>hidden</viewType>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="name" type="xs:string" use="optional" default="wsecl_service">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Name for this ESP service</tooltip>
+                        <required>true</required>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="description" type="xs:string" use="optional" default="WsEcl Service">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Allows creation of web services using ECL language</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="defaultStyle" type="xs:string" use="optional" default="wsecl/xslt">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Location of default xslt stylesheets in the repository</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="encodeResultsXml" type="xs:boolean" use="optional" default="true"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:attributeGroup name="EclServer">
+        <xs:annotation>
+            <xs:appinfo>
+                <title>ECL Server</title>
+            </xs:appinfo>
+        </xs:annotation>
+        <xs:attribute name="eclServer" type="eclServerType" use="optional">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>Name of the ECL server or job server where the jobs are dispatched</tooltip>
+                    <autogenforwizard>1</autogenforwizard>
+                    <onchange>
+                        <xml>component</xml>
+                        <xslt>@temp/wsecl_onchange.xslt</xslt>
+                        <refresh>false</refresh>
+                    </onchange>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="clusterName" type="xpathType" use="optional">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>Cluster for the specified ECL server that jobs will be submitted to</tooltip>
+                    <xpath>/Environment/Software/Topology/EclServerProcess[@process=$./@eclServer]/Cluster</xpath>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="attributeServer" type="espBindingType" use="optional">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>Specifies the eclserver or attribute server from which attributes are loaded</tooltip>
+                    <autogenforwizard>1</autogenforwizard>
+                    <serviceType>WsAttributes</serviceType>
+                    <onchange>
+                        <xml>component</xml>
+                        <xslt>@temp/wsecl_onchange.xslt</xslt>
+                        <refresh>false</refresh>
+                    </onchange>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="wuTimeout" type="xs:unsignedInt" use="optional" default="60000">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>Specifies the timeout in milliseconds that service will wait for a workunit to complete</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="roxieTimeout" type="xs:unsignedInt" use="optional" default="300">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>Specifies the timeout in seconds that service will wait for a roxie query to complete</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="deleteWorkunits" type="xs:boolean" use="optional" default="true">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>Controls whether workunits are deleted after completion</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="eclWatch" type="espBindingType" use="optional">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>Name of the ECL Watch service to use</tooltip>
+                    <serviceType>WsSMC</serviceType>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:attributeGroup>
+    <xs:attributeGroup name="Roxie">
+        <xs:attribute name="roxieAddress" type="roxieAddress" use="optional">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>For internal use only.</tooltip>
+                    <onchange>
+                        <xml>component</xml>
+                        <xslt>@temp/wsecl_onchange.xslt</xslt>
+                        <refresh>false</refresh>
+                    </onchange>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="loadbalanced" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>The roxie address is load balanced.</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:attributeGroup>
+    <xs:attributeGroup name="Logging">
+        <xs:attribute name="loggingServer" type="xs:string" use="optional">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>URL of server used for logging</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="failSafe" type="xs:boolean" use="optional" default="true">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>When enabled, the logging client writes all transactions to disk as well as to the remote logging server</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:attributeGroup>
+</xs:schema>

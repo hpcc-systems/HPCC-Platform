@@ -1,0 +1,50 @@
+#!/bin/bash
+################################################################################
+#    Copyright (C) 2011 HPCC Systems.
+#
+#    All rights reserved. This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License as
+#    published by the Free Software Foundation, either version 3 of the
+#    License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+
+
+cd `dirname $0`
+
+if [ $1 == 'add' ] && [ ! -z $2 ]; then
+    read -p "Are you sure you want to secure Configenv using '$2'? [y/n] " resp;
+    if [ $resp == 'y' ]; then 
+        export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH
+        sdsfix . set "/Environment/@wsConfigUrl" "$2"; 
+    fi
+elif [ $1 = 'remove' ]; then
+    read -p "Are you sure you want to remove security from Configenv? [y/n] " resp;
+    if [ $resp == 'y' ]; then 
+        export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH
+        sdsfix . set "/Environment/@wsConfigUrl" ""; 
+    fi
+else
+    echo
+    echo "This batch file associates a URL of an ECL Watch service with"
+    echo "the super computer environment maintained in the Dali server."
+    echo "The deployment tool (Configenv) then enforces user-level "
+    echo "authentication for accessing the environment using an LDAP "
+    echo "server resource 'ConfigAccess'."
+    echo 
+    echo "syntax: "
+    echo "secure_configenv add <URL>"
+    echo "or"
+    echo "secure_configenv remove"
+    echo 
+    echo "URL is of the form http://host_or_ip_address[:port]"
+    echo "or"
+    echo "https://ip_address[:port]"
+fi

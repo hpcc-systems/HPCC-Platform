@@ -1,0 +1,27 @@
+#!/bin/bash
+################################################################################
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+################################################################################
+
+###<REPLACE>###
+
+HPCC_CONFIG=${HPCC_CONFIG:-${CONFIG_DIR}/${ENV_CONF_FILE}}
+SECTION=${1:-DEFAULT}
+
+
+PATH_PREFIX=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^home *= *" | sed -e 's/^home *= *//'`
+USER_NAME=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^user *= *" | sed -e 's/^user *= *//'`
+
+PATH_HOME=${PATH_PREFIX}/${USER_NAME}
+echo $PATH_HOME
+if [ ! -d $PATH_HOME/.ssh ]; then
+        mkdir $PATH_HOME/.ssh
+fi
+sudo -u ${USER_NAME} ssh-keygen -f $PATH_HOME/.ssh/id_rsa -N "" -q
+if [ -e $PATH_HOME/.ssh/id_rsa.pub ]; then
+        cat $PATH_HOME/.ssh/id_rsa.pub > $PATH_HOME/.ssh/authorized_keys
+fi
+
+chown -R $USER_NAME:$USER_NAME $PATH_HOME/.ssh
+
+echo "New SSH Keys have been created. Use your standard methods for Key distribution to distribute keys for user $USER_NAME located at $PATH_HOME/.ssh"

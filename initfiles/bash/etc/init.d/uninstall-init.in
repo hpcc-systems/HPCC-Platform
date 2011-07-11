@@ -1,0 +1,34 @@
+#!/bin/bash
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+###<REPLACE>###
+
+source ${INSTALL_DIR}/etc/init.d/hpcc_common
+source ${INSTALL_DIR}/etc/init.d/init-functions
+
+removeSymlink ()
+{
+    toDelete=$1
+    
+    rm -f ${toDelete} 2> /dev/null
+
+    printf "Removing Symlink %-44s ..." "${toDelete}"
+    if [ -L ${toDelete} ]; then
+        log_failure_msg
+    elif [ -e ${toDelete} ] && [ ! -L ${toDelete} ] ; then
+        log_failure_msg
+    else
+        log_success_msg
+    fi
+}
+
+echo ""
+
+## uninstalling files
+removeSymlink "/etc/init.d/hpcc-init"
+removeSymlink "/etc/init.d/dafilesrv"
+removeSymlink "/usr/bin/dfuplus"
+removeSymlink "/usr/bin/eclcc"
+removeSymlink "/usr/bin/eclplus"
+removeSymlink "/usr/bin/soapplus"
+removeSymlink "/usr/bin/testsocket"
+removeSymlink "/usr/bin/wuget"

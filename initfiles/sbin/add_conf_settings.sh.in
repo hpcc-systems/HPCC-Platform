@@ -1,0 +1,29 @@
+#!/bin/bash
+################################################################################
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+################################################################################
+
+###<REPLACE>###
+
+HPCC_CONFIG=${HPCC_CONFIG:-${CONFIG_DIR}/${ENV_CONF_FILE}}
+SECTION=${1:-DEFAULT}
+
+USER_NAME=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^user *= *" | sed -e 's/^user *= *//'`
+
+PREFIX_PATH=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^path *= *" | sed -e 's/^path *= *//'`
+
+source $PREFIX_PATH/sbin/alter_confs.sh
+
+alter_file /etc/sudoers "^Cmnd_Alias OSS_|^${USER_NAME} ALL =|^Defaults\:${USER_NAME} !requiretty" <<-%EOF
+Cmnd_Alias OSS_DAFILESRV = /etc/init.d/dafilesrv
+Cmnd_Alias OSS_HPCCINIT = /etc/init.d/hpcc-init
+${USER_NAME} ALL = NOPASSWD: OSS_DAFILESRV, OSS_HPCCINIT
+Defaults:${USER_NAME} !requiretty
+%EOF
+
+alter_file /etc/security/limits.conf "^${USER_NAME}" << %EOF
+${USER_NAME}    hard    nofile  8192
+${USER_NAME}    soft  core  unlimited
+${USER_NAME}    hard  core  unlimited
+%EOF
+

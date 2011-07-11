@@ -1,0 +1,3 @@
+id name author rating100 price personid __fileposition__
+10 The Life of Pi Yan Martel 90 0 3 411
+20 The Rituals of Dinner: The Origins, Evolution, Eccentricities and the Meaning of Table Manners Margaret Visser 60 0 5 844

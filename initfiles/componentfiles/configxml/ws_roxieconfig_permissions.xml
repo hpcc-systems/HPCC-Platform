@@ -1,0 +1,12 @@
+<!--
+
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+-->
+
+<Permissions service="ws_roxieconfig"> 
+   <Feature path="RoxieconfigAccess">
+      <Read>
+         <Capability name="access" description="access Roxie configuration service"/>
+      </Read>
+   </Feature>
+</Permissions>

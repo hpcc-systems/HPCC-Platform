@@ -1,0 +1,43 @@
+#!/bin/bash
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+
+###<REPLACE>###
+
+if [ -z $1 ]; then
+        log=${LOG_DIR}/dafilesrv
+else
+        log=$1
+fi
+
+shift
+
+PATH_PRE=`type -path hpcc_setenv`
+source ${PATH_PRE}
+PID_NAME="$PID/`basename $PWD`.pid"
+
+INIT_PID_NAME="$PID/init_`basename $PWD`.pid"
+echo $$ > $INIT_PID_NAME
+
+killed(){
+    rm -f dafilesrv_sentinel.txt
+    killall -9 dafilesrv 2> /dev/null
+    sleep 2
+    exit 255
+}
+
+
+trap "killed" SIGINT SIGTERM SIGKILL
+dafilesrv -L $log &
+echo "rerun" > dafilesrv_sentinel.txt
+echo $! > $PID_NAME
+wait
+
+while [ -e dafilesrv_sentinel.txt ]; do
+        sleep 5
+        if [ -e dafilesrv_sentinel.txt ]; then
+        trap "killed" SIGINT SIGTERM SIGKILL
+        dafilesrv -L $log &
+                echo $! > $PID_NAME
+                wait
+        fi
+done

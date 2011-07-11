@@ -1,0 +1,78 @@
+<Dataset name='Result 1'>
+ <Row><nickname_category>Animal              </nickname_category><conference>American            </conference><groupcount>7</groupcount><groupsum>22.166</groupsum><groupmin>1.17</groupmin><groupmax>5.53</groupmax></Row>
+ <Row><nickname_category>Animal              </nickname_category><conference>National            </conference><groupcount>8</groupcount><groupsum>34.749</groupsum><groupmin>0.976</groupmin><groupmax>9.9</groupmax></Row>
+ <Row><nickname_category>People              </nickname_category><conference>American            </conference><groupcount>8</groupcount><groupsum>22.94</groupsum><groupmin>1.12</groupmin><groupmax>6.45</groupmax></Row>
+ <Row><nickname_category>People              </nickname_category><conference>National            </conference><groupcount>8</groupcount><groupsum>28.61</groupsum><groupmin>1.28</groupmin><groupmax>6.64</groupmax></Row>
+ <Row><nickname_category>Thing               </nickname_category><conference>American            </conference><groupcount>1</groupcount><groupsum>0.855</groupsum><groupmin>0.855</groupmin><groupmax>0.855</groupmax></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><Result_2>------ CHOOSEN --- First 5</Result_2></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><team>Buffalo             </team><nickname>Bills               </nickname><nickname_category>Animal              </nickname_category><conference>American            </conference><division>East                </division><salary_cap>4.2</salary_cap></Row>
+ <Row><team>Miami               </team><nickname>Dolphins            </nickname><nickname_category>Animal              </nickname_category><conference>American            </conference><division>East                </division><salary_cap>2.62</salary_cap></Row>
+ <Row><team>New England         </team><nickname>Patriots            </nickname><nickname_category>People              </nickname_category><conference>American            </conference><division>East                </division><salary_cap>2.0</salary_cap></Row>
+ <Row><team>New York            </team><nickname>Jets                </nickname><nickname_category>Thing               </nickname_category><conference>American            </conference><division>East                </division><salary_cap>0.855</salary_cap></Row>
+ <Row><team>Baltimore           </team><nickname>Ravens              </nickname><nickname_category>Animal              </nickname_category><conference>American            </conference><division>North               </division><salary_cap>1.26</salary_cap></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><Result_4>------ CHOOSEN --- First 1</Result_4></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><team>Buffalo             </team><nickname>Bills               </nickname><nickname_category>Animal              </nickname_category><conference>American            </conference><division>East                </division><salary_cap>4.2</salary_cap></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><Result_6>------ CHOOSEN --- All 0</Result_6></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><team>Buffalo             </team><nickname>Bills               </nickname><nickname_category>Animal              </nickname_category><conference>American            </conference><division>East                </division><salary_cap>4.2</salary_cap></Row>
+ <Row><team>Miami               </team><nickname>Dolphins            </nickname><nickname_category>Animal              </nickname_category><conference>American            </conference><division>East                </division><salary_cap>2.62</salary_cap></Row>
+ <Row><team>New England         </team><nickname>Patriots            </nickname><nickname_category>People              </nickname_category><conference>American            </conference><division>East                </division><salary_cap>2.0</salary_cap></Row>
+ <Row><team>New York            </team><nickname>Jets                </nickname><nickname_category>Thing               </nickname_category><conference>American            </conference><division>East                </division><salary_cap>0.855</salary_cap></Row>
+ <Row><team>Baltimore           </team><nickname>Ravens              </nickname><nickname_category>Animal              </nickname_category><conference>American            </conference><division>North               </division><salary_cap>1.26</salary_cap></Row>
+ <Row><team>Cincinnati          </team><nickname>Bengals             </nickname><nickname_category>Animal              </nickname_category><conference>American            </conference><division>North               </division><salary_cap>5.206</salary_cap></Row>
+ <Row><team>Cleveland           </team><nickname>Browns              </nickname><nickname_category>People              </nickname_category><conference>American            </conference><division>North               </division><salary_cap>4.67</salary_cap></Row>
+ <Row><team>Pittsburgh          </team><nickname>Steelers            </nickname><nickname_category>People              </nickname_category><conference>American            </conference><division>North               </division><salary_cap>2.61</salary_cap></Row>
+ <Row><team>Houston             </team><nickname>Texans              </nickname><nickname_category>People              </nickname_category><conference>American            </conference><division>South               </division><salary_cap>6.45</salary_cap></Row>
+ <Row><team>Indianapolis        </team><nickname>Colts               </nickname><nickname_category>Animal              </nickname_category><conference>American            </conference><division>South               </division><salary_cap>2.18</salary_cap></Row>
+ <Row><team>Jacksonville        </team><nickname>Jaguars             </nickname><nickname_category>Animal              </nickname_category><conference>American            </conference><division>South               </division><salary_cap>5.53</salary_cap></Row>
+ <Row><team>Tennessee           </team><nickname>Titans              </nickname><nickname_category>People              </nickname_category><conference>American            </conference><division>South               </division><salary_cap>2.13</salary_cap></Row>
+ <Row><team>Denver              </team><nickname>Broncos             </nickname><nickname_category>Animal              </nickname_category><conference>American            </conference><division>West                </division><salary_cap>1.17</salary_cap></Row>
+ <Row><team>Kansas City         </team><nickname>Chiefs              </nickname><nickname_category>People              </nickname_category><conference>American            </conference><division>West                </division><salary_cap>2.35</salary_cap></Row>
+ <Row><team>Oakland             </team><nickname>Radiers             </nickname><nickname_category>People              </nickname_category><conference>American            </conference><division>West                </division><salary_cap>1.61</salary_cap></Row>
+ <Row><team>San Diego           </team><nickname>Chargers            </nickname><nickname_category>People              </nickname_category><conference>American            </conference><division>West                </division><salary_cap>1.12</salary_cap></Row>
+ <Row><team>Dallas              </team><nickname>Cowboys             </nickname><nickname_category>People              </nickname_category><conference>National            </conference><division>East                </division><salary_cap>3.26</salary_cap></Row>
+ <Row><team>New York            </team><nickname>Giants              </nickname><nickname_category>People              </nickname_category><conference>National            </conference><division>East                </division><salary_cap>2.75</salary_cap></Row>
+ <Row><team>Philidelphia        </team><nickname>Eagles              </nickname><nickname_category>Animal              </nickname_category><conference>National            </conference><division>East                </division><salary_cap>9.9</salary_cap></Row>
+ <Row><team>Washington          </team><nickname>Redskins            </nickname><nickname_category>People              </nickname_category><conference>National            </conference><division>East                </division><salary_cap>3.34</salary_cap></Row>
+ <Row><team>Chicago             </team><nickname>Bears               </nickname><nickname_category>Animal              </nickname_category><conference>National            </conference><division>North               </division><salary_cap>6.26</salary_cap></Row>
+ <Row><team>Detroit             </team><nickname>Lions               </nickname><nickname_category>Animal              </nickname_category><conference>National            </conference><division>North               </division><salary_cap>4.839</salary_cap></Row>
+ <Row><team>Green Bay           </team><nickname>Packers             </nickname><nickname_category>People              </nickname_category><conference>National            </conference><division>North               </division><salary_cap>3.29</salary_cap></Row>
+ <Row><team>Minnesota           </team><nickname>Vikings             </nickname><nickname_category>People              </nickname_category><conference>National            </conference><division>North               </division><salary_cap>6.64</salary_cap></Row>
+ <Row><team>Atlanta             </team><nickname>Falcons             </nickname><nickname_category>Animal              </nickname_category><conference>National            </conference><division>South               </division><salary_cap>3.36</salary_cap></Row>
+ <Row><team>Carolina            </team><nickname>Panthers            </nickname><nickname_category>Animal              </nickname_category><conference>National            </conference><division>South               </division><salary_cap>0.976</salary_cap></Row>
+ <Row><team>New Orleans         </team><nickname>Saints              </nickname><nickname_category>People              </nickname_category><conference>National            </conference><division>South               </division><salary_cap>2.86</salary_cap></Row>
+ <Row><team>Tampa Bay           </team><nickname>Buccaneers          </nickname><nickname_category>People              </nickname_category><conference>National            </conference><division>South               </division><salary_cap>1.28</salary_cap></Row>
+ <Row><team>Arizona             </team><nickname>Cardnials           </nickname><nickname_category>Animal              </nickname_category><conference>National            </conference><division>West                </division><salary_cap>6.15</salary_cap></Row>
+ <Row><team>Saint Louis         </team><nickname>Rams                </nickname><nickname_category>Animal              </nickname_category><conference>National            </conference><division>West                </division><salary_cap>1.96</salary_cap></Row>
+ <Row><team>San Francisco       </team><nickname>49ers               </nickname><nickname_category>People              </nickname_category><conference>National            </conference><division>West                </division><salary_cap>5.19</salary_cap></Row>
+ <Row><team>Seattle             </team><nickname>Seahawks            </nickname><nickname_category>Animal              </nickname_category><conference>National            </conference><division>West                </division><salary_cap>1.304</salary_cap></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><Result_8>------ CHOOSESETS --- American, 2</Result_8></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><team>Buffalo             </team><nickname>Bills               </nickname><nickname_category>Animal              </nickname_category><conference>American            </conference><division>East                </division><salary_cap>4.2</salary_cap></Row>
+ <Row><team>Miami               </team><nickname>Dolphins            </nickname><nickname_category>Animal              </nickname_category><conference>American            </conference><division>East                </division><salary_cap>2.62</salary_cap></Row>
+</Dataset>
+<Dataset name='Result 10'>
+ <Row><Result_10>------ CHOOSESETS --- East, 1</Result_10></Row>
+</Dataset>
+<Dataset name='Result 11'>
+ <Row><team>Buffalo             </team><nickname>Bills               </nickname><nickname_category>Animal              </nickname_category><conference>American            </conference><division>East                </division><salary_cap>4.2</salary_cap></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><Result_12>------ CHOOSESETS --- East, 0 (none)</Result_12></Row>
+</Dataset>
+<Dataset name='Result 13'>
+</Dataset>

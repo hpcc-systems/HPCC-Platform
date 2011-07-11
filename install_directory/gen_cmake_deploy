@@ -1,0 +1,40 @@
+#!/bin/bash
+################################################################################
+#    Copyright (C) 2011 HPCC Systems.
+#
+#    All rights reserved. This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License as
+#    published by the Free Software Foundation, either version 3 of the
+#    License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+
+
+
+for XML in `find . -name deploy_map.xml` ; do
+    BASE=`dirname $XML | sed -e 's/^\.\///' `
+    echo $BASE
+    export HPCC_MODULE=`basename "${BASE}"`
+    echo "----------"
+    tidy -q -w -xml -i $XML | grep '<[^/]*/>' | \
+        grep -v "srcPath='\.\..libs'"  | grep -v "srcPath='\.\..bin'"  |\
+        sed -e 's/<\(.*\)\/>/\1/' > ${BASE}.sf
+
+    if [ -s ${BASE}.sf ]; then
+        echo "# ${BASE} Supplementals" > ${BASE}.install
+            echo "Install ( FILES \${CMAKE_CURRENT_SOURCE_DIR}/install_directory/${BASE}/${BASE}_deploy_map.xml DESTINATION \${OSSDIR}/componentfiles/$HPCC_MODULE" >>${BASE}.install
+            echo "    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )" >>${BASE}.install
+        cat ${BASE}.sf | sed -e 's/\\/\//g' -e 's/^/.\/emit_install /' | bash >> ${BASE}.install
+    fi
+    grep -E 'UnKnOwN|NoTfOuNd' ${BASE}.install
+    #UNKNOWNS=`cat ${BASE}.install | grep -c UnKnOwN`
+    #DUPLICATES=`cat ${BASE}.install | grep -c NoTfOuNd`
+    #printf "Install file has %d unresolved files and %d ambiguous files\n" $NOTFOUND $UNKNOWN
+done

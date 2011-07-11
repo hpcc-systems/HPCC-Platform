@@ -1,0 +1,62 @@
+#!/bin/bash
+################################################################################
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+################################################################################
+
+
+
+thorpid=0
+
+ulimit -c unlimited
+ulimit -n 8192
+
+# prevent two thors starting together
+if [ -e run_thor.lck ]; then
+  oldpid=`cat run_thor.lck`
+  while ps h $oldpid ; do 
+     echo waiting for process $oldpid to finish
+     sleep 5
+  done
+fi
+trap "rm -f run_thor.lck" exit
+echo $$ > run_thor.lck
+
+export sentinelfile="thor_sentinel_$THORMASTERPORT.txt"
+while [ 1 ]; do
+    export logpthtail="`date +%m_%d_%Y_%H_%M_%S`"  
+    export logpth="$logdir/$logpthtail"
+    $deploydir/start_slaves
+
+    echo thormaster cmd : $instancedir/thormaster_$THORMASTERPORT MASTER=$THORMASTER:$THORMASTERPORT logDir=$logpth SOCACHE_DIR=$instancedir/socache 
+    nohup $instancedir/thormaster_$THORMASTERPORT MASTER=$THORMASTER:$THORMASTERPORT logDir=$logpth SOCACHE_DIR=$instancedir/socache 2> /dev/null 1>/dev/null &
+
+    thorpid=$!
+    if [ "$thorpid" -ne "0" ]; then 
+        echo thormaster$LCR process started pid = $thorpid
+        
+        echo $thorpid > $PID_NAME
+        echo $thorpid > $PID_NAME_BASE
+        wait $thorpid
+        errcode=$?
+        if [ "$errcode" -eq "0" ]; then  # allows for CTRL-C or thorstop
+            echo thor exited cleanly - script stopping
+            exit 0
+        fi
+        echo master exited with errorcode = $errcode
+        if [ ! -e $sentinelfile ]; then
+            echo $sentinelfile 'has been removed (1) - script stopping'
+            exit 0
+        fi
+
+        echo 'stopping thor(slaves) for restart'
+        $deploydir/stop_thor $deploydir keep_sentinel
+    else
+        echo failed to start thormaster$LCR, pausing for 30 seconds
+        sleep 30
+    fi
+    if [! -e $sentinelfile ]; then
+        echo $sentinelfile 'has been removed or thormaster did not fully start - script stopping'
+        exit 0
+    fi
+done
+

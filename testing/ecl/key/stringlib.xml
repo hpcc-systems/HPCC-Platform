@@ -1,0 +1,195 @@
+<Dataset name='Result 1'>
+ <Row><Result_1>Str.FilterOut(string src, string _within)</Result_1></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><Result_2>ACE</Result_2></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><Result_3>Str.Filter(string src, string _within)</Result_3></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><Result_4>BD</Result_4></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><Result_5>Str.SubstituteIncluded(string src, string _within, string _newchar)</Result_5></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><Result_6>AXCXE</Result_6></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><Result_7>Str.SubstituteExcluded(string src, string _within, string _newchar)</Result_7></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><Result_8>XBXDX</Result_8></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><Result_9>StringLib.StringRepad(string src, unsigned4 size)</Result_9></Row>
+</Dataset>
+<Dataset name='Result 10'>
+ <Row><Result_10>ABCDE </Result_10></Row>
+</Dataset>
+<Dataset name='Result 11'>
+ <Row><Result_11>ABC</Result_11></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><Result_12>Str.Find(string src, string tofind, unsigned4 instance )</Result_12></Row>
+</Dataset>
+<Dataset name='Result 13'>
+ <Row><Result_13>2</Result_13></Row>
+</Dataset>
+<Dataset name='Result 14'>
+ <Row><Result_14>0</Result_14></Row>
+</Dataset>
+<Dataset name='Result 15'>
+ <Row><Result_15>7</Result_15></Row>
+</Dataset>
+<Dataset name='Result 16'>
+ <Row><Result_16>StringLib.EbcdicStringFind(ebcdic string src, ebcdic string tofind , unsigned4 instance )</Result_16></Row>
+</Dataset>
+<Dataset name='Result 17'>
+ <Row><Result_17>2</Result_17></Row>
+</Dataset>
+<Dataset name='Result 18'>
+ <Row><Result_18>0</Result_18></Row>
+</Dataset>
+<Dataset name='Result 19'>
+ <Row><Result_19>7</Result_19></Row>
+</Dataset>
+<Dataset name='Result 20'>
+ <Row><Result_20>StringLib.UnboundedUnsafeFind(string src, string tofind )</Result_20></Row>
+</Dataset>
+<Dataset name='Result 21'>
+ <Row><Result_21>2</Result_21></Row>
+</Dataset>
+<Dataset name='Result 22'>
+ <Row><Result_22>StringLib.EbcdicStringUnboundedUnsafeFind(ebcdic string src, ebcdic string tofind )</Result_22></Row>
+</Dataset>
+<Dataset name='Result 23'>
+ <Row><Result_23>2</Result_23></Row>
+</Dataset>
+<Dataset name='Result 24'>
+ <Row><Result_24>Str.Extract(string src, unsigned4 instance)</Result_24></Row>
+</Dataset>
+<Dataset name='Result 25'>
+ <Row><Result_25>CD</Result_25></Row>
+</Dataset>
+<Dataset name='Result 26'>
+ <Row><Result_26>StringLib.GetDateYYYYMMDD()</Result_26></Row>
+</Dataset>
+<Dataset name='Result 27'>
+ <Row><Result_27>true</Result_27></Row>
+</Dataset>
+<Dataset name='Result 28'>
+ <Row><Result_28>StringLib.GetBuildInfo()</Result_28></Row>
+</Dataset>
+<Dataset name='Result 29'>
+ <Row><Result_29>true</Result_29></Row>
+</Dataset>
+<Dataset name='Result 30'>
+ <Row><Result_30>StringLib.Data2String(data src)</Result_30></Row>
+</Dataset>
+<Dataset name='Result 31'>
+ <Row><Result_31>0A0D</Result_31></Row>
+</Dataset>
+<Dataset name='Result 32'>
+ <Row><Result_32>StringLib.String2Data(string src)</Result_32></Row>
+</Dataset>
+<Dataset name='Result 33'>
+ <Row><Result_33>AB</Result_33></Row>
+</Dataset>
+<Dataset name='Result 34'>
+ <Row><Result_34>Str.ToLowerCase(string src)</Result_34></Row>
+</Dataset>
+<Dataset name='Result 35'>
+ <Row><Result_35>abcde</Result_35></Row>
+</Dataset>
+<Dataset name='Result 36'>
+ <Row><Result_36>Str.ToUpperCase(string src)</Result_36></Row>
+</Dataset>
+<Dataset name='Result 37'>
+ <Row><Result_37>ABCDE</Result_37></Row>
+</Dataset>
+<Dataset name='Result 38'>
+ <Row><Result_38>Str.ToCapitalCase(string src)</Result_38></Row>
+</Dataset>
+<Dataset name='Result 39'>
+ <Row><Result_39>Abcde</Result_39></Row>
+</Dataset>
+<Dataset name='Result 40'>
+ <Row><Result_40>Str.CompareIgnoreCase(string src1, string src2)</Result_40></Row>
+</Dataset>
+<Dataset name='Result 41'>
+ <Row><Result_41>0</Result_41></Row>
+</Dataset>
+<Dataset name='Result 42'>
+ <Row><Result_42>1</Result_42></Row>
+</Dataset>
+<Dataset name='Result 43'>
+ <Row><Result_43>-1</Result_43></Row>
+</Dataset>
+<Dataset name='Result 44'>
+ <Row><Result_44>Str.Reverse(string src)</Result_44></Row>
+</Dataset>
+<Dataset name='Result 45'>
+ <Row><Result_45>EDCBA</Result_45></Row>
+</Dataset>
+<Dataset name='Result 46'>
+ <Row><Result_46>Str.FindReplace(string src, string stok, string rtok)</Result_46></Row>
+</Dataset>
+<Dataset name='Result 47'>
+ <Row><Result_47>AXYDEAXYDE</Result_47></Row>
+</Dataset>
+<Dataset name='Result 48'>
+ <Row><Result_48>Str.CleanSpaces(string src)</Result_48></Row>
+</Dataset>
+<Dataset name='Result 49'>
+ <Row><Result_49>ABCDE ABCDE ABCDE</Result_49></Row>
+</Dataset>
+<Dataset name='Result 50'>
+ <Row><Result_50>Str.WildMatch(string src, string _pattern, boolean _noCase)</Result_50></Row>
+</Dataset>
+<Dataset name='Result 51'>
+ <Row><Result_51>true</Result_51></Row>
+</Dataset>
+<Dataset name='Result 52'>
+ <Row><Result_52>false</Result_52></Row>
+</Dataset>
+<Dataset name='Result 53'>
+ <Row><Result_53>Str.Contains(string src, string _pattern, boolean _noCase)</Result_53></Row>
+</Dataset>
+<Dataset name='Result 54'>
+ <Row><Result_54>true</Result_54></Row>
+</Dataset>
+<Dataset name='Result 55'>
+ <Row><Result_55>false</Result_55></Row>
+</Dataset>
+<Dataset name='Result 56'>
+ <Row><Result_56>false</Result_56></Row>
+</Dataset>
+<Dataset name='Result 57'>
+ <Row><Result_57>false</Result_57></Row>
+</Dataset>
+<Dataset name='Result 58'>
+ <Row><Result_58>Str.ExtractMultiple(commastring, bitmap)</Result_58></Row>
+</Dataset>
+<Dataset name='Result 59'>
+ <Row><Result_59>1</Result_59></Row>
+</Dataset>
+<Dataset name='Result 60'>
+ <Row><Result_60>1,2</Result_60></Row>
+</Dataset>
+<Dataset name='Result 61'>
+ <Row><Result_61>1,345</Result_61></Row>
+</Dataset>
+<Dataset name='Result 62'>
+ <Row><Result_62></Result_62></Row>
+</Dataset>
+<Dataset name='Result 63'>
+ <Row><Result_63>1,2,345,,5</Result_63></Row>
+</Dataset>
+<Dataset name='Result 64'>
+ <Row><Result_64></Result_64></Row>
+</Dataset>
+<Dataset name='Result 65'>
+ <Row><Result_65></Result_65></Row>
+</Dataset>

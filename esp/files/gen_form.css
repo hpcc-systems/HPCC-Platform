@@ -1,0 +1,30 @@
+/*##############################################################################
+## Copyright (c) 2011 HPCC Systems.  All rights reserved.
+############################################################################## */
+
+/* remove IE always-on scrollbar */
+textarea {overflow: auto;} 
+
+/* make IE disable more visible */
+input.disabled { background-color: #BBBBBB }
+textarea.disabled { background-color: #BBBBBB }
+select.disabled { background-color: #BBBBBB }
+
+/* table for struct */
+table.struct { border-left:gray dotted thin; border-top:gray solid thin }
+
+/* background colors */
+.request { font-weight: bold; font-variant: small-caps }
+.service { background-color: #4775FF }
+.method { background-color: #CBE5FF }
+.desc { background-color:#fefefe }
+.help { background-color:#fefefe }
+.commands { background-color:#e0e0e0 }
+.options { background-color:#e0e0e0 }
+.gap { background-color:#efefef }
+.input { background-color:#efefef }
+.tributton { color: gray; font-size:9px; text-align:center; height: 18; border-style: outset; border-width: 1px; border-color: silver; background-color: LightGray; cursor: default;}
+
+
+/* vertical text: only works in IE unfortunately  */
+.verttext {  writing-mode: tb-rl; filter: flipv fliph; }

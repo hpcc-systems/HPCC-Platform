@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<!--
+
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+-->
+
+<RDF:RDF xmlns:em="http://www.mozilla.org/2004/em-rdf#"
+         xmlns:NC="http://home.netscape.com/NC-rdf#"
+         xmlns:RDF="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <RDF:Seq RDF:about="rdf:#$FRpbn3">
+    <RDF:li RDF:resource="rdf:#$GRpbn3"/>
+  </RDF:Seq>
+  <RDF:Description RDF:about="urn:mozilla:extension:foobar@developer.mozilla.org"
+                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBANfn3DoZdgzUWnwaH7MtY4m2waksstZOL/qVARCDZqlHHJlZWGaaxD3/O09imYK7ALGXoqxKDER7J4eALUwNAk5yXmS1grnpcEcpWPY32+zmAbEEcwht0neG/2qkoPKHdIdPR46GHeC3+Py5KbOURlcqWXlfr9qvVJf81etF17Ac">
+    <em:updates RDF:resource="rdf:#$FRpbn3"/>
+  </RDF:Description>
+  <RDF:Description RDF:about="rdf:#$JRpbn3"
+                   em:id="{ec8030f7-c20a-464f-9b0e-13a3a9e97384}"
+                   em:minVersion="3.6"
+                   em:maxVersion="3.6.*"
+                   em:updateLink="npGraphViewCtl.xpi"
+                   em:updateInfoURL="npGraphViewCtl.html" />
+  <RDF:Description RDF:about="rdf:#$GRpbn3"
+                   em:version="5.7.0.8">
+    <em:targetApplication RDF:resource="rdf:#$JRpbn3"/>
+  </RDF:Description>
+</RDF:RDF>

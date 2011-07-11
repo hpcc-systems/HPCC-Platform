@@ -1,0 +1,21 @@
+<Dataset name='Result 1'>
+ <Row><addr>99 Maltings Road</addr><_unnamed_2>3</_unnamed_2><_unnamed_3>23.0</_unnamed_3><_unnamed_4>20000101</_unnamed_4></Row>
+ <Row><addr>Buckingham Palace</addr><_unnamed_2>2</_unnamed_2><_unnamed_3>80.0</_unnamed_3><_unnamed_4>19260421</_unnamed_4></Row>
+ <Row><addr>Bedrock</addr><_unnamed_2>2</_unnamed_2><_unnamed_3>2003.0</_unnamed_3><_unnamed_4>20202</_unnamed_4></Row>
+ <Row><addr>Wimpole Hall</addr><_unnamed_2>0</_unnamed_2><_unnamed_3>0.0</_unnamed_3><_unnamed_4>0</_unnamed_4></Row>
+ <Row><addr>56 New Road</addr><_unnamed_2>2</_unnamed_2><_unnamed_3>49.5</_unnamed_3><_unnamed_4>19550312</_unnamed_4></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><addr>99 Maltings Road</addr><oldest>Abigail Halliday</oldest></Row>
+ <Row><addr>Buckingham Palace</addr><oldest>Elizabeth Windsor</oldest></Row>
+ <Row><addr>Bedrock</addr><oldest>Wilma Flintstone</oldest></Row>
+ <Row><addr>Wimpole Hall</addr><oldest> </oldest></Row>
+ <Row><addr>56 New Road</addr><oldest>Julia Jones</oldest></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><addr>99 Maltings Road</addr><firstperson>Gavin Halliday</firstperson></Row>
+ <Row><addr>Buckingham Palace</addr><firstperson>Elizabeth Windsor</firstperson></Row>
+ <Row><addr>Bedrock</addr><firstperson>Fred Flintstone</firstperson></Row>
+ <Row><addr>Wimpole Hall</addr><firstperson> </firstperson></Row>
+ <Row><addr>56 New Road</addr><firstperson>Brian Jones</firstperson></Row>
+</Dataset>

@@ -1,0 +1,20 @@
+#!/bin/bash
+################################################################################
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+################################################################################
+
+###<REPLACE>###
+
+HPCC_CONFIG=${HPCC_CONFIG:-${CONFIG_DIR}/${ENV_CONF_FILE}}
+SECTION=${1:-DEFAULT}
+
+USER_NAME=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^user=" | sed -e 's/^user=//'`
+
+PREFIX_PATH=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^path=" | sed -e 's/^path=//'`
+
+source $PREFIX_PATH/sbin/alter_confs.sh
+
+alter_file /etc/sudoers "^Cmnd_Alias OSS_|^${USER_NAME} ALL =" < /dev/null
+
+alter_file /etc/security/limits.conf "^${USER_NAME}" < /dev/null
+

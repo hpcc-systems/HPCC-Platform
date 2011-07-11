@@ -1,0 +1,4 @@
+<Dataset name='Result 1'>
+ <Row><kind>1</kind><word>boy                 </word><doc>281474976710661</doc><segment>0</segment><wpos>32</wpos><wip>1</wip><flags>1</flags><original>boy                 </original><dpos>145</dpos></Row>
+ <Row><kind>1</kind><word>sheep               </word><doc>281474976710661</doc><segment>0</segment><wpos>5</wpos><wip>1</wip><flags>1</flags><original>sheep               </original><dpos>17</dpos></Row>
+</Dataset>

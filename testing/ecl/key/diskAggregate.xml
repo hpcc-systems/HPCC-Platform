@@ -1,0 +1,6 @@
+<Dataset name='Result 1'>
+ <Row><books><Row><id>1</id><name>To kill a mocking bird</name><author>Harper Lee</author><rating100>95</rating100><price>0</price></Row><Row><id>2</id><name>Clarion Language Manual</name><author>Richard Taylor</author><rating100>1</rating100><price>399.99</price></Row><Row><id>3</id><name>The bible</name><author>Various</author><rating100>98</rating100><price>0</price></Row><Row><id>4</id><name>Compilers</name><author>Aho, Sethi, Ullman</author><rating100>80</rating100><price>0</price></Row><Row><id>5</id><name>Lord of the Rings</name><author>JRR Tolkien</author><rating100>95</rating100><price>0</price></Row></books><surname>Halliday            </surname><_unnamed_cnt_3>10</_unnamed_cnt_3></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><surname>Halliday            </surname><_unnamed_cnt_2>10</_unnamed_cnt_2></Row>
+</Dataset>

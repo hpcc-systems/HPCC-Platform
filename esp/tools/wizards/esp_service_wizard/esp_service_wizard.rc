@@ -1,0 +1,262 @@
+//Microsoft Developer Studio generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#define _AFX_NO_SPLITTER_RESOURCES\r\n"
+    "#define _AFX_NO_OLE_RESOURCES\r\n"
+    "#define _AFX_NO_TRACKER_RESOURCES\r\n"
+    "#define _AFX_NO_PROPERTY_RESOURCES\r\n"
+    "#include ""afxres.rc""  // Standard components\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+#ifndef _MAC
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,1
+ PRODUCTVERSION 1,0,0,1
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x2L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "CompanyName", "\0"
+            VALUE "FileDescription", "ESP_SERVICE_WIZARD AppWizard\0"
+            VALUE "FileVersion", "1, 0, 0, 1\0"
+            VALUE "InternalName", "ESP_SERVICE_WIZARD\0"
+            VALUE "LegalCopyright", "Copyright © 2002\0"
+            VALUE "LegalTrademarks", "\0"
+            VALUE "OriginalFilename", "ESP_SERVICE_WIZARD.DLL\0"
+            VALUE "ProductName", "ESP Service Wizard\0"
+            VALUE "ProductVersion", "1, 0, 0, 1\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+#endif    // !_MAC
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEMPLATE
+//
+
+NEWPROJ.INF             TEMPLATE DISCARDABLE    "template\\newproj.inf"
+CONFIRM.INF             TEMPLATE DISCARDABLE    "template\\confirm.inf"
+GENESPSERVICEPLUGIN.CPP TEMPLATE DISCARDABLE    "template\\GenEspServicePlugin.cpp"
+GENESPSERVICE.CPP       TEMPLATE DISCARDABLE    "template\\GenEspService.cpp"
+GENESPSERVICE.HPP       TEMPLATE DISCARDABLE    "template\\GenEspService.hpp"
+GENESPSERVICE.SCM       TEMPLATE DISCARDABLE    "Template\\GenEspService.scm"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_ESP_SERVICE_WIZARD  ICON    DISCARDABLE     "res\\esp_service_wizard.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_CUSTOM1 DIALOG DISCARDABLE  0, 0, 303, 197
+STYLE DS_CONTROL | WS_CHILD | WS_TABSTOP
+FONT 8, "MS Sans Serif"
+BEGIN
+    EDITTEXT        IDC_SERVICE_NAME,11,29,270,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_ABBREV,11,65,60,14,ES_AUTOHSCROLL
+    LTEXT           "Service Name:",IDC_STATIC,11,14,48,8
+    LTEXT           "Service Abbreviation:",IDC_STATIC,11,50,68,8
+    EDITTEXT        IDC_EXISTING_SCM_FILE,12,118,242,14,ES_AUTOHSCROLL
+    LTEXT           "Existing SCM file:",IDC_STATIC,12,103,55,8
+    PUSHBUTTON      "...",IDC_BROWSE_SCM_FILE,259,118,19,14
+    EDITTEXT        IDC_ESP_PATH,13,157,242,14,ES_AUTOHSCROLL
+    LTEXT           "ESP Root path:",IDC_STATIC,13,142,50,8
+    PUSHBUTTON      "...",IDC_BROWSE_ESP_ROOT,259,158,19,14
+END
+
+IDD_CUSTOM2 DIALOG DISCARDABLE  0, 0, 303, 197
+STYLE DS_CONTROL | WS_CHILD | WS_TABSTOP
+FONT 8, "MS Sans Serif"
+BEGIN
+    EDITTEXT        IDC_METHOD,17,90,217,14,ES_AUTOHSCROLL
+    LTEXT           "Method:",IDC_STATIC,17,75,27,8
+    EDITTEXT        IDC_SCM_PATH,17,51,217,14,ES_AUTOHSCROLL
+    LTEXT           "SCM File Path:",IDC_STATIC,17,36,48,8
+    PUSHBUTTON      "...",IDC_BROWSE_SCM_FILE,241,52,19,14
+END
+
+IDD_CUSTOM3 DIALOG DISCARDABLE  0, 0, 303, 197
+STYLE DS_CONTROL | WS_CHILD | WS_TABSTOP
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "Request Parameters:",IDC_STATIC,21,20,67,8
+    LISTBOX         IDC_PARAMETER_LIST,21,69,208,79,LBS_NOINTEGRALHEIGHT | 
+                    WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_PARAMETER,21,50,103,14,ES_AUTOHSCROLL
+    LTEXT           "Parameter:",IDC_STATIC,21,36,35,8
+    PUSHBUTTON      "Add",IDC_BTN_ADD_PARAMETER,241,74,50,14
+    COMBOBOX        IDC_PARAMETER_TYPE,141,51,82,81,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Type:",IDC_STATIC,141,36,19,8
+    PUSHBUTTON      "Delete",IDC_BTN_DELETE,241,92,50,14
+END
+
+IDD_CUSTOM4 DIALOG DISCARDABLE  0, 0, 303, 197
+STYLE DS_CONTROL | WS_CHILD | WS_TABSTOP
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "Response Parameters:",IDC_STATIC,21,20,72,8
+    LISTBOX         IDC_PARAMETER_LIST,21,69,208,79,LBS_NOINTEGRALHEIGHT | 
+                    WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_PARAMETER,21,50,103,14,ES_AUTOHSCROLL
+    LTEXT           "Parameter:",IDC_STATIC,21,36,35,8
+    PUSHBUTTON      "Add",IDC_BTN_ADD_PARAMETER,241,74,50,14
+    COMBOBOX        IDC_PARAMETER_TYPE,141,51,82,81,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Type:",IDC_STATIC,141,36,19,8
+    PUSHBUTTON      "Delete",IDC_BTN_DELETE,241,92,50,14
+END
+
+IDD_DIALOG1 DIALOG DISCARDABLE  0, 0, 186, 95
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Dialog"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,129,7,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,129,24,50,14
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog Info
+//
+
+IDD_CUSTOM3 DLGINIT
+BEGIN
+    IDC_PARAMETER_TYPE, 0x403, 8, 0
+0x6e69, 0x6574, 0x6567, 0x0072, 
+    IDC_PARAMETER_TYPE, 0x403, 19, 0
+0x6f6e, 0x4e6e, 0x6765, 0x7461, 0x7669, 0x4965, 0x746e, 0x6765, 0x7265, 
+"\000" 
+    IDC_PARAMETER_TYPE, 0x403, 7, 0
+0x7473, 0x6972, 0x676e, "\000" 
+    IDC_PARAMETER_TYPE, 0x403, 8, 0
+0x6f62, 0x6c6f, 0x6165, 0x006e, 
+    0
+END
+
+IDD_CUSTOM4 DLGINIT
+BEGIN
+    IDC_PARAMETER_TYPE, 0x403, 8, 0
+0x6e69, 0x6574, 0x6567, 0x0072, 
+    IDC_PARAMETER_TYPE, 0x403, 19, 0
+0x6f6e, 0x4e6e, 0x6765, 0x7461, 0x7669, 0x4965, 0x746e, 0x6765, 0x7265, 
+"\000" 
+    IDC_PARAMETER_TYPE, 0x403, 7, 0
+0x7473, 0x6972, 0x676e, "\000" 
+    IDC_PARAMETER_TYPE, 0x403, 8, 0
+0x6f62, 0x6c6f, 0x6165, 0x006e, 
+    0
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO DISCARDABLE 
+BEGIN
+    IDD_DIALOG1, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 179
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 88
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+#define _AFX_NO_SPLITTER_RESOURCES
+#define _AFX_NO_OLE_RESOURCES
+#define _AFX_NO_TRACKER_RESOURCES
+#define _AFX_NO_PROPERTY_RESOURCES
+#include "afxres.rc"  // Standard components
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

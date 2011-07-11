@@ -1,0 +1,40 @@
+#!/bin/bash
+################################################################################
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+################################################################################
+
+
+# Invoke the script to parse command line arguments and shift args
+# past options.  Note that using $include or invoking the script without
+# . does not set these variables.
+# On exit, the variables cluster, thoruser and thorpassword are set.
+. get_thor_options 
+
+# -------------------------
+while test "$thoruser" = ""
+do
+    read -p "Enter the username under which thor will run: " thoruser
+    if test "$thoruser" = ""; then
+        thoruser=(thor)
+    fi
+done
+echo thor user=$thoruser
+
+read -s -p "Enter password: " thorpasswd
+
+#
+read -p "Enter file name [slaves]: " fileName
+if test "$fileName" == ""; then
+    fileName=slaves
+fi
+
+echo
+
+COUNTER=1
+for computer in `cat $fileName`; do
+    echo scping computer $COUNTER - $computer:
+    echo pscp -o StrictHostKeyChecking=no -o password=$THORPASSWD  "$1" $THORUSER@$computer:"$2"
+    pscp -o password=$THORPASSWD  "$1" $THORUSER@$computer:"$2"
+    let COUNTER=COUNTER+1
+done
+

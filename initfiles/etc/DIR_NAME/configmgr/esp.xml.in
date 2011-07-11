@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+-->
+
+<Environment>
+<Software>
+<EspProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}" description="ESP server" componentfilesDir="${COMPONENTFILES_PATH}" enableSEHMapping="true" enableSNMP="false" formOptionsAccess="false" httpConfigAccess="true" logDir="${LOG_PATH}/configmgr" logLevel="1" logRequests="false" logResponses="false" maxBacklogQueueSize="200" maxConcurrentThreads="0" name="esp" perfReportDelay="60" computer="localhost" directory="${PID_PATH}/configmgr">
+<Environment/>
+<EspProtocol name="http" type="http_protocol" plugin="esphttp" maxRequestEntityLength="8000000"/>
+<EspService name="WsDeploy_wsdeploy_esp" type="WsDeploy" plugin="WsDeploy">
+  <LocalEnvFile>${CONFIG_DIR}/${ENV_XML_FILE}</LocalEnvFile>
+  <LocalConfFile>${INSTALL_DIR}${CONFIG_DIR}/configmgr/configmgr.conf</LocalConfFile>
+  <LocalEnvConfFile>${CONFIG_DIR}/${ENV_CONF_FILE}</LocalEnvConfFile>
+</EspService>
+<EspBinding name="WsDeploy_EspBinding_esp" service="WsDeploy_wsdeploy_esp" protocol="http" type="WsDeploySoapBinding" plugin="WsDeploy" netAddress="0.0.0.0" port="8015" defaultBinding="true">
+</EspBinding>
+</EspProcess>
+</Software>
+</Environment>

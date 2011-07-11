@@ -1,0 +1,163 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+#if !defined CONFIGENGCALLBACK_HPP
+#define CONFIGENGCALLBACK_HPP
+
+#include "deploy.hpp"
+
+class CConfigEngCallback: public CInterface, implements IDeploymentCallback
+{
+    virtual void printStatus(IDeployTask* task)  
+    {
+        if (!m_verbose || !task || !task->isProcessed())
+            return;
+
+        StringBuffer sb;
+        const char* name = task->getCompName();
+        if (!name || !*name)
+            return;
+        
+        const char* instance = task->getInstanceName();
+        const char* caption = task->getCaption();
+        const char* sourceFile = task->getFileSpec(DT_SOURCE);
+        const char* targetFile = task->getFileSpec(DT_TARGET);
+    
+        offset_t size = 0;
+
+        try
+        {
+            if (!task->getCallback().getAbortStatus())
+                size = task->getFileSize(DT_TARGET);
+        }
+        catch (IException* e)
+        {
+            e->Release();
+        }
+
+        StringBuffer s("0"); 
+        if (size>0)
+        {
+            // format size into: 12,345,456
+            s.clear().append(task->getFileSize(DT_TARGET));
+            int i = s.length()-3;
+            for (;i>0;i-=3)
+                s.insert(i,",");
+        }
+
+        sb.appendf("\nComponent: %s-%s\nAction: %s\nSource Path:%s\nDestination Path:%s\nTarget Size:%s\n", name, instance, caption, sourceFile, targetFile, s.str());
+        
+        StringBuffer sbErr(task->getErrorString());
+        StringBuffer sbWarnings(task->getWarnings());
+        StringBuffer sbErrCode;
+
+        if (task->getErrorCode() > 0)
+            sbErrCode.appendlong(task->getErrorCode());
+        
+        if (sbErr.length() == 0 && sbWarnings.length() == 0 && sbErrCode.length() == 0)
+            sb.append("Result: Success\n");
+        else
+        {
+            if (sbErr.length() > 0) sb.appendf("Errors: %s\n", sbErr.str());
+            if (sbErrCode.length() > 0) sb.appendf("Error Code: %s\n", sbErrCode.str());
+            if (sbWarnings.length() > 0) sb.appendf("Warnings: %s\n", sbWarnings.str());
+            sb.append("Result: Errors or warnings raised.\n");
+        }
+
+        fprintf(stdout, "%s", sb.str());
+    }
+    virtual void printStatus(StatusType type, const char* processType, const char* comp, 
+        const char* instance, const char* msg=NULL, ...)
+    {
+      if (!m_verbose) return;
+      char buf[1024];
+            if (msg)
+            {
+                va_list args;
+                va_start(args, msg);
+                if (_vsnprintf(buf, sizeof(buf), msg, args) < 0)
+                    buf[sizeof(buf) - 1] = '\0';
+                va_end(args);
+            }
+            else
+                *buf = '\0';
+            
+            StringBuffer sb;
+
+            if (processType)
+                sb.append("Process type: ").append(processType).append("\n");
+            if (comp)
+                sb.append("Component: ").append(comp).append("\n");
+            if (instance)
+                sb.append("Instance: ").append(instance).append("\n");
+            if (msg)
+                sb.append("Message: ").append(buf).append("\n");
+        
+        if (STATUS_ERROR == type)
+            fprintf(stderr, "%s", sb.str());
+        else
+            fprintf(stdout, "%s", sb.str());
+    }
+    virtual bool onDisconnect(const char* target){return true;}
+    virtual bool getAbortStatus()const {return m_abort;}
+    virtual void setAbortStatus(bool bAbort){m_abort = bAbort;}
+    virtual void setEnvironmentUpdated(){}
+    virtual void getSshAccountInfo(StringBuffer& userid, StringBuffer& password)const{}
+    //the following throws exception on abort, returns true for ignore
+    virtual bool processException(const char* processType, const char* process, const char* instance, 
+        IException* e, const char* szMessage=NULL, const char* szCaption=NULL,
+        IDeployTask* pTask = NULL )
+    {
+        if (m_abortOnException) 
+        {
+            StringBuffer sb;
+
+            if (processType)
+                sb.append("Process type: ").append(processType).append("\n");
+            if (process)
+                sb.append("Component: ").append(process).append("\n");
+            if (instance)
+                sb.append("Instance: ").append(instance).append("\n");
+            if (szMessage)
+                sb.append("Message: ").append(szMessage).append("\n");
+
+            if (!m_abort)
+                m_abort = true;
+
+            if (szMessage)
+                m_sbExMsg.append(sb);
+
+            throw MakeStringException(0, "%s", m_sbExMsg.str());
+        }
+        
+        return true;
+    }
+    virtual IEnvDeploymentEngine* getEnvDeploymentEngine()const{return NULL;}
+    virtual void* getWindowHandle() const{return NULL;}
+    virtual void installFileListChanged(){}
+    virtual void fileSizeCopied(offset_t size, bool bWholeFileDone){}
+
+private:
+    bool m_verbose;
+    bool m_abortOnException;
+    bool m_abort;
+    StringBuffer m_sbExMsg;
+public: // IDeploymentCallback
+    IMPLEMENT_IINTERFACE;
+    CConfigEngCallback(bool verbose = false, bool abortOnException = false){m_verbose = verbose;m_abortOnException=abortOnException;m_abort=false;}
+};
+#endif

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+-->
+
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd">
+<section>
+    <title>initfiles/componentfiles/ftslave</title>
+
+    <para>
+        The initfiles/componentfiles/ftslave directory contains the sources for the initfiles/componentfiles/ftslave library.
+    </para>
+</section>

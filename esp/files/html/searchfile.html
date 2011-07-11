@@ -1,0 +1,92 @@
+<!--
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Search Logical Files</title>
+<style type="text/css">
+                body { background-color: #white;}
+                table { padding:3px; }
+                .number { text-align:right; }
+                .sbutton { width: 5em; font: 10pt arial , helvetica, sans-serif; }
+                </style>
+<script language="JavaScript1.2">
+                    function format2(n)
+                    {
+                        return new String(Math.floor(n/10))+ new String(n%10);
+                    }
+                    </script>
+</head>
+<body>
+<h4>Open Logical File:</h4>
+<form action="/WsDfu/DFUInfo" method="GET">
+<table>
+<tr>
+<td>File Name:</td>
+<td>
+<input name="Name" size="25" type="text"/>
+</td>
+<td>
+<input type="submit" value="Open" class="sbutton"/>
+</td>
+</tr>
+</table>
+</form>
+<br/>
+<br/>
+<h4>Search Logical Files:</h4>
+<form action="/WsDfu/DFUQuery" method="POST"">
+<table>
+<tr>
+<td>Owner:</td>
+<td>
+<input name="Owner" size="20" type="text"/>
+</td>
+</tr>
+<tr>
+<td>File Type:</td>
+<td>
+<select id="FileType" name="FileType">
+<option value="Logicalonly">Logical Files Only</option>
+<option value="Superfileonly">Superfiles Only</option>
+<option value="Both" selected>Logical Files and Superfiles</option>
+</select>
+</td>
+</tr>
+<tr>
+<td>File Name Pattern:</td>
+<td>
+<input name="LogicalName" size="25" type="text"/>
+</td>
+</tr>
+<tr>
+<td>Example Patterns:</td>
+<td>
+<UI><LI>All files - leave it blank or *<LI>Files beginning with "thor::key" - thor::key*<LI>Files containing "key::" - *key::*<LI> Files ending with "header" -  *header <LI>Files matching "thor::key::header" exactly - thor::key::header</UL>
+</td>
+</tr>
+<tr>
+<td>
+<input type="submit" value="Find" class="sbutton"/>
+</td>
+</tr>
+</table>
+</form>
+</body>
+</html>

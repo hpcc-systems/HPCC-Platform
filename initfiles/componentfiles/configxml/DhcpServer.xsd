@@ -1,0 +1,106 @@
+<!--
+
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+-->
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSPY v5 rel. 4 U (http://www.xmlspy.com) by Rajeev Moondhra (Seisint, Inc.) -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+   <xs:include schemaLocation="environment.xsd"/>
+   <xs:element name="DhcpServerProcess">
+      <xs:complexType>
+         <xs:attribute name="build" type="seisint:buildType" use="required">
+            <xs:annotation>
+               <xs:appinfo>
+                                    <tooltip>The build name to be deployed</tooltip>
+                                 <viewType>hidden</viewType>
+                             </xs:appinfo>
+                        </xs:annotation>
+         </xs:attribute>
+         <xs:attribute name="buildSet" type="seisint:buildSetType" use="required">
+            <xs:annotation>
+               <xs:appinfo>
+                  <viewType>hidden</viewType>
+               </xs:appinfo>
+            </xs:annotation>
+         </xs:attribute>
+         <xs:attribute name="name" type="xs:string" use="required">
+            <xs:annotation>
+               <xs:appinfo>
+                  <tooltip>Name for this DHCP server configuration</tooltip>
+               </xs:appinfo>
+            </xs:annotation>
+         </xs:attribute>
+         <xs:attribute name="description" type="xs:string" use="optional" default="DHCP server configuration">
+            <xs:annotation>
+               <xs:appinfo>
+                  <tooltip>Description for this process</tooltip>
+               </xs:appinfo>
+            </xs:annotation>
+         </xs:attribute>
+         <xs:attribute name="computer" type="seisint:computerType" use="required">
+            <xs:annotation>
+               <xs:appinfo>
+                  <tooltip>Computer on which DHCP server is running.</tooltip>
+               </xs:appinfo>
+            </xs:annotation>
+         </xs:attribute>
+         <xs:attribute name="routers" type="xs:string" use="optional">
+            <xs:annotation>
+               <xs:appinfo>
+                  <tooltip>I.P. addresses of the network routers.</tooltip>
+               </xs:appinfo>
+            </xs:annotation>
+         </xs:attribute>
+         <xs:attribute name="subnet" type="xs:string" use="optional">
+            <xs:annotation>
+               <xs:appinfo>
+                  <tooltip>Multicast I.P. address of the subnet.</tooltip>
+               </xs:appinfo>
+            </xs:annotation>
+         </xs:attribute>
+         <xs:attribute name="subnetMask" type="xs:string" use="optional" default="255.255.255.0">
+            <xs:annotation>
+               <xs:appinfo>
+                  <tooltip>I.P. address of the subnet mask.</tooltip>
+               </xs:appinfo>
+            </xs:annotation>
+         </xs:attribute>
+         <xs:attribute name="hostnamePrefix" type="xs:string" use="optional" default="NODE">
+            <xs:annotation>
+               <xs:appinfo>
+                  <tooltip>Used to generate host names like NODE001002 for computer with I.P. address 192.168.1.2</tooltip>
+               </xs:appinfo>
+            </xs:annotation>
+         </xs:attribute>
+         <xs:attribute name="addressRangeStart" type="xs:string" use="optional">
+            <xs:annotation>
+               <xs:appinfo>
+                  <tooltip>First assignable I.P. address in the range</tooltip>
+               </xs:appinfo>
+            </xs:annotation>
+         </xs:attribute>
+         <xs:attribute name="addressRangeEnd" type="xs:string" use="optional">
+            <xs:annotation>
+               <xs:appinfo>
+                  <tooltip>Last assignable I.P. address in the range</tooltip>
+               </xs:appinfo>
+            </xs:annotation>
+         </xs:attribute>
+         <xs:attribute name="defaultLeaseTime" type="xs:nonNegativeInteger" use="optional" default="86400">
+            <xs:annotation>
+               <xs:appinfo>
+                  <tooltip>Default lease time in seconds for the assigned I.P. addresses.</tooltip>
+               </xs:appinfo>
+            </xs:annotation>
+         </xs:attribute>
+         <xs:attribute name="maxLeaseTime" type="xs:nonNegativeInteger" use="optional" default="86400">
+            <xs:annotation>
+               <xs:appinfo>
+                  <tooltip>Maximum lease time in seconds for the assigned I.P. addresses.</tooltip>
+               </xs:appinfo>
+            </xs:annotation>
+         </xs:attribute>
+      </xs:complexType>
+   </xs:element>
+</xs:schema>

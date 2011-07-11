@@ -1,0 +1,339 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+a:link 
+{
+    color: Navy;
+}
+a:visited {
+}
+a:hover {
+}
+a:active {
+}
+
+
+a:link.espnavlink 
+{
+    color: Navy;
+    font-size: 0.85em;
+}
+a:visited.espnavlink {
+    font-size: 0.85em;
+}
+a:hover.espnavlink {
+    color: Navy;
+    font-size: 0.85em;
+}
+a:active.espnavlink {
+    font-size: 0.85em;
+}
+
+.espnavlinkhover {
+    background-color: #BFDBFF;
+}
+
+.espnavfolder 
+{
+    border-style: none;
+    background-color: #B8CFE9;
+    font-weight: bold;
+    COLOR: Navy;
+    font-size: 0.85em;
+    line-height: 1.5em;
+    vertical-align: top;
+}
+
+.menu1 
+{
+    cursor: pointer;
+}
+
+.espnavcollapse 
+{
+    width:18px;top:0;right:1;height:15px;position:absolute;zoom:1;
+    background:transparent url(/esp/files/yui/build/layout/assets/skins/sam/layout_sprite.png) no-repeat -20px -120px;border:1px solid #808080;
+}
+.espnavexpand 
+{
+    width:18px;top:0;right:1;height:15px;position:absolute;zoom:1;
+    background:transparent url(/esp/files/yui/build/layout/assets/skins/sam/layout_sprite.png) no-repeat -20px -140px;border:1px solid #808080;
+}
+
+div.wugroup 
+{ 
+    font: 10pt verdana, arial, helvetica, sans-serif; 
+    height: 20px;
+    background-color: #E8E8E8;
+    font-weight:bold; 
+    text-align:right;   
+}
+
+div.hiddenwugroup 
+{ 
+    font: 10pt verdana, arial, helvetica, sans-serif; 
+    height: 20px;
+    border-top: 1px gray; 
+    background-color: #E8E8E8;
+    font-weight:bold; 
+    cursor:hand;
+    text-align:right;   
+}
+
+div.wusectioncontent
+{
+     font: 10pt verdana, arial, helvetica, sans-serif; 
+     display:none; 
+     visibility:hidden;
+}
+
+.HdrExp
+{
+    float:right; 
+    font-size:10;
+    font-weight:lighter; 
+}
+
+span.loading
+{
+    font: 8pt verdana, arial, helvetica, sans-serif; 
+    font-weight:lighter; 
+}
+
+.wusectiontable
+{
+    border: solid 1px #E8E8E8;
+    left: +5;
+    font: 10pt verdana, arial, helvetica, sans-serif; 
+    margin: 5px 5px 5px 5px;
+    width: 98%;
+}
+
+.WuGroupHdrLeft
+{
+    left:4px;
+    top:3px;
+    float:left;
+    position:relative;
+}
+
+tr.wusectioncontent
+{
+     font: 10pt verdana, arial, helvetica, sans-serif; 
+     display:none; 
+     visibility:hidden;
+}
+
+.wusectionexpand
+{
+    PADDING-LEFT: 18px;
+    FONT-WEIGHT: Bold;
+    BACKGROUND: url(/esp/files_/img/espbtns_tiled.gif) no-repeat 0px -299px;
+    TEXT-DECORATION: none;
+    
+}
+.wusectionexpand:hover
+{
+    COLOR: #692;
+    PADDING-LEFT: 18px;
+    BACKGROUND: url(/esp/files_/img/espbtns_tiled.gif) no-repeat 0px -399px;
+    TEXT-DECORATION: underline;
+}
+
+.wusectioncontract
+{
+    PADDING-LEFT: 18px;
+    FONT-WEIGHT: Bold;
+    BACKGROUND: url(/esp/files_/img/espbtns_tiled.gif) no-repeat 0px -599px;
+    TEXT-DECORATION: none;
+    
+}
+.wusectioncontract:hover
+{
+    COLOR: #692;
+    PADDING-LEFT: 18px;
+    BACKGROUND: url(/esp/files_/img/espbtns_tiled.gif) no-repeat 0px -699px;
+    TEXT-DECORATION: underline;
+}
+
+.graphlink
+{
+    COLOR: black;
+    TEXT-DECORATION: none;
+    
+}
+
+.graphlink:hover
+{
+    COLOR: #692;
+    FONT-WEIGHT: Bold;
+    TEXT-DECORATION: underline;
+}
+
+.graphcell
+{
+    vertical-align:bottom;
+}
+
+.WorkflowHeader
+{
+    text-align: left;
+    background-color: Silver;
+}
+
+.WorkflowTable
+{
+    border: solid 1px Silver;
+}
+
+.viewkeyexpand
+{
+    PADDING-LEFT: 18px;
+    FONT-WEIGHT: Bold;
+    BACKGROUND: url(/esp/files_/img/espbtns_tiled.gif) no-repeat 0px -299px;
+    TEXT-DECORATION: none;
+    
+}
+
+.viewkeyexpand:hover
+{
+    COLOR: #692;
+    PADDING-LEFT: 18px;
+    BACKGROUND: url(/esp/files_/img/espbtns_tiled.gif) no-repeat 0px -399px;
+    TEXT-DECORATION: underline;
+}
+
+.viewkeycontract
+{
+    PADDING-LEFT: 18px;
+    FONT-WEIGHT: Bold;
+    BACKGROUND: url(/esp/files_/img/espbtns_tiled.gif) no-repeat 0px -599px;
+    TEXT-DECORATION: none;
+    
+}
+.viewkeycontract:hover
+{
+    COLOR: #692;
+    PADDING-LEFT: 18px;
+    BACKGROUND: url(/esp/files_/img/espbtns_tiled.gif) no-repeat 0px -699px;
+    TEXT-DECORATION: underline;
+}
+
+.viewfieldsexpand
+{
+    PADDING-LEFT: 18px;
+    FONT-WEIGHT: Bold;
+    BACKGROUND: url(/esp/files_/img/espbtns_tiled.gif) no-repeat 0px -899px;
+    TEXT-DECORATION: none;
+    
+}
+
+.loadkey
+{
+    PADDING-LEFT: 18px;
+    FONT-WEIGHT: Bold;
+    BACKGROUND: url(/esp/files_/img/espbtns_tiled.gif) no-repeat 0px -199px;
+    TEXT-DECORATION: none;
+    
+}
+
+.viewfieldsexpand:hover
+{
+    COLOR: #692;
+    PADDING-LEFT: 18px;
+    BACKGROUND: url(/esp/files_/img/espbtns_tiled.gif) no-repeat 0px -999px;
+    TEXT-DECORATION: underline;
+}
+
+.viewfieldscontract
+{
+    PADDING-LEFT: 18px;
+    FONT-WEIGHT: Bold;
+    BACKGROUND: url(/esp/files_/img/espbtns_tiled.gif) no-repeat 0px -1199px;
+    TEXT-DECORATION: none;
+    
+}
+.viewfieldscontract:hover
+{
+    COLOR: #692;
+    PADDING-LEFT: 18px;
+    BACKGROUND: url(/esp/files_/img/espbtns_tiled.gif) no-repeat 0px -1299px;
+    TEXT-DECORATION: underline;
+}
+
+.columnsclose
+{
+    PADDING-LEFT: 18px;
+    FONT-WEIGHT: Bold;
+    BACKGROUND: url(/esp/files_/img/espbtns_tiled.gif) no-repeat 0px -1999px;
+    TEXT-DECORATION: none;
+    
+}
+
+.columnsclose:hover
+{
+    COLOR: #692;
+    PADDING-LEFT: 18px;
+    BACKGROUND: url(/esp/files_/img/espbtns_tiled.gif) no-repeat 0px -2099px;
+    TEXT-DECORATION: underline;
+}
+
+span.searchprompt
+{
+    font: 8pt verdana, arial, helvetica, sans-serif; 
+    font-weight:bold; 
+}
+
+.wufileexpand
+{
+    PADDING-LEFT: 18px;
+    FONT-WEIGHT: Bold;
+    BACKGROUND: url(/esp/files_/img/espbtns_tiled.gif) no-repeat 0px -899px;
+    TEXT-DECORATION: none;
+    
+}
+.wufileexpand:hover
+{
+    COLOR: #692;
+    PADDING-LEFT: 18px;
+    BACKGROUND: url(/esp/files_/img/espbtns_tiled.gif) no-repeat 0px -999px;
+    TEXT-DECORATION: underline;
+}
+
+.wufilecontract
+{
+    PADDING-LEFT: 18px;
+    FONT-WEIGHT: Bold;
+    BACKGROUND: url(/esp/files_/img/espbtns_tiled.gif) no-repeat 0px -1199px;
+    TEXT-DECORATION: none;
+    
+}
+.wufilecontract:hover
+{
+    COLOR: #692;
+    PADDING-LEFT: 18px;
+    BACKGROUND: url(/esp/files_/img/espbtns_tiled.gif) no-repeat 0px -1299px;
+    TEXT-DECORATION: underline;
+}
+
+tbody tr.1 td {
+      background-color: #F5F5F5;
+}
+tbody tr.0  td {
+      background-color: #fff;
+}

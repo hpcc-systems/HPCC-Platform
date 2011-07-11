@@ -1,0 +1,400 @@
+#!/bin/bash
+##
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+##
+## version v0.1
+## author Philip Schwartz <philip.schwartz@lexisnexis.com>
+##
+##
+##########################################################################
+##                                                                       #
+##                          System Flow                                  #
+##                                                                       #
+##########################################################################
+##                                                                       #
+##      1. Parse Passed In arguments                                     #
+##      2. Get the component and specific information                    #
+##      3. Generate component related config files (runtime directory)   #
+##      4. CD to the runtime Directory                                   #
+##      5. Start the component                                           #
+##                                                                       #
+##########################################################################
+
+##-----------------------------------------------------------------------------
+#                         General Purpose Functions                           
+##----------------------------------------------------------------------------
+
+###<REPLACE>###
+
+function print_usage {
+    echo >&2 "Usage: $0 [-c component] {start|stop|restart|status|setup}
+       $0 [--componentlist] Display node component name list.
+       $0 [--typelist] Display node component type list.
+       $0 [-h] [--help] Display help"
+    echo >&2
+    print_components
+    exit 0
+}
+
+function print_components {
+    if [ ! -z ${compList} ];then
+        echo >&2 "Components on this node as defined by ${CONFIG_DIR}/${ENV_CONF_FILE}:"
+        IFS=$'\n'
+        echo >&2 "${compList[*]}"
+        unset IFS
+    else
+        echo >&2 "No components on this node as defined by ${CONFIG_DIR}/${ENV_CONF_FILE}."
+    fi
+    echo >&2
+    exit 0
+}
+
+function print_types {
+    if [ ! -z ${compList} ];then
+        echo >&2 "Components types on this node as defined by ${CONFIG_DIR}/${ENV_CONF_FILE}:"
+        IFS=$'\n'
+        echo >&2 "${compTypeList[*]}"
+        unset IFS
+    else
+        echo >&2 "No components on this node as defined by ${CONFIG_DIR}/${ENV_CONF_FILE}."
+    fi
+    echo >&2
+    exit 0
+}
+
+
+
+source  ${INSTALL_DIR}/etc/init.d/lock.sh
+source  ${INSTALL_DIR}/etc/init.d/pid.sh
+source  ${INSTALL_DIR}/etc/init.d/hpcc_common
+source  ${INSTALL_DIR}/etc/init.d/init-functions
+source  ${INSTALL_DIR}/etc/init.d/export-path
+
+## Debug variable allowing verbose debug output
+##
+DEBUG=${DEBUG:-NO_DEBUG}
+TRACE=${TRACE:-0}
+VERBOSE=${VERBOSE:-0}
+COMP_BY_TYPE=${COMP_BY_TYPE:-0}
+DAFILESRV=${DAFILESRV:-0}
+
+set_envrionmentvars 
+envfile=$configs/$environment
+
+#Sourcing the hpcc environment
+configgen_path=${path}/sbin
+bin_path=${path}/bin
+source ${configgen_path}/hpcc_setenv
+
+is_root
+which_service
+get_commondirs
+
+#Check for existance of user
+check_user ${user}
+if [ $? -ne 1 ];then
+   echo "$user user does not exits on the system. Exiting ....."
+   exit 3
+fi
+
+check_group ${group}
+if [ $? -ne 1 ];then
+  echo "Group for user ${group} does not exist on the system. Exiting....."
+   exit 3
+fi 
+
+#changing ownership of the home directory for user.
+chown -cR $user:$group ${home}/${user} 1>/dev/null 2>/dev/null
+
+basepath=`pwd`
+daemon_path=${bin_path}
+
+COMPS=`${configgen_path}/configgen -env ${envfile} -list`
+
+comp.parser ${COMPS}
+
+if [ -z ${compArray} ];then
+   echo "There are no components configured to run on this node..."
+   exit 3
+fi
+
+#--------------------------------------------------------------------------------
+#                                    Beginning of the Option Parsing                                                 
+#-------------------------------------------------------------------------------
+
+compList[0]=''
+compListLen=0
+compTypeList[0]=''
+foundThorSlave=0
+compDafilesrv=''
+
+#Forming the component list from the configgen 
+
+for i in ${compArray[@]}; do
+    compName=`echo $i | awk -F"_" '{print $2}'`
+    comp.getByName ${compName}
+    componentType=`echo ${comp_return} | awk -F" " '{print $1}' | awk -F"=" '{print $2}'`
+    if [ -z ${compName} ];
+    then
+        continue;
+    elif strstr ${componentType} "dali" ;
+    then
+        compDali=${compName}
+    elif strstr ${componentType} "thor";
+    then
+        comp.getByName "${compName}"
+        if strstr ${comp_return} "slave";
+        then
+            foundThorSlave=1
+        fi
+        compListLen=$(expr ${compListLen} + 1)
+        compList[${compListLen}]=${compName}
+        compTypeList[${compListLen}]=${componentType}
+    else
+        if strstr ${componentType} "ftslave" ; 
+        then 
+            continue
+        elif strstr ${componentType} "dafilesrv";
+        then
+            compDafilesrv=${compName}
+        else
+            compListLen=$(expr ${compListLen} + 1)
+            compList[${compListLen}]=${compName}
+            compTypeList[${compListLen}]=${componentType}
+        fi
+    fi
+done
+
+#Defaulting the first component as Dali 
+compList[0]=$compDali
+compTypeList[0]="dali"
+
+if [ ${DEBUG} != "NO_DEBUG" ]; then
+    for i in ${compList[@]};do
+        echo $i
+    done
+    
+fi
+
+# Checking if start-stop-deamon exists
+if [ ! -e ${path}/bin/start-stop-daemon ]; then
+    result=$(which start-stop-daemon)
+    if [ "$?" -ne 0 ]; then
+        echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+        echo "You don't have start-stop-deamon installed"
+        echo "YOU CAN'T RUN THIS SYSTEM - SORRY"
+        echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+        exit 0
+    else
+        daemon_path=$(echo $result | tr '/' '\n' | grep -v start-stop-daemon | tr '\n' '/')
+    fi
+fi
+
+#declaring all flags here
+isComp=0
+component=""
+runSetupOnly=0
+dafilesrvflag=0
+
+TEMP=`/usr/bin/getopt -o c:h --long help,componentlist,typelist -n 'hpcc-init' -- "$@"`
+if [ $? != 0 ] ; then echo "Failure to parse commandline." >&2 ; exit 1 ; fi
+eval set -- "$TEMP"
+while true ; do
+    case "$1" in
+        -c) comp=$2
+            isComp=1
+            comp.getByName $comp
+            if [ -z $comp_return ] ;
+            then
+                comp.getByType $comp
+                if [ -z $comp_return ]
+                then
+                    echo "Unknown component: $comp"
+                    exit 1
+                fi
+                for (( i=0; i<=${compListLen}; i++ ));do
+                    if strstr ${compTypeList[$i]} "$comp";
+                    then
+                        component="$component ${compList[$i]}"
+                    fi
+                done
+                if [ -z "${component}" ];then
+                   if strstr "${comp}" "dafilesrv" ;then
+                       component="${component} ${compDafilesrv}"
+                   fi
+                fi
+            else
+                component=$comp
+            fi
+            shift 2 ;;
+        -h|--help) print_usage
+                   shift ;;
+        --componentlist) print_components
+                   shift ;;
+        --typelist) print_types
+                   shift ;;
+        --) shift ; break ;;
+        *) print_usage ;;
+    esac
+done
+for arg do arg=$arg; done
+
+if [ -z ${component} ]; then
+    for (( i=0; i<=${compListLen}; i++ ));do
+        component="$component ${compList[$i]}"
+    done
+elif strstr ${component} "dafilesrv";then
+    compDafilesrv=${component}
+    component=''
+else
+    compDafilesrv=''
+fi
+
+if [ -z $arg ]; then
+    print_usage
+fi
+
+case "$arg" in 
+    status|start|restart|setup)
+        cmd=$arg
+        ;;
+    stop)
+       #need to reverse the list so that dali stops last
+       cmd=$arg
+       component_rev=""
+       if [ "${isComp}" -eq 0 ]; then
+         for (( i=${compListLen}; i>=0; i-- ));
+         do
+            if strstr ${compList[$i]} "dafilesrv" ;then
+              continue;
+            fi
+            component_rev="$component_rev ${compList[$i]}"
+         done
+         if [ ! -z "${component_rev}" ]; then
+            component=${component_rev}
+         fi   
+       fi
+       ;;
+    *) print_usage
+        ;;
+esac
+
+unset IFS
+
+# Create dropzone on a full system start
+if [ ${cmd} = "start" ] || [ "${cmd}" = "restart" ]; then
+    create_dropzone
+fi
+
+#Before we start/stop any component we should check dafilesrv.
+if [ ! -z "${compDafilesrv}" ];then
+    case "$1" in
+        start)
+            ${SERV} dafilesrv status 1>/dev/null 2>/dev/null
+            if [ $? -ne 0 ];then
+              ${SERV} dafilesrv $1 2>/dev/null
+            fi
+            ;;
+        status|setup)
+            ${SERV} dafilesrv ${1} 2>/dev/null
+            ;;
+        stop|restart)
+            ;;
+    esac
+fi
+
+# Restart handling for entire system
+if [ ${cmd} = "restart" ] && [ "${isComp}" -eq 0 ]; then
+    echo "*****************************************"
+    echo "Stopping entire system for a full restart"
+    echo "*****************************************"
+    cmd=stop
+    statForStop=0;
+    for (( i=${compListLen}; i>=0; i-- ));do
+        if [ -z "${compList[$i]}" ];then
+          continue;
+        fi
+        set_componentvars ${compList[$i]}
+        xcmd="${cmd}_component ${compList[$i]}"
+        if [ ${DEBUG} != "NO_DEBUG" ]; then
+            echo $xcmd
+        fi
+        if strstr ${compType} "thor" && [ ${foundThorSlave} -eq 1 ];
+        then
+            if [ ${DEBUG} != "NO_DEBUG" ]; then
+               echo "Thor slave found on the node, hence skipping the component "
+            fi
+            continue
+        elif strstr ${compType} "dafilesrv" ;then
+            if [ ${DEBUG} != "NO_DEBUG" ]; then
+               echo "skipping the component ${compName}"
+            fi
+            continue;
+        else
+          eval $xcmd
+          statForEach=$?
+          statForStop=$(( ${statForStop} == 3 ? ${statForEach} : ${statForStop} ))
+        fi
+    done 
+
+    echo "***************************************************"
+    echo "Starting the entire System"
+    echo "***************************************************"
+    cmd=start
+    statForStart=0
+    for (( i=0; i<=${compListLen}; i++ ));do
+        if [ -z "${compList[$i]}" ];then
+           continue;
+        fi
+        set_componentvars ${compList[$i]}
+        xcmd="${cmd}_component ${compList[$i]}"
+        if [ ${DEBUG} != "NO_DEBUG" ]; then
+            echo $xcmd
+        fi
+        if strstr ${compType} "thor" && [ ${foundThorSlave}  -eq 1 ]; 
+        then
+            if [ ${DEBUG} != "NO_DEBUG" ]; then
+               echo "Thor slave found on the node, hence just running the setup for thor"
+            fi
+            setup_component 
+            continue
+        else
+           eval $xcmd
+           statForEach=$?
+           statForStart=$(( ${statForStart} == 0 ? ${statForEach} : ${statForStart} ))
+        fi
+    done
+    if [ "${statForStop}" -eq 3 ] && [ "${statForStart}" -eq 0 ];
+    then
+        exit 0
+    else
+       a=$(( ${statForStop} != 0  ? $statForStop : $statForStart ))
+       exit $a
+    fi
+fi
+
+# All other command handling
+# start, stop and status (individual component restart as well)
+STATUS=0
+for C in ${component} ; do
+    if [ -z "${C}" ];then
+          continue;
+    fi
+    set_componentvars ${C}
+    xcmd="${cmd}_component ${C}"
+    if [ ${DEBUG} != "NO_DEBUG" ]; then
+        echo $xcmd
+    fi
+    if strstr ${compType} "thor" && [ ${foundThorSlave} -eq 1 ] && [ "${cmd}" != "status" ] && [ "${cmd}" != "setup" ]; then
+        if [ ${DEBUG} != "NO_DEBUG" ]; then
+            echo "Thor slave found on the node, hence just running the setup for thor"
+        fi
+        setup_component 
+        continue
+    else
+        eval $xcmd
+        statForEach=$?
+        STATUS=$(( $STATUS == 0 ? $statForEach : $STATUS))
+    fi
+done 
+exit ${STATUS}

@@ -1,0 +1,1859 @@
+################################################################################
+#    Copyright (C) 2011 HPCC Systems.
+#
+#    This program is free software: you can redistribute it and/or All rights reserved. This program is NOT PRESENTLY free software: you can NOT redistribute
+#    it under the terms of the GNU Affero General Public License as
+#    published by the Free Software Foundation, either version 3 of the
+#    License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+
+# esp Supplementals
+# SCHEMA: name=esp.xsd method=schema
+### name=esp.xsl method=xslt destName=esp.xml
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/configxml/esp.xsl DESTINATION ${OSSDIR}/componentfiles/configxml
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=diagEspCore
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/platform/diagEspCore DESTINATION ${OSSDIR}/bin
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=EspMethods.txt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/tools/soapplus/EspMethods.txt DESTINATION ${OSSDIR}/componentfiles
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=xslt/exceptions.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/exceptions.xslt DESTINATION ${OSSDIR}/componentfiles/xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=xslt/BoolResponse.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/BoolResponse.xslt DESTINATION ${OSSDIR}/componentfiles/xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/GraphViewCtl.cab
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/GraphViewCtl.cab DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/npGraphViewCtl.xpi
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/npGraphViewCtl.xpi DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/update.rdf
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/update.rdf DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/base64.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/base64.js DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/qmalert.html
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/qmalert.html DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/calendar.html
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/calendar.html DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/calendar_xs.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/calendar_xs.js DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/components.xml
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/components.xml DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/default.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/default.css DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/empty.svg
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/empty.svg DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/gen_form.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/gen_form.css DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/gen_form.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/gen_form.js DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/get_input.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/get_input.js DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/graph.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/graph.js DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/groupadd.html
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/groupadd.html DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/hashtable.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/hashtable.js DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/hint.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/hint.js DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/joblist.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/joblist.js DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/jobqueue.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/jobqueue.js DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/minus.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/minus.gif DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/plus.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/plus.gif DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/popup.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/popup.js DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/req_array.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/req_array.js DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/select.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/select.js DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/stack.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/stack.js DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/stringbuffer.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/stringbuffer.js DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/submitNavForm.html
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/submitNavForm.html DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/tabularForm.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/tabularForm.xslt DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/transformDlg.html
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/transformDlg.html DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/useradd.html
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/useradd.html DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/animation/animation-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/animation/animation-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/animation
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/animation/animation-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/animation/animation-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/animation
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/animation/animation.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/animation/animation.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/animation
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/ajax-loader.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/ajax-loader.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/asc.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/asc.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/autocomplete.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/autocomplete.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/back-h.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/back-h.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/back-v.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/back-v.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/bar-h.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/bar-h.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/bar-v.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/bar-v.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/bg-h.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/bg-h.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/bg-v.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/bg-v.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/blankimage.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/blankimage.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/button.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/button.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/calendar.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/calendar.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/carousel.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/carousel.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/check0.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/check0.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/check1.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/check1.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/check2.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/check2.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/colorpicker.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/colorpicker.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/container.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/container.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/datatable.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/datatable.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/desc.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/desc.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/dt-arrow-dn.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/dt-arrow-dn.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/dt-arrow-up.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/dt-arrow-up.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/editor-knob.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/editor-knob.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/editor-sprite-active.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/editor-sprite-active.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/editor-sprite.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/editor-sprite.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/editor.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/editor.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/header_background.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/header_background.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/hue_bg.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/hue_bg.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/imagecropper.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/imagecropper.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/layout.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/layout.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/layout_sprite.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/layout_sprite.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/loading.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/loading.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/logger.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/logger.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/menu-button-arrow-disabled.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/menu-button-arrow-disabled.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/menu-button-arrow.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/menu-button-arrow.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/menu.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/menu.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/menubaritem_submenuindicator.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/menubaritem_submenuindicator.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/menubaritem_submenuindicator_disabled.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/menubaritem_submenuindicator_disabled.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/menuitem_checkbox.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/menuitem_checkbox.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/menuitem_checkbox_disabled.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/menuitem_checkbox_disabled.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/menuitem_submenuindicator.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/menuitem_submenuindicator.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/menuitem_submenuindicator_disabled.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/menuitem_submenuindicator_disabled.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/paginator.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/paginator.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/picker_mask.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/picker_mask.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/profilerviewer.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/profilerviewer.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/progressbar.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/progressbar.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/resize.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/resize.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/simpleeditor.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/simpleeditor.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/skin.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/skin.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/slider.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/slider.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/split-button-arrow-active.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/split-button-arrow-active.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/split-button-arrow-disabled.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/split-button-arrow-disabled.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/split-button-arrow-focus.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/split-button-arrow-focus.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/split-button-arrow-hover.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/split-button-arrow-hover.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/split-button-arrow.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/split-button-arrow.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/sprite.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/sprite.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/sprite.psd
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/sprite.psd DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/tabview.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/tabview.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/treeview-loading.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/treeview-loading.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/treeview-sprite.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/treeview-sprite.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/treeview.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/treeview.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/wait.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/wait.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/assets/skins/sam/yuitest.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/yuitest.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/autocomplete/autocomplete-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/autocomplete/autocomplete-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/autocomplete
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/autocomplete/autocomplete-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/autocomplete/autocomplete-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/autocomplete
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/autocomplete/autocomplete.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/autocomplete/autocomplete.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/autocomplete
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/autocomplete/assets/skins/sam/autocomplete-skin.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/autocomplete/assets/skins/sam/autocomplete-skin.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/autocomplete/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/autocomplete/assets/skins/sam/autocomplete.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/autocomplete/assets/skins/sam/autocomplete.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/autocomplete/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/base/base-min.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/base/base-min.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/base
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/base/base.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/base/base.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/base
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/button/button-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/button/button-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/button
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/button/button-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/button/button-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/button
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/button/button.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/button/button.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/button
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/button/assets/skins/sam/button-skin.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/button/assets/skins/sam/button-skin.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/button/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/button/assets/skins/sam/button.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/button/assets/skins/sam/button.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/button/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/button/assets/skins/sam/menu-button-arrow-disabled.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/button/assets/skins/sam/menu-button-arrow-disabled.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/button/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/button/assets/skins/sam/menu-button-arrow.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/button/assets/skins/sam/menu-button-arrow.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/button/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/button/assets/skins/sam/split-button-arrow-active.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/button/assets/skins/sam/split-button-arrow-active.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/button/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/button/assets/skins/sam/split-button-arrow-disabled.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/button/assets/skins/sam/split-button-arrow-disabled.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/button/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/button/assets/skins/sam/split-button-arrow-focus.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/button/assets/skins/sam/split-button-arrow-focus.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/button/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/button/assets/skins/sam/split-button-arrow-hover.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/button/assets/skins/sam/split-button-arrow-hover.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/button/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/button/assets/skins/sam/split-button-arrow.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/button/assets/skins/sam/split-button-arrow.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/button/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/calendar/calendar-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/calendar/calendar-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/calendar
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/calendar/calendar-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/calendar/calendar-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/calendar
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/calendar/calendar.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/calendar/calendar.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/calendar
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/calendar/assets/skins/sam/calendar-skin.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/calendar/assets/skins/sam/calendar-skin.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/calendar/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/calendar/assets/skins/sam/calendar.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/calendar/assets/skins/sam/calendar.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/calendar/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/carousel/carousel-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/carousel/carousel-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/carousel
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/carousel/carousel-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/carousel/carousel-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/carousel
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/carousel/carousel.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/carousel/carousel.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/carousel
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/carousel/assets/skins/sam/ajax-loader.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/carousel/assets/skins/sam/ajax-loader.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/carousel/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/carousel/assets/skins/sam/carousel-skin.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/carousel/assets/skins/sam/carousel-skin.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/carousel/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/carousel/assets/skins/sam/carousel.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/carousel/assets/skins/sam/carousel.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/carousel/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/charts/charts-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/charts/charts-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/charts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/charts/charts-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/charts/charts-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/charts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/charts/charts.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/charts/charts.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/charts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/charts/assets/charts.swf
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/charts/assets/charts.swf DESTINATION ${OSSDIR}/componentfiles/files/yui/build/charts/assets
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/colorpicker/colorpicker-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/colorpicker/colorpicker-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/colorpicker
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/colorpicker/colorpicker-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/colorpicker/colorpicker-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/colorpicker
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/colorpicker/colorpicker.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/colorpicker/colorpicker.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/colorpicker
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/colorpicker/assets/skins/sam/colorpicker-skin.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/colorpicker/assets/skins/sam/colorpicker-skin.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/colorpicker/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/colorpicker/assets/skins/sam/colorpicker.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/colorpicker/assets/skins/sam/colorpicker.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/colorpicker/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/colorpicker/assets/skins/sam/hue_bg.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/colorpicker/assets/skins/sam/hue_bg.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/colorpicker/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/colorpicker/assets/skins/sam/picker_mask.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/colorpicker/assets/skins/sam/picker_mask.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/colorpicker/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/connection/connection-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/connection/connection-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/connection
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/connection/connection-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/connection/connection-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/connection
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/connection/connection.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/connection/connection.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/connection
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/connection/connection.swf
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/connection/connection.swf DESTINATION ${OSSDIR}/componentfiles/files/yui/build/connection
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/connection/connection_core-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/connection/connection_core-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/connection
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/connection/connection_core-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/connection/connection_core-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/connection
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/connection/connection_core.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/connection/connection_core.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/connection
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/container/container-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/container/container-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/container
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/container/container-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/container/container-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/container
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/container/container.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/container/container.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/container
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/container/container_core-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/container/container_core-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/container
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/container/container_core-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/container/container_core-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/container
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/container/container_core.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/container/container_core.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/container
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/container/assets/skins/sam/container-skin.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/container/assets/skins/sam/container-skin.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/container/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/container/assets/skins/sam/container.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/container/assets/skins/sam/container.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/container/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/cookie/cookie-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/cookie/cookie-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/cookie
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/cookie/cookie-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/cookie/cookie-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/cookie
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/cookie/cookie.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/cookie/cookie.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/cookie
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/datasource/datasource-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/datasource/datasource-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/datasource
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/datasource/datasource-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/datasource/datasource-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/datasource
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/datasource/datasource.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/datasource/datasource.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/datasource
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/datatable/datatable-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/datatable/datatable-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/datatable
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/datatable/datatable-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/datatable/datatable-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/datatable
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/datatable/datatable.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/datatable/datatable.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/datatable
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/datatable/assets/skins/sam/datatable-skin.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/datatable/assets/skins/sam/datatable-skin.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/datatable/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/datatable/assets/skins/sam/datatable.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/datatable/assets/skins/sam/datatable.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/datatable/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/datatable/assets/skins/sam/dt-arrow-dn.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/datatable/assets/skins/sam/dt-arrow-dn.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/datatable/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/datatable/assets/skins/sam/dt-arrow-up.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/datatable/assets/skins/sam/dt-arrow-up.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/datatable/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/datemath/datemath-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/datemath/datemath-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/datemath
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/datemath/datemath-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/datemath/datemath-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/datemath
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/datemath/datemath.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/datemath/datemath.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/datemath
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/dom/dom-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/dom/dom-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/dom
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/dom/dom-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/dom/dom-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/dom
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/dom/dom.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/dom/dom.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/dom
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/dragdrop/dragdrop-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/dragdrop/dragdrop-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/dragdrop
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/dragdrop/dragdrop-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/dragdrop/dragdrop-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/dragdrop
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/dragdrop/dragdrop.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/dragdrop/dragdrop.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/dragdrop
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/editor/editor-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/editor/editor-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/editor
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/editor/editor-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/editor/editor-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/editor
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/editor/editor.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/editor/editor.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/editor
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/editor/simpleeditor-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/editor/simpleeditor-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/editor
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/editor/simpleeditor-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/editor/simpleeditor-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/editor
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/editor/simpleeditor.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/editor/simpleeditor.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/editor
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/editor/assets/skins/sam/blankimage.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/editor/assets/skins/sam/blankimage.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/editor/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/editor/assets/skins/sam/editor-knob.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/editor/assets/skins/sam/editor-knob.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/editor/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/editor/assets/skins/sam/editor-skin.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/editor/assets/skins/sam/editor-skin.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/editor/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/editor/assets/skins/sam/editor-sprite-active.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/editor/assets/skins/sam/editor-sprite-active.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/editor/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/editor/assets/skins/sam/editor-sprite.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/editor/assets/skins/sam/editor-sprite.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/editor/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/editor/assets/skins/sam/editor.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/editor/assets/skins/sam/editor.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/editor/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/editor/assets/skins/sam/simpleeditor-skin.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/editor/assets/skins/sam/simpleeditor-skin.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/editor/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/editor/assets/skins/sam/simpleeditor.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/editor/assets/skins/sam/simpleeditor.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/editor/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/element/element-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/element/element-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/element
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/element/element-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/element/element-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/element
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/element/element.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/element/element.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/element
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/element-delegate/element-delegate-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/element-delegate/element-delegate-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/element-delegate
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/element-delegate/element-delegate-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/element-delegate/element-delegate-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/element-delegate
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/element-delegate/element-delegate.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/element-delegate/element-delegate.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/element-delegate
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/event/event-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/event/event-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/event
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/event/event-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/event/event-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/event
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/event/event.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/event/event.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/event
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/event-delegate/event-delegate-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/event-delegate/event-delegate-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/event-delegate
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/event-delegate/event-delegate-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/event-delegate/event-delegate-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/event-delegate
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/event-delegate/event-delegate.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/event-delegate/event-delegate.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/event-delegate
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/event-mouseenter/event-mouseenter-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/event-mouseenter/event-mouseenter-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/event-mouseenter
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/event-mouseenter/event-mouseenter-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/event-mouseenter/event-mouseenter-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/event-mouseenter
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/event-mouseenter/event-mouseenter.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/event-mouseenter/event-mouseenter.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/event-mouseenter
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/event-simulate/event-simulate-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/event-simulate/event-simulate-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/event-simulate
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/event-simulate/event-simulate-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/event-simulate/event-simulate-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/event-simulate
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/event-simulate/event-simulate.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/event-simulate/event-simulate.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/event-simulate
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/fonts/fonts-min.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/fonts/fonts-min.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/fonts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/fonts/fonts.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/fonts/fonts.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/fonts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/get/get-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/get/get-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/get
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/get/get-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/get/get-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/get
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/get/get.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/get/get.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/get
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/grids/grids-min.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/grids/grids-min.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/grids
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/grids/grids.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/grids/grids.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/grids
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/history/history-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/history/history-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/history
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/history/history-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/history/history-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/history
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/history/history.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/history/history.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/history
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/history/assets/blank.html
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/history/assets/blank.html DESTINATION ${OSSDIR}/componentfiles/files/yui/build/history/assets
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/hpcc-ext/DataView.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/hpcc-ext/DataView.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/hpcc-ext
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/hpcc-ext/RowFilter.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/hpcc-ext/RowFilter.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/hpcc-ext
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/imagecropper/imagecropper-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/imagecropper/imagecropper-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/imagecropper
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/imagecropper/imagecropper-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/imagecropper/imagecropper-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/imagecropper
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/imagecropper/imagecropper.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/imagecropper/imagecropper.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/imagecropper
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/imagecropper/assets/skins/sam/imagecropper-skin.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/imagecropper/assets/skins/sam/imagecropper-skin.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/imagecropper/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/imagecropper/assets/skins/sam/imagecropper.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/imagecropper/assets/skins/sam/imagecropper.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/imagecropper/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/imageloader/imageloader-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/imageloader/imageloader-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/imageloader
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/imageloader/imageloader-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/imageloader/imageloader-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/imageloader
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/imageloader/imageloader.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/imageloader/imageloader.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/imageloader
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/json/json-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/json/json-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/json
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/json/json-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/json/json-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/json
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/json/json.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/json/json.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/json
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/layout/layout-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/layout/layout-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/layout
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/layout/layout-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/layout/layout-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/layout
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/layout/layout.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/layout/layout.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/layout
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/layout/assets/skins/sam/layout-skin.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/layout/assets/skins/sam/layout-skin.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/layout/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/layout/assets/skins/sam/layout.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/layout/assets/skins/sam/layout.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/layout/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/layout/assets/skins/sam/layout_sprite.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/layout/assets/skins/sam/layout_sprite.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/layout/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/logger/logger-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/logger/logger-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/logger
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/logger/logger-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/logger/logger-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/logger
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/logger/logger.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/logger/logger.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/logger
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/logger/assets/skins/sam/logger-skin.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/logger/assets/skins/sam/logger-skin.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/logger/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/logger/assets/skins/sam/logger.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/logger/assets/skins/sam/logger.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/logger/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/menu/menu-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/menu/menu-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/menu
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/menu/menu-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/menu/menu-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/menu
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/menu/menu.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/menu/menu.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/menu
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/menu/assets/skins/sam/menu-skin.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/menu/assets/skins/sam/menu-skin.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/menu/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/menu/assets/skins/sam/menu.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/menu/assets/skins/sam/menu.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/menu/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/menu/assets/skins/sam/menubaritem_submenuindicator.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/menu/assets/skins/sam/menubaritem_submenuindicator.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/menu/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/menu/assets/skins/sam/menubaritem_submenuindicator_disabled.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/menu/assets/skins/sam/menubaritem_submenuindicator_disabled.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/menu/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/menu/assets/skins/sam/menuitem_checkbox.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/menu/assets/skins/sam/menuitem_checkbox.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/menu/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/menu/assets/skins/sam/menuitem_checkbox_disabled.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/menu/assets/skins/sam/menuitem_checkbox_disabled.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/menu/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/menu/assets/skins/sam/menuitem_submenuindicator.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/menu/assets/skins/sam/menuitem_submenuindicator.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/menu/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/menu/assets/skins/sam/menuitem_submenuindicator_disabled.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/menu/assets/skins/sam/menuitem_submenuindicator_disabled.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/menu/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/paginator/paginator-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/paginator/paginator-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/paginator
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/paginator/paginator-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/paginator/paginator-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/paginator
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/paginator/paginator.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/paginator/paginator.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/paginator
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/paginator/assets/skins/sam/paginator-skin.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/paginator/assets/skins/sam/paginator-skin.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/paginator/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/paginator/assets/skins/sam/paginator.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/paginator/assets/skins/sam/paginator.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/paginator/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/profiler/profiler-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/profiler/profiler-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/profiler
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/profiler/profiler-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/profiler/profiler-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/profiler
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/profiler/profiler.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/profiler/profiler.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/profiler
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/profilerviewer/profilerviewer-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/profilerviewer/profilerviewer-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/profilerviewer
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/profilerviewer/profilerviewer-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/profilerviewer/profilerviewer-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/profilerviewer
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/profilerviewer/profilerviewer.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/profilerviewer/profilerviewer.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/profilerviewer
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/profilerviewer/assets/skins/sam/asc.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/profilerviewer/assets/skins/sam/asc.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/profilerviewer/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/profilerviewer/assets/skins/sam/desc.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/profilerviewer/assets/skins/sam/desc.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/profilerviewer/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/profilerviewer/assets/skins/sam/header_background.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/profilerviewer/assets/skins/sam/header_background.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/profilerviewer/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/profilerviewer/assets/skins/sam/profilerviewer-skin.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/profilerviewer/assets/skins/sam/profilerviewer-skin.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/profilerviewer/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/profilerviewer/assets/skins/sam/profilerviewer.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/profilerviewer/assets/skins/sam/profilerviewer.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/profilerviewer/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/profilerviewer/assets/skins/sam/wait.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/profilerviewer/assets/skins/sam/wait.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/profilerviewer/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/progressbar/progressbar-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/progressbar/progressbar-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/progressbar
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/progressbar/progressbar-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/progressbar/progressbar-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/progressbar
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/progressbar/progressbar.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/progressbar/progressbar.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/progressbar
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/progressbar/assets/skins/sam/back-h.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/progressbar/assets/skins/sam/back-h.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/progressbar/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/progressbar/assets/skins/sam/back-v.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/progressbar/assets/skins/sam/back-v.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/progressbar/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/progressbar/assets/skins/sam/bar-h.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/progressbar/assets/skins/sam/bar-h.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/progressbar/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/progressbar/assets/skins/sam/bar-v.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/progressbar/assets/skins/sam/bar-v.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/progressbar/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/progressbar/assets/skins/sam/progressbar-skin.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/progressbar/assets/skins/sam/progressbar-skin.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/progressbar/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/progressbar/assets/skins/sam/progressbar.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/progressbar/assets/skins/sam/progressbar.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/progressbar/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/reset/reset-min.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/reset/reset-min.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/reset
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/reset/reset.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/reset/reset.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/reset
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/reset-fonts/reset-fonts.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/reset-fonts/reset-fonts.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/reset-fonts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/reset-fonts-grids/reset-fonts-grids.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/reset-fonts-grids/reset-fonts-grids.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/reset-fonts-grids
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/resize/resize-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/resize/resize-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/resize
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/resize/resize-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/resize/resize-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/resize
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/resize/resize.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/resize/resize.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/resize
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/resize/assets/skins/sam/layout_sprite.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/resize/assets/skins/sam/layout_sprite.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/resize/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/resize/assets/skins/sam/resize-skin.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/resize/assets/skins/sam/resize-skin.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/resize/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/resize/assets/skins/sam/resize.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/resize/assets/skins/sam/resize.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/resize/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/selector/selector-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/selector/selector-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/selector
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/selector/selector-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/selector/selector-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/selector
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/selector/selector.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/selector/selector.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/selector
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+
+### name=files/yui/build/slider/slider-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/slider/slider-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/slider
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/slider/slider-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/slider/slider-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/slider
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/slider/slider.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/slider/slider.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/slider
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/slider/assets/skins/sam/bg-h.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/slider/assets/skins/sam/bg-h.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/slider/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/slider/assets/skins/sam/bg-v.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/slider/assets/skins/sam/bg-v.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/slider/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/slider/assets/skins/sam/slider-skin.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/slider/assets/skins/sam/slider-skin.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/slider/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/slider/assets/skins/sam/slider.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/slider/assets/skins/sam/slider.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/slider/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+
+### name=files/yui/build/slider/assets/bg-fader.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/slider/assets/bg-fader.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/slider/assets
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+
+### name=files/yui/build/slider/assets/bg-h.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/slider/assets/bg-h.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/slider/assets
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+
+### name=files/yui/build/slider/assets/bg-v-e.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/slider/assets/bg-v-e.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/slider/assets
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+
+### name=files/yui/build/slider/assets/bg-v.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/slider/assets/bg-v.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/slider/assets
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/slider/assets/left-thumb.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/slider/assets/bg-v.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/slider/assets
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/slider/assets/right-thumb.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/slider/assets/right-thumb.png DESTINATION ${OSSDIR}/componentfiles/files/yui/build/slider/assets
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/slider/assets/slider-core.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/slider/assets/slider-core.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/slider/assets
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/slider/assets/slider-skin.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/slider/assets/slider-skin.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/slider/assets
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/slider/assets/thumb-bar.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/slider/assets/thumb-bar.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/slider/assets
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/slider/assets/thumb-e.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/slider/assets/thumb-e.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/slider/assets
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/slider/assets/thumb-fader.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/slider/assets/thumb-fader.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/slider/assets
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/slider/assets/thumb-n.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/slider/assets/thumb-n.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/slider/assets
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/slider/assets/thumb-s.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/slider/assets/thumb-s.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/slider/assets
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/slider/assets/thumb-w.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/slider/assets/thumb-w.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/slider/assets
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/storage/storage-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/storage/storage-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/storage
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/storage/storage-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/storage/storage-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/storage
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/storage/storage.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/storage/storage.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/storage
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/stylesheet/stylesheet-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/stylesheet/stylesheet-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/stylesheet
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/stylesheet/stylesheet-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/stylesheet/stylesheet-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/stylesheet
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/stylesheet/stylesheet.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/stylesheet/stylesheet.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/stylesheet
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/swf/swf-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/swf/swf-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/swf
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/swf/swf-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/swf/swf-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/swf
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/swf/swf.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/swf/swf.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/swf
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/swfdetect/swfdetect-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/swfdetect/swfdetect-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/swfdetect
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/swfdetect/swfdetect-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/swfdetect/swfdetect-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/swfdetect
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/swfdetect/swfdetect.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/swfdetect/swfdetect.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/swfdetect
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/swfstore/swf.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/swfstore/swf.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/swfstore
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/swfstore/swfstore-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/swfstore/swfstore-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/swfstore
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/swfstore/swfstore-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/swfstore/swfstore-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/swfstore
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/swfstore/swfstore.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/swfstore/swfstore.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/swfstore
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/swfstore/swfstore.swf
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/swfstore/swfstore.swf DESTINATION ${OSSDIR}/componentfiles/files/yui/build/swfstore
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/tabview/tabview-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/tabview/tabview-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/tabview
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/tabview/tabview-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/tabview/tabview-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/tabview
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/tabview/tabview.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/tabview/tabview.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/tabview
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/tabview/assets/skins/sam/tabview-skin.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/tabview/assets/skins/sam/tabview-skin.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/tabview/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/tabview/assets/skins/sam/tabview.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/tabview/assets/skins/sam/tabview.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/tabview/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/treeview/treeview-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/treeview/treeview-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/treeview
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/treeview/treeview-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/treeview/treeview-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/treeview
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/treeview/treeview.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/treeview/treeview.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/treeview
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/treeview/assets/skins/sam/check0.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/check0.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/treeview/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/treeview/assets/skins/sam/check1.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/check1.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/treeview/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/treeview/assets/skins/sam/check2.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/assets/skins/sam/check2.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/treeview/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/treeview/assets/skins/sam/loading.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/treeview/assets/skins/sam/loading.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/treeview/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/treeview/assets/skins/sam/treeview-loading.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/treeview/assets/skins/sam/treeview-loading.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/treeview/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/treeview/assets/skins/sam/treeview-skin.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/treeview/assets/skins/sam/treeview-skin.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/treeview/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/treeview/assets/skins/sam/treeview-sprite.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/treeview/assets/skins/sam/treeview-sprite.gif DESTINATION ${OSSDIR}/componentfiles/files/yui/build/treeview/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/treeview/assets/skins/sam/treeview.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/treeview/assets/skins/sam/treeview.css DESTINATION ${OSSDIR}/componentfiles/files/yui/build/treeview/assets/skins/sam
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/uploader/uploader-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/uploader/uploader-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/uploader
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/uploader/uploader-experimental-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/uploader/uploader-experimental-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/uploader
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/uploader/uploader-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/uploader/uploader-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/uploader
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/uploader/uploader.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/uploader/uploader.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/uploader
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/uploader/assets/uploader.swf
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/uploader/assets/uploader.swf DESTINATION ${OSSDIR}/componentfiles/files/yui/build/uploader/assets
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/utilities/utilities.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/utilities/utilities.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/utilities
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/yahoo/yahoo-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/yahoo/yahoo-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/yahoo
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/yahoo/yahoo-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/yahoo/yahoo-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/yahoo
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/yahoo/yahoo.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/yahoo/yahoo.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/yahoo
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/yahoo-dom-event/yahoo-dom-event.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/yahoo-dom-event/yahoo-dom-event.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/yahoo-dom-event
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/yuiloader/yuiloader-debug.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/yuiloader/yuiloader-debug.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/yuiloader
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/yuiloader/yuiloader-min.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/yuiloader/yuiloader-min.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/yuiloader
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/yuiloader/yuiloader.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/yuiloader/yuiloader.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/yuiloader
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/yui/build/yuiloader-dom-event/yuiloader-dom-event.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/yui/build/yuiloader-dom-event/yuiloader-dom-event.js DESTINATION ${OSSDIR}/componentfiles/files/yui/build/yuiloader-dom-event
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/favicon.ico
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/favicon.ico DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/base.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/base.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/blank.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/blank.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/information.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/information.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/cal.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/cal.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/close_wnd.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/close_wnd.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/config.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/config.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/copyurl.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/copyurl.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/downsimple.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/downsimple.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/espbtns_tiled.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/espbtns_tiled.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/folder.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/folder.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/folderopen.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/folderopen.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/form_minus.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/form_minus.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/form_more.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/form_more.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/form_plus.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/form_plus.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/home.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/home.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/join.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/join.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/joinbottom.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/joinbottom.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/keyfile.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/keyfile.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/hpccsystemsECLWatch.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/hpccsystemsECLWatch.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/hpccsystemsWsECL.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/hpccsystemsWsECL.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/line.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/line.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/loading.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/loading.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/locked.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/locked.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/menu1.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/menu1.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/menudown.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/menudown.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/menuup.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/menuup.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/minus.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/minus.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/minusbottom.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/minusbottom.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/next.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/next.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/next_year.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/next_year.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/outlet.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/outlet.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/page.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/page.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/pixel.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/pixel.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/plus.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/plus.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/plusbottom.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/plusbottom.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/prev.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/prev.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/prev_year.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/prev_year.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/refresh.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/refresh.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/refreshdisabled.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/refreshdisabled.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/refreshenabled.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/refreshenabled.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/relogin.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/relogin.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/reqxml.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/reqxml.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/respxml.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/respxml.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/selectall.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/selectall.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/tab_bottom.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/tab_bottom.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/topurl.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/topurl.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/unselectall.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/unselectall.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/upsimple.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/upsimple.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/wsdl.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/wsdl.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/xsd.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/xsd.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/zip.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/zip.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/zipbig.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/zipbig.gif DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/accept.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/accept.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/bullet_green.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/bullet_green.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/bullet_orange.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/bullet_orange.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/cog.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/cog.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/delete.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/delete.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/folder_table.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/folder_table.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/control_pause_blue.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/control_pause_blue.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/bullet_error.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/bullet_error.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/bullet_red.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/bullet_red.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/bullet_white.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/bullet_white.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/img/bullet_yellow.png
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/bullet_yellow.png DESTINATION ${OSSDIR}/componentfiles/files/img
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )    
+### name=files/logo/ln_small.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/logo/ln_small.gif DESTINATION ${OSSDIR}/componentfiles/files/logo
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/logo/seisint_small.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/logo/seisint_small.gif DESTINATION ${OSSDIR}/componentfiles/files/logo
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/logo/slogo.gif
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/logo/slogo.gif DESTINATION ${OSSDIR}/componentfiles/files/logo
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/scripts/espdefault.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/scripts/espdefault.js DESTINATION ${OSSDIR}/componentfiles/files/scripts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )    
+### name=files/scripts/CMultiSelect.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/scripts/CMultiSelect.js DESTINATION ${OSSDIR}/componentfiles/files/scripts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/scripts/bpsreport.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/scripts/bpsreport.js DESTINATION ${OSSDIR}/componentfiles/files/scripts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/scripts/builder.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/scripts/builder.js DESTINATION ${OSSDIR}/componentfiles/files/scripts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/scripts/controls.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/scripts/controls.js DESTINATION ${OSSDIR}/componentfiles/files/scripts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/scripts/dragdrop.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/scripts/dragdrop.js DESTINATION ${OSSDIR}/componentfiles/files/scripts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/scripts/effects.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/scripts/effects.js DESTINATION ${OSSDIR}/componentfiles/files/scripts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/scripts/fixedTables.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/scripts/fixedTables.js DESTINATION ${OSSDIR}/componentfiles/files/scripts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/scripts/graphgvc.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/scripts/graphgvc.js DESTINATION ${OSSDIR}/componentfiles/files/scripts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/scripts/multiselect.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/scripts/multiselect.js DESTINATION ${OSSDIR}/componentfiles/files/scripts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/scripts/objtree.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/scripts/objtree.js DESTINATION ${OSSDIR}/componentfiles/files/scripts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/scripts/prototype.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/scripts/prototype.js DESTINATION ${OSSDIR}/componentfiles/files/scripts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/scripts/range.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/scripts/range.js DESTINATION ${OSSDIR}/componentfiles/files/scripts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/scripts/timer.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/scripts/timer.js DESTINATION ${OSSDIR}/componentfiles/files/scripts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/scripts/slider.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/scripts/slider.js DESTINATION ${OSSDIR}/componentfiles/files/scripts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/scripts/prototype_helpers.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/scripts/prototype_helpers.js DESTINATION ${OSSDIR}/componentfiles/files/scripts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/scripts/rightSideBar.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/scripts/rightSideBar.js DESTINATION ${OSSDIR}/componentfiles/files/scripts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/scripts/scriptaculous.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/scripts/scriptaculous.js DESTINATION ${OSSDIR}/componentfiles/files/scripts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/scripts/sortabletable.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/scripts/sortabletable.js DESTINATION ${OSSDIR}/componentfiles/files/scripts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/scripts/tabularForm.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/scripts/tabularForm.js DESTINATION ${OSSDIR}/componentfiles/files/scripts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/scripts/tooltip.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/scripts/tooltip.js DESTINATION ${OSSDIR}/componentfiles/files/scripts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/scripts/tree.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/scripts/tree.js DESTINATION ${OSSDIR}/componentfiles/files/scripts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/scripts/tree_template.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/scripts/tree_template.js DESTINATION ${OSSDIR}/componentfiles/files/scripts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/scripts/ui_engine.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/scripts/ui_engine.js DESTINATION ${OSSDIR}/componentfiles/files/scripts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/css/espdefault.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/css/espdefault.css DESTINATION ${OSSDIR}/componentfiles/files/css
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/css/eclwatch.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/css/eclwatch.css DESTINATION ${OSSDIR}/componentfiles/files/css
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/css/graph.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/css/graph.css DESTINATION ${OSSDIR}/componentfiles/files/css
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/css/winclassic.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/css/winclassic.css DESTINATION ${OSSDIR}/componentfiles/files/css
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/css/headerFooter.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/css/headerFooter.css DESTINATION ${OSSDIR}/componentfiles/files/css
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/css/list.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/css/list.css DESTINATION ${OSSDIR}/componentfiles/files/css
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/css/rightSideBar.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/css/rightSideBar.css DESTINATION ${OSSDIR}/componentfiles/files/css
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/css/sortabletable.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/css/sortabletable.css DESTINATION ${OSSDIR}/componentfiles/files/css
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/css/tabs.css
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/css/tabs.css DESTINATION ${OSSDIR}/componentfiles/files/css
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=xslt/appframe.xsl
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/xslt/appframe.xsl DESTINATION ${OSSDIR}/componentfiles/xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=xslt/dict_sort.xsl
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/xslt/dict_sort.xsl DESTINATION ${OSSDIR}/componentfiles/xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=xslt/env2jstree.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/xslt/env2jstree.xslt DESTINATION ${OSSDIR}/componentfiles/xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=xslt/esdl2ecl.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/xslt/esdl2ecl.xslt DESTINATION ${OSSDIR}/componentfiles/xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=xslt/esdl_method.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/xslt/esdl_method.xslt DESTINATION ${OSSDIR}/componentfiles/xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=xslt/espheader.xsl
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/xslt/espheader.xsl DESTINATION ${OSSDIR}/componentfiles/xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=xslt/esxdl2req.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/xslt/esxdl2req.xslt DESTINATION ${OSSDIR}/componentfiles/xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=xslt/esxdl2xsd.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/xslt/esxdl2xsd.xslt DESTINATION ${OSSDIR}/componentfiles/xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=xslt/gen_form.xsl
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/xslt/gen_form.xsl DESTINATION ${OSSDIR}/componentfiles/xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=xslt/multistatus.xsl
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/xslt/multistatus.xsl DESTINATION ${OSSDIR}/componentfiles/xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=xslt/nav.xsl
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/xslt/nav.xsl DESTINATION ${OSSDIR}/componentfiles/xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=xslt/navigation.xsl
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/xslt/navigation.xsl DESTINATION ${OSSDIR}/componentfiles/xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=xslt/soap_page.xsl
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/xslt/soap_page.xsl DESTINATION ${OSSDIR}/componentfiles/xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=xslt/sso_create_session.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/xslt/sso_create_session.xslt DESTINATION ${OSSDIR}/componentfiles/xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=xslt/ui_engine.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/xslt/ui_engine.xslt DESTINATION ${OSSDIR}/componentfiles/xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=xslt/ui_overrides.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/xslt/ui_overrides.xslt DESTINATION ${OSSDIR}/componentfiles/xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=xslt/yuitree.xsl
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/xslt/yuitree.xsl DESTINATION ${OSSDIR}/componentfiles/xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=xslt/xmlformatter.xsl
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/xslt/xmlformatter.xsl DESTINATION ${OSSDIR}/componentfiles/xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/BoolResponse.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/BoolResponse.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/GvcGraph.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/GvcGraph.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/RoxieGVCGraph.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/RoxieGVCGraph.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/RoxieGraph.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/RoxieGraph.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/action.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/action.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/addto_superfile.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/addto_superfile.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/atts.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/atts.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/batchjobdispatch.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/batchjobdispatch.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/batchworkunits.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/batchworkunits.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/batchwuid.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/batchwuid.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/batchwuid_search.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/batchwuid_search.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/bdefault.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/bdefault.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/cluster_info.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/cluster_info.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/date-time.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/date-time.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/def_def_file.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/def_def_file.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/default.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/default.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/dfu.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/dfu.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/dfu_file.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/dfu_file.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/dfu_file_space.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/dfu_file_space.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/dfu_filelist.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/dfu_filelist.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/dfu_fileview.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/dfu_fileview.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/dfu_getdatacolumns.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/dfu_getdatacolumns.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/dfu_progress.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/dfu_progress.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/dfu_search.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/dfu_search.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/dfu_searchdata.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/dfu_searchdata.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/dfu_superedit.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/dfu_superedit.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/dfu_superresult.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/dfu_superresult.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/dfu_viewdata.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/dfu_viewdata.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/dfu_workunits.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/dfu_workunits.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/dfu_wuid.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/dfu_wuid.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/dfusearchresult.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/dfusearchresult.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/dfuwu_search.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/dfuwu_search.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/dfuwuaction_results.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/dfuwuaction_results.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/dim_graph.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/dim_graph.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/dot.xslt
+#Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/dot.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+#    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/dot_update.xslt
+#Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/dot_update.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+#    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/exceptions.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/exceptions.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/exceptions_svg.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/exceptions_svg.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/fs_desprayCopyForm.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/fs_desprayCopyForm.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/fs_sprayForm.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/fs_sprayForm.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/graph.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/graph.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/graphStats.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/graphStats.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/graph_gvc.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/graph_gvc.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/graph_gvc_common.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/graph_gvc_common.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/graphupdate_gvc.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/graphupdate_gvc.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/html.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/html.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/index.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/index.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/indexdisplayinfo.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/indexdisplayinfo.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/jobs_search.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/jobs_search.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/lib.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/lib.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/listroxiequery.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/listroxiequery.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/machines.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/machines.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/oldgraph.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/oldgraph.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/queryfiledetails.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/queryfiledetails.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/queryfilelist.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/queryfilelist.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/queryfilelistdone.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/queryfilelistdone.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/result.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/result.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/result_lib.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/result_lib.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/result_lib1.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/result_lib1.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/result_lib2.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/result_lib2.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/resultxls.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/resultxls.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/roxieclusters.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/roxieclusters.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/roxiefile_search.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/roxiefile_search.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/roxieindexes.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/roxieindexes.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/roxieoriginalfiles.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/roxieoriginalfiles.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/roxiequery.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/roxiequery.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/roxiequery_search.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/roxiequery_search.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/roxiequery_stat_detail.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/roxiequery_stat_detail.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/roxiequery_stat_exception.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/roxiequery_stat_exception.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/roxiequery_stat_exception_detail.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/roxiequery_stat_exception_detail.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/roxiequery_stat_query.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/roxiequery_stat_query.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/roxiequery_stat_report.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/roxiequery_stat_report.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/roxiequery_stat_search.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/roxiequery_stat_search.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/roxiequerydetails.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/roxiequerydetails.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/roxiequerygraph.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/roxiequerygraph.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/roxiequerygvcgraph.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/roxiequerygvcgraph.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/scheduledwus.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/scheduledwus.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/services.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/services.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/clusterprocesses.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/clusterprocesses.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/targetclusters.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/targetclusters.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/showresult.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/showresult.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/table.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/table.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/topology.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/topology.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/tplog.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/tplog.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/tplogdisplay.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/tplogdisplay.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/workunits.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/workunits.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/wuaction_results.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/wuaction_results.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/wuid.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/wuid.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/wuid_jobs.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/wuid_jobs.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/wuid_jobs_sasha.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/wuid_jobs_sasha.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/wuid_search.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/wuid_search.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/wuidcommon.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/wuidcommon.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/wuiddetails.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/wuiddetails.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/xml_def_file.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/xml_def_file.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/xref_build.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/xref_build.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/xref_directories.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/xref_directories.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/xref_errwarn.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/xref_errwarn.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/xref_found.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/xref_found.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/xref_lost.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/xref_lost.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/xref_main.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/xref_main.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/xref_orphan.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/xref_orphan.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/opensave.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/opensave.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/filerelationsearch.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/filerelationsearch.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/filerelationlist.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/filerelationlist.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/WUQuerysets.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/WUQuerysets.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/WUQuerysetQueries.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/WUQuerysetQueries.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/dropzonefile.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/dropzonefile.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/hpccresourcelist.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/hpccresourcelist.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/dropzonefilelist.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/dropzonefilelist.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=esdl_files/ecl.xml
+Install ( FILES ${SCM_GENERATED_DIR}/ecl.xml DESTINATION ${OSSDIR}/componentfiles/esdl_files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=esdl_files/ecldirect.xml
+Install ( FILES ${SCM_GENERATED_DIR}/ecldirect.xml DESTINATION ${OSSDIR}/componentfiles/esdl_files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=esdl_files/ecllib.xml
+Install ( FILES ${SCM_GENERATED_DIR}/ecllib.xml DESTINATION ${OSSDIR}/componentfiles/esdl_files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=esdl_files/esp.xml
+Install ( FILES ${SCM_GENERATED_DIR}/esp.xml DESTINATION ${OSSDIR}/componentfiles/esdl_files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=esdl_files/roxiecommlibscm.xml
+Install ( FILES ${SCM_GENERATED_DIR}/roxiecommlibscm.xml DESTINATION ${OSSDIR}/componentfiles/esdl_files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=esdl_files/roxiemanagerscm.xml
+Install ( FILES ${SCM_GENERATED_DIR}/roxiemanagerscm.xml DESTINATION ${OSSDIR}/componentfiles/esdl_files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=esdl_files/sc2console.xml
+#Install ( FILES ${SCM_GENERATED_DIR}/sc2console.xml DESTINATION ${OSSDIR}/componentfiles/esdl_files
+#    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=esdl_files/ws_config.xml
+Install ( FILES ${SCM_GENERATED_DIR}/ws_config.xml DESTINATION ${OSSDIR}/componentfiles/esdl_files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=esdl_files/ws_dfu.xml
+Install ( FILES ${SCM_GENERATED_DIR}/ws_dfu.xml DESTINATION ${OSSDIR}/componentfiles/esdl_files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=esdl_files/ws_dfuXref.xml
+Install ( FILES ${SCM_GENERATED_DIR}/ws_dfuXref.xml DESTINATION ${OSSDIR}/componentfiles/esdl_files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=esdl_files/ws_ecl_client.xml
+Install ( FILES ${SCM_GENERATED_DIR}/ws_ecl_client.xml DESTINATION ${OSSDIR}/componentfiles/esdl_files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=esdl_files/ws_fileio.xml
+Install ( FILES ${SCM_GENERATED_DIR}/ws_fileio.xml DESTINATION ${OSSDIR}/componentfiles/esdl_files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=esdl_files/ws_fs.xml
+Install ( FILES ${SCM_GENERATED_DIR}/ws_fs.xml DESTINATION ${OSSDIR}/componentfiles/esdl_files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=esdl_files/ws_machine.xml
+Install ( FILES ${SCM_GENERATED_DIR}/ws_machine.xml DESTINATION ${OSSDIR}/componentfiles/esdl_files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=esdl_files/ws_roxie.xml
+Install ( FILES ${SCM_GENERATED_DIR}/ws_roxie.xml DESTINATION ${OSSDIR}/componentfiles/esdl_files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=esdl_files/ws_roxiequery.xml
+Install ( FILES ${SCM_GENERATED_DIR}/ws_roxiequery.xml DESTINATION ${OSSDIR}/componentfiles/esdl_files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=esdl_files/ws_smc.xml
+Install ( FILES ${SCM_GENERATED_DIR}/ws_smc.xml DESTINATION ${OSSDIR}/componentfiles/esdl_files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=esdl_files/ws_topology.xml
+Install ( FILES ${SCM_GENERATED_DIR}/ws_topology.xml DESTINATION ${OSSDIR}/componentfiles/esdl_files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=esdl_files/ws_workunits.xml
+Install ( FILES ${SCM_GENERATED_DIR}/ws_workunits.xml DESTINATION ${OSSDIR}/componentfiles/esdl_files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+
+
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/common/monitoring/preflight DESTINATION ${OSSDIR}/sbin
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+

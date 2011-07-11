@@ -1,0 +1,30 @@
+#!/bin/bash
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+
+ulimit -c unlimited
+
+. ./roxievars
+
+killed () {
+    . ./roxievars
+
+    echo --------------------------
+    echo stopping roxie
+    if [ "$useSSH" = "true" ]; then
+       frunssh slaves "PATH=$PATH LD_LIBRARY_PATH=$LD_LIBRARY_PATH init_stopccd $roxiedir" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries 2>&1 | egrep -v "no process killed"
+    else        
+       frunagent @slaves start "PATH=$PATH LD_LIBRARY_PATH=$LD_LIBRARY_PATH init_stopccd $roxiedir"
+    fi
+    sleep 10 
+    exit 255
+
+}
+
+trap "killed" SIGINT SIGTERM SIGKILL
+logfile="`date +%m_%d_%Y_%H_%M_%S`"
+if [ "$useSSH" = "true" ]; then
+  frunssh slaves "/bin/sh -c 'PATH=$PATH LD_LIBRARY_PATH=$LD_LIBRARY_PATH init_startccd $roxiedir $logfile 1>/dev/null 2>/dev/null &'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries 2>&1
+else
+  frunagent @slaves start "PATH=$PATH LD_LIBRARY_PATH=$LD_LIBRARY_PATH init_startccd $roxiedir $logfile 1>/dev/null 2>/dev/null &"  
+fi
+

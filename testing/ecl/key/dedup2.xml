@@ -1,0 +1,9 @@
+<Dataset name='Result 1'>
+ <Row><g>1</g><l>1a                  </l></Row>
+ <Row><g>1</g><l>1b                  </l></Row>
+ <Row><g>2</g><l>2a                  </l></Row>
+ <Row><g>2</g><l>2b                  </l></Row>
+ <Row><g>3</g><l>3a                  </l></Row>
+ <Row><g>4</g><l>4a                  </l></Row>
+ <Row><g>4</g><l>4b                  </l></Row>
+</Dataset>

@@ -1,0 +1,58 @@
+################################################################################
+#    Copyright (C) 2011 HPCC Systems.
+#
+#    This program is free software: you can redistribute it and/or All rights reserved. This program is NOT PRESENTLY free software: you can NOT redistribute
+#    it under the terms of the GNU Affero General Public License as
+#    published by the Free Software Foundation, either version 3 of the
+#    License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+
+# wsecl Supplementals
+# AuthenticateFeature service=ws_ecl path=WsEclAccess resource=WsEclAccess description=Access to WS ECL service
+# SCHEMA: name=esp_service_wsecl2.xsd method=schema
+### name=@temp/wsecl_onchange.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/configxml/@temp/wsecl_onchange.xslt DESTINATION ${OSSDIR}/componentfiles/configxml/@temp
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=@temp/esp_service_wsecl.xsl method=esp_service_module
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/configxml/@temp/esp_service_wsecl.xsl DESTINATION ${OSSDIR}/componentfiles/configxml/@temp
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+
+### name=@temp/esp_service_wsecl2.xsd method=esp_service_module
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/configxml/esp_service_wsecl2.xsd DESTINATION ${OSSDIR}/componentfiles/configxml
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+
+### name=files/esp_app_tree.html
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/esp_app_tree.html DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+
+### name=xslt/wsecl3_form.xsl
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/xslt/wsecl3_form.xsl DESTINATION ${OSSDIR}/componentfiles/xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+
+### name=xslt/wsecl3_links.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/xslt/wsecl3_links.xslt DESTINATION ${OSSDIR}/componentfiles/xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+
+### name=xslt/wsecl3_tabview.xsl
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/xslt/wsecl3_tabview.xsl DESTINATION ${OSSDIR}/componentfiles/xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+
+### name=xslt/wsecl3_xmltest.xsl
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/xslt/wsecl3_xmltest.xsl DESTINATION ${OSSDIR}/componentfiles/xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+
+### name=xslt/wsecl3_jsontest.xsl
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/xslt/wsecl3_jsontest.xsl DESTINATION ${OSSDIR}/componentfiles/xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+
+### name=xslt/wsecl3_result.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/xslt/wsecl3_result.xslt DESTINATION ${OSSDIR}/componentfiles/xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )

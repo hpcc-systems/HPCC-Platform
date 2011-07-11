@@ -1,0 +1,621 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+
+ESPStruct [nil_remove] DFUWorkunit
+{
+    string ID;
+    string ClusterName;
+    string JobName;
+    string Queue;
+    string User;
+    bool isProtected;
+    int Command;
+    [min_ver("1.03")] string CommandMessage;
+
+    int PercentDone;
+    int SecsLeft;
+    string ProgressMessage;
+    string SummaryMessage;
+    int State;
+
+    string SourceLogicalName;
+
+    string SourceIP;
+    string SourceFilePath;
+    string SourceDali;
+    int SourceRecordSize;
+    int SourceFormat;
+    string RowTag;
+
+    int SourceNumParts;
+    string SourceDirectory;
+
+    string DestLogicalName;
+    string DestGroupName;
+    string DestDirectory;
+
+    string DestIP;
+    string DestFilePath;
+    int DestFormat;
+
+    int DestNumParts;
+    int DestRecordSize;
+    bool Replicate;
+    bool Overwrite;
+    bool Compress;
+
+    string TimeStarted;
+    string TimeStopped;
+    string StateMessage;
+
+    // Monitor
+    string MonitorEventName;
+    bool MonitorSub;                
+    int MonitorShotLimit;
+
+    string SourceDiffKeyName;
+    string DestDiffKeyName;
+    [min_ver("1.03")] bool Archived(false);
+
+    string encrypt;
+    string decrypt;
+};
+
+ESPStruct DFUException
+{
+    int Code;
+    string Message;
+};
+
+ESPStruct [nil_remove] DFUActionResult
+{
+    string ID;
+    string Action;
+    string Result;
+};
+
+ESPrequest 
+[
+]
+DFUWUSearchRequest
+{
+};
+
+ESPresponse 
+[
+   exceptions_inline
+]
+DFUWUSearchResponse
+{
+    ESParray<string, ClusterName> ClusterNames;
+};
+
+
+ESPrequest GetDFUWorkunits
+{
+    string Owner;
+    string Cluster;
+    string StateReq;
+    [min_ver("1.03")] string Type;
+    [min_ver("1.03")] string Jobname;
+
+    int64 PageSize;
+    int CurrentPage; //Not used
+    [min_ver("1.01")] int64 PageStartFrom(-1);
+    string Sortby;
+    bool Descending(false);
+};
+
+ESPresponse [encode(0), exceptions_inline]
+GetDFUWorkunitsResponse
+{
+    ESParray<ESPstruct DFUWorkunit> results;
+
+    [min_ver("1.03")] string Type;
+    string Owner;
+    string Cluster;
+    string StateReq;
+
+    int64 PageSize;
+    int64 PrevPage;
+    int64 NextPage;
+    [min_ver("1.01")] int64 LastPage(-1);
+    int64 NumWUs;
+    [min_ver("1.01")] int64 PageStartFrom(-1);
+    [min_ver("1.01")] int64 PageEndAt;
+    bool First(true);
+    string Sortby;
+    bool Descending(false);
+    string BasicQuery;
+    string Filters;
+
+ };
+
+ESPrequest [exceptions_inline] ProgressRequest
+{
+    string wuid;
+};
+
+ESPresponse [encode(0), exceptions_inline] ProgressResponse
+{
+    string wuid;
+    int PercentDone;
+    int SecsLeft;
+    int KbPerSecAve;
+    int KbPerSec;
+    int SlavesDone;
+    string TimeTaken;
+    string ProgressMessage;
+    string SummaryMessage;
+    string State;
+};
+
+ESPrequest GetDFUWorkunit
+{
+    string wuid;
+};
+
+ESPresponse [exceptions_inline]
+GetDFUWorkunitResponse
+{
+    ESPstruct DFUWorkunit result;
+    int  AutoRefresh(0);
+};
+
+ESPrequest CreateDFUWorkunit
+{
+};
+
+ESPresponse [exceptions_inline]
+CreateDFUWorkunitResponse
+{
+    ESPstruct DFUWorkunit result;
+};
+
+ESPrequest UpdateDFUWorkunit
+{
+    ESPstruct DFUWorkunit wu;
+    string ClusterOrig;
+    string JobNameOrig;
+    bool isProtectedOrig;
+    int StateOrig;
+};
+
+ESPresponse [exceptions_inline]
+UpdateDFUWorkunitResponse
+{
+};
+
+ESPrequest DeleteDFUWorkunit
+{
+    string wuid;
+};
+
+ESPresponse [exceptions_inline]
+DeleteDFUWorkunitResponse
+{
+    bool result;
+};
+
+ESPrequest DeleteDFUWorkunits
+{
+    ESParray<string> wuids;
+};
+
+ESPresponse [exceptions_inline]
+DeleteDFUWorkunitsResponse
+{
+};
+
+ESPrequest DFUWorkunitsActionRequest
+{
+    ESParray<string> wuids;
+    string Type;
+};
+
+ESPresponse [exceptions_inline] DFUWorkunitsActionResponse
+{
+    string FirstColumn("WUID");
+    ESParray<ESPstruct DFUActionResult> DFUActionResults;
+};
+
+ESPrequest SubmitDFUWorkunit
+{
+    string wuid;
+};
+
+ESPresponse [exceptions_inline] 
+SubmitDFUWorkunitResponse
+{
+};
+
+ESPrequest AbortDFUWorkunit
+{
+    string wuid;
+};
+
+ESPresponse [exceptions_inline] 
+AbortDFUWorkunitResponse
+{
+};
+
+ESPrequest GetDFUExceptions
+{
+    string wuid;
+};
+
+ESPresponse [exceptions_inline] 
+GetDFUExceptionsResponse
+{
+    ESParray<ESPstruct DFUException> result;
+};
+
+ESPrequest [nil_remove] SprayFixed
+{
+    string sourceIP;
+    string sourcePath;
+    binary srcxml;
+    int sourceRecordSize;
+
+    string destGroup;
+    string destLogicalName;
+    bool   overwrite;
+    bool   replicate;
+    int    ReplicateOffset(1);
+
+    int    maxConnections;
+    int    throttle;
+    int    transferBufferSize;
+
+    string prefix;
+    bool   nosplit(false);
+    bool   norecover(false);
+    bool   compress(false);
+    bool   push(false);
+    bool   pull(false);
+
+    string encrypt;
+    string decrypt;
+    bool   wrap(false);
+
+};
+
+ESPresponse [exceptions_inline] 
+SprayFixedResponse 
+{
+    string wuid;
+};
+
+ESPrequest [nil_remove] SprayVariable
+{
+    string sourceIP;
+    string sourcePath;
+    binary srcxml;
+    
+    int sourceMaxRecordSize;
+    int sourceFormat;
+    string sourceCsvSeparate;
+    string sourceCsvTerminate;
+    string sourceCsvQuote;
+    string sourceRowTag;
+
+    string destGroup;
+    string destLogicalName;
+    bool   overwrite;
+    bool   replicate;
+    int    ReplicateOffset(1);
+
+    int    maxConnections;
+    int    throttle;    
+    int    transferBufferSize;
+
+    string prefix;
+    bool   nosplit(false);
+    bool   norecover(false);    
+    bool   compress(false);
+    bool   push(false);
+    bool   pull(false);
+
+    string encrypt;
+    string decrypt;
+
+};
+
+ESPresponse [exceptions_inline] 
+SprayResponse 
+{
+    string wuid;
+};
+
+ESPrequest [nil_remove] Replicate
+{
+    string sourceLogicalName;
+    int    replicateOffset(1);
+    string cluster;
+    bool   repeatLast(false);
+    bool   onlyRepeated(false);
+};  
+
+ESPresponse [exceptions_inline] 
+ReplicateResponse
+{
+    string wuid;
+};
+
+ESPrequest Despray
+{
+    string sourceLogicalName;
+
+    string destIP;
+    string destPath;
+    binary dstxml;
+    bool   overwrite;
+
+    int    maxConnections;
+    int    throttle;    
+    int    transferBufferSize;
+
+    string splitprefix;
+    bool   norecover(false);
+    bool   wrap(false);
+    bool   multiCopy(false);
+    [min_ver("1.02")] bool SingleConnection;
+
+    bool   compress(false);
+    string encrypt;
+    string decrypt;
+
+};  
+
+ESPresponse [exceptions_inline] 
+DesprayResponse
+{
+    string wuid;
+};
+
+ESPrequest [nil_remove] Copy
+{
+    string sourceLogicalName;
+    string destGroup;
+    string destGroupRoxie;
+    string destLogicalName;
+    string sourceDali;
+    string srcusername;
+    string srcpassword;
+    bool   overwrite;
+    bool   replicate;
+    int    ReplicateOffset(1);
+
+    int    maxConnections;
+    int    throttle;    
+    int    transferBufferSize;
+    bool   nosplit;
+    bool   norecover(false);
+    bool   compress(false);
+    bool   Wrap(false);
+    bool   Multicopy(false);
+    //bool   Farmers(false);
+    string SourceDiffKeyName;
+    string DestDiffKeyName;
+    bool   superCopy(false);
+    bool   push(false);
+    bool   pull(false);
+    bool   ifnewer(false);
+
+    string encrypt;
+    string decrypt;
+
+};
+
+ESPresponse [exceptions_inline] 
+CopyResponse
+{
+    string result;
+};
+
+ESPrequest EchoDateTime
+{
+    xsdDateTime dt;
+};
+
+ESPresponse EchoDateTimeResponse
+{
+    xsdDateTime result;
+};
+
+ESPrequest Rename
+{
+    string srcname;
+    string dstname;
+    bool   overwrite;
+};
+
+ESPresponse [exceptions_inline] 
+RenameResponse
+{
+    string wuid;
+};
+
+ESPrequest DFUWUFileRequest
+{
+    string Wuid;
+    string Type;
+    string  PlainText;
+};
+
+ESPresponse [exceptions_inline] DFUWUFileResponse
+{
+    [http_content("text/xml")] string file;
+};
+
+ESPrequest FileListRequest
+{
+    string Netaddr;
+    string Path;
+    string Mask;
+    string OS;
+    bool DirectoryOnly(false);
+};
+
+ESPStruct PhysicalFileStruct
+{
+    string name;
+    bool isDir;
+    int64 filesize;
+    string modifiedtime;
+};
+
+ESPresponse [exceptions_inline] FileListResponse
+{
+    string Netaddr;
+    string Path;
+    string Mask;
+    int    OS;
+    bool DirectoryOnly(false);
+    ESParray<ESPStruct PhysicalFileStruct> files;   
+};
+
+ESPrequest OpenSaveRequest
+{
+    string Location;
+    string Path;
+    string Name;
+    string Type;
+    string DateTime;
+    bool BinaryFile(false);
+};
+
+ESPresponse [exceptions_inline] OpenSaveResponse
+{
+    string Location;
+    string Path;
+    string Name;
+    string Type;
+    string DateTime;
+    bool Viewable(true);
+};
+
+ESPrequest DfuMonitorRequest
+{
+    string EventName;
+    string LogicalName;
+    string Ip;
+    string Filename;
+    bool   Sub;
+    int    ShotLimit;
+};
+
+ESPresponse [exceptions_inline] DfuMonitorResponse
+{
+    string wuid;
+};
+
+ESPrequest ShowResultRequest
+{
+    string Result;
+};
+
+ESPresponse [exceptions_inline] ShowResultResponse
+{
+    string Result;
+};
+
+
+ESPStruct [nil_remove] DropZone
+{
+    string Name;
+    string NetAddress;
+    string Path;
+    string Computer;
+    string Linux;                          
+};
+
+ESPrequest DropZoneFilesRequest
+{
+    string NetAddress;
+    string Path;
+    string OS;
+    string Subfolder;
+    bool DirectoryOnly(false);
+};
+
+ESPresponse [exceptions_inline, nil_remove] DropZoneFilesResponse
+{
+    string NetAddress;
+    string Path;
+    int OS;
+
+    ESParray<ESPStruct DropZone> DropZones; 
+    ESParray<ESPStruct PhysicalFileStruct> Files;   
+};
+
+ESPrequest DeleteDropZoneFilesRequest
+{
+    string NetAddress;
+    string Path;
+    string OS;
+
+    ESParray<string> Names;
+};
+
+ESPresponse [exceptions_inline, nil_remove] DeleteDropZoneFilesResponse
+{
+    ESParray<ESPstruct DFUActionResult> DFUActionResults;
+};
+
+ESPservice [
+    version("1.03"), default_client_version("1.03"),
+    exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
+{
+    ESPuses ESPstruct DFUWorkunit;
+    ESPuses ESPstruct DFUException;
+    ESPmethod EchoDateTime(EchoDateTime, EchoDateTimeResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/showresult.xslt")] ShowResult(ShowResultRequest, ShowResultResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/dfuwu_search.xslt")] DFUWUSearch(DFUWUSearchRequest, DFUWUSearchResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/dfu_workunits.xslt")] GetDFUWorkunits(GetDFUWorkunits, GetDFUWorkunitsResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/dfu_wuid.xslt")] GetDFUWorkunit(GetDFUWorkunit, GetDFUWorkunitResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/dfu_progress.xslt")] GetDFUProgress(ProgressRequest, ProgressResponse);
+
+    ESPmethod [resp_xsl_default("/esp/xslt/dfu_wuid.xslt")] CreateDFUWorkunit(CreateDFUWorkunit, CreateDFUWorkunitResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/dfu_wuid.xslt")] UpdateDFUWorkunit(UpdateDFUWorkunit, UpdateDFUWorkunitResponse);
+    ESPmethod DeleteDFUWorkunit(DeleteDFUWorkunit, DeleteDFUWorkunitResponse);
+    ESPmethod DeleteDFUWorkunits(DeleteDFUWorkunits, DeleteDFUWorkunitsResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/dfuwuaction_results.xslt")] DFUWorkunitsAction(DFUWorkunitsActionRequest, DFUWorkunitsActionResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/dfu_wuid.xslt")] SubmitDFUWorkunit(SubmitDFUWorkunit, SubmitDFUWorkunitResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/dfu_wuid.xslt")] AbortDFUWorkunit(AbortDFUWorkunit, AbortDFUWorkunitResponse);
+    ESPmethod GetDFUExceptions(GetDFUExceptions, GetDFUExceptionsResponse);
+
+    ESPmethod SprayFixed(SprayFixed, SprayFixedResponse);
+    ESPmethod SprayVariable(SprayVariable, SprayResponse);
+    ESPmethod Despray(Despray, DesprayResponse);
+    ESPmethod Copy(Copy, CopyResponse);
+    ESPmethod Rename(Rename, RenameResponse);
+    ESPmethod Replicate(Replicate, ReplicateResponse);
+    ESPmethod DFUWUFile(DFUWUFileRequest, DFUWUFileResponse);
+    ESPmethod DfuMonitor(DfuMonitorRequest, DfuMonitorResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/dfu_filelist.xslt")] FileList(FileListRequest, FileListResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/opensave.xslt")] OpenSave(OpenSaveRequest, OpenSaveResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/dropzonefile.xslt")] DropZoneFiles(DropZoneFilesRequest, DropZoneFilesResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/dfuwuaction_results.xslt")] DeleteDropZoneFiles(DeleteDropZoneFilesRequest, DFUWorkunitsActionResponse);
+};
+
+SCMexportdef(FileSpray);
+
+SCMapi(FileSpray) IClientFileSpray *createFileSprayClient();
+

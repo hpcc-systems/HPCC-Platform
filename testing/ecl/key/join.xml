@@ -1,0 +1,614 @@
+<Dataset name='Result 1'>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>CLAIRE    BAYLISS   1                        </leftrec><rightrec>CLAIRE    BAYLISS   1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>CLAIRE    BAYLISS   2                        </leftrec><rightrec>CLAIRE    BAYLISS   2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>CLAIRE    BAYLISS   3                        </leftrec><rightrec>CLAIRE    BAYLISS   3                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>CLAIRE    BAYLISS   4                        </leftrec><rightrec>CLAIRE    BAYLISS   4                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>CLAIRE    BILLINGTON1                        </leftrec><rightrec>CLAIRE    BILLINGTON1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>CLAIRE    BILLINGTON2                        </leftrec><rightrec>CLAIRE    BILLINGTON2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>CLAIRE    BILLINGTON3                        </leftrec><rightrec>CLAIRE    BILLINGTON3                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>CLAIRE    BILLINGTON4                        </leftrec><rightrec>CLAIRE    BILLINGTON4                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>CLAIRE    DOLSON    1                        </leftrec><rightrec>CLAIRE    DOLSON    1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>CLAIRE    DOLSON    2                        </leftrec><rightrec>CLAIRE    DOLSON    2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>CLAIRE    DOLSON    3                        </leftrec><rightrec>CLAIRE    DOLSON    3                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>CLAIRE    DOLSON    4                        </leftrec><rightrec>CLAIRE    DOLSON    4                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>CLAIRE    SMITH     1                        </leftrec><rightrec>CLAIRE    SMITH     1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>CLAIRE    SMITH     2                        </leftrec><rightrec>CLAIRE    SMITH     2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>CLAIRE    SMITH     3                        </leftrec><rightrec>CLAIRE    SMITH     3                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>CLAIRE    SMITH     4                        </leftrec><rightrec>CLAIRE    SMITH     4                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>KIMBERLY  BAYLISS   1                        </leftrec><rightrec>KIMBERLY  BAYLISS   1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>KIMBERLY  BAYLISS   2                        </leftrec><rightrec>KIMBERLY  BAYLISS   2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>KIMBERLY  BAYLISS   3                        </leftrec><rightrec>KIMBERLY  BAYLISS   3                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>KIMBERLY  BAYLISS   4                        </leftrec><rightrec>KIMBERLY  BAYLISS   4                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>KIMBERLY  BILLINGTON1                        </leftrec><rightrec>KIMBERLY  BILLINGTON1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>KIMBERLY  BILLINGTON2                        </leftrec><rightrec>KIMBERLY  BILLINGTON2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>KIMBERLY  BILLINGTON3                        </leftrec><rightrec>KIMBERLY  BILLINGTON3                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>KIMBERLY  BILLINGTON4                        </leftrec><rightrec>KIMBERLY  BILLINGTON4                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>KIMBERLY  DOLSON    1                        </leftrec><rightrec>KIMBERLY  DOLSON    1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>KIMBERLY  DOLSON    2                        </leftrec><rightrec>KIMBERLY  DOLSON    2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>KIMBERLY  DOLSON    3                        </leftrec><rightrec>KIMBERLY  DOLSON    3                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>KIMBERLY  DOLSON    4                        </leftrec><rightrec>KIMBERLY  DOLSON    4                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>KIMBERLY  SMITH     1                        </leftrec><rightrec>KIMBERLY  SMITH     1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>KIMBERLY  SMITH     2                        </leftrec><rightrec>KIMBERLY  SMITH     2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>KIMBERLY  SMITH     3                        </leftrec><rightrec>KIMBERLY  SMITH     3                        </rightrec></Row>
+ <Row><name>Unkeyed: simple inner                        </name><leftrec>KIMBERLY  SMITH     4                        </leftrec><rightrec>KIMBERLY  SMITH     4                        </rightrec></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>DAVID     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>DAVID     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>DAVID     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>DAVID     BAYLISS   4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>DAVID     BILLINGTON1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>DAVID     BILLINGTON2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>DAVID     BILLINGTON3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>DAVID     BILLINGTON4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>DAVID     DOLSON    1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>DAVID     DOLSON    2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>DAVID     DOLSON    3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>DAVID     DOLSON    4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>DAVID     SMITH     1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>DAVID     SMITH     2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>DAVID     SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>DAVID     SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>KELLY     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>KELLY     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>KELLY     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>KELLY     BAYLISS   4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>KELLY     BILLINGTON1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>KELLY     BILLINGTON2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>KELLY     BILLINGTON3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>KELLY     BILLINGTON4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>KELLY     DOLSON    1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>KELLY     DOLSON    2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>KELLY     DOLSON    3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>KELLY     DOLSON    4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>KELLY     SMITH     1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>KELLY     SMITH     2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>KELLY     SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple only                         </name><leftrec>KELLY     SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>CLAIRE    BAYLISS   1                        </leftrec><rightrec>CLAIRE    BAYLISS   1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>CLAIRE    BAYLISS   2                        </leftrec><rightrec>CLAIRE    BAYLISS   2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>CLAIRE    BAYLISS   3                        </leftrec><rightrec>CLAIRE    BAYLISS   3                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>CLAIRE    BAYLISS   4                        </leftrec><rightrec>CLAIRE    BAYLISS   4                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>CLAIRE    BILLINGTON1                        </leftrec><rightrec>CLAIRE    BILLINGTON1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>CLAIRE    BILLINGTON2                        </leftrec><rightrec>CLAIRE    BILLINGTON2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>CLAIRE    BILLINGTON3                        </leftrec><rightrec>CLAIRE    BILLINGTON3                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>CLAIRE    BILLINGTON4                        </leftrec><rightrec>CLAIRE    BILLINGTON4                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>CLAIRE    DOLSON    1                        </leftrec><rightrec>CLAIRE    DOLSON    1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>CLAIRE    DOLSON    2                        </leftrec><rightrec>CLAIRE    DOLSON    2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>CLAIRE    DOLSON    3                        </leftrec><rightrec>CLAIRE    DOLSON    3                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>CLAIRE    DOLSON    4                        </leftrec><rightrec>CLAIRE    DOLSON    4                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>CLAIRE    SMITH     1                        </leftrec><rightrec>CLAIRE    SMITH     1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>CLAIRE    SMITH     2                        </leftrec><rightrec>CLAIRE    SMITH     2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>CLAIRE    SMITH     3                        </leftrec><rightrec>CLAIRE    SMITH     3                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>CLAIRE    SMITH     4                        </leftrec><rightrec>CLAIRE    SMITH     4                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>DAVID     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>DAVID     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>DAVID     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>DAVID     BAYLISS   4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>DAVID     BILLINGTON1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>DAVID     BILLINGTON2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>DAVID     BILLINGTON3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>DAVID     BILLINGTON4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>DAVID     DOLSON    1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>DAVID     DOLSON    2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>DAVID     DOLSON    3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>DAVID     DOLSON    4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>DAVID     SMITH     1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>DAVID     SMITH     2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>DAVID     SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>DAVID     SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KELLY     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KELLY     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KELLY     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KELLY     BAYLISS   4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KELLY     BILLINGTON1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KELLY     BILLINGTON2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KELLY     BILLINGTON3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KELLY     BILLINGTON4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KELLY     DOLSON    1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KELLY     DOLSON    2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KELLY     DOLSON    3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KELLY     DOLSON    4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KELLY     SMITH     1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KELLY     SMITH     2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KELLY     SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KELLY     SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KIMBERLY  BAYLISS   1                        </leftrec><rightrec>KIMBERLY  BAYLISS   1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KIMBERLY  BAYLISS   2                        </leftrec><rightrec>KIMBERLY  BAYLISS   2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KIMBERLY  BAYLISS   3                        </leftrec><rightrec>KIMBERLY  BAYLISS   3                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KIMBERLY  BAYLISS   4                        </leftrec><rightrec>KIMBERLY  BAYLISS   4                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KIMBERLY  BILLINGTON1                        </leftrec><rightrec>KIMBERLY  BILLINGTON1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KIMBERLY  BILLINGTON2                        </leftrec><rightrec>KIMBERLY  BILLINGTON2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KIMBERLY  BILLINGTON3                        </leftrec><rightrec>KIMBERLY  BILLINGTON3                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KIMBERLY  BILLINGTON4                        </leftrec><rightrec>KIMBERLY  BILLINGTON4                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KIMBERLY  DOLSON    1                        </leftrec><rightrec>KIMBERLY  DOLSON    1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KIMBERLY  DOLSON    2                        </leftrec><rightrec>KIMBERLY  DOLSON    2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KIMBERLY  DOLSON    3                        </leftrec><rightrec>KIMBERLY  DOLSON    3                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KIMBERLY  DOLSON    4                        </leftrec><rightrec>KIMBERLY  DOLSON    4                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KIMBERLY  SMITH     1                        </leftrec><rightrec>KIMBERLY  SMITH     1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KIMBERLY  SMITH     2                        </leftrec><rightrec>KIMBERLY  SMITH     2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KIMBERLY  SMITH     3                        </leftrec><rightrec>KIMBERLY  SMITH     3                        </rightrec></Row>
+ <Row><name>Unkeyed: simple outer                        </name><leftrec>KIMBERLY  SMITH     4                        </leftrec><rightrec>KIMBERLY  SMITH     4                        </rightrec></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><name>Unkeyed: simple skip                         </name><leftrec>CLAIRE    BAYLISS   1                        </leftrec><rightrec>CLAIRE    BAYLISS   1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip                         </name><leftrec>CLAIRE    BAYLISS   2                        </leftrec><rightrec>CLAIRE    BAYLISS   2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip                         </name><leftrec>CLAIRE    BAYLISS   3                        </leftrec><rightrec>CLAIRE    BAYLISS   3                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip                         </name><leftrec>CLAIRE    BAYLISS   4                        </leftrec><rightrec>CLAIRE    BAYLISS   4                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip                         </name><leftrec>CLAIRE    BILLINGTON1                        </leftrec><rightrec>CLAIRE    BILLINGTON1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip                         </name><leftrec>CLAIRE    BILLINGTON2                        </leftrec><rightrec>CLAIRE    BILLINGTON2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip                         </name><leftrec>CLAIRE    BILLINGTON3                        </leftrec><rightrec>CLAIRE    BILLINGTON3                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip                         </name><leftrec>CLAIRE    BILLINGTON4                        </leftrec><rightrec>CLAIRE    BILLINGTON4                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip                         </name><leftrec>CLAIRE    DOLSON    1                        </leftrec><rightrec>CLAIRE    DOLSON    1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip                         </name><leftrec>CLAIRE    DOLSON    2                        </leftrec><rightrec>CLAIRE    DOLSON    2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip                         </name><leftrec>CLAIRE    DOLSON    3                        </leftrec><rightrec>CLAIRE    DOLSON    3                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip                         </name><leftrec>CLAIRE    DOLSON    4                        </leftrec><rightrec>CLAIRE    DOLSON    4                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip                         </name><leftrec>CLAIRE    SMITH     1                        </leftrec><rightrec>CLAIRE    SMITH     1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip                         </name><leftrec>CLAIRE    SMITH     2                        </leftrec><rightrec>CLAIRE    SMITH     2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip                         </name><leftrec>CLAIRE    SMITH     3                        </leftrec><rightrec>CLAIRE    SMITH     3                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip                         </name><leftrec>CLAIRE    SMITH     4                        </leftrec><rightrec>CLAIRE    SMITH     4                        </rightrec></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>DAVID     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>DAVID     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>DAVID     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>DAVID     BAYLISS   4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>DAVID     BILLINGTON1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>DAVID     BILLINGTON2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>DAVID     BILLINGTON3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>DAVID     BILLINGTON4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>DAVID     DOLSON    1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>DAVID     DOLSON    2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>DAVID     DOLSON    3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>DAVID     DOLSON    4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>DAVID     SMITH     1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>DAVID     SMITH     2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>DAVID     SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>DAVID     SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>KELLY     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>KELLY     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>KELLY     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>KELLY     BAYLISS   4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>KELLY     BILLINGTON1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>KELLY     BILLINGTON2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>KELLY     BILLINGTON3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>KELLY     BILLINGTON4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>KELLY     DOLSON    1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>KELLY     DOLSON    2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>KELLY     DOLSON    3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>KELLY     DOLSON    4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>KELLY     SMITH     1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>KELLY     SMITH     2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>KELLY     SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left only              </name><leftrec>KELLY     SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>CLAIRE    BAYLISS   1                        </leftrec><rightrec>CLAIRE    BAYLISS   1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>CLAIRE    BAYLISS   2                        </leftrec><rightrec>CLAIRE    BAYLISS   2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>CLAIRE    BAYLISS   3                        </leftrec><rightrec>CLAIRE    BAYLISS   3                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>CLAIRE    BAYLISS   4                        </leftrec><rightrec>CLAIRE    BAYLISS   4                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>CLAIRE    BILLINGTON1                        </leftrec><rightrec>CLAIRE    BILLINGTON1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>CLAIRE    BILLINGTON2                        </leftrec><rightrec>CLAIRE    BILLINGTON2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>CLAIRE    BILLINGTON3                        </leftrec><rightrec>CLAIRE    BILLINGTON3                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>CLAIRE    BILLINGTON4                        </leftrec><rightrec>CLAIRE    BILLINGTON4                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>CLAIRE    DOLSON    1                        </leftrec><rightrec>CLAIRE    DOLSON    1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>CLAIRE    DOLSON    2                        </leftrec><rightrec>CLAIRE    DOLSON    2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>CLAIRE    DOLSON    3                        </leftrec><rightrec>CLAIRE    DOLSON    3                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>CLAIRE    DOLSON    4                        </leftrec><rightrec>CLAIRE    DOLSON    4                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>CLAIRE    SMITH     1                        </leftrec><rightrec>CLAIRE    SMITH     1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>CLAIRE    SMITH     2                        </leftrec><rightrec>CLAIRE    SMITH     2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>CLAIRE    SMITH     3                        </leftrec><rightrec>CLAIRE    SMITH     3                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>CLAIRE    SMITH     4                        </leftrec><rightrec>CLAIRE    SMITH     4                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>DAVID     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>DAVID     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>DAVID     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>DAVID     BAYLISS   4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>DAVID     BILLINGTON1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>DAVID     BILLINGTON2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>DAVID     BILLINGTON3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>DAVID     BILLINGTON4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>DAVID     DOLSON    1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>DAVID     DOLSON    2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>DAVID     DOLSON    3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>DAVID     DOLSON    4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>DAVID     SMITH     1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>DAVID     SMITH     2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>DAVID     SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>DAVID     SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>KELLY     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>KELLY     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>KELLY     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>KELLY     BAYLISS   4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>KELLY     BILLINGTON1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>KELLY     BILLINGTON2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>KELLY     BILLINGTON3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>KELLY     BILLINGTON4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>KELLY     DOLSON    1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>KELLY     DOLSON    2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>KELLY     DOLSON    3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>KELLY     DOLSON    4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>KELLY     SMITH     1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>KELLY     SMITH     2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>KELLY     SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: simple skip, left outer             </name><leftrec>KELLY     SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    BAYLISS   1                        </leftrec><rightrec>CLAIRE    BAYLISS   1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    BAYLISS   1                        </leftrec><rightrec>CLAIRE    BAYLISS   2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    BAYLISS   2                        </leftrec><rightrec>CLAIRE    BAYLISS   1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    BAYLISS   2                        </leftrec><rightrec>CLAIRE    BAYLISS   2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    BAYLISS   3                        </leftrec><rightrec>CLAIRE    BAYLISS   1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    BAYLISS   3                        </leftrec><rightrec>CLAIRE    BAYLISS   2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    BAYLISS   4                        </leftrec><rightrec>CLAIRE    BAYLISS   1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    BAYLISS   4                        </leftrec><rightrec>CLAIRE    BAYLISS   2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    BILLINGTON1                        </leftrec><rightrec>CLAIRE    BILLINGTON1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    BILLINGTON1                        </leftrec><rightrec>CLAIRE    BILLINGTON2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    BILLINGTON2                        </leftrec><rightrec>CLAIRE    BILLINGTON1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    BILLINGTON2                        </leftrec><rightrec>CLAIRE    BILLINGTON2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    BILLINGTON3                        </leftrec><rightrec>CLAIRE    BILLINGTON1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    BILLINGTON3                        </leftrec><rightrec>CLAIRE    BILLINGTON2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    BILLINGTON4                        </leftrec><rightrec>CLAIRE    BILLINGTON1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    BILLINGTON4                        </leftrec><rightrec>CLAIRE    BILLINGTON2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    DOLSON    1                        </leftrec><rightrec>CLAIRE    DOLSON    1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    DOLSON    1                        </leftrec><rightrec>CLAIRE    DOLSON    2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    DOLSON    2                        </leftrec><rightrec>CLAIRE    DOLSON    1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    DOLSON    2                        </leftrec><rightrec>CLAIRE    DOLSON    2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    DOLSON    3                        </leftrec><rightrec>CLAIRE    DOLSON    1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    DOLSON    3                        </leftrec><rightrec>CLAIRE    DOLSON    2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    DOLSON    4                        </leftrec><rightrec>CLAIRE    DOLSON    1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    DOLSON    4                        </leftrec><rightrec>CLAIRE    DOLSON    2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    SMITH     1                        </leftrec><rightrec>CLAIRE    SMITH     1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    SMITH     1                        </leftrec><rightrec>CLAIRE    SMITH     2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    SMITH     2                        </leftrec><rightrec>CLAIRE    SMITH     1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    SMITH     2                        </leftrec><rightrec>CLAIRE    SMITH     2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    SMITH     3                        </leftrec><rightrec>CLAIRE    SMITH     1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    SMITH     3                        </leftrec><rightrec>CLAIRE    SMITH     2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    SMITH     4                        </leftrec><rightrec>CLAIRE    SMITH     1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>CLAIRE    SMITH     4                        </leftrec><rightrec>CLAIRE    SMITH     2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  BAYLISS   1                        </leftrec><rightrec>KIMBERLY  BAYLISS   1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  BAYLISS   1                        </leftrec><rightrec>KIMBERLY  BAYLISS   2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  BAYLISS   2                        </leftrec><rightrec>KIMBERLY  BAYLISS   1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  BAYLISS   2                        </leftrec><rightrec>KIMBERLY  BAYLISS   2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  BAYLISS   3                        </leftrec><rightrec>KIMBERLY  BAYLISS   1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  BAYLISS   3                        </leftrec><rightrec>KIMBERLY  BAYLISS   2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  BAYLISS   4                        </leftrec><rightrec>KIMBERLY  BAYLISS   1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  BAYLISS   4                        </leftrec><rightrec>KIMBERLY  BAYLISS   2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  BILLINGTON1                        </leftrec><rightrec>KIMBERLY  BILLINGTON1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  BILLINGTON1                        </leftrec><rightrec>KIMBERLY  BILLINGTON2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  BILLINGTON2                        </leftrec><rightrec>KIMBERLY  BILLINGTON1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  BILLINGTON2                        </leftrec><rightrec>KIMBERLY  BILLINGTON2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  BILLINGTON3                        </leftrec><rightrec>KIMBERLY  BILLINGTON1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  BILLINGTON3                        </leftrec><rightrec>KIMBERLY  BILLINGTON2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  BILLINGTON4                        </leftrec><rightrec>KIMBERLY  BILLINGTON1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  BILLINGTON4                        </leftrec><rightrec>KIMBERLY  BILLINGTON2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  DOLSON    1                        </leftrec><rightrec>KIMBERLY  DOLSON    1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  DOLSON    1                        </leftrec><rightrec>KIMBERLY  DOLSON    2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  DOLSON    2                        </leftrec><rightrec>KIMBERLY  DOLSON    1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  DOLSON    2                        </leftrec><rightrec>KIMBERLY  DOLSON    2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  DOLSON    3                        </leftrec><rightrec>KIMBERLY  DOLSON    1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  DOLSON    3                        </leftrec><rightrec>KIMBERLY  DOLSON    2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  DOLSON    4                        </leftrec><rightrec>KIMBERLY  DOLSON    1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  DOLSON    4                        </leftrec><rightrec>KIMBERLY  DOLSON    2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  SMITH     1                        </leftrec><rightrec>KIMBERLY  SMITH     1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  SMITH     1                        </leftrec><rightrec>KIMBERLY  SMITH     2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  SMITH     2                        </leftrec><rightrec>KIMBERLY  SMITH     1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  SMITH     2                        </leftrec><rightrec>KIMBERLY  SMITH     2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  SMITH     3                        </leftrec><rightrec>KIMBERLY  SMITH     1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  SMITH     3                        </leftrec><rightrec>KIMBERLY  SMITH     2                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  SMITH     4                        </leftrec><rightrec>KIMBERLY  SMITH     1                        </rightrec></Row>
+ <Row><name>Unkeyed: simple keep(2)                      </name><leftrec>KIMBERLY  SMITH     4                        </leftrec><rightrec>KIMBERLY  SMITH     2                        </rightrec></Row>
+</Dataset>
+<Dataset name='Result 8'>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><name>Unkeyed: simple choosen                      </name><leftrec>CLAIRE    BAYLISS   1                        </leftrec><rightrec>CLAIRE    BAYLISS   1                        </rightrec></Row>
+</Dataset>
+<Dataset name='Result 10'>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>CLAIRE    BAYLISS   1                        </leftrec><rightrec>CLAIRE    BAYLISS   1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>CLAIRE    BAYLISS   2                        </leftrec><rightrec>CLAIRE    BAYLISS   2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>CLAIRE    BAYLISS   3                        </leftrec><rightrec>CLAIRE    BAYLISS   3                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>CLAIRE    BAYLISS   4                        </leftrec><rightrec>CLAIRE    BAYLISS   4                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>CLAIRE    BILLINGTON1                        </leftrec><rightrec>CLAIRE    BILLINGTON1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>CLAIRE    BILLINGTON2                        </leftrec><rightrec>CLAIRE    BILLINGTON2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>CLAIRE    BILLINGTON3                        </leftrec><rightrec>CLAIRE    BILLINGTON3                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>CLAIRE    BILLINGTON4                        </leftrec><rightrec>CLAIRE    BILLINGTON4                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>CLAIRE    DOLSON    1                        </leftrec><rightrec>CLAIRE    DOLSON    1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>CLAIRE    DOLSON    2                        </leftrec><rightrec>CLAIRE    DOLSON    2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>CLAIRE    DOLSON    3                        </leftrec><rightrec>CLAIRE    DOLSON    3                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>CLAIRE    DOLSON    4                        </leftrec><rightrec>CLAIRE    DOLSON    4                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>CLAIRE    SMITH     1                        </leftrec><rightrec>CLAIRE    SMITH     1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>CLAIRE    SMITH     2                        </leftrec><rightrec>CLAIRE    SMITH     2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>CLAIRE    SMITH     3                        </leftrec><rightrec>CLAIRE    SMITH     3                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>CLAIRE    SMITH     4                        </leftrec><rightrec>CLAIRE    SMITH     4                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>KIMBERLY  BAYLISS   1                        </leftrec><rightrec>KIMBERLY  BAYLISS   1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>KIMBERLY  BAYLISS   2                        </leftrec><rightrec>KIMBERLY  BAYLISS   2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>KIMBERLY  BAYLISS   3                        </leftrec><rightrec>KIMBERLY  BAYLISS   3                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>KIMBERLY  BAYLISS   4                        </leftrec><rightrec>KIMBERLY  BAYLISS   4                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>KIMBERLY  BILLINGTON1                        </leftrec><rightrec>KIMBERLY  BILLINGTON1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>KIMBERLY  BILLINGTON2                        </leftrec><rightrec>KIMBERLY  BILLINGTON2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>KIMBERLY  BILLINGTON3                        </leftrec><rightrec>KIMBERLY  BILLINGTON3                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>KIMBERLY  BILLINGTON4                        </leftrec><rightrec>KIMBERLY  BILLINGTON4                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>KIMBERLY  DOLSON    1                        </leftrec><rightrec>KIMBERLY  DOLSON    1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>KIMBERLY  DOLSON    2                        </leftrec><rightrec>KIMBERLY  DOLSON    2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>KIMBERLY  DOLSON    3                        </leftrec><rightrec>KIMBERLY  DOLSON    3                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>KIMBERLY  DOLSON    4                        </leftrec><rightrec>KIMBERLY  DOLSON    4                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>KIMBERLY  SMITH     1                        </leftrec><rightrec>KIMBERLY  SMITH     1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>KIMBERLY  SMITH     2                        </leftrec><rightrec>KIMBERLY  SMITH     2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>KIMBERLY  SMITH     3                        </leftrec><rightrec>KIMBERLY  SMITH     3                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped inner                       </name><leftrec>KIMBERLY  SMITH     4                        </leftrec><rightrec>KIMBERLY  SMITH     4                        </rightrec></Row>
+</Dataset>
+<Dataset name='Result 11'>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>DAVID     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>DAVID     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>DAVID     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>DAVID     BAYLISS   4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>DAVID     BILLINGTON1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>DAVID     BILLINGTON2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>DAVID     BILLINGTON3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>DAVID     BILLINGTON4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>DAVID     DOLSON    1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>DAVID     DOLSON    2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>DAVID     DOLSON    3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>DAVID     DOLSON    4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>DAVID     SMITH     1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>DAVID     SMITH     2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>DAVID     SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>DAVID     SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>KELLY     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>KELLY     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>KELLY     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>KELLY     BAYLISS   4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>KELLY     BILLINGTON1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>KELLY     BILLINGTON2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>KELLY     BILLINGTON3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>KELLY     BILLINGTON4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>KELLY     DOLSON    1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>KELLY     DOLSON    2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>KELLY     DOLSON    3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>KELLY     DOLSON    4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>KELLY     SMITH     1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>KELLY     SMITH     2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>KELLY     SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped only                        </name><leftrec>KELLY     SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>CLAIRE    BAYLISS   1                        </leftrec><rightrec>CLAIRE    BAYLISS   1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>CLAIRE    BAYLISS   2                        </leftrec><rightrec>CLAIRE    BAYLISS   2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>CLAIRE    BAYLISS   3                        </leftrec><rightrec>CLAIRE    BAYLISS   3                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>CLAIRE    BAYLISS   4                        </leftrec><rightrec>CLAIRE    BAYLISS   4                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>CLAIRE    BILLINGTON1                        </leftrec><rightrec>CLAIRE    BILLINGTON1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>CLAIRE    BILLINGTON2                        </leftrec><rightrec>CLAIRE    BILLINGTON2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>CLAIRE    BILLINGTON3                        </leftrec><rightrec>CLAIRE    BILLINGTON3                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>CLAIRE    BILLINGTON4                        </leftrec><rightrec>CLAIRE    BILLINGTON4                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>CLAIRE    DOLSON    1                        </leftrec><rightrec>CLAIRE    DOLSON    1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>CLAIRE    DOLSON    2                        </leftrec><rightrec>CLAIRE    DOLSON    2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>CLAIRE    DOLSON    3                        </leftrec><rightrec>CLAIRE    DOLSON    3                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>CLAIRE    DOLSON    4                        </leftrec><rightrec>CLAIRE    DOLSON    4                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>CLAIRE    SMITH     1                        </leftrec><rightrec>CLAIRE    SMITH     1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>CLAIRE    SMITH     2                        </leftrec><rightrec>CLAIRE    SMITH     2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>CLAIRE    SMITH     3                        </leftrec><rightrec>CLAIRE    SMITH     3                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>CLAIRE    SMITH     4                        </leftrec><rightrec>CLAIRE    SMITH     4                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>DAVID     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>DAVID     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>DAVID     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>DAVID     BAYLISS   4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>DAVID     BILLINGTON1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>DAVID     BILLINGTON2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>DAVID     BILLINGTON3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>DAVID     BILLINGTON4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>DAVID     DOLSON    1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>DAVID     DOLSON    2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>DAVID     DOLSON    3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>DAVID     DOLSON    4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>DAVID     SMITH     1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>DAVID     SMITH     2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>DAVID     SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>DAVID     SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KELLY     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KELLY     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KELLY     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KELLY     BAYLISS   4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KELLY     BILLINGTON1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KELLY     BILLINGTON2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KELLY     BILLINGTON3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KELLY     BILLINGTON4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KELLY     DOLSON    1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KELLY     DOLSON    2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KELLY     DOLSON    3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KELLY     DOLSON    4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KELLY     SMITH     1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KELLY     SMITH     2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KELLY     SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KELLY     SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KIMBERLY  BAYLISS   1                        </leftrec><rightrec>KIMBERLY  BAYLISS   1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KIMBERLY  BAYLISS   2                        </leftrec><rightrec>KIMBERLY  BAYLISS   2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KIMBERLY  BAYLISS   3                        </leftrec><rightrec>KIMBERLY  BAYLISS   3                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KIMBERLY  BAYLISS   4                        </leftrec><rightrec>KIMBERLY  BAYLISS   4                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KIMBERLY  BILLINGTON1                        </leftrec><rightrec>KIMBERLY  BILLINGTON1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KIMBERLY  BILLINGTON2                        </leftrec><rightrec>KIMBERLY  BILLINGTON2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KIMBERLY  BILLINGTON3                        </leftrec><rightrec>KIMBERLY  BILLINGTON3                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KIMBERLY  BILLINGTON4                        </leftrec><rightrec>KIMBERLY  BILLINGTON4                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KIMBERLY  DOLSON    1                        </leftrec><rightrec>KIMBERLY  DOLSON    1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KIMBERLY  DOLSON    2                        </leftrec><rightrec>KIMBERLY  DOLSON    2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KIMBERLY  DOLSON    3                        </leftrec><rightrec>KIMBERLY  DOLSON    3                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KIMBERLY  DOLSON    4                        </leftrec><rightrec>KIMBERLY  DOLSON    4                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KIMBERLY  SMITH     1                        </leftrec><rightrec>KIMBERLY  SMITH     1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KIMBERLY  SMITH     2                        </leftrec><rightrec>KIMBERLY  SMITH     2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KIMBERLY  SMITH     3                        </leftrec><rightrec>KIMBERLY  SMITH     3                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped outer                       </name><leftrec>KIMBERLY  SMITH     4                        </leftrec><rightrec>KIMBERLY  SMITH     4                        </rightrec></Row>
+</Dataset>
+<Dataset name='Result 13'>
+ <Row><name>Unkeyed: grouped skip                        </name><leftrec>CLAIRE    BAYLISS   1                        </leftrec><rightrec>CLAIRE    BAYLISS   1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip                        </name><leftrec>CLAIRE    BAYLISS   2                        </leftrec><rightrec>CLAIRE    BAYLISS   2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip                        </name><leftrec>CLAIRE    BAYLISS   3                        </leftrec><rightrec>CLAIRE    BAYLISS   3                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip                        </name><leftrec>CLAIRE    BAYLISS   4                        </leftrec><rightrec>CLAIRE    BAYLISS   4                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip                        </name><leftrec>CLAIRE    BILLINGTON1                        </leftrec><rightrec>CLAIRE    BILLINGTON1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip                        </name><leftrec>CLAIRE    BILLINGTON2                        </leftrec><rightrec>CLAIRE    BILLINGTON2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip                        </name><leftrec>CLAIRE    BILLINGTON3                        </leftrec><rightrec>CLAIRE    BILLINGTON3                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip                        </name><leftrec>CLAIRE    BILLINGTON4                        </leftrec><rightrec>CLAIRE    BILLINGTON4                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip                        </name><leftrec>CLAIRE    DOLSON    1                        </leftrec><rightrec>CLAIRE    DOLSON    1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip                        </name><leftrec>CLAIRE    DOLSON    2                        </leftrec><rightrec>CLAIRE    DOLSON    2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip                        </name><leftrec>CLAIRE    DOLSON    3                        </leftrec><rightrec>CLAIRE    DOLSON    3                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip                        </name><leftrec>CLAIRE    DOLSON    4                        </leftrec><rightrec>CLAIRE    DOLSON    4                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip                        </name><leftrec>CLAIRE    SMITH     1                        </leftrec><rightrec>CLAIRE    SMITH     1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip                        </name><leftrec>CLAIRE    SMITH     2                        </leftrec><rightrec>CLAIRE    SMITH     2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip                        </name><leftrec>CLAIRE    SMITH     3                        </leftrec><rightrec>CLAIRE    SMITH     3                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip                        </name><leftrec>CLAIRE    SMITH     4                        </leftrec><rightrec>CLAIRE    SMITH     4                        </rightrec></Row>
+</Dataset>
+<Dataset name='Result 14'>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>DAVID     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>DAVID     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>DAVID     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>DAVID     BAYLISS   4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>DAVID     BILLINGTON1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>DAVID     BILLINGTON2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>DAVID     BILLINGTON3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>DAVID     BILLINGTON4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>DAVID     DOLSON    1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>DAVID     DOLSON    2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>DAVID     DOLSON    3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>DAVID     DOLSON    4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>DAVID     SMITH     1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>DAVID     SMITH     2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>DAVID     SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>DAVID     SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>KELLY     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>KELLY     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>KELLY     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>KELLY     BAYLISS   4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>KELLY     BILLINGTON1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>KELLY     BILLINGTON2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>KELLY     BILLINGTON3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>KELLY     BILLINGTON4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>KELLY     DOLSON    1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>KELLY     DOLSON    2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>KELLY     DOLSON    3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>KELLY     DOLSON    4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>KELLY     SMITH     1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>KELLY     SMITH     2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>KELLY     SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left only             </name><leftrec>KELLY     SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+</Dataset>
+<Dataset name='Result 15'>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>CLAIRE    BAYLISS   1                        </leftrec><rightrec>CLAIRE    BAYLISS   1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>CLAIRE    BAYLISS   2                        </leftrec><rightrec>CLAIRE    BAYLISS   2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>CLAIRE    BAYLISS   3                        </leftrec><rightrec>CLAIRE    BAYLISS   3                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>CLAIRE    BAYLISS   4                        </leftrec><rightrec>CLAIRE    BAYLISS   4                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>CLAIRE    BILLINGTON1                        </leftrec><rightrec>CLAIRE    BILLINGTON1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>CLAIRE    BILLINGTON2                        </leftrec><rightrec>CLAIRE    BILLINGTON2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>CLAIRE    BILLINGTON3                        </leftrec><rightrec>CLAIRE    BILLINGTON3                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>CLAIRE    BILLINGTON4                        </leftrec><rightrec>CLAIRE    BILLINGTON4                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>CLAIRE    DOLSON    1                        </leftrec><rightrec>CLAIRE    DOLSON    1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>CLAIRE    DOLSON    2                        </leftrec><rightrec>CLAIRE    DOLSON    2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>CLAIRE    DOLSON    3                        </leftrec><rightrec>CLAIRE    DOLSON    3                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>CLAIRE    DOLSON    4                        </leftrec><rightrec>CLAIRE    DOLSON    4                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>CLAIRE    SMITH     1                        </leftrec><rightrec>CLAIRE    SMITH     1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>CLAIRE    SMITH     2                        </leftrec><rightrec>CLAIRE    SMITH     2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>CLAIRE    SMITH     3                        </leftrec><rightrec>CLAIRE    SMITH     3                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>CLAIRE    SMITH     4                        </leftrec><rightrec>CLAIRE    SMITH     4                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>DAVID     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>DAVID     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>DAVID     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>DAVID     BAYLISS   4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>DAVID     BILLINGTON1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>DAVID     BILLINGTON2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>DAVID     BILLINGTON3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>DAVID     BILLINGTON4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>DAVID     DOLSON    1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>DAVID     DOLSON    2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>DAVID     DOLSON    3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>DAVID     DOLSON    4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>DAVID     SMITH     1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>DAVID     SMITH     2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>DAVID     SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>DAVID     SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>KELLY     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>KELLY     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>KELLY     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>KELLY     BAYLISS   4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>KELLY     BILLINGTON1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>KELLY     BILLINGTON2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>KELLY     BILLINGTON3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>KELLY     BILLINGTON4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>KELLY     DOLSON    1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>KELLY     DOLSON    2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>KELLY     DOLSON    3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>KELLY     DOLSON    4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>KELLY     SMITH     1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>KELLY     SMITH     2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>KELLY     SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped skip, left outer            </name><leftrec>KELLY     SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+</Dataset>
+<Dataset name='Result 16'>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    BAYLISS   1                        </leftrec><rightrec>CLAIRE    BAYLISS   1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    BAYLISS   1                        </leftrec><rightrec>CLAIRE    BAYLISS   2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    BAYLISS   2                        </leftrec><rightrec>CLAIRE    BAYLISS   1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    BAYLISS   2                        </leftrec><rightrec>CLAIRE    BAYLISS   2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    BAYLISS   3                        </leftrec><rightrec>CLAIRE    BAYLISS   1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    BAYLISS   3                        </leftrec><rightrec>CLAIRE    BAYLISS   2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    BAYLISS   4                        </leftrec><rightrec>CLAIRE    BAYLISS   1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    BAYLISS   4                        </leftrec><rightrec>CLAIRE    BAYLISS   2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    BILLINGTON1                        </leftrec><rightrec>CLAIRE    BILLINGTON1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    BILLINGTON1                        </leftrec><rightrec>CLAIRE    BILLINGTON2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    BILLINGTON2                        </leftrec><rightrec>CLAIRE    BILLINGTON1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    BILLINGTON2                        </leftrec><rightrec>CLAIRE    BILLINGTON2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    BILLINGTON3                        </leftrec><rightrec>CLAIRE    BILLINGTON1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    BILLINGTON3                        </leftrec><rightrec>CLAIRE    BILLINGTON2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    BILLINGTON4                        </leftrec><rightrec>CLAIRE    BILLINGTON1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    BILLINGTON4                        </leftrec><rightrec>CLAIRE    BILLINGTON2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    DOLSON    1                        </leftrec><rightrec>CLAIRE    DOLSON    1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    DOLSON    1                        </leftrec><rightrec>CLAIRE    DOLSON    2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    DOLSON    2                        </leftrec><rightrec>CLAIRE    DOLSON    1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    DOLSON    2                        </leftrec><rightrec>CLAIRE    DOLSON    2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    DOLSON    3                        </leftrec><rightrec>CLAIRE    DOLSON    1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    DOLSON    3                        </leftrec><rightrec>CLAIRE    DOLSON    2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    DOLSON    4                        </leftrec><rightrec>CLAIRE    DOLSON    1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    DOLSON    4                        </leftrec><rightrec>CLAIRE    DOLSON    2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    SMITH     1                        </leftrec><rightrec>CLAIRE    SMITH     1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    SMITH     1                        </leftrec><rightrec>CLAIRE    SMITH     2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    SMITH     2                        </leftrec><rightrec>CLAIRE    SMITH     1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    SMITH     2                        </leftrec><rightrec>CLAIRE    SMITH     2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    SMITH     3                        </leftrec><rightrec>CLAIRE    SMITH     1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    SMITH     3                        </leftrec><rightrec>CLAIRE    SMITH     2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    SMITH     4                        </leftrec><rightrec>CLAIRE    SMITH     1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>CLAIRE    SMITH     4                        </leftrec><rightrec>CLAIRE    SMITH     2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  BAYLISS   1                        </leftrec><rightrec>KIMBERLY  BAYLISS   1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  BAYLISS   1                        </leftrec><rightrec>KIMBERLY  BAYLISS   2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  BAYLISS   2                        </leftrec><rightrec>KIMBERLY  BAYLISS   1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  BAYLISS   2                        </leftrec><rightrec>KIMBERLY  BAYLISS   2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  BAYLISS   3                        </leftrec><rightrec>KIMBERLY  BAYLISS   1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  BAYLISS   3                        </leftrec><rightrec>KIMBERLY  BAYLISS   2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  BAYLISS   4                        </leftrec><rightrec>KIMBERLY  BAYLISS   1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  BAYLISS   4                        </leftrec><rightrec>KIMBERLY  BAYLISS   2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  BILLINGTON1                        </leftrec><rightrec>KIMBERLY  BILLINGTON1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  BILLINGTON1                        </leftrec><rightrec>KIMBERLY  BILLINGTON2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  BILLINGTON2                        </leftrec><rightrec>KIMBERLY  BILLINGTON1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  BILLINGTON2                        </leftrec><rightrec>KIMBERLY  BILLINGTON2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  BILLINGTON3                        </leftrec><rightrec>KIMBERLY  BILLINGTON1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  BILLINGTON3                        </leftrec><rightrec>KIMBERLY  BILLINGTON2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  BILLINGTON4                        </leftrec><rightrec>KIMBERLY  BILLINGTON1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  BILLINGTON4                        </leftrec><rightrec>KIMBERLY  BILLINGTON2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  DOLSON    1                        </leftrec><rightrec>KIMBERLY  DOLSON    1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  DOLSON    1                        </leftrec><rightrec>KIMBERLY  DOLSON    2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  DOLSON    2                        </leftrec><rightrec>KIMBERLY  DOLSON    1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  DOLSON    2                        </leftrec><rightrec>KIMBERLY  DOLSON    2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  DOLSON    3                        </leftrec><rightrec>KIMBERLY  DOLSON    1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  DOLSON    3                        </leftrec><rightrec>KIMBERLY  DOLSON    2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  DOLSON    4                        </leftrec><rightrec>KIMBERLY  DOLSON    1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  DOLSON    4                        </leftrec><rightrec>KIMBERLY  DOLSON    2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  SMITH     1                        </leftrec><rightrec>KIMBERLY  SMITH     1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  SMITH     1                        </leftrec><rightrec>KIMBERLY  SMITH     2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  SMITH     2                        </leftrec><rightrec>KIMBERLY  SMITH     1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  SMITH     2                        </leftrec><rightrec>KIMBERLY  SMITH     2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  SMITH     3                        </leftrec><rightrec>KIMBERLY  SMITH     1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  SMITH     3                        </leftrec><rightrec>KIMBERLY  SMITH     2                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  SMITH     4                        </leftrec><rightrec>KIMBERLY  SMITH     1                        </rightrec></Row>
+ <Row><name>Unkeyed: grouped keep(2)                     </name><leftrec>KIMBERLY  SMITH     4                        </leftrec><rightrec>KIMBERLY  SMITH     2                        </rightrec></Row>
+</Dataset>
+<Dataset name='Result 17'>
+</Dataset>
+<Dataset name='Result 18'>
+ <Row><name>Unkeyed: grouped choosen                     </name><leftrec>CLAIRE    BAYLISS   1                        </leftrec><rightrec>CLAIRE    BAYLISS   1                        </rightrec></Row>
+</Dataset>

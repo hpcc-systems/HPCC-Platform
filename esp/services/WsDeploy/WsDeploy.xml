@@ -1,0 +1,94 @@
+<!--
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<?xml version="1.0" encoding="UTF-8"?>
+<Components>
+    <WsDeploy caption="">
+        <TabContainer>
+            <Tab name="Deploy" url="/WsDeploy/deploy"/>
+            <Tab name="Graph" url="/WsDeploy/Graph"/>
+        </TabContainer>
+        <Commands>
+            <Deploy caption="Deploy Components" argsNode="Deploy" selectedTab="Deploy">
+                    <!--script type="text/javascript"><![CDATA[
+                        function isChecked()
+                        {
+                            alert(document.forms[0].outerHTML);
+                            return true;
+                                var rows = document.getElementsByName( "SelectedComponents.Component.checkbox" );
+                                var n_rows = rows.length == undefined ? 0 : rows.length;
+                                if (n_rows == 0)
+                                {
+                                    alert("Please select one or more components to deploy!");
+                                    return false;
+                                }
+                                return true;
+                        }
+                        //bRowCheckboxes = false;
+                        ]]>
+                    </script-->
+                <Deploy maxOccurs="1">
+                    <Components maxOccurs="1">
+                        <Component maxOccurs="unbounded" checkboxes="false" hover="false" tableRows="true" width="1200">
+                            <DisplayType caption="Type" viewType="static" width="200"/>
+                            <Name viewType="static" width="200"/>
+                            <Type viewType="hidden"/>
+                            <Build viewType="static" width="200"/>
+                            <InstanceType viewType="static" width="200"/>
+                            <Instance viewType="static" width="200"/>
+                            <Computer viewType="static" width="200"/>
+                            <Tasks maxOccurs="1" break="true">
+                                <Task maxOccurs="unbounded" caption="Tasks:" width="100%" checkboxes="false">
+                                    <Caption dataType="none" viewType="static" width="10%" align="left" column="1"/>
+                                    <FileName dataType="none" viewType="static" width="20%" align="left" column="2"/>
+                                    <SourcePath dataType="none" viewType="static" width="30%" align="left" column="3"/> 
+                                    <TargetPath dataType="none" viewType="static" width="30%" align="left" column="4"/> 
+                                    <Status dataType="none" viewType="static:|OK|Error" width="5%" column="5"/>
+                                    <Message dataType="none" viewType="showHideRowBtn" width="5%" column="6"/>
+                                        </Task>
+                            </Tasks>
+                        </Component>
+                    </Components>
+                    <Options maxOccurs="1" caption="Options" table="true">
+                        <Compare dataType="boolean" caption="Compare Files"/>
+                        <ConfigFiles dataType="boolean" caption="Config Files"/>
+                        <BuildFiles dataType="boolean" caption="Build Files"/>
+                        <UpgradeBuildFiles dataType="boolean" caption="Upgrade Build Files"/>
+                        <Start dataType="boolean" caption="Start Components"/>
+                        <Stop dataType="boolean" caption="Stop Components"/>
+                        <Log dataType="boolean" caption="Generate Log"/>
+                        <Backup viewType="select">
+                            <option value="0">none</option>
+                            <option value="1">using rename</option>
+                            <option value="2">using copy</option>
+                        </Backup>
+                        <ArchiveEnv dataType="boolean" caption="Archive Environment"/>
+                        <ArchivePath caption="Archive Path" size="40"/>
+                    </Options>
+                <Buttons>
+                    <input type="submit" name="submitBtn" value="Submit" onclick="return true"> </input>
+                </Buttons>
+                </Deploy>
+            </Deploy>
+            <Init argsNode="." selectedTab="Deploy" maxOccurs="1" subcaption="&lt;|-- Please use context menu in tree to initiate deployment.">
+                <Buttons/>
+            </Init>
+            <Graph caption="Dependency Graph" argsNode="." selectedTab="Graph" maxOccurs="1"/>
+        </Commands>
+    </WsDeploy>
+</Components>

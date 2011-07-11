@@ -1,0 +1,105 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+
+
+Test SOAP server
+----------------
+
+This provides a service called TestService with methods called
+greeting and espsplit.
+
+You will need the following.
+(1) A webserver, with CGI enabled.
+(2) The perl modules Cwd, Config::Simple, and SOAP::Transort::HTTP.
+(3) The scripts soaplog.cgi and soapdispatch.cgi, copied or symlinked
+    into a location where they can be accessed via the webserver with
+    CGI enable, with the correct permissions.
+(4) The directory TestSOAP containing the module TestService.pm, both
+    visible to the webserver.
+(5) A config file soapserver.ini, in the directory where the CGI
+    scripts are run, with values for logfile and libpath, and
+    optionally a value for maxsleep (in seconds, to force a delay in
+    the response).
+
+For example:
+ - I have apache running, with CGI enabled on /home/pete/public_html/cgi-bin.
+ - I have TestSOAP in /home/pete.
+ - I have symlinks in cgi-bin for soaplog.cgi and soapdispatch.cgi to
+the copies in TestSOAP (and have enabled symlinks on the directory in
+apache).
+ - My /home/pete/public_html/cgi-bin/soapserver.ini reads as below.
+
+logfile=/tmp/soap.log
+libpath=/home/pete
+
+If you run soaplog.cgi or soapdispatch.cgi from the command line, you
+should see "Expected POST request, received NONE". If you point a web
+browser at it, you should see "Expected POST request, received GET".
+
+Test SOAP client
+----------------
+
+This tests the greeting method.
+
+You will need the following.
+(1) The test SOAP server working.
+(2) The script soapclient, with the correct permissions.
+(3) A config file soapclient.ini, in the current directory, with
+    values for proxypath and myname.
+
+For example, my soapclient.ini reads as below.
+
+proxypath=http://127.0.0.1/~pete/cgi-bin/
+myname=pete
+
+If you run './soapclient log', you should see the message "SOAP
+returned OK". The log file shows the request time, the the CGI
+environment, the current directory, and the request content read from
+standard input.
+
+If you run './soapclient dispatch', you should see the same message,
+followed by the response from the SOAP server, which should be a
+single variable called 'saluation' with value e.g. 'hello pete'. The
+log file shows the request time, the CGI environment, the current
+directory, the message "Dispatching", the response status, the
+response content, and the message "OK".
+
+Testing with ECL for client
+---------------------------
+
+The basic query is contained in soapcall.ecl. You will need to edit it
+to set proxypath and myname (values as in soapclient.ecl, above) and
+proxyname (to 'log', to get the full request logged but not actually
+dispatch it and so get no response; or 'dispatch' to actually dispatch
+the request and hopefully get a response like 'hello pete'). For
+example, I run the server on a machine named 'aphex', and my query
+starts as below.
+
+proxypath := 'http://aphex/~pete/cgi-bin/';
+myname := 'pete';
+proxyname := 'dispatch';
+
+You will also need to uncomment whichever call(s) you want to test.
+The greeting call should return e.g. "hello pete". The espsplit call
+should return five rows: "hello", "world", "cat", "dog", and "pig".
+
+N.B. The test server can't currently handle ESP-type calls with
+MERGE(n). This is because that makes thorsoapcall send fooRequestArray
+and expect fooResponseArray, a combination which is not compatible
+with perl's SOAP::Lite.

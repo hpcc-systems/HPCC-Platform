@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd">
+<section>
+    <title>esp/bindings/SOAP/xpp/xpp</title>
+
+    <para>
+        The esp/bindings/SOAP/xpp/xpp directory contains the sources for the esp/bindings/SOAP/xpp/xpp library.
+    </para>
+</section>

@@ -1,0 +1,12 @@
+<Dataset name='Result 1'>
+ <Row><Result_1>the cap sap on the map</Result_1></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><Result_2>the cap sap on the map</Result_2></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><orig>She       </orig><withcase>She       </withcase><wocase>fhe       </wocase><uorig>Eins      </uorig><uwithcase>Eins      </uwithcase><uwocase>ëins      </uwocase></Row>
+ <Row><orig>Sells     </orig><withcase>Sellf     </withcase><wocase>fellf     </wocase><uorig>Zwei      </uorig><uwithcase>Zwëi      </uwithcase><uwocase>Zwëi      </uwocase></Row>
+ <Row><orig>Sea       </orig><withcase>Sea       </withcase><wocase>fea       </wocase><uorig>Drei      </uorig><uwithcase>Drëi      </uwithcase><uwocase>Drëi      </uwocase></Row>
+ <Row><orig>Shells    </orig><withcase>Shellf    </withcase><wocase>fhellf    </wocase><uorig>Vier      </uorig><uwithcase>Viër      </uwithcase><uwocase>Viër      </uwocase></Row>
+</Dataset>

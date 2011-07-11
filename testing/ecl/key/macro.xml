@@ -1,0 +1,13 @@
+<Dataset name='Result 1'>
+ <Row><Result_1>15</Result_1></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><Result_2>510</Result_2></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><value1>A</value1><value2>B</value2></Row>
+ <Row><value1>A</value1><value2>X</value2></Row>
+ <Row><value1>B</value1><value2>G</value2></Row>
+ <Row><value1>C</value1><value2>C</value2></Row>
+ <Row><value1>C</value1><value2>G</value2></Row>
+</Dataset>

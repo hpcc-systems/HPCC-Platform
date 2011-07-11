@@ -1,0 +1,82 @@
+<xgmml>
+<graph>
+ <node id="1" label="regress::hthor::house"><att>
+ <graph>
+ <node id="1_0" label="id">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="1_1" label="addr">
+<attr name="type" value="string"/>
+ </node>
+ <node id="1_2" label="postcode">
+<attr name="type" value="string10"/>
+ </node>
+ <node id="1_3" label="yearbuilt">
+<attr name="type" value="unsigned2"/>
+ </node>
+ <node id="1_4" label="{virtual(fileposition)}">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="2" label="regress::hthor::person"><att>
+ <graph>
+ <node id="2_0" label="id">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="2_1" label="forename">
+<attr name="type" value="string"/>
+ </node>
+ <node id="2_2" label="surname">
+<attr name="type" value="string"/>
+ </node>
+ <node id="2_3" label="dob">
+<attr name="type" value="udecimal8"/>
+ </node>
+ <node id="2_4" label="booklimit">
+<attr name="type" value="udecimal8"/>
+ </node>
+ <node id="2_5" label="aage">
+<attr name="type" value="unsigned2"/>
+ </node>
+ <node id="2_6" label="houseid">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="2_7" label="{virtual(fileposition)}">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="4" label="regress::hthor::book"><att>
+ <graph>
+ <node id="4_0" label="id">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="4_1" label="name">
+<attr name="type" value="string"/>
+ </node>
+ <node id="4_2" label="author">
+<attr name="type" value="string"/>
+ </node>
+ <node id="4_3" label="rating100">
+<attr name="type" value="unsigned1"/>
+ </node>
+ <node id="4_4" label="price">
+<attr name="type" value="udecimal8_2"/>
+ </node>
+ <node id="4_5" label="personid">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="4_6" label="{virtual(fileposition)}">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+  <edge id="3" source="2_6" target="1_0">
+<attr name="cardinality" value="M:1"/>
+  </edge>
+  <edge id="5" source="4_5" target="2_0">
+<attr name="cardinality" value="M:1"/>
+  </edge>
+</graph>
+</xgmml>

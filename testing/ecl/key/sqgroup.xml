@@ -1,0 +1,28 @@
+<Dataset name='Result 1'>
+ <Row><addr>99 Maltings Road</addr><summary><Row><surname>Halliday</surname><cnt>12</cnt></Row></summary></Row>
+ <Row><addr>Buckingham Palace</addr><summary><Row><surname>Windsor</surname><cnt>9</cnt></Row></summary></Row>
+ <Row><addr>Bedrock</addr><summary><Row><surname>Flintstone</surname><cnt>1</cnt></Row></summary></Row>
+ <Row><addr>Wimpole Hall</addr><summary><Row><surname>Grabdale</surname><cnt>2</cnt></Row></summary></Row>
+ <Row><addr>56 New Road</addr><summary><Row><surname>Jones</surname><cnt>6</cnt></Row></summary></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><addr>99 Maltings Road</addr><summary><Row><surname>Halliday</surname><cnt>12</cnt></Row></summary></Row>
+ <Row><addr>Buckingham Palace</addr><summary><Row><surname>Windsor</surname><cnt>9</cnt></Row></summary></Row>
+ <Row><addr>Bedrock</addr><summary><Row><surname>Flintstone</surname><cnt>1</cnt></Row></summary></Row>
+ <Row><addr>Wimpole Hall</addr><summary><Row><surname>Grabdale</surname><cnt>2</cnt></Row></summary></Row>
+ <Row><addr>56 New Road</addr><summary><Row><surname>Jones</surname><cnt>6</cnt></Row></summary></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><addr>99 Maltings Road</addr><summary><Row><surname>Halliday</surname><cnt>5</cnt></Row><Row><surname>Halliday</surname><cnt>9</cnt></Row><Row><surname>Halliday</surname><cnt>12</cnt></Row></summary></Row>
+ <Row><addr>Buckingham Palace</addr><summary><Row><surname>Windsor</surname><cnt>5</cnt></Row><Row><surname>Windsor</surname><cnt>9</cnt></Row></summary></Row>
+ <Row><addr>Bedrock</addr><summary><Row><surname>Flintstone</surname><cnt>0</cnt></Row><Row><surname>Flintstone</surname><cnt>1</cnt></Row></summary></Row>
+ <Row><addr>Wimpole Hall</addr><summary><Row><surname>Grabdale</surname><cnt>2</cnt></Row></summary></Row>
+ <Row><addr>56 New Road</addr><summary><Row><surname>Jones</surname><cnt>2</cnt></Row><Row><surname>Jones</surname><cnt>6</cnt></Row></summary></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><addr>99 Maltings Road</addr><summary><Row><surname>Halliday</surname><cnt>12</cnt></Row></summary></Row>
+ <Row><addr>Buckingham Palace</addr><summary><Row><surname>Windsor</surname><cnt>9</cnt></Row></summary></Row>
+ <Row><addr>Bedrock</addr><summary><Row><surname>Flintstone</surname><cnt>1</cnt></Row></summary></Row>
+ <Row><addr>Wimpole Hall</addr><summary><Row><surname>Grabdale</surname><cnt>2</cnt></Row></summary></Row>
+ <Row><addr>56 New Road</addr><summary><Row><surname>Jones</surname><cnt>6</cnt></Row></summary></Row>
+</Dataset>

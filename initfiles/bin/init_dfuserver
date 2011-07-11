@@ -1,0 +1,41 @@
+#!/bin/bash
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+
+PATH_PRE=`type -path hpcc_setenv`
+source ${PATH_PRE}
+PID_NAME="$PID/`basename $PWD`.pid"
+
+INIT_PID_NAME="$PID/init_`basename $PWD`.pid"
+echo $$ > $INIT_PID_NAME
+
+ulimit -c unlimited
+ulimit -n 8192
+ulimit -s 512
+
+killed() {
+    if [ -e dfuserver_sentinel.txt ]; then
+        rm -f dfuserver_sentinel.txt
+        dfuserver stop=1
+        sleep 5
+        killall -9 dfuserver
+    fi
+    exit 255
+}
+
+trap "killed" SIGINT SIGTERM SIGKILL
+export LANG=en_US
+
+rm -f dfuserver_sentinel.txt
+dfuserver 1>/dev/null 2>/dev/null &
+echo $! > $PID_NAME
+wait
+
+while [ -e dfuserver_sentinel.txt ]; do
+    sleep 5
+    if [ -e dfuserver_sentinel.txt ]; then
+        rm -f dfuserver_sentinel.txt
+        dfuserver 1>/dev/null 2>/dev/null &
+        echo $! > $PID_NAME
+        wait
+    fi
+done

@@ -1,0 +1,177 @@
+<!--
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<Roxie numChannels="50">
+    <QueryTable>
+        <Alias name="HeaderFileSearchService" id="HeaderFileSearchService.1"/>
+    </QueryTable>
+    <Key directory="c:\seisint\roxy\data" name="key::header.ssn.did" partmask="tinyheader.ssn.did._$P_of_$N" numparts="51" replicated="2"/>
+    <Key directory="c:\seisint\roxy\data" name="~thor_data400::key::header.did20021001" partmask="tinyheader.did._$P_of_$N" numparts="51" replicated="2"/>
+    <Key directory="c:\seisint\roxy\data" name="~thor_data400::key::header.ssn.did20021001" partmask="tinyheader.ssn.did._$P_of_$N" numparts="51" replicated="2"/>
+    <Key directory="c:\seisint\roxy\data" name="~thor_data400::key::ssn_map" partmask="ssn_map._$P_of_$N" numparts="51" replicated="2"/>
+    <File name="rkc::tinyheader" directory="c:\seisint\roxy\data" partmask="tinyheader._$P_of_$N" numparts="50" replicated="2">
+        <Part size="1373076" num="1"/>
+        <Part size="1317090" num="2"/>
+        <Part size="1400940" num="3"/>
+        <Part size="1116882" num="4"/>
+        <Part size="1114818" num="5"/>
+        <Part size="1070700" num="6"/>
+        <Part size="955374" num="7"/>
+        <Part size="1167450" num="8"/>
+        <Part size="1596504" num="9"/>
+        <Part size="1761624" num="10"/>
+        <Part size="1484274" num="11"/>
+        <Part size="1252590" num="12"/>
+        <Part size="1014198" num="13"/>
+        <Part size="1041804" num="14"/>
+        <Part size="1234788" num="15"/>
+        <Part size="1733502" num="16"/>
+        <Part size="1389330" num="17"/>
+        <Part size="1185510" num="18"/>
+        <Part size="1404552" num="19"/>
+        <Part size="1488660" num="20"/>
+        <Part size="1371528" num="21"/>
+        <Part size="1411518" num="22"/>
+        <Part size="1281744" num="23"/>
+        <Part size="1343664" num="24"/>
+        <Part size="2601414" num="25"/>
+        <Part size="1664358" num="26"/>
+        <Part size="1709766" num="27"/>
+        <Part size="1291290" num="28"/>
+        <Part size="1545678" num="29"/>
+        <Part size="1191702" num="30"/>
+        <Part size="1484016" num="31"/>
+        <Part size="1598568" num="32"/>
+        <Part size="1827930" num="33"/>
+        <Part size="2041554" num="34"/>
+        <Part size="1115076" num="35"/>
+        <Part size="1365336" num="36"/>
+        <Part size="1380558" num="37"/>
+        <Part size="965694" num="38"/>
+        <Part size="1973184" num="39"/>
+        <Part size="1621788" num="40"/>
+        <Part size="1659972" num="41"/>
+        <Part size="865848" num="42"/>
+        <Part size="1142424" num="43"/>
+        <Part size="1024002" num="44"/>
+        <Part size="1313220" num="45"/>
+        <Part size="2457966" num="46"/>
+        <Part size="1280454" num="47"/>
+        <Part size="1582572" num="48"/>
+        <Part size="1433190" num="49"/>
+        <Part size="1980666" num="50"/>
+    </File>
+    <File name="~thor_data400::BASE::Headers_2DIDs20021001" directory="c:\seisint\roxy\data" partmask="tinyheader._$P_of_$N" numparts="50" replicated="2">
+        <Part size="1373076" num="1"/>
+        <Part size="1317090" num="2"/>
+        <Part size="1400940" num="3"/>
+        <Part size="1116882" num="4"/>
+        <Part size="1114818" num="5"/>
+        <Part size="1070700" num="6"/>
+        <Part size="955374" num="7"/>
+        <Part size="1167450" num="8"/>
+        <Part size="1596504" num="9"/>
+        <Part size="1761624" num="10"/>
+        <Part size="1484274" num="11"/>
+        <Part size="1252590" num="12"/>
+        <Part size="1014198" num="13"/>
+        <Part size="1041804" num="14"/>
+        <Part size="1234788" num="15"/>
+        <Part size="1733502" num="16"/>
+        <Part size="1389330" num="17"/>
+        <Part size="1185510" num="18"/>
+        <Part size="1404552" num="19"/>
+        <Part size="1488660" num="20"/>
+        <Part size="1371528" num="21"/>
+        <Part size="1411518" num="22"/>
+        <Part size="1281744" num="23"/>
+        <Part size="1343664" num="24"/>
+        <Part size="2601414" num="25"/>
+        <Part size="1664358" num="26"/>
+        <Part size="1709766" num="27"/>
+        <Part size="1291290" num="28"/>
+        <Part size="1545678" num="29"/>
+        <Part size="1191702" num="30"/>
+        <Part size="1484016" num="31"/>
+        <Part size="1598568" num="32"/>
+        <Part size="1827930" num="33"/>
+        <Part size="2041554" num="34"/>
+        <Part size="1115076" num="35"/>
+        <Part size="1365336" num="36"/>
+        <Part size="1380558" num="37"/>
+        <Part size="965694" num="38"/>
+        <Part size="1973184" num="39"/>
+        <Part size="1621788" num="40"/>
+        <Part size="1659972" num="41"/>
+        <Part size="865848" num="42"/>
+        <Part size="1142424" num="43"/>
+        <Part size="1024002" num="44"/>
+        <Part size="1313220" num="45"/>
+        <Part size="2457966" num="46"/>
+        <Part size="1280454" num="47"/>
+        <Part size="1582572" num="48"/>
+        <Part size="1433190" num="49"/>
+        <Part size="1980666" num="50"/>
+    </File>
+    <Query id="HeaderFileSearchService.1" dll="ccd.exe">
+        <Graph fetchEntire="1" name="graphFC" type="activities">
+            <xgmml>
+                <graph>
+                    <edge source="400" target="406" /> 
+                    <edge source="406" target="408" /> 
+                    <edge source="408" target="449" /> 
+                    <edge source="449" target="454" /> 
+                    <edge source="454" target="459" /> 
+                    <edge source="459" target="460" /> 
+                    <node id="400" label="IndexRead">
+                        <att name="_roxieId" value="400" /> 
+                        <att name="_kind" value="46" /> 
+                        <att name="_helper" value="fGC" /> 
+                    </node>
+                    <node id="406" label="Fetch">
+                        <att name="_roxieId" value="406" /> 
+                        <att name="_kind" value="52" /> 
+                        <att name="_helper" value="fMC" /> 
+                    </node>
+                    <node id="408" label="Filter">
+                        <att name="_kind" value="5" /> 
+                        <att name="_helper" value="fOC" /> 
+                    </node>
+                    <node id="449" label="GroupDedup">
+                        <att name="_kind" value="4" /> 
+                        <att name="_helper" value="f1E" /> 
+                    </node>
+                    <node id="454" label="KeyedJoin">
+                        <att name="_roxieId" value="454" /> 
+                        <att name="_roxieId2" value="455" /> 
+                        <att name="_kind" value="19" /> 
+                        <att name="_helper" value="f6E" /> 
+                    </node>
+                    <node id="459" label="FirstN">
+                        <att name="_kind" value="12" /> 
+                        <att name="_helper" value="fBE" /> 
+                    </node>
+                    <node id="460" label="PipeOutput">
+                        <att name="_kind" value="22" /> 
+                        <att name="_helper" value="fCE" /> 
+                    </node>
+                </graph>
+            </xgmml>
+        </Graph>
+    </Query>
+</Roxie>

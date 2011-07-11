@@ -1,0 +1,6 @@
+<Dataset name='Result 1'>
+ <Row><surname>Halliday            </surname><forename>Gavin     </forename><age>31</age></Row>
+ <Row><surname>Halliday            </surname><forename>Liz       </forename><age>30</age></Row>
+ <Row><surname>Zingo               </surname><forename>Abi       </forename><age>10</age></Row>
+ <Row><surname>X                   </surname><forename>Z         </forename><age>25</age></Row>
+</Dataset>

@@ -1,0 +1,6 @@
+<Dataset name='Result 1'>
+ <Row><id>1</id><children><Row><forename>Gavin               </forename><surname>Halliday            </surname></Row><Row><forename>Gavin               </forename><surname>Hall                </surname></Row><Row><forename>Gawain              </forename><surname>                    </surname></Row></children></Row>
+ <Row><id>2</id><children><Row><forename>Liz                 </forename><surname>Halliday            </surname></Row><Row><forename>Elizabeth           </forename><surname>Halliday            </surname></Row><Row><forename>Elizabeth           </forename><surname>MaidenName          </surname></Row></children></Row>
+ <Row><id>3</id><children><Row><forename>Lorraine            </forename><surname>Chapman             </surname></Row></children></Row>
+ <Row><id>4</id><children><Row><forename>Richard             </forename><surname>Chapman             </surname></Row><Row><forename>John                </forename><surname>Doe                 </surname></Row></children></Row>
+</Dataset>

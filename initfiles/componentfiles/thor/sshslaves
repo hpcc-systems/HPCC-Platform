@@ -1,0 +1,17 @@
+#!/bin/bash
+################################################################################
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+################################################################################
+
+
+THORUSER=root
+echo
+echo -------------------------
+COUNTER=1
+for slave in $(cat slaves); do
+    echo sshing slave $COUNTER - $slave:
+    echo ssh $THORUSER@$slave $1
+    ssh $THORUSER@$slave $1
+    let COUNTER=COUNTER+1
+done
+

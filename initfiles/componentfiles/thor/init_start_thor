@@ -1,0 +1,10 @@
+#!/bin/bash
+################################################################################
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+################################################################################
+
+
+# Absolute path
+export deploydir=$(dirname $(type -path init_start_thor))
+
+$deploydir/start_thor $deploydir

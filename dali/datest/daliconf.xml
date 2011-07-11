@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- *##############################################################################
+
+Copyright (C) <2010>
+  <LexisNexis Risk="" Data="" Management="" Inc.="">
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    ############################################################################## -->
+
+
+    <!-- Test Dali Config -->
+<DALI>
+  <SDS store="dalisds.xml"
+       caseInsensitive="0"
+       msgLevel="100"
+       restartOnUnhandled="0"
+       coalesceCheckPeriod="30"
+       coalesceMaxIncrements="10"
+       coalesceAtTime="04:00:00"
+       coalesceRetainStore="1"
+       incrementMinSize="1024"
+       externalSizeThreshold="65536"
+       enableSNMP="1"
+       snmpSendWarnings="1"/>
+  <Coven store="dalicoven.xml" perfReportDelay="60">
+    <Alerts updateInterval="599">
+      <SNMPalert type="Processor" trigger="100" warning="900" minor="1200" major="1800" critical="3600"/>
+      <SNMPalert type="VirtualMemory" warning="80" minor="85" major="90" critical="95"/>
+      <SNMPalert type="Disk1" warning="50" minor="85" major="90" critical="95"/>
+      <SNMPalert type="Disk2" warning="80" minor="85" major="90" critical="95"/>
+      <SNMPalert type="Thread" warning="800" minor="1000" major="1200" critical="1500"/>
+    </Alerts>
+  </Coven>
+</DALI>

@@ -1,0 +1,87 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+#include "xslprocessor.hpp" 
+
+ESPrequest CreateFileRequest
+{
+    string DestDropZone;        //name or IP address; 
+    string DestRelativePath;    //file name and/or path; related to the predefined directory of the dropzone
+    bool   Overwrite(false);
+};
+
+ESPresponse [nil_remove, exceptions_inline] 
+CreateFileResponse 
+{
+    string DestDropZone;        //echo back from request
+    string DestRelativePath;    //echo back from request
+    bool   Overwrite;           //echo back from request
+    string Result;
+};
+
+ESPrequest WriteFileDataRequest
+{
+    binary Data;
+    string DestDropZone;        //name or IP address; 
+    string DestRelativePath;    //file name and/or path;
+    int64  Offset(0);
+    bool   Append(false);
+};
+
+ESPresponse [nil_remove, exceptions_inline] 
+WriteFileDataResponse 
+{
+    string DestDropZone;        //echo back from request
+    string DestRelativePath;    //echo back from request
+    int64  Offset;              //echo back from request
+    bool   Append;              //echo back from request
+    string Result;
+};
+
+ESPrequest ReadFileDataRequest
+{
+    string DestDropZone;        //name or IP address; 
+    string DestRelativePath;    //file name and/or path;
+    int64  Offset(0);
+    int64  DataSize;        
+};
+
+ESPresponse [nil_remove, exceptions_inline] 
+ReadFileDataResponse 
+{
+    binary Data;
+    string DestDropZone;        //echo back from request
+    string DestRelativePath;    //echo back from request
+    int64  Offset;              //echo back from request
+    int64  DataSize;            //echo back from request
+    string Result;
+};
+
+
+ESPservice [exceptions_inline("./smc_xslt/exceptions.xslt")] WsFileIO
+{
+    //ESPuses ESPstruct DFUException;
+    ESPmethod CreateFile(CreateFileRequest, CreateFileResponse);
+    ESPmethod WriteFileData(WriteFileDataRequest, WriteFileDataResponse);
+    ESPmethod ReadFileData(ReadFileDataRequest, ReadFileDataResponse);
+};
+
+SCMexportdef(WsFileIO);
+
+SCMapi(WsFileIO) IClientWsFileIO *createWsFileIOClient();
+

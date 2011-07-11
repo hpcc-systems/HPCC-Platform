@@ -1,0 +1,16 @@
+<Dataset name='Result 1'>
+ <Row><word>boy  </word><doc>281474976710658</doc></Row>
+ <Row><word>sheep</word><doc>281474976710659</doc></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><word>boy  </word><doc>281474976710658</doc></Row>
+ <Row><word>sheep</word><doc>281474976710659</doc></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><word>boy  </word><doc>0</doc></Row>
+ <Row><word>sheep</word><doc>0</doc></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><word>boy  </word><doc>0</doc></Row>
+ <Row><word>sheep</word><doc>0</doc></Row>
+</Dataset>

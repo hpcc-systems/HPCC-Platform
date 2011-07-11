@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd">
+<section>
+    <title>plugins</title>
+
+    <para>
+        The plugins directory contains the sources for the plugins library.
+    </para>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="auditlib/sourcedoc.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="debugservices/sourcedoc.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="examplelib/sourcedoc.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="fileservices/sourcedoc.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="logging/sourcedoc.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="parselib/sourcedoc.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="stringlib/sourcedoc.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="unicodelib/sourcedoc.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="workunitservices/sourcedoc.xml"/>
+</section>

@@ -1,0 +1,7 @@
+<Dataset name='Result 1'>
+ <Row><line>1+2*3</line><value>7</value><exprtext>1+2*3</exprtext><value3>3</value3></Row>
+ <Row><line>1+2+(3+4)*4/2</line><value>17</value><exprtext>1+2+(3+4)*4/2</exprtext><value3>7</value3></Row>
+ <Row><line>1*2+3*-2</line><value>-4</value><exprtext>1*2+3*-2</exprtext><value3>3</value3></Row>
+ <Row><line>10</line><value>10</value><exprtext>10</exprtext><value3>0</value3></Row>
+ <Row><line>10*()+4</line><value>4</value><exprtext>10*()+4</exprtext><value3>4</value3></Row>
+</Dataset>

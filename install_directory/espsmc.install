@@ -1,0 +1,94 @@
+################################################################################
+#    Copyright (C) 2011 HPCC Systems.
+#
+#    This program is free software: you can redistribute it and/or All rights reserved. This program is NOT PRESENTLY free software: you can NOT redistribute
+#    it under the terms of the GNU Affero General Public License as
+#    published by the Free Software Foundation, either version 3 of the
+#    License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+
+# espsmc Supplementals
+# AuthenticateFeature service=ws_smc path=SmcAccess resource=SmcAccess description=Access to SMC service
+# AuthenticateFeature service=ws_smc path=ThorQueueAccess resource=ThorQueueAccess description=Access to thor queues
+# AuthenticateFeature service=ws_config path=ConfigAccess resource=ConfigAccess description=Access to super computer environment
+# AuthenticateFeature service=ws_dfu path=DfuAccess resource=DfuAccess description=Access to DFU
+# AuthenticateFeature service=ws_dfuxref path=DfuXrefAccess resource=DfuXrefAccess description=Access to DFU XRef
+# AuthenticateFeature service=ws_machine path=MachineInfoAccess resource=MachineInfoAccess description=Access to machine information
+# AuthenticateFeature service=ws_machine path=MetricsAccess resource=MetricsAccess description=Access to SNMP metrics information
+# AuthenticateFeature service=ws_machine path=ExecuteAccess resource=ExecuteAccess description=Access to remote execution
+# AuthenticateFeature service=ws_fs path=DfuWorkunitsAccess resource=DfuWorkunitsAccess description=Access to DFU workunits
+# AuthenticateFeature service=ws_fs path=DfuExceptionsAccess resource=DfuExceptions description=Access to DFU exceptions
+# AuthenticateFeature service=ws_fs path=FileSprayAccess resource=FileSprayAccess description=Access to spraying files
+# AuthenticateFeature service=ws_fs path=FileDesprayAccess resource=FileDesprayAccess description=Access to despraying of files
+# AuthenticateFeature service=ws_fileio path=FileIOAccess resource=FileIOAccess description=Access to files in dropzone
+# AuthenticateFeature service=ws_roxiequery path=RoxieQueryAccess resource=RoxieQueryAccess description=Access to Roxie queries and files
+# AuthenticateFeature service=ws_topology path=ClusterTopologyAccess resource=ClusterTopologyAccess description=Access to cluster topology
+# AuthenticateFeature service=ws_workunits path=OwnWorkunitsAccess resource=OwnWorkunitsAccess description=Access to own workunits
+# AuthenticateFeature service=ws_workunits path=OthersWorkunitsAccess resource=OthersWorkunitsAccess description=Access to others' workunits
+# Process name=dafilesrv
+# Process name=attrserver
+# Process name=daserver
+# Process name=dfuserver
+# Process name=eclccserver
+# Process name=esp
+# Process name=dafilesrv remove=true
+# Process name=ftslave
+# Process name=roxie
+# Process name=eclscheduler
+# Process name=thormaster
+# Process name=thorslave
+# Process name=saserver
+# Process name=dafilesrv
+# Process name=attrserver
+# Process name=daserver
+# Process name=dfuserver
+# Process name=esp
+# Process name=httpd
+# Process name=atftpd
+# Process name=dhcpd
+# Process name=saserver
+# SCHEMA: name=espsmcservice.xsd method=schema
+### name=@temp/plugins.xsl method=esp_plugin destName=plugins.xml destPath=@temp
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/configxml/@temp/plugins.xsl DESTINATION ${OSSDIR}/componentfiles/configxml/@temp
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=@temp/esp_service_WsSMC.xsl method=esp_service_module
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/configxml/@temp/esp_service_WsSMC.xsl DESTINATION ${OSSDIR}/componentfiles/configxml/@temp
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/searchfile.html
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/html/searchfile.html DESTINATION ${OSSDIR}/componentfiles/files
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=dot/dot
+#Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/deploy/dot/linux/dot DESTINATION ${OSSDIR}/componentfiles/configxml/dot
+#    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/ws_machine/DhcpMethods.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/services/ws_machine/DhcpMethods.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt/ws_machine
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/ws_machine/StartStop.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/services/ws_machine/StartStop.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt/ws_machine
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/ws_machine/StartStopBegin.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/services/ws_machine/StartStopBegin.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt/ws_machine
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/ws_machine/StartStopDone.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/services/ws_machine/StartStopDone.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt/ws_machine
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/ws_machine/machines.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/services/ws_machine/machines.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt/ws_machine
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/ws_machine/metrics.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/services/ws_machine/metrics.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt/ws_machine
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/ws_machine/rexec.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/services/ws_machine/rexec.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt/ws_machine
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/ws_machine/preflightControls.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/services/ws_machine/preflightControls.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt/ws_machine
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )

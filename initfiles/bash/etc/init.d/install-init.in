@@ -1,0 +1,235 @@
+#!/bin/bash
+
+## Copyright © 2011 HPCC Systems.  All rights reserved. 
+
+###<REPLACE>###
+
+source ${INSTALL_DIR}/etc/init.d/hpcc_common
+source ${INSTALL_DIR}/etc/init.d/init-functions
+
+installConfs () 
+{
+    fileName=$1
+    configPath=$2
+
+    printf "Installing %-44s ..." "${fileName}"
+    if [ ! -e ${configPath}/${fileName} ]; then
+        if [ -e ${configPath}/rpmnew/${fileName} ]; then
+            cp -f ${configPath}/rpmnew/${fileName} ${configPath}/${fileName}
+            log_success_msg
+        else
+            if [ -e ${INSTALL_DIR}/${configPath}/rpmnew/${fileName} ]; then
+                cp -f ${INSTALL_DIR}/${configPath}/rpmnew/${fileName} ${configPath}/${fileName}
+                cp -f ${INSTALL_DIR}/${configPath}/rpmnew/${fileName} ${configPath}/rpmnew/${fileName}
+                log_success_msg
+            else
+                log_failure_msg "Fail: File doesn't exist in rpmnew"
+            fi
+        fi
+    else
+        log_success_msg
+    fi
+}
+
+
+installFile ()
+{
+    fileNameFrom=$1
+    fileNameTo=$2
+    symlink=$3
+    createDir=$4
+    option="-f"
+    if [ ${symlink} != 0 ];then
+        option="-sf"
+    fi
+
+    if [ ! -z "${createDir}" ]; then
+        if [ ! -d ${createDir} ];then
+            mkdir -p ${createDir}
+        fi
+    fi
+
+    cp ${option} ${fileNameFrom} ${fileNameTo} 2> /dev/null
+
+    printf "Installing %-44s ..." "${fileNameTo}"
+    if [ -L ${fileNameTo} ]; then
+        log_success_msg
+    elif [ -e ${fileNameTo} ] && [ ! -L ${fileNameTo} ] ; then
+        log_success_msg
+    else
+        log_failure_msg
+    fi
+}
+
+
+fileCheck ()
+{
+    inFile=$1
+    echo -n "Checking SSH Key for user $user ..."
+    if [ ! -e $inFile ]; then
+        echo "Fail"
+        echo "Bad File name"
+    fi
+
+    while read line
+    do
+        first=$( echo $line | awk '{ print $1 }' )
+        second=$( echo $line | awk '{ print $2 }' )
+
+        passValue=0
+        if [ -f $first ] && [ -f $second ]; then
+            newSum=$( md5sum $second )
+            if [ ${newSum} -eq ${first} ]; then
+                sc=0
+            else
+                sc=1
+            fi
+        else
+            sc=0
+        fi
+
+        if [ "$sc" -gt 0 ]; then
+           passValue=$(( ${passValue} + 1 )) 
+        fi  
+    done < ${inFile}
+
+    if [ ${passValue} -lt 3 ]; then
+        __fileCheck=0
+        echo "Fail"
+        echo "*** Security Alert ***"
+        echo "You are using a publicly available default key."
+        echo "Please run ${path}/sbin/keygen.sh to generate a new key to make your system secure."
+        echo "***  Security Alert  ***"
+    else
+        __fileCheck=1
+        echo "OK"
+    fi
+
+}
+#---------------------------------------------------------------------
+# Main code
+#---------------------------------------------------------------------
+SECTION=${SECTION:-DEFAULT}
+
+confToUse="${INSTALL_DIR}${CONFIG_DIR}/${ENV_CONF_FILE}"
+
+if [ -d ${CONFIG_DIR} ]; then
+    if [ -e ${CONFIG_DIR}/${ENV_CONF_FILE} ]; then
+        confToUse="${CONFIG_DIR}/${ENV_CONF_FILE}"
+    fi
+fi
+
+# Reading and processing conf file
+cfg.parser ${confToUse}
+cfg.section.${SECTION}
+
+if [ ${DEBUG:-NO_DEBUG} != "NO_DEBUG" ]; then
+    echo "\$runtime=$runtime"
+    echo "\$path=$path"
+    echo "\$configs=$configs"
+    echo "\$configsbackup=$configsbackup"
+    echo "\$user=$user"
+    echo "\$lock=$lock"
+    echo "\$pid=$pid"
+    echo "\$log=$log"
+    echo "\$environment=$environment"
+    echo "\$interface=$interface"
+    echo "\$sourcedir=$sourcedir"
+    echo
+fi
+
+#Checking if user exists and if doesn't then creating one
+useradd_d=$(echo "[DEFAULTLINUX]" > /tmp/tmp_defaultuser.conf;useradd -D >> /tmp/tmp_defaultuser.conf)
+cfg.parser /tmp/tmp_defaultuser.conf
+cfg.section.DEFAULTLINUX
+
+if [ "$HOME" != "$home" ]; then
+    echo "Linux Default home directory is different from HPCC default."
+    echo "Will continue to work with Linux Default $HOME....."
+    homePath=$HOME/$user
+fi
+
+initPath="$path/etc/init.d"
+homePath=$HOME/$user
+binPath="$path/bin"
+
+add_user $user $group $homePath || exit 1
+echo ""
+
+# installing files
+installConfs "environment.conf" $configs/ 1 || exit 1
+installConfs "environment.xml" $configs/  1 || exit 1
+installConfs "genenvrules.conf" $configs/ 1 || exit 1
+
+installFile "$path${CONFIG_DIR}/version" "${CONFIG_DIR}/version" 1 || exit 1
+installFile "$binPath/esp" "$binPath/configesp" 1 || exit 1
+installFile "$initPath/hpcc-init" "/etc/init.d/hpcc-init" 1 || exit 1
+installFile "$initPath/dafilesrv" "/etc/init.d/dafilesrv" 1 || exit 1
+installFile "$binPath/dfuplus" "/usr/bin/dfuplus" 1 || exit 1
+installFile "$binPath/eclcc" "/usr/bin/eclcc" 1 || exit 1
+installFile "$binPath/eclplus" "/usr/bin/eclplus" 1 || exit 1
+installFile "$binPath/soapplus" "/usr/bin/soapplus" 1 || exit 1
+installFile "$binPath/testsocket" "/usr/bin/testsocket" 1 || exit 1
+installFile "$binPath/wuget" "/usr/bin/wuget" 1 || exit 1
+installFile "$configs/$environment" "$sourcedir/$environment" 0 "$sourcedir"
+
+if [ ! -d ${homePath}/.ssh ]; then
+    mkdir -p ${homePath}/.ssh
+fi
+
+totalFiles=$(ls -l ${homePath}/.ssh | head -n 1 | awk '{ print $2 }' )
+if [ -d $homePath/.ssh ] && [ "$totalFiles" -le 3 ]; then
+    installFile "${path}/etc/sshkey/.ssh.md5" "${homePath}/.ssh.md5" 0 || exit 1
+    fileCheck "${homePath}/.ssh.md5"
+
+    if [ ${__fileCheck} -eq 0 ]; then
+        installFile "${path}/etc/sshkey/.ssh/authorized_keys" "${homePath}/.ssh/authorized_keys" 0 || exit 1
+        installFile "${path}/etc/sshkey/.ssh/id_rsa" "${homePath}/.ssh/id_rsa" 0 || exit 1
+        installFile "${path}/etc/sshkey/.ssh/id_rsa.pub" "${homePath}/.ssh/id_rsa.pub" 0 || exit 1
+    fi
+else
+    printf "SSH keys are already installed for user %-15s ..." "$user"
+    log_success_msg
+fi
+
+# Added code to change environment.conf file user home directory location for key generation
+if [ "$HOME" != "$home" ]; then
+    sed -e "s;^\(.*\)\/home$;\1$HOME;" ${CONFIG_DIR}/${ENV_CONF_FILE} > temp.conf
+    mv temp.conf ${CONFIG_DIR}/${ENV_CONF_FILE}
+fi
+
+# Setting up values for /etc/sudoers and /etc/security/limits.conf files
+${path}/sbin/add_conf_settings.sh
+
+groupNum=`grep -w ${user} /etc/passwd  | cut -d ':' -f 4`
+group=`grep -w ${groupNum} /etc/group | cut -d ':' -f 1`
+
+#Assigning correct permission for /User/hpcc
+chmod 700 ${homePath}/.ssh
+chown -R $user:$group ${homePath}
+
+$path/sbin/add_conf_settings.sh
+
+confPath=${path}${CONFIG_DIR}
+
+if [ -d ${confPath} ]; then
+    for i in $(find $confPath)
+    do 
+        if [ -d $confPath/$i ]; then
+            if [ -d $configs/$i ]; then
+                for infile in $(find $confPath/$i)
+                do
+                    cp $confPath/$i/$infile $configs/$i/$infile
+                done
+            else
+                mkdir $configs/$i
+                for infile in $(find $confPath/$i)
+                do 
+                    cp "$confPath/$i/$infile" "$configs/$i/$infile"
+                done
+            fi
+        fi
+    done
+fi
+
+

@@ -1,0 +1,220 @@
+<!--
+
+    Copyright (C) 2011 HPCC Systems.
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>From regress.bat to runregress</title>
+    <style type="text/css">
+table
+{
+    border: solid;
+    border-collapse: collapse;
+}
+th
+{
+    border: thin solid;
+    border-bottom: solid;
+    padding: 1pt 5pt;
+}
+td
+{
+    border: thin solid;
+    padding: 1pt 5pt;
+}
+    </style>
+  </head>
+  <body>
+    <h1>From <code>regress.bat</code> to <code>runregress</code></h1>
+
+    <h2>Requirements</h2>
+    <ul>
+      <li>It is assumed that you have a deployed regression suite
+      directory.</li>
+      <li>You will need the perl executable installed.</li>
+      <li>You will need a number of standard perl modules installed.
+      Many are be packaged by linux distros, otherwise all are
+      available through CPAN. See below for <a href="#perlmodules">a
+      table of modules</a>.</li>
+      <li>The deployed directory should be in <code>@INC</code> (the
+      path where perl looks for modules). If you are running from the
+      deployed directory and <code>.</code> is in <code>@INC</code>
+      (it normally is) then this is okay. Otherwise, <a
+      href="#perlinc">add it</a>.</li>
+      <li>The <code>runregress</code> tool is run like any <a
+      href="#shebang">shebanged perl script</a>. Invoke with the
+      option <code>-help</code> (or <code>-h</code> or
+      <code>-?</code>) to check that it is working, and to view the
+      documentation.</li>
+    </ul>
+
+    <h2>Configuration</h2>
+    <p>The deployment tool should create the required configuration,
+    as with <code>regress.bat</code>. You will notice some new options in the
+    deployment tool. The <code>compareProgram</code> option does not
+    apply to <code>runregress</code>, it is superceded by
+    <code>report_types</code>.</p>
+    <p>The configuration file created by the deployment tool is
+    <code>regress.ini</code>. After deployment, you can make further
+    configuration changes yourself. Anything you add to
+    <code>local.ini</code> will override the generated
+    <code>regress.ini</code>, so you should use that for long-term
+    local changes. (You can change the configuration file(s) used on
+    the command line, but this is the default.)</p>
+    <p>The argument on the command line names the chosen
+    configuration, by identifying a block to load from each
+    configuration file. This block consists of a line
+    <code>[<em>configuration_name</em>]</code>, followed by lines of
+    the form <code><em>name</em>=<em>value</em></code>. A global block
+    starting <code>[*]</code> is always loaded. With
+    <code>-setup</code>, you may omit the configuration name, and only
+    the global block is loaded: with the deployed configuration file,
+    all the required variables for a setup run are included there.</p>
+    <p>With one exception, <code>runregress</code> supports all of the
+    configuration variables of <code>regress.bat</code> and more. The
+    exception is <code>compare</code>, which has been <a
+    href="#reports">superceded by <code>report</code></a>.</p>
+
+    <h2>Running</h2>
+
+    <p>Usage: <code>runregress</code> supports all of the command line
+    options of <code>regress.bat</code> and more.</p>
+
+    <p>Documentation is available using the option <code>-help</code>
+    (or <code>-h</code> or <code>-?</code>). The same information is
+    provided in HTML in the deployed directory.</p>
+
+    <p>With one exception, the behaviour of <code>runregress</code>
+    currently mimics that of <code>runregress.bat</code> in all
+    important respects. This is expected to change in the future as
+    new functionality is added to <code>runregress</code> and
+    <code>regress.bat</code> gets left behind.</p>
+
+    <p>The major exception to this emulation is in <a
+    href="#reports">generating reports.</a></p>
+
+    <p>There are other minor differences in behaviour, but hopefully
+    these are all straight improvements. For example,
+    <code>runregress</code> handles errors more robustly.</p>
+
+    <h2><a name="reports">Generating reports</a></h2>
+
+    <p>By default, <code>regress.bat</code> launches Beyond Compare on
+    completion. This is changed for <code>runregress</code>: the
+    default behaviour is now to write a summary of the results to
+    standard output. This change is necessary since
+    <code>runregress</code> is intended to be portable and the
+    availability of Beyond Compare cannot be assumed.</p>
+
+    <p>To generate another type of report, use the command line option
+    <code>-report</code> (or <code>-r</code>) or the configuration
+    variable <code>report</code>. You can generate multiple reports
+    using a comma- or space-separated list. To see a list of available
+    types and their descriptions, use the option
+    <code>-listreports</code>. To restore the launching of Beyond
+    Compare, where available, you can use <code>-r BC2</code>.</p>
+
+    <p>On linux, the <code>xxdiff</code> report type provides a
+    similar functionality, using the tool of that name. Of course, you
+    need to be either running the suite locally or via a ssh
+    connection with X-forwarding.</p>
+
+    <p>One new feature of <code>runregress</code> is the option to
+    generate reports on a suite you have previously run. To do this,
+    use the option <code>-norun</code> (<code>-n</code>).</p>
+
+    <p>Another new feature is the checking of setup runs. Where
+    <code>regress.bat</code> ignores the output of setup queries,
+    <code>runregress</code> checks for errors.</p>
+
+    <h2>Notes</h2>
+
+    <h3><a name="perlmodules">Perl modules used</a></h3>
+    <table>
+      <tr><th>Module</th><th>Status</th></tr>
+      <tr><td><code>Config::Simple</code></td><td>Required</td></tr>
+      <tr><td><code>Cwd</code></td><td>Required</td></tr>
+      <tr><td><code>Exporter</code></td><td>Required</td></tr>
+      <tr><td><code>File::Compare</code></td><td>Required</td></tr>
+      <tr><td><code>File::Copy</code></td><td>Required</td></tr>
+      <tr><td><code>File::Path</code></td><td>Required</td></tr>
+      <tr><td><code>File::Spec::Functions</code></td><td>Required</td></tr>
+      <tr><td><code>Getopt::Long</code></td><td>Required</td></tr>
+      <tr><td><code>IPC::Run</code></td><td>Required</td></tr>
+      <tr><td><code>Pod::Usage</code></td><td>Required</td></tr>
+      <tr><td><code>POSIX</code></td><td>Required</td></tr>
+
+      <tr><td><code>Text::Diff</code></td><td>Required by the
+      <code>Diff</code> and <code>DiffFull</code> report
+      types</td></tr>
+      <tr><td><code>HTML::Entities</code></td><td>Required by the
+      <code>HTML</code> report type</td></tr>
+      <tr><td><code>Text::Diff::HTML</code></td><td>Required by the
+      <code>HTML</code> report type</td></tr>
+      <tr><td><code>Template</code></td><td>Required by the
+      <code>HTML</code> report type</td></tr>
+      <tr><td><code>Term::Prompt</code></td><td>Required if you do not
+      specify a password in the configuration file</td></tr>
+      <tr><td><code>Sys::Hostname</code></td><td>Recommended: if
+      available, and it can find the hostname, the hostname will be
+      logged</td></tr>
+      <tr><td><code>Text::Wrap</code></td><td>Optional: if
+      available, makes output of <code>-listreports</code>
+      neater</td></tr>
+    </table>
+
+    <h3><a name="perlinc">Adding directories to perl's module path</a></h3>
+
+    There are (at least) three ways to add <code><em>dir</em></code>
+    to <code>@INC</code>.
+
+    <ul>
+      <li>Invoke the script with <code>perl
+      -I<em>dir</em></code>.</li>
+      <li>Edit the script to add the line <code>use lib
+      <em>dir</em></code>.</li>
+      <li>Set the <code>PERL5LIB</code> environment variable.</li>
+    </ul>
+
+    <h3><a name="shebang">Running a shebanged perl script</a></h3>
+
+    <ul>
+      <li>If your system understands the shebang ( <code>#!</code> )
+      and perl can be found at <code>/usr/bin/perl</code> (these
+      things should be true on linux and cygwin) the script can be run
+      like any command: if the deployed directory is in your path (it
+      probably isn't: having <code>.</code> in your path is a security
+      risk) just use <code>runregress</code>; otherwise, use e.g.
+      <code>./runregress</code> or
+      <code>path/to/runregress</code>.</li>
+
+      <li>If you system understands the shebang but perl cannot be
+      found at <code>/usr/bin/perl</code>, either edit the shebang
+      line in the script and procede as above, or procede as
+      below.</li>
+
+      <li>If your system does not understand the shebang, invoke perl
+      explicitly using e.g. <code>perl runregress</code> or <code>perl
+      path/to/runregress</code>. This assumes that perl itself is in
+      your path (it should be).</li>
+    </ul>
+
+  </body>
+</html>

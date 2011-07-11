@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd">
+<section>
+    <title>system/jlib</title>
+
+    <para>
+        The system/jlib directory contains the sources for the system/jlib library. jlib is the core 
+    common library used by all hpcc components, and all OS-dependent code should be in here. As
+    well as isolating the rest of the system from OS dependencies by providing platform-neutral
+    implementations of such things as file IO, threading, synchronization primitives etc, jlib
+    provides common data structures and algorithms like hash tables, expanding arrays, etc.
+    </para>
+  
+  <para>
+    The 'j' in jlib stands for 'Java' - when the system was first created we were in two minds 
+    whether it should be coded in Java (the first prototypes were) or C++, and one of the original 
+    intentions for jlib was to make it easier for us to translate to Java if we ever wanted to 
+    change back. That is also the reason why we adopted a 'Java-style' coding paradigm of writing
+    member functions inline within class definitions.
+  </para>
+
+  <para>
+    The core of jlib is the IInterface interface and the associated CInterface base implementation,
+    which provides for reference-counted objects that are released when the last reference is
+    released. Most of the jlib data structures expect to work with reference-counted objects, and
+    most interfaces throughout the HPCC system will therefore be derived from IInterface.
+  </para>
+
+  <para>
+    By convention, when a function returns a pointer or reference to an object and gives ownership 
+    of it to the caller, the function name will be prefixed with get, and the function will have 
+    called Link() on the object before returning it. The caller should then release the object when 
+    it has finished with it. Conversely, functions that return pointers or references to objects 
+    without granting ownership are prefixed query. Such objects should not be released by the caller
+    but are guaranteed to remain alive for as long as the object providing the queryXXX() function.
+  </para>
+  
+  <para>
+    To ensure that objects are released properly, especially where exceptions are involved, the 
+    Owned&lt;&gt; and Linked&lt;&gt; templates should be used wherever appropriate. Owned is 
+    constructed from a pointer or reference whose link count has already beein incremented,
+    such as that returned by a getXXX() function, while the Linked constructor will call Link() for
+    the pointer it is managing. Thus Owned&lt;MyObjectType&gt; o = getXXX(); and Linked&lt;MyObjectYpe&gt;
+    o2 = queryXXX(); are roughly equivalent (the former is generally preferred).
+  </para>
+
+  <para>
+    Proper use of Link and Release is crucial for the proper operation of the system. If you Link an
+    object but forget to Release, you will create a memory leak. If you Release an object that you 
+    did not Link(), you will end up with a "negative memory leak" resulting in the potential for 
+    heap corruption, dangling pointers and other generally bad news.
+  </para>
+
+  <section>
+    <title>Key jlib classes, interfaces and templates</title>
+    <section>
+      <title>Array classes</title>
+      <para></para>
+    </section>
+    <section>
+      <title>Strings and Memory Buffers</title>
+      <para></para>
+    </section>
+    <section>
+      <title>Hash tables</title>
+      <para></para>
+    </section>
+    <section>
+      <title>Mutexes and other synchronization primitives</title>
+      <para></para>
+    </section>
+    <section>
+      <title>Threads and thread pools</title>
+      <para></para>
+    </section>
+    <section>
+      <title>File IO</title>
+      <para></para>
+    </section>
+    <section>
+      <title>Logging</title>
+      <para></para>
+    </section>
+    <section>
+      <title>Sockets</title>
+      <para></para>
+    </section>
+    <section>
+      <title>Property Trees and XML support</title>
+      <para></para>
+    </section>
+    <section>
+      <title>Compiler support</title>
+      <para></para>
+    </section>
+  </section>
+</section>

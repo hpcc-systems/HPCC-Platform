@@ -1,0 +1,27 @@
+ESPrequest $$ESP_METHOD$$Request
+{
+$$IF(ESP_REQ_PARM_COUNT)
+$$BEGINLOOP(ESP_REQ_PARM_COUNT);
+    $$ESP_REQ_PARM_TYPE$$ $$ESP_REQ_PARM$$;
+$$ENDLOOP;
+$$ENDIF
+};
+
+ESPresponse $$ESP_METHOD$$Response
+{
+$$IF(ESP_RESP_PARM_COUNT)
+$$BEGINLOOP(ESP_RESP_PARM_COUNT);
+    $$ESP_RESP_PARM_TYPE$$ $$ESP_RESP_PARM$$;
+$$ENDLOOP;
+$$ENDIF
+};
+
+ESPservice $$ESP_SERVICE$$
+{
+    ESPmethod $$ESP_METHOD$$($$ESP_METHOD$$Request, $$ESP_METHOD$$Response);
+};
+
+
+SCMexportdef($$ESP_SERVICE$$);
+
+SCMapi($$ESP_SERVICE$$) IClient$$ESP_SERVICE$$ *create$$ESP_SERVICE$$Client();

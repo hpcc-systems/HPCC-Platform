@@ -1,0 +1,9 @@
+<Dataset name='Result 1'>
+ <Row><forename>Liz                                     </forename><surname>Halliday                                </surname><id>3</id></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><forename>Liz                                     </forename><surname>Halliday                                </surname><id>3</id><filepos>80</filepos></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><id>3</id><forename>Liz</forename><surname>Halliday</surname><dob>19700909</dob><booklimit>0</booklimit><aage>34</aage><houseid>1</houseid><filepos>80</filepos></Row>
+</Dataset>

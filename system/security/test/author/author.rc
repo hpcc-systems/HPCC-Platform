@@ -1,0 +1,223 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+//Microsoft Developer Studio generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#define _AFX_NO_SPLITTER_RESOURCES\r\n"
+    "#define _AFX_NO_OLE_RESOURCES\r\n"
+    "#define _AFX_NO_TRACKER_RESOURCES\r\n"
+    "#define _AFX_NO_PROPERTY_RESOURCES\r\n"
+    "\r\n"
+    "#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)\r\n"
+    "#ifdef _WIN32\r\n"
+    "LANGUAGE 9, 1\r\n"
+    "#pragma code_page(1252)\r\n"
+    "#endif //_WIN32\r\n"
+    "#include ""res\\author.rc2""  // non-Microsoft Visual C++ edited resources\r\n"
+    "#include ""afxres.rc""         // Standard components\r\n"
+    "#endif\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDR_MAINFRAME           ICON    DISCARDABLE     "res\\author.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_AUTHOR_DIALOG DIALOGEX 0, 0, 361, 383
+STYLE DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_APPWINDOW
+CAPTION "SECSCM Authorizaton"
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "User:",IDC_STATIC,15,69,18,8
+    EDITTEXT        IDC_USER,15,81,118,14,ES_AUTOHSCROLL
+    LTEXT           "Password:",IDC_STATIC,15,103,34,8
+    EDITTEXT        IDC_PASSWORD,15,115,118,14,ES_PASSWORD | ES_AUTOHSCROLL
+    CONTROL         "Feature A",IDC_FEATURE_A,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,154,78,47,10
+    CONTROL         "Feature B",IDC_FEATURE_B,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,154,98,47,10
+    CONTROL         "Feature C",IDC_FEATURE_C,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,154,118,47,10
+    CONTROL         "Feature D",IDC_FEATURE_D,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,207,78,47,10
+    CONTROL         "Feature E",IDC_FEATURE_E,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,207,98,47,10
+    CONTROL         "Feature F",IDC_FEATURE_F,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,207,118,46,10
+    CONTROL         "Feature  G",IDC_FEATURE_G,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,262,78,49,10
+    CONTROL         "Feature H",IDC_FEATURE_H,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,262,98,47,10
+    CONTROL         "Feature I",IDC_FEATURE_I,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,262,118,44,10
+    PUSHBUTTON      "Authorize",IDC_BTN_AUTHORIZE,149,165,50,14
+    GROUPBOX        "Results  ",IDC_STATIC,7,186,347,190
+    LTEXT           "Service Name:",IDC_STATIC,7,7,48,8
+    EDITTEXT        IDC_SERVICE_NAME,7,20,244,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "Create SEC Manager",IDC_BTN_CREATE_SEC_MGR,7,41,81,14
+    GROUPBOX        "",IDC_STATIC,7,60,347,97
+    EDITTEXT        IDC_PERMISSIONS,7,205,347,167,ES_MULTILINE | 
+                    ES_AUTOHSCROLL | ES_WANTRETURN
+    PUSHBUTTON      "Create User",IDC_BTN_CREATE_USER,43,136,50,14
+    PUSHBUTTON      "Build Feature Set",IDC_BTN_BUILD_FEATURE_SET,198,136,69,
+                    14
+END
+
+
+#ifndef _MAC
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,1
+ PRODUCTVERSION 1,0,0,1
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "CompanyName", "\0"
+            VALUE "FileDescription", "author MFC Application\0"
+            VALUE "FileVersion", "1, 0, 0, 1\0"
+            VALUE "InternalName", "author\0"
+            VALUE "LegalCopyright", "Copyright (C) 2002\0"
+            VALUE "LegalTrademarks", "\0"
+            VALUE "OriginalFilename", "author.EXE\0"
+            VALUE "ProductName", "author Application\0"
+            VALUE "ProductVersion", "1, 0, 0, 1\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+#endif    // !_MAC
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO DISCARDABLE 
+BEGIN
+    IDD_AUTHOR_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 354
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 376
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+#define _AFX_NO_SPLITTER_RESOURCES
+#define _AFX_NO_OLE_RESOURCES
+#define _AFX_NO_TRACKER_RESOURCES
+#define _AFX_NO_PROPERTY_RESOURCES
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE 9, 1
+#pragma code_page(1252)
+#endif //_WIN32
+#include "res\author.rc2"  // non-Microsoft Visual C++ edited resources
+#include "afxres.rc"         // Standard components
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

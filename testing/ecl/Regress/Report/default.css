@@ -1,0 +1,76 @@
+
+body
+{
+    background: white;
+    font-family: sans-serif;
+}
+
+h1
+{
+    text-align: center;
+}
+
+table
+{
+    border: medium black solid;
+    border-collapse: collapse;
+}
+
+td
+{
+    border: thin black solid;
+    padding: 0.1em 1em;
+}
+
+div.wrong
+{
+    border-top: thin black solid;
+}
+
+div.failure, div.mismatch
+{
+    margin: 1em;
+    border: thin black solid;
+    padding: 1em;
+    font-family: monospace;
+    white-space: pre;
+}
+
+span.errors
+{
+    background: #EEE;
+}
+
+span.fileheader
+{
+    font-size: small;
+}
+
+span.hunkheader
+{
+    font-style: italic;
+}
+
+span.ctx
+{
+    color: #222;
+    background: #EEE;
+}
+
+del
+{
+    text-decoration: none;
+    background: #FDD;
+}
+
+ins
+{
+    text-decoration: none;
+    background: #DFD;
+}
+
+div.right
+{
+    border-top: thin black solid;
+    font-size: smaller;
+}

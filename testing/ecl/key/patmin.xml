@@ -1,0 +1,44 @@
+<Dataset name='Letter_min'>
+ <Row><s>abcd</s></Row>
+ <Row><s>bcd</s></Row>
+ <Row><s>cd</s></Row>
+ <Row><s>d</s></Row>
+ <Row><s>abcdefghijklmn</s></Row>
+ <Row><s>bcdefghijklmn</s></Row>
+ <Row><s>cdefghijklmn</s></Row>
+ <Row><s>defghijklmn</s></Row>
+ <Row><s>efghijklmn</s></Row>
+ <Row><s>fghijklmn</s></Row>
+</Dataset>
+<Dataset name='Letter_max'>
+ <Row><s>d</s></Row>
+ <Row><s>cd</s></Row>
+ <Row><s>bcd</s></Row>
+ <Row><s>abcd</s></Row>
+ <Row><s>fghijklmn</s></Row>
+ <Row><s>efghijklmn</s></Row>
+ <Row><s>defghijklmn</s></Row>
+ <Row><s>cdefghijklmn</s></Row>
+ <Row><s>bcdefghijklmn</s></Row>
+ <Row><s>abcdefghijklmn</s></Row>
+</Dataset>
+<Dataset name='pair_min'>
+ <Row><s>abcd</s></Row>
+ <Row><s>cd</s></Row>
+ <Row><s>abcdefghijklmn</s></Row>
+ <Row><s>cdefghijklmn</s></Row>
+ <Row><s>efghijklmn</s></Row>
+ <Row><s>ghijklmn</s></Row>
+ <Row><s>ijklmn</s></Row>
+ <Row><s>klmn</s></Row>
+</Dataset>
+<Dataset name='pair_max'>
+ <Row><s>cd</s></Row>
+ <Row><s>abcd</s></Row>
+ <Row><s>klmn</s></Row>
+ <Row><s>ijklmn</s></Row>
+ <Row><s>ghijklmn</s></Row>
+ <Row><s>efghijklmn</s></Row>
+ <Row><s>cdefghijklmn</s></Row>
+ <Row><s>abcdefghijklmn</s></Row>
+</Dataset>

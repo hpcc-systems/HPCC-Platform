@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd">
+<book lang="en_US">
+    <bookinfo>
+        <title>HPCC Source</title>
+
+        <mediaobject>
+            <imageobject>
+                <imagedata fileref="images/redswoo0.jpg" />
+            </imageobject>
+        </mediaobject>
+
+        <author>
+            <surname>Boca Documentation Team</surname>
+        </author>
+
+        <legalnotice>
+            <para>
+                We welcome your comments and feedback about this document via
+                email to <email>docfeedback@lexisnexis.com</email> Please include
+                <emphasis role="bold">Documentation Feedback</emphasis> in the subject
+                line and reference the document name, page numbers, and current Revision
+                Number in the text of the message.
+            </para>
+
+            <para>
+                LexisNexis and the Knowledge Burst logo are registered trademarks
+                of Reed Elsevier Properties Inc., used under license. Other products and
+                services may be trademarks or registered trademarks of their respective
+                companies. All names and example data used in this manual are
+                fictitious. Any similarity to actual persons, living or dead, is purely
+                coincidental.
+            </para>
+
+            <para></para>
+        </legalnotice>
+
+        <releaseinfo>
+            © 2011 LexisNexis Risk Solutions. All rights reserved
+        </releaseinfo>
+
+        <date>2011-01-11</date>
+
+        <corpname>LexisNexis</corpname>
+
+        <copyright>
+            <year>2011 LexisNexis Risk Solutions. All rights reserved</year>
+        </copyright>
+
+        <mediaobject role="logo">
+            <imageobject>
+                <imagedata fileref="images/LN_Horz.gif" scale="45" />
+            </imageobject>
+        </mediaobject>
+    </bookinfo>
+
+    <chapter>
+        <title>Overview</title>
+
+        <para>
+            This manual contains a description of the HPCC sources.
+        </para>
+    </chapter>
+
+    <chapter>
+        <title>Getting the sources</title>
+        <para>
+            The sources will be available from the portal as a tarball.
+            We will also set up a GIT repository
+        </para>
+    </chapter>
+
+    <chapter>
+        <title>Building the system from sources
+        </title>
+
+        <sect1>
+            <title>Requirements</title>
+            <para>
+        The HPCC platform requires a number of third party tools and libraries in order to build.
+
+        On Ubuntu 11, the following commands will install the required libraries
+        <programlisting>
+          sudo apt-get install cmake
+          sudo apt-get install bison
+          sudo apt-get install flex
+          sudo apt-get install libicu-dev
+          sudo apt-get install libboost-regex-dev
+          sudo apt-get install binutils-dev
+          sudo apt-get install libxerces-c2-dev
+          sudo apt-get install libxalan110-dev
+          sudo apt-get install zlib1g-dev
+          sudo apt-get libssl-dev
+        </programlisting>
+
+      </para>
+    </sect1>
+   
+        <sect1>
+            <title>Building the system</title>
+            <para>
+                The HPCC system is built using the cross-platform build tool cmake,
+                which is available for Windows, virtually all flavors of Linux, 
+                FreeBSD, and other platforms. You should install cmake version 
+                2.8.3 or later before building the sources.
+                
+                It is good practice in cmake to separate the build directory where
+                objects and executables are made from the source directory, and the 
+                HPCC cmake scripts will enforce this.
+                
+                To build the sources, create a directory where the built files should 
+                be located, and from that directory, run
+            
+                <programlisting>
+                    cmake &lt;source directory&gt;
+                </programlisting>
+                
+                Depending on your operating system and the compilers installed on it,
+                this will create a makefile, Visual Studio .sln file, or other build
+                script for building the system. If cmake was configured to create a 
+                makefile, then you can build simply by typing
+
+                <programlisting>
+                    make
+                </programlisting>
+
+                If a Visual Studio solution file was created, you can load it simply
+                by typing the name:
+                
+                <programlisting>
+                    lexisnexisrs.sln
+                </programlisting>
+
+                This will load the solution in Visual Studio where you can build in the
+                usual way.
+            </para>
+        </sect1>
+        <sect1>
+            <title>Packaging</title>
+            <para>
+                To make an installation package on a supported linux system, use the
+                command
+            
+                <programlisting>
+                    make package
+                </programlisting>
+                
+                This will first do a make to ensure everything is up to date, then will 
+                create the appropriate package for your operating system, Currently supported
+                package formats are rpm (for RedHat and Centos) and  .deb (for Debian and 
+                Ubuntu).
+            </para>
+        </sect1>
+        <sect1>
+            <title>Debugging a system</title>
+            <para>
+                On linux systems, the makefile generated by cmake will build a specific
+                version (debug or release) of the system depending on the options selected 
+                when cmake is first run in that directory. The default is to build a release
+                system. In order to build a debug system instead, use
+                command
+            
+                <programlisting>
+                    cmake -DCMAKE_BUILD_TYPE=Debug &lt;source directory&gt;
+                </programlisting>
+                
+                You can then run make or make package in the usual way to build the system.
+            </para>
+            <para>
+                On a Windows system, cmake always generates s solution file with both debug and 
+                release target platforms in it, so you can select which one to build within
+                Visual Studio.
+            </para>
+        </sect1>
+    </chapter>
+
+    <chapter>
+        <title>Coding conventions</title>
+        <sect1>
+            <title>Why coding conventions</title>
+            <para>
+                Everyone has their own ideas of what the best code formatting style is, but most
+                would agree that code in a mixture of styles is the worst of all worlds. A
+                consistent coding style makes unfamiliar code easier to understand and navigate.
+                
+                In an ideal world, the HPCC sources would adhere to the coding standards described
+                perfectly. In reality, there are many places that do not. These are being cleaned up 
+                as and when we find time.
+            </para>
+        </sect1>
+        <sect1>
+            <title>C++ coding conventions</title>
+            <para>
+                For the most part out coding style conventions match those described at 
+                http://geosoft.no/development/cppstyle.html, with a few exceptions or extensions as 
+                noted below.
+            </para>
+            <sect2>
+                <title>Source files</title>
+                <para>
+                    We use the extension .cpp for C++ source files, and .h or .hpp for header files.
+                    Header files with the .hpp extension should be used for headers that are internal
+                    to a single library, while header files with the .h extension should be used for 
+                    the interface that the library exposes. There will typically be one .h file per 
+                    library, and one .hpp file per cpp file.
+                    
+                    Source file names within a single shared library should share a common prefix to aid 
+                    in identifying where they belong.
+                    
+                    Header files with extension .ipp (i for internal) and .tpp (t for template) will 
+                    be phased out in favour of the scheme described above.
+                </para>
+            </sect2>
+            <sect2>
+                <title>Identifiers</title>
+                <para>
+                    We generally follow the java conventions for identifier naming and formatting.
+                </para>
+                
+                <para>
+                    Class and interface names are in CamelCase with a leading capital letter. 
+                    Interface names should be prefixed capital I followed by another capital.
+                    Class names may be prefixed with a C if there is a corresponding I-prefixed
+                    interface name, but need not be otherwise.
+                </para>
+
+                <para>
+                    Variables, function and method names, and parameters use camelCase starting with a
+                    lower case letter. Parameters may be prefixed with underscore.
+                </para>
+            </sect2>
+            <sect2>
+                <title>Indentation</title>
+                <para>
+                    We currently use leading tab characters tabs with a tab width of 4 for indenting
+                    C++ source and header files. While this worked well when everyone was using the same 
+                    Visual Studio editor, it's becoming less satisfactory and we intend to convert
+                    to leading spaces at some point. We will most likely keep the 4 character indentation.
+                </para>
+
+                <para>
+                    The { that starts a new scope and the corresponding } to close it are placed on a 
+                    new line by themselves, and are not indented.
+                </para>
+            </sect2>
+            <sect2>
+                <title>Comments</title>
+                <para>
+                    We generally believe in the philosophy that well written code is self-documenting.
+                    javadoc-formatted comments for classes and interfaces are being added.
+                </para>
+            </sect2>
+            <sect2>
+                <title>Namespaces</title>
+                <para>
+                    We do not use namespaces. We probably should, following the Google style guide's 
+                    guidelines - see http://google-styleguide.googlecode.com/svn/trunk/cppguide.xml#Namespaces
+                </para>
+            </sect2>
+            <sect2>
+                <title>Other</title>
+                <para>
+                    We often pretend we are coding in Java and write all our class members inline. 
+                </para>
+            </sect2>
+        </sect1>
+        <sect1>
+            <title>Other coding conventions</title>
+            <sect2>
+                <title>ECL code</title>
+                <para>
+                    The ECL style guide is published separately.
+                </para>
+            </sect2>
+            <sect2>
+                <title>Javascript, XML, XSL etc</title>
+                <para>
+                    We use the commonly accepted conventions for formatting these files.
+                </para>
+            </sect2>
+        </sect1>
+    </chapter>
+
+    <chapter>
+        <title>Design Patterns</title>
+        <sect1>
+            <title>Why Design Patterns?</title>
+            <para>
+                Consistent use of design patterns helps make the code easy to understand.
+            </para>
+        </sect1>
+        <sect1><title>Interfaces</title><para/></sect1>
+        <sect1><title>Reference counted objects</title><para/></sect1>
+        <sect1><title>STL</title><para/></sect1>
+    </chapter>
+
+    <chapter>
+        <title>Structure of the HPCC source tree</title>
+        <section>
+            <title>Introduction</title>
+            <para/>
+        </section>
+
+        <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="cmake_modules/sourcedoc.xml" />
+        <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/sourcedoc.xml" />
+        <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="dali/sourcedoc.xml" />
+        <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="deployment/sourcedoc.xml" />
+        <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="ecl/sourcedoc.xml" />
+        <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="ecllibrary/sourcedoc.xml" />
+        <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="esp/sourcedoc.xml" />
+        <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="initfiles/sourcedoc.xml" />
+        <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="plugins/sourcedoc.xml" />
+        <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="roxie/sourcedoc.xml" />
+        <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="rtl/sourcedoc.xml" />
+        <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="services/sourcedoc.xml" />
+        <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="system/sourcedoc.xml" />
+        <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="testing/sourcedoc.xml" />
+        <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="thorlcr/sourcedoc.xml" />
+        <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="tools/sourcedoc.xml" />
+
+    </chapter>
+</book>
+
+
+
+
+

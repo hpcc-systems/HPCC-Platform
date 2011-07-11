@@ -1,0 +1,20 @@
+<Dataset name='names'>
+ <Row><i>1</i><str>one  </str><__fileposition__>0</__fileposition__></Row>
+ <Row><i>4</i><str>four </str><__fileposition__>6</__fileposition__></Row>
+ <Row><i>7</i><str>seven</str><__fileposition__>12</__fileposition__></Row>
+ <Row><i>8</i><str>eight</str><__fileposition__>18</__fileposition__></Row>
+ <Row><i>9</i><str>nine </str><__fileposition__>24</__fileposition__></Row>
+</Dataset>
+<Dataset name='namesClone'>
+ <Row><i>1</i><str>one  </str><__fileposition__>0</__fileposition__></Row>
+ <Row><i>4</i><str>four </str><__fileposition__>6</__fileposition__></Row>
+ <Row><i>7</i><str>seven</str><__fileposition__>12</__fileposition__></Row>
+ <Row><i>8</i><str>eight</str><__fileposition__>18</__fileposition__></Row>
+ <Row><i>9</i><str>nine </str><__fileposition__>24</__fileposition__></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><i>2</i><str>four </str></Row>
+ <Row><i>3</i><str>four </str></Row>
+ <Row><i>4</i><str>seven</str></Row>
+ <Row><i>9</i><str>     </str></Row>
+</Dataset>

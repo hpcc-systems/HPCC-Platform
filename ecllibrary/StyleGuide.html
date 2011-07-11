@@ -1,0 +1,62 @@
+<!--
+
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+-->
+
+<head>
+<title>ECL standard library style guide</title>
+</head>
+<body>
+<H1>ECL standard library style guide</H1>
+
+The ECL code in the standard library should follow the following style guidelines:
+<ul>
+<li>All ECL keywords in upper case</li>
+<li>ECL reserved types in upper case</li>
+<li>Public attributes in camel case with leading upper case</li>
+<li>Private attributes in lower case with underscore as a separator</li>
+<li>Field names in lower case with underscore as a separator</li>
+</ul><ul>
+<li>Standard indent is 2 spaces (no tabs)</li>
+<li>Maximum line length of 120 characters</li>
+<li>Compound statements have contents indented, and END is aligned with the opening statement</li>
+<li>Field names are not indented to make them line up within a record structure</li>
+<li>Parameters are indented as necessary</li>
+</ul><ul>
+<li>Use javadoc style comments on all functions/attributes (see <A HREF="http://java.sun.com/j2se/javadoc/writingdoccomments/">Writing Javadoc Comments</A>)</li>
+</ul>
+
+For example:
+
+<pre>
+
+my_record := RECORD
+  INTEGER4 id;
+  STRING firstname{MAXLENGTH(40)};
+  STRING lastname{MAXLENGTH(50)};
+END;
+
+/**
+  * Returns a dataset of people to treat with caution matching a particular lastname.  The 
+  * names are maintained in a global database of undesirables.
+  *
+  * @param  search_lastname    A lastname used as a filter
+  * @return                    The list of people
+  * @see                       NoFlyList
+  * @see                       MorePeopleToAvoid
+  */
+
+EXPORT DodgyCharacters(STRING search_lastname) := FUNCTION
+  raw_ds := DATASET(my_record, 'undesirables', THOR);
+  RETURN raw_ds(last_name = search_lastname);
+END;
+
+</pre>
+
+Some additional rules for attributes in the library:
+<ul>
+<li>Services should be SHARED and EXPORTed via intermediate attributes</li>
+<li>All attributes must have at least one matching test.  If you're not on the test list you're not comming in.</li>
+</ul>
+
+</body>

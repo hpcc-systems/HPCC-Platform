@@ -1,0 +1,60 @@
+#! /usr/bin/perl
+
+################################################################################
+#
+#   Copyright (C) 2011 HPCC Systems.
+#
+#   All rights reserved. This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU Affero General Public License as
+#   published by the Free Software Foundation, either version 3 of the
+#   License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU Affero General Public License for more details.
+#
+#   You should have received a copy of the GNU Affero General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#################################################################################
+
+
+use strict;
+use warnings;
+use Config::Simple qw();
+use SOAP::Lite qw();
+use Data::Dumper;
+
+my ($proxypath, $myname);
+
+BEGIN
+{
+    my $cfgfile = 'soapclient.ini';
+    my $cfg = new Config::Simple();
+    $cfg->read($cfgfile) or die("Could not read config file $cfgfile: $!");
+    $proxypath = $cfg->param('proxypath') or die("No proxypath in config file $cfgfile");
+    $myname = $cfg->param('myname') or die("No myname in config file $cfgfile");
+}
+
+my @proxies = qw(log dispatch);
+my $usage = 'usage: soapclient ' . join('|', @proxies);
+die($usage) unless(@ARGV == 1);
+my ($proxyname) = @ARGV;
+die($usage) unless(grep({$proxyname eq $_} @proxies));
+
+my $serviceuri = 'urn:TestSOAP/TestService';
+my $proxyurl = $proxypath . 'soap' . $proxyname . '.cgi';
+my $soap = SOAP::Lite->uri($serviceuri)->proxy($proxyurl);
+
+my $arg = SOAP::Data->name('name')->type('string')->value($myname);
+my $resp = $soap->greeting($arg);
+
+if($resp->fault())
+{
+    print('SOAP returned error ', $resp->faultcode(), ': ', $resp->faultstring(), "\n", $resp->faultdetail(), "\n");
+}
+else
+{
+    print("SOAP returned OK\n");
+    print(Data::Dumper->Dump([$resp->method()], ['SOAP_response']));
+}

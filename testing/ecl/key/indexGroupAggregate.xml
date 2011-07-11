@@ -1,0 +1,14 @@
+<Dataset name='Result 1'>
+ <Row><books></books><surname>Flintstone          </surname><forename>Fred      </forename><_unnamed_cnt_4>2</_unnamed_cnt_4></Row>
+ <Row><books><Row><id>23</id><name>Pride and prejudice, 1st edition</name><author>Jane Austen</author><rating100>95</rating100><price>12000</price></Row><Row><id>24</id><name>Mein Kampf, 1st edition</name><author>Adolph Hitler</author><rating100>80</rating100><price>10000</price></Row></books><surname>Grabdale            </surname><forename>John      </forename><_unnamed_cnt_4>1</_unnamed_cnt_4></Row>
+ <Row><books><Row><id>6</id><name>The thinks you can think</name><author>Dr. Seuss</author><rating100>90</rating100><price>5.99</price></Row><Row><id>7</id><name>Where is flop?</name><author></author><rating100>85</rating100><price>4.99</price></Row><Row><id>8</id><name>David and Goliath</name><author></author><rating100>20</rating100><price>2.99</price></Row><Row><id>9</id><name>The story of Jonah</name><author></author><rating100>80</rating100><price>6.99</price></Row></books><surname>Halliday            </surname><forename>Abigail   </forename><_unnamed_cnt_4>3</_unnamed_cnt_4></Row>
+ <Row><books><Row><id>25</id><name>All quiet on the western front</name><author>Erich Maria Remarque</author><rating100>85</rating100><price>4.99</price></Row><Row><id>26</id><name>Fox in Socks</name><author>Dr. Seuss</author><rating100>99</rating100><price>4.99</price></Row></books><surname>Jones               </surname><forename>Brian     </forename><_unnamed_cnt_4>2</_unnamed_cnt_4></Row>
+ <Row><books><Row><id>13</id><name>The bible</name><author>Various</author><rating100>93</rating100><price>0</price></Row><Row><id>14</id><name>The Prince</name><author>Machiavelli</author><rating100>40</rating100><price>0</price></Row><Row><id>15</id><name>Atlas of the world</name><author>Times</author><rating100>70</rating100><price>0</price></Row><Row><id>16</id><name>Girl guide annual</name><author>Various</author><rating100>50</rating100><price>0</price></Row><Row><id>17</id><name>Rwandan war dances</name><author>Unknown</author><rating100>30</rating100><price>0</price></Row></books><surname>Windsor             </surname><forename>Elizabeth </forename><_unnamed_cnt_4>2</_unnamed_cnt_4></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><surname>Flintstone          </surname><forename>Fred      </forename><_unnamed_cnt_3>2</_unnamed_cnt_3></Row>
+ <Row><surname>Grabdale            </surname><forename>John      </forename><_unnamed_cnt_3>1</_unnamed_cnt_3></Row>
+ <Row><surname>Halliday            </surname><forename>Abigail   </forename><_unnamed_cnt_3>3</_unnamed_cnt_3></Row>
+ <Row><surname>Jones               </surname><forename>Brian     </forename><_unnamed_cnt_3>2</_unnamed_cnt_3></Row>
+ <Row><surname>Windsor             </surname><forename>Elizabeth </forename><_unnamed_cnt_3>2</_unnamed_cnt_3></Row>
+</Dataset>

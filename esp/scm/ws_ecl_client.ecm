@@ -1,0 +1,149 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+#ifndef WS_ECL_CLIENT_API
+#define WS_ECL_CLIENT_API __declspec(dllimport)
+#endif
+
+SCMenum WsEclClientRequestState
+{
+    ESP_CLIENT_REQUEST_OK,
+    ESP_CLIENT_REQUEST_CONNECTION_ERROR,
+    ESP_CLIENT_REQUEST_NORMAL_ERROR
+};
+
+// IClientHeaderFileSearchResp is used to access the result set of the query
+//
+
+SCMInterface IClientWsEclResp(IInterface)
+{
+   unsigned long getRequestId();
+   unsigned long getClientValue();
+   
+   WsEclClientRequestState getRequestState();
+   const char *getResultsXML();
+   const char *getSoapMessage();
+   const char *getStatusMessage(StringBuffer &message);
+   const char *getHttpMessage(StringBuffer &message);
+};
+
+
+// IClientHeaderFileSearchRequest is used to set up a simple ECL query
+//
+
+/*
+SCMInterface IClientWsEclRequest(IInterface)
+{
+    void setUrl(const char* URL);
+    void setClientValue(unsigned long cv);
+    void addTag(const char* name, const char *value);
+    void addIntTag(const char* name, int value);
+    void addArray(const char *name, StringArray &array);
+    bool hasTag(const char* name);
+    void addDataset(const char *name, const char *ds);
+};
+*/
+
+SCMInterface IClientRequestNode(IInterface)
+{
+    void addTag(const char* name, const char *value);
+    void addIntTag(const char* name, int value);
+    void setTag(const char* name, const char *value); //will overwrite the tag if it already exists.
+    bool hasTag(const char* name);
+    void addAttr(const char* name, const char* value);
+    IClientRequestNode& addChild(const char* name);
+    IClientRequestNode& addChild(const char* name, const char* value);
+    void addDataset(const char *name, const char *ds);
+};
+
+SCMInterface IClientWsEclRequest(IClientRequestNode)
+{
+    void setUrl(const char* URL);
+    void setNamespace(const char* ns);
+    void setNamespaceVar(const char* nsvar);
+    void setSoapAction(const char* action);
+    void setClientValue(unsigned long cv);
+    void addArray(const char *name, StringArray &array);
+    // Some server can not handle security header
+    void setNoSecurityHeader(bool noHeader);
+    void setSpecialMethod(const char* method);
+    void disableKeepAlive();
+    const char* getSerializedContent();
+    void setSerializedContent(const char* c);
+    void setItemTag(const char * tag);
+    IClientRequestNode& addHeader(const char* name, const char* ns);
+    void appendSerializedContent(const char * c);
+};
+
+/*
+SCMInterface IClientWsEclRequest(IInterface)
+{
+    // from IClientRequestNode
+    void addTag(const char* name, const char *value);
+    void addIntTag(const char* name, int value);
+    bool hasTag(const char* name);
+    void addAttr(const char* name, const char* value);
+    IClientRequestNode& addChild(const char* name);
+    IClientRequestNode& addChild(const char* name, const char* value);
+    void addDataset(const char *name, const char *ds);
+    // more
+    void setUrl(const char* URL);
+    void setNamespace(const char* ns);
+    void setSoapAction(const char* action);
+    void setClientValue(unsigned long cv);
+    void addArray(const char *name, StringArray &array);
+    // Some server can not handle security header
+    void setNoSecurityHeader(bool noHeader);
+};
+*/
+
+SCMinterface IClientWsEclEvents(IInterface)
+{
+   int onComplete(IClientWsEclResp &resp);
+   int onError(IClientWsEclResp &resp);
+};
+
+SCMInterface IClientWsEclService(IInterface)
+{
+    void addServiceUrl(const char * url);
+    void removeServiceUrl(const char *url);
+    const char* queryServiceUrl();
+    IClientWsEclRequest* createRequest(const char *methodName);
+   
+    IClientWsEclResp* search(IClientWsEclRequest* request);
+    void searchAsync(IClientWsEclRequest* request, IClientWsEclEvents &events);
+    IClientWsEclResp* searchEx(IClientWsEclRequest* request, const char *user, const char *pw, const char *relm);
+
+    IClientWsEclResp* searchEx(IClientWsEclRequest* request,const char* URL, const char *user, const char *pw, const char *relm);   
+    IClientWsEclResp* sendHttpRequest(IClientWsEclRequest* request, const char* method, const char* URL, 
+                                                 const char *user, const char *pw, const char *realm, const char* httpPostVariableName, 
+                                                 bool encodeHttpPostBody);
+};
+
+
+extern "C" WS_ECL_CLIENT_API IClientWsEclService * getWsEclClient();
+extern "C" WS_ECL_CLIENT_API IClientWsEclService * createWsEclClient();
+
+SCMclarion
+  map
+    module('instant ecl client')
+      createWsEclClient procedure, *cppClientWsEclService, pascal, raw, name('_createWsEclClient@0')
+    end
+  end
+SCMend
+

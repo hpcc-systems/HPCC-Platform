@@ -1,0 +1,72 @@
+<Dataset name='Result 1'>
+ <Row><Result_1>UnicodeLib.UnicodeFilterOut(const unicode src, const unicode _within)</Result_1></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><Result_2>UnicodeLib.UnicodeFilter(const unicode src, const unicode _within)</Result_2></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><Result_3>UnicodeLib.UnicodeSubstituteOut(const unicode src, const unicode _within, const unicode _newchar)</Result_3></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><Result_4>UnicodeLib.UnicodeSubstitute(const unicode src, const unicode _within, const unicode _newchar)</Result_4></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><Result_5>UnicodeLib.UnicodeRepad(const unicode src, unsigned4 size)</Result_5></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><Result_6>UnicodeLib.UnicodeFind(const unicode src, const unicode tofind, unsigned4 instance)</Result_6></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><Result_7>UnicodeLib.UnicodeExtract(const unicode src, unsigned4 instance)</Result_7></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><Result_8>UnicodeLib.UnicodeExtract50(const unicode src, unsigned4 instance)</Result_8></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><Result_9>UnicodeLib.UnicodeToLowerCase(const unicode src)</Result_9></Row>
+</Dataset>
+<Dataset name='Result 10'>
+ <Row><Result_10>UnicodeLib.UnicodeToUpperCase(const unicode src)</Result_10></Row>
+</Dataset>
+<Dataset name='Result 11'>
+ <Row><Result_11>UnicodeLib.UnicodeToProperCase(const unicode src)</Result_11></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><Result_12>UnicodeLib.UnicodeToLowerCase80(const unicode src)</Result_12></Row>
+</Dataset>
+<Dataset name='Result 13'>
+ <Row><Result_13>UnicodeLib.UnicodeToUpperCase80(const unicode src)</Result_13></Row>
+</Dataset>
+<Dataset name='Result 14'>
+ <Row><Result_14>UnicodeLib.UnicodeToProperCase80(const unicode src)</Result_14></Row>
+</Dataset>
+<Dataset name='Result 15'>
+ <Row><Result_15>UnicodeLib.UnicodeCompareIgnoreCase(const unicode src1, const unicode src2)</Result_15></Row>
+</Dataset>
+<Dataset name='Result 16'>
+ <Row><Result_16>UnicodeLib.UnicodeCompareAtStrength(const unicode src1, const unicode src2, integer1 strength)</Result_16></Row>
+</Dataset>
+<Dataset name='Result 17'>
+ <Row><Result_17>UnicodeLib.UnicodeReverse(const unicode src)</Result_17></Row>
+</Dataset>
+<Dataset name='Result 18'>
+ <Row><Result_18>UnicodeLib.UnicodeFindReplace(const unicode src, const unicode stok, const unicode rtok)</Result_18></Row>
+</Dataset>
+<Dataset name='Result 19'>
+ <Row><Result_19>UnicodeLib.UnicodeFindReplace80(const unicode src, const unicode stok, const unicode rtok)</Result_19></Row>
+</Dataset>
+<Dataset name='Result 20'>
+ <Row><Result_20>UnicodeLib.UnicodeCleanSpaces(const unicode src)</Result_20></Row>
+</Dataset>
+<Dataset name='Result 21'>
+ <Row><Result_21>UnicodeLib.UnicodeCleanSpaces25(const unicode src)</Result_21></Row>
+</Dataset>
+<Dataset name='Result 22'>
+ <Row><Result_22>UnicodeLib.UnicodeCleanSpaces80(const unicode src)</Result_22></Row>
+</Dataset>
+<Dataset name='Result 23'>
+ <Row><Result_23>UnicodeLib.UnicodeWildMatch(const unicode src, const unicode _pattern, boolean _noCase)</Result_23></Row>
+</Dataset>
+<Dataset name='Result 24'>
+ <Row><Result_24>UnicodeLib.UnicodeContains(const unicode src, const unicode _pattern, boolean _noCase)</Result_24></Row>
+</Dataset>

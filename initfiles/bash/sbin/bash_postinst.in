@@ -1,0 +1,8 @@
+#!/bin/bash 
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+
+###<REPLACE>###
+
+${INSTALL_DIR}/etc/init.d/install-init
+
+exit 0

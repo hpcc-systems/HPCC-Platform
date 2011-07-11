@@ -1,0 +1,39 @@
+################################################################################
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+################################################################################
+
+#
+# allow names of valid options to be passed in by the calling script
+# If no such options are passed in then use default option names.
+#
+if test "$thor_options" == ""; then
+    thor_options="i:u:p:qh?"
+else
+    thor_options="i:u:p:qh?"$thor_options
+fi
+
+while getopts $thor_options opt; 
+do
+    case "$opt" in
+    i) cluster=$OPTARG;;
+    u) thoruser=$OPTARG;;
+    p) thorpasswd=$OPTARG;;
+    q) quietmode=true;;
+    \? | h) echo valid options are:
+        echo "-i <instance>"
+        echo "-u <thor-user>"
+        echo "-p <password>"
+        exit 1;;
+    *) thor_option_arg[$opt]=$OPTARG;; # any valid option other than c, u or p
+    esac
+done
+
+#echo ${thor_option_arg[n]}
+
+while test "$cluster" = ""
+do
+   read -p "Please enter cluster name: " cluster
+done
+
+shift $(($OPTIND - 1))
+

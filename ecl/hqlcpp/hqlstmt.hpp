@@ -1,0 +1,263 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+#ifndef HQLSTMT_HPP
+#define HQLSTMT_HPP
+
+#ifdef HQLCPP_EXPORTS
+#define HQLCPP_API __declspec(dllexport)
+#else
+#define HQLCPP_API __declspec(dllimport)
+#endif
+
+interface IHqlStmt;
+struct BuildOptions;
+class BuildCtx;
+class HqlStmt;
+class HqlCompoundStmt;
+class HqlStmts;
+class HqlCppInstance;
+class CHqlBoundExpr;
+class all_result_types;
+
+interface IFunctionInfo;
+
+//---------------------------------------------------------------------------
+// used to represent an association of something already calculated in the context
+// e.g. a cursor, temporary value, or even dependency information.
+
+enum AssocKind { AssocAny, AssocExpr, AssocActivity, AssocCursor, AssocClass, 
+                 AssocRow,
+                 AssocActivityInstance,
+                 AssocExtract,
+                 AssocExtractContext,
+                 AssocSubQuery,
+                 AssocGraphNode,
+                 AssocSubGraph,
+                 AssocStmt,
+ };
+
+class CHqlBoundExpr;
+struct HQLCPP_API HqlExprAssociation : public CInterface
+{
+public:
+    HqlExprAssociation(IHqlExpression * _represents) { represents.set(_represents); }
+
+    virtual bool isAlias()                                  { return false; }
+    virtual bool isRowAssociation()                         { return false; }
+    virtual AssocKind getKind() = 0;
+    virtual IHqlExpression * queryExpr() const              { UNIMPLEMENTED; }
+    virtual void getBound(CHqlBoundExpr & result);
+
+public:
+    HqlExprAttr represents;
+};
+
+interface IAssociationVisitor
+{
+    virtual bool visit(HqlExprAssociation & assoc) = 0;         // return true if done
+};
+    
+//---------------------------------------------------------------------------
+// Class used to represent current location for generating source code statements.
+    
+class CHqlBoundExpr;
+class HQLCPP_API BuildCtx : public CInterface
+{
+    friend class AssociationIterator;
+public:
+    BuildCtx(HqlCppInstance & _state, _ATOM section);
+    BuildCtx(HqlCppInstance & _state);
+    BuildCtx(BuildCtx & _owner);
+    ~BuildCtx();
+
+    IHqlStmt *                  addAssign(IHqlExpression * target, IHqlExpression * value);
+    IHqlStmt *                  addAssignIncrement(IHqlExpression * target, IHqlExpression * value);
+    IHqlStmt *                  addAssignDecrement(IHqlExpression * target, IHqlExpression * value);
+    IHqlStmt *                  addAlias(IHqlStmt * stmt);
+    IHqlStmt *                  addBlock();
+    IHqlStmt *                  addBreak();
+    IHqlStmt *                  addCase(IHqlStmt * owner, IHqlExpression * condition);
+    IHqlStmt *                  addContinue();
+    IHqlStmt *                  addDeclare(IHqlExpression * name, IHqlExpression * value=NULL);
+    IHqlStmt *                  addDeclareExternal(IHqlExpression * name);
+    IHqlStmt *                  addDeclareAssign(IHqlExpression * name, IHqlExpression * value);
+    IHqlStmt *                  addDefault(IHqlStmt * owner);
+    IHqlStmt *                  addExpr(IHqlExpression * condition);
+    IHqlStmt *                  addExprOwn(IHqlExpression * condition);
+    IHqlStmt *                  addReturn(IHqlExpression * value);
+    IHqlStmt *                  addFilter(IHqlExpression * condition);
+    IHqlStmt *                  addGoto(const char * labelText);
+    IHqlStmt *                  addGroup(); // like a block but no {}
+    IHqlStmt *                  addGroupPass(IHqlExpression * pass);
+    IHqlStmt *                  addIndirection(const BuildCtx & _parent);       // pretend this is generated in the parent context (add a modified container)
+    IHqlStmt *                  addLabel(const char * labelText);
+    IHqlStmt *                  addLine(const char * filename = NULL, unsigned lineNum = 0);
+    IHqlStmt *                  addLoop(IHqlExpression * cond, IHqlExpression * next, bool atEnd);
+    IHqlStmt *                  addQuoted(const char * text);
+    IHqlStmt *                  addQuotedF(const char * text, ...);
+    IHqlStmt *                  addQuotedCompound(const char * text, const char * extra = NULL);
+    IHqlStmt *                  addQuotedCompoundOpt(const char * text, const char * extra = NULL);
+    IHqlStmt *                  addQuoted(StringBuffer & text)              { return addQuoted(text.str()); }
+    IHqlStmt *                  addQuotedCompound(StringBuffer & text, const char * extra = NULL){ return addQuotedCompound(text.str(), extra); }
+    IHqlStmt *                  addSwitch(IHqlExpression * condition);
+    void                        associate(HqlExprAssociation & next);
+    void                        associateOwn(HqlExprAssociation & next);
+    HqlExprAssociation *        associateExpr(IHqlExpression * represents, IHqlExpression * expr);
+    HqlExprAssociation *        associateExpr(IHqlExpression * represents, const CHqlBoundExpr & bound);
+    bool                        hasAssociation(HqlExprAssociation & search, bool unconditional);
+    HqlExprAssociation *        queryAssociation(IHqlExpression * dataset, AssocKind kind, HqlExprCopyArray * selectors);
+    HqlExprAssociation *        queryFirstAssociation(AssocKind kind);
+    HqlExprAssociation *        queryFirstCommonAssociation(AssocKind kind);
+    HqlExprAssociation *        queryMatchExpr(IHqlExpression * expr);
+    bool                        getMatchExpr(IHqlExpression * expr, CHqlBoundExpr & bound);
+    IHqlExpression *            getTempDeclare(ITypeInfo * type, IHqlExpression * value);
+    void                        needFunction(IFunctionInfo & helper);
+    void                        needFunction(_ATOM name);
+    void                        removeAssociation(HqlExprAssociation * search);
+    IHqlStmt *                  replaceExpr(IHqlStmt * stmt, IHqlExpression * expr);            // use with extreme care!
+    IHqlStmt *                  selectBestContext(IHqlExpression * expr);
+    void                        selectContainer();
+    void                        selectElse(IHqlStmt * filter);
+    void                        setNextConstructor()    { setNextPriority(ConPrio); }
+    void                        setNextDestructor()     { setNextPriority(DesPrio); }
+    void                        setNextNormal()         { setNextPriority(NormalPrio); }
+    void                        setNextPriority(unsigned newPrio);
+    unsigned                    setPriority(unsigned newPrio);
+
+    void                        set(_ATOM section);
+    void                        set(BuildCtx & _owner);
+    void                        walkAssociations(IAssociationVisitor & visitor);
+
+public:
+    enum { ConPrio = 1, EarlyPrio =3000, NormalPrio = 5000, LatePrio = 7000, DesPrio = 9999, OutermostScopePrio };
+
+protected:
+    HqlStmt *                   appendCompound(HqlCompoundStmt * next);
+    HqlStmt *                   appendSimple(HqlStmt * next);
+    void                        appendToOutermostScope(HqlStmt * next);
+    void                        init(HqlStmts * _root);
+    bool                        isChildOf(HqlStmt * stmt, HqlStmts * stmts);
+    void                        recordDefine(HqlStmt * declare);
+    IHqlStmt *                  recursiveGetBestContext(HqlStmts * searchStmts, HqlExprCopyArray & required);
+    void                        selectCompound(IHqlStmt * stmt);
+
+private:
+    BuildCtx(BuildCtx & owner, HqlStmts * _root);
+
+protected:
+    HqlStmts *                      root;
+    HqlStmts *                      curStmts;
+    bool                            ignoreInput;
+    unsigned                        curPriority;
+    unsigned                        nextPriority;
+    HqlCppInstance &            state;
+};
+
+
+enum StmtKind { 
+             null_stmt,
+             assign_stmt, block_stmt, group_stmt, declare_stmt, 
+             expr_stmt,
+             return_stmt,
+             quote_stmt,
+             quote_compound_stmt,
+             quote_compoundopt_stmt,
+             filter_stmt,
+             goto_stmt, label_stmt,
+             switch_stmt, case_stmt, default_stmt,
+             loop_stmt, break_stmt,
+             pass_stmt, external_stmt,
+             indirect_stmt,
+             assigninc_stmt, assigndec_stmt,
+             alias_stmt,
+             line_stmt,
+             continue_stmt,
+};
+
+
+interface IHqlStmt : public IInterface
+{
+public:
+    virtual StringBuffer &  getTextExtra(StringBuffer & out) = 0;
+    virtual bool            isIncluded() const = 0;
+    virtual StmtKind        getStmt() = 0;
+    virtual unsigned                numChildren() const = 0;
+    virtual IHqlStmt *          queryChild(unsigned index) const = 0;
+    virtual IHqlExpression *queryExpr(unsigned index) = 0;
+
+//used when creating the statement graph
+    virtual void            mergeScopeWithContainer() = 0;
+    virtual void            setIncomplete(bool incomplete) = 0;
+    virtual void            setIncluded(bool _included) = 0;
+};
+
+class HqlCppTranslator;
+void peepholeOptimize(HqlCppInstance & instance, HqlCppTranslator & translator);
+
+class AssociationIterator
+{
+public:
+    AssociationIterator(BuildCtx & ctx);
+
+    bool first();
+    bool isValid()      { return curStmts != NULL; }
+    inline bool next()  { return doNext(); }
+    HqlExprAssociation & get();
+
+protected:
+    virtual bool doNext();
+
+protected:
+    HqlStmts * rootStmts;
+    unsigned curIdx;
+    HqlStmts * curStmts;
+};
+
+
+class FilteredAssociationIterator : public AssociationIterator
+{
+public:
+    FilteredAssociationIterator(BuildCtx & ctx, AssocKind _searchKind) : AssociationIterator(ctx) { searchKind = _searchKind; }
+
+    virtual bool doNext();
+
+protected:
+    AssocKind searchKind;
+};
+
+
+
+class BoundRow;
+class RowAssociationIterator : public AssociationIterator
+{
+public:
+    RowAssociationIterator(BuildCtx & ctx) : AssociationIterator(ctx) {}
+
+    virtual bool doNext();
+
+    BoundRow & get()                                        { return (BoundRow &)AssociationIterator::get(); }
+};
+
+
+unsigned calcTotalChildren(IHqlStmt * stmt);
+
+IHqlExpression * stripTranslatedCasts(IHqlExpression * e);
+IHqlExpression * peepholeAddExpr(IHqlExpression * left, IHqlExpression * right);
+bool rightFollowsLeft(IHqlExpression * left, IHqlExpression * leftLen, IHqlExpression * right);
+
+#endif

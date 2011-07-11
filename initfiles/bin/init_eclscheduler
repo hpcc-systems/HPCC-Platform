@@ -1,0 +1,36 @@
+#!/bin/bash
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+
+PATH_PRE=`type -path hpcc_setenv`
+source ${PATH_PRE}
+PID_NAME="$PID/`basename $PWD`.pid"
+
+INIT_PID_NAME="$PID/init_`basename $PWD`.pid"
+echo $$ > $INIT_PID_NAME
+
+
+killed(){
+    rm -rf eclscheduler_sentinel.txt
+    killall -9 eclscheduler
+    sleep
+    exit 255
+}
+
+
+trap "killed" SIGINT SIGTERM SIGKILL
+echo "rerun" > eclscheduler_sentinel.txt
+eclscheduler 1>/dev/null 2>/dev/null &
+echo $! > $PID_NAME
+wait
+
+
+while [ -e eclscheduler_sentinel.txt ]; do
+        sleep 5
+        if [ -e eclscheduler_sentinel.txt ]; then
+                trap "killed" SIGINT SIGTERM SIGKILL
+        eclscheduler 1>/dev/null 2>/dev/null &
+                echo $! > $PID_NAME
+                wait
+        fi
+done
+

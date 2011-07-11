@@ -1,0 +1,25 @@
+<Dataset name='Result 1'>
+ <Row><Result_1>1</Result_1></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><Result_2>1,2</Result_2></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><Result_3>1,345</Result_3></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><Result_4></Result_4></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><Result_5>1,2,345,,5</Result_5></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><Result_6></Result_6></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><Result_7></Result_7></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><stringfilterout>ACE</stringfilterout><stringfilter>BD</stringfilter><stringsubstituteout>AXCXE</stringsubstituteout><stringsubstitute>XBXDX</stringsubstitute><stringrepad_1>ABCDE </stringrepad_1><stringrepad_2>ABC</stringrepad_2><stringfind_1>2</stringfind_1><stringfind_2>0</stringfind_2><stringfind_3>7</stringfind_3><ebcdicstringfind_1>2</ebcdicstringfind_1><ebcdicstringfind_2>0</ebcdicstringfind_2><ebcdicstringfind_3>7</ebcdicstringfind_3><stringfind2>2</stringfind2><ebcdicstringfind2>2</ebcdicstringfind2><stringextract>CD</stringextract><getdateyyyymmdd>true</getdateyyyymmdd><getbuildinfo>true</getbuildinfo><data2string>0A0D</data2string><string2data>AB</string2data><stringtolowercase>abcde</stringtolowercase><stringtouppercase>ABCDE</stringtouppercase><stringtopropercase>Abcde</stringtopropercase><stringcompareignorecase_1>0</stringcompareignorecase_1><stringcompareignorecase_2>1</stringcompareignorecase_2><stringcompareignorecase_3>-1</stringcompareignorecase_3><stringreverse>EDCBA</stringreverse><stringfindreplace>AXYDEAXYDE</stringfindreplace><stringcleanspaces>ABCDE ABCDE ABCDE</stringcleanspaces><stringwildmatch_1>true</stringwildmatch_1><stringwildmatch_2>false</stringwildmatch_2><stringcontains_1>true</stringcontains_1><stringcontains_2>false</stringcontains_2><stringcontains_3>false</stringcontains_3><stringcontains_4>false</stringcontains_4><stringextractmultiple_1>1</stringextractmultiple_1><stringextractmultiple_2>1,2</stringextractmultiple_2><stringextractmultiple_3>1,345</stringextractmultiple_3><stringextractmultiple_4></stringextractmultiple_4><stringextractmultiple_5>1,2,345,,5</stringextractmultiple_5><stringextractmultiple_6></stringextractmultiple_6><stringextractmultiple_7></stringextractmultiple_7></Row>
+ <Row><stringfilterout>ACE</stringfilterout><stringfilter>BD</stringfilter><stringsubstituteout>AXCXE</stringsubstituteout><stringsubstitute>XBXDX</stringsubstitute><stringrepad_1>ABCDE </stringrepad_1><stringrepad_2>ABC</stringrepad_2><stringfind_1>2</stringfind_1><stringfind_2>0</stringfind_2><stringfind_3>7</stringfind_3><ebcdicstringfind_1>2</ebcdicstringfind_1><ebcdicstringfind_2>0</ebcdicstringfind_2><ebcdicstringfind_3>7</ebcdicstringfind_3><stringfind2>2</stringfind2><ebcdicstringfind2>2</ebcdicstringfind2><stringextract>CD</stringextract><getdateyyyymmdd>true</getdateyyyymmdd><getbuildinfo>true</getbuildinfo><data2string>0A0D</data2string><string2data>AB</string2data><stringtolowercase>abcde</stringtolowercase><stringtouppercase>ABCDE</stringtouppercase><stringtopropercase>Abcde</stringtopropercase><stringcompareignorecase_1>0</stringcompareignorecase_1><stringcompareignorecase_2>1</stringcompareignorecase_2><stringcompareignorecase_3>-1</stringcompareignorecase_3><stringreverse>EDCBA</stringreverse><stringfindreplace>AXYDEAXYDE</stringfindreplace><stringcleanspaces>ABCDE ABCDE ABCDE</stringcleanspaces><stringwildmatch_1>true</stringwildmatch_1><stringwildmatch_2>false</stringwildmatch_2><stringcontains_1>true</stringcontains_1><stringcontains_2>false</stringcontains_2><stringcontains_3>false</stringcontains_3><stringcontains_4>false</stringcontains_4><stringextractmultiple_1>1</stringextractmultiple_1><stringextractmultiple_2>1,2</stringextractmultiple_2><stringextractmultiple_3>1,345</stringextractmultiple_3><stringextractmultiple_4></stringextractmultiple_4><stringextractmultiple_5>1,2,345,,5</stringextractmultiple_5><stringextractmultiple_6></stringextractmultiple_6><stringextractmultiple_7></stringextractmultiple_7></Row>
+</Dataset>

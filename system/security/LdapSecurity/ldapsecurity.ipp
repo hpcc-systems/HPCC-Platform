@@ -1,0 +1,407 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+#ifndef __LDAPSECURITY_IPP_
+#define __LDAPSECURITY_IPP_
+
+#pragma warning(disable:4786)
+
+#include "permissions.ipp"
+#include "aci.ipp"
+#include "caching.hpp"
+#undef new
+#include <map>
+#include <string>
+#if defined(_DEBUG) && defined(_WIN32) && !defined(USING_MPATROL)
+ #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
+#endif
+#include "seclib.hpp"
+
+class CLdapSecUser : public CInterface,
+    implements ISecUser,
+    implements ISecCredentials
+{
+private:
+    StringAttr   m_realm;
+    StringAttr   m_name;
+    StringAttr   m_fullname;
+    StringAttr   m_firstname;
+    StringAttr   m_lastname;
+    StringAttr   m_pw;
+    StringAttr   m_Fqdn;
+    StringAttr   m_Peer;
+    bool         m_isAuthenticated;
+    unsigned     m_userid;
+    MemoryBuffer m_usersid;
+    BufferArray  m_groupsids;
+    
+    bool         m_posixenabled;
+    StringAttr   m_gidnumber;
+    StringAttr   m_uidnumber;
+    StringAttr   m_homedirectory;
+    StringAttr   m_loginshell;
+
+    bool         m_sudoersenabled;
+    bool         m_insudoers;
+    StringAttr   m_sudoHost;
+    StringAttr   m_sudoCommand;
+    StringAttr   m_sudoOption;
+
+public:
+    IMPLEMENT_IINTERFACE
+
+    CLdapSecUser(const char *name, const char *pw);
+    virtual ~CLdapSecUser();
+
+//non-interfaced functions
+    virtual void setAuthenticated(bool authenticated);
+    void setUserID(unsigned userid);
+    void setUserSid(int sidlen, const char* sid);
+    MemoryBuffer& getUserSid();
+//interface ISecUser
+    const char * getName();
+    bool setName(const char * name);
+    virtual const char * getFullName();
+    virtual bool setFullName(const char * name);
+    virtual const char * getFirstName();
+    virtual bool setFirstName(const char * fname);
+    virtual const char * getLastName();
+    virtual bool setLastName(const char * lname);
+    const char * getRealm();
+    bool setRealm(const char * name);
+    bool isAuthenticated();
+    ISecCredentials & credentials();
+    virtual unsigned getUserID();
+    virtual void copyTo(ISecUser& source);
+
+    virtual const char * getFqdn();
+    virtual bool setFqdn(const char * Fqdn);
+    virtual const char *getPeer();
+    virtual bool setPeer(const char *Peer);
+
+
+    virtual SecUserStatus getStatus(){return SecUserStatus_Unknown;}
+    virtual bool setStatus(SecUserStatus Status){return false;}
+
+
+   virtual CDateTime& getPasswordExpiration(CDateTime& expirationDate) {return expirationDate; }
+   virtual bool setPasswordExpiration(CDateTime& expirationDate){return false;}
+   ISecUser * clone();
+    virtual void setProperty(const char* name, const char* value){}
+    virtual const char* getProperty(const char* name){ return "";}
+
+    virtual void setPropertyInt(const char* name, int value){}
+    virtual int getPropertyInt(const char* name){ return 0;}
+
+
+//interface ISecCredentials
+    bool setPassword(const char * pw);
+    const char* getPassword();
+    bool setEncodedPassword(SecPasswordEncoding enc, void * pw, unsigned length, void * salt, unsigned saltlen);
+    bool addToken(unsigned type, void * data, unsigned length);
+
+// Posix specific fields
+    virtual void setGidnumber(const char* gidnumber)
+    {
+        m_gidnumber.set(gidnumber);
+    }
+    virtual const char* getGidnumber()
+    {
+        return m_gidnumber.get();
+    }
+    virtual void setUidnumber(const char* uidnumber)
+    {
+        m_uidnumber.set(uidnumber);
+    }
+    virtual const char* getUidnumber()
+    {
+        return m_uidnumber.get();
+    }
+    virtual void setHomedirectory(const char* homedir)
+    {
+        m_homedirectory.set(homedir);
+    }
+    virtual const char* getHomedirectory()
+    {
+        return m_homedirectory.get();
+    }
+    virtual void setLoginshell(const char* loginshell)
+    {
+        m_loginshell.set(loginshell);
+    }
+    virtual const char* getLoginshell()
+    {
+        return m_loginshell.get();
+    }
+    virtual void setPosixenabled(bool enabled)
+    {
+        m_posixenabled = enabled;
+    }
+    virtual bool getPosixenabled()
+    {
+        return m_posixenabled;
+    }
+
+// Sudoers specific fields  
+    virtual void setSudoersEnabled(bool enabled)
+    {
+        m_sudoersenabled = enabled;
+    }
+    virtual bool getSudoersEnabled()
+    {
+        return m_sudoersenabled;
+    }
+    virtual void setInSudoers(bool in)
+    {
+        m_insudoers = in;
+    }
+    virtual bool getInSudoers()
+    {
+        return m_insudoers;
+    }
+    virtual void setSudoHost(const char* host)
+    {
+        m_sudoHost.set(host);
+    }
+    virtual const char* getSudoHost()
+    {
+        return m_sudoHost.get();
+    }
+    virtual void setSudoCommand(const char* cmd)
+    {
+         m_sudoCommand.set(cmd);
+    }
+    virtual const char* getSudoCommand()
+    {
+        return m_sudoCommand.get();
+    }
+    virtual void setSudoOption(const char* option)
+    {
+        m_sudoOption.set(option);
+    }
+    virtual const char* getSudoOption()
+    {
+        return m_sudoOption.get();
+    }
+};
+
+
+class CLdapSecResource : public CInterface,
+    implements ISecResource
+{
+private:
+    StringAttr         m_name;
+    int                m_access;
+    int                m_required_access;
+    Owned<IProperties> m_parameters;
+    StringBuffer       m_description;
+    StringBuffer       m_value;
+    SecResourceType    m_resourcetype;
+
+public: 
+    IMPLEMENT_IINTERFACE
+
+    CLdapSecResource(const char *name);
+
+    void addAccess(int flags);
+    void setAccessFlags(int flags);
+    virtual void setRequiredAccessFlags(int flags);
+    virtual int getRequiredAccessFlags();
+//interface ISecResource : extends IInterface
+    virtual const char * getName();
+    virtual int  getAccessFlags();
+    virtual int addParameter(const char* name, const char* value);
+    virtual const char * getParameter(const char * name);
+    virtual void setDescription(const char* description);
+    virtual const char* getDescription();
+
+    virtual void setValue(const char* value);
+    virtual const char* getValue();
+
+    virtual ISecResource * clone();
+    virtual SecResourceType getResourceType();
+    virtual void setResourceType(SecResourceType resourcetype);
+    virtual void copy(ISecResource* from);
+    virtual StringBuffer& toString(StringBuffer& s)
+    {
+        s.appendf("%s: %s (value: %s, rqr'ed access: %d, type: %s)", m_name.get(), m_description.str(),  
+                    m_value.str(), m_required_access, resTypeDesc(m_resourcetype)); 
+        return s;
+    }
+};
+
+
+class CLdapSecResourceList : public CInterface,
+    implements ISecResourceList
+{
+private:
+    bool m_complete;
+    StringAttr m_name;
+    IArrayOf<ISecResource> m_rlist;
+    std::map<std::string, ISecResource*> m_rmap;  
+
+public:
+    IMPLEMENT_IINTERFACE
+
+    CLdapSecResourceList(const char *name);
+
+    void setAuthorizationComplete(bool value);
+    IArrayOf<ISecResource>& getResourceList();
+
+//interface ISecResourceList : extends IInterface
+    bool isAuthorizationComplete();
+
+    virtual ISecResourceList * clone();
+    virtual bool copyTo(ISecResourceList& destination);
+
+    void clear();
+
+
+    ISecResource* addResource(const char * name);
+    virtual void addResource(ISecResource * resource);
+    bool addCustomResource(const char * name, const char * config);
+    ISecResource * getResource(const char * Resource);
+    virtual int count();
+    virtual const char* getName();
+    virtual ISecResource * queryResource(unsigned seq);
+    virtual ISecPropertyIterator * getPropertyItr();
+    virtual ISecProperty* findProperty(const char* name);
+    virtual StringBuffer& toString(StringBuffer& s) 
+    { 
+        s.appendf("name=%s, count=%d.", m_name.get(), count()); 
+        for (int i=0; i<count(); i++) 
+        { 
+            s.appendf("\nItem %d: ",i+1); 
+            queryResource(i)->toString(s); 
+        } 
+        return s;
+    }
+};
+
+class CLdapSecManager : public CInterface,
+    implements ISecManager
+{
+private:
+    Owned<ILdapClient> m_ldap_client;
+    Owned<IPermissionProcessor> m_pp;
+    Owned<IPropertyTree> m_cfg;
+    Owned<ISecAuthenticEvents> m_subscriber;
+    StringBuffer m_server;
+    void init(const char *serviceName, IPropertyTree* cfg);
+    IUserArray m_user_array;
+    Monitor m_monitor;
+    Owned<IProperties> m_extraparams;
+    CPermissionsCache m_permissionsCache;
+    bool m_cache_off[RT_SCOPE_MAX];
+    bool m_usercache_off;
+    bool authenticate(ISecUser* user);
+    StringBuffer m_description;
+
+public:
+    IMPLEMENT_IINTERFACE
+
+    CLdapSecManager(const char *serviceName, const char *config);
+    CLdapSecManager(const char *serviceName, IPropertyTree &config);
+    virtual ~CLdapSecManager();
+
+//interface ISecManager : extends IInterface
+    ISecUser * createUser(const char * user_name);
+    ISecResourceList * createResourceList(const char * rlname);
+    bool subscribe(ISecAuthenticEvents & events);
+    bool unsubscribe(ISecAuthenticEvents & events);
+    bool authorize(ISecUser& sec_user, ISecResourceList * Resources);
+    bool authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISecResourceList * Resources);
+    int authorizeEx(SecResourceType rtype, ISecUser& sec_user, const char* resourcename);
+    virtual int authorizeFileScope(ISecUser & user, const char * filescope);
+    virtual bool authorizeFileScope(ISecUser & user, ISecResourceList * resources);
+    virtual int authorizeWorkunitScope(ISecUser & user, const char * wuscope);
+    virtual bool authorizeWorkunitScope(ISecUser & user, ISecResourceList * resources);
+    virtual bool addResources(ISecUser& sec_user, ISecResourceList * resources);
+    virtual int getAccessFlagsEx(SecResourceType rtype, ISecUser & user, const char * resourcename);
+    virtual bool addResourcesEx(SecResourceType rtype, ISecUser &user, ISecResourceList* resources, SecPermissionType ptype = PT_DEFAULT, const char* basedn = NULL);
+    virtual bool addResourceEx(SecResourceType rtype, ISecUser& user, const char* resourcename, SecPermissionType ptype = PT_DEFAULT, const char* basedn = NULL);
+    virtual bool updateResources(ISecUser& sec_user, ISecResourceList * resources){return false;}
+    virtual bool addUser(ISecUser & user);
+    virtual ISecUser * lookupUser(unsigned uid);
+    virtual ISecUser * findUser(const char * username);
+    virtual ISecUserIterator * getAllUsers();
+    virtual void searchUsers(const char* searchstr, IUserArray& users);
+    virtual void getAllUsers(IUserArray& users);
+    virtual void setExtraParam(const char * name, const char * value);
+    virtual IAuthMap * createAuthMap(IPropertyTree * authconfig);
+    virtual IAuthMap * createFeatureMap(IPropertyTree * authconfig);
+    virtual IAuthMap * createSettingMap(struct IPropertyTree *){return 0;}
+    virtual bool updateSettings(ISecUser & User,ISecPropertyList * settings){return false;}
+    virtual bool updateUser(ISecUser& user, const char* newPassword);
+    virtual bool updateUser(const char* type, ISecUser& user);
+    virtual bool updateUser(const char* username, const char* newPassword);
+    virtual bool initUser(ISecUser& user){return false;}
+
+    virtual bool getResources(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& resources);
+    virtual bool getResourcesEx(SecResourceType rtype, const char * basedn, const char * searchstr, IArrayOf<ISecResource>& resources);
+    virtual void cacheSwitch(SecResourceType rtype, bool on);
+
+    virtual bool getPermissionsArray(const char* basedn, SecResourceType rtype, const char* name, IArrayOf<CPermission>& permissions);
+    virtual void getAllGroups(StringArray & groups);
+    virtual void getGroups(const char* username, StringArray & groups);
+    virtual bool changePermission(CPermissionAction& action);
+    virtual void changeUserGroup(const char* action, const char* username, const char* groupname);
+    virtual bool deleteUser(ISecUser* user);
+    virtual void addGroup(const char* groupname);
+    virtual void deleteGroup(const char* groupname);
+    virtual void getGroupMembers(const char* groupname, StringArray & users);
+    virtual void deleteResource(SecResourceType rtype, const char * name, const char * basedn);
+    virtual void renameResource(SecResourceType rtype, const char * oldname, const char * newname, const char * basedn);
+    virtual void copyResource(SecResourceType rtype, const char * oldname, const char * newname, const char * basedn);
+
+    virtual bool authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISecResourceList * Resources, bool doAuthentication);
+    virtual int authorizeEx(SecResourceType rtype, ISecUser& sec_user, const char* resourcename, bool doAuthentication);
+
+    virtual void normalizeDn(const char* dn, StringBuffer& ndn);
+    virtual bool isSuperUser(ISecUser* user);
+    virtual ILdapConfig* queryConfig();
+
+    virtual int countResources(const char* basedn, const char* searchstr, int limit);
+    virtual int countUsers(const char* searchstr, int limit);
+    virtual bool authTypeRequired(SecResourceType rtype) {return true;};
+
+    virtual bool getUserInfo(ISecUser& user, const char* infotype = NULL);
+    
+    virtual LdapServerType getLdapServerType() 
+    { 
+        if(m_ldap_client) 
+            return m_ldap_client->getServerType();
+        else
+            return ACTIVE_DIRECTORY;
+    }
+
+    virtual const char* getPasswordStorageScheme()
+    {
+        if(m_ldap_client) 
+            return m_ldap_client->getPasswordStorageScheme();
+        else
+            return NULL;
+    }
+        
+    virtual const char* getDescription()
+    {
+        return m_description.str();
+    }
+};
+
+#endif

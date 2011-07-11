@@ -1,0 +1,58 @@
+#!/bin/bash
+################################################################################
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+################################################################################
+
+
+if [ $# -lt 1 ]; then
+        echo usage: $0 thordeploydir 
+        exit 1
+fi
+
+shift
+
+export PATH_PRE=`type -path hpcc_setenv`
+source ${PATH_PRE} ""
+export PID_NAME="$PID/`basename $PWD`_master.pid" ## this needed when we use bash_init_system
+export PID_NAME_BASE="$PID/`basename $PWD`.pid"
+
+
+
+# deploydir = where binaries and scripts live
+if [ -z "$deploydir" ]; then
+export deploydir=$(pwd -P)
+fi
+# instancedir = [cwd] - on legacy system would be same as deploydir
+export instancedir=$(pwd -P)
+
+. $instancedir/setvars
+
+
+$deploydir/stop_thor $deploydir
+
+
+# ----------------------------
+
+ln -s -f $deploydir/thormaster${LCR} thormaster_$THORMASTERPORT
+
+if [ "$localthor" = "true" ]; then
+    ln -s -f $deploydir/thorslave${LCR} thorslave_$THORSLAVEPORT
+        . $deploydir/makethorgroup
+fi
+if [ "$multislaves" = "true" ]; then
+    . $deploydir/makethorgroup
+fi
+
+ulimit -n 8192
+if [ `ulimit -n` -lt 8192 ]; then
+    echo 'ulimit -n failed, aborting start_thor (perhaps you are not logged is as super user?)'
+    exit 0
+fi
+
+ENV_DIR=`cat ${HPCC_CONFIG} | sed -n "/\[DEFAULT\]/,/\[/p" | grep "^configs=" | sed -e 's/^configs=//'`
+export logdir=`updtdalienv $ENV_DIR/environment.xml -d log thor $THORNAME`
+if [ -z "$logdir" ]; then
+export logdir="./start_logs"
+fi
+mkdir -p $logdir
+$deploydir/run_thor 1>>$logdir/start_thor_$logpthtail.log 2>>$logdir/start_thor_$logpthtail.log

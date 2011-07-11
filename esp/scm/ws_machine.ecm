@@ -1,0 +1,340 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+#include "xslprocessor.hpp" 
+
+SCMenum ThresholdType
+{
+    THRESHOLD_PERCENTAGE,
+    THRESHOLD_MB
+};
+
+ESPrequest GetMachineInfoRequest
+{
+    ESParray<string> Addresses;
+    [hidden] string SortBy;
+   TpMachineType ClusterType;
+   string Cluster;
+   string OldIP;
+    string Path;
+   string AddProcessesToFilter;
+   bool   ApplyProcessFilter;
+   bool   GetProcessorInfo;
+   bool   GetStorageInfo;
+   bool   GetSoftwareInfo;
+   int    MemThreshold;
+   int    DiskThreshold;
+   int    CpuThreshold;
+   int    AutoRefresh;
+   ThresholdType MemThresholdType;
+   ThresholdType DiskThresholdType;
+   string UserName;
+   [password, cols(20)] string Password;
+   [password, cols(20)] string SecurityString;
+};
+
+//--define a struct that mimics GetMachineInfoRequest so it can be
+//--echoed back in the response
+//
+ESPstruct RequestInfoStruct
+{
+    ESParray<string> Addresses;
+    [hidden] string SortBy;
+   TpMachineType ClusterType;
+   string Cluster;
+   string OldIP;                //used for swap node
+    string Path;
+   string AddProcessesToFilter;
+   bool   ApplyProcessFilter;
+   bool   GetProcessorInfo;
+   bool   GetStorageInfo;
+   bool   GetSoftwareInfo;
+   int    MemThreshold;
+   int    DiskThreshold;
+   int    CpuThreshold;
+   int    AutoRefresh;
+   ThresholdType MemThresholdType;
+   ThresholdType DiskThresholdType;
+   [password, cols(20)] string SecurityString;
+   [min_ver("1.02")] string UserName;
+   [min_ver("1.02"), password, cols(20)] string Password;
+   [min_ver("1.03")] bool EnableSNMP;
+};
+
+
+ESPstruct ProcessorInfo
+{
+   string Type;
+   int Load;
+};
+
+ESPstruct StorageInfo
+{
+   string Description;
+   string Type;
+   int    Available;
+   int    PercentAvail;
+   int    Total;
+   int    Failures;
+};
+
+ESPstruct SWRunInfo
+{
+    string Name;
+   int    Instances;
+    int  State;
+};
+
+ESPstruct ProcessInfo
+{
+    int     PID;
+    string  Description;
+    string  Parameter;
+};
+   
+ESPStruct [nil_remove] ComponentInfo
+{
+    int Condition;
+    int State;
+    string UpTime;//component's uptime
+};
+
+ESPstruct MachineInfoEx
+{
+    string Address;
+    [min_ver("1.04")] string ConfigAddress;
+   string Name;
+   string ProcessType;
+    string DisplayType;
+    string Description;
+   string AgentVersion;
+   string Contact;
+   string Location;
+   string UpTime;
+   string ComponentName;
+   string ComponentPath;
+   int    OS;
+   ESParray<ESPstruct ProcessorInfo> Processors;
+   ESParray<ESPstruct StorageInfo> Storage;
+   ESParray<ESPstruct SWRunInfo> Running;
+   ESPstruct StorageInfo PhysicalMemory;
+   ESPstruct StorageInfo VirtualMemory;
+    ESPstruct ComponentInfo ComponentInfo;
+};
+
+
+ESPresponse [encode(0), exceptions_inline] GetMachineInfoResponse 
+{
+    ESPstruct RequestInfoStruct     RequestInfo;
+    ESParray<string>                Columns;
+    ESParray<ESPstruct MachineInfoEx> Machines;
+   string TimeStamp;
+   [min_ver("1.02")] string UserName;
+   [min_ver("1.02"), password, cols(20)] string Password;
+};
+
+
+ESPrequest GetMachineInfoRequestEx
+{
+    ESParray<string> Addresses;
+    TpMachineType ClusterType;
+};
+
+ESPresponse [encode(0), exceptions_inline] GetMachineInfoResponseEx
+{
+    ESParray<ESPstruct MachineInfoEx> Machines;
+};
+
+
+
+//-------- GetMetrics ---------
+//
+ESPrequest MetricsRequest
+{
+   [password, cols(20)] string SecurityString;
+    ESParray<string> Addresses;
+    ESParray<string> ShowColumns;
+   int    AutoRefresh;
+   bool   SelectAllChecked(false);
+   [min_ver("1.02")] string Cluster;
+   [min_ver("1.07")] bool   AutoUpdate(true);
+};
+
+ESPresponse [encode(0), exceptions_inline] MetricsResponse 
+{
+    string FieldInformation;
+    string Metrics;
+   int    AutoRefresh;
+   [min_ver("1.02")] string Cluster;
+   [min_ver("1.06")] bool   SelectAllChecked(false);
+   [min_ver("1.07")] bool   AutoUpdate(true);
+};
+
+ESPstruct RemoteExecResult
+{
+   TpMachineType ClusterType;
+    [min_ver("1.01")] string AddressOrig;
+    string Address;
+   string Response;
+   int    ResultCode;
+};
+
+ESPrequest StartStopBeginRequest
+{
+    ESParray<string> Addresses;
+    string Key1;
+    [password, cols(20)] string Key2;
+    bool Stop;
+    [min_ver("1.08")] int    MemThreshold;
+    [min_ver("1.08")] int    DiskThreshold;
+    [min_ver("1.08")] int    CpuThreshold;
+    [min_ver("1.08")] int    AutoRefresh;
+    [min_ver("1.08")] ThresholdType MemThresholdType;
+    [min_ver("1.08")] ThresholdType DiskThresholdType;
+};
+
+ESPresponse [exceptions_inline] StartStopBeginResponse 
+{
+    string Addresses;
+    string Key1;
+    [password, cols(20)] string Key2;
+    bool Stop;
+    [min_ver("1.08")] int    MemThreshold;
+    [min_ver("1.08")] int    DiskThreshold;
+    [min_ver("1.08")] int    CpuThreshold;
+    [min_ver("1.08")] int    AutoRefresh;
+    [min_ver("1.08")] ThresholdType MemThresholdType;
+    [min_ver("1.08")] ThresholdType DiskThresholdType;
+};
+
+ESPrequest StartStopDoneRequest
+{
+    string Addresses;
+    string Key1;
+    [password, cols(20)] string Key2;
+    bool Stop;
+    [min_ver("1.08")] int    MemThreshold;
+    [min_ver("1.08")] int    DiskThreshold;
+    [min_ver("1.08")] int    CpuThreshold;
+    [min_ver("1.08")] int    AutoRefresh;
+    [min_ver("1.08")] ThresholdType MemThresholdType;
+    [min_ver("1.08")] ThresholdType DiskThresholdType;
+};
+
+ESPrequest StartStopRequest
+{
+    ESParray<string> Addresses;
+    [min_ver("1.01")] string Key1;
+   [min_ver("1.01"), password, cols(20)] string Key2;
+    bool Stop;
+};
+
+ESPstruct StartStopResult
+{
+    string AddressOrig;
+    string Address;
+    string CompType;
+    [min_ver("1.05")] string Name;
+    string Path;
+    string Command;
+    string Response;
+    int    ResultCode;
+    int    OS;
+};
+
+ESPresponse [encode(0), exceptions_inline] StartStopResponse 
+{
+    ESParray<ESPstruct StartStopResult> StartStopResults;
+    bool Stop;
+    [min_ver("1.09")] bool ContainCluster;
+    [min_ver("1.08")] int    MemThreshold;
+    [min_ver("1.08")] int    DiskThreshold;
+    [min_ver("1.08")] int    CpuThreshold;
+    [min_ver("1.08")] int    AutoRefresh;
+    [min_ver("1.08")] ThresholdType MemThresholdType;
+    [min_ver("1.08")] ThresholdType DiskThresholdType;
+};
+
+ESPrequest GetTargetClusterInfoRequest
+{
+    ESParray<string> TargetClusters;
+    string AddProcessesToFilter;
+    bool   ApplyProcessFilter;
+    bool   GetProcessorInfo;
+    bool   GetStorageInfo;
+    bool   GetSoftwareInfo;
+    int    MemThreshold;
+    int    DiskThreshold;
+    int    CpuThreshold;
+    int    AutoRefresh;
+    ThresholdType MemThresholdType;
+    ThresholdType DiskThresholdType;
+};
+
+ESPstruct TargetClusterInfo
+{
+    string Name;
+    string Type;
+    ESParray<ESPstruct MachineInfoEx> Processes;
+};
+
+ESPresponse [encode(0), exceptions_inline] GetTargetClusterInfoResponse 
+{
+    ESParray<string>                        Columns;
+    ESPstruct RequestInfoStruct             RequestInfo;
+    ESParray<ESPstruct TargetClusterInfo>   TargetClusterInfoList;
+    string TimeStamp;
+};
+//-------- service ---------
+ESPservice [version("1.09"), default_client_version("1.09")] ws_machine
+{
+    ESPuses ESPstruct RequestInfoStruct;
+    ESPuses ESPstruct MachineInfoEx;
+    ESPuses ESPstruct ProcessorInfo;
+    ESPuses ESPstruct StorageInfo;
+    ESPuses ESPstruct SWRunInfo;
+   ESPuses ESPstruct RemoteExecResult;
+   ESPuses ESPStruct ComponentInfo;
+
+
+    ESPmethod [resp_xsl_default("./smc_xslt/clusterprocesses.xslt"), exceptions_inline("./smc_xslt/exceptions.xslt")]
+       GetTargetClusterInfo(GetTargetClusterInfoRequest, GetTargetClusterInfoResponse);
+
+    ESPmethod [resp_xsl_default("./smc_xslt/ws_machine/machines.xslt"), exceptions_inline("./smc_xslt/exceptions.xslt")] 
+       GetMachineInfo(GetMachineInfoRequest, GetMachineInfoResponse);
+
+    ESPmethod [resp_xsl_default("./smc_xslt/ws_machine/machines.xslt"), exceptions_inline("./smc_xslt/exceptions.xslt")] 
+       GetMachineInfoEx(GetMachineInfoRequestEx, GetMachineInfoResponseEx);
+
+
+    ESPmethod [resp_xsl_default("./smc_xslt/ws_machine/metrics.xslt"), exceptions_inline("./smc_xslt/exceptions.xslt")] 
+       GetMetrics(MetricsRequest, MetricsResponse);
+
+    ESPmethod [resp_xsl_default("./smc_xslt/ws_machine/StartStopBegin.xslt"), exceptions_inline("./smc_xslt/exceptions.xslt")]
+       StartStopBegin(StartStopBeginRequest, StartStopBeginResponse);
+
+    ESPmethod [resp_xsl_default("./smc_xslt/ws_machine/StartStopDone.xslt"), exceptions_inline("./smc_xslt/exceptions.xslt")]
+        StartStopDone(StartStopDoneRequest, StartStopResponse);
+
+    ESPmethod StartStop(StartStopRequest, StartStopResponse);
+};
+
+
+SCMexportdef(ws_machine);
+
+SCMapi(ws_machine) IClientws_machine *createws_machineClient();

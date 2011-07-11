@@ -1,0 +1,121 @@
+<Dataset name='Result 1'>
+ <Row><fname>Jane           </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>Joe            </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>John           </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>Larry          </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>Sue            </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>Frank          </fname><lname>Smith                    </lname></Row>
+ <Row><fname>Fred           </fname><lname>Smith                    </lname></Row>
+ <Row><fname>Nancy          </fname><lname>Smith                    </lname></Row>
+ <Row><fname>Sue            </fname><lname>Smith                    </lname></Row>
+ <Row><fname>Zeek           </fname><lname>Smith                    </lname></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><Result_2>LIMIT, keyed, hit</Result_2></Row>
+</Dataset>
+<Dataset name='Result 3'>
+</Dataset>
+<Dataset name='Result 4'>
+</Dataset>
+<Dataset name='Result 5'>
+</Dataset>
+<Dataset name='Result 6'>
+</Dataset>
+<Dataset name='Result 7'>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><Result_8>LIMIT, keyed, not hit</Result_8></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><fname>Jane           </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>Joe            </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>John           </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>Larry          </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>Sue            </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>Frank          </fname><lname>Smith                    </lname></Row>
+ <Row><fname>Fred           </fname><lname>Smith                    </lname></Row>
+ <Row><fname>Nancy          </fname><lname>Smith                    </lname></Row>
+ <Row><fname>Sue            </fname><lname>Smith                    </lname></Row>
+ <Row><fname>Zeek           </fname><lname>Smith                    </lname></Row>
+</Dataset>
+<Dataset name='Result 10'>
+ <Row><fname>Jane           </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>Joe            </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>John           </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>Larry          </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>Sue            </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>Frank          </fname><lname>Smith                    </lname></Row>
+ <Row><fname>Fred           </fname><lname>Smith                    </lname></Row>
+ <Row><fname>Nancy          </fname><lname>Smith                    </lname></Row>
+ <Row><fname>Sue            </fname><lname>Smith                    </lname></Row>
+ <Row><fname>Zeek           </fname><lname>Smith                    </lname></Row>
+</Dataset>
+<Dataset name='Result 11'>
+ <Row><fname>Jane           </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>Joe            </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>John           </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>Larry          </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>Sue            </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>Frank          </fname><lname>Smith                    </lname></Row>
+ <Row><fname>Fred           </fname><lname>Smith                    </lname></Row>
+ <Row><fname>Nancy          </fname><lname>Smith                    </lname></Row>
+ <Row><fname>Sue            </fname><lname>Smith                    </lname></Row>
+ <Row><fname>Zeek           </fname><lname>Smith                    </lname></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><Result_12>LIMIT, not keyed, hit</Result_12></Row>
+</Dataset>
+<Dataset name='Result 13'>
+</Dataset>
+<Dataset name='Result 14'>
+</Dataset>
+<Dataset name='Result 15'>
+</Dataset>
+<Dataset name='Result 16'>
+</Dataset>
+<Dataset name='Result 17'>
+</Dataset>
+<Dataset name='Result 18'>
+ <Row><Result_18>LIMIT, not keyed, not hit</Result_18></Row>
+</Dataset>
+<Dataset name='Result 19'>
+ <Row><fname>Jane           </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>Joe            </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>John           </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>Larry          </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>Sue            </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>Frank          </fname><lname>Smith                    </lname></Row>
+ <Row><fname>Fred           </fname><lname>Smith                    </lname></Row>
+ <Row><fname>Nancy          </fname><lname>Smith                    </lname></Row>
+ <Row><fname>Sue            </fname><lname>Smith                    </lname></Row>
+ <Row><fname>Zeek           </fname><lname>Smith                    </lname></Row>
+</Dataset>
+<Dataset name='Result 20'>
+ <Row><fname>Jane           </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>Joe            </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>John           </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>Larry          </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>Sue            </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>Frank          </fname><lname>Smith                    </lname></Row>
+ <Row><fname>Fred           </fname><lname>Smith                    </lname></Row>
+ <Row><fname>Nancy          </fname><lname>Smith                    </lname></Row>
+ <Row><fname>Sue            </fname><lname>Smith                    </lname></Row>
+ <Row><fname>Zeek           </fname><lname>Smith                    </lname></Row>
+</Dataset>
+<Dataset name='Result 21'>
+ <Row><fname>Jane           </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>Joe            </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>John           </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>Larry          </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>Sue            </fname><lname>Anderson                 </lname></Row>
+ <Row><fname>Frank          </fname><lname>Smith                    </lname></Row>
+ <Row><fname>Fred           </fname><lname>Smith                    </lname></Row>
+ <Row><fname>Nancy          </fname><lname>Smith                    </lname></Row>
+ <Row><fname>Sue            </fname><lname>Smith                    </lname></Row>
+ <Row><fname>Zeek           </fname><lname>Smith                    </lname></Row>
+</Dataset>
+<Dataset name='Result 22'>
+ <Row><Result_22>LIMIT, keyed, false condition</Result_22></Row>
+</Dataset>
+<Dataset name='Result 23'>
+</Dataset>

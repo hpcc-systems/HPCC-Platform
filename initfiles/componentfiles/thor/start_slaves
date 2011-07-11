@@ -1,0 +1,41 @@
+#!/bin/bash
+################################################################################
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+################################################################################
+
+echo --------------------------
+echo starting thorslaves ...
+
+if [ "$localthor" = "true" ]; then
+        ulimit -c unlimited
+        ulimit -n 8192
+        let "n = 1";
+        for slave in $(cat $instancedir/thorgroup); do
+        slaveport=${slave/*:/}
+        if [ "$slaveport" = "" ]; then
+            slaveport=$THORSLAVEPORT
+        fi
+        $deploydir/start_slave $deploydir $n $logpth $instancedir $slaveport $THORNAME $PATH_PRE &> $logdir/start_slave_$logpthtail.$n.log
+        let "n += 1";
+        done
+else
+        if [ "$multislaves" = "true" ]; then
+            let "n = 1";
+            for slave in $(cat $instancedir/thorgroup); do
+                ip=${slave/:*/}
+                slaveport=${slave/*:/}
+                if [ "$slaveport" = "" ]; then
+                    slaveport=$THORSLAVEPORT
+                fi
+                frunssh $ip "/bin/sh -c 'mkdir -p  $instancedir; cd $instancedir; mkdir -p $logdir; $deploydir/start_slave $deploydir $n $logpth $instancedir $slaveport $THORNAME $PATH_PRE&> $logdir/start_slave_$logpthtail.$n.log'" /t30
+                let "n += 1";
+            done
+        else
+            if [ -e $instancedir/thorgroup ]; then
+                mv $instancedir/thorgroup $instancedir/thorgroup.local
+            fi
+            frunssh $instancedir/slaves "/bin/sh -c 'mkdir -p  $instancedir; cd $instancedir; mkdir -p $logdir; $deploydir/start_slave $deploydir %n $logpth $instancedir $THORSLAVEPORT $THORNAME $PATH_PRE &> $logdir/start_slave_$logpthtail.log'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries 2>&1
+        fi
+fi
+echo thorslaves started
+

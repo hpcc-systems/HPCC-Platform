@@ -1,0 +1,309 @@
+<!--
+
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+-->
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSPY v5 rel. 4 U (http://www.xmlspy.com) by Rajeev Moondhra (Seisint, Inc.) -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:include schemaLocation="environment.xsd"/>
+    <xs:element name="SiteCertificate">
+        <xs:annotation>
+            <xs:documentation>Describes a site certificate</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="Instance" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:appinfo>
+                            <viewType>Instance</viewType>
+                            <viewChildNodes>true</viewChildNodes>
+                        </xs:appinfo>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="Certificate" type="xs:string" minOccurs="0">
+                                <xs:annotation>
+                                    <xs:appinfo>
+                                        <tooltip>A certificate can be pasted here from the clipboard.  Otherwise,\n the generated certificate is displayed here after deployment.</tooltip>
+                                        <title>Certificate</title>
+                                    </xs:appinfo>
+                                </xs:annotation>
+                            </xs:element>
+                            <xs:element name="PrivateKey" type="xs:string" minOccurs="0">
+                                <xs:annotation>
+                                    <xs:appinfo>
+                                        <tooltip>A private key can be pasted here from the clipboard.  Otherwise,\n the generated private key is displayed here after deployment.</tooltip>
+                                        <title>Private Key</title>
+                                    </xs:appinfo>
+                                </xs:annotation>
+                            </xs:element>
+                            <xs:element name="CSR" type="xs:string" minOccurs="0">
+                                <xs:annotation>
+                                    <xs:appinfo>
+                                        <tooltip>The generated Certificate Signing Request (CSR) is displayed here after first deployment.</tooltip>
+                                        <title>Certificate Signing Request (CSR)</title>
+                                    </xs:appinfo>
+                                </xs:annotation>
+                            </xs:element>
+                        </xs:sequence>
+                        <xs:attribute name="computer" type="computerType" use="required">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <tooltip>Name of a computer as defined in the hardware section</tooltip>
+                                    <colIndex>1</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="netAddress" type="ipAddress" use="optional">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <viewType>readonly</viewType>
+                                    <colIndex>2</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="directory" type="absolutePath" use="optional">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <viewType>hidden</viewType>
+                                    <tooltip>Absolute path to be used for installation</tooltip>
+                                    <colIndex>3</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="FQDN" type="xs:string" use="optional">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <tooltip>Fully Qualified Domain Name</tooltip>
+                                    <colIndex>4</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="Notes" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:appinfo>
+                            <viewChildNodes>true</viewChildNodes>
+                        </xs:appinfo>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="Note" type="xs:string" minOccurs="0" maxOccurs="1"/>
+                        </xs:sequence>
+                        <xs:attribute name="severity" use="optional" default="Minor">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <tooltip>Significance of this note.</tooltip>
+                                    <title>Severity</title>
+                                    <colIndex>1</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                            <xs:simpleType>
+                                <xs:restriction base="xs:string">
+                                    <xs:enumeration value="Minor"/>
+                                    <xs:enumeration value="Normal"/>
+                                    <xs:enumeration value="Critical"/>
+                                </xs:restriction>
+                            </xs:simpleType>
+                        </xs:attribute>                     
+                        <xs:attribute name="date" type="AutoTimeStampType" use="optional">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <title>Date / Time</title>
+                                    <tooltip>Date and time this note was entered</tooltip>
+                                    <viewType>readonly</viewType>
+                                    <width>120</width>
+                                    <colIndex>2</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="computer" type="AutoComputerType" use="optional">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <title>Computer</title>
+                                    <tooltip>Computer from which this note was entered</tooltip>
+                                    <viewType>readonly</viewType>
+                                    <colIndex>3</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="user" type="AutoUseridType" use="optional">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <title>User</title>
+                                    <tooltip>User account from which this note was entered</tooltip>
+                                    <viewType>readonly</viewType>
+                                    <colIndex>4</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+            <xs:attribute name="build" type="buildType" use="required">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Name of the build to be deployed</tooltip>
+                        <viewType>hidden</viewType>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="buildSet" type="buildSetType" use="required">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <viewType>hidden</viewType>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="name" type="xs:string" use="required">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Name for this component</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="description" type="xs:string" use="optional" default="DFU client process">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Describes a site certificate component</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="certificateFileName" type="xs:string" use="optional" default="certificate.cer">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <required>true</required>
+                        <tooltip>Name of destination file in which the certificate will be written.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="privateKeyFileName" type="xs:string" use="optional" default="privatekey.cer">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <required>true</required>
+                        <tooltip>Name of destination file in which the private key will be written.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="passphrase" type="xs:string" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <required>true</required>
+                        <viewType>password</viewType>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="organization" type="xs:string" use="optional" default="Customer of Seisint">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <required>true</required>
+                        <tooltip>Name of your organization</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="organizationalUnit" type="xs:string" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <required>true</required>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="city" type="xs:string" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <required>true</required>
+                        <tooltip>Name of the city where this organization is located.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="state" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <required>true</required>
+                        <tooltip>Name of the state where this organization is located.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:simpleType>
+                    <xs:restriction base="xs:string">
+                        <xs:enumeration value="Alabama"/>
+                        <xs:enumeration value="Alaska"/>
+                        <xs:enumeration value="Arizona"/>
+                        <xs:enumeration value="Arkansas"/>
+                        <xs:enumeration value="California"/>
+                        <xs:enumeration value="Colorado"/>
+                        <xs:enumeration value="Connecticut"/>
+                        <xs:enumeration value="Delaware"/>
+                        <xs:enumeration value="District Of Columbia"/>
+                        <xs:enumeration value="Florida"/>
+                        <xs:enumeration value="Georgia"/>
+                        <xs:enumeration value="Hawaii"/>
+                        <xs:enumeration value="Idaho"/>
+                        <xs:enumeration value="Illinois"/>
+                        <xs:enumeration value="Indiana"/>
+                        <xs:enumeration value="Iowa"/>
+                        <xs:enumeration value="Kansas"/>
+                        <xs:enumeration value="Kentucky"/>
+                        <xs:enumeration value="Louisiana"/>
+                        <xs:enumeration value="Maine"/>
+                        <xs:enumeration value="Maryland"/>
+                        <xs:enumeration value="Massachusetts"/>
+                        <xs:enumeration value="Michigan"/>
+                        <xs:enumeration value="Minnesota"/>
+                        <xs:enumeration value="Mississippi"/>
+                        <xs:enumeration value="Missouri"/>
+                        <xs:enumeration value="Montana"/>
+                        <xs:enumeration value="Nebraska"/>
+                        <xs:enumeration value="Nevada"/>
+                        <xs:enumeration value="New Hampshire"/>
+                        <xs:enumeration value="New Jersey"/>
+                        <xs:enumeration value="New Mexico"/>
+                        <xs:enumeration value="New York"/>
+                        <xs:enumeration value="North Carolina"/>
+                        <xs:enumeration value="North Dakota"/>
+                        <xs:enumeration value="Ohio"/>
+                        <xs:enumeration value="Oklahoma"/>
+                        <xs:enumeration value="Oregon"/>
+                        <xs:enumeration value="Pennsylvania"/>
+                        <xs:enumeration value="Rhode Island"/>
+                        <xs:enumeration value="South Carolina"/>
+                        <xs:enumeration value="South Dakota"/>
+                        <xs:enumeration value="Tennessee"/>
+                        <xs:enumeration value="Texas"/>
+                        <xs:enumeration value="Utah"/>
+                        <xs:enumeration value="Vermont"/>
+                        <xs:enumeration value="Virginia"/>
+                        <xs:enumeration value="Washington"/>
+                        <xs:enumeration value="West Virginia"/>
+                        <xs:enumeration value="Wisconsin"/>
+                        <xs:enumeration value="Wyoming"/>
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="country" type="xs:string" use="optional" default="US">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <required>true</required>
+                        <title>Name of the country where this organization is located.</title>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="daysValid" type="xs:string" use="optional" default="365">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <required>true</required>
+                        <title>Number of days the certificate is valid.</title>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="regenerateCredentials" type="xs:boolean" use="optional" default="false">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Set this to true to regenerate the private key, certificate and CSR.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

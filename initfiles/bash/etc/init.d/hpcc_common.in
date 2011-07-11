@@ -1,0 +1,801 @@
+## hpcc_common.lib
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+##
+## A series of functions that are common to all hpcc-init processes 
+##
+## version v0.1
+## author Philip Schwartz <philip.schwartz@lexisnexis.com>
+##
+
+## cfg.parser parses an ini format file and when given a section places
+## the associated variables with the section in to local scope.
+##
+## $1="<path to ini file>"
+####
+
+###<REPLACE>###
+
+source  ${INSTALL_DIR}/etc/init.d/lock.sh
+source  ${INSTALL_DIR}/etc/init.d/pid.sh
+source  ${INSTALL_DIR}/etc/init.d/init-functions
+source  ${INSTALL_DIR}/etc/init.d/export-path
+
+
+cfg.parser () {
+    [[ "${VERBOSE:-0}" -eq 1 ]] && log_begin_msg "Parsing $1 config file..."
+    if [ ! -e $1 ] || [ $# -lt 1 ]; then
+    [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg 1 && return 1 || return 1
+    fi
+    IFS=$'\n' && ini=( $(cat $1 | sed -e 's/[ \t]*=[ \t]*/=/') )              # convert to line-array
+    ini=( ${ini[*]//[;#]*/} )                   # remove comments
+    ini=( ${ini[*]/#[/\}$'\n'cfg.section.} ) # set section prefix
+    ini=( ${ini[*]/%]/ \(} )                 # convert text2function (1)
+    ini=( ${ini[*]/=/=\( } )                 # convert item to array
+    ini=( ${ini[*]/%/ \)} )                  # close array parenthesis
+    ini=( ${ini[*]/%\( \)/\(\) \{} )         # convert text2function (2)
+    ini=( ${ini[*]/%\} \)/\}} )              # remove extra parenthesis
+    ini[0]=''                                # remove first element
+    ini[${#ini[*]} + 1]='}'                  # add the last brace
+    #echo "${ini[*]}"               # echoing the result
+    eval "$(echo "${ini[*]}")"               # eval the result
+    [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg 0
+}
+
+## dir.parser parses the return of configgen -listcommondirs and builds local scope 
+## arrays for each return from the generator. It also builds an array of which 
+## elements can be used in the local scope ($dirArray).
+##
+## $@="line1 . . lineN"
+##
+dir.parser() {
+    [[ "${VERBOSE:-0}" -eq 1 ]] && log_begin_msg "Parsing configgen data..."
+        if [ $# -lt 1 ]; then
+            [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg 1 && return 1 || return 1
+        fi
+        IFS=$'\n' && cmp=( $@ )
+        cmp=( ${cmp[*]/#/dir_} )
+        cmp=( ${cmp[*]/=/= dirItem=} )
+        cmp=( ${cmp[*]/=/=\(} )
+        cmp=( ${cmp[*]/%/ \)} )
+        eval "$(echo "${cmp[*]}")"
+        for i in ${!dir_*}; do
+            dirArray=( ${dirArray[@]} $i )
+        done
+    [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg 0
+}
+
+## dir.getByName allows the user to pass the name of a directory from the <Directories/>
+## tag they would like to recive and in return sets $dir_return in the local scope 
+## to the array that has been requested.
+##
+## $1="<directory name>"
+##
+dir.getByName(){
+    dir_return=""
+    name=$1
+    [[ "${VERBOSE:-0}" -eq 1 ]] && log_begin_msg "Retrieving dir by name: $1..\
+."
+    for x in ${dirArray[@]}; do
+            eval z=(\${${x}[@]})
+            if [ $x = "dir_${name}" ]; then
+            dir_return=`echo ${z[@]} | awk -F" " '{print $1}' | awk -F"=" '{print $2}'`
+            fi
+    done
+    if [[ "${VERBOSE:-0}" -eq 1 ]]; then
+    if [ ! -z "${dir_return}" ]; then
+        log_end_msg 0
+        else
+        log_end_msg 1
+        fi
+    fi
+
+}
+
+## comp.parser parses the return of configgen and builds local scope arrays for each
+## return from the generator. It also builds an array of which elements can be used in
+## the local scope ($compArray).
+##
+## $@="line1 . . lineN"
+##
+comp.parser() {
+    [[ "${VERBOSE:-0}" -eq 1 ]] && log_begin_msg "Parsing configgen data..."
+        if [ $# -lt 1 ]; then
+            [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg 1 && return 1 || return 1
+        fi
+        IFS=$'\n' && cmp=( $@ )
+        cmp=( ${cmp[*]/#/comp_} )
+        cmp=( ${cmp[*]/=/= compType=} )
+        cmp=( ${cmp[*]/;/ compPath=} )
+        cmp=( ${cmp[*]/;/ compStat=} )
+        cmp=( ${cmp[*]/=/=\(} )
+        cmp=( ${cmp[*]/%/ \)} )
+        eval "$(echo "${cmp[*]}")"
+        for i in ${!comp_*}; do
+            compArray=( ${compArray[@]} $i )
+        done
+    [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg 0
+}
+
+## comp.getByType allows the user to pass the type of component for the local system they
+## would like to recieve and in return sets $comp_return in the local scope to the array
+## that has been requested.
+##
+## $1="<component type>"
+##
+comp.getByType() {
+    comp_return=""
+    type=$1
+    [[ "${VERBOSE:-0}" -eq 1 ]] && log_begin_msg "Retrieving components by type: $1..."
+    for x in ${compArray[@]}; do
+            eval z=(\${${x}[@]})
+            eval $z
+            if [ $compType = "${type}" ]; then
+                comp_return=${z[@]}
+            fi
+    done
+    if [[ "${VERBOSE:-0}" -eq 1 ]]; then
+        if [ ! -z ${comp_return} ]; then
+            echo "Returning 0"
+            log_end_msg 0
+        else
+            echo "Returning 1"
+            log_end_msg 1
+        fi
+    fi
+}
+
+## comp.getByName allows the user to pass the type of component for the local system they
+## would like to receive and in return sets $comp_return in the local scope to the array
+## that has been requested.
+##
+## $1="<component type>"
+##
+comp.getByName() {
+    comp_return=""
+    name=$1
+    [[ "${VERBOSE:-0}" -eq 1 ]] && log_begin_msg "Retrieving component by name: $1..\
+."
+    for x in ${compArray[@]}; do
+            eval z=(\${${x}[@]})
+            eval $z
+            if [ $x = "comp_${name}" ]; then
+            comp_return=${z[@]}
+            fi
+    done
+    if [[ "${VERBOSE:-0}" -eq 1 ]]; then
+    if [ ! -z "${comp_return}" ]; then
+        log_end_msg 0
+        else
+        log_end_msg 1
+        fi
+    fi
+}
+
+
+## createDir allows the user to pass a directory to be created.
+##
+## $1="/dir/to/be/created/"
+##
+createDir() {
+    dir=$1
+    [[ "${VERBOSE:-0}" -eq 1 ]] && log_begin_msg "Creating ${dir} directory..."
+    if [ ! -d $dir ]; then
+    mkdir -p $dir
+    [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg $? && return $? || return $?
+    fi
+    [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg 1 && return 1 || return 1
+}
+
+## removeDir allows the user to pass a directory to be removed.
+##
+## $1="/dir/to/be/removed/"
+##
+removeDir() {
+    dir=$1
+    [[ "${VERBOSE:-0}" -eq 1 ]] && log_begin_msg "Removing ${dir} directory..."
+    if [ -d $dir ]; then 
+    rm -rf $dir
+    [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg $? && return $? || return $?
+    fi
+    [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg 1 && return 1 || return 1
+}
+
+
+# returns OK if $1 contains $2
+strstr() {
+  [[ "${1#*$2*}" = "$1" ]] && return 1
+  return 0
+}
+
+set_envrionmentvars() {
+    HPCC_CONFIG=${HPCC_CONFIG:-${CONFIG_DIR}/${ENV_CONF_FILE}}
+    
+    ## Retrieve the Section to use from environment variable and if not set
+    ## use default of "DEFAULT"
+    ##
+    SECTION=${SECTION:-DEFAULT}
+    DEBUG=${DEBUG:-NO_DEBUG}
+
+    cfg.parser ${HPCC_CONFIG}
+    cfg.section.${SECTION}
+
+    if [ ${DEBUG} != "NO_DEBUG" ]; then
+        echo "\$runtime=$runtime"
+        echo "\$path=$path"
+        echo "\$configs=$configs"
+        echo "\$configsbackup=$configsbackup"
+        echo "\$user=$user"
+        echo "\$lock=$lock"
+        echo "\$pid=$pid"
+        echo "\$log=$log"
+        echo "\$environment=$environment"
+        echo "\$interface=$interface"
+        echo "\$autodetectipscript=$autodetectipscript"
+        echo
+    fi
+}
+
+set_componentvars() {
+    compName=$1
+    comp.getByName ${compName}
+    compPath=`echo $comp_return | cut -d ' ' -f 2 | cut -d '=' -f 2 `
+    compType=`echo $comp_return | cut -d ' ' -f 1 | cut -d '=' -f 2 `
+    PIDPATH=${pid}/${compName}_init.pid
+    LOCKPATH=${lock}/$compName/$compName.lock
+    COMPPIDPATH=${pid}/${compName}.pid
+}
+
+get_commondirs() {
+    componentFile="${path}/componentfiles/configxml"
+    DIRS=`${configgen_path}/configgen -env ${envfile} -id ${componentFile} -listcommondirs`
+    dir.parser ${DIRS}
+}
+
+configGenCmd() {
+    componentFile="${path}/componentfiles/configxml"
+    
+    # Creating logfiles for component
+    logDir=$log/${compName}
+    logFile=$log/${compName}/${compName}_init.log    
+
+    configcmd="${configgen_path}/configgen -env ${envfile} -od ${runtime} -id ${componentFile} -c ${compName}"
+    if [ ${DEBUG} != "NO_DEBUG" ]; then
+        echo $configcmd
+    else 
+        echo $configcmd >> $logFile
+    fi
+    eval $configcmd >> $logFile 2>&1
+}
+
+createRuntime() {
+    # Creating Directories for runtime environment
+    if [ ! -d ${runtime} ]; then 
+        createDir ${runtime}
+    fi 
+
+    if [ ! -d ${pid} ]; then 
+        createDir ${pid}
+    fi
+
+    if [ ! -d ${lock} ]; then 
+        createDir ${lock}
+    fi
+
+    if [ ! -d ${log} ]; then 
+        createDir ${log}
+    fi
+
+
+    chown -c $user:$group ${runtime}  1> /dev/null 2>/dev/null
+    chown -c $user:$group ${pid}  1> /dev/null 2>/dev/null
+    chown -c $user:$group ${lock} 1> /dev/null 2>/dev/null
+    chown -c $user:$group ${log}  1> /dev/null 2>/dev/null
+
+
+    # Creating Component Specific directories
+    # Creating pidfile specific directory and changing its owner permissions 
+    if [ ! -d "$pid/$compName" ]; then
+        if [ ${DEBUG} != "NO_DEBUG" ]; then
+            echo "Creating Pidfile directory"
+        fi
+        createDir "$pid/$compName"
+    fi
+
+    if [ ! -d "$lock/$compName" ]; then
+        if [ ${DEBUG} != "NO_DEBUG" ]; then
+            echo "Creating lockfile directory"
+        fi
+        createDir "$lock/$compName"
+    fi
+    
+    if [ ! -d "$log/$compName" ]; then
+        if [ ${DEBUG} != "NO_DEBUG" ]; then
+            echo "Creating log directory"
+        fi
+        createDir "$log/$compName"
+    fi
+    
+    # Creating runtime specific directory and changing its owner permissions 
+    if [ ! -d $compPath ]; then
+        if [ ${DEBUG} != "NO_DEBUG" ]; then
+            echo "Creating Runtime Directory for $compName"
+        fi
+        createDir "$compPath"
+    fi
+
+    #change the permission for all component directory under var
+    chown -cR $user:$group "$pid/$compName"  1> /dev/null 2>/dev/null
+    chown -cR $user:$group "$lock/$compName"  1> /dev/null 2>/dev/null
+    chown -cR $user:$group "$log/$compName"  1> /dev/null 2>/dev/null
+    chown -cR $user:$group "$compPath"  1> /dev/null 2>/dev/null
+    
+    dir.getByName data
+    chown -cR $user:$group "${dir_return}"  1> /dev/null 2>/dev/null
+
+    dir.getByName data2
+    chown -cR $user:$group "${dir_return}"  1> /dev/null 2>/dev/null
+
+    dir.getByName data3
+    chown -cR $user:$group "${dir_return}"  1> /dev/null 2>/dev/null
+
+    dir.getByName query
+    chown -cR $user:$group "${dir_return}"  1> /dev/null 2>/dev/null
+
+    dir.getByName mirror
+    chown -cR $user:$group "${dir_return}"  1> /dev/null 2>/dev/null
+
+    # setting up ulimit for thor and other component which needs it.
+    ulimit -n 8192
+    ulimit -c unlimited
+
+}
+
+start_dafilesrv() {
+   ${SERV} dafilesrv status 1>/dev/null 2>/dev/null
+   if [ $? -ne 0 ];then
+      #Dafilesrv is not running so start it , before starting cleanup the lock and pid file.
+       if [ ${DEBUG} != "NO_DEBUG" ]; then
+          log_failure_msg "Pid or lock file exists, but process is not running"
+          removePid ${PIDPATH}
+          unlock ${LOCKPATH}
+      else
+          removePid ${PIDPATH}
+          unlock ${LOCKPATH}
+      fi
+
+      noStatusCheck=1
+      ${SERV} dafilesrv setup 1>/dev/null 2>/dev/null
+      startCmd ${compName} ${noStatusCheck}
+      return $?
+   else 
+      printf "Starting %-21s" "$compName.... "
+      log_failure_msg "Already started"
+      return 0
+   fi 
+}
+
+startCmd() {
+    noStatusCheck=$2
+    printf "Starting %-21s" "$compName.... "
+    if [ ${DEBUG} != "NO_DEBUG" ]; then
+        echo "compName=$compName compPath=$compPath compProcessName=$compType"
+    fi
+
+    # Creating logfiles for component
+    logDir=$log/${compName}
+    logFile=$log/${compName}/${compName}_init.log
+    
+    if [ ${noStatusCheck} -ne 1 ]; then
+       check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
+       RCSTART=$?
+       if [ ${RCSTART} -ne 0 ];then
+          if [ ${DEBUG} != "NO_DEBUG" ]; then
+              log_failure_msg "Pid or lock file exists, but process is not running"
+              removePid ${PIDPATH}
+              unlock ${LOCKPATH}
+          else
+              removePid ${PIDPATH}
+              unlock ${LOCKPATH}
+          fi
+       else
+          if [ ${DEBUG} != "NO_DEBUG" ]; then
+              log_failure_msg "Lock or Pid file already exists"
+          else
+              #Since component is already started but current script is failed till returning 0
+              log_failure_msg "Already Started"
+          fi
+          return ${RCSTART}
+       fi
+    fi
+    
+    EXEC_COMMAND="${bin_path}/init_${compType} "
+    startcmd="${daemon_path}/start-stop-daemon -S -p ${pid}/${compName}_init.pid -c ${user}:${group} -d ${compPath} -m -x ${EXEC_COMMAND} -b  >>${logFile} 2>&1" 
+
+    issueTime=`date`
+    logCommand="COMMAND:: $startcmd  ::Issued at $issueTime "
+    echo $logCommand >> $logFile
+
+
+    # Creating a Lock
+    lockPath=${lock}/${compName}
+    if [ ! -d $lockPath ]; then
+        mkdir -p $lockPath >> $logFile 2>&1
+    fi
+    chown -cR $user:$user $lockPath >> /dev/null 2>&1
+    lock ${lock}/${compName}/${compName}.lock
+
+    if [ $__lockCreated -eq 0 ]; then
+        log_failure_msg "Cannot create the lock file, File locked by subsystem"
+        return 3
+    fi 
+
+    if [ ${DEBUG} != "NO_DEBUG" ]; then
+        echo $startcmd
+    fi
+    eval $startcmd
+
+    if strstr ${compType} "thor" ; then
+        sleep 15
+        WAITTIME=30
+    else
+        sleep 1
+        WAITTIME=5
+    fi
+
+    RCSTART=0
+    WAITEDLONGENOUGH=0
+    while [[ ${WAITEDLONGENOUGH} -lt ${WAITTIME} ]]
+    do
+        WAITEDLONGENOUGH=`expr ${WAITEDLONGENOUGH}+1`
+        check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0 
+        RCSTART=$?
+        if [ ${RCSTART} -eq 0 ]; then
+          log_success_msg 
+          return 0;
+        fi
+        sleep 1
+    done
+
+    if [ $RCSTART -eq 1 ] || [ $RCSTART -eq 3 ];then
+       if [ ${DEBUG} != "NO_DEBUG" ]; then
+          log_failure_msg "${compName} is not running, Pidfile exists"
+       else
+          log_failure_msg 
+       fi
+    elif [ $RCSTART -eq 2 ];then
+       if [ ${DEBUG} != "NO_DEBUG" ]; then
+          log_failure_msg "${compName} is not running, lockfile exists"
+       else
+          log_failure_msg
+       fi
+    else
+       if [ ${DEBUG} != "NO_DEBUG" ]; then
+          log_failure_msg "Failed : Could not bring up Component"
+       else
+          log_failure_msg
+       fi
+    fi
+   
+    chmod 644 ${envfile}
+
+    return ${RCSTART}
+}
+
+stop_component() {
+    printf "Stopping %-21s" "${compName}... "
+
+    ####
+    ## This is handling for when daemon is running as an orphan daemon. That is process is 
+    ## not running but associated pidfile and/or lockfiles do exist.
+    ###
+    FAILED=0
+    check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0 
+    RCSTOP=$?
+    if [ $RCSTOP -ne 0 ];then
+       if [ ${DEBUG} != "NO_DEBUG" ]; then
+          log_failure_msg "Failed: Process is not running"
+          removePid ${PIDPATH}
+          unlock ${LOCKPATH}
+       else
+          log_failure_msg "Already Stopped"
+          removePid ${PIDPATH}
+          unlock ${LOCKPATH}
+       fi
+       return ${RCSTOP}
+    fi
+    
+    stopcmd="${daemon_path}/start-stop-daemon -K -p ${PIDPATH} >> tmp.txt 2>&1"
+
+    if [ ${DEBUG} != "NO_DEBUG" ]; then
+        echo "$stopcmd"
+    fi
+
+    eval $stopcmd 
+    check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
+    RESULT="$?"
+    
+    if [ "${RESULT}" -eq 0 ] ; then 
+        while [ 1 ]
+        do
+            check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0 
+            RCSTOP=$?
+            if [ ${RCSTOP} -ne 0 ] ; then 
+               #Before exiting check whether init_<component> is still running or not
+                while [ 1 ]
+                do 
+                   checkPid ${PIDPATH}
+                   if [ $__flagPid -eq 1 ];then
+                        checkPidExist ${PIDPATH}
+                        if [ $__pidExists -ne 1 ];then
+                            removePid ${PIDPATH}
+                            unlock ${LOCKPATH}
+                            log_success_msg  
+                            return 3 
+                        fi
+                    fi
+                done
+            fi
+            sleep 1
+       done 
+    else 
+        removePid ${PIDPATH}
+        unlock ${LOCKPATH}
+        log_success_msg  
+        RCSTOP=3
+    fi
+    return ${RCSTOP}
+}
+
+which_service(){
+    if [ -e "/sbin/service" ]; then
+        SERV=/sbin/service
+    elif [ -e "/usr/sbin/service" ]; then
+        SERV=/usr/sbin/service
+    fi
+}
+
+
+#--------------------------------------------------------------------------------
+#                        Component Specific Functions                            
+#--------------------------------------------------------------------------------
+
+
+start_component() {
+    if [ ${DEBUG} != "NO_DEBUG" ]; then
+        echo "comp_return = $comp_return"
+        echo "compName = $compName compPath = $compPath " 
+        echo "path = $PATH"
+    fi
+
+
+    # Creating logfiles for component
+    logDir=$log/${compName}
+    logFile=$log/${compName}/${compName}_init.log    
+
+    if [ ! -d $logDir ]; then
+        mkdir -p $logDir >> tmp.txt 2>&1
+        chown -cR $user:$user $logDir >> /dev/null 2>&1
+    fi
+
+    if [ ! -f $logFile ]; then
+        touch $logFile >> tmp.txt 2>&1
+        chown -cR $user:$user $logFile >> /dev/null 2>&1
+    fi 
+
+    # Creating Runtime 
+    createRuntime $compName $compPath   
+
+    # starting Component
+    configGenCmd $compName
+    STAT=0;
+
+    if [ ${runSetupOnly} -ne 1 ]
+    then
+        cd ${compPath} > $logFile 2>&1
+        startCmd ${compName} 0
+        STAT=$?
+    fi
+    return $STAT;
+}
+
+restart_component() {
+    if strstr "${compType}" "dafilesrv" ;then
+       ${SERV} dafilesrv status 1>/dev/null 2>/dev/null
+       if [ $? -eq 0 ];then
+         ${SERV} dafilesrv stop 2>/dev/null
+       else
+           echo "Component $compName was not running. Will start it now for you ...."
+           removePid ${PIDPATH}
+           unlock ${LOCKPATH}
+       fi
+         ${SERV} dafilesrv start 2>/dev/null
+    else
+       check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
+       RCRESTART=$?
+       if [ $RCRESTART -ne 0 ];then
+           echo "Component $compName was not running. Will start it now for you ...."
+           removePid ${PIDPATH}
+           unlock ${LOCKPATH}
+       else   
+           stop_component ${compName}
+       fi
+       start_component $compName
+       check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
+       RCRESTART=$?
+       return $RCRESTART
+    fi
+}
+
+status_component() {
+  sentinelFileCheck=1;
+  if strstr ${compType} "thor" && [ ${foundThorSlave}  -eq 1 ];
+  then
+    STAT=0
+    for i in `ls -lrt ${pid}/${compName}_slave*.pid | awk -F" " '{print $NF}'`;
+    do
+      checkPid ${i}
+      comp_name=`echo $i | awk -F"${pid}/" '{print $2}' | awk -F"." '{print $1}'`  
+      if [ $__flagPid -eq 1 ]; then
+         checkPidExist ${i}
+         getPid ${i}
+         if [ $__pidExists -eq 1 ];then 
+             printf "%-15s ( pid %8s ) is running..." "${comp_name}" "${__pidValue}"
+             statForEach=0
+         else 
+             printf "%-15s is stopped" "${comp_name}"
+             statForEach=3
+         fi
+      else
+         printf "%-15s is stopped" "${comp_name}"
+         statForEach=3
+      fi
+      STAT=$(( ${STAT} == 0 ? ${statForEach} : ${STAT} ))
+    echo ""
+    done
+   return ${STAT}
+  else
+    check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} ${sentinelFileCheck}
+    RCSTATUS=$?
+    getPid ${COMPPIDPATH}
+    if [ ${RCSTATUS} -ne 0 ];then
+        printf "%-15s is stopped" "$compName"
+    else
+        printf "%-15s ( pid %8s ) is running..." "${compName}" "${__pidValue}"
+    fi
+    echo ""
+    return ${RCSTATUS}
+  fi
+}
+  
+
+setup_component() {
+    printf "Setting %-22s" "$compName.... " 
+    runSetupOnly=1
+    start_component ${compName}
+    runSetupOnly=0
+    if [ $? -eq 0 ];
+    then
+       log_success_msg ""
+       return 0
+    else
+       log_failure_msg "" 
+       return 3
+    fi
+}
+
+create_dropzone() {
+    dropzones=`${configgen_path}/configgen -env ${envfile} -listdirs`
+    for D in ${dropzones} ; do
+    # Creating DropZone directory
+    if [ ! -d ${D} ]; then
+         mkdir -p $D > /dev/null 2>&1
+    fi
+      chown -cR $user:$user $D > /dev/null 2>&1
+      chmod 777 $D > /dev/null 2>&1
+    done
+}
+
+check_user(){
+    USER=$1
+    id ${USER} > /dev/null
+    if [ $? -eq 0 ];
+    then
+        return 1
+    else
+        return 0
+    fi
+}
+
+check_group(){
+    GROUP=$1
+    touch /tmp/file.$$
+    chgrp ${GROUP} /tmp/file.$$ > /dev/null 2>&1
+    if [ $(stat -c %G /tmp/file.$$) = "${GROUP}" ];
+    then
+        rm -rf /tmp/file.$$
+        return 1
+    else
+        rm -rf /tmp/file.$$
+        return 0
+    fi
+}
+
+
+add_user(){
+    USER=$1
+    GROUP=$2
+    HOMEPATH=$3
+    check_user ${USER}
+    UFND=$?
+    check_group ${GROUP}
+    GFND=$?
+    if [ ${GFND} -eq 1 ];
+    then
+        if [ ${UFND} -eq 1 ];
+        then
+            printf "Adding %s to group %s ..." "${USER}" "${GROUP}"
+            CURRGROUPS=`id -nG ${USER} | tr ' ' ','`
+            usermod -G ${CURRGROUPS},${GROUP} ${USER}
+            if [ $? -eq 0 ];
+            then
+                log_success_msg
+            else
+                log_failure_msg "Failed to add ${USER} to group ${GROUP}."
+                return 1
+            fi
+        else
+            printf "Adding %s to system ..." "${USER}"
+            useradd -s ${SHELL} -m -d ${HOMEPATH} -g ${GROUP} ${USER}
+            if [ $? -eq 0 ];
+            then
+                log_success_msg
+            else
+                log_failure_msg "Failed to add ${USER} to system."
+                return 1
+            fi
+        fi
+    else
+        printf "Creating group %s ..." "${GROUP}"
+        groupadd ${GROUP}
+        if [ $? -eq 0 ];
+        then
+            log_success_msg
+        else
+            log_failure_msg "Failed to add group ${GROUP} to system."
+            return 1
+        fi
+        if [ ${UFND} -eq 1 ];
+        then
+            printf "Adding %s to group %s ..." "${USER}" "${GROUP}"
+            CURRGROUPS=`id -nG ${USER} | tr ' ' ','`
+            usermod -G ${CURRGROUPS},${GROUP} ${USER}
+            if [ $? -eq 0 ];
+            then
+                log_success_msg
+            else
+                log_failure_msg "Failed to add ${USER} to group ${GROUP}."
+                return 1
+            fi
+        else
+            printf "Adding %s to system ..." "${USER}"
+            useradd -s ${SHELL} -m -d ${HOMEPATH} -g ${GROUP} ${USER}
+            if [ $? -eq 0 ];
+            then
+                log_success_msg
+            else
+                log_failure_msg "Failed to add ${USER} to system."
+                return 1
+            fi
+
+        fi
+    fi
+    return 0
+}
+
+is_root(){
+    if [ "$(id -u)" != "0" ]; then
+        echo "This operation can be executed only by ROOT user"
+        exit
+    fi
+}
+

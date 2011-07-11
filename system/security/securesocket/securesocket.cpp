@@ -1,0 +1,1568 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+// Some ssl prototypes use char* where they should be using const char *, resulting in lots of spurious warnings
+#pragma GCC diagnostic ignored "-Wwrite-strings"
+
+//jlib
+#include "jliball.hpp"
+#include "string.h"
+
+#ifdef _WIN32
+#include <windows.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <signal.h>  
+#else
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/tcp.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <stddef.h>
+#include <errno.h>
+#endif
+
+//openssl
+#include <openssl/rsa.h>
+#include <openssl/crypto.h>
+#ifndef _WIN32
+//x509.h includes evp.h, which in turn includes des.h which defines 
+//crypt() that throws different exception than in unistd.h
+//(this causes build break on linux) so exclude it
+#define crypt DONT_DEFINE_CRYPT
+#include <openssl/x509.h>
+#undef  crypt
+#else
+#include <openssl/x509.h>
+#endif
+#include <openssl/ssl.h>
+#include <openssl/pem.h>
+#include <openssl/err.h>
+#include <openssl/conf.h>
+#include <openssl/x509v3.h>
+
+#include "securesocket.hpp"
+
+Owned<ISecureSocketContext> server_securesocket_context;
+bool accept_selfsigned = false;
+
+#define CHK_NULL(x) if((x)==NULL) exit(1)
+#define CHK_ERR(err, s) if((err)==-1){perror(s);exit(1);}
+#define CHK_SSL(err) if((err) ==-1){ERR_print_errors_fp(stderr); exit(2);}
+
+#define THROWSECURESOCKETEXCEPTION(err) \
+  { \
+    char msg[1024]; \
+    sprintf(msg,"SecureSocket Exception Raised in: %s, line %d - %s",__FILE__, __LINE__, err); \
+    throw MakeStringException(-1, msg); }
+
+int pem_passwd_cb(char* buf, int size, int rwflag, void* password)
+{
+    strncpy(buf, (char*)password, size);
+    buf[size - 1] = '\0';
+    return(strlen(buf));
+}
+
+class CStringSet : public CInterface, implements IInterface
+{
+    class StringHolder : public CInterface
+    {
+    public:
+        StringBuffer m_str;
+        StringHolder(const char* str)
+        {
+            m_str.clear().append(str);
+        }
+
+        const char *queryFindString() const { return m_str.str(); }
+    };
+
+private:
+    OwningStringSuperHashTableOf<StringHolder> strhash;
+
+public:
+    IMPLEMENT_IINTERFACE;
+
+    void add(const char* val)
+    {
+        StringHolder* h1 = strhash.find(val);
+        if(h1 == NULL)
+            strhash.add(*(new StringHolder(val)));
+    }
+
+    bool contains(const char* val)
+    {
+        StringHolder* h1 = strhash.find(val);
+        return (h1 != NULL);
+    }
+};
+
+
+class CSecureSocket : public CInterface, implements ISecureSocket
+{
+private:
+    SSL*        m_ssl;
+    Owned<ISocket> m_socket;
+    bool        m_verify;
+    bool        m_address_match;
+    CStringSet* m_peers;
+    int         m_loglevel;
+private:
+    StringBuffer& get_cn(X509* cert, StringBuffer& cn);
+    bool verify_cert(X509* cert);
+
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CSecureSocket(ISocket* sock, SSL_CTX* ctx, bool verify = false, bool addres_match = false, CStringSet* m_peers = NULL, int loglevel=SSLogNormal);
+    CSecureSocket(int sockfd, SSL_CTX* ctx, bool verify = false, bool addres_match = false, CStringSet* m_peers = NULL, int loglevel=SSLogNormal);
+    ~CSecureSocket();
+
+    virtual int secure_accept();
+    virtual int secure_connect();
+    
+    virtual int wait_read(unsigned timeoutms);
+    virtual void read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,unsigned timeoutsecs);
+    virtual size32_t write(void const* buf, size32_t size);
+
+    //The following are the functions from ISocket that haven't been implemented.
+
+    virtual void   readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,
+                           unsigned timeoutms)
+    {
+        throw MakeStringException(-1, "not implemented");
+    }
+
+    virtual void   read(void* buf, size32_t size)
+    {
+        throw MakeStringException(-1, "not implemented");
+    }
+
+    virtual size32_t get_max_send_size()
+    {
+        throw MakeStringException(-1, "not implemented");
+    }
+
+    //
+    // This method is called by server to accept client connection
+    //
+    virtual ISocket* accept(bool allowcancel=false) // not needed for UDP
+    {
+        throw MakeStringException(-1, "not implemented");
+    }
+
+    //
+    // This method is called to check whether a socket is ready to write (i.e. some free buffer space)
+    // 
+    virtual int wait_write(unsigned timeout)
+    {
+        throw MakeStringException(-1, "not implemented");
+    }
+
+    //
+    // can be used with write to allow it to return if it would block
+    // be sure and restore to old state before calling other functions on this socket
+    //
+    virtual bool set_nonblock(bool on) // returns old state
+    {
+        throw MakeStringException(-1, "not implemented");
+    }
+
+    // enable 'nagling' - small packet coalescing (implies delayed transmission)
+    //
+    virtual bool set_nagle(bool on) // returns old state
+    {
+        throw MakeStringException(-1, "not implemented");
+    }
+
+
+    // set 'linger' time - time close will linger so that outstanding unsent data will be transmited
+    //
+    virtual void set_linger(int lingersecs)  
+    {
+        throw MakeStringException(-1, "not implemented");
+    }
+
+
+    //
+    // Cancel accept operation and close socket
+    //
+    virtual void  cancel_accept() // not needed for UDP
+    {
+        throw MakeStringException(-1, "not implemented");
+    }
+
+    //
+    // Shutdown socket: prohibit write and read operations on socket
+    //
+    virtual void  shutdown(unsigned mode) // not needed for UDP
+    {
+        m_socket->shutdown(mode);
+    }
+
+    // Get name of accepted socket and returns port
+    virtual int name(char *name,size32_t namemax)
+    {
+        return m_socket->name(name, namemax);
+    }
+
+    // Get peer name of socket and returns port - in UDP returns return addr
+    virtual int peer_name(char *name,size32_t namemax)
+    {
+        return m_socket->peer_name(name, namemax);
+    }
+
+    // Get peer endpoint of socket - in UDP returns return addr
+    virtual SocketEndpoint &getPeerEndpoint(SocketEndpoint &ep)
+    {
+        return m_socket->getPeerEndpoint(ep);
+    }
+
+    // Get peer ip of socket - in UDP returns return addr
+    virtual IpAddress &getPeerAddress(IpAddress &addr)
+    {
+        return m_socket->getPeerAddress(addr);
+    }
+
+    //
+    // Close socket
+    //
+    virtual bool connectionless() // true if accept need not be called (i.e. UDP)
+    {
+        throw MakeStringException(-1, "not implemented");
+    }
+
+    virtual void set_return_addr(int port,const char *name) // used for UDP servers only
+    {
+        throw MakeStringException(-1, "not implemented");
+    }
+
+    // Block functions 
+
+    virtual void  set_block_mode (             // must be called before block operations
+                            unsigned flags,    // BF_* flags (must match receive_block)
+                          size32_t recsize=0,  // record size (required for rec compression)
+                            unsigned timeout=0 // timeout in msecs (0 for no timeout)
+                  ) 
+    {
+        throw MakeStringException(-1, "not implemented");
+    }
+
+
+
+    virtual bool  send_block( 
+                            const void *blk,   // data to send 
+                            size32_t sz          // size to send (0 for eof)
+                  )
+    {
+        throw MakeStringException(-1, "not implemented");
+    }
+
+    virtual size32_t receive_block_size ()     // get size of next block (always must call receive_block after) 
+    {
+        throw MakeStringException(-1, "not implemented");
+    }
+
+    virtual size32_t receive_block(
+                            void *blk,         // receive pointer 
+                            size32_t sz          // max size to read (0 for sync eof) 
+                                               // if less than block size truncates block
+                  )
+    {
+        throw MakeStringException(-1, "not implemented");
+    }
+
+    virtual void  close()
+    {
+        m_socket->close();  
+    }
+
+    virtual unsigned OShandle()              // for internal use
+    {
+        return m_socket->OShandle();
+    }
+
+    virtual size32_t avail_read()            // called after wait_read to see how much data available
+    {
+        throw MakeStringException(-1, "not implemented");
+    }
+
+    virtual size32_t write_multiple(unsigned num,const void **buf, size32_t *size)
+    {
+        throw MakeStringException(-1, "not implemented");
+    }
+
+    virtual size32_t get_send_buffer_size() // get OS send buffer
+    {
+        throw MakeStringException(-1, "not implemented");
+    }
+
+    void set_send_buffer_size(size32_t sz)  // set OS send buffer size
+    {
+        throw MakeStringException(-1, "not implemented");
+    }
+
+    bool join_multicast_group(SocketEndpoint &ep)   // for udp multicast
+    {
+        throw MakeStringException(-1, "not implemented");
+        return false;
+    }
+
+    bool leave_multicast_group(SocketEndpoint &ep)  // for udp multicast
+    {
+        throw MakeStringException(-1, "not implemented");
+        return false;
+    }
+
+    size32_t get_receive_buffer_size()  // get OS send buffer
+    {
+        throw MakeStringException(-1, "not implemented");
+    }
+
+    void set_receive_buffer_size(size32_t sz)   // set OS send buffer size
+    {
+        throw MakeStringException(-1, "not implemented");
+    }
+
+    virtual void set_keep_alive(bool set) // set option SO_KEEPALIVE
+    {
+        throw MakeStringException(-1, "not implemented");
+    }
+
+    virtual size32_t udp_write_to(SocketEndpoint &ep, void const* buf, size32_t size)
+    {
+        throw MakeStringException(-1, "not implemented");
+    }
+
+    virtual bool check_connection()
+    {
+        throw MakeStringException(-1, "not implemented");
+    }
+
+};
+
+
+/**************************************************************************
+ *  CSecureSocket -- secure socket layer implementation using openssl     *
+ **************************************************************************/
+CSecureSocket::CSecureSocket(ISocket* sock, SSL_CTX* ctx, bool verify, bool address_match, CStringSet* peers, int loglevel)
+{
+    m_socket.setown(sock);
+    m_ssl = SSL_new(ctx);
+
+    m_verify = verify;
+    m_address_match = address_match;
+    m_peers = peers;;
+    m_loglevel = loglevel;
+
+    if(m_ssl == NULL)
+    {
+        throw MakeStringException(-1, "Can't create ssl");
+    }
+    SSL_set_fd(m_ssl, sock->OShandle());
+}
+
+CSecureSocket::CSecureSocket(int sockfd, SSL_CTX* ctx, bool verify, bool address_match, CStringSet* peers, int loglevel)
+{
+    //m_socket.setown(sock);
+    //m_socket.setown(ISocket::attach(sockfd));
+    m_ssl = SSL_new(ctx);
+
+    m_verify = verify;
+    m_address_match = address_match;
+    m_peers = peers;;
+    m_loglevel = loglevel;
+
+    if(m_ssl == NULL)
+    {
+        throw MakeStringException(-1, "Can't create ssl");
+    }
+    SSL_set_fd(m_ssl, sockfd);
+}
+
+CSecureSocket::~CSecureSocket()
+{
+    SSL_free(m_ssl);
+}
+
+StringBuffer& CSecureSocket::get_cn(X509* cert, StringBuffer& cn)
+{
+    X509_NAME *subj;
+    char      data[256];
+    int       extcount;
+    int       found = 0;
+
+    if ((extcount = X509_get_ext_count(cert)) > 0)
+    {
+        int i;
+
+        for (i = 0;  i < extcount;  i++)
+        {
+            const char              *extstr;
+            X509_EXTENSION    *ext;
+
+            ext = X509_get_ext(cert, i);
+            extstr = OBJ_nid2sn(OBJ_obj2nid(X509_EXTENSION_get_object(ext)));
+
+            if (!strcmp(extstr, "subjectAltName"))
+            {
+                int                  j;
+                unsigned char        *data;
+                STACK_OF(CONF_VALUE) *val;
+                CONF_VALUE           *nval;
+#if (OPENSSL_VERSION_NUMBER > 0x00909000L) 
+                const X509V3_EXT_METHOD    *meth;
+#else
+                X509V3_EXT_METHOD    *meth;
+#endif 
+                void                 *ext_str = NULL;
+
+                if (!(meth = X509V3_EXT_get(ext)))
+                    break;
+                data = ext->value->data;
+#if (OPENSSL_VERSION_NUMBER > 0x00908000L) 
+                if (meth->it)
+                    ext_str = ASN1_item_d2i(NULL, (const unsigned char **)&data, ext->value->length,
+                        ASN1_ITEM_ptr(meth->it));
+                else
+                    ext_str = meth->d2i(NULL, (const unsigned char **) &data, ext->value->length);
+#elif (OPENSSL_VERSION_NUMBER > 0x00907000L)     
+                if (meth->it)
+                    ext_str = ASN1_item_d2i(NULL, (unsigned char **)&data, ext->value->length,
+                        ASN1_ITEM_ptr(meth->it));
+                else
+                    ext_str = meth->d2i(NULL, (unsigned char **) &data, ext->value->length);
+#else
+                    ext_str = meth->d2i(NULL, &data, ext->value->length);
+#endif
+                val = meth->i2v(meth, ext_str, NULL);
+                for (j = 0;  j < sk_CONF_VALUE_num(val);  j++)
+                {
+                    nval = sk_CONF_VALUE_value(val, j);
+                    if (!strcmp(nval->name, "DNS"))
+                    {
+                        cn.append(nval->value);                     
+                        found = 1;
+                        break;
+                    }
+                }
+            }
+            if (found)
+                break;
+        }
+    }
+
+    if (!found && (subj = X509_get_subject_name(cert)) &&
+        X509_NAME_get_text_by_NID(subj, NID_commonName, data, 256) > 0)
+    {
+        data[255] = 0;
+        cn.append(data);
+    }
+
+    return cn;
+}
+
+bool CSecureSocket::verify_cert(X509* cert)
+{
+    DBGLOG ("peer's certificate:\n");
+
+    char *s, oneline[1024];
+
+    s = X509_NAME_oneline (X509_get_subject_name (cert), oneline, 1024);
+    if(s != NULL)
+    {
+        DBGLOG ("\t subject: %s", oneline);
+    }
+
+    s = X509_NAME_oneline (X509_get_issuer_name  (cert), oneline, 1024);
+    if(s != NULL)
+    {
+        DBGLOG ("\t issuer: %s", oneline);
+    }
+
+    StringBuffer cn;
+    get_cn(cert, cn);
+
+    if(cn.length() == 0)
+        throw MakeStringException(-1, "cn of the certificate can't be found");
+
+    if(m_address_match)
+    {
+        SocketEndpoint ep;
+        m_socket->getPeerEndpoint(ep);
+        StringBuffer iptxt;
+        ep.getIpText(iptxt);
+        SocketEndpoint cnep(cn.str());
+        StringBuffer cniptxt;
+        cnep.getIpText(cniptxt);
+        DBGLOG("peer ip=%s, certificate ip=%s", iptxt.str(), cniptxt.str());
+        if(!(cniptxt.length() > 0 && stricmp(iptxt.str(), cniptxt.str()) == 0))
+        {
+            DBGLOG("Source address of the request doesn't match the certificate");
+            return false;
+        }
+    }
+    
+    if (m_peers->contains("anyone") || m_peers->contains(cn.str()))
+    {
+        DBGLOG("%s among trusted peers", cn.str());
+        return true;
+    }
+    else
+    {
+        DBGLOG("%s not among trusted peers, verification failed", cn.str());
+        return false;
+    }
+}
+
+int CSecureSocket::secure_accept()
+{
+    int err;
+    err = SSL_accept(m_ssl);
+    if(err == 0)
+    {
+        char errbuf[512];
+        ERR_error_string_n(ERR_get_error(), errbuf, 512);
+        DBGLOG("SSL_accept returned 0, error - %s", errbuf);
+        return -1;
+    }
+    else if(err < 0)
+    {
+        char errbuf[512];
+        ERR_error_string_n(ERR_get_error(), errbuf, 512);
+        errbuf[511] = '\0';
+        DBGLOG("SSL_accept returned %d, error - %s", err, errbuf);
+        if(strstr(errbuf, "error:1408F455:") != NULL)
+        {
+            DBGLOG("Unrecoverable SSL library error.");
+            _exit(0);
+        }
+        return err;
+    }
+
+    DBGLOG("SSL connection using %s", SSL_get_cipher(m_ssl));
+
+    if(m_verify)
+    {
+        bool verified = false;
+        // Get client's certificate (note: beware of dynamic allocation) - opt 
+        X509* client_cert = SSL_get_peer_certificate (m_ssl);
+        if (client_cert != NULL) 
+        {
+            // We could do all sorts of certificate verification stuff here before
+            // deallocating the certificate.
+            verified = verify_cert(client_cert);
+            X509_free (client_cert);
+        }
+
+        if(!verified)
+            throw MakeStringException(-1, "certificate verification failed");
+
+    }
+
+    return 0;
+}
+
+int CSecureSocket::secure_connect()
+{
+    int err = SSL_connect (m_ssl);                     
+    if(err < 0)
+    {
+        char errbuf[512];
+        ERR_error_string_n(ERR_get_error(), errbuf, 512);
+        DBGLOG("SSL_connect error - %s", errbuf);
+        throw MakeStringException(-1, "Certificate verification failed: %s", errbuf);
+    }
+    
+
+    // Currently only do fake verify - simply logging the subject and issuer
+    // The verify parameter makes it possible for the application to verify only
+    // once per session and cache the result of the verification.
+    if(m_verify)
+    {
+        // Following two steps are optional and not required for
+        // data exchange to be successful.
+        
+        // Get the cipher - opt
+        DBGLOG("SSL connection using %s\n", SSL_get_cipher (m_ssl));
+
+        // Get server's certificate (note: beware of dynamic allocation) - opt
+        X509* server_cert = SSL_get_peer_certificate (m_ssl);
+        bool verified = false;
+        if(server_cert != NULL)
+        {
+            // We could do all sorts of certificate verification stuff here before
+            // deallocating the certificate.
+            verified = verify_cert(server_cert);
+
+            X509_free (server_cert);    
+        }
+
+        if(!verified)
+            throw MakeStringException(-1, "certificate verification failed");
+
+    }
+
+    return 0;
+}
+
+//
+// This method is called to check whether a socket has data ready
+// 
+int CSecureSocket::wait_read(unsigned timeoutms)
+{
+    int pending = SSL_pending(m_ssl);
+    if(pending > 0)
+        return pending;
+    return m_socket->wait_read(timeoutms);
+}
+
+
+void CSecureSocket::read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,unsigned timeoutsecs)
+{
+    size_read = 0;
+    unsigned start;
+    unsigned timeleft;
+
+    if (timeoutsecs != WAIT_FOREVER) {
+        time_t timenow;
+        time(&timenow);
+        start = (unsigned)timenow;
+        timeleft = timeoutsecs;
+    }
+
+    do {
+        int rc;
+        if (timeoutsecs != WAIT_FOREVER) {
+            rc = wait_read(timeleft*1000);
+            if (rc < 0) {
+                THROWSECURESOCKETEXCEPTION("wait_read error"); 
+            }
+            if (rc == 0) {
+                THROWSECURESOCKETEXCEPTION("timeout expired"); 
+            }
+            time_t timenow;
+            time(&timenow);
+            time_t elapsed = (unsigned)timenow-start;
+            if (elapsed<timeoutsecs)
+                timeleft = timeoutsecs-elapsed;
+            else
+                timeleft = 0;
+        }
+
+        rc = SSL_read(m_ssl, (char*)buf + size_read, max_size - size_read);
+        if(rc > 0)
+        {
+            size_read += rc;
+        }
+        else
+        {
+            int err = SSL_get_error(m_ssl, rc);
+            // Ignoring SSL_ERROR_SYSCALL because IE prompting user acceptance of the certificate 
+            // causes this error, but is harmless.
+            if((err != SSL_ERROR_NONE) && (err != SSL_ERROR_SYSCALL))
+            {
+                if(m_loglevel >= SSLogMax)
+                {
+                    char errbuf[512];
+                    ERR_error_string_n(ERR_get_error(), errbuf, 512);
+                    DBGLOG("Warning: SSL_read error %d - %s", err, errbuf);
+                }
+            }
+            break;
+        }
+    } while (size_read < min_size);
+}
+
+size32_t CSecureSocket::write(void const* buf, size32_t size)
+{
+    int numwritten = SSL_write(m_ssl, buf, size);
+    return numwritten;
+}
+
+int verify_callback(int ok, X509_STORE_CTX *store)
+{
+    if(!ok)
+    {
+        X509 *cert = X509_STORE_CTX_get_current_cert(store);
+        int err = X509_STORE_CTX_get_error(store);
+        
+        char issuer[256], subject[256];
+        X509_NAME_oneline(X509_get_issuer_name(cert), issuer, 256);
+        X509_NAME_oneline(X509_get_subject_name(cert), subject, 256);
+        
+        if(accept_selfsigned && (stricmp(issuer, subject) == 0))
+        {
+            DBGLOG("accepting selfsigned certificate, subject=%s", subject);
+            ok = true;
+        }
+        else
+            DBGLOG("Error with certificate: issuer=%s,subject=%s,err %d - %s", issuer, subject,err,X509_verify_cert_error_string(err));
+    }
+    return ok;
+}
+
+const char* strtok__(const char* s, const char* d, StringBuffer& tok)
+{
+    if(!s || !*s || !d || !*d)
+        return s;
+
+    while(*s && strchr(d, *s))
+        s++;
+
+    while(*s && !strchr(d, *s))
+    {
+        tok.append(*s);
+        s++;
+    }
+
+    return s;
+}
+
+static Mutex** mutexArray = NULL;
+static int numMutexes = 0;
+static CriticalSection mutexCrit;
+
+static void locking_function(int mode, int n, const char * file, int line)
+{
+    assertex(mutexArray != NULL && n < numMutexes);
+    if (mode & CRYPTO_LOCK)
+        mutexArray[n]->lock();
+    else
+        mutexArray[n]->unlock();
+}
+
+static void initSSLLibrary()
+{
+    CriticalBlock b(mutexCrit);
+    if(mutexArray == NULL)
+    {
+        SSL_load_error_strings();
+        SSLeay_add_ssl_algorithms();
+        numMutexes= CRYPTO_num_locks();
+        mutexArray = new Mutex*[numMutexes];
+        for(int i = 0; i < numMutexes; i++)
+        {
+            mutexArray[i] = new Mutex;
+        }
+        CRYPTO_set_locking_callback(locking_function);
+    }
+}
+
+
+class CSecureSocketContext : public CInterface, implements ISecureSocketContext
+{
+private:
+    SSL_CTX*    m_ctx;
+#if (OPENSSL_VERSION_NUMBER > 0x00909000L) 
+    const SSL_METHOD* m_meth;
+#else
+    SSL_METHOD* m_meth;
+#endif 
+
+    bool m_verify;
+    bool m_address_match;
+    Owned<CStringSet> m_peers;
+
+public:
+    IMPLEMENT_IINTERFACE;
+    CSecureSocketContext(SecureSocketType sockettype)
+    {
+        m_verify = false;
+        m_address_match = false;
+        initSSLLibrary();
+
+        if(sockettype == ClientSocket)
+            m_meth = SSLv23_client_method();
+        else
+            m_meth = SSLv23_server_method();
+
+        m_ctx = SSL_CTX_new(m_meth);
+
+        if(!m_ctx)
+        {
+            throw MakeStringException(-1, "ctx can't be created");
+        }
+        SSL_CTX_set_mode(m_ctx, SSL_CTX_get_mode(m_ctx) | SSL_MODE_AUTO_RETRY);
+    }
+
+    CSecureSocketContext(const char* certfile, const char* privkeyfile, const char* passphrase, SecureSocketType sockettype)
+    {
+        m_verify = false;
+        m_address_match = false;
+        initSSLLibrary();
+
+        if(sockettype == ClientSocket)
+            m_meth = SSLv23_client_method();
+        else
+            m_meth = SSLv23_server_method();
+
+        m_ctx = SSL_CTX_new(m_meth);
+
+        if(!m_ctx)
+        {
+            throw MakeStringException(-1, "ctx can't be created");
+        }
+
+        char passwdbuf[128];
+        strcpy(passwdbuf, passphrase);
+
+        SSL_CTX_set_default_passwd_cb_userdata(m_ctx, passwdbuf);
+        SSL_CTX_set_default_passwd_cb(m_ctx, pem_passwd_cb);
+
+        if(SSL_CTX_use_certificate_file(m_ctx, certfile, SSL_FILETYPE_PEM) <= 0)
+        {
+            char errbuf[512];
+            ERR_error_string_n(ERR_get_error(), errbuf, 512);
+            throw MakeStringException(-1, "error loading certificate file %s - %s", certfile, errbuf);
+        }
+
+        if(SSL_CTX_use_PrivateKey_file(m_ctx, privkeyfile, SSL_FILETYPE_PEM) <= 0)
+        {
+            char errbuf[512];
+            ERR_error_string_n(ERR_get_error(), errbuf, 512);
+            throw MakeStringException(-1, "error loading private key file %s - %s", privkeyfile, errbuf);
+        }
+
+        if(!SSL_CTX_check_private_key(m_ctx))
+        {
+            throw MakeStringException(-1, "Private key does not match the certificate public key");
+        }
+        
+        SSL_CTX_set_mode(m_ctx, SSL_CTX_get_mode(m_ctx) | SSL_MODE_AUTO_RETRY);
+    }
+
+    CSecureSocketContext(IPropertyTree* config, SecureSocketType sockettype)
+    {
+        assertex(config);
+        m_verify = false;
+        m_address_match = false;
+        initSSLLibrary();
+
+        if(sockettype == ClientSocket)
+            m_meth = SSLv23_client_method();
+        else
+            m_meth = SSLv23_server_method();
+
+        m_ctx = SSL_CTX_new(m_meth);
+
+        if(!m_ctx)
+        {
+            throw MakeStringException(-1, "ctx can't be created");
+        }
+
+        const char* passphrase = config->queryProp("passphrase");
+        if(passphrase && *passphrase)
+        {
+            StringBuffer passbuf;
+            decrypt(passbuf, passphrase);
+            char passwdbuf[128];
+            strcpy(passwdbuf, passbuf.str());
+
+            SSL_CTX_set_default_passwd_cb_userdata(m_ctx, passwdbuf);
+            SSL_CTX_set_default_passwd_cb(m_ctx, pem_passwd_cb);
+        }
+
+        const char* certfile = config->queryProp("certificate");
+        if(certfile && *certfile)
+        {
+            if(SSL_CTX_use_certificate_file(m_ctx, certfile, SSL_FILETYPE_PEM) <= 0)
+            {
+                char errbuf[512];
+                ERR_error_string_n(ERR_get_error(), errbuf, 512);
+                throw MakeStringException(-1, "error loading certificate file %s - %s", certfile, errbuf);
+            }
+        }
+
+        const char* privkeyfile = config->queryProp("privatekey");
+        if(privkeyfile && *privkeyfile)
+        {
+            if(SSL_CTX_use_PrivateKey_file(m_ctx, privkeyfile, SSL_FILETYPE_PEM) <= 0)
+            {
+                char errbuf[512];
+                ERR_error_string_n(ERR_get_error(), errbuf, 512);
+                throw MakeStringException(-1, "error loading private key file %s - %s", privkeyfile, errbuf);
+            }
+            if(!SSL_CTX_check_private_key(m_ctx))
+            {
+                throw MakeStringException(-1, "Private key does not match the certificate public key");
+            }
+        }
+    
+        SSL_CTX_set_mode(m_ctx, SSL_CTX_get_mode(m_ctx) | SSL_MODE_AUTO_RETRY);
+
+        m_verify = config->getPropBool("verify/@enable");
+        m_address_match = config->getPropBool("verify/@address_match");
+        accept_selfsigned = config->getPropBool("verify/@accept_selfsigned");
+
+        if(m_verify)
+        {
+            const char* capath = config->queryProp("verify/ca_certificates/@path");
+            if(capath && *capath)
+            {
+                if(SSL_CTX_load_verify_locations(m_ctx, capath, NULL) != 1)
+                {
+                    throw MakeStringException(-1, "Error loading CA certificates from %s", capath);
+                }
+            }
+
+            SSL_CTX_set_verify(m_ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT | SSL_VERIFY_CLIENT_ONCE, verify_callback);
+
+            m_peers.setown(new CStringSet());
+            const char* peersstr = config->queryProp("verify/trusted_peers");
+            while(peersstr && *peersstr)
+            {
+                StringBuffer onepeerbuf;
+                peersstr = strtok__(peersstr, "|", onepeerbuf);
+                if(onepeerbuf.length() == 0)
+                    break;
+
+                char*  onepeer = onepeerbuf.detach();
+                if (isdigit(*onepeer))
+                {
+                    char *dash = strrchr(onepeer, '-');
+                    if (dash)
+                    {
+                        *dash = 0;
+                        int last = atoi(dash+1);
+                        char *dot = strrchr(onepeer, '.');
+                        *dot = 0;
+                        int first = atoi(dot+1);
+                        for (int i = first; i <= last; i++)
+                        {
+                            StringBuffer t;
+                            t.append(onepeer).append('.').append(i);
+                            m_peers->add(t.str());
+                        }
+                    }
+                    else
+                    {
+                        m_peers->add(onepeer);
+                    }
+                }
+                else
+                {
+                    m_peers->add(onepeer);
+                }
+                free(onepeer);
+            }
+        }
+    }
+
+    ~CSecureSocketContext()
+    {
+        SSL_CTX_free(m_ctx);
+    }
+
+    ISecureSocket* createSecureSocket(ISocket* sock, int loglevel)
+    {
+        return new CSecureSocket(sock, m_ctx, m_verify, m_address_match, m_peers);
+    }
+
+    ISecureSocket* createSecureSocket(int sockfd, int loglevel)
+    {
+        return new CSecureSocket(sockfd, m_ctx, m_verify, m_address_match, m_peers);
+    }
+};
+
+void readBio(BIO* bio, StringBuffer& buf)
+{
+    char readbuf[1024];
+
+    int len = 0;
+    while((len = BIO_read(bio, readbuf, 1024)) > 0)
+    {
+        buf.append(len, readbuf);
+    }
+}
+
+class CRsaCertificate : public CInterface, implements ICertificate
+{
+private:
+    StringAttr m_destaddr;
+    StringAttr m_passphrase;
+    int        m_days;
+    StringAttr m_c;
+    StringAttr m_s;
+    StringAttr m_l;
+    StringAttr m_o;
+    StringAttr m_ou;
+    StringAttr m_e;
+    int        m_bits;
+
+    void addNameEntry(X509_NAME *subj, const char* name, const char* value)
+    {
+        int nid;
+        X509_NAME_ENTRY *ent;
+        
+        if ((nid = OBJ_txt2nid ((char*)name)) == NID_undef)
+            throw MakeStringException(-1, "Error finding NID for %s\n", name);
+        
+        if (!(ent = X509_NAME_ENTRY_create_by_NID(NULL, nid, MBSTRING_ASC, (unsigned char*)value, -1)))
+            throw MakeStringException(-1, "Error creating Name entry from NID");
+        
+        if (X509_NAME_add_entry (subj, ent, -1, 0) != 1)
+            throw MakeStringException(-1, "Error adding entry to subject");
+    }
+
+public:
+    IMPLEMENT_IINTERFACE;
+    
+    CRsaCertificate()
+    {
+        m_days = 365;
+        m_bits = 1024;
+    }
+
+    virtual ~CRsaCertificate()
+    {
+    }
+
+    virtual void setDestAddr(const char* destaddr)
+    {
+        m_destaddr.set(destaddr);
+    }
+
+    virtual void setDays(int days)
+    {
+        m_days = days;
+    }
+
+    virtual void setPassphrase(const char* passphrase)
+    {
+        m_passphrase.set(passphrase);
+    }
+
+    virtual void setCountry(const char* country)
+    {
+        m_c.set(country);
+    }
+
+    virtual void setState(const char* state)
+    {
+        m_s.set(state);
+    }
+
+    virtual void setCity(const char* city)
+    {
+        m_l.set(city);
+    }
+
+    virtual void setOrganization(const char* o)
+    {
+        m_o.set(o);
+    }
+
+    virtual void setOrganizationalUnit(const char* ou)
+    {
+        m_ou.set(ou);
+    }
+
+    virtual void setEmail(const char* email)
+    {
+        m_e.set(email);
+    }
+
+    virtual int generate(StringBuffer& certificate, StringBuffer& privkey)
+    {
+        if(m_destaddr.length() == 0)
+            throw MakeStringException(-1, "Common Name (server's hostname or IP address) not set for certificate");
+        if(m_passphrase.length() == 0)
+            throw MakeStringException(-1, "passphrase not set.");
+        if(m_days <= 0)
+            throw MakeStringException(-1, "The number of days should be a positive integer");
+        
+        if(m_c.length() == 0)
+            m_c.set("US");
+
+        if(m_o.length() == 0)
+            m_o.set("Customer Of Seisint");
+
+        BIO *bio_err;
+        BIO *pmem, *cmem;
+        X509 *x509=NULL;
+        EVP_PKEY *pkey=NULL;
+
+        CRYPTO_mem_ctrl(CRYPTO_MEM_CHECK_ON);
+
+        bio_err=BIO_new_fp(stderr, BIO_NOCLOSE);
+
+        if ((pkey=EVP_PKEY_new()) == NULL)
+            throw MakeStringException(-1, "can't create private key");
+
+        if ((x509=X509_new()) == NULL)
+            throw MakeStringException(-1, "can't create X509 structure");
+
+        RSA *rsa=RSA_generate_key(m_bits, RSA_F4, NULL, NULL);
+        if (!EVP_PKEY_assign_RSA(pkey, rsa))
+        {
+            char errbuf[512];
+            ERR_error_string_n(ERR_get_error(), errbuf, 512);
+            throw MakeStringException(-1, "EVP_PKEY_ASSIGN_RSA error - %s", errbuf);
+        }
+
+        X509_NAME *name=NULL;
+        X509_set_version(x509,3);
+        ASN1_INTEGER_set(X509_get_serialNumber(x509), 0); // serial number set to 0
+        X509_gmtime_adj(X509_get_notBefore(x509),0);
+        X509_gmtime_adj(X509_get_notAfter(x509),(long)60*60*24*m_days);
+        X509_set_pubkey(x509, pkey);
+
+        name=X509_get_subject_name(x509);
+        /* This function creates and adds the entry, working out the
+         * correct string type and performing checks on its length.
+         * Normally we'd check the return value for errors...
+         */
+        X509_NAME_add_entry_by_txt(name,"C",
+                    MBSTRING_ASC, (unsigned char*)m_c.get(), -1, -1, 0);
+        if(m_s.length() > 0)
+        {
+            X509_NAME_add_entry_by_txt(name,"S",
+                    MBSTRING_ASC, (unsigned char*)m_s.get(), -1, -1, 0);
+        }
+
+        if(m_l.length() > 0)
+        {
+            X509_NAME_add_entry_by_txt(name,"L",
+                    MBSTRING_ASC, (unsigned char*)m_l.get(), -1, -1, 0);
+        }
+
+        X509_NAME_add_entry_by_txt(name,"O",
+                    MBSTRING_ASC, (unsigned char*)m_o.get(), -1, -1, 0);
+
+        if(m_ou.length() > 0)
+        {
+            X509_NAME_add_entry_by_txt(name,"OU",
+                    MBSTRING_ASC, (unsigned char*)m_ou.get(), -1, -1, 0);
+        }
+
+        if(m_e.length() > 0)
+        {
+            X509_NAME_add_entry_by_txt(name,"E",
+                    MBSTRING_ASC, (unsigned char*)m_e.get(), -1, -1, 0);
+        }
+
+        X509_NAME_add_entry_by_txt(name,"CN",
+                    MBSTRING_ASC, (unsigned char*)m_destaddr.get(), -1, -1, 0);
+
+        X509_set_issuer_name(x509,name);
+
+        /* Add extension using V3 code: we can set the config file as NULL
+         * because we wont reference any other sections. We can also set
+         * the context to NULL because none of these extensions below will need
+         * to access it.
+         */
+        X509_EXTENSION *ex = X509V3_EXT_conf_nid(NULL, NULL, NID_netscape_cert_type, "server");
+        if(ex != NULL)
+        {
+            X509_add_ext(x509, ex, -1);
+            X509_EXTENSION_free(ex);
+        }
+
+        ex = X509V3_EXT_conf_nid(NULL, NULL, NID_netscape_ssl_server_name,
+                                (char*)m_destaddr.get());
+        if(ex != NULL)
+        {
+            X509_add_ext(x509, ex,-1);
+            X509_EXTENSION_free(ex);
+        }
+
+        if (!X509_sign(x509, pkey, EVP_md5()))
+        {
+            char errbuf[512];
+            ERR_error_string_n(ERR_get_error(), errbuf, 512);
+            throw MakeStringException(-1, "X509_sign error %s", errbuf);
+        }
+
+        const EVP_CIPHER *enc = EVP_des_ede3_cbc();
+        pmem = BIO_new(BIO_s_mem());
+        PEM_write_bio_PrivateKey(pmem, pkey, enc, (unsigned char*)m_passphrase.get(), m_passphrase.length(), NULL, NULL);
+        readBio(pmem, privkey);
+
+        cmem = BIO_new(BIO_s_mem());
+        PEM_write_bio_X509(cmem, x509);
+        readBio(cmem, certificate);
+
+        X509_free(x509);
+        EVP_PKEY_free(pkey);
+
+        CRYPTO_mem_leaks(bio_err);
+        BIO_free(bio_err);
+        BIO_free(pmem);
+        BIO_free(cmem);
+
+        return 0;
+    }
+
+    virtual int generate(StringBuffer& certificate, const char* privkey)
+    {
+        if(m_destaddr.length() == 0)
+            throw MakeStringException(-1, "Common Name (server's hostname or IP address) not set for certificate");
+        if(m_passphrase.length() == 0)
+            throw MakeStringException(-1, "passphrase not set.");
+        if(m_days <= 0)
+            throw MakeStringException(-1, "The number of days should be a positive integer");
+        
+        if(m_c.length() == 0)
+            m_c.set("US");
+
+        if(m_o.length() == 0)
+            m_o.set("Customer Of Seisint");
+
+        BIO *bio_err;
+        BIO *pmem, *cmem;
+        X509 *x509=NULL;
+        EVP_PKEY *pkey=NULL;
+
+        CRYPTO_mem_ctrl(CRYPTO_MEM_CHECK_ON);
+        bio_err=BIO_new_fp(stderr, BIO_NOCLOSE);
+
+        OpenSSL_add_all_algorithms ();
+        ERR_load_crypto_strings ();
+
+        pmem = BIO_new(BIO_s_mem());
+        BIO_puts(pmem, privkey);
+        if (!(pkey = PEM_read_bio_PrivateKey (pmem, NULL, NULL, (void*)m_passphrase.get())))
+            throw MakeStringException(-1, "Error reading private key");
+
+        if ((x509=X509_new()) == NULL)
+            throw MakeStringException(-1, "can't create X509 structure");
+
+        X509_NAME *name=NULL;
+        X509_set_version(x509,3);
+        ASN1_INTEGER_set(X509_get_serialNumber(x509), 0); // serial number set to 0
+        X509_gmtime_adj(X509_get_notBefore(x509),0);
+        X509_gmtime_adj(X509_get_notAfter(x509),(long)60*60*24*m_days);
+        X509_set_pubkey(x509, pkey);
+
+        name=X509_get_subject_name(x509);
+        /* This function creates and adds the entry, working out the
+         * correct string type and performing checks on its length.
+         * Normally we'd check the return value for errors...
+         */
+        X509_NAME_add_entry_by_txt(name,"C",
+                    MBSTRING_ASC, (unsigned char*)m_c.get(), -1, -1, 0);
+        if(m_s.length() > 0)
+        {
+            X509_NAME_add_entry_by_txt(name,"S",
+                    MBSTRING_ASC, (unsigned char*)m_s.get(), -1, -1, 0);
+        }
+
+        if(m_l.length() > 0)
+        {
+            X509_NAME_add_entry_by_txt(name,"L",
+                    MBSTRING_ASC, (unsigned char*)m_l.get(), -1, -1, 0);
+        }
+
+        X509_NAME_add_entry_by_txt(name,"O",
+                    MBSTRING_ASC, (unsigned char*)m_o.get(), -1, -1, 0);
+
+        if(m_ou.length() > 0)
+        {
+            X509_NAME_add_entry_by_txt(name,"OU",
+                    MBSTRING_ASC, (unsigned char*)m_ou.get(), -1, -1, 0);
+        }
+
+        if(m_e.length() > 0)
+        {
+            X509_NAME_add_entry_by_txt(name,"E",
+                    MBSTRING_ASC, (unsigned char*)m_e.get(), -1, -1, 0);
+        }
+
+        X509_NAME_add_entry_by_txt(name,"CN",
+                    MBSTRING_ASC, (unsigned char*)m_destaddr.get(), -1, -1, 0);
+
+        X509_set_issuer_name(x509,name);
+
+        /* Add extension using V3 code: we can set the config file as NULL
+         * because we wont reference any other sections. We can also set
+         * the context to NULL because none of these extensions below will need
+         * to access it.
+         */
+        X509_EXTENSION *ex = X509V3_EXT_conf_nid(NULL, NULL, NID_netscape_cert_type, "server");
+        if(ex != NULL)
+        {
+            X509_add_ext(x509, ex, -1);
+            X509_EXTENSION_free(ex);
+        }
+
+        ex = X509V3_EXT_conf_nid(NULL, NULL, NID_netscape_ssl_server_name,
+                                (char*)m_destaddr.get());
+        if(ex != NULL)
+        {
+            X509_add_ext(x509, ex,-1);
+            X509_EXTENSION_free(ex);
+        }
+
+        if (!X509_sign(x509, pkey, EVP_md5()))
+        {
+            char errbuf[512];
+            ERR_error_string_n(ERR_get_error(), errbuf, 512);
+            throw MakeStringException(-1, "X509_sign error %s", errbuf);
+        }
+
+        cmem = BIO_new(BIO_s_mem());
+        PEM_write_bio_X509(cmem, x509);
+        readBio(cmem, certificate);
+
+        X509_free(x509);
+        EVP_PKEY_free(pkey);
+
+        CRYPTO_mem_leaks(bio_err);
+        BIO_free(bio_err);
+        BIO_free(pmem);
+        BIO_free(cmem);
+
+        return 0;
+    }
+
+    virtual int generateCSR(StringBuffer& privkey, StringBuffer& csr)
+    {
+        StringBuffer mycert;
+        generate(mycert, privkey);
+        return generateCSR(privkey.str(), csr);
+    }
+
+    virtual int generateCSR(const char* privkey, StringBuffer& csr)
+    {
+        if(m_destaddr.length() == 0)
+            throw MakeStringException(-1, "Common Name (server's hostname or IP address) not set for certificate");
+        if(m_passphrase.length() == 0)
+            throw MakeStringException(-1, "passphrase not set.");
+        
+        if(m_c.length() == 0)
+            m_c.set("US");
+
+        if(m_o.length() == 0)
+            m_o.set("Customer Of Seisint");
+
+        BIO *bio_err;
+        X509_REQ *req;
+        X509_NAME *subj;
+        EVP_PKEY *pkey = NULL;
+        const EVP_MD *digest;
+        BIO *pmem;
+
+        CRYPTO_mem_ctrl(CRYPTO_MEM_CHECK_ON);
+        bio_err=BIO_new_fp(stderr, BIO_NOCLOSE);
+
+        OpenSSL_add_all_algorithms ();
+        ERR_load_crypto_strings ();
+
+        pmem = BIO_new(BIO_s_mem());
+        BIO_puts(pmem, privkey);
+
+        if (!(pkey = PEM_read_bio_PrivateKey (pmem, NULL, NULL, (void*)m_passphrase.get())))
+            throw MakeStringException(-1, "Error reading private key");
+
+        /* create a new request and add the key to it */
+        if (!(req = X509_REQ_new ()))
+            throw MakeStringException(-1, "Failed to create X509_REQ object");
+
+        X509_REQ_set_version(req,0L);
+
+        X509_REQ_set_pubkey (req, pkey);
+
+        if (!(subj = X509_NAME_new ()))
+            throw MakeStringException(-1, "Failed to create X509_NAME object");
+
+        addNameEntry(subj, "countryName", m_c.get());
+
+        if(m_s.length() > 0)
+            addNameEntry(subj, "stateOrProvinceName", m_s.get());
+
+        if(m_l.length() > 0)
+            addNameEntry(subj, "localityName", m_l.get());
+
+        addNameEntry(subj, "organizationName", m_o.get());
+
+        if(m_ou.length() > 0)
+            addNameEntry(subj, "organizationalUnitName", m_ou.get());
+
+        if(m_e.length() > 0)
+            addNameEntry(subj, "emailAddress", m_e.get());
+
+        addNameEntry(subj, "commonName", m_destaddr.get());
+
+        if (X509_REQ_set_subject_name (req, subj) != 1)
+            throw MakeStringException(-1, "Error adding subject to request");
+
+        /* pick the correct digest and sign the request */
+        if (EVP_PKEY_type (pkey->type) == EVP_PKEY_DSA)
+            digest = EVP_dss1 ();
+        else if (EVP_PKEY_type (pkey->type) == EVP_PKEY_RSA)
+            digest = EVP_sha1 ();
+        else
+            throw MakeStringException(-1, "Error checking public key for a valid digest");
+
+        if (!(X509_REQ_sign (req, pkey, digest)))
+            throw MakeStringException(-1, "Error signing request");
+
+        /* write the completed request */
+        BIO* reqmem = BIO_new(BIO_s_mem());
+        if (PEM_write_bio_X509_REQ(reqmem, req) != 1)
+            throw MakeStringException(-1, "Error while writing request");
+
+        readBio(reqmem, csr);
+
+        CRYPTO_mem_leaks(bio_err);
+        BIO_free(pmem);
+        BIO_free(reqmem);
+        EVP_PKEY_free (pkey);
+        X509_REQ_free (req);
+        return 0;   
+    }
+};
+
+extern "C" {
+CriticalSection factoryCrit;
+
+SECURESOCKET_API ISecureSocketContext* createSecureSocketContext(SecureSocketType sockettype)
+{
+    CriticalBlock b(factoryCrit);
+    if(sockettype == ClientSocket)
+    {
+        return new CSecureSocketContext(sockettype);
+    }
+    else
+    {
+        if(server_securesocket_context.get() == NULL)
+            server_securesocket_context.setown(new CSecureSocketContext(sockettype));
+        return server_securesocket_context.getLink();
+    }
+}
+
+SECURESOCKET_API ISecureSocketContext* createSecureSocketContextEx(const char* certfile, const char* privkeyfile, const char* passphrase, SecureSocketType sockettype)
+{
+    CriticalBlock b(factoryCrit);
+    if(sockettype == ClientSocket)
+    {
+        return new CSecureSocketContext(certfile, privkeyfile, passphrase, sockettype);
+    }
+    else
+    {
+        if(server_securesocket_context.get() == NULL)
+            server_securesocket_context.setown(new CSecureSocketContext(certfile, privkeyfile, passphrase, sockettype));
+        return server_securesocket_context.getLink();
+    }
+}
+
+SECURESOCKET_API ISecureSocketContext* createSecureSocketContextEx2(IPropertyTree* config, SecureSocketType sockettype)
+{
+    if(config == NULL)
+        return createSecureSocketContext(sockettype);
+
+    CriticalBlock b(factoryCrit);
+    if(sockettype == ClientSocket)
+    {
+        return new CSecureSocketContext(config, sockettype);
+    }
+    else
+    {
+        if(server_securesocket_context.get() == NULL)
+            server_securesocket_context.setown(new CSecureSocketContext(config, sockettype));
+        return server_securesocket_context.getLink();
+    }
+}       
+
+SECURESOCKET_API ICertificate *createCertificate()
+{
+    return new CRsaCertificate();
+}
+
+SECURESOCKET_API int signCertificate(const char* csr, const char* ca_certificate, const char* ca_privkey, const char* ca_passphrase, int days, StringBuffer& certificate)
+{
+    EVP_PKEY *pkey, *CApkey;
+    const EVP_MD *digest;
+    X509 *cert, *CAcert;
+    X509_REQ *req;
+    X509_NAME *name;
+
+    if(days <= 0)
+        days = 365;
+
+    OpenSSL_add_all_algorithms ();
+    ERR_load_crypto_strings ();
+    
+    BIO *bio_err;
+    bio_err=BIO_new_fp(stderr, BIO_NOCLOSE);
+
+    // Read in and verify signature on the request
+    BIO *csrmem = BIO_new(BIO_s_mem());
+    BIO_puts(csrmem, csr);
+    if (!(req = PEM_read_bio_X509_REQ(csrmem, NULL, NULL, NULL)))
+        throw MakeStringException(-1, "Error reading request from buffer");
+    if (!(pkey = X509_REQ_get_pubkey(req)))
+        throw MakeStringException(-1, "Error getting public key from request");
+    if (X509_REQ_verify (req, pkey) != 1)
+        throw MakeStringException(-1, "Error verifying signature on certificate");
+
+    // read in the CA certificate and private key
+    BIO *cacertmem = BIO_new(BIO_s_mem());
+    BIO_puts(cacertmem, ca_certificate);
+    if (!(CAcert = PEM_read_bio_X509(cacertmem, NULL, NULL, NULL)))
+        throw MakeStringException(-1, "Error reading CA's certificate from buffer");
+    BIO *capkeymem = BIO_new(BIO_s_mem());
+    BIO_puts(capkeymem, ca_privkey);
+    if (!(CApkey = PEM_read_bio_PrivateKey (capkeymem, NULL, NULL, (void*)ca_passphrase)))
+        throw MakeStringException(-1, "Error reading CA private key");
+
+    cert = X509_new();
+    X509_set_version(cert,3);
+    ASN1_INTEGER_set(X509_get_serialNumber(cert), 0); // serial number set to 0
+
+    // set issuer and subject name of the cert from the req and the CA
+    name = X509_REQ_get_subject_name (req);
+    X509_set_subject_name (cert, name);
+    name = X509_get_subject_name (CAcert);
+    X509_set_issuer_name (cert, name);
+
+    //set public key in the certificate
+    X509_set_pubkey (cert, pkey);
+
+    // set duration for the certificate
+    X509_gmtime_adj (X509_get_notBefore (cert), 0);
+    X509_gmtime_adj (X509_get_notAfter (cert), days*24*60*60);
+
+    // sign the certificate with the CA private key
+    if (EVP_PKEY_type (CApkey->type) == EVP_PKEY_DSA)
+        digest = EVP_dss1 ();
+    else if (EVP_PKEY_type (CApkey->type) == EVP_PKEY_RSA)
+        digest = EVP_sha1 ();
+    else
+        throw MakeStringException(-1, "Error checking public key for a valid digest");
+    
+    if (!(X509_sign (cert, CApkey, digest)))
+        throw MakeStringException(-1, "Error signing certificate");
+
+    // write the completed certificate
+    BIO* cmem = BIO_new(BIO_s_mem());
+    PEM_write_bio_X509(cmem, cert);
+    readBio(cmem, certificate);
+
+    CRYPTO_mem_leaks(bio_err);
+    BIO_free(csrmem);
+    BIO_free(cacertmem);
+    BIO_free(cmem);
+    EVP_PKEY_free(pkey);
+    X509_REQ_free(req);
+    return 0;
+}
+
+}

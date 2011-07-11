@@ -1,0 +1,631 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+-->
+<Components>
+    <ws_roxieconfig caption="">
+         <TabContainer>
+            <Tab name="Queries" url="/ws_roxieconfig/ListDeployedQueries?excludeDataOnlyNames=1"/>
+         <Tab name="Data Only Queries" url="/ws_roxieconfig/ListDeployedDataOnlyQueries"/>
+         <Tab name="Library Queries" url="/ws_roxieconfig/ListDeployedLibraryQueries"/>
+         <Tab name="Aliases" url="/ws_roxieconfig/ListDeployedAliases"/>
+         <Tab name="Data Files" url="/ws_roxieconfig/ListFilesUsedByQuery?excludeSuperFileNames=1"/>
+            <Tab name="Super Files" url="/ws_roxieconfig/ListFilesUsedByQuery?excludeDataFileNames=1"/>
+            <Tab name="Deployments" url="/ws_roxieconfig/NavMenuEvent?Cmd=DeployMultiple"/>
+            <!--Tab name="Remap Super Files" url="/ws_roxieconfig/NavMenuEvent?Cmd=DataDeployRemap"/-->
+         </TabContainer>
+         
+      <Commands>      
+         <DeployMultiple caption="Deploy ECL Attributes or Roxie Queries" subcaption="Loading, please wait..."
+                argsNode="Requests" selectedTab="Deployments" nosort="true" schemaIsland="false" objIsland="SuperFilesBlocks">
+                    <script type="text/javascript" src="/esp/files_/scripts/ws_roxieconfig_deploy.js">
+                    </script>
+            <Requests maxOccurs="1">
+               <Deploy maxOccurs="unbounded" multiselect="true" sortable="true" width="1125">
+                  <Info maxOccurs="1">
+                     <SourceRepositoryType viewType="hidden"/>
+                     <SourceRepository viewType="hidden"/>
+                     <OriginalName caption="Original Name" viewType="url" width="340" column="1" align="left" 
+                        onclick="return showDetails(this)" href=""/>
+                     <ModuleName viewType="hidden"/>
+                     <AttributeName viewType="hidden"/>
+                     <AttributeLabel caption="Label" multiselect="true" size="8" width="100" column="2"/>
+                     <SuperFilesBlockRef viewType="hidden"/>
+                     <IsRemap viewType="hidden"/>
+                  </Info>
+                  <NameServices caption="Name Service" viewType="select" source="object"
+                                 option="NameService" text="Name" value="Name" 
+                                 selected="Selected" multiselect="true" width="130" column="3"/>
+                  <Options maxOccurs="1">
+                     <Activate viewType="select" multiselect="true" width="150" column="4">
+                                    <option value="0">Don't Activate</option>
+                                    <option value="1">Activate</option>
+                                    <option value="2">Suspend Previous</option>
+                                    <option value="3">Delete  Previous</option>
+                                    <option value="4">Load Data Only</option>
+                                    <option value="5">Activate-Load Data</option>
+                     </Activate>
+                     <QueryPriority viewType="select" caption="Query Priority" multiselect="true" width="85" column="7">
+                                    <option value="1">High</option>
+                                    <option value="0">Low</option>
+                                    <option value="2">High-SLA</option>
+                     </QueryPriority>
+                     <memoryLimit caption="Memory Limit" size="3" multiselect="true" width="70" column="9"/>
+                     <checkOnly viewType="hidden" default="0"/>
+                     <ResolveFileInfo viewType="hidden" default="1"/>
+                     <UseLocalRoxieDfuFiles viewType="hidden" default="0"/>
+                     <UseRenamedFileInfo viewType="hidden" default="0"/>
+                     <GeneratePackageFileInfo viewType="hidden" default="0"/>
+                     <CheckIfLibrary viewType="hidden" default="1"/>
+                  </Options>
+                  <Result maxOccurs="1">
+                                <Code caption="Response" viewType="static:|OK|Failed|OK(Warnings)" width="80" column="9"/>
+                                <Status viewType="showHideRowBtn" width="80" column="10"/>
+                  </Result>
+                  <WorkunitHighPriority viewType="hidden" default="1"/>
+               </Deploy>
+            </Requests>            
+              <Buttons width="1125">
+                    <input type="submit" name="Requests.Deploy.Delete" value="Remove Selected" disabled="true" 
+                        onclick="return onDelete('Requests.Deploy', true) &amp;&amp; submitForm('/ws_roxieconfig/DeployMultiple?SaveOnly=1')"> </input>
+                    <input type="submit" name="Requests.Deploy.Save" value="Save" 
+                        onclick="return submitForm('/ws_roxieconfig/DeployMultiple?SaveOnly=1')"> </input>
+                    <input type="submit" name="AddFiles" value="Add Files ..." onclick="return addEclFiles()"> </input>
+                    <input type="submit" name="submitBtnCheck" 
+                    onclick="document.forms[0].action='/ws_roxieconfig/DeployMultiple?CheckOnly=1'; return true;" override="true"> </input>
+                    <input type="submit" name="submitBtnDeploy" override="true"> </input>
+              </Buttons>
+         </DeployMultiple>
+         
+         <!--RemapSuperFiles caption="Deploy ECL Attributes or Roxie Queries" subcaption="Loading, please wait..." nosort="true"
+                argsNode="Requests" selectedTab="Remap Super Files" schemaIsland="false" objIsland="SuperFilesBlocks">
+                    <script type="text/javascript" src="/esp/files_/scripts/ws_roxieconfig_remapper.js">
+                    </script>
+                    <script type="text/javascript">
+                        function onLoadCustom()
+                        {
+                            createTableSorter('Requests.Deploy',
+                                [ 'None', 'iHtml', 'Html', 'Html', 'nHtml', 'String', 'None']);
+                        }
+                    </script>
+            <Requests maxOccurs="1">
+               <Deploy maxOccurs="unbounded" multiselect="true" sortable="true" width="870">
+                  <Info maxOccurs="1">
+                     <SourceRepositoryType viewType="hidden"/>
+                     <SourceRepository viewType="hidden"/>
+                     <OriginalName caption="Original Name" viewType="url" width="400" column="1" align="left" 
+                        onclick="return showDetails(this)" href=""/>
+                     <ModuleName viewType="hidden"/>
+                     <AttributeName viewType="hidden"/>
+                     <AttributeLabel viewType="hidden"/>
+                     <SuperFilesBlockRef viewType="hidden"/>
+                  </Info>
+                  <NameServices viewType="hidden"/>
+                  <Options maxOccurs="1">
+                     <Activate viewType="select" multiselect="true" width="150" column="2">
+                                    <option value="0">Don't Activate</option>
+                                    <option value="1">Activate</option>
+                                    <option value="2">Suspend Previous</option>
+                                    <option value="3">Delete  Previous</option>
+                                    <option value="4">Load Data Only</option>
+                                    <option value="5">Activate-Load Data</option>
+                     </Activate>
+                     <highPriority dataType="boolean" caption="High Priority" multiselect="true" default="1" width="80" column="3" overrideCell="before"/>
+                     <memoryLimit caption="Memory Limit" size="3" multiselect="true" width="80" column="4"/>
+                     <checkOnly viewType="hidden" default="0"/>
+                     <ResolveFileInfo viewType="hidden" default="1"/>
+                     <UseLocalRoxieDfuFiles viewType="hidden" default="0"/>
+                     <UseRenamedFileInfo viewType="hidden" default="0"/>
+                     <GeneratePackageFileInfo viewType="hidden" default="0"/>
+                     <CheckIfLibrary viewType="hidden" default="1"/>
+                  </Options>
+                  <Result maxOccurs="1">
+                                <Code caption="Response" viewType="static:|OK|Failed|OK(Warnings)" width="80" column="5"/>
+                                <Status viewType="showHideRowBtn" width="80" column="6"/>
+                  </Result>
+                  <WorkunitHighPriority viewType="hidden" default="1"/>
+               </Deploy>
+            </Requests>            
+              <Buttons width="870">
+                    <input type="submit" name="Requests.Deploy.Delete" value="Remove" disabled="true" 
+                        onclick="return onDelete('Requests.Deploy', true) &amp;&amp; submitForm('/ws_roxieconfig/DeployMultiple?SaveOnly=1&amp;Remap=1')"> </input>
+                    <input type="submit" name="submitBtn" onclick="submitForm('/ws_roxieconfig/DeployMultiple?Remap=1')"> </input>
+              </Buttons>
+         </RemapSuperFiles-->
+         
+            <ListDeployedQueries argsNode="Queries" caption="Deployed Queries" subcaption="Loading, please wait..."
+                selectedTab="Queries">
+                <script type="text/javascript">
+            <![CDATA[
+                    function onLoadCustom()
+                    {
+                        createTableSorter( 'Queries.QueryInfo', 
+                                                     ['None', 'CaseInsensitiveString', 'String', 'String', 'String', 'String'],
+                                                     objRootNode.getElementsByTagName('Queries')[0]);
+                    }
+                    function onDocumentModified(modified)
+                    {
+                        enableSubmitButton();
+                    }
+                    //define a stub that may be overridden by a component's command 
+                    //if special handling of item selection is desired
+                    //
+                    function onRowCheckHandler(xpath)
+                    {
+            if (xpath.setAllSet) {
+              for(var i=0;i<xpath.n_totalItems;i++)
+              {
+                var suspendedcell = xpath.tableId + '.' + i + '.Suspended';
+                var suspended = document.getElementById(suspendedcell);
+                if (suspended) {
+                  suspended.disabled = xpath.setAllValue == true ? false : true;
+                }                
+              }
+            }
+            else {
+              if (xpath.n_column == 0) {
+                var suspendedcell = xpath.tableId + '.' + xpath.n_lastRowClicked + '.Suspended';
+                var suspended = document.getElementById(suspendedcell);
+                if (suspended) {
+                  suspended.disabled = xpath.lastValueSet == true ? false : true;
+                }
+              }
+            }
+                        enableSubmitButton();
+                    }
+                    function enableSubmitButton()
+                    {
+                        var multiselect = ms_lookup(0);
+                        var enable = multiselect && multiselect.getSelectionCount() && document.modified;
+                        var submitBtns = document.getElementsByName('Queries.QueryInfo.SubmitBtn');
+                        for (var i=0; i<submitBtns.length; i++)
+                            submitBtns[i].disabled = !enable;
+                    }
+                    ]]>
+                </script>
+                <Queries maxOccurs="1">
+                    <QueryInfo maxOccurs="unbounded" multiselect="true" sortable="true" width="1000">
+                        <QueryName caption="Query" viewType="static" align="left" width="350" column="1"/>
+                        <Suspended viewType="select" multiselect="true" width="80" column="2" disabled="1">
+                            <option value="0">No</option>
+                            <option value="1">Yes</option>
+                        </Suspended>
+                        <QueryPriority caption="Query Priority" viewType="static" sortable="true" width="60" column="4"/>
+                        <Aliased caption="Has Aliases" viewType="static:No|Yes" width="60" column="5"/>
+                        <IsLibrary caption="Is Library" viewType1="static:No|Yes" sortable="true" width="60" column="6"/>
+                        <ErrorStatus caption="Status" viewType="static" align="left" width="450" column="7"/> 
+                    </QueryInfo>
+                </Queries>
+          <Buttons width="1000">
+                <input type="submit" name="Queries.QueryInfo.Delete" value="Delete" disabled="true" 
+                 onclick="return confirm('Are you sure you want to delete the selected queries?') ? submitSelectedItems('Queries/QueryInfo', '/ws_roxieconfig/ModifyQueries?Operation=Delete'): false"> </input>
+                <input type="submit" name="Queries.QueryInfo.MultiEdit1" value="Activate" disabled="true" 
+                 onclick="return submitSelectedItemsAsXml('Queries/QueryInfo', '/ws_roxieconfig/NavMenuEvent?Cmd=ActivateQueries', 'XmlArg')"> </input>
+                <input type="submit" name="Queries.QueryInfo.MultiEdit2" value="Add Alias" disabled="true" 
+                 onclick="return submitSelectedItemsAsXml('Queries/QueryInfo', '/ws_roxieconfig/NavMenuEvent?Cmd=AddAliases', 'XmlArg')"> </input>
+                <input type="submit" name="Queries.QueryInfo.Edit1" value="Show Graph" disabled="true" 
+                 onclick="return submitSelectedItem('Queries/QueryInfo', unescape(&quot;/ws_roxieconfig/GVCAjaxGraph?Name={QueryName}&quot;))"> </input>
+                <input type="submit" name="Queries.QueryInfo.Edit2" value="List Data Files" disabled="true" 
+                 onclick="return submitSelectedItem('Queries/QueryInfo', unescape(&quot;/ws_roxieconfig/ListFilesUsedByQuery?queryName={QueryName}&amp;excludeSuperFileNames=1&quot;))"> </input>
+                <input type="submit" name="Queries.QueryInfo.Edit3" value="List Super Files" disabled="true" 
+                 onclick="return submitSelectedItem('Queries/QueryInfo', unescape(&quot;/ws_roxieconfig/ListFilesUsedByQuery?queryName={QueryName}&amp;excludeDataFileNames=1&quot;))"> </input>
+                <input type="submit" name="Queries.QueryInfo.SubmitBtn" value="Submit" disabled="true" 
+                 onclick="return confirm('Are you sure you want to modify the selected queries?') ? submitSelectedItems('Queries/QueryInfo', '/ws_roxieconfig/ModifyQueries?Operation=Suspend'): false"> </input>
+          </Buttons>
+            </ListDeployedQueries>
+
+        <ListDeployedDataOnlyQueries argsNode="Queries" caption="Deployed Data Only Queries" subcaption="Loading, please wait..."
+          selectedTab="Data Only Queries">
+          <script type="text/javascript">
+            <![CDATA[
+                    function onLoadCustom()
+                    {
+                        createTableSorter( 'Queries.QueryInfo', 
+                                                     ['None', 'CaseInsensitiveString', 'String', 'String', 'String', 'String'],
+                                                     objRootNode.getElementsByTagName('Queries')[0]);
+                    }
+                    function onDocumentModified(modified)
+                    {
+                        enableSubmitButton();
+                    }
+                    //define a stub that may be overridden by a component's command 
+                    //if special handling of item selection is desired
+                    //
+                    function onRowCheckHandler(xpath)
+                    {
+            if (xpath.setAllSet) {
+              for(var i=0;i<xpath.n_totalItems;i++)
+              {
+                var suspendedcell = xpath.tableId + '.' + i + '.Suspended';
+                var suspended = document.getElementById(suspendedcell);
+                if (suspended) {
+                  suspended.disabled = xpath.setAllValue == true ? false : true;
+                }                
+              }
+            }
+            else {
+              if (xpath.n_column == 0) {
+                var suspendedcell = xpath.tableId + '.' + xpath.n_lastRowClicked + '.Suspended';
+                var suspended = document.getElementById(suspendedcell);
+                if (suspended) {
+                  suspended.disabled = xpath.lastValueSet == true ? false : true;
+                }
+              }
+            }
+                        enableSubmitButton();
+                    }
+                    function enableSubmitButton()
+                    {
+                        var multiselect = ms_lookup(0);
+                        var enable = multiselect && multiselect.getSelectionCount() && document.modified;
+                        var submitBtns = document.getElementsByName('Queries.QueryInfo.SubmitBtn');
+                        for (var i=0; i<submitBtns.length; i++)
+                            submitBtns[i].disabled = !enable;
+                    }
+                    ]]>
+          </script>
+          <Queries maxOccurs="1">
+            <QueryInfo maxOccurs="unbounded" multiselect="true" sortable="true" width="1000">
+              <QueryName caption="Query" viewType="static" align="left" width="350" column="1"/>
+                        <Suspended viewType="select" multiselect="true" width="80" column="2" disabled="1">
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+              </Suspended>
+              <QueryPriority caption="Query Priority" viewType="static" sortable="true" width="60" column="4"/>
+              <Aliased caption="Has Aliases" viewType="static:No|Yes" width="60" column="5"/>
+              <IsLibrary caption="Is Library" viewType1="static:No|Yes" sortable="true" width="60" column="6"/>
+              <ErrorStatus caption="Status" viewType="static" align="left" width="450" column="7"/>
+            </QueryInfo>
+          </Queries>
+          <Buttons width="1000">
+            <input type="submit" name="Queries.QueryInfo.Delete" value="Delete" disabled="true"
+                 onclick="return confirm('Are you sure you want to delete the selected queries?') ? submitSelectedItems('Queries/QueryInfo', '/ws_roxieconfig/ModifyQueries?Operation=Delete'): false"> </input>
+            <input type="submit" name="Queries.QueryInfo.MultiEdit1" value="Activate" disabled="true"
+                 onclick="return submitSelectedItemsAsXml('Queries/QueryInfo', '/ws_roxieconfig/NavMenuEvent?Cmd=ActivateQueries', 'XmlArg')"> </input>
+            <input type="submit" name="Queries.QueryInfo.MultiEdit2" value="Add Alias" disabled="true"
+                 onclick="return submitSelectedItemsAsXml('Queries/QueryInfo', '/ws_roxieconfig/NavMenuEvent?Cmd=AddAliases', 'XmlArg')"> </input>
+            <input type="submit" name="Queries.QueryInfo.Edit1" value="Show Graph" disabled="true"
+                 onclick="return submitSelectedItem('Queries/QueryInfo', unescape(&quot;/ws_roxieconfig/GVCAjaxGraph?Name={QueryName}&quot;))"> </input>
+            <input type="submit" name="Queries.QueryInfo.Edit2" value="List Data Files" disabled="true"
+                 onclick="return submitSelectedItem('Queries/QueryInfo', unescape(&quot;/ws_roxieconfig/ListFilesUsedByQuery?queryName={QueryName}&amp;excludeSuperFileNames=1&quot;))"> </input>
+            <input type="submit" name="Queries.QueryInfo.Edit3" value="List Super Files" disabled="true"
+                 onclick="return submitSelectedItem('Queries/QueryInfo', unescape(&quot;/ws_roxieconfig/ListFilesUsedByQuery?queryName={QueryName}&amp;excludeDataFileNames=1&quot;))"> </input>
+            <input type="submit" name="Queries.QueryInfo.SubmitBtn" value="Submit" disabled="true"
+                 onclick="return confirm('Are you sure you want to modify the selected queries?') ? submitSelectedItems('Queries/QueryInfo', '/ws_roxieconfig/ModifyQueries?Operation=Suspend'): false"> </input>
+          </Buttons>
+        </ListDeployedDataOnlyQueries>
+
+        <ListDeployedLibraryQueries argsNode="Queries" caption="Deployed Library Queries" subcaption="Loading, please wait..."
+          selectedTab="Library Queries">
+          <script type="text/javascript">
+            <![CDATA[
+                    function onLoadCustom()
+                    {
+                        createTableSorter( 'Queries.QueryInfo', 
+                                                     ['None', 'CaseInsensitiveString', 'String', 'String', 'String', 'String'],
+                                                     objRootNode.getElementsByTagName('Queries')[0]);
+                    }
+                    function onDocumentModified(modified)
+                    {
+                        enableSubmitButton();
+                    }
+                    //define a stub that may be overridden by a component's command 
+                    //if special handling of item selection is desired
+                    //
+                    function onRowCheckHandler(xpath)
+                    {
+            if (xpath.setAllSet) {
+              for(var i=0;i<xpath.n_totalItems;i++)
+              {
+                var suspendedcell = xpath.tableId + '.' + i + '.Suspended';
+                var suspended = document.getElementById(suspendedcell);
+                if (suspended) {
+                  suspended.disabled = xpath.setAllValue == true ? false : true;
+                }                
+              }
+            }
+            else {
+              if (xpath.n_column == 0) {
+                var suspendedcell = xpath.tableId + '.' + xpath.n_lastRowClicked + '.Suspended';
+                var suspended = document.getElementById(suspendedcell);
+                if (suspended) {
+                  suspended.disabled = xpath.lastValueSet == true ? false : true;
+                }
+              }
+            }
+                        enableSubmitButton();
+                    }
+                    function enableSubmitButton()
+                    {
+                        var multiselect = ms_lookup(0);
+                        var enable = multiselect && multiselect.getSelectionCount() && document.modified;
+                        var submitBtns = document.getElementsByName('Queries.QueryInfo.SubmitBtn');
+                        for (var i=0; i<submitBtns.length; i++)
+                            submitBtns[i].disabled = !enable;
+                    }
+                    ]]>
+          </script>
+          <Queries maxOccurs="1">
+            <QueryInfo maxOccurs="unbounded" multiselect="true" sortable="true" width="1000">
+              <QueryName caption="Query" viewType="static" align="left" width="350" column="1"/>
+                        <Suspended viewType="select" multiselect="true" width="80" column="2" disabled="1">
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+              </Suspended>
+              <QueryPriority caption="Query Priority" viewType="static" sortable="true" width="60" column="4"/>
+              <Aliased caption="Has Aliases" viewType="static:No|Yes" width="60" column="5"/>
+              <IsLibrary caption="Is Library" viewType1="static:No|Yes" sortable="true" width="60" column="6"/>
+              <ErrorStatus caption="Status" viewType="static" align="left" width="450" column="7"/>
+            </QueryInfo>
+          </Queries>
+          <Buttons width="1000">
+            <input type="submit" name="Queries.QueryInfo.Delete" value="Delete" disabled="true"
+                 onclick="return confirm('Are you sure you want to delete the selected queries?') ? submitSelectedItems('Queries/QueryInfo', '/ws_roxieconfig/ModifyQueries?Operation=Delete'): false"> </input>
+            <input type="submit" name="Queries.QueryInfo.MultiEdit1" value="Activate" disabled="true"
+                 onclick="return submitSelectedItemsAsXml('Queries/QueryInfo', '/ws_roxieconfig/NavMenuEvent?Cmd=ActivateQueries', 'XmlArg')"> </input>
+            <input type="submit" name="Queries.QueryInfo.MultiEdit2" value="Add Alias" disabled="true"
+                 onclick="return submitSelectedItemsAsXml('Queries/QueryInfo', '/ws_roxieconfig/NavMenuEvent?Cmd=AddAliases', 'XmlArg')"> </input>
+            <input type="submit" name="Queries.QueryInfo.Edit1" value="Show Graph" disabled="true"
+                 onclick="return submitSelectedItem('Queries/QueryInfo', unescape(&quot;/ws_roxieconfig/GVCAjaxGraph?Name={QueryName}&quot;))"> </input>
+            <input type="submit" name="Queries.QueryInfo.Edit2" value="List Data Files" disabled="true"
+                 onclick="return submitSelectedItem('Queries/QueryInfo', unescape(&quot;/ws_roxieconfig/ListFilesUsedByQuery?queryName={QueryName}&amp;excludeSuperFileNames=1&quot;))"> </input>
+            <input type="submit" name="Queries.QueryInfo.Edit3" value="List Super Files" disabled="true"
+                 onclick="return submitSelectedItem('Queries/QueryInfo', unescape(&quot;/ws_roxieconfig/ListFilesUsedByQuery?queryName={QueryName}&amp;excludeDataFileNames=1&quot;))"> </input>
+            <input type="submit" name="Queries.QueryInfo.SubmitBtn" value="Submit" disabled="true"
+                 onclick="return confirm('Are you sure you want to modify the selected queries?') ? submitSelectedItems('Queries/QueryInfo', '/ws_roxieconfig/ModifyQueries?Operation=Suspend'): false"> </input>
+          </Buttons>
+        </ListDeployedLibraryQueries>
+
+        
+        
+        <ListDeployedAliases argsNode="Aliases" caption="Deployed Aliases" selectedTab="Aliases">
+                <script type="text/javascript">
+                    function onLoadCustom()
+                    {
+                        createTableSorter('Aliases.AliasInfo', ['None', 'CaseInsensitiveString', 'CaseInsensitiveString'],
+                                                     objRootNode.getElementsByTagName('Aliases')[0]);
+                    }
+                </script>
+                <Aliases maxOccurs="1">
+                    <AliasInfo maxOccurs="unbounded" sortable="true" multiselect="true" width="800">
+                        <AliasName caption="Alias Name" viewType="static" column="1" align="left" width="400"/>
+                        <OriginalName caption="Original Name" viewType="static" column="2" align="left" width="400"/> 
+                    </AliasInfo>
+                </Aliases>
+          <Buttons width="800">
+                <input type="submit" name="Aliases.AliasInfo.Delete" value="Delete" disabled="true" 
+                 onclick="return confirm('Are you sure you want to delete?') ? submitSelectedItems('Aliases/AliasInfo', '/ws_roxieconfig/RemoveAliases'):false"> </input>
+          </Buttons>
+            </ListDeployedAliases>
+            
+            
+        <ActivateQueries caption="Activate Deployed Queries" argsNode="Info" selectedTab="Queries"
+         action="/ws_roxieconfig/AddAliasesToQueries?Activate=1">
+                <script type="text/javascript">
+                    function onLoadCustom()
+                    {
+                        createTableSorter('Info.RoxieQueryModificationInfo', ['CaseInsensitiveString', 'CaseInsensitiveString', 'Html', 'Html'],
+                                                     objRootNode.getElementsByTagName('Info')[0]);
+                    }
+                </script>
+                <Info maxOccurs="1">
+                    <RoxieQueryModificationInfo maxOccurs="unbounded" sortable="true" checkboxes="false" width="960">
+                        <OriginalName caption="Query Name" viewType="static" align="left" column="0" width="400"/>
+                        <RoxieQueryName caption="Alias" viewType="static" align="left" column="1" width="400"/>
+                        <SuspendPrevious caption="Suspend Previous" dataType="boolean" multiselect="true" column="2" width="80"/>
+                        <DeletePrevious caption="Delete Previous" dataType="boolean" multiselect="true" column="3" width="80"/>
+                    </RoxieQueryModificationInfo>
+                </Info>
+                <Buttons showResetButton="false">
+                    <input name="Submit" type="submit" value="Submit"/>
+                </Buttons>
+        </ActivateQueries>
+      
+        <AddAliases caption="Add aliases to deployed queries" argsNode="Info" selectedTab="Queries"
+         action="/ws_roxieconfig/AddAliasesToQueries">
+                <script type="text/javascript">
+                    function onLoadCustom()
+                    {
+                        createTableSorter('Info.RoxieQueryModificationInfo', ['CaseInsensitiveString', 'iHtml', 'Html', 'Html'],
+                                                     objRootNode.getElementsByTagName('Info')[0]);
+                    }
+                </script>
+                <Info maxOccurs="1">
+                    <RoxieQueryModificationInfo maxOccurs="unbounded" sortable="true" checkboxes="false" width="960">
+                        <OriginalName caption="Query Name" viewType="static" align="left" column="0" width="400"/>
+                        <RoxieQueryName caption="Alias" size="18" column="1" align="left" width="400"/>
+                        <SuspendPrevious caption="Suspend Previous" dataType="boolean" multiselect="true" column="2" width="80"/>
+                        <DeletePrevious caption="Delete Previous" dataType="boolean" multiselect="true" column="3" width="80"/>
+                    </RoxieQueryModificationInfo>
+                </Info>
+            <Buttons width="960">
+                <input type="submit" name="Info.RoxieQueryModificationInfo.Edit1" value="Submit"> </input>
+            </Buttons>
+        </AddAliases>
+      
+            <ListDataFilesUsedByQuery caption="Files used by {ListDataFilesUsedByQuery/QueryName}" argsNode="." 
+                selectedTab="Data Files" maxOccurs="1" nodeName="">
+                <script type="text/javascript">
+                    function onLoadCustom()
+                    {
+                        createTableSorter('IndexFiles', ['None', 'String', 'NumberWithCommas', 'NumberWithCommas'],
+                                                     objRootNode.getElementsByTagName('IndexFiles')[0]);
+                        createTableSorter('DataFiles', ['None', 'String', 'NumberWithCommas', 'NumberWithCommas'],
+                                                     objRootNode.getElementsByTagName('DataFiles')[0]);
+                    }
+                </script>
+                <IndexFiles maxOccurs="1">
+                    <FileInfo caption="Index Files" maxOccurs="unbounded" sortable="true" width="850" nodeName="" multiselect="false" splitTable="false">
+                        <Name caption="Logical Name" viewType="static" column="1" width="600" align="left"/>
+                        <RecordCount caption="Records" viewType="static" column="2" width="100" align="right"/>
+                        <FileSize caption="Size" viewType="static" column="3" width="150" align="right"/>
+                    </FileInfo>
+                </IndexFiles>
+                <DataFiles maxOccurs="1">
+                    <FileInfo maxOccurs="unbounded" sortable="true" width="850" nodeName="" caption="Data Files" splitTable="false" break="true">
+                        <Name caption="Logical Name" viewType="static" column="1" width="600" align="left"/>
+                        <RecordCount caption="Records" viewType="static" column="2" width="100" align="right"/>
+                        <FileSize caption="Size" viewType="static" column="3" width="150" align="right"/>
+                    </FileInfo>                 
+                </DataFiles>
+                <Totals maxOccurs="1" table="true" width="300" splitTable="false">
+                    <RecordCount caption="Total Index/Data File Records" noWrap="true" viewType="static" column="1" width="150" align="right"/>
+                    <FileSize caption="Total Index/Data File Size" noWrap="true" viewType="static" column="2" width="150" align="right"/>
+                </Totals>
+                <Buttons showResetButton="false" width="850">
+                <input type="submit" name="IndexFiles.Edit1" value="Queries using index file..." disabled="true" 
+                 onclick="return submitSelectedItem('ListDataFilesUsedByQuery.IndexFiles.FileInfo', '/ws_roxieconfig/ListQueriesUsingFile?fileName={Name}', 'IndexFiles')">      
+                    </input>
+                <input type="submit" name="DataFiles.Edit1" value="Queries using data file..." disabled="true" 
+                 onclick="return submitSelectedItem('ListDataFilesUsedByQuery.DataFiles.FileInfo', '/ws_roxieconfig/ListQueriesUsingFile?fileName={Name}', 'DataFiles')">
+                    </input>
+                </Buttons>
+            </ListDataFilesUsedByQuery>
+            
+            <ListSuperFilesUsedByQuery caption="Super Files used by {ListSuperFilesUsedByQuery/QueryName}" argsNode="." 
+                selectedTab="Super Files" maxOccurs="1" nodeName="">
+                <script type="text/javascript">
+                    function onLoadCustom()
+                    {
+                        createTableSorter('SuperFiles.SuperFileInfo', ['None'], objRootNode.getElementsByTagName('SuperFiles')[0]);
+                    }
+                </script>
+                <SuperFiles caption="" maxOccurs="1" id="">
+                    <SuperFileInfo maxOccurs="unbounded" sortable="true" multiselect="true" width="580">
+                        <Name caption="Name / Description" viewType="static" column="1" width="500" align="left" override="true"/>
+                        <Description viewType="hidden"/>
+                        <Version viewType="static" column="2" width="80"/>
+                        <FullName viewType="hidden"/>
+                    </SuperFileInfo>
+                </SuperFiles>
+                <Buttons showResetButton="false" width="580">
+                <input type="submit" name="SuperFiles.SuperFileInfo.Edit1" value="Queries using file..." disabled="true" 
+                 onclick="return submitSelectedItem('ListSuperFilesUsedByQuery.SuperFiles.SuperFileInfo', '/ws_roxieconfig/ListQueriesUsingFile?fileName={Name}', 'SuperFiles.SuperFileInfo')">
+                    </input>                     
+                <input type="submit" name="SuperFiles.SuperFileInfo.MultiEdit1" value="Redeploy related queries" disabled="true" 
+                 onclick="return submitSelectedItemsAsXml('ListSuperFilesUsedByQuery.SuperFiles.SuperFileInfo','/ws_roxieconfig/NavMenuEvent?Cmd=DataDeploySelected', 'XmlArg', 'SuperFiles.SuperFileInfo')">
+                    </input>
+                <!--input type="submit" name="SuperFiles.SuperFileInfo.MultiEdit2" value="Setup Remap" disabled="true" 
+                 onclick="return submitSelectedItems('SuperFiles.SuperFileInfo','/ws_roxieconfig/SetupSuperFilesRemap')">
+                    </input-->
+                </Buttons>
+            </ListSuperFilesUsedByQuery>
+            
+            
+            <!--SetupSuperFilesRemap caption="Remap Super Files" argsNode="." 
+                selectedTab="Super Files" maxOccurs="1" nodeName="" schemaIsland="false" objIsland1="" nosort="true">
+                <script type="text/javascript" src="/esp/files_/scripts/ws_roxieconfig_remap.js">
+                </script>
+                <RemapSuperFiles caption="" maxOccurs="1" id="">
+                    <RemapSuperFile maxOccurs="unbounded" multiselect="true" hover="false" splitTable="false" width="930">
+                        <RemapInfo caption="Setup Remapping of Super Files" maxOccurs="1" table="true" splitTable="false" column="1" width="800" overrideCell='after'>
+                            <Name caption="Super File Name" viewType="static" align="left" noWrap="true"/>
+                            <FullName viewType="hidden"/>
+                            <Description caption="Target Description" viewType="static" align="left" noWrap="true"/>
+                            <Version caption="Target Version" viewType="static" align="left" noWrap="true"/>
+                            <SrcDesc caption="Source Description" viewType="static" align="left" noWrap="true" span="true"/>
+                            <SrcVersion caption="Source Version" viewType="static" noWrap="true" span="true"/>
+                        </RemapInfo>
+                        <NameServices caption="Source Roxie" viewType="select" valign="top" multiselect="true" 
+                            column="2" width="130" source="object" xpath="/" option="NameService" text="Name" value="Name" 
+                            selected="Selected" onchange="onSourceRoxie(this)" ms_onchange_item="onSourceRoxie">
+                        </NameServices>
+                    </RemapSuperFile>
+                </RemapSuperFiles>
+            <Buttons showResetButton="false" width="930">
+                <input type="button" name="RemapSuperFiles.RemapSuperFile.MultiEdit1" value="Remove Checked" disabled="true" 
+                 onclick="return onDelete('RemapSuperFiles.RemapSuperFile')">
+                    </input>
+                <input type="button" value="Fetch Source Files" onclick="return fetchCandidateSourceFiles()">
+                    </input>
+                <input type="submit" value="Setup Remap" onclick="return submitFormIfComplete()">
+                    </input>
+            </Buttons>
+            </SetupSuperFilesRemap-->
+            
+            <ListQueriesUsingFile caption="Queries using file {ListQueriesUsingFile/FileName}" argsNode="." maxOccurs='1'
+                selectedTab="Queries">
+                <script type="text/javascript">
+                    function onLoadCustom()
+                    {
+                        createTableSorter('Queries.Item', ['None', 'CaseInsensitiveString'], objRootNode.getElementsByTagName('Queries')[0]);
+                    }
+                </script>
+                <Queries maxOccurs="1">
+                    <Item maxOccurs="unbounded" sortable="true" width="400">
+                        <innerText caption="Logical Name" dataType="innerText" viewType="static" align="left" column="1" width="400"/>
+                    </Item>
+                </Queries>
+            <Buttons showResetButton="false" width="400">
+                <input type="button" value="Go Back" onclick="history.back()"> </input>
+                <input type="submit" name="ListQueriesUsingFile.Queries.Item.Edit1" value="List Data Files" disabled="true" 
+                 onclick="return submitSelectedItem('ListQueriesUsingFile.Queries.Item', '/ws_roxieconfig/ListFilesUsedByQuery?queryName={.}&amp;excludeSuperFileNames=1')">
+                </input>
+                <input type="submit" name="ListQueriesUsingFile.Queries.Item.Edit1" value="List Super Files" disabled="true" 
+                 onclick="return submitSelectedItem('ListQueriesUsingFile.Queries.Item', '/ws_roxieconfig/ListFilesUsedByQuery?queryName={.}&amp;excludeDataFileNames=1')">
+                </input>
+            </Buttons>
+            </ListQueriesUsingFile>
+        
+            <DeployECLFileForm caption="Deploy ECL file" argsNode="EclFiles" selectedTab="Pending Deployments">
+                <script type="text/javascript"><![CDATA[
+                    function onLoadCustom()
+                    {
+                        createTableSorter('EclFiles.EclFile', ['None', 'Html', 'Html'], objRootNode.getElementsByTagName('EclFiles')[0]);
+                    }
+                    function isFormComplete()
+                    {
+                            var checkboxes = document.getElementsByName( "EclFiles.EclFile.checkbox" );
+                            var n_checkboxes = checkboxes.length == undefined ? 0 : checkboxes.length;
+                            if (n_checkboxes == 0)
+                            {
+                                alert("Please add one or more files to be deployed!");
+                                return false;
+                            }
+                            
+                            for (var i=0; i<n_checkboxes; i++)
+                             {
+                                var checkbox = checkboxes[i];
+                                var row = getEnclosingTableRow(checkbox);
+                                var rowId = row.id;
+                               var originalName = document.getElementById( rowId + ".OriginalName");
+                               if (originalName.value == "")
+                               {
+                                 alert("Please enter an original name for query!");
+                                 originalName.focus();
+                                 return false;
+                               }
+                               var file  = document.getElementById(rowId + ".FileContents");
+                               if (file.value == "")
+                               {
+                                 alert("Please enter a valid path to an ECL file to deploy!");
+                                 file.focus();
+                                 return false;
+                               }
+                             }  
+                             return true;
+                    }
+                    ]]>
+                </script>
+                <EclFiles maxOccurs="1" enctype="multipart/form-data">
+                <EclFile maxOccurs="unbounded" sortable="true" multiselect="true" width="700" splitTable="false">
+                        <OriginalName caption="Original Name" column="1" width="300"/>
+                        <FileContents dataType="file" caption="File" column="2" width="400"/>
+                    </EclFile>
+                </EclFiles>
+            <Buttons width="700">
+                    <input type="button" name="EclFiles.EclFile.Add" value="Add" onclick="onAdd('EclFiles.EclFile')"> </input>
+                <input type="button" name="EclFiles.EclFile.Delete" value="Remove" disabled="true" onclick="onDelete('EclFiles.EclFile')"> </input>
+                <input type="submit" value="Submit" 
+                onclick="return isFormComplete() ? submitForm('/ws_roxieconfig/NavMenuEvent?Cmd=DeployECLFile'): false"> </input>
+            </Buttons>
+            </DeployECLFileForm>
+            
+            <!--GetVersion caption="Roxie Config Web Service" argsNode="." selectedTab="About Roxie Config" width="200">
+                <version caption="Version" viewType="static" align="left" width="200"/>
+            </GetVersion-->
+            
+        </Commands>
+    </ws_roxieconfig>
+</Components>

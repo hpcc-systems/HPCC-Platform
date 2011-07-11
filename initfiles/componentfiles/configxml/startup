@@ -1,0 +1,17 @@
+rem /*##############################################################################
+rem 
+rem ## Copyright © 2011 HPCC Systems.  All rights reserved.
+rem ############################################################################## */
+
+. /opt/sybase-15/SYBASE.sh
+DESTDIR=`dirname $0`
+if [ "$DESTDIR" == "." ]; then DESTDIR=`pwd`; fi
+cd $DESTDIR
+
+$DESTDIR/stop
+sleep 1
+
+#bash in the following line results in reporting its arguments in the process table
+#instead of showing up as "-bash".  This is used in process monitoring.
+
+bash $DESTDIR/start_esp 1>/dev/null 2>/dev/null &

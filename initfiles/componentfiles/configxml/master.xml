@@ -1,0 +1,31 @@
+<!--
+
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+-->
+
+<?xml version="1.0" encoding="UTF-8"?>
+<Environment>
+<Software>
+<EspProcess formOptionsAccess="1" description="ESP server" enableSNMP="false" enableSEHMapping="false" httpConfigAccess="true" logLevel="1" maxBacklogQueueSize="200" maxConcurrentThreads="0" name="esp_2" perfReportDelay="60">
+ <ldapSecurity name="ldapserver" ldapProtocol="ldap" localDomain="localhost" authMethod="simple" maxConnections="10" cacheTimeout="5" ldapAddress="10.150.0.3" description="LDAP server process" groupsBasedn="ou=groups,ou=ecl,dc=internal,dc=sds" ldapPort="389" ldapSecurePort="636" resourcesBasedn="ou=dataland,ou=ecl,dc=internal,dc=sds" sudoersBasedn="ou=SUDOers" systemBasedn="cn=Users,dc=internal,dc=sds" systemCommonName="sds_system" systemPassword="2ggj6ZTFZA3sa5SUv7oexg==" systemUser="sds_system" usersBasedn="ou=users,ou=ecl,dc=internal,dc=sds" workunitsBasedn="ou=workunits,ou=ecl" />
+<EspProtocol name="http" type="http_protocol" plugin="libesphttp.so" maxRequestEntityLength="8000000"/>
+<EspService name="ws_dispatch" type="ws_dispatch" plugin="ws_dispatch">
+<JobsPerAgent>4</JobsPerAgent>
+<MaxRoxieThreads>400</MaxRoxieThreads>
+<RunAgents>
+<RunAgent ip="kettledev01.br.seisint.com" port="8040" user="yma" password="QMleCDUY0RC2ub6JfLAT+A=="/>
+<RunAgent ip="kettledev02.br.seisint.com" port="8040" user="yma" password="QMleCDUY0RC2ub6JfLAT+A=="/>
+</RunAgents>
+<Mysql server="mysqldev02.br.seisint.com" user="batch_dispatcher" password="mfhqAubTv+21NbEOtFY58g==" db="batch_dispatcher"/>
+<Sybase server="syb15dev" user="bpsbatch" password="uzmNZSnouBb77c8Uc3R64g==" db="batch"/>
+<ReportSybase server="syb15dev" user="bpsbatch" password="uzmNZSnouBb77c8Uc3R64g==" db="batch"/>
+</EspService>
+<EspBinding name="ws_dispatchSoapBinding" service="ws_dispatch" protocol="http" type="ws_dispatchSoapBinding" plugin="ws_dispatch" netAddress="0.0.0.0" port="8030" defaultBinding="true">
+<Authenticate method="LdapSecurity" config="ldapserver" resourcesBasedn="ou=SMC,ou=EspServices,ou=ecl" workunitsBasedn="ou=workunits,ou=ecl">
+<Location path="/" resource="SmcAccess" required="Read" description="Root access to SMC service" />
+</Authenticate>
+</EspBinding>
+  </EspProcess>
+</Software>
+</Environment>
+

@@ -1,0 +1,22 @@
+#!/bin/bash
+################################################################################
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+################################################################################
+
+
+export PATH=$PATH:.
+if [ $# -lt 3 ]; then
+    echo usage: $0 host rootpasswd nfsserver 
+    exit 1
+fi
+
+HOSTADDR=$1
+ROOTPASSWD=$2
+NFSSERVER=$3
+
+echo unmounting shared drive for $HOSTADDR...
+pssh root@$HOSTADDR -o StrictHostKeyChecking=no -o password=$ROOTPASSWD "umount /thor; umount /mnt/lib; umount /mnt/usrlib; umount /mnt/bin; umount /mnt/usr/bin"
+
+echo mounting directories /thor, /mnt/lib, /mnt/usr/lib ...
+pssh root@$HOSTADDR -o StrictHostKeyChecking=no -o password=$ROOTPASSWD "mkdir /thor; mount $NFSSERVER:/thor /thor -o hard,intr; mkdir /mnt/lib; mount $NFSSERVER:/lib /mnt/lib -o hard,intr; mkdir /mnt/usrlib; mount $NFSSERVER:/usr/lib /mnt/usrlib -o hard,intr; mkdir /mnt/bin; mount $NFSSERVER:/bin /mnt/bin -o hard,intr; mkdir /mnt/usrbin; mount $NFSSERVER:/usr/bin /mnt/usrbin -o hard,intr;"
+

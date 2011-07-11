@@ -1,0 +1,24 @@
+<Dataset name='MatchSmith'>
+ <Row><surname>Halliday            </surname><forename>Gavin     </forename><age>31</age></Row>
+ <Row><surname>Halliday            </surname><forename>Liz       </forename><age>30</age></Row>
+ <Row><surname>Jones               </surname><forename>John      </forename><age>44</age></Row>
+ <Row><surname>Smith               </surname><forename>George    </forename><age>75</age></Row>
+ <Row><surname>Smith               </surname><forename>Baby      </forename><age>2</age></Row>
+</Dataset>
+<Dataset name='NotHalliday'>
+</Dataset>
+<Dataset name='NotTricky'>
+ <Row><surname>Halliday            </surname><forename>Gavin     </forename><age>31</age></Row>
+ <Row><surname>Halliday            </surname><forename>Liz       </forename><age>30</age></Row>
+ <Row><surname>Jones               </surname><forename>John      </forename><age>44</age></Row>
+ <Row><surname>Smith               </surname><forename>George    </forename><age>75</age></Row>
+ <Row><surname>Smith               </surname><forename>Baby      </forename><age>2</age></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><matches><Row><surname>Halliday            </surname><forename>Gavin     </forename><age>31</age></Row><Row><surname>Halliday            </surname><forename>Liz       </forename><age>30</age></Row></matches></Row>
+ <Row><matches></matches></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><others></others></Row>
+ <Row><others><Row><surname>Jones               </surname><forename>John      </forename><age>44</age></Row><Row><surname>Smith               </surname><forename>George    </forename><age>75</age></Row><Row><surname>Smith               </surname><forename>Baby      </forename><age>2</age></Row></others></Row>
+</Dataset>

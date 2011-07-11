@@ -1,0 +1,30 @@
+<xgmml>
+<graph>
+ <node id="1" label="regress::hthor::personindex"><att>
+ <graph>
+ <node id="1_0" label="forename">
+<attr name="type" value="string40"/>
+ </node>
+ <node id="1_1" label="surname">
+<attr name="type" value="string40"/>
+ </node>
+ <node id="1_2" label="id">
+<attr name="type" value="unsigned4"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="2" label="regress::hthor::personindexid"><att>
+ <graph>
+ <node id="2_0" label="id">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="2_1" label="filepos">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+  <edge id="3" source="1_2" target="2_0">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+</graph>
+</xgmml>

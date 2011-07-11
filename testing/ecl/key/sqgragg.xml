@@ -1,0 +1,7 @@
+<Dataset name='Result 1'>
+ <Row><addr>99 Maltings Road</addr><rec><decade>3</decade><cntpersons>2</cntpersons><cntbooks>8</cntbooks></rec></Row>
+ <Row><addr>Buckingham Palace</addr><rec><decade>7</decade><cntpersons>1</cntpersons><cntbooks>5</cntbooks></rec></Row>
+ <Row><addr>Bedrock</addr><rec><decade>200</decade><cntpersons>2</cntpersons><cntbooks>1</cntbooks></rec></Row>
+ <Row><addr>Wimpole Hall</addr><rec><decade>6</decade><cntpersons>1</cntpersons><cntbooks>2</cntbooks></rec></Row>
+ <Row><addr>56 New Road</addr><rec><decade>4</decade><cntpersons>1</cntpersons><cntbooks>4</cntbooks></rec></Row>
+</Dataset>

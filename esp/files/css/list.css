@@ -1,0 +1,82 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+body 
+{ 
+    background-color: white;
+}
+
+table 
+{ 
+    padding:3px; 
+}
+
+table.list 
+{ 
+    border-collapse: collapse; 
+    border: double #777; 
+    font: 10pt verdana, arial, helvetica, sans-serif; 
+}
+
+table.list th, table.list td 
+{ 
+    border: 1px solid #777; 
+    padding:2px; 
+}
+
+table.results 
+{ 
+    font: 9pt verdana, arial, helvetica, sans-serif; 
+}
+
+table.workunit tr 
+{ 
+    padding: 2 0; 
+}
+
+table.workunit th 
+{ 
+    text-align:left; 
+    vertical-align:top; 
+}
+
+table.workunit td 
+{ 
+    padding: 2 2 2 12; 
+}
+
+.grey 
+{ 
+    background-color: #ddd;
+}
+
+.number 
+{ 
+    text-align:right; 
+}
+
+.sbutton 
+{ 
+    width: 7em; 
+    font: 10pt verdana, arial, helvetica, sans-serif; 
+}
+
+.running 
+{ 
+    font-weight : bolder; 
+}

@@ -1,0 +1,4 @@
+<Dataset name='Result 1'>
+ <Row><surname>Halliday            </surname><forename>Gavin     </forename><homephone><areacode>09876</areacode><number>123987      </number></homephone><hasmobile>true</hasmobile><mobilephone><areacode>07967</areacode><number>123987      </number></mobilephone><contact><phone><areacode>n/a  </areacode><number>n/a         </number></phone><hasemail>true</hasemail><email>gavin@edata.com</email></contact><endmarker>$$</endmarker></Row>
+ <Row><surname>Halliday            </surname><forename>Abigail   </forename><homephone><areacode>09876</areacode><number>123987      </number></homephone><hasmobile>false</hasmobile><contact><phone><areacode>     </areacode><number>            </number></phone><hasemail>false</hasemail></contact><endmarker>$$</endmarker></Row>
+</Dataset>

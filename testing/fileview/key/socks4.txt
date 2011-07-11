@@ -1,0 +1,4 @@
+kind word doc segment wpos wip flags original dpos
+1 socks                1407374883553282 0 7 1 3 Socks                59
+2 socks                1407374883553282 0 2 1 1 socks                1
+2 socks                1407374883553282 0 6 1 1 socks                34

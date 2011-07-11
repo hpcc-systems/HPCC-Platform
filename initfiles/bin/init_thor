@@ -1,0 +1,24 @@
+#!/bin/bash
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+
+export deploydir=$(dirname $(type -path $0)) 
+PATH_PRE=`type -path hpcc_setenv` 
+source ${PATH_PRE} 
+PID_NAME="$PID/`basename $PWD`.pid"
+
+INIT_PID_NAME="$PID/init_`basename $PWD`.pid"
+echo $$ > $INIT_PID_NAME
+
+killed() {
+        echo "Stopping"
+        $deploydir/stop_thor $deploydir
+        rm $PID_NAME
+        exit 255
+}
+
+echo $$ > $PID_NAME
+$deploydir/start_thor $deploydir &
+trap "killed" SIGINT SIGTERM
+wait
+rm $PID_NAME
+

@@ -1,0 +1,42 @@
+<Dataset name='Result 1'>
+ <Row><source>1</source><subdoc>5</subdoc><wpos>4</wpos><wip>1</wip></Row>
+ <Row><source>1</source><subdoc>5</subdoc><wpos>5</wpos><wip>1</wip></Row>
+ <Row><source>2</source><subdoc>1</subdoc><wpos>5</wpos><wip>1</wip></Row>
+ <Row><source>2</source><subdoc>1</subdoc><wpos>6</wpos><wip>1</wip></Row>
+ <Row><source>3</source><subdoc>1</subdoc><wpos>2</wpos><wip>1</wip></Row>
+ <Row><source>3</source><subdoc>1</subdoc><wpos>5</wpos><wip>1</wip></Row>
+ <Row><source>3</source><subdoc>1</subdoc><wpos>7</wpos><wip>1</wip></Row>
+ <Row><source>3</source><subdoc>3</subdoc><wpos>3</wpos><wip>1</wip></Row>
+ <Row><source>3</source><subdoc>3</subdoc><wpos>5</wpos><wip>1</wip></Row>
+ <Row><source>3</source><subdoc>3</subdoc><wpos>6</wpos><wip>1</wip></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><source>3</source><subdoc>2</subdoc><wpos>5</wpos><wip>1</wip></Row>
+ <Row><source>3</source><subdoc>4</subdoc><wpos>4</wpos><wip>1</wip></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><source>1</source><subdoc>5</subdoc><wpos>4</wpos><wip>1</wip></Row>
+ <Row><source>1</source><subdoc>5</subdoc><wpos>5</wpos><wip>1</wip></Row>
+ <Row><source>2</source><subdoc>1</subdoc><wpos>5</wpos><wip>1</wip></Row>
+ <Row><source>2</source><subdoc>1</subdoc><wpos>6</wpos><wip>1</wip></Row>
+ <Row><source>3</source><subdoc>1</subdoc><wpos>2</wpos><wip>1</wip></Row>
+ <Row><source>3</source><subdoc>1</subdoc><wpos>5</wpos><wip>1</wip></Row>
+ <Row><source>3</source><subdoc>1</subdoc><wpos>7</wpos><wip>1</wip></Row>
+ <Row><source>3</source><subdoc>3</subdoc><wpos>2</wpos><wip>1</wip></Row>
+ <Row><source>3</source><subdoc>3</subdoc><wpos>3</wpos><wip>1</wip></Row>
+ <Row><source>3</source><subdoc>3</subdoc><wpos>5</wpos><wip>1</wip></Row>
+ <Row><source>3</source><subdoc>3</subdoc><wpos>6</wpos><wip>1</wip></Row>
+ <Row><source>3</source><subdoc>4</subdoc><wpos>4</wpos><wip>1</wip></Row>
+ <Row><source>3</source><subdoc>4</subdoc><wpos>6</wpos><wip>1</wip></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><source>1</source><subdoc>5</subdoc><wpos>4</wpos><wip>1</wip></Row>
+ <Row><source>1</source><subdoc>5</subdoc><wpos>5</wpos><wip>1</wip></Row>
+ <Row><source>2</source><subdoc>1</subdoc><wpos>5</wpos><wip>1</wip></Row>
+ <Row><source>2</source><subdoc>1</subdoc><wpos>6</wpos><wip>1</wip></Row>
+ <Row><source>3</source><subdoc>1</subdoc><wpos>2</wpos><wip>1</wip></Row>
+ <Row><source>3</source><subdoc>1</subdoc><wpos>5</wpos><wip>1</wip></Row>
+ <Row><source>3</source><subdoc>1</subdoc><wpos>7</wpos><wip>1</wip></Row>
+ <Row><source>3</source><subdoc>4</subdoc><wpos>4</wpos><wip>1</wip></Row>
+ <Row><source>3</source><subdoc>4</subdoc><wpos>6</wpos><wip>1</wip></Row>
+</Dataset>

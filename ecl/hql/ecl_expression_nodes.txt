@@ -1,0 +1,645 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+no_none
+A not-a-value for variables and return values. Occasionally used in a node in the 
+expression tree where the definition of a symbol is not yet known or during error 
+recovery, but should not be encountered during code generation
+Operands: none
+
+no_scope
+Used for a symbol referring to a module name in HQL. Resolved at parse time – should 
+not be encountered during code generation.
+Operands: none
+
+no_list
+A set of values (HQL: [ 1, 2, 3])
+Operands: one per list element
+
+no_mul
+Multiply
+Operands: lhs, rhs
+
+no_div
+Divide
+Operands: lhs, rhs
+
+no_modulus
+Modulus
+Operands: lhs, rhs
+
+no_negate
+Unary negation
+Operand should be numeric
+A string operand is allowed ONLY the expression is a operand of SORT.
+Operands: rhs
+
+no_add
+Addition (integer and real).
+Currently used for string concat and file union too but these should be given their own 
+operators.
+Operands: lhs, rhs
+
+no_sub
+Subtraction (integer and real).
+Also used for recordset difference but should not be.
+Operands: lhs, rhs
+
+no_eq
+Equality (C++ == operator)
+Operands: lhs, rhs
+
+no_ne
+Inequality (C++ != operator)
+Operands: lhs, rhs
+
+no_lt
+Less than (C++ < operator)
+Operands: lhs, rhs
+
+no_le
+Less than or equal (C++ <= operator)
+Operands: lhs, rhs
+
+no_gt 
+Greater than (C++ > operator)
+Operands: lhs, rhs
+
+no_ge
+Greater or equal (C++ >= operator)
+Operands: lhs, rhs
+
+no_not
+Unary Boolean NOT
+Operand: rhs
+
+no_notnot
+Unary Boolean NOT(NOT())
+I.e., a no-op. Used internally when optimizing expressions, and as a return value from the 
+invert function.
+Operand: rhs
+
+no_and
+Logical AND (C++ && operator)
+Short circuit evaluation is expected.
+Operands: lhs, rhs
+
+no_or
+Logical OR (C++ || operator)
+Short circuit evaluation is expected.
+Operands: lhs, rhs
+
+no_xor
+Logical XOR
+Operands: lhs, rhs
+
+no_notin
+Item not in list (SQL "x NOT IN (…)" operator)
+Operands: lhs (value), rhs (set)
+
+no_in
+Item in list (SQL "x IN (…)" operator)
+Operands: lhs (value), rhs (set)
+
+no_notbetween
+Item not in range (SQL "x NOT BETWEEN y AND z")
+Operands: x, y, z
+
+no_between
+Item in range (SQL "x BETWEEN y AND z")
+Operands: x, y, z
+
+no_comma
+Used to build up lists while parsing, but should not be encountered during code 
+generation.
+Operands: lhs, rhs
+
+no_count
+Number of rows in a dataset (HQL: COUNT(recordset))
+Operands: dataset 
+
+no_countstar
+Number of rows in a group (HQL: COUNT(group))
+Operands: none
+
+no_notexists
+Dataset is empty (HQL: ~EXISTS(recordset))
+Operands: dataset
+
+no_exists
+Dataset is not empty (HQL: EXISTS(recordset))
+Operands: dataset
+
+no_within
+Record is found in recordset (HQL: WITHIN(recordset))
+Operands: dataset
+
+no_notwithin
+Record is not found in recordset (HQL: ~WITHIN(recordset))
+Operands: dataset
+
+no_param
+Used for defining HQL functions – should not be encountered during code generation
+Operands: none
+
+no_constant
+Literal constant of simple type.
+Operands: none
+
+no_field
+Field of a dataset.
+Operands: none
+
+no_select
+Selection of field from a named dataset (table.field)
+Operands: table, field
+
+no_map
+MAP(value1=>result1,valuen=>resultn, default).
+Short circuit evaluation is expected.
+Operands: n operands of type no_mapto, followed by a final operand for the default case.
+
+no_if
+IF (expression, truevalue, falsevalue)
+Short circuit evaluation is expected.
+Operands: expression, truevalue, falsevalue.
+
+no_max
+Maximum value of expression in dataset (HQL: MAX(dataset, expr))
+Operands: dataset, expr
+
+no_min
+Minimum value of expression in dataset (HQL: MIN(dataset, expr))
+Operands: dataset, expr
+
+no_sum
+Aggregate total value of expression in dataset (HQL: SUM(dataset, expr))
+Operands: dataset, expr
+
+no_ave
+Aggregate average value of expression in dataset (HQL: AVE(dataset, expr))
+Operands: dataset, expr
+
+no_maxstar
+Maximum value of expression in group (HQL: MAX(GROUP, expr))
+Operands: expr
+
+no_minstar
+Minimum value of expression in group (HQL: MIN(GROUP, expr))
+Operands: expr
+
+no_sumstar
+Aggregate total value of expression in group (HQL: SUM(GROUP, expr))
+Operands: expr
+
+no_avestar
+Aggregate average value of expression in group (HQL: AVE(GROUP, expr))
+Operands: expr
+
+no_exp
+E to the n
+Operands: n
+
+no_power
+x raised to the power y
+Operands: x, y
+
+no_round
+x rounded to nearest integer
+Operands: x
+
+no_roundup
+x rounded up to nearest integer
+Operands: x
+
+no_range
+Used as the operand of a substring operation to indicate [x..y]
+Operands: x, y
+
+no_rangeto
+Used as the operand of a substring operation to indicate [..y]
+Operands: y
+
+no_rangefrom
+Used as the operand of a substring operation to indicate [x..]
+Operands: x
+
+no_substring
+String slicing
+Operands: a single operand of type no_range, no_rangeto or no_rangefrom indicating the 
+desired range, or other integral type to indicate character indexing
+
+no_transform
+HQL TRANSFORM structure
+Operands: Not yet defined
+
+no_rollup
+HQL ROLLUP(dataset, expression, transformation)
+Operands: dataset, expression, transformation
+
+no_iterate
+HQL ITERATE(dataset, transformation)
+Operands: dataset, transformation
+
+no_assign
+Used within a TRANSFORM structure to indicate an assignment to the result.
+Operands: to be defined
+
+no_assignall
+Used within a TRANSFORM structure to indicate a bulk assignment to the result.
+Operands: to be defined
+
+no_asstring
+HQL ASSTRING(x) operator
+Operands: x
+
+no_group
+HQL GROUP(dataset, expression1, ..., expressionN)
+Operands: dataset, sortlist
+
+no_truncate
+Convert real to integer discarding fractional part
+Operands: realvalue
+
+no_ln
+Natural logarithm
+Operands: realvalue
+
+no_sqrt
+Square root
+Operands: realvalue
+
+no_evaluate
+HQL evaluate (datarow, expression)
+Operands: datarow, expression
+
+no_choose
+HQL: CHOOSE(expression, value1, value2, …, valuen, defaultvalue)
+Operands: expression, value1..valuen, defaultvalue
+
+no_which
+HQL: WHICH(expression1, expression2, …, expressionn)
+Operands: expression1, expression2,…, expressionn
+
+no_rejected
+HQL: REJECTED(expression1, expression2, …, expressionn)
+Operands: expression1, expression2,…, expressionn
+
+no_mapto
+Used for the operands of a MAP expression for each expression=>value pair
+Operands: expression, value
+
+no_record
+A record structure
+Operands: one per defined field. If new names were introduced, these are named 
+symbols.
+
+no_service
+A service structure
+Operands: one per defined function
+
+no_index
+Used in a list[n] construct 
+Operands: list, n
+
+no_all
+Represents the ALL keyword in a parameter to DEDUP etc.
+Operands: none
+
+no_left
+Represents the left hand row in DEDUP and elsewhere
+Operands: none
+
+no_right
+Represents the right hand row in DEDUP and elsewhere
+Operands: none
+
+no_self
+Represents the target row in DEDUP and elsewhere
+Operands: none
+
+no_cast
+Typecast operation (value preserving). The new type is indicated by the cast node's type.
+Operands: source value
+
+no_csv
+Represents the CSV keyword in a DATASET declaration
+Operands: none
+
+no_sql
+Represents the SQL keyword in a DATASET declaration
+Operands: none
+
+no_dos
+Represents the DOS keyword in a DATASET declaration
+Operands: none
+
+no_mix
+Used internally during Mourad's transformations
+no_selectnth
+Select the nth row from a dataset (HQL: recordset[n])
+Operands: recordset, n
+
+no_failure
+ECL FAILURE construct
+Operands: action
+
+no_success
+ECL SUCCESS construct
+Operands: action
+
+no_recovery
+HQL RECOVERY construct
+Operands: action [, repeatcount]
+
+no_external
+Used as the body of a function defined in a service
+
+no_output
+OUTPUT statement
+Operands: dataset, recordstructure
+
+no_when
+ECL WHEN construct
+Operands: action, period [, condition]
+
+no_setconditioncode
+Used internally in ECL code generator
+
+no_priority
+Used when a WHEN clause has a priority. First operand will be a no_when node
+Operands: WHEN clause, priority
+
+no_table
+A built-in table or one defined using DATASET
+Operands: none
+
+no_usertable
+A projection using TABLE
+Operands: source, record [ , grouping]
+
+no_choosen
+Return first N records from a dataset
+Operands: dataset, n
+
+no_filter
+Return only matching records from a dataset
+Operands: dataset, filter1, filter2, ..., filtern
+
+no_join
+ECL: JOIN(dataset1, dataset2, expression, transformation)
+Operands: dataset1, dataset2, expression, transformation
+
+no_sort
+Sort a dataset
+Operands: dataset, sortlist
+
+no_sortlist
+A list of expressions to sort, group or whatever by.
+Expressions may be unary negations where descending sorts are requested.
+sortexpression1, sortexpression2, ..., sortexpressionn
+
+no_dedup
+ECL DEDUP construct
+Operands: dataset, expression, flags
+
+no_enth
+Select every Nth record from a dataset
+Operands: dataset, n
+
+no_union_join
+Union join of two datasets
+Operands: dataset1, dataset2
+
+no_cross_join 
+Cross join of two datasets
+Operands: dataset1, dataset2
+
+no_cartesian_product 
+Complete cartesian product of a list of datasets
+Operands: dataset1, dataset2, ..., datasetn
+
+no_inner_join
+Inner join between two datasets
+Operands: one of the following forms
+dataset1, dataset2, constExpr(no_natural)
+dataset1, dataset2, constExpr(no_on), bool expr
+dataset1, dataset2, constExpr(no_using), column1, column2, …, columnn
+
+no_left_outer_join, no_right_outer_join, no_full_outer_join, 
+no_left_join, no_right_join, no_full_join
+same as above
+
+no_intersect
+Intersection of two datasets
+Operands: one of the following form
+dataset1, datatset2, 
+dataset1, datatset2, constExpr(no_all)
+dataset1, datatset2, constExpr(no_all), column1, …, columnn
+dataset1, datatset2, column1, …, columnn
+
+no_union
+Union of two datasets
+Operands: Same as above
+
+no_except
+Set difference of two datasets
+Operands: Same as above
+
+no_project
+Select a list of columns/expressions from a table
+Operands: dataset, scalar_expr1, …, scalar_exprn
+
+no_horizontal_project
+Select a particular row from a dataset
+Operands: one from the following forms
+dataset, constExpr(no_first)
+dataset, constExpr(no_last)
+dataset, constExpr(no_element), constExpr(element index)
+
+no_group
+Group the rows of a dataset on a list of columns
+Operands: dataset, column1, column2, …, columnn
+
+no_sort
+Sort a dataset on a list of columns
+Operands: dataset, column1, constExpr(no_asc|no_desc), …, columnn, constExpr(no_asc|no_desc)
+
+no_is_null
+Checks if a column is null
+Operands: column
+
+no_is_not_null
+Checks if a column is not null
+Operands: column
+
+no_not_between
+Item innot in range (SQL "x NOT BETWEEN y AND z")
+Operands: x, y, z
+
+no_like
+String 
+(s_exp1, s_exp2[, exp])
+
+no_not_like
+(s_exp1, s_exp2[, exp])
+
+no_match
+
+no_concat
+
+no_substring
+
+no_lower
+
+no_upper
+
+no_translate
+
+no_trim
+
+no_extract
+
+no_position
+
+no_charlen
+
+no_bitlen
+
+no_octetlen
+
+no_leading
+
+no_trailing
+
+no_both
+
+no_convert
+
+no_fold_upper
+
+no_fold_lower
+
+no_current_date
+
+no_current_time
+
+no_current_timestamp
+
+no_case
+CASE(search,value1=>result1,valuen=>resultn, default).
+Similar to no_map, except the first parameter is compared with the other parameters in turn.
+Operands: search value, n operands of type no_mapto, followed by a final operand for the default case.
+
+no_band
+e & e
+Binary and of the two operands
+Operands: lhs, rhs
+
+no_bor
+e | e
+Binary or of the two operands
+Operands: lhs, rhs
+
+no_bxor
+e ^ e
+Binary exclusive or of the two operands
+Operands: lhs, rhs
+
+no_bnot,
+*No ECL
+Binary not.
+Operands: lhs
+
+no_order,
+x <=> y
+Generate a value <0, 0, >0 depending on how the values compare
+Operand: lhs, rhs
+
+no_unicodeorder,
+UNICODEORDER(x, y, l), UNICODEORD(x, y, l, s)
+Generate a value <0, 0, >0 depending on how unicode values compare in
+locale, at given strength
+
+no_hint
+Will be used to attach hints into the tree
+
+no_route_return
+Used as a place holder for the return result from a process
+
+no_attr
+General mechanism for attaching attributes to nodes.
+Operand: optional argument(s) to the attribute.
+
+no_self
+SELF
+Represents the target of a tranform.
+
+no_intformat
+INTFORMAT(value, width, places)
+Function to aid formatting of real numbers
+Operand: value, width, places
+
+no_realformat
+REALFORMAT(value, width, places)
+Function to aid formatting of integer numbers
+Operand: value, width, flags
+
+
+//=================================================================================
+Nodes Only used in parsing:
+no_loaxml
+
+//=================================================================================
+Nodes Only used in code generation:
+
+no_postinc
+C++: x++
+Operands: x
+
+no_postdec
+C++: x--
+Operands: x
+
+no_preinc
+C++: ++x
+Operands: x
+
+no_predec
+C++: --x
+Operands: x
+
+no_typetransfer
+Used to force change of expressions type without any action.
+Operand: lhs  (type of expr is new type)
+
+no_pselect,
+C++:  x->y
+Operands: x y
+
+no_address
+C++:  &(x)
+Operands: x
+
+no_deref,
+C++:  *(x)
+Operands: x
+
+no_variable
+Represent a temporary variable in generate code
+Operands: None
+

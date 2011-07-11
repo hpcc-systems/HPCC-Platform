@@ -1,0 +1,146 @@
+<!--
+
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+-->
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSPY v5 rel. 4 U (http://www.xmlspy.com) by Rajeev Moondhra (Seisint, Inc.) -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+    <xs:include schemaLocation="environment.xsd"/>
+    <xs:element name="EspService">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="SourceRoxie" minOccurs="0" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:appinfo>
+                            <title>Source Roxie Clusters</title>
+                        </xs:appinfo>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:attribute name="name" type="xs:string" use="required">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                <autogenforwizard>1</autogenforwizard>
+                                <autogendefaultvalue>myself</autogendefaultvalue>
+                                <colIndex>1</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="type" type="xs:string" use="optional" default="Roxie Cluster">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <viewType>hidden</viewType>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="netAddress" type="ipAddressAndPort" use="required">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <autogenforwizard>1</autogenforwizard>
+                                    <title>roxieAddress</title>
+                                    <autogenxpath>./Software/RoxieCluster/RoxieFarmProcess[1]/RoxieServerProcess[1]/@computer</autogenxpath>
+                                    <defaultPort>9876</defaultPort>
+                                    <colIndex>2</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="NameService" minOccurs="0" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:appinfo>
+                            <title>Name Services</title>
+                        </xs:appinfo>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:attribute name="name" type="xs:string" use="required">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                <autogenforwizard>1</autogenforwizard>
+                                <autogendefaultvalue>Local</autogendefaultvalue>
+                                <colIndex>1</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="daliAddress" type="ipAddressAndPort" use="required">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <autogenforwizard>1</autogenforwizard>
+                                    <autogenxpath>./Software/DaliServerProcess[1]/Instance[1]/@computer</autogenxpath>
+                                    <defaultPort>7070</defaultPort>
+                                    <colIndex>2</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>                     
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+            <xs:attribute name="build" type="buildType" use="required">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>The build name to be deployed</tooltip>
+                        <viewType>hidden</viewType>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="buildSet" type="buildSetType" use="required">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <viewType>hidden</viewType>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="name" type="xs:string" use="optional" default="ws_roxieconfig">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <required>true</required>
+                        <tooltip>Name for this ESP service</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="description" type="xs:string" use="optional" default="ESP service for building / deploying roxie queries.">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>ESP service for building / deploying roxie queries.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="roxieCluster" type="roxieClusterType" use="required">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <autogenforwizard>1</autogenforwizard>
+                        <tooltip>Name of the Roxie cluster to manage</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="defaultStyle" type="xs:string" default="wsecl/xslt">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Location of default xslt stylesheets in the repository</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="wuTimeout" type="xs:nonNegativeInteger" use="required" default="-1">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Timeout for workunit compilation</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="roxieTimeout" type="xs:nonNegativeInteger" use="required" default="60000">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Timeout for suspending existing queries in Roxie</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+                        <xs:attribute name="allowNewRoxieOnDemandQuery" type="xs:boolean" use="optional" default="false">
+                                <xs:annotation>
+                                        <xs:appinfo>
+                                                <tooltip>allow new queries to be used by roxie on demand and roxie browser</tooltip>
+                                        </xs:appinfo>
+                                </xs:annotation>
+                        </xs:attribute>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

@@ -1,0 +1,24 @@
+<Dataset name='testResult'>
+ <Row><value1>A1</value1><value2>A</value2></Row>
+ <Row><value1>A2</value1><value2>A</value2></Row>
+ <Row><value1>A3</value1><value2>B</value2></Row>
+ <Row><value1>A4</value1><value2>B</value2></Row>
+ <Row><value1>A5</value1><value2>C</value2></Row>
+ <Row><value1>B1</value1><value2>A</value2></Row>
+ <Row><value1>B2</value1><value2>A</value2></Row>
+ <Row><value1>B3</value1><value2>B</value2></Row>
+ <Row><value1>B4</value1><value2>B</value2></Row>
+ <Row><value1>B5</value1><value2>C</value2></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><value1>A1</value1><value2>A</value2></Row>
+ <Row><value1>A2</value1><value2>A</value2></Row>
+ <Row><value1>A3</value1><value2>B</value2></Row>
+ <Row><value1>A4</value1><value2>B</value2></Row>
+ <Row><value1>A5</value1><value2>C</value2></Row>
+ <Row><value1>B1</value1><value2>A</value2></Row>
+ <Row><value1>B2</value1><value2>A</value2></Row>
+ <Row><value1>B3</value1><value2>B</value2></Row>
+ <Row><value1>B4</value1><value2>B</value2></Row>
+ <Row><value1>B5</value1><value2>C</value2></Row>
+</Dataset>

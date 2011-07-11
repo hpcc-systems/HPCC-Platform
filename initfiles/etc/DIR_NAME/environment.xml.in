@@ -1,0 +1,1280 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+-->
+
+<!-- Edited with ConfigMgr by smeda from ip 172.16.48.173 on 2010-09-21T20:27:40 -->
+<Environment>
+ <EnvSettings>
+  <configs>${CONFIG_DIR}</configs>
+  <environment>${ENV_XML_FILE}</environment>
+  <home>${HOME_DIR}</home>
+  <lock>${LOCK_PATH}</lock>
+  <log>${LOG_PATH}</log>
+  <path>${INSTALL_DIR}</path>
+  <pid>${PID_PATH}</pid>
+  <runtime>${RUNTIME_PATH}</runtime>
+  <sourcedir>${CONFIG_SOURCE_PATH}</sourcedir>
+  <user>${RUNTIME_USER}</user>
+ </EnvSettings>
+ <Hardware>
+  <Computer computerType="linuxmachine"
+            domain="localdomain"
+            name="localhost"
+            netAddress="."/>
+  <ComputerType computerType="linuxmachine"
+                manufacturer="unknown"
+                name="linuxmachine"
+                opSys="linux"/>
+  <Domain name="localdomain" snmpSecurityString=""/>
+  <Switch name="Switch"/>
+ </Hardware>
+ <Programs>
+  <Build name="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}" url="${INSTALL_DIR}">
+   <BuildSet installSet="deploy_map.xml"
+             name="dafilesrv"
+             path="componentfiles/dafilesrv"
+             processName="DafilesrvProcess"
+             schema="dafilesrv.xsd"/>
+   <BuildSet installSet="deploy_map.xml"
+             name="dali"
+             path="componentfiles/dali"
+             processName="DaliServerProcess"
+             schema="dali.xsd"/>
+   <BuildSet installSet="deploy_map.xml"
+             name="dfuplus"
+             path="componentfiles/dfuplus"
+             processName="DfuplusProcess"
+             schema="dfuplus.xsd"
+             overide="no"/>
+   <BuildSet installSet="deploy_map.xml"
+             name="dfuserver"
+             path="componentfiles/dfuserver"
+             processName="DfuServerProcess"
+             schema="dfuserver.xsd"/>
+   <BuildSet deployable="no"
+             installSet="deploy_map.xml"
+             name="DropZone"
+             path="componentfiles/DropZone"
+             processName="DropZone"
+             schema="dropzone.xsd"/>
+   <BuildSet installSet="deploy_map.xml"
+             name="eclagent"
+             path="componentfiles/eclagent"
+             processName="EclAgentProcess"
+             schema="eclagent_config.xsd"/>
+   <BuildSet installSet="deploy_map.xml" name="eclminus" path="componentfiles/eclminus" overide="no"/>
+   <BuildSet installSet="deploy_map.xml"
+             name="eclplus"
+             path="componentfiles/eclplus"
+             processName="EclPlusProcess"
+             schema="eclplus.xsd"
+             overide="no"/>
+   <BuildSet installSet="eclccserver_deploy_map.xml"
+             name="eclccserver"
+             path="componentfiles/configxml"
+             processName="EclCCServerProcess"
+             schema="eclccserver.xsd"/>
+   <BuildSet installSet="eclscheduler_deploy_map.xml"
+             name="eclscheduler"
+             path="componentfiles/configxml"
+             processName="EclSchedulerProcess"
+             schema="eclscheduler.xsd"/>
+   <BuildSet installSet="deploy_map.xml"
+             name="esp"
+             path="componentfiles/esp"
+             processName="EspProcess"
+             schema="esp.xsd"/>
+   <BuildSet deployable="no"
+             installSet="deploy_map.xml"
+             name="espsmc"
+             path="componentfiles/espsmc"
+             processName="EspService"
+             schema="espsmcservice.xsd">
+    <Properties defaultPort="8010"
+                defaultResourcesBasedn="ou=SMC,ou=EspServices,ou=ecl"
+                defaultSecurePort="18010"
+                type="WsSMC">
+     <Authenticate access="Read"
+                   description="Root access to SMC service"
+                   path="/"
+                   required="Read"
+                   resource="SmcAccess"/>
+     <AuthenticateFeature description="Access to SMC service"
+                          path="SmcAccess"
+                          resource="SmcAccess"
+                          service="ws_smc"/>
+     <AuthenticateFeature description="Access to thor queues"
+                          path="ThorQueueAccess"
+                          resource="ThorQueueAccess"
+                          service="ws_smc"/>
+     <AuthenticateFeature description="Access to super computer environment"
+                          path="ConfigAccess"
+                          resource="ConfigAccess"
+                          service="ws_config"/>
+     <AuthenticateFeature description="Access to DFU"
+                          path="DfuAccess"
+                          resource="DfuAccess"
+                          service="ws_dfu"/>
+     <AuthenticateFeature description="Access to DFU XRef"
+                          path="DfuXrefAccess"
+                          resource="DfuXrefAccess"
+                          service="ws_dfuxref"/>
+     <AuthenticateFeature description="Access to machine information"
+                          path="MachineInfoAccess"
+                          resource="MachineInfoAccess"
+                          service="ws_machine"/>
+     <AuthenticateFeature description="Access to SNMP metrics information"
+                          path="MetricsAccess"
+                          resource="MetricsAccess"
+                          service="ws_machine"/>
+     <AuthenticateFeature description="Access to remote execution"
+                          path="ExecuteAccess"
+                          resource="ExecuteAccess"
+                          service="ws_machine"/>
+     <AuthenticateFeature description="Access to DFU workunits"
+                          path="DfuWorkunitsAccess"
+                          resource="DfuWorkunitsAccess"
+                          service="ws_fs"/>
+     <AuthenticateFeature description="Access to DFU exceptions"
+                          path="DfuExceptionsAccess"
+                          resource="DfuExceptions"
+                          service="ws_fs"/>
+     <AuthenticateFeature description="Access to spraying files"
+                          path="FileSprayAccess"
+                          resource="FileSprayAccess"
+                          service="ws_fs"/>
+     <AuthenticateFeature description="Access to despraying of files"
+                          path="FileDesprayAccess"
+                          resource="FileDesprayAccess"
+                          service="ws_fs"/>
+     <AuthenticateFeature description="Access to dkcing of key files"
+                          path="FileDkcAccess"
+                          resource="FileDkcAccess"
+                          service="ws_fs"/>
+     <AuthenticateFeature description="Access to files in dropzone"
+                          path="FileIOAccess"
+                          resource="FileIOAccess"
+                          service="ws_fileio"/>
+     <AuthenticateFeature description="Access to WS ECL service"
+                          path="WsEclAccess"
+                          resource="WsEclAccess"
+                          service="ws_ecl"/>
+     <AuthenticateFeature description="Access to Roxie queries and files"
+                          path="RoxieQueryAccess"
+                          resource="RoxieQueryAccess"
+                          service="ws_roxiequery"/>
+     <AuthenticateFeature description="Access to cluster topology"
+                          path="ClusterTopologyAccess"
+                          resource="ClusterTopologyAccess"
+                          service="ws_topology"/>
+     <AuthenticateFeature description="Access to own workunits"
+                          path="OwnWorkunitsAccess"
+                          resource="OwnWorkunitsAccess"
+                          service="ws_workunits"/>
+     <AuthenticateFeature description="Access to others&apos; workunits"
+                          path="OthersWorkunitsAccess"
+                          resource="OthersWorkunitsAccess"
+                          service="ws_workunits"/>
+     <AuthenticateFeature description="Access to ECL direct service"
+                          path="EclDirectAccess"
+                          resource="EclDirectAccess"
+                          service="ecldirect"/>
+     <ProcessFilters>
+      <Platform name="Windows">
+       <ProcessFilter name="any">
+        <Process name="dafilesrv"/>
+       </ProcessFilter>
+       <ProcessFilter name="AttrServerProcess">
+        <Process name="attrserver"/>
+       </ProcessFilter>
+       <ProcessFilter name="DaliProcess">
+        <Process name="daserver"/>
+       </ProcessFilter>
+       <ProcessFilter multipleInstances="true" name="DfuServerProcess">
+        <Process name="dfuserver"/>
+       </ProcessFilter>
+       <ProcessFilter multipleInstances="true" name="EclCCServerProcess">
+        <Process name="eclccserver"/>
+       </ProcessFilter>
+       <ProcessFilter multipleInstances="true" name="EspProcess">
+        <Process name="esp"/>
+        <Process name="dafilesrv" remove="true"/>
+       </ProcessFilter>
+       <ProcessFilter name="FTSlaveProcess">
+        <Process name="ftslave"/>
+       </ProcessFilter>
+       <ProcessFilter name="RoxieServerProcess">
+        <Process name="ccd"/>
+       </ProcessFilter>
+       <ProcessFilter name="RoxieSlaveProcess">
+        <Process name="ccd"/>
+       </ProcessFilter>
+       <ProcessFilter name="SchedulerProcess">
+        <Process name="scheduler"/>
+       </ProcessFilter>
+       <ProcessFilter name="ThorMasterProcess">
+        <Process name="thormaster"/>
+       </ProcessFilter>
+       <ProcessFilter name="ThorSlaveProcess">
+        <Process name="thorslave"/>
+       </ProcessFilter>
+       <ProcessFilter name="SashaServerProcess">
+        <Process name="saserver"/>
+       </ProcessFilter>
+      </Platform>
+      <Platform name="Linux">
+       <ProcessFilter name="any">
+        <Process name="dafilesrv"/>
+       </ProcessFilter>
+       <ProcessFilter name="AttrServerProcess">
+        <Process name="attrserver"/>
+       </ProcessFilter>
+       <ProcessFilter name="DaliProcess">
+        <Process name="daserver"/>
+       </ProcessFilter>
+       <ProcessFilter multipleInstances="true" name="DfuServerProcess">
+        <Process name="."/>
+       </ProcessFilter>
+       <ProcessFilter multipleInstances="true" name="EclCCServerProcess">
+        <Process name="."/>
+       </ProcessFilter>
+       <ProcessFilter multipleInstances="true" name="EspProcess">
+        <Process name="."/>
+        <Process name="dafilesrv" remove="true"/>
+       </ProcessFilter>
+       <ProcessFilter name="FTSlaveProcess">
+        <Process name="ftslave"/>
+       </ProcessFilter>
+       <ProcessFilter name="GenesisServerProcess">
+        <Process name="httpd"/>
+        <Process name="atftpd"/>
+        <Process name="dhcpd"/>
+       </ProcessFilter>
+       <ProcessFilter name="RoxieServerProcess">
+        <Process name="ccd"/>
+       </ProcessFilter>
+       <ProcessFilter name="RoxieSlaveProcess">
+        <Process name="ccd"/>
+       </ProcessFilter>
+       <ProcessFilter name="SchedulerProcess">
+        <Process name="scheduler"/>
+       </ProcessFilter>
+       <ProcessFilter name="ThorMasterProcess">
+        <Process name="thormaster"/>
+       </ProcessFilter>
+       <ProcessFilter name="ThorSlaveProcess">
+        <Process name="thorslave"/>
+       </ProcessFilter>
+       <ProcessFilter name="SashaServerProcess">
+        <Process name="saserver"/>
+       </ProcessFilter>
+      </Platform>
+     </ProcessFilters>
+    </Properties>
+   </BuildSet>
+   <BuildSet installSet="deploy_map.xml"
+             name="ftslave"
+             path="componentfiles/ftslave"
+             processName="FTSlaveProcess"
+             schema="ftslave_linux.xsd"/>
+   <BuildSet installSet="deploy_map.xml"
+             name="hqltest"
+             path="componentfiles/hqltest"
+             processName="HqlTestProcess"
+             overide="no"/>
+   <BuildSet deployable="no"
+             installSet="deploy_map.xml"
+             name="ldapServer"
+             path="componentfiles/ldapServer"
+             processName="LDAPServerProcess"
+             schema="ldapserver.xsd"/>
+   <BuildSet deployable="no"
+             installSet="auditlib_deploy_map.xml"
+             name="plugins_auditlib"
+             path="componentfiles/configxml"
+             processName="PluginProcess"
+             schema="plugin.xsd"/>
+   <BuildSet deployable="no"
+             installSet="debugservices_deploy_map.xml"
+             name="plugins_debugservices"
+             path="componentfiles/configxml"
+             processName="PluginProcess"
+             schema="plugin.xsd"/>
+   <BuildSet deployable="no"
+             installSet="fileservices_deploy_map.xml"
+             name="plugins_fileservices"
+             path="componentfiles/configxml"
+             processName="PluginProcess"
+             schema="plugin.xsd"/>
+   <BuildSet deployable="no"
+             installSet="logging_deploy_map.xml"
+             name="plugins_logging"
+             path="componentfiles/configxml"
+             processName="PluginProcess"
+             schema="plugin.xsd"/>
+   <BuildSet deployable="no"
+             installSet="parselib_deploy_map.xml"
+             name="plugins_parselib"
+             path="componentfiles/configxml"
+             processName="PluginProcess"
+             schema="plugin.xsd"/>
+   <BuildSet deployable="no"
+             installSet="stringlib_deploy_map.xml"
+             name="plugins_stringlib"
+             path="componentfiles/configxml"
+             processName="PluginProcess"
+             schema="plugin.xsd"/>
+   <BuildSet deployable="no"
+             installSet="unicodelib_deploy_map.xml"
+             name="plugins_unicodelib"
+             path="componentfiles/configxml"
+             processName="PluginProcess"
+             schema="plugin.xsd"/>
+   <BuildSet deployable="no"
+             installSet="workunitservices_deploy_map.xml"
+             name="plugins_workunitservices"
+             path="componentfiles/configxml"
+             processName="PluginProcess"
+             schema="plugin.xsd"/>    
+   <BuildSet installSet="roxie_deploy_map.xml"
+             name="roxie"
+             path="componentfiles/configxml"
+             processName="RoxieCluster"
+             schema="roxie.xsd"/>
+   <BuildSet installSet="deploy_map.xml" name="roxieconfig" path="componentfiles/roxieconfig" overide="no"/>
+   <BuildSet installSet="deploy_map.xml"
+             name="sasha"
+             path="componentfiles/sasha"
+             processName="SashaServerProcess"
+             schema="sasha.xsd"/>
+   <BuildSet deployable="no"
+             installSet="deploy_map.xml"
+             name="SiteCertificate"
+             path="componentfiles/SiteCertificate"
+             processName="SiteCertificate"
+             schema="SiteCertificate.xsd"
+             overide="no"/>
+   <BuildSet installSet="deploy_map.xml"
+             name="soapplus"
+             path="componentfiles/soapplus"
+             processName="SoapPlusProcess"
+             schema="soapplus.xsd"
+             overide="no"/>
+   <BuildSet installSet="deploy_map.xml"
+             name="thor"
+             path="componentfiles/thor"
+             processName="ThorCluster"
+             schema="thor.xsd"/>
+   <BuildSet deployable="no"
+             installSet="deploy_map.xml"
+             name="topology"
+             path="componentfiles/topology"
+             processName="Topology"
+             schema="topology.xsd"/>
+   <BuildSet deployable="no"
+             installSet="deploy_map.xml"
+             name="ws_ecl"
+             path="componentfiles/ws_ecl"
+             processName="EspService"
+             schema="esp_service_wsecl2.xsd">
+    <Properties bindingType="ws_eclSoapBinding"
+                defaultPort="8002"
+                defaultResourcesBasedn="ou=WsEcl,ou=EspServices,ou=ecl"
+                defaultSecurePort="18002"
+                plugin="ws_ecl"
+                type="ws_ecl">
+     <Authenticate access="Read"
+                   description="Root access to WS ECL service"
+                   path="/"
+                   required="Read"
+                   resource="WsEclAccess"/>
+     <AuthenticateFeature description="Access to WS ECL service"
+                          path="WsEclAccess"
+                          resource="WsEclAccess"
+                          service="ws_ecl"/>
+    </Properties>
+   </BuildSet>
+   <BuildSet deployable="no"
+             installSet="deploy_map.xml"
+             name="ecldirect"
+             path="componentfiles/ecldirect"
+             processName="EspService"
+             schema="esp_service_ecldirect.xsd">
+    <Properties bindingType="EclDirectSoapBinding"
+                defaultPort="8008"
+                defaultResourcesBasedn="ou=EclDirectAccess,ou=EspServices,ou=ecl"
+                defaultSecurePort="18008"
+                plugin="ecldirect"
+                type="ecldirect">
+     <Authenticate access="Read"
+                   description="Root access to ECL Direct service"
+                   path="/"
+                   required="Read"
+                   resource="EclDirectAccess"/>
+     <AuthenticateFeature description="Access to ECL Direct service"
+                          path="EclDirectAccess"
+                          resource="EclDirectAccess"
+                          service="ecldirect"/>
+    </Properties>
+   </BuildSet>
+  </Build>
+ </Programs>
+ <Software>
+  <DafilesrvProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+                    buildSet="dafilesrv"
+                    description="DaFileSrv process"
+                    name="mydafilesrv"
+                    version="1">
+   <Instance computer="localhost"
+             directory="${RUNTIME_PATH}/mydafilesrv"
+             name="s1"
+             netAddress="."/>
+  </DafilesrvProcess>
+  <DaliServerProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+                     buildSet="dali"
+                     environment="${CONFIG_DIR}/${ENV_XML_FILE}"
+                     name="mydali"
+                     recoverFromIncErrors="true">
+   <Instance computer="localhost"
+             directory="${RUNTIME_PATH}/mydali"
+             name="s1"
+             netAddress="."
+             port="7070"/>
+  </DaliServerProcess>
+  <DfuServerProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+                    buildSet="dfuserver"
+                    daliServers="mydali"
+                    description="DFU Server"
+                    monitorinterval="900"
+                    monitorqueue="dfuserver_monitor_queue"
+                    name="mydfuserver"
+                    queue="dfuserver_queue"
+                    transferBufferSize="65536">
+   <Instance computer="localhost"
+             directory="${RUNTIME_PATH}/mydfuserver"
+             name="s1"
+             netAddress="."/>
+   <SSH SSHidentityfile="$HOME/.ssh/id_rsa"
+        SSHpassword=""
+        SSHretries="3"
+        SSHtimeout="0"
+        SSHusername="${RUNTIME_USER}"/>
+  </DfuServerProcess>
+  <Directories name="${DIR_NAME}">
+   <Category dir="${EXEC_PREFIX}/log/[NAME]/[INST]" name="log"/>
+   <Category dir="${EXEC_PREFIX}/lib/[NAME]/[INST]" name="run"/>
+   <Category dir="${CONFIG_PREFIX}/[NAME]/[INST]" name="conf"/>
+   <Category dir="${EXEC_PREFIX}/lib/[NAME]/[INST]/temp" name="temp"/>
+   <Category dir="${EXEC_PREFIX}/lib/[NAME]/hpcc-data/[COMPONENT]" name="data"/>
+   <Category dir="${EXEC_PREFIX}/lib/[NAME]/hpcc-data2/[COMPONENT]" name="data2"/>
+   <Category dir="${EXEC_PREFIX}/lib/[NAME]/hpcc-data3/[COMPONENT]" name="data3"/>
+   <Category dir="${EXEC_PREFIX}/lib/[NAME]/hpcc-mirror/[COMPONENT]" name="mirror"/>
+   <Category dir="${EXEC_PREFIX}/lib/[NAME]/queries/[INST]" name="query"/>
+   <Category dir="${EXEC_PREFIX}/lock/[NAME]/[INST]" name="lock"/>
+  </Directories>
+  <DropZone build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+            buildSet="DropZone"
+            computer="localhost"
+            description="DropZone process"
+            directory="${RUNTIME_PATH}/mydropzone"
+            name="mydropzone"/>
+  <EclAgentProcess allowedPipePrograms="*"
+                   build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+                   buildSet="eclagent"
+                   daliServers="mydali"
+                   description="EclAgent process"
+                   name="myeclagent"
+                   pluginDirectory="${PLUGINS_PATH}"
+                   thorConnectTimeout="600"
+                   traceLevel="0"
+                   wuQueueName="myeclagent_queue">
+   <Instance computer="localhost"
+             directory="${RUNTIME_PATH}/myeclagent"
+             name="s1"
+             netAddress="."/>
+  </EclAgentProcess>
+   <EclCCServerProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+                    buildSet="eclccserver"
+                    daliServers="mydali"
+                    description="EclCCServer process"
+                    enableSysLog="true"
+                    maxCompileThreads="4"
+                    name="myeclccserver"
+                    traceLevel="1">
+   <Instance computer="localhost"
+             directory="${RUNTIME_PATH}/myeclccserver"
+             name="s1"
+             netAddress="."/>
+  </EclCCServerProcess>
+   <EclSchedulerProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+                buildSet="eclscheduler"
+                daliServers="mydali"
+                description="EclScheduler process"
+                name="myeclscheduler">
+   <Instance computer="localhost"
+               directory="${RUNTIME_PATH}/myeclscheduler"
+               name="s1"
+               netAddress="."/>
+  </EclSchedulerProcess>
+   <EspProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+              buildSet="esp"
+              componentfilesDir="${COMPONENTFILES_PATH}"
+              daliServers="mydali"
+              description="ESP server"
+              enableSEHMapping="true"
+              formOptionsAccess="false"
+              httpConfigAccess="true"
+              logLevel="1"
+              logRequests="false"
+              logResponses="false"
+              maxBacklogQueueSize="200"
+              maxConcurrentThreads="0"
+              maxRequestEntityLength="8000000"
+              name="myesp"
+              perfReportDelay="60"
+              portalurl="${PORTALURL}">
+   <Authentication ldapAuthMethod="kerberos"
+                   ldapConnections="10"
+                   ldapServer=""
+                   method="none"/>
+   <EspBinding defaultForPort="true"
+               defaultServiceVersion=""
+               name="smc"
+               port="8010"
+               protocol="http"
+               resourcesBasedn="ou=SMC,ou=EspServices,ou=ecl"
+               service="EclWatch"
+               workunitsBasedn="ou=workunits,ou=ecl"
+               wsdlServiceAddress="">
+    <Authenticate access="Read"
+                  description="Root access to SMC service"
+                  path="/"
+                  required="Read"
+                  resource="SmcAccess"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to SMC service"
+                         path="SmcAccess"
+                         resource="SmcAccess"
+                         service="ws_smc"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to thor queues"
+                         path="ThorQueueAccess"
+                         resource="ThorQueueAccess"
+                         service="ws_smc"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to super computer environment"
+                         path="ConfigAccess"
+                         resource="ConfigAccess"
+                         service="ws_config"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to DFU"
+                         path="DfuAccess"
+                         resource="DfuAccess"
+                         service="ws_dfu"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to DFU XRef"
+                         path="DfuXrefAccess"
+                         resource="DfuXrefAccess"
+                         service="ws_dfuxref"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to machine information"
+                         path="MachineInfoAccess"
+                         resource="MachineInfoAccess"
+                         service="ws_machine"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to SNMP metrics information"
+                         path="MetricsAccess"
+                         resource="MetricsAccess"
+                         service="ws_machine"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to remote execution"
+                         path="ExecuteAccess"
+                         resource="ExecuteAccess"
+                         service="ws_machine"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to DFU workunits"
+                         path="DfuWorkunitsAccess"
+                         resource="DfuWorkunitsAccess"
+                         service="ws_fs"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to DFU exceptions"
+                         path="DfuExceptionsAccess"
+                         resource="DfuExceptions"
+                         service="ws_fs"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to spraying files"
+                         path="FileSprayAccess"
+                         resource="FileSprayAccess"
+                         service="ws_fs"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to despraying of files"
+                         path="FileDesprayAccess"
+                         resource="FileDesprayAccess"
+                         service="ws_fs"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to dkcing of key files"
+                         path="FileDkcAccess"
+                         resource="FileDkcAccess"
+                         service="ws_fs"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to files in dropzone"
+                         path="FileIOAccess"
+                         resource="FileIOAccess"
+                         service="ws_fileio"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to WS ECL service"
+                         path="WsEclAccess"
+                         resource="WsEclAccess"
+                         service="ws_ecl"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to Roxie queries and files"
+                         path="RoxieQueryAccess"
+                         resource="RoxieQueryAccess"
+                         service="ws_roxiequery"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to cluster topology"
+                         path="ClusterTopologyAccess"
+                         resource="ClusterTopologyAccess"
+                         service="ws_topology"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to own workunits"
+                         path="OwnWorkunitsAccess"
+                         resource="OwnWorkunitsAccess"
+                         service="ws_workunits"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to others&apos; workunits"
+                         path="OthersWorkunitsAccess"
+                         resource="OthersWorkunitsAccess"
+                         service="ws_workunits"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to ECL direct service"
+                         path="EclDirectAccess"
+                         resource="EclDirectAccess"
+                         service="ecldirect"/>
+   </EspBinding>
+   <EspBinding defaultForPort="true"
+               defaultServiceVersion=""
+               name="ws_ecl"
+               port="8002"
+               protocol="http"
+               resourcesBasedn="ou=WsEcl,ou=EspServices,ou=ecl"
+               service="ws_ecl"
+               workunitsBasedn="ou=workunits,ou=ecl"
+               wsdlServiceAddress="">
+    <Authenticate access="Read"
+                  description="Root access to WS ECL service"
+                  path="/"
+                  required="Read"
+                  resource="WsEclAccess"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to WS ECL service"
+                         path="WsEclAccess"
+                         resource="WsEclAccess"
+                         service="ws_ecl"/>
+   </EspBinding>
+   <EspBinding defaultForPort="true"
+               defaultServiceVersion=""
+               name="ecldirect"
+               port="8008"
+               protocol="http"
+               resourcesBasedn="ou=EclDirectAccess,ou=EspServices,ou=ecl"
+               service="ecldirect"
+               workunitsBasedn="ou=workunits,ou=ecl"
+               wsdlServiceAddress="">
+    <Authenticate access="Read"
+                  description="Root access to ECL Direct service"
+                  path="/"
+                  required="Read"
+                  resource="EclDirectAccess"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to ECL Direct service"
+                         path="EclDirectAccess"
+                         resource="EclDirectAccess"
+                         service="ecldirect"/>
+   </EspBinding>
+   <HTTPS acceptSelfSigned="true"
+          CA_Certificates_Path="ca.pem"
+          certificateFileName="certificate.cer"
+          city=""
+          country="US"
+          daysValid="365"
+          enableVerification="false"
+          organization="Customer of HPCCSystems"
+          organizationalUnit=""
+          passphrase=""
+          privateKeyFileName="privatekey.cer"
+          regenerateCredentials="false"
+          requireAddressMatch="false"
+          state=""
+          trustedPeers="anyone"/>
+   <Instance computer="localhost"
+             directory="${RUNTIME_PATH}/myesp"
+             FQDN=""
+             name="s1"
+             netAddress="."/>
+   <ProtocolX authTimeout="3"
+              defaultTimeout="21"
+              idleTimeout="3600"
+              maxTimeout="36"
+              minTimeout="30"
+              threadCount="2"/>
+  </EspProcess>
+  <EspService allowNewRoxieOnDemandQuery="false"
+              AWUsCacheTimeout="15"
+              build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+              buildSet="espsmc"
+              description="ESP services for SMC"
+              disableUppercaseTranslation="false"
+              eclServer="myeclccserver"
+              enableSystemUseRewrite="false"
+              excludePartitions="/,/dev*,/sys,/usr,/proc/*"
+              monitorDaliFileServer="false"
+              name="EclWatch"
+              pluginsPath="${PLUGINS_PATH}"
+              syntaxCheckQueue=""
+              viewTimeout="1000"
+              warnIfCpuLoadOver="95"
+              warnIfFreeMemoryUnder="5"
+              warnIfFreeStorageUnder="5">
+   <Properties defaultPort="8010"
+               defaultResourcesBasedn="ou=SMC,ou=EspServices,ou=ecl"
+               defaultSecurePort="18010"
+               type="WsSMC">
+    <Authenticate access="Read"
+                  description="Root access to SMC service"
+                  path="/"
+                  required="Read"
+                  resource="SmcAccess"/>
+    <AuthenticateFeature description="Access to SMC service"
+                         path="SmcAccess"
+                         resource="SmcAccess"
+                         service="ws_smc"/>
+    <AuthenticateFeature description="Access to thor queues"
+                         path="ThorQueueAccess"
+                         resource="ThorQueueAccess"
+                         service="ws_smc"/>
+    <AuthenticateFeature description="Access to super computer environment"
+                         path="ConfigAccess"
+                         resource="ConfigAccess"
+                         service="ws_config"/>
+    <AuthenticateFeature description="Access to DFU"
+                         path="DfuAccess"
+                         resource="DfuAccess"
+                         service="ws_dfu"/>
+    <AuthenticateFeature description="Access to DFU XRef"
+                         path="DfuXrefAccess"
+                         resource="DfuXrefAccess"
+                         service="ws_dfuxref"/>
+    <AuthenticateFeature description="Access to machine information"
+                         path="MachineInfoAccess"
+                         resource="MachineInfoAccess"
+                         service="ws_machine"/>
+    <AuthenticateFeature description="Access to SNMP metrics information"
+                         path="MetricsAccess"
+                         resource="MetricsAccess"
+                         service="ws_machine"/>
+    <AuthenticateFeature description="Access to remote execution"
+                         path="ExecuteAccess"
+                         resource="ExecuteAccess"
+                         service="ws_machine"/>
+    <AuthenticateFeature description="Access to DFU workunits"
+                         path="DfuWorkunitsAccess"
+                         resource="DfuWorkunitsAccess"
+                         service="ws_fs"/>
+    <AuthenticateFeature description="Access to DFU exceptions"
+                         path="DfuExceptionsAccess"
+                         resource="DfuExceptions"
+                         service="ws_fs"/>
+    <AuthenticateFeature description="Access to spraying files"
+                         path="FileSprayAccess"
+                         resource="FileSprayAccess"
+                         service="ws_fs"/>
+    <AuthenticateFeature description="Access to despraying of files"
+                         path="FileDesprayAccess"
+                         resource="FileDesprayAccess"
+                         service="ws_fs"/>
+    <AuthenticateFeature description="Access to dkcing of key files"
+                         path="FileDkcAccess"
+                         resource="FileDkcAccess"
+                         service="ws_fs"/>
+    <AuthenticateFeature description="Access to files in dropzone"
+                         path="FileIOAccess"
+                         resource="FileIOAccess"
+                         service="ws_fileio"/>
+    <AuthenticateFeature description="Access to WS ECL service"
+                         path="WsEclAccess"
+                         resource="WsEclAccess"
+                         service="ws_ecl"/>
+    <AuthenticateFeature description="Access to Roxie queries and files"
+                         path="RoxieQueryAccess"
+                         resource="RoxieQueryAccess"
+                         service="ws_roxiequery"/>
+    <AuthenticateFeature description="Access to cluster topology"
+                         path="ClusterTopologyAccess"
+                         resource="ClusterTopologyAccess"
+                         service="ws_topology"/>
+    <AuthenticateFeature description="Access to own workunits"
+                         path="OwnWorkunitsAccess"
+                         resource="OwnWorkunitsAccess"
+                         service="ws_workunits"/>
+    <AuthenticateFeature description="Access to others&apos; workunits"
+                         path="OthersWorkunitsAccess"
+                         resource="OthersWorkunitsAccess"
+                         service="ws_workunits"/>
+    <AuthenticateFeature description="Access to ECL direct service"
+                         path="EclDirectAccess"
+                         resource="EclDirectAccess"
+                         service="ecldirect"/>
+    <ProcessFilters>
+     <Platform name="Windows">
+      <ProcessFilter name="any">
+       <Process name="dafilesrv"/>
+      </ProcessFilter>
+      <ProcessFilter name="AttrServerProcess">
+       <Process name="attrserver"/>
+      </ProcessFilter>
+      <ProcessFilter name="DaliProcess">
+       <Process name="daserver"/>
+      </ProcessFilter>
+      <ProcessFilter multipleInstances="true" name="DfuServerProcess">
+       <Process name="dfuserver"/>
+      </ProcessFilter>
+      <ProcessFilter multipleInstances="true" name="EclCCServerProcess">
+       <Process name="eclccserver"/>
+      </ProcessFilter>
+      <ProcessFilter multipleInstances="true" name="EspProcess">
+       <Process name="esp"/>
+       <Process name="dafilesrv" remove="true"/>
+      </ProcessFilter>
+      <ProcessFilter name="FTSlaveProcess">
+       <Process name="ftslave"/>
+      </ProcessFilter>
+      <ProcessFilter name="RoxieServerProcess">
+       <Process name="ccd"/>
+      </ProcessFilter>
+      <ProcessFilter name="RoxieSlaveProcess">
+       <Process name="ccd"/>
+      </ProcessFilter>
+      <ProcessFilter name="SchedulerProcess">
+       <Process name="scheduler"/>
+      </ProcessFilter>
+      <ProcessFilter name="ThorMasterProcess">
+       <Process name="thormaster"/>
+      </ProcessFilter>
+      <ProcessFilter name="ThorSlaveProcess">
+       <Process name="thorslave"/>
+      </ProcessFilter>
+      <ProcessFilter name="SashaServerProcess">
+       <Process name="saserver"/>
+      </ProcessFilter>
+     </Platform>
+     <Platform name="Linux">
+      <ProcessFilter name="any">
+       <Process name="dafilesrv"/>
+      </ProcessFilter>
+      <ProcessFilter name="AttrServerProcess">
+       <Process name="attrserver"/>
+      </ProcessFilter>
+      <ProcessFilter name="DaliProcess">
+       <Process name="daserver"/>
+      </ProcessFilter>
+      <ProcessFilter multipleInstances="true" name="DfuServerProcess">
+       <Process name="dfuserver"/>
+      </ProcessFilter>
+      <ProcessFilter multipleInstances="true" name="EclCCServerProcess">
+       <Process name="eclccserver"/>
+      </ProcessFilter>
+      <ProcessFilter multipleInstances="true" name="EspProcess">
+       <Process name="esp"/>
+       <Process name="dafilesrv" remove="true"/>
+      </ProcessFilter>
+      <ProcessFilter name="FTSlaveProcess">
+       <Process name="ftslave"/>
+      </ProcessFilter>
+      <ProcessFilter name="GenesisServerProcess">
+       <Process name="httpd"/>
+       <Process name="atftpd"/>
+       <Process name="dhcpd"/>
+      </ProcessFilter>
+      <ProcessFilter name="RoxieServerProcess">
+       <Process name="ccd"/>
+      </ProcessFilter>
+      <ProcessFilter name="RoxieSlaveProcess">
+       <Process name="ccd"/>
+      </ProcessFilter>
+      <ProcessFilter name="SchedulerProcess">
+       <Process name="scheduler"/>
+      </ProcessFilter>
+      <ProcessFilter name="ThorMasterProcess">
+       <Process name="thormaster"/>
+      </ProcessFilter>
+      <ProcessFilter name="ThorSlaveProcess">
+       <Process name="thorslave"/>
+      </ProcessFilter>
+      <ProcessFilter name="SashaServerProcess">
+       <Process name="saserver"/>
+      </ProcessFilter>
+     </Platform>
+    </ProcessFilters>
+   </Properties>
+  </EspService>
+  <EspService build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+              buildSet="ws_ecl"
+              description="WS ECL Service"
+              name="ws_ecl">
+   <Properties bindingType="ws_eclSoapBinding"
+               defaultPort="8002"
+               defaultResourcesBasedn="ou=WsEcl,ou=EspServices,ou=ecl"
+               defaultSecurePort="18002"
+               plugin="ws_ecl"
+               type="ws_ecl">
+    <Authenticate access="Read"
+                  description="Root access to WS ECL service"
+                  path="/"
+                  required="Read"
+                  resource="WsEclAccess"/>
+    <AuthenticateFeature description="Access to WS ECL service"
+                         path="WsEclAccess"
+                         resource="WsEclAccess"
+                         service="ws_ecl"/>
+   </Properties>
+  </EspService>
+  <EspService build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+              buildSet="ecldirect"
+              clusterName="hthor"
+              description="ESP service for running raw ECL queries"
+              name="ecldirect">
+   <Properties bindingType="EclDirectSoapBinding"
+               defaultPort="8008"
+               defaultResourcesBasedn="ou=EclDirectAccess,ou=EspServices,ou=ecl"
+               defaultSecurePort="18008"
+               plugin="ecldirect"
+               type="ecldirect">
+    <Authenticate access="Read"
+                  description="Root access to ECL Direct service"
+                  path="/"
+                  required="Read"
+                  resource="EclDirectAccess"/>
+    <AuthenticateFeature description="Access to ECL Direct service"
+                         path="EclDirectAccess"
+                         resource="EclDirectAccess"
+                         service="ecldirect"/>
+   </Properties>
+  </EspService>
+  <FTSlaveProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+                  buildSet="ftslave"
+                  description="FTSlave process"
+                  name="myftslave"
+                  version="1">
+   <Instance computer="localhost"
+             directory="${RUNTIME_PATH}/myftslave"
+             name="s1"
+             netAddress="."
+             program="${EXEC_PATH}/ftslave"/>
+  </FTSlaveProcess>
+  <PluginProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+                 buildSet="plugins_auditlib"
+                 description="plugin process"
+                 name="plugins_auditlib"/>
+  <PluginProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+                 buildSet="plugins_debugservices"
+                 description="plugin process"
+                 name="plugins_debugservices"/>
+  <PluginProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+                 buildSet="plugins_fileservices"
+                 description="plugin process"
+                 name="plugins_fileservices"/>
+  <PluginProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+                 buildSet="plugins_logging"
+                 description="plugin process"
+                 name="plugins_logging"/>
+  <PluginProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+                 buildSet="plugins_parselib"
+                 description="plugin process"
+                 name="plugins_parselib"/>
+  <PluginProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+                 buildSet="plugins_stringlib"
+                 description="plugin process"
+                 name="plugins_stringlib"/>
+  <PluginProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+                 buildSet="plugins_unicodelib"
+                 description="plugin process"
+                 name="plugins_unicodelib"/>
+  <PluginProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+                 buildSet="plugins_workunitservices"
+                 description="plugin process"
+                 name="plugins_workunitservices"/>
+  <RoxieCluster allowRoxieOnDemand="false"
+                baseDataDir="${RUNTIME_PATH}/hpcc-data/roxie"
+                blindLogging="false"
+                blobCacheMem="0"
+                build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+                buildSet="roxie"
+                callbackRetries="3"
+                callbackTimeout="500"
+                channel0onPrimary="true"
+                checkCompleted="true"
+                checkFileDate="true"
+                checkingHeap="0"
+                checkPrimaries="true"
+                checkState="false"
+                checkVersion="true"
+                clusterWidth="1"
+                copyResources="false"
+                crcResources="false"
+                dafilesrvLookupTimeout="10000"
+                daliServers="mydali"
+                debugPermitted="true"
+                defaultConcatPreload="0"
+                defaultFetchPreload="0"
+                defaultFullKeyedJoinPreload="0"
+                defaultHighPriorityTimeLimit="0"
+                defaultHighPriorityTimeWarning="5000"
+                defaultKeyedJoinPreload="0"
+                defaultLowPriorityTimeLimit="0"
+                defaultLowPriorityTimeWarning="0"
+                defaultMemoryLimit="0"
+                defaultParallelJoinPreload="0"
+                defaultPrefetchProjectPreload="10"
+                defaultSLAPriorityTimeLimit="0"
+                defaultSLAPriorityTimeWarning="5000"
+                defaultStripLeadingWhitespace="1"
+                deleteUnneededFiles="false"
+                description="Roxie cluster"
+                directory="${RUNTIME_PATH}/myroxie"
+                diskReadBufferSize="65536"
+                diskReadStable="true"
+                doIbytiDelay="true"
+                enableForceKeyDiffCopy="false"
+                enableHeartBeat="true"
+                enableKeyDiff="true"
+                enableSNMP="true"
+                enableSysLog="true"
+                fastLaneQueue="true"
+                fieldTranslationEnabled="false"
+                flushJHtreeCacheOnOOM="true"
+                forceStdLog="false"
+                highTimeout="2000"
+                ignoreMissingFiles="false"
+                indexReadChunkSize="60000"
+                indexReadStable="true"
+                initIbytiDelay="100"
+                jumboFrames="false"
+                keyedJoinFlowLimit="1000"
+                keyedJoinStable="true"
+                lazyOpen="true"
+                leafCacheMem="50"
+                linuxYield="true"
+                localFilesExpire="-1"
+                localSlave="true"
+                logFullQueries="false"
+                logQueueDrop="32"
+                logQueueLen="512"
+                lowTimeout="10000"
+                maxBlockSize="10000000"
+                maxLocalFilesOpen="4000"
+                maxLockAttempts="5"
+                maxRemoteFilesOpen="1000"
+                memoryStatsInterval="60"
+                memTraceLevel="1"
+                memTraceSizeLimit="0"
+                minFreeDiskSpace="1073741824"
+                minIbytiDelay="0"
+                minLocalFilesOpen="2000"
+                minRemoteFilesOpen="500"
+                miscDebugTraceLevel="0"
+                monitorDaliFileServer="false"
+                multicastBase="239.1.1.1"
+                multicastLast="239.1.254.254"
+                name="myroxie"
+                nodeCacheMem="100"
+                nodeCachePreload="false"
+                numChannels="1"
+                numDataCopies="1"
+                parallelAggregate="0"
+                perChannelFlowLimit="10"
+                pingInterval="60"
+                pluginsPath="${PLUGINS_PATH}"
+                preabortIndexReadsThreshold="100"
+                preabortKeyedJoinsThreshold="100"
+                preferredSubnet=""
+                preferredSubnetMask=""
+                remoteFilesExpire="3600000"
+                resolveFilesInPackage="false"
+                roxieMulticastEnabled="true"
+                serverSideCacheSize="0"
+                serverThreads="30"
+                simpleLocalKeyedJoins="true"
+                siteCertificate=""
+                slaTimeout="2000"
+                slaveConfig="simple"
+                slaveThreads="30"
+                smartSteppingChunkRows="100"
+                soapTraceLevel="1"
+                socketCheckInterval="5000"
+                SSHidentityfile="$HOME/.ssh/id_rsa"
+                SSHpassword=""
+                SSHretries="3"
+                SSHtimeout="0"
+                SSHusername="hpcc"
+                statsExpiryTime="3600"
+                syncCluster="false"
+                systemMonitorInterval="60000"
+                totalMemoryLimit="1073741824"
+                traceLevel="1"
+                trapTooManyActiveQueries="true"
+                udpFlowSocketsSize="131071"
+                udpInlineCollation="false"
+                udpInlineCollationPacketLimit="50"
+                udpLocalWriteSocketSize="131071"
+                udpMaxRetryTimedoutReqs="0"
+                udpMaxSlotsPerClient="2147483647"
+                udpMulticastBufferSize="131071"
+                udpOutQsPriority="0"
+                udpQueueSize="100"
+                udpRequestToSendTimeout="5"
+                udpResendEnabled="true"
+                udpRetryBusySenders="0"
+                udpSendCompletedInData="false"
+                udpSendQueueSize="50"
+                udpSnifferEnabled="true"
+                udpTraceLevel="1"
+                useHardLink="false"
+                useLogQueue="true"
+                useMemoryMappedIndexes="false"
+                useRemoteResources="true"
+                useTreeCopy="false">
+   <RoxieFarmProcess 
+                     dataDirectory="${RUNTIME_PATH}/hpcc-data/roxie"
+                     listenQueue="200"
+                     name="farm1"
+                     numThreads="30"
+                     port="9876"
+                     requestArrayThreads="5">
+    <RoxieServerProcess computer="localhost" name="farm1_s1"/>
+   </RoxieFarmProcess>
+   <RoxieServerProcess 
+                       computer="localhost"
+                       dataDirectory="${RUNTIME_PATH}/hpcc-data/roxie"
+                       listenQueue="200"
+                       name="farm1_s1"
+                       netAddress="."
+                       numThreads="30"
+                       port="9876"
+                       requestArrayThreads="5"/>
+   <RoxieSlave computer="localhost" name="s1">
+    <RoxieChannel dataDirectory="${RUNTIME_PATH}/hpcc-data/roxie" number="1"/>
+   </RoxieSlave>
+   <RoxieSlaveProcess channel="1"
+                      computer="localhost"
+                      dataDirectory="${RUNTIME_PATH}/hpcc-data/roxie"
+                      name="s1"
+                      netAddress="."/>
+  </RoxieCluster>
+  <SashaServerProcess autoRestartInterval="0"
+                      build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+                      buildSet="sasha"
+                      cachedWUat="* * * * *"
+                      cachedWUinterval="24"
+                      cachedWUlimit="100"
+                      coalesceAt="* * * * *"
+                      coalesceInterval="1"
+                      dafsmonAt="* * * * *"
+                      dafsmonInterval="0"
+                      dafsmonList="*"
+                      daliServers="mydali"
+                      description="Sasha Server process"
+                      DFUrecoveryAt="* * * * *"
+                      DFUrecoveryCutoff="4"
+                      DFUrecoveryInterval="12"
+                      DFUrecoveryLimit="20"
+                      DFUWUat="* * * * *"
+                      DFUWUcutoff="14"
+                      DFUWUduration="0"
+                      DFUWUinterval="24"
+                      DFUWUlimit="1000"
+                      DFUWUthrottle="0"
+                      ExpiryAt="* 3 * * *"
+                      ExpiryInterval="24"
+                      keepResultFiles="false"
+                      LDSroot="LDS"
+                      logDir="."
+                      minDeltaSize="50000"
+                      name="mysasha"
+                      recoverDeltaErrors="false"
+                      thorQMonInterval="1"
+                      thorQMonQueues="*"
+                      thorQMonSwitchMinTime="0"
+                      WUat="* * * * *"
+                      WUbackup="0"
+                      WUcutoff="8"
+                      WUduration="0"
+                      WUinterval="6"
+                      WUlimit="1000"
+                      WUretryinterval="7"
+                      WUthrottle="0"
+                      xrefAt="* 2 * * *"
+                      xrefCutoff="1"
+                      xrefEclWatchProvider="true"
+                      xrefInterval="0"
+                      xrefList="*">
+   <Instance computer="localhost"
+             directory="${RUNTIME_PATH}/mysasha"
+             name="s1"
+             netAddress="."
+             port="8877"/>
+  </SashaServerProcess>
+  <ThorCluster autoCopyBackup="false"
+               build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+               buildSet="thor"
+               computer="localhost"
+               daliServers="mydali"
+               description="Thor process"
+               localThor="true"
+               monitorDaliFileServer="true"
+               multiSlaves="false"
+               name="mythor"
+               pluginsPath="${PLUGINS_PATH}"
+               replicateAsync="false"
+               replicateOutputs="false"
+               slaves="1"
+               watchdogEnabled="true"
+               watchdogProgressEnabled="true">
+   <Debug/>
+   <SSH SSHidentityfile="$HOME/.ssh/id_rsa"
+        SSHpassword=""
+        SSHretries="3"
+        SSHtimeout="0"
+        SSHusername="${RUNTIME_USER}"/>
+   <Storage/>
+   <SwapNode/>
+   <ThorMasterProcess computer="localhost" name="m1"/>
+   <ThorSlaveProcess computer="localhost" name="s1"/>
+   <Topology>
+    <Node process="m1">
+     <Node process="s1"/>
+    </Node>
+   </Topology>
+  </ThorCluster>
+  <Topology build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}" buildSet="topology" name="topology">
+   <Cluster name="hthor" prefix="hthor">
+    <EclCCServerProcess process="myeclccserver"/>
+    <EclSchedulerProcess process="myeclscheduler"/>
+    <EclAgentProcess process="myeclagent"/>
+   </Cluster>
+   <Cluster name="thor" prefix="thor">
+    <ThorCluster process="mythor"/>
+    <EclCCServerProcess process="myeclccserver"/>
+    <EclSchedulerProcess process="myeclscheduler"/>
+    <EclAgentProcess process="myeclagent"/>
+   </Cluster>
+   <Cluster name="roxie" prefix="roxie">
+    <EclCCServerProcess process="myeclccserver"/>
+    <EclSchedulerProcess process="myeclscheduler"/>
+    <RoxieCluster process="myroxie"/>
+   </Cluster>
+  </Topology>
+ </Software>
+</Environment>

@@ -1,0 +1,18 @@
+#!/bin/bash
+################################################################################
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+################################################################################
+
+###<REPLACE>###
+
+HPCC_CONFIG=${HPCC_CONFIG:-${CONFIG_DIR}/${ENV_CONF_FILE}}
+SECTION="DEFAULT"
+PATH_PREFIX=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^path *= *" | sed -e 's/^path *= *//'`
+source ${PATH_PREFIX}/sbin/hpcc_setenv ""
+ulimit -n 8192
+ulimit -c unlimited
+nohup ftslave $* 1>/dev/null 2>/dev/null &
+
+    
+    
+    

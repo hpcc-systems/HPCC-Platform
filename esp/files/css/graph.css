@@ -1,0 +1,104 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+BODY
+{
+    FONT-SIZE: 12px;
+    MARGIN: 5px;
+    FONT-FAMILY: Arial, Helvetica, sans-serif, "MS sans serif"
+}
+TD
+{
+    FONT-SIZE: 12px
+}
+TH
+{
+    FONT-SIZE: 12px
+}
+FORM
+{
+    PADDING-RIGHT: 0px;
+    PADDING-LEFT: 0px;
+    PADDING-BOTTOM: 0px;
+    MARGIN: 0px;
+    PADDING-TOP: 0px
+}
+
+span
+{
+    font-family: Arial; font-size: 8pt; color: #000000; 
+}
+
+input
+{
+    font-family: Arial; font-size: 8pt; color: #000000; border: 1 solid #cccccc;    
+}
+
+.checkbox 
+{
+    font-family: Arial; font-size: 8pt; color: Red;
+
+}
+.header1
+{
+    font-size: 10pt;
+}
+ 
+.clearAll
+{
+    CLEAR: both;
+    FONT-SIZE: 0px;
+    LINE-HEIGHT: 0;
+    HEIGHT: 0px
+}
+.text-box
+{
+    BORDER-RIGHT: #b2b2b2 1px solid;
+    PADDING-RIGHT: 3px;
+    BORDER-TOP: #b2b2b2 1px solid;
+    PADDING-LEFT: 5px;
+    FONT-SIZE: 11px;
+    PADDING-BOTTOM: 1px;
+    MARGIN: 0px;
+    BORDER-LEFT: #b2b2b2 1px solid;
+    COLOR: #333333;
+    PADDING-TOP: 1px;
+    BORDER-BOTTOM: #b2b2b2 1px solid;
+    BORDER-COLLAPSE: collapse;
+    BACKGROUND-COLOR: #ffffff
+}
+
+.button
+{
+    BORDER-RIGHT: #6a7382 1px solid;
+    PADDING-RIGHT: 5px;
+    BORDER-TOP: #6a7382 1px solid;
+    PADDING-LEFT: 5px;
+    FONT-WEIGHT: bold;
+    FONT-SIZE: 11px;
+    PADDING-BOTTOM: 0px;
+    MARGIN: 0px;
+    BORDER-LEFT: #6a7382 1px solid;
+    COLOR: #333333;
+    PADDING-TOP: 0px;
+    BORDER-BOTTOM: #6a7382 1px solid;
+    BORDER-COLLAPSE: collapse;
+    BACKGROUND-COLOR: #DFE6EF;
+    TEXT-ALIGN: center
+}
+

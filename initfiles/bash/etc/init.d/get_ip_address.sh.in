@@ -1,0 +1,22 @@
+#!/bin/bash
+
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+
+###<REPLACE>###
+
+ifexists=$(grep -c 'interface' ${CONFIG_DIR}/${ENV_CONF_FILE})
+interface=$( grep 'interface' ${CONFIG_DIR}/${ENV_CONF_FILE}| awk -F '=' '{ print $2 }'  )
+
+if [ $ifexists -eq 0 ] || [ $interface = "" ] ; then
+    ipaddr=$(hostname -i)
+else
+    badinterfacename=$(ifconfig | grep -c $interface)
+    if [ $badinterfacename -eq 0 ] ; then   
+        echo "Provided Interface Name doesn't exist"
+    fi
+
+    ipaddr=$(ifconfig | grep -A 1 $interface | grep 'inet addr' | awk '{ print $2 }' | cut -d ':' -f 2)
+fi
+    
+echo $ipaddr
+

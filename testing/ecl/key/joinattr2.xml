@@ -1,0 +1,239 @@
+<Dataset name='Result 1'>
+ <Row><idl>A</idl><idr>D</idr></Row>
+ <Row><idl>B</idl><idr>D</idr></Row>
+ <Row><idl>C</idl><idr>D</idr></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><idl>A</idl><idr>D</idr></Row>
+ <Row><idl>B</idl><idr>D</idr></Row>
+ <Row><idl>C</idl><idr>D</idr></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><idl>D</idl><idr>A</idr></Row>
+ <Row><idl>D</idl><idr>B</idr></Row>
+ <Row><idl>D</idl><idr>C</idr></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><idl>B</idl><idr>C</idr></Row>
+ <Row><idl>B</idl><idr>D</idr></Row>
+ <Row><idl>B</idl><idr>E</idr></Row>
+ <Row><idl>C</idl><idr>C</idr></Row>
+ <Row><idl>C</idl><idr>D</idr></Row>
+ <Row><idl>C</idl><idr>E</idr></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><idl>A</idl><idr>D</idr></Row>
+ <Row><idl>B</idl><idr>D</idr></Row>
+ <Row><idl>C</idl><idr>D</idr></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><idl>D</idl><idr>A</idr></Row>
+ <Row><idl>D</idl><idr>B</idr></Row>
+ <Row><idl>D</idl><idr>C</idr></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><idl>A</idl><idr>F</idr></Row>
+ <Row><idl>A</idl><idr>G</idr></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><idl>A</idl><idr>E</idr></Row>
+ <Row><idl>A</idl><idr>F</idr></Row>
+ <Row><idl>B</idl><idr>E</idr></Row>
+ <Row><idl>B</idl><idr>F</idr></Row>
+ <Row><idl>C</idl><idr>E</idr></Row>
+ <Row><idl>C</idl><idr>F</idr></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><idl>A</idl><idr>C</idr></Row>
+ <Row><idl>A</idl><idr>D</idr></Row>
+ <Row><idl>A</idl><idr>E</idr></Row>
+ <Row><idl>B</idl><idr>C</idr></Row>
+ <Row><idl>B</idl><idr>D</idr></Row>
+ <Row><idl>B</idl><idr>E</idr></Row>
+</Dataset>
+<Dataset name='Result 10'>
+ <Row><idl>A</idl><idr>C</idr></Row>
+ <Row><idl>A</idl><idr>D</idr></Row>
+ <Row><idl>A</idl><idr>E</idr></Row>
+ <Row><idl>B</idl><idr>C</idr></Row>
+ <Row><idl>B</idl><idr>D</idr></Row>
+ <Row><idl>B</idl><idr>E</idr></Row>
+</Dataset>
+<Dataset name='Result 11'>
+ <Row><idl>B</idl><idr>C</idr></Row>
+ <Row><idl>B</idl><idr>D</idr></Row>
+ <Row><idl>B</idl><idr>E</idr></Row>
+ <Row><idl>C</idl><idr>C</idr></Row>
+ <Row><idl>C</idl><idr>D</idr></Row>
+ <Row><idl>C</idl><idr>E</idr></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><idl>B</idl><idr>B</idr></Row>
+ <Row><idl>B</idl><idr>C</idr></Row>
+ <Row><idl>C</idl><idr>B</idr></Row>
+ <Row><idl>C</idl><idr>C</idr></Row>
+</Dataset>
+<Dataset name='Result 13'>
+ <Row><idl>A</idl><idr>E</idr></Row>
+ <Row><idl>A</idl><idr>F</idr></Row>
+ <Row><idl>A</idl><idr>G</idr></Row>
+ <Row><idl>B</idl><idr>E</idr></Row>
+ <Row><idl>B</idl><idr>F</idr></Row>
+ <Row><idl>B</idl><idr>G</idr></Row>
+ <Row><idl>C</idl><idr>E</idr></Row>
+ <Row><idl>C</idl><idr>F</idr></Row>
+ <Row><idl>C</idl><idr>G</idr></Row>
+</Dataset>
+<Dataset name='Result 14'>
+</Dataset>
+<Dataset name='Result 15'>
+ <Row><idl>A</idl><idr>A</idr></Row>
+ <Row><idl>B</idl><idr>A</idr></Row>
+ <Row><idl>C</idl><idr>A</idr></Row>
+</Dataset>
+<Dataset name='Result 16'>
+ <Row><idl>A</idl><idr>A</idr></Row>
+ <Row><idl>B</idl><idr>A</idr></Row>
+ <Row><idl>C</idl><idr>A</idr></Row>
+</Dataset>
+<Dataset name='Result 17'>
+ <Row><idl>A</idl><idr>A</idr></Row>
+ <Row><idl>B</idl><idr>A</idr></Row>
+ <Row><idl>C</idl><idr>A</idr></Row>
+</Dataset>
+<Dataset name='Result 18'>
+</Dataset>
+<Dataset name='Result 19'>
+ <Row><idl>C</idl><idr> </idr></Row>
+ <Row><idl>D</idl><idr> </idr></Row>
+ <Row><idl>E</idl><idr> </idr></Row>
+</Dataset>
+<Dataset name='Result 20'>
+ <Row><idl>A</idl><idr> </idr></Row>
+ <Row><idl>B</idl><idr> </idr></Row>
+ <Row><idl>C</idl><idr> </idr></Row>
+</Dataset>
+<Dataset name='Result 21'>
+ <Row><idl>A</idl><idr> </idr></Row>
+ <Row><idl>B</idl><idr> </idr></Row>
+ <Row><idl>C</idl><idr> </idr></Row>
+</Dataset>
+<Dataset name='Result 22'>
+ <Row><idl>A</idl><idr> </idr></Row>
+ <Row><idl>B</idl><idr> </idr></Row>
+ <Row><idl>C</idl><idr> </idr></Row>
+</Dataset>
+<Dataset name='Result 23'>
+ <Row><idl> </idl><idr>A</idr></Row>
+</Dataset>
+<Dataset name='Result 24'>
+</Dataset>
+<Dataset name='Result 25'>
+ <Row><idl>A</idl><idr> </idr></Row>
+</Dataset>
+<Dataset name='Result 26'>
+ <Row><idl>A</idl><idr> </idr></Row>
+</Dataset>
+<Dataset name='Result 27'>
+ <Row><idl>A</idl><idr> </idr></Row>
+</Dataset>
+<Dataset name='Result 28'>
+ <Row><idl> </idl><idr>A</idr></Row>
+ <Row><idl> </idl><idr>B</idr></Row>
+ <Row><idl> </idl><idr>C</idr></Row>
+</Dataset>
+<Dataset name='Result 29'>
+</Dataset>
+<Dataset name='Result 30'>
+ <Row><idl>B</idl><idr>B</idr></Row>
+ <Row><idl>C</idl><idr>B</idr></Row>
+</Dataset>
+<Dataset name='Result 31'>
+ <Row><idl>A</idl><idr>A</idr></Row>
+ <Row><idl>B</idl><idr>A</idr></Row>
+ <Row><idl>C</idl><idr>A</idr></Row>
+</Dataset>
+<Dataset name='Result 32'>
+ <Row><idl>B</idl><idr>B</idr></Row>
+ <Row><idl>C</idl><idr>B</idr></Row>
+</Dataset>
+<Dataset name='Result 33'>
+ <Row><idl>A</idl><idr>A</idr></Row>
+ <Row><idl>B</idl><idr>A</idr></Row>
+ <Row><idl>C</idl><idr>A</idr></Row>
+</Dataset>
+<Dataset name='Result 34'>
+ <Row><idl>B</idl><idr>B</idr></Row>
+ <Row><idl>C</idl><idr>B</idr></Row>
+</Dataset>
+<Dataset name='Result 35'>
+</Dataset>
+<Dataset name='Result 36'>
+ <Row><idl>B</idl><idr> </idr></Row>
+ <Row><idl>C</idl><idr> </idr></Row>
+</Dataset>
+<Dataset name='Result 37'>
+ <Row><idl>B</idl><idr>B</idr></Row>
+ <Row><idl>C</idl><idr>B</idr></Row>
+</Dataset>
+<Dataset name='Result 38'>
+ <Row><idl>B</idl><idr>B</idr></Row>
+ <Row><idl>C</idl><idr>B</idr></Row>
+</Dataset>
+<Dataset name='Result 39'>
+ <Row><idl>B</idl><idr>B</idr></Row>
+ <Row><idl>C</idl><idr>B</idr></Row>
+</Dataset>
+<Dataset name='Result 40'>
+ <Row><idl>B</idl><idr> </idr></Row>
+ <Row><idl>C</idl><idr> </idr></Row>
+</Dataset>
+<Dataset name='Result 41'>
+ <Row><idl>A</idl><idr>A</idr></Row>
+ <Row><idl>A</idl><idr>B</idr></Row>
+ <Row><idl>A</idl><idr>C</idr></Row>
+ <Row><idl>B</idl><idr>A</idr></Row>
+ <Row><idl>B</idl><idr>B</idr></Row>
+ <Row><idl>B</idl><idr>C</idr></Row>
+ <Row><idl>C</idl><idr>A</idr></Row>
+ <Row><idl>C</idl><idr>B</idr></Row>
+ <Row><idl>C</idl><idr>C</idr></Row>
+</Dataset>
+<Dataset name='Result 42'>
+ <Row><idl>A</idl><idr>A</idr></Row>
+ <Row><idl>B</idl><idr>A</idr></Row>
+ <Row><idl>C</idl><idr>A</idr></Row>
+</Dataset>
+<Dataset name='Result 43'>
+</Dataset>
+<Dataset name='Result 44'>
+ <Row><idl>A</idl><idr>A</idr></Row>
+ <Row><idl>A</idl><idr>B</idr></Row>
+ <Row><idl>A</idl><idr>C</idr></Row>
+ <Row><idl>B</idl><idr>A</idr></Row>
+ <Row><idl>B</idl><idr>B</idr></Row>
+ <Row><idl>B</idl><idr>C</idr></Row>
+ <Row><idl>C</idl><idr>A</idr></Row>
+ <Row><idl>C</idl><idr>B</idr></Row>
+ <Row><idl>C</idl><idr>C</idr></Row>
+</Dataset>
+<Dataset name='Result 45'>
+ <Row><idl>A</idl><idr>A</idr></Row>
+ <Row><idl>B</idl><idr>A</idr></Row>
+ <Row><idl>C</idl><idr>A</idr></Row>
+</Dataset>
+<Dataset name='Result 46'>
+ <Row><idl>A</idl><idr>A</idr></Row>
+ <Row><idl>B</idl><idr>A</idr></Row>
+ <Row><idl>C</idl><idr>A</idr></Row>
+</Dataset>
+<Dataset name='Result 47'>
+ <Row><idl>A</idl><idr> </idr></Row>
+ <Row><idl>B</idl><idr> </idr></Row>
+ <Row><idl>C</idl><idr> </idr></Row>
+</Dataset>
+<Dataset name='Result 48'>
+ <Row><idl>A</idl><idr>C</idr></Row>
+ <Row><idl>B</idl><idr>C</idr></Row>
+ <Row><idl>C</idl><idr>C</idr></Row>
+</Dataset>

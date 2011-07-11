@@ -1,0 +1,25 @@
+<Dataset name='Result 1'>
+ <Row><value1>A</value1><value2>X</value2></Row>
+ <Row><value1>B</value1><value2>G</value2></Row>
+ <Row><value1>C</value1><value2>G</value2></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><value1>A</value1><value2>B</value2></Row>
+ <Row><value1>C</value1><value2>C</value2></Row>
+ <Row><value1>C</value1><value2>G</value2></Row>
+ <Row><value1>A</value1><value2>X</value2></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><value1>A</value1><value2>B</value2></Row>
+ <Row><value1>B</value1><value2>G</value2></Row>
+ <Row><value1>C</value1><value2>C</value2></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><value1>A</value1><value2>B</value2></Row>
+ <Row><value1>C</value1><value2>C</value2></Row>
+ <Row><value1>B</value1><value2>G</value2></Row>
+ <Row><value1>A</value1><value2>X</value2></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><value1>1</value1><value2>A</value2></Row>
+</Dataset>

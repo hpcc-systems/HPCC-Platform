@@ -1,0 +1,63 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+#ifndef ROXIECOMMLIB_API
+#define ROXIECOMMLIB_API __declspec(dllimport)
+#endif
+
+#include "esp.hpp"
+#include "jptree.hpp"
+#include "jsocket.hpp"
+
+interface IUserDescriptor;
+
+
+SCMinterface IRoxieCommunicationClient(IInterface)
+{
+    IPropertyTree *sendRoxieControlRequest(const char *xml, bool lockAll);
+    const char *sendRoxieOnDemandRequest(const char *xml, SCMStringBuffer &repsonse, bool lockAll);
+    void sendRoxieReloadControlRequest();
+
+    IPropertyTree *retrieveQuery(const char *id);
+    IPropertyTree *retrieveAllQueryInfo(const char *id);
+    IPropertyTree *retrieveState();
+
+    IPropertyTree *retrieveQueryStats(const char *queryName, const char *action, const char *graphName, bool lockAll);
+    const char *queryRoxieClusterName(SCMStringBuffer &clusterName);
+    IPropertyTree *retrieveQueryWuInfo(const char *queryName);
+    IPropertyTree *retrieveTopology();
+
+    bool updateQueryComment(const char *id, const char *comment, bool append);
+    bool updateACLInfo(bool allow, const char *restrict_ip, const char *mask, const char *query, const char *errorMsg, int errorCode, const char *roxieAddress, SCMStringBuffer &status);
+    IPropertyTree *queryACLInfo();
+    IPropertyTree *retrieveRoxieQueryMetrics(SCMStringBuffer &queryName, SCMStringBuffer &startDateTime, SCMStringBuffer &endDateTime);
+    IPropertyTree *retrieveRoxieMetrics(StringArray &ipList);
+    IPropertyTree *listLibrariesUsedByQuery(const char *id, bool useAliasNames);
+    IPropertyTree *listQueriesUsingLibrary(const char *id);
+    IPropertyTree *retrieveQueryActivityInfo(const char *id, int activityId);
+
+    unsigned retrieveRoxieStateRevision();
+    IPropertyTree *getRoxieBuildVersion();
+};
+
+
+extern "C" ROXIECOMMLIB_API IRoxieCommunicationClient *createRoxieCommunicationClient(SocketEndpoint &roxieEP, unsigned roxieTimeout);
+
+
+
+

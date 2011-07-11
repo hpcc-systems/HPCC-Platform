@@ -1,0 +1,43 @@
+#!/bin/bash
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+
+###<REPLACE>###
+
+PATH_PRE=`type -path hpcc_setenv`
+source ${PATH_PRE}
+PID_NAME="$PID/`basename $PWD`.pid"
+
+INIT_PID_NAME="$PID/init_`basename $PWD`.pid"
+echo $$ > $INIT_PID_NAME
+
+rm -f ${PID_DIR}/hthortemp/*
+
+killed (){
+    rm -f agentexec_sentinel*.txt
+
+    killall agentexec
+    killall eclagent
+    sleep 2
+    killall -9 agentexec eclagent 1>/dev/null 2>&1 
+    sleep 2
+    exit 255
+}
+
+
+trap "killed" SIGINT SIGTERM SIGKILL
+export LANG=en_US
+
+ulimit -c unlimited
+agentexec 1>/dev/null 2>/dev/null &
+echo $! > $PID_NAME
+wait
+
+if [ -e agentexec_sentinel.txt ]; then
+    sleep 1
+    if [ -e agentexec_sentinel.txt ]; then
+        agentexec 1>/dev/null 2>/dev/null &
+        echo $! > $PID_NAME
+        wait
+    fi
+fi
+

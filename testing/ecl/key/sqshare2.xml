@@ -1,0 +1,42 @@
+<Dataset name='Result 1'>
+ <Row><addr>99 Maltings Road</addr><aveagetop5>23.0</aveagetop5><_unnamed_3>23</_unnamed_3></Row>
+ <Row><addr>Buckingham Palace</addr><aveagetop5>80.0</aveagetop5><_unnamed_3>80</_unnamed_3></Row>
+ <Row><addr>Bedrock</addr><aveagetop5>2003.0</aveagetop5><_unnamed_3>2003</_unnamed_3></Row>
+ <Row><addr>Wimpole Hall</addr><aveagetop5>67.0</aveagetop5><_unnamed_3>67</_unnamed_3></Row>
+ <Row><addr>56 New Road</addr><aveagetop5>49.5</aveagetop5><_unnamed_3>49</_unnamed_3></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><addr>99 Maltings Road</addr><aveagetop5>23.0</aveagetop5><maxagetop5>34</maxagetop5><minagetop5>2</minagetop5></Row>
+ <Row><addr>Buckingham Palace</addr><aveagetop5>80.0</aveagetop5><maxagetop5>82</maxagetop5><minagetop5>78</minagetop5></Row>
+ <Row><addr>Bedrock</addr><aveagetop5>2003.0</aveagetop5><maxagetop5>2004</maxagetop5><minagetop5>2002</minagetop5></Row>
+ <Row><addr>Wimpole Hall</addr><aveagetop5>67.0</aveagetop5><maxagetop5>67</maxagetop5><minagetop5>67</minagetop5></Row>
+ <Row><addr>56 New Road</addr><aveagetop5>49.5</aveagetop5><maxagetop5>50</maxagetop5><minagetop5>49</minagetop5></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><addr>99 Maltings Road</addr><aveagetop5ds>23.0</aveagetop5ds><_unnamed_3>23</_unnamed_3></Row>
+ <Row><addr>Buckingham Palace</addr><aveagetop5ds>80.0</aveagetop5ds><_unnamed_3>80</_unnamed_3></Row>
+ <Row><addr>Bedrock</addr><aveagetop5ds>2003.0</aveagetop5ds><_unnamed_3>2003</_unnamed_3></Row>
+ <Row><addr>Wimpole Hall</addr><aveagetop5ds>67.0</aveagetop5ds><_unnamed_3>67</_unnamed_3></Row>
+ <Row><addr>56 New Road</addr><aveagetop5ds>49.5</aveagetop5ds><_unnamed_3>49</_unnamed_3></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><addr>99 Maltings Road</addr><aveagetop5ds>23.0</aveagetop5ds><maxagetop5ds>34</maxagetop5ds><minagetop5ds>2</minagetop5ds></Row>
+ <Row><addr>Buckingham Palace</addr><aveagetop5ds>80.0</aveagetop5ds><maxagetop5ds>82</maxagetop5ds><minagetop5ds>78</minagetop5ds></Row>
+ <Row><addr>Bedrock</addr><aveagetop5ds>2003.0</aveagetop5ds><maxagetop5ds>2004</maxagetop5ds><minagetop5ds>2002</minagetop5ds></Row>
+ <Row><addr>Wimpole Hall</addr><aveagetop5ds>67.0</aveagetop5ds><maxagetop5ds>67</maxagetop5ds><minagetop5ds>67</minagetop5ds></Row>
+ <Row><addr>56 New Road</addr><aveagetop5ds>49.5</aveagetop5ds><maxagetop5ds>50</maxagetop5ds><minagetop5ds>49</minagetop5ds></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><addr>99 Maltings Road</addr><aveagetop5dsds>23.0</aveagetop5dsds><_unnamed_3>23</_unnamed_3></Row>
+ <Row><addr>Buckingham Palace</addr><aveagetop5dsds>80.0</aveagetop5dsds><_unnamed_3>80</_unnamed_3></Row>
+ <Row><addr>Bedrock</addr><aveagetop5dsds>2003.0</aveagetop5dsds><_unnamed_3>2003</_unnamed_3></Row>
+ <Row><addr>Wimpole Hall</addr><aveagetop5dsds>67.0</aveagetop5dsds><_unnamed_3>67</_unnamed_3></Row>
+ <Row><addr>56 New Road</addr><aveagetop5dsds>49.5</aveagetop5dsds><_unnamed_3>49</_unnamed_3></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><addr>99 Maltings Road</addr><aveagetop5dsds>23.0</aveagetop5dsds><maxagetop5dsds>34</maxagetop5dsds><minagetop5dsds>2</minagetop5dsds></Row>
+ <Row><addr>Buckingham Palace</addr><aveagetop5dsds>80.0</aveagetop5dsds><maxagetop5dsds>82</maxagetop5dsds><minagetop5dsds>78</minagetop5dsds></Row>
+ <Row><addr>Bedrock</addr><aveagetop5dsds>2003.0</aveagetop5dsds><maxagetop5dsds>2004</maxagetop5dsds><minagetop5dsds>2002</minagetop5dsds></Row>
+ <Row><addr>Wimpole Hall</addr><aveagetop5dsds>67.0</aveagetop5dsds><maxagetop5dsds>67</maxagetop5dsds><minagetop5dsds>67</minagetop5dsds></Row>
+ <Row><addr>56 New Road</addr><aveagetop5dsds>49.5</aveagetop5dsds><maxagetop5dsds>50</maxagetop5dsds><minagetop5dsds>49</minagetop5dsds></Row>
+</Dataset>

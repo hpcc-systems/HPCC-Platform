@@ -1,0 +1,44 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+#include "esp.hpp"
+
+// IEspInstantEclRequest represents an incoming ECL Request.
+
+SCMInterface IEspInstantEclRequest(IInterface)
+{
+   virtual const char* getUser() = 0;
+   virtual const char* getEclServer() = 0;
+   virtual const char* getCluster() = 0;
+   virtual const char* getEclText() = 0;
+};
+
+// IEspInstantEclResp represents the response to an Instant ECL query
+
+SCMInterface IEspInstantEclResp(IInterface)
+{
+   virtual void setResultsXML(const char * results) = 0;
+};
+
+// IEspInstantEcl represents the ECL service plugin.
+
+SCMInterface IEspInstantEcl(IEspService)
+{
+   virtual bool onInstantEcl(IEspContext &context, IEspInstantEclRequest &req, IEspInstantEclResp &resp) = 0;
+};
+

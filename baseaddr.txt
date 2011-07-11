@@ -1,0 +1,119 @@
+;    Copyright (C) 2011 HPCC Systems.
+;
+;    All rights reserved. This program is free software: you can redistribute it and/or modify
+;    it under the terms of the GNU Affero General Public License as
+;    published by the Free Software Foundation, either version 3 of the
+;    License, or (at your option) any later version.
+;
+;    This program is distributed in the hope that it will be useful,
+;    but WITHOUT ANY WARRANTY; without even the implied warranty of
+;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;    GNU Affero General Public License for more details.
+;
+;    You should have received a copy of the GNU Affero General Public License
+;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+; This file is directly used by the linker, and should warn about any clashes.
+; Reserved:
+;
+; C++ compiler:
+
+; cl.exe    00400000 00410000   fixed
+; c1.dll    10600000 106A4000       
+; c1xx.dll  10400000 10522000
+; c2.dll    10700000 107B5000
+; link.exe  00400000 00472000    fixed
+
+; Rest of the system: (sizes approx 2x current debug size)
+;
+; name      base-addr  max-size
+ftsslave    0x00400000 0x00100000
+
+jlib        0x00500000 0x00100000
+bcd     0x00600000 0x00040000
+eclrtl      0x00640000 0x00040000
+dab     0x00680000 0x00040000
+remote      0x006C0000 0x00090000
+dalift      0x00750000 0x00040000
+dataxfer    0x00790000 0x00020000
+
+hthor       0x00700000 0x00050000
+deftype     0x00750000 0x00050000
+thorhelper  0x007a0000 0x00140000           ; doesn't load in parallel with the following entries
+deffile     0x00820000 0x000e0000
+loader          0x00960000 0x00040000
+
+
+; HOLe specific dlls
+hoparse     0x00A00000 0x000D0000
+hons        0x00AD0000 0x00030000
+readscript  0x00B00000 0x00080000
+
+processor   0x00C00000 0x00060000
+collator    0x00C00000 0x00060000
+hoserver    0x00C00000 0x00080000
+hoagent     0x00C00000 0x00060000
+msortdll    0x00C00000 0x00100000
+pipeline    0x00D00000 0x00060000
+commonext       0x00E00000 0x00010000
+socache         0x00E20000 0x00010000
+
+querydll    0x00480000 0x00100000
+
+
+; ecl server etc.
+hql         0x00A00000 0x00300000
+hqlcpp      0x00D00000 0x00280000
+
+; eclplus etc.
+fileviewer  0x00D00000 0x00060000
+
+; eclagent style program
+fileservices    0x00C00000 0x00060000
+workunitservices    0x00C60000 0x00010000
+
+;
+; for thor (intentional overlap with hole only dlls)
+activityslaves  0x00A00000 0x000D0000
+activityslaves_lcr  0x00A00000 0x000D0000
+activitymasters 0x00A00000 0x000D0000 ; never slaves/master in same process
+activitymasters_lcr 0x00A00000 0x000D0000 ; never slaves/master in same process
+graph           0x00B00000 0x00075000
+graph_lcr       0x00B00000 0x00075000
+graphslave      0x00B80000 0x00080000 
+graphslave_lcr  0x00B80000 0x00080000 
+graphmaster     0x00B80000 0x00080000 ; never in same process as graphslave
+graphmaster_lcr 0x00B80000 0x00080000 ; never in same process as graphslave_lcr
+mfilemanager    0x00D00000 0x00075000
+mfilemanager_lcr    0x00D00000 0x00075000
+
+dalibase        0x00D80000 0x00100000
+mp              0x00E90000 0x00020000
+environment     0x00EB0000 0x00050000
+sasha           0x00F00000 0x00020000
+dfuwu           0x00F00000 0x00020000
+workunit        0x00F20000 0x00080000
+jhtree          0x00FA0000 0x00060000
+dllserver       0x01000000 0x00040000
+mysql       0x01040000 0x00040000
+boostregex      0x01080000 0x00120000
+icuuc           0x011A0000 0x000A0000
+icuin           0x01240000 0x000C0000
+icudata         0x01300000 0x00810000
+snmputils       0x014A0000 0x00040000
+schedulectrl    0x014E0000 0x00040000
+
+roxiemanager    0x01560000 0x00080000
+roxiecommlib    0x01600000 0x00080000
+
+; plugins.
+parselib        0x01500000 0x00020000
+logging         0x01520000 0x00020000
+auditlib        0x01540000 0x00020000
+
+;
+; More could add /FIXED attributes to the linker options to reduce file size
+; especially the .exe should have no effect
+;
+

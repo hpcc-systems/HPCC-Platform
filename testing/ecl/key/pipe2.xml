@@ -1,0 +1,16 @@
+<Dataset name='Result 1'>
+ <Row><l>1234                </l></Row>
+ <Row><l>Hello there         </l></Row>
+ <Row><l>what a nice day     </l></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><l>Hello there         </l></Row>
+ <Row><l>what a nice day     </l></Row>
+ <Row><l>1234                </l></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><l>1234                </l></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><l>Hello there         </l></Row>
+</Dataset>

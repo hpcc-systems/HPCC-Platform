@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd">
+<section>
+    <title>cmake_modules</title>
+
+    <para>
+        The cmake_modules directory contains the sources for the cmake_modules library.
+    </para>
+</section>

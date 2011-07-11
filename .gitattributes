@@ -1,0 +1,11 @@
+*               text=auto
+*.bat           eol=crlf
+*.jpg           -text
+*.gif           -text
+*.png           -text
+*.jpg           -text
+*.swf           -text
+*.ico           -text
+*.psd           -text
+*.doc           -text
+*.mk            -text

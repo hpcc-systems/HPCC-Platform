@@ -1,0 +1,50 @@
+#!/bin/bash
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+
+PATH_PRE=`type -path hpcc_setenv`
+source ${PATH_PRE}
+PID_NAME="$PID/`basename $PWD`.pid"
+
+INIT_PID_NAME="$PID/init_`basename $PWD`.pid"
+echo $$ > $INIT_PID_NAME
+
+ulimit -c unlimited
+ulimit -n 8192
+
+killed() {
+
+    rm -f saserver_sentinel*.txt
+    pid=`pidof saserver`
+    if [ -n "$pid" ]; then
+        sasha server=. action=stop
+        I=1
+        while [ -n "$pid" ] && [ $I -lt 30 ]; do
+            echo "Waiting for saserver to stop"
+            sleep 2
+            pid=`pidof saserver`
+            let I=I+1
+        
+        done
+        if [ -n "$pid" ]; then
+            kill -9 $pid
+        fi
+    fi
+    sleep 2
+    exit 255
+}
+
+trap "killed" SIGINT SIGTERM SIGKILL
+export LANG=en_US
+echo rerun > saserver_sentinel_$$.txt
+saserver 1>/dev/null 2>/dev/null &
+echo $! > $PID_NAME
+wait
+
+while [ -e saserver_sentinel_$$.txt ]; do
+    sleep 5
+    if [ -e saserver_sentinel_$$.txt ]; then
+        saserver 1>/dev/null 2>/dev/null &
+        echo $! > $PID_NAME
+        wait
+    fi
+done

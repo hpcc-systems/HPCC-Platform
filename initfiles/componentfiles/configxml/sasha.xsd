@@ -1,0 +1,467 @@
+<!--
+
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+-->
+
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:include schemaLocation="environment.xsd"/>
+    <xs:element name="SashaServerProcess">
+        <xs:annotation>
+            <xs:documentation>Describes a Sasha server installation</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="Instance" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:appinfo>
+                            <viewType>instance</viewType>
+                        </xs:appinfo>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:attribute name="computer" type="computerType" use="required">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <colIndex>1</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="netAddress" type="ipAddress" use="optional">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <viewType>readonly</viewType>
+                                    <colIndex>2</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="directory" type="absolutePath" use="optional">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <viewType>hidden</viewType>
+                                    <colIndex>3</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="port" type="xs:nonNegativeInteger" use="optional" default="8877">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <required>true</required>
+                                    <colIndex>4</colIndex>                  
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="Notes" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:appinfo>
+                            <viewChildNodes>true</viewChildNodes>
+                        </xs:appinfo>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="Note" type="xs:string" minOccurs="0" maxOccurs="1"/>
+                        </xs:sequence>
+                        <xs:attribute name="severity" use="optional" default="Minor">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <tooltip>Significance of this note.</tooltip>
+                                    <title>Severity</title>
+                                    <colIndex>1</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                            <xs:simpleType>
+                                <xs:restriction base="xs:string">
+                                    <xs:enumeration value="Minor"/>
+                                    <xs:enumeration value="Normal"/>
+                                    <xs:enumeration value="Critical"/>
+                                </xs:restriction>
+                            </xs:simpleType>
+                        </xs:attribute>                     
+                        <xs:attribute name="date" type="AutoTimeStampType" use="optional">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <title>Date / Time</title>
+                                    <tooltip>Date and time this note was entered</tooltip>
+                                    <viewType>readonly</viewType>
+                                    <width>120</width>
+                                    <colIndex>2</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="computer" type="AutoComputerType" use="optional">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <title>Computer</title>
+                                    <tooltip>Computer from which this note was entered</tooltip>
+                                    <viewType>readonly</viewType>
+                                    <colIndex>3</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="user" type="AutoUseridType" use="optional">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <title>User</title>
+                                    <tooltip>User account from which this note was entered</tooltip>
+                                    <viewType>readonly</viewType>
+                                    <colIndex>4</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+            <xs:attributeGroup ref="Archiver"/>
+            <xs:attributeGroup ref="Coalescer"/>
+            <xs:attributeGroup ref="DfuXRef"/>
+            <xs:attributeGroup ref="DfuExpiry"/>
+            <xs:attributeGroup ref="ThorQMon"/>
+            <xs:attributeGroup ref="DaFileSrvMonitor"/>
+            <xs:attribute name="build" type="buildType" use="required">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>The build name to be deployed</tooltip>
+                        <viewType>hidden</viewType>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="buildSet" type="buildSetType" use="required">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <viewType>hidden</viewType>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="name" type="xs:string" use="required">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Name for this process</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="description" type="xs:string" use="optional" default="Sasha Server process">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Description for this process</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="daliServers" type="daliServersType" use="required">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <autogenforwizard>1</autogenforwizard>
+                        <tooltip>Specifies the Dali server to which this Sasha server is attached.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="logDir" type="xs:string" use="optional" default=".">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <required>true</required>
+                        <tooltip>Specifies the Sasha server log directory.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="autoRestartInterval" type="xs:nonNegativeInteger" use="optional" default="0">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Specifies interval between sasha server auto-restart (hours, 0 no auto restart (default))</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="LDSroot" type="xs:string" use="optional" default="LDS">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Specifies the Sasha data store root directory.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+        </xs:complexType>
+    </xs:element>
+    <xs:attributeGroup name="Archiver">
+        <xs:attribute name="WUlimit" type="xs:nonNegativeInteger" use="optional" default="1000">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>threshold number of workunits before archiving starts (0 disables).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="WUcutoff" type="xs:nonNegativeInteger" use="optional" default="8">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>minimum workunit age to archive (days).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="WUbackup" type="xs:nonNegativeInteger" use="optional" default="0">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>minimum workunit age to backup (days, 0 disables).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="WUinterval" type="xs:nonNegativeInteger" default="6">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>minimum interval between running WorkUnit archiver(in hours, 0 disables).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="WUat" type="xs:string" use="optional" default="* * * * *">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>schedule to run WorkUnit archiver (cron format).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="WUduration" type="xs:string" use="optional" default="0">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>maximum duration to run WorkUnit archiving session (hours, 0 unlimited).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="WUthrottle" type="xs:string" use="optional" default="0">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>throttle ratio (0-99, 0 no throttling, 50 is half speed).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="WUretryinterval" type="xs:nonNegativeInteger" use="optional" default="7">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>minimal time before retrying archive of failed WorkUnits (days).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="keepResultFiles" type="xs:boolean" use="optional" default="false">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>option to keep result files owned by workunits after workunit is archived</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="DFUrecoveryLimit" type="xs:nonNegativeInteger" use="optional" default="20">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>threshold number of DFU recovery items before archiving starts (0 disables).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="DFUrecoveryCutoff" type="xs:nonNegativeInteger" use="optional" default="4">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>minimum DFU recovery item age to archive (days).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="DFUrecoveryInterval" type="xs:nonNegativeInteger" default="12">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>minimum interval between running DFU recovery archiver(in hours, 0 disables).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="DFUrecoveryAt" type="xs:string" use="optional" default="* * * * *">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>schedule to run DFU recovery archiver (cron format).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="DFUWUlimit" type="xs:nonNegativeInteger" use="optional" default="1000">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>threshold number of DFU workunits before archiving starts (0 disables).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="DFUWUcutoff" type="xs:nonNegativeInteger" use="optional" default="14">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>minimum DFU workunit age to archive (days).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="DFUWUinterval" type="xs:nonNegativeInteger" default="24">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>minimum interval between running DFU recovery archiver (in hours, 0 disables).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="DFUWUat" type="xs:string" use="optional" default="* * * * *">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>schedule to run DFU workunit archiver (cron format).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="DFUWUduration" type="xs:string" use="optional" default="0">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>maximum duration to run DFU WorkUnit archiving session (hours, 0 unlimited).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="DFUWUthrottle" type="xs:string" use="optional" default="0">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>throttle ratio (0-99, 0 no throttling, 50 is half speed).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="cachedWUlimit" type="xs:nonNegativeInteger" use="optional" default="100">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>threshold number of cached workunits before removal starts (0 disables).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="cachedWUinterval" type="xs:nonNegativeInteger" default="24">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>minimum interval between running cached workunit removal(in hours, 0 disables).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="cachedWUat" type="xs:string" use="optional" default="* * * * *">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>schedule to run cached workunit removal (cron format).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:attributeGroup>
+    <xs:attributeGroup name="Coalescer">
+        <xs:attribute name="coalesceInterval" type="xs:nonNegativeInteger" default="1">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>minimum interval between running Dali datastore coalescer (in hours, 0 disables).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="coalesceAt" type="xs:string" use="optional" default="* * * * *">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>schedule to run Dali datastore coalescer (cron format).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="minDeltaSize" type="xs:nonNegativeInteger" use="optional" default="50000">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>Coalescing will only begin, if the delta size is above this threashold (K)</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="recoverDeltaErrors" type="xs:boolean" use="optional" default="false">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>Switch on to auto recover from corruption to delta files on load</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:attributeGroup>
+    <xs:attributeGroup name="DfuXRef">
+        <xs:attribute name="xrefInterval" type="xs:nonNegativeInteger" default="0">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>minimum interval between running DFU XREF (in hours, 0 disables).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="xrefAt" type="xs:string" use="optional" default="* 2 * * *">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>schedule to run DFU XREF (cron format).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="xrefList" type="xs:string" use="optional" default="*">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>comma seperated list of clusters to xref (* for all clusters).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="xrefCutoff" type="xs:nonNegativeInteger" default="1">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>cutoff (in days) to ignore recent files.</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="xrefEclWatchProvider" type="xs:boolean" use="optional" default="true">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>use sasha for EclWatch initiated xref.</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:attributeGroup>
+    <xs:attributeGroup name="DfuExpiry">
+        <xs:attribute name="ExpiryInterval" type="xs:nonNegativeInteger" default="24">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>minimum interval between checking for distributed file expiry (in hours, 0 disables).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="ExpiryAt" type="xs:string" use="optional" default="* 3 * * *">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>schedule to check for distributed file expiry (cron format).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:attributeGroup>
+    <xs:attributeGroup name="ThorQMon">
+        <xs:attribute name="thorQMonQueues" type="xs:string" use="optional" default="*">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>comma seperated list of Thor queues to monitor (* for all).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="thorQMonInterval" type="xs:nonNegativeInteger" default="1">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>interval to monitor and log queue activity (in minutes).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="thorQMonSwitchMinTime" type="xs:nonNegativeInteger" default="0">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>minimum idle time before job will switch queues. (in minutes, 0 disables)</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:attributeGroup>
+    <xs:attributeGroup name="DaFileSrvMonitor">
+        <xs:attribute name="dafsmonInterval" type="xs:nonNegativeInteger" default="0">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>minimum interval between running DaFileSrv monitor (in hours, 0 disables).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="dafsmonAt" type="xs:string" use="optional" default="* * * * *">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>schedule to run DaFileSrv monitor (cron format).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="dafsmonList" type="xs:string" use="optional" default="*">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>comma seperated list of clusters and IPs to monitor (* for all clusters).</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:attributeGroup>
+</xs:schema>

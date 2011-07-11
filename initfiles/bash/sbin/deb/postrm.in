@@ -1,0 +1,9 @@
+#!/bin/bash
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+
+###<REPLACE>###
+
+if [ -f "${INSTALL_DIR}/etc/init.d/install-init" ]; then
+        ${INSTALL_DIR}/etc/init.d/install-init
+fi
+

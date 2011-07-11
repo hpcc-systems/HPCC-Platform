@@ -1,0 +1,36 @@
+#!/bin/bash
+################################################################################
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+################################################################################
+
+###<REPLACE>###
+
+# Checking if configmgr is still running
+########################################
+configmgr_status=`ps -ef | grep 'configmgr' | grep -cE '(python|bash)'`
+if [ $configmgr_status -gt 0 ]; then
+    echo "ConfigMgr is still running can't uninstall the rpm. Please stop configmgr and retry. ERROR-101";
+    exit 1
+fi
+
+
+# Stop all services before cleaning up
+######################################
+/etc/init.d/hpcc-init stop
+if [ -f "${PID_DIR}/mydafilesrv.pid" ]; then
+    # Stopping Dafilesrv
+    ${INSTALL_DIR}/bin/start-stop-daemon -K -p ${PID_DIR}/mydafilesrv_init.pid >> /dev/null 2>&1
+    rm -rf ${LOCK_DIR}/mydafilesrv/mydafilesrv.lock >> /dev/null 2>&1
+    rm -rf ${PID_DIR}/mydafilesrv_init.pid >> /dev/null 2>&1
+        #/etc/init.d/dafilesrv stop
+fi
+# Removing edits from /etc files
+${INSTALL_DIR}/sbin/rm_conf_settings.sh
+
+
+# Removing symlinks.
+${INSTALL_DIR}/etc/init.d/uninstall-init
+
+
+exit 0
+ 

@@ -1,0 +1,229 @@
+<!--
+
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+-->
+
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:include schemaLocation="environment.xsd"/>
+    <xs:element name="LDAPServerProcess">
+        <xs:annotation>
+            <xs:appinfo>
+                <title>Active Directory LDAP process</title>
+            </xs:appinfo>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="Instance" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:appinfo>
+                            <viewType>instance</viewType>
+                        </xs:appinfo>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:attribute name="computer" type="computerType" use="required">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <colIndex>1</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="netAddress" type="ipAddress" use="optional">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <viewType>readonly</viewType>
+                                    <colIndex>2</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="Notes" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:appinfo>
+                            <viewChildNodes>true</viewChildNodes>
+                        </xs:appinfo>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="Note" type="xs:string" minOccurs="0" maxOccurs="1"/>
+                        </xs:sequence>
+                        <xs:attribute name="severity" use="optional" default="Minor">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <tooltip>Significance of this note.</tooltip>
+                                    <title>Severity</title>
+                                    <colIndex>1</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                            <xs:simpleType>
+                                <xs:restriction base="xs:string">
+                                    <xs:enumeration value="Minor"/>
+                                    <xs:enumeration value="Normal"/>
+                                    <xs:enumeration value="Critical"/>
+                                </xs:restriction>
+                            </xs:simpleType>
+                        </xs:attribute>                     
+                        <xs:attribute name="date" type="AutoTimeStampType" use="optional">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <title>Date / Time</title>
+                                    <tooltip>Date and time this note was entered</tooltip>
+                                    <viewType>readonly</viewType>
+                                    <width>120</width>
+                                    <colIndex>2</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="computer" type="AutoComputerType" use="optional">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <title>Computer</title>
+                                    <tooltip>Computer from which this note was entered</tooltip>
+                                    <viewType>readonly</viewType>
+                                    <colIndex>3</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="user" type="AutoUseridType" use="optional">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <title>User</title>
+                                    <tooltip>User account from which this note was entered</tooltip>
+                                    <viewType>readonly</viewType>
+                                    <colIndex>4</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+            <xs:attribute name="build" type="buildType" use="required">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>The build name to be deployed</tooltip>
+                        <viewType>hidden</viewType>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="buildSet" type="buildSetType" use="required">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <viewType>hidden</viewType>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="name" type="xs:string" use="required">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Name for this process</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="description" type="xs:string" use="optional" default="LDAP server process">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Description for this process</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="ldapPort" type="xs:nonNegativeInteger" use="optional" default="389">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <required>true</required>
+                        <tooltip>The port of the ldap (ActiveDirectory) server.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="ldapSecurePort" type="xs:nonNegativeInteger" use="optional" default="636">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <required>true</required>
+                        <tooltip>The port of the ldap (ActiveDirectory) server.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="cacheTimeout" type="xs:nonNegativeInteger" use="optional" default="5">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Time in minutes after which the cached security information should expire.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="systemUser" type="xs:string" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>The username under which eclserver should log into ldap (ActiveDirectory).</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="systemPassword" type="xs:string" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <viewType>password</viewType>
+                        <tooltip>The password for the systemUser.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="systemCommonName" type="xs:string" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>The common name ecl server should use to log into the ldap (ActiveDirectory) server.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="systemBasedn" type="xs:string" use="optional" default="cn=Users">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <required>true</required>
+                        <tooltip>The ldap "base distinguished name" of the systemUser.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="groupsBasedn" type="xs:string" use="required">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>The ldap "base distinguished name"  that ecl server should use when looking up groups in the ldap (ActiveDirectory) server.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="usersBasedn" type="xs:string" use="required">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>The ldap "base distinguished name"  that ecl server should use when looking up users in the ldap (ActiveDirectory) server.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="modulesBasedn" type="xs:string" use="required">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>The ldap "base distinguished name"  that ecl server should use when looking up modules in the ldap (ActiveDirectory) server.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="workunitsBasedn" type="xs:string" use="optional" default="ou=workunits,ou=ecl">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <required>true</required>
+                        <tooltip>The ldap "base distinguished name"  that ecl server should use when looking up workunit scopes in the ldap (ActiveDirectory) server.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="filesBasedn" type="xs:string" use="optional" default="ou=files,ou=ecl">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <required>true</required>
+                        <tooltip>The ldap "base distinguished name"  that ecl server should use when looking up file scopes in the ldap (ActiveDirectory) server.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="sudoersBasedn" type="xs:string" use="optional" default="ou=SUDOers">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>The place to hold the sudoers entries.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

@@ -1,0 +1,125 @@
+/*##############################################################################
+
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+############################################################################## */
+
+body 
+{ 
+    background-color: white;
+
+    font-style:     normal;
+    font-variant:   normal;
+    font-weight:    normal;
+    font-size:      10pt;
+    line-height:    16pt;    
+}
+
+table.results 
+{ 
+    font:               9pt arial; 
+    border-collapse:    collapse; 
+    border:             double solid #0066CC; 
+}
+
+table.results th 
+{ 
+    border:             2 solid #0066CC; 
+    text-align:         center;
+    vertical-align:     top; 
+    background-color:   #DFEFFF;
+} 
+
+table.results td
+{ 
+    border:             2 solid #0066CC; 
+    vertical-align:     top; 
+    text-align:         center;
+    padding:            2; 
+}
+
+.datacell
+{ 
+    background:         white;
+    padding:            0; 
+}
+
+
+.blue  
+{   
+    background-color:   #DFEFFF; 
+}
+
+table.workunit
+{ 
+    font:       10pt; 
+}
+
+table.workunit tr 
+{ 
+    padding:    12 0; 
+}
+
+table.workunit th 
+{ 
+    text-align:     left; 
+    vertical-align: top; 
+}
+
+table.workunit td 
+{ 
+    padding:    2 2 2 12; 
+}
+
+.sbutton 
+{ 
+    width:  7em; 
+    font:   10pt; 
+}
+
+.running 
+{ 
+    font-weight: bolder; 
+}
+
+.number 
+{ 
+    text-align: right; 
+}
+
+.cluster 
+{ 
+    text-align: left; 
+}
+
+
+.menu1
+{
+    width:  12;
+    height: 14;
+    margin: 0 5 0 0;
+}
+
+.active 
+{ 
+    background-color: #eee; 
+}
+
+.highpriority
+{ 
+    background-color: #888; 
+}
+
+.normalpriority 
+{ 
+    background-color: #eee; 
+}
+
+.lowpriority 
+{ 
+    background-color: #eee; 
+}
+
+.red  
+{   
+    background-color:   #DF0000; 
+}

@@ -1,0 +1,42 @@
+<xgmml>
+<graph>
+ <node id="1" label="regress::hthor::houseindexid"><att>
+ <graph>
+ <node id="1_0" label="id">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="1_1" label="addr">
+<attr name="type" value="string"/>
+ </node>
+ <node id="1_2" label="filepos">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+ <node id="2" label="regress::hthor::house"><att>
+ <graph>
+ <node id="2_0" label="id">
+<attr name="type" value="unsigned4"/>
+ </node>
+ <node id="2_1" label="addr">
+<attr name="type" value="string"/>
+ </node>
+ <node id="2_2" label="postcode">
+<attr name="type" value="string10"/>
+ </node>
+ <node id="2_3" label="yearbuilt">
+<attr name="type" value="unsigned2"/>
+ </node>
+ <node id="2_4" label="{virtual(fileposition)}">
+<attr name="type" value="unsigned8"/>
+ </node>
+ </graph>
+ </att></node>
+  <edge id="3" source="1_0" target="2_0" label="view of">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+  <edge id="4" source="1_2" target="2_4">
+<attr name="cardinality" value="1:1"/>
+  </edge>
+</graph>
+</xgmml>

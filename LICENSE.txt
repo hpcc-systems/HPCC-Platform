@@ -1,0 +1,3 @@
+Copyright (C) 2011 HPCC Systems.
+License Agreement: http://hpccsystems.com/hpcc-ce-binary-license-agreement
+

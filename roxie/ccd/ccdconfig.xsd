@@ -1,0 +1,45 @@
+<!--
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+    <xs:element name="ThorCluster">
+        <xs:complexType>
+            <xs:attribute name="build" type="seisint:build" use="required">
+                <xs:annotation><xs:appinfo>
+                    <tooltip>The build name to be deployed</tooltip>
+                </xs:appinfo></xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="buildSet" type="seisint:buildSet" use="required">
+                <xs:annotation><xs:appinfo>
+                    <tooltip>The component within the build</tooltip>
+                </xs:appinfo></xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="name" type="xs:string" use="required">
+                <xs:annotation><xs:appinfo>
+                    <tooltip>Name for this process</tooltip>
+                </xs:appinfo></xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="description" type="xs:string" use="optional">
+                <xs:annotation><xs:appinfo>
+                    <tooltip>Description for this process</tooltip>
+                </xs:appinfo></xs:annotation>
+            </xs:attribute>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

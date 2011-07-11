@@ -1,0 +1,908 @@
+<!--
+
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+-->
+
+<!--<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">-->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
+<title>HPCC Systems Configuration Manager</title>
+<link rel="shortcut icon" href="/esp/files/img/favicon.ico" type="image/x-icon" />
+<style type="text/css">
+/*margin and padding on body element
+  can introduce errors in determining
+  element position and are not recommended;
+  we turn them off as a foundation for YUI
+  CSS treatments. */
+body {
+    margin:0;
+    padding:0;
+}
+#toggle {
+    text-align: center;
+    padding: 1em;
+}
+#toggle a {
+    padding: 0 5px;
+    border-left: 1px solid black;
+}
+#tRight {
+    border-left: none !important;
+}
+</style>
+<link rel="stylesheet" type="text/css" href="/esp/files/yui/build/fonts/fonts.css" />
+<link rel="stylesheet" type="text/css" href="/esp/files/yui/build/reset-fonts-grids/reset-fonts-grids.css" />
+<link rel="stylesheet" type="text/css" href="/esp/files/yui/build/resize/assets/skins/sam/resize.css" />
+<link rel="stylesheet" type="text/css" href="/esp/files/yui/build/layout/assets/skins/sam/layout.css" />
+<link rel="stylesheet" type="text/css" href="/esp/files/yui/build/button/assets/skins/sam/button.css" />
+<link rel="stylesheet" type="text/css" href="/esp/files/yui/build/menu/assets/skins/sam/menu.css" />
+<link rel="stylesheet" type="text/css" href="/esp/files/yui/build/tabview/assets/skins/sam/tabview.css" />
+<link rel="stylesheet" type="text/css" href="/esp/files/yui/build/datatable/assets/skins/sam/datatable.css" />
+<link rel="stylesheet" type="text/css" href="/esp/files/yui/build/container/assets/skins/sam/container.css" />
+<link rel="stylesheet" type="text/css" href="/esp/files/yui/build/progressbar/assets/skins/sam/progressbar.css" />
+<script type="text/javascript" src="/esp/files/yui/build/yahoo/yahoo-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/event/event-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/animation/animation-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/dom/dom-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/yahoo-dom-event/yahoo-dom-event.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/container/container-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/element/element-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/dragdrop/dragdrop-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/resize/resize-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/layout/layout-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/yuiloader/yuiloader-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/connection/connection-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/datasource/datasource-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/datatable/datatable.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/tabview/tabview-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/menu/menu-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/progressbar/progressbar-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/event-simulate/event-simulate-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/button/button-min.js"></script>
+<script type="text/javascript" src="/esp/files/scripts/configmgr/common.js"></script>
+<script type="text/javascript" src="/esp/files/scripts/configmgr/navtree.js"></script>
+
+      <style type="text/css">
+        .yui-dt-liner #depth-1 {
+        padding-left:0em !important;
+        }
+        .yui-dt-liner #depth0 {
+        padding-left:2em !important;
+        }
+        .yui-dt-liner #depth1 {
+        padding-left:4em !important;
+        background-position:1em 0  !important;
+        }
+        .yui-dt-liner #depth2 {
+        padding-left:6em !important;
+        background-position:2em 0  !important;
+        }
+        .yui-dt-liner #depth3 {
+        padding-left:8em !important;
+        background-position:3em 0  !important;
+        }
+        .yui-dt-liner #depth4 {
+        padding-left:10em !important;
+        background-position:4em 0  !important;
+        }
+        .yui-dt-liner #depth5 {
+        padding-left:12em !important;
+        background-position:5em 0  !important;
+        }
+        .hidden {
+        display:none;
+        }
+        .expanded .yui-dt-col-icon .yui-dt-liner{
+        background: url(/esp/files/img/collapse.gif) no-repeat;
+        }
+        .collapsed .yui-dt-col-icon .yui-dt-liner{
+        background: url(/esp/files/img/expand.gif) no-repeat;
+        }
+
+        .envLocked .yui-dt-col-name .yui-dt-liner{
+        background: url(/esp/files/img/locked.gif) ;
+        }
+
+        .envUnlocked .yui-dt-col-name .yui-dt-liner{
+        background: url(/esp/files/img/unlocked.gif) no-repeat;
+        }
+
+        .buttoncollapsed#pushbutton {
+
+        background: url(/esp/files/img/expand.gif) center center no-repeat;
+      border: none;
+      text-indent: -4em;
+      text-align:justify;
+      overflow: hidden;
+      padding: 0 .75em;
+      width: 1.75em;
+      height: 1em;
+      margin-left: 4em;   /* IE only */
+      padding: 0 1.75em;  /* IE only */
+
+      }
+      div>.buttoncollapsed#pushbutton 
+      {
+        margin-left: 0em;   /* non-IE only */
+        padding: 0 0em;  /* non-IE only */
+      }
+            
+      .buttonexpanded#pushbutton {
+
+      background: url(/esp/files/img/collapse.gif) center center no-repeat;
+      border: none;
+      text-indent: -4em;
+      text-align:justify;
+      overflow: hidden;
+      padding: 0 .75em;
+      width: 1.75em;
+      height: 1em;
+      margin-left: 4em;   /* IE only */
+      padding: 0 1.75em;  /* IE only */
+
+      }
+      div>.buttonexpanded#pushbutton 
+      {
+        margin-left: 0em;   /* non-IE only */
+        padding: 0 0em;  /* non-IE only */
+      }
+
+      .yui-dt table {
+      position:absolute;
+      top:0px;
+      left:0px;
+      }
+      
+      .mousewait 
+      {
+        cursor:wait;
+      }
+      
+      .mouseauto 
+      {
+        cursor:auto;
+      }
+      .cfghd
+      {
+          text-align: left;
+      }   
+      .cfgbd
+      {
+          text-align: left;
+          font-size: 0.85em;
+      }   
+      .cfgft
+      {
+          text-align: right;
+      }   
+
+      .groupheader
+      {
+          font-weight:bold;
+      }
+      .cfgdroplist
+      {
+          width: 200px;
+      }
+      .cfggroupbox
+      {
+           border: solid 1px #666666;
+           padding: 5px 5px;
+      }
+      .cfgindentcol 
+      {
+          width: 20px;
+      }
+      
+      /* Class for displaying out of focus tables */
+      .yui-skin-sam .yui-dt tr.outoffocus td {
+      background-color: #D0D0D0;
+      }
+      
+      .yui-button#savebutton button {
+      background: url(/esp/files/img/save.gif) center center no-repeat;
+      width: 2em;
+      text-indent: -4em;
+      text-align:justify;
+      overflow: hidden;
+      padding: 0 .75em;
+      *margin-left: 4em;   /* IE only */
+      *padding: 0 1.75em;  /* IE only */
+      }
+      
+      .yui-button#validatebutton button {
+      background: url(/esp/files/img/accept.png) center center no-repeat;
+      width: 2em;
+      text-indent: -4em;
+      text-align:justify;
+      overflow: hidden;
+      padding: 0 .75em;
+      *margin-left: 4em;   /* IE only */
+      *padding: 0 1.75em;  /* IE only */
+      }
+      
+      .yui-button#openbutton button {
+      background: url(/esp/files/img/folderopen.gif) center center no-repeat;
+      width: 2em;
+      text-indent: -4em;
+      text-align:justify;
+      overflow: hidden;
+      padding: 0 .75em;
+      *margin-left: 4em;   /* IE only */
+      *padding: 0 1.75em;  /* IE only */
+      }
+      
+      .yui-button#wizardbutton button {
+      background: url(/esp/files/img/wizard.gif) center center no-repeat;
+      width: 2em;
+      text-indent: -4em;
+      text-align:justify;
+      overflow: hidden;
+      padding: 0 .75em;
+      *margin-left: 4em;   /* IE only */
+      *padding: 0 1.75em;  /* IE only */
+      }
+            
+      .yui-panel#displayModeDialog .hd {    
+        padding:1px;   
+        background:url(/esp/files/img/hpcc_logo.png) no-repeat;
+        border-color:Background;
+        color:white;   
+        height:55px;   
+        overflow:visible; 
+        *padding:1px; 
+        *margin:1px; 
+      } 
+     
+      #wizardTop .hd{    
+        padding:0px;   
+        background:url(/esp/files/img/hpcc_logo.png) no-repeat;
+        height:65px;  
+        width:578px;
+        color:white; 
+        overflow:visible; 
+        border:none;
+        margin:none;
+        *border:none;
+        *margin:none;
+        *padding:none;
+      }
+      
+      #summaryPageHeader .hd{    
+        padding:0px;   
+        background:url(/esp/files/img/hpcc_logo.png) no-repeat;
+        height:65px;  
+        width:578px;
+        color:white; 
+        overflow:visible; 
+        border:none;
+        margin:none;
+        *border:none;
+        *margin:none;
+        *padding:none;
+      }  
+     
+     .yui-skin-sam .yui-tt#navTabletooltip .bd {
+      BORDER-RIGHT: #808080 1px solid;
+      BORDER-TOP: #808080 1px solid;
+      BORDER-LEFT: #808080 1px solid;
+      BORDER-BOTTOM: #808080 1px solid;
+      BACKGROUND-COLOR: #FAFAD2;
+     }
+     
+     .yui-tt#EEOnlyTooltip .bd {
+      BORDER-RIGHT: #808080 1px solid;
+      BORDER-TOP: #808080 1px solid;
+      BORDER-LEFT: #808080 1px solid;
+      BORDER-BOTTOM: #808080 1px solid;
+      BACKGROUND-COLOR: #FAFAD2;
+     }
+     
+     #wizardLeft .bd
+     {
+       padding:0px; 
+       background-color:transparent;
+       overflow: inherit;  
+       color:White;
+       height:435px;
+       border:none;
+       margin:none;
+     }
+     
+     .yui-panel#noborders {
+       *margin:none;
+       *padding:none;
+       *border:none;
+     }
+     
+     .yui-panel#staticProgress .bd 
+     {
+        background-color: White;
+        border:1.5px solid #808080;
+        *border: none;
+        *margin:none;
+        *padding:none;
+     }
+     
+     #wizardLayout
+     {
+       border: 1px solid #808080; 
+       *border: 0.5px solid #808080;
+     }
+     
+     .yui-panel#messagePanel .bd{
+          font-family:Arial;
+          font-size :small;
+          font-weight :normal;
+          background-color:White;
+          text-align :center;
+     }
+     
+     textarea {resize: none}
+     
+     .textAreaCSS 
+     {
+       color:#808080;
+       width:440px;
+     }
+     
+     #sumPage .ft { 
+        height:30px; 
+        padding:none; 
+        border-bottom: 1px solid #808080; 
+        *border-bottom:none;
+       } 
+     
+     
+     .yui-dt td.classForSum 
+     {
+        word-wrap:break-word;  
+     }
+     
+     .yui-panel#sumPage {
+        overflow:visible;
+     }
+     
+     #sumPage .yui-resize-handle-br { 
+       height: 11px; 
+       width: 11px; 
+       background-position: -20px -60px; 
+       background-color: transparent; 
+     } 
+     
+     #summaryPage .yui-resize-handle-br { 
+       height: 11px; 
+       width: 11px; 
+       background-position: -20px -60px; 
+       background-color: transparent; 
+     } 
+    </style>
+</head>
+
+<!--[if IE]>
+<style type="text/css">
+   .yui-panel .bd{
+    font-size: expression(screen.deviceXDPI > 96 ? "87.5%" : "100%");
+   }
+   .yui-panel .ft{
+    font-size: expression(screen.deviceXDPI > 96 ? "87.5%" : "100%");
+   }
+   .yui-panel .hd{
+    font-size: expression(screen.deviceXDPI > 96 ? "87.5%" : "100%");
+   }
+</style>
+<![endif]-->
+
+<body class=" yui-skin-sam" onbeforeunload="var r = promptSaveChanges(); if (r.length>0) return r;" onunload="unlockUser();">
+<noscript style="display:block;font-size:large;margin-top:40;margin-bottom:20;font-size:18px;font-weight:bold;color:#5C59B2;">
+You need to have Javascript enabled in order to use ConfigMgr. Please enable Javascript for your browser.<br /><br />
+<div align='left' style="font-size:16px; font-weight:bold; color:#5C59B2;">To enable Javascript in Internet Explorer 5.5 or higher...
+<ol style="list-style-position:outside;font-size:13px; font-weight:normal; color:#000000;">1. Click <i>Tools</i>, then click <i>Internet Options</i>.<br />2. Click the <i>Security</i> tab.<br />3. Click the <i>Custom Level</i> button.<br />4. Scroll to the <i>Scripting</i> section. <br />5. Check <i>Enable</i> under <i>Active scripting</i>.<br />6. Click the <i>OK</i> button.</ol></div>
+<br /><div align='left' style="font-size:16px; font-weight:bold; color:#5C59B2;">To enable Javascript in Firefox 1.0 or higher...<ol style="list-style-position:outside;font-size:13px; font-weight:normal; color:#000000;">1. Click <i>Tools</i>, then click <i>Options</i>.<br />2. Check <i>Enable Javascript</i>.<br />3. Click the <i>OK</i> button.</ol><br /><div align="left" align='left' style="font-size:16px; font-weight:bold; color:#5C59B2;">After enabling Javascript...</div><div align="left" style="list-style-position:outside;font-size:13px; font-weight:normal; color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;you can <a class="" href="">return to the ConfigMgr start page.</a></div>
+</noscript>
+<form method="post" id="treeForm" action="" target="main">
+  <input type="hidden" id="isLocked" name="isLocked" value="false"/>
+  <input type="hidden" id="isWizLocked" name="isWizLocked" value="false"/>
+  <input type="hidden" id="compsToBeDeployed" name="compsToBeDeployed" value=""/>
+  <input type="hidden" id="configFiles" name="configFiles" value="0"/>
+  <input type="hidden" id="isChanged" name="isChanged" value="false"/>
+  <input type="hidden" id="displayMode" name="displayMode" value="0"/>
+  <input type="hidden" id="lastSaved" name="lastSaved" value=""/>
+  <input type="hidden" id="lastStarted" name="lastStarted" value=""/>
+  <input type="hidden" id="saveInProgress" name="saveInProgress" value="false"/>
+  <input type="hidden" id="foundEnvironment" name="foundEnvironment" value="false"/>
+  <input type="hidden" id="mode" name="mode" value="4"/>
+  <input type="hidden" id="ipMode" name="ipMode" value="1"/>
+  <input type="hidden" id="ip" name="ip" value=""/>
+  <input type="hidden" id="textClear" name="textClear" value="false"/>
+  <input type="hidden" id="userName" name="userName" value=""/>
+  <input type="hidden" id="oldips" name="oldips" value="" />
+  <input type="hidden" id="computerRangeEnd" name="computerRangeEnd" value="" />
+  <input type="hidden" id="encryptionNeeded" name="encryptionNeeded" value='0'/>
+  <input type="hidden" id="sourcefile" name="sourcefile" value="environment.xml" />
+  <input type="hidden" id="wizfile" name="wizfile" value="" />
+  <input type="hidden" id="defenvfile" name="defenvfile" value="" />
+  <input type="hidden" id="userid" name="userid" value="" />
+  <input type="hidden" id="wizops" name="wizops" value="1"/>
+  <input type="hidden" id="sumparams" name="sumparams" value="0" />
+</form>
+
+<div id="displayModeDialog" style="display: none;">
+ <div class="hd" style="background-color: White; border-color: Background">
+  </div>
+    <div class="bd">
+      <div id="radioBut" class="yui-buttongroup">
+        <br>
+        <table border="0" style="background-color: White; border-color: Background" cellpadding="4">
+          <tr>
+            <td>
+            <table style="background-color: White; border: none" cellpadding="0" width="455px">
+             <h4>Choose an option to create/view environment</h4>
+             <!-- <fieldset style="width:350px">-->
+              <tr>
+                <td style="border:none">
+                  <label><input id="sumButton" type="radio" name="radiobutton" value="4" checked onclick="if(this.checked) document.forms['treeForm'].mode.value='4';loadAndCheckFileNames('4');enableCurrentOption(4)" />Summary View</label><br><br>
+                  <label onmouseover="showTooltipForButtons(event)"><input id="advButton" type="radio" name="radiobutton" value="2" onmouseover="showTooltipForButtons(event)" onclick="if(this.checked) document.forms['treeForm'].mode.value='2';loadAndCheckFileNames('2');enableCurrentOption(2)" />Advanced View</label><br><br>
+                  <label><input id="wizButton" type="radio" name="radiobutton" value="1"  onclick="if(this.checked) document.forms['treeForm'].mode.value='1';enableCurrentOption(1);" />Generate new environment using wizard</label><br><br>
+                  <label onmouseover="showTooltipForButtons(event)"><input id="blankEnv" type="radio" name="radiobutton" value="0"  onmouseover="showTooltipForButtons(event)" onclick="if(this.checked) document.forms['treeForm'].mode.value='0';enableCurrentOption(0);" />Create blank environment</label><br><br>
+                  
+                </td>
+                <td style="border:none">
+                  <select id="sumDropDownMenu" name="sumDropDownMenu" style="width:175px"><OPTION VALUE="Select"></OPTION></select><br><br>
+                  <select id="fileDropDownMenu" name="fileDropDownMenu" style="width:175px" disabled="disabled"><OPTION VALUE="Select"></OPTION></select><br><br>
+                  <input id="NewEnvTextBox" type="text" name="NewEnvTextBox" style="width:175px" disabled="disabled" onclick="clearTextBox(document.getElementById('NewEnvTextBox'))" value="<Enter file name>"/><br><br>
+                  <input id="blankEnvtextbox" type="text" name="blankEnvtextbox" style="width:175px" onclick="clearTextBox(document.getElementById('blankEnvtextbox'))" disabled="disabled" value="<Enter file name>"/><br><br>
+                </td>
+              <!--</fieldset>-->
+              </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+   <div class="ft noborders"></div>
+</div>
+
+<div id="envSaveAsDialog" style="display: none;">
+  <div class="hd" style="background-color: White; border:none;border-color: Background">Save Environment As</div>
+  <div class="bd">
+    <label>Save current environment as: </label>
+    <input id="saveAsFileName" type="text" name="saveAsFileName" style="width:175px" onclick="clearTextBox(document.getElementById('saveAsFileName'))" value="<Enter file name>"/>
+  </div>
+</div>
+
+
+<div id="wizardPanel" style="display:none;background-color:transparent">
+ <div class="hd" style="background-color:Transparent"></div>
+   <div class="bd" style="background-color: White">
+    <div id="wizardLayout">
+      <div id="wizardTop" style="background-color:White;border:none" >
+      <div class="hd"></div>
+      </div>
+      <div id="wizardCenter">
+        <div id="bd">
+           <div id="wizardIPAddressScreen" style="display:none;background-color:White;border:none;">
+             <div class="bd noborders" style="background-color: White;border:none">
+               <h1>Environment setup</h1>
+               <h2>Welcome to wizard mode!</h2>
+                Define IP Addresses for the environment being configured. Choose manual entry to enter IP addresses or 
+                auto discovery to acquire the list of IP Addresses via auto discovery script.
+                Manual entry format:X.X.X.X; X.X.X.X-XXX;
+                <br>
+                <br>
+                <label style="font-weight:bold">List IP Addresses</label>&nbsp;<br><br>
+                <table border="0" cellpadding="0" cellspacing="0" height="169px">
+                  <tr>
+                    <td>
+                      <fieldset>
+                        <label><input id="manualIP" type="radio" name="ipRadiobutton" value="1" checked onclick="if(this.checked) document.forms['treeForm'].ipMode.value='1';enableTextArea(true);clearTextArea();" />Manual
+                          Entry</label>
+                        <label id="autoipId" onmouseover="showTooltipForButtons(event)"><input id="autoIP" type="radio" name="ipRadiobutton" disabled value="2" onmouseover="showTooltipForButtons(event)" onclick="if (this.checked) document.forms['treeForm'].ipMode.value='2';getIPAddrThrAutoGenScript();enableTextArea(false)" title="This operation is only supported in Enterprise Editions (or higher )."/>Auto
+                          Discovery</label>
+                      </fieldset>
+                      <textarea id="ipListText" name="ipListText" rows="5" cols="69" wrap onclick="if(document.forms['treeForm'].textClear.value !== 'true') clearTextArea();"
+                        onkeyup="addNewLine(event)" class="textAreaCSS">Sample: X.X.X.X; X.X.X.X - XXX;</textarea>
+                        <!--onchange="document.forms['treeForm'].isChanged.value='true'" -->
+                    </td>
+                  </tr>
+                </table>
+             </div>
+             <div class="ft" style="background-color:White;border:none;"></div>
+           </div>
+            <div id="wizardNumNodesPage" style="display: none;background-color:White;border:none;">
+              <div class="bd noborders" style="background-color:White;border:none;">
+                <br>
+                <h1>Environment setup</h1>
+                 Enter number of nodes for Roxie and Thor clusters. No Roxie/Thor cluster will be generated for zero (0) number of nodes.
+                <br>
+                <br>
+                <table border="0" cellpadding="0" cellspacing="0" height="222px">
+                  <tr>
+                    <td>
+                      <label><br>Number of nodes for Roxie cluster<br>&nbsp;&nbsp;</label>
+                    </td>
+                    <td>
+                      <input id="node4RoxieServ" type="textbox" name="node4RoxieServ" style="width:33px"
+                        value="1" />&nbsp;
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <label><br>Number of slave nodes for Thor cluster<br></label>
+                      <label style="font-weight:bold;font-weight:800">( A master node will be automatically added to the cluster )<br><br>
+                      </label>
+                    </td>
+                    <td>
+                      <input id="node4Thor" type="textbox" name="node4Thor" style="width: 33px" value="1" />&nbsp;
+                    </td>
+                    <tr>
+                     <td>
+                        <label id="slavePerNodelabel" onmouseover="showTooltipForButtons(event)"><br>Number of Thor slaves per node (default 1):<br></label><br>
+                     </td>
+                     <td>
+                       <input id="slavesPerNode" type="textbox" name="slavesPerNode" style="width: 33px" value="1" onmouseover="showTooltipForButtons(event)"/>&nbsp;
+                     </td>
+                  </tr>
+                  </tr>
+                </table>
+                <br>
+                <!--[if IE]>
+                <br>
+                <![endif]-->
+              </div>
+              <div class="ft" style="background-color:White;border:none;">
+              </div>   
+            </div>
+         </div>
+      </div>
+    </div>
+   </div>
+</div>
+
+<div id="staticProgress" style="display:none;background-color: White; border-color: Background;height:75%">
+ <div class="hd">Building Environment, please wait...</div>
+  <div class="bd noborders">
+       <img src="/esp/files/img/loading.gif"/>
+  </div>
+</div>
+
+<div id='sumPage' style="display:none;background-color:White">  
+<div class="hd noborders" "style="background-color:White;"></div>
+ <div class="bd noborders sumpage" style="background-color:White;">
+  <div id='sumPageLayout' style="background-color:White;">
+    <div id='sumPageTable' style="background-color:White;"></div>
+  </div>
+</div>
+<div class="ft sumpage" style="background-color:White;"></div>
+</div>
+
+<div id='summaryPage' style="display:none;background-color:White;"> 
+  <div class="hd noborders" style="background-color:White;"></div>
+    <div class="bd noborders" style="background-color:White">
+       <div id='summaryPageLayout' style="background-color:White;border:none">
+         <div id="summaryPageHeader" style="background-color:White;border:none" >
+            <div class="hd"></div>
+         </div>
+         <div id='summaryPageTable' style="background-color:White;border:none"></div>
+       </div>
+    </div>
+<div class="ft sumpage" style="background-color:White;"></div>   
+</div>   
+
+<div id="messagePanel" style="display:none;">
+  <div class="bd"></div>
+</div>
+ 
+<div id="top1"  style="background-color:White;display:none">
+<table border="0" style="background-color:White;border-color:Background" width="100%" cellpadding="10">
+    <tr>
+      <td width="75%" valign="top" style="background-color:White;border-color:White">
+        <a href='/'><img src='/esp/files/img/hpcc_logo.png' alt='HPCC Configuration Manager'/></a>
+      </td>
+      <!--<td style="background-color:White;border-color:Background">
+        <legend>Display Mode</legend><p />
+        <input id="Simple" type="radio" name="radiofieldMode" value="Simple" onclick="if (this.checked) document.forms['treeForm'].displayMode.value='1';top.window.document.body.dt.clickCurrentSelOrName(top.window.document.body.dt);"/>Simple
+        <input id="Advanced" type="radio" name="radiofieldMode" value="Advanced" checked onclick="if (this.checked) document.forms['treeForm'].displayMode.value='0';top.window.document.body.dt.clickCurrentSelOrName(top.window.document.body.dt);"/>Advanced
+      </td>-->
+      <td style="background-color:White;border-color:White">
+      <div id="envctrls">
+        <input id="ReadWrite" type="checkbox" name="ReadWrite" value="false" onclick="setReadWrite(this.checked)"/>Write Access&nbsp;
+        <input type="button" id='savebutton' class='yui-button savebutton' name="savebutton" title="Save Environment" />
+        <input type="button" id='validatebutton' class='yui-button validatebutton' name="validatebutton" title="Validate Environment" />
+        <input type="button" id='openbutton' class='yui-button openbutton' name="openbutton" title="Open Environment" />
+        <input type="button" id='wizardbutton' class='yui-button wizardbutton' name="wizardbutton" title="Wizard" />
+        </div>
+      </td>
+    </tr>
+    </table>
+</div>
+<div id="left1" style="background-color:White; font-size:0.9em;display:none">
+ <div id="pageBody"></div>
+</div>
+<div id="center1" style="height:100%; width:100%;display:none">
+    <iframe id="center1frame" name="DisplaySettingsFrame" style="height:100%; width:100%;"></iframe>
+</div>
+
+<div id="deployPanel" style="display:none">
+    <div class="hd">Deploy</div>
+    <div class="bd">
+         <iframe id="selectDeployFrame" style="height:100%; width:100%;"></iframe>
+    </div>
+    <div class="ft"></div>
+</div>
+<div id="optionsPanel" style="display:none; background-color:White;">
+    <div class="hd">Deploy Options</div>
+    <div class="bd" style="background-color:White;">
+        <div id="buttongroup1" class="yui-buttongroup">
+        <fieldset style="border-style:solid;border-color:gray;border-width:thin;width:100%">
+        <legend>
+            <input id="compareRadio" type="radio" name="radiofield1" onclick="enableOptions(true)" value="Compare" checked/>Compare
+        </legend>
+        <table border="0" style="position:relative;float:left">
+        <tr >
+        <input type="checkbox" name="configFilesCmp" value="true" onclick="if (this.checked) document.forms['treeForm'].configFiles.value=1; else document.forms['treeForm'].configFiles.value=0;"/>Config&nbsp;Files
+        </tr>
+        <tr>
+        <input type="checkbox" name="buildFilesCmp" value="true"/>Build&nbsp;Files
+        </tr>
+        </table>
+        <br />
+        </fieldset> 
+        <p/>
+        <fieldset style="border-style:solid;border-color:gray;border-width:thin;width:100%">
+        <legend>
+        <input id="deployRadio" type="radio" name="radiofield1" onclick="enableOptions(false)" value="Deploy"/>Deploy<br />
+        </legend>
+        <table border="0" style="position:relative;float:left">
+        <tr >
+        <input type="checkbox" name="configFilesDep" value="true"  disabled />Config&nbsp;Files
+        <input type="checkbox" name="buildFilesDep" value="true"  disabled />Build&nbsp;Files     
+        </tr>
+        <tr>
+        <input type="checkbox" name="stopComponents" value="true"  disabled />Stop&nbsp;Components
+        <input type="checkbox" name="buildFilesIfChanged" value="true" disabled />Build&nbsp;files&nbsp;if&nbsp;changed
+        <input type="checkbox" name="startComponents" value="true" disabled />Start&nbsp;Components
+        </tr>
+        <tr >
+        <input type="checkbox" name="archiveEnv" value="true" disabled />Archive&nbsp;environment
+        </tr>
+        <tr>
+        <input type="checkbox" name="genLogFile" value="true" disabled />Generate&nbsp;log&nbsp;file    
+        Archive/Log path<input type="text" name="archivePath" disabled />
+        </tr>
+        <tr>
+        <input type="checkbox" name="backupDirs" value="true" disabled onclick="enableOptions(false)" />Backup&nbsp;directories
+        <input id="renameBkupRadio" type="radio" name="radiofield2" value="useRename" disabled />Use&nbsp;rename<br />
+        <input id="copyBkupRadio" type="radio" name="radiofield2" value="useCopy" disabled />Use&nbsp;copy<br />
+        </tr>
+        </table>        
+        </fieldset> 
+        </div>
+    </div>
+    <div class="ft"></div>
+</div>
+
+<div id="reloadDiv" style="display:none;">
+<iframe id="navtreedataFrame"></iframe>
+</div>
+
+<div id="submitDeployPanel" style="display:none">
+    <div class="hd">Deploy</div>
+    <div class="bd">
+    </div>
+    <div class="ft"></div>
+</div>
+<div id="progressBarPanel" style="display:none">
+    <div class="hd">Deploy progress...</div>
+    <div class="bd">
+    <div id="progressBarDiv" ></div>
+    </div>
+</div>
+
+<div id="importBuildPanel" style="display:none;background-color:White;">
+<div class="bd" style="background-color:White;">
+<div id="buildLayout" style="background-color:White;">
+    <div id="top2">
+    
+    <table border="0" style="background-color:White;border-color:Background" width="100%" cellpadding="10">
+    <tr>
+      <td width="70%" valign="top" style="background-color:White;border-color:Background">
+        <legend>Build Server: </legend>
+        <input type="text" name="buildServer" value="\\brpsnt082c\builds2\" />
+        <input type="button" id="refreshButton" value="Refresh" onclick="getDirectories()"/>
+      </td>
+
+      <td valign="top"  style="background-color:White;border-color:Background">
+        <legend>Version</legend>
+        <input id="Release" type="radio" name="radiofield3" value="Release" checked/>Release
+        <input id="Debug" type="radio" name="radiofield3" value="Debug"/>Debug
+      </td>
+    </tr>
+    </table>
+    </div>
+    <div id="left2" style="background-color:White; font-size:0.9em;width:50%;">
+    
+    </div>
+    <div id="center2"  style="background-color:White;">
+    
+    </div>
+</div>
+</div>
+</div>
+
+<div id="PwdPanel" style="display:none">
+    <div class="hd">Verify password</div>
+    <div class="bd">
+    </div>
+    <div class="ft"></div>
+</div>
+<div id="promptSavePanel" style="display:none">
+    <div class="hd"></div>
+    <div class="bd"><p></p>
+    </div>
+    <div class="ft"></div>
+</div>
+<div id="YesNoCancelPanel" style="display:none">
+    <div class="hd">ConfigMgr</div>
+    <div class="bd"><p></p>
+    </div>
+    <div class="ft"></div>
+</div>
+
+<div id="openEnvPanel" style="display:none;background-color:White;">
+  <div class="bd" style="background-color:White;">
+    <div id="openEnvLayout" style="background-color:White;">
+      <div id="openEnvTableDiv" style="background-color:White; font-size:0.9em;width:50%;">
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div id="roxieClusterPanel" style="display:none;background-color:White;">
+          <div class="bd" style="background-color:White;">
+            <div id="roxieClusterLayout" style="background-color:White;">
+              <div id="left3" style="background-color:White; font-size:0.9em;width:50%;">
+              </div>
+              <div id="center3"  style="background-color:White;">
+                <div id="roxieClusterFilterPanel" style="display:none">
+                  <div class="hd"></div>
+                  <div class="bd">
+                    <iframe id="computerFilterFrame" style="height:100%; width:75%;"></iframe>
+                  </div>
+                  <div class="ft"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+<div id="roxieReplaceNodePanel" style="display:none;background-color:White;">
+  <div class="bd" style="background-color:White;">
+    <div id="roxieReplaceNodeLayout" style="background-color:White;">
+      <div id="left4" style="background-color:White; font-size:0.9em;width:50%;">
+      </div>
+    </div>
+  </div>
+</div>        
+        
+<div id="cfgAddComputers"  style="display:none;background-color:White;">   
+     <div class="hd cfghd">Add New Computers</div>  
+     <div class="bd cfgbd">
+      <div class="cfggroupbox">
+        <span class="groupheader"><u>Computer Attributes</u></span>
+        <table cellspacing="2">
+            <tr><td class="prompt">Name Prefix:</td><td><input type="text" id="cfgAddComputersNamePrefix" /></td></tr>
+            <tr><td class="prompt">Domain:</td><td><select id="cfgAddComputersDomain" class="cfgdroplist"></select></td></tr>
+            <tr><td class="prompt">Type:</td><td><select id="cfgAddComputersType" class="cfgdroplist"></select></td></tr>
+        </table>
+      </div>
+      <br />
+      <div class="cfggroupbox"> 
+        <span class="groupheader"><u>IP address/range</u></span>
+        <table cellspacing="2">
+            <tr><td class="prompt">Range:</td><td><input id="isRange" type="checkbox" name="isRange" value="true" checked onclick="isRangeClicked(this.checked);"/></tr>        
+            <tr><td class="prompt">Start IP Address:</td><td><input type="text" id="cfgAddComputersStartIP" /></td></tr>
+            <tr><td class="prompt" id="cfgAddComputersStopIPLabel">Stop IP Address:</td><td><input type="text" id="cfgAddComputersStopIP" /></td></tr>
+        </table>
+      </div>
+     </div> 
+     <div class="ft">
+         <span id="cfgAddComputersOk" class="yui-button yui-push-button">   
+             <span class="first-child">   
+                 <input type="button" name="cfgAddComputersOkButton" value="Ok" />   
+             </span>  
+         </span>  
+         <span id="cfgAddComputersCancel" class="yui-button yui-push-button">   
+             <span class="first-child">   
+                 <input type="button" name="cfgAddComputersCancelButton" value="Cancel" />   
+             </span>  
+         </span>  
+     </div> 
+</div> 
+<div id="cfgRoxieSlave" style="display:none;background-color:White;">
+     <div class="hd cfghd">Roxie Agent Configuration</div>  
+     <div class="bd cfgbd">
+      <div class="cfggroupbox">
+        <table cellspacing="2">
+            <tr><td colspan="3"><input type="radio" name="cfgRoxieSlaveRedundancy" id="cfgRoxieSlaveRedundancyFull" onclick="enableRoxieConfigOptions('Full')" value="FullRedundancy"/> Full Redundancy</td></tr>
+            <tr><td class="cfgindentcol">&nbsp;</td><td colspan="2">(Multiple agents host each channel)</td></tr>
+            <tr><td class="cfgindentcol">&nbsp;</td><td class="prompt">Channel Redundancy:</td><td><input type="text" name="cfgRoxieSlaveFullChannel" id="cfgRoxieSlaveFullChannel" /></td></tr>
+            <tr><td colspan="2"><input type="radio" name="cfgRoxieSlaveRedundancy" id="cfgRoxieSlaveRedundancyCir"  onclick="enableRoxieConfigOptions('Cir')" value="CircularRedundancy" /> Circular Redundancy</td></tr>
+            <tr><td class="cfgindentcol">&nbsp;</td><td colspan="2">(Each computer hosts multiple channels in rotation)</td></tr>
+            <tr><td class="cfgindentcol">&nbsp;</td><td class="prompt">Channel Redundancy:</td><td><input type="text" name="cfgRoxieSlaveCircularChannel" id="cfgRoxieSlaveCircularChannel" /></td></tr>
+            <tr><td class="cfgindentcol">&nbsp;</td><td class="prompt">Offset:</td><td><input type="text" name="cfgRoxieSlaveCircularOffset" id="cfgRoxieSlaveCircularOffset" /></td></tr>
+            <tr><td colspan="2"><input type="radio" name="cfgRoxieSlaveRedundancy" id="cfgRoxieSlaveRedundancyNone"  onclick="enableRoxieConfigOptions('None')" value="NoRedundancy" checked /> No Redundancy</td></tr>
+            <tr><td class="cfgindentcol">&nbsp;</td><td colspan="2">(One channel per agent)</td></tr>
+            <tr><td colspan="3"><input type="radio" name="cfgRoxieSlaveRedundancy" id="cfgRoxieSlaveRedundancyOver" onclick="enableRoxieConfigOptions('Over')" value="Overloaded" /> Overloaded</td></tr>
+            <tr><td class="cfgindentcol">&nbsp;</td><td colspan="2">(Multiple channels per agent)</td></tr>
+            <tr><td class="cfgindentcol">&nbsp;</td><td class="prompt">Channels per host:</td><td><input type="text" name="cfgRoxieSlaveChannelsPerHost" id="cfgRoxieSlaveChannelsPerHost" /></td></tr>
+        </table>
+      </div>
+     </div> 
+     <div class="ft">
+         <span id="cfgRoxieSlaveOk" class="yui-button yui-push-button">   
+             <span class="first-child">   
+                 <input type="button" name="cfgRoxieSlaveOkButton" value="Ok" />   
+             </span>  
+         </span>  
+         <span id="cfgRoxieSlaveCancel" class="yui-button yui-push-button">   
+             <span class="first-child">   
+                 <input type="button" name="cfgRoxieSlaveCancelButton" value="Cancel" />   
+             </span>  
+         </span>  
+     </div> 
+</div> 
+
+
+<script type="text/javascript">
+
+(function() {
+    var Dom = YAHOO.util.Dom,
+        Event = YAHOO.util.Event;
+
+    Event.onDOMReady(function() {
+         top.document.layout = new YAHOO.widget.Layout({
+            units: [
+                { position: 'top', height: 60, body: 'top1', zindex: 9999 },
+                { position: 'left', header: 'Navigator', useShim:true, width: 400, resize: true, body: 'left1', gutter: '5px', collapse: true, collapseSize: 20, scroll: true, zindex: 9999},
+                { position: 'center', body: 'center1', resize: true, zindex: 9999 }
+            ]
+        });
+        
+        Event.on('tLeft', 'click', function(ev) {
+            Event.stopEvent(ev);
+            top.document.layout.getUnitByPosition('left').toggle();
+        });
+        var closeLeft = function() {
+            var a = document.createElement('a');
+            a.href = '#';
+            a.innerHTML = 'Add Left Unit';
+            Dom.get('closeLeft').parentNode.appendChild(a);
+
+            Dom.setStyle('tLeft', 'display', 'none');
+            Dom.setStyle('closeLeft', 'display', 'none');
+            Event.on(a, 'click', function(ev) {
+                Event.stopEvent(ev);
+                Dom.setStyle('tLeft', 'display', 'inline');
+                Dom.setStyle('closeLeft', 'display', 'inline');
+                a.parentNode.removeChild(a);
+                top.document.layout.addUnit(top.document.layout.get('units')[3]);
+                top.document.layout.getUnitByPosition('left').on('close', function() {
+                    closeLeft();
+                });
+            });
+        };
+        Event.on('closeLeft', 'click', function(ev) {
+            Event.stopEvent(ev);
+            top.document.layout.getUnitByPosition('left').close();
+        });
+    });
+})();
+
+</script>
+</body>
+</html>
+<script type="text/javascript"></script>

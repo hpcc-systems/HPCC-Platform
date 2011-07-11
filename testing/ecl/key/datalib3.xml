@@ -1,0 +1,45 @@
+<Dataset name='Result 1'>
+ <Row><Result_1>DataLib.AddressClean(const string address1, const string address2)</Result_1></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><Result_2>DataLib.CompanyClean(const string scr)</Result_2></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><Result_3>DataLib.DeDouble(const string scr)</Result_3></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><Result_4>DataLib.LeadMatch(const string src, const string search)</Result_4></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><Result_5>DataLib.NameClean(const string scr)</Result_5></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><Result_6>DataLib.NameMatch(const string le_f, const string le_m, const string le_l, const string ri_f,const string ri_m,const string ri_l)</Result_6></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><Result_7>DataLib.NameSimilar(const string le, const string ri,boolean blanks)</Result_7></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><Result_8>DataLib.PositionalMatch(const string src, const string search)</Result_8></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><Result_9>DataLib.PreferredFirst(const string scr)</Result_9></Row>
+</Dataset>
+<Dataset name='Result 10'>
+ <Row><Result_10>DataLib.SlidingMatch(const string src, const string arg)</Result_10></Row>
+</Dataset>
+<Dataset name='Result 11'>
+ <Row><Result_11>DataLib.StrCompare(const string str1, const string str2)</Result_11></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><Result_12>DataLib.StringFind(const string scr, const string search, unsigned4 instance)</Result_12></Row>
+</Dataset>
+<Dataset name='Result 13'>
+ <Row><Result_13>DataLib.StringReplaceSmaller(const string scr, const string search, const string replace)</Result_13></Row>
+</Dataset>
+<Dataset name='Result 14'>
+ <Row><Result_14>DataLib.StringSimilar100(const string le, const string ri)</Result_14></Row>
+</Dataset>
+<Dataset name='Result 15'>
+ <Row><Result_15>DataLib.Gender(const string name)</Result_15></Row>
+</Dataset>

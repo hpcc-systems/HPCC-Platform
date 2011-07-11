@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<section xmlns:xi="http://www.w3.org/2001/XInclude" xmlns="http://docbook.org/ns/docbook" version="5.0"  >
+    <title>deployment/envgen</title>
+
+    <para>
+    The deployment/envgen directory contains the sources for the deployment/envgen library.
+  </para>
+</section>

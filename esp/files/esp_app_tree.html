@@ -1,0 +1,869 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
+<title>ESP</title>
+<style type="text/css">
+/*margin and padding on body element
+  can introduce errors in determining
+  element position and are not recommended;
+  we turn them off as a foundation for YUI
+  CSS treatments. */
+body {
+    margin:0;
+    padding:0;
+    }
+    div
+    {
+    border:0;
+    }
+#toggle {
+    text-align: center;
+    padding: 1em;
+}
+#toggle a {
+    padding: 0 5px;
+    border-left: 1px solid black;
+}
+#tRight {
+    border-left: none !important;
+}
+.yui-navset  {
+    height:100%;
+}
+.yui-content {
+    height:100%;
+}
+.yui-nav
+{
+background-image:url('esp/files/img/wsecltext.GIF');
+background-repeat:no-repeat;
+background-position:center;
+}
+.yui-skin-sam .yui-layout .yui-layout-hd {
+    background:url(sprite.png) repeat-x 0 -1400px;
+    border: 1px solid #808080;
+}
+/* Style the text in the header */
+.yui-skin-sam .yui-layout .yui-layout-unit div.yui-layout-hd h2 {
+    font-weight: bold;
+    color: #fff;
+    padding: 3px;
+    text-align: center;
+}
+#yui-history-iframe {
+  position:absolute;
+  top:0; left:0;
+  width:1px; height:1px; /* avoid scrollbars */
+  visibility:hidden;
+}
+.ESPchar {
+    //color: #3A3E5E;
+    color: #7D0E1B;
+}
+/*
+                Setting the "zoom" property to "1" triggers the "hasLayout"
+                property in IE.  This is necessary to fix a bug IE where
+                mousing mousing off a the text node of MenuItem instance's
+                text label, or help text without the mouse actually exiting the
+                boundaries of the MenuItem instance will result in the losing
+                the background color applied when it is selected.
+            */
+
+            #filemenu.visible .yuimenuitemlabel,
+            #editmenu.visible .yuimenuitemlabel {
+
+                *zoom: 1;
+
+            }
+
+
+            /*
+                Remove "hasLayout" from the submenu of the file menu.
+            */
+
+            #filemenu.visible .yuimenu .yuimenuitemlabel {
+
+                *zoom: normal;
+
+            }
+            em#hpcclabel {
+                text-indent: -12em;
+                display: block;
+                background: url(/esp/files/img/hpccsystemsWsECL.png) center center no-repeat;
+                width: 10em;
+                overflow: hidden;
+            }
+            #espleftnavmenu {
+                position: static;
+            }
+
+            #espleftnavmenu .yuimenu .yuimenuitemlabel {
+                _zoom: normal;
+            }
+    
+    #espleftnavmenu .bd {
+        border: none;
+    }
+    #espleftnavmenu .bd .first-of-type .bd {
+        border: 1px solid #808080;
+    }
+
+
+</style>
+<link rel="shortcut icon" href="/esp/files/img/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="/esp/files/yui/build/reset-fonts-grids/reset-fonts-grids.css" />
+<link rel="stylesheet" type="text/css" href="/esp/files/yui/build/layout/assets/skins/sam/layout.css" />
+<link rel="stylesheet" type="text/css" href="/esp/files/yui/build/button/assets/skins/sam/button.css" />
+<link rel="stylesheet" type="text/css" href="/esp/files/css/espdefault.css">
+<link rel="stylesheet" type="text/css" href="/esp/files/yui/build/reset/reset.css">
+<link rel="stylesheet" type="text/css" href="/esp/files/yui/build/fonts/fonts-min.css">
+<link rel="stylesheet" type="text/css" href="/esp/files/yui/build/reset-fonts-grids/reset-fonts-grids.css">
+<link rel="stylesheet" type="text/css" href="/esp/files/yui/build/resize/assets/skins/sam/resize.css">
+<link rel="stylesheet" type="text/css" href="/esp/files/yui/build/layout/assets/skins/sam/layout.css">
+<link rel="stylesheet" type="text/css" href="/esp/files/yui/build/button/assets/skins/sam/button.css">
+<link rel="stylesheet" type="text/css" href="/esp/files/yui/build/menu/assets/skins/sam/menu.css">
+<link rel="stylesheet" type="text/css" href="/esp/files/yui/build/tabview/assets/skins/sam/tabview.css">
+<link rel="stylesheet" type="text/css" href="/esp/files/yui/build/treeview/assets/skins/sam/treeview.css">
+<link rel="stylesheet" type="text/css" href="/esp/files/yui/build/paginator/assets/skins/sam/paginator.css">
+<link rel="stylesheet" type="text/css" href="/esp/files/yui/build/datatable/assets/skins/sam/datatable.css">
+<link rel="stylesheet" type="text/css" href="/esp/files/yui/build/container/assets/skins/sam/container.css">
+<link rel="stylesheet" type="text/css" href="/esp/files/yui/build/autocomplete/assets/skins/sam/autocomplete.css">
+<link rel="stylesheet" type="text/css" href="/esp/files/yui/build/menu/assets/skins/sam/menu.css">
+
+
+
+<script type="text/javascript" src="/esp/files/scripts/espdefault.js"> </script>
+<script type="text/javascript" src="/esp/files/yui/build/yahoo/yahoo-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/yuiloader/yuiloader-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/event/event-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/dom/dom-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/yahoo-dom-event/yahoo-dom-event.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/element/element-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/connection/connection-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/dragdrop/dragdrop-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/container/container_core-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/container/container-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/resize/resize-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/animation/animation-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/button/button-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/menu/menu.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/menu/menu-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/animation/animation-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/layout/layout-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/datasource/datasource-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/paginator/paginator-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/datatable/datatable-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/json/json-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/tabview/tabview-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/treeview/treeview.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/autocomplete/autocomplete-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/hpcc-ext/DataView.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/hpcc-ext/RowFilter.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/datatable/datatable-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/history/history-min.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/utilities/utilities.js"></script>
+<script type="text/javascript" src="/esp/files/yui/build/container/container.js"></script>
+
+</head>
+
+<body class=" yui-skin-sam" onload="loadNavUnit();" onresize="writeESPText();">
+<iframe id="yui-history-iframe" src="/esp/files/yui/build/history/assets/blank.html"></iframe>
+<input id="yui-history-field" type="hidden">
+<div id="top1">
+            <div class="bd"><div id="menu1" style="float: left; width: 100%"><div id="ESPtitle" style="float: right; text-align: right; color: #525461; width: 30%;"><font size=\"4\"><b class=\"ESPchar\">E</b>nterprise&nbsp;<b class=\"ESPchar\">S</b>ervices&nbsp;<b class=\"ESPchar\">P</b>latform&nbsp;&nbsp;&nbsp;</font></div>
+            <div style="float: right; text-align: center; "><b><font size="4"><div id="ESPappname" style="color: #525461;" >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div></font></b><font size="1"></font></div>
+</div>
+            </div>
+            </div>
+<div id="left1">
+    <div id="espNavObj" class=" ygtv-highlight" style="font-size:0.90em; padding: 2px; height: 100%; width: 60">&nbsp;</div>
+
+</div>
+<div id="center1" style="height:100%; width:100%">
+    <iframe id="center1frame" name="main" style="height:100%; width:100%; border:0;" ></iframe>
+</div>
+<script>
+      var tree, currentIconMode;
+      var treeSelections;
+      var lastTreeNode;
+      var layout;
+      var navMenu;
+      var viewType;
+      var leftcfg;
+      var start_page;
+
+function getURLParameter(name)
+{
+    name = name.replace(/[[]/,"\[").replace(/[]]/,"\]");
+    var regexS = "[\?&]"+name+"=([^&#]*)";
+    var regex = new RegExp( regexS );
+    var results = regex.exec( window.location.href );
+    if( results == null )
+        return "";
+    else
+        return results[1];
+}
+function getFrameUrls(flist, parentwin)
+{
+    for (var fnbr=0; fnbr<parentwin.frames.length; fnbr++)
+    {
+        tf = parentwin.frames[fnbr];
+        if (tf.name && tf.name!="" && tf.location && tf.location.href != "about:blank" && tf.location.pathname.substr(0,14)!="/esp/files/yui")
+        {
+            flist.push({name: tf.name, url: tf.location});
+            getFrameUrls(flist, tf.window);
+        }
+    }
+}
+
+function writeESPText()
+{
+    var titlediv = document.getElementById("ESPtitle")
+    if (titlediv.clientWidth < 225)
+    {
+        if (titlediv.innerHTML != "<font size=\"4\"><b class=\"ESPchar\">ESP&nbsp;&nbsp;&nbsp;</b></font>")
+            titlediv.innerHTML =  "<font size=\"4\"><b class=\"ESPchar\">ESP&nbsp;&nbsp;&nbsp;</b></font>";
+    }
+    else
+    {
+        if (titlediv.innerHTML != "<font size=\"4\"><b class=\"ESPchar\">E</b>nterprise&nbsp;<b class=\"ESPchar\">S</b>ervices&nbsp;<b class=\"ESPchar\">P</b>latform&nbsp;&nbsp;&nbsp;</font>")
+            titlediv.innerHTML =  "<font size=\"4\"><b class=\"ESPchar\">E</b>nterprise&nbsp;<b class=\"ESPchar\">S</b>ervices&nbsp;<b class=\"ESPchar\">P</b>latform&nbsp;&nbsp;&nbsp;</font>";
+    }
+}
+
+function writeESPappname(appname)
+{
+    var namediv = document.getElementById("ESPappname")
+    namediv.innerHTML =  appname + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+}
+
+(function() {
+    var Dom = YAHOO.util.Dom,
+        Event = YAHOO.util.Event;
+
+    Event.onDOMReady(function() {
+
+        writeESPText();
+        layout = new YAHOO.widget.Layout({
+            units: [
+                { position: 'top', height: 28, body: 'top1', scroll: null, zIndex: 3, useShim: true },
+                { position: 'left', width: 240, resize: true, body: 'left1', gutter: '0px', 
+                collapse: true, close: true, useShim: true, scroll: true, zIndex: 2 },
+                { position: 'center', body: 'center1', useShim: true, zIndex: 1 }
+            ]
+        });
+
+        layout.render();
+
+        var inner  = getURLParameter("inner");
+        if (inner!="")
+            gomain(inner);
+
+        Event.on('tLeft', 'click', function(ev) {
+            Event.stopEvent(ev);
+            layout.getUnitByPosition('left').toggle();
+        });
+
+                var close_nav = function() {
+                    layout.getUnitByPosition('left').close();
+                   };
+                var no_frames = function() {
+                    top.location.href=top.frames['main'].location.href
+                   };
+                var refresh_main = function() {
+                        parent.frames['main'].location.reload();
+                   };
+
+                var open_nav = function() {
+                    var navunit = layout.getUnitByPosition('left');
+                    if (navunit)
+                        navunit.expand();
+                    else
+                        layout.addUnit({position: 'left', width: 240, resize: true, body: 'left1', gutter: '0px', collapse: true, close: true, useShim: true, scroll: true, zIndex: 2});
+                    };
+
+      var show_about=function()
+      {
+        //prepare URL for XHR request:
+        var sUrl = "/esp/titlebar?rawxml_";
+
+        //prepare our callback object
+        var callback = {
+
+          //if our XHR call is successful, we want to make use
+          //of the returned data and create child nodes.
+
+          success: function(oResponse) {
+            var xmldoc = oResponse.responseXML;
+            var abouttxt = "Enterprise Services Platform <br/><br/>";
+            var builditer = xmldoc.getElementsByTagName("BuildVersion");
+            if (builditer.length)
+                abouttxt += "Build:  " + builditer[0].text + "<br/><br/>";
+            builditer = xmldoc.getElementsByTagName("LoginId");
+            if (builditer.length)
+                abouttxt += "Logged in as:  " + builditer[0].text + "<br/><br/>";
+            abouttxt += "Copyright (c)  2011  HPCC Systems";
+            
+            var aPanel = new YAHOO.widget.Panel("about_panel", { 
+                constraintoviewport: true, 
+                visible: true, 
+                fixedcenter: true, 
+                width: "400px", 
+                zIndex: 4, 
+                iframe: true 
+                });
+    
+            aPanel.setHeader("ABOUT");
+            aPanel.setBody(abouttxt);
+            aPanel.render("center1");
+          },
+
+          //if our XHR call is not successful, we want to
+          //fire the TreeView callback and let the Tree
+          //proceed with its business.
+          failure: function(oResponse) {
+          },
+
+          //our handlers for the XHR response will need the same
+          //argument information we got to loadNodeData, so
+          //we'll pass those along:
+          argument: {
+          }
+
+          //timeout -- if more than 7 seconds go by, we'll abort
+          //the transaction and assume there are no children:
+          //timeout: 21000
+        };
+
+        //With our callback object ready, it's now time to
+        //make our XHR call using Connection Manager's
+        //asyncRequest method:
+        YAHOO.util.Connect.asyncRequest('GET', sUrl, callback);
+      }
+
+            var copy_url = function()
+                {
+                    var inner = parent.frames['main'].location;
+                    var ploc = top.location;
+                    var url = ploc.protocol + "//" + ploc.host + ploc.pathname;
+                    if ((inner.pathname != "" && inner.pathname != '/') || inner.search!="")
+                    {
+                      var b = false;
+                          var s1 = inner.search;
+                          if (s1.split("?").length > 1)
+                          {
+                            s2 = s1.split("?")[1];
+                            if (s2.split("&").length > 1)
+                            {
+                                  s3 = s2.split("&")[0];
+                                  s4 = s2.split("&")[1];
+                                  if ((s3.indexOf('inner=') == 0) && (s4.indexOf('esp_iframe_title=') == 0))
+                                  {
+                                    b = true;
+                                    url += '?inner=' + escape('..' + inner.pathname + '?' + s4 + '&' + s3);
+                                  }
+                                }
+                            }
+                        if (!b)
+                          url += '?inner=' + escape('..' + inner.pathname + inner.search);
+                    }
+                var oPanel = new YAHOO.widget.Panel("panel1", { constraintoviewport: false, visible: true, fixedcenter: true, zIndex: 4, iframe: true });
+                oPanel.setHeader("COPY URLs");
+                var bodystr = "<table border=\"0\" cellpadding=\"2\" cellspacing=\"2\">";
+                var usequote = "\"";
+                bodystr += "<tr><td><a href=" +  usequote + url + usequote + "><b>full:</b></a>&nbsp;</td><td>" + url + "</td></tr>";
+                bodystr += "<tr><td><a href=" +  usequote + ploc + usequote + "><b>top:</b></a>&nbsp;</td><td>" + ploc + "</td></tr>";
+                
+                var allframes = new Array();
+                getFrameUrls(allframes, parent);
+                for (var fnbr=0; fnbr<allframes.length; fnbr++)
+                {
+                    var tf = allframes[fnbr];
+                    bodystr += "<tr><td><a href=" +  usequote + tf.url + usequote + "><b>" + tf.name +":</b></a>&nbsp;</td><td>" + tf.url + "</td></tr>";
+                }
+
+                bodystr += "</table>";
+                oPanel.setBody(bodystr);
+                oPanel.render("center1");
+            };
+                var aItemData = [
+                    {
+                        text: "<em id=\"hpcclabel\">HPCC Systems</em>", 
+                        submenu: {
+                            id: "LNButton",
+                            itemdata: [
+                                    { text: "About", onclick: { fn: show_about }},
+                            ]
+                        }
+
+                    },
+                    {
+                        text: "<b>View</b>",
+                        submenu: {
+                            id: "viewmenu",
+                            itemdata: [
+
+                                [
+                                    { text: "Config", url: '/?config_&esp_iframe_title=ESP Configuration File', target: "main"}
+                                ],
+                                [
+                                    { text: "Show NAV", onclick: { fn: open_nav }},
+                                    { text: "Hide NAV", onclick: { fn: close_nav }}
+                                ]
+
+                        ] }
+
+                    },
+                    {
+                        text: "<b>Frame</b>",
+                        submenu: {
+                            id: "framemenu",
+                            itemdata: [
+                                [
+                                    { text: "No Frames", onclick: { fn: no_frames }},
+                                    { text: "Links", onclick: { fn: copy_url }},
+                                    { text: "Refresh", onclick: { fn: refresh_main }}
+                                ]
+                        ] }
+                    },
+                    {
+                        text: "<b>User</b>",
+                        submenu: {
+                            id: "usermenu",
+                            itemdata: [
+                                [
+                                    { text: "re-login", url: 'esp/relogin_?action=ok', target: "main"}
+                                ]
+                        ] }
+
+                    }
+                ];
+
+                /*
+                    Instantiate a Menu:  The first argument passed to the constructor
+                    is the id for the Menu element to be created, the second is an
+                    object literal of configuration properties.
+                */
+                var oMenuBar = new YAHOO.widget.MenuBar("mymenubar", {
+                                                            iframe: true,
+                                                            lazyload: true,
+                                                            itemdata: aItemData,
+                                                            hidedelay: 750
+                                                            });
+
+
+                /*
+                     Since this MenuBar instance is built completely from
+                     script, call the "render" method passing in a node
+                     reference for the DOM element that its should be
+                     appended to.
+                */
+
+                oMenuBar.render(document.getElementById("menu1"));
+
+
+                // Add a "show" event listener for each submenu.
+
+                function onSubmenuShow() {
+
+                    var oIFrame,
+                        oElement,
+                        nOffsetWidth;
+
+
+                    // Keep the left-most submenu against the left edge of the browser viewport
+
+                    if (this.id == "yahoo") {
+
+                        YAHOO.util.Dom.setX(this.element, 0);
+
+                        oIFrame = this.iframe;
+
+
+                        if (oIFrame) {
+
+                            YAHOO.util.Dom.setX(oIFrame, 0);
+
+                        }
+
+                        this.cfg.setProperty("x", 0, true);
+
+                    }
+
+
+                    /*
+                        Need to set the width for submenus of submenus in IE to prevent the mouseout
+                        event from firing prematurely when the user mouses off of a MenuItem's
+                        text node.
+                    */
+
+                    if ((this.id == "filemenu" || this.id == "editmenu") && YAHOO.env.ua.ie) {
+
+                        oElement = this.element;
+                        nOffsetWidth = oElement.offsetWidth;
+
+                        /*
+                            Measuring the difference of the offsetWidth before and after
+                            setting the "width" style attribute allows us to compute the
+                            about of padding and borders applied to the element, which in
+                            turn allows us to set the "width" property correctly.
+                        */
+
+                        oElement.style.width = nOffsetWidth + "px";
+                        oElement.style.width = (nOffsetWidth - (oElement.offsetWidth - nOffsetWidth)) + "px";
+
+                    }
+
+                }
+
+
+                // Subscribe to the "show" event for each submenu
+
+                oMenuBar.subscribe("show", onSubmenuShow);
+    });
+
+})();
+
+      function gomain(url)
+      {
+          var f=top.frames['main'];
+          f.focus();
+          if (f)
+              f.location=url;
+            return false;
+       }
+
+      function loadDynamicFolderData(node, fnLoadComplete)
+      {
+        var nodeLabel = encodeURI(node.label);
+        tree.locked = false;
+
+        //prepare URL for XHR request:
+        var sUrl = "/esp/navdata?" + node.data.params;
+
+        //prepare our callback object
+        var callback = {
+
+          //if our XHR call is successful, we want to make use
+          //of the returned data and create child nodes.
+
+          success: function(oResponse) {
+            var xmldoc = oResponse.responseXML.documentElement;
+            treeLoadFolderDataFromXml(node, xmldoc)
+            //ttreeLoadFolderData(node, xmldoc);
+
+            oResponse.argument.fnLoadComplete();
+          },
+
+          //if our XHR call is not successful, we want to
+          //fire the TreeView callback and let the Tree
+          //proceed with its business.
+          failure: function(oResponse) {
+            oResponse.argument.fnLoadComplete();
+          },
+
+          //our handlers for the XHR response will need the same
+          //argument information we got to loadNodeData, so
+          //we'll pass those along:
+          argument: {
+            "node": node,
+            "fnLoadComplete": fnLoadComplete
+          }
+
+          //timeout -- if more than 7 seconds go by, we'll abort
+          //the transaction and assume there are no children:
+          //timeout: 21000
+        };
+
+        //With our callback object ready, it's now time to
+        //make our XHR call using Connection Manager's
+        //asyncRequest method:
+        YAHOO.util.Connect.asyncRequest('GET', sUrl, callback);
+      }
+
+      function loadNodeData(node, fnLoadComplete)
+      {
+            loadDynamicFolderData(node, fnLoadComplete);
+      }
+
+
+      function showOldForm(ev)
+      {
+            var Node = tree._currentlyHighlighted;
+            gomain("/" + Node.parent.data.myNodeId +"/" + Node.data.myNodeId + "?form");
+
+      }
+
+    function createXmlArg()
+    {
+        var rootNode = tree.getRoot();
+        var xmlArgs = '';
+        if (rootNode.children.length > 0)
+        {
+            if (rootNode.highlightState > 0)
+            {
+                xmlArgs = '<EspNavigationData>' + selectChildNodes(rootNode) + '</EspNavigationData>';
+            }
+        }
+
+        xmlArgs = escape(xmlArgs);
+        xmlArgs = xmlArgs.replace(/'+'/g, '%20')
+        return xmlArgs;
+      }
+
+
+      function selectChildNodes(Node)
+      {
+        var xmlChildArgs = '';
+        for(var i=0;i<Node.children.length;i++)
+        {
+          if (Node.children[i].highlightState > 0)
+          {
+            xmlChildArgs = xmlChildArgs + selectChildNodes(Node.children[i]);
+          }
+        }
+        if (Node.parent == null)
+        {
+          return xmlChildArgs;
+        }
+        return '<' + Node.data.elementType + ' name="' + Node.label + '" ' + (Node.data.params != null && Node.data.params != '' ? 'params="' + Node.data.params.replace(/&/g, '&amp;') + '" ': '') + (Node.highlightState == 1 ? 'selected="true" ': '') + '>' + xmlChildArgs + '</' + Node.data.elementType + '>';
+      }
+
+      var onTreeClick = function(oArgs)
+       {
+         oCurrentTextNode = oArgs.node;
+         return true;
+      };
+
+    var onNodeClick = function(tNode)
+    {
+        if (tNode.data.elementType=='Link')
+        {
+            if (tNode.data.navpath && tNode.data.navpath!="")
+                gomain(tNode.data.navpath);
+            else
+            {
+                var pathval = tNode.parent.data.myNodeId;
+                var queryval = tNode.data.myNodeId;
+                var fullurl = "/WsEcl2/tabview/query/" + pathval + "/" + queryval;
+                gomain(fullurl);
+            }
+        }
+    };
+
+    function treeLoadFolderDataFromXml(ntparent, xfolder, expandlist)
+    {
+        var xchildren = xfolder.childNodes;
+        for(var i = 0; i < xchildren.length; i++)
+        {
+            var xchild = xchildren[i];
+            if (xchild.nodeName=="Link")
+            {
+              var ntnode = new YAHOO.widget.TextNode({label: xchild.getAttribute("name")}, ntparent);
+              ntnode.isLeaf = true;
+              var pathval = xchild.getAttribute("navpath");
+              
+              if (!pathval || pathval=="")
+                pathval = xchild.getAttribute("path");
+              
+              ntnode.data = { 
+                myNodeId: xchild.getAttribute("name"), 
+                title: xchild.getAttribute("name"), 
+                elementType:'Link', 
+                params: xchild.getAttribute("params"), 
+                navpath: pathval 
+                };
+            }
+            else if (xchild.nodeName=="DynamicFolder")
+            {
+                var ntnode = new YAHOO.widget.TextNode({label: xchild.getAttribute("name")}, ntparent);
+                ntnode.data = { elementType:'DynamicFolder', params: xchild.getAttribute("params") };
+                if (expandlist)
+                    expandlist.push(ntnode);
+            }
+            else if (xchild.nodeName=="Folder")
+            {
+                var ntnode = new YAHOO.widget.TextNode({label: xchild.getAttribute("name"), expanded: true}, ntparent);
+                ntnode.data = { elementType: 'Folder', params: '', myNodeId: xchild.getAttribute("name") };
+                ntnode.setNodesProperty("propagateHighlightUp",false);
+                ntnode.setNodesProperty("propagateHighlightDown",false);
+                treeLoadFolderDataFrom(ntnode, xchild)
+            }
+        }
+    }
+
+    function buildTree(xmlNav)
+  {
+    tree = new YAHOO.widget.TreeView("espNavObj");
+    tree.subscribe('dblClickEvent',function(oArgs) { ImportFromTree(oArgs.Node);});
+
+    // By default, trees with TextNodes will fire an event for when the label is clicked:
+    tree.subscribe("labelClick", onNodeClick);
+
+    tree.locked = false;
+    tree.singleNodeHighlight=true;
+
+    var ntroot = tree.getRoot();
+
+    tree.setDynamicLoad(loadNodeData, currentIconMode);
+    tree.subscribe("clickEvent", onTreeClick);
+
+    var expandlist = new Array();
+    treeLoadFolderDataFromXml(ntroot, xmlNav, expandlist);
+    tree.render();
+    for (var exp=0; exp<expandlist.length; exp++)
+    {
+        expandlist[exp].expand();
+    }
+}
+
+  function addNavMenuItemdata(menuitemdata, xmltag)
+  {
+    var children = xmltag.childNodes;
+    for(var i = 0; i < children.length; i++)
+    {
+        if (children[i].nodeName=="Link")
+        {
+            menuitemdata[i]={text: children[i].getAttribute("name"), url: children[i].getAttribute("path"), target: "main"};
+        }
+        else if (children[i].nodeName=="Folder")
+        {
+            var childdata = new Array();
+            addNavMenuItems(childdata, children[i]);
+            menuitemdata[i]={
+                text: children[i].getAttribute('name'), 
+                submenu: {
+                    id: children[i].getAttribute('name'), 
+                    iframe: true, 
+                    itemdata: childdata
+                    }
+                };
+        }
+    }
+}
+  
+  function addNavMenuSubmenuItems(xmltag)
+  {
+    var children = xmltag.childNodes;
+    var ai=0;
+    for(var i = 0; i < children.length; i++)
+    {
+        if (children[i].nodeName=="Folder")
+        {
+            var childdata = new Array();
+            addNavMenuItemdata(childdata, children[i]);
+            navMenu.addItem({
+                text: children[i].getAttribute('name'), 
+                iframe: true, 
+                submenu: {
+                    id: children[i].getAttribute('name'), 
+                    iframe: true, 
+                    itemdata: childdata
+                    }
+                });
+        }
+        else if (children[i].nodeName=="Link")
+        {
+            navMenu.addItem({
+                text: children[i].getAttribute("name"), 
+                url: children[i].getAttribute("path"), 
+                target: "main"
+                });
+        }
+    }
+}
+
+  
+  function buildNavMenu(xmlNav)
+  {
+    navMenu = new YAHOO.widget.Menu("espNavObj", { iframe: true, position: "static", hidedelay:  750, lazyload: true});
+    addNavMenuSubmenuItems(xmlNav);
+    
+    navMenu.render();
+    navMenu.show();
+}
+
+function loadNavRootData()
+{
+//prepare URL for XHR request:
+var sUrl = "/esp/nav?rawxml_";
+
+//prepare our callback object
+var navroot_callback = {
+  
+  success: function(oResponse) {
+    var xmlDoc = oResponse.responseXML;
+    var xroot = xmlDoc.documentElement;
+    viewtype = xroot.getAttribute("viewType");
+    
+    if (viewtype && (viewtype=="wsecl_tree"||viewtype=="yuitree"))
+        buildTree(xroot);
+    else
+        buildNavMenu(xroot);
+
+},
+
+  failure: function(oResponse) {
+    oResponse.argument.fnLoadComplete();
+  },
+
+  argument: {
+  }
+};
+    
+    YAHOO.util.Connect.asyncRequest('GET', sUrl, navroot_callback);
+}
+
+function loadNavUnit()
+{
+//prepare URL for XHR request:
+var sUrl = "/esp/nav?rawxml_";
+
+//prepare our callback object
+var navunit_callback = {
+  
+  success: function(oResponse) {
+    var xmlDoc = oResponse.responseXML;
+    var xroot = xmlDoc.documentElement;
+    var appname = xroot.getAttribute("appName");
+    viewtype = xroot.getAttribute("viewType");
+    
+    var inner  = getURLParameter("inner");
+    if (inner!="")
+        start_page = inner;
+    else
+        start_page = xroot.getAttribute("start_page");
+    if (start_page && start_page!="" && start_page!="/")
+    {
+        var cloc = parent.frames['main'].location;
+        if (cloc.href=="about:blank" || cloc.pathname=="" || cloc.pathname=='/')
+        {
+            gomain(start_page);
+        }
+    }
+
+    if (appname && appname!="")
+        writeESPappname(appname);
+
+    loadNavRootData();
+
+},
+
+  failure: function(oResponse) {
+    oResponse.argument.fnLoadComplete();
+  },
+
+  argument: {
+  }
+};
+    
+    YAHOO.util.Connect.asyncRequest('GET', sUrl, navunit_callback);
+}
+
+
+
+</script>
+</body>
+</html>
+

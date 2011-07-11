@@ -1,0 +1,251 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+////////////////////////////////////////////////////////////
+#include "ws_topology.hpp"
+EspInclude(ws_topology);
+#include "ws_workunits.hpp"
+EspInclude(ws_workunits);
+
+ESPStruct ActiveWorkunit
+{
+    string Wuid;
+    string State;
+    int StateID;    //remove it later
+    string Owner;
+    string Jobname;
+    string Server;
+    strint Instance;
+    string Priority;
+    [min_ver("1.01")] string Extra;
+    [min_ver("1.02")] string GraphName;
+    [min_ver("1.02")] string Duration;
+    [min_ver("1.02")] string GID;
+    [min_ver("1.03")] string QueueName;
+    [min_ver("1.04")] int MemoryBlocked;
+    [min_ver("1.09")] bool IsPausing(false);
+    [min_ver("1.10")] string Warning;
+};
+
+ESPStruct ThorCluster
+{
+    string ClusterName;
+    [min_ver("1.03")] string QueueName;
+    string QueueStatus;
+    int    DoCommand;
+    [min_ver("1.05")] int QueueAvailable;
+    [min_ver("1.05")] int JobsRunning;
+    [min_ver("1.05")] int JobsInQueue;
+    [min_ver("1.07")] int QueueStatus2;
+    [min_ver("1.09")] string ThorLCR;
+};
+
+ESPStruct RoxieCluster
+{
+    string ClusterName;
+    string QueueName;
+    string QueueStatus;
+    int    DoCommand;
+    int JobsRunning;
+    int JobsInQueue;
+    int QueueStatus2;
+};
+
+ESPStruct HoleCluster
+{
+    string ClusterName;
+    string DataModel;
+};
+
+ESPStruct DFUJob
+{
+    string TimeStarted;
+    int Done;
+    int Total;
+    string Command;
+};
+
+ESPrequest [nil_remove] ActivityRequest
+{
+    string ChatURL;
+    string BannerContent;
+    string BannerColor;
+    string BannerSize;
+    [min_ver("1.08")] string BannerScroll;
+    int BannerAction(0);
+    bool EnableChatURL;
+    bool FromSubmitBtn(false);
+};
+
+ESPresponse [exceptions_inline] ActivityResponse
+{
+    string Build;
+    ESParray<ESPstruct ThorCluster> ThorClusters;
+    [min_ver("1.07")] ESParray<ESPstruct RoxieCluster> RoxieClusters;
+    ESParray<ESPstruct HoleCluster> HoleClusters;
+    ESParray<ESPstruct DFUJob> DFUJobs;
+    ESParray<ESPstruct ActiveWorkunit> Running;
+    [min_ver("1.06")] int UserPermission(-1);
+    [min_ver("1.06")] string BannerContent;
+    [min_ver("1.06")] string BannerColor;
+    [min_ver("1.06")] string BannerSize;
+    [min_ver("1.08")] string BannerScroll;
+    [min_ver("1.06")] string ChatURL;
+    [min_ver("1.06")] int ShowBanner(0);
+    [min_ver("1.06")] int ShowChatURL(0);
+};
+
+ESPrequest SMCIndexRequest
+{
+};
+
+ESPresponse [exceptions_inline] SMCIndexResponse
+{
+};
+
+ESPStruct Capability
+{
+   string name;
+   string description;
+};
+
+
+ESPStruct Permission
+{
+   string Feature;
+   ESParray<ESPstruct Capability> Capabilities;
+};
+
+ESPrequest SMCPermissionsRequest
+{
+};
+
+ESPresponse [] SMCPermissionsResponse
+{
+    ESParray<ESPstruct Permission> Permissions;
+};
+
+
+ESPrequest SMCQueueRequest
+{
+    int ClusterType;
+    string Cluster;
+};
+
+
+ESPresponse [exceptions_inline] SMCQueueResponse
+{
+};
+
+ESPrequest SMCJobRequest
+{
+    int ClusterType;
+    string Cluster;
+    string Wuid;
+};
+
+
+ESPresponse [exceptions_inline] SMCJobResponse
+{
+};
+
+ESPrequest SMCPriorityRequest
+{
+    int ClusterType;
+    string Cluster;
+    string Wuid;
+    string Priority;
+};
+
+
+ESPresponse [exceptions_inline] SMCPriorityResponse
+{
+};
+
+ESPrequest GetThorQueueAvailabilityRequest
+{
+};
+
+ESPresponse [exceptions_inline] GetThorQueueAvailabilityResponse
+{
+    ESParray<ESPstruct ThorCluster> ThorClusters;
+};
+
+
+ESPrequest [nil_remove] SetBannerRequest
+{
+    string ChatURL;
+    string BannerContent;
+    string BannerColor;
+    string BannerSize;
+    string BannerScroll;
+    int BannerAction;
+    bool EnableChatURL;
+    bool FromSubmitBtn(false);
+};
+
+ESPresponse [exceptions_inline] SetBannerResponse
+{
+};
+
+ESPrequest NotInCommunityEditionRequest
+{
+    string EEPortal; 
+};
+
+ESPresponse [exceptions_inline] NotInCommunityEditionResponse
+{
+};
+
+#include "xslprocessor.hpp" 
+
+//ESPservice [noforms, version("1.04"), default_client_version("1.04"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsSMC
+ESPservice [noforms, version("1.10"), default_client_version("1.10"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
+{
+    ESPuses ESPStruct Capability;
+    ESPuses ESPStruct Permission;
+    ESPuses ESPStruct ThorCluster;
+    ESPuses ESPStruct HoleCluster;
+    ESPuses ESPStruct ActiveWorkunit;
+    ESPuses ESPStruct DFUJob;
+
+    ESPmethod Index(SMCIndexRequest, SMCIndexResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/index.xslt")] Activity(ActivityRequest, ActivityResponse);
+
+    ESPmethod ClearQueue(SMCQueueRequest, SMCQueueResponse);
+    ESPmethod PauseQueue(SMCQueueRequest, SMCQueueResponse);
+    ESPmethod ResumeQueue(SMCQueueRequest, SMCQueueResponse);
+    ESPmethod StopQueue(SMCQueueRequest, SMCQueueResponse);
+
+    ESPmethod RemoveJob(SMCJobRequest, SMCJobResponse);
+    ESPmethod MoveJobFront(SMCJobRequest, SMCJobResponse);
+    ESPmethod MoveJobBack(SMCJobRequest, SMCJobResponse);
+    ESPmethod MoveJobUp(SMCJobRequest, SMCJobResponse);
+    ESPmethod MoveJobDown(SMCJobRequest, SMCJobResponse);
+
+    ESPmethod SetJobPriority(SMCPriorityRequest, SMCPriorityResponse);
+    ESPmethod GetThorQueueAvailability(GetThorQueueAvailabilityRequest, GetThorQueueAvailabilityResponse);
+    ESPmethod SetBanner(SetBannerRequest, SetBannerResponse);
+
+    ESPmethod NotInCommunityEdition(NotInCommunityEditionRequest, NotInCommunityEditionResponse);
+};
+
+SCMexportdef(WSSMC);
+
+SCMapi(WSSMC) IClientWsSMC *createWsSMCClient();
+

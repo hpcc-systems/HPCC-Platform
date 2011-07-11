@@ -1,0 +1,49 @@
+#!/bin/bash
+################################################################################
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+################################################################################
+
+
+if [ $# -lt 1 ]; then
+    echo usage: $0 thordeploydir 
+    exit 1
+fi
+
+# deploydir = where binaries and scripts live
+if [ -z "$deploydir" ]; then
+export deploydir=$(pwd -P)
+fi
+# instancedir = [cwd] - on legacy system would be same as deploydir
+export instancedir=$(pwd -P)
+
+. $instancedir/setvars
+
+if [ "$#" -lt "2" ] || [ "$2" != "keep_sentinel" ]; then
+    echo removing sentinel file
+    rm -f $instancedir/thor_sentinel_$THORMASTERPORT.txt
+    sleep 1
+fi
+
+while [ "`pidof thormaster_$THORMASTERPORT`" != "" ]
+do
+  echo --------------------------
+  echo stopping thormaster $THORMASTER 
+  killall thormaster_$THORMASTERPORT
+  sleep 8
+  killall -9 thormaster_$THORMASTERPORT
+  sleep 1
+done
+
+echo --------------------------
+echo stopping thor slaves 
+
+if [ "$localthor" = "true" ]; then
+    killall -9 thorslave_$THORSLAVEPORT
+else
+    # use 20 threads
+    # timeout of 60 seconds (in case slave busy)
+    # hard kill (called after master down anyway so going to stall)
+    $deploydir/frunssh $instancedir/slaves "/bin/sh -c 'killall -9 thorslave_$THORSLAVEPORT'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries 2>&1 | egrep -v "no process killed"
+    echo slaves stopped
+fi
+

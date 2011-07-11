@@ -1,0 +1,4 @@
+<Dataset name='MatchSmith'>
+ <Row><surname>Smith               </surname><forename>Baby      </forename><age>2</age></Row>
+ <Row><surname>Smith               </surname><forename>George    </forename><age>75</age></Row>
+</Dataset>

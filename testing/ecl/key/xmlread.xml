@@ -1,0 +1,44 @@
+<Dataset name='Result 1'>
+ <Row><month>Mar04</month><date>20040301</date><desc1>HAJ</desc1><description>HALLIDAY AAandZZ</description><fulldescription>&lt;text:p&gt;HALLIDAY AAandZZ&lt;/text:p&gt;</fulldescription><amount>-2000</amount></Row>
+ <Row><month>Apr04</month><date>20040423</date><desc1>SED</desc1><description>BROWN ENVELOPES LTD</description><fulldescription>&lt;text:p&gt;SEISINT LTD&lt;/text:p&gt;</fulldescription><amount>2000</amount></Row>
+ <Row><month>Apr04</month><date>20040413</date><desc1>CON</desc1><description>COUNTY INSURANCE KIDLINGTON</description><fulldescription>&lt;text:p&gt;COUNTY INSURANCE &lt;text:s text:c=&quot;2&quot;/&gt;KIDLINGTON&lt;/text:p&gt;</fulldescription><amount>-841.47</amount></Row>
+ <Row><month>Mar04</month><date>20040330</date><desc1>ROY</desc1><description>ROYSIA SURGERY</description><fulldescription>&lt;text:p&gt;ROYSIA SURGERY&lt;/text:p&gt;</fulldescription><amount>784.19</amount></Row>
+ <Row><month>Mar04</month><date>20040330</date><desc1>104</desc1><description>Unknown Cheque Payment</description><fulldescription>&lt;text:p&gt;100194&lt;/text:p&gt;</fulldescription><amount>-452</amount></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><total>4000</total><cnt>2</cnt><description>BROWN ENVELOPES LTD</description></Row>
+ <Row><total>-2585.47</total><cnt>30</cnt><description>Unknown Cheque Payment</description></Row>
+ <Row><total>-2000</total><cnt>1</cnt><description>HALLIDAY AAandZZ</description></Row>
+ <Row><total>1198.56</total><cnt>2</cnt><description>ROYSIA SURGERY</description></Row>
+ <Row><total>-1104.96</total><cnt>15</cnt><description>Groceries</description></Row>
+ <Row><total>-841.47</total><cnt>1</cnt><description>COUNTY INSURANCE KIDLINGTON</description></Row>
+ <Row><total>-603.25</total><cnt>2</cnt><description>MR M DR S WILLIAMS HOLIDAY</description></Row>
+ <Row><total>-350</total><cnt>7</cnt><description>CASH</description></Row>
+ <Row><total>-299.99</total><cnt>1</cnt><description>BEAU-PORT LTD ALTON</description></Row>
+ <Row><total>-220</total><cnt>2</cnt><description>BARCLAYS</description></Row>
+ <Row><total>-220</total><cnt>2</cnt><description>HALLIDAY AA</description></Row>
+ <Row><total>215.15</total><cnt>2</cnt><description>Child Benefit</description></Row>
+ <Row><total>-201.66</total><cnt>1</cnt><description>TRAVELEX DOVER E DOCKS</description></Row>
+ <Row><total>-200</total><cnt>7</cnt><description>Train</description></Row>
+ <Row><total>-194.25</total><cnt>1</cnt><description>MBNA VISA 000000******1003</description></Row>
+ <Row><total>-183.49</total><cnt>1</cnt><description>STH CMBRIDGSHRE DC</description></Row>
+ <Row><total>-150</total><cnt>2</cnt><description>CHILDRENS SOCIETY</description></Row>
+ <Row><total>-124</total><cnt>2</cnt><description>FAT BANANA SOCIETY</description></Row>
+ <Row><total>-103.44</total><cnt>2</cnt><description>WOOLWORTHS.CO.UK </description></Row>
+ <Row><total>-100</total><cnt>2</cnt><description>UNITED BENEFICE</description></Row>
+ <Row><total>-88</total><cnt>2</cnt><description>POWERGEN ELEC</description></Row>
+ <Row><total>-85</total><cnt>1</cnt><description>JOHN LEWIS GIFT LIST</description></Row>
+ <Row><total>-76.08</total><cnt>4</cnt><description>Life insurance</description></Row>
+ <Row><total>-75.44</total><cnt>1</cnt><description>BT DIRECT DEBITS</description></Row>
+ <Row><total>75</total><cnt>1</cnt><description>Cheques Paid In</description></Row>
+ <Row><total>-75</total><cnt>1</cnt><description>TEAR FUND LTD</description></Row>
+ <Row><total>-64</total><cnt>1</cnt><description>AUTOMOBILE ASSN</description></Row>
+ <Row><total>-57.4</total><cnt>2</cnt><description>Petrol</description></Row>
+ <Row><total>-50</total><cnt>1</cnt><description>RYL COLL OF JESTERS</description></Row>
+ <Row><total>-49.3</total><cnt>3</cnt><description>AMAZON.CO.UK </description></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><_unnamed_1>Total = -5023.89</_unnamed_1><_unnamed_2>Total out = -10517.54</_unnamed_2><_unnamed_3>Average = </_unnamed_3><_unnamed_4>-86.209</_unnamed_4></Row>
+</Dataset>
+<Dataset name='Result 4'>
+</Dataset>

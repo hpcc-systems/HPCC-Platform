@@ -1,0 +1,177 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+/* Note that any changes in sort-table should be reflected in div.TableHeaderDiv* and div.TableBodyDiv* 
+   defined below to ensure consistent look and feel.
+*/
+.sort-table {
+    background: Window;
+    border: 0;
+    border-bottom:  #777 2px solid;
+    border-collapse: collapse;
+    color:      WindowText;
+    padding: 2px 5px 2px 5px;
+    text-align:center;
+}
+
+.sort-table thead {
+    background: lightgrey;
+}
+
+.sort-table th {
+    border: #777 1px solid;
+    cursor:     default;
+    padding: 2px 5px 2px 5px;
+}
+
+.sort-table td {
+    padding: 2px 5px 2px 5px;
+    border: lightgrey 1px solid;
+}
+
+/*-------------------------------------------------------------------------*/
+/* the following styles only affect the screen rendering                   */
+/*-------------------------------------------------------------------------*/
+div.TableHeaderDiv {
+    background: lightgrey;
+    border: gray 1px solid;
+}
+div.TableHeaderDiv table {   
+    background: lightgrey;
+    border: 0px;
+    border-collapse:collapse;
+    padding:0;
+    margin:0;
+    text-align:center;
+}
+
+div.TableHeaderDiv table tr th {
+    border-left: gray 1px solid;
+    border-right: gray 1px solid;
+    border-collapse: collapse;
+}
+
+/* styles for DIVs containing a table body */
+div.TableBodyDiv {
+    border: gray 1px solid;
+}
+div.TableBodyDiv table {
+    border-collapse: collapse;
+    border: lightgrey 1px solid;
+    padding:0;
+    margin:0;
+    text-align:center;
+}
+div.TableBodyDiv table tr td {
+    border: lightgrey 1px solid;
+}
+
+@media screen {
+    div.TableBodyDiv table tr td {
+        overflow: hidden; 
+        text-overflow: ellipsis; 
+    }
+}
+
+/*-------------------------------------------------------------------------*/
+body { 
+   background-color: white;
+}
+
+.select-all {
+    border: #777 2px solid;
+    border: 0;
+    border-collapse: collapse;
+    padding: 0px;
+    text-align:center;
+    cursor:     default;
+}
+
+.even {
+    background: #eee;
+}
+
+.odd {
+}
+
+.sort-arrow {
+    width:                  11px;
+    height:                 11px;
+    background-position:center center;
+    background-repeat:  no-repeat;
+    display: none;
+    visibility: hidden;
+}
+
+.sort-arrow.descending {
+    background-image:       url("/esp/files_/img/downsimple.png");
+    display: inline;
+    visibility: visible;    
+}
+
+.sort-arrow.ascending {
+    background-image:       url("/esp/files_/img/upsimple.png");
+    display: inline;
+    visibility: visible;    
+}
+
+.hilite { 
+   background-color: #F0F0FF; 
+}
+
+.grey { 
+   background-color: #ccc;
+}
+
+.number { 
+   text-align:right; 
+}
+
+.left-aligned-table, 
+.left-aligned-table tr, 
+.left-aligned-table tr th, 
+.left-aligned-table tr td {
+    border: 0;
+    text-align: left;
+    padding:0;
+    font-size: 9pt;
+}
+
+.left-aligned-table caption {
+    text-align: left;
+    border-top: #0000ff 1px solid;
+    border-bottom:  #0000ff 1px solid;
+    font-weight: bold;
+}
+
+tr.blue-bottom {
+    border-bottom:  #0000ff 1px solid;
+    background: window;
+}
+
+span.resizer {
+    position: absolute;  
+    right: 0; 
+    top: 0;
+    height: 100%;
+    cursor: e-resize;
+    margin: 0;
+    padding: 0;
+}
+
+#ToolTip{position:absolute; width: 100px; top: 0px; left: 0px; z-index:4; visibility:hidden;}               

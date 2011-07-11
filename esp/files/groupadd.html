@@ -1,0 +1,28 @@
+<!--
+
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+-->
+
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:fo="http://www.w3.org/1999/XSL/Format" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Add Group</title>
+</head>
+<body><form xmlns="" method="POST" action="/ws_access/GroupAdd"/>
+<table xmlns="" name="table1">
+<tr>
+<th colspan="2">
+<h3>Add Group</h3>
+</th>
+</tr>
+<tr>
+<td height="10"></td>
+</tr>
+<tr>
+<th>Group Name:</th><td><input type="text" name="groupname" size="35" onKeyUp="if(this.value != '') document.forms[0].S1.disabled=false; else document.forms[0].S1.disabled=true;"></td>
+</tr>
+<td></td><td><input type="submit" value="Submit" id="S1" name="S1" disabled=true></td>
+</tr>
+</table>
+</body>
+</html>

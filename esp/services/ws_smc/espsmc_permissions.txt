@@ -1,0 +1,87 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+ws_smc:
+    SmcAccess: 
+        Read - access ecl watch service, activity page, permissions(obsolete)
+    ThorQueueAccess: 
+        Full - thor activity, MoveJobDown, MoveJobUp, MoveJobBack, 
+                 MoveJobFront, RemoveJob, StopQueue, ResumeQueue, PauseQueue, 
+                 ClearQueue
+ws_config:
+    ConfigAccess: 
+        Read - Read only access to super computer environment
+        Write- Read/write access to super computer environment
+
+ws_dfu:
+    DfuAccess: 
+        Read  - DFU search, query, info, space, DFUDefFile, DFUFileView, DFUBrowseData
+        Write - AddtoSuperfile, DFUArrayAction, 
+
+ws_dfuxref:
+    DfuXrefAccess: 
+        Read  - DFUXRefLostFiles, DFUXRefFoundFiles, DFUXRefOrphanFiles, 
+                  DFUXRefMessages, DFUXRefCleanDirectories, DFUXRefDirectories,
+                  DFUXRefList
+        Full  - DFUXRefArrayAction, DFUXRefBuild, DFUXRefBuildCancel
+
+ws_fs:
+    DfuWorkunitsAccess: 
+        Read - DFUWUSearch, GetDFUWorkunits, GetDFUWorkunit, GetDFUProgress, DFUWUFile
+        Write- Create/update/submit/delete/abort DFU Workunit, DFUWorkunitsAction
+    DfuExceptionsAccess: 
+        Read - access DFU exceptions
+    FileSprayAccess: 
+        Write - Access to spraying files fixed/variable, Replicate, Copy, 
+                  SuperCopy, Rename, FileList, DfuMonitor
+    FileDesprayAccess: 
+        Write - Access to despraying of files
+    FileDkcAccess: 
+        Write - Access to DKC key files
+
+ws_fileio:
+    FileIO: Not defined in esp.xml but used by service.
+        Write - Access to files in dropzone... CreateFile, ReadFileData, WriteFileData
+    FileIOAccess: Defined in esp.xml but not used by service.
+
+ws_topology:
+    ClusterTopologyAccess: 
+        Read - TpLogFile, TpClusterQuery, TpLogicalClusterQuery, TpGroupQuery,
+                 TpClusterInfo, TpServiceQuery, onTpMachineQuery
+        Write - TpSetMachineStatus
+        Full - swap node, TpGetComponentFile
+    MachineInfoAccess:
+        Read - TpMachineQuery
+
+ws_machine:
+    MachineInfoAccess: 
+        Read - GetMachineInfo
+    MetricsAccess: 
+        Read - Access to SNMP metrics information
+    ExecuteAccess: 
+        Full - access to remote execution of commands and start/stop
+
+ws_workunits:
+    OwnWorkunitsAccess: 
+        Read - view own workunits
+        Write - resubmit/abort/update/reset own workunits
+        Full - delete own workunits
+    OthersWorkunitsAccess: 
+        Read - view other users' workunits
+        Write- resubmit/abort/update/reset other users' workunits
+        Full - delete other users' workunits

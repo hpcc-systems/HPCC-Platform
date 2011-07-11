@@ -1,0 +1,172 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+Issues that aren't handled correctly at the moment:
+
+o LEFT/RIGHT.
+  Currently these can be ambiguous - because expressions at different levels of the tree can have the same
+  logical representation.  It means many all transforms need to be context dependant because the same expression
+  in different locations may not have the same meaning.  Currently get away with it most of the time.
+
+o No way to alias a dataset.
+  - it is needed in some situations e.g., count(children.names, age > ave(children.names));
+
+o no_setresult
+  The representation is ugly for walking activity lists - much better if could guarantee that a dataset was the first parameter
+  no_setresult(dataset, select, sequence).
+
+o It isn't ever simple to walk the activity tree because of exceptions like if(), setresult(), activerow etc.
+
+o Should possibly represent selectors as different HqlExpressions - it might remove some of the complication from the transformers.
+
+o Hoisting common items: conditions and dependencies
+  - Generally if a cse is used in multiple places then we want to hoist it once
+  - We don't want to hoist it too early otherwise dependencies might get messed up
+  - If a cse is used in a condition branch then don't want to hoist it globally unless it is (first) used non-globally
+  - cses shouldn't be moved within sequentials because it may change the meaning.  We can assume that all evaluation
+    of the same expressions produce the same result though
+  - careful if hoisting, because may also need to hoist items in no_comma that are futher up the tree....
+  - if sequential inside a condition, then can't common up with a later non-conditional cse.
+  - Need comma expressions to be created in the best locations.  Generally tagged onto the activity at a minimum.
+  - problem with creating a comma locally and then hoisting without analysing is they won't get commoned up.
+
+o Correct place for matched/fileposition
+  - currently the subquery tree is walked to work out correct place to evaluated fileposition, but need reimplementing.
+
+o Filter scoring
+  - It would be useful to be able to scope filters/datasets so we can reorder them/work out if optimizations are worthwhile.
+
+o no_mapto
+  This is a particularly bad representation for walking the tree because of cse issues etc.
+  better would be no_case(value, [match_values], result_values {expanded});
+  Removing case/map activities at least makes cse transforming simpler.
+
+o no_xml flags in tree
+  for xml etc. should inherit from child datasets, but ignore from child values.  Also don't allow nested parse at moment.
+
+**********************************************************************************************************************************************************
+
+-- Reordering filters --
+o Should have a go at looking at HOLe, and trying to steal its code.  Effectively need to 
+  - work out the cardinality of each field.
+  - functions to calculate how likely a filter is to occur
+  - functions to score how expensive an operation is.
+  - do filters on outer datasets first
+  - reorder the filters to match.
+o Hole also chooses the best order to do the joins in.  That would be possible, but there aren't that many situations where
+  reordering would be that helpful.  It wouldn't be trivial, but i think it could be done reasonably easily.
+
+-- Related datasets --
+o What is the issue?  Simplest with a couple of examples:
+  address(exists(address.person.books(f)))
+o The nested child dataset is relatively simple if node created is (select(select(address,person,new),books,new)
+  would be requested to build iterator on address.person.  
+  - If no break required, can just use nested iterators
+  - if break required we need a class that can iterate; AND provide access to both person and book fields.
+  - Similar problem as outer level nested iterator, except we can use use pointers to parent record.
+
+o Would be easier if we had a representation:
+  address(exists(related(person(parent-join-condition), books(join-condition))(f));
+  related has syntax:
+  related(filter1, filter2, filter3, filter4, ...)
+
+o relate() iterator:
+  i) need to create a class.  The class will probably be of the same form as the hole iterators:
+
+-- Related datasets --
+o The problem, an example:
+  address(exists(books(books.personid=(person(person.addrid = address.id)).id)(f)))
+o The issue here is that we need to look in the filter condition for how the join is done.
+  we really need a graph which looks like:
+  address(exists(relate(person(addr = address.id), books(personid=person.id)))(f);
+o First requirement is to support the explicit syntax.  Second is to spot where it needs to be introduced:
+o Main effect of the syntax is 
+  a) to ensure tables are met in the correct order
+  b) never meet newtable.field
+o Automatic spotting:
+  - For aggregates etc.
+  - Spot all uses of dataset.field in filter where dataset is new and not a single row.
+  - If these datasets provide a bridge from current scope, and main dataset for the aggregate then
+    generate a relate(a,b,c) statement.  Extract any filter which just relates to fields that are already
+    in scope to the appropriate level.
+  - Also applies to x[1] where x is a unrelated dataset.
+  - Needs to be done after scope tagging so the table usage information is there which means that
+    a) scope checking needs to be happy with it.  Not sure how it would really cope.
+    b) modified graph with the relates needs to also be correctly tagged.
+
+-- Sub query related work---
+* ROW(row, record) - convert fields by name with error if no match found.
+* BUG: Hoisting datasets because scope invariant probably does too much, and
+  doesn't create a valid structure.
+* Add a debug option to always create compound activities regardless of sharing - for debugging code generation of sq.
+
+-- Related potential changes ---
+* What work would be needed to allow records to be represented as records in a record
+  rather than expanding the record/dataset?
+  What work to then allow items compatibility between record and implicit-children.
+* EXISTS(x) etc. should really push x onto a top scope stack, where all are accessible.  Would 
+  reduce the number of qualifying prefixes on fields.
+
+* Distributed local activities after remote activities - potentially may speed things up, but
+  generally compound aggregating sources will have a larger advantage.
+
+-------- SubQuery fundamental questions: ---------
+* Is an explicit syntax needed when accessing related non-nested datasets?  What would be 
+  sensible?  Can it be deduced?
+
+* How do you calculate an average in an enclosing scope?  How does within relate?
+
+!! Do Aliases solve the problems they are proposed to, or do you need something to evaluate something in a different scope?
+
+* In what sense are parent fields accessible when iterating through people at root level?  
+
+Could theoretically be serialised as part of the
+  record, but removed by an output with no table.  Implicit projects would then make it usable.  Worth persuing.
+  >> Needs a representation in a record to indicate it also contains parent references.
+
+* How do you alias a dataset?  Otherwise can't implement sqjoin for a disk based item.
+
+-----------------------------------------------------------------------
+-- Sub query complications ---
+
+*) generating a sub graph on a child dataset.
+*) accessing fields from a parent dataset (unrelated child).
+*) accessing fields from a grand parent (multi level nesting)
+*) accessing fields from within inline sub-query (both levels).
+*) Indicating whether subgraphs can be run locally or need to be distributed (effects how 
+cursors are serialised).
+*) traversing query at a child level.
+*) Aggregating, and selecting as child activities.
+*) counting, aggregating and group-aggregating source activities. (ensure both tested)
+*) CSE causing datasets to be returned. - Are they worth it?
+*) Multiple sub-queries, with different fields being available at different nesting levels.
+*) Optimizing counts and representation.
+*) Are aliases ever needed?  (Situations where global is currently used I suspect.)
+*) Grouped temporary recordsets.
+*) hoisting table/context invariant expressions.  E.g.,
+   SELF.countMatch := count(d2(field = left.field))
+   recoded as
+   summary := table(d2, {cnt := count(group), field}, field);
+   SELF.countMatch := sum(summary(field = left.field), cnt);
+   where summary is only evaluate once per query.
+*) Executing multiple sub queries at once.
+   - Would it help
+   - What chaos would it cause.
+   - How about if we only allowed an explicit syntax?
+*) How do we replicate HOLe's join files?  Effectively disk read (or other) datasets are cloned on each machine.
+
+

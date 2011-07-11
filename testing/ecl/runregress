@@ -1,0 +1,339 @@
+#! /usr/bin/perl
+################################################################################
+#    Copyright (C) 2011 HPCC Systems.
+#
+#    All rights reserved. This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License as
+#    published by the Free Software Foundation, either version 3 of the
+#    License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+
+
+# If you commit a change which alters the documented usage or behaviour of this script, please also update the POD documentation and run pod2html to update the HTML documentation
+
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+use Pod::Usage qw(pod2usage);
+use Regress::Engine qw();
+use Regress::ReportList qw();
+
+=pod
+
+=head1 NAME
+
+runregress - Runs the regression suite and generates reports
+
+=head1 SYNOPSIS
+
+runregress [I<options>] I<configuration_name> [I<options>]
+
+runregress [I<options>] B<-setup_generate>|B<-setup> [I<options>]
+
+runregress B<-help>|B<-h>|B<-?>
+
+runregress B<-listreports>|B<-lr>
+
+=cut
+
+my $options = {configfile => 'local.ini?,regress.ini',
+               ecloptions => {pickBestEngine => 0,
+                              foldConstantDatasets => 0}};
+
+GetOptions('help|?' => sub { pod2usage(-exitstatus => 0, -verbose => 2) },
+           'listreports|lr' => sub { my $rl = Regress::ReportList->new(); $rl->print(); exit(0); },
+           'listconfigs|lc' => \$options->{listconfigs},
+           'describeonly' => \$options->{describeonly},
+           'setup_generate|setup' => \$options->{setup_generate},
+           'suite|s=s' => \$options->{suite},
+           'query=s' => \$options->{query},
+           'variant=s' => \$options->{variant},
+           'setup_clusters=s' => \$options->{setup_clusters},
+           'setup_file_location=s' => \$options->{setup_file_location},
+           'class|c=s' => \$options->{class},
+           'parallel_queries|pq=s' => \$options->{parallel_queries},
+           'ecloption=s' => $options->{ecloptions},
+           'deploy_roxie_queries|drq=s' => \$options->{deploy_roxie_queries},
+           'report=s' => \$options->{report},
+           'norun' => \$options->{norun},
+           'preview' => \$options->{preview},
+           'testdir' => \$options->{testdir},
+           'logfile|l=s' => \$options->{logfile},
+           'verbose' => \$options->{verbose},
+           'config' => \$options->{configfile}) or pod2usage(-exitstatus => 2, -verbose => 1);
+
+if((@ARGV == 0) && !($options->{setup_generate} || $options->{listconfigs}))
+{
+    print(STDERR "Missing argument (expected configuration name)\n");
+    pod2usage(-exitstatus => 2, -verbose => 1);
+}
+elsif(@ARGV > 1)
+{
+    print(STDERR "Multiple arguments (expected single configuration name)\n");
+    pod2usage(-exitstatus => 2, -verbose => 1);
+}
+$options->{configuration} = shift(@ARGV);
+
+my $engine = Regress::Engine->new($options);
+if($options->{listconfigs})
+{
+    $engine->listconfigs();
+    exit(0);
+}
+$engine->init();
+exit(0) if($options->{describeonly});
+$engine->prepare();
+$engine->run();
+$engine->report();
+
+__END__
+
+=pod
+
+=head1 OPTIONS
+
+=over
+
+=item B<-setup_generate>|B<-setup>|B<-se>
+
+Runs the setup queries rather than the test queries. May not be used with the options B<-class>, B<-query>, or B<-norun>.
+
+=item B<-suite>|B<-s> I<suite>
+
+Names the suite, i.e. the directory where the tests are generated and run
+
+=item B<-query>|B<-q> I<query>
+
+Names specific queries from the test directory to run, as a comma- or space-separated list. You may use wildcards, but will often need to use quotes to stop your shell expanding them. If this option is absent, all queries in the test directory are run. (See also the B<-class> option.) In conjunction with B<-norun>, causes reports to be generated on a subset of the queries it was run on (where report type supports this feature).
+
+=item B<-variant>|B<-var> I<variant>
+
+Names the specific variant or variants of queries to run, as a comma- or space-separated list. Intended mainly for developer testing. In conjunction with B<-norun>, causes reports to be generated on a subset of the queries it was run on (where report type supports this feature).
+
+=item B<-class>|B<-c> I<class>
+
+Specifies that queries of this class, and only queries of this class, should be run (see L<"Preparing a suite"> in the help).
+
+=item B<-parallel_queries>|B<-pq> I<n>
+
+Specifies number of parallel queries to send, e.g. 2 to take advantage of dual-thor.
+
+=item B<-ecloption>|B<-e> I<name>=I<value>
+
+Specifies that the ECL option I<name> should be set to I<value>. If I<value> is a string, it should be single-quoted (and remember you may need to protect these quotes from your shell). This prepends C<#option('I<name>', I<value>);> to each query.
+
+=item B<-deploy_roxie_queries>|B<-drq>|B<-d> I<roxie-deploy-style>
+
+Determines the method for deploying and executing roxie queries. If C<run>, roxieconfig is executed in RunECLFile mode. If C<yes>, roxieconfig is executed in DeployECLFile mode and then testsocket is run. Otherwise, testsocket is run (the queries are assumed to be deployed already). Defaults to C<yes>.
+
+=item B<-report>|B<-r> I<report-style>
+
+Specifies the type or types of report to generate, as a comma- or space-separated list. To see a list of available types, use the B<-listreports> option. This is ignored on a setup run.
+
+=item B<-norun>|B<-n>
+
+Skips the preparation and execution of the suite, so that reports may be generated on a suite which has already been run.
+
+=item B<-preview>|B<-pre>
+
+Stops after the preparation of the suite. Shows what queries would be run, skipped, etc.
+
+=item B<-setup_clusters>
+
+During a setup run, specifies the clusters to use, as a comma- or space-separated list. During a test run, specifies the setup clusters to run against. Defaults to value of cluster if not specified.
+
+=item B<-setup_file_location>
+
+During a setup run, defines the location of the text files used to create the additional text searching attributes.
+
+=item B<-testdir>|B<-t> I<directory>
+
+Specifies the directory from which queries are taken. Defaults to the current directory.
+
+=item B<-logfile>|B<-l> I<filename>
+
+Specifies a logfile to which warnings and errors will be written. Will be deleted at the start of the run (so use unique names if running the suite more than once, simultaneiously, from the same directory). Defaults to a logfile named for the configuration specified as the argument to runregress with C<.log> appended, or to C<setup_generate.log> where that argument is omitted by the option B<-setup> is used.
+
+=item B<-verbose>|B<-ver>
+
+Makes the script produce more output. It reports and logs the external commands it executes to run queries (eclplus, roxieconfig, and testsocket), and their output when it does not contain the results (so output is reported and logged for eclplus, and for roxieconfig when B<deploy_roxie_queries> is C<yes>; for roxieconfig when B<deploy_roxie_queries> is C<run> or for testsocket, the output contains the results and is captured).
+
+=item B<-config>|B<-co> I<config-file>
+
+Specifies the configuration file or files. This may be a comma-separated list, in which case all files are read, with values from the earlier named files taking priority. If any filename is followed by a ?, it is optional. Otherwise, the file must exist and must contain a section corresponding to the configuration named as the argument to the command. The default behaviour is to read an optional file C<local.ini> and a non-optional file C<regress.ini>, with C<local.ini> taking priority (allowing users to set local overrides or additions to a centrally deployed base configuration). See L<"CONFIGURATION"> for more details.
+
+=item B<-listconfigs>|B<-lc>
+
+Causes runregress to load its configuration files, list the configurations they provide, and exit.
+
+=item B<-describeonly>|B<-desc>
+
+Causes the script to describe its configuration and options as normal and then exit.
+
+=back
+
+All of these may be used (in their long forms) as configuration variables too (see below). A configuration variable overrides the built-in default, but is overridden by a command line option.
+
+A note on space-separated lists. To use these on the command line, you will need to prevent your shell from interpreting the space as a break between options (normally by escaping it with a backslash or enclosing the value in quotes). Using the alternative of comma-separated lists may be preferred. The option of space-separated lists is mainly intended when giving the value in a configuration variable instead.
+
+=head1 CONFIGURATION
+
+Configuration for the runregress tool is via configuration files (see L<"OPTIONS"> above). In each file, values are specified in a block corresponding to the specified configuration name, and optionally in a global block named C<*>. The blocks are started by C<[configuration_name]> and C<[*]>, and the values are specifed as C<name=value>. Earlier named configuration files take priority over later ones; within each file, the named block takes priority over the global C<*> block. The following configuration variables are understood. Note that additional configuration files for the tools invoked will be read, e.g. C<eclplus.ini>.
+
+If you specify the option B<-setup_generate> (aka B<-setup>) then you can omit the name of the configuration to use. In that case, only global blocks are loaded, which is okay provided every variable required (including B<setup_clusters>) is specified in the global blocks.
+
+Note that, although the global and named blocks are the only ones loaded, the other blocks in the configuration files will be scanned. This is done to determine the types of the clusters listed in the configuration variable B<setup_clusters>. It is an error for different configurations to specify different types for the same cluster. If a cluster is only ever used for setup (i.e. no configuration names it as its active cluster) it is assumed to be thor (and a warning is issued).
+
+=over
+
+=item B<server>
+
+Gives the B<server> option for eclplus, i.e. the location of eclwatch. Not required for roxie.
+
+=item B<roxieconfigaddress>
+
+Gives the B<roxieconfigaddress> option for roxieconfig, i.e. the location of roxieconfig. Required only for roxie and if B<deploy_roxie_queries> is C<yes> or C<run>.
+
+=item B<roxieserver>
+
+Gives the B<roxieserver> option for testsocket, i.e. the location of roxie. Required only for roxie and if B<deploy_roxie_queries> is not C<run>.
+
+=item B<owner>
+
+Specifies B<owner> option for eclplus or the B<owner> option for roxieconfig. Not required for roxie if B<deploy_roxie_queries> is neither C<yes> nor C<run>.
+
+=item B<password>
+
+Specifies B<password> option for eclplus or roxieconfig. Not required for roxie if B<deploy_roxie_queries> is neither C<yes> nor C<run>.
+
+=item B<cluster>
+
+During a test run, specifies the B<cluster> option to eclplus, i.e. the cluster to run on. During a setup run, ignored (except as the default for B<setup_clusters>). Not required for roxie.
+
+=item B<type>
+
+Specifies the type of cluster (thor, hthor, or roxie). This changes the execution procedure, and may add or skip queries and override key results. It is required for roxie, and is recommended for hthor and thor to ensure that the correct tests are run.
+
+=item B<os>
+
+Specifies a particular type of OS. This may add or skip queries and override key results. It is optional, but recommended to ensure that the correct tests are run.
+
+=item B<purge>
+
+If this has the value C<move>, then the previous suite directory is moved to a C<.bak> directory at the start of a run, instead of being removed. This can be used to compare two result sets, or to back up the previous result set in case of problems. Note that only one back up is kept: mess up twice (with restoring or backing up yourself) and you will have lost your results.
+
+=item B<eclpluscmd>
+
+Specifies the path of a command to substitute for eclplus, e.g. ./eclminus.
+
+=item B<eclplus>
+
+A synonym of B<eclpluscmd>.
+
+=item B<roxieconfigcmd>
+
+Specifies the path of a command to substitute for roxieconfig.
+
+=item B<testsocketcmd>
+
+Specifies the path of a command to substitute for testsocket.
+
+=back
+
+Additionally, configuration variables with the same names as any the long forms of the command line options may be used, with the same effect. These provide defaults, which are overridden by the command line options if present. These include: B<suite>, B<setup_generate>, B<parallel_queries>, B<deploy_roxie_queries>, B<report>, and B<logfile>. For on/off command line options (B<setup_generate>), turn on using a non-empty, non-zero string.
+
+=head1 DESCRIPTION
+
+By default, this tool prepares a suite of test queries, runs it, and generates reports on the results. If the B<-norun> option is given (or the B<setup_generate> config value is non-empty), the first two stages are omitted, so that reports can be generated for a previous run suite. If the B<-setup> options is given, the tool prepares and runs a suite of queries which generate datasets and indexes used in the test queries, and reports on the success of these queries. If the B<-listreports> option is given then the tool just lists the available report formats and exits. If the B<-help> option is given then the tool displays its documentation and exits.
+
+=head2 Preparing a suite
+
+The queries and results go into a directory named for the suite. In a test run, the suite name is specified by the B<-suite> option if used, otherwise it the configuration name is used. In a setup run, the suite is always called C<setup_generate>.
+
+By default, if the suite directory exists then it is removed at the start of a new run. The B<purge> configuration variable changes this behaviour.
+
+During a setup run, queries are taken from the C<setup> subdirectory of the test directory. All queries are used, in four variants (regular, local, payload, and varload) for each setup cluster.
+
+During a test run, queries are taken from the test directory, and from the subdirectory named for the cluster type. All queries are considered unless the B<-query> option is used. Some queries may be skipped, and some queries may appear in several variants, as described in L<QUERIES, VARIANTS, AND SKIPPING> (below).
+
+During a test run, key results are taken from the C<key> subdirectory of the test directory, except that when results exist in a key subdirectory of a type or os subdirectory those are used instead (the type subdirectory taking priority).
+
+During a setup run, the queries go into a C<setup> subdirectory of the suite directory. During a test run, they go directly into the suite directory, and key results go into the C<key> subdirectory.
+
+Four additional files are created in the suite directory.
+
+=over
+
+=item C<manifest.csv>
+
+A CSV file listing the queries to be run, with four fields: the query name, the variant (blank indicates that the query does not have multiple variants), the path to the key file (blank indicates that this is a setup query with no key file), and the path to the output.
+
+=item C<skipped.csv> 
+
+A CSV file listing the queries which will be skipped, with three fields: the query name, the variant (blank indicates that all variants are skipped), and the reason it will be skipped. 
+
+=item C<tbd.csv> 
+
+As C<skipped.csv>, but only includes those queries which are skipped because of lines flagged C<TBD>.
+
+=item C<wuids.csv> 
+
+A CSV file listing the queries which actually were run, with four fields: the query name, the variant (black indicates that the query does not have multiple variants), and the WUID of the workunit where available.
+
+=item C<settings.ini> 
+
+An ini file storing the settings and values used (for descriptive purposes).
+
+=back
+
+=head2 Running a suite
+
+All queries generated during the preparation stage are executed. For roxie queries, roxieconfig and/or testsocket are used, as described under the B<deploy_roxie_queries> configuration variable above. For other queries, eclplus is used, unless an alternative has been specified by the B<eclplus> configuration variable. Arguments can be altered using various configuarion variables.
+
+During a setup run, the results go into the C<setup> subdirectory of the suite directory. During a test run, they go into a C<out> subdirectory.
+
+One additional file is created in the suite directory: C<wuids.csv> is a CSV file which lists the queries which have been run, and has three fields: the query name (blank indicates that this query does not have multiple variants), and the WUID (blank indicates that the WUID could not be determined). It should be possible to determine the WUIDs for non-roxie, provided eclplus outputs it as expected; roxieconfig does not report the WUID (and it would be less useful anyway).
+
+=head2 Generating reports
+
+This script can generate any number of arbitrary reports, provided by perl modules. These reports are based only on configuration data and information from files in the suite directory: the output, the key results, and the files C<manifest.csv>, C<skipped.csv>, and C<tbd.csv>. Because of this, the report generation stage can be done separately from the preparation and running stages, using the B<-norun> option. The B<-report> option or B<report> configuration variable determines which reports are generated.
+
+Possible things a report could do include: describing the results on standard output; generating a file showing the results (e.g. in HTML); or invoking an external diff tool (e.g. Beyond Compare or xxdiff). The default behaviour is to summarize the result on standard output.
+
+During a setup run, the values of the B<-report> option and B<report> configuration variable are ignored: the script always just summarizes the results. Because there is no key output for setup queries, all it does is check the output for errors.
+
+=head1 QUERIES, VARIANTS, AND SKIPPING
+
+If the ECL contains a comment C<//UseStandardFiles>, the query is generated in a variant for each setup cluster; or, on roxie, two variants, one using dynamic filenames. If it contains a comment C<//UseIndexes>, it is generated in several variants for each setup cluster: there is a regular one, a payload one, a varload one (using blobs), and for multipart indexes (where the setup cluster was thor rather than hthor) a local one (using C<noroot>); except when running on thor, these each also come in a trans variant (using record layout translation); and, on roxie, these each also come in a dynamic filename variant.
+
+A comment C<//class=...> in the ECL puts the query in a class. If the C<-class> option is used then queries not in that class are skipped. Otherwise, queries in any class are skipped.
+
+Queries with a comment C<//nohthor>, C<//nothor>, or C<//noroxie> are skipped when the C<type> configuration variable has the appropriate value.
+
+Queries with a comment C<//nowindows>, or C<//nolinux> are skipped when the C<os> configuration variable has the appropriate value.
+
+If the query contains a comment C<//nolocal>, the local variant is skipped.
+
+More generally, a query can be skipped using a comment starting C<//skip>, or some variants can be skipped using a comment starting C<//varskip>. In either case, the rest of the line consists of a condition, or multiple conditions combined by C<&&>. Each condition may be C<name==value> (tests for equality), C<name!=value> (tests for inequality), C<name> (tests for a true value), or C<!name> (tests for a false value). In C<//skip>, the tests may be against any configuration variable (including C<type>, C<os>, etc.). In C<//varskip>, tests may be against any configuration variable or against C<local>, C<payload>, C<varload>, C<trans>, and C<dynamic> (which have true values if this variant has the named properties) or C<setuptype> (which gives the type of the cluster used for setup (assumes thor if not known)). So, for example, C<//skip type==thor> is equivalent to C<//nothor>, and C<//varskip type==roxie && setuptype==thor && !local> skips non-local variants running against thor indexes on roxie.
+
+The characters C<TBD> may be added at the end of any line specifying a skip. That will cause this skip to be displayed under a separate (and more prominent) section in reports.
+
+=head1 POST-FILTERS
+
+It is possible to apply filters to the key and output results, to normalize them in some way. Currently, one such filter is available, to round floating point values: a comment C<//normalizeFP 10> causes all floating point values spotted in the result set to be rounded to 10 d.p. (and anything within 10^-10 of zero to be replaced by 0, to fix the -0 problem).
+
+=head1 CHILD PROCESSES
+
+This script runs eclplus, roxieconfig, and testsocket as child processes. There are four possible outcomes: the process terminates normally with a zero return status (success); the process terminates normally with a nonzero return status (failure); the process was terminated by a signal; or the process failed to start at all (e.g. the executable was not found). The intention is that the all of these except success will be logged as a warning to standard error, and that none of them should prevent the script continuing.
+
+This intention is not quite achieved on Win32, which does not have real signals. It seems that using pskill to terminate a child process (with or without the B<-c> option) abruptly kills the script itself; while using the windows task manager to terminate a child process correctly allows the script to continue, but incorrectly appears as if the process had terminated with a return status of 1. As far as I know, this behaviour is outside our control (it is in the perl module L<IPC::Run>).
+
+Some report types (e.g. B<BC2>, B<xxdiff>) launch diff viewers as child processes. The script starts these but does not wait for them to finish, and so does not care if they receive signals or return a nonzero status. A failure to start will be logged as a warning to standard error.

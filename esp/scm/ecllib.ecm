@@ -1,0 +1,85 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+#ifndef ECL_CLIENT_API
+#define ECL_CLIENT_API __declspec(dllimport)
+#endif
+
+SCMenum InstantEclState
+{
+    ECL_OK,
+    ECL_CONNECTION_ERROR,
+    ECL_NORMAL_ERROR
+};
+
+// IClientInstantEclResp is used to access the result set of the query
+//
+
+SCMInterface IClientInstantEclResp(IInterface)
+{
+   virtual unsigned long getRequestId() = 0;
+   virtual unsigned long getClientValue() = 0;
+   
+   virtual InstantEclState getState() = 0;
+   virtual const char *getResultsXML() = 0;
+};
+
+
+// IClientInstantEclRequest is used to set up a simple ECL query
+//
+
+SCMInterface IClientInstantEclRequest(IInterface)
+{
+   virtual void setUser(const char* user) = 0;
+   virtual void setUserToken(const char* user, const char* password) = 0;
+   virtual void setEclServer(const char* eclserver) = 0;
+   virtual void setCluster(const char* cluster) = 0;
+   virtual void setClientValue(unsigned long cv) = 0;
+   
+   virtual void setEclText(const char *text) = 0;
+};
+
+SCMinterface IClientInstantEclEvents(IInterface)
+{
+   virtual int onComplete(IClientInstantEclResp &resp) = 0;
+   virtual int onError(IClientInstantEclResp &resp) = 0;
+
+   //virtual int onProgress(IClientInstantEclResp &resp) = 0;
+   //virtual int onCancelled(IClientInstantEclResp &resp) = 0;
+};
+
+SCMInterface IClientInstantEcl(IInterface)
+{
+   virtual void addServiceUrl(const char * url) = 0;
+   virtual void removeServiceUrl(const char *url) = 0;
+   virtual IClientInstantEclRequest* createRequest() = 0;
+   virtual IClientInstantEclResp* runEcl(IClientInstantEclRequest* request) = 0;
+   virtual void runEclAsync(IClientInstantEclRequest* request, IClientInstantEclEvents &events) = 0;
+};
+
+
+extern "C" ECL_CLIENT_API IClientInstantEcl * createInstantEclClient();
+
+SCMclarion
+  map
+    module('instant ecl client')
+      createInstantEclClient procedure, *cppClientInstantEcl, pascal, raw, name('_createInstantEclClient@0')
+    end
+  end
+SCMend
+

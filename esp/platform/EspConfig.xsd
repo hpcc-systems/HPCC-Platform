@@ -1,0 +1,175 @@
+<!--
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XML Spy v4.0.1 U (http://www.xmlspy.com) by Jorge Mon (Seisint) -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:element name="Environment">
+        <xs:annotation>
+            <xs:documentation>Defines a Seisint Environment</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:choice maxOccurs="unbounded">
+                    <xs:element name="Software">
+                        <xs:annotation>
+                            <xs:documentation>Section to describe the processes that run in the environment.</xs:documentation>
+                        </xs:annotation>
+                        <xs:complexType>
+                            <xs:sequence minOccurs="0">
+                                <xs:choice minOccurs="0" maxOccurs="unbounded">
+                                    <xs:element name="EspProcess">
+                                        <xs:annotation>
+                                            <xs:documentation>Describes an HMon instance.</xs:documentation>
+                                        </xs:annotation>
+                                        <xs:complexType>
+                                            <xs:complexContent>
+                                                <xs:extension base="ProcessBase">
+                                                    <xs:sequence>
+                                                        <xs:choice minOccurs="0" maxOccurs="unbounded">
+                                                            <xs:element name="Listener">
+                                                                <xs:complexType>
+                                                                    <xs:attributeGroup ref="BaseAttributes"/>
+                                                                    <xs:attribute name="netAddress" type="xs:string" use="optional"/>
+                                                                    <xs:attribute name="port" type="xs:nonNegativeInteger" use="optional"/>
+                                                                    <xs:attribute name="deadbeatTimer" type="xs:nonNegativeInteger"/>
+                                                                    <xs:attribute name="heartbeatTimer" type="xs:nonNegativeInteger"/>
+                                                                    <xs:attribute name="jack" type="xs:string"/>
+                                                                    <xs:attribute name="isDisabled" type="xs:boolean"/>
+                                                                </xs:complexType>
+                                                            </xs:element>
+                                                            <xs:element name="Permissions">
+                                                                <xs:complexType>
+                                                                    <xs:sequence>
+                                                                        <xs:choice maxOccurs="unbounded">
+                                                                            <xs:element name="User">
+                                                                                <xs:complexType>
+                                                                                    <xs:attribute name="name" type="xs:string"/>
+                                                                                    <xs:attribute name="password" type="xs:string"/>
+                                                                                </xs:complexType>
+                                                                            </xs:element>
+                                                                        </xs:choice>
+                                                                    </xs:sequence>
+                                                                </xs:complexType>
+                                                            </xs:element>
+                                                        </xs:choice>
+                                                    </xs:sequence>
+                                                    <xs:attributeGroup ref="PoolingAttributes"/>
+                                                    <xs:attribute name="port" type="xs:nonNegativeInteger"/>
+                                                    <xs:attribute name="logFile" type="xs:string"/>
+                                                    <xs:attribute name="logFileSize" type="xs:nonNegativeInteger"/>
+                                                    <xs:attribute name="maxLogSize" type="xs:nonNegativeInteger"/>
+                                                </xs:extension>
+                                            </xs:complexContent>
+                                        </xs:complexType>
+                                    </xs:element>
+                                    <xs:element name="ItsProcess">
+                                        <xs:annotation>
+                                            <xs:documentation>Describes an HMon instance.</xs:documentation>
+                                        </xs:annotation>
+                                        <xs:complexType>
+                                            <xs:complexContent>
+                                                <xs:extension base="ProcessBase">
+                                                    <xs:sequence>
+                                                        <xs:choice minOccurs="0" maxOccurs="unbounded">
+                                                            <xs:element name="Listener">
+                                                                <xs:complexType>
+                                                                    <xs:attributeGroup ref="BaseAttributes"/>
+                                                                    <xs:attribute name="netAddress" type="xs:string" use="optional"/>
+                                                                    <xs:attribute name="port" type="xs:nonNegativeInteger" use="optional"/>
+                                                                    <xs:attribute name="deadbeatTimer" type="xs:nonNegativeInteger"/>
+                                                                    <xs:attribute name="heartbeatTimer" type="xs:nonNegativeInteger"/>
+                                                                    <xs:attribute name="jack" type="xs:string"/>
+                                                                    <xs:attribute name="isDisabled" type="xs:boolean"/>
+                                                                </xs:complexType>
+                                                            </xs:element>
+                                                        </xs:choice>
+                                                    </xs:sequence>
+                                                    <xs:attributeGroup ref="PoolingAttributes"/>
+                                                    <xs:attribute name="port" type="xs:nonNegativeInteger"/>
+                                                    <xs:attribute name="filtersPath" type="xs:string" default="/utils/hozed/dynamic/log_filters"/>
+                                                    <xs:attribute name="logFile" type="xs:string" default="hmon2"/>
+                                                    <xs:attribute name="logFilePath" type="xs:string" default="/utils/hozed/dynamic/logs"/>
+                                                    <xs:attribute name="logFileSize" type="xs:nonNegativeInteger"/>
+                                                    <xs:attribute name="maxLogSize" type="xs:nonNegativeInteger"/>
+                                                    <xs:attribute name="slaveRetryInterval" type="xs:nonNegativeInteger"/>
+                                                    <xs:attribute name="deadbeatTimer" type="xs:nonNegativeInteger"/>
+                                                    <xs:attribute name="heartbeatTimer" type="xs:nonNegativeInteger"/>
+                                                </xs:extension>
+                                            </xs:complexContent>
+                                        </xs:complexType>
+                                    </xs:element>
+                                </xs:choice>
+                            </xs:sequence>
+                            <xs:attribute name="include" type="xs:string"/>
+                            <xs:attribute name="name" type="xs:string"/>
+                        </xs:complexType>
+                    </xs:element>
+                </xs:choice>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <xs:complexType name="SettingsBase">
+        <xs:attributeGroup ref="BaseAttributes"/>
+    </xs:complexType>
+    <xs:complexType name="SimpleProcessBase">
+        <xs:complexContent>
+            <xs:extension base="SettingsBase">
+                <xs:attribute name="computer" type="xs:string" use="required"/>
+                <xs:attribute name="netAddress" type="xs:string" use="optional"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:complexType name="ProcessBase">
+        <xs:complexContent>
+            <xs:extension base="SimpleProcessBase">
+                <xs:attributeGroup ref="ProcessFileAttributes"/>
+                <xs:attribute name="description" type="xs:string" use="optional"/>
+                <xs:attribute name="daliCluster" type="xs:string" use="optional"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:attributeGroup name="BaseAttributes">
+        <xs:attribute name="include" type="xs:string"/>
+        <xs:attribute name="name" type="xs:string"/>
+    </xs:attributeGroup>
+    <xs:attributeGroup name="ProcessFileAttributes">
+        <xs:attribute name="directory" type="xs:string" use="required"/>
+        <xs:attribute name="build" type="xs:string" use="required"/>
+        <xs:attribute name="buildSet" type="xs:string" use="required"/>
+    </xs:attributeGroup>
+    <xs:attributeGroup name="DatabaseAttributes">
+        <xs:attribute name="dbProcess" type="xs:string"/>
+        <xs:attribute name="dbName" type="xs:string"/>
+        <xs:attribute name="dbUser" type="xs:string"/>
+        <xs:attribute name="dbPassword" type="xs:string"/>
+        <xs:attribute name="dbConnections" type="xs:string"/>
+        <xs:attribute name="dbTimeout" type="xs:nonNegativeInteger"/>
+    </xs:attributeGroup>
+    <xs:attributeGroup name="JackServiceAttributes">
+        <xs:attribute name="traceLevel" type="xs:nonNegativeInteger"/>
+        <xs:attribute name="logfile" type="xs:string"/>
+    </xs:attributeGroup>
+    <xs:attributeGroup name="PoolingAttributes">
+        <xs:attribute name="poolIdleCount" type="xs:nonNegativeInteger"/>
+        <xs:attribute name="poolIdleTimer" type="xs:nonNegativeInteger"/>
+        <xs:attribute name="poolMinCount" type="xs:nonNegativeInteger"/>
+        <xs:attribute name="poolMaxCount" type="xs:nonNegativeInteger"/>
+    </xs:attributeGroup>
+    <xs:attributeGroup name="LogFileAttributes"/>
+</xs:schema>

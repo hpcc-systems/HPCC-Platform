@@ -1,0 +1,67 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+1. Compile
+    (1) Enter the directory that contains this file and all the source files.
+    (2) Type in "gmake" to build release mode. Use "gmake DEBUG" to build debug mode.
+    (3) Release mode files will be under the "release" directory (within the source directory). There're 4
+        directories - include, lib, bin and obj. The include directory contains zcrypt.hpp, lib directory 
+        contains libzcrypt.a and bin directory contains zcrypttest. 
+        Debug mode files will be under "debug" directory, and the sub directories are similar to release mode.
+    (4) to clean up, use "gmake clean"
+
+2. Use the library.
+    To use the library, you only need zcrypt.hpp and libzcrypt.a.
+    You'll find an example to use it in main.cpp (from which zcrypttest is built).
+
+    Several things to pay attention to -
+    (1) When error happens, the library throws string type exception, so you should put the calls within 
+        a try catch block.
+    (2) Tracelevel is an integer. By default is set to 0, which means no tracing. If set to 1, it only prints
+        errors and warnings, set to 6 it will print some tracing, set to 11 or bigger it will print more
+        tracing info. All tracing goes to stdout.
+    (3) the encrypt() function takes references of IZBuffer* type as input. The pointers will be allocated within
+        the function. 
+        After using them, they need to be released with releaseIZ function. The IZEncryptor* object also need to 
+        be released with releaseIZ, after you've done all the encryption work.
+
+
+    #include "zcrypt.hpp"
+    
+    .....
+
+    try
+    {
+        IZEncryptor* zc = createZEncryptor(pubkeystr);
+        zc->setTraceLevel(atoi(argv[2]));
+
+        IZBuffer* buf = NULL;
+        IZBuffer* key = NULL;
+        zc->encrypt(inlen, din, key, buf);
+        releaseIZ(key);
+        releaseIZ(buf);
+        releaseIZ(zc);
+    }
+    catch(string str)
+    {
+        printf("%s\n", str.c_str());
+    }
+    
+3. Use the test proggram.
+    usage: zcrypttest <file-to-encrypt> <trace-level> <iteration-times>
+

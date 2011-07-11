@@ -1,0 +1,50 @@
+ 
+Copyright (C) <2011> <LexisNexis Risk Data Management Inc.>
+ 
+All rights reserved. This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+ 
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+ 
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+
+http://hpccsystems.com
+ 
+ 
+Description:
+------------
+This file is the top level handling for 
+cmake based compilation and build process.
+ 
+To build for Linux:
+1. Check out sources (for example, to directory ~/hpcc)
+2. Create a build directory - either as a child of hpcc or elsewhere
+3. cd to the build directory
+4a.To create makefiles to build native release version for local machine, run
+cmake ~/hpcc
+4b.To create makefiles to build native debug version, run
+cmake -DCMAKE_BUILD_TYPE=Debug ~/hpcc
+4c.To create makefiles to build 32-bit version from 64-bit host, run
+cmake -DCMAKE_C_FLAGS:STRING="-m32 -march=i386" -DCMAKE_CXX_FLAGS:STRING="-m32 -march=i386" ~/hpcc
+5. To build the makefiles just created above, run
+make
+6. Executables will be created in ./<releasemode>/bin and ./<releasemode>/libs
+ 
+To build for Windows:
+1. Check out sources (for example, to directory c:\hpcc)
+2. Create a build directory - either as a child of hpcc or elsewhere
+3. cd to the build directory
+4. To create a Visual Studio project, run
+cmake c:\hpcc -G "Visual Studio 9 2008"
+The sln file hpccsystems-platform.sln will be created in the current directory, and will support debug and release targets
+5. To build the project, load the solution into the visual studio IDE and build in the usual way.
+6. Executables will be created in (for example) c:\hpcc\bin\<release_mode>
+ 
+ 

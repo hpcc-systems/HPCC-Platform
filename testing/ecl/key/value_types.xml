@@ -1,0 +1,402 @@
+<Dataset name='Result 1'>
+ <Row><Result_1>------ IF(0&gt;10,TRUE,FALSE)     = FALSE ?</Result_1></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><Result_2>false</Result_2></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><Result_3>------ IF(0&lt;10,TRUE,FALSE)     = TRUE ?</Result_3></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><Result_4>true</Result_4></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><Result_5>------ IF(0=10,TRUE,FALSE)     = FALSE ?</Result_5></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><Result_6>false</Result_6></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><Result_7>------ IF(0!=10,TRUE,FALSE)    = TRUE ?</Result_7></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><Result_8>true</Result_8></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><Result_9>------ INTEGER[n] - 8 @ 255</Result_9></Row>
+</Dataset>
+<Dataset name='Result 10'>
+ <Row><Result_10>-1</Result_10></Row>
+</Dataset>
+<Dataset name='Result 11'>
+ <Row><Result_11>255</Result_11></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><Result_12>255</Result_12></Row>
+</Dataset>
+<Dataset name='Result 13'>
+ <Row><Result_13>255</Result_13></Row>
+</Dataset>
+<Dataset name='Result 14'>
+ <Row><Result_14>255</Result_14></Row>
+</Dataset>
+<Dataset name='Result 15'>
+ <Row><Result_15>255</Result_15></Row>
+</Dataset>
+<Dataset name='Result 16'>
+ <Row><Result_16>255</Result_16></Row>
+</Dataset>
+<Dataset name='Result 17'>
+ <Row><Result_17>255</Result_17></Row>
+</Dataset>
+<Dataset name='Result 18'>
+ <Row><Result_18>------ UNSIGNED INTEGER [n] - 8 @ 255</Result_18></Row>
+</Dataset>
+<Dataset name='Result 19'>
+ <Row><Result_19>255</Result_19></Row>
+</Dataset>
+<Dataset name='Result 20'>
+ <Row><Result_20>255</Result_20></Row>
+</Dataset>
+<Dataset name='Result 21'>
+ <Row><Result_21>255</Result_21></Row>
+</Dataset>
+<Dataset name='Result 22'>
+ <Row><Result_22>255</Result_22></Row>
+</Dataset>
+<Dataset name='Result 23'>
+ <Row><Result_23>255</Result_23></Row>
+</Dataset>
+<Dataset name='Result 24'>
+ <Row><Result_24>255</Result_24></Row>
+</Dataset>
+<Dataset name='Result 25'>
+ <Row><Result_25>255</Result_25></Row>
+</Dataset>
+<Dataset name='Result 26'>
+ <Row><Result_26>255</Result_26></Row>
+</Dataset>
+<Dataset name='Result 27'>
+ <Row><Result_27>255</Result_27></Row>
+</Dataset>
+<Dataset name='Result 28'>
+ <Row><Result_28>------ COMPARE INTEGER to INTEGER[n] = TRUE ?</Result_28></Row>
+</Dataset>
+<Dataset name='Result 29'>
+ <Row><Result_29>true</Result_29></Row>
+</Dataset>
+<Dataset name='Result 30'>
+ <Row><Result_30>true</Result_30></Row>
+</Dataset>
+<Dataset name='Result 31'>
+ <Row><Result_31>true</Result_31></Row>
+</Dataset>
+<Dataset name='Result 32'>
+ <Row><Result_32>true</Result_32></Row>
+</Dataset>
+<Dataset name='Result 33'>
+ <Row><Result_33>true</Result_33></Row>
+</Dataset>
+<Dataset name='Result 34'>
+ <Row><Result_34>true</Result_34></Row>
+</Dataset>
+<Dataset name='Result 35'>
+ <Row><Result_35>true</Result_35></Row>
+</Dataset>
+<Dataset name='Result 36'>
+ <Row><Result_36>------ COMPARE UNSIGNED to UNSIGNED[n] = TRUE ?</Result_36></Row>
+</Dataset>
+<Dataset name='Result 37'>
+ <Row><Result_37>true</Result_37></Row>
+</Dataset>
+<Dataset name='Result 38'>
+ <Row><Result_38>true</Result_38></Row>
+</Dataset>
+<Dataset name='Result 39'>
+ <Row><Result_39>true</Result_39></Row>
+</Dataset>
+<Dataset name='Result 40'>
+ <Row><Result_40>true</Result_40></Row>
+</Dataset>
+<Dataset name='Result 41'>
+ <Row><Result_41>true</Result_41></Row>
+</Dataset>
+<Dataset name='Result 42'>
+ <Row><Result_42>true</Result_42></Row>
+</Dataset>
+<Dataset name='Result 43'>
+ <Row><Result_43>true</Result_43></Row>
+</Dataset>
+<Dataset name='Result 44'>
+ <Row><Result_44>true</Result_44></Row>
+</Dataset>
+<Dataset name='Result 45'>
+ <Row><Result_45>true</Result_45></Row>
+</Dataset>
+<Dataset name='Result 46'>
+ <Row><Result_46>------ REAL, REAL4 &amp; REAL8 255 or 255.125</Result_46></Row>
+</Dataset>
+<Dataset name='Result 47'>
+ <Row><Result_47>255.0</Result_47></Row>
+</Dataset>
+<Dataset name='Result 48'>
+ <Row><Result_48>255.0</Result_48></Row>
+</Dataset>
+<Dataset name='Result 49'>
+ <Row><Result_49>255.125</Result_49></Row>
+</Dataset>
+<Dataset name='Result 50'>
+ <Row><Result_50>255.125</Result_50></Row>
+</Dataset>
+<Dataset name='Result 51'>
+ <Row><Result_51>true</Result_51></Row>
+</Dataset>
+<Dataset name='Result 52'>
+ <Row><Result_52>true</Result_52></Row>
+</Dataset>
+<Dataset name='Result 53'>
+ <Row><Result_53>true</Result_53></Row>
+</Dataset>
+<Dataset name='Result 54'>
+ <Row><Result_54>true</Result_54></Row>
+</Dataset>
+<Dataset name='Result 55'>
+ <Row><Result_55>------ COMPARE REAL4 &amp; REAL8   = TRUE ?</Result_55></Row>
+</Dataset>
+<Dataset name='Result 56'>
+ <Row><Result_56>true</Result_56></Row>
+</Dataset>
+<Dataset name='Result 57'>
+ <Row><Result_57>true</Result_57></Row>
+</Dataset>
+<Dataset name='Result 58'>
+ <Row><Result_58>true</Result_58></Row>
+</Dataset>
+<Dataset name='Result 59'>
+ <Row><Result_59>true</Result_59></Row>
+</Dataset>
+<Dataset name='Result 60'>
+ <Row><Result_60>true</Result_60></Row>
+</Dataset>
+<Dataset name='Result 61'>
+ <Row><Result_61>------ DECIMAL                 = 255.1 &amp; 255.12 ?</Result_61></Row>
+</Dataset>
+<Dataset name='Result 62'>
+ <Row><Result_62>255.1</Result_62></Row>
+</Dataset>
+<Dataset name='Result 63'>
+ <Row><Result_63>255.12</Result_63></Row>
+</Dataset>
+<Dataset name='Result 64'>
+ <Row><Result_64>true</Result_64></Row>
+</Dataset>
+<Dataset name='Result 65'>
+ <Row><Result_65>true</Result_65></Row>
+</Dataset>
+<Dataset name='Result 66'>
+ <Row><Result_66>false</Result_66></Row>
+</Dataset>
+<Dataset name='Result 67'>
+ <Row><Result_67>------ QSTRING,STRING &amp; LENGTH = 7 ?</Result_67></Row>
+</Dataset>
+<Dataset name='Result 68'>
+ <Row><Result_68>SEISINT</Result_68></Row>
+</Dataset>
+<Dataset name='Result 69'>
+ <Row><Result_69>SEISINT</Result_69></Row>
+</Dataset>
+<Dataset name='Result 70'>
+ <Row><Result_70>7</Result_70></Row>
+</Dataset>
+<Dataset name='Result 71'>
+ <Row><Result_71>------ INTEGER SETs;           = TRUE, TRUE &amp; FALSE ?</Result_71></Row>
+</Dataset>
+<Dataset name='Result 72'>
+ <Row><Result_72>true</Result_72></Row>
+</Dataset>
+<Dataset name='Result 73'>
+ <Row><Result_73>true</Result_73></Row>
+</Dataset>
+<Dataset name='Result 74'>
+ <Row><Result_74>false</Result_74></Row>
+</Dataset>
+<Dataset name='Result 75'>
+ <Row><Result_75>------ STRING SETs;            = TRUE, TRUE &amp; FALSE ?</Result_75></Row>
+</Dataset>
+<Dataset name='Result 76'>
+ <Row><Result_76>true</Result_76></Row>
+</Dataset>
+<Dataset name='Result 77'>
+ <Row><Result_77>true</Result_77></Row>
+</Dataset>
+<Dataset name='Result 78'>
+ <Row><Result_78>false</Result_78></Row>
+</Dataset>
+<Dataset name='Result 79'>
+ <Row><Result_79>------ TYPEOF;                 = SEISINT &amp; TRUE ?</Result_79></Row>
+</Dataset>
+<Dataset name='Result 80'>
+ <Row><Result_80>SEISINT</Result_80></Row>
+</Dataset>
+<Dataset name='Result 81'>
+ <Row><Result_81>true</Result_81></Row>
+</Dataset>
+<Dataset name='Result 82'>
+ <Row><Result_82>------ BOOLEAN to INTEGER      = 1, 0 ?</Result_82></Row>
+</Dataset>
+<Dataset name='Result 83'>
+ <Row><Result_83>1</Result_83></Row>
+</Dataset>
+<Dataset name='Result 84'>
+ <Row><Result_84>0</Result_84></Row>
+</Dataset>
+<Dataset name='Result 85'>
+ <Row><Result_85>------ INTEGER to BOOLEAN      = FALSE, TRUE, TRUE ?</Result_85></Row>
+</Dataset>
+<Dataset name='Result 86'>
+ <Row><Result_86>false</Result_86></Row>
+</Dataset>
+<Dataset name='Result 87'>
+ <Row><Result_87>true</Result_87></Row>
+</Dataset>
+<Dataset name='Result 88'>
+ <Row><Result_88>true</Result_88></Row>
+</Dataset>
+<Dataset name='Result 89'>
+ <Row><Result_89>------ INTEGER to DECIMAL      = 0.0, 255 ?</Result_89></Row>
+</Dataset>
+<Dataset name='Result 90'>
+ <Row><Result_90>0</Result_90></Row>
+</Dataset>
+<Dataset name='Result 91'>
+ <Row><Result_91>255</Result_91></Row>
+</Dataset>
+<Dataset name='Result 92'>
+ <Row><Result_92>------ INTEGER to REAL         = 0, 1, 100 ?</Result_92></Row>
+</Dataset>
+<Dataset name='Result 93'>
+ <Row><Result_93>0.0</Result_93></Row>
+</Dataset>
+<Dataset name='Result 94'>
+ <Row><Result_94>1.0</Result_94></Row>
+</Dataset>
+<Dataset name='Result 95'>
+ <Row><Result_95>100.0</Result_95></Row>
+</Dataset>
+<Dataset name='Result 96'>
+ <Row><Result_96>------ INTEGER to STRING1      = 0, 1, 2 ?</Result_96></Row>
+</Dataset>
+<Dataset name='Result 97'>
+ <Row><Result_97>0</Result_97></Row>
+</Dataset>
+<Dataset name='Result 98'>
+ <Row><Result_98>1</Result_98></Row>
+</Dataset>
+<Dataset name='Result 99'>
+ <Row><Result_99>2</Result_99></Row>
+</Dataset>
+<Dataset name='Result 100'>
+ <Row><Result_100>------ DECIMAL to INTEGER      = 255, 255 ?</Result_100></Row>
+</Dataset>
+<Dataset name='Result 101'>
+ <Row><Result_101>255</Result_101></Row>
+</Dataset>
+<Dataset name='Result 102'>
+ <Row><Result_102>255</Result_102></Row>
+</Dataset>
+<Dataset name='Result 103'>
+ <Row><Result_103>------ DECIMAL to REAL         = 255.1, 255.12 ?</Result_103></Row>
+</Dataset>
+<Dataset name='Result 104'>
+ <Row><Result_104>255.1</Result_104></Row>
+</Dataset>
+<Dataset name='Result 105'>
+ <Row><Result_105>255.12</Result_105></Row>
+</Dataset>
+<Dataset name='Result 106'>
+ <Row><Result_106>------ DECIMAL to STRING1      = 255.1, 255.12 ?</Result_106></Row>
+</Dataset>
+<Dataset name='Result 107'>
+ <Row><Result_107>255.1</Result_107></Row>
+</Dataset>
+<Dataset name='Result 108'>
+ <Row><Result_108>255.12</Result_108></Row>
+</Dataset>
+<Dataset name='Result 109'>
+ <Row><Result_109>------ REAL to DECIMAL         = 0.0, 255.25, 0.0 ?</Result_109></Row>
+</Dataset>
+<Dataset name='Result 110'>
+ <Row><Result_110>0</Result_110></Row>
+</Dataset>
+<Dataset name='Result 111'>
+ <Row><Result_111>255.25</Result_111></Row>
+</Dataset>
+<Dataset name='Result 112'>
+ <Row><Result_112>0</Result_112></Row>
+</Dataset>
+<Dataset name='Result 113'>
+ <Row><Result_113>------ REAL to INTEGER         = 0, 255, 999 ?</Result_113></Row>
+</Dataset>
+<Dataset name='Result 114'>
+ <Row><Result_114>0</Result_114></Row>
+</Dataset>
+<Dataset name='Result 115'>
+ <Row><Result_115>255</Result_115></Row>
+</Dataset>
+<Dataset name='Result 116'>
+ <Row><Result_116>999</Result_116></Row>
+</Dataset>
+<Dataset name='Result 117'>
+ <Row><Result_117>------ REAL to STRING8         = 255.1230, 0.000000 ?</Result_117></Row>
+</Dataset>
+<Dataset name='Result 118'>
+ <Row><Result_118>255.123 </Result_118></Row>
+</Dataset>
+<Dataset name='Result 119'>
+ <Row><Result_119>0.0     </Result_119></Row>
+</Dataset>
+<Dataset name='Result 120'>
+ <Row><Result_120>------ STRING to DECIMAL       = 123.456, -23.456 ?</Result_120></Row>
+</Dataset>
+<Dataset name='Result 121'>
+ <Row><Result_121>123.456</Result_121></Row>
+</Dataset>
+<Dataset name='Result 122'>
+ <Row><Result_122>-23.456</Result_122></Row>
+</Dataset>
+<Dataset name='Result 123'>
+ <Row><Result_123>------ STRING to REAL          = 123.456, -23.456 ?</Result_123></Row>
+</Dataset>
+<Dataset name='Result 124'>
+ <Row><Result_124>123.456</Result_124></Row>
+</Dataset>
+<Dataset name='Result 125'>
+ <Row><Result_125>-23.456</Result_125></Row>
+</Dataset>
+<Dataset name='Result 126'>
+ <Row><Result_126>------ STRING  to INTEGER      = 0, 1, 100, 0 ?</Result_126></Row>
+</Dataset>
+<Dataset name='Result 127'>
+ <Row><Result_127>0</Result_127></Row>
+</Dataset>
+<Dataset name='Result 128'>
+ <Row><Result_128>1</Result_128></Row>
+</Dataset>
+<Dataset name='Result 129'>
+ <Row><Result_129>100</Result_129></Row>
+</Dataset>
+<Dataset name='Result 130'>
+ <Row><Result_130>0</Result_130></Row>
+</Dataset>
+<Dataset name='Result 131'>
+ <Row><Result_131>------ STRING  to QSTRING      = SEISINT, INC. BOCA RATON, FL. 33487 ?</Result_131></Row>
+</Dataset>
+<Dataset name='Result 132'>
+ <Row><Result_132>SEISINT, INC.</Result_132></Row>
+</Dataset>
+<Dataset name='Result 133'>
+ <Row><Result_133>BOCA RATON, FL.</Result_133></Row>
+</Dataset>
+<Dataset name='Result 134'>
+ <Row><Result_134>33487</Result_134></Row>
+</Dataset>

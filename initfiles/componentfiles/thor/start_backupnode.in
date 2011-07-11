@@ -1,0 +1,94 @@
+#!/bin/bash
+################################################################################
+#    Copyright (C) 2011 HPCC Systems.
+#
+#    All rights reserved. This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License as
+#    published by the Free Software Foundation, either version 3 of the
+#    License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+
+###<REPLACE>###
+
+if [ $# -lt 1 ]; then
+    echo usage: $0 thorinstance 
+    exit 1
+fi
+
+pid=`pidof backupnode`
+if [ -n "$pid" ]; then
+   echo stopping previous backupnode processes $pid
+   killall backupnode
+fi
+
+echo ------------------------------
+echo starting backupnode ...
+
+PATH_PRE=`type -path hpcc_setenv`
+if [ -z "$PATH_PRE" ]; then
+    # assume default conf location
+    PATH_PRE=`cat ${CONFIG_DIR}/environment.conf | sed -n "/\[DEFAULT\]/,/\[/p" | grep "^path=" | sed -e 's/^path=//'`/sbin/hpcc_setenv
+fi
+source ${PATH_PRE} ""
+DEPLOY_DIR=$(dirname $(type -path start_backupnode))
+ENV_DIR=`cat ${HPCC_CONFIG} | sed -n "/\[DEFAULT\]/,/\[/p" | grep "^configs=" | sed -e 's/^configs=//'`
+RUN_DIR=`cat ${HPCC_CONFIG} | sed -n "/\[DEFAULT\]/,/\[/p" | grep "^runtime=" | sed -e 's/^runtime=//'`
+INSTANCE_DIR=$RUN_DIR/$1
+PID_NAME="$PID/`basename $INSTANCE_DIR`.pid"
+BACKUPNODE_DATA=`updtdalienv $ENV_DIR/environment.xml -d data backupnode backupnode`
+if [ -z "$BACKUPNODE_DATA" ]; then
+    echo cannot determine backupnode directory 
+    exit 1
+fi
+BACKUPNODE_REMOTEDATA=`updtdalienv $ENV_DIR/environment.xml -d data backupnode backupnode .`
+if [ ! -r $INSTANCE_DIR/slaves ]; then
+    echo cannot read $INSTANCE_DIR/slaves 
+    exit 1
+fi
+
+mkdir -p $BACKUPNODE_DATA/last_backup
+rm -f $BACKUPNODE_DATA/last_backup/*.ERR
+rm -f $BACKUPNODE_DATA/last_backup/*.DAT
+. $INSTANCE_DIR/setvars
+echo ------------------------------
+echo scanning files from dali ...
+
+NODEGROUP=$THORPRIMARY
+if [ -z "$THORPRIMARY" ]; then
+  NODEGROUP=$THORNAME
+fi
+
+LOGFILE="`updtdalienv $ENV_DIR/environment.xml -d data backupnode backupnode`/`date +%m_%d_%Y_%H_%M_%S`.log"
+mkdir -p `dirname $LOGFILE` 
+
+backupnode -O $DALISERVER $NODEGROUP $BACKUPNODE_DATA/last_backup 2>$LOGFILE 1>$LOGFILE
+if [ $? -ne 0 ]; then
+  echo Backupnode failed - see $LOGFILE
+  exit 1
+fi
+
+frunssh $DEPLOY_DIR/slaves "killall backupnode" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -b &> $LOGFILE
+frunssh $DEPLOY_DIR/slaves "$DEPLOY_DIR/start_one_backupnode $BACKUPNODE_REMOTEDATA/last_backup %n $LOGFILE" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -b &> $LOGFILE
+
+echo ------------------------------
+sleep 5
+echo ------------------------------ >> $LOGFILE
+echo Waiting for backup to complete >> $LOGFILE
+
+nohup backupnode -W $DEPLOY_DIR/slaves $DEPLOY_DIR/last_backup >> $LOGFILE &
+pid=`pidof backupnode`
+trap "echo start_backupnode exiting, backupnode process $pid still continuing; exit 0" 2
+if [ -n "$pid" ]; then
+  tail --pid $pid -f $LOGFILE 2>nul
+fi
+
+
+

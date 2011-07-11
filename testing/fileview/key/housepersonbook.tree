@@ -1,0 +1,106 @@
+>>regress::hthor::house<<
+[1]
+1 99 Maltings Road SW1A0AA    1720 0
+ >>regress::hthor::person<<
+ [1]
+ 1 Gavin Halliday 19700101 1000 35 1 0
+  >>regress::hthor::book<<
+  [1]
+  1 To kill a mocking bird Harper Lee 95 0 1 0
+  [2]
+  2 Clarion Language Manual Richard Taylor 1 399.99 1 53
+  [3]
+  3 The bible Various 98 0 1 111
+  [4]
+  4 Compilers Aho, Sethi, Ullman 80 0 1 148
+  [5]
+  5 Lord of the Rings JRR Tolkien 95 0 1 196
+ [2]
+ 2 Abigail Halliday 20000101 40 2 1 39
+  >>regress::hthor::book<<
+  [1]
+  6 The thinks you can think Dr. Seuss 90 5.99 2 245
+  [2]
+  7 Where is flop?  85 4.99 2 299
+  [3]
+  8 David and Goliath  20 2.99 2 334
+  [4]
+  9 The story of Jonah  80 6.99 2 372
+ [3]
+ 3 Liz Halliday 19700909 0 34 1 80
+  >>regress::hthor::book<<
+  [1]
+  10 The Life of Pi Yan Martel 90 0 3 411
+  [2]
+  11 BNF Various 60 0 3 456
+  [3]
+  12 The Third Policeman Flann O'Brien 85 0 3 487
+[2]
+2 Buckingham Palace WC1        1702 36
+ >>regress::hthor::person<<
+ [1]
+ 4 Elizabeth Windsor 19260421 0 78 2 117
+  >>regress::hthor::book<<
+  [1]
+  13 The bible Various 93 0 4 540
+  [2]
+  14 The Prince Machiavelli 40 0 4 577
+  [3]
+  15 Atlas of the world Times 70 0 4 619
+  [4]
+  16 Girl guide annual Various 50 0 4 663
+  [5]
+  17 Rwandan war dances Unknown 30 0 4 708
+ [2]
+ 5 Philip Windsor 19210610 0 83 2 159
+  >>regress::hthor::book<<
+  [1]
+  18 Greek tragedies Various 30 0 5 754
+  [2]
+  19 Social etiquette RU Correct 10 0 5 797
+  [3]
+  20 The Rituals of Dinner: The Origins, Evolution, Eccentricities and the Meaning of Table Manners Margaret Visser 60 0 5 844
+  [4]
+  21 The cat in the hat Dr. Seuss 85 0 5 974
+[3]
+3 Bedrock            0 73
+ >>regress::hthor::person<<
+ [1]
+ 6 Fred Flintstone 101 0 99 3 198
+  >>regress::hthor::book<<
+ [2]
+ 7 Wilma Flintstone 20202 0 99 3 238
+  >>regress::hthor::book<<
+  [1]
+  22 Dinosaur stews Trog 55 0 7 1022
+[4]
+4 Wimpole Hall AG1 6QT    1203 100
+ >>regress::hthor::person<<
+ [1]
+ 8 John Grabdale 19361008 0 68 4 279
+  >>regress::hthor::book<<
+  [1]
+  23 Pride and prejudice, 1st edition Jane Austen 95 12000 8 1061
+  [2]
+  24 Mein Kampf, 1st edition Adolph Hitler 80 10000 8 1125
+[5]
+5 56 New Road SG8 1S2    2003 132
+ >>regress::hthor::person<<
+ [1]
+ 9 Brian Jones 19540206 0 50 5 317
+  >>regress::hthor::book<<
+  [1]
+  25 All quiet on the western front Erich Maria Remarque 85 4.99 9 1182
+  [2]
+  26 Fox in Socks Dr. Seuss 99 4.99 9 1253
+ [2]
+ 10 Julia Jones 19550312 0 49 5 353
+  >>regress::hthor::book<<
+  [1]
+  27 Zen and the art of motorcyle maintenance Robert Pirsig 90 7.99 10 1295
+  [2]
+  28 Where the wild things are Maurice Sendak 70 4.79 10 1369
+  [3]
+  29 The bible Various 10 5.99 10 1429
+  [4]
+  30 The cat in the hat Dr. Seuss 80 0 10 1466

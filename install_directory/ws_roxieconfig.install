@@ -1,0 +1,44 @@
+################################################################################
+#    Copyright (C) 2011 HPCC Systems.
+#
+#    This program is free software: you can redistribute it and/or All rights reserved. This program is NOT PRESENTLY free software: you can NOT redistribute
+#    it under the terms of the GNU Affero General Public License as
+#    published by the Free Software Foundation, either version 3 of the
+#    License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+
+# ws_roxieconfig Supplementals
+# AuthenticateFeature service=ws_roxieconfig path=RoxieConfigAccess resource=RoxieConfigAccess description=Access to Roxie Configuration service
+# SCHEMA: name=esp_service_roxieconfig.xsd method=schema
+### name=ws_roxieconfig_permissions.xml
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/configxml/ws_roxieconfig_permissions.xml DESTINATION ${OSSDIR}/componentfiles/configxml
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=@temp/esp_service.xsl method=esp_service_module
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/configxml/@temp/esp_service.xsl DESTINATION ${OSSDIR}/componentfiles/configxml/@temp
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=roxie_xslt/exceptions.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/exceptions.xslt DESTINATION ${OSSDIR}/componentfiles/roxie_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=xslt/multistatus.xsl
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/xslt/multistatus.xsl DESTINATION ${OSSDIR}/componentfiles/xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/scripts/popup.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/popup.js DESTINATION ${OSSDIR}/componentfiles/files/scripts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/scripts/ws_roxieconfig_deploy.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/services/ws_roxieconfig/ws_roxieconfig_deploy.js DESTINATION ${OSSDIR}/componentfiles/files/scripts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/scripts/ws_roxieconfig_remap.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/services/ws_roxieconfig/ws_roxieconfig_remap.js DESTINATION ${OSSDIR}/componentfiles/files/scripts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=files/scripts/ws_roxieconfig_remapper.js
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/services/ws_roxieconfig/ws_roxieconfig_remapper.js DESTINATION ${OSSDIR}/componentfiles/files/scripts
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )

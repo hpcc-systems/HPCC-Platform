@@ -1,0 +1,17 @@
+<Dataset name='Result 1'>
+ <Row><aage>34</aage><_unnamed_max_fullname2>Halliday, Liz</_unnamed_max_fullname2></Row>
+ <Row><aage>35</aage><_unnamed_max_fullname2>Halliday, Gavin</_unnamed_max_fullname2></Row>
+ <Row><aage>49</aage><_unnamed_max_fullname2>Jones, Julia</_unnamed_max_fullname2></Row>
+ <Row><aage>50</aage><_unnamed_max_fullname2>Jones, Brian</_unnamed_max_fullname2></Row>
+ <Row><aage>68</aage><_unnamed_max_fullname2>Grabdale, John</_unnamed_max_fullname2></Row>
+ <Row><aage>78</aage><_unnamed_max_fullname2>Windsor, Elizabeth</_unnamed_max_fullname2></Row>
+ <Row><aage>83</aage><_unnamed_max_fullname2>Windsor, Philip</_unnamed_max_fullname2></Row>
+ <Row><aage>99</aage><_unnamed_max_fullname2>Flintstone, Wilma</_unnamed_max_fullname2></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><surname>Flintstone          </surname><_unnamed_avg_aage2>99.0</_unnamed_avg_aage2></Row>
+ <Row><surname>Grabdale            </surname><_unnamed_avg_aage2>68.0</_unnamed_avg_aage2></Row>
+ <Row><surname>Halliday            </surname><_unnamed_avg_aage2>34.5</_unnamed_avg_aage2></Row>
+ <Row><surname>Jones               </surname><_unnamed_avg_aage2>49.5</_unnamed_avg_aage2></Row>
+ <Row><surname>Windsor             </surname><_unnamed_avg_aage2>80.5</_unnamed_avg_aage2></Row>
+</Dataset>

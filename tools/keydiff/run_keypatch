@@ -1,0 +1,37 @@
+#!/bin/bash
+################################################################################
+#    Copyright (C) 2011 HPCC Systems.
+#
+#    All rights reserved. This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License as
+#    published by the Free Software Foundation, either version 3 of the
+#    License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+
+
+if [ $# -lt 5 ]; then
+    echo usage: $0 workdir newkeyfile oldkeyfile patchfile flagfile
+    exit 1
+fi
+cd `dirname $0`
+deploydir=`pwd`
+mkdir -p $1
+cd $1
+rm -f $5
+export PATH=$PATH:$deploydir
+export LD_LIBRARY_PATH=$deploydir
+keypatch -o $4 $3 $2  &>$5.log
+errcode=$?
+if [ $errcode -ne 0 ]; then
+   echo error=$errcode deploydir=$deploydir >> $5.log
+   echo cmd = keypatch -o $4 $3 $2 >> $5.log
+fi
+mv -f $5.log $5

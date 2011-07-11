@@ -1,0 +1,15 @@
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+
+[DEFAULT]
+configs=${CONFIG_DIR}
+path=${INSTALL_DIR}
+runtime=${RUNTIME_PATH}
+lock=${LOCK_PATH}
+pid=${PID_PATH}
+log=${LOG_PATH}
+user=${RUNTIME_USER}
+group=${RUNTIME_GROUP}
+home=${HOME_DIR}
+environment=${ENV_XML_FILE}
+sourcedir=${CONFIG_SOURCE_PATH}
+blockname=${DIR_NAME}

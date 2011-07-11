@@ -1,0 +1,98 @@
+#!/bin/bash
+################################################################################
+## Copyright © 2011 HPCC Systems.  All rights reserved.
+################################################################################
+#
+# HPCC Set Environment
+# Extract pathing parameters from config file (optional section) and set
+# relevant environment varibles if we are being sourced. Otherwise, just
+# echo bash-style commands to the caller that can in-turn be sourced.
+
+###<REPLACE>###
+
+function pidwait_fn () {
+        WATCH_PID=$1
+        TIMEOUT=$(($2*1000))
+        kill $WATCH_PID
+        while [ -d /proc/$WATCH_PID -a $TIMEOUT -gt 0 ]; do
+                sleep 0.2
+                TIMEOUT=$(($TIMEOUT-200))
+        done
+        if [ $TIMEOUT -le 0 ]; then
+                kill -9 $WATCH_PID
+        fi
+}
+
+HPCC_CONFIG=${HPCC_CONFIG:-${CONFIG_DIR}/${ENV_CONF_FILE}}
+#SECTION=${1:-DEFAULT}
+SECTION="DEFAULT"
+
+PATH_PREFIX=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^path *= *" | sed -e 's/^path *= *//'`
+
+export PID=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^pid *= *" | sed -e 's/^pid *= *//'`
+
+NEW_PATH="${PATH_PREFIX}/bin"
+for D in ${PATH//:/ } ; do
+    if [ "${D}" = "${NEW_PATH}" ]; then
+        unset NEW_PATH
+        break
+    fi
+done
+if [ -n "${NEW_PATH}" ]; then
+    NEW_PATH="${NEW_PATH}:${PATH_PREFIX}/sbin:${PATH_PREFIX}/etc/init.d"
+fi
+
+NEW_LIB="${PATH_PREFIX}/lib"
+for D in ${LD_LIBRARY_PATH//:/ } ; do
+    if [ "${D}" = "${NEW_LIB}" ]; then
+        unset NEW_LIB
+        break
+    fi
+done
+
+NEW_LIB2="${PATH_PREFIX}/plugins"
+for D in ${LD_LIBRARY_PATH//:/ } ; do
+        if [ "${D}" = "${NEW_LIB2}" ]; then
+                unset NEW_LIB2
+                break
+        fi
+done
+
+if [ `basename -- "$0"` = "hpcc_setenv" ]; then
+    if [ -z ${PATH_PREFIX} ]; then
+        echo "# Can't find path in ${SECTION} section in ${HPCC_CONFIG}"
+        exit 1
+    fi
+    # Not being sourced directly, so echo out commands to do so to the caller
+    if [ -n "${NEW_PATH}" ]; then
+        echo "export PATH=${PATH:+${PATH}:}${NEW_PATH}"
+    else
+        echo "# \$PATH already contains ${PATH_PREFIX}/bin"
+    fi
+    if [ -n "${NEW_LIB}" ]; then
+        echo "export LD_LIBRARY_PATH=${LD_LIBRARY_PATH:+${LD_LIBRARY_PATH}:}${NEW_LIB}"
+    else
+        echo "# \$LD_LIBRARY_PATH already contains ${PATH_PREFIX}/lib"
+    fi
+
+    if [ -n "${NEW_LIB2}" ]; then
+                echo "export LD_LIBRARY_PATH=${LD_LIBRARY_PATH:+${LD_LIBRARY_PATH}:}${NEW_LIB2}"
+        else
+                echo "# \$LD_LIBRARY_PATH already contains ${PATH_PREFIX}/plugins"
+        fi
+else
+    if [ -z ${PATH_PREFIX} ]; then
+        return
+    fi
+    # being sourced - can set environment vars directly
+    if [ -n "${NEW_PATH}" ]; then
+        export PATH=${PATH:+${PATH}:}${NEW_PATH}
+    fi
+    if [ -n "${NEW_LIB}" ]; then
+        export LD_LIBRARY_PATH=${LD_LIBRARY_PATH:+${LD_LIBRARY_PATH}:}${NEW_LIB}
+    fi
+    if [ -n "${NEW_LIB2}" ]; then
+                export LD_LIBRARY_PATH=${LD_LIBRARY_PATH:+${LD_LIBRARY_PATH}:}${NEW_LIB2}
+        fi
+
+fi

@@ -1,0 +1,27 @@
+<Dataset name='Result 1'>
+ <Row><c>6</c><sx>21.000000</sx><sy>21.000000</sy><sxx>91.000000</sxx><sxy>91.000000</sxy><syy>91.000000</syy><varx>2.916667</varx><vary>2.916667</vary><varxy>2.916667</varxy><rc>1.000000</rc></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><_unnamed_1>0.000000</_unnamed_1><_unnamed_2>0.000000</_unnamed_2><_unnamed_3>0.000000</_unnamed_3><_unnamed_4>0.000000</_unnamed_4></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><_unnamed_1>bestFit: y=0 + 1x</_unnamed_1></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><c>7</c><sx>17181700000.000000</sx><sy>8860168000.000000</sy><sxx>46389768650199998464.000000</sxx><sxy>23067811270579998720.000000</sxy><syy>12882340489263998976.000000</syy><varx>602399299212244736.000000</varx><vary>238240947686203968.000000</vary><varxy>188610823846122048.000000</varxy><rc>0.497870</rc></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><_unnamed_1>0.000000</_unnamed_1><_unnamed_2>0.000000</_unnamed_2><_unnamed_3>0.000000</_unnamed_3><_unnamed_4>-0.000000</_unnamed_4></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><_unnamed_1>bestFit: y=4.97227e+08 + 0.313099x</_unnamed_1></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><c>6</c><sx>21.000000</sx><sy>21.137130</sy><sxx>91.000000</sxx><sxy>92.061560</sxy><syy>93.221375</syy><varx>2.916667</varx><vary>3.126389</vary><varxy>3.013601</varxy><rc>0.997978</rc></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><_unnamed_1>0.000000</_unnamed_1><_unnamed_2>0.000000</_unnamed_2><_unnamed_3>-0.000000</_unnamed_3><_unnamed_4>0.000000</_unnamed_4></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><_unnamed_1>bestFit: y=-0.093466 + 1.03323x</_unnamed_1></Row>
+</Dataset>
