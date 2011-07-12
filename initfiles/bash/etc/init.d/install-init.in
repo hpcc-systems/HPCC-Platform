@@ -232,4 +232,5 @@ if [ -d ${confPath} ]; then
     done
 fi
 
-
+chown root:$group ${configs}
+chown -R $user:$group ${configs}/*

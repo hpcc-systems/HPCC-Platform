@@ -1,0 +1,100 @@
+#!/bin/bash
+##
+## Copyright (c) 2011 HPCC Systems.  All rights reserved.
+##
+## version v0.1
+## author Philip Schwartz <philip.schwartz@lexisnexis.com>
+##
+## Usage: hpcc-run.sh [hpcc-init | dafilesrv] [-c component] <cmd>
+##
+## This is acomplished with a standard ssh command with the use of the 
+## runtime users id_rsa file.
+
+###<REPLACE>###
+
+source  ${INSTALL_DIR}/etc/init.d/lock.sh
+source  ${INSTALL_DIR}/etc/init.d/pid.sh
+source  ${INSTALL_DIR}/etc/init.d/hpcc_common
+source  ${INSTALL_DIR}/etc/init.d/init-functions
+source  ${INSTALL_DIR}/etc/init.d/export-path
+
+print_usage(){
+	echo "usage: hpcc-run.sh [-c component] [-a {hpcc-init|dafilesrv}] {start|stop|restart|status|setup}"
+	exit 1
+}
+
+getIPS(){
+	IPS=`${INSTALL_DIR}/sbin/configgen -env ${envfile} -machines | awk -F, '{print \$1}'  | sort | uniq`
+}
+
+buildCmd(){
+	if [ -z $3 ]; then
+		CMD="sudo /etc/init.d/$1 $2"
+	else
+		CMD="sudo /etc/init.d/$1 -c $3 $2"
+	fi
+}
+
+runCmd(){
+	echo "$IP: Running $@";
+	ssh -i $home/$user/.ssh/id_rsa $user@$IP $@;
+}
+
+set_envrionmentvars
+envfile=$configs/$environment
+
+getIPS
+
+TEMP=`/usr/bin/getopt -o a:c:h --long help,action -n 'hpcc-run' -- "$@"`
+if [ $? != 0 ] ; then echo "Failure to parse commandline." >&2 ; exit 1 ; fi
+eval set -- "$TEMP"
+while true ; do
+    case "$1" in
+        -c) comp=$2
+            shift 2 ;;
+	-a|--action) action=$2
+	    shift 2 ;;
+        -h|--help) print_usage
+                   shift ;;
+        --) shift ; break ;;
+        *) print_usage ;;
+    esac
+done
+for arg do arg=$arg; done
+
+case "$action" in
+    hpcc-init) ;;
+    dafilesrv) ;;
+    *) if [ -z $action ]; then
+	    action="hpcc-init"
+	else
+	    print_usage 
+        fi
+	;;
+esac
+
+case "$arg" in
+    start) cmd="start" ;;
+    stop) cmd="stop" ;;
+    restart) cmd="restart" ;;
+    status) cmd="status" ;;
+    setup) cmd="setup" ;;
+    *) print_usage;;
+esac
+
+
+
+for IP in $IPS; do
+	if ping -c 1 -w 5 -n $IP > /dev/null 2>&1; then
+		echo "$IP: Host is alive."
+		CAN_SSH="`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@$IP exit > /dev/null 2>&1; echo $?`"
+		if [ "$CAN_SSH" -eq 255 ]; then
+			echo "$IP: Cannot SSH to host.";
+		else
+			buildCmd $action $cmd $comp
+			runCmd $CMD
+		fi
+	else
+		echo "$IP: FAIL"
+	fi
+done
