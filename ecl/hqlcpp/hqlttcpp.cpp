@@ -1311,7 +1311,7 @@ IHqlExpression * SequenceNumberAllocator::doTransformRootExpr(IHqlExpression * e
                     args.append(*LINK(transformed->queryChild(0)));
                 else
                     args.append(*LINK(transformed));
-                nextSequence(args, NULL, false, NULL, true, NULL);
+                nextSequence(args, NULL, NULL, NULL, true, NULL);
                 IHqlExpression * ret = createSetResult(args);
                 if (isOuterWorkflow)
                 {

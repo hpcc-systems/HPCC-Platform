@@ -27,6 +27,7 @@
 
 #define JLIBERR_BadlyFormedDateTime             1000
 #define JLIBERR_BadUtf8InArguments              1001
+#define JLIBERR_InternalError                   1002
 
 //---- Text for all errors (make it easy to internationalise) ---------------------------
 

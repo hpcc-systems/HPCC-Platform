@@ -78,8 +78,11 @@ int keyboard::getch()
         ch = peek_character;
         peek_character = -1;
     } 
-    else 
-        read(0,&ch,1);
+    else
+    {
+        if (read(0,&ch,1) == 0)
+            return -1;
+    }
 
     return ch;
 #else
