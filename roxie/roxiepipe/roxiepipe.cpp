@@ -35,6 +35,8 @@ static unsigned maxRetries = 0;
 static int readTimeout = 300;
 
 #define MAXBUFSIZE 0x8000
+#define MAXTHREADS 50
+
 
 static Mutex readMutex;
 static Mutex writeMutex;
@@ -514,13 +516,25 @@ int main(int argc, char *argv[])
         {
             i++;
             if (i < argc)
-                freopen(argv[i], "rb", stdin);
+            {
+                if (!freopen(argv[i], "rb", stdin))
+                {
+                    fatalError.appendf("Could not open file %s for input (error %d)\n)", argv[i], errno);
+                    break;
+                }
+            }
         }
         else if (stricmp(argv[i], "-o") == 0)   //output - string
         {
             i++;
             if (i < argc)
-                freopen(argv[i], "wb", stdout);
+            {
+                if (!freopen(argv[i], "wb", stdout))
+                {
+                    fatalError.appendf("Could not open file %s for output (error %d))", argv[i], errno);
+                    break;
+                }
+            }
         }
         else if (stricmp(argv[i], "-n") == 0)   //ignored (was start node)
         {
@@ -571,7 +585,7 @@ int main(int argc, char *argv[])
         else
         {
             fatalError.appendf("Unknown/unexpected parameter %s", argv[i]);
-            
+            break;
         }
     }
 
@@ -579,57 +593,57 @@ int main(int argc, char *argv[])
     attachStandardFileLogMsgMonitor(logFile.str(), NULL, MSGFIELD_STANDARD, MSGAUD_all, MSGCLS_all, TopDetail, false, true);
     queryLogMsgManager()->removeMonitor(queryStderrLogMsgHandler()); // only want fprintf(stderr)
 
-    if (in_width == 0 || out_width == 0 || query.length() == 0 || hosts.length() == 0)
+    if (!fatalError.length())
     {
-        fatalError.append("Missing/invalid parameter (-iw, -q & -h are all required)");
-    }
-    else 
-    {
-        
-    #ifdef _WIN32
-        _setmode(_fileno(stdin), _O_BINARY);
-        _setmode(_fileno(stdout), _O_BINARY);
-    #endif
-
-    #define MAXTHREADS 50
-
-        numThreads = (numThreads < 1)? 1: ((numThreads > MAXTHREADS)? MAXTHREADS: numThreads);
-        recordsPerQuery = (recordsPerQuery < 1)? 10000: recordsPerQuery;
-
-        RoxieThread *rt[MAXTHREADS];
-
-        try
+        if (in_width == 0 || out_width == 0 || query.length() == 0 || hosts.length() == 0)
         {
-            smartSocketFactory = createSmartSocketFactory(hosts.str(), retryMode);
+            fatalError.append("Missing/invalid parameter (-iw, -q & -h are all required)");
         }
-        catch (ISmartSocketException *e)
+        else 
         {
-            e->errorMessage(fatalError);
-            e->Release();
-        }
-        
-        if (fatalError.length()==0) 
-        {
-            for (i=0; i<(int)numThreads; i++)
+            
+        #ifdef _WIN32
+            _setmode(_fileno(stdin), _O_BINARY);
+            _setmode(_fileno(stdout), _O_BINARY);
+        #endif
+            numThreads = (numThreads < 1)? 1: ((numThreads > MAXTHREADS)? MAXTHREADS: numThreads);
+            recordsPerQuery = (recordsPerQuery < 1)? 10000: recordsPerQuery;
+
+            RoxieThread *rt[MAXTHREADS];
+
+            try
             {
-                rt[i] = new RoxieThread(query.str(), resultName.str());
-                PROGLOG("Starting thread %d", i);
-                rt[i]->start();
+                smartSocketFactory = createSmartSocketFactory(hosts.str(), retryMode);
             }
-
-            unsigned totalRead = 0;
-            unsigned totalWritten = 0;
-
-            for (i=0; i<(int)numThreads; i++)
+            catch (ISmartSocketException *e)
             {
-                PROGLOG("Waiting for thread %d to finish", i);
-                rt[i]->join();
-                PROGLOG("Final stats for thread %d: %d records read, %d %swritten", i, rt[i]->recordsRead, rt[i]->recordsWritten, (out_width==1)?"bytes ":"");
-                totalRead += rt[i]->recordsRead;
-                totalWritten += rt[i]->recordsWritten;
+                e->errorMessage(fatalError);
+                e->Release();
             }
+            
+            if (fatalError.length()==0) 
+            {
+                for (i=0; i<(int)numThreads; i++)
+                {
+                    rt[i] = new RoxieThread(query.str(), resultName.str());
+                    PROGLOG("Starting thread %d", i);
+                    rt[i]->start();
+                }
 
-            PROGLOG("Final roxiepipe stats: %d records read, %d %swritten", totalRead, totalWritten, (out_width==1)?"bytes ":"");
+                unsigned totalRead = 0;
+                unsigned totalWritten = 0;
+
+                for (i=0; i<(int)numThreads; i++)
+                {
+                    PROGLOG("Waiting for thread %d to finish", i);
+                    rt[i]->join();
+                    PROGLOG("Final stats for thread %d: %d records read, %d %swritten", i, rt[i]->recordsRead, rt[i]->recordsWritten, (out_width==1)?"bytes ":"");
+                    totalRead += rt[i]->recordsRead;
+                    totalWritten += rt[i]->recordsWritten;
+                }
+
+                PROGLOG("Final roxiepipe stats: %d records read, %d %swritten", totalRead, totalWritten, (out_width==1)?"bytes ":"");
+            }
         }
     }
     if (fatalError.length()) {

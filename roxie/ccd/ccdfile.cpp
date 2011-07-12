@@ -1505,7 +1505,7 @@ ILazyFileIO *createDynamicFile(const char *id, IPartDescriptor *pdesc, RoxieFile
         r.getRemotePath(origName);
         remoteLocations.append(origName.str());
     }
-    return queryFileCache().lookupFile(id, partNo, fileType, localFileName, NULL, NULL, localLocations, remoteLocations, dfsSize, false, false, true, false, false, crcResources ? crc : 0, pdesc->queryOwner().isCompressed(), NULL);
+    return queryFileCache().lookupFile(id, partNo, fileType, localFileName, NULL, NULL, localLocations, remoteLocations, dfsSize, NULL, false, true, false, false, crcResources ? crc : 0, pdesc->queryOwner().isCompressed(), NULL);
 }
 
 //====================================================================================================

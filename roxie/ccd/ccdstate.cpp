@@ -603,7 +603,7 @@ public:
                 {
                     IPropertyTree &item= allQuerySets->query();
                     if (!querySets)
-                        querySets.setown(createPropertyTree("QuerySets", false));
+                        querySets.setown(createPTree("QuerySets", false));
                     querySets->addPropTree("QuerySet", item.getBranch("."));
                 }
                 DBGLOG("Loaded package file %s", fileName.str());
