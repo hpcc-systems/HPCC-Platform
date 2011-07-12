@@ -176,13 +176,12 @@
 
             <table id="resultsTable" class="sort-table" width="100%">
             <colgroup>
-                <col width="1%"/>
-                <col width="19%"/>
-                <col width="16%"/>
-                <col width="16%"/>
-                <col width="16%"/>
-                <col width="16%"/>
-                <col width="16%"/>
+				<col width="1%"/>
+				<col width="25%"/>
+				<col width="18%"/>
+				<col width="18%"/>
+				<col width="19%"/>
+				<col width="19%"/>
             </colgroup>
             <tr class="grey">
                 <th id="selectAll1" align="left" width="1%">
@@ -190,7 +189,6 @@
                 </th>
                 <th width="20%">Name</th>
                 <th width="15%">Queue</th>
-                <th>Build</th>
                 <th>Computer</th>
                 <th>Network Address</th>
                 <th>Directory</th>
@@ -405,9 +403,6 @@
                             </tr>
                         </tbody>
                      </table>
-                    </td>
-                    <td>
-                        <xsl:value-of select="../../Build"/>
                     </td>
                     <td>
                         <xsl:value-of select="Name"/>
