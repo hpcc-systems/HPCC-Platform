@@ -467,7 +467,9 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
     setTerminateOnSEH();
 
     char currentDirectory[_MAX_DIR];
-    getcwd(currentDirectory, sizeof(currentDirectory));
+    if (!getcwd(currentDirectory, sizeof(currentDirectory)))
+        throw MakeStringException(ROXIE_INTERNAL_ERROR, "getcwd failed (%d)", errno);
+
     codeDirectory.set(currentDirectory);
     ensureDirectory(codeDirectory);
     try
