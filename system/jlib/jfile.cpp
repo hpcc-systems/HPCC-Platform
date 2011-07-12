@@ -41,6 +41,7 @@
 
 #include "time.h"
 
+#include "jerror.hpp"
 #include "jlib.hpp"
 #include "jio.hpp"
 #include "jmisc.hpp"
@@ -6330,4 +6331,16 @@ extern jlib_decl void writeSentinelFile(IFile * sentinelFile)
     DBGLOG("Creating sentinel file %s for rerun from script", sentinelFile->queryFilename());
     Owned<IFileIO> sentinel = sentinelFile->open(IFOcreate);
     sentinel->write(0, 5, "rerun");
+}
+
+jlib_decl void getCurrentDirectory(StringBuffer & target, bool blankIfFails)
+{
+    char temp[_MAX_PATH+1];
+    if (!getcwd(temp,sizeof(temp)))
+    {
+        if (blankIfFails)
+            return;
+        throw MakeStringException(JLIBERR_InternalError, "getcwd failed (%d)", errno);
+    }
+    target.append(temp);
 }
