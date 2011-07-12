@@ -38,30 +38,13 @@
 
 class CWsRoxieQuerySoapBindingEx : public CWsRoxieQuerySoapBinding
 {
-    StringBuffer m_portalURL;
 public:
     CWsRoxieQuerySoapBindingEx(IPropertyTree *cfg, const char *name, const char *process, http_soap_log_level llevel=hsl_none) : CWsRoxieQuerySoapBinding(cfg, name, process, llevel)
     {
-        StringBuffer xpath;
-        xpath.appendf("Software/EspProcess[@name='%s']/@portalurl", process);
-        const char* portalURL = cfg->queryProp(xpath.str());
-        if (portalURL && *portalURL)
-            m_portalURL.append(portalURL);
     }
 
     virtual void getNavigationData(IEspContext &context, IPropertyTree & data)
     {
-        IPropertyTree *folder = ensureNavFolder(data, "Roxie Queries", "Roxie Queries");
-        ensureNavLink(*folder, "Search Roxie Queries", "/WsRoxieQuery/RoxieQuerySearch", "Search Roxie Queries");
-
-        StringBuffer path = "/WsSMC/NotInCommunityEdition?form_";
-        if (m_portalURL.length() > 0)
-            path.appendf("&EEPortal=%s", m_portalURL.str());
-        ensureNavLink(*folder, "Search Roxie Files",path.str(), "Search Roxie Files");
-        ensureNavLink(*folder, "View Roxie Files", path.str(), "View Roxie Files");
-
-        IPropertyTree *folderTools = ensureNavFolder(data, "Resources", "HPCC Resources");
-        ensureNavLink(*folderTools, "Browse", "/WsRoxieQuery/BrowseResources", "List HPCC Resources for Download");
     }
 };
 

@@ -38,33 +38,15 @@
 
 class Cws_accessSoapBinding : public CHttpSoapBinding
 {
-    StringBuffer m_authType, m_portalURL;
     Owned<IXslProcessor> xslp;
 
 public:
     Cws_accessSoapBinding(IPropertyTree *cfg, const char *name, const char *process, http_soap_log_level llevel=hsl_none) : CHttpSoapBinding(cfg, name, process, llevel)
     {
-        StringBuffer xpath;
-        xpath.appendf("Software/EspProcess[@name='%s']/Authentication/@method", process);
-        const char* method = cfg->queryProp(xpath);
-        if (method && *method)
-            m_authType.append(method);
-        xpath.clear().appendf("Software/EspProcess[@name='%s']/@portalurl", process);
-        const char* portalURL = cfg->queryProp(xpath.str());
-        if (portalURL && *portalURL)
-            m_portalURL.append(portalURL);
     }
 
     virtual void getNavigationData(IEspContext &context, IPropertyTree & data)
     {
-        StringBuffer path = "/WsSMC/NotInCommunityEdition?form_";
-        if (m_portalURL.length() > 0)
-            path.appendf("&EEPortal=%s", m_portalURL.str());
-
-        IPropertyTree *folder = ensureNavFolder(data, "Users/Permissions", "Permissions");
-        ensureNavLink(*folder, "Users", path.str(), "Users");
-        ensureNavLink(*folder, "Groups", path.str(), "Groups");
-        ensureNavLink(*folder, "Permissions", path.str(), "Permissions");
     }
 
     int getQualifiedNames(IEspContext& ctx, MethodInfoArray & methods)
