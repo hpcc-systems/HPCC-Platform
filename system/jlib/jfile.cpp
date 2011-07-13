@@ -6333,7 +6333,7 @@ extern jlib_decl void writeSentinelFile(IFile * sentinelFile)
     sentinel->write(0, 5, "rerun");
 }
 
-jlib_decl StringBuffer & getCurrentDirectory(StringBuffer & target, bool blankIfFails)
+jlib_decl StringBuffer & appendCurrentDirectory(StringBuffer & target, bool blankIfFails)
 {
     char temp[_MAX_PATH+1];
     if (!getcwd(temp,sizeof(temp)))
