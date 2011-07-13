@@ -1601,15 +1601,15 @@ int CWsEclBinding::getXmlTestForm(IEspContext &context, CHttpRequest* request, C
 
     StringBuffer header("Content-Type: text/xml; charset=UTF-8");
 
-	Owned<IXslProcessor> xslp = getXslProcessor();
-	Owned<IXslTransform> xform = xslp->createXslTransform();
-	xform->setXslSource(StringBuffer(getCFD()).append("./xslt/wsecl3_xmltest.xsl").str());
+    Owned<IXslProcessor> xslp = getXslProcessor();
+    Owned<IXslTransform> xform = xslp->createXslTransform();
+    xform->setXslSource(StringBuffer(getCFD()).append("./xslt/wsecl3_xmltest.xsl").str());
 
-	StringBuffer srcxml;
-	srcxml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?><srcxml><soapbody><![CDATA[");
-	srcxml.append(soapmsg.str());
-	srcxml.append("]]></soapbody></srcxml>");
-	xform->setXmlSource(srcxml.str(), srcxml.length());
+    StringBuffer srcxml;
+    srcxml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?><srcxml><soapbody><![CDATA[");
+    srcxml.append(soapmsg.str());
+    srcxml.append("]]></soapbody></srcxml>");
+    xform->setXmlSource(srcxml.str(), srcxml.length());
 
     if (!stricmp(formtype, "roxiexml"))
     {
@@ -1665,15 +1665,15 @@ int CWsEclBinding::getJsonTestForm(IEspContext &context, CHttpRequest* request, 
 
     StringBuffer header("Content-Type: application/json; charset=UTF-8");
 
-	Owned<IXslProcessor> xslp = getXslProcessor();
-	Owned<IXslTransform> xform = xslp->createXslTransform();
-	xform->setXslSource(StringBuffer(getCFD()).append("./xslt/wsecl3_jsontest.xsl").str());
+    Owned<IXslProcessor> xslp = getXslProcessor();
+    Owned<IXslTransform> xform = xslp->createXslTransform();
+    xform->setXslSource(StringBuffer(getCFD()).append("./xslt/wsecl3_jsontest.xsl").str());
 
-	StringBuffer srcxml;
-	srcxml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?><srcxml><jsonreq><![CDATA[");
-	srcxml.append(jsonmsg.str());
-	srcxml.append("]]></jsonreq></srcxml>");
-	xform->setXmlSource(srcxml.str(), srcxml.length());
+    StringBuffer srcxml;
+    srcxml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?><srcxml><jsonreq><![CDATA[");
+    srcxml.append(jsonmsg.str());
+    srcxml.append("]]></jsonreq></srcxml>");
+    xform->setXmlSource(srcxml.str(), srcxml.length());
 
     xform->setStringParameter("showhttp", "true()");
     pageName.append("JSON Test");
@@ -1734,65 +1734,65 @@ int CWsEclBinding::getWsEcl2Form(CHttpRequest* request, CHttpResponse* response,
 
 void CWsEclBinding::addParameterToWorkunit(IWorkUnit * workunit, IConstWUResult &vardef, IResultSetMetaData &metadef, const char *varname, IPropertyTree *valtree)
 {
-	if (!varname || !*varname)
-		return;
+    if (!varname || !*varname)
+        return;
 
-	Owned<IWUResult> var = workunit->updateVariableByName(varname);
-	if (!vardef.isResultScalar())
-	{
-		StringBuffer ds;
-		if (valtree->hasChildren())
-			toXML(valtree, ds);
-		else
-		{
-			const char *val = valtree->queryProp(NULL);
-			if (val)
-				decodeXML(val, ds);
-		}
-		if (ds.length())
-			var->setResultRaw(ds.length(), ds.str(), ResultFormatXml);
-	}
-	else
-	{
-		const char *val = valtree->queryProp(NULL);
-		if (val && *val)
-		{
-			switch (metadef.getColumnDisplayType(0))
-			{
-				case TypeBoolean:
-					var->setResultBool(strieq(val, "1") || strieq(val, "true") || strieq(val, "on"));
-					break;
-				case TypeInteger:
-					var->setResultInt(_atoi64(val));
-					break;
-				case TypeUnsignedInteger:
-					var->setResultInt(_atoi64(val));
-					break;
-				case TypeReal:
-					var->setResultReal(atof(val));
-					break;
-				case TypeSet:
-				case TypeDataset:
-				case TypeData:
-					var->setResultRaw(strlen(val), val, ResultFormatRaw);
-					break;
-				case TypeUnicode: {
-					MemoryBuffer target;
-					convertUtf(target, UtfReader::Utf16le, strlen(val), val, UtfReader::Utf8);
-					var->setResultUnicode(target.toByteArray(), (target.length()>1) ? target.length()/2 : 0);
-					} 
-					break;
-				case TypeString:
-				case TypeUnknown:
-				default:
-					var->setResultString(val, strlen(val));
-					break;
-					break;
-			}
-	
-			var->setResultStatus(ResultStatusSupplied);
-		}
-	}
+    Owned<IWUResult> var = workunit->updateVariableByName(varname);
+    if (!vardef.isResultScalar())
+    {
+        StringBuffer ds;
+        if (valtree->hasChildren())
+            toXML(valtree, ds);
+        else
+        {
+            const char *val = valtree->queryProp(NULL);
+            if (val)
+                decodeXML(val, ds);
+        }
+        if (ds.length())
+            var->setResultRaw(ds.length(), ds.str(), ResultFormatXml);
+    }
+    else
+    {
+        const char *val = valtree->queryProp(NULL);
+        if (val && *val)
+        {
+            switch (metadef.getColumnDisplayType(0))
+            {
+                case TypeBoolean:
+                    var->setResultBool(strieq(val, "1") || strieq(val, "true") || strieq(val, "on"));
+                    break;
+                case TypeInteger:
+                    var->setResultInt(_atoi64(val));
+                    break;
+                case TypeUnsignedInteger:
+                    var->setResultInt(_atoi64(val));
+                    break;
+                case TypeReal:
+                    var->setResultReal(atof(val));
+                    break;
+                case TypeSet:
+                case TypeDataset:
+                case TypeData:
+                    var->setResultRaw(strlen(val), val, ResultFormatRaw);
+                    break;
+                case TypeUnicode: {
+                    MemoryBuffer target;
+                    convertUtf(target, UtfReader::Utf16le, strlen(val), val, UtfReader::Utf8);
+                    var->setResultUnicode(target.toByteArray(), (target.length()>1) ? target.length()/2 : 0);
+                    } 
+                    break;
+                case TypeString:
+                case TypeUnknown:
+                default:
+                    var->setResultString(val, strlen(val));
+                    break;
+                    break;
+            }
+    
+            var->setResultStatus(ResultStatusSupplied);
+        }
+    }
 }
 
 
@@ -1825,21 +1825,21 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsWuInfo &wsinfo, 
     if (start->hasProp("Body"))
         start=start->queryPropTree("Body/*[1]");
 
-	Owned<IResultSetFactory> resultSetFactory(getResultSetFactory(context.queryUserId(), context.queryPassword()));
-	Owned<IPropertyTreeIterator> it = start->getElements("*");
-	ForEach(*it)
-	{
-		IPropertyTree &eclparm=it->query();
-		const char *varname = eclparm.queryName();
+    Owned<IResultSetFactory> resultSetFactory(getResultSetFactory(context.queryUserId(), context.queryPassword()));
+    Owned<IPropertyTreeIterator> it = start->getElements("*");
+    ForEach(*it)
+    {
+        IPropertyTree &eclparm=it->query();
+        const char *varname = eclparm.queryName();
 
-		IConstWUResult *vardef = wsinfo.wu->getVariableByName(varname);
-		if (vardef)
-		{
-			Owned<IResultSetMetaData> metadef = resultSetFactory->createResultSetMeta(vardef);
-			if (metadef)
-				addParameterToWorkunit(workunit.get(), *vardef, *metadef, varname, &eclparm);
-		}
-	}
+        IConstWUResult *vardef = wsinfo.wu->getVariableByName(varname);
+        if (vardef)
+        {
+            Owned<IResultSetMetaData> metadef = resultSetFactory->createResultSetMeta(vardef);
+            if (metadef)
+                addParameterToWorkunit(workunit.get(), *vardef, *metadef, varname, &eclparm);
+        }
+    }
 
     workunit->schedule();
     workunit.clear();
@@ -1909,7 +1909,7 @@ void xppToXmlString(XmlPullParser &xpp, StartTag &stag, StringBuffer &buffer)
             break;
             case XmlPullParser::CONTENT:
                 content = xpp.readContent();
-				encodeUtf8XML(content, buffer);
+                encodeUtf8XML(content, buffer);
                 break;
             case XmlPullParser::END_DOCUMENT:
                 level=0;
@@ -2079,7 +2079,7 @@ int CWsEclBinding::onSubmitQueryOutputTables(IEspContext &context, CHttpRequest*
     }
 
     StringBuffer sourcexml;
-	sourcexml.appendf("<?xml version=\"1.0\" encoding=\"UTF-8\"?><%sResponse><Results><Result>", wsinfo.queryname.sget());
+    sourcexml.appendf("<?xml version=\"1.0\" encoding=\"UTF-8\"?><%sResponse><Results><Result>", wsinfo.queryname.sget());
 
     getResultsXmlBody(output.str(), sourcexml);
 
@@ -2105,7 +2105,7 @@ int CWsEclBinding::onSubmitQueryOutputTables(IEspContext &context, CHttpRequest*
     xsltTransform(sourcexml.str(), sourcexml.length(), "./xslt/wsecl3_result.xslt", NULL, html);
 
     response->setContent(html.str());
-	response->setContentType("text/html; charset=utf-8");
+    response->setContentType("text/html; charset=utf-8");
     response->setStatus("200 OK");
     response->send();
     

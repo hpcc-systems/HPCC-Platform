@@ -171,7 +171,7 @@ public:
 
     int submitWsEclWorkunit(IEspContext & context, WsWuInfo &wsinfo, const char *xml, StringBuffer &respxml);
 
-	void addParameterToWorkunit(IWorkUnit * workunit, IConstWUResult &vardef, IResultSetMetaData &metadef, const char *varname, IPropertyTree *valtree);
+    void addParameterToWorkunit(IWorkUnit * workunit, IConstWUResult &vardef, IResultSetMetaData &metadef, const char *varname, IPropertyTree *valtree);
     
     void handleHttpPost(CHttpRequest *request, CHttpResponse *response);
     int HandleSoapRequest(CHttpRequest* request, CHttpResponse* response);
