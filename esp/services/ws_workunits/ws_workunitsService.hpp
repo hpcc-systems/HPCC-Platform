@@ -209,29 +209,16 @@ class CWsWorkunitsSoapBindingEx : public CWsWorkunitsSoapBinding
 public:
     CWsWorkunitsSoapBindingEx(IPropertyTree *cfg, const char *name, const char *process, http_soap_log_level llevel) : CWsWorkunitsSoapBinding(cfg, name, process, llevel)
     {
-        StringBuffer xpath;
-        xpath.appendf("Software/EspProcess[@name=\"%s\"]/EspBinding[@name=\"%s\"]/BatchWatch", process, name);
-        m_bBatchWatch = cfg->getPropBool(xpath.str(), false);
     }
 
     virtual int onGetForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method);
     virtual int onGet(CHttpRequest* request, CHttpResponse* response);
 
-    virtual void getNavigationData(IEspContext &context, IPropertyTree & data)
+	virtual void getNavigationData(IEspContext &context, IPropertyTree & data)
     {
-        if (!m_bBatchWatch)
-        {
-            IPropertyTree *folder = ensureNavFolder(data, "ECL Workunits", "ECL Workunits");
-            ensureNavLink(*folder, "Search", "/WsWorkunits/WUQuery?form_", "Search Workunits");
-            ensureNavLink(*folder, "Browse", "/WsWorkunits/WUQuery", "Browse Workunits");
-
-            IPropertyTree *folderQueryset = ensureNavFolder(data, "Query Sets", "Queryset Management");
-            ensureNavLink(*folderQueryset, "Browse", "/WsWorkunits/WUQuerySets", "Browse Querysets");
-        }
     }
 private:
     void addLogicalClusterByName(const char* clusterName, StringArray& clusters, StringBuffer& x);
-    bool m_bBatchWatch;
 };
 
 class CWsWorkunitsEx : public CWsWorkunits

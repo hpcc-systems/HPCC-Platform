@@ -267,6 +267,13 @@ IPropertyTree *CEspBinding::ensureNavFolder(IPropertyTree &root, const char *nam
     return ret;
 }
 
+IPropertyTree *CEspBinding::getNavFolder(IPropertyTree &root, const char *name)
+{
+    StringBuffer xpath;
+    xpath.appendf("Folder[@name=\"%s\"]", name);
+    return root.queryPropTree(xpath.str());
+}
+
 IPropertyTree *CEspBinding::ensureNavMenu(IPropertyTree &root, const char *name)
 {
     StringBuffer xpath;
@@ -338,6 +345,31 @@ IPropertyTree *CEspBinding::ensureNavLink(IPropertyTree &folder, const char *nam
 
         folder.addPropTree("Link", ret);
     }
+    return ret;
+}
+
+IPropertyTree *CEspBinding::updateNavLink(IPropertyTree &folder, const char *name, const char *path, const char *tooltip, const char *menuname, const char *navPath)
+{
+    StringBuffer xpath;
+    xpath.appendf("Link[@name=\"%s\"]", name);
+
+    IPropertyTree *ret = folder.queryPropTree(xpath.str());
+    if (!ret)
+    {
+		ensureNavLink(folder, name, path, tooltip, menuname, navPath);
+    }
+	else
+	{
+		ret->setProp("@name", name);
+		if (tooltip)
+			ret->setProp("@tooltip", tooltip);
+		if (path)
+			ret->setProp("@path", path);
+        if (menuname)
+            ret->setProp("@menu", menuname);
+        if (navPath)
+            ret->setProp("@navPath", navPath);
+	}
     return ret;
 }
 

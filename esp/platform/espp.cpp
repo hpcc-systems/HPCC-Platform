@@ -318,13 +318,13 @@ int init_main(int argc, char* argv[])
 
         const char* build_ver = BUILD_TAG;
         setBuildVersion(build_ver);
-        if(procpt->hasProp("@build"))
+        /*if(procpt->hasProp("@build"))
         {
             StringBuffer buildstr;
             procpt->getProp("@build", buildstr);
             if (buildstr.length() > 0)
                 setBuildVersion(buildstr.str());
-        }
+        }*/
 
         const char* build_level = BUILD_LEVEL;
         setBuildLevel(build_level);
