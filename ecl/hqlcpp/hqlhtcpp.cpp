@@ -3190,7 +3190,7 @@ void HqlCppTranslator::doBuildFunction(BuildCtx & ctx, ITypeInfo * type, const c
 
         StringBuffer s, returnParameters;
         s.append("virtual ");
-        expandFunctionReturnType(s, returnParameters, type, false);
+        expandFunctionReturnType(s, returnParameters, type, NULL);
         s.append(" ").append(name).append("(").append(returnParameters).append(")");
 
         BuildCtx funcctx(ctx);
