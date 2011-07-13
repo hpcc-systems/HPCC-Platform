@@ -103,8 +103,13 @@ void sendFile(const char * filename, ISocket * socket)
         size_t numRead = fread(buff, 1, size, in);
         fclose(in);
         if (numRead != size)
+		{
+            printf("read from file %s failed (%u/%u)\n", filename, (unsigned)numRead, size);
             size = 0;
+		}
     }
+	else
+		printf("read from file %s failed\n", filename);
 
     unsigned dllLen = size;
     _WINREV(dllLen);
@@ -136,8 +141,14 @@ void sendFileChunk(const char * filename, offset_t offset, ISocket * socket)
         size_t numRead = fread(buff, 1, size, in);
         fclose(in);
         if (numRead != size)
+		{
+            printf("read from file %s failed (%u/%u)\n", filename, (unsigned)numRead, size);
             size = 0;
+		}
     }
+	else
+		printf("read from file %s failed\n", filename);
+
 
     if (size > 0)
     {
