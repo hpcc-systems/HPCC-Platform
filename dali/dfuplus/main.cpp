@@ -258,8 +258,8 @@ void promptFor(const char *prompt, const char *prop, bool hide, IProperties * gl
     else
     {
         char buf[100];
-        fgets(buf, 100, stdin);
-        result.append(buf);
+        if (fgets(buf, 100, stdin))
+            result.append(buf);
         if (result.length() && result.charAt(result.length()-1)=='\n')
             result.remove(result.length()-1, 1);
     }

@@ -149,11 +149,8 @@ int main(int argc, const char *argv[])
         if (logdir.length() && recursiveCreateDirectory(logdir.str()))
             logname.append(logdir);
         else
-        {
-            char cwd[1024];
-            GetCurrentDirectory(1024, cwd);
-            logname.append(cwd);
-        }
+            appendCurrentDirectory(logname, true);
+
         if (logname.length() && logname.charAt(logname.length()-1) != PATHSEPCHAR)
             logname.append(PATHSEPCHAR);
         logname.append("dfuserver");
