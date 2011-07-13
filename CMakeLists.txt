@@ -305,11 +305,11 @@ if ( CMAKE_SYSTEM MATCHES Linux )
     message ( "-- distro uses ${packageManagement}, revision is ${packageRevisionArch}" )
 
     if ( ${packageManagement} STREQUAL "DEB" )
-        set(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${CPACK_RPM_PACKAGE_VERSION}_${version}${packageRevisionArch}")
+        set(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${CPACK_RPM_PACKAGE_VERSION}_${version}-${stagever}${packageRevisionArch}")
     elseif ( ${packageManagement} STREQUAL "RPM" )
-        set(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${CPACK_RPM_PACKAGE_VERSION}_${version}.${packageRevisionArch}")
+        set(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${CPACK_RPM_PACKAGE_VERSION}_${version}-${stagever}.${packageRevisionArch}")
         else()
-        set(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${CPACK_RPM_PACKAGE_VERSION}_${version}-${CPACK_SYSTEM_NAME}")
+        set(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${CPACK_RPM_PACKAGE_VERSION}_${version}-${stagever}-${CPACK_SYSTEM_NAME}")
     endif ()
 endif ( CMAKE_SYSTEM MATCHES Linux )
 MESSAGE ("-- Current release version is ${CPACK_PACKAGE_FILE_NAME}")
@@ -342,7 +342,7 @@ set(CPACK_SOURCE_IGNORE_FILES
 ###
 ## Run file configuration to set build tag
 ###
-set( BUILD_TAG "${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}")
+set( BUILD_TAG "${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}-${stagever}")
 configure_file(${HPCC_SOURCE_DIR}/build-config.h.cmake "build-config.h" )
 configure_file("initfiles/etc/DIR_NAME/version.in" "version")
 configure_file("initfiles/etc/DIR_NAME/environment.conf.in" "environment.conf")
