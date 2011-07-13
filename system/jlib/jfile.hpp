@@ -600,6 +600,6 @@ extern jlib_decl IFileIOCache* createFileIOCache(unsigned max);
 extern jlib_decl void setIORetryCount(unsigned _ioRetryCount); // default 0 == off, retries if read op. fails, linux only
 extern jlib_decl IFile * createSentinelTarget(const char * argv0, const char * component);
 extern jlib_decl void writeSentinelFile(IFile * file);
-extern jlib_decl StringBuffer & getCurrentDirectory(StringBuffer & target, bool blankIfFails);
+extern jlib_decl StringBuffer & appendCurrentDirectory(StringBuffer & target, bool blankIfFails);
 
 #endif

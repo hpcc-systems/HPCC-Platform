@@ -149,7 +149,7 @@ int main(int argc, const char *argv[])
         if (logdir.length() && recursiveCreateDirectory(logdir.str()))
             logname.append(logdir);
         else
-            getCurrentDirectory(logname, true);
+            appendCurrentDirectory(logname, true);
 
         if (logname.length() && logname.charAt(logname.length()-1) != PATHSEPCHAR)
             logname.append(PATHSEPCHAR);
