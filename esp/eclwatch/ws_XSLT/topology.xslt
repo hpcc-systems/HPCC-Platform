@@ -97,12 +97,11 @@
                 <colgroup>
                   <col width="1%" align="center"/>
                   <col width="2%" align="center"/>
-                  <col width="15%" align="left"/>
-                  <col width="8%" align="left"/>
-                  <col width="17%" align="left"/>
-                  <col width="8%" align="left"/>
-                  <col width="25%" align="left"/>
-                  <col width="24%" align="left"/>
+                  <col width="18%" align="left"/>
+                  <col width="9%" align="left"/>
+                  <col width="10%" align="left"/>
+                  <col width="30%" align="left"/>
+                  <col width="30%" align="left"/>
                 </colgroup>
                 <tr class="grey">
                   <th id="selectAll1">
@@ -110,7 +109,6 @@
                   </th>
                   <th colspan="2" align="left">Name</th>
                   <th>Type</th>
-                  <th>Build</th>
                   <th>Platform</th>
                   <th>Directory</th>
                   <th>Log Directory</th>
@@ -231,9 +229,6 @@
       </td>
       <td>
         <xsl:value-of select="$type2"/>
-      </td>
-      <td>
-        <xsl:value-of select="Build"/>
       </td>
       <td>
         <xsl:choose>
