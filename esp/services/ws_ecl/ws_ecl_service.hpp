@@ -21,6 +21,9 @@
 
 
 #include "jliball.hpp"
+#include "junicode.hpp"
+#include "fileview.hpp"
+
 #include "esp.hpp"
 #include "SOAP/Platform/soapbind.hpp"
 
@@ -168,10 +171,7 @@ public:
 
     int submitWsEclWorkunit(IEspContext & context, WsWuInfo &wsinfo, const char *xml, StringBuffer &respxml);
 
-    void addParameterToWorkunit(IWorkUnit * workunit, wsEclType type, const char *varname, const char *val, unsigned len, const char *defval);
-    void addParameterToWorkunit(IWorkUnit * workunit, IPropertyTree *parmTree, const char *varname, const char *val, unsigned len);
-    void addParameterToWorkunit(IWorkUnit * workunit, wsEclType type, const char *varname, IPropertyTree *valtree, const char *defval);
-    void addParameterToWorkunit(IWorkUnit * workunit, IPropertyTree *parmTree, const char *varname, IPropertyTree *valtree);
+    void addParameterToWorkunit(IWorkUnit * workunit, IConstWUResult &vardef, IResultSetMetaData &metadef, const char *varname, IPropertyTree *valtree);
     
     void handleHttpPost(CHttpRequest *request, CHttpResponse *response);
     int HandleSoapRequest(CHttpRequest* request, CHttpResponse* response);
