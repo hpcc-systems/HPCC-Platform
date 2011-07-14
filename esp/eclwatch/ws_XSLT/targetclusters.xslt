@@ -298,19 +298,17 @@
                 <table class="blueline" border="2" frame="box" rules="groups">
                   <colgroup>
                     <col width="2%"/>
-                    <col width="12%"/>
-                    <col width="12%"/>
-                    <col width="16%"/>
+                    <col width="20%"/>
+                    <col width="20%"/>
                     <col width="10%"/>
                     <col width="8%"/>
-                    <col width="10%"/>
-                    <col width="20%"/>
+                    <col width="15%"/>
+                    <col width="25%"/>
                   </colgroup>
                   <tr bgcolor="#C0C0C0">
                     <th/>
-                    <th width="12%">Name</th>
-                    <th width="12%">Type</th>
-                    <th>Build</th>
+                    <th>Name</th>
+                    <th>Type</th>
                     <th>Computer</th>
                     <th>Platform</th>
                     <th>Network Address</th>
@@ -420,9 +418,6 @@
               </td>
               <td>
                 <xsl:value-of select="$type4"/>
-              </td>
-              <td>
-                <xsl:value-of select="Build"/>
               </td>
               <td>
               </td>
@@ -557,9 +552,6 @@
             </td>
             <td>
               <xsl:value-of select="$type4"/>
-            </td>
-            <td>
-              <xsl:value-of select="../../Build"/>
             </td>
             <td>
               <xsl:value-of select="Name"/>
