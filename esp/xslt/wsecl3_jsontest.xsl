@@ -21,7 +21,6 @@
     <xsl:param name="wuid"/>
     <xsl:param name="destination" select="'zz'"/>
     <xsl:param name="header" select="'xx'"/>
-    <xsl:param name="jsonreq" select="'yy'"/>
     <xsl:param name="inhouseUser" select="false()"/>
     <xsl:param name="showhttp" select="false()"/>
     <!-- ===============================================================================-->
@@ -553,7 +552,7 @@ function onImportConciseRequest()
       showGetInputWnd('The Concise Request Text (from esp log):', 'inputReturnMethod()');     
 }
 
-var jsonreq = ']]><xsl:value-of select="$jsonreq"/><![CDATA[';
+var jsonreq = ']]><xsl:value-of select="/srcxml/jsonreq"/><![CDATA[';
 
 function setJsonReq()
 {
