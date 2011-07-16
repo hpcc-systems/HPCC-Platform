@@ -4468,7 +4468,7 @@ void CWsWorkunitsEx::doWUQueryForArchivedWUs(IEspContext &context, IEspWUQueryRe
         throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, msg.str());
     }
 
-   double version = context.getClientVersion();
+    double version = context.getClientVersion();
 
     StringBuffer user;
     context.getUserID(user);
@@ -4488,7 +4488,7 @@ void CWsWorkunitsEx::doWUQueryForArchivedWUs(IEspContext &context, IEspWUQueryRe
     bool hasNextPage = true;
 
     CDateTime wuTimeFrom, wuTimeTo;
-   if(req.getEndDate() && *req.getEndDate())
+    if(req.getEndDate() && *req.getEndDate())
     {
         wuTimeTo.setString(req.getEndDate(),NULL,true);
     }
@@ -4514,7 +4514,6 @@ void CWsWorkunitsEx::doWUQueryForArchivedWUs(IEspContext &context, IEspWUQueryRe
         filter.appendf("jobName=%s;", req.getJobname());
     if (req.getState() && *req.getState())
         filter.appendf("state=%s;", req.getState());
-    //if (req.getLastNDays() < 0)
     if (req.getLastNDays_isNull())
     {
         if (req.getStartDate() && *req.getStartDate())
@@ -4571,8 +4570,6 @@ void CWsWorkunitsEx::doWUQueryForArchivedWUs(IEspContext &context, IEspWUQueryRe
             wuFrom.appendf("%4d%02d%02d%02d%02d",year0,month0,day0,hour0,minute0);
             wuTo.appendf("%4d%02d%02d%02d%02d",year,month,day,hour,minute);     
 
-            DBGLOG("From=%s,To=%s", wuFrom.str(), wuTo.str());
-
             __int64 begin = 0;
             int count = 1000;
             bool doLoop1 = true;
@@ -4593,8 +4590,6 @@ void CWsWorkunitsEx::doWUQueryForArchivedWUs(IEspContext &context, IEspWUQueryRe
 
                 cmd->setAfter(wuFrom.str());      
                 cmd->setBefore(wuTo.str());     
-                //cmd->setAfter("200910291536");      
-                //cmd->setBefore("200910301536");       
 
                 cmd->setStart(begin);
                 cmd->setLimit(count);
@@ -4613,12 +4608,6 @@ void CWsWorkunitsEx::doWUQueryForArchivedWUs(IEspContext &context, IEspWUQueryRe
                     break;
 
                 totalWus += actualCount;
-
-                StringBuffer msg;
-                msg.appendf("begin=%"I64F"d", begin);
-                msg.appendf(",count=%d", count);
-                msg.appendf(",read=%"I64F"d", totalWus);
-                DBGLOG(msg.str());
 
                 if (actualCount < count)
                     doLoop1 = false;
@@ -4732,7 +4721,7 @@ void CWsWorkunitsEx::doWUQueryForArchivedWUs(IEspContext &context, IEspWUQueryRe
             resp.setPrevPage(0);
     }
 
-   resp.setPageSize(pageSize);
+    resp.setPageSize(pageSize);
     resp.setWorkunits(results);
     resp.setType("archived only");
     return;
