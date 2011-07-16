@@ -62,6 +62,9 @@
                   <xsl:when test="number(Archived)">
                     <xsl:value-of select="State"/>
                   </xsl:when>
+                  <xsl:when test="number(IsPausing)">
+                    Pausing
+                  </xsl:when>
                   <xsl:otherwise>
                     <select size="1" name="State">
                       <xsl:choose>
@@ -838,34 +841,36 @@
       <xsl:otherwise>
         <table>
           <tr>
-                <td></td>
-            <td>
-              <form action="/WsWorkunits/WUAction?ActionType=Pause&amp;Wuids_i1={$wuid}" method="post">
-                <input type="submit" name="Pause" value="Pause" class="sbutton" title="Pause workunit">
-                  <xsl:if test="number(AccessFlag) &lt; 7 or State!='running'">
-                    <xsl:attribute name="disabled">disabled</xsl:attribute>
-                  </xsl:if>
-                </input>
-              </form>
-            </td>
-            <td>
-              <form action="/WsWorkunits/WUAction?ActionType=PauseNow&amp;Wuids_i1={$wuid}" method="post">
-                <input type="submit" name="PauseNow" value="PauseNow" class="sbutton" title="Pause workunit now">
-                  <xsl:if test="number(AccessFlag) &lt; 7 or State!='running'">
-                    <xsl:attribute name="disabled">disabled</xsl:attribute>
-                  </xsl:if>
-                </input>
-              </form>
-            </td>
-            <td>
-              <form action="/WsWorkunits/WUAction?ActionType=Resume&amp;Wuids_i1={$wuid}" method="post">
-                <input type="submit" name="Resume" value="Resume" class="sbutton" title="Resume workunit">
-                  <xsl:if test="number(AccessFlag) &lt; 7 or State!='paused'">
-                    <xsl:attribute name="disabled">disabled</xsl:attribute>
-                  </xsl:if>
-                </input>
-              </form>
-            </td>
+            <td></td>
+            <xsl:if test="number(ThorLCR)">
+                <td>
+                  <form action="/WsWorkunits/WUAction?ActionType=Pause&amp;Wuids_i1={$wuid}" method="post">
+                    <input type="submit" name="Pause" value="Pause" class="sbutton" title="Pause workunit">
+                      <xsl:if test="number(AccessFlag) &lt; 7 or State!='running'">
+                        <xsl:attribute name="disabled">disabled</xsl:attribute>
+                      </xsl:if>
+                    </input>
+                  </form>
+                </td>
+                <td>
+                  <form action="/WsWorkunits/WUAction?ActionType=PauseNow&amp;Wuids_i1={$wuid}" method="post">
+                    <input type="submit" name="PauseNow" value="PauseNow" class="sbutton" title="Pause workunit now">
+                      <xsl:if test="number(AccessFlag) &lt; 7 or State!='running'">
+                        <xsl:attribute name="disabled">disabled</xsl:attribute>
+                      </xsl:if>
+                    </input>
+                  </form>
+                </td>
+                <td>
+                  <form action="/WsWorkunits/WUAction?ActionType=Resume&amp;Wuids_i1={$wuid}" method="post">
+                    <input type="submit" name="Resume" value="Resume" class="sbutton" title="Resume workunit">
+                      <xsl:if test="number(AccessFlag) &lt; 7 or State!='paused'">
+                        <xsl:attribute name="disabled">disabled</xsl:attribute>
+                      </xsl:if>
+                    </input>
+                  </form>
+                </td>
+            </xsl:if>
             <td>
               <form action="/WsWorkunits/WUAction?PageFrom=WUID" method="post">
                 <xsl:variable name="ScheduledAborting">
