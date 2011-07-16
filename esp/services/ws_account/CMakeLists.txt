@@ -28,6 +28,7 @@ project( ws_account )
 include(${HPCC_SOURCE_DIR}/esp/scm/additional.cmake)
 
 set (    SRCS 
+         ${ESPSCM_GENERATED_DIR}/ws_account_esp.cpp
          ws_accountPlugin.cpp 
          ws_accountService.cpp 
     )

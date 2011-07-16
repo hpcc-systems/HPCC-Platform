@@ -33,26 +33,26 @@ extern "C"
 // Change the function names when we stick with dynamic loading.
 ESP_FACTORY IEspService * esp_service_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process)
 {
-   if (strcmp(type, "ws_account")==0)
-   {
-      Cws_account* service = new Cws_account;
+    if (strcmp(type, "ws_account")==0)
+    {
+        Cws_accountEx* service = new Cws_accountEx;
         service->init(cfg, process, name);
-      return service;
-   }
-   return NULL;
+        return service;
+    }
+    return NULL;
 }
- 
-   
+
+
 
 ESP_FACTORY IEspRpcBinding * esp_binding_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process)
 {
-   if (strcmp(type, "ws_accountSoapBinding")==0)
-   {
-        Cws_accountSoapBinding* binding = new Cws_accountSoapBinding(cfg, name, process);
-      return binding;
-   }
+    if (strcmp(type, "ws_accountSoapBinding")==0)
+    {
+        Cws_accountSoapBindingEx* binding = new Cws_accountSoapBindingEx(cfg, name, process);
+        return binding;
+    }
 
-   return NULL;
+    return NULL;
 }
 
 

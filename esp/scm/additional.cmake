@@ -29,6 +29,7 @@ GET_TARGET_PROPERTY(ESDL_EXE esdl LOCATION)
 set ( ESPSCM_SRCS 
       ws_config.ecm
       ws_fileio.ecm
+      ws_account.ecm
       ##### LIST FOR ESPECL
       WsDeploy.ecm
     )
