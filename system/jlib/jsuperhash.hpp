@@ -423,6 +423,7 @@ friend class AtomRefTable;
 typedef const char constcharptr;
 class jlib_decl AtomRefTable : public SuperHashTableOf<HashKeyElement, constcharptr>
 {
+protected:
     CriticalSection crit;
     bool nocase;
 
