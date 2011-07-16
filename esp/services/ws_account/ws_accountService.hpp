@@ -19,28 +19,14 @@
 #ifndef _ESPWIZ_ws_account_HPP__
 #define _ESPWIZ_ws_account_HPP__
 
-#pragma warning( disable : 4786)
+#include "ws_account_esp.ipp"
 
-//JLib
-#include "jliball.hpp"
-
-//SCM Interfaces
-#include "esp.hpp"
-#include "soapesp.hpp"
-
-//ESP Bindings
-#include "SOAP/Platform/soapmessage.hpp"
-#include "SOAP/Platform/soapmacro.hpp"
-#include "SOAP/Platform/soapservice.hpp"
-#include "SOAP/Platform/soapparam.hpp"
-#include "SOAP/client/soapclient.hpp"
-
-class Cws_accountSoapBinding : public CHttpSoapBinding
+class Cws_accountSoapBindingEx : public Cws_accountSoapBinding
 {
-    StringBuffer m_authType, m_portalURL;
-    Owned<IXslProcessor> xslp;
+    StringBuffer m_portalURL;
+
 public:
-    Cws_accountSoapBinding(IPropertyTree *cfg, const char *name, const char *process, http_soap_log_level llevel=hsl_none) : CHttpSoapBinding(cfg, name, process, llevel)
+    Cws_accountSoapBindingEx(IPropertyTree *cfg, const char *name, const char *process, http_soap_log_level llevel=hsl_none) : Cws_accountSoapBinding(cfg, name, process, llevel)
     {
         StringBuffer xpath;
         xpath.appendf("Software/EspProcess[@name='%s']/@portalurl", process);
@@ -67,38 +53,14 @@ public:
             ensureNavLink(*folder, "Relogin", path.str(), "Relogin");
         ensureNavLink(*folder, "Who Am I", path.str(), "WhoAmI");
     }
-
-    int getQualifiedNames(IEspContext& ctx, MethodInfoArray & methods)
-    {
-        return methods.ordinality();
-    }
-    void setXslProcessor(IInterface *xslp_){xslp.set(dynamic_cast<IXslProcessor *>(xslp_));}
 };
 
-
-class Cws_account : public CInterface,
-    implements IEspService
+class Cws_accountEx : public Cws_account
 {
-private:
-    IEspContainer* m_container;
-
 public:
     IMPLEMENT_IINTERFACE;
 
-    virtual void init(IPropertyTree *cfg, const char *process, const char *service) {};
-    virtual bool init(const char * service, const char * type, IPropertyTree * cfg, const char * process)
-    {
-        return true;
-    }
-    virtual void setContainer(IEspContainer *c)
-    {
-        m_container = c;
-    }
-    virtual IEspContainer *queryContainer()
-    {
-        return m_container;
-    }
-    virtual const char* getServiceType(){return "ws_account";}
+    virtual bool onVerifyUser(IEspContext &context, IEspVerifyUserRequest &req, IEspVerifyUserResponse &resp);
 };
 
 #endif //_ESPWIZ_ws_account_HPP__
