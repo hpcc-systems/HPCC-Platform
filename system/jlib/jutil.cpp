@@ -2002,10 +2002,29 @@ StringBuffer &genUUID(StringBuffer &out, bool nocase)
 
 //==============================================================
 
-static AtomRefTable *namedCountHT;
+class jlib_decl CNameCountTable : public AtomRefTable
+{
+public:
+    CNameCountTable(bool _nocase=false) : AtomRefTable(_nocase) { }
+    StringBuffer &dump(StringBuffer &str)
+    {
+        SuperHashIteratorOf<HashKeyElement> iter(*this);
+        CriticalBlock b(crit);
+        ForEach (iter)
+        {
+            HashKeyElement &elem = iter.query();
+            str.append(elem.get()).append(", count = ").append(elem.queryReferences()).newline();
+        }
+        return str;
+    }
+};
+
+static CNameCountTable *namedCountHT;
+
+
 MODULE_INIT(INIT_PRIORITY_SYSTEM)
 {
-    namedCountHT = new AtomRefTable;
+    namedCountHT = new CNameCountTable;
     return true;
 }
 
@@ -2029,13 +2048,7 @@ void NamedCount::set(const char *name)
 
 StringBuffer &dumpNamedCounts(StringBuffer &str)
 {
-    SuperHashIteratorOf<HashKeyElement> iter(*namedCountHT);
-    ForEach (iter)
-    {
-        HashKeyElement &e = iter.query();
-        str.append(e.get()).append(", count = ").append(e.queryReferences()).newline();
-    }
-    return str;
+    return namedCountHT->dump(str);
 }
 
 //==============================================================
