@@ -988,6 +988,8 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                         slaveCount++;
                     }
                     addChannel(channel, dataDirectory, isMe, suspended, slaveIp);
+                    if (isMe)
+                        joinMulticastChannel(channel);
                 }
                 else
                     throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - missing or invalid channel attribute on RoxieSlaveProcess element");
@@ -995,6 +997,9 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             else
                 throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - missing netAddress attribute on RoxieSlaveProcess element");
         }
+        if (numActiveChannels)
+            joinMulticastChannel(0); // all slaves also listen on channel 0
+
         for (unsigned n = 1; n < numActiveChannels; n++)
         {
             if (primaries[n].isNull())

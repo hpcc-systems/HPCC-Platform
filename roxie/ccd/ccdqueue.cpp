@@ -86,6 +86,22 @@ bool isSlaveEndpoint(unsigned channel, const IpAddress &slaveIp)
     return false;
 }
 
+void joinMulticastChannel(unsigned channel)
+{
+    if (roxieMulticastEnabled)
+    {
+        IpAddress multicastIp;
+        getChannelIp(multicastIp, channel);
+        SocketEndpoint ep(CCD_MULTICAST_PORT, multicastIp);
+        StringBuffer epStr;
+        ep.getUrlStr(epStr);
+        if (!multicastSocket->join_multicast_group(ep))
+            throw MakeStringException(ROXIE_MULTICAST_ERROR, "Failed to join multicast channel %d (%s)", channel, epStr.str());
+        if (traceLevel)
+            DBGLOG("Joined multicast channel %d (%s)", channel, epStr.str());
+    }
+}
+
 void addEndpoint(unsigned channel, const IpAddress &slaveIp, unsigned port)
 {
     if (!slaveEndpoints)
@@ -99,29 +115,22 @@ void addEndpoint(unsigned channel, const IpAddress &slaveIp, unsigned port)
     {
         SocketEndpoint &ep = *new SocketEndpoint(CCD_MULTICAST_PORT, multicastIp);
         slaveEndpoints[channel].append(ep);
-        StringBuffer epStr;
-        ep.getUrlStr(epStr);
         if (!multicastSocket)
+        {
             multicastSocket.setown(ISocket::udp_create(CCD_MULTICAST_PORT));
-        multicastSocket->set_receive_buffer_size(udpMulticastBufferSize);
-        size32_t actualSize = multicastSocket->get_receive_buffer_size();
-        if (actualSize < udpMulticastBufferSize)
-        {
-            DBGLOG("Roxie: multicast socket buffer size could not be set (requested=%d actual %d", udpMulticastBufferSize, actualSize);
-            throwUnexpected();
-        }
-        if (traceLevel)
-            DBGLOG("Roxie: multicast socket created port=%d sockbuffsize=%d actual %d", CCD_MULTICAST_PORT, udpMulticastBufferSize, actualSize);
-        if (roxieMulticastEnabled)
-        {
-            if (!multicastSocket->join_multicast_group(ep))
-                throw MakeStringException(ROXIE_MULTICAST_ERROR, "Failed to join multicast channel %d (%s)", channel, epStr.str());
+            multicastSocket->set_receive_buffer_size(udpMulticastBufferSize);
+            size32_t actualSize = multicastSocket->get_receive_buffer_size();
+            if (actualSize < udpMulticastBufferSize)
+            {
+                DBGLOG("Roxie: multicast socket buffer size could not be set (requested=%d actual %d", udpMulticastBufferSize, actualSize);
+                throwUnexpected();
+            }
             if (traceLevel)
-                DBGLOG("Joined multicast channel %d (%s)", channel, epStr.str());
+                DBGLOG("Roxie: multicast socket created port=%d sockbuffsize=%d actual %d", CCD_MULTICAST_PORT, udpMulticastBufferSize, actualSize);
         }
     }
     if (channel)
-        addEndpoint(0, slaveIp, port); // all slaves also listen on channel 0
+        addEndpoint(0, slaveIp, port);
 }
 
 void closeMulticastSockets()
