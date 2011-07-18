@@ -7310,6 +7310,8 @@ void CWsWorkunitsEx::getWorkunitEclAgentLog(IEspContext &context, const char *wu
     bool eof = false;
     StringBuffer pidstr;
     pidstr.appendf(" %5d ", pid);
+
+    bool wuidFound = false;
     char const * pidchars = pidstr.str();
     while(!eof)
     {
@@ -7327,8 +7329,26 @@ void CWsWorkunitsEx::getWorkunitEclAgentLog(IEspContext &context, const char *wu
             if (c=='\n')
                 break;
         }
+
+        //Retain all rows that match a unique program instance - by retaining all rows that match a pid
         if(strstr(line.str(), pidchars))
+        {
+            //Check if this is a new instance using line sequence number
+            if (strncmp(line.str(), "00000000", 8) == 0)
+            {
+                if (wuidFound) //If the correct instance has been found, return that instance before the next instance.
+                    break;
+
+                //The last instance is not a correct instance. Clean the buf in order to start a new instance. 
+                buf.clear();
+            }
+
+            //If we spot the workunit id anywhere in the tacing for this pid then assume it is the correct instance.
+            if(!wuidFound && strstr(line.str(), wuid))
+                wuidFound = true;
+
             buf.append(line.length(), line.str());
+        }
     }
 }
 
