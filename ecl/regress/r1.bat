@@ -17,8 +17,8 @@ rem     You should have received a copy of the GNU Affero General Public License
 rem     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 rem ############################################################################## */
 
-
+setlocal enableextensions
 set inputfile=%1
-md %regresstgt% 2>err
-call regress1 -m %*
+md %regresstgt% 2>nul
+call %~dp0\regress1 -m %*
 call bc "/filters=%inputfile%*" /expandall %regresstgt% %regresskey%

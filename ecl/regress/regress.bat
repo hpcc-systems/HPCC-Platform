@@ -17,15 +17,14 @@ rem     You should have received a copy of the GNU Affero General Public License
 rem     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 rem ############################################################################## */
 
-
 if '%regresstgt%'=='' goto novars
 rd /s /q %regresstgt%
-md %regresstgt% 2>err
+md %regresstgt% 2>nul
 
-set flags=-P%regresstgt% -legacy -target=thorlcr -fforceGenerate -fdebugNlp=1 -fnoteRecordSizeInGraph -fregressionTest -b -m -shared -faddTimingToWorkunit=0 -fshowRecordCountInGraph -S
-set flags=%flags% -Imodules
+set flags=-P%regresstgt% -legacy -target=thorlcr -fforceGenerate -fdebugNlp=1 -fnoteRecordSizeInGraph -fregressionTest -b -m -S -shared -faddTimingToWorkunit=0 -fshowRecordCountInGraph
+set flags=%flags% %regressinclude%
 
-if NOT '%numParallel%'=='' goto multiway    
+if NOT '%numParallel%'=='' goto multiway
 eclcc %flags% %* > out.log
 if '%nocompare%'=='1' goto done;
 call bc regressNew
