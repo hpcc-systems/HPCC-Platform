@@ -16,18 +16,14 @@ rem
 rem     You should have received a copy of the GNU Affero General Public License
 rem     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 rem ############################################################################## */
+rem 
+rem Rename this file, and then modify the following values below to match your local system
+rem
+rem The directory you wanr the target results to be written to
+set regresstgt=d:\regression
 
-if '%regresstgt%'=='' goto novars
+rem The directory that contains the "correct" results from a previous run
+set regresskey=c:\regression
 
-set flags=-P%regresstgt% -legacy -target=thorlcr -fforceGenerate -fdebugNlp=1 -fnoteRecordSizeInGraph -fregressionTest -b -m -S -shared -faddTimingToWorkunit=0 -fshowRecordCountInGraph
-set flags=%flags% %regressinclude%
-
-md %regresstgt% 2>nul
-echo %* >> %regresstgt%\stdout.log
-eclcc %flags% %* >> %regresstgt%\stdout.log
-
-goto done;
-
-:novars
-echo Environment variables regresstgt etc not set up
-:done
+rem Any includes which need to be passed to eclcc
+set regressinclude=-Ic:\hpcc\HPCC-Platform\ecl\regress\modules
