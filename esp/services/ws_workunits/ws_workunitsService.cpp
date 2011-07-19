@@ -900,9 +900,11 @@ int WUSchedule::run()
                         wu.getClusterName(cluster);
                         if (!isRoxieCluster(cluster.str()))
                         {
-                            Owned<IWorkUnit> lwu = &wu.lock();
-                            lwu->setState(WUStateSubmitted);
-                            lwu->commit();
+                            {
+                                Owned<IWorkUnit> lwu = &wu.lock();
+                                lwu->setState(WUStateSubmitted);
+                                lwu->commit();
+                            } //Release the lock here. Otherwise, submitWorkUnit() will not work.
                             
                             SCMStringBuffer user, password, token;
                             wu.getSecurityToken(token).str();
