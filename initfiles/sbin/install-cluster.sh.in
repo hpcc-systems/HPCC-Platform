@@ -1,0 +1,204 @@
+#!/bin/bash
+##
+## Copyright (c) 2011 HPCC Systems.  All rights reserved.
+##
+## version v0.1
+## author Philip Schwartz <philip.schwartz@lexisnexis.com>
+##
+## Usage: install-cluster.sh
+##
+## This script is used as a remote engine for a cluster installation.
+##
+## Flow:
+##
+## 1. SSH Keys Generated.
+## 2. Script copied to node.
+## 3. Install package copied to node.
+## 4. SSH Keys copied to node.
+## 5. Run CheckInstall to determine if  package is installed.
+## 6. Install/Upgrade if needed.
+## 7. Run CheckKeys to determine if sshkeys are installed.
+## 8. Install keys if different then installed or no keys installed.
+## 9. Return.
+##
+
+###<REPLACE>###
+
+source  ${INSTALL_DIR}/etc/init.d/lock.sh
+source  ${INSTALL_DIR}/etc/init.d/pid.sh
+source  ${INSTALL_DIR}/etc/init.d/hpcc_common
+source  ${INSTALL_DIR}/etc/init.d/init-functions
+source  ${INSTALL_DIR}/etc/init.d/export-path
+
+REMOTE_INSTALL="/tmp/remote_install"
+NEW="${REMOTE_INSTALL}/new_keys"
+CMDPREFIX="sudo"
+
+print_usage(){
+    echo "usage: install-cluster.sh [-h|--help] [-k|--newkey] <Platform Package>"
+    exit 1
+}
+
+getUser(){
+    read -p "Input admin username:" USER;
+    echo;
+    if [ "${USER}" == "root" ]; then
+        CMDPREFIX=""
+    fi
+}
+
+getPW(){
+    stty -echo;
+    read -p "Input admin password:" PASS;
+    stty echo;
+    echo;
+}
+
+
+getIPS(){
+    IPS=`${INSTALL_DIR}/sbin/configgen -env ${CONFIG_DIR}/${ENV_XML_FILE} -machines | awk -F, '{print $1}'  | sort | uniq`
+}
+
+
+generateKey(){
+	GENKEY=${PWD}/new_ssh
+	if [ -d ${GENKEY} ]; then
+		rm -rf ${GENKEY}
+	fi
+	mkdir -p ${GENKEY}
+	ssh-keygen -t rsa -f ${GENKEY}/id_rsa -P ""
+}
+
+createPayload(){
+	if [ -d ${REMOTE_INSTALL} ]; then
+		rm -rf ${REMOTE_INSTALL};
+	fi
+	mkdir -p ${REMOTE_INSTALL};
+    if [ ${NEW_KEY} -eq 1 ]; then
+        mkdir -p ${NEW}
+        cp -r ${GENKEY}/* ${NEW}/
+    fi
+    cp -r ${PKG} ${REMOTE_INSTALL}
+    cp -r ${CONFIG_DIR}/${ENV_XML_FILE} ${REMOTE_INSTALL}
+    cp -r ${INSTALL_DIR}/sbin/remote-install-engine.sh ${REMOTE_INSTALL}
+    tar -zcvf remote_install.tgz ${REMOTE_INSTALL}/*
+	rm -rf ${REMOTE_INSTALL}
+}
+
+copyPayload(){
+    expect -c "set timeout -1;
+        spawn scp remote_install.tgz $USER@$1:~;
+        expect {
+            *?assword:* {
+                    send \"$PASS\r\";
+            } yes/no)? {
+                    send \"yes\r\";
+                    set timeout -1;
+            } timeout {
+                    exit;
+            } eof {
+                    exit;
+            }
+        }
+        interact;";
+}
+
+expandPayload(){
+    expect -c "set timeout -1;
+        spawn ssh $USER@$1 \"cd /; tar -zxf ~/remote_install.tgz\";
+        expect {
+            *?assword:* {
+                    send \"$PASS\r\";
+            } yes/no)? {
+                    send \"yes\r\";
+                    set timeout -1;
+            } timeout {
+                    exit;
+            } eof {
+                    exit;
+            }
+        }
+        interact;";
+}
+
+runPayload(){
+    expect -c "set timeout 3;
+        spawn ssh $USER@$1;
+        expect {
+            *?assword:* {
+                    send \"$PASS\r\";
+            } yes/no)? {
+                    send \"yes\r\";
+                    set timeout -1;
+            } timeout {
+                    exit;
+            } eof {
+                    exit;
+            }
+        }
+        expect "${USER}@" {
+            send \"${CMDPREFIX} ${REMOTE_INSTALL}/remote-install-engine.sh ${REMOTE_INSTALL}/${PKG}\r\";
+            expect *?assword* {
+                send \"${PASS}\r\";
+            }
+        }
+	    expect "${USER}@" {
+            send \"exit\r\";
+	    }
+        interact;"
+}
+
+
+
+getUser
+getPW
+getIPS
+
+NEW_KEY=0
+
+TEMP=`/usr/bin/getopt -o kh --long help,newkey -n 'install-cluster' -- "$@"`
+if [ $? != 0 ] ; then echo "Failure to parse commandline." >&2 ; exit 1 ; fi
+eval set -- "$TEMP"
+while true ; do
+    case "$1" in
+        -k|--newkey) NEW_KEY=1
+            shift ;;	
+        -h|--help) print_usage
+                   shift ;;
+        --) shift ; break ;;
+        *) print_usage ;;
+    esac
+done
+for arg do arg=$arg; done
+PKG=${arg}
+
+pkgtype=`echo "${PKG}" | grep -i rpm`
+if [ -z $pkgtype ]; then
+    pkgcmd="dpkg"
+else
+    pkgcmd="rpm"
+fi
+
+if [ ${NEW_KEY} -eq 1 ]; then
+    generateKey
+fi
+
+for IP in $IPS; do
+    if ping -c 1 -w 5 -n $IP > /dev/null 2>&1; then
+        echo "$IP: Host is alive."
+        CAN_SSH="`ssh -i /home/hpcc/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no hpcc@$IP exit > /dev/null 2>&1; echo $?`"
+        if [ "$CAN_SSH" -eq 255 ]; then
+            echo "$IP: Cannot SSH to host with key..";
+            echo "$IP: Connecting with password.";
+			createPayload;
+			copyPayload $IP;
+			expandPayload $IP;
+			runPayload $IP;
+            echo "$IP: Done.";
+        else
+            echo "$IP: Has SSH Key, No install actions done.";
+        fi
+    else
+        echo "$IP: FAIL"
+    fi
+done
