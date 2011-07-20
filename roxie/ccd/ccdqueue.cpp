@@ -88,7 +88,7 @@ bool isSlaveEndpoint(unsigned channel, const IpAddress &slaveIp)
 
 void joinMulticastChannel(unsigned channel)
 {
-    if (roxieMulticastEnabled)
+    if (roxieMulticastEnabled && !localSlave)
     {
         IpAddress multicastIp;
         getChannelIp(multicastIp, channel);
