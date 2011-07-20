@@ -1874,7 +1874,7 @@ bool PTree::removeProp(const char *xpath)
 
     if (path.length())
     {
-        IPropertyTreeIterator *iter = getElements(path.str());
+        Owned<IPropertyTreeIterator> iter = getElements(path.str());
 
         if (!iter)
             return false;
@@ -1894,7 +1894,6 @@ bool PTree::removeProp(const char *xpath)
             }
             while (iter->next());
         }
-        iter->Release();
         return res;
     }
     else
@@ -2165,195 +2164,194 @@ public:
 IPropertyTreeIterator *PTree::getElements(const char *xpath, IPTIteratorCodes flags) const
 {
     // NULL iterator for local value (i.e. maybe be single value or array)
-    IPropertyTreeIterator *iter = NULL;
     if (NULL == xpath || '\0' == *xpath)
         return new SingleIdIterator(*this);
-    else
-    {
-        const char *_xpath = xpath;
-        bool root=true;
+    Owned<IPropertyTreeIterator> iter;
+    const char *_xpath = xpath;
+    bool root=true;
 restart:
-        if (NULL == xpath || '\0' == *xpath)
-            return new SingleIdIterator(*this);
-        switch (*xpath)
-        {
-            case '.':
-                root=false;
-                ++xpath;
-                if (*xpath && '/' != *xpath)
-                    throw MakeXPathException(xpath-1, PTreeExcpt_XPath_Unsupported, 0, "");
-                goto restart;
-            case '/':
-                ++xpath;
-                if ('/' == *xpath)
-                {
-                    iter = getElements(xpath+1);
-                    if (checkChildren())
-                    {
-                        IPropertyTreeIterator *iter2 = new PTIdMatchIterator(this, "*", isnocase(), flags & iptiter_sort);
-                        iter2 = new PTStackIterator(iter2, xpath-1);
-
-                        SeriesPTIterator *series = new SeriesPTIterator();
-                        series->addIterator(iter);
-                        series->addIterator(iter2);
-
-                        return series;
-                    }
-                    else
-                        return iter;
-                }
-                else if (root)
-                    throw MakeXPathException(xpath, PTreeExcpt_XPath_Unsupported, 0, "Root specifier \"/\" specifier is not supported");
-                goto restart;
-            case '[':
+    switch (*xpath)
+    {
+        case '.':
+            root=false;
+            ++xpath;
+            if ('\0' == *xpath)
+                return new SingleIdIterator(*this);
+            else if ('/' != *xpath)
+                throw MakeXPathException(xpath-1, PTreeExcpt_XPath_Unsupported, 0, "");
+            goto restart;
+        case '/':
+            ++xpath;
+            if ('/' == *xpath)
             {
-                ++xpath;
-                if (isdigit(*xpath)) {
-                    StringAttr index;
-                    xpath = readIndex(xpath, index);
-                    unsigned i = atoi(index.get());
-                    if (i)
-                    {
-                        if (value && value->isArray())
-                        {
-                            IPropertyTree *element = value->queryElement(--i);
-                            if (element)
-                            {
-                                iter = element->getElements(NULL);
-                            }
-                        }
-                        else if (i == 1)
-                            iter = new SingleIdIterator(*this);
-                    }
-                }
-                else 
+                iter.setown(getElements(xpath+1));
+                if (checkChildren())
                 {
-                    if (checkPattern(xpath))
-                        iter = new SingleIdIterator(*this);
+                    IPropertyTreeIterator *iter2 = new PTIdMatchIterator(this, "*", isnocase(), flags & iptiter_sort);
+                    iter2 = new PTStackIterator(iter2, xpath-1);
+
+                    SeriesPTIterator *series = new SeriesPTIterator();
+                    series->addIterator(iter.getClear());
+                    series->addIterator(iter2);
+
+                    return series;
                 }
-                if (']' != *xpath)
-                    throw MakeXPathException(_xpath, PTreeExcpt_XPath_ParseError, xpath-_xpath, "Qualifier brace unclosed");
-                ++xpath;
-                break;
+                else
+                    return iter.getClear();
             }
-            default:
-            {
-                bool wild;
-                const char *start = xpath;
-                readWildId(xpath, wild);
-                size32_t s = xpath-start;
-                if (s)
+            else if (root)
+                throw MakeXPathException(xpath, PTreeExcpt_XPath_Unsupported, 0, "Root specifier \"/\" specifier is not supported");
+            else if ('\0' == *xpath)
+                return new SingleIdIterator(*this);
+            goto restart;
+        case '[':
+        {
+            ++xpath;
+            if (isdigit(*xpath)) {
+                StringAttr index;
+                xpath = readIndex(xpath, index);
+                unsigned i = atoi(index.get());
+                if (i)
                 {
-                    MAKE_LSTRING(id, start, s);
-                    if (checkChildren())
+                    if (value && value->isArray())
                     {
-                        IPropertyTree *child = NULL;
-                        if (!wild)
-                            child = children->query(id);
-
-                        if ((wild || child) && '[' == *xpath) // check for local index not iterative qualifier.
+                        IPropertyTree *element = value->queryElement(--i);
+                        if (element)
                         {
-                            const char *xxpath = xpath+1;
-                            if (isdigit(*xxpath)) {
-                                StringAttr idxstr;
-                                xxpath = readIndex(xxpath, idxstr);
-                                if (']' != *xxpath)
-                                    throw MakeXPathException(_xpath, PTreeExcpt_XPath_ParseError, xpath-_xpath, "Qualifier brace unclosed");
-                                ++xxpath;
-                                unsigned index = atoi(idxstr.get());
-                                if (index)
-                                {
-                                    Owned<IPropertyTreeIterator> _iter = getElements(id);
-                                    if (_iter->first())
-                                    {
-                                        do
-                                        {
-                                            if (0 == --index)
-                                            {
-                                                iter = new SingleIdIterator((PTree &)_iter->query());
-                                                break;
-                                            }
-                                        }
-                                        while (_iter->next());
-                                    }
-                                }
-                                xpath = xxpath; 
-                            }
-                            else
+                            iter.setown(element->getElements(NULL));
+                        }
+                    }
+                    else if (i == 1)
+                        iter.setown(new SingleIdIterator(*this));
+                }
+            }
+            else 
+            {
+                if (checkPattern(xpath))
+                    iter.setown(new SingleIdIterator(*this));
+            }
+            if (']' != *xpath)
+                throw MakeXPathException(_xpath, PTreeExcpt_XPath_ParseError, xpath-_xpath, "Qualifier brace unclosed");
+            ++xpath;
+            break;
+        }
+        default:
+        {
+            bool wild;
+            const char *start = xpath;
+            readWildId(xpath, wild);
+            size32_t s = xpath-start;
+            if (s)
+            {
+                MAKE_LSTRING(id, start, s);
+                if (checkChildren())
+                {
+                    IPropertyTree *child = NULL;
+                    if (!wild)
+                        child = children->query(id);
+
+                    if ((wild || child) && '[' == *xpath) // check for local index not iterative qualifier.
+                    {
+                        const char *xxpath = xpath+1;
+                        if (isdigit(*xxpath)) {
+                            StringAttr idxstr;
+                            xxpath = readIndex(xxpath, idxstr);
+                            if (']' != *xxpath)
+                                throw MakeXPathException(_xpath, PTreeExcpt_XPath_ParseError, xpath-_xpath, "Qualifier brace unclosed");
+                            ++xxpath;
+                            unsigned index = atoi(idxstr.get());
+                            if (index)
                             {
-                                if (wild)
-                                    iter = new PTIdMatchIterator(this, id, isnocase(), flags & iptiter_sort);
-                                else
-                                    iter = child->getElements(NULL);
-                                const char *start = xxpath-1;
-                                loop
+                                Owned<IPropertyTreeIterator> _iter = getElements(id);
+                                if (_iter->first())
                                 {
-                                    char quote = 0;
-                                    while (']' != *(++xxpath) || quote)
+                                    do
                                     {
-                                        switch (*xxpath) {
-                                        case '\"':
-                                        case '\'':
+                                        if (0 == --index)
                                         {
-                                            if (quote)
-                                            {
-                                                if (*xxpath == quote)
-                                                    quote = 0;
-                                            }
-                                            else
-                                                quote = *xxpath;
-                                            break;
-                                        }
-                                        case '\0':
-                                            throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xxpath-start, "Qualifier brace unclosed");
-                                        }
-                                    }
-                                    ++xxpath;
-                                    if ('[' == *xxpath)
-                                    {
-                                        ++xxpath;
-                                        if (isdigit(*xxpath))
-                                        {
-                                            StringAttr qualifier(start, (xxpath-1)-start);
-                                            Owned<PTStackIterator> siter = new PTStackIterator(iter, qualifier.get());
-                                            StringAttr index;
-                                            xxpath = readIndex(xxpath, index);
-                                            unsigned i = atoi(index.get());
-                                            iter = new CIndexIterator(siter.getClear(), i);
-                                            ++xxpath;
+                                            iter.setown(new SingleIdIterator((PTree &)_iter->query()));
                                             break;
                                         }
                                     }
-                                    else
-                                    {
-                                        StringAttr qualifier(start, xxpath-start);
-                                        iter = new PTStackIterator(iter, qualifier.get());
-                                        break;
-                                    }
+                                    while (_iter->next());
                                 }
-                                xpath = xxpath;
                             }
+                            xpath = xxpath; 
                         }
                         else
                         {
                             if (wild)
-                                iter = new PTIdMatchIterator(this, id, isnocase(), flags & iptiter_sort);
-                            else if (child)
-                                iter = child->getElements(NULL);
+                                iter.setown(new PTIdMatchIterator(this, id, isnocase(), flags & iptiter_sort));
+                            else
+                                iter.setown(child->getElements(NULL));
+                            const char *start = xxpath-1;
+                            loop
+                            {
+                                char quote = 0;
+                                while (']' != *(++xxpath) || quote)
+                                {
+                                    switch (*xxpath) {
+                                    case '\"':
+                                    case '\'':
+                                    {
+                                        if (quote)
+                                        {
+                                            if (*xxpath == quote)
+                                                quote = 0;
+                                        }
+                                        else
+                                            quote = *xxpath;
+                                        break;
+                                    }
+                                    case '\0':
+                                        throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xxpath-start, "Qualifier brace unclosed");
+                                    }
+                                }
+                                ++xxpath;
+                                if ('[' == *xxpath)
+                                {
+                                    ++xxpath;
+                                    if (isdigit(*xxpath))
+                                    {
+                                        StringAttr qualifier(start, (xxpath-1)-start);
+                                        Owned<PTStackIterator> siter = new PTStackIterator(iter.getClear(), qualifier.get());
+                                        StringAttr index;
+                                        xxpath = readIndex(xxpath, index);
+                                        unsigned i = atoi(index.get());
+                                        iter.setown(new CIndexIterator(siter.getClear(), i));
+                                        ++xxpath;
+                                        break;
+                                    }
+                                }
+                                else
+                                {
+                                    StringAttr qualifier(start, xxpath-start);
+                                    iter.setown(new PTStackIterator(iter.getClear(), qualifier.get()));
+                                    break;
+                                }
+                            }
+                            xpath = xxpath;
                         }
                     }
+                    else
+                    {
+                        if (wild)
+                            iter.setown(new PTIdMatchIterator(this, id, isnocase(), flags & iptiter_sort));
+                        else if (child)
+                            iter.setown(child->getElements(NULL));
+                    }
                 }
-                break;
             }
+            break;
         }
     }
 
     if (!iter)
-        iter = LINK(nullPTreeIterator);
+        iter.setown(LINK(nullPTreeIterator));
     if (*xpath == '\0' || (*xpath == '/' && '\0' == *(xpath+1)))
-        return iter;
+        return iter.getClear();
     else
-        return new PTStackIterator(iter, xpath);
+        return new PTStackIterator(iter.getClear(), xpath);
 }
 
 void PTree::localizeElements(const char *xpath, bool allTail)
@@ -2547,7 +2545,7 @@ void PTree::serializeCutOff(MemoryBuffer &tgt, int cutoff, int depth)
 
     if (-1 == cutoff || depth<cutoff)
     {
-        IPropertyTreeIterator *iter = getElements("*");
+        Owned<IPropertyTreeIterator> iter = getElements("*");
         if (iter->first())
         {
             do
@@ -2558,7 +2556,6 @@ void PTree::serializeCutOff(MemoryBuffer &tgt, int cutoff, int depth)
             }
             while (iter->next());
         }
-        iter->Release();
     }
     tgt.append(""); // element terminator. i.e. blank child name.
 }
@@ -2677,7 +2674,7 @@ void PTree::clone(IPropertyTree &srcTree, IPropertyTree &dstTree, bool sub)
 
     if (sub)
     {
-        IPropertyTreeIterator *iter = srcTree.getElements("*");
+        Owned<IPropertyTreeIterator> iter = srcTree.getElements("*");
         if (iter->first())
         {
             do
@@ -2689,7 +2686,6 @@ void PTree::clone(IPropertyTree &srcTree, IPropertyTree &dstTree, bool sub)
             }
             while (iter->next());
         }
-        iter->Release();
     }
 }
 
