@@ -3303,10 +3303,10 @@ bool EclResourcer::addExprDependency(IHqlExpression * expr, ResourceGraphInfo * 
         }
     case no_table:
         {
-            IHqlExpression * in = expr->queryChild(0);
-            OwnedHqlExpr value = createAttribute(fileAtom, getNormalizedFilename(in));
+            IHqlExpression * filename = expr->queryChild(0);
+            OwnedHqlExpr value = createAttribute(fileAtom, getNormalizedFilename(filename));
             addDependencyUse(value, curGraph, activityExpr);
-            return false;
+            return !filename->isConstant();
         }
     case no_select:
         return expr->hasProperty(newAtom);
@@ -3350,6 +3350,8 @@ bool EclResourcer::addExprDependency(IHqlExpression * expr, ResourceGraphInfo * 
         }
     case no_attr:
     case no_attr_link:
+    case no_record:
+    case no_field:
         return false; //no need to look any further
     default:
         return true;
