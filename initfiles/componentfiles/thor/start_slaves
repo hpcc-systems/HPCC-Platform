@@ -27,7 +27,7 @@ else
                 if [ "$slaveport" = "" ]; then
                     slaveport=$THORSLAVEPORT
                 fi
-                frunssh $ip "/bin/sh -c 'mkdir -p  $instancedir; cd $instancedir; mkdir -p $logdir; $deploydir/start_slave $deploydir $n $logpth $instancedir $slaveport $THORNAME $PATH_PRE&> $logdir/start_slave_$logpthtail.$n.log'" /t30
+                frunssh $ip "/bin/sh -c 'mkdir -p  $instancedir; cd $instancedir; mkdir -p $logdir; $deploydir/start_slave $deploydir $n $logpth $instancedir $slaveport $THORNAME $PATH_PRE&> $logdir/start_slave_$logpthtail.$n.log'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries 2>&1
                 let "n += 1";
             done
         else
