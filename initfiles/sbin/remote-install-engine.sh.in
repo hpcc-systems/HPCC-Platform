@@ -1,0 +1,181 @@
+#!/bin/bash
+##
+## Copyright (c) 2011 HPCC Systems.  All rights reserved.
+##
+## version v0.1
+## author Philip Schwartz <philip.schwartz@lexisnexis.com>
+##
+## Usage: remote-install-engine.sh
+##
+## This script is used as a remote engine for a cluster installation.
+##
+## Flow:
+##
+## 1. SSH Keys Generated.
+## 2. Script copied to node.
+## 3. Install package copied to node.
+## 4. SSH Keys copied to node.
+## 5. Run CheckInstall to determine if  package is installed.
+## 6. Install/Upgrade if needed.
+## 7. Run CheckKeys to determine if sshkeys are installed.
+## 8. Install keys if different then installed or no keys installed.
+## 9. Return.
+##
+
+###<REPLACE>###
+
+REMOTE_INSTALL="/tmp/remote_install"
+CURR="${REMOTE_INSTALL}/curr_keys"
+NEW="${REMOTE_INSTALL}/new_keys"
+MD5="${REMOTE_INSTALL}/md5"
+
+print_usage(){
+    echo "usage: remote-install-engine.sh <package file>";
+    exit 1;
+}
+
+pkgCmd(){
+    if [ "$1" == "deb" ]; then
+        if [ "$2" == "install" ]; then
+            PKGCMD="dpkg -i"
+        elif [ "$2" == "upgrade" ]; then
+            PKGCMD="dpkg -i"
+        else
+            echo "Bad option type."
+            exit 1
+        fi
+    elif [ "$1" == "rpm" ]; then
+        if [ "$2" == "install" ]; then
+            PKGCMD="rpm  -ivh"
+        elif [ "$2" == "upgrade" ]; then
+            PKGCMD="rpm -Uvh"
+        else
+            echo "Bad option type."
+            exit 1
+        fi
+    else
+        echo "BAD Package type."
+        exit 1
+    fi
+}
+
+checkInstall(){
+    _FILE=`ls ${INSTALL_DIR}${CONFIG_DIR}/version 2>&1 1>/dev/null; echo $?`
+    if [ "${_FILE}" == 0 ];then
+        _INSTALLED=1
+        checkUpgrade
+    else
+        _INSTALLED=0
+    fi
+}
+
+checkUpgrade(){
+    if [ "${_INSTALLED}" == "1" ]; then
+        _VERSION=`cat ${INSTALL_DIR}${CONFIG_DIR}/version`
+        _PKG=`echo $PKG | grep -c "${_VERSION}"`
+        if [ "${_PKG}" == "1" ]; then
+            _UPGRADE=0
+        else
+            _UPGRADE=1
+        fi
+    fi
+}
+
+installPkg(){
+    checkInstall
+    if [ "${_INSTALLED}" == "0" ]; then
+        pkgCmd $OSPKG "install"
+        RUN=`$PKGCMD $PKG 2>&1 1>/dev/null; echo $?`
+    elif [ "${_UPGRADE}" == "1" ]; then
+        pkgCmd $OSPKG "upgrade"
+        RUN=`$PKGCMD $PKG 2>&1 1>/dev/null; echo $?`
+    else
+        RUN=0
+    fi
+    if [ ${RUN} -eq 0 ]; then
+        return $RUN
+    fi
+}
+
+generateMD5(){
+        if [ -e $2/$3 ]; then
+                /usr/bin/md5sum $2/$3 > $1/$3.md5
+        fi
+}
+
+checkMD5(){
+        if [ -e $1.md5 ] &&  [ -e $2.md5 ]; then
+                _K1=`cat $1.md5 | awk '{print $1}'`
+                _K2=`cat $2.md5 | awk '{print $1}'`
+                if [ "${_K1}" == "${_K2}" ]; then
+                        KM="1"
+                else
+                        KM="0"
+                fi
+        fi
+}
+
+checkKeys(){
+        CNT=0
+        if [ -e ~hpcc/.ssh/$1 ] && [ -e ~hpcc/.ssh/$1.pub ]; then
+                mkdir -p ${MD5}
+                mkdir -p ${CURR}
+                cp ~hpcc/.ssh/$1 ${CURR}/${1}-inst
+                cp ~hpcc/.ssh/$1.pub ${CURR}/${1}-inst.pub
+                generateMD5 ${MD5} ${CURR} ${1}-inst
+                generateMD5 ${MD5} ${CURR} ${1}-inst.pub
+                if [ -e ${NEW}/$1 ]; then
+                        generateMD5 ${MD5} ${NEW} ${1}
+                        generateMD5 ${MD5} ${NEW} ${1}.pub
+                fi
+                checkMD5 ${MD5}/$1 ${MD5}/${1}-inst
+                if [ "$KM" == "0" ]; then
+                        CNT=1
+                fi
+                checkMD5 ${MD5}/$1.pub ${MD5}/${1}-inst.pub
+                if [ "$KM" == "0" ]; then
+                        CNT=1
+                fi
+                rm -rf ${MD5}
+                rm -rf ${CURR}
+    else
+        CNT=1
+        fi
+        if [ "$CNT" == "1" ]; then
+                installKeys ${NEW} $1
+        fi
+}
+
+installKeys(){
+    mkdir -p  ~/hpcc/.ssh
+    rm -f ~hpcc/.ssh/authorized_keys
+    /bin/cp $1/$2 ~hpcc/.ssh/$2
+    /bin/cp $1/$2.pub ~hpcc/.ssh/$2.pub
+    /bin/cp $1/$2.pub ~hpcc/.ssh/authorized_keys
+    chown -R hpcc:hpcc ~hpcc/.ssh
+    chmod 700 ~hpcc/.ssh
+    chmod 600 ~hpcc/.ssh/$2
+    chmod 644 ~hpcc/.ssh/$2.pub
+    chmod 644 ~hpcc/.ssh/authorized_keys
+}
+
+if [ $# -eq 0 ]; then
+    print_usage
+fi
+
+PKG=$1
+
+pkgtype=`echo "$PKG" | grep -i rpm`
+if [ -z $pkgtype ]; then
+    OSPKG="deb"
+else
+    OSPKG="rpm"
+fi
+
+installPkg
+checkKeys id_rsa
+if [ -e ${REMOTE_INSTALL}/${ENV_XML_FILE} ]; then
+	cp -r ${REMOTE_INSTALL}/${ENV_XML_FILE}  ${CONFIG_DIR}/${ENV_XML_FILE} 
+	chown hpcc:hpcc ${CONFIG_DIR}/${ENV_XML_FILE}
+fi
+exit 0
