@@ -37,7 +37,7 @@ j1 := join(ds, i1, left.did = right.did, left outer, lookup);
 j2 := join(ds, i2, left.did = right.did, left outer, lookup);
 j3 := join(ds, i3, left.did = right.did, left outer, lookup);
 
-combined1 := combine(j1, j2, transform(outRec, self := left; self := right; self := []));
-combined2 := combine(combined1, j3, transform(outRec, self.dob := right.dob; self := left));
+combined1 := combine(j1, j2, transform(outRec, self := left; self := right; self := []), LOCAL);
+combined2 := combine(combined1, j3, transform(outRec, self.dob := right.dob; self := left), LOCAL);
 output(combined2);
 

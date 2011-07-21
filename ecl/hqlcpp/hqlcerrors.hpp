@@ -265,6 +265,7 @@
 #define HQLERR_MinusOnString                    4616
 #define HQLERR_ThorNotSupportStepping           4617
 #define HQLERR_OnceCannotAccessStored           4618
+#define HQLERR_ThorCombineOnlyLocal             4619
 
 #define HQLERR_ErrorAlreadyReported             4799            // special case...
 
@@ -536,6 +537,7 @@
 #define HQLERR_StarRangeOnlyInJoinCondition_Text "string[n..*] syntax is only valid in a join condition"
 #define HQLERR_KeyedDistributeNoSubstringJoin_Text "Keyed distribute doesn' support join condition of the form field[n..*]"
 #define HQLERR_OnceCannotAccessStored_Text      "ONCE workflow items cannot be dependent on other workflow items (including ONCE)"
+#define HQLERR_ThorCombineOnlyLocal_Text        "Thor currently only supports the local version of COMBINE"
 
 #define HQLERR_NoClearOnLocalDataset_Text       "INTERNAL: Clear not supported on LOCAL datasets"
 #define HQLERR_NoCreateLocalDataset_Text        "INTERNAL: Local datasets cannot be created"
