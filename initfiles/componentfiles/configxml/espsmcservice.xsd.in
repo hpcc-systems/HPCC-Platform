@@ -111,7 +111,7 @@
                 </xs:appinfo>
             </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="excludePartitions" type="xs:string" use="optional" default="/dev*,/sys,/proc/*">
+        <xs:attribute name="excludePartitions" type="xs:string" use="optional" default="/dev*,/sys,/proc/*,/boot">
             <xs:annotation>
                 <xs:appinfo>
                     <tooltip>Comma, space or semicolon delimited list of partitions not to be monitored for free space</tooltip>
