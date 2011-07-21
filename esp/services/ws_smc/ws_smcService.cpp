@@ -127,6 +127,12 @@ void CWsSMCEx::init(IPropertyTree *cfg, const char *process, const char *service
     m_BannerSize = "4";
     m_BannerColor = "red";
     m_BannerScroll = "2";
+    
+    StringBuffer xpath;
+    xpath.appendf("Software/EspProcess[@name='%s']/@portalurl", process, service);
+    const char* portalURL = cfg->queryProp(xpath.str());
+    if (portalURL && *portalURL)
+        m_portalURL.append(portalURL);
 }
 
 static void countProgress(IPropertyTree *t,unsigned &done,unsigned &total)
@@ -1365,4 +1371,141 @@ int CWsSMCSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* request, 
         FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
     }
     return onGetForm(context, request, response, service, method);
+}
+
+bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesRequest & req, IEspBrowseResourcesResponse & resp)
+{
+    try
+    {
+        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
+            throw MakeStringException(ECLWATCH_ROXIE_QUERY_ACCESS_DENIED, "Failed to Browse Resources. Permission denied.");
+
+        if (m_portalURL.length() > 0)
+            resp.setPortalURL(m_portalURL.str());
+        
+                IArrayOf<IEspHPCCResourceRepository> resourcRepositories;
+
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+        Owned<IConstEnvironment> constEnv = factory->openEnvironmentByFile();
+        Owned<IPropertyTree> pEnvRoot = &constEnv->getPTree();
+        const char* ossInstall = pEnvRoot->queryProp("EnvSettings/path");
+        if (!ossInstall || !*ossInstall)
+            return true;
+
+        //The resource files will be downloaded from the same box of ESP (not dali)
+        StringBuffer ipStr;
+        IpAddress ipaddr = queryHostIP();
+        ipaddr.getIpText(ipStr);
+        if (ipStr.length() > 0)
+        {
+            resp.setNetAddress(ipStr.str());
+            Owned<IConstMachineInfo> machine = constEnv->getMachineByAddress(ipStr.str());
+            if (machine)
+            {
+                int os = machine->getOS();
+                resp.setOS(os);
+            }
+        }
+
+        StringBuffer path;
+        path.appendf("%s/componentfiles/files/downloads", ossInstall);
+        Owned<IFile> f = createIFile(path.str());
+        if(f->exists())
+        {
+            if(!f->isDirectory())
+                throw MakeStringException(ECLWATCH_INVALID_DIRECTORY, "%s is not a directory.", path.str());
+
+            Owned<IDirectoryIterator> di = f->directoryFiles(NULL, false, true);
+            if(di.get() != NULL)
+            {
+                ForEach(*di) 
+                {
+                    StringBuffer path0, folder;
+
+                    if (!di->isDir())
+                        continue;
+
+                    di->getName(folder);
+                    if (folder.length() == 0)
+                        continue;
+
+                    StringArray files;
+                    IArrayOf<IEspHPCCResource> resourcs;
+                    path0.appendf("%s/%s/description.xml", path.str(), folder.str());
+                    Owned<IFile> f0 = createIFile(path0.str());
+                    if(f0->exists())
+                    {
+                        OwnedIFileIO rIO = f0->openShared(IFOread,IFSHfull);
+                        if(rIO)
+                        {
+                            StringBuffer tmpBuf;
+                            offset_t fileSize = f0->size();
+                            tmpBuf.ensureCapacity((unsigned)fileSize);
+                            tmpBuf.setLength((unsigned)fileSize);
+
+                            size32_t nRead = rIO->read(0, (size32_t) fileSize, (char*)tmpBuf.str());
+                            if (nRead == fileSize)
+                            {
+                                Owned<IPropertyTree> desc = createPTreeFromXMLString(tmpBuf.str(),false);
+                                if (desc)
+                                {
+                                    Owned<IPropertyTreeIterator> fileIterator = desc->getElements("file");
+                                    if (fileIterator->first()) 
+                                    {
+                                        do {
+                                            IPropertyTree &fileItem = fileIterator->query();
+                                            const char* filename = fileItem.queryProp("filename");
+                                            if (!filename || !*filename)
+                                                continue;
+
+                                            StringBuffer pathStr(filename);
+                                            files.append(pathStr.toLowerCase());
+
+                                            const char* name0 = fileItem.queryProp("name");
+                                            const char* description0 = fileItem.queryProp("description");
+                                            const char* version0 = fileItem.queryProp("version");
+                                            
+                                            Owned<IEspHPCCResource> onefile = createHPCCResource();
+
+                                            onefile->setFileName(filename);
+                                            if (name0 && *name0)
+                                                onefile->setName(name0);
+                                            if (description0 && *description0)
+                                                onefile->setDescription(description0);
+                                            if (version0 && *version0)
+                                                onefile->setVersion(version0);
+
+                                            resourcs.append(*onefile.getLink());
+
+                                        } while (fileIterator->next());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    StringBuffer path1;
+                    path1.appendf("%s/%s", path.str(), folder.str());
+
+                    if (resourcs.ordinality())
+                    {
+                        Owned<IEspHPCCResourceRepository> oneRepository = createHPCCResourceRepository();
+                        oneRepository->setName(folder.str());
+                        oneRepository->setPath(path1.str());
+                        oneRepository->setHPCCResources(resourcs);
+
+                        resourcRepositories.append(*oneRepository.getLink());
+                    }
+                }
+            }
+        }
+            
+        if (resourcRepositories.ordinality())
+            resp.setHPCCResourceRepositories(resourcRepositories);
+    }
+    catch(IException* e)
+    {   
+        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+    }
+
+    return true;
 }
