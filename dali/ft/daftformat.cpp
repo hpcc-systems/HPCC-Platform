@@ -1222,7 +1222,7 @@ void CRemotePartitioner::callRemote()
         StringBuffer url, tmp;
         ep.getUrlStr(url);
         
-        Owned<ISocket> socket = spawnRemoteChild(SPAWNdfu, slave, ep, DAFT_VERSION, queryFtSlaveLogDir(), NULL, false, wuid);
+        Owned<ISocket> socket = spawnRemoteChild(SPAWNdfu, slave, ep, DAFT_VERSION, queryFtSlaveLogDir(), NULL, wuid);
         if (socket)
         {
             LogMsgJobInfo job(unknownJob);
