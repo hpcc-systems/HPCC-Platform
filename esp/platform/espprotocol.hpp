@@ -101,6 +101,8 @@ public:
     const StringBuffer &getNavBarContent(IEspContext &context, StringBuffer &content, StringBuffer &contentType, bool xml);
     const StringBuffer &getDynNavData(IEspContext &context, IProperties *params, StringBuffer &content, 
                                       StringBuffer &contentType, bool& bVolatile);
+    void buildNavTreeXML(IPropertyTree* navtree, StringBuffer& xmlBuf, bool insideFolder = false);
+
     int onGetNavEvent(IEspContext &context, IHttpMessage* request, IHttpMessage* response);
     int onBuildSoapRequest(IEspContext &context, IHttpMessage* request, IHttpMessage* response);
 

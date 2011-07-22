@@ -173,7 +173,7 @@ const StringBuffer &CEspApplicationPort::getNavBarContent(IEspContext &context, 
             bindings[idx]->queryBinding()->getNavigationData(context, *navtree.get());
 
         StringBuffer xml;
-        toXML(navtree.get(), xml);
+        buildNavTreeXML(navtree.get(), xml);
         if (rawxml)
         {
             content.swapWith(xml);
@@ -246,7 +246,97 @@ int CEspApplicationPort::onBuildSoapRequest(IEspContext &context, IHttpMessage* 
     return handled;
 }
 
-IPropertyTree *CEspBinding::ensureNavFolder(IPropertyTree &root, const char *name, const char *tooltip, const char *menuname, bool sort)
+void CEspApplicationPort::buildNavTreeXML(IPropertyTree* navtree, StringBuffer& xmlBuf, bool insideFolder)
+{
+    if (!navtree)
+        return;
+
+    //Find out the menu items which do not request a specific position
+    //Also find out the maximum position being requested
+    unsigned positionMax = 0;
+    StringArray itemsGroup1;
+    Owned<IPropertyTreeIterator> items = navtree->getElements("*");
+    ForEach(*items)
+    {
+        IPropertyTree &item = items->query();
+        unsigned position = (unsigned) item.getPropInt("@relPosition", 0);
+        if (position > positionMax)
+        {
+            positionMax = position;
+        }
+        else if (position < 1)
+        {//if the item does not request a position, add it to the 'itemsGroup1'.
+            StringBuffer itemXML;
+            if (!insideFolder)
+                buildNavTreeXML(&item, itemXML, true);
+            else
+                toXML(&item, itemXML);
+
+            itemsGroup1.append(itemXML);
+        }
+    }
+
+    xmlBuf.appendf("<%s", navtree->queryName());
+    Owned<IAttributeIterator> attrs = navtree->getAttributes();
+    ForEach(*attrs)
+    {
+        const char *attrname = attrs->queryName()+1;
+        const char *attrvaluee = attrs->queryValue();
+        if (attrname && *attrname && attrvaluee && *attrvaluee)
+            xmlBuf.appendf(" %s=\"%s\"", attrname, attrvaluee);
+    }
+    xmlBuf.append(">\n");
+
+    unsigned positionInGroup1 = 0;
+    unsigned itemCountInGroup1 = itemsGroup1.length();
+
+    //append the menu items based on the position requested
+    unsigned position = 1;
+    while (position <= positionMax)
+    {
+        bool foundOne = false;
+
+        //process the item(s) which asks for this position
+        StringBuffer xPath;
+        xPath.appendf("*[@relPosition=%d]", position);
+        Owned<IPropertyTreeIterator> items1 = navtree->getElements(xPath.str());
+        ForEach(*items1)
+        {
+            IPropertyTree &item = items1->query();
+
+            StringBuffer itemXML;
+            if (!insideFolder)
+                buildNavTreeXML(&item, itemXML, true);
+            else
+                toXML(&item, itemXML);
+            xmlBuf.append(itemXML.str());
+
+            foundOne = true;
+        }
+
+        //If no one asks for this position, pick one from the itemsGroup1
+        if (!foundOne && (positionInGroup1 < itemCountInGroup1))
+        {
+            StringBuffer itemXML = itemsGroup1.item(positionInGroup1);
+            xmlBuf.append(itemXML.str());
+            positionInGroup1++;
+        }
+
+        position++;
+    }
+
+    //Check any item left inside the itemsGroup1 and append it into the xml
+    while (positionInGroup1 < itemCountInGroup1)
+    {
+        StringBuffer itemXML = itemsGroup1.item(positionInGroup1);
+        xmlBuf.append(itemXML.str());
+        positionInGroup1++;
+    }
+
+    xmlBuf.appendf("</%s>\n", navtree->queryName());
+}
+
+IPropertyTree *CEspBinding::ensureNavFolder(IPropertyTree &root, const char *name, const char *tooltip, const char *menuname, bool sort, unsigned relPosition)
 {
     StringBuffer xpath;
     xpath.appendf("Folder[@name=\"%s\"]", name);
@@ -261,9 +351,11 @@ IPropertyTree *CEspBinding::ensureNavFolder(IPropertyTree &root, const char *nam
             ret->addProp("@menu", menuname);
         if (sort)
             ret->addPropBool("@sort", true);
+        ret->addPropInt("@relPosition", relPosition);
 
         root.addPropTree("Folder", ret);
     }
+
     return ret;
 }
 
@@ -317,7 +409,7 @@ IPropertyTree *CEspBinding::ensureNavDynFolder(IPropertyTree &root, const char *
     return ret;
 }
 
-IPropertyTree *CEspBinding::ensureNavLink(IPropertyTree &folder, const char *name, const char *path, const char *tooltip, const char *menuname, const char *navPath)
+IPropertyTree *CEspBinding::ensureNavLink(IPropertyTree &folder, const char *name, const char *path, const char *tooltip, const char *menuname, const char *navPath, unsigned relPosition)
 {
     StringBuffer xpath;
     xpath.appendf("Link[@name=\"%s\"]", name);
@@ -327,17 +419,19 @@ IPropertyTree *CEspBinding::ensureNavLink(IPropertyTree &folder, const char *nam
     {
         ret=createPTree("Link", false);
         ret->addProp("@name", name);
-      if (tooltip)
-           ret->addProp("@tooltip", tooltip);
-      if (path)
-           ret->addProp("@path", path);
+        if (tooltip)
+            ret->addProp("@tooltip", tooltip);
+        if (path)
+            ret->addProp("@path", path);
         if (menuname)
             ret->addProp("@menu", menuname);
         if (navPath)
             ret->addProp("@navPath", navPath);
+        ret->addPropInt("@relPosition", relPosition);
 
         folder.addPropTree("Link", ret);
     }
+
     return ret;
 }
 

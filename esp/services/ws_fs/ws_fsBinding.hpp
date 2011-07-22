@@ -39,23 +39,22 @@ public:
 
     virtual void getNavigationData(IEspContext &context, IPropertyTree & data)
     {
-        IPropertyTree *folder0 = ensureNavFolder(data, "DFU Workunits", "DFU Workunits");
-        ensureNavLink(*folder0, "Search", "/FileSpray/DFUWUSearch", "Search Workunits");
-        ensureNavLink(*folder0, "Browse", "/FileSpray/GetDFUWorkunits", "Browse Workunits");
-        IPropertyTree *folder = ensureNavFolder(data, "DFU Files", "DFU Files");
-        //ensureNavLink(*folder, "Search Logical Files", "/esp/files_/searchfile.html", "Search Logical Files");
-        ensureNavLink(*folder, "Upload/download File", "/FileSpray/DropZoneFiles", "Upload/download File");
-        ensureNavLink(*folder, "View Data File", "/WsDfu/DFUGetDataColumns?ChooseFile=1", "View Data File");
-        ensureNavLink(*folder, "Search File Relationships", "/WsRoxieQuery/FileRelationSearch", "Search File Relationships");
-        ensureNavLink(*folder, "Browse Space Usage", "/WsDfu/DFUSpace", "Browse Space Usage");
-        ensureNavLink(*folder, "Search Logical Files", "/WsDfu/DFUSearch", "Search Logical Files");
-        ensureNavLink(*folder, "Browse Logical Files", "/WsDfu/DFUQuery", "Browse Logical Files");
-        ensureNavLink(*folder, "Browse Files by Scope", "/WsDfu/DFUFileView", "Browse Files by Scope");
-        ensureNavLink(*folder, "Spray Fixed", "/FileSpray/SprayFixedInput", "Spray Fixed");
-        ensureNavLink(*folder, "Spray CSV", "/FileSpray/SprayVariableInput?submethod=csv", "Spray CSV");
-        ensureNavLink(*folder, "Spray XML", "/FileSpray/SprayVariableInput?submethod=xml", "Spray XML");
-        ensureNavLink(*folder, "Remote Copy", "/FileSpray/CopyInput", "Remote Copy");
-        ensureNavLink(*folder, "XRef", "/WsDFUXRef/DFUXRefList", "XRef");
+        IPropertyTree *folder0 = ensureNavFolder(data, "DFU Workunits", "DFU Workunits", NULL, false, 5);
+        ensureNavLink(*folder0, "Search", "/FileSpray/DFUWUSearch", "Search Workunits", NULL, NULL, 1);
+        ensureNavLink(*folder0, "Browse", "/FileSpray/GetDFUWorkunits", "Browse Workunits", NULL, NULL, 2);
+        IPropertyTree *folder = ensureNavFolder(data, "DFU Files", "DFU Files", NULL, false, 6);
+        ensureNavLink(*folder, "Upload/download File", "/FileSpray/DropZoneFiles", "Upload/download File", NULL, NULL, 1);
+        ensureNavLink(*folder, "View Data File", "/WsDfu/DFUGetDataColumns?ChooseFile=1", "View Data File", NULL, NULL, 2);
+        ensureNavLink(*folder, "Search File Relationships", "/WsRoxieQuery/FileRelationSearch", "Search File Relationships", NULL, NULL, 3);
+        ensureNavLink(*folder, "Browse Space Usage", "/WsDfu/DFUSpace", "Browse Space Usage", NULL, NULL, 4);
+        ensureNavLink(*folder, "Search Logical Files", "/WsDfu/DFUSearch", "Search Logical Files", NULL, NULL, 5);
+        ensureNavLink(*folder, "Browse Logical Files", "/WsDfu/DFUQuery", "Browse Logical Files", NULL, NULL, 6);
+        ensureNavLink(*folder, "Browse Files by Scope", "/WsDfu/DFUFileView", "Browse Files by Scope", NULL, NULL, 7);
+        ensureNavLink(*folder, "Spray Fixed", "/FileSpray/SprayFixedInput", "Spray Fixed", NULL, NULL, 8);
+        ensureNavLink(*folder, "Spray CSV", "/FileSpray/SprayVariableInput?submethod=csv", "Spray CSV", NULL, NULL, 9);
+        ensureNavLink(*folder, "Spray XML", "/FileSpray/SprayVariableInput?submethod=xml", "Spray XML", NULL, NULL, 10);
+        ensureNavLink(*folder, "Remote Copy", "/FileSpray/CopyInput", "Remote Copy", NULL, NULL, 11);
+        ensureNavLink(*folder, "XRef", "/WsDFUXRef/DFUXRefList", "XRef", NULL, NULL, 12);
     }
 
     int onGetInstantQuery(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method);
