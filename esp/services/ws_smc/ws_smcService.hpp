@@ -88,9 +88,9 @@ public:
     {
         data.setProp("@appName", "EclWatch");
         data.setProp("@start_page", "/WsSMC/Activity");
-        IPropertyTree *folder = ensureNavFolder(data, "Clusters", "Clusters");
-        ensureNavLink(*folder, "Activity", "/WsSMC/Activity", "Change Password");
-        ensureNavLink(*folder, "Scheduler", "/WsWorkunits/WUShowScheduled", "Show Scheduled WUs");
+        IPropertyTree *folder = ensureNavFolder(data, "Clusters", "Clusters", NULL, false, 1);
+        ensureNavLink(*folder, "Activity", "/WsSMC/Activity", "View Activity", NULL, NULL, 1);
+        ensureNavLink(*folder, "Scheduler", "/WsWorkunits/WUShowScheduled", "Show Scheduled WUs", NULL, NULL, 2);
     }
     virtual void getNavSettings(int &width, bool &resizable, bool &scroll)
     {

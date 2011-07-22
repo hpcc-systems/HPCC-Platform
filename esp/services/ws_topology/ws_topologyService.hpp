@@ -50,10 +50,10 @@ public:
 
     virtual void getNavigationData(IEspContext &context, IPropertyTree & data)
     {
-        IPropertyTree *folder = ensureNavFolder(data, "Topology", "Topology");
-        ensureNavLink(*folder, "Target Clusters", "/WsTopology/TpTargetClusterQuery?Type=ROOT", "Target Clusters");
-        ensureNavLink(*folder, "Cluster Processes", "/WsTopology/TpClusterQuery?Type=ROOT", "Cluster Processes");
-        ensureNavLink(*folder, "System Servers", "/WsTopology/TpServiceQuery?Type=ALLSERVICES", "System Servers");
+        IPropertyTree *folder = ensureNavFolder(data, "Topology", "Topology", NULL, false, 4);
+        ensureNavLink(*folder, "Target Clusters", "/WsTopology/TpTargetClusterQuery?Type=ROOT", "Target Clusters", NULL, NULL, 1);
+        ensureNavLink(*folder, "Cluster Processes", "/WsTopology/TpClusterQuery?Type=ROOT", "Cluster Processes", NULL, NULL, 2);
+        ensureNavLink(*folder, "System Servers", "/WsTopology/TpServiceQuery?Type=ALLSERVICES", "System Servers", NULL, NULL, 3);
     }
 };
 

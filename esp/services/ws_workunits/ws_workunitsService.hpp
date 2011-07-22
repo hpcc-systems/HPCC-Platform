@@ -221,11 +221,11 @@ public:
     {
         if (!m_bBatchWatch)
         {
-            IPropertyTree *folder = ensureNavFolder(data, "ECL Workunits", "ECL Workunits");
-            ensureNavLink(*folder, "Search", "/WsWorkunits/WUQuery?form_", "Search Workunits");
-            ensureNavLink(*folder, "Browse", "/WsWorkunits/WUQuery", "Browse Workunits");
+            IPropertyTree *folder = ensureNavFolder(data, "ECL Workunits", "ECL Workunits", NULL, false, 2);
+            ensureNavLink(*folder, "Search", "/WsWorkunits/WUQuery?form_", "Search Workunits", NULL, NULL, 1);
+            ensureNavLink(*folder, "Browse", "/WsWorkunits/WUQuery", "Browse Workunits", NULL, NULL, 2);
 
-            IPropertyTree *folderQueryset = ensureNavFolder(data, "Query Sets", "Queryset Management");
+            IPropertyTree *folderQueryset = ensureNavFolder(data, "Query Sets", "Queryset Management", NULL, false, 3);
             ensureNavLink(*folderQueryset, "Browse", "/WsWorkunits/WUQuerySets", "Browse Querysets");
         }
     }
