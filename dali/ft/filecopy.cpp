@@ -2802,6 +2802,20 @@ void FileSprayer::updateTargetProperties()
 
                     curProps.setProp("@modified", temp.getString(timestr).str());
                 }
+                if (replicate && (distributedSource != distributedTarget))
+                {
+                    Owned<IDistributedFilePart> curSourcePart = distributedSource->getPart(cur.whichInput);
+                    Owned<IAttributeIterator> aiter = curSourcePart->queryProperties().getAttributes();
+                    //At the moment only clone the topLevelKey indicator (stored in kind), but make it easy to add others.
+                    ForEach(*aiter) {
+                        const char *aname = aiter->queryName();
+                        if (strieq(aname,"@kind")
+                            ) {
+                            if (!curProps.hasProp(aname))
+                                curProps.setProp(aname,aiter->queryValue());
+                        }
+                    }
+                }
                 curPart->unlockProperties();
                 partCRC.clear();
                 partLength = 0;
@@ -2835,7 +2849,7 @@ void FileSprayer::updateTargetProperties()
                      (stricmp(aname,"@formatCrc")==0)||
                      (stricmp(aname,"@owner")==0)||
                      ((stricmp(aname,FArecordCount)==0)&&!gotrc))
-                     ) 
+                    )
                     curProps.setProp(aname,aiter->queryValue());
             }
 
