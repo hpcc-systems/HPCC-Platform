@@ -14624,6 +14624,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCombine(BuildCtx & ctx, IHqlEx
     IHqlExpression * transform = expr->queryChild(2);
     IHqlExpression * selSeq = querySelSeq(expr);
 
+    if (targetThor() && !expr->hasProperty(localAtom))
+        ERRORAT(queryLocation(expr), HQLERR_ThorCombineOnlyLocal);
+
     CIArray bound;
     bound.append(*buildCachedActivity(ctx, left));
     bound.append(*buildCachedActivity(ctx, right));

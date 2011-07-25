@@ -1558,7 +1558,6 @@ bool isLocalActivity(IHqlExpression * expr)
     case no_if:
         return false;
     case no_forcelocal:
-    case no_combine:
     case no_combinegroup:
     case no_regroup:
         return true;
@@ -1596,6 +1595,7 @@ bool isLocalActivity(IHqlExpression * expr)
     case no_loop2:
     case no_graphloop:
     case no_aggregate:
+    case no_combine:
         assertex(localChangesActivity(expr));
         return expr->hasProperty(localAtom);
     case no_newusertable:
@@ -1786,6 +1786,7 @@ bool localChangesActivityAction(IHqlExpression * expr)
     case no_loop:
     case no_loop2:
     case no_graphloop:
+    case no_combine:
         return true;
     case no_hqlproject:
         return expr->hasProperty(_countProject_Atom);
