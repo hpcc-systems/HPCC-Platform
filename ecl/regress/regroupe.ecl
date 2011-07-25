@@ -40,7 +40,6 @@ j1 := join(ds, i1, left.did = right.did, left outer);
 j2 := join(ds, i2, left.did = right.did, left outer);
 j3 := join(ds, i3, left.did = right.did, left outer);
 
-combined1 := combine(j1, j2, transform(outRec, self := left; self := right; self := []), local);
-combined2 := combine(combined1, j3, transform(outRec, self := left; self := right), local);
+combined1 := combine(j1, j2, transform(outRec, self := left; self := right; self := []));
+combined2 := combine(combined1, j3, transform(outRec, self := left; self := right));
 output(combined2);
-
