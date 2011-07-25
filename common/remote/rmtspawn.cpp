@@ -102,7 +102,7 @@ void getRemoteSpawnSSH(
 }
 
 
-ISocket * spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoint & childEP, unsigned version, const char *logdir, IAbortRequestCallback * abort, bool debug, const char *extra)
+ISocket * spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoint & childEP, unsigned version, const char *logdir, IAbortRequestCallback * abort, const char *extra)
 {
     SocketEndpoint myEP;
     myEP.setLocalHost(0);
@@ -120,45 +120,42 @@ ISocket * spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoin
         args.append(' ').append(logdir);
 
 
+    StringBuffer cmd;
+    if (SSHexeprefix.isEmpty())
+        cmd.append(exe);
+    else {
+        const char * tail = splitDirTail(exe,cmd);
+        size32_t l = strlen(tail);
+        addPathSepChar(cmd).append(SSHexeprefix);
+        if ((l>4)&&(memcmp(tail+l-4,".exe",4)==0))  // bit odd but want .bat if prefix on windows
+            cmd.append(l-4,tail).append(".bat");
+        else
+            cmd.append(tail);
+    }
+    cmd.append(' ').append(args);
+
+#if defined(_WIN32)
     //Run the program directly if it is being run on the local machine - so hoagent/ssh doesn't need to be running...
-#if 0 // this doesn't necessarily work as relies on hoagent account dir so disable
-    if (!debug && childEP.isHost())
+    //Change once we have solved the problems with ssh etc. on windows.
+    if (childEP.isHost())
     {
-        StringBuffer command;
-        command.append(exe).append(" ").append(args);
         DWORD runcode;
-        if (!invoke_program(command.str(), runcode, false))
-        {
-            //Try running remote if not on the path.
-            if (!runRemoteProgram(exe, args.str(), childEP, debug))
-                return NULL;
-        }
+        if (!invoke_program(cmd.str(), runcode, false))
+            return NULL;
     }
     else
 #endif
-    if (SSHusername.isEmpty()) 
-        throw MakeStringException(-1,"SSH user not specified");
-    else {
-        Owned<IFRunSSH> runssh = createFRunSSH();
-        StringBuffer cmd;
-        if (SSHexeprefix.isEmpty())
-            cmd.append(exe);
+    {
+        if (SSHusername.isEmpty())
+            throw MakeStringException(-1,"SSH user not specified");
         else {
-            const char * tail = splitDirTail(exe,cmd);
-            size32_t l = strlen(tail);
-            addPathSepChar(cmd).append(SSHexeprefix);
-            if ((l>4)&&(memcmp(tail+l-4,".exe",4)==0))  // bit odd but want .bat if prefix on windows
-                cmd.append(l-4,tail).append(".bat");
-            else
-                cmd.append(tail);
+            Owned<IFRunSSH> runssh = createFRunSSH();
+            runssh->init(cmd.str(),SSHidentfilename,SSHusername,SSHpasswordenc,SSHtimeout,SSHretries);
+            runssh->exec(childEP,NULL,true); // need workdir? TBD
         }
-        cmd.append(' ').append(args);
-        runssh->init(cmd.str(),SSHidentfilename,SSHusername,SSHpasswordenc,SSHtimeout,SSHretries);
-        runssh->exec(childEP,NULL,true); // need workdir? TBD
     }
+
     //Have to now try and connect to the child and get back the port it is listening on
-    bool connected;
-    unsigned slaveTag;
     unsigned attempts = 20;
     SocketEndpoint connectEP(childEP);
     connectEP.port = port;
@@ -188,6 +185,8 @@ ISocket * spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoin
                     buffer.append(replyTag);
                     writeBuffer(socket, buffer);
 
+                    bool connected;
+                    unsigned slaveTag;
                     readBuffer(socket, buffer.clear(), 100*1000);
                     buffer.read(connected);
                     buffer.read(slaveTag);
