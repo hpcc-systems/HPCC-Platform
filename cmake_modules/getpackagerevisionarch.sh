@@ -1,5 +1,25 @@
 #!/bin/bash
 
+print_usage(){
+    echo "usage: getpackagerevisionarch.sh [-n|--noarch] "
+    exit 1
+}
+
+NOARCH=0
+TEMP=`/usr/bin/getopt -o nh --long help,noarch -n 'getpackagerevisionarch.sh' -- "$@"`
+if [ $? != 0 ] ; then echo "Failure to parse commandline." >&2 ; exit 1 ; fi
+eval set -- "$TEMP"
+while true ; do
+    case "$1" in
+	-n|--noarch) NOARCH=1
+	    shift ;;
+        -h|--help) print_usage
+                   shift ;;
+        --) shift ; break ;;
+        *) print_usage ;;
+    esac
+done
+
 OUTPUT=""
 ARCH=`uname -m`
 ARCH2=${ARCH}
@@ -18,14 +38,26 @@ esac
 if [ -e /etc/debian_version ]; then
   if [ -e /etc/lsb-release ]; then
     . /etc/lsb-release
-    OUTPUT="${DISTRIB_CODENAME}_${ARCH2}"
+    if [ ${NOARCH} -eq 0 ]; then
+        OUTPUT="${DISTRIB_CODENAME}_${ARCH2}"
+    else
+        OUTPUT="${DISTRIB_CODENAME}"
+    fi
   else
     case `cat /etc/debian_version` in
       5.*)
-        OUTPUT="lenny_${ARCH2}"
+        if [ ${NOARCH} -eq 0 ]; then
+            OUTPUT="lenny_${ARCH2}"
+        else
+            OUTPUT="lenny"
+        fi
         ;;
       "sid")
-        OUTPUT="sid_${ARCH2}"
+        if [ ${NOARCH} -eq 0 ]; then
+            OUTPUT="sid_${ARCH2}"
+        else
+            OUTPUT="sid"
+        fi
         ;;
     esac
   fi
@@ -36,11 +68,19 @@ elif [ -e /etc/redhat-release ]; then
     REDHAT_VERSION=`/bin/rpm -q --qf "%{VERSION}" --whatprovides /etc/redhat-release`
     case "$OS_GROUP" in
       "centos" | "fedora")
-        OUTPUT="el${REDHAT_VERSION}.${ARCH}"
+        if [ ${NOARCH} -eq 0 ]; then
+            OUTPUT="el${REDHAT_VERSION}.${ARCH}"
+        else
+            OUTPUT="el${REDHAT_VERSION}"
+        fi
         ;;
       "redhat")
         REDHAT_RELEASE=`/bin/rpm -q --qf "%{RELEASE}" --whatprovides /etc/redhat-release| cut -d. -f1`
-        OUTPUT="el${REDHAT_VERSION}.${ARCH}"
+        if [ ${NOARCH} -eq 0 ]; then
+            OUTPUT="el${REDHAT_VERSION}.${ARCH}"
+        else
+            OUTPUT="el${REDHAT_VERSION}"
+        fi
         ;;
       esac
     fi
@@ -50,7 +90,11 @@ elif [ -e /etc/SuSE-release ]; then
     REDHAT_VERSION=`/bin/rpm -q --qf "%{VERSION}" --whatprovides /etc/SuSE-release`
       case "$OS_GROUP" in
         "opensuse" )
-          OUTPUT="suse${REDHAT_VERSION}.${ARCH}"
+          if [ ${NOARCH} -eq 0 ]; then
+              OUTPUT="suse${REDHAT_VERSION}.${ARCH}"
+          else
+              OUTPUT="suse${REDHAT_VERSION}"
+          fi
           ;;
       esac
   fi

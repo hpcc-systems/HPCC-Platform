@@ -291,6 +291,12 @@ if ( CMAKE_SYSTEM MATCHES Linux )
                     OUTPUT_VARIABLE packageRevisionArch
                         ERROR_VARIABLE  packageRevisionArch
                 )
+    EXECUTE_PROCESS (
+                COMMAND ${HPCC_SOURCE_DIR}/cmake_modules/getpackagerevisionarch.sh --noarch
+                    OUTPUT_VARIABLE packageRevision
+                        ERROR_VARIABLE  packageRevision
+                )
+		
     message ( "-- Auto Detecting Packaging type")
     message ( "-- distro uses ${packageManagement}, revision is ${packageRevisionArch}" )
 
@@ -363,7 +369,6 @@ if (NOT "${CMAKE_VERSION}" VERSION_LESS "2.8.1")
                 ###
                 ## CPack instruction required for Debian
                 ###
-                set ( CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-regex-dev, libicu-dev, libxalan110, libxerces-c28, binutils, libldap2-dev, openssl, zlib1g, g++, openssh-client, openssh-server")
                 message ("-- Packing BASH installation files")
                 set ( CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_BINARY_DIR}/initfiles/bash/sbin/deb/postinst;${CMAKE_BINARY_DIR}/initfiles/sbin/prerm;${CMAKE_BINARY_DIR}/initfiles/bash/sbin/deb/postrm" )
             endif ()
@@ -374,7 +379,6 @@ if (NOT "${CMAKE_VERSION}" VERSION_LESS "2.8.1")
             ## CPack instruction required for RPM 
             ###
             message("-- Will build RPM package")
-            set ( CPACK_RPM_PACKAGE_REQUIRES "boost, openldap, libicu, m4, libtool, xalan-c, xerces-c, gcc-c++, openssh-server, openssh-clients")
             message ("-- Packing BASH installation files")
             set ( CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${CMAKE_BINARY_DIR}/initfiles/bash/sbin/deb/postinst" )
 
@@ -385,7 +389,12 @@ if (NOT "${CMAKE_VERSION}" VERSION_LESS "2.8.1")
         endif ()
 
     endif ( CMAKE_SYSTEM MATCHES Linux )
-
+    if ( EXISTS ${CMAKE_MODULE_PATH}/dependencies/${packageRevision}.cmake )
+        include( ${CMAKE_MODULE_PATH}/dependencies/${packageRevision}.cmake )
+    else()
+        message("-- WARNING: DEPENDENCY FILE FOR ${packageRevision} NOT FOUND, Using deps template.")
+        include( ${CMAKE_MODULE_PATH}/dependencies/template.cmake )
+    endif()
 else()
     message("WARNING: CMAKE 2.8.1 or later required to create RPMs from this project")
 endif()
