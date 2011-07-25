@@ -59,7 +59,7 @@ public:
     IPropertyTree *ensureNavDynFolder(IPropertyTree &root, const char *name, const char *tooltip, const char *parms, const char *menu=NULL);
     IPropertyTree *addNavException(IPropertyTree &root, const char *message=NULL, int code=0, const char *source=NULL);
 
-    IPropertyTree *ensureNavLink(IPropertyTree &folder, const char *name, const char *path, const char *tooltip, const char *menu=NULL, const char *navPath=NULL, unsigned relPosition = 0);
+    IPropertyTree *ensureNavLink(IPropertyTree &folder, const char *name, const char *path, const char *tooltip, const char *menu=NULL, const char *navPath=NULL, unsigned relPosition = 0, bool force = false);
     virtual void getNavigationData(IEspContext &context, IPropertyTree & data);
     virtual void getDynNavData(IEspContext &context, IProperties *params, IPropertyTree & data);
     virtual bool showSchemaLinks() { return false; }
