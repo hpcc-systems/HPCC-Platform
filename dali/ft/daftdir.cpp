@@ -454,7 +454,7 @@ bool DirectoryThread::performCommand()
 
     LOG(MCdebugProgressDetail, job, "Starting to generate part %s [%lx]", url.str(), this);
     StringBuffer tmp;
-    Owned<ISocket> socket = spawnRemoteChild(SPAWNdfu, queryFtSlaveExecutable(node->endpoint(), tmp), node->endpoint(), DAFT_VERSION, queryFtSlaveLogDir(), NULL, false, NULL);
+    Owned<ISocket> socket = spawnRemoteChild(SPAWNdfu, queryFtSlaveExecutable(node->endpoint(), tmp), node->endpoint(), DAFT_VERSION, queryFtSlaveLogDir(), NULL, NULL);
     if (socket)
     {
         observer.addSlave(socket);
@@ -817,7 +817,7 @@ void doPhysicalCopy(IPropertyTree * source, const char * target, IPropertyTree *
 
     LOG(MCdebugProgressDetail, unknownJob, "Starting to generate part %s", url.str());
     StringBuffer tmp;
-    Owned<ISocket> socket = spawnRemoteChild(SPAWNdfu, queryFtSlaveExecutable(targetIP, tmp), targetName.queryEndpoint(), DAFT_VERSION, queryFtSlaveLogDir(), NULL, false); 
+    Owned<ISocket> socket = spawnRemoteChild(SPAWNdfu, queryFtSlaveExecutable(targetIP, tmp), targetName.queryEndpoint(), DAFT_VERSION, queryFtSlaveLogDir(), NULL);
     if (socket)
     {
         broadcaster.addSlave(socket);

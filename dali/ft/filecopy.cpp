@@ -49,7 +49,6 @@
 #define PARTITION_RECOVERY_LIMIT 1000
 #define EXPECTED_RESPONSE_TIME          (60 * 1000)
 #define RESPONSE_TIME_TIMEOUT           (60 * 60 * 1000)
-#define DEBUG_FTSLAVE   false
 
 static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/ft/filecopy.cpp $ $Id: filecopy.cpp 62376 2011-02-04 21:59:58Z sort $");
 
@@ -326,7 +325,7 @@ bool FileTransferThread::performTransfer()
 
     LOG(MCdebugProgressDetail, job, "Start generate part %s [%lx]", url.str(), this);
     StringBuffer tmp;
-    Owned<ISocket> socket = spawnRemoteChild(SPAWNdfu, sprayer.querySlaveExecutable(ep, tmp), ep, DAFT_VERSION, queryFtSlaveLogDir(), this, DEBUG_FTSLAVE, wuid);
+    Owned<ISocket> socket = spawnRemoteChild(SPAWNdfu, sprayer.querySlaveExecutable(ep, tmp), ep, DAFT_VERSION, queryFtSlaveLogDir(), this, wuid);
     if (socket)
     {
         MemoryBuffer msg;
