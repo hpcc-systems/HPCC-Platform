@@ -34,6 +34,7 @@ class CWsSMCEx : public CWsSMC
     StringBuffer m_BannerSize;
     StringBuffer m_BannerColor;
     StringBuffer m_BannerScroll;
+    StringBuffer m_PortalURL;
     int m_BannerAction;
     bool m_EnableChatURL;
 
@@ -58,6 +59,8 @@ public:
     bool onGetThorQueueAvailability(IEspContext &context, IEspGetThorQueueAvailabilityRequest &req, IEspGetThorQueueAvailabilityResponse& resp);
     bool onSetBanner(IEspContext &context, IEspSetBannerRequest &req, IEspSetBannerResponse& resp);
     bool onNotInCommunityEdition(IEspContext &context, IEspNotInCommunityEditionRequest &req, IEspNotInCommunityEditionResponse &resp);
+
+    virtual bool onBrowseResources(IEspContext &context, IEspBrowseResourcesRequest & req, IEspBrowseResourcesResponse & resp);
 
 private:
     void addCapabilities( IPropertyTree* pFeatureNode, const char* access, 
@@ -91,6 +94,9 @@ public:
         IPropertyTree *folder = ensureNavFolder(data, "Clusters", "Clusters", NULL, false, 1);
         ensureNavLink(*folder, "Activity", "/WsSMC/Activity", "View Activity", NULL, NULL, 1);
         ensureNavLink(*folder, "Scheduler", "/WsWorkunits/WUShowScheduled", "Show Scheduled WUs", NULL, NULL, 2);
+
+        IPropertyTree *folderTools = ensureNavFolder(data, "Resources", "HPCC Resources", NULL, false, 8);
+        ensureNavLink(*folderTools, "Browse", "/WsSMC/BrowseResources", "List HPCC Resources for Download", NULL, NULL, 1);
     }
     virtual void getNavSettings(int &width, bool &resizable, bool &scroll)
     {

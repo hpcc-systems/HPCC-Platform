@@ -212,7 +212,39 @@ ESPresponse [exceptions_inline] NotInCommunityEditionResponse
 {
 };
 
-#include "xslprocessor.hpp" 
+ESPStruct HPCCResource
+{
+    string Name;
+    string Description;
+    string FileName;
+    string Version;
+};
+
+ESPStruct HPCCResourceRepository
+{
+    string Name;
+    string Path;
+    ESParray<ESPstruct HPCCResource> HPCCResources;
+};
+
+ESPrequest
+[
+]
+BrowseResourcesRequest
+{
+};
+
+ESPresponse
+[
+    exceptions_inline, nil_remove
+]
+BrowseResourcesResponse
+{
+    string PortalURL;
+    string NetAddress;
+    int OS;
+    ESParray<ESPstruct HPCCResourceRepository> HPCCResourceRepositories;
+};
 
 //ESPservice [noforms, version("1.04"), default_client_version("1.04"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsSMC
 ESPservice [noforms, version("1.10"), default_client_version("1.10"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
@@ -243,6 +275,8 @@ ESPservice [noforms, version("1.10"), default_client_version("1.10"), exceptions
     ESPmethod SetBanner(SetBannerRequest, SetBannerResponse);
 
     ESPmethod NotInCommunityEdition(NotInCommunityEditionRequest, NotInCommunityEditionResponse);
+
+    ESPmethod [resp_xsl_default("/esp/xslt/hpccresourcelist.xslt")] BrowseResources(BrowseResourcesRequest, BrowseResourcesResponse);
 };
 
 SCMexportdef(WSSMC);
