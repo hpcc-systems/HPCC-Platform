@@ -63,4 +63,3 @@ b := OUTPUT (x);
 SEQUENTIAL (a,b);
 OUTPUT (COUNT (x));
 */
-
