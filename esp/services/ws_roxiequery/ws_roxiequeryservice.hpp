@@ -59,9 +59,6 @@ public:
             path.appendf("&EEPortal=%s", m_portalURL.str());
         ensureNavLink(*folder, "Search Roxie Files",path.str(), "Search Roxie Files", NULL, NULL, 2);
         ensureNavLink(*folder, "View Roxie Files", path.str(), "View Roxie Files", NULL, NULL, 3);
-
-        IPropertyTree *folderTools = ensureNavFolder(data, "Resources", "HPCC Resources", NULL, false, 8);
-        ensureNavLink(*folderTools, "Browse", "/WsRoxieQuery/BrowseResources", "List HPCC Resources for Download", NULL, NULL, 1);
     }
 };
 
@@ -74,7 +71,6 @@ private:
 
     StringBuffer m_attsXSLT;
     StringBuffer m_graphStatsXSLT;
-    StringBuffer m_portalURL;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -84,8 +80,6 @@ public:
     bool onRoxieQuerySearch(IEspContext &context, IEspRoxieQuerySearchRequest & req, IEspRoxieQuerySearchResponse & resp);
     bool onRoxieQueryList(IEspContext &context, IEspRoxieQueryListRequest &req, IEspRoxieQueryListResponse &resp);
     bool onQueryDetails(IEspContext &context, IEspRoxieQueryDetailsRequest & req, IEspRoxieQueryDetailsResponse & resp);
-
-    virtual bool onBrowseResources(IEspContext &context, IEspBrowseResourcesRequest & req, IEspBrowseResourcesResponse & resp);
 
 private:
     void addToQueryString(StringBuffer &queryString, const char *name, const char *value);

@@ -127,6 +127,12 @@ void CWsSMCEx::init(IPropertyTree *cfg, const char *process, const char *service
     m_BannerSize = "4";
     m_BannerColor = "red";
     m_BannerScroll = "2";
+
+    StringBuffer xpath;
+    xpath.appendf("Software/EspProcess[@name='%s']/@portalurl", process, service);
+    const char* portalURL = cfg->queryProp(xpath.str());
+    if (portalURL && *portalURL)
+        m_PortalURL.append(portalURL);
 }
 
 static void countProgress(IPropertyTree *t,unsigned &done,unsigned &total)
@@ -1325,6 +1331,161 @@ bool CWsSMCEx::onSetBanner(IEspContext &context, IEspSetBannerRequest &req, IEsp
 bool CWsSMCEx::onNotInCommunityEdition(IEspContext &context, IEspNotInCommunityEditionRequest &req, IEspNotInCommunityEditionResponse &resp)
 {
    return true;
+}
+
+
+bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesRequest & req, IEspBrowseResourcesResponse & resp)
+{
+    try
+    {
+        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
+            throw MakeStringException(ECLWATCH_SMC_ACCESS_DENIED, "Failed to Browse Resources. Permission denied.");
+
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+        Owned<IConstEnvironment> constEnv = factory->openEnvironmentByFile();
+
+        //The resource files will be downloaded from the same box of ESP (not dali)
+        StringBuffer ipStr;
+        IpAddress ipaddr = queryHostIP();
+        ipaddr.getIpText(ipStr);
+        if (ipStr.length() > 0)
+        {
+            resp.setNetAddress(ipStr.str());
+            Owned<IConstMachineInfo> machine = constEnv->getMachineByAddress(ipStr.str());
+            if (machine)
+            {
+                int os = machine->getOS();
+                resp.setOS(os);
+            }
+        }
+
+        if (m_PortalURL.length() > 0)
+            resp.setPortalURL(m_PortalURL.str());
+
+        //Now, get a list of resources stored inside the ESP box
+        IArrayOf<IEspHPCCResourceRepository> resourceRepositories;
+
+        Owned<IPropertyTree> pEnvRoot = &constEnv->getPTree();
+        const char* ossInstall = pEnvRoot->queryProp("EnvSettings/path");
+        if (!ossInstall || !*ossInstall)
+        {
+            DBGLOG("Failed to get EnvSettings/Path in environment settings.");
+            return true;
+        }
+
+        StringBuffer path;
+        path.appendf("%s/componentfiles/files/downloads", ossInstall);
+        Owned<IFile> f = createIFile(path.str());
+        if(!f->exists() || !f->isDirectory())
+        {
+            DBGLOG("Invalid resource folder");
+            return true;
+        }
+
+        Owned<IDirectoryIterator> di = f->directoryFiles(NULL, false, true);
+        if(di.get() == NULL)
+        {
+            DBGLOG("Resource folder is empty.");
+            return true;
+        }
+
+        ForEach(*di)
+        {
+            if (!di->isDir())
+                continue;
+
+            StringBuffer folder, path0, tmpBuf;
+            di->getName(folder);
+            if (folder.length() == 0)
+                continue;
+
+            path0.appendf("%s/%s/description.xml", path.str(), folder.str());
+            Owned<IFile> f0 = createIFile(path0.str());
+            if(!f0->exists())
+            {
+                DBGLOG("Description file not found for %s", folder.str());
+                continue;
+            }
+
+            OwnedIFileIO rIO = f0->openShared(IFOread,IFSHfull);
+            if(!rIO)
+            {
+                DBGLOG("Failed to open the description file for %s", folder.str());
+                continue;
+            }
+
+            offset_t fileSize = f0->size();
+            tmpBuf.ensureCapacity((unsigned)fileSize);
+            tmpBuf.setLength((unsigned)fileSize);
+
+            size32_t nRead = rIO->read(0, (size32_t) fileSize, (char*)tmpBuf.str());
+            if (nRead != fileSize)
+            {
+                DBGLOG("Failed to read the description file for %s", folder.str());
+                continue;
+            }
+
+            Owned<IPropertyTree> desc = createPTreeFromXMLString(tmpBuf.str(),false);
+            if (!desc)
+            {
+                DBGLOG("Invalid description file for %s", folder.str());
+                continue;
+            }
+
+            Owned<IPropertyTreeIterator> fileIterator = desc->getElements("file");
+            if (!fileIterator->first())
+            {
+                DBGLOG("Invalid description file for %s", folder.str());
+                continue;
+            }
+
+            IArrayOf<IEspHPCCResource> resourcs;
+
+            do {
+                IPropertyTree &fileItem = fileIterator->query();
+                const char* filename = fileItem.queryProp("filename");
+                if (!filename || !*filename)
+                    continue;
+
+                const char* name0 = fileItem.queryProp("name");
+                const char* description0 = fileItem.queryProp("description");
+                const char* version0 = fileItem.queryProp("version");
+
+                Owned<IEspHPCCResource> onefile = createHPCCResource();
+                onefile->setFileName(filename);
+                if (name0 && *name0)
+                    onefile->setName(name0);
+                if (description0 && *description0)
+                    onefile->setDescription(description0);
+                if (version0 && *version0)
+                    onefile->setVersion(version0);
+
+                resourcs.append(*onefile.getLink());
+            } while (fileIterator->next());
+
+            if (resourcs.ordinality())
+            {
+                StringBuffer path1;
+                path1.appendf("%s/%s", path.str(), folder.str());
+
+                Owned<IEspHPCCResourceRepository> oneRepository = createHPCCResourceRepository();
+                oneRepository->setName(folder.str());
+                oneRepository->setPath(path1.str());
+                oneRepository->setHPCCResources(resourcs);
+
+                resourceRepositories.append(*oneRepository.getLink());
+            }
+        }
+
+        if (resourceRepositories.ordinality())
+            resp.setHPCCResourceRepositories(resourceRepositories);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+    }
+
+    return true;
 }
 
 int CWsSMCSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method)
