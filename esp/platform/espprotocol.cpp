@@ -347,10 +347,8 @@ IPropertyTree *CEspBinding::ensureNavFolder(IPropertyTree &root, const char *nam
         ret=createPTree("Folder", false);
         ret->addProp("@name", name);
         ret->addProp("@tooltip", tooltip);
-        if (menuname)
-            ret->addProp("@menu", menuname);
-        if (sort)
-            ret->addPropBool("@sort", true);
+        ret->setProp("@menu", menuname);
+        ret->setPropBool("@sort", true);
         ret->addPropInt("@relPosition", relPosition);
 
         root.addPropTree("Folder", ret);
@@ -402,35 +400,41 @@ IPropertyTree *CEspBinding::ensureNavDynFolder(IPropertyTree &root, const char *
         ret->addProp("@name", name);
         ret->addProp("@tooltip", tooltip);
         ret->addProp("@params", params);
-        if (menuname)
-            ret->addProp("@menu", menuname);
+        ret->setProp("@menu", menuname);
         root.addPropTree("DynamicFolder", ret);
     }
     return ret;
 }
 
-IPropertyTree *CEspBinding::ensureNavLink(IPropertyTree &folder, const char *name, const char *path, const char *tooltip, const char *menuname, const char *navPath, unsigned relPosition)
+IPropertyTree *CEspBinding::ensureNavLink(IPropertyTree &folder, const char *name, const char *path, const char *tooltip, const char *menuname, const char *navPath, unsigned relPosition, bool force)
 {
     StringBuffer xpath;
     xpath.appendf("Link[@name=\"%s\"]", name);
 
+    bool addNew = true;
     IPropertyTree *ret = folder.queryPropTree(xpath.str());
-    if (!ret)
+    if (ret)
     {
-        ret=createPTree("Link", false);
-        ret->addProp("@name", name);
-        if (tooltip)
-            ret->addProp("@tooltip", tooltip);
-        if (path)
-            ret->addProp("@path", path);
-        if (menuname)
-            ret->addProp("@menu", menuname);
-        if (navPath)
-            ret->addProp("@navPath", navPath);
-        ret->addPropInt("@relPosition", relPosition);
+        bool forced = ret->getPropBool("@force");
+        if (forced || !force)
+            return ret;
 
-        folder.addPropTree("Link", ret);
+        addNew = false;
     }
+
+    if (addNew)
+        ret=createPTree("Link", false);
+
+    ret->setProp("@name", name);
+    ret->setProp("@tooltip", tooltip);
+    ret->setProp("@path", path);
+    ret->setProp("@menu", menuname);
+    ret->setProp("@navPath", navPath);
+    ret->setPropInt("@relPosition", relPosition);
+    ret->setPropBool("@force", force);
+
+    if (addNew)
+        folder.addPropTree("Link", ret);
 
     return ret;
 }
@@ -439,10 +443,9 @@ IPropertyTree *CEspBinding::ensureNavLink(IPropertyTree &folder, const char *nam
 IPropertyTree *CEspBinding::addNavException(IPropertyTree &folder, const char *message/*=NULL*/, int code/*=0*/, const char *source/*=NULL*/)
 {
     IPropertyTree *ret = folder.addPropTree("Exception", createPTree(false));
-   ret->addProp("@message", message ? message : "Unknown exception");
+    ret->addProp("@message", message ? message : "Unknown exception");
     ret->setPropInt("@code", code); 
-   if (source)
-       ret->addProp("@source", source);
+    ret->setProp("@source", source);
     return ret;
 }
 
