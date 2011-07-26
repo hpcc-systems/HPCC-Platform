@@ -85,15 +85,10 @@ installPkg(){
     checkInstall
     if [ "${_INSTALLED}" == "0" ]; then
         pkgCmd $OSPKG "install"
-        RUN=`$PKGCMD $PKG 2>&1 1>/dev/null; echo $?`
+        $PKGCMD $PKG 1>/dev/null 2>&1;
     elif [ "${_UPGRADE}" == "1" ]; then
         pkgCmd $OSPKG "upgrade"
-        RUN=`$PKGCMD $PKG 2>&1 1>/dev/null; echo $?`
-    else
-        RUN=0
-    fi
-    if [ ${RUN} -eq 0 ]; then
-        return $RUN
+        $PKGCMD $PKG 1>/dev/null 2>&1;
     fi
 }
 
@@ -147,7 +142,7 @@ checkKeys(){
 }
 
 installKeys(){
-    mkdir -p  ~/hpcc/.ssh
+    mkdir -p  ~hpcc/.ssh
     rm -f ~hpcc/.ssh/authorized_keys
     /bin/cp $1/$2 ~hpcc/.ssh/$2
     /bin/cp $1/$2.pub ~hpcc/.ssh/$2.pub
@@ -178,4 +173,6 @@ if [ -e ${REMOTE_INSTALL}/${ENV_XML_FILE} ]; then
 	cp -r ${REMOTE_INSTALL}/${ENV_XML_FILE}  ${CONFIG_DIR}/${ENV_XML_FILE} 
 	chown hpcc:hpcc ${CONFIG_DIR}/${ENV_XML_FILE}
 fi
+rm -rf ${REMOTE_INSTALL}
+rm -rf ~/remote_install.tgz
 exit 0
