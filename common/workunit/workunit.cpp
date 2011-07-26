@@ -8884,11 +8884,14 @@ IPropertyTree * resolveDefinitionInArchive(IPropertyTree * archive, const char *
     {
         xpath.clear().append("Module[@key='").appendLower(dot-path, path).append("']");
         module = archive->queryPropTree(xpath);
-        if (!module)
-            return module;
 
         path = dot+1;
     }
+    else
+        module = archive->queryPropTree("Module[@key='']");
+
+    if (!module)
+        return NULL;
 
     xpath.clear().append("Attribute[@key='").appendLower(strlen(path), path).append("']");
     return module->queryPropTree(xpath);
