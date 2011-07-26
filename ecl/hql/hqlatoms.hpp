@@ -39,6 +39,7 @@ extern HQL_API _ATOM _array_Atom;
 extern HQL_API _ATOM asciiAtom;
 extern HQL_API _ATOM assertAtom;
 extern HQL_API _ATOM assertConstAtom;
+extern HQL_API _ATOM atAtom;
 extern HQL_API _ATOM atmostAtom;
 extern HQL_API _ATOM _attrAligned_Atom;
 extern HQL_API _ATOM _attrRecordCount_Atom;

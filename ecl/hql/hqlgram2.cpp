@@ -177,12 +177,6 @@ protected:
 };
 
 
-/* only enable this when GAB support multiple error message */
-//#define GAB_SUPPORT_MULTIERRORS
-
-/* CAUTION: Turn on these will significantly slow down the speed. */
-//#define _DEBUG_EXPR
-
 /* This enables warning on a assignall which tries to reassign a field. */
 //#define _WARN_ON_ASSIGNALL
 
@@ -1456,11 +1450,6 @@ void HqlGram::doAddAssignment(IHqlExpression * transform, IHqlExpression * _fiel
     if (!rhsType)           // this happens when rhs is no_null.
         rhsType.set(fldType);
 
-#ifdef _DEBUG_EXPR
-    StringBuffer s1; fldType->getECLType(s1);
-    StringBuffer s2; rhsType->getECLType(s2);
-#endif
-
     // handle alien type
     if (rhsType->getTypeCode() == type_alien)
     {
@@ -2504,6 +2493,15 @@ IHqlExpression * HqlGram::leaveLamdaExpression(attribute & exprattr)
 {
     OwnedHqlExpr resultExpr = exprattr.getExpr();
     OwnedHqlExpr expr = associateSideEffects(resultExpr, exprattr.pos);
+
+    if (queryParametered())
+    {
+        ActiveScopeInfo & activeScope = defineScopes.tos();
+        OwnedHqlExpr formals = activeScope.createFormals(false);
+        OwnedHqlExpr defaults = activeScope.createDefaults();
+        expr.setown(createFunctionDefinition(atAtom, expr.getClear(), formals.getClear(), defaults.getClear(), NULL));
+    }
+
     leaveScope(exprattr);
     leaveCompoundObject();
 
@@ -9675,7 +9673,6 @@ static void getTokenText(StringBuffer & msg, int token)
     case BIG: msg.append("BIG_ENDIAN"); break;
     case TOK_BITMAP: msg.append("BITMAP"); break;
     case BLOB: msg.append("BLOB"); break;
-    case __BLOCK__: msg.append("__BLOCK__"); break;
     case BNOT: msg.append("BNOT"); break;
     case BUILD: msg.append("BUILD"); break;
     case CARDINALITY: msg.append("CARDINALITY"); break;
@@ -9806,7 +9803,6 @@ static void getTokenText(StringBuffer & msg, int token)
     case KEYPATCH: msg.append("KEYPATCH"); break;
     case KEYUNICODE: msg.append("KEYUNICODE"); break;
     case LABELED: msg.append("LABELED"); break;
-    case __LAMBDA__: msg.append("FUNCTIONMACRO"); break;
     case LAST: msg.append("LAST"); break;
     case LEFT: msg.append("LEFT"); break;
     case LENGTH: msg.append("LENGTH"); break;
@@ -10140,7 +10136,7 @@ void HqlGram::simplifyExpected(int *expected)
                        GROUP, GROUPED, KEYED, UNGROUP, JOIN, PULL, ROLLUP, ITERATE, PROJECT, NORMALIZE, PIPE, DENORMALIZE, CASE, MAP, 
                        HTTPCALL, SOAPCALL, LIMIT, PARSE, FAIL, MERGE, PRELOAD, ROW, TOPN, ALIAS, LOCAL, NOFOLD, NOHOIST, NOTHOR, IF, GLOBAL, __COMMON__, __COMPOUND__, TOK_ASSERT, _EMPTY_,
                        COMBINE, ROWS, REGROUP, XMLPROJECT, SKIP, LOOP, CLUSTER, NOLOCAL, REMOTE, PROCESS, ALLNODES, THISNODE, GRAPH, MERGEJOIN, STEPPED, NONEMPTY, HAVING,
-                       TOK_CATCH, __LAMBDA__, '@', SECTION, WHEN, IFF, COGROUP, HINT, INDEX, PARTITION, AGGREGATE, 0);
+                       TOK_CATCH, '@', SECTION, WHEN, IFF, COGROUP, HINT, INDEX, PARTITION, AGGREGATE, 0);
     simplify(expected, EXP, ABS, SIN, COS, TAN, SINH, COSH, TANH, ACOS, ASIN, ATAN, ATAN2, 
                        COUNT, CHOOSE, MAP, CASE, IF, HASH, HASH32, HASH64, HASHMD5, CRC, LN, TOK_LOG, POWER, RANDOM, ROUND, ROUNDUP, SQRT, 
                        TRUNCATE, LENGTH, TRIM, INTFORMAT, REALFORMAT, ASSTRING, TRANSFER, MAX, MIN, EVALUATE, SUM,
@@ -10148,7 +10144,7 @@ void HqlGram::simplifyExpected(int *expected)
                        FAILCODE, FAILMESSAGE, FROMUNICODE, __GROUPED__, ISNULL, ISVALID, XMLDECODE, XMLENCODE, XMLTEXT, XMLUNICODE,
                        MATCHED, MATCHLENGTH, MATCHPOSITION, MATCHTEXT, MATCHUNICODE, MATCHUTF8, NOFOLD, NOHOIST, NOTHOR, OPT, REGEXFIND, REGEXREPLACE, RELATIONSHIP, SEQUENTIAL, SKIP, TOUNICODE, UNICODEORDER, UNSORTED,
                        KEYUNICODE, TOK_TRUE, TOK_FALSE, NOT, EXISTS, WITHIN, LEFT, RIGHT, SELF, '[', HTTPCALL, SOAPCALL, ALL, TOK_ERROR, TOK_CATCH, __COMMON__, __COMPOUND__, RECOVERY, CLUSTERSIZE, CHOOSENALL, BNOT, STEPPED, ECLCRC, NAMEOF,
-                       TOXML, __LAMBDA__, '@', SECTION, EVENTEXTRA, EVENTNAME, __SEQUENCE__, IFF, OMITTED, GETENV, __DEBUG__, __STAND_ALONE__, 0);
+                       TOXML, '@', SECTION, EVENTEXTRA, EVENTNAME, __SEQUENCE__, IFF, OMITTED, GETENV, __DEBUG__, __STAND_ALONE__, 0);
     simplify(expected, DATA_CONST, REAL_CONST, STRING_CONST, INTEGER_CONST, UNICODE_CONST, 0);
     simplify(expected, VALUE_MACRO, DEFINITIONS_MACRO, 0);
     simplify(expected, VALUE_ID, DATASET_ID, RECORD_ID, ACTION_ID, UNKNOWN_ID, SCOPE_ID, VALUE_FUNCTION, DATAROW_FUNCTION, DATASET_FUNCTION, LIST_DATASET_FUNCTION, LIST_DATASET_ID, ALIEN_ID, TYPE_ID, SET_TYPE_ID, TRANSFORM_ID, TRANSFORM_FUNCTION, RECORD_FUNCTION, FEATURE_ID, EVENT_ID, EVENT_FUNCTION, SCOPE_FUNCTION, ENUM_ID, PATTERN_TYPE_ID, 0); 

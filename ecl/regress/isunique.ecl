@@ -22,7 +22,7 @@ isUnique1(set of integer x) := not exists(makeDataset(x)(value in x));
 
 isUnique2(set of integer x) := not exists(join(makeDataset(x),makeDataset(x),left.value=right.value,all));
 
-set of integer values := [1,2,3,4,5,6,7] : stored('values');
+set of integer values := [1,2,3,4,5,6,3,2,7] : stored('values');
 
 
 output(isUnique1(values));
