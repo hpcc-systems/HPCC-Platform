@@ -16,42 +16,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-import macro7b;
+mangle(integer i, integer j) := i + j;
 
-namesRecord := 
-            RECORD
-string20        surname;
-string10        forename;
-integer2        age := 25;
-            END;
+doMangle(integer i, mangle mangler) := mangler(i, -i);
 
-namesTable := dataset('x',namesRecord,FLAT);
-
-macro7b.z(namesTable, xsum);
-
-output(xsum);
-
-
-xsum2 := @FUNCTION
-    z := namesTable(age != 10);
-    return z + z;
-END + namesTable;
-output(xsum2);
-
-
-xsum4 := @FUNCTION
-    dataset gr := group(namesTable, age);
-
-    return table(gr, {count(gr)});
-END;
-
-output(xsum4);
-
-
-xsum3 := macro7b.z2(namesTable);
-
-output(xsum3);
-
-
-split := macro7b.ageSplit(namesTable);
-output(split.young + split.old);
+output(doMangle(100, mangle));
+output(doMangle(100, @(integer i, integer j){ return i * j; }));

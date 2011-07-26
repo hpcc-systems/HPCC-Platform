@@ -133,7 +133,6 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   TOK_BITMAP
   BIG
   BLOB
-  __BLOCK__
   BNOT
   BUILD
   CARDINALITY
@@ -261,7 +260,6 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   KEYPATCH
   KEYUNICODE
   LABELED
-  __LAMBDA__
   LAST
   LEFT
   LENGTH
@@ -1072,21 +1070,11 @@ moduleOption
                             parser->processForwardModuleDefinition($1);
                             $$.setExpr(NULL, $1);
                         }
-    | LIBRARY '(' scopeFunctionReference ')'
+    | LIBRARY '(' scopeFunction ')'
                         {
                             $$.setExpr(createExprAttribute(libraryAtom, $3.getExpr()), $1);
                         }
     ;
-
-scopeFunctionReference
-    : SCOPE_FUNCTION
-    | moduleScopeDot SCOPE_FUNCTION leaveScope
-                        {
-                            $1.release();
-                            $$.setExpr($2.getExpr(), $2);
-                        }
-    ;
-
 
 abstractModuleList
     : abstractModuleItem
@@ -1295,11 +1283,6 @@ optDefinitions
 definitions
     : definition
     | definitions definition
-    ;
-
-attributeDefinitions
-    :
-    | attributeDefinitions attributeDefinition
     ;
 
 attributeDefinition
@@ -1691,22 +1674,13 @@ transform
                             $1.release();
                             $$.setExpr($2.getExpr(), $1);
                         }
-    | TRANSFORM_FUNCTION '('
+    | transformFunction '('
                         {
                             parser->beginFunctionCall($1);
                         }
     actualParameters ')'
                         {
                             $$.setExpr(parser->bindParameters($1, $4.getExpr()), $1);
-                        }
-    | moduleScopeDot TRANSFORM_FUNCTION leaveScope '('
-                        {
-                            parser->beginFunctionCall($2);
-                        }
-   actualParameters ')'
-                        {
-                            $1.release();
-                            $$.setExpr(parser->bindParameters($2, $6.getExpr()), $1);
                         }
     | startInlineTransform transformOptions ',' transformations ')'
                         {
@@ -1718,6 +1692,11 @@ transform
                             OwnedHqlExpr value = $3.getExpr();
                             IHqlExpression * record = value->queryRecord();
                             $$.setExpr(parser->createDefaultAssignTransform(record, value, $1), $1);
+                        }
+    | startCompoundExpression beginInlineFunctionToken optDefinitions RETURN transform ';' endInlineFunctionToken
+                        {
+                            Owned<ITypeInfo> retType = $1.getType();
+                            $$.setExpr(parser->leaveLamdaExpression($5), $7);
                         }
     ;
 
@@ -2075,24 +2054,13 @@ globalRecordId
                             $1.release();
                             $$.setExpr($2.getExpr(), $1);
                         }
-    | RECORD_FUNCTION '('
+    | recordFunction '('
                         {
                             parser->beginFunctionCall($1);
                         }
-   actualParameters ')'
+      actualParameters ')'
                         {
                             $$.setExpr(parser->bindParameters($1, $4.getExpr()), $1);
-                        }
-
-
-    | moduleScopeDot RECORD_FUNCTION leaveScope '('
-                        {
-                            parser->beginFunctionCall($2);
-                        }
-   actualParameters ')'
-                        {
-                            $1.release();
-                            $$.setExpr(parser->bindParameters($2, $6.getExpr()), $1);
                         }
     ;
 
@@ -2133,17 +2101,6 @@ sequentialAction
     | expression
     ;
     
-optActionlist
-    :
-                        {
-                            $$.setNullExpr();
-                        }
-    | optActionlist action semiComma
-                        {
-                            $$.setExpr(createComma($1.getExpr(), $2.getExpr()), $1);
-                        }
-    ;
-
 action
     : actionStmt
                         {
@@ -2581,38 +2538,6 @@ actionStmt
                             parser->endList(actions);
                             $$.setExpr(createActionList(actions), $1);
                         }
-//  | __BLOCK__ attributeDefinitions optActionlist END      // causes a s/r error needs a keyword to separate definitions + actions
-    | __BLOCK__ optActionlist END
-                        {
-#ifndef _DEBUG
-                            parser->reportError(ERR_NOT_IMPLEMENTED, $1, "Undocumented feature not yet implemented");   // prevent this getting out into the wild
-#endif
-                            HqlExprArray actions;
-                            OwnedHqlExpr actionList = $2.getExpr();
-                            if (actionList)
-                            {
-                                actionList->unwindList(actions, no_comma);
-                                $$.setExpr(createActionList(actions), $1);
-                            }
-                            else
-                                $$.setExpr(createValue(no_null, makeVoidType()), $1);
-                        }
-    | '\\' '{' optActionlist '}'
-                        {
-#ifndef _DEBUG
-                            parser->reportError(ERR_NOT_IMPLEMENTED, $1, "Undocumented feature not yet implemented");   // prevent this getting out into the wild
-#endif
-                            //Experimental syntax!!!
-                            HqlExprArray actions;
-                            OwnedHqlExpr actionList = $3.getExpr();
-                            if (actionList)
-                            {
-                                actionList->unwindList(actions, no_comma);
-                                $$.setExpr(createActionList(actions), $1);
-                            }
-                            else
-                                $$.setExpr(createValue(no_null, makeVoidType()), $1);
-                        }
     ;
 
 
@@ -2641,7 +2566,7 @@ failAction
                             $$.setExpr(createValue(no_fail, makeVoidType()));
                             $$.setPosition($1);
                         }
-    | startCompoundExpression FUNCTION optDefinitions RETURN action ';' END
+    | startCompoundExpression beginInlineFunctionToken optDefinitions RETURN action ';' endInlineFunctionToken
                         {
                             Owned<ITypeInfo> retType = $1.getType();
                             $$.setExpr(parser->leaveLamdaExpression($5), $7);
@@ -3421,7 +3346,7 @@ scopedActionId
                             $$.setExpr($2.getExpr());
                             $$.setPosition($2);
                         }
-    | ACTION_FUNCTION '('
+    | actionFunction '('
                         {
                             parser->beginFunctionCall($1);
                         }
@@ -3429,16 +3354,6 @@ scopedActionId
                         {
                             $$.setExpr(parser->bindParameters($1, $4.getExpr()));
                             $$.setPosition($1);
-                        }
-    | moduleScopeDot ACTION_FUNCTION leaveScope '('
-                        {
-                            parser->beginFunctionCall($2);
-                        }
-    actualParameters ')'
-                        {
-                            $1.release();
-                            $$.setExpr(parser->bindParameters($2, $6.getExpr()));
-                            $$.setPosition($2);
                         }
     | VALUE_MACRO action ENDMACRO
                         {
@@ -3477,7 +3392,7 @@ eventObject
                             $$.setExpr($2.getExpr());
                             $$.setPosition($2);
                         }
-    | EVENT_FUNCTION '('
+    | eventFunction '('
                         {
                             parser->beginFunctionCall($1);
                         }
@@ -3486,15 +3401,10 @@ eventObject
                             $$.setExpr(parser->bindParameters($1, $4.getExpr()));
                             $$.setPosition($1);
                         }
-    | moduleScopeDot EVENT_FUNCTION leaveScope '('
+    | startCompoundExpression beginInlineFunctionToken optDefinitions RETURN eventObject ';' endInlineFunctionToken
                         {
-                            parser->beginFunctionCall($2);
-                        }
-    actualParameters ')'
-                        {
-                            $1.release();
-                            $$.setExpr(parser->bindParameters($2, $6.getExpr()));
-                            $$.setPosition($2);
+                            Owned<ITypeInfo> retType = $1.getType();
+                            $$.setExpr(parser->leaveLamdaExpression($5), $7);
                         }
     ;
 
@@ -3510,6 +3420,10 @@ event
 parmdef
     : realparmdef       {   parser->setParametered(true); $$.clear(); }
     |                   {   parser->setParametered(false); $$.clear(); }
+    ;
+
+reqparmdef
+    : realparmdef       {   parser->setParametered(true); $$.clear(); }
     ;
 
 realparmdef
@@ -3899,7 +3813,7 @@ recordDef
                             $$.setExpr($4.getExpr());
                             $$.setPosition($2);
                         }
-    | startCompoundExpression FUNCTION optDefinitions RETURN recordDef ';' END
+    | startCompoundExpression beginInlineFunctionToken optDefinitions RETURN recordDef ';' endInlineFunctionToken
                         {
                             Owned<ITypeInfo> retType = $1.getType();
                             $$.setExpr(parser->leaveLamdaExpression($5), $7);
@@ -4749,7 +4663,7 @@ query
 
                             $$.setExpr(expr);
                         }
-    | BUILD '(' scopeFunctionReference ')'
+    | BUILD '(' scopeFunction ')'
                         {
                             OwnedHqlExpr expr = $3.getExpr();
                             assertex(expr->getOperator() == no_funcdef);
@@ -4790,7 +4704,7 @@ constExpression
 
 expression
     : scalarExpression
-    | startCompoundExpression FUNCTION optDefinitions RETURN expression ';' END
+    | startCompoundExpression beginInlineFunctionToken optDefinitions RETURN expression ';' endInlineFunctionToken
                         {
                             Owned<ITypeInfo> retType = $1.getType();
                             $$.setExpr(parser->leaveLamdaExpression($5), $7);
@@ -4798,50 +4712,26 @@ expression
     ;
 
 startCompoundExpression
-    : doStartCompoundExpression parmdef
+    : '@'
                         {
+                            //Currently this is only used inside functionmacro to define an inline function.
+                            parser->enterScope(false);
+                            parser->enterCompoundObject();
                             parser->beginDefineId(NULL, NULL);
                             $$.setType(NULL);
                         }
-/*
- * Really these would be a good idea, but DATASET has a s/r with DATASET(record) v DATASET(arg)
-                        
-    | doStartCompoundExpression defineType parmdef
-                        {
-                            Owned<ITypeInfo> type = $2.getType();
-                            parser->beginDefineId(NULL, type);
-                            $$.setType(type.getClear());
-                        }
-    | doStartCompoundExpression DATASET_ID parmdef
-                        {
-                            OwnedHqlExpr ds = $2.getExpr();
-                            parser->beginDefineId(NULL, ds->queryType());
-                            $$.setType(ds->getType());
-                        }
-                        */
-    ;
-
-doStartCompoundExpression
-    : __LAMBDA__ 
-                        {
-                            //Currently this is only used inside functionmacro to define an inline function.
-                            //One day it could possibly be combined with paramaters and a sensible syntax to
-                            //implement something more.
-                            parser->enterScope(false);
-                            parser->enterCompoundObject();
-                            $$.setInt(0);
-                        }
-    | '@'
-                        {
-                            //Currently this is only used inside functionmacro to define an inline function.
-                            //One day it could possibly be combined with paramaters and a sensible syntax to
-                            //implement something more.
-                            parser->enterScope(false);
-                            parser->enterCompoundObject();
-                            $$.setInt(0);
-                        }
     ;
     
+beginInlineFunctionToken
+    : FUNCTION          // Will always work
+    | '{'               // No so sure about this syntax - more concise, but not sure if in keeping with the rest of the language
+    ;
+
+endInlineFunctionToken
+    : END
+    | '}'               // see above
+    ;
+
 condList
     : booleanExpr       {
                             parser->normalizeExpression($1, type_boolean, false);
@@ -6513,7 +6403,7 @@ abstractModule
                             $$.setPosition($1);
                         }
     | compoundModule
-    | LIBRARY '(' libraryName ',' scopeFunctionReference ','
+    | LIBRARY '(' libraryName ',' scopeFunction ','
                         {
                             parser->beginFunctionCall($5);
                         }
@@ -6547,7 +6437,7 @@ abstractModule
                             $$.setExpr(parser->createLibraryInstance($1, name, func, actuals));
                             $$.setPosition($1);
                         }
-    | startCompoundExpression FUNCTION optDefinitions RETURN abstractModule ';' END
+    | startCompoundExpression beginInlineFunctionToken optDefinitions RETURN abstractModule ';' endInlineFunctionToken
                         {
                             Owned<ITypeInfo> retType = $1.getType();
                             $$.setExpr(parser->leaveLamdaExpression($5), $7);
@@ -6555,7 +6445,7 @@ abstractModule
     ;
 
 scopeFunctionWithParameters
-    :   scopeFunctionReference '('
+    :   scopeFunction '('
                         {
                             parser->beginFunctionCall($1);
                         }
@@ -6579,7 +6469,7 @@ libraryName
                             //default name of library implementation name
                             $$.setExpr(createExprAttribute(nameAtom, $1.getExpr()));
                         }
-    | INTERNAL '(' scopeFunctionReference ')'
+    | INTERNAL '(' scopeFunction ')'
                         {
                             //want to create a name based on the name of the scope reference, but one that will be commmoned up between all
                             //internal instances of the same library.
@@ -6677,23 +6567,13 @@ globalValueAttribute
                             $1.release();
                             $$.setExpr($4.getExpr(), $1);
                         }
-    | VALUE_FUNCTION '('
+    | valueFunction '('
                         {
                             parser->beginFunctionCall($1);
                         }
     actualParameters ')'
                         {
                             $$.setExpr(parser->bindParameters($1, $4.getExpr()));
-                        }
-
-    | moduleScopeDot VALUE_FUNCTION leaveScope '('
-                        {
-                            parser->beginFunctionCall($2);
-                        }
-    actualParameters ')'
-                        {
-                            $1.release();
-                            $$.setExpr(parser->bindParameters($2, $6.getExpr()), $1);
                         }
     ;
 
@@ -6725,22 +6605,13 @@ dataRow
                             $1.release();
                             $$.setExpr($2.getExpr());
                         }
-    | DATAROW_FUNCTION '('
+    | datarowFunction '('
                         {
                             parser->beginFunctionCall($1);
                         }
     actualParameters ')'
                         {
                             $$.setExpr(parser->bindParameters($1, $4.getExpr()));
-                        }
-    | moduleScopeDot DATAROW_FUNCTION leaveScope '('
-                        {
-                            parser->beginFunctionCall($2);
-                        }
-    actualParameters ')'
-                        {
-                            $1.release();
-                            $$.setExpr(parser->bindParameters($2, $6.getExpr()));
                         }
     | simpleDataRow
     | VALUE_MACRO dataRow ENDMACRO
@@ -6754,7 +6625,7 @@ dataRow
                             $$.setExpr($4.getExpr());
                             $$.setPosition($2);
                         }
-    | startCompoundExpression FUNCTION optDefinitions RETURN dataRow ';' END
+    | startCompoundExpression beginInlineFunctionToken optDefinitions RETURN dataRow ';' endInlineFunctionToken
                         {
                             Owned<ITypeInfo> retType = $1.getType();
                             $$.setExpr(parser->leaveLamdaExpression($5), $7);
@@ -7007,7 +6878,7 @@ simpleDataRow
 
 dataSet
     : simpleDataSet
-    | startCompoundExpression FUNCTION optDefinitions RETURN dataSet ';' END
+    | startCompoundExpression beginInlineFunctionToken optDefinitions RETURN dataSet ';' endInlineFunctionToken
                         {
                             Owned<ITypeInfo> retType = $1.getType();
                             $$.setExpr(parser->leaveLamdaExpression($5), $7);
@@ -10226,22 +10097,13 @@ scopedDatasetId
                             OwnedHqlExpr scope = $1.getExpr();
                             $$.setExpr($2.getExpr());
                         }
-    | DATASET_FUNCTION '('
+    | datasetFunction '('
                         {
                             parser->beginFunctionCall($1);
                         }
     actualParameters ')'
                         {
                             $$.setExpr(parser->bindParameters($1, $4.getExpr()));
-                        }
-    | moduleScopeDot DATASET_FUNCTION leaveScope '('
-                        {
-                            parser->beginFunctionCall($2);
-                        }
-    actualParameters ')'
-                        {
-                            $1.release();
-                            $$.setExpr(parser->bindParameters($2, $6.getExpr()));
                         }
     ;
 
@@ -10272,6 +10134,11 @@ setOfDatasets
                         {
                             $$.setExpr(parser->processRowset($3), $1);
                         }
+    | startCompoundExpression beginInlineFunctionToken optDefinitions RETURN setOfDatasets ';' endInlineFunctionToken
+                        {
+                            Owned<ITypeInfo> retType = $1.getType();
+                            $$.setExpr(parser->leaveLamdaExpression($5), $7);
+                        }
     ;
 
 scopedListDatasetId
@@ -10293,22 +10160,13 @@ scopedListDatasetId
                             OwnedHqlExpr scope = $1.getExpr();
                             $$.setExpr($2.getExpr());
                         }
-    | LIST_DATASET_FUNCTION '('
+    | listDatasetFunction '('
                         {
                             parser->beginFunctionCall($1);
                         }
     actualParameters ')'
                         {
                             $$.setExpr(parser->bindParameters($1, $4.getExpr()));
-                        }
-    | moduleScopeDot LIST_DATASET_FUNCTION leaveScope '('
-                        {
-                            parser->beginFunctionCall($2);
-                        }
-    actualParameters ')'
-                        {
-                            $1.release();
-                            $$.setExpr(parser->bindParameters($2, $6.getExpr()));
                         }
     ;
 
@@ -10425,7 +10283,7 @@ anyFunction
                             $1.release();
                             $$.setExpr($2.getExpr());
                         }
-    | scopeFunctionReference
+    | scopeFunction
     | TRANSFORM_FUNCTION
     | moduleScopeDot TRANSFORM_FUNCTION leaveScope
                         {
@@ -10441,7 +10299,129 @@ valueFunction
                             $1.release();
                             $$.setExpr($2.getExpr());
                         }
+    | startCompoundExpression reqparmdef beginInlineFunctionToken optDefinitions RETURN expression ';' endInlineFunctionToken
+                        {
+                            Owned<ITypeInfo> retType = $1.getType();
+                            $$.setExpr(parser->leaveLamdaExpression($6), $8);
+                        }
     ;
+
+actionFunction
+    : ACTION_FUNCTION
+    | moduleScopeDot ACTION_FUNCTION leaveScope
+                        {
+                            $1.release();
+                            $$.setExpr($2.getExpr());
+                        }
+    | startCompoundExpression reqparmdef beginInlineFunctionToken optDefinitions RETURN action ';' endInlineFunctionToken
+                        {
+                            Owned<ITypeInfo> retType = $1.getType();
+                            $$.setExpr(parser->leaveLamdaExpression($6), $8);
+                        }
+    ;
+
+datarowFunction
+    : DATAROW_FUNCTION
+    | moduleScopeDot DATAROW_FUNCTION leaveScope
+                        {
+                            $1.release();
+                            $$.setExpr($2.getExpr());
+                        }
+    | startCompoundExpression reqparmdef beginInlineFunctionToken optDefinitions RETURN dataRow ';' endInlineFunctionToken
+                        {
+                            Owned<ITypeInfo> retType = $1.getType();
+                            $$.setExpr(parser->leaveLamdaExpression($6), $8);
+                        }
+    ;
+
+datasetFunction
+    : DATASET_FUNCTION
+    | moduleScopeDot DATASET_FUNCTION leaveScope
+                        {
+                            $1.release();
+                            $$.setExpr($2.getExpr());
+                        }
+    | startCompoundExpression reqparmdef beginInlineFunctionToken optDefinitions RETURN dataSet ';' endInlineFunctionToken
+                        {
+                            Owned<ITypeInfo> retType = $1.getType();
+                            $$.setExpr(parser->leaveLamdaExpression($6), $8);
+                        }
+    ;
+
+scopeFunction
+    : SCOPE_FUNCTION
+    | moduleScopeDot SCOPE_FUNCTION leaveScope
+                        {
+                            $1.release();
+                            $$.setExpr($2.getExpr(), $2);
+                        }
+    | startCompoundExpression reqparmdef beginInlineFunctionToken optDefinitions RETURN abstractModule ';' endInlineFunctionToken
+                        {
+                            Owned<ITypeInfo> retType = $1.getType();
+                            $$.setExpr(parser->leaveLamdaExpression($6), $8);
+                        }
+    ;
+
+
+transformFunction
+    : TRANSFORM_FUNCTION
+    | moduleScopeDot TRANSFORM_FUNCTION leaveScope
+                        {
+                            $1.release();
+                            $$.setExpr($2.getExpr(), $2);
+                        }
+    | startCompoundExpression reqparmdef beginInlineFunctionToken optDefinitions RETURN transform ';' endInlineFunctionToken
+                        {
+                            Owned<ITypeInfo> retType = $1.getType();
+                            $$.setExpr(parser->leaveLamdaExpression($6), $8);
+                        }
+    ;
+
+
+recordFunction
+    : RECORD_FUNCTION
+    | moduleScopeDot RECORD_FUNCTION leaveScope
+                        {
+                            $1.release();
+                            $$.setExpr($2.getExpr(), $2);
+                        }
+    | startCompoundExpression reqparmdef beginInlineFunctionToken optDefinitions RETURN recordDef ';' endInlineFunctionToken
+                        {
+                            Owned<ITypeInfo> retType = $1.getType();
+                            $$.setExpr(parser->leaveLamdaExpression($6), $8);
+                        }
+    ;
+
+listDatasetFunction
+    : LIST_DATASET_FUNCTION
+    | moduleScopeDot LIST_DATASET_FUNCTION leaveScope
+                        {
+                            $1.release();
+                            $$.setExpr($2.getExpr());
+                        }
+    | startCompoundExpression reqparmdef beginInlineFunctionToken optDefinitions RETURN setOfDatasets ';' endInlineFunctionToken
+                        {
+                            Owned<ITypeInfo> retType = $1.getType();
+                            $$.setExpr(parser->leaveLamdaExpression($6), $8);
+                        }
+    ;
+
+
+eventFunction
+    : EVENT_FUNCTION
+    | moduleScopeDot EVENT_FUNCTION leaveScope
+                        {
+                            $1.release();
+                            $$.setExpr($2.getExpr());
+                        }
+    | startCompoundExpression reqparmdef beginInlineFunctionToken optDefinitions RETURN eventObject ';' endInlineFunctionToken
+                        {
+                            Owned<ITypeInfo> retType = $1.getType();
+                            $$.setExpr(parser->leaveLamdaExpression($6), $8);
+                        }
+    ;
+
+
 
 optFieldMaps
     : '{' beginList fieldMaps '}'

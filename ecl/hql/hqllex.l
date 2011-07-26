@@ -629,7 +629,6 @@ BETWEEN             { RETURNSYM(BETWEEN); }
 BITMAP              { RETURNSYM(TOK_BITMAP); }
 BIG_ENDIAN          { RETURNSYM(BIG); }
 BLOB                { RETURNSYM(BLOB); }
-__BLOCK__           { RETURNSYM(__BLOCK__); }
 BNOT                { RETURNSYM(BNOT); }
 BUILD               { RETURNSYM(BUILD); }
 BUILDINDEX          { RETURNSYM(BUILD); }
@@ -647,7 +646,6 @@ COGROUP             { RETURNSYM(COGROUP); }
 COMBINE             { RETURNSYM(COMBINE); }
 __COMMON__          { RETURNSYM(__COMMON__); }
 __COMPOUND__        { RETURNSYM(__COMPOUND__); }
-__LAMBDA__          { RETURNSYM(__LAMBDA__); }
 COMPRESSED          { RETURNSYM(COMPRESSED); }
 __COMPRESSED__      { RETURNSYM(__COMPRESSED__); }
 COS                 { RETURNSYM(COS); }
@@ -1439,6 +1437,8 @@ FUNCTIONMACRO|MACRO {
                             }
                             else if ((tok == ASSIGN) || (tok == ';'))
                                 complex = true;
+                            else if (tok == '@')
+                                isFunctionMacro = true;
                             returnToken.release();
                         }
                         lexer->macroGathering--;
@@ -1457,7 +1457,7 @@ FUNCTIONMACRO|MACRO {
                         else
                         {
                             complex = false;
-                            const char * prefix = " __LAMBDA__ FUNCTION ";
+                            const char * prefix = " @FUNCTION ";
                             const char * suffix = " END ENDMACRO ";
                             unsigned lenPrefix = strlen(prefix);
                             unsigned lenSuffix = strlen(suffix);
