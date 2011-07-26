@@ -36,6 +36,7 @@ _ATOM _array_Atom;
 _ATOM asciiAtom;
 _ATOM assertAtom;
 _ATOM assertConstAtom;
+_ATOM atAtom;
 _ATOM atmostAtom;
 _ATOM _attrAligned_Atom;
 _ATOM _attrRecordCount_Atom;
@@ -405,6 +406,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(ascii);
     MAKEATOM(assert);
     MAKEATOM(assertConst);
+    MAKEATOM(at);
     MAKEATOM(atmost);
     MAKESYSATOM(attrAligned)->setAttrId(EAaligned);
     MAKESYSATOM(attrRecordCount)->setAttrId(EArecordCount);

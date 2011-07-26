@@ -32,16 +32,14 @@ macro7b.z(namesTable, xsum);
 output(xsum);
 
 
-//NB: __LAMBDA__ is undocumented and unsupported!
-
-xsum2 := __LAMBDA__ FUNCTION
+xsum2 := @FUNCTION
     z := namesTable(age != 10);
     return z + z;
 END + namesTable;
 output(xsum2);
 
 
-xsum4 := __LAMBDA__ FUNCTION
+xsum4 := @FUNCTION
     return table(group(namesTable, age), {count(gr)});
 END;
 
