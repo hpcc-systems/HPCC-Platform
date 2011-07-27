@@ -189,7 +189,7 @@ class CDFUengine: public CInterface, implements IDFUengine
             mask.clear().appendf("Job[@wuid=\"%s\"]",wuid);
             if (set&&!t->hasProp(mask.str())) {
                 
-                t->addPropTree("Job",createPTree(false))->setProp("@wuid",wuid);
+                t->addPropTree("Job",createPTree())->setProp("@wuid",wuid);
             }
             else 
                 t->removeProp(mask.str());

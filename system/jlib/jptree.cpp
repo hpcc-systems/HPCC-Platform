@@ -212,7 +212,12 @@ MODULE_EXIT()
 }
 
 
-
+static int comparePropTrees(IInterface **ll, IInterface **rr)
+{
+    IPropertyTree *l = (IPropertyTree *) *ll;
+    IPropertyTree *r = (IPropertyTree *) *rr;
+    return stricmp(l->queryName(), r->queryName());
+};
 
 //////////////////
 
@@ -222,6 +227,40 @@ unsigned ChildMap::getHashFromElement(const void *e) const
     return elem.queryKey()->queryHash();
 }
 
+IPropertyTreeIterator *ChildMap::getIterator(bool sort)
+{
+    class CPTHashIterator : public CInterface, implements IPropertyTreeIterator
+    {
+        SuperHashIteratorOf<IPropertyTree> *hiter;
+    public:
+        IMPLEMENT_IINTERFACE;
+
+        CPTHashIterator(SuperHashTable &table) { hiter = new SuperHashIteratorOf<IPropertyTree>(table); }
+        ~CPTHashIterator() { hiter->Release(); }
+    // IPropertyTreeIterator
+        virtual bool first() { return hiter->first(); }
+        virtual bool next() { return hiter->next(); }
+        virtual bool isValid() { return hiter->isValid(); }
+        virtual IPropertyTree & query() { return hiter->query(); }
+    };
+    class CPTArrayIterator : public ArrayIIteratorOf<IArrayOf<IPropertyTree>, IPropertyTree, IPropertyTreeIterator>
+    {
+        IArrayOf<IPropertyTree> elems;
+    public:
+        CPTArrayIterator(IPropertyTreeIterator &iter) : ArrayIIteratorOf<IArrayOf<IPropertyTree>, IPropertyTree, IPropertyTreeIterator>(elems)
+        {
+            ForEach(iter)
+                elems.append(iter.get());
+            elems.sort(comparePropTrees);
+        }
+    };
+    IPropertyTreeIterator *baseIter = new CPTHashIterator(*this);
+    if (!sort)
+        return baseIter;
+    IPropertyTreeIterator *it = new CPTArrayIterator(*baseIter);
+    baseIter->Release();
+    return it;
+}
 
 ///////////
 
@@ -834,7 +873,6 @@ MemoryBuffer &CPTValue::getValue(MemoryBuffer &tgt, bool binary) const
     return tgt;
 }
 
-// JCSMORE template method?
 StringBuffer &CPTValue::getValue(StringBuffer &tgt, bool binary) const
 {
     if (compressed)
@@ -1889,7 +1927,7 @@ bool PTree::removeProp(const char *xpath)
                 if (branch) {
                     res = branch->removeProp(prop);
                     if (res)
-                        break; // JCSMORE deleted first may have been another
+                        break; // deleted first may be another
                 }
             }
             while (iter->next());
@@ -2381,7 +2419,7 @@ void getXPathMatchTree(IPropertyTree &parentContext, const char *xpath, IPropert
 {
     if (!xpath || !*xpath)
     {
-        matchContainer = createPTree(parentContext.queryName(), false);
+        matchContainer = createPTree(parentContext.queryName());
         return;
     }
     StringBuffer head;
@@ -2434,7 +2472,7 @@ void getXPathMatchTree(IPropertyTree &parentContext, const char *xpath, IPropert
         head.append(xpath);
         if (0 == head.length())
         {
-            matchContainer = createPTree(xpath, false);
+            matchContainer = createPTree(xpath);
             return;
         }
         tail = NULL;
@@ -2454,7 +2492,7 @@ void getXPathMatchTree(IPropertyTree &parentContext, const char *xpath, IPropert
     {
         IPropertyTree &parent = parentIter->query();
         if (!matchParent)
-            matchParent.setown(createPTree(parentContext.queryName(), false));
+            matchParent.setown(createPTree(parentContext.queryName()));
         if (tail && *tail)
         {
             IPropertyTree *childContainer = NULL;
@@ -2495,7 +2533,7 @@ void getXPathMatchTree(IPropertyTree &parentContext, const char *xpath, IPropert
         {
             if (&parent != &parentContext)
             {
-                IPropertyTree *childContainer = matchParent->addPropTree(parent.queryName(), createPTree(false));
+                IPropertyTree *childContainer = matchParent->addPropTree(parent.queryName(), createPTree());
                 unsigned pos = ((PTree &)parentContext).findChild(&parent);
                 childContainer->setPropInt("@pos", pos+1);
             }
@@ -2750,7 +2788,7 @@ IPropertyTree *_createPropBranch(IPropertyTree *tree, const char *xpath, bool cr
         else
         {
             IPropertyTree *p = branch;
-            branch = branch->addPropTree(prop, createPTree(false));
+            branch = branch->addPropTree(prop, createPTree());
             if (!created) { created = branch; createdParent = p; }
         }
     }
@@ -3145,30 +3183,8 @@ bool isEmptyPTree(IPropertyTree *t)
 
 ///////////////////
 
-static int comparePropTrees(IInterface **ll, IInterface **rr)
-{
-    IPropertyTree *l = (IPropertyTree *) *ll;
-    IPropertyTree *r = (IPropertyTree *) *rr;
-    return stricmp(l->queryName(), r->queryName());
-};
-
 PTLocalIteratorBase::PTLocalIteratorBase(const PTree *_tree, const char *_id, bool _nocase, bool _sort) : tree(_tree), id(_id), nocase(_nocase), sort(_sort)
 {
-    class CPTHashIterator : public CInterface, implements IPropertyTreeIterator
-    {
-        SuperHashIteratorOf<IPropertyTree> *hiter;
-    public:
-        IMPLEMENT_IINTERFACE;
-
-        CPTHashIterator(SuperHashTable &table) { hiter = new SuperHashIteratorOf<IPropertyTree>(table); }
-        ~CPTHashIterator() { hiter->Release(); }
-    // IPropertyTreeIterator
-        virtual bool first() { return hiter->first(); }
-        virtual bool next() { return hiter->next(); }
-        virtual bool isValid() { return hiter->isValid(); }
-        virtual IPropertyTree & query() { return hiter->query(); }
-    };
-
     class CPTArrayIterator : public ArrayIIteratorOf<IArrayOf<IPropertyTree>, IPropertyTree, IPropertyTreeIterator>
     {
     public:
@@ -3180,17 +3196,8 @@ PTLocalIteratorBase::PTLocalIteratorBase(const PTree *_tree, const char *_id, bo
         }
         IArrayOf<IPropertyTree> elems;
     };
-
     tree->Link();
-    baseIter = new CPTHashIterator(* tree->checkChildren());
-
-    if (sort)
-    {
-        IPropertyTreeIterator *it = new CPTArrayIterator(*baseIter);
-        baseIter->Release();
-        baseIter = it;
-    }
-
+    baseIter = tree->checkChildren()->getIterator(sort);
     iter = NULL;
     current = NULL;
 }
@@ -3519,16 +3526,6 @@ IPropertyTreeIterator *PTStackIterator::popFromStack(StringAttr &path)
 
 
 // factory methods
-IPropertyTree *createPTree(bool nocase)
-{
-    return new LocalPTree(NULL, nocase);
-}
-
-IPropertyTree *createPTree(const char *name, bool nocase)
-{
-    return new LocalPTree(name, nocase);
-}
-
 IPropertyTree *createPTree(MemoryBuffer &src)
 {
     IPropertyTree *tree = new LocalPTree();
@@ -3690,7 +3687,7 @@ void synchronizePTree(IPropertyTree *target, IPropertyTree *source)
     _synchronizePTree(target, source);
 }
 
-IPropertyTree * ensurePTree(IPropertyTree *root, const char *xpath)
+IPropertyTree *ensurePTree(IPropertyTree *root, const char *xpath)
 {
     return createPropBranch(root, xpath, true);
 }
@@ -5069,103 +5066,84 @@ IPullXMLReader *createPullXMLBufferReader(const void *buf, size32_t bufLength, I
     return new CXMLBufferReader(buf, bufLength, iEvent, xmlReaderOptions);
 }
 
-IPTreeMaker *createPTreeMaker(bool caseInsensitive, IPropertyTree *root, IPTreeNodeCreator *nodeCreator)
+IPTreeMaker *createPTreeMaker(ipt_flags flags, IPropertyTree *root, IPTreeNodeCreator *nodeCreator)
 {
-    return new CPTreeMaker(caseInsensitive, nodeCreator, root);
+    return new CPTreeMaker(flags, nodeCreator, root);
 }
 
-IPTreeMaker *createRootLessPTreeMaker(bool caseInsensitive, IPropertyTree *root, IPTreeNodeCreator *nodeCreator)
+IPTreeMaker *createRootLessPTreeMaker(ipt_flags flags, IPropertyTree *root, IPTreeNodeCreator *nodeCreator)
 {
-    return new CPTreeMaker(caseInsensitive, nodeCreator, root, true);
+    return new CPTreeMaker(flags, nodeCreator, root, true);
 }
 
-void loadXMLToPTree(IPropertyTree *tree, ISimpleReadStream &stream, bool caseInsensitive, bool ignoreWhiteSpace, IPTreeMaker *iMaker, bool ignoreCheckRoot)
+
+////////////////////////////
+///////////////////////////
+IPropertyTree *createPTree(ISimpleReadStream &stream, ipt_flags flags, XmlReaderOptions readFlags, IPTreeMaker *iMaker)
 {
     Owned<IPTreeMaker> _iMaker;
     if (!iMaker)
     {
-        iMaker = new CPTreeMaker(caseInsensitive, NULL, tree);
+        iMaker = new CPTreeMaker(flags);
         _iMaker.setown(iMaker);
     }
-    unsigned options = (ignoreCheckRoot?xr_noRoot:xr_none) | (ignoreWhiteSpace?xr_ignoreWhiteSpace:xr_none);
-    Owned<IXMLReader> reader = createXMLStreamReader(stream, *iMaker, (XmlReaderOptions)options);
-    reader->load();
-}
-
-void loadXMLFileToPTree(IPropertyTree *tree, const char *filename, bool caseInsensitive, bool ignoreWhiteSpace, IPTreeMaker *iMaker, bool ignoreCheckRoot)
-{
-    OwnedIFile ifile = createIFile(filename);
-    OwnedIFileIO ifileio = ifile->open(IFOread);
-    if (!ifileio)
-        throw MakeStringException(0, "Could not locate filename: %s", filename);
-    OwnedIFileIOStream stream = createIOStream(ifileio);
-    loadXMLToPTree(tree, *stream, caseInsensitive, ignoreWhiteSpace, iMaker, ignoreCheckRoot);
-}
-
-IPropertyTree *createPTree(ISimpleReadStream &stream, bool caseInsensitive, bool ignoreWhiteSpace, IPTreeMaker *iMaker, bool ignoreCheckRoot)
-{
-    Owned<IPTreeMaker> _iMaker;
-    if (!iMaker)
-    {
-        iMaker = new CPTreeMaker(caseInsensitive);
-        _iMaker.setown(iMaker);
-    }
-    unsigned options = (ignoreCheckRoot?xr_noRoot:xr_none) | (ignoreWhiteSpace?xr_ignoreWhiteSpace:xr_none);
-    Owned<IXMLReader> reader = createXMLStreamReader(stream, *iMaker, (XmlReaderOptions)options);
+    Owned<IXMLReader> reader = createXMLStreamReader(stream, *iMaker, readFlags);
     reader->load();
     if (iMaker->queryRoot())
         return LINK(iMaker->queryRoot());
     else
-        return createPTree(caseInsensitive);
+        return createPTree(flags);
 }
 
-IPropertyTree *createPTree(IFileIO &ifileio, bool caseInsensitive, bool ignoreWhiteSpace, IPTreeMaker *iMaker, bool ignoreCheckRoot)
+IPropertyTree *createPTree(IFileIO &ifileio, ipt_flags flags, XmlReaderOptions readFlags, IPTreeMaker *iMaker)
 {
     OwnedIFileIOStream stream = createIOStream(&ifileio);
-    return createPTree(*stream, caseInsensitive, ignoreWhiteSpace, iMaker, ignoreCheckRoot);
+    return createPTree(*stream, flags, readFlags, iMaker);
 }
 
-IPropertyTree *createPTree(IFile &ifile, bool caseInsensitive, bool ignoreWhiteSpace, IPTreeMaker *iMaker, bool ignoreCheckRoot)
+IPropertyTree *createPTree(IFile &ifile, ipt_flags flags, XmlReaderOptions readFlags, IPTreeMaker *iMaker)
 {
     OwnedIFileIO ifileio = ifile.open(IFOread);
     if (!ifileio)
         throw MakeStringException(0, "Could not locate filename: %s", ifile.queryFilename());
-    return createPTree(*ifileio, caseInsensitive, ignoreWhiteSpace, iMaker, ignoreCheckRoot);
+    return createPTree(*ifileio, flags, readFlags, iMaker);
 }
 
-IPropertyTree *createPTreeFromXMLFile(const char *filename, bool caseInsensitive, bool ignoreWhiteSpace, IPTreeMaker *iMaker, bool ignoreCheckRoot)
+IPropertyTree *createPTreeFromXMLFile(const char *filename, ipt_flags flags, XmlReaderOptions readFlags, IPTreeMaker *iMaker)
 {
     OwnedIFile ifile = createIFile(filename);
-    return createPTree(*ifile, caseInsensitive, ignoreWhiteSpace, iMaker, ignoreCheckRoot);
+    return createPTree(*ifile, flags, readFlags, iMaker);
 }
 
-IPropertyTree *createPTreeFromXMLString(const char *xml, bool caseInsensitive, bool ignoreWhiteSpace, IPTreeMaker *iMaker, bool ignoreNameSpaces, bool ignoreCheckRoot)
+IPropertyTree *createPTreeFromXMLString(const char *xml, ipt_flags flags, XmlReaderOptions readFlags, IPTreeMaker *iMaker)
 {
     Owned<IPTreeMaker> _iMaker;
     if (!iMaker)
     {
-        iMaker = new CPTreeMaker(caseInsensitive);
+        iMaker = new CPTreeMaker(flags);
         _iMaker.setown(iMaker);
     }
-    unsigned options = (ignoreCheckRoot?xr_noRoot:xr_none) | (ignoreWhiteSpace?xr_ignoreWhiteSpace:xr_none) | (ignoreNameSpaces?xr_ignoreNameSpaces:xr_none);
-    Owned<IXMLReader> reader = createXMLStringReader(xml, *iMaker, (XmlReaderOptions)options);
+    Owned<IXMLReader> reader = createXMLStringReader(xml, *iMaker, readFlags);
     reader->load();
     return LINK(iMaker->queryRoot());
 }
-    
-IPropertyTree *createPTreeFromXMLString(unsigned len, const char *xml, bool caseInsensitive, bool ignoreWhiteSpace, IPTreeMaker *iMaker, bool ignoreCheckRoot)
+
+IPropertyTree *createPTreeFromXMLString(unsigned len, const char *xml, ipt_flags flags, XmlReaderOptions readFlags, IPTreeMaker *iMaker)
 {
     Owned<IPTreeMaker> _iMaker;
     if (!iMaker)
     {
-        iMaker = new CPTreeMaker(caseInsensitive);
+        iMaker = new CPTreeMaker(flags);
         _iMaker.setown(iMaker);
     }
-    unsigned options = (ignoreCheckRoot?xr_noRoot:xr_none) | (ignoreWhiteSpace?xr_ignoreWhiteSpace:xr_none);
-    Owned<IXMLReader> reader = createXMLBufferReader(xml, len, *iMaker, (XmlReaderOptions)options);
+    Owned<IXMLReader> reader = createXMLBufferReader(xml, len, *iMaker, readFlags);
     reader->load();
     return LINK(iMaker->queryRoot());
 }
+
+//////////////////////////
+/////////////////////////
+
     
 static int compareStrings(CInterface **ll, CInterface **rr)
 {
@@ -5378,16 +5356,6 @@ void toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, byte flag
 {
     _toXML(tree, out, indent, flags);
 }
-
-// JCSMORE - do we really need this weird filename come XML func.? (I think this should go where possible)
-IPropertyTree *loadPropertyTree(const char *filename, bool nocase, bool ignoreWhiteSpace)
-{
-    if (filename && filename[0]=='<')
-        return createPTreeFromXMLString(filename, nocase, ignoreWhiteSpace);
-    else
-        return createPTreeFromXMLFile(filename, nocase, ignoreWhiteSpace);
-}
-
 
 void saveXML(const char *filename, const IPropertyTree *tree, unsigned indent, byte flags)
 {
@@ -5799,7 +5767,7 @@ jlib_decl void validatePTree()
 "   <E a=\"av1\" b=\"bv2\"></E>"            \
 "   <E a=\"av2\" b=\"bv2\" c=\"cv3\">ev1</E>"   \
         "</ROOT>"
-    , false);
+    );
 
     Owned<IPropertyTreeIterator> iter = testTree->getElements("E[@a=\"av1\"][@b=\"bv2\"]");
     unsigned c = 0;
@@ -5857,23 +5825,23 @@ jlib_decl void testValidateXPathSyntax()
 
 jlib_decl void testJdocCompare()
 {
-    Owned<IPropertyTree> t1 = createPTree(false);
-    Owned<IPropertyTree> t2 = createPTree(false);
-    Owned<IPropertyTree> t3 = createPTree(false);
-    Owned<IPropertyTree> t4 = createPTree(false);
-    Owned<IPropertyTree> t5 = createPTree(false);
+    Owned<IPropertyTree> t1 = createPTree();
+    Owned<IPropertyTree> t2 = createPTree();
+    Owned<IPropertyTree> t3 = createPTree();
+    Owned<IPropertyTree> t4 = createPTree();
+    Owned<IPropertyTree> t5 = createPTree();
     extractJavadoc(t1, "Defines a record that contains information about a person");
     extractJavadoc(t2, "Allows the name table to be filtered.\n\n@param ages\tThe ages that are allowed to be processed.\n\t\tbadForename Forname to avoid.\n\n@return\tthe filtered dataset.");
     extractJavadoc(t3, "Allows the name table to be filtered.\n\n@param ages\tThe ages that are allowed to be processed.\n\t\tbadForename Forname to avoid.\n\n@return\tthe filtered dataset.");
     extractJavadoc(t4, "Allows the name table to be filtered.\n\n@param ages\tThe ages that are allowed to be processed.\n\t\tbadForename Forname to avoid.\n\n@return\tthe filtered dataset.");
     extractJavadoc(t5, "Allows the name table to be filtered.\n\n@param ages\tThe ages that are allowed to be processed.\n\t\tbadForename Forname to avoid.\n\n@return\tthe filtered dataset.");
-    IPropertyTree * t2c = t2->addPropTree("Child1", createPTree(false));
+    IPropertyTree * t2c = t2->addPropTree("Child1", createPTree());
     extractJavadoc(t2c, "This is some child data\n\n@param  ages\tThe ages that are allowed to be processed.");
-    IPropertyTree * t3c = t3->addPropTree("Child1", createPTree(false));
+    IPropertyTree * t3c = t3->addPropTree("Child1", createPTree());
     extractJavadoc(t3c, "This is some child data\n\n@param  ages\tThe ages that are allowed to be processed.");
-    IPropertyTree * t4c = t4->addPropTree("Child1", createPTree(false));
+    IPropertyTree * t4c = t4->addPropTree("Child1", createPTree());
     extractJavadoc(t4c, "This is some child data\n\n@param  ages\tThe ages that are allowed to be processed, but differs.");
-    IPropertyTree * t5c = t5->addPropTree("Child1", createPTree(false));
+    IPropertyTree * t5c = t5->addPropTree("Child1", createPTree());
     extractJavadoc(t5c, "This is some child data\n\n@param  ages\tThe ages that are allowed to be processed.");
     t2->setProp("@childAttr", "1");
     t3->setProp("@childAttr", "1");
@@ -5890,4 +5858,96 @@ jlib_decl void testJdocCompare()
 }
 
 #endif
+
+
+class COrderedPTree : public PTree
+{
+    class jlib_decl COrderedChildMap : public ChildMap
+    {
+        ICopyArrayOf<IPropertyTree> order;
+    public:
+        IMPLEMENT_SUPERHASHTABLEOF_REF_FIND(IPropertyTree, constcharptr);
+
+        COrderedChildMap(bool nocase) : ChildMap(nocase) { }
+        ~COrderedChildMap() { kill(); }
+
+        virtual IPropertyTreeIterator *getIterator(bool sort)
+        {
+            class CPTArrayIterator : public ArrayIIteratorOf<IArrayOf<IPropertyTree>, IPropertyTree, IPropertyTreeIterator>
+            {
+                IArrayOf<IPropertyTree> elems;
+            public:
+                CPTArrayIterator(ICopyArrayOf<IPropertyTree> &order, bool sort) : ArrayIIteratorOf<IArrayOf<IPropertyTree>, IPropertyTree, IPropertyTreeIterator>(elems)
+                {
+                    ForEachItemIn(e, order)
+                        elems.append(*LINK(&order.item(e)));
+                    if (sort)
+                        elems.sort(comparePropTrees);
+                }
+            };
+            return new CPTArrayIterator(order, sort);
+        }
+        virtual bool set(const char *key, IPropertyTree *tree)
+        {
+            order.zap(*tree); // would be nice to have preversed position
+            order.append(*tree);
+            return ChildMap::set(key, tree);
+        }
+        virtual bool replace(const char *key, IPropertyTree *tree) // provides different semantics, used if element being replaced is not to be treated as deleted.
+        {
+            return set(key, tree);
+        }
+        virtual bool remove(const char *key)
+        {
+            IPropertyTree *e = find(*key);
+            if (!e)
+                return false;
+            order.zap(*e);
+            SuperHashTableOf<IPropertyTree, constcharptr>::removeExact(e);
+            return true;
+        }
+        virtual bool removeExact(IPropertyTree *child)
+        {
+            if (!order.zap(*child))
+                return false;
+            SuperHashTableOf<IPropertyTree, constcharptr>::removeExact(child);
+            return true;
+        }
+    };
+public:
+    COrderedPTree(const char *name=NULL, bool nocase=false, IPTArrayValue *value=NULL, ChildMap *children=NULL)
+        : PTree(name, nocase, value, children) { }
+
+    virtual bool isEquivalent(IPropertyTree *tree) { return (NULL != QUERYINTERFACE(tree, COrderedPTree)); }
+    virtual IPropertyTree *create(const char *name=NULL, bool nocase=false, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false)
+    {
+        return new COrderedPTree(name, nocase, value, children);
+    }
+    virtual IPropertyTree *create(MemoryBuffer &mb)
+    {
+        IPropertyTree *tree = new COrderedPTree();
+        tree->deserialize(mb);
+        return tree;
+    }
+    virtual void createChildMap(bool caseInsensitive=true)
+    {
+        children = new COrderedChildMap(caseInsensitive);
+    }
+};
+
+IPropertyTree *createPTree(ipt_flags flags)
+{
+    if (flags & ipt_ordered)
+        return new COrderedPTree(NULL, 0 != (flags & ipt_caseInsensitive));
+    else
+        return new LocalPTree(NULL, 0 != (flags & ipt_caseInsensitive));
+}
+
+IPropertyTree *createPTree(const char *name, ipt_flags flags)
+{
+    if (flags & ipt_ordered)
+        return new COrderedPTree(name, 0 != (flags & ipt_caseInsensitive));
+    else
+        return new LocalPTree(name, 0 != (flags & ipt_caseInsensitive));
+}
 

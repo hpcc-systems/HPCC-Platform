@@ -39,7 +39,7 @@ static void appendReplyMessage(StringBuffer &reply, const char *href,const char 
     loop {
         char c=*(s++);
         if (!c||(c=='\n')) {
-            Owned<IPropertyTree> tree = createPTree("Message",false);
+            Owned<IPropertyTree> tree = createPTree("Message");
             tree->addProp("Value",fmsg.str());
             if (href) {
                 tree->addProp("href",href);
@@ -340,7 +340,7 @@ bool CWsDfuXRefEx::onDFUXRefDirectories(IEspContext &context, IEspDFUXRefDirecto
         StringBuffer buf0;
         xRefNode->serializeDirectories(buf0);
 
-        Owned <IPropertyTree> dirs = createPTreeFromXMLString(buf0.str(), false); // Why are we doing this?
+        Owned <IPropertyTree> dirs = createPTreeFromXMLString(buf0.str()); // Why are we doing this?
         Owned<IPropertyTreeIterator> iter = dirs->getElements("Directory");
         ForEach(*iter)
         {
@@ -470,12 +470,12 @@ bool CWsDfuXRefEx::onDFUXRefList(IEspContext &context, IEspDFUXRefListRequest &r
         _topology.getClusterProcessList(eqThorCluster,clusters,false,true);
         ///_topology.getClusterList(eqRoxieCluster,clusters,false,true);
 
-        Owned<IPropertyTree> pXRefNodeTree = createPTree("XRefNodes",false);
+        Owned<IPropertyTree> pXRefNodeTree = createPTree("XRefNodes");
         //DBGLOG("CWsDfuXRefEx::onDFUXRefList1\n");
 
         for (unsigned x=0;x<=clusters.ordinality();x++)
         {
-            IPropertyTree* XRefTreeNode = pXRefNodeTree->addPropTree("XRefNode", createPTree(true));
+            IPropertyTree* XRefTreeNode = pXRefNodeTree->addPropTree("XRefNode", createPTree(ipt_caseInsensitive));
             
             IEspTpCluster* cluster = x<clusters.ordinality()?&clusters.item(x):NULL;        
             const char *clustername = cluster?cluster->getName():"SuperFiles";

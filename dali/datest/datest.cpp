@@ -60,7 +60,7 @@ static void addTestFile(const char *name,unsigned n)
         epa.append(ep);
     }
     Owned<IGroup> group = createIGroup(epa); 
-    Owned<IPropertyTree> fileInfo = createPTree(false);
+    Owned<IPropertyTree> fileInfo = createPTree();
     Owned<IFileDescriptor> fileDesc = createFileDescriptor();
     StringBuffer dir;
     makePhysicalPartName(name, 0, 0, dir, false, DFD_OSdefault);
@@ -71,7 +71,7 @@ static void addTestFile(const char *name,unsigned n)
         RemoteFilename rfn;
         constructPartFilename(group,m+1,n,NULL,partmask.str(),dir.str(),false,1,rfn);
         rfn.getLocalPath(path.clear());
-        Owned<IPropertyTree> pp = createPTree("Part",false);
+        Owned<IPropertyTree> pp = createPTree("Part");
         pp->setPropInt64("@size",1234*(m+1));
         fileDesc->setPart(m,&group->queryNode(m), path.str(), pp);
     }
@@ -446,7 +446,7 @@ void Test_DFS()
     dfiler->Release();
     return;
 #endif
-    Owned<IPropertyTree> pp = createPTree("Part",false);
+    Owned<IPropertyTree> pp = createPTree("Part");
     IFileDescriptor *fdesc = createFileDescriptor();
     fdesc->setDefaultDir("c:\\thordata\\test");
     INode *node = createINode("192.168.0.1");
@@ -553,7 +553,7 @@ void Test_DFS()
 
 void Test_DFSU()
 {
-    Owned<IPropertyTree> pp = createPTree("Part",false);
+    Owned<IPropertyTree> pp = createPTree("Part");
     IFileDescriptor *fdesc = createFileDescriptor();
     fdesc->setDefaultDir("/c$/thordata/test");
     INode *node = createINode("192.168.0.1");
@@ -636,7 +636,7 @@ void testcode()
 
 void Test_MultiFile()
 {
-    Owned<IPropertyTree> pp = createPTree("Part",false);
+    Owned<IPropertyTree> pp = createPTree("Part");
     Owned<IFileDescriptor> fdesc = createFileDescriptor();
     fdesc->setDefaultDir("c:\\thordata\\test");
     INode *node = createINode("10.150.10.16");
@@ -1114,7 +1114,7 @@ myProcessSession(), RTM_CREATE_QUERY, 1000000);
                 i = _i%subscriptions;
                     StringBuffer key;
                     key.append("TEST").append(i);
-                    root->setPropTree(key.str(), createPTree(false));
+                    root->setPropTree(key.str(), createPTree());
 
             }
             conn->commit();
@@ -1248,7 +1248,7 @@ void TestStress()
     {
         StringBuffer branch(branchPrefix);
         branch.append(b+1);
-        root->setPropTree(branch.str(), createPTree(false));
+        root->setPropTree(branch.str(), createPTree());
     }
     conn->commit();
 
@@ -1801,15 +1801,15 @@ void TestSDS1()
     root = conn->queryRoot();
 
     // root->removeProp("newTree");
-    IPropertyTree *nt = root->setPropTree("newTree", createPTree(false));
-    IPropertyTree *s1 = nt->setPropTree("_subNT1", createPTree(false));
-    IPropertyTree *s2 = nt->setPropTree("_subNT2", createPTree(false));
+    IPropertyTree *nt = root->setPropTree("newTree", createPTree());
+    IPropertyTree *s1 = nt->setPropTree("_subNT1", createPTree());
+    IPropertyTree *s2 = nt->setPropTree("_subNT2", createPTree());
     
     nt->setPropInt("t1", 1);
 
     conn->commit();
 
-//  IPropertyTree *t1_2 = nt->addPropTree("t1", createPTree(false));
+//  IPropertyTree *t1_2 = nt->addPropTree("t1", createPTree());
     nt->addPropInt("t1", 2);
     IPropertyTree *t1_2 = nt->queryPropTree("t1[2]");
 //  nt->addPropInt("t1", 3);
@@ -1875,12 +1875,12 @@ void TestSDS1()
     conn = sdsManager.connect("/", myProcessSession(), RTM_LOCK_WRITE | RTM_LOCK_SUB, 2000*MDELAY);
     root = conn->queryRoot();
 
-    IPropertyTree *t1 = createPTree(false);
-    IPropertyTree *t2 = root->setPropTree("t2", createPTree(false));
+    IPropertyTree *t1 = createPTree();
+    IPropertyTree *t2 = root->setPropTree("t2", createPTree());
     IPropertyTree *_t1 = t2->setPropTree("t1", t1);
-    _t1->setPropTree("under_t1", createPTree(false));
+    _t1->setPropTree("under_t1", createPTree());
 
-    IPropertyTree *t3 = root->setPropTree("t3", createPTree(false));
+    IPropertyTree *t3 = root->setPropTree("t3", createPTree());
 
     conn->commit();
 
@@ -1906,7 +1906,7 @@ void TestSDS1()
     }
 
 #if 1
-    IPropertyTree *newTree = loadPropertyTree("c:\\seisint\\deployment\\xmlenv\\jorge.xml", false);
+    IPropertyTree *newTree = createPTreeFromXMLFile("c:\\seisint\\deployment\\xmlenv\\jorge.xml");
     diter.setown(newTree->getElements("*"));
     ForEach (*diter)
     {
@@ -1942,7 +1942,7 @@ void TestSDS1()
     root = conn->queryRoot();
 
     root->removeProp("attrtree");
-    IPropertyTree *attrTree = createPTree(false);
+    IPropertyTree *attrTree = createPTree();
     attrTree->addProp("@rattr1", "a");
     attrTree->addProp("@rattr2", "b");
     attrTree->addProp("@rattr3", "c");
@@ -2035,18 +2035,18 @@ void TestSDS1()
 
 #if 1 // test similar to DFS file release.
     // create f (local)
-    IPropertyTree *f = createPTree("file",true);
-    IPropertyTree *p = createPTree("part",true);
+    IPropertyTree *f = createPTree("file", ipt_caseInsensitive);
+    IPropertyTree *p = createPTree("part", ipt_caseInsensitive);
     p->setProp("@num","1");
     p->setProp("filename","testfile1.d00._1_of_3");
     p->setProp("node","192.168.0.3");
     f->addPropTree("part",p);
-    p = createPTree("part",true);
+    p = createPTree("part", ipt_caseInsensitive);
     p->setProp("@num","2");
     p->setProp("filename","testfile1.d00._2_of_3");
     p->setProp("node","192.168.0.3");
     f->addPropTree("part",p);
-    p = createPTree("part",true);
+    p = createPTree("part", ipt_caseInsensitive);
     p->setProp("@num","3");
     p->setProp("filename","testfile1.d00._3_of_3");
     p->setProp("node","192.168.0.3");
@@ -2054,18 +2054,18 @@ void TestSDS1()
     f->setProp("directory","c:\\thordata");
     f->setProp("@name","testfile1");
     
-    IPropertyTree *f2 = createPTree("file",true);
-    p = createPTree("part",true);
+    IPropertyTree *f2 = createPTree("file", ipt_caseInsensitive);
+    p = createPTree("part", ipt_caseInsensitive);
     p->setProp("@num","1");
     p->setProp("filename","testfile2.d00._1_of_3");
     p->setProp("node","192.168.0.3");
     f2->addPropTree("part",p);
-    p = createPTree("part",true);
+    p = createPTree("part", ipt_caseInsensitive);
     p->setProp("@num","2");
     p->setProp("filename","testfile2.d00._2_of_3");
     p->setProp("node","192.168.0.3");
     f2->addPropTree("part",p);
-    p = createPTree("part",true);
+    p = createPTree("part", ipt_caseInsensitive);
     p->setProp("@num","3");
     p->setProp("f2ilename","testfile2.d00._3_of_3");
     p->setProp("node","192.168.0.3");
@@ -2073,18 +2073,18 @@ void TestSDS1()
     f2->setProp("directory","c:\\thordata");
     f2->setProp("@name","testfile2");
     
-    IPropertyTree *f3 = createPTree("file",true);
-    p = createPTree("part",true);
+    IPropertyTree *f3 = createPTree("file", ipt_caseInsensitive);
+    p = createPTree("part", ipt_caseInsensitive);
     p->setProp("@num","1");
     p->setProp("filename","testfile3.d00._1_of_3");
     p->setProp("node","192.168.0.3");
     f3->addPropTree("part",p);
-    p = createPTree("part",true);
+    p = createPTree("part", ipt_caseInsensitive);
     p->setProp("@num","2");
     p->setProp("filename","testfile3.d00._2_of_3");
     p->setProp("node","192.168.0.3");
     f3->addPropTree("part",p);
-    p = createPTree("part",true);
+    p = createPTree("part", ipt_caseInsensitive);
     p->setProp("@num","3");
     p->setProp("filename","testfile3.d00._3_of_3");
     p->setProp("node","192.168.0.3");
@@ -2097,10 +2097,10 @@ void TestSDS1()
     const char *name = root->queryName();
 
 
-    IPropertyTree *sroot = createPTree(false);
+    IPropertyTree *sroot = createPTree();
     sroot->setProp("@name","nigel");
     sroot = root->addPropTree("scope",sroot);
-    IPropertyTree *sroot2 = createPTree(false);
+    IPropertyTree *sroot2 = createPTree();
     sroot2->setProp("@name","test");
     sroot2 = sroot->addPropTree("scope",sroot2);
 
@@ -2155,7 +2155,7 @@ void TestSDS1()
 
     root->setPropInt("@id", 5);
 
-    IPropertyTree *a = createPTree(true);
+    IPropertyTree *a = createPTree(ipt_caseInsensitive);
     a->setProp("@attr1", "123");
 
     root->setPropTree("file", LINK(a));
@@ -2178,7 +2178,7 @@ void TestSDS1()
     root->setPropInt("sub1", 5);
     IPropertyTree *sub = root->queryPropTree("sub1");
 
-    IPropertyTree *subsub = createPTree(false);
+    IPropertyTree *subsub = createPTree();
     subsub->setProp("hello", "there");
     sub->setPropTree("hellosubsub", subsub);
     root->Release();
@@ -2481,7 +2481,7 @@ NULL
     OwnedIFile newFileSecondary = createIFile("xpathTestsSecondary.out");
     Owned<IIOStream> newFileIOStream;
 
-    Owned<IPropertyTree> originalTree = createPTreeFromXMLString(testXML, false);
+    Owned<IPropertyTree> originalTree = createPTreeFromXMLString(testXML);
     Owned<IPropertyTree> tree;
     unsigned l;
     MemoryBuffer newOutput, secondary;

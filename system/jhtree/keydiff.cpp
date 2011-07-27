@@ -379,7 +379,7 @@ public:
         crecsize.maxrecsize = buffer.buffSize();
         crecsize.frecsize = isvar?0:crecsize.maxrecsize;
 
-        header.setown(createPTree("Index",false));
+        header.setown(createPTree("Index"));
         header->setPropInt("@rowSize",rowsize);
         header->setPropInt("@keyedSize",reader.queryKeyedSize());
         header->setPropBool("@variableWidth",isvar);

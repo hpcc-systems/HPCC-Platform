@@ -2263,7 +2263,7 @@ IPropertyTree *getHPCCenvironment(const char *confloc)
             if (file) {
                 Owned<IFileIO> fileio = file->open(IFOread);
                 if (fileio)
-                    return createPTree(*fileio, false);
+                    return createPTree(*fileio);
             }
         }
     }

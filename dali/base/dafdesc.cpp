@@ -633,14 +633,14 @@ public:
             props->removeProp("@node");
         }
         else
-            props.setown(createPTree("Part",false));
+            props.setown(createPTree("Part"));
     }
 
     void set(unsigned idx, const char *_tail, IPropertyTree *pt)
     {
         partIndex = idx;
         setOverrideName(_tail);
-        props.setown(pt?createPTree(pt):createPTree("Part",false));
+        props.setown(pt?createPTree(pt):createPTree("Part"));
     }
 
     CPartDescriptor(CFileDescriptorBase &_parent, unsigned idx, MemoryBuffer &mb)
@@ -1295,7 +1295,7 @@ public:
         }
         attr.setown(createPTree(mb));
         if (!attr)
-            attr.setown(createPTree("Attr",false)); // doubt can happen
+            attr.setown(createPTree("Attr")); // doubt can happen
         if (version==SERIALIZATION_VERSION2) {
             if (subcounts)
                 *subcounts = new UnsignedArray;
@@ -1322,7 +1322,7 @@ public:
         pending = NULL;
         if ((flags&IFDSF_ATTR_ONLY)||!tree) {
             if (!tree)
-                tree = createPTree("Attr",false);
+                tree = createPTree("Attr");
             attr.setown(tree);
             setupdone = false;
             return;
@@ -1373,7 +1373,7 @@ public:
                     if (!num)
                         continue;
                     while (num>trees.ordinality()+1)
-                        trees.append(*createPTree("Part",false));
+                        trees.append(*createPTree("Part"));
                     cpt.Link();
                     if (num>trees.ordinality())
                         trees.append(cpt);
@@ -1396,7 +1396,7 @@ public:
         if (at)
             attr.setown(createPTree(at));
         else
-            attr.setown(createPTree("Attr",false));
+            attr.setown(createPTree("Attr"));
         if (totalsize!=(offset_t)-1)
             attr->setPropInt64("@size",totalsize);
     }
@@ -1432,7 +1432,7 @@ public:
         unsigned cn = 0;
         StringBuffer grplist;
         ForEachItemIn(i1,clusters) {
-            Owned<IPropertyTree> ct = createPTree("Cluster",false);
+            Owned<IPropertyTree> ct = createPTree("Cluster");
             clusters.item(i1).serializeTree(ct,flags);
             if (!isEmptyPTree(ct)) {
                 const char *cname = ct->queryProp("@name");
@@ -1455,7 +1455,7 @@ public:
         if ((flags&IFDSF_EXCLUDE_PARTS)==0) {
             if ((n==1)||((flags&CPDMSF_packParts)==0)) {
                 for (unsigned i2=0;i2<n;i2++) {
-                    Owned<IPropertyTree> p = createPTree("Part",false);
+                    Owned<IPropertyTree> p = createPTree("Part");
                     if (part(i2)->subserializeTree(p))
                         pt.addPropTree("Part",p.getClear());
                 }
@@ -1464,7 +1464,7 @@ public:
                 MemoryBuffer mb;
                 for (unsigned i2=0;i2<n;i2++) {
                     // this seems a bit excessive in conversions
-                    Owned<IPropertyTree> p = createPTree("Part",false);
+                    Owned<IPropertyTree> p = createPTree("Part");
                     part(i2)->subserializeTree(p);
                     serializePartAttr(mb,p);
                 }
@@ -1478,7 +1478,7 @@ public:
 
     IPropertyTree *getFileTree(unsigned flags)
     {
-        Owned<IPropertyTree> ret = createPTree(queryDfsXmlBranchName(DXB_File),false);
+        Owned<IPropertyTree> ret = createPTree(queryDfsXmlBranchName(DXB_File));
         serializeTree(*ret,flags);
         return ret.getClear();
     }
@@ -2634,7 +2634,7 @@ IFileDescriptor *createFileDescriptorFromRoxieXML(IPropertyTree *tree,const char
     if (!tree)
         return NULL;
     bool iskey = (strcmp(tree->queryName(),"Key")==0);
-    Owned<IPropertyTree> attr = createPTree("Attr",false);
+    Owned<IPropertyTree> attr = createPTree("Attr");
     Owned<IFileDescriptor> res = createFileDescriptor(attr.getLink());
     const char *id = tree->queryProp("@id");
     if (id) {

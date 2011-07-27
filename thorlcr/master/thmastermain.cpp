@@ -445,7 +445,7 @@ int main( int argc, char *argv[]  )
     NoQuickEditSection xxx;
 
     Owned<IFile> thorConfFile = createIFile("thor.xml");
-    globals = thorConfFile->exists() ? createPTreeFromXMLFile("thor.xml", true) : createPTree(true);
+    globals = thorConfFile->exists() ? createPTreeFromXMLFile("thor.xml", ipt_caseInsensitive) : createPTree(ipt_caseInsensitive);
     char **pp = argv+1;
     while (*pp)
         loadCmdProp(globals, *pp++);

@@ -1809,7 +1809,7 @@ void CGraphBase::createFromXGMML(IPropertyTree *_node, CGraphBase *_owner, CGrap
                         // not a loop graph, force it to be local child graph
                         if (!e.getPropBool("att[@name=\"coLocal\"]/@value", false))
                         {
-                            IPropertyTree *att = createPTree("att", false);
+                            IPropertyTree *att = createPTree("att");
                             att->setProp("@name", "coLocal");
                             att->setPropBool("@value", true);
                             e.addPropTree("att", att);

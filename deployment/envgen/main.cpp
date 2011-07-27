@@ -160,7 +160,7 @@ int main(int argc, char** argv)
     validateIPS(ipAddrs.str());
     StringBuffer optionsXml, envXml;
     const char* pServiceName = "WsDeploy_wsdeploy_esp";
-    Owned<IPropertyTree> pCfg = createPTreeFromXMLFile(ENVGEN_PATH_TO_ESP_CONFIG, false);
+    Owned<IPropertyTree> pCfg = createPTreeFromXMLFile(ENVGEN_PATH_TO_ESP_CONFIG);
 
     optionsXml.appendf("<XmlArgs roxieNodes=\"%d\" thorNodes=\"%d\" slavesPerNode=\"%d\" ipList=\"%s\"/>", roxieNodes,
                       thorNodes, slavesPerNode, ipAddrs.str());

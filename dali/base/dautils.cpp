@@ -574,11 +574,11 @@ IPropertyTree *CDfsLogicalFileName::createSuperTree() const
 {
     if (!multi)
         return NULL;
-    IPropertyTree *ret = createPTree("SuperFile",false);
+    IPropertyTree *ret = createPTree("SuperFile");
     unsigned numsub = 0;
     ForEachItemIn(i1,*multi) {
         const CDfsLogicalFileName &sub = multi->item(i1);
-        IPropertyTree *st = createPTree(false);
+        IPropertyTree *st = createPTree();
         st->setProp("@name",sub.get());
         st->setPropInt("@num",++numsub);
         ret->addPropTree("SubFile",st);
@@ -1138,7 +1138,7 @@ MemoryBuffer &serializePartAttr(MemoryBuffer &mb,IPropertyTree *tree)
 
 IPropertyTree *deserializePartAttr(MemoryBuffer &mb)
 {
-    IPropertyTree *pt = createPTree("Part",false);
+    IPropertyTree *pt = createPTree("Part");
     byte flags;
     mb.read(flags);
     if (flags&PAF_HAS_SIZE) {
@@ -1380,7 +1380,7 @@ bool shrinkFileTree(IPropertyTree *file)
     }
     for (i=0;i<n;i++) {
         if (!parts[i])
-            parts[i] = createPTree("Part",false);
+            parts[i] = createPTree("Part");
         serializePartAttr(mb,parts[i]);
     }
     file->setPropBin("Parts",mb.length(),mb.toByteArray());
@@ -2293,7 +2293,7 @@ public:
                     throw MakeStringException(-1,"CDaliMutex::enter Cannot create /Locks branch");
                 path.clear().appendf("Mutex[@name=\"%s\"]",name.get());
                 if (!pconn->queryRoot()->hasProp(name))
-                    pconn->queryRoot()->addPropTree("Mutex",createPTree("Mutex",false))->setProp("@name",name);
+                    pconn->queryRoot()->addPropTree("Mutex",createPTree("Mutex"))->setProp("@name",name);
                 continue; // try again
             }
             unsigned remaining;
@@ -2379,7 +2379,7 @@ bool getSwapNodeInfo(IPropertyTree *options,StringAttr &grpname,Owned<IGroup> &g
             PROGLOG("SWAPNODE: no information for group %s",grpname.get());
             return false;
         }
-        info.set(conn->queryRoot()->addPropTree("Thor",createPTree("Thor",false)));
+        info.set(conn->queryRoot()->addPropTree("Thor",createPTree("Thor")));
         info->setProp("@group",grpname.get());
     }
     return true;
@@ -2452,7 +2452,7 @@ bool checkThorNodeSwap(IPropertyTree *options,const char *failedwuid, unsigned m
                 xpath.clear().appendf("BadNode[@netAddress=\"%s\"]",ips.str());
                 IPropertyTree *bnt = info->queryPropTree(xpath.str());
                 if (!bnt) {
-                    bnt = info->addPropTree("BadNode",createPTree("BadNode",false));
+                    bnt = info->addPropTree("BadNode",createPTree("BadNode"));
                     bnt->setProp("@netAddress",ips.str());
                 }
                 bnt->setPropInt("@numTimes",bnt->getPropInt("@numTimes",0)+1);
@@ -2466,7 +2466,7 @@ bool checkThorNodeSwap(IPropertyTree *options,const char *failedwuid, unsigned m
                 xpath.clear().appendf("WorkUnit[@id=\"%s\"]",failedwuid);
                 IPropertyTree *wut = info->queryPropTree(xpath.str());
                 if (!wut) {
-                    wut = info->addPropTree("WorkUnit",createPTree("WorkUnit",false));
+                    wut = info->addPropTree("WorkUnit",createPTree("WorkUnit"));
                     wut->setProp("@id",failedwuid);
                 }
                 wut->setProp("@time",ts.str());

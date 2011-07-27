@@ -554,9 +554,9 @@ FileSprayer::FileSprayer(IPropertyTree * _options, IPropertyTree * _progress, IR
     recoveryConnection = _recoveryConnection;
     options.set(_options);
     if (!options)
-        options.setown(createPTree(false));
+        options.setown(createPTree());
     if (!progressTree)
-        progressTree.setown(createPTree("progress", true));
+        progressTree.setown(createPTree("progress", ipt_caseInsensitive));
 
     //split prefix messes up recovery because the target filenames aren't saved in the recovery info.
     allowRecovery = !options->getPropBool(ANnoRecover) && !querySplitPrefix();
@@ -1538,7 +1538,7 @@ void FileSprayer::derivePartitionExtra()
             next.whichPartition=idx;
             if (allowRecovery)
             {
-                IPropertyTree * progressInfo = progressTree->addPropTree(PNprogress, createPTree(PNprogress, true));
+                IPropertyTree * progressInfo = progressTree->addPropTree(PNprogress, createPTree(PNprogress, ipt_caseInsensitive));
                 next.tree.set(progressInfo);
                 next.save(progressInfo);
             }
@@ -2229,7 +2229,7 @@ void FileSprayer::savePartition()
     {
         ForEachItemIn(idx, partition)
         {
-            IPropertyTree * child = createPTree(PNpartition, true);
+            IPropertyTree * child = createPTree(PNpartition, ipt_caseInsensitive);
             partition.item(idx).save(child);
             progressTree->addPropTree(PNpartition, child);
         }

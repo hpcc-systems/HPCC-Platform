@@ -2081,7 +2081,7 @@ void ActivityInstance::processHint(IHqlExpression * attr)
     if (value.length() == 0)
         value.append("1");
 
-    IPropertyTree * att = createPTree(false);
+    IPropertyTree * att = createPTree();
     att->setProp("@name", name->str());
     att->setProp("@value", value.str());
     graphNode->addPropTree("hint", att);
@@ -2130,7 +2130,7 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
     if (!parentGraphNode)
         return;
     assertex(kind < TAKlast);
-    graphNode.set(parentGraphNode->addPropTree("node", createPTree(false)));
+    graphNode.set(parentGraphNode->addPropTree("node", createPTree()));
 
     graphNode->setPropInt64("@id", activityId);
     StringBuffer label;
@@ -6657,7 +6657,7 @@ void HqlCppTranslator::addDependency(BuildCtx & ctx, ABoundActivity * element, A
 //  if (outputIndex)
 //      idText.append("_").append(outputIndex);
 
-    IPropertyTree *edge = createPTree(false);
+    IPropertyTree *edge = createPTree();
     edge->setProp("@id", idText.str());
     edge->setPropInt64("@target", sinkActivity->queryGraphId());
     edge->setPropInt64("@source", sourceActivity->queryGraphId());
@@ -8804,7 +8804,7 @@ unsigned HqlCppTranslator::doBuildThorChildSubGraph(BuildCtx & ctx, IHqlExpressi
 //NB: Need to create the graph in the correct order so the references to property trees we retain
 // remain live..
     SubGraphInfo * activeSubgraph = queryActiveSubGraph(ctx);
-    IPropertyTree * node = createPTree("node", false);
+    IPropertyTree * node = createPTree("node");
     if (activeSubgraph)
         node = activeSubgraph->tree->addPropTree("node", node);
     else
@@ -8813,8 +8813,8 @@ unsigned HqlCppTranslator::doBuildThorChildSubGraph(BuildCtx & ctx, IHqlExpressi
     unsigned thisId = reservedId ? reservedId : nextActivityId();
     node->setPropInt("@id", thisId);
 
-    IPropertyTree * graphAttr = node->addPropTree("att", createPTree("att", false));
-    IPropertyTree * subGraph = graphAttr->addPropTree("graph", createPTree("graph", false));
+    IPropertyTree * graphAttr = node->addPropTree("att", createPTree("att"));
+    IPropertyTree * subGraph = graphAttr->addPropTree("graph", createPTree("graph"));
 
     Owned<SubGraphInfo> graphInfo = new SubGraphInfo(subGraph, thisId, graphTag, kind);
     ctx.associate(*graphInfo);
@@ -8902,7 +8902,7 @@ void HqlCppTranslator::beginGraph(BuildCtx & ctx, const char * _graphName)
         graphName.append(_graphName);
     activeGraphName.set(graphName.str());
 
-    graph.setown(createPTree("graph", false));
+    graph.setown(createPTree("graph"));
     if (graphLabel)
     {
         graph->setProp("@label", graphLabel);
@@ -10388,14 +10388,14 @@ void HqlCppTranslator::addSchemaResource(int seq, const char * name, IHqlExpress
 
 void HqlCppTranslator::addSchemaResource(int seq, const char * name, const char * schemaXml)
 {
-    Owned<IPropertyTree> resultTree = createPTree("Result", false);
+    Owned<IPropertyTree> resultTree = createPTree("Result");
     resultTree->setPropInt("@sequence", seq);
     resultTree->setProp("@name", name);
-    resultTree->addPropTree("xs:schema", createPTreeFromXMLString(schemaXml, false));
+    resultTree->addPropTree("xs:schema", createPTreeFromXMLString(schemaXml));
     IPropertyTree * web = code->ensureWebServiceInfo();
     IPropertyTree * schema = web->queryPropTree("SCHEMA");
     if (!schema)
-        schema = web->addPropTree("SCHEMA", createPTree("SCHEMA", false));
+        schema = web->addPropTree("SCHEMA", createPTree("SCHEMA"));
     schema->addPropTree("Result", resultTree.getClear());
 }
 
@@ -17343,7 +17343,7 @@ void HqlCppTranslator::buildConnectOrders(BuildCtx & ctx, ABoundActivity * slave
     //I'm not sure we even use this information, but at least it's there if needed.
     if (targetThor())
     {
-        IPropertyTree *edge = createPTree(false);
+        IPropertyTree *edge = createPTree();
         edge->setPropInt64("@target", slaveActivity->queryActivityId());
         edge->setPropInt64("@source", masterActivity->queryActivityId());
         addGraphAttributeBool(edge, "cosort", true);

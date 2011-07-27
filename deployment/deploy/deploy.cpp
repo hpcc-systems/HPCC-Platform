@@ -1108,7 +1108,7 @@ bool matchDeployAddress(const char *searchIP, const char *envIP)
 IPropertyTree* getInstances(const IPropertyTree* pEnvRoot, const char* compName, 
                             const char* compType, const char* ipAddr, bool listall)
 {
-  Owned<IPropertyTree> pSelComps(createPTree("SelectedComponents", false));
+  Owned<IPropertyTree> pSelComps(createPTree("SelectedComponents"));
   Owned<IPropertyTreeIterator> iter = pEnvRoot->getElements("Software/*");
   const char* instanceNodeNames[] = { "Instance", "RoxieServerProcess", "RoxieSlaveProcess" };
   const char* logDirNames[] = { "@logDir", "@LogDir", "@dfuLogDir", "@eclLogDir" };
@@ -1165,7 +1165,7 @@ IPropertyTree* getInstances(const IPropertyTree* pEnvRoot, const char* compName,
             {
               if (!bAdded)
               {
-                pSelComp = pSelComps->addPropTree(pComponent->queryName(), createPTree(false));
+                pSelComp = pSelComps->addPropTree(pComponent->queryName(), createPTree());
                 pSelComp->addProp("@name", name);
                 pSelComp->addProp("@buildSet", buildSet);
                 pSelComp->addProp("@logDir", logDir);
@@ -1174,7 +1174,7 @@ IPropertyTree* getInstances(const IPropertyTree* pEnvRoot, const char* compName,
 
               if (listall)
               {
-                IPropertyTree* pInstance = pSelComp->addPropTree(pInst->queryName(), createPTree(false));
+                IPropertyTree* pInstance = pSelComp->addPropTree(pInst->queryName(), createPTree());
                 pInstance->addProp("@name", pInst->queryProp("@name"));
                 pInstance->addProp("@computer", computer);
                 pInstance->addProp("@netAddress", netAddr);
@@ -1186,7 +1186,7 @@ IPropertyTree* getInstances(const IPropertyTree* pEnvRoot, const char* compName,
           {
             if (!bAdded)
             {
-              pSelComp = pSelComps->addPropTree(pComponent->queryName(), createPTree(false));
+              pSelComp = pSelComps->addPropTree(pComponent->queryName(), createPTree());
               pSelComp->addProp("@name", name);
               pSelComp->addProp("@buildSet", buildSet);
               pSelComp->addProp("@logDir", logDir);
@@ -1201,7 +1201,7 @@ IPropertyTree* getInstances(const IPropertyTree* pEnvRoot, const char* compName,
                 //allow multiple instances but do not allow either roxie servers or slaves more than once per computer
                 if (listall || sb.str()[0] != 'R' || !pSelComp->queryPropTree(StringBuffer().appendf("*[@computer=\"%s\"]", computer)))
                 {
-                  IPropertyTree* pInstance = pSelComp->addPropTree(sb.str(), createPTree(false));
+                  IPropertyTree* pInstance = pSelComp->addPropTree(sb.str(), createPTree());
                   pInstance->addProp("@name", pInst->queryProp("@name"));
                   pInstance->addProp("@computer", pInst->queryProp("@computer"));
                   pInstance->addProp("@port", pInst->queryProp("@port"));

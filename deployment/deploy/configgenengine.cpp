@@ -56,7 +56,7 @@ int CConfigGenEngine::determineInstallFiles(IPropertyTree& processNode, CInstall
         if (m_inDir.length())
             compListPath.clear().append(m_inDir).append(PATHSEPCHAR).append(CONFIGGEN_COMP_LIST);
 
-        Owned<IPropertyTree> deployNode = createPTreeFromXMLFile(compListPath.str(), true);
+        Owned<IPropertyTree> deployNode = createPTreeFromXMLFile(compListPath.str(), ipt_caseInsensitive);
         StringBuffer srcFilePath;
         srcFilePath.ensureCapacity(_MAX_PATH);
         const bool bFindStartable = &m_process == &processNode && m_startable == unknown;

@@ -109,7 +109,7 @@ void checkClusterCRCs(const char *cluster,bool fix,bool verbose,const char *csvf
             }
             Owned<IPropertyTree> fileattr = file.getPropTree("Attr");
             if (!fileattr)
-                fileattr.setown(createPTree("Attr",false));
+                fileattr.setown(createPTree("Attr"));
             bool compressedfile = isCompressed(*fileattr);
             IPropertyTree **parts = (IPropertyTree **)calloc(n,sizeof(IPropertyTree *));
             Owned<IPropertyTreeIterator> it;

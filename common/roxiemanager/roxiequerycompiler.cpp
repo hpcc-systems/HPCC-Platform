@@ -217,7 +217,7 @@ public:
             StringBuffer options(compileInfo.queryWuDebugOptions());
             if (options.length())
             {
-                Owned<IPropertyTree> dbgOptions = createPTreeFromXMLString(options, true);
+                Owned<IPropertyTree> dbgOptions = createPTreeFromXMLString(options, ipt_caseInsensitive);
                 Owned<IPropertyTreeIterator> iter = dbgOptions->getElements("Option");
                 ForEach(*iter)
                 {

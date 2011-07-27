@@ -137,9 +137,10 @@ public:
 class thorhelper_decl CXmlToRawTransformer : public CInterface, implements IXmlToRawTransformer
 {
 public:
-    CXmlToRawTransformer(IXmlToRowTransformer & _rowTransformer, bool _stripWhitespace)
-    : rowTransformer(&_rowTransformer), stripWhitespace(_stripWhitespace)
+    CXmlToRawTransformer(IXmlToRowTransformer & _rowTransformer, bool stripWhitespace)
+    : rowTransformer(&_rowTransformer)
     {
+        xmlReadFlags = stripWhitespace ? xr_ignoreWhiteSpace : xr_none;
     }
     IMPLEMENT_IINTERFACE
 
@@ -148,6 +149,7 @@ public:
 
 protected:
     Linked<IXmlToRowTransformer> rowTransformer;
+    XmlReaderOptions xmlReadFlags;
     bool stripWhitespace;
 };
 

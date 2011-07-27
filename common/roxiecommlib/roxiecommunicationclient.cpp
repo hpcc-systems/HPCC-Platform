@@ -81,7 +81,7 @@ protected:
             _WINREV(sendlen);
             sock->read(response.reserveTruncate(sendlen), sendlen);
         }
-        Owned<IPropertyTree> ret = createPTreeFromXMLString(response.str(), false);
+        Owned<IPropertyTree> ret = createPTreeFromXMLString(response.str());
         Owned<IMultiException> me = MakeMultiException();
         Owned<IPropertyTreeIterator> endpoints = ret->getElements("Endpoint");
         ForEach(*endpoints)
@@ -123,7 +123,7 @@ protected:
             sock->read(block, sendlen);
             if (!exception && sendlen > 11 && memicmp(block, "<Exception>", 11) == 0)
             {
-                Owned<IPropertyTree> eTree = createPTreeFromXMLString(sendlen, block, true);
+                Owned<IPropertyTree> eTree = createPTreeFromXMLString(sendlen, block, ipt_caseInsensitive);
                 exception.setown(MakeStringException(eTree->getPropInt("Code", 0), eTree->queryProp("Message")));
             }
         }
@@ -206,7 +206,7 @@ protected:
             _WINREV(sendlen);
             sock->read(lockResponse.reserveTruncate(sendlen), sendlen);
         }
-        Owned<IPropertyTree> lockRet = createPTreeFromXMLString(lockResponse.str(), false);
+        Owned<IPropertyTree> lockRet = createPTreeFromXMLString(lockResponse.str());
         if (lockAll)
         {
             int lockCount = lockRet->getPropInt("Lock", 0);
@@ -220,7 +220,7 @@ protected:
     void buildPackageFileInfo(IPropertyTree *packageTree, const char *filename)
     {
         StringBuffer packageInfo;
-        IPropertyTree *pkgInfo = createPTreeFromXMLFile(filename, true);
+        IPropertyTree *pkgInfo = createPTreeFromXMLFile(filename, ipt_caseInsensitive);
 
         StringBuffer baseFileName;
         splitFilename(filename, NULL, NULL, &baseFileName, &baseFileName);
@@ -398,7 +398,7 @@ public:
             return sendRoxieControlQuery(xpath.str(), true);
         else
         {
-            IPropertyTree *tree = createPTree("Control", false);
+            IPropertyTree *tree = createPTree("Control");
             ForEachItemIn(idx, ipList)
             {
                 StringBuffer ip(ipList.item(idx));

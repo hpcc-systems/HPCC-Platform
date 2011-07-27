@@ -222,13 +222,14 @@ bool CXmlScope::appendValue(const char *name, const char *value)
 
 void CXmlScope::loadXML(const char * text, const char * element)
 {
-    IPropertyTree * ptree = loadPropertyTree(text, true);
+    IPropertyTree * ptree = createPTreeFromXMLString(text, ipt_caseInsensitive);
     root->setPropTree(element, ptree);
 }
 
-HQL_API IXmlScope* loadXML(const char* filename)
+HQL_API IXmlScope* loadXML(const char* xml)
 {
-    IPropertyTree * ptree = loadPropertyTree(filename, true);
+    assertex(xml);
+    IPropertyTree * ptree = ('<' == *xml) ? createPTreeFromXMLString(xml, ipt_caseInsensitive) : createPTreeFromXMLFile(xml, ipt_caseInsensitive);
     return ptree ? new CXmlScope(ptree, NULL) : NULL;
 }
 

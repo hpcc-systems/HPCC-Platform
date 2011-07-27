@@ -1763,7 +1763,7 @@ IPropertyTree &CClientSDSManager::queryProperties() const
     }
     properties = createPTree(mb);
     if (!properties->hasProp("Client"))
-        properties->setPropTree("Client", createPTree(false));
+        properties->setPropTree("Client", createPTree());
     return *properties;
 }
 

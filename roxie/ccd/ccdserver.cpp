@@ -2650,7 +2650,7 @@ void throwRemoteException(IMessageUnpackCursor *extra)
     {
         char *xml = (char *) extra->getNext(*rowlen);
         ReleaseRoxieRow(rowlen);
-        Owned<IPropertyTree> p = createPTreeFromXMLString(xml, false);
+        Owned<IPropertyTree> p = createPTreeFromXMLString(xml);
         ReleaseRoxieRow(xml);
         unsigned code = p->getPropInt("Code", 0);
         const char *msg = p->queryProp("Message");
@@ -10578,7 +10578,7 @@ protected:
             desc->setDefaultDir(dir.str());
 
             //properties of the first file part.
-            Owned<IPropertyTree> attrs = createPTree("Part", false);
+            Owned<IPropertyTree> attrs = createPTree("Part");
             if(blockcompressed)
             {
                 attrs->setPropInt64("@size", uncompressedBytesWritten);
@@ -24614,7 +24614,7 @@ public:
                                 IPropertyTree *att = edge.queryPropTree("att[@name=\"_roxieStarted\"]");
                                 if (!att)
                                 {
-                                    att = edge.addPropTree("att", createPTree(false));
+                                    att = edge.addPropTree("att", createPTree());
                                     att->setProp("@name", "_roxieStarted");
                                 }
                                 else
@@ -24644,7 +24644,7 @@ public:
                                     IPropertyTree *att = edge.queryPropTree("att[@name=\"_roxieStarted\"]");
                                     if (!att)
                                     {
-                                        att = edge.addPropTree("att", createPTree(false));
+                                        att = edge.addPropTree("att", createPTree());
                                         att->setProp("@name", "_roxieStarted");
                                     }
                                     else
@@ -25801,7 +25801,7 @@ public:
                 DebugRequestLookupActivityByEdgeId request(proxyId, edgeId);
                 CommonXmlWriter reply(0);
                 sendProxyRequest(&reply, request);
-                Owned<IPropertyTree> response = createPTreeFromXMLString(reply.str(), false);
+                Owned<IPropertyTree> response = createPTreeFromXMLString(reply.str());
                 if (response)
                 {
                     memsize_t proxyId = (memsize_t) response->getPropInt64("@proxyId", 0);
@@ -25894,7 +25894,7 @@ public:
         reply.outputBeginNested("Counts", true);
         sendProxyRequest(&reply, request);
         reply.outputEndNested("Counts"); // strange way to do it...
-        Owned<IPropertyTree> response = createPTreeFromXMLString(reply.str(), false);
+        Owned<IPropertyTree> response = createPTreeFromXMLString(reply.str());
         if (response)
         {
             Owned<IPropertyTreeIterator> edges = response->getElements("edge");
@@ -27911,7 +27911,7 @@ protected:
             {
                 CriticalBlock b(contextCrit);
                 if (!temporaries)
-                    temporaries = createPTree(false);
+                    temporaries = createPTree();
                 return *temporaries;
             }
         case ResultSequenceOnce:
@@ -27922,7 +27922,7 @@ protected:
             {
                 CriticalBlock b(contextCrit);
                 if (!rereadResults)
-                    rereadResults = createPTree(false);
+                    rereadResults = createPTree();
                 return *rereadResults;
             }
         }
@@ -27984,7 +27984,7 @@ public:
         init();
         rowManager->setMemoryLimit(serverQueryFactory->getMemoryLimit());
         workflow.setown(_factory->createWorkflowMachine(true, logctx));
-        context.setown(createPTree(true));
+        context.setown(createPTree(ipt_caseInsensitive));
     }
 
     CRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, bool _isXml, bool _isRaw, bool _isBlocked, HttpHelper &httpHelper, bool _trim, unsigned _priority, const IRoxieContextLogger &_logctx, const SocketEndpoint &poolEndpoint, bool _stripLeadingWhitespace)
@@ -28028,7 +28028,7 @@ public:
             if (workUnit->getXmlParams(wuParams).length())
             {
                 // Merge in params from WU. Ones on command line take precedence though...
-                Owned<IPropertyTree> wuParamTree = createPTreeFromXMLString(wuParams.str(), true);
+                Owned<IPropertyTree> wuParamTree = createPTreeFromXMLString(wuParams.str(), ipt_caseInsensitive);
                 Owned<IPropertyTreeIterator> params = wuParamTree ->getElements("*");
                 ForEach(*params)
                 {
@@ -28361,7 +28361,7 @@ public:
         else
         {
             if (!val)
-                val = ctx.addPropTree(name, createPTree(false));
+                val = ctx.addPropTree(name, createPTree());
             val->setProp("@format", "deserialized");
             val->setPropInt("@id", resultStore.addResult(data, meta));
         }
@@ -28506,7 +28506,7 @@ public:
     virtual void setResultXml(const char *name, unsigned sequence, const char *xml) 
     {
         CriticalBlock b(contextCrit);
-        useContext(sequence).setPropTree(name, createPTreeFromXMLString(xml, true));
+        useContext(sequence).setPropTree(name, createPTreeFromXMLString(xml, ipt_caseInsensitive));
     }
 
     virtual void setResultDecimal(const char *name, unsigned sequence, int len, int precision, bool isSigned, const void *val) 
@@ -29758,7 +29758,7 @@ public:
         StringBuffer lockQuery;
         lockQuery.appendf("<control:childlock thisEndpoint='%d' parent='%d'/>", activeIdxes.item(idx), myEndpoint);
         doChildQuery(idx, lockQuery.str(), lockReply);
-        Owned<IPropertyTree> lockResult = createPTreeFromXMLString(lockReply.str(), true);
+        Owned<IPropertyTree> lockResult = createPTreeFromXMLString(lockReply.str(), ipt_caseInsensitive);
         int lockCount = lockResult->getPropInt("Lock", 0);
         if (lockCount)
         {
@@ -29895,7 +29895,7 @@ public:
         if (traceLevel > 5)
             DBGLOG("doLockChild: %s", queryText);
         isMaster = false;
-        Owned<IPropertyTree> xml = createPTreeFromXMLString(queryText, false);
+        Owned<IPropertyTree> xml = createPTreeFromXMLString(queryText);
         bool unlock = xml->getPropBool("@unlock", false);
         if (unlock)
         {
@@ -29985,7 +29985,7 @@ public:
         // So do the query ourselves and in all child threads;
         Owned<IPropertyTree> mergedStats;
         if (strstr(queryText, "querystats"))
-            mergedStats.setown(createPTree("Endpoint", false));
+            mergedStats.setown(createPTree("Endpoint"));
         
         class casyncfor: public CAsyncFor
         {
@@ -30014,7 +30014,7 @@ public:
                 {
                     StringBuffer childReply;
                     parent->doChildQuery(i, queryText, childReply);
-                    Owned<IPropertyTree> xml = createPTreeFromXMLString(childReply, false);
+                    Owned<IPropertyTree> xml = createPTreeFromXMLString(childReply);
                     if (!xml)
                     {
                         StringBuffer err;
@@ -30043,7 +30043,7 @@ public:
                 myReply.append("'>\n");
                 try
                 {
-                    Owned<IPropertyTree> xml = createPTreeFromXMLString(queryText, false); // control queries are case sensitive
+                    Owned<IPropertyTree> xml = createPTreeFromXMLString(queryText); // control queries are case sensitive
                     doControlMessage(xml, myReply, logctx);
                 }
                 catch(IException *E)
@@ -30058,7 +30058,7 @@ public:
                 CriticalBlock cb(crit);
                 if (mergedStats)
                 {
-                    Owned<IPropertyTree> xml = createPTreeFromXMLString(myReply, false);
+                    Owned<IPropertyTree> xml = createPTreeFromXMLString(myReply);
                     mergeStats(mergedStats, xml, 0);
                 }
                 else
@@ -30701,7 +30701,7 @@ readAnother:
             }
             else if (strnicmp(rawText.str(), "<control:", 9)==0)
             {
-                Owned<IPropertyTree> queryXML = createPTreeFromXMLString(rawText.str(), false); // This is just done to check it is valid XML and make error reporting better...
+                Owned<IPropertyTree> queryXML = createPTreeFromXMLString(rawText.str()); // This is just done to check it is valid XML and make error reporting better...
                 queryXML.clear();
                 bool doControlQuery = true;
                 
@@ -30710,7 +30710,7 @@ readAnother:
 
                 if (strnicmp(rawText.str(), "<control:aclupdate", 18)==0)
                 {
-                    queryXml.setown(createPTreeFromXMLString(rawText.str(), true, true, NULL, true));
+                    queryXml.setown(createPTreeFromXMLString(rawText.str(), ipt_caseInsensitive, (XmlReaderOptions)(xr_ignoreWhiteSpace|xr_ignoreNameSpaces)));
                     IPropertyTree *aclTree = queryXml->queryPropTree("ACL");
                     if (aclTree)
                     {
@@ -30764,7 +30764,9 @@ readAnother:
             {
                 try
                 {
-                    queryXml.setown(createPTreeFromXMLString(rawText.str(), true, defaultStripLeadingWhitespace, NULL, true));
+                    XmlReaderOptions xmlReadFlags = defaultStripLeadingWhitespace ? xr_ignoreWhiteSpace : xr_none;
+                    xmlReadFlags = (XmlReaderOptions)(xmlReadFlags | xr_ignoreNameSpaces);
+                    queryXml.setown(createPTreeFromXMLString(rawText.str(), ipt_caseInsensitive, xmlReadFlags));
                 }
                 catch (IException *E)
                 {
@@ -30848,7 +30850,9 @@ readAnother:
                             if (stripLeadingWhitespace != defaultStripLeadingWhitespace)
                             {
                                 // we need to reparse input xml, as global whitespace setting has been overridden
-                                queryXml.setown(createPTreeFromXMLString(rawText.str(), true, stripLeadingWhitespace , NULL, true));
+                                XmlReaderOptions xmlReadFlags = stripLeadingWhitespace ? xr_ignoreWhiteSpace : xr_none;
+                                xmlReadFlags = (XmlReaderOptions)(xmlReadFlags | xr_ignoreNameSpaces);
+                                queryXml.setown(createPTreeFromXMLString(rawText.str(), ipt_caseInsensitive, xmlReadFlags));
                                 sanitizeQuery(queryXml, queryName, sanitizedText, isHTTP, uid, isRequest, isRequestArray, isBlind, isDebug);
                             }
                             IArrayOf<IPropertyTree> requestArray;
@@ -30862,7 +30866,7 @@ readAnother:
                                     Owned<IPropertyTreeIterator> reqIter = queryXml->getElements(reqIterString.str());
                                     ForEach(*reqIter)
                                     {
-                                        IPropertyTree *fixedreq = createPTree(queryName, true);
+                                        IPropertyTree *fixedreq = createPTree(queryName, ipt_caseInsensitive);
                                         Owned<IPropertyTreeIterator> iter = reqIter->query().getElements("*");
                                         ForEach(*iter)
                                         {
@@ -30873,7 +30877,7 @@ readAnother:
                                 }
                                 else
                                 {
-                                    IPropertyTree *fixedreq = createPTree(queryName, true);
+                                    IPropertyTree *fixedreq = createPTree(queryName, ipt_caseInsensitive);
                                     Owned<IPropertyTreeIterator> iter = queryXml->getElements("*");
                                     ForEach(*iter)
                                     {

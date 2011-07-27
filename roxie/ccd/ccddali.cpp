@@ -138,12 +138,12 @@ private:
             StringBuffer cacheFileName(queryDirectory);
             cacheFileName.append(roxieStateName);
             if (checkFileExists(cacheFileName))
-                cache.setown(createPTreeFromXMLFile(cacheFileName, false));
+                cache.setown(createPTreeFromXMLFile(cacheFileName));
             else
             {
-                IPropertyTree *tree = createPTree("Roxie", false);
-                tree->addPropTree("QuerySets", createPTree("QuerySets", false));
-                tree->addPropTree("Files", createPTree("Files", false));
+                IPropertyTree *tree = createPTree("Roxie");
+                tree->addPropTree("QuerySets", createPTree("QuerySets"));
+                tree->addPropTree("Files", createPTree("Files"));
                 cache.setown(tree);
             }
         }
@@ -206,7 +206,7 @@ public:
         Owned<IPropertyTree> ret = loadDaliTree(getQuerySetPath(xpath, id));
         if (!ret)
         {
-            ret.setown(createPTree("QuerySet", false));
+            ret.setown(createPTree("QuerySet"));
             ret->setProp("@id", id);
         }
         return ret.getClear();
@@ -224,7 +224,7 @@ public:
         Owned<IPropertyTree> ret = loadDaliTree(getPackageSetPath(xpath, id));
         if (!ret)
         {
-            ret.setown(createPTree("QuerySet", false));
+            ret.setown(createPTree("QuerySet"));
             ret->setProp("@id", id);
         }
         return ret.getClear();
@@ -238,7 +238,7 @@ public:
         Owned<IPropertyTree> ret = loadDaliTree(xpath);
         if (!ret)
         {
-            ret.setown(createPTree("RoxieStates", false));
+            ret.setown(createPTree("RoxieStates"));
             ret->setProp("@id", id);
         }
         return ret.getClear();

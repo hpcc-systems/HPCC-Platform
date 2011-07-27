@@ -206,7 +206,7 @@ public:
     {
         Owned<IPropertyTree> qmonprops = serverConfig->getPropTree("ThorQMon");
         if (!qmonprops)
-            qmonprops.setown(createPTree("ThorQMon",false));
+            qmonprops.setown(createPTree("ThorQMon"));
         unsigned interval = qmonprops->getPropInt("@interval",DEFAULT_QMONITOR_INTERVAL); // probably always 1
         unsigned autoswitch = qmonprops->getPropInt("@switchMinTime",0);
         if (!interval)

@@ -188,13 +188,13 @@ public:
         StringBuffer path("Patch[@name=\"");
         path.append(scopedName.str()).append("\"]");
         IPropertyTree *patch = fileProps.queryPropTree(path.str());
-        if (!patch) patch = fileProps.addPropTree("Patch", createPTree(false));
+        if (!patch) patch = fileProps.addPropTree("Patch", createPTree());
         patch->setProp("@name", scopedName.str());
         unsigned checkSum;
         if (patchFile->getFileCheckSum(checkSum))
             patch->setPropInt64("@checkSum", checkSum);
 
-        IPropertyTree *index = patch->setPropTree("Index", createPTree(false));
+        IPropertyTree *index = patch->setPropTree("Index", createPTree());
         index->setProp("@name", originalIndexFile->queryLogicalName());
         if (originalIndexFile->getFileCheckSum(checkSum))
             index->setPropInt64("@checkSum", checkSum);

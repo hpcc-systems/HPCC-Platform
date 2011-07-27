@@ -865,7 +865,7 @@ public:
     virtual IPropertyTree* cloneQueryXGMML() const
     {
         assertex(dll->queryWorkUnit());
-        Owned<IPropertyTree> tree = createPTree("Query", false);
+        Owned<IPropertyTree> tree = createPTree("Query");
         Owned<IConstWUGraphIterator> graphs = &dll->queryWorkUnit()->getGraphs(GraphTypeActivities);
         SCMStringBuffer graphNameStr;
         ForEach(*graphs)
@@ -873,9 +873,9 @@ public:
             graphs->query().getName(graphNameStr);
             const char *graphName = graphNameStr.s.str();
             Owned<IPropertyTree> graphXgmml = graphs->query().getXGMMLTree(false);
-            IPropertyTree *newGraph = createPTree(false);
+            IPropertyTree *newGraph = createPTree();
             newGraph->setProp("@id", graphName);
-            IPropertyTree *newXGMML = createPTree(false);
+            IPropertyTree *newXGMML = createPTree();
             newXGMML->addPropTree("graph", graphXgmml.getLink());
             newGraph->addPropTree("xgmml", newXGMML);
             tree->addPropTree("Graph", newGraph);
@@ -1161,7 +1161,7 @@ public:
             CriticalBlock b(onceCrit);
             if (!onceContext)
             {
-                onceContext.setown(createPTree(false));
+                onceContext.setown(createPTree());
                 onceResultStore.setown(createDeserializedResultStore());
                 Owned <IRoxieServerContext> ctx = createOnceServerContext(this, _logctx);
                 onceManager.set(&ctx->queryRowManager());

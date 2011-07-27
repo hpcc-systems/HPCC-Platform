@@ -439,7 +439,7 @@ static IPropertyTree *getWorkUnitBranch(ICodeContext *ctx,const char *wuid,const
             if (cmd->numIds()) {
                 StringBuffer res;
                 if (cmd->getResult(0,res)) 
-                    return createPTreeFromXMLString(res.str(),false);
+                    return createPTreeFromXMLString(res.str());
             }
             if (i+1>=sashaeps.ordinality()) 
                 break;

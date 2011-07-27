@@ -208,7 +208,7 @@ void expandRange(IPropertyTree* pComputers)
 
         for(unsigned i = 0 ; i < ipList.ordinality(); i++)
         {
-          IPropertyTree* pElem = pComputers->addPropTree(XML_TAG_COMPUTER,createPTree(false));
+          IPropertyTree* pElem = pComputers->addPropTree(XML_TAG_COMPUTER,createPTree());
           pElem->addProp(XML_ATTR_NETADDRESS,ipList.item(i));
         }
 
@@ -382,12 +382,12 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
     Owned<IPropertyTree> pEnvRoot = getEnvTree(context, &req.getReqInfo());
     IPropertyTree* pEnvSoftware = pEnvRoot->queryPropTree(XML_TAG_SOFTWARE);
 
-    Owned<IPropertyTree> pDeploy = createPTree("Deploy", false);
-    IPropertyTree* pComponents = pDeploy->addPropTree("Components", createPTree(false));
+    Owned<IPropertyTree> pDeploy = createPTree("Deploy");
+    IPropertyTree* pComponents = pDeploy->addPropTree("Components", createPTree());
 
     if (pEnvSoftware)
     {
-      Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>", false);
+      Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>");
       IPropertyTree* pSoftwareFolder = pSrcTree->queryPropTree("Folder[@name='Environment']/Folder[@name='Software']");
 
       if (pSoftwareFolder)
@@ -508,12 +508,12 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
       </SelectedComponents>
       </Deploy>
       */
-      Owned<IPropertyTree> pDeploy = createPTree("Deploy", false);
-      IPropertyTree* pComponents = pDeploy->addPropTree("Components", createPTree(false));
+      Owned<IPropertyTree> pDeploy = createPTree("Deploy");
+      IPropertyTree* pComponents = pDeploy->addPropTree("Components", createPTree());
 
       if (xmlArg && *xmlArg)
       {
-        Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString( xmlArg, false);
+        Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString( xmlArg);
         IPropertyTree* pComputersFolder = pSrcTree->queryPropTree("Folder[@name='Environment']/Folder[@name='Hardware']/Folder[@name='Computers']");
 
         if (pComputersFolder)
@@ -557,7 +557,7 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
           if (m_bCloud)
           {
             StringBuffer sbMsg;
-            Owned<IPropertyTree> pComputers = createPTreeFromXMLString(xmlArg, false);
+            Owned<IPropertyTree> pComputers = createPTreeFromXMLString(xmlArg);
             
             CCloudActionHandler lockCloud(this, CLOUD_LOCK_ENV, CLOUD_UNLOCK_ENV, sbName.str(), "8015", pComputers);
             bool ret = lockCloud.start(sbMsg);
@@ -595,7 +595,7 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
           StringBuffer sbxml;
           if (m_pFileIO.get())
           {
-            Owned <IPropertyTree> pTree = createPTree(*m_pFileIO, false);
+            Owned <IPropertyTree> pTree = createPTree(*m_pFileIO);
             toXML(pTree, sbxml);
           }
           else
@@ -692,7 +692,7 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
 
         if (!stricmp(m_userWithLock.str(), sbUser.str()) && !stricmp(sbUserIp.str(), m_userIp.str()))
         {
-          Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>", false);
+          Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>");
           IPropertyTree* pSaveEnv = pSrcTree->queryPropTree("SaveEnv[@flag='true']");
 
           if (pSaveEnv)
@@ -807,7 +807,7 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
       sbUser.clear().append(req.getReqInfo().getUserId());
       context.getPeer(sbIp);
       const char* xmlArg = req.getXmlArgs();
-      Owned<IPropertyTree> pParamTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>", false);
+      Owned<IPropertyTree> pParamTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>");
       const char* envSaveAs = pParamTree->queryProp("@envSaveAs");
       if (envSaveAs && *envSaveAs)
       {
@@ -926,7 +926,7 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
   IPropertyTree* pEnvSoftware = pEnvRoot->queryPropTree(XML_TAG_SOFTWARE);
   IPropertyTree* pEnvHardware = pEnvRoot->queryPropTree(XML_TAG_HARDWARE);
 
-  Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>", false);
+  Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>");
   IPropertyTree* pSoftwareFolder = pSrcTree->queryPropTree("Setting[@category='Software']");
   IPropertyTree* pTopologyFolder = pSrcTree->queryPropTree("Setting[@category='Topology']");
   IPropertyTree* pHardwareFolder = pSrcTree->queryPropTree("Setting[@category='Hardware']");
@@ -1093,7 +1093,7 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
                   pBuildSet = &buildSetIter->query();
                 else if (!strcmp(pszCompType, "Directories"))
                 {      
-                  pBuildSet = createPTree(XML_TAG_BUILDSET, false);
+                  pBuildSet = createPTree(XML_TAG_BUILDSET);
                   pBuildSet->addProp(XML_ATTR_NAME, pszCompName);
                   pBuildSet->addProp(XML_ATTR_SCHEMA, "directories.xsd");
                   pBuildSet->addProp(XML_ATTR_PROCESS_NAME, "Directories");
@@ -1144,13 +1144,13 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
                   if (pElem)
                     pComp = pTmpComp->addPropTree(pszSubType, createPTree(pElem));
                   else
-                    pComp = pTmpComp->addPropTree(pszSubType, createPTree(false));
+                    pComp = pTmpComp->addPropTree(pszSubType, createPTree());
 
                   break;
                 }
 
                 if (!pComp)
-                  pComp = pTmpComp->addPropTree(pszSubType, createPTree(false));
+                  pComp = pTmpComp->addPropTree(pszSubType, createPTree());
 
                 if (pComp && !strcmp(pszAttrName, "name"))
                   pComp->setProp(XML_ATTR_NAME, pszNewValue);
@@ -1827,7 +1827,7 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
           StringBuffer sb, sbMsg;
           {
             sb.clear().appendf("<Computers><Computer netAddress='%s'/></Computers>", pszNewValue);
-            Owned<IPropertyTree> pComputer = createPTreeFromXMLString(sb.str(), false);
+            Owned<IPropertyTree> pComputer = createPTreeFromXMLString(sb.str());
             CCloudActionHandler lockCloud(this, CLOUD_LOCK_ENV, CLOUD_NONE, m_userWithLock.str(), "8015", pComputer);
             bool ret = lockCloud.start(sbMsg.clear());
             if (!ret || sbMsg.length())
@@ -1837,7 +1837,7 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
           if (pszOldValue && *pszOldValue)
           {
             sb.clear().appendf("<Computers><Computer netAddress='%s'/></Computers>", pszOldValue);
-            Owned<IPropertyTree> pComputer = createPTreeFromXMLString(sb.str(), false);
+            Owned<IPropertyTree> pComputer = createPTreeFromXMLString(sb.str());
             CCloudActionHandler unlockCloud(this, CLOUD_UNLOCK_ENV, CLOUD_NONE, m_userWithLock.str(), "8015", pComputer);
             bool ret = unlockCloud.start(sbMsg.clear());
             if (!ret || sbMsg.length())
@@ -1845,7 +1845,7 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
               //Unlock the new node.
               {
                 sb.clear().appendf("<Computers><Computer netAddress='%s'/></Computers>", pszNewValue);
-                Owned<IPropertyTree> pComputer = createPTreeFromXMLString(sb.str(), false);
+                Owned<IPropertyTree> pComputer = createPTreeFromXMLString(sb.str());
                 CCloudActionHandler unlockPrevCloud(this, CLOUD_UNLOCK_ENV, CLOUD_NONE, m_userWithLock.str(), "8015", pComputer);
                 ret = unlockPrevCloud.start(sbMsg.clear());
               }
@@ -2332,7 +2332,7 @@ bool CWsDeployFileInfo::rollbackEnvironmentForCloud(IEspContext &context, IEspRo
                 Owned<IFileIO> pFileIO = pFile->open(IFOreadwrite);
                 StringBuffer sbxml;
                 {
-                    Owned <IPropertyTree> pTree = createPTree(*pFileIO, false);
+                    Owned <IPropertyTree> pTree = createPTree(*pFileIO);
                     toXML(pTree, sbxml);
                     setEnvironment(context, &req.getReqInfo(), sbxml, "RollbackEnvironmentForCloud", sbBackup);
                 }
@@ -2734,7 +2734,7 @@ bool CWsDeployFileInfo::getEnvironment(IEspContext &context, IEspGetEnvironmentR
   StringBuffer sb;
   if (m_pFileIO.get())
   {
-    Owned <IPropertyTree> pTree = createPTree(*m_pFileIO, false);
+    Owned <IPropertyTree> pTree = createPTree(*m_pFileIO);
     toXML(pTree, sb);
     resp.setEnvXml(sb.str());
   }
@@ -2783,7 +2783,7 @@ void CWsDeployFileInfo::setEnvironment(IEspContext &context, IConstWsDeployReqIn
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
     Owned<IConstEnvironment>    constEnv = factory->loadLocalEnvironment(pszEnv);
 
-    Owned<IPropertyTree> pEnvRoot = createPTreeFromXMLString(pszEnv, false);
+    Owned<IPropertyTree> pEnvRoot = createPTreeFromXMLString(pszEnv);
     Owned<IPropertyTreeIterator> dalis = pEnvRoot->getElements("Software/DaliServerProcess/Instance");
 
     if (validate)
@@ -2897,8 +2897,8 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
   StringBuffer sbDefn, sbViewChildNodes, sbMultiRowNodes;
 
   Owned<IPropertyTree> pEnvRoot = getEnvTree(context, &req.getReqInfo());
-  Owned<IPropertyTree> pSettings = createPTree("Settings", false);
-  Owned<IPropertyTree> pParamTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>", false);
+  Owned<IPropertyTree> pSettings = createPTree("Settings");
+  Owned<IPropertyTree> pParamTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>");
   IPropertyTree* pSoftwareFolder = pParamTree->queryPropTree("Component[@parent='Software']");
   IPropertyTree* pBuildFolder = pParamTree->queryPropTree("Component[@name='Programs']");
   IPropertyTree* pHardwareFolder = pParamTree->queryPropTree("Component[@name='Hardware']");
@@ -2939,7 +2939,7 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
         pBuildSet = &buildSetIter->query();
       else if (!strcmp(pszCompName, "Directories"))
       {      
-        pBuildSet = createPTree(XML_TAG_BUILDSET, false);
+        pBuildSet = createPTree(XML_TAG_BUILDSET);
         pBuildSet->addProp(XML_ATTR_NAME, pszCompName);
         pBuildSet->addProp(XML_ATTR_SCHEMA, "directories.xsd");
         pBuildSet->addProp(XML_ATTR_PROCESS_NAME, "Directories");
@@ -2970,7 +2970,7 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
       xml.replaceString("\\","\\\\");
 
       //add any missing parameters
-      Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xml, false);
+      Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xml);
       Owned<IPropertyTree> pNewCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName, true);
 
       if (pNewCompTree)
@@ -3056,7 +3056,7 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
 
       if (!strcmp(pszCompType, "Directories"))
       {
-        Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xml, false);
+        Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xml);
         Owned<IPropertyTreeIterator> iterCats = pSrcTree->getElements("Category");
 
         ForEach (*iterCats)
@@ -3073,7 +3073,7 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
           {
             IPropertyTree* pOver = pCat->queryPropTree("Override[1]");
             if (!pOver)
-              pOver = pCat->addPropTree("Override", createPTree(false));
+              pOver = pCat->addPropTree("Override", createPTree());
             if (!pOver->queryProp("@component"))
               pOver->addProp("@component", "");
             if (!pOver->queryProp("@dir"))
@@ -3088,7 +3088,7 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
       }
       else if (!strcmp(pszCompType, XML_TAG_THORCLUSTER))
       {
-        Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xml, false);
+        Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xml);
         xpath.clear().append("Topology/Node");
         Owned<IPropertyTreeIterator> iterMNodes = pSrcTree->getElements(xpath.str());
 
@@ -3175,7 +3175,7 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
       }
       else if (!strcmp(pszCompType, "RoxieCluster"))
       {
-        Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xml, false);
+        Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xml);
         pNewCompTree.setown(generateTreeFromXsd(pEnvRoot, pSchema, processName));
 
         if (!strcmp(pszCompType, "RoxieCluster"))
@@ -3258,7 +3258,7 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
       }
       else if (!strcmp(pszCompType, XML_TAG_ESPPROCESS))
       {
-        Owned<IPropertyTree> pTree = createPTreeFromXMLString(xml, false);
+        Owned<IPropertyTree> pTree = createPTreeFromXMLString(xml);
         
         Owned<IPropertyTreeIterator> iterBindings = pTree->getElements(XML_TAG_ESPBINDING);
         ForEach (*iterBindings)
@@ -3275,7 +3275,7 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
 
           if (!flag)
           {
-            IPropertyTree* pAuthFeature = pBinding->addPropTree( "AuthenticateFeature", createPTree(false) );
+            IPropertyTree* pAuthFeature = pBinding->addPropTree( "AuthenticateFeature", createPTree() );
             pAuthFeature->addProp("@authenticate", "");
             pAuthFeature->addProp("@description", "");
             pAuthFeature->addProp("@path", "");
@@ -3293,7 +3293,7 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
 
           if (!flag)
           {
-            IPropertyTree* pAuth = pBinding->addPropTree( "Authenticate", createPTree(false) );
+            IPropertyTree* pAuth = pBinding->addPropTree( "Authenticate", createPTree() );
             pAuth->addProp("@access", "");
             pAuth->addProp("@description", "");
             pAuth->addProp("@method", "");
@@ -3325,13 +3325,13 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
           }
           
           if (!pInst->hasProp("CSR"))
-            pInst->addPropTree("CSR", createPTree(false));
+            pInst->addPropTree("CSR", createPTree());
 
           if (!pInst->hasProp("Certificate"))
-            pInst->addPropTree("Certificate", createPTree(false));
+            pInst->addPropTree("Certificate", createPTree());
 
           if (!pInst->hasProp("PrivateKey"))
-            pInst->addPropTree("PrivateKey", createPTree(false));
+            pInst->addPropTree("PrivateKey", createPTree());
         }
       
         xml.clear();
@@ -3358,7 +3358,7 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
     generateHardwareHeaders(pEnvRoot, sbDefn);
     resp.setCompDefn(sbDefn.str());
     StringBuffer sb;
-    Owned<IPropertyTree> multiRowNodes = createPTree("multiRowNodes", false);
+    Owned<IPropertyTree> multiRowNodes = createPTree("multiRowNodes");
     multiRowNodes->addProp("Node", "ComputerType");
     multiRowNodes->addProp("Node", "Domain");
     multiRowNodes->addProp("Node", "Computer");
@@ -3371,9 +3371,9 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
     xml.replaceString("switch=","Switch=");
 
     //add any missing parameters
-    Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xml, false);
+    Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xml);
     StringBuffer sbTemp;
-    Owned<IPropertyTree> pNewCompTree = createPTree(XML_TAG_HARDWARE, false);
+    Owned<IPropertyTree> pNewCompTree = createPTree(XML_TAG_HARDWARE);
     generateHardwareHeaders(pEnvRoot, sbTemp, false, pNewCompTree);
     const char* pElemNames[] = {XML_TAG_COMPUTER};
     bool modified = false;
@@ -3459,7 +3459,7 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
         StringBuffer fileName;
         connectBuildSet(b, bs, fileName, m_Environment);
         fileName.append(bs->queryProp("@installSet"));
-        pParentNode = createPTreeFromXMLFile(fileName.str(), false);
+        pParentNode = createPTreeFromXMLFile(fileName.str());
         pFiles = pParentNode->queryPropTree("File");
       }
 
@@ -3534,7 +3534,7 @@ bool CWsDeployFileInfo::getDeployableComps(IEspContext &context, IEspGetDeployab
   synchronized block(m_mutex);
   Owned<IPropertyTree> pEnvRoot = getEnvTree(context, &req.getReqInfo());
   Owned<IPropertyTreeIterator> iter = pEnvRoot->getElements("Software/*");
-  Owned<IPropertyTree> pDeploy = createPTree("Deploy", false);
+  Owned<IPropertyTree> pDeploy = createPTree("Deploy");
 
   ForEach(*iter)
   {
@@ -3557,7 +3557,7 @@ bool CWsDeployFileInfo::getDeployableComps(IEspContext &context, IEspGetDeployab
 
       if (name && *name && build && *build && bDeployable)
       {
-        IPropertyTree* pCompNode = pDeploy->addPropTree( XML_TAG_COMPONENT, createPTree(false) );
+        IPropertyTree* pCompNode = pDeploy->addPropTree( XML_TAG_COMPONENT, createPTree() );
         pCompNode->addProp(XML_ATTR_NAME, name);
         pCompNode->addProp(XML_ATTR_BUILD,  build); 
         pCompNode->addProp(XML_ATTR_BUILDSET, type);
@@ -3578,7 +3578,7 @@ bool CWsDeployFileInfo::getDeployableComps(IEspContext &context, IEspGetDeployab
               {
                 if (*nodeName != 'R')// || //neither RoxieServerProcess nor RoxieSlaveProcess
                 {
-                  IPropertyTree* pInstanceNode = pCompNode->addPropTree(XML_TAG_INSTANCES, createPTree(false));
+                  IPropertyTree* pInstanceNode = pCompNode->addPropTree(XML_TAG_INSTANCES, createPTree());
                   const char* directory = pNode->queryProp(*nodeName == 'R' ? XML_ATTR_DATADIRECTORY : XML_ATTR_DIRECTORY);
                   if (directory && *directory)
                     pInstanceNode->addProp(XML_ATTR_BUILD, directory);
@@ -3647,8 +3647,8 @@ bool CWsDeployFileInfo::getBuildSetInfo(IEspContext &context, IEspGetBuildSetInf
   const char* xmlArg = req.getXmlArgs();
   Owned<IPropertyTree> pEnvRoot = getEnvTree(context, &req.getReqInfo());
 
-  Owned<IPropertyTree> pSettings = createPTree("Settings", false);
-  Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>", false);
+  Owned<IPropertyTree> pSettings = createPTree("Settings");
+  Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>");
   IPropertyTree* pBuildSet = pSrcTree->queryPropTree(XML_TAG_BUILDSET);
 
   if (pBuildSet)
@@ -3687,7 +3687,7 @@ bool CWsDeployFileInfo::getBuildSetInfo(IEspContext &context, IEspGetBuildSetInf
         connectBuildSet(b, bs, fileName, m_Environment);
         fileName.append(bs->queryProp("@installSet"));
 
-        pParentNode = createPTreeFromXMLFile(fileName.str(), false);
+        pParentNode = createPTreeFromXMLFile(fileName.str());
         pFiles = pParentNode->queryPropTree("File");
       }
 
@@ -3707,8 +3707,8 @@ bool CWsDeployFileInfo::importBuild(IEspContext &context, IEspImportBuildRequest
   checkForRefresh(context, &req.getReqInfo(), true);
 
   const char* xmlArg = req.getBuildSets();
-  IPropertyTree* buildSets = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<BuildSets/>", false);
-  IPropertyTree* buildNode = createPTree(XML_TAG_BUILD, false);
+  IPropertyTree* buildSets = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<BuildSets/>");
+  IPropertyTree* buildNode = createPTree(XML_TAG_BUILD);
   const char* buildName = buildSets->queryProp(XML_ATTR_NAME);
   const char* buildUrl = buildSets->queryProp("@path");
   buildNode->setProp(XML_ATTR_NAME, buildName);
@@ -3722,7 +3722,7 @@ bool CWsDeployFileInfo::importBuild(IEspContext &context, IEspImportBuildRequest
     const char* bsName = pBuildSet->queryProp(XML_ATTR_NAME);
     const char* bsPath = pBuildSet->queryProp("@path");
 
-    IPropertyTree* pBuildsetNode = createPTree(false);
+    IPropertyTree* pBuildsetNode = createPTree();
     pBuildsetNode->addProp(XML_ATTR_NAME, bsName);
     pBuildsetNode->addProp(XML_ATTR_PATH, bsPath);
     pBuildsetNode->addProp(XML_ATTR_INSTALLSET, "deploy_map.xml");
@@ -3757,7 +3757,7 @@ bool CWsDeployFileInfo::importBuild(IEspContext &context, IEspImportBuildRequest
   IPropertyTree* pEnvPrograms = pEnvRoot->queryPropTree(XML_TAG_PROGRAMS);
 
   if (!pEnvPrograms)
-    pEnvPrograms = pEnvRoot->addPropTree(XML_TAG_PROGRAMS, createPTree(false) );
+    pEnvPrograms = pEnvRoot->addPropTree(XML_TAG_PROGRAMS, createPTree() );
 
   pEnvPrograms->addPropTree(XML_TAG_BUILD, buildNode);
   resp.setStatus("true");
@@ -3785,7 +3785,7 @@ bool CWsDeployFileInfo::getBuildServerDirs(IEspContext &context, IEspGetBuildSer
   if (!strcmp(cmd, "SubDirs"))
   {
     Owned<IFile> inFiles = NULL;
-    IPropertyTree* pParentNode = createPTree("BuildServerDirs", false);
+    IPropertyTree* pParentNode = createPTree("BuildServerDirs");
 
     try
     {
@@ -3821,7 +3821,7 @@ bool CWsDeployFileInfo::getBuildServerDirs(IEspContext &context, IEspGetBuildSer
       {
         StringBuffer sb;
         de->modifiedTime.getString(sb);
-        IPropertyTree* pCompNode = pParentNode->addPropTree( "Directory", createPTree(false) );
+        IPropertyTree* pCompNode = pParentNode->addPropTree( "Directory", createPTree() );
         pCompNode->addProp(XML_ATTR_NAME, de->name.get());
         pCompNode->addProp("@modified", sb.str());  
       }
@@ -3835,7 +3835,7 @@ bool CWsDeployFileInfo::getBuildServerDirs(IEspContext &context, IEspGetBuildSer
   else 
   {
     Owned<IFile> inFiles = NULL;
-    IPropertyTree* pParentNode = createPTree("BuildServerComps", false);
+    IPropertyTree* pParentNode = createPTree("BuildServerComps");
 
     if (!strcmp(cmd, "Release"))
       sourceDir.append(PATHSEPCHAR).append("release");
@@ -3893,7 +3893,7 @@ bool CWsDeployFileInfo::getBuildServerDirs(IEspContext &context, IEspGetBuildSer
             Owned<IFile> depfile(createIFile(fileName));
             if(depfile->exists())
             {
-              IPropertyTree* pCompNode = pParentNode->addPropTree("Comp", createPTree(false) );
+              IPropertyTree* pCompNode = pParentNode->addPropTree("Comp", createPTree() );
               pCompNode->addProp(XML_ATTR_NAME, compName.str());
               pCompNode->addProp("@path", sbPath.str());
             }
@@ -3918,7 +3918,7 @@ bool CWsDeployFileInfo::handleComponent(IEspContext &context, IEspHandleComponen
   checkForRefresh(context, &req.getReqInfo(), true);
 
   const char* xmlArg = req.getXmlArgs();
-  Owned<IPropertyTree> pComponents = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<Components/>", false);
+  Owned<IPropertyTree> pComponents = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<Components/>");
 
   const char* operation = req.getOperation();
   StringBuffer sbNewName;
@@ -3998,7 +3998,7 @@ bool CWsDeployFileInfo::handleInstance(IEspContext &context, IEspHandleInstanceR
 
   const char* operation = req.getOperation();
   const char* xmlArg = req.getXmlArgs();
-  Owned<IPropertyTree> instances = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<Instances/>", false);
+  Owned<IPropertyTree> instances = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<Instances/>");
   const char* buildSet = instances->queryProp(XML_ATTR_BUILDSET);
   const char* compName = instances->queryProp("@compName");
   Owned<IPropertyTree> pEnvRoot = getEnvTree(context, &req.getReqInfo());
@@ -4032,7 +4032,7 @@ bool CWsDeployFileInfo::handleInstance(IEspContext &context, IEspHandleInstanceR
         continue;
       }
 
-      IPropertyTree* pNode = pCompTree->addPropTree(XML_TAG_INSTANCE, createPTree(false));
+      IPropertyTree* pNode = pCompTree->addPropTree(XML_TAG_INSTANCE, createPTree());
 
       if (pSchema)
       {
@@ -4151,7 +4151,7 @@ bool CWsDeployFileInfo::handleEspServiceBindings(IEspContext &context, IEspHandl
   checkForRefresh(context, &req.getReqInfo(), true);
 
   const char* xmlArg = req.getXmlArgs();
-  Owned<IPropertyTree> pBindings = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<EspServiceBindings/>", false);
+  Owned<IPropertyTree> pBindings = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<EspServiceBindings/>");
   const char* type = pBindings->queryProp(XML_ATTR_TYPE);
   const char* espName = pBindings->queryProp("@compName");
 
@@ -4345,7 +4345,7 @@ bool CWsDeployFileInfo::handleComputer(IEspContext &context, IEspHandleComputerR
   checkForRefresh(context, &req.getReqInfo(), true);
 
   const char* xmlArg = req.getXmlArgs();
-  Owned<IPropertyTree> pParams = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>", false);
+  Owned<IPropertyTree> pParams = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>");
   const char* type = pParams->queryProp(XML_ATTR_TYPE);
   const char* operation = req.getOperation();
   StringBuffer sbNewName;
@@ -4356,7 +4356,7 @@ bool CWsDeployFileInfo::handleComputer(IEspContext &context, IEspHandleComputerR
   if (!strcmp(operation, "New"))
   {
     StringBuffer sbTemp;
-    IPropertyTree* pCompTree = createPTree(XML_TAG_HARDWARE, false);
+    IPropertyTree* pCompTree = createPTree(XML_TAG_HARDWARE);
     generateHardwareHeaders(pEnvRoot, sbTemp, false, pCompTree);
 
     StringBuffer sbNewName(type);
@@ -4453,7 +4453,7 @@ bool CWsDeployFileInfo::handleComputer(IEspContext &context, IEspHandleComputerR
           sb.appendf("<Computer netAddress='%s'/>", pTree->queryProp(XML_ATTR_NETADDRESS));
         }
         sb.append("</Computers>");
-        Owned<IPropertyTree> pComputers = createPTreeFromXMLString(sb.str(), false);
+        Owned<IPropertyTree> pComputers = createPTreeFromXMLString(sb.str());
 
         CCloudActionHandler unlockCloud(this, CLOUD_UNLOCK_ENV, CLOUD_LOCK_ENV, m_userWithLock.str(), "8015", pComputers);
         bool ret = unlockCloud.start(sbMsg);
@@ -4483,7 +4483,7 @@ bool CWsDeployFileInfo::handleTopology(IEspContext &context, IEspHandleTopologyR
   checkForRefresh(context, &req.getReqInfo(), true);
 
   const char* xmlArg = req.getXmlArgs();
-  Owned<IPropertyTree> pParams = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>", false);
+  Owned<IPropertyTree> pParams = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>");
   const char* compType = pParams->queryProp("@compType");
   const char* name = pParams->queryProp(XML_ATTR_NAME);
   const char* newType = pParams->queryProp("@newType");
@@ -4550,7 +4550,7 @@ bool CWsDeployFileInfo::handleTopology(IEspContext &context, IEspHandleTopologyR
     else if (!strcmp(newType, "Roxie"))
       sbNewType.clear().append(XML_TAG_ROXIECLUSTER);
 
-    IPropertyTree* pNode = createPTree(sbNewType.str(), false);
+    IPropertyTree* pNode = createPTree(sbNewType.str());
 
     if (!strcmp(sbNewType.str(), XML_TAG_ECLCCSERVERPROCESS) || 
       !strcmp(sbNewType.str(), XML_TAG_ECLAGENTPROCESS) ||
@@ -4619,7 +4619,7 @@ bool CWsDeployFileInfo::handleRows(IEspContext &context, IEspHandleRowsRequest &
   checkForRefresh(context, &req.getReqInfo(), true);
 
   const char* xmlArg = req.getXmlArgs();
-  Owned<IPropertyTree> pParams = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>", false);
+  Owned<IPropertyTree> pParams = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>");
   const char* buildSet = pParams->queryProp(XML_ATTR_BUILDSET);
   const char* name = pParams->queryProp("@compName");
   const char* rowType = pParams->queryProp("@rowType");
@@ -4657,7 +4657,7 @@ bool CWsDeployFileInfo::handleRows(IEspContext &context, IEspHandleRowsRequest &
         IPropertyTree* pOver = pCat->queryPropTree("Override[@component=''][@dir=''][@instance='']");
         if (!pOver)
         {
-          pOver = pCat->addPropTree("Override", createPTree(false));
+          pOver = pCat->addPropTree("Override", createPTree());
           pOver->addProp("@component", "");
           pOver->addProp("@dir", "");
           pOver->addProp("@instance", "");
@@ -4985,7 +4985,7 @@ void CWsDeployFileInfo::addInstance(IPropertyTree* pDst,  const char* comp, cons
                               const char* compName, const char* build, const char* instType, 
                               const char* instName, const char* computer)
 {
-  IPropertyTree* pCompNode = pDst->addPropTree( XML_TAG_COMPONENT, createPTree(false) );
+  IPropertyTree* pCompNode = pDst->addPropTree( XML_TAG_COMPONENT, createPTree() );
   pCompNode->addProp("Type",                comp);
   pCompNode->addProp("DisplayType", displayType);   
   pCompNode->addProp("Name",                compName);
@@ -5341,9 +5341,9 @@ void CWsDeployFileInfo::unlockEnvironment(IEspContext* context, IConstWsDeployRe
   if (m_bCloud)
   {
     StringBuffer sbMsg;
-    Owned<IPropertyTree> pComputers = createPTreeFromXMLString(xmlArg, false);
-    Owned<IPropertyTree> unlockComputers = createPTree("ComputerList", false);
-    Owned<IPropertyTree> lockComputers = createPTree("ComputerList", false);
+    Owned<IPropertyTree> pComputers = createPTreeFromXMLString(xmlArg);
+    Owned<IPropertyTree> unlockComputers = createPTree("ComputerList");
+    Owned<IPropertyTree> lockComputers = createPTree("ComputerList");
     Owned<IPropertyTreeIterator> iter;
     StringBuffer xpath;
     if (pComputers && pComputers->numChildren() && m_lockedNodesBeforeEnv.get() != NULL)
@@ -5697,7 +5697,7 @@ void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite)
   {
     fileExists = false;
     StringBuffer s("<?xml version=\"1.0\" encoding=\"UTF-8\"?><Environment></Environment>");
-    Owned<IPropertyTree> pNewTree = createPTreeFromXMLString(s, false);
+    Owned<IPropertyTree> pNewTree = createPTreeFromXMLString(s);
 
     xpath.clear().appendf("Software/EspProcess/EspService[@name='%s']/LocalConfFile", m_pService->getName());
     const char* pConfFile = m_pService->getCfg()->queryProp(xpath.str());
@@ -5718,7 +5718,7 @@ void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite)
 
         try
         {
-          Owned<IPropertyTree> pDefBldSet = createPTreeFromXMLFile(bldSetFile, false);
+          Owned<IPropertyTree> pDefBldSet = createPTreeFromXMLFile(bldSetFile);
           pNewTree->addPropTree(XML_TAG_PROGRAMS, createPTree(pDefBldSet->queryPropTree("./Programs")));
           pNewTree->addPropTree(XML_TAG_SOFTWARE, createPTree(pDefBldSet->queryPropTree("./Software")));
         }
@@ -5731,13 +5731,13 @@ void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite)
 
     if(!pNewTree->queryPropTree(XML_TAG_SOFTWARE))
     {
-      pNewTree->addPropTree(XML_TAG_SOFTWARE, createPTree(false));
-      pNewTree->addPropTree("./Software/Directories", createPTreeFromXMLString(DEFAULT_DIRECTORIES, false));
+      pNewTree->addPropTree(XML_TAG_SOFTWARE, createPTree());
+      pNewTree->addPropTree("./Software/Directories", createPTreeFromXMLString(DEFAULT_DIRECTORIES));
     }
-    pNewTree->addPropTree(XML_TAG_HARDWARE, createPTree(false));
+    pNewTree->addPropTree(XML_TAG_HARDWARE, createPTree());
 
     if (!pNewTree->queryPropTree(XML_TAG_PROGRAMS))
-      pNewTree->addPropTree(XML_TAG_PROGRAMS, createPTree(false));
+      pNewTree->addPropTree(XML_TAG_PROGRAMS, createPTree());
 
     toXML(pNewTree, s.clear());
     sbxml.clear().append(s);
@@ -5777,7 +5777,7 @@ void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite)
     m_pFileIO.setown(m_pFile->open(IFOreadwrite));
   
     {
-      Owned <IPropertyTree> pTree = createPTree(*m_pFileIO, false);
+      Owned <IPropertyTree> pTree = createPTree(*m_pFileIO);
       toXML(pTree, sbxml.clear());
     }
   }
@@ -5792,7 +5792,7 @@ void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite)
 
   if (!pSettings)
   {
-    pSettings = pEnvRoot->addPropTree(XML_TAG_ENVSETTINGS, createPTree(false));
+    pSettings = pEnvRoot->addPropTree(XML_TAG_ENVSETTINGS, createPTree());
     modified = true;
   }
 
@@ -5841,7 +5841,7 @@ void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite)
     if (fileExists)
     {
       sbxml.clear();
-      Owned <IPropertyTree> pTree = createPTree(*m_pFileIO, false);
+      Owned <IPropertyTree> pTree = createPTree(*m_pFileIO);
       toXML(pTree, sbxml);
     }
 
@@ -6093,7 +6093,7 @@ bool CWsDeployExCE::onGetValue(IEspContext &context, IEspGetValueRequest &req, I
             sb.append(PATHSEPCHAR).append(it->getName(name.clear()));
             try
             {
-              Owned<IPropertyTree> pTree = createPTreeFromXMLFile(sb.str(), false);
+              Owned<IPropertyTree> pTree = createPTreeFromXMLFile(sb.str());
 
               if (pTree && pTree->queryName() && !strcmp(XML_TAG_ENVIRONMENT, pTree->queryName()))
                 sbMultiple.append(it->getName(name.clear())).append(";");

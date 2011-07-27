@@ -238,7 +238,7 @@ int main( int argc, char *argv[]  )
 
     if (globals) globals->Release();
     { Owned<IFile> ifile = createIFile("thor.xml");
-        globals = ifile->exists() ? createPTreeFromXMLFile("thor.xml", true) : createPTree("Thor", true);
+        globals = ifile->exists() ? createPTreeFromXMLFile("thor.xml", ipt_caseInsensitive) : createPTree("Thor", ipt_caseInsensitive);
     }
     unsigned multiThorMemoryThreshold = 0;
     try {

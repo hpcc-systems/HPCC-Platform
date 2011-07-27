@@ -1223,7 +1223,7 @@ int EsdlTransformer::process(IEspContext &ctx, EsdlProcessMode mode, const char 
                 EsdlRequest *rootreq = dynamic_cast<EsdlRequest *>(*root);
                 if (rootreq)
                 {
-                    Owned<IPropertyTree> req=createPTreeFromXMLString(out.str(), false);
+                    Owned<IPropertyTree> req=createPTreeFromXMLString(out.str());
                     rootreq->addDefaults(req);
                     toXML(req.get(), out.clear());
                 }
@@ -1361,7 +1361,7 @@ void EsdlTransformer::ptreeLoadInclude(const char *srcfile)
         StringBuffer FileName("esdl_files/");
         FileName.append(srcfile).append(".xml");
 
-        IPropertyTree *src = createPTreeFromXMLFile(FileName.str(), false);
+        IPropertyTree *src = createPTreeFromXMLFile(FileName.str());
         if (!src)
         {
             StringBuffer msg("EsdlInclude file not found - ");
@@ -1408,7 +1408,7 @@ void EsdlTransformer::loadFromFile(const char *file, StringArray *types)
 
 void EsdlTransformer::loadFromFiles(StringArray &files, StringArray *types)
 {
-    Owned<IPropertyTree> esdlxml = createPTree(false);
+    Owned<IPropertyTree> esdlxml = createPTree();
     ForEachItemIn(idx, files)
         ptreeLoadInclude(files.item(idx));
     load(types);
@@ -1418,7 +1418,7 @@ void EsdlTransformer::loadFromString(const char *xml)
 {
     DBGLOG("ESDL Loading from xml string");
 
-    IPropertyTree *src = createPTreeFromXMLString(xml, false);
+    IPropertyTree *src = createPTreeFromXMLString(xml);
 
     if (!src)
         throw MakeStringException(-1, "ESDL Initialization Error loading xml string: %s", xml);

@@ -51,6 +51,8 @@ typedef MapStringTo<IInterfacePtr, IInterfacePtr, MappingStringToOwned> MapStrin
 
 class jlib_decl ChildMap : public SuperHashTableOf<IPropertyTree, constcharptr>
 {
+protected:
+    bool nocase;
 public: 
     IMPLEMENT_SUPERHASHTABLEOF_REF_FIND(IPropertyTree, constcharptr);
 
@@ -61,33 +63,27 @@ public:
     { 
         kill(); 
     }
-
-//
+    virtual IPropertyTreeIterator *getIterator(bool sort);
     virtual bool set(const char *key, IPropertyTree *tree)
     {
         return SuperHashTableOf<IPropertyTree, constcharptr>::replace(* tree);
     }
-
     virtual bool replace(const char *key, IPropertyTree *tree) // provides different semantics, used if element being replaced is not to be treated as deleted.
     {
         return SuperHashTableOf<IPropertyTree, constcharptr>::replace(* tree);
     }
-
     virtual IPropertyTree *query(const char *key)
     {
         return find(*key);
     }
-
     virtual bool remove(const char *key)
     {
         return SuperHashTableOf<IPropertyTree, constcharptr>::remove(key);
     }
-
     virtual bool removeExact(IPropertyTree *child)
     {
         return SuperHashTableOf<IPropertyTree, constcharptr>::removeExact(child);
     }
-
 public:
 // SuperHashTable definitions
     virtual void onAdd(void *) {}
@@ -97,7 +93,6 @@ public:
         IPropertyTree &elem= *(IPropertyTree *)e;       
         elem.Release();
     }
-
     virtual unsigned getHashFromElement(const void *e) const;
     virtual unsigned getHashFromFindParam(const void *fp) const
     {
@@ -107,13 +102,11 @@ public:
         else
             return hashc((const unsigned char *)name, (size32_t)strlen(name), 0);
     }
-
     virtual const void *getFindParam(const void *e) const
     {
         const IPropertyTree &elem=*(const IPropertyTree *)e;
         return (void *)elem.queryName();
     }
-
     virtual bool matchesFindParam(const void *e, const void *fp, unsigned fphash) const
     {
         if (nocase)
@@ -121,8 +114,6 @@ public:
         else
             return (0 == strcmp(((IPropertyTree *)e)->queryName(), (const char *)fp));
     }
-private:
-    bool nocase;
 };
 
 
@@ -397,7 +388,6 @@ protected:
     virtual IPropertyTree *create(const char *name=NULL, bool nocase=false, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false) = 0;
     virtual IPropertyTree *create(MemoryBuffer &mb) = 0;
     virtual IPropertyTree *ownPTree(IPropertyTree *tree);
-
     aindex_t getChildMatchPos(const char *xpath);
 
 private:
@@ -425,12 +415,10 @@ public:
         : PTree(name, nocase, value, children) { }
 
     virtual bool isEquivalent(IPropertyTree *tree) { return (NULL != QUERYINTERFACE(tree, LocalPTree)); }
-    
     virtual IPropertyTree *create(const char *name=NULL, bool nocase=false, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false)
     {
         return new LocalPTree(name, nocase, value, children);
     }
-
     virtual IPropertyTree *create(MemoryBuffer &mb)
     {
         IPropertyTree *tree = new LocalPTree();
@@ -534,29 +522,29 @@ class CPTreeMaker : public CInterface, implements IPTreeMaker
 {
     IPropertyTree *root;
     ICopyArrayOf<IPropertyTree> ptreeStack;
-    bool caseInsensitive, rootProvided, noRoot;
+    bool rootProvided, noRoot;
     IPTreeNodeCreator *nodeCreator;
     class CDefaultNodeCreator : public CInterface, implements IPTreeNodeCreator
     {
-        bool caseInsensitive;
+        ipt_flags flags;
     public:
         IMPLEMENT_IINTERFACE;
 
-        CDefaultNodeCreator(bool _caseInsensitive) : caseInsensitive(_caseInsensitive) { }
+        CDefaultNodeCreator(ipt_flags _flags) : flags(_flags) { }
 
-        virtual IPropertyTree *create(const char *tag) { return createPTree(tag, caseInsensitive); }
+        virtual IPropertyTree *create(const char *tag) { return createPTree(tag, flags); }
     };
 protected:
     IPropertyTree *currentNode;
 public:
     IMPLEMENT_IINTERFACE;
 
-    CPTreeMaker(bool _caseInsensitive, IPTreeNodeCreator *_nodeCreator=NULL, IPropertyTree *_root=NULL, bool _noRoot=false) : caseInsensitive(_caseInsensitive), noRoot(_noRoot)
+    CPTreeMaker(ipt_flags flags=ipt_none, IPTreeNodeCreator *_nodeCreator=NULL, IPropertyTree *_root=NULL, bool _noRoot=false) : noRoot(_noRoot)
     {
         if (_nodeCreator)
             nodeCreator = LINK(_nodeCreator);
         else
-            nodeCreator = new CDefaultNodeCreator(caseInsensitive);
+            nodeCreator = new CDefaultNodeCreator(flags);
         if (_root)
         { 
             root = LINK(_root);

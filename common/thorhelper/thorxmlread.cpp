@@ -569,7 +569,7 @@ void XmlSetColumnProvider::readUtf8X(size32_t & len, char * & target, const char
 IDataVal & CXmlToRawTransformer::transform(IDataVal & result, size32_t len, const void * text, bool isDataSet)
 {
     // MORE - should redo using a pull parser sometime
-    Owned<IPropertyTree> root = createPTreeFromXMLString(len, (const char *)text, stripWhitespace);
+    Owned<IPropertyTree> root = createPTreeFromXMLString(len, (const char *)text, ipt_none, xmlReadFlags);
     return transformTree(result, *root, isDataSet);
 }
 
@@ -600,7 +600,7 @@ IDataVal & CXmlToRawTransformer::transformTree(IDataVal & result, IPropertyTree 
                     try
                     {
                         decodedXML.append("<root>").append(body).append("</root>");
-                        decodedTree.setown(createPTreeFromXMLString(decodedXML.str(), true));
+                        decodedTree.setown(createPTreeFromXMLString(decodedXML.str(), ipt_caseInsensitive));
                         rows.setown(decodedTree->getElements("Row"));
                     }
                     catch (IException *E)
@@ -652,7 +652,7 @@ IDataVal & CXmlToRawTransformer::transformTree(IDataVal & result, IPropertyTree 
 
 size32_t createRowFromXml(ARowBuilder & rowBuilder, size32_t size, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
 {
-    Owned<IPropertyTree> root = createPTreeFromXMLString(size, utf8, stripWhitespace);
+    Owned<IPropertyTree> root = createPTreeFromXMLString(size, utf8, ipt_none, stripWhitespace ? xr_ignoreWhiteSpace : xr_none);
     if (!root)
     {
         throwError(THORCERR_InvalidXmlFromXml);
@@ -1650,7 +1650,7 @@ class CXMLParse : public CInterface, implements IXMLParse
         {
             level = 0;
             Owned<COffsetNodeCreator> nodeCreator = new COffsetNodeCreator();
-            maker = createRootLessPTreeMaker(false, NULL, nodeCreator);
+            maker = createRootLessPTreeMaker(ipt_none, NULL, nodeCreator);
             bool f;
             utf8Translator = rtlOpenCodepageConverter("utf-8", "latin1", f);
             if (f)
