@@ -279,7 +279,7 @@ public:
         if (!root) {
             root.set(parent->root->queryPropTree(name.get()));
             if (!root)
-                root.set(parent->root->setPropTree(name,createPTree(name,false)));
+                root.set(parent->root->setPropTree(name,createPTree(name)));
             assertex(root);
         }
         return root.get();
@@ -781,7 +781,7 @@ public:
             }
             throw MakeStringException(-1,"CDFUfileSpec: No parts found for file!");
         }
-        IPropertyTree *p = createPTree(queryProperties());
+        IPropertyTree *p = createPTreeFromIPT(queryProperties());
         if (iskey) {
             p->removeProp("@blockCompressed");      // can't compress keys
         }
@@ -925,7 +925,7 @@ public:
         if (!ret) {
             ret = nullattr.get();
             if (!ret) {
-                nullattr.setown(createPTree("Attr",false));
+                nullattr.setown(createPTree("Attr"));
                 ret = nullattr.get();
             }
         }
@@ -935,7 +935,7 @@ public:
     {
         IPropertyTree *ret = queryRoot()->queryPropTree("Attr");
         if (!ret)
-            ret = setProperties(createPTree("Attr",false));
+            ret = setProperties(createPTree("Attr"));
         return ret;
     }
     size32_t getRecordSize() const 
@@ -1101,7 +1101,7 @@ public:
         path.append("Part[@num=\"").append(partidx+1).append("\"]");
         IPropertyTree *ret = queryRoot()->queryPropTree(path.str());
         if (!ret) {
-            ret = queryRoot()->addPropTree("Part",createPTree("Part",false));
+            ret = queryRoot()->addPropTree("Part",createPTree("Part"));
             ret->setPropInt("@num",partidx+1);
         }
         return ret;
@@ -1270,7 +1270,7 @@ public:
         }
         setFileMask(mask.str());
         queryRoot()->setPropInt("@numparts",1);
-        IPropertyTree * part = queryRoot()->setPropTree("Part",createPTree("Part",false));
+        IPropertyTree * part = queryRoot()->setPropTree("Part",createPTree("Part"));
         part->setPropInt("@num",1);
         StringBuffer url;
         rmfn.queryEndpoint().getUrlStr(url);
@@ -1354,7 +1354,7 @@ public:
     void setFromXML(const char *xml)
     {
         // the following is slightly odd: xml->tree->file->tree
-        Owned<IPropertyTree> t = createPTreeFromXMLString(xml, false);
+        Owned<IPropertyTree> t = createPTreeFromXMLString(xml);
         Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(t,&queryNamedGroupStore(),0);
         setFromFileDescriptor(*fdesc);
     }
@@ -1479,7 +1479,7 @@ public:
         if (!clustername) {
             if (!iter->first()) {
                 iter.clear();
-                IPropertyTree *pt= createPTree("Cluster",false);
+                IPropertyTree *pt= createPTree("Cluster");
                 ClusterPartDiskMapSpec spec;
                 spec.toProp(pt);
                 StringBuffer grpname; // this shouldn't be set but if it is then use
@@ -1527,7 +1527,7 @@ public:
             clustername = _clustername.append(clustername).trim().toLowerCase().str();
         unsigned clusternum;
         if (!findCluster(clustername,clusternum)) {
-            IPropertyTree *pt = createPTree("Cluster",false);   
+            IPropertyTree *pt = createPTree("Cluster");
             if (clustername&&*clustername)
                 pt->setProp("@name",clustername);
             queryRoot()->addPropTree("Cluster",pt);
@@ -2594,7 +2594,7 @@ public:
         _conn = conn;
         _tree = root->queryPropTree("Recovery");
         if (!_tree)
-            _tree = root->addPropTree("Recovery",createPTree("Recovery",false));
+            _tree = root->addPropTree("Recovery",createPTree("Recovery"));
         getXPath(runningpath,queryId()).append("/Running");
     }
 
@@ -2608,8 +2608,8 @@ public:
     {
         IPropertyTree *tree = root->queryPropTree("Exceptions");
         if (!tree)
-            tree = root->addPropTree("Exceptions",createPTree("Exceptions",false));
-        IPropertyTree *et = tree->addPropTree("Exception",createPTree("Exception",false));
+            tree = root->addPropTree("Exceptions",createPTree("Exceptions"));
+        IPropertyTree *et = tree->addPropTree("Exception",createPTree("Exception"));
         et->setPropInt("@exceptionCode", e->errorCode());
         StringBuffer msg;
         et->setProp("@exceptionMessage",e->errorMessage(msg).str());
@@ -2648,10 +2648,10 @@ public:
     {
         IPropertyTree *tree = root->queryPropTree("Application");
         if (!tree) 
-            tree = root->addPropTree("Application",createPTree("Application",false));
+            tree = root->addPropTree("Application",createPTree("Application"));
         IPropertyTree *sub = tree->queryPropTree(app);
         if (!sub) 
-            sub = tree->addPropTree(app,createPTree(app,false));
+            sub = tree->addPropTree(app,createPTree(app));
         if (overwrite || !sub->hasProp(propname)) 
             sub->setProp(propname, value); 
     }
@@ -2677,7 +2677,7 @@ public:
     {
         IPropertyTree *tree = root->queryPropTree("Debug");
         if (!tree) 
-            tree = root->addPropTree("Debug",createPTree("Debug",false));
+            tree = root->addPropTree("Debug",createPTree("Debug"));
         if (overwrite || !tree->hasProp(propname))
             tree->setProp(propname, value); 
     }

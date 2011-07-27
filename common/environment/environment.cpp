@@ -143,7 +143,7 @@ public:
 
          //copy const environment to our member environment
          Owned<IPropertyTree> pSrc = conn2->getRoot();
-         c.setown( new CLocalEnvironment(NULL, createPTree(pSrc)));
+         c.setown( new CLocalEnvironment(NULL, createPTreeFromIPT(pSrc)));
          conn2->rollback();
       }
       else
@@ -487,14 +487,14 @@ public:
 
     virtual IEnvironment * loadLocalEnvironmentFile(const char * filename)
     {
-        Owned<IPropertyTree> ptree = createPTreeFromXMLFile(filename, false);
+        Owned<IPropertyTree> ptree = createPTreeFromXMLFile(filename);
         Owned<CLocalEnvironment> pLocalEnv = new CLocalEnvironment(NULL, ptree);
         return new CLockedEnvironment(pLocalEnv);
     }
 
     virtual IEnvironment * loadLocalEnvironment(const char * xml)
     {
-        Owned<IPropertyTree> ptree = createPTreeFromXMLString(xml, false);
+        Owned<IPropertyTree> ptree = createPTreeFromXMLString(xml);
         Owned<CLocalEnvironment> pLocalEnv = new CLocalEnvironment(NULL, ptree);
         return new CLockedEnvironment(pLocalEnv);
     }
@@ -972,7 +972,7 @@ CLocalEnvironment::CLocalEnvironment(const char* environmentFile)
 {
    if (environmentFile && *environmentFile)
    {
-       IPropertyTree* root = createPTreeFromXMLFile(environmentFile, false);
+       IPropertyTree* root = createPTreeFromXMLFile(environmentFile);
        if (root)
            p.set(root);
    }
@@ -1253,7 +1253,7 @@ void CLocalEnvironment::preload()
 
 void CLocalEnvironment::setXML(const char *xml)
 {
-    Owned<IPropertyTree> newRoot = createPTreeFromXMLString(xml, false);
+    Owned<IPropertyTree> newRoot = createPTreeFromXMLString(xml);
     Owned<IPropertyTreeIterator> it = p->getElements("*");
     ForEach(*it)
     {

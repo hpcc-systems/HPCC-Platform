@@ -192,7 +192,7 @@ int main(int argc, const char *argv[])
     }
     try
     {
-        globals.setown(loadPropertyTree(iniFileName, true));
+        globals.setown(createPTreeFromXMLFile(iniFileName, ipt_caseInsensitive));
     }
     catch(...)
     {

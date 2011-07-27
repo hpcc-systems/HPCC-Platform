@@ -131,7 +131,7 @@ IPropertyTree *WsWuInfo::queryParamInfo()
     {
         StringBuffer xml;
         if (getWsResource("SOAP", xml))
-            paraminfo.setown(createPTreeFromXMLString(xml.str(), false));
+            paraminfo.setown(createPTreeFromXMLString(xml.str()));
     }
     return paraminfo.get();
 }
@@ -227,7 +227,7 @@ IPropertyTreeIterator *WsWuInfo::getInputSchemas()
     {
         updateSchemaCache();
         if (schemacache.length())   
-            xsds.setown(createPTreeFromXMLString(schemacache.str(), false));
+            xsds.setown(createPTreeFromXMLString(schemacache.str()));
     }
 
     return (xsds) ? xsds->getElements("Input") : NULL;
@@ -239,7 +239,7 @@ IPropertyTreeIterator *WsWuInfo::getResultSchemas()
     {
         updateSchemaCache();
         if (schemacache.length())   
-            xsds.setown(createPTreeFromXMLString(schemacache.str(), false));
+            xsds.setown(createPTreeFromXMLString(schemacache.str()));
     }
 
     return (xsds) ? xsds->getElements("Result") : NULL;

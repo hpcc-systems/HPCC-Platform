@@ -1000,7 +1000,7 @@ void HqlLex::doExport(YYSTYPE & returnToken, bool toXml)
         reportError(returnToken, ERR_EXPECTED_COMMA, ", expected"); 
         return;
     }
-    IPropertyTree *data = createPropertyTree(true, "Data");
+    IPropertyTree *data = createPTree("Data", ipt_caseInsensitive);
     for (;;)
     {
         StringBuffer curParam("SIZEOF(");
@@ -2062,7 +2062,7 @@ IPropertyTree * HqlLex::getClearJavadoc()
     if (javaDocComment.length() == 0)
         return NULL;
 
-    IPropertyTree * tree = createPTree("javadoc", false);
+    IPropertyTree * tree = createPTree("javadoc");
     extractJavadoc(tree, javaDocComment.str());
     javaDocComment.clear();
     return tree;

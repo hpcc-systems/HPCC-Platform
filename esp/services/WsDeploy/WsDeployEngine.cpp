@@ -86,9 +86,9 @@ m_bEnvUpdated(false),
 m_errorCount(0),
 m_version(version),
 m_depInfo(deployInfo),
-m_pDeploy(createPTreeFromXMLString(selComps, false))
+m_pDeploy(createPTreeFromXMLString(selComps))
 {
-  m_pResponseXml.setown( createPTreeFromXMLString(selComps, false) );
+  m_pResponseXml.setown( createPTreeFromXMLString(selComps) );
 
   if (!m_pResponseXml)
     return;
@@ -101,7 +101,7 @@ m_pDeploy(createPTreeFromXMLString(selComps, false))
     if (pTasks)
       pComp->removeTree(pTasks);
 
-    pTasks =    pComp->addPropTree("Tasks", createPTree(false));
+    pTasks =    pComp->addPropTree("Tasks", createPTree());
 
     Owned<IPropertyTreeIterator> itInstances = pComp->getElements("Instance");
 
@@ -138,7 +138,7 @@ m_version(1)
   CDeployInfo& depInfo = dynamic_cast<CDeployInfo&>( deployInfo );
   depInfo.serialize(ctx,xml);
 
-  m_pResponseXml.setown( createPTreeFromXMLString(xml.str(), false) );
+  m_pResponseXml.setown( createPTreeFromXMLString(xml.str()) );
   m_pSelComps = m_pResponseXml->queryPropTree("Components");
 
   //save a copy of component in request into our internal tree that we maintain and 
@@ -152,7 +152,7 @@ m_version(1)
     if (pTasks)
       pComp->removeTree(pTasks);
 
-    pTasks =    pComp->addPropTree("Tasks", createPTree(false));
+    pTasks =    pComp->addPropTree("Tasks", createPTree());
 
     string key;
     //key += comp.getType();
@@ -173,8 +173,8 @@ void CWsDeployEngine::initComponents(IArrayOf<IConstComponent>& components)
 {
   unsigned int nComps = components.ordinality();
 
-  m_pDeploy.set(createPTree("Deploy", false));
-  IPropertyTree* pComps = m_pDeploy->addPropTree("SelectedComponents", createPTree(false));
+  m_pDeploy.set(createPTree("Deploy"));
+  IPropertyTree* pComps = m_pDeploy->addPropTree("SelectedComponents", createPTree());
 
   for (unsigned int i=0; i<nComps; i++)
   {
@@ -192,11 +192,11 @@ void CWsDeployEngine::initComponents(IArrayOf<IConstComponent>& components)
     IPropertyTree* pComp = pComps->queryPropTree(xpath.str());
     if (!pComp)
     {
-      pComp = pComps->addPropTree(type, createPTree(false));
+      pComp = pComps->addPropTree(type, createPTree());
       pComp->addProp("@name", name);
     }
     const char* instType = comp.getInstanceType();
-    IPropertyTree* pInst = pComp->addPropTree(instType, createPTree(false));
+    IPropertyTree* pInst = pComp->addPropTree(instType, createPTree());
     pInst->addProp("@name", comp.getInstance());
     pInst->addProp("@computer", comp.getComputer());
   }
@@ -556,7 +556,7 @@ void CWsDeployEngine::printStatus(IDeployTask* task)
 
   if (!pTask)
   {
-    pTask = pTasks->addPropTree("Task", createPTree(false));
+    pTask = pTasks->addPropTree("Task", createPTree());
     pTask->setPropInt64("@id", (__int64)task);
 
     const char* sourceFile = task->getFileName(DT_SOURCE);
@@ -613,7 +613,7 @@ void CWsDeployEngine::printStatus(StatusType type, const char* processType, cons
   {
     IPropertyTree* pTasks = findTasksForComponent(process, instance);
 
-    IPropertyTree* pTask = pTasks->addPropTree("Task", createPTree(false));
+    IPropertyTree* pTask = pTasks->addPropTree("Task", createPTree());
     //pTask->setProp( "Caption",    buf );
     pTask->setProp( "Message",  buf );
     pTask->setPropInt("Status",type);

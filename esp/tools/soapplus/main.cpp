@@ -110,7 +110,7 @@ void doTestSchemaParser(IProperties* globals, const char* url, const char* in_fn
             e->Release();
         }
 
-        Owned<IPTree> xml = createPTreeFromXMLString(s,false);
+        Owned<IPTree> xml = createPTreeFromXMLString(s);
         IPTree* schema = xml->queryBranch(VStringBuffer("Results/Result/XmlSchema[@name='%s']/*[1]", element));
         if (schema)
             xsd.setown(createXmlSchemaFromPTree(LINK(schema)));
@@ -692,7 +692,7 @@ int main(int argc, char** argv)
             const char* cfg = globals->queryProp("cfg");
             try
             {
-                cfgtree.setown(createPTreeFromXMLFile(cfg,false));
+                cfgtree.setown(createPTreeFromXMLFile(cfg));
             }
             catch(IException* e)
             {

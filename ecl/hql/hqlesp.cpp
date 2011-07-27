@@ -155,7 +155,7 @@ class WebServicesExtractor
 public:
     WebServicesExtractor(HqlLookupContext & _lookupCtx) : lookupCtx(_lookupCtx) 
     {
-        root.setown(createPTree("Cache", false));
+        root.setown(createPTree("Cache"));
     }
 
     void addRootReference(const char * attribute);
@@ -232,7 +232,7 @@ IPropertyTree * WebServicesExtractor::ensureCacheEntry(const char * name)
     if (match)
         return match;
 
-    Owned<IPropertyTree> tree = createPTree("attr", false);
+    Owned<IPropertyTree> tree = createPTree("attr");
     tree->setProp("@name", name);
     
     StringBuffer lowerName;
@@ -417,7 +417,7 @@ IPropertyTree * retrieveWebServicesInfo(const char * queryText, HqlLookupContext
     StringPairArray results;
     extractor.getResults(results);
 
-    Owned<IPropertyTree> result = createPTree("WebServicesInfo", false);
+    Owned<IPropertyTree> result = createPTree("WebServicesInfo");
     ForEachItemIn(i, results)
     {
         StringPairItem & cur = results.item(i);

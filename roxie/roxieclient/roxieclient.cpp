@@ -372,7 +372,7 @@ void RoxieThread::processQuery()
                     StringBuffer body(x.length() - (payload-obuf), payload);
                     StringBuffer xml;
                     xml.append("<Exception>").append(body).append("</Exception>");
-                    Owned<IPropertyTree> ep = createPTreeFromXMLString(xml.str(), false);
+                    Owned<IPropertyTree> ep = createPTreeFromXMLString(xml.str());
                     int code = ep->getPropInt("./Code", 0);
                     SocketEndpoint peerEp;
                     StringBuffer peerStr;
@@ -578,7 +578,7 @@ void CRoxieClient::runQuery(const char* query, bool trim)
     StringBuffer qxml;
     if(trim)
     {
-        Owned<IPropertyTree> qtree = createPTreeFromXMLString(query, false, true);
+        Owned<IPropertyTree> qtree = createPTreeFromXMLString(query);
         if(qtree)
         {
             qtree->setPropBool("@trim", true);

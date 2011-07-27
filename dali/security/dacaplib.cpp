@@ -149,7 +149,7 @@ class CDaliCapabilityCreator: public CInterface, implements IDaliCapabilityCreat
     void addcap(const char *tag,CSystemCapability &cap)
     { // cap is plain
         cap.setSystem(sysid.get());
-        IPropertyTree *tree = root->addPropTree(tag,createPTree(tag,false));
+        IPropertyTree *tree = root->addPropTree(tag,createPTree(tag));
         crc = crc32(tag,strlen(tag),crc);
         if (clientpassword)
             cap.secure((const byte *)clientpassword.get(), clientpassword.length());
@@ -221,7 +221,7 @@ public:
     }
     void reset()
     {
-        root.setown(createPTree("DACAP",false));
+        root.setown(createPTree("DACAP"));
         crc = 0;
     }
 };
@@ -244,7 +244,7 @@ unsigned importDaliCapabilityXML_basic(const char *filename)
 
     Owned<IPropertyTree> root;
     try {
-        root.setown(createPTreeFromXMLFile(filename, false));
+        root.setown(createPTreeFromXMLFile(filename));
     }
     catch (IException *e) {
         // no specific error (file missing)
@@ -266,7 +266,7 @@ unsigned importDaliCapabilityXML_basic(const char *filename)
         return 71;
     Owned<IPropertyTree>conf;
     try {
-        conf.setown(createPTreeFromXMLFile(DACONF_FILENAME, false));
+        conf.setown(createPTreeFromXMLFile(DACONF_FILENAME));
     }
     catch (IException *e) {
         // no specific error (file missing)
@@ -290,9 +290,9 @@ unsigned importDaliCapabilityXML_basic(const char *filename)
             if (!update) {
                 update = conf->queryPropTree(UPDATE_XPATH);
                 if (!update)
-                    update = conf->addPropTree(UPDATE_XPATH,createPTree(UPDATE_XPATH,false));
+                    update = conf->addPropTree(UPDATE_XPATH,createPTree(UPDATE_XPATH));
             }
-            IPropertyTree *tree = update->addPropTree(tag,createPTree(tag,false));
+            IPropertyTree *tree = update->addPropTree(tag,createPTree(tag));
             tree->setProp("@cap",it->query().queryProp("@cap"));
             modified = true;
         }

@@ -558,7 +558,7 @@ void DllServer::doRegisterDll(const char * name, const char * kind, const char *
         conn->queryRoot()->setProp("@uid", name);
     }
 
-    IPropertyTree * locationTree = createPTree("location", false);
+    IPropertyTree * locationTree = createPTree("location");
     locationTree->setProp("@ip", ipText.str());
     locationTree->setProp("@dll", dllText.str());
 

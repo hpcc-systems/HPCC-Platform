@@ -89,7 +89,7 @@ IPropertyTree& CXRefFilesNode::getDataTree()
     {
         StringBuffer dataStr;
         Serialize(dataStr);
-        m_DataTree.setown(createPTreeFromXMLString(dataStr.str(),false ));
+        m_DataTree.setown(createPTreeFromXMLString(dataStr.str()));
     }
     return *m_DataTree.get();
 }

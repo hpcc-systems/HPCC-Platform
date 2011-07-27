@@ -1590,7 +1590,7 @@ IPropertyTree * CKeyIndex::getMetadata()
     IPropertyTree * ret;
     try
     {
-        ret = createPTreeFromXMLString(xml.str(), false);
+        ret = createPTreeFromXMLString(xml.str());
     }
     catch(IXMLReadException * e)
     {

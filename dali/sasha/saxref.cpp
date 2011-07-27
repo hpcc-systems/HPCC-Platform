@@ -561,7 +561,7 @@ public:
         branch->setProp("Cluster",clustname);
         StringBuffer datastr;
         toXML(branch,datastr);
-        root->addPropTree(name,createPTree(name,false))->setPropBin("data",datastr.length(),datastr.toCharArray());
+        root->addPropTree(name,createPTree(name))->setPropBin("data",datastr.length(),datastr.toCharArray());
     }
 
     CNewXRefManagerBase()
@@ -599,16 +599,16 @@ public:
 
     void addErrorsWarnings(IPropertyTree *croot)
     {
-        Owned<IPropertyTree> message = createPTree("Messages",false);
+        Owned<IPropertyTree> message = createPTree("Messages");
         ForEachItemIn(i1,errors) {
             cMessage &item = errors.item(i1);
-            IPropertyTree *t = message->addPropTree("Error",createPTree("Error",false));
+            IPropertyTree *t = message->addPropTree("Error",createPTree("Error"));
             t->addProp("File",item.lname.get());
             t->addProp("Text",item.msg.get());
         }
         ForEachItemIn(i2,warnings) {
             cMessage &item = warnings.item(i2);
-            IPropertyTree *t = message->addPropTree("Warning",createPTree("Warning",false));
+            IPropertyTree *t = message->addPropTree("Warning",createPTree("Warning"));
             t->addProp("File",item.lname.get());
             t->addProp("Text",item.msg.get());
         }
@@ -622,7 +622,7 @@ public:
         if (abort)
             return;
         log("Saving information");
-        Owned<IPropertyTree> croot = createPTree("Cluster",false);
+        Owned<IPropertyTree> croot = createPTree("Cluster");
         croot->setProp("@name",clustname);
         if (!rootdir.isEmpty()) 
             croot->setProp("@rootdir",rootdir);
@@ -689,10 +689,10 @@ public:
         verbose = true;
         iphash = NULL;
         ipnum = NULL;
-        foundbranch.setown(createPTree("Found",false));
-        lostbranch.setown(createPTree("Lost",false));
-        orphansbranch.setown(createPTree("Orphans",false));
-        dirbranch.setown(createPTree("Directories",false));
+        foundbranch.setown(createPTree("Found"));
+        lostbranch.setown(createPTree("Lost"));
+        orphansbranch.setown(createPTree("Orphans"));
+        dirbranch.setown(createPTree("Directories"));
     }
 
     ~CNewXRefManager()
@@ -1164,13 +1164,13 @@ public:
     void addOrphanPartNode(Owned<IPropertyTree> &branch,const SocketEndpoint &ep,unsigned i,bool rep)
     {
         if (!branch)
-            branch.setown(createPTree("File",false));
+            branch.setown(createPTree("File"));
         i++;
         StringBuffer tmp;
         tmp.appendf("Part[Num=\"%d\"]",i);
         IPropertyTree* pb = branch->queryPropTree(tmp.str());
         if (!pb) {
-            pb = createPTree("Part",false);
+            pb = createPTree("Part");
             pb->setPropInt("Num",i);
             pb = branch->addPropTree("Part",pb);
         }
@@ -1377,7 +1377,7 @@ public:
                 return;
             if ((d->files.ordinality()!=0)||(d->totalsize[drv]!=0)||d->empty(drv)) { // final empty() is to make sure only truly empty dirs get added
                                                                                   // but not empty parents
-                Owned<IPropertyTree> dt = createPTree("Directory",false);
+                Owned<IPropertyTree> dt = createPTree("Directory");
                 if (drv) {
                     StringBuffer tmp(name);
                     setReplicateFilename(tmp,drv);
@@ -1518,7 +1518,7 @@ public:
                 continue;
             }
             CDateTime dt;
-            Owned<IPropertyTree> ft = createPTree("File",false);
+            Owned<IPropertyTree> ft = createPTree("File");
             if (file->getModificationTime(dt)) {
                 CDateTime now;
                 now.setNow();
@@ -1586,7 +1586,7 @@ public:
                     if (!ok)
                         break;
                     if (lost) {
-                        Owned<IPropertyTree> pt = createPTree("Part",false);
+                        Owned<IPropertyTree> pt = createPTree("Part");
                         StringBuffer tmp;
                         rfn.queryEndpoint().getIpText(tmp);
                         pt->setProp("Node",tmp.str());
@@ -1844,7 +1844,7 @@ public:
                             path.appendf("SuperOwner[@name=\"%s\"]",owner);
                             if (!conn->queryRoot()->hasProp(path.str())) {
                                 if (fix) {
-                                    Owned<IPropertyTree> t = createPTree("SuperOwner",false);
+                                    Owned<IPropertyTree> t = createPTree("SuperOwner");
                                     t->setProp("@name",owner);
                                     conn->queryRoot()->addPropTree("SuperOwner",t.getClear());
                                 }
@@ -2176,7 +2176,7 @@ public:
             StringBuffer xpath2;
             xpath2.appendf("Cluster[@name=\"%s\"]",cluster);
             if (!conn->queryRoot()->hasProp(xpath2.str()))
-                conn->queryRoot()->addPropTree("Cluster",createPTree("Cluster",false))->setProp("@name",cluster);
+                conn->queryRoot()->addPropTree("Cluster",createPTree("Cluster"))->setProp("@name",cluster);
         }
     }
 
@@ -2190,7 +2190,7 @@ public:
     {
         Owned<IPropertyTree> props = serverConfig->getPropTree("DfuXRef");
         if (!props)
-            props.setown(createPTree("DfuXRef",false));
+            props.setown(createPTree("DfuXRef"));
         bool eclwatchprovider = props->getPropBool("@eclwatchProvider");
         unsigned interval = props->getPropInt("@interval",DEFAULT_XREF_INTERVAL);
         const char *clusters = props->queryProp("@clusterlist");
@@ -2366,7 +2366,7 @@ public:
     {
         Owned<IPropertyTree> props = serverConfig->getPropTree("DfuExpiry");
         if (!props)
-            props.setown(createPTree("DfuExpiry",false));
+            props.setown(createPTree("DfuExpiry"));
         unsigned interval = props->getPropInt("@interval",DEFAULT_EXPIRY_INTERVAL);
         if (!interval)
             stopped = true;

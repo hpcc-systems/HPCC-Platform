@@ -1297,7 +1297,7 @@ public:
         const char *_name = owner.queryName();
         mb.append(_name?_name:"");
         byte flags = ((PTree &)owner).queryFlags();
-        mb.append(PtFlagSet(flags, PtFlag_Binary));
+        mb.append(IptFlagSet(flags, ipt_binary));
 
         serializeVisibleAttributes(owner, mb);
 
@@ -1402,7 +1402,8 @@ public:
         size32_t sz = (size32_t)iFile->size();
         if ((unsigned)-1 == sz)
         {
-            byte flags = ((PTree &)owner).queryFlags() & ~PtFlag_Binary;
+            byte flags = ((PTree &)owner).queryFlags();
+            IptFlagClr(flags, ipt_binary);
             mb.append(flags);
             serializeVisibleAttributes(owner, mb);
             StringBuffer s("Missing external file ");
@@ -1487,7 +1488,7 @@ public:
         else
         {
             Owned<IPropertyTree> tree;
-            tree.setown(createPTreeFromXMLFile(filename.str(), false));
+            tree.setown(createPTreeFromXMLFile(filename.str()));
             IPTArrayValue *v = ((PTree *)tree.get())->queryValue();
             if (v)
                 v->serialize(mb);
@@ -1511,13 +1512,13 @@ public:
             LOG(MCoperatorWarning, unknownJob, e, s.str());
             StringBuffer str("EXTERNAL XML FILE: \"");
             str.append(filename.str()).append("\" MISSING");
-            tree.setown(createPTree(owner.queryName(), false));
+            tree.setown(createPTree(owner.queryName()));
             if (withValue)
                 tree->setProp(NULL, str.toCharArray());
         }
         else
         {
-            tree.setown(createPTreeFromXMLFile(filename.str(), false));
+            tree.setown(createPTreeFromXMLFile(filename.str()));
             if (!withValue)
                 tree->setProp(NULL, (char *)NULL);
         }
@@ -2068,7 +2069,7 @@ void CServerConnection::aborted(SessionId id)
 enum IncCmd { None, PropDelete, AttrDelete, PropChange, PropNew, PropExisting, ChildEndMarker, PropRename, AttrChange };
 
 CRemoteTreeBase::CRemoteTreeBase(const char *name, IPTArrayValue *value, ChildMap *children, CPState _state)
-    : PTree(name, false, value, children), state(_state)
+    : PTree(name, ipt_none, value, children), state(_state)
 {
     serverId = 0;
 }
@@ -2077,10 +2078,6 @@ CRemoteTreeBase::CRemoteTreeBase(MemoryBuffer &mb, CPState _state)
     : state(_state)
 {
     serverId = 0;
-}
-
-CRemoteTreeBase::~CRemoteTreeBase()
-{
 }
 
 void CRemoteTreeBase::reset(unsigned _state, bool sub)
@@ -2138,13 +2135,13 @@ IPropertyTree *CRemoteTreeBase::collateData()
     {
         ChangeTree(IPropertyTree *donor=NULL) { ptree = LINK(donor); }
         ~ChangeTree() { ::Release(ptree); }
-        inline void createTree() { assertex(!ptree); ptree = createPTree(RESERVED_CHANGE_NODE, false); }
+        inline void createTree() { assertex(!ptree); ptree = createPTree(RESERVED_CHANGE_NODE); }
         inline IPropertyTree *queryTree() { return ptree; }
         inline IPropertyTree *getTree() { return LINK(ptree); }
         inline IPropertyTree *queryCreateTree()
         {
             if (!ptree)
-                ptree = createPTree(RESERVED_CHANGE_NODE, false);
+                ptree = createPTree(RESERVED_CHANGE_NODE);
             return ptree;
         }
     private:
@@ -2166,7 +2163,7 @@ IPropertyTree *CRemoteTreeBase::collateData()
         Owned<IAttributeIterator> iter = getAttributes();
         if (iter->count())
         {
-            IPropertyTree *t = createPTree(false);
+            IPropertyTree *t = createPTree();
             ForEach(*iter)
                 t->setProp(iter->queryName(), queryProp(iter->queryName()));
             ct.queryTree()->addPropTree(ATTRCHANGE_TAG, t);
@@ -2182,7 +2179,7 @@ IPropertyTree *CRemoteTreeBase::collateData()
             {
                 ct.queryTree()->removeTree(ac);
                 Owned<IAttributeIterator> iter = ac->getAttributes();
-                IPropertyTree *t = createPTree(false);
+                IPropertyTree *t = createPTree();
                 ForEach(*iter)
                     t->setProp(iter->queryName(), queryProp(iter->queryName()));
                 ct.queryTree()->addPropTree(ATTRCHANGE_TAG, t);
@@ -2306,7 +2303,7 @@ void CRemoteTreeBase::clearChildren()
 
 CRemoteTreeBase *CRemoteTreeBase::createChild(int pos, const char *childName)
 {
-    CRemoteTreeBase *child = (CRemoteTreeBase *) create(NULL, false);
+    CRemoteTreeBase *child = (CRemoteTreeBase *) create(NULL);
     if (-1 == pos)
         child = (CRemoteTreeBase *) addPropTree(childName, child);
     else
@@ -2353,14 +2350,14 @@ class CServerRemoteTree : public CRemoteTreeBase
     class COrphanHandler : public ChildMap
     {
     public:
-        COrphanHandler() : ChildMap(false) { }
+        COrphanHandler() : ChildMap() { }
         ~COrphanHandler() { kill(); }
         static void setOrphans(CServerRemoteTree &tree, bool tf)
         {
             if (tf)
-                PtFlagSet(tree.flags, PtFlag_Ext6);
+                IptFlagSet(tree.flags, ipt_ext5);
             else
-                PtFlagClr(tree.flags, PtFlag_Ext6);
+                IptFlagClr(tree.flags, ipt_ext5);
             IPTArrayValue *v = tree.queryValue();
             if (v && v->isArray())
             {
@@ -2468,7 +2465,7 @@ public:
         SDSManager->queryAllNodes().addElem(this);
     }
 
-    virtual bool isOrphaned() const { return PtFlagTst(flags, PtFlag_Ext6); }
+    virtual bool isOrphaned() const { return IptFlagTst(flags, ipt_ext5); }
 
     virtual void setServerId(__int64 _serverId)
     {
@@ -2482,7 +2479,7 @@ public:
         return SDSManager->getSubscribers(xpath, stack);
     }
 
-    IPropertyTree *create(const char *name=NULL, bool nocase=false, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false)
+    IPropertyTree *create(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false)
     {
         return new CServerRemoteTree(name, value, children);
     }
@@ -2492,7 +2489,7 @@ public:
         return new CServerRemoteTree(mb);
     }
 
-    virtual void createChildMap(bool caseInsensitive=true) { children = new COrphanHandler(); }
+    virtual void createChildMap() { children = new COrphanHandler(); }
 
     inline bool testExternalCandidate()
     {
@@ -2831,7 +2828,7 @@ PDState CServerRemoteTree::checkChange(IPropertyTree &changeTree, CBranchChange 
             {
                 IPropertyTree *t = changeTree.queryPropTree(ATTRDELETE_TAG);
                 if (!t)
-                    t = changeTree.addPropTree(ATTRDELETE_TAG, createPTree(false));
+                    t = changeTree.addPropTree(ATTRDELETE_TAG, createPTree());
                 t->addProp(EXT_ATTR, "");
             }
             else
@@ -2844,7 +2841,7 @@ PDState CServerRemoteTree::checkChange(IPropertyTree &changeTree, CBranchChange 
                 SDSManager->writeExternal(*this);
                 IPropertyTree *t = changeTree.queryPropTree(ATTRCHANGE_TAG);
                 if (!t)
-                    t = changeTree.addPropTree(ATTRCHANGE_TAG, createPTree(false));
+                    t = changeTree.addPropTree(ATTRCHANGE_TAG, createPTree());
                 changeTree.setProp(NULL, (const char *)NULL);
                 t->setProp(EXT_ATTR, queryProp(EXT_ATTR));
             }
@@ -3677,7 +3674,7 @@ bool checkOldFormat(CServerRemoteTree *parentServerTree, IPropertyTree *tree, Me
                     if (NotFound == pos)
                         throw MakeSDSException(SDSExcpt_ClientCacheDirty, "::checkChange - child(%s) not found in parent(%s) at %s(%d)", child->queryName(), parentServerTree->queryName(), __FILE__, __LINE__);
 
-                    IPropertyTree *t = createPTree(false);
+                    IPropertyTree *t = createPTree();
                     t->setProp("@from", child->queryName());
                     t->setProp("@to", newName);
                     t->setPropInt64("@id", id);
@@ -3707,7 +3704,7 @@ bool checkOldFormat(CServerRemoteTree *parentServerTree, IPropertyTree *tree, Me
                     if (NotFound == pos)
                         continue;
 
-                    IPropertyTree *t = createPTree(false);
+                    IPropertyTree *t = createPTree();
                     t->setProp("@name", child->queryName());
                     t->setPropInt64("@id", id);
 #ifdef SIBLING_MOVEMENT_CHECK
@@ -3726,7 +3723,7 @@ bool checkOldFormat(CServerRemoteTree *parentServerTree, IPropertyTree *tree, Me
             if (count)
             {
                 IPropertyTree *ct = tree->queryPropTree(ATTRCHANGE_TAG);
-                IPropertyTree *t = tree->addPropTree(ATTRDELETE_TAG, createPTree(false));
+                IPropertyTree *t = tree->addPropTree(ATTRDELETE_TAG, createPTree());
                 for (c=0; c<count; c++)
                 {
                     StringAttr attr;
@@ -3758,7 +3755,7 @@ bool checkOldFormat(CServerRemoteTree *parentServerTree, IPropertyTree *tree, Me
                 ((PTree *)tree)->setValue(new CPTValue(0, NULL, false, true, false), false);
 
             Owned<IAttributeIterator> attrs = clientTree->getAttributes();
-            IPropertyTree *t = createPTree(false);
+            IPropertyTree *t = createPTree();
             if (attrs->first())
             {
                 do
@@ -3791,7 +3788,7 @@ bool translateOldFormat(CServerRemoteTree *parentServerTree, IPropertyTree *pare
                 break;
             mb.read(pos);
             CServerRemoteTree *serverTree = NULL;
-            Owned<IPropertyTree> tree = createPTree(RESERVED_CHANGE_NODE, false);
+            Owned<IPropertyTree> tree = createPTree(RESERVED_CHANGE_NODE);
             if (0 == id)
             {
                 StringAttr childName;
@@ -4139,7 +4136,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                     {
                         if (oldFormat)
                         {
-                            Owned<IPropertyTree> t = createPTree(RESERVED_CHANGE_NODE, false);
+                            Owned<IPropertyTree> t = createPTree(RESERVED_CHANGE_NODE);
                             t->setProp("@name", tree->queryName());
                             if (translateOldFormat(tree, t, mb))
                                 changeTree.setown(LINK(t));
@@ -4523,7 +4520,7 @@ void initializeInternals(IPropertyTree *root)
     ensurePTree(root, "DFU/WorkUnits");
     ensurePTree(root, "Files/Relationships");
     root->removeProp("Status/Servers");
-    root->addPropTree("Status/Servers",createPTree(false));
+    root->addPropTree("Status/Servers",createPTree());
 }
 
 IPropertyTree *loadStore(const char *storeFilename, IPTreeMaker *iMaker, unsigned crcValidation, bool logErrorsOnly=false, const bool *abort=NULL)
@@ -4541,7 +4538,7 @@ IPropertyTree *loadStore(const char *storeFilename, IPTreeMaker *iMaker, unsigne
         Owned<IFileIOStream> fstream = createIOStream(iFileIOStore);
         Owned<ICrcIOStream> crcPipeStream = createCrcPipeStream(fstream);
         Owned<IIOStream> ios = createBufferedIOStream(crcPipeStream);
-        root.setown((CServerRemoteTree *) createPTree(*ios, false, true, iMaker));
+        root.setown((CServerRemoteTree *) createPTree(*ios, ipt_none, xr_ignoreWhiteSpace, iMaker));
         ios.clear();
         unsigned crc = crcPipeStream->queryCrc();
 
@@ -5497,12 +5494,12 @@ CCovenSDSManager::CCovenSDSManager(ICoven &_coven, IPropertyTree &_config, const
     Owned<CBinaryFileExternal> binaryExternalHandler = new CBinaryFileExternal(dataPath, backupHandler);
     externalHandlers.replace(* new CExternalHandlerMapping(EF_BinaryValue, *binaryExternalHandler));
 
-    properties.setown(createPTree("Properties", false));
-    IPropertyTree *clientProps = properties->setPropTree("Client", config.hasProp("Client") ? config.getPropTree("Client") : createPTree(false));
+    properties.setown(createPTree("Properties"));
+    IPropertyTree *clientProps = properties->setPropTree("Client", config.hasProp("Client") ? config.getPropTree("Client") : createPTree());
     clientProps->setPropBool("@serverIterAvailable", true);
     clientProps->setPropBool("@useAppendOpt", true);
     clientProps->setPropBool("@serverGetIdsAvailable", true);
-    IPropertyTree *throttle = clientProps->setPropTree("Throttle", createPTree(false));
+    IPropertyTree *throttle = clientProps->setPropTree("Throttle", createPTree());
     throttle->setPropInt("@limit", CLIENT_THROTTLE_LIMIT);
     throttle->setPropInt("@delay", CLIENT_THROTTLE_DELAY);
     // NB: dataPath is assumed to be local
@@ -5666,7 +5663,7 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
     class CSDSTreeMaker : public CPTreeMaker
     {
     public:
-        CSDSTreeMaker(IPTreeNodeCreator *nodeCreator) : CPTreeMaker(false, nodeCreator) { }
+        CSDSTreeMaker(IPTreeNodeCreator *nodeCreator) : CPTreeMaker(ipt_none, nodeCreator) { }
         virtual void endNode(const char *tag, unsigned length, const void *value, bool binary, offset_t endOffset)
         {
             IPropertyTree *node = queryCurrentNode();
@@ -5716,7 +5713,7 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
             OwnedIFileIO iFileIO = envFile->open(IFOread);
             if (!iFileIO)
                 throw MakeStringException(0, "Failed to open '%s'", environment);
-            Owned<IPropertyTree> envTree = createPTreeFromXMLFile(environment, false);
+            Owned<IPropertyTree> envTree = createPTreeFromXMLFile(environment);
             if (0 != stricmp("Environment", envTree->queryName()))
                 throw MakeStringException(0, "External environment file '%s', has '%s' as root, expecting a 'Environment' xml node.", environment, envTree->queryName());
             Owned<IPropertyTree> existingEnvTree = root->getPropTree("Environment");
@@ -5982,7 +5979,7 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
                     extHandler->getFilename(fname, itm.name);
                     PROGLOG("Converting legacy external type(%s) to new, file=%s", itm.ext.get(), fname.str());
                     MemoryBuffer mb;
-                    Owned<IPropertyTree> tree = createPTree("tmp", false);
+                    Owned<IPropertyTree> tree = createPTree("tmp");
                     extHandler->read(itm.name, *tree, mb, true);
                     mb.append(""); // no children
                     tree.setown(createPTree(mb));
@@ -6159,9 +6156,9 @@ void CCovenSDSManager::saveDelta(const char *path, IPropertyTree &changeTree)
     }
     cleanChangeTree(changeTree);
     // write out with header details (e.g. path)
-    Owned<IPropertyTree> header = createPTree("Header", false);
+    Owned<IPropertyTree> header = createPTree("Header");
     header->setProp("@path", path);
-    IPropertyTree *delta = header->addPropTree("Delta", createPTree(false));
+    IPropertyTree *delta = header->addPropTree("Delta", createPTree());
     delta->addPropTree(changeTree.queryName(), LINK(&changeTree));
 
     StringBuffer fname(dataPath);
@@ -6591,7 +6588,7 @@ static void addServerChildren(CClientRemoteTree &clientParent, CServerRemoteTree
     ForEach (*iter)
     {
         CServerRemoteTree &serverChild = (CServerRemoteTree &)iter->query();
-        CClientRemoteTree *clientChild = (CClientRemoteTree *)clientParent.create(NULL, false);
+        CClientRemoteTree *clientChild = (CClientRemoteTree *)clientParent.create(NULL);
         serverToClientTree(serverChild, *clientChild);
         clientChild = (CClientRemoteTree *)clientParent.addPropTree(clientChild->queryName(), clientChild);
         if (recurse)
@@ -6606,7 +6603,7 @@ void CCovenSDSManager::matchServerTree(CClientRemoteTree *local, IPropertyTree &
     {
         if (local->hasChildren() && NULL == local->queryChildren())
         {
-            local->createChildMap(false);
+            local->createChildMap();
             Owned<CServerRemoteTree> tree = getRegisteredTree(matchTree.getPropInt64("@serverId"));
             addServerChildren(*local, *tree, false);
         }
@@ -6626,7 +6623,7 @@ void CCovenSDSManager::matchServerTree(CClientRemoteTree *local, IPropertyTree &
     {
         if (local->hasChildren() && NULL == local->queryChildren())
         {
-            local->createChildMap(false);
+            local->createChildMap();
             Owned<CServerRemoteTree> tree = getRegisteredTree(matchTree.getPropInt64("@serverId"));
             addServerChildren(*local, *tree, allTail);
         }
@@ -6925,7 +6922,7 @@ CServerConnection *CCovenSDSManager::createConnectionInstance(CRemoteTreeBase *r
     {
         writeTransactions++;
         // add tree into stack temporarily, or add manually at end.
-        deltaChange.setown(createPTree(RESERVED_CHANGE_NODE, false));
+        deltaChange.setown(createPTree(RESERVED_CHANGE_NODE));
         IPropertyTree *tail = deltaChange;
         if (created) // some elems in "head" created
         {
@@ -6964,7 +6961,7 @@ CServerConnection *CCovenSDSManager::createConnectionInstance(CRemoteTreeBase *r
             {   
                 
                 IPropertyTree &tree = connection->queryPTreePath().item(s);
-                IPropertyTree *n = tail->addPropTree(RESERVED_CHANGE_NODE, createPTree(false));
+                IPropertyTree *n = tail->addPropTree(RESERVED_CHANGE_NODE, createPTree());
                 n->setProp("@name", tree.queryName());
                 n->setPropBool("@new", true);
                 tail = n;
@@ -6981,7 +6978,7 @@ CServerConnection *CCovenSDSManager::createConnectionInstance(CRemoteTreeBase *r
             connection->queryPTreePath().getAbsolutePath(s);
             const char *t = splitXPath(s.str(), _deltaPath);
             deltaPath->set(_deltaPath.str());
-            IPropertyTree *n = tail->addPropTree(RESERVED_CHANGE_NODE, createPTree(false));
+            IPropertyTree *n = tail->addPropTree(RESERVED_CHANGE_NODE, createPTree());
             n->setProp("@name", tree->queryName());
             if (replaceNode)
                 n->setPropBool("@replace", true);
@@ -7580,8 +7577,8 @@ void CCovenSDSManager::disconnect(ConnectionId id, bool deleteRoot, Owned<CLCLoc
         writeTransactions++;
     if (!orphaned && deleteRoot)
     {
-        Owned<IPropertyTree> changeTree = createPTree(RESERVED_CHANGE_NODE, false);
-        IPropertyTree *d = changeTree->setPropTree(DELETE_TAG, createPTree(false));
+        Owned<IPropertyTree> changeTree = createPTree(RESERVED_CHANGE_NODE);
+        IPropertyTree *d = changeTree->setPropTree(DELETE_TAG, createPTree());
         d->setProp("@name", tree->queryName());
         d->setPropInt("@pos", index+1);
 
@@ -8337,7 +8334,7 @@ public:
         if (config)
             sdsConfig.setown(config->getPropTree("SDS"));
         if (!sdsConfig)
-            sdsConfig.setown(createPTree(false));
+            sdsConfig.setown(createPTree());
         manager = new CCovenSDSManager(coven, *sdsConfig, config?config->queryProp("@dataPath"):NULL);
         SDSManager = manager;
         addThreadExceptionHandler(manager);
@@ -8371,7 +8368,7 @@ public:
 
         Owned<IRemoteConnection> conn = manager->connect("/", 0, 0, 0);
         IPropertyTree *root = conn->queryRoot();
-        IPropertyTree *tree = root->setPropTree("test", createPTree(false));
+        IPropertyTree *tree = root->setPropTree("test", createPTree());
 
         setNotifyHandlerName("testHandler", tree);
 
@@ -8460,7 +8457,7 @@ bool applyXmlDeltas(IPropertyTree &root, IIOStream &stream, bool stopOnError)
         {
             sectionEndOffset = 0;
             hadError = false;
-            maker = createRootLessPTreeMaker(false);
+            maker = createRootLessPTreeMaker();
         }
         ~CDeltaProcessor()
         {
@@ -8554,12 +8551,12 @@ bool applyXmlDeltas(IPropertyTree &root, IIOStream &stream, bool stopOnError)
                     const char *name = child.queryProp("@name");
                     if (child.getPropBool("@new"))
                     {
-                        IPropertyTree *newBranch = currentBranch.addPropTree(name, createPTree(false));
+                        IPropertyTree *newBranch = currentBranch.addPropTree(name, createPTree());
                         apply(child, *newBranch);
                     }
                     else if (child.getPropBool("@replace"))
                     {
-                        IPropertyTree *newBranch = currentBranch.setPropTree(name, createPTree(false));
+                        IPropertyTree *newBranch = currentBranch.setPropTree(name, createPTree());
                         apply(child, *newBranch);
                     }
                     else

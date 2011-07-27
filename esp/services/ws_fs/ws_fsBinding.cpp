@@ -203,8 +203,8 @@ IPropertyTree* CFileSpraySoapBindingEx::createPTreeForXslt(const char* method, c
     Owned<IPropertyTree> pEnvRoot = &m_constEnv->getPTree();
     IPropertyTree* pEnvSoftware = pEnvRoot->queryPropTree("Software");
 
-    Owned<IPropertyTree> pRoot = createPTreeFromXMLString("<Environment/>", false);
-    IPropertyTree* pSoftware = pRoot->addPropTree("Software", createPTree("Software", false));
+    Owned<IPropertyTree> pRoot = createPTreeFromXMLString("<Environment/>");
+    IPropertyTree* pSoftware = pRoot->addPropTree("Software", createPTree("Software"));
 
     if (pEnvSoftware)
     {
@@ -217,7 +217,7 @@ IPropertyTree* CFileSpraySoapBindingEx::createPTreeForXslt(const char* method, c
             {   
                 dfuwu->toXML(wuxml);
 
-                Owned<IPropertyTree> wu = createPTreeFromXMLString(wuxml.str(), false);
+                Owned<IPropertyTree> wu = createPTreeFromXMLString(wuxml.str());
                 if (wu)
                 {
                     const char* ip = wu->queryProp("Source/Part/@node");
@@ -345,7 +345,7 @@ IPropertyTree* CFileSpraySoapBindingEx::createPTreeForXslt(const char* method, c
         }
 
         if (wuxml.length() > 0)
-            pSoftware->addPropTree("DfuWorkunit", createPTreeFromXMLString(wuxml.str(), false));
+            pSoftware->addPropTree("DfuWorkunit", createPTreeFromXMLString(wuxml.str()));
     }
     return pRoot.getClear();
 }

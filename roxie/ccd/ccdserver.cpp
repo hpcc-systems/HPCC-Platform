@@ -2650,7 +2650,7 @@ void throwRemoteException(IMessageUnpackCursor *extra)
     {
         char *xml = (char *) extra->getNext(*rowlen);
         ReleaseRoxieRow(rowlen);
-        Owned<IPropertyTree> p = createPTreeFromXMLString(xml, false);
+        Owned<IPropertyTree> p = createPTreeFromXMLString(xml);
         ReleaseRoxieRow(xml);
         unsigned code = p->getPropInt("Code", 0);
         const char *msg = p->queryProp("Message");
@@ -10578,7 +10578,7 @@ protected:
             desc->setDefaultDir(dir.str());
 
             //properties of the first file part.
-            Owned<IPropertyTree> attrs = createPTree("Part", false);
+            Owned<IPropertyTree> attrs = createPTree("Part");
             if(blockcompressed)
             {
                 attrs->setPropInt64("@size", uncompressedBytesWritten);
@@ -24614,7 +24614,7 @@ public:
                                 IPropertyTree *att = edge.queryPropTree("att[@name=\"_roxieStarted\"]");
                                 if (!att)
                                 {
-                                    att = edge.addPropTree("att", createPTree(false));
+                                    att = edge.addPropTree("att", createPTree());
                                     att->setProp("@name", "_roxieStarted");
                                 }
                                 else
@@ -24644,7 +24644,7 @@ public:
                                     IPropertyTree *att = edge.queryPropTree("att[@name=\"_roxieStarted\"]");
                                     if (!att)
                                     {
-                                        att = edge.addPropTree("att", createPTree(false));
+                                        att = edge.addPropTree("att", createPTree());
                                         att->setProp("@name", "_roxieStarted");
                                     }
                                     else
@@ -25801,7 +25801,7 @@ public:
                 DebugRequestLookupActivityByEdgeId request(proxyId, edgeId);
                 CommonXmlWriter reply(0);
                 sendProxyRequest(&reply, request);
-                Owned<IPropertyTree> response = createPTreeFromXMLString(reply.str(), false);
+                Owned<IPropertyTree> response = createPTreeFromXMLString(reply.str());
                 if (response)
                 {
                     memsize_t proxyId = (memsize_t) response->getPropInt64("@proxyId", 0);
@@ -25894,7 +25894,7 @@ public:
         reply.outputBeginNested("Counts", true);
         sendProxyRequest(&reply, request);
         reply.outputEndNested("Counts"); // strange way to do it...
-        Owned<IPropertyTree> response = createPTreeFromXMLString(reply.str(), false);
+        Owned<IPropertyTree> response = createPTreeFromXMLString(reply.str());
         if (response)
         {
             Owned<IPropertyTreeIterator> edges = response->getElements("edge");
@@ -27838,7 +27838,7 @@ class CRoxieServerContext : public CSlaveContext, implements IRoxieServerContext
     bool sendHeartBeats;
     bool trim;
     bool traceMemoryUsage;
-    bool stripWhitespaceFromStoredDataset;
+    XmlReaderOptions xmlStoredDatasetReadFlags;
     unsigned warnTimeLimit;
     unsigned lastSocketCheckTime;
     unsigned lastHeartBeat;
@@ -27911,7 +27911,7 @@ protected:
             {
                 CriticalBlock b(contextCrit);
                 if (!temporaries)
-                    temporaries = createPTree(false);
+                    temporaries = createPTree();
                 return *temporaries;
             }
         case ResultSequenceOnce:
@@ -27922,7 +27922,7 @@ protected:
             {
                 CriticalBlock b(contextCrit);
                 if (!rereadResults)
-                    rereadResults = createPTree(false);
+                    rereadResults = createPTree();
                 return *rereadResults;
             }
         }
@@ -27971,7 +27971,7 @@ protected:
         ctxFetchPreload = defaultFetchPreload;
         ctxPrefetchProjectPreload = defaultPrefetchProjectPreload;
 
-        stripWhitespaceFromStoredDataset = false;
+        xmlStoredDatasetReadFlags = xr_none;
         traceActivityTimes = false;
     }
 
@@ -27984,10 +27984,10 @@ public:
         init();
         rowManager->setMemoryLimit(serverQueryFactory->getMemoryLimit());
         workflow.setown(_factory->createWorkflowMachine(true, logctx));
-        context.setown(createPTree(true));
+        context.setown(createPTree(ipt_caseInsensitive));
     }
 
-    CRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, bool _isXml, bool _isRaw, bool _isBlocked, HttpHelper &httpHelper, bool _trim, unsigned _priority, const IRoxieContextLogger &_logctx, const SocketEndpoint &poolEndpoint, bool _stripLeadingWhitespace)
+    CRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, bool _isXml, bool _isRaw, bool _isBlocked, HttpHelper &httpHelper, bool _trim, unsigned _priority, const IRoxieContextLogger &_logctx, const SocketEndpoint &poolEndpoint, XmlReaderOptions _xmlReadFlags)
         : CSlaveContext(_factory, _logctx, 0, 0, NULL, false, false), serverQueryFactory(_factory)
     {
         init();
@@ -27999,6 +27999,7 @@ public:
         isHttp = httpHelper.isHttp();
         trim = _trim;
         priority = _priority;
+        xmlStoredDatasetReadFlags = _xmlReadFlags;
         sendHeartBeats = enableHeartBeat && isRaw && isBlocked && priority==0;
         timeLimit = context->getPropInt("_TimeLimit", timeLimit);
         warnTimeLimit = context->getPropInt("_warnTimeLimit", warnTimeLimit);
@@ -28028,7 +28029,7 @@ public:
             if (workUnit->getXmlParams(wuParams).length())
             {
                 // Merge in params from WU. Ones on command line take precedence though...
-                Owned<IPropertyTree> wuParamTree = createPTreeFromXMLString(wuParams.str(), true);
+                Owned<IPropertyTree> wuParamTree = createPTreeFromXMLString(wuParams.str(), ipt_caseInsensitive);
                 Owned<IPropertyTreeIterator> params = wuParamTree ->getElements("*");
                 ForEach(*params)
                 {
@@ -28086,7 +28087,6 @@ public:
         ctxFetchPreload = context->getPropInt("_FetchPreload", defaultFetchPreload);
         ctxPrefetchProjectPreload = context->getPropInt("_PrefetchProjectPreload", defaultPrefetchProjectPreload);
 
-        stripWhitespaceFromStoredDataset = _stripLeadingWhitespace;
         traceActivityTimes = context->getPropBool("_TraceActivityTimes", false) || context->getPropBool("@timing", false);
     }
 
@@ -28361,7 +28361,7 @@ public:
         else
         {
             if (!val)
-                val = ctx.addPropTree(name, createPTree(false));
+                val = ctx.addPropTree(name, createPTree());
             val->setProp("@format", "deserialized");
             val->setPropInt("@id", resultStore.addResult(data, meta));
         }
@@ -28506,7 +28506,7 @@ public:
     virtual void setResultXml(const char *name, unsigned sequence, const char *xml) 
     {
         CriticalBlock b(contextCrit);
-        useContext(sequence).setPropTree(name, createPTreeFromXMLString(xml, true));
+        useContext(sequence).setPropTree(name, createPTreeFromXMLString(xml, ipt_caseInsensitive));
     }
 
     virtual void setResultDecimal(const char *name, unsigned sequence, int len, int precision, bool isSigned, const void *val) 
@@ -28877,7 +28877,7 @@ public:
                 {
                     assertex(xmlTransformer);
                     Variable2IDataVal result(&tlen, &tgt);
-                    CXmlToRawTransformer rawTransformer(*xmlTransformer, stripWhitespaceFromStoredDataset);
+                    CXmlToRawTransformer rawTransformer(*xmlTransformer, xmlStoredDatasetReadFlags);
                     rawTransformer.transformTree(result, *val, !isSet);
                 }
                 else if (strcmp(format, "deserialized")==0)
@@ -28924,7 +28924,7 @@ public:
         else if (xmlTransformer)
         {
             Fixed2IDataVal result(tlen, tgt);
-            CXmlToRawTransformer rawTransformer(*xmlTransformer, stripWhitespaceFromStoredDataset);
+            CXmlToRawTransformer rawTransformer(*xmlTransformer, xmlStoredDatasetReadFlags);
             rawTransformer.transformTree(result, *val, !isSet);
         }
         else if (csvTransformer)
@@ -29549,8 +29549,8 @@ private:
     StringAttr queryName;
 
 public:
-    CSoapRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, HttpHelper &httpHelper, unsigned _priority, const IRoxieContextLogger &_logctx, const SocketEndpoint &poolEndpoint, bool _stripLeadingWhitespace) 
-        : CRoxieServerContext(_context, _factory, _client, true, false, false, httpHelper, true, _priority, _logctx, poolEndpoint, _stripLeadingWhitespace)
+    CSoapRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, HttpHelper &httpHelper, unsigned _priority, const IRoxieContextLogger &_logctx, const SocketEndpoint &poolEndpoint, XmlReaderOptions xmlReadFlags)
+        : CRoxieServerContext(_context, _factory, _client, true, false, false, httpHelper, true, _priority, _logctx, poolEndpoint, xmlReadFlags)
     {
         queryName.set(_context->queryName());
     }
@@ -29602,12 +29602,12 @@ public:
     }
 };
 
-IRoxieServerContext *createRoxieServerContext(IPropertyTree *context, const IQueryFactory *factory, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, unsigned priority, const IRoxieContextLogger &_logctx, const SocketEndpoint &poolEndpoint, bool _stripLeadingWhitespace)
+IRoxieServerContext *createRoxieServerContext(IPropertyTree *context, const IQueryFactory *factory, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, unsigned priority, const IRoxieContextLogger &_logctx, const SocketEndpoint &poolEndpoint, XmlReaderOptions xmlReadFlags)
 {
     if (httpHelper.isHttp())
-        return new CSoapRoxieServerContext(context, factory, client, httpHelper, priority, _logctx, poolEndpoint, _stripLeadingWhitespace);
+        return new CSoapRoxieServerContext(context, factory, client, httpHelper, priority, _logctx, poolEndpoint, xmlReadFlags);
     else
-        return new CRoxieServerContext(context, factory, client, isXml, isRaw, isBlocked, httpHelper, trim, priority, _logctx, poolEndpoint, _stripLeadingWhitespace);
+        return new CRoxieServerContext(context, factory, client, isXml, isRaw, isBlocked, httpHelper, trim, priority, _logctx, poolEndpoint, xmlReadFlags);
 }
 
 IRoxieServerContext *createOnceServerContext(const IQueryFactory *factory, const IRoxieContextLogger &_logctx)
@@ -29758,7 +29758,7 @@ public:
         StringBuffer lockQuery;
         lockQuery.appendf("<control:childlock thisEndpoint='%d' parent='%d'/>", activeIdxes.item(idx), myEndpoint);
         doChildQuery(idx, lockQuery.str(), lockReply);
-        Owned<IPropertyTree> lockResult = createPTreeFromXMLString(lockReply.str(), true);
+        Owned<IPropertyTree> lockResult = createPTreeFromXMLString(lockReply.str(), ipt_caseInsensitive);
         int lockCount = lockResult->getPropInt("Lock", 0);
         if (lockCount)
         {
@@ -29895,7 +29895,7 @@ public:
         if (traceLevel > 5)
             DBGLOG("doLockChild: %s", queryText);
         isMaster = false;
-        Owned<IPropertyTree> xml = createPTreeFromXMLString(queryText, false);
+        Owned<IPropertyTree> xml = createPTreeFromXMLString(queryText);
         bool unlock = xml->getPropBool("@unlock", false);
         if (unlock)
         {
@@ -29985,7 +29985,7 @@ public:
         // So do the query ourselves and in all child threads;
         Owned<IPropertyTree> mergedStats;
         if (strstr(queryText, "querystats"))
-            mergedStats.setown(createPTree("Endpoint", false));
+            mergedStats.setown(createPTree("Endpoint"));
         
         class casyncfor: public CAsyncFor
         {
@@ -30014,7 +30014,7 @@ public:
                 {
                     StringBuffer childReply;
                     parent->doChildQuery(i, queryText, childReply);
-                    Owned<IPropertyTree> xml = createPTreeFromXMLString(childReply, false);
+                    Owned<IPropertyTree> xml = createPTreeFromXMLString(childReply);
                     if (!xml)
                     {
                         StringBuffer err;
@@ -30043,7 +30043,7 @@ public:
                 myReply.append("'>\n");
                 try
                 {
-                    Owned<IPropertyTree> xml = createPTreeFromXMLString(queryText, false); // control queries are case sensitive
+                    Owned<IPropertyTree> xml = createPTreeFromXMLString(queryText); // control queries are case sensitive
                     doControlMessage(xml, myReply, logctx);
                 }
                 catch(IException *E)
@@ -30058,7 +30058,7 @@ public:
                 CriticalBlock cb(crit);
                 if (mergedStats)
                 {
-                    Owned<IPropertyTree> xml = createPTreeFromXMLString(myReply, false);
+                    Owned<IPropertyTree> xml = createPTreeFromXMLString(myReply);
                     mergeStats(mergedStats, xml, 0);
                 }
                 else
@@ -30120,14 +30120,14 @@ private:
     SafeSocket &client;
     HttpHelper &httpHelper;
     const SocketEndpoint &poolEndpoint;
-    bool stripLeadingWhitespace;
+    XmlReaderOptions xmlReadFlags;
     unsigned &memused;
     unsigned &slaveReplyLen;
     CriticalSection crit;
 
 public:
-    CSoapRequestAsyncFor(const char *_queryName, IQueryFactory *_f, IArrayOf<IPropertyTree> &_requestArray, SafeSocket &_client, HttpHelper &_httpHelper, unsigned &_memused, unsigned &_slaveReplyLen, const char *_queryText, const IRoxieContextLogger &_logctx, const SocketEndpoint &_poolEndpoint, bool _stripLeadingWhitespace) :
-      f(_f), requestArray(_requestArray), client(_client), httpHelper(_httpHelper), memused(_memused), slaveReplyLen(_slaveReplyLen), logctx(_logctx), poolEndpoint(_poolEndpoint), stripLeadingWhitespace(_stripLeadingWhitespace)
+    CSoapRequestAsyncFor(const char *_queryName, IQueryFactory *_f, IArrayOf<IPropertyTree> &_requestArray, SafeSocket &_client, HttpHelper &_httpHelper, unsigned &_memused, unsigned &_slaveReplyLen, const char *_queryText, const IRoxieContextLogger &_logctx, const SocketEndpoint &_poolEndpoint, XmlReaderOptions _xmlReadFlags) :
+      f(_f), requestArray(_requestArray), client(_client), httpHelper(_httpHelper), memused(_memused), slaveReplyLen(_slaveReplyLen), logctx(_logctx), poolEndpoint(_poolEndpoint), xmlReadFlags(_xmlReadFlags)
     {
         queryName = _queryName;
         queryText = _queryText;
@@ -30151,7 +30151,7 @@ public:
         try
         {
             IPropertyTree &request = requestArray.item(idx);
-            Owned<IRoxieServerContext> ctx = f->createContext(&request, client, true, false, false, httpHelper, true, logctx, poolEndpoint, stripLeadingWhitespace);
+            Owned<IRoxieServerContext> ctx = f->createContext(&request, client, true, false, false, httpHelper, true, logctx, poolEndpoint, xmlReadFlags);
             ctx->process();
             ctx->flush(idx);
             CriticalBlock b(crit);
@@ -30701,7 +30701,7 @@ readAnother:
             }
             else if (strnicmp(rawText.str(), "<control:", 9)==0)
             {
-                Owned<IPropertyTree> queryXML = createPTreeFromXMLString(rawText.str(), false); // This is just done to check it is valid XML and make error reporting better...
+                Owned<IPropertyTree> queryXML = createPTreeFromXMLString(rawText.str()); // This is just done to check it is valid XML and make error reporting better...
                 queryXML.clear();
                 bool doControlQuery = true;
                 
@@ -30710,7 +30710,7 @@ readAnother:
 
                 if (strnicmp(rawText.str(), "<control:aclupdate", 18)==0)
                 {
-                    queryXml.setown(createPTreeFromXMLString(rawText.str(), true, true, NULL, true));
+                    queryXml.setown(createPTreeFromXMLString(rawText.str(), ipt_caseInsensitive, (XmlReaderOptions)(xr_ignoreWhiteSpace|xr_ignoreNameSpaces)));
                     IPropertyTree *aclTree = queryXml->queryPropTree("ACL");
                     if (aclTree)
                     {
@@ -30764,7 +30764,7 @@ readAnother:
             {
                 try
                 {
-                    queryXml.setown(createPTreeFromXMLString(rawText.str(), true, defaultStripLeadingWhitespace, NULL, true));
+                    queryXml.setown(createPTreeFromXMLString(rawText.str(), ipt_caseInsensitive, (XmlReaderOptions)(defaultXmlReadFlags | xr_ignoreNameSpaces)));
                 }
                 catch (IException *E)
                 {
@@ -30842,13 +30842,14 @@ readAnother:
                             client->setHttpMode(queryName, isRequestArray);
                         if (queryFactory)
                         {
-                            bool stripLeadingWhitespace = defaultStripLeadingWhitespace;
-                            stripLeadingWhitespace = queryFactory->getDebugValueBool("stripWhitespaceFromStoredDataset", stripLeadingWhitespace);
-                            stripLeadingWhitespace = queryXml->getPropBool("_stripWhitespaceFromStoredDataset", stripLeadingWhitespace);
-                            if (stripLeadingWhitespace != defaultStripLeadingWhitespace)
+                            bool stripWhitespace = queryFactory->getDebugValueBool("stripWhitespaceFromStoredDataset", 0 != (xr_ignoreWhiteSpace & defaultXmlReadFlags));
+                            stripWhitespace = queryXml->getPropBool("_stripWhitespaceFromStoredDataset", stripWhitespace);
+                            XmlReaderOptions xmlReadFlags = (XmlReaderOptions)((defaultXmlReadFlags & ~xr_ignoreWhiteSpace) |
+                                                                               (stripWhitespace ? xr_ignoreWhiteSpace : xr_none));
+                            if (xmlReadFlags != defaultXmlReadFlags)
                             {
                                 // we need to reparse input xml, as global whitespace setting has been overridden
-                                queryXml.setown(createPTreeFromXMLString(rawText.str(), true, stripLeadingWhitespace , NULL, true));
+                                queryXml.setown(createPTreeFromXMLString(rawText.str(), ipt_caseInsensitive, (XmlReaderOptions)(xmlReadFlags|xr_ignoreNameSpaces)));
                                 sanitizeQuery(queryXml, queryName, sanitizedText, isHTTP, uid, isRequest, isRequestArray, isBlind, isDebug);
                             }
                             IArrayOf<IPropertyTree> requestArray;
@@ -30862,7 +30863,7 @@ readAnother:
                                     Owned<IPropertyTreeIterator> reqIter = queryXml->getElements(reqIterString.str());
                                     ForEach(*reqIter)
                                     {
-                                        IPropertyTree *fixedreq = createPTree(queryName, true);
+                                        IPropertyTree *fixedreq = createPTree(queryName, ipt_caseInsensitive);
                                         Owned<IPropertyTreeIterator> iter = reqIter->query().getElements("*");
                                         ForEach(*iter)
                                         {
@@ -30873,7 +30874,7 @@ readAnother:
                                 }
                                 else
                                 {
-                                    IPropertyTree *fixedreq = createPTree(queryName, true);
+                                    IPropertyTree *fixedreq = createPTree(queryName, ipt_caseInsensitive);
                                     Owned<IPropertyTreeIterator> iter = queryXml->getElements("*");
                                     ForEach(*iter)
                                     {
@@ -30921,12 +30922,12 @@ readAnother:
                             unknownQueryStats.noteComplete();
                             if (isHTTP)
                             {
-                                CSoapRequestAsyncFor af(queryName, queryFactory, requestArray, *client, httpHelper, memused, slavesReplyLen, sanitizedText, logctx, pool->queryEndpoint(), stripLeadingWhitespace);
+                                CSoapRequestAsyncFor af(queryName, queryFactory, requestArray, *client, httpHelper, memused, slavesReplyLen, sanitizedText, logctx, pool->queryEndpoint(), xmlReadFlags);
                                 af.For(requestArray.length(), numRequestArrayThreads);
                             }
                             else
                             {
-                                Owned<IRoxieServerContext> ctx = queryFactory->createContext(queryXml, *client, isXml, isRaw, isBlocked, httpHelper, trim, logctx, pool->queryEndpoint(), stripLeadingWhitespace);
+                                Owned<IRoxieServerContext> ctx = queryFactory->createContext(queryXml, *client, isXml, isRaw, isBlocked, httpHelper, trim, logctx, pool->queryEndpoint(), xmlReadFlags);
                                 if (client && !ctx->outputResultsToSocket())
                                 {
                                     unsigned replyLen = 0;

@@ -236,9 +236,12 @@ int main( int argc, char *argv[]  )
     Owned<CReleaseMutex> globalNamedMutex;
 #endif 
 
-    if (globals) globals->Release();
-    { Owned<IFile> ifile = createIFile("thor.xml");
-        globals = ifile->exists() ? createPTreeFromXMLFile("thor.xml", true) : createPTree("Thor", true);
+    if (globals)
+        globals->Release();
+
+    {
+        Owned<IFile> iFile = createIFile("thor.xml");
+        globals = iFile->exists() ? createPTree(*iFile, ipt_caseInsensitive) : createPTree("Thor", ipt_caseInsensitive);
     }
     unsigned multiThorMemoryThreshold = 0;
     try {

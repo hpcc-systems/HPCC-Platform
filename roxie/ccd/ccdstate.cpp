@@ -575,7 +575,7 @@ public:
         }
         else
         {
-            Owned<IPropertyTree> xml = createPTree(*packageFile, false);
+            Owned<IPropertyTree> xml = createPTree(*packageFile);
             if (strcmp(xml->queryName(), "RoxiePackages")==0)
             {
                 Owned<IPropertyTreeIterator> allpackages = xml->getElements("Package");
@@ -603,7 +603,7 @@ public:
                 {
                     IPropertyTree &item= allQuerySets->query();
                     if (!querySets)
-                        querySets.setown(createPTree("QuerySets", false));
+                        querySets.setown(createPTree("QuerySets"));
                     querySets->addPropTree("QuerySet", item.getBranch("."));
                 }
                 DBGLOG("Loaded package file %s", fileName.str());
@@ -961,7 +961,7 @@ public:
                     throw MakeStringException(ROXIE_INVALID_TOPOLOGY, "Invalid topology file - channel %d repeated for this slave", channelNo);
             }
         }
-        Owned<IPropertyTree> newQuerySets = createPTree("QuerySets", false);
+        Owned<IPropertyTree> newQuerySets = createPTree("QuerySets");
         Owned<IPropertyTree> loadSets = packages->getQuerySets();
         if (loadSets)
         {
@@ -983,7 +983,7 @@ public:
         }
         if (standaloneDll)
         {
-            Owned<IPropertyTree> newQuerySet = createPTree("QuerySet", false);
+            Owned<IPropertyTree> newQuerySet = createPTree("QuerySet");
             newQuerySet->setProp("@name", "_standalone");
             newQuerySet->addPropTree("Query", standaloneDll.getLink());
             newQuerySets->addPropTree("QuerySet", newQuerySet.getClear());
@@ -1564,13 +1564,13 @@ public:
                     id = f->queryQueryName();
                     StringBuffer freply;
                     serverManager->getStats(id, graphName, freply, logctx);
-                    Owned<IPropertyTree> stats = createPTreeFromXMLString(freply.str(), false);
+                    Owned<IPropertyTree> stats = createPTreeFromXMLString(freply.str());
                     for (unsigned channel = 0; channel < numChannels; channel++)
                         if (slaveManagers[channel])
                         {
                             StringBuffer sreply;
                             slaveManagers[channel]->getStats(id, graphName, sreply, logctx);
-                            Owned<IPropertyTree> cstats = createPTreeFromXMLString(sreply.str(), false);
+                            Owned<IPropertyTree> cstats = createPTreeFromXMLString(sreply.str());
                             mergeStats(stats, cstats, 1);
                         }
                     toXML(stats, reply);
@@ -2094,7 +2094,7 @@ extern void createResourceManagers(const IQueryDll *standAloneDll, unsigned numC
         Owned<IPropertyTree> standAloneDllTree;
         if (standAloneDll)
         {
-            standAloneDllTree.setown(createPTree("Query", false));
+            standAloneDllTree.setown(createPTree("Query"));
             standAloneDllTree->setProp("@id", "roxie");
             standAloneDllTree->setProp("@dll", standAloneDll->queryDll()->queryName());
         }
@@ -2481,9 +2481,9 @@ class MergeStatsTest : public CppUnit::TestFixture
 protected:
     void test1()
     {
-        Owned<IPropertyTree> p1 = createPTreeFromXMLString(g1, false);
-        Owned<IPropertyTree> p2 = createPTreeFromXMLString(g2, false);
-        Owned<IPropertyTree> e = createPTreeFromXMLString(expected, false);
+        Owned<IPropertyTree> p1 = createPTreeFromXMLString(g1);
+        Owned<IPropertyTree> p2 = createPTreeFromXMLString(g2);
+        Owned<IPropertyTree> e = createPTreeFromXMLString(expected);
         mergeStats(p1, p2, 0);
         StringBuffer s1, s2;
         toXML(p1, s1);

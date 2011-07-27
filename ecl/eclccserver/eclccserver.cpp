@@ -539,7 +539,7 @@ int main(int argc, const char *argv[])
 
     try
     {
-        globals.setown(loadPropertyTree("eclccserver.xml", true));
+        globals.setown(createPTreeFromXMLFile("eclccserver.xml", ipt_caseInsensitive));
     }
     catch (IException * e)
     {

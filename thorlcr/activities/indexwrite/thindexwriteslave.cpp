@@ -214,14 +214,14 @@ public:
                 throw MakeActivityException(this, 0, "Invalid name %s in user metadata for index %s (names beginning with underscore are reserved)", name.str(), helper->getFileName());
             if(!validateXMLTag(name.str()))
                 throw MakeActivityException(this, 0, "Invalid name %s in user metadata for index %s (not legal XML element name)", name.str(), helper->getFileName());
-            if(!metadata) metadata.setown(createPTree("metadata", false));
+            if(!metadata) metadata.setown(createPTree("metadata"));
             metadata->setProp(name.str(), value.str());
         }
     }
 
     void buildLayoutMetadata(Owned<IPropertyTree> & metadata)
     {
-        if(!metadata) metadata.setown(createPTree("metadata", false));
+        if(!metadata) metadata.setown(createPTree("metadata"));
         metadata->setProp("_record_ECL", helper->queryRecordECL());
 
         void * layoutMetaBuff;

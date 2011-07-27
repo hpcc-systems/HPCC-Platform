@@ -166,7 +166,7 @@ int main(int argc, char* argv[])
         StringBuffer auditDir;
         if (confIFile->exists())
         {
-            serverConfig.setown(createPTreeFromXMLFile(DALICONF, false));
+            serverConfig.setown(createPTreeFromXMLFile(DALICONF));
             if (getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"log","dali",serverConfig->queryProp("@name"),logName)) {
                 addPathSepChar(auditDir.append(logName)).append("audit");
                 addPathSepChar(logName).append("server");
@@ -343,7 +343,7 @@ int main(int argc, char* argv[])
             }
         }
         else
-            serverConfig.setown(createPTree(false));
+            serverConfig.setown(createPTree());
 #ifdef _WIN32
         Owned<CReleaseMutex> globalNamedMutex;
         if (!serverConfig->getPropBool("allowMultipleDalis"))

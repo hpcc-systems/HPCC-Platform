@@ -64,7 +64,7 @@ class MonitoredChildMap : public ChildMap
 {
     CClientRemoteTree &owner;
 public:
-    MonitoredChildMap(CClientRemoteTree &_owner) : ChildMap(false), owner(_owner) { }
+    MonitoredChildMap(CClientRemoteTree &_owner) : ChildMap(), owner(_owner) { }
 
     
     virtual bool replace(const char *name, IPropertyTree *tree)
@@ -484,7 +484,7 @@ void extractServerIds(IPropertyTree &tree, MemoryBuffer &mb, bool completeTailBr
 
 static void walkAndFill(IPropertyTree &tree, CClientRemoteTree &parent, MemoryBuffer &mb, bool childrenCanBeMissing)
 {
-    parent.createChildMap(false);
+    parent.createChildMap();
     bool r;
     if (childrenCanBeMissing)
         mb.read(r);
@@ -608,7 +608,7 @@ void CClientRemoteTree::deserializeChildrenRT(MemoryBuffer &src)
         size32_t pos = src.getPos();
         src.read(eName);
         if (eName.length())
-            createChildMap(false);
+            createChildMap();
         src.reset(pos);
     }
     CRemoteTreeBase::deserializeChildrenRT(src);
@@ -759,7 +759,7 @@ ChildMap *CClientRemoteTree::_checkChildren()
         if (queryLazyFetch())
         {
             serverTreeInfo &= ~STI_HaveChildren;
-            createChildMap(false);
+            createChildMap();
             if (serverId)
                 queryManager().getChildren(*this, connection);
         }
@@ -779,13 +779,7 @@ IPropertyTree *CClientRemoteTree::ownPTree(IPropertyTree *tree)
         return PTree::ownPTree(tree);
 }
 
-IPropertyTree *CClientRemoteTree::create(IPTArrayValue *value)
-{
-    assertex(false);
-    return NULL;
-}
-
-IPropertyTree *CClientRemoteTree::create(const char *name, bool nocase, IPTArrayValue *value, ChildMap *children, bool existing)
+IPropertyTree *CClientRemoteTree::create(const char *name, IPTArrayValue *value, ChildMap *children, bool existing)
 {
     CClientRemoteTree *newTree = new CClientRemoteTree(name, value, children, connection);
     if (existing)
@@ -809,7 +803,7 @@ IPropertyTree *CClientRemoteTree::create(MemoryBuffer &mb)
     return tree;
 }
 
-void CClientRemoteTree::createChildMap(bool caseInsensitive)
+void CClientRemoteTree::createChildMap()
 {
     children = new MonitoredChildMap(*this);
 }
@@ -1017,7 +1011,7 @@ void CClientRemoteTree::checkExt() const
             queryManager().getExternalValueFromServerId(serverId, mb);
             if (mb.length())
             {
-                bool binary = PtFlagTst(flags, PtFlag_Binary);
+                bool binary = IptFlagTst(flags, ipt_binary);
                 const_cast<CClientRemoteTree *>(this)->setValue(new CPTValue(mb), binary);
             }
             else
@@ -1029,7 +1023,7 @@ void CClientRemoteTree::checkExt() const
         if (STI_External & serverTreeInfo)
         {
             MemoryBuffer mb;
-            bool binary = PtFlagTst(flags, PtFlag_Binary);
+            bool binary = IptFlagTst(flags, ipt_binary);
             queryManager().getExternalValueFromServerId(serverId, mb);
             if (mb.length())
             {
@@ -1376,7 +1370,7 @@ void CClientSDSManager::getChildrenFor(CRTArray &childLessList, CRemoteConnectio
     ForEachItemIn(f2, childLessList)
     {
         CRemoteTreeBase &parent = childLessList.item(f2);
-        parent.createChildMap(false);
+        parent.createChildMap();
         if (parent.queryServerId())
         {
             bool r;
@@ -1765,7 +1759,7 @@ IPropertyTree &CClientSDSManager::queryProperties() const
     }
     properties = createPTree(mb);
     if (!properties->hasProp("Client"))
-        properties->setPropTree("Client", createPTree(false));
+        properties->setPropTree("Client", createPTree());
     return *properties;
 }
 

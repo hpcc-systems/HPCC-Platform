@@ -443,9 +443,10 @@ int main( int argc, char *argv[]  )
     loadMasters(); // actually just a dummy call to ensure dll linked
     InitModuleObjects();
     NoQuickEditSection xxx;
-
-    Owned<IFile> thorConfFile = createIFile("thor.xml");
-    globals = thorConfFile->exists() ? createPTreeFromXMLFile("thor.xml", true) : createPTree(true);
+    {
+        Owned<IFile> iFile = createIFile("thor.xml");
+        globals = iFile->exists() ? createPTree(*iFile, ipt_caseInsensitive) : createPTree("Thor", ipt_caseInsensitive);
+    }
     char **pp = argv+1;
     while (*pp)
         loadCmdProp(globals, *pp++);

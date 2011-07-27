@@ -465,7 +465,7 @@ int main(int argc, char* argv[])
                                     StringBuffer res;
                                     if (cmd->getResult(i,res)) {
                                         if (extractTimings) {
-                                            Owned<IPropertyTree> pt = createPTreeFromXMLString(res.str(),false);
+                                            Owned<IPropertyTree> pt = createPTreeFromXMLString(res.str());
                                             if (pt) 
                                                 DumpWorkunitTimings(pt);
                                         }
