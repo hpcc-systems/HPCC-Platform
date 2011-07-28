@@ -150,7 +150,6 @@ public:
 protected:
     Linked<IXmlToRowTransformer> rowTransformer;
     XmlReaderOptions xmlReadFlags;
-    bool stripWhitespace;
 };
 
 class thorhelper_decl CCsvToRawTransformer : public CInterface, implements ICsvToRawTransformer
