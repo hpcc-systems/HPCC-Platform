@@ -4757,7 +4757,7 @@ void XmlMemSize(const char *filename)
     size32_t sz = iFile->size();
     StringBuffer xml;
     iFileIO->read(0, sz, xml.reserve(sz));
-    Owned<IPropertyTree> branch = createPTreeFromXMLString(xml.str(), ipt_none, xr_ignoreWhiteSpace);
+    Owned<IPropertyTree> branch = createPTreeFromXMLString(xml.str());
     unsigned tm = setAllocHook(true);
     branch.clear();
     tm -= setAllocHook(false);
