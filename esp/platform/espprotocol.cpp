@@ -348,7 +348,8 @@ IPropertyTree *CEspBinding::ensureNavFolder(IPropertyTree &root, const char *nam
         ret->addProp("@name", name);
         ret->addProp("@tooltip", tooltip);
         ret->setProp("@menu", menuname);
-        ret->setPropBool("@sort", true);
+        if (sort)
+            ret->addPropBool("@sort", true);
         ret->addPropInt("@relPosition", relPosition);
 
         root.addPropTree("Folder", ret);
