@@ -746,6 +746,7 @@ add_user(){
         else
             printf "Adding %s to system ..." "${USER}"
             useradd -s ${SHELL} -m -d ${HOMEPATH} -g ${GROUP} ${USER}
+            passwd -d ${USER} 1>/dev/null 2>&1
             if [ $? -eq 0 ];
             then
                 log_success_msg
@@ -779,6 +780,7 @@ add_user(){
         else
             printf "Adding %s to system ..." "${USER}"
             useradd -s ${SHELL} -m -d ${HOMEPATH} -g ${GROUP} ${USER}
+            passwd -d ${USER} 1>/dev/null 2>&1
             if [ $? -eq 0 ];
             then
                 log_success_msg
