@@ -1133,7 +1133,7 @@ public:
 class CPTreeWithOffsets : public LocalPTree
 {
 public:
-    CPTreeWithOffsets(const char *name) : LocalPTree(name, false) { startOffset = endOffset = 0; }      
+    CPTreeWithOffsets(const char *name) : LocalPTree(name) { startOffset = endOffset = 0; }
 
     offset_t startOffset, endOffset;
 };

@@ -49,14 +49,13 @@ public:
 
 typedef MapStringTo<IInterfacePtr, IInterfacePtr, MappingStringToOwned> MapStringToOwned;
 
+// case sensitive childmap
 class jlib_decl ChildMap : public SuperHashTableOf<IPropertyTree, constcharptr>
 {
-protected:
-    bool nocase;
 public: 
     IMPLEMENT_SUPERHASHTABLEOF_REF_FIND(IPropertyTree, constcharptr);
 
-    ChildMap(bool _nocase) : SuperHashTableOf<IPropertyTree, constcharptr>(4), nocase(_nocase)
+    ChildMap() : SuperHashTableOf<IPropertyTree, constcharptr>(4)
     { 
     }
     ~ChildMap() 
@@ -96,11 +95,7 @@ public:
     virtual unsigned getHashFromElement(const void *e) const;
     virtual unsigned getHashFromFindParam(const void *fp) const
     {
-        const char *name = (const char *)fp;
-        if (nocase)
-            return hashnc((const unsigned char *)name, (size32_t)strlen(name), 0);
-        else
-            return hashc((const unsigned char *)name, (size32_t)strlen(name), 0);
+        return hashc((const unsigned char *)fp, (size32_t)strlen((const char *)fp), 0);
     }
     virtual const void *getFindParam(const void *e) const
     {
@@ -109,10 +104,22 @@ public:
     }
     virtual bool matchesFindParam(const void *e, const void *fp, unsigned fphash) const
     {
-        if (nocase)
-            return (0 == stricmp(((IPropertyTree *)e)->queryName(), (const char *)fp));
-        else
-            return (0 == strcmp(((IPropertyTree *)e)->queryName(), (const char *)fp));
+        return (0 == strcmp(((IPropertyTree *)e)->queryName(), (const char *)fp));
+    }
+};
+
+// case insensitive childmap
+class jlib_decl ChildMapNC : public ChildMap
+{
+public:
+// SuperHashTable definitions
+    virtual unsigned getHashFromFindParam(const void *fp) const
+    {
+        return hashnc((const unsigned char *)fp, (size32_t)strlen((const char *)fp), 0);
+    }
+    virtual bool matchesFindParam(const void *e, const void *fp, unsigned fphash) const
+    {
+        return (0 == stricmp(((IPropertyTree *)e)->queryName(), (const char *)fp));
     }
 };
 
@@ -212,11 +219,9 @@ private:
     mutable bool compressed;
 };
 
-// NB PtFlag_Ext6 - used by SDS
-enum PtFlags { PtFlag_NoCase=1, PtFlag_Binary=2, PtFlag_Ext1=4, PtFlag_Ext2=8, PtFlag_Ext3=16, PtFlag_Ext4=32, PtFlag_Ext5=64, PtFlag_Ext6=128 };
-#define PtFlagTst(fs, f) (0!=(fs&(f)))
-#define PtFlagSet(fs, f) (fs |= (f))
-#define PtFlagClr(fs, f) (fs &= (~f))
+#define IptFlagTst(fs, f) (0!=(fs&(f)))
+#define IptFlagSet(fs, f) (fs |= (f))
+#define IptFlagClr(fs, f) (fs &= (~f))
 
 struct AttrStr
 {
@@ -299,21 +304,21 @@ public:
     virtual bool IsShared() const { return CInterface::IsShared(); }
 
     PTree(MemoryBuffer &mb);
-    PTree(const char *_name=NULL, bool _nocase=false, IPTArrayValue *_value=NULL, ChildMap *_children=NULL);
+    PTree(const char *_name=NULL, byte _flags=0, IPTArrayValue *_value=NULL, ChildMap *_children=NULL);
     ~PTree();
 
     IPropertyTree *queryParent() { return parent; }
     IPropertyTree *queryChild(unsigned index);
     ChildMap *queryChildren() { return children; }
     aindex_t findChild(IPropertyTree *child, bool remove=false);
-    inline bool isnocase() const { return PtFlagTst(flags, PtFlag_NoCase); }
-    const PtFlags queryFlags() const { return (PtFlags) flags; }
+    inline bool isnocase() const { return IptFlagTst(flags, ipt_caseInsensitive); }
+    const ipt_flags queryFlags() const { return (ipt_flags) flags; }
 public:
     void serializeCutOff(MemoryBuffer &tgt, int cutoff=-1, int depth=0);
     void serializeAttributes(MemoryBuffer &tgt);
     virtual void serializeSelf(MemoryBuffer &tgt);
     virtual void deserializeSelf(MemoryBuffer &src);
-    virtual void createChildMap(bool caseInsensitive=true) { children = new ChildMap(caseInsensitive); }
+    virtual void createChildMap() { children = isnocase()?new ChildMapNC():new ChildMap(); }
 
 
     HashKeyElement *queryKey() { return name; }
@@ -325,7 +330,7 @@ public:
     IPropertyTree *splitBranchProp(const char *xpath, const char *&_prop, bool error=false);
     IPTArrayValue *queryValue() { return value; }
     IPTArrayValue *detachValue() { IPTArrayValue *v = value; value = NULL; return v; }
-    void setValue(IPTArrayValue *_value, bool binary) { if (value) delete value; value = _value; if (binary) PtFlagSet(flags, PtFlag_Binary); }
+    void setValue(IPTArrayValue *_value, bool binary) { if (value) delete value; value = _value; if (binary) IptFlagSet(flags, ipt_binary); }
     bool checkPattern(const char *&xxpath) const;
     void clear();
 
@@ -385,7 +390,7 @@ protected:
     virtual bool removeAttr(const char *attr);
     virtual void addingNewElement(IPropertyTree &child, int pos) { }
     virtual void removingElement(IPropertyTree *tree, unsigned pos) { }
-    virtual IPropertyTree *create(const char *name=NULL, bool nocase=false, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false) = 0;
+    virtual IPropertyTree *create(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false) = 0;
     virtual IPropertyTree *create(MemoryBuffer &mb) = 0;
     virtual IPropertyTree *ownPTree(IPropertyTree *tree);
     aindex_t getChildMatchPos(const char *xpath);
@@ -411,13 +416,13 @@ jlib_decl IPropertyTree *createPropBranch(IPropertyTree *tree, const char *xpath
 class LocalPTree : public PTree
 {
 public:
-    LocalPTree(const char *name=NULL, bool nocase=false, IPTArrayValue *value=NULL, ChildMap *children=NULL)
-        : PTree(name, nocase, value, children) { }
+    LocalPTree(const char *name=NULL, byte flags=ipt_none, IPTArrayValue *value=NULL, ChildMap *children=NULL)
+        : PTree(name, flags, value, children) { }
 
     virtual bool isEquivalent(IPropertyTree *tree) { return (NULL != QUERYINTERFACE(tree, LocalPTree)); }
-    virtual IPropertyTree *create(const char *name=NULL, bool nocase=false, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false)
+    virtual IPropertyTree *create(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false)
     {
-        return new LocalPTree(name, nocase, value, children);
+        return new LocalPTree(name, flags, value, children);
     }
     virtual IPropertyTree *create(MemoryBuffer &mb)
     {
@@ -526,11 +531,11 @@ class CPTreeMaker : public CInterface, implements IPTreeMaker
     IPTreeNodeCreator *nodeCreator;
     class CDefaultNodeCreator : public CInterface, implements IPTreeNodeCreator
     {
-        ipt_flags flags;
+        byte flags;
     public:
         IMPLEMENT_IINTERFACE;
 
-        CDefaultNodeCreator(ipt_flags _flags) : flags(_flags) { }
+        CDefaultNodeCreator(byte _flags) : flags(_flags) { }
 
         virtual IPropertyTree *create(const char *tag) { return createPTree(tag, flags); }
     };
@@ -539,7 +544,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CPTreeMaker(ipt_flags flags=ipt_none, IPTreeNodeCreator *_nodeCreator=NULL, IPropertyTree *_root=NULL, bool _noRoot=false) : noRoot(_noRoot)
+    CPTreeMaker(byte flags=ipt_none, IPTreeNodeCreator *_nodeCreator=NULL, IPropertyTree *_root=NULL, bool _noRoot=false) : noRoot(_noRoot)
     {
         if (_nodeCreator)
             nodeCreator = LINK(_nodeCreator);

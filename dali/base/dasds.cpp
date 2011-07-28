@@ -1297,7 +1297,7 @@ public:
         const char *_name = owner.queryName();
         mb.append(_name?_name:"");
         byte flags = ((PTree &)owner).queryFlags();
-        mb.append(PtFlagSet(flags, PtFlag_Binary));
+        mb.append(IptFlagTst(flags, ipt_binary));
 
         serializeVisibleAttributes(owner, mb);
 
@@ -1402,7 +1402,8 @@ public:
         size32_t sz = (size32_t)iFile->size();
         if ((unsigned)-1 == sz)
         {
-            byte flags = ((PTree &)owner).queryFlags() & ~PtFlag_Binary;
+            byte flags = ((PTree &)owner).queryFlags();
+            IptFlagClr(flags, ipt_binary);
             mb.append(flags);
             serializeVisibleAttributes(owner, mb);
             StringBuffer s("Missing external file ");
@@ -2067,7 +2068,7 @@ void CServerConnection::aborted(SessionId id)
 enum IncCmd { None, PropDelete, AttrDelete, PropChange, PropNew, PropExisting, ChildEndMarker, PropRename, AttrChange };
 
 CRemoteTreeBase::CRemoteTreeBase(const char *name, IPTArrayValue *value, ChildMap *children, CPState _state)
-    : PTree(name, false, value, children), state(_state)
+    : PTree(name, ipt_none, value, children), state(_state)
 {
     serverId = 0;
 }
@@ -2076,10 +2077,6 @@ CRemoteTreeBase::CRemoteTreeBase(MemoryBuffer &mb, CPState _state)
     : state(_state)
 {
     serverId = 0;
-}
-
-CRemoteTreeBase::~CRemoteTreeBase()
-{
 }
 
 void CRemoteTreeBase::reset(unsigned _state, bool sub)
@@ -2305,7 +2302,7 @@ void CRemoteTreeBase::clearChildren()
 
 CRemoteTreeBase *CRemoteTreeBase::createChild(int pos, const char *childName)
 {
-    CRemoteTreeBase *child = (CRemoteTreeBase *) create(NULL, false);
+    CRemoteTreeBase *child = (CRemoteTreeBase *) create(NULL);
     if (-1 == pos)
         child = (CRemoteTreeBase *) addPropTree(childName, child);
     else
@@ -2352,14 +2349,14 @@ class CServerRemoteTree : public CRemoteTreeBase
     class COrphanHandler : public ChildMap
     {
     public:
-        COrphanHandler() : ChildMap(false) { }
+        COrphanHandler() : ChildMap() { }
         ~COrphanHandler() { kill(); }
         static void setOrphans(CServerRemoteTree &tree, bool tf)
         {
             if (tf)
-                PtFlagSet(tree.flags, PtFlag_Ext6);
+                IptFlagSet(tree.flags, ipt_ext5);
             else
-                PtFlagClr(tree.flags, PtFlag_Ext6);
+                IptFlagClr(tree.flags, ipt_ext5);
             IPTArrayValue *v = tree.queryValue();
             if (v && v->isArray())
             {
@@ -2467,7 +2464,7 @@ public:
         SDSManager->queryAllNodes().addElem(this);
     }
 
-    virtual bool isOrphaned() const { return PtFlagTst(flags, PtFlag_Ext6); }
+    virtual bool isOrphaned() const { return IptFlagTst(flags, ipt_ext5); }
 
     virtual void setServerId(__int64 _serverId)
     {
@@ -2481,7 +2478,7 @@ public:
         return SDSManager->getSubscribers(xpath, stack);
     }
 
-    IPropertyTree *create(const char *name=NULL, bool nocase=false, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false)
+    IPropertyTree *create(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false)
     {
         return new CServerRemoteTree(name, value, children);
     }
@@ -2491,7 +2488,7 @@ public:
         return new CServerRemoteTree(mb);
     }
 
-    virtual void createChildMap(bool caseInsensitive=true) { children = new COrphanHandler(); }
+    virtual void createChildMap() { children = new COrphanHandler(); }
 
     inline bool testExternalCandidate()
     {
@@ -6588,7 +6585,7 @@ static void addServerChildren(CClientRemoteTree &clientParent, CServerRemoteTree
     ForEach (*iter)
     {
         CServerRemoteTree &serverChild = (CServerRemoteTree &)iter->query();
-        CClientRemoteTree *clientChild = (CClientRemoteTree *)clientParent.create(NULL, false);
+        CClientRemoteTree *clientChild = (CClientRemoteTree *)clientParent.create(NULL);
         serverToClientTree(serverChild, *clientChild);
         clientChild = (CClientRemoteTree *)clientParent.addPropTree(clientChild->queryName(), clientChild);
         if (recurse)
@@ -6603,7 +6600,7 @@ void CCovenSDSManager::matchServerTree(CClientRemoteTree *local, IPropertyTree &
     {
         if (local->hasChildren() && NULL == local->queryChildren())
         {
-            local->createChildMap(false);
+            local->createChildMap();
             Owned<CServerRemoteTree> tree = getRegisteredTree(matchTree.getPropInt64("@serverId"));
             addServerChildren(*local, *tree, false);
         }
@@ -6623,7 +6620,7 @@ void CCovenSDSManager::matchServerTree(CClientRemoteTree *local, IPropertyTree &
     {
         if (local->hasChildren() && NULL == local->queryChildren())
         {
-            local->createChildMap(false);
+            local->createChildMap();
             Owned<CServerRemoteTree> tree = getRegisteredTree(matchTree.getPropInt64("@serverId"));
             addServerChildren(*local, *tree, allTail);
         }

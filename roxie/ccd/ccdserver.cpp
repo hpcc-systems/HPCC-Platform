@@ -30842,10 +30842,10 @@ readAnother:
                             client->setHttpMode(queryName, isRequestArray);
                         if (queryFactory)
                         {
-                            bool stripLeadingWhitespace = queryFactory->getDebugValueBool("stripWhitespaceFromStoredDataset", 0 != (xr_ignoreWhiteSpace & defaultXmlReadFlags));
-                            stripLeadingWhitespace = queryXml->getPropBool("_stripWhitespaceFromStoredDataset", stripLeadingWhitespace);
+                            bool stripWhitespace = queryFactory->getDebugValueBool("stripWhitespaceFromStoredDataset", 0 != (xr_ignoreWhiteSpace & defaultXmlReadFlags));
+                            stripWhitespace = queryXml->getPropBool("_stripWhitespaceFromStoredDataset", stripWhitespace);
                             XmlReaderOptions xmlReadFlags = (XmlReaderOptions)((defaultXmlReadFlags & ~xr_ignoreWhiteSpace) |
-                                                                               (stripLeadingWhitespace ? xr_ignoreWhiteSpace : xr_none));
+                                                                               (stripWhitespace ? xr_ignoreWhiteSpace : xr_none));
                             if (xmlReadFlags != defaultXmlReadFlags)
                             {
                                 // we need to reparse input xml, as global whitespace setting has been overridden

@@ -233,7 +233,6 @@ public:
 
     CRemoteTreeBase(MemoryBuffer &mb, CPState _state=CPS_Unchanged);
     CRemoteTreeBase(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL, CPState _state=CPS_Unchanged);
-    ~CRemoteTreeBase();
     void reset(unsigned state, bool sub=false);
 
     void deserializeRT(MemoryBuffer &src);
@@ -257,7 +256,7 @@ public:
 
 // PTree
     virtual bool isEquivalent(IPropertyTree *tree) { return (NULL != QUERYINTERFACE(tree, CRemoteTreeBase)); }
-    virtual IPropertyTree *create(const char *name=NULL, bool nocase=false, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false) = 0;
+    virtual IPropertyTree *create(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false) = 0;
     virtual IPropertyTree *create(MemoryBuffer &mb) = 0;
 
 // ITrackChanges
