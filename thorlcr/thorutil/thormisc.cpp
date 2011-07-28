@@ -988,7 +988,6 @@ bool getBestFilePart(CActivityBase *activity, IPartDescriptor &partDesc, OwnedIF
                         if (!eHandler)
                             throw e;
                         eHandler->fireException(e);
-                        return false;
                     }
                     path.append(locationName);
                     return true;
