@@ -327,7 +327,7 @@ bool CLogThread::queueLog(IEspContext & context,const char* serviceName,int Reco
 {
     StringBuffer dataStr;
     serializeRequest(context,logInfo,dataStr);
-    Owned<IPropertyTree> pLogTreeInfo = createPTreeFromXMLString(dataStr.str());
+    Owned<IPropertyTree> pLogTreeInfo = createPTreeFromXMLString(dataStr.str(), ipt_none, xr_none);
     return queueLog(context,serviceName,RecordsReturned,LogArray, *pLogTreeInfo);
 }
 
@@ -339,7 +339,7 @@ bool CLogThread::queueLog(IEspContext & context,const char* serviceName,int Reco
 
     serializeRequest(context,logInfo,_LogStruct.RequestStr);
 
-    Owned<IPropertyTree> pLogTreeInfo = createPTreeFromXMLString(_LogStruct.RequestStr.str());
+    Owned<IPropertyTree> pLogTreeInfo = createPTreeFromXMLString(_LogStruct.RequestStr.str(), ipt_none, xr_none);
 
 
     addLogInfo(LogArray,*pLogTreeInfo.get());
@@ -530,7 +530,7 @@ bool CLogThread::queueLog(IEspContext & context,const char* serviceName,int Reco
 
 bool CLogThread::queueLog(IEspContext & context,const char* serviceName,int RecordsReturned,IArrayOf<IEspLogInfo>& LogArray, StringBuffer& logInfo)
 {
-    Owned<IPropertyTree> pLogTreeInfo = createPTreeFromXMLString(logInfo);
+    Owned<IPropertyTree> pLogTreeInfo = createPTreeFromXMLString(logInfo, ipt_none, xr_none);
     return queueLog(context,serviceName,RecordsReturned,LogArray, *pLogTreeInfo.get());
 }
 
@@ -549,7 +549,7 @@ bool CLogThread::queueLog(IEspContext & context,const char* serviceName, const c
     else
         context.getRealm(UserRealm);
 
-    Owned<IPropertyTree> pLogTreeInfo = createPTreeFromXMLString(request);
+    Owned<IPropertyTree> pLogTreeInfo = createPTreeFromXMLString(request, ipt_none, xr_none);
     IArrayOf<IEspLogInfo> LogArray;
     addLogInfo(LogArray, *pLogTreeInfo.get());
 
@@ -569,7 +569,7 @@ bool CLogThread::queueLog(IEspContext & context,const char* serviceName, const c
 bool CLogThread::queueLog(IEspContext & context,const char* serviceName,int RecordsReturned, const char* logInfo)
 {
     try {
-        Owned<IPropertyTree> pLogTreeInfo = createPTreeFromXMLString(logInfo);
+        Owned<IPropertyTree> pLogTreeInfo = createPTreeFromXMLString(logInfo, ipt_none, xr_none);
         return queueLog(context,serviceName,RecordsReturned,*pLogTreeInfo);
     } catch (IException* e) {
         StringBuffer msg;
@@ -922,7 +922,7 @@ IClientLOGServiceUpdateRequest* CLogThread::DeserializeRequest(const char* reque
     m_LogFailSafe->SplitLogRecord(requestStr,GUID,Cache);
     _Info.GUID = GUID.str();
 
-    Owned<IPropertyTree> pLogTree = createPTreeFromXMLString(Cache.str());
+    Owned<IPropertyTree> pLogTree = createPTreeFromXMLString(Cache.str(), ipt_none, xr_none);
     pRequest->setUserName(pLogTree->queryProp("UserName"));
     pRequest->setDomainName(pLogTree->queryProp("DomainName"));
     pRequest->setRecordCount(pLogTree->getPropInt("RecordCount"));
