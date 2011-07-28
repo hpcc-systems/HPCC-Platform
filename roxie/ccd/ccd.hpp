@@ -388,7 +388,7 @@ extern bool simpleLocalKeyedJoins;
 extern bool enableKeyDiff;
 extern bool enableForceKeyDiffCopy;
 extern bool useTreeCopy;
-extern bool defaultStripLeadingWhitespace;
+extern XmlReaderOptions defaultXmlReadFlags;
 extern bool mergeSlaveStatistics;
 extern bool roxieMulticastEnabled;   // enable use of multicast for sending requests to slaves
 

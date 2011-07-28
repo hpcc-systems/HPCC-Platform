@@ -84,7 +84,7 @@ bool fieldTranslationEnabled = false;
 bool syncCluster = false;  // should we sync an out of sync cluster (always send a trap)
 bool useTreeCopy = true;
 bool mergeSlaveStatistics = true;
-bool defaultStripLeadingWhitespace = true;
+XmlReaderOptions defaultXmlReadFlags = xr_ignoreWhiteSpace;
 bool runOnce = false;
 
 unsigned udpMulticastBufferSize = 262142;
@@ -767,7 +767,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         defaultWarnTimeLimit[1] = (unsigned) topology->getPropInt64("@defaultHighPriorityTimeWarning", 0);
         defaultWarnTimeLimit[2] = (unsigned) topology->getPropInt64("@defaultSLAPriorityTimeWarning", 0);
 
-        defaultStripLeadingWhitespace = topology->getPropBool("@defaultStripLeadingWhitespace", true);
+        defaultXmlReadFlags = topology->getPropBool("@defaultStripLeadingWhitespace", true) ? xr_ignoreWhiteSpace : xr_none;
         defaultParallelJoinPreload = topology->getPropInt("@defaultParallelJoinPreload", 0);
         defaultConcatPreload = topology->getPropInt("@defaultConcatPreload", 0);
         defaultFetchPreload = topology->getPropInt("@defaultFetchPreload", 0);

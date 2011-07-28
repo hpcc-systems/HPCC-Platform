@@ -700,10 +700,10 @@ IDataVal & CCsvToRawTransformer::transform(IDataVal & result, size32_t len, cons
 
 //=====================================================================================================
 
-extern thorhelper_decl IXmlToRawTransformer * createXmlRawTransformer(IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
+extern thorhelper_decl IXmlToRawTransformer * createXmlRawTransformer(IXmlToRowTransformer * xmlTransformer, XmlReaderOptions xmlReadFlags)
 {
     if (xmlTransformer)
-        return new CXmlToRawTransformer(*xmlTransformer, stripWhitespace);
+        return new CXmlToRawTransformer(*xmlTransformer, xmlReadFlags);
     return NULL;
 }
 

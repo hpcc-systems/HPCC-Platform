@@ -956,7 +956,7 @@ void EclAgent::getResultRaw(unsigned & tlen, void * & tgt, const char * stepname
     tgt = NULL;
     PROTECTED_GETRESULT(stepname, sequence, "Raw", "raw",
         Variable2IDataVal result(&tlen, &tgt);
-        Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer, true);
+        Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer);
         Owned<ICsvToRawTransformer> rawCsvTransformer = createCsvRawTransformer(csvTransformer);
         r->getResultRaw(result, rawXmlTransformer, rawCsvTransformer);
     );
@@ -967,7 +967,7 @@ void EclAgent::getResultSet(bool & tisAll, size32_t & tlen, void * & tgt, const 
     tgt = NULL;
     PROTECTED_GETRESULT(stepname, sequence, "Raw", "raw",
         Variable2IDataVal result(&tlen, &tgt);
-        Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer, true);
+        Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer);
         Owned<ICsvToRawTransformer> rawCsvTransformer = createCsvRawTransformer(csvTransformer);
         tisAll = r->getResultIsAll();
         r->getResultRaw(result, rawXmlTransformer, rawCsvTransformer);
@@ -1008,7 +1008,7 @@ void EclAgent::getExternalResultRaw(unsigned & tlen, void * & tgt, const char * 
         if (!r) failv(0, "Failed to find raw value %s:%d in workunit %s", nullText(stepname),sequence, wuid);
         
         Variable2IDataVal result(&tlen, &tgt);
-        Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer, true);
+        Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer);
         Owned<ICsvToRawTransformer> rawCsvTransformer = createCsvRawTransformer(csvTransformer);
         r->getResultRaw(result, rawXmlTransformer, rawCsvTransformer);
     }
@@ -1031,7 +1031,7 @@ void EclAgent::getResultRowset(size32_t & tcount, byte * * & tgt, const char * s
     PROTECTED_GETRESULT(stepname, sequence, "Rowset", "rowset",
         MemoryBuffer datasetBuffer;
         MemoryBuffer2IDataVal result(datasetBuffer);
-        Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer, true);
+        Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer);
         Owned<ICsvToRawTransformer> rawCsvTransformer = createCsvRawTransformer(csvTransformer);
         r->getResultRaw(result, rawXmlTransformer, rawCsvTransformer);
         rtlDataset2RowsetX(tcount, tgt, _rowAllocator, deserializer, datasetBuffer.length(), datasetBuffer.toByteArray(), isGrouped);

@@ -137,10 +137,9 @@ public:
 class thorhelper_decl CXmlToRawTransformer : public CInterface, implements IXmlToRawTransformer
 {
 public:
-    CXmlToRawTransformer(IXmlToRowTransformer & _rowTransformer, bool stripWhitespace)
-    : rowTransformer(&_rowTransformer)
+    CXmlToRawTransformer(IXmlToRowTransformer & _rowTransformer, XmlReaderOptions _xmlReadFlags)
+    : rowTransformer(&_rowTransformer), xmlReadFlags(_xmlReadFlags)
     {
-        xmlReadFlags = stripWhitespace ? xr_ignoreWhiteSpace : xr_none;
     }
     IMPLEMENT_IINTERFACE
 
@@ -193,7 +192,7 @@ protected:
     CSVColumnProvider csvSplitter;
 };
 #endif
-extern thorhelper_decl IXmlToRawTransformer * createXmlRawTransformer(IXmlToRowTransformer * xmlTransformer, bool stripWhitespace);
+extern thorhelper_decl IXmlToRawTransformer * createXmlRawTransformer(IXmlToRowTransformer * xmlTransformer, XmlReaderOptions xmlReadFlags=xr_ignoreWhiteSpace);
 extern thorhelper_decl ICsvToRawTransformer * createCsvRawTransformer(ICsvToRowTransformer * csvTransformer);
 
 

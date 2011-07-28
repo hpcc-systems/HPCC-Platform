@@ -1038,7 +1038,7 @@ public:
     {
         throwUnexpected();   // only implemented in derived server class
     }
-    virtual IRoxieServerContext *createContext(IPropertyTree *xml, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, const IRoxieContextLogger &_logctx, const SocketEndpoint &poolEndpoint, bool _stripLeadingWhitespace) const
+    virtual IRoxieServerContext *createContext(IPropertyTree *xml, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, const IRoxieContextLogger &_logctx, const SocketEndpoint &poolEndpoint, XmlReaderOptions xmlReadFlags) const
     {
         throwUnexpected();   // only implemented in derived server class
     }
@@ -1186,7 +1186,7 @@ public:
         }
     }
 
-    virtual IRoxieServerContext *createContext(IPropertyTree *context, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, const IRoxieContextLogger &_logctx, const SocketEndpoint &_poolEndpoint, bool _stripLeadingWhitespace) const
+    virtual IRoxieServerContext *createContext(IPropertyTree *context, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, const IRoxieContextLogger &_logctx, const SocketEndpoint &_poolEndpoint, XmlReaderOptions _xmlReadFlags) const
     {
         if (isSuspended)
         {
@@ -1196,7 +1196,7 @@ public:
             throw MakeStringException(ROXIE_QUERY_SUSPENDED, "Query %s is suspended%s", id.get(), err.str());
         }
         checkOnceDone(_logctx);
-        return createRoxieServerContext(context, this, client, isXml, isRaw, isBlocked, httpHelper, trim, priority, _logctx, _poolEndpoint, _stripLeadingWhitespace);
+        return createRoxieServerContext(context, this, client, isXml, isRaw, isBlocked, httpHelper, trim, priority, _logctx, _poolEndpoint, _xmlReadFlags);
     }
 
     virtual WorkflowMachine *createWorkflowMachine(bool isOnce, const IRoxieContextLogger &logctx) const

@@ -431,7 +431,7 @@ IPropertyTree* RemoteXmlEclRepository::getModules(timestamp_t from)
     try
     {
         repository.getModules(modNames, user, from);
-        repositoryTree = createPTreeFromXMLString(modNames.str());
+        repositoryTree = createPTreeFromXMLString(modNames.str(), ipt_caseInsensitive);
     }
     catch(IException *e) 
     {

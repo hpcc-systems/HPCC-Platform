@@ -876,7 +876,7 @@ public:
         tgt = NULL;
         PROTECTED_GETRESULT(stepname, sequence, "Raw", "raw",
             Variable2IDataVal result(&tlen, &tgt);
-            Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer, true);
+            Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer);
             Owned<ICsvToRawTransformer> rawCsvTransformer = createCsvRawTransformer(csvTransformer);
             r->getResultRaw(result, rawXmlTransformer, rawCsvTransformer);
         );
@@ -886,7 +886,7 @@ public:
         tgt = NULL;
         PROTECTED_GETRESULT(stepname, sequence, "Raw", "raw",
             Variable2IDataVal result(&tlen, &tgt);
-            Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer, true);
+            Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer);
             Owned<ICsvToRawTransformer> rawCsvTransformer = createCsvRawTransformer(csvTransformer);
             isAll = r->getResultIsAll();
             r->getResultRaw(result, rawXmlTransformer, rawCsvTransformer);
@@ -961,7 +961,7 @@ public:
         PROTECTED_GETRESULT(stepname, sequence, "Rowset", "rowset",
             MemoryBuffer datasetBuffer;
             MemoryBuffer2IDataVal result(datasetBuffer);
-            Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer, true);
+            Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer);
             Owned<ICsvToRawTransformer> rawCsvTransformer = createCsvRawTransformer(csvTransformer);
             r->getResultRaw(result, rawXmlTransformer, rawCsvTransformer);
             rtlDataset2RowsetX(tcount, tgt, _rowAllocator, deserializer, datasetBuffer.length(), datasetBuffer.toByteArray(), isGrouped);
@@ -976,7 +976,7 @@ public:
 
             Variable2IDataVal result(&tlen, &tgt);
             Owned<IConstWUResult> r = getExternalResult(wuid, stepname, sequence);
-            Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer, true);
+            Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer);
             Owned<ICsvToRawTransformer> rawCsvTransformer = createCsvRawTransformer(csvTransformer);
             r->getResultRaw(result, rawXmlTransformer, rawCsvTransformer);
         }
