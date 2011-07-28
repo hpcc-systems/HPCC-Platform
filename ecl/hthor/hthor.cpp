@@ -1045,7 +1045,7 @@ CHThorIndexWriteActivity::CHThorIndexWriteActivity(IAgentContext &_agent, unsign
 {
     incomplete = false;
     StringBuffer lfn;
-    Owned<ILocalOrDistributedFile> ldf = agent.resolveLFN(helper.getFileName(),"Cannot write, invalid logical name",true,false,true,&lfn);
+    expandLogicalFilename(lfn, helper.getFileName(), agent);
     if (!agent.queryResolveFilesLocally())
     {
         Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(lfn, agent.queryCodeContext()->queryUserDescriptor(), true);
@@ -1055,8 +1055,8 @@ CHThorIndexWriteActivity::CHThorIndexWriteActivity(IAgentContext &_agent, unsign
             if (TIWoverwrite & helper.getFlags()) 
             {
                 PrintLog("Removing %s from DFS", lfn.str());
-                agent.logFileAccess(f, "HThor", "DELETED");
                 f->detach();
+                agent.logFileAccess(f, "HThor", "DELETED");
             }
             else // not quite sure about raising exceptions in constructors
                 throw MakeStringException(99, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", lfn.str());
