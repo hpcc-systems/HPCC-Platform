@@ -2742,7 +2742,7 @@ IPropertyTree *_createPropBranch(IPropertyTree *tree, const char *xpath, bool cr
         branch = _createPropBranch(tree, path.str(), createIntermediates, created, createdParent);
         assertex(branch);
     }
-    if (prop && '\0' != *prop)
+    if (prop && '\0' != *prop && '@' != *prop)
     {
         IPropertyTree *_branch = branch->queryPropTree(prop);
         if (_branch)
