@@ -32,8 +32,6 @@
 #include "thgraph.hpp"
 #include "thorxmlwrite.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/thorcodectx/thcodectx.cpp $ $Id: thcodectx.cpp 64760 2011-05-20 11:16:30Z jsmith $");
-
 CThorCodeContextBase::CThorCodeContextBase(CJobBase &_job, ILoadedDllEntry &_querySo, IUserDescriptor &_userDesc) : job(_job), querySo(_querySo), userDesc(&_userDesc)
 {
 }

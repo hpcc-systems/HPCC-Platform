@@ -45,8 +45,6 @@
 
 #define EMPTY_LOOP_LIMIT 1000
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hthor/hthor.cpp $ $Id: hthor.cpp 66008 2011-07-06 09:31:54Z rchapman $");
-
 static unsigned const hthorReadBufferSize = 0x10000;
 static memsize_t const defaultHThorSpillThreshold = 512*1024*1024;  // MORE - should increase on 64-bit platform?
 static offset_t const defaultHThorDiskWriteSizeLimit = I64C(10*1024*1024*1024); //10 GB, per Nigel

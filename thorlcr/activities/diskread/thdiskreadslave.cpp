@@ -40,8 +40,6 @@
 #include "../hashdistrib/thhashdistribslave.ipp"
 #include "thdiskreadslave.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/diskread/thdiskreadslave.cpp $ $Id: thdiskreadslave.cpp 64498 2011-05-11 11:45:08Z jsmith $");
-
 #define ASYNC_BUFFER_SIZE   64 * 1024       // 64k
 
 #define RECORD_BUFFER_SIZE  64 * 1024       // 64k

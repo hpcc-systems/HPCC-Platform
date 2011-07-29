@@ -58,12 +58,8 @@
 #include "portlist.h"
 
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jfile.cpp $ $Id: jfile.cpp 65976 2011-07-05 11:24:53Z ghalliday $");
-
-
 // #define REMOTE_DISCONNECT_ON_DESTRUCTOR  // enable to disconnect on IFile destructor
                                             // this should not be enabled in WindowRemoteDirectory used
-
 
 #ifdef _DEBUG
 #define ASSERTEX(e) assertex(e); 

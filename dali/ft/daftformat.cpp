@@ -37,8 +37,6 @@
 #include "daftformat.ipp"
 #include "junicode.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/ft/daftformat.cpp $ $Id: daftformat.cpp 62850 2011-03-01 18:12:54Z nhicks $");
-
 //----------------------------------------------------------------------------
 
 /*

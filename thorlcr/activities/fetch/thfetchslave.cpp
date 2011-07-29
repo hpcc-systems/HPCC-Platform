@@ -40,8 +40,6 @@
 #include "../hashdistrib/thhashdistribslave.ipp"
 #include "thfetchslave.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/fetch/thfetchslave.cpp $ $Id: thfetchslave.cpp 62831 2011-03-01 12:56:25Z jsmith $");
-
 #define NUMSLAVEPORTS       2
 
 struct FPosTableEntryIFileIO : public FPosTableEntry

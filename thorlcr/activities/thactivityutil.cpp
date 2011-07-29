@@ -39,9 +39,6 @@
 #include "thormisc.hpp"
 #include "thorport.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/thactivityutil.cpp $ $Id: thactivityutil.cpp 64338 2011-05-03 08:37:58Z jsmith $");
-
-
 //#define TRACE_STARTSTOP_EXCEPTIONS
 
 #ifdef _DEBUG

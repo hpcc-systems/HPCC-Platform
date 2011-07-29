@@ -38,8 +38,6 @@
 #include "hqlattr.hpp"
 #include "hqlmeta.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hql/hqlattr.cpp $ $Id: hqlattr.cpp 66009 2011-07-06 12:28:32Z ghalliday $");
-
 static CriticalSection * attributeCS;
 
 MODULE_INIT(INIT_PRIORITY_HQLINTERNAL)

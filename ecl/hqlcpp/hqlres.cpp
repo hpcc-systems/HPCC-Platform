@@ -27,8 +27,6 @@
 #include "bfd.h"
 #endif
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hqlcpp/hqlres.cpp $ $Id: hqlres.cpp 66009 2011-07-06 12:28:32Z ghalliday $");
-
 #define RESOURCE_BASE 101
 
 class ResourceItem : public CInterface

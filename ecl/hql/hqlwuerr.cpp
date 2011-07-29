@@ -18,9 +18,6 @@
 #include "jliball.hpp"
 #include "hqlwuerr.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hql/hqlwuerr.cpp $ $Id: hqlwuerr.cpp 62376 2011-02-04 21:59:58Z sort $");
-
-
 static void formatError(StringBuffer & out, int errNo, const char *msg, _ATOM modulename, _ATOM attributename, int lineno, int column)
 {
     out.append(modulename);

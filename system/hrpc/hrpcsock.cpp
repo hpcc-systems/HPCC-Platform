@@ -27,8 +27,6 @@
 #include "jmutex.hpp"
 #include "jexcept.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/hrpc/hrpcsock.cpp $ $Id: hrpcsock.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 class HRPCsockettransport: public CInterface, implements IHRPCtransport 
 {
 public:

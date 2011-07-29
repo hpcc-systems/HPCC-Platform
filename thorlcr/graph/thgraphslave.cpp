@@ -27,8 +27,6 @@
 #include "slwatchdog.hpp"
 #include "thgraphslave.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/graph/thgraphslave.cpp $ $Id: thgraphslave.cpp 65511 2011-06-16 16:12:24Z jsmith $");
-
 //////////////////////////////////
 
 class CBarrierSlave : public CInterface, implements IBarrier

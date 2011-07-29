@@ -19,8 +19,6 @@
 #include "platform.h"
 #include "debugservices.hpp"
 
-static char buildVersion[] = "$HeadURL: https://svn.br.seisint.com/ecl/trunk/plugins/debugservices/debugservices.cpp $ $Id: debugservices.cpp 62376 2011-02-04 21:59:58Z sort $";
-
 #define DEBUGSERVICES_VERSION "DEBUGSERVICES 1.0.1"
 
 const char * EclDefinition = 
@@ -50,7 +48,7 @@ DEBUGSERVICES_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 
 DEBUGSERVICES_API char * DEBUGSERVICES_CALL dsGetBuildInfo(void)
 { 
-    return strdup(buildVersion);
+    return strdup(DEBUGSERVICES_VERSION);
 }
 
 //-------------------------------------------------------------------------------------------------------------------------------------------

@@ -35,8 +35,6 @@
  #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
 #endif
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/common/deftype/defvalue.cpp $ $Id: defvalue.cpp 65491 2011-06-16 07:42:49Z ghalliday $");
-
 BoolValue *BoolValue::trueconst;
 BoolValue *BoolValue::falseconst;
 static _ATOM asciiAtom;

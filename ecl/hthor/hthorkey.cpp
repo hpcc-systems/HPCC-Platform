@@ -27,8 +27,6 @@
 #include "thorstep.ipp"
 #include "roxiedebug.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hthor/hthorkey.cpp $ $Id: hthorkey.cpp 63707 2011-04-01 14:24:52Z wwhitehead $");
-
 #define MAX_FETCH_LOOKAHEAD 1000
 #define IGNORE_FORMAT_CRC_MISMATCH_WHEN_NO_METADATA
 #define DEFAULT_KJ_PRESERVES_ORDER 1

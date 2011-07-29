@@ -21,9 +21,6 @@
 #include "thexception.hpp"
 #include "thbufdef.hpp"
 
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/lookupjoin/thlookupjoin.cpp $ $Id: thlookupjoin.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 class CLookupJoinActivityMaster : public CMasterActivity
 {
 public:

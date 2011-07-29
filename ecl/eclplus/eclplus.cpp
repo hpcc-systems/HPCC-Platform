@@ -25,8 +25,6 @@
 #include "ws_workunits.hpp"
 #include "bindutil.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/eclplus/eclplus.cpp $ $Id: eclplus.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 IClientWsWorkunits * createWorkunitsClient(IProperties * _globals)
 {
     Owned<IClientWsWorkunits> wuclient = createWsWorkunitsClient();

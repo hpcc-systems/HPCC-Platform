@@ -17,12 +17,9 @@
 ############################################################################## */
 
 #include "jliball.hpp"
-
 #include "platform.h"
-
 #include "jlib.hpp"
 #include "jio.hpp"
-
 #include "jmutex.hpp"
 #include "jfile.hpp"
 #include "jsocket.hpp"
@@ -38,8 +35,6 @@
 #include "daftsize.hpp"
 #include "daftcfg.hpp"
 #include "mptag.hpp"
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/ft/ftslave.cpp $ $Id: ftslave.cpp 64048 2011-04-15 12:44:57Z nhicks $");
 
 bool processPullCommand(ISocket * masterSocket, MemoryBuffer & msg)
 {

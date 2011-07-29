@@ -23,9 +23,6 @@
 #include "commonext.hpp"
 #include "slave.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/catch/thcatchslave.cpp $ $Id: thcatchslave.cpp 63725 2011-04-01 17:40:45Z jsmith $");
-
-
 class CCatchSlaveActivityBase : public CSlaveActivity, public CThorDataLink
 {
 protected:

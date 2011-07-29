@@ -28,10 +28,6 @@
 
 #include "thdiskwrite.ipp"
 
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/diskwrite/thdiskwrite.cpp $ $Id: thdiskwrite.cpp 63406 2011-03-23 17:33:52Z jsmith $");
-
-
 class CDiskWriteActivityMaster : public CWriteMasterBase
 {
 public:

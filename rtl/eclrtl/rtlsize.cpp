@@ -26,8 +26,6 @@
 
 #include "rtlsize.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/rtl/eclrtl/rtlsize.cpp $ $Id: rtlsize.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 /*************** This file is not yet used.  WIP ******************************/
 class OffsetInfoArray : public PointerArray
 {

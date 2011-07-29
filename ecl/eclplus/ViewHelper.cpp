@@ -20,8 +20,6 @@
 #include "jmisc.hpp"
 #include "ViewHelper.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/eclplus/ViewHelper.cpp $ $Id: ViewHelper.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 #define DEFAULT_PAGESIZE 500
 
 SCMStringBuffer resultName;

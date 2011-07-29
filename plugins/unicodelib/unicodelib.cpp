@@ -30,8 +30,6 @@
 #include "unicode/rbbi.h"
 #include "../stringlib/wildmatch.tpp"
 
-static char buildVersion[] = "$HeadURL: https://svn.br.seisint.com/ecl/trunk/plugins/unicodelib/unicodelib.cpp $ $Id: unicodelib.cpp 65100 2011-06-02 18:23:08Z muhareex@risk $";
-
 #define UNICODELIB_VERSION "UNICODELIB 1.1.05"
 
 UChar32 const u32comma = ',';

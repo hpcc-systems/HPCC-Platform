@@ -24,8 +24,6 @@
 #include "dalienv.hpp"
 #include "daclient.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/dfuxref/dfuxrefmain.cpp $ $Id: dfuxrefmain.cpp 62561 2011-02-16 13:59:53Z nhicks $");
-
 static bool AddCompleteOrphans = false;
 static bool DeleteEmptyFiles = false;
 static bool fixSizes = false;

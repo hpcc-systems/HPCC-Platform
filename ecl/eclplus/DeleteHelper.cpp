@@ -18,8 +18,6 @@
 #include "jlib.hpp"
 #include "DeleteHelper.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/eclplus/DeleteHelper.cpp $ $Id: DeleteHelper.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 DeleteHelper::DeleteHelper(IProperties * _globals, IFormatType * _format) : globals(_globals), format(_format), wuclient(createWorkunitsClient(_globals))
 {
 }

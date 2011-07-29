@@ -23,8 +23,6 @@
 #include "thactivityutil.ipp"
 #include "eclrtl.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/xmlparse/thxmlparseslave.cpp $ $Id: thxmlparseslave.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 class CXmlParseSlaveActivity : public CSlaveActivity, public CThorDataLink, implements IXMLSelect
 {
     IHThorXmlParseArg *helper;

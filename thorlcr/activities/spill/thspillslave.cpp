@@ -21,19 +21,13 @@
 #include "jbuff.hpp"
 #include "jlzw.hpp"
 #include "jtime.hpp"
-
 #include "dadfs.hpp"
-
 #include "thbuf.hpp"
 #include "thexception.hpp"
 #include "thmfilemanager.hpp"
 #include "slave.ipp"
 #include "thactivityutil.ipp"
-
 #include "thspillslave.ipp"
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/spill/thspillslave.cpp $ $Id: thspillslave.cpp 62878 2011-03-02 13:14:35Z jsmith $");
-
 
 class SpillSlaveActivity : public CSlaveActivity, public CThorDataLink
 {

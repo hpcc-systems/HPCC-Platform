@@ -41,8 +41,6 @@
 #include "hqlcse.ipp"
 #include "hqliter.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hqlcpp/hqliter.cpp $ $Id: hqliter.cpp 66009 2011-07-06 12:28:32Z ghalliday $");
-
 //===========================================================================
 
 bool isSequenceRoot(IHqlExpression * expr)

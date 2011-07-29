@@ -24,7 +24,6 @@
 #include "jtime.hpp"
 #include "jsort.hpp"
 
-
 #include "thormisc.hpp"
 #include "thmfilemanager.hpp"
 #include "thorport.hpp"
@@ -35,9 +34,6 @@
 #include "thactivityutil.ipp"
 #include "csvsplitter.hpp"
 #include "thdiskbaseslave.ipp"
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/csvread/thcsvrslave.cpp $ $Id: thcsvrslave.cpp 65710 2011-06-23 13:22:19Z ghalliday $");
-
 
 class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDataLink
 {

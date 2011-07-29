@@ -52,8 +52,6 @@ namespace thormisc {  // Make sure we can't clash with generated versions or ver
 
 #define SDS_LOCK_TIMEOUT 30000
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/thorutil/thormisc.cpp $ $Id: thormisc.cpp 65752 2011-06-24 14:26:58Z jsmith $");
-
 static IGroup *clusterGroup;
 static IGroup *slaveGroup;
 static IGroup *dfsGroup;
@@ -588,7 +586,7 @@ void SetLogName(const char *prefix, const char *logdir, const char *thorname, bo
     logname.append(".log");
     openLogFile(logname.toCharArray());
     PrintLog("Opened log file %s", logname.toCharArray());
-    CBuildVersion::log();
+    PrintLog("Build %s", BUILD_TAG);
 }
 #endif
 

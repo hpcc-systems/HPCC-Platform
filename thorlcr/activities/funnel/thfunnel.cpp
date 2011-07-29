@@ -22,9 +22,6 @@
 #include "thexception.hpp"
 #include "thfunnel.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/funnel/thfunnel.cpp $ $Id: thfunnel.cpp 63725 2011-04-01 17:40:45Z jsmith $");
-
-
 //
 // CNonEmptyActivityMaster
 //

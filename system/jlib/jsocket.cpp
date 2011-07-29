@@ -65,8 +65,6 @@
 #include "jdebug.hpp"
 #include "build-config.h"
 
-//static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jsocket.cpp $ $Id: jsocket.cpp 66016 2011-07-06 17:43:49Z rchapman $");
-
 // various options 
 
 #define CONNECT_TIMEOUT_REFUSED_WAIT    1000        // maximum to sleep on connect_timeout

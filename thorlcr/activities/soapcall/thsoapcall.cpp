@@ -20,9 +20,6 @@
 #include "thsoapcall.ipp"
 #include "dasess.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/soapcall/thsoapcall.cpp $ $Id: thsoapcall.cpp 62376 2011-02-04 21:59:58Z sort $");
-
-
 class SoapCallActivityMaster : public CMasterActivity
 {
 private:

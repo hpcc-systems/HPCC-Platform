@@ -23,8 +23,6 @@
 #include "thorcommon.hpp"
 #include "thorstep2.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/common/thorhelper/thorstep2.cpp $ $Id: thorstep2.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 const static SmartStepExtra knownLowestFrequencyTermStepExtra(SSEFreadAhead, NULL);

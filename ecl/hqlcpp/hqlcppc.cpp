@@ -29,8 +29,6 @@
 #include "hqlwcpp.hpp"
 #include "hqlcpp.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hqlcpp/hqlcppc.cpp $ $Id: hqlcppc.cpp 63158 2011-03-11 22:39:30Z ghalliday $");
-
 IHqlExpression * convertAddressToValue(IHqlExpression * address, ITypeInfo * columnType)
 {
     if (isTypePassedByAddress(columnType) && !columnType->isReference())

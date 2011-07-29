@@ -40,8 +40,6 @@
 #endif
 #endif
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jexcept.cpp $ $Id: jexcept.cpp 65025 2011-06-01 11:23:50Z rchapman $");
-
 //#define NOSEH
 
 #define NO_LINUX_SEH

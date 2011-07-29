@@ -25,9 +25,6 @@
 
 #include "thnullactionslave.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/nullaction/thnullactionslave.cpp $ $Id: thnullactionslave.cpp 62376 2011-02-04 21:59:58Z sort $");
-
-
 class CNullActionSlaveActivity : public CSlaveActivity, public CThorDataLink
 {
 public:

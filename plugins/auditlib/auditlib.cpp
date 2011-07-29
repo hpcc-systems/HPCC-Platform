@@ -19,8 +19,6 @@
 #include "jlog.hpp"
 #include "auditlib.hpp"
 
-static char buildVersion[] = "$HeadURL: https://svn.br.seisint.com/ecl/trunk/plugins/auditlib/auditlib.cpp $ $Id: auditlib.cpp 62376 2011-02-04 21:59:58Z sort $";
-
 #define AUDITLIB_VERSION "AUDITLIB 1.0.1"
 static const char * compatibleVersions[] = {
     "AUDITLIB 1.0.0 [29933bc38c1f07bcf70f938ad18775c1]", // linux version

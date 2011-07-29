@@ -28,8 +28,6 @@
 #include <io.h>
 #endif
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jstream.cpp $ $Id: jstream.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 CByteInputStream::CByteInputStream()
 {
     eofseen = false;

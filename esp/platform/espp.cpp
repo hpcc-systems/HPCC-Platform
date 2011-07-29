@@ -209,12 +209,12 @@ void openEspLogFile(const char* logdir, IPropertyTree* globals)
     queryLogMsgManager()->addMonitorOwn(getRollingFileLogMsgHandler(logbase.str(), ".log", MSGFIELD_STANDARD, false, true, NULL, alias.str()), getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, DefaultDetail));
     if (globals->getPropBool("@enableSysLog", false))
         UseSysLogForOperatorMessages();
-    DBGLOG("Esp starting %s", "$HeadURL: https://svn.br.seisint.com/ecl/trunk/esp/platform/espp.cpp $");
+    DBGLOG("Esp starting %s", BUILD_TAG);
 }   
 
 static void usage()
 {
-    puts("ESP - Enterprise Service Platform server. (C) 2001-2005, Seisint Inc.");
+    puts("ESP - Enterprise Service Platform server. (C) 2001-2011, HPCC Systems.");
     puts("Usage:");
     puts("  esp [options]");
     puts("Options:");

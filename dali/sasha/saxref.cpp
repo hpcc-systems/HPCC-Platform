@@ -24,8 +24,6 @@
 #include "sacoalescer.hpp"
 #include "sacmd.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/sasha/saxref.cpp $ $Id: saxref.cpp 61615 2011-01-07 15:01:55Z jsmith $");
-
 //#define _SINGLETHREAD
 #ifdef _SINGLETHREAD
 #define NUMTHREADS 1

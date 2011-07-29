@@ -47,8 +47,6 @@
 #include "hqlmeta.hpp"
 #include "workunit.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hql/hqlexpr.cpp $ $Id: hqlexpr.cpp 66009 2011-07-06 12:28:32Z ghalliday $");
-
 //This nearly works - but there are still some examples which have problems - primarily libraries, old parameter syntax, enums and other issues.
 
 //#define ANNOTATE_EXPR_POSITION

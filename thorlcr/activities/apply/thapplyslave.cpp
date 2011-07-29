@@ -19,9 +19,6 @@
 #include "thapplyslave.ipp"
 #include "thactivityutil.ipp"
 
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/apply/thapplyslave.cpp $ $Id: thapplyslave.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 class CApplySlaveActivity : public ProcessSlaveActivity
 {
     IHThorApplyArg *helper;
