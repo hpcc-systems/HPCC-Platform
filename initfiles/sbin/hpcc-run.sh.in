@@ -27,6 +27,10 @@ getIPS(){
 	IPS=`${INSTALL_DIR}/sbin/configgen -env ${envfile} -machines | awk -F, '{print \$1}'  | sort | uniq`
 }
 
+getDali(){
+	DIP=`${INSTALL_DIR}/sbin/configgen -env ${envfile} -listall | awk -F, '{print \$3}'  | sort | uniq`
+}
+
 buildCmd(){
 	if [ -z $3 ]; then
 		CMD="sudo /etc/init.d/$1 $2"
@@ -44,6 +48,10 @@ set_envrionmentvars
 envfile=$configs/$environment
 
 getIPS
+getDali
+
+IPS=${IPS//$DIP[^0-9]/ }
+
 
 TEMP=`/usr/bin/getopt -o a:c:h --long help,action -n 'hpcc-run' -- "$@"`
 if [ $? != 0 ] ; then echo "Failure to parse commandline." >&2 ; exit 1 ; fi
@@ -82,19 +90,54 @@ case "$arg" in
     *) print_usage;;
 esac
 
-
-
-for IP in $IPS; do
-	if ping -c 1 -w 5 -n $IP > /dev/null 2>&1; then
-		echo "$IP: Host is alive."
-		CAN_SSH="`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@$IP exit > /dev/null 2>&1; echo $?`"
+if [ "${cmd}" == "restart" ]; then
+    for i in stop start; do
+        cmd=$i
+        echo "Running '${cmd}' on cluster."
+        if [ "${cmd}" == "start" ]; then
+            if ping -c 1 -w 5 -n $DIP > /dev/null 2>&1; then
+                echo "$DIP: Host is alive."
+                CAN_SSH="`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@$DIP exit > /dev/null 2>&1; echo $?`"
 		if [ "$CAN_SSH" -eq 255 ]; then
-			echo "$IP: Cannot SSH to host.";
+                    echo "$DIP: Cannot SSH to host.";
+                else
+                    buildCmd $action $cmd $comp
+                    runCmd $CMD
+                fi
+            else
+	        echo "$DIP: FAIL"
+            fi 
+        fi
+
+        for IP in $IPS; do
+            if ping -c 1 -w 5 -n $IP > /dev/null 2>&1; then
+                echo "$IP: Host is alive."
+                CAN_SSH="`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@$IP exit > /dev/null 2>&1; echo $?`"
+                if [ "$CAN_SSH" -eq 255 ]; then
+                    echo "$IP: Cannot SSH to host.";
 		else
-			buildCmd $action $cmd $comp
-			runCmd $CMD
+                    buildCmd $action $cmd $comp
+                    runCmd $CMD
+                fi
+	    else
+                echo "$IP: FAIL"
+            fi
+        done
+	
+        if [ "${cmd}" == "stop" ]; then
+            if ping -c 1 -w 5 -n $DIP > /dev/null 2>&1; then
+                echo "$DIP: Host is alive."
+                CAN_SSH="`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@$DIP exit > /dev/null 2>&1; echo $?`"
+                if [ "$CAN_SSH" -eq 255 ]; then
+                    echo "$DIP: Cannot SSH to host.";
+                else
+                    buildCmd $action $cmd $comp
+		    runCmd $CMD
 		fi
-	else
-		echo "$IP: FAIL"
-	fi
-done
+	    else
+		echo "$DIP: FAIL"
+            fi
+        fi
+    done
+fi
+
