@@ -19,9 +19,6 @@
 // Handling Rollup and Dedup
 
 #include "throllupslave.ipp"
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/rollup/throllupslave.cpp $ $Id: throllupslave.cpp 63725 2011-04-01 17:40:45Z jsmith $");
-
 #include "thactivityutil.ipp"
 #include "thorport.hpp"
 #include "thbufdef.hpp"

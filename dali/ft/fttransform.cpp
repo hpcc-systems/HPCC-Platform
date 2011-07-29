@@ -17,12 +17,9 @@
 ############################################################################## */
 
 #include "jliball.hpp"
-
 #include "platform.h"
-
 #include "jlib.hpp"
 #include "jio.hpp"
-
 #include "jmutex.hpp"
 #include "jfile.hpp"
 #include "jsocket.hpp"
@@ -31,12 +28,9 @@
 #include "dadfs.hpp"
 #include "daftcfg.hpp"
 #include "daftmc.hpp"
-
 #include "rmtspawn.hpp"
 #include "fttransform.ipp"
 #include "ftbase.ipp"
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/ft/fttransform.cpp $ $Id: fttransform.cpp 62376 2011-02-04 21:59:58Z sort $");
 
 #define OPTIMIZE_COMMON_TRANSFORMS
 

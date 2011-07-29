@@ -29,8 +29,6 @@
 #include "eclrtl_imp.hpp"
 #include "thcompressutil.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/loop/thloopslave.cpp $ $Id: thloopslave.cpp 64284 2011-04-28 17:40:46Z jsmith $");
-
 class CNextRowFeeder : public CSimpleInterface, implements IThreaded, implements IRowStream
 {
     CThreaded threaded;

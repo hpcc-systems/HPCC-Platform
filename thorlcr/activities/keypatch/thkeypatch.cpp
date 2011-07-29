@@ -25,9 +25,6 @@
 #include "thexception.hpp"
 #include "thkeypatch.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/keypatch/thkeypatch.cpp $ $Id: thkeypatch.cpp 65578 2011-06-20 11:49:27Z jsmith $");
-
-
 class CKeyPatchMaster : public CMasterActivity
 {
     IHThorKeyPatchArg *helper;

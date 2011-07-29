@@ -46,8 +46,6 @@
 #define __stdcall
 #endif
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/rtl/eclrtl/rtlqstr.cpp $ $Id: rtlqstr.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 //=============================================================================
 // Miscellaneous string functions...
 

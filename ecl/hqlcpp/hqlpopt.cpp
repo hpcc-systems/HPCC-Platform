@@ -33,9 +33,6 @@
 #include "hqlcpp.ipp"
 #include "hqlpopt.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hqlcpp/hqlpopt.cpp $ $Id: hqlpopt.cpp 62376 2011-02-04 21:59:58Z sort $");
-
-
 //Optimize IF(a,b,c) op x to IF(a,b op x, c OP x)
 //But be careful because it uncommons attributes increasing the size of the queries.
 static IHqlExpression * peepholeOptimizeCompare(BuildCtx & ctx, IHqlExpression * expr)

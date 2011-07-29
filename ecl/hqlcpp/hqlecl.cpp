@@ -15,6 +15,8 @@
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
+
+#include "build-config.h"
 #include "jliball.hpp"
 #include "jmisc.hpp"
 #include "jstream.hpp"
@@ -34,9 +36,6 @@
 
 #include "workunit.hpp"
 #include "thorplugin.hpp"
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hqlcpp/hqlecl.cpp $ $Id: hqlecl.cpp 66009 2011-07-06 12:28:32Z ghalliday $");
-static const char buildTag[] = "$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hqlcpp/hqlecl.cpp $";
 
 #define MAIN_MODULE_TEMPLATE        "thortpl.cpp"
 #define HEADER_TEMPLATE             "thortpl.hpp"
@@ -545,7 +544,7 @@ extern HQLCPP_API unsigned getLibraryCRC(IHqlExpression * library)
 void setWorkunitHash(IWorkUnit * wu, IHqlExpression * expr)
 {
     //Assuming builds come from different branches this will change the crc for each one.
-    unsigned cacheCRC = crc32(buildTag, strlen(buildTag), ACTIVITY_INTERFACE_VERSION);
+    unsigned cacheCRC = crc32(BUILD_TAG, strlen(BUILD_TAG), ACTIVITY_INTERFACE_VERSION);
     cacheCRC += getExpressionCRC(expr);
 #ifdef _WIN32
     cacheCRC++; // make sure CRC is different in windows/linux

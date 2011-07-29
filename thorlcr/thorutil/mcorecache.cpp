@@ -24,8 +24,6 @@
 
 #include "mcorecache.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/thorutil/mcorecache.cpp $ $Id: mcorecache.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 #ifdef _DEBUG
 #define _FULL_TRACE
 #endif

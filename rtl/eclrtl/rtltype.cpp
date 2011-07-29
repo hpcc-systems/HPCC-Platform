@@ -23,8 +23,6 @@
 #include "jlib.hpp"
 #include "rtltype.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/rtl/eclrtl/rtltype.cpp $ $Id: rtltype.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 //=============================================================================
 // Pascal string helper functions...
 

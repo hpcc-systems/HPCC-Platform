@@ -20,10 +20,6 @@
 #include "thactivityutil.ipp"
 #include "thbufdef.hpp"
 
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/choosesets/thchoosesetsslave.cpp $ $Id: thchoosesetsslave.cpp 65252 2011-06-08 08:41:27Z jsmith $");
-
-
 class BaseChooseSetsActivity : public CSlaveActivity,  public CThorDataLink
 {
 protected:

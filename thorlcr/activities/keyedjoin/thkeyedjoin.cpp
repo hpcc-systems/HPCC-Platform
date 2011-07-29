@@ -22,13 +22,7 @@
 
 #include "../hashdistrib/thhashdistrib.ipp"
 #include "thkeyedjoin.ipp"
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/keyedjoin/thkeyedjoin.cpp $ $Id: thkeyedjoin.cpp 64422 2011-05-05 16:51:53Z jsmith $");
-
-
 #include "jhtree.hpp"
-
-
 
 class CKeyedJoinMaster : public CMasterActivity
 {

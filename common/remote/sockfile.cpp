@@ -38,8 +38,6 @@
 
 #include "remoteerr.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/common/remote/sockfile.cpp $ $Id: sockfile.cpp 62595 2011-02-17 14:30:45Z rchapman $");
-
 #define SOCKET_CACHE_MAX 500
 
 #define MAX_THREADS             100
@@ -163,14 +161,12 @@ struct dummyReadWrite
 // backward compatible modes
 typedef enum { compatIFSHnone, compatIFSHread, compatIFSHwrite, compatIFSHexec, compatIFSHall} compatIFSHmode;
 
-
 static const char *VERSTRING= "DS V1.7e - 6 "       // dont forget FILESRV_VERSION in header
 #ifdef _WIN32
-"Windows "
+"Windows ";
 #else
-"Linux "
+"Linux ";
 #endif
-"$HeadURL: https://svn.br.seisint.com/ecl/trunk/common/remote/sockfile.cpp $ $Id: sockfile.cpp 62595 2011-02-17 14:30:45Z rchapman $";
 
 typedef unsigned char RemoteFileCommandType;
 typedef int RemoteFileIOHandle;

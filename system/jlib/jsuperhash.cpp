@@ -21,8 +21,6 @@
 #include "jsuperhash.hpp"
 #include <assert.h>
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jsuperhash.cpp $ $Id: jsuperhash.cpp 64069 2011-04-18 14:15:50Z rchapman $");
-
 #ifndef HASHSIZE_POWER2
 #define HASHSIZE_POWER2
 #endif

@@ -15,6 +15,8 @@
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
+
+#include "build-config.h"
 #include "jlib.hpp"
 #include "jmisc.hpp"
 #include "jdebug.hpp"
@@ -58,9 +60,6 @@
 
 #define MONITOR_ECLAGENT_STATUS     
  
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/eclagent/eclagent.cpp $ $Id: eclagent.cpp 66010 2011-07-06 13:36:28Z wwhitehead $");
-
-static const char buildTag[] = "$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/eclagent/eclagent.cpp $";
 static const char XMLHEADER[] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 
 //#define ROOT_DRIVE      "c:"
@@ -1842,7 +1841,7 @@ void EclAgent::doProcess()
             LOG(MCrunlock, unknownJob, "Obtained workunit lock");
             if (w->hasDebugValue("traceLevel"))
                 traceLevel = w->getDebugValueInt("traceLevel", 10);
-            w->setTracingValue("EclAgentBuild", buildTag);  
+            w->setTracingValue("EclAgentBuild", BUILD_TAG);  
             w->setDebugValue("EclAgentLog", logname.str(), true);
             if (checkVersion && ((w->getCodeVersion() > ACTIVITY_INTERFACE_VERSION) || (w->getCodeVersion() < MIN_ACTIVITY_INTERFACE_VERSION)))
                 failv(0, "Workunit was compiled for eclagent interface version %d, this eclagent requires version %d..%d", w->getCodeVersion(), MIN_ACTIVITY_INTERFACE_VERSION, ACTIVITY_INTERFACE_VERSION);
@@ -3076,11 +3075,11 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
 
     if (logfilespec.length())
         appendLogFile(logfilespec.str());
-
-    if (globals->getPropInt("VERSIONS"))
-        CBuildVersion::log();   
     if (traceLevel)
+    {
         printStart(argc, argv);
+        DBGLOG("Build %s", BUILD_TAG);
+    }
 
     // Extract any params into stored - primarily for standalone case but handy for debugging eclagent sometimes too
     Owned<IPropertyTree> query;
@@ -3164,10 +3163,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
                 MTIME_SECTION(timer, "Environment_Initialize");
                 setPasswordsFromSDS();
             }
-
-            if (strlen(buildTag) > 6)
-                PrintLog("ECLAGENT build %s", buildTag);
-
+            PrintLog("ECLAGENT build %s", BUILD_TAG);
             startLogMsgParentReceiver();    
             connectLogMsgManagerToDali();
             StringBuffer datadir;

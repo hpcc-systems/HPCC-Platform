@@ -34,8 +34,6 @@
 #include "hqlwcpp.hpp"
 #include "hqlwcpp.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hqlcpp/hqlwcpp.cpp $ $Id: hqlwcpp.cpp 66009 2011-07-06 12:28:32Z ghalliday $");
-
 #define INDENT_SOURCE
 #define FILE_CHUNK_SIZE         65000
 #define PREFERRED_LINE_LIMIT    160

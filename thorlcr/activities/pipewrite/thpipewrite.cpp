@@ -17,15 +17,9 @@
 ############################################################################## */
 
 #include "thmfilemanager.hpp"
-
-
 #include "eclhelper.hpp"
 #include "deftype.hpp"
-
 #include "thpipewrite.ipp"
-
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/pipewrite/thpipewrite.cpp $ $Id: thpipewrite.cpp 64114 2011-04-19 16:17:47Z jsmith $");
 
 //
 // CPipeWriteActivityMaster

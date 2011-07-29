@@ -31,8 +31,6 @@
  extern char **environ;
 #endif
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jprop.cpp $ $Id: jprop.cpp 62965 2011-03-04 12:34:40Z ghalliday $");
-
 const char *conv2char_ptr(const char *p) { return p; }
 const char *convchar_ptr2(const char *p) { return p; }
 const char *tokvchar_ptr(const void *p) { return (const char *)p; }

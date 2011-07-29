@@ -19,8 +19,6 @@
 #include "hqlexpr.hpp"
 #include "hqlcatom.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hqlcpp/hqlccommon.cpp $ $Id: hqlccommon.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 //===========================================================================
 
 IHqlExpression * activeActivityMarkerExpr;

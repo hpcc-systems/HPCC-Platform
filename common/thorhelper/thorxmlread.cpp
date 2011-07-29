@@ -24,7 +24,6 @@
 #include "jfile.hpp"
 #include "jlog.hpp"
 
-
 #include "csvsplitter.hpp"
 #include "thorcerror.hpp"
 #include "thorxmlread.hpp"
@@ -33,10 +32,7 @@
 
 #include "jptree.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/common/thorhelper/thorxmlread.cpp $ $Id: thorxmlread.cpp 65310 2011-06-10 08:37:45Z ghalliday $");
-
 #define XMLTAG_CONTENT "<>"
-
 
 //=====================================================================================================
 XmlColumnIterator::XmlColumnIterator(IPropertyTreeIterator * _iter) : iter(_iter)

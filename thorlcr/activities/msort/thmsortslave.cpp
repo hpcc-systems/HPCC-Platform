@@ -29,9 +29,6 @@
 #include "thactivityutil.ipp"
 #include "thexception.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/msort/thmsortslave.cpp $ $Id: thmsortslave.cpp 62376 2011-02-04 21:59:58Z sort $");
-
-
 #define NUMSLAVEPORTS 2     // actually should be num MP tags
 
 

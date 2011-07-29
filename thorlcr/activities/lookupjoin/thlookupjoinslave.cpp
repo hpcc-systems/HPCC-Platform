@@ -34,8 +34,6 @@
 #define _TRACEBROADCAST
 #endif
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/lookupjoin/thlookupjoinslave.cpp $ $Id: thlookupjoinslave.cpp 65660 2011-06-22 13:00:59Z jsmith $");
-
 enum join_t { JT_Undefined, JT_Inner, JT_LeftOuter, JT_RightOuter, JT_LeftOnly, JT_RightOnly, JT_LeftOnlyTransform };
 enum joinkind_t { join_lookup, join_all, denormalize_lookup, denormalize_all };
 const char *joinActName[4] = { "LOOKUPJOIN", "ALLJOIN", "LOOKUPDENORMALIZE", "ALLDENORMALIZE" };

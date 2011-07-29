@@ -83,8 +83,6 @@ public:
 typedef CIArrayOf<StringBufferItem> StringBufferArray;
 MAKEPointerArray(HqlExprArray, HqlExprArrayArray);
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hql/hqlthql.cpp $ $Id: hqlthql.cpp 65973 2011-07-04 15:37:51Z ghalliday $");
-
 class HqltHql
 {
 public:

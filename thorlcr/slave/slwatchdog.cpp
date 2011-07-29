@@ -18,23 +18,16 @@
 
 // Slave Watchdog
 #include "platform.h"
-
 #include <stdio.h>
-
 #include "jsocket.hpp"
 #include "jmisc.hpp"
-
 #include "portlist.h"
-
 #include "thorport.hpp"
 #include "thormisc.hpp"
 #include "thcompressutil.hpp"
 #include "thwatchdog.hpp"
 #include "slwatchdog.hpp"
-
 #include "thgraphslave.hpp"
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/slave/slwatchdog.cpp $ $Id: slwatchdog.cpp 62376 2011-02-04 21:59:58Z sort $");
 
 class CGraphProgressHandler : public CSimpleInterface, implements ISlaveWatchdog, implements IThreaded
 {

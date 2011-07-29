@@ -21,8 +21,6 @@
 #include "jiter.hpp"
 #include "jiter.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jiter.cpp $ $Id: jiter.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 //==============================================================================================================
 
 CArrayIteratorBase::CArrayIteratorBase(const Array &_values, aindex_t _start, IInterface *_owner) : owner(_owner), values (_values), start(_start)

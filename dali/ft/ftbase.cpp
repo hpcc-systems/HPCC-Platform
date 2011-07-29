@@ -17,12 +17,9 @@
 ############################################################################## */
 
 #include "jliball.hpp"
-
 #include "platform.h"
-
 #include "jlib.hpp"
 #include "jio.hpp"
-
 #include "jmutex.hpp"
 #include "jfile.hpp"
 #include "jsocket.hpp"
@@ -37,8 +34,6 @@
 #include "environment.hpp"
 #include "dalienv.hpp"
 #include "rmtspawn.hpp"
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/ft/ftbase.cpp $ $Id: ftbase.cpp 62376 2011-02-04 21:59:58Z sort $");
 
 #define DEFAULT_MAX_CSV_SIZE     8096
 

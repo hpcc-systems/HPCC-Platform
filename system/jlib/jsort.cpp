@@ -28,10 +28,6 @@
 #include "jthread.hpp"
 #include "jqueue.tpp"
 
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jsort.cpp $ $Id: jsort.cpp 63168 2011-03-14 11:27:12Z nhicks $");
-
-
 #ifdef _DEBUG
 // #define PARANOID
 // #define DOUBLE_COMPARE

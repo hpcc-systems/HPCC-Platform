@@ -51,6 +51,8 @@ include_directories (
          ./../../esp/bindings 
          ./../../common/workunit 
          ./../../common/remote 
+         ${CMAKE_BINARY_DIR}
+         ${CMAKE_BINARY_DIR}/oss
     )
 
 set_source_files_properties (../../common/remote/rmtfile.cpp PROPERTIES COMPILE_FLAGS -DDAFILESRV_LOCAL)

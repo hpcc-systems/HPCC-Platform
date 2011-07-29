@@ -30,8 +30,6 @@
 #include "jhash.hpp"
 #include "jmutex.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jhash.cpp $ $Id: jhash.cpp 62965 2011-03-04 12:34:40Z ghalliday $");
-
 #define PSTRINGDATA INT_MIN
 
 #define mix(a,b,c) \

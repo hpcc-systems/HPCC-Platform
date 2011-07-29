@@ -22,11 +22,7 @@
 #include "jlib.hpp"
 #include "javahash.hpp"
 #include "javahash.tpp"
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/base/dacsds.cpp $ $Id: dacsds.cpp 62962 2011-03-04 11:10:12Z jsmith $");
-
 #include "jptree.ipp"
-
 #include "mpbuff.hpp"
 #include "mpcomm.hpp"
 #include "mputil.hpp"
@@ -36,7 +32,6 @@ static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/ba
 #include "daclient.hpp"
 
 #include "dasds.ipp" // common header for client/server sds
-
 #include "dacsds.ipp"
 
 #define CLIENT_THROTTLE_LIMIT 10

@@ -30,8 +30,6 @@
 
 
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/common/remote/rmtspawn.cpp $ $Id: rmtspawn.cpp 64028 2011-04-14 14:28:10Z nhicks $");
-
 LogMsgCategory MCdetailDebugInfo(MCdebugInfo(1000));
 
 /*

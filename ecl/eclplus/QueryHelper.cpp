@@ -21,8 +21,6 @@
 #include "QueryHelper.ipp"
 #include "ViewHelper.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/eclplus/QueryHelper.cpp $ $Id: QueryHelper.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 QueryHelper::QueryHelper(IProperties * _globals, IFormatType * _format) : globals(_globals), format(_format), wuclient(createWorkunitsClient(_globals))
 {
 }
