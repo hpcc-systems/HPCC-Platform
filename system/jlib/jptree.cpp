@@ -5931,8 +5931,8 @@ class COrderedPTree : public PTree
         }
     };
 public:
-    COrderedPTree(const char *name=NULL, byte flags=ipt_ordered, IPTArrayValue *value=NULL, ChildMap *children=NULL)
-        : PTree(name, flags, value, children) { }
+    COrderedPTree(const char *name=NULL, byte flags=ipt_none, IPTArrayValue *value=NULL, ChildMap *children=NULL)
+        : PTree(name, flags|ipt_ordered, value, children) { }
 
     virtual bool isEquivalent(IPropertyTree *tree) { return (NULL != QUERYINTERFACE(tree, COrderedPTree)); }
     virtual IPropertyTree *create(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false)
