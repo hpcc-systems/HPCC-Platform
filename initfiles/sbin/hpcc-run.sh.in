@@ -60,7 +60,38 @@ while true ; do
         *) print_usage ;;
     esac
 done
-for arg do arg=$arg; done
+
+cnt=0
+for arg; do 
+    arg=$arg; 
+    case "$arg" in
+        start) 
+	    cmd="start" 
+	    cnt=$(( $cnt + 1 ))
+	    ;;
+        stop) 
+	    cmd="stop" 
+	    cnt=$(( $cnt + 1 ))
+	    ;;
+        restart) 
+	    cmd="restart" 
+	    cnt=$(( $cnt + 1 ))
+	    ;;
+        status) 
+	    cmd="status" 
+	    cnt=$(( $cnt + 1 ))
+	    ;;
+        setup) 
+	    cmd="setup" 
+	    cnt=$(( $cnt + 1 ))
+	    ;;
+        *) print_usage;;
+    esac
+done
+
+if [ ${cnt} -gt 1 ];
+	print_usage
+fi
 
 case "$action" in
     hpcc-init) ;;
@@ -72,17 +103,6 @@ case "$action" in
         fi
 	;;
 esac
-
-case "$arg" in
-    start) cmd="start" ;;
-    stop) cmd="stop" ;;
-    restart) cmd="restart" ;;
-    status) cmd="status" ;;
-    setup) cmd="setup" ;;
-    *) print_usage;;
-esac
-
-
 
 for IP in $IPS; do
 	if ping -c 1 -w 5 -n $IP > /dev/null 2>&1; then
