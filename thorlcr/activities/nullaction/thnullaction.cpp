@@ -18,9 +18,6 @@
 
 #include "jlib.hpp"
 #include "thexception.hpp"
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/nullaction/thnullaction.cpp $ $Id: thnullaction.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 #include "thactivitymaster.ipp"
 #include "thnullaction.ipp"
 

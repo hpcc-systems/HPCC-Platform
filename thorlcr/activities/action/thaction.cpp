@@ -21,8 +21,6 @@
 
 #include "thexception.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/action/thaction.cpp $ $Id: thaction.cpp 64945 2011-05-27 13:20:16Z jsmith $");
-
 #include "thactivitymaster.ipp"
 #include "thaction.ipp"
 

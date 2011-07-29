@@ -37,10 +37,6 @@
 #include "thdiskbaseslave.ipp"
 #include "thindexreadslave.ipp"
 
-
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/indexread/thindexreadslave.cpp $ $Id: thindexreadslave.cpp 64673 2011-05-18 15:15:16Z rchapman $");
-
 static IKeyManager *getKeyManager(IKeyIndex *keyIndex, IHThorIndexReadBaseArg *helper, size32_t fixedDiskRecordSize)
 {
     Owned<IKeyManager> klManager = createKeyManager(keyIndex, fixedDiskRecordSize, NULL);

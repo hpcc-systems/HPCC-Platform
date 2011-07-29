@@ -21,8 +21,6 @@
 #include "jstats.h"
 #include "jexcept.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jstats.cpp $ $Id: jstats.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 extern jlib_decl const char *getStatName(unsigned i)
 {
     switch (i)

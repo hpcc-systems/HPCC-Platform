@@ -22,8 +22,6 @@
 #include <assert.h>
 #include "jmutex.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jiface.cpp $ $Id: jiface.cpp 62933 2011-03-03 17:00:04Z nhicks $");
-
 //===========================================================================
 
 void CInterface::beforeDispose()

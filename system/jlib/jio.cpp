@@ -30,8 +30,6 @@
 #include "jexcept.hpp"
 #include "jqueue.tpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jio.cpp $ $Id: jio.cpp 63504 2011-03-26 13:46:15Z nhicks $");
-
 #ifdef _WIN32
 #include <io.h>
 #endif

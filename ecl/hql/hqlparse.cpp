@@ -32,8 +32,6 @@
 
 //#define TIMING_DEBUG
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hql/hqlparse.cpp $ $Id: hqlparse.cpp 66009 2011-07-06 12:28:32Z ghalliday $");
-
 #define  MAX_LOOP_TIMES 10000
 
 // =========================== local helper functions ===================================

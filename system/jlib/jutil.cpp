@@ -47,8 +47,6 @@
 #include "build-config.h"
 #endif
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jutil.cpp $ $Id: jutil.cpp 65678 2011-06-22 16:57:45Z rchapman $");
-
 static SpinLock * cvtLock;
 
 #ifdef _WIN32

@@ -28,11 +28,6 @@
 #include "csvsplitter.hpp"
 #include "eclrtl.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/common/thorhelper/csvsplitter.cpp $ $Id: csvsplitter.cpp 62567 2011-02-16 16:01:41Z rchapman $");
-
-//=====================================================================================================
-
-
 CSVSplitter::CSVSplitter()
 {
     lengths = NULL;

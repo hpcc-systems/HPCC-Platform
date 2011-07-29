@@ -30,8 +30,6 @@
 #include "rmtfile.hpp"
 #include "remoteerr.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/common/remote/rmtfile.cpp $ $Id: rmtfile.cpp 64457 2011-05-09 17:28:42Z yma $");
-
 //----------------------------------------------------------------------------
 
 //#define TEST_DAFILESRV_FOR_UNIX_PATHS     // probably not needed

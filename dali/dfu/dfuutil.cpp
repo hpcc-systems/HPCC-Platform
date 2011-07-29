@@ -31,12 +31,8 @@
 #include "dfuerror.hpp"
 #include "dautils.hpp"
 #include "dalienv.hpp"
-
 #include "rmtfile.hpp"
-
 #include "dfuutil.hpp"
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/dfu/dfuutil.cpp $ $Id: dfuutil.cpp 62376 2011-02-04 21:59:58Z sort $");
 
 // savemap
 // superkey functions

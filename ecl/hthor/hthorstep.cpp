@@ -37,8 +37,6 @@
 #include "thorparse.ipp"
 #include "hthorstep.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hthor/hthorstep.cpp $ $Id: hthorstep.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 //---------------------------------------------------------------------------
 
 CHThorSteppedInput::CHThorSteppedInput(IHThorInput * _input)

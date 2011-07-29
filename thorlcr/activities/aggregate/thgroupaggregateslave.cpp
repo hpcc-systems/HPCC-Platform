@@ -18,12 +18,6 @@
 
 #include "thgroupaggregateslave.ipp"
 
-
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/aggregate/thgroupaggregateslave.cpp $ $Id: thgroupaggregateslave.cpp 62376 2011-02-04 21:59:58Z sort $");
-
-
-
 class GroupAggregateSlaveActivity : public CSlaveActivity, public CThorDataLink
 {
 

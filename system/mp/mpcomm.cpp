@@ -29,8 +29,6 @@
 #include "jlib.hpp"
 #include <limits.h>
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/mp/mpcomm.cpp $ $Id: mpcomm.cpp 66046 2011-07-07 10:56:16Z rchapman $");
-
 #include "jsocket.hpp"
 #include "jmutex.hpp"
 #include "jutil.hpp"

@@ -26,8 +26,6 @@
 
 #include "thfirstnslave.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/firstn/thfirstnslave.cpp $ $Id: thfirstnslave.cpp 65251 2011-06-08 08:38:02Z jsmith $");
-
 class CFirstNSlaveBase : public CSlaveActivity, public CThorDataLink
 {
 protected:

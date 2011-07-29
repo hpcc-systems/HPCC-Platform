@@ -22,8 +22,6 @@
 #include "jlib.hpp"
 #include "jobserve.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jobserve.cpp $ $Id: jobserve.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 //-----------------------------------------------------------------------
 //-- Classes for helping with notification
 //-----------------------------------------------------------------------

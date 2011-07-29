@@ -28,8 +28,6 @@
 #define CHECK_CONSISTENCY
 #endif
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/common/thorhelper/thorstep.cpp $ $Id: thorstep.cpp 65884 2011-06-29 11:25:52Z ghalliday $");
-
 const static SmartStepExtra knownLowestFrequencyTermStepExtra(SSEFreadAhead, NULL);
 const static SmartStepExtra unknownFrequencyTermStepExtra(SSEFreturnMismatches, NULL);
 const static SmartStepExtra nonSeekStepExtra(SSEFreturnUnbufferedMatches, NULL);                    // if doing next() instead of nextGE()

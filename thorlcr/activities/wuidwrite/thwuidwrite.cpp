@@ -25,8 +25,6 @@
 #include "thwuidwrite.ipp"
 #include "thbufdef.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/wuidwrite/thwuidwrite.cpp $ $Id: thwuidwrite.cpp 63725 2011-04-01 17:40:45Z jsmith $");
-
 #define INVALID_SEQUENCE_VALUE  -1
 #define DEFAULT_WUIDWRITE_LIMIT 10
 

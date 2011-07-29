@@ -53,8 +53,6 @@
 #include "hqlcse.ipp"
 #include "thorplugin.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hqlcpp/hqlcpp.cpp $ $Id: hqlcpp.cpp 66009 2011-07-06 12:28:32Z ghalliday $");
-
 #ifdef _DEBUG
 //#define ADD_ASSIGNMENT_COMMENTS
 //#define ADD_RESOURCE_AS_CPP_COMMENT

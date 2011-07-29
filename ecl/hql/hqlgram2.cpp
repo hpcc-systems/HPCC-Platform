@@ -54,8 +54,6 @@
 #define MANYFIELDS_THRESHOLD                        2000
 #define MAX_SENSIBLE_FIELD_LENGTH                   1000000000
 
-static CBuildVersion _bv1("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hql/hqlgram2.cpp $ $Id: hqlgram2.cpp 66009 2011-07-06 12:28:32Z ghalliday $");
-
 struct TokenMap
 {
     int lexToken;

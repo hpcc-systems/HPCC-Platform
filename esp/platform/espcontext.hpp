@@ -62,7 +62,6 @@ ESPHTTP_API const char* getCFD();
 
 ESPHTTP_API void setBuildVersion(const char* buildVersion);
 ESPHTTP_API const char* getBuildVersion();
-
 ESPHTTP_API void setBuildLevel(const char* buildLevel);
 ESPHTTP_API const char* getBuildLevel();
 #endif

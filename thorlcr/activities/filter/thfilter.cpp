@@ -18,8 +18,6 @@
 
 #include "thfilter.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/filter/thfilter.cpp $ $Id: thfilter.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 class CFilterActivityMaster : public CMasterActivity
 {
 public:

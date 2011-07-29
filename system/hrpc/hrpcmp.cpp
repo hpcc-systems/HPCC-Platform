@@ -30,9 +30,6 @@
 #include <mpbase.hpp> 
 #include <mpcomm.hpp> 
 
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/hrpc/hrpcmp.cpp $ $Id: hrpcmp.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 interface IMpTransportState : extends IInterface
 {
 public:

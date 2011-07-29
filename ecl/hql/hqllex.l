@@ -67,8 +67,6 @@ extern void hex2str(char * target, const char * digits, unsigned len);
 #define RETURNHARD(sym) \
         setupdatepos; return sym;
 
-static CBuildVersion _bv1("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hql/hqllex.l $ $Id: hqllex.l 66009 2011-07-06 12:28:32Z ghalliday $");
-
 int HqlLex::lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lookup, const short * activeState, const char * tokenText)
 {
     if ((tokenText[0] == '$') && tokenText[1]==0)

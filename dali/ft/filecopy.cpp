@@ -43,14 +43,10 @@
 #include "jlog.hpp"
 #include "dalienv.hpp"
 
-
-
 #define DEFAULT_MAX_CONNECTIONS 25
 #define PARTITION_RECOVERY_LIMIT 1000
 #define EXPECTED_RESPONSE_TIME          (60 * 1000)
 #define RESPONSE_TIME_TIMEOUT           (60 * 60 * 1000)
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/ft/filecopy.cpp $ $Id: filecopy.cpp 62376 2011-02-04 21:59:58Z sort $");
 
 //#define CLEANUP_RECOVERY
 

@@ -27,8 +27,6 @@
 #include "slave.ipp"
 #include "thactivityutil.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/topn/thtopnslave.cpp $ $Id: thtopnslave.cpp 62878 2011-03-02 13:14:35Z jsmith $");
-
 IRowStream *createFirstNReadSeqVar(IRowStream *input, unsigned limit)
 {
     class CFirstNReadSeqVar : public CSimpleInterface, implements IRowStream

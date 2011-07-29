@@ -18,11 +18,6 @@
 
 #include "thdegroupslave.ipp"
 
-
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/degroup/thdegroupslave.cpp $ $Id: thdegroupslave.cpp 62376 2011-02-04 21:59:58Z sort $");
-
-
 class CDegroupSlaveActivity : public CSlaveActivity, public CThorDataLink, public CThorSteppable
 {
     IThorDataLink *input;

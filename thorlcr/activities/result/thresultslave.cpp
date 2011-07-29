@@ -23,9 +23,6 @@
 
 #include "thresultslave.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/result/thresultslave.cpp $ $Id: thresultslave.cpp 62376 2011-02-04 21:59:58Z sort $");
-
-
 class CResultSlaveActivity : public ProcessSlaveActivity
 {
     mptag_t masterMpTag;

@@ -23,10 +23,6 @@
 #include "jsuperhash.hpp"
 #include "jmisc.hpp"
 #include "jencrypt.hpp"
-
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/base/dasess.cpp $ $Id: dasess.cpp 64657 2011-05-18 11:46:07Z jsmith $");
-
 #include "dacoven.hpp"
 #include "mpbuff.hpp"
 #include "mpcomm.hpp"

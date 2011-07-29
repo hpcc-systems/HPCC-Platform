@@ -23,8 +23,6 @@
 #include "eclrtl.hpp"
 #include "hqlexpr.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hql/hqlrepository.cpp $ $Id: hqlrepository.cpp 66009 2011-07-06 12:28:32Z ghalliday $");
-
 bool isPluginDllScope(IHqlScope * scope)
 {
     if (!scope)

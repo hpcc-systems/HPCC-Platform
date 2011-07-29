@@ -26,9 +26,6 @@
 #include "jlog.hpp"
 #include "jmisc.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/dafilesrv/dafilesrv.cpp $ $Id: dafilesrv.cpp 62376 2011-02-04 21:59:58Z sort $");
-
-
 #ifdef _MSC_VER
 #pragma warning (disable : 4355)
 #endif

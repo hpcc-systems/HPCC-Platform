@@ -30,8 +30,6 @@
 #include "slave.ipp"
 #include "thactivityutil.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/keypatch/thkeypatchslave.cpp $ $Id: thkeypatchslave.cpp 64773 2011-05-20 13:47:42Z jsmith $");
-
 class CKeyPatchSlave : public ProcessSlaveActivity
 {
     IHThorKeyPatchArg *helper;

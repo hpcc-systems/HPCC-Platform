@@ -27,13 +27,8 @@
 #include "mputil.hpp"
 #include "jmisc.hpp"
 #include "daclient.hpp"
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/base/dacoven.cpp $ $Id: dacoven.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 #include "daserver.hpp"
-
 #include "dacoven.hpp"
-
 #include "mpcomm.hpp"
 
 extern void closedownDFS();

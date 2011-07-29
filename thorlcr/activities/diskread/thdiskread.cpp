@@ -26,9 +26,6 @@
 
 #include "thdiskread.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/diskread/thdiskread.cpp $ $Id: thdiskread.cpp 63725 2011-04-01 17:40:45Z jsmith $");
-
-
 class CDiskReadMasterVF : public CDiskReadMasterBase
 {
 public:

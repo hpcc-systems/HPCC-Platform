@@ -18,19 +18,12 @@
 
 #include "jiface.hpp"
 #include "jtime.hpp"
-
 #include "dadfs.hpp"
-
 #include "thexception.hpp"
 #include "thmfilemanager.hpp"
-
-
 #include "eclhelper.hpp"
 #include "deftype.hpp"
-
 #include "thxmlwrite.ipp"
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/xmlwrite/thxmlwrite.cpp $ $Id: thxmlwrite.cpp 63406 2011-03-23 17:33:52Z jsmith $");
 
 class CXmlWriteActivityMaster : public CWriteMasterBase
 {

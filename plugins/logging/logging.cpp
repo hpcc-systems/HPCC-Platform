@@ -23,8 +23,6 @@
 #include "logging.hpp"
 #include "jlog.hpp"
 
-static char buildVersion[] = "$HeadURL: https://svn.br.seisint.com/ecl/trunk/plugins/logging/logging.cpp $ $Id: logging.cpp 62376 2011-02-04 21:59:58Z sort $";
-
 #define LOGGING_VERSION "LOGGING 1.0.1"
 static const char * compatibleVersions[] = {
     "LOGGING 1.0.0 [66aec3fb4911ceda247c99d6a2a5944c]", // linux version

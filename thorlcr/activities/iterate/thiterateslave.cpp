@@ -24,9 +24,6 @@
 
 #include "thiterateslave.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/iterate/thiterateslave.cpp $ $Id: thiterateslave.cpp 62939 2011-03-03 18:47:12Z jsmith $");
-
-
 class IterateSlaveActivityBase : public CSlaveActivity, public CThorDataLink
 {
     OwnedConstThorRow first;

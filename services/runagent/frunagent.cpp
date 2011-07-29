@@ -43,9 +43,6 @@
 #include "jsocket.hpp"
 #include "hodisp_base.hpp"
 
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/services/runagent/frunagent.cpp $ $Id: frunagent.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 #ifdef _WIN32
 const char* statcmd = "cmd /c dir c:\\hoagent.txt";
 #else

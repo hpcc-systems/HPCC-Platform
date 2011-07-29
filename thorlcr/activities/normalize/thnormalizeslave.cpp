@@ -26,9 +26,6 @@
 #include "thexception.hpp"
 
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/normalize/thnormalizeslave.cpp $ $Id: thnormalizeslave.cpp 62376 2011-02-04 21:59:58Z sort $");
-
-
 class NormalizeSlaveActivity : public CSlaveActivity, public CThorDataLink
 {
     IHThorNormalizeArg * helper;

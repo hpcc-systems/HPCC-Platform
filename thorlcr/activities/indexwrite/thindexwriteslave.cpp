@@ -31,8 +31,6 @@
 #include "thbufdef.hpp"
 #include "backup.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/indexwrite/thindexwriteslave.cpp $ $Id: thindexwriteslave.cpp 64655 2011-05-18 08:08:09Z rchapman $");
-
 #define SINGLEPART_KEY_TRANSFER_SIZE 0x10000
 #define FEWWARNCAP 10
 

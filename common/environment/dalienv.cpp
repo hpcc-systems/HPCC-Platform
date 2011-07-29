@@ -32,10 +32,6 @@
 #include "dalienv.hpp"
 #include "rmtfile.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/common/environment/dalienv.cpp $ $Id: dalienv.cpp 62376 2011-02-04 21:59:58Z sort $");
-
-
-
 struct CIpInstance
 {
     unsigned hash;

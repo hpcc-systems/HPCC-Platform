@@ -20,6 +20,4 @@
 #include "jlib.hpp"
 #include "javahash.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/javahash.cpp $ $Id: javahash.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 #include "javahash.tpp"

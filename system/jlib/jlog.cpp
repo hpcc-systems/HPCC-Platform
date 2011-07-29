@@ -34,8 +34,6 @@
 #define AUDIT_DATA_LOG_TEMPLATE "/var/log/seisint/log_data_XXXXXX"
 #endif
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jlog.cpp $ $Id: jlog.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 // Time, in nanoseconds, after which the clock field loops --- 3600000000000ns = 1hr
 #define CLOCK_LOOP_NANOSECONDS I64C(3600000000000)
 

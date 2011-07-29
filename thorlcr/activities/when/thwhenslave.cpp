@@ -23,9 +23,6 @@
 #include "commonext.hpp"
 #include "slave.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/when/thwhenslave.cpp $ $Id: thwhenslave.cpp 62376 2011-02-04 21:59:58Z sort $");
-
-
 class CDependencyExecutorSlaveActivity : public CSimpleInterface
 {
 protected:

@@ -43,8 +43,6 @@
  #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
 #endif
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/common/deftype/deftype.cpp $ $Id: deftype.cpp 65583 2011-06-20 13:29:24Z ghalliday $");
-
 //#define DATA_STRING_COMPATIBLE
 #define HASHFIELD(p) hashcode = hashc((unsigned char *) &p, sizeof(p), hashcode)
 

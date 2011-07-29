@@ -24,11 +24,6 @@
 #include "jmisc.hpp"
 #include "rmtssh.hpp"
 
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/services/runagent/frunssh.cpp $ $Id: frunssh.cpp 62376 2011-02-04 21:59:58Z sort $");
-
-
-
 int main( int argc, char *argv[] )
 {
     int res=0;
