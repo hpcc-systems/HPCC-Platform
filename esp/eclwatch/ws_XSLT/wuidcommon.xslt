@@ -43,13 +43,19 @@
                   <xsl:value-of select="$wuid"/>
                 </xsl:when>
                 <xsl:otherwise>
-                  <!--a href="/esp/iframe/WsWorkunits/WUFile?Wuid={$wuid}&amp;Type=XML&amp;esp_iframe_title=ECL Workunit XML - {$wuid}"
-                                   -->
                   <a href="/esp/iframe?esp_iframe_title=ECL Workunit XML - {$wuid}&amp;inner=/WsWorkunits/WUFile%3fWuid%3d{$wuid}%26Type%3dXML" >
                     <xsl:value-of select="$wuid"/>
                   </a>
                 </xsl:otherwise>
               </xsl:choose>
+            </td>
+          </tr>
+          <tr>
+            <td class="eclwatch entryprompt">
+              Action:
+            </td>
+            <td>
+              <xsl:value-of select="ActionEx"/>
             </td>
           </tr>
           <tr>
@@ -249,14 +255,6 @@
               </xsl:choose>
             </td>
           </tr>
-          <!--tr>
-                            <td class="eclwatch entryprompt">
-                  Cluster:
-              </td>
-                            <td>
-                                <xsl:value-of select="Cluster"/>
-                            </td>
-                        </tr-->
           <xsl:variable name="defaultcluster" select="Cluster"/>
           <tr>
             <td class="eclwatch entryprompt">
@@ -633,7 +631,6 @@
                 </A>
               </div>
             </div>
-            <!--xsl:apply-templates select="Workflows" mode="list"/-->
             <div id="Workflows" class="wusectioncontent">
               <xsl:choose>
                 <xsl:when test="WorkflowsDesc != ''">
@@ -698,37 +695,6 @@
       </xsl:if>
 
       <xsl:if test="number(Archived) &lt; 1">
-        <!--tr>
-                                <th>Helpers:</th>
-                                <td>
-                                    <table class="list">
-                                        <tr>
-                                            <xsl:if test="string-length(Query/Cpp)">
-                                                <td>
-                                                <a href="/WsWorkunits/WUFile/{$wuid}.cpp?Wuid={$wuid}&amp;Type=cpp" >cpp</a>
-                                                </td>
-                                            </xsl:if>
-                                            <xsl:if test="string-length(Query/Dll)">
-                                                <td>
-                                                <a href="/WsWorkunits/WUFile/{$wuid}.dll?Wuid={$wuid}&amp;Type=dll" >dll</a>
-                                                </td>
-                                            </xsl:if>
-                                            <xsl:if test="string-length(Query/ResTxt)">
-                                                <td>
-                                                <a href="/WsWorkunits/WUFile/res.txt?Wuid={$wuid}&amp;Type=res"
-                                                   >res.txt</a>
-                                                </td>
-                                            </xsl:if>
-                                            <xsl:if test="string-length(Query/ThorLog)">
-                                                <td>
-                                                <a href="/WsWorkunits/WUFile/ThorLog?Wuid={$wuid}&amp;Type=ThorLog" 
-                                                    >thormaster.log</a>
-                                                </td>
-                                            </xsl:if>
-                                        </tr>
-                                    </table>
-                                </td>
-                            </tr-->
         <xsl:if test="count(Helpers/ECLHelpFile)">
           <p>
             <div class="wugroup">
@@ -1206,12 +1172,6 @@
         </xsl:if>
         <xsl:if test="not(GraphName)">
           <xsl:value-of select="Value"/>
-          <!--
-          (  <xsl:call-template name="timeformat">
-            <xsl:with-param name="toformat" select="Value"/>
-          </xsl:call-template>
-          )
-          -->
         </xsl:if>
       </td>
       <td>

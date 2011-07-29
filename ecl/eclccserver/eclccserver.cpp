@@ -290,7 +290,7 @@ public:
                     workunit->setState(WUStateFailed);
             }
             else if (workunit->getAction()==WUActionCompile)
-                workunit->setState(WUStateCompleted);
+                workunit->setState(WUStateCompiled);
         }
         else if (workunit->getState() != WUStateAborted)
             workunit->setState(WUStateFailed);
