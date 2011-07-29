@@ -2286,7 +2286,7 @@ void FileSprayer::setReplicate(bool _replicate)
 void FileSprayer::setSource(IDistributedFile * source)
 {
     distributedSource.set(source);
-    srcAttr.setown(createPTree(&source->queryProperties()));
+    srcAttr.setown(createPTreeFromIPT(&source->queryProperties()));
     extractSourceFormat(srcAttr);
     unsigned numParts = source->numParts();
     for (unsigned idx=0; idx < numParts; idx++)
@@ -2322,7 +2322,7 @@ void FileSprayer::setSource(IFileDescriptor * source, unsigned copy, unsigned mi
 {
     IPropertyTree *attr = &source->queryProperties();
     extractSourceFormat(attr);
-    srcAttr.setown(createPTree(&source->queryProperties()));
+    srcAttr.setown(createPTreeFromIPT(&source->queryProperties()));
     extractSourceFormat(srcAttr);
 
     RemoteFilename filename;
@@ -2856,7 +2856,7 @@ void FileSprayer::updateTargetProperties()
             // and simple (top level) elements
             Owned<IPropertyTreeIterator> iter = srcAttr->getElements("*");
             ForEach(*iter) {
-                curProps.addPropTree(iter->query().queryName(),createPTree(&iter->query()));
+                curProps.addPropTree(iter->query().queryName(),createPTreeFromIPT(&iter->query()));
             }
         }
         distributedTarget->unlockProperties();

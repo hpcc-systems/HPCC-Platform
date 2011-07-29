@@ -227,6 +227,23 @@ unsigned ChildMap::getHashFromElement(const void *e) const
     return elem.queryKey()->queryHash();
 }
 
+unsigned ChildMap::numChildren()
+{
+    SuperHashIteratorOf<IPropertyTree> iter(*this);
+    if (!iter.first()) return 0;
+    unsigned count = 0;
+    do
+    {
+        PTree *element = (PTree *) &iter.query();
+        if (element->value && element->value->isArray())
+            count += element->value->elements();
+        else
+            ++count;
+    }
+    while (iter.next());
+    return count;
+}
+
 IPropertyTreeIterator *ChildMap::getIterator(bool sort)
 {
     class CPTHashIterator : public CInterface, implements IPropertyTreeIterator
@@ -1871,12 +1888,12 @@ bool PTree::removeTree(IPropertyTree *child)
 {
     if (children)
     {
-        SuperHashIteratorOf<IPropertyTree> iter(*children);
-        if (iter.first())
+        Owned<IPropertyTreeIterator> iter = children->getIterator(false);
+        if (iter->first())
         {
             do
             {
-                PTree *element = (PTree *) &iter.query();
+                PTree *element = (PTree *) &iter->query();
                 if (element == child)
                     return children->removeExact(element);
 
@@ -1893,7 +1910,7 @@ bool PTree::removeTree(IPropertyTree *child)
                     }
                 }
             }
-            while (iter.next());
+            while (iter->next());
         }
     }
     return false;
@@ -2399,19 +2416,7 @@ void PTree::localizeElements(const char *xpath, bool allTail)
 unsigned PTree::numChildren()
 {
     if (!checkChildren()) return 0;
-    SuperHashIteratorOf<IPropertyTree> iter(*children);
-    if (!iter.first()) return 0;
-    unsigned count = 0;
-    do
-    {
-        PTree *element = (PTree *) &iter.query();
-        if (element->value && element->value->isArray())
-            count += element->value->elements();
-        else
-            ++count;
-    }
-    while (iter.next());
-    return count;
+    return children->numChildren();
 }   
 
 void getXPathMatchTree(IPropertyTree &parentContext, const char *xpath, IPropertyTree *&matchContainer)
@@ -2665,7 +2670,7 @@ void PTree::init()
 void PTree::clear()
 {
     attributes.kill(); 
-    if (children) { children->kill(); children->Release(); children = NULL; }
+    if (children) { children->Release(); children = NULL; }
     if (value) { delete value; value = NULL; }  
 }
 
@@ -3525,6 +3530,7 @@ IPropertyTreeIterator *PTStackIterator::popFromStack(StringAttr &path)
 
 
 // factory methods
+
 IPropertyTree *createPTree(MemoryBuffer &src)
 {
     IPropertyTree *tree = new LocalPTree();
@@ -3532,9 +3538,9 @@ IPropertyTree *createPTree(MemoryBuffer &src)
     return tree;
 }
 
-IPropertyTree *createPTree(const IPropertyTree *srcTree)
+IPropertyTree *createPTreeFromIPT(const IPropertyTree *srcTree, ipt_flags flags)
 {
-    Owned<PTree> tree = new LocalPTree();
+    Owned<PTree> tree = (PTree *)createPTree(NULL, flags);
     return tree->clone(*srcTree->queryBranch(NULL));
 }
 
@@ -5872,6 +5878,7 @@ class COrderedPTree : public PTree
         COrderedChildMap<BASECHILDMAP>() : BASECHILDMAP() { }
         ~COrderedChildMap<BASECHILDMAP>() { kill(); }
 
+        virtual unsigned numChildren() { return order.ordinality(); }
         virtual IPropertyTreeIterator *getIterator(bool sort)
         {
             class CPTArrayIterator : public ArrayIIteratorOf<IArrayOf<IPropertyTree>, IPropertyTree, IPropertyTreeIterator>
@@ -5890,9 +5897,20 @@ class COrderedPTree : public PTree
         }
         virtual bool set(const char *key, IPropertyTree *tree)
         {
-            order.zap(*tree); // would be nice to have preversed position
-            order.append(*tree);
-            return BASECHILDMAP::set(key, tree);
+            IPropertyTree *existing = find(*key);
+            if (existing)
+            {
+                unsigned pos = order.find(*existing);
+                BASECHILDMAP::set(key, tree);
+                order.replace(*tree, pos);
+            }
+            else
+            {
+                BASECHILDMAP::set(key, tree);
+                order.append(*tree);
+            }
+            return true;
+
         }
         virtual bool replace(const char *key, IPropertyTree *tree) // provides different semantics, used if element being replaced is not to be treated as deleted.
         {
@@ -5900,23 +5918,20 @@ class COrderedPTree : public PTree
         }
         virtual bool remove(const char *key)
         {
-            IPropertyTree *e = find(*key);
-            if (!e)
+            IPropertyTree *child = BASECHILDMAP::find(*key);
+            if (!child)
                 return false;
-            order.zap(*e);
-            SuperHashTableOf<IPropertyTree, constcharptr>::removeExact(e);
-            return true;
+            order.zap(*child);
+            return BASECHILDMAP::removeExact(child);
         }
         virtual bool removeExact(IPropertyTree *child)
         {
-            if (!order.zap(*child))
-                return false;
-            SuperHashTableOf<IPropertyTree, constcharptr>::removeExact(child);
-            return true;
+            order.zap(*child);
+            return BASECHILDMAP::removeExact(child);
         }
     };
 public:
-    COrderedPTree(const char *name=NULL, byte flags=ipt_none, IPTArrayValue *value=NULL, ChildMap *children=NULL)
+    COrderedPTree(const char *name=NULL, byte flags=ipt_ordered, IPTArrayValue *value=NULL, ChildMap *children=NULL)
         : PTree(name, flags, value, children) { }
 
     virtual bool isEquivalent(IPropertyTree *tree) { return (NULL != QUERYINTERFACE(tree, COrderedPTree)); }

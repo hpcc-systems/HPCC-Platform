@@ -261,7 +261,7 @@ void CWsDeployExCE::init(IPropertyTree *cfg, const char *process, const char *se
     m_lastStarted.setNow();
 
   if (m_pCfg.get() == NULL)
-    m_pCfg.setown(createPTree(cfg));
+    m_pCfg.setown(createPTreeFromIPT(cfg));
   
   if (m_process.length() == 0)
     m_process.append(process);
@@ -1142,7 +1142,7 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
                     IPropertyTree* pElem = &iterElems->query();
                 
                   if (pElem)
-                    pComp = pTmpComp->addPropTree(pszSubType, createPTree(pElem));
+                    pComp = pTmpComp->addPropTree(pszSubType, createPTreeFromIPT(pElem));
                   else
                     pComp = pTmpComp->addPropTree(pszSubType, createPTree());
 
@@ -1565,7 +1565,7 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
               Owned<IPropertyTreeIterator> i = pSvcProps->getElements("Authenticate");
               ForEach(*i)
               {
-                IPropertyTree* pAuthCopy = createPTree(&i->query());
+                IPropertyTree* pAuthCopy = createPTreeFromIPT(&i->query());
                 mergeAttributes(pAuthCopy, pCompTree->queryPropTree("Authenticate"));
                 IPropertyTree* pNewNode = pComp->addPropTree("Authenticate", pAuthCopy);
               }
@@ -1573,14 +1573,14 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
               i.setown( pSvcProps->getElements("AuthenticateFeature") );
               ForEach(*i)
               {
-                IPropertyTree* pAuthCopy = createPTree(&i->query());
+                IPropertyTree* pAuthCopy = createPTreeFromIPT(&i->query());
                 mergeAttributes(pAuthCopy, pCompTree->queryPropTree("AuthenticateFeature"));
                 IPropertyTree* pNewNode = pComp->addPropTree("AuthenticateFeature", pAuthCopy);
               }
               i.setown( pSvcProps->getElements("AuthenticateSetting") );
               ForEach(*i)
               {
-                IPropertyTree* pAuthCopy = createPTree(&i->query());
+                IPropertyTree* pAuthCopy = createPTreeFromIPT(&i->query());
                 mergeAttributes(pAuthCopy, pCompTree->queryPropTree("AuthenticateSetting"));
                 IPropertyTree* pNewNode = pComp->addPropTree("AuthenticateSetting", pAuthCopy);
               }
@@ -3028,7 +3028,7 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
               }
 
               if (!pSrcSubElem)
-                pSrcSubElem = pSrcElem->addPropTree(pSubElem->queryName(), createPTree(pSubElem));
+                pSrcSubElem = pSrcElem->addPropTree(pSubElem->queryName(), createPTreeFromIPT(pSubElem));
             }
           }
         }
@@ -3226,7 +3226,7 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
 
             if (!pAcl->queryPropTree("Access") && pNewCompTree->queryPropTree("Access"))
             {
-              IPropertyTree* pAccess = pAcl->addPropTree("Access", createPTree(pNewCompTree->queryPropTree("Access")));
+              IPropertyTree* pAccess = pAcl->addPropTree("Access", createPTreeFromIPT(pNewCompTree->queryPropTree("Access")));
 
               Owned<IAttributeIterator> iAttrElem = pNewCompTree->queryPropTree("Access")->getAttributes();
                     ForEach(*iAttrElem)
@@ -3238,7 +3238,7 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
 
             if (!pAcl->queryPropTree("BaseList") && pNewCompTree->queryPropTree("BaseList"))
             {
-              IPropertyTree* pBaseList = pAcl->addPropTree("BaseList", createPTree(pNewCompTree->queryPropTree("BaseList")));
+              IPropertyTree* pBaseList = pAcl->addPropTree("BaseList", createPTreeFromIPT(pNewCompTree->queryPropTree("BaseList")));
               Owned<IAttributeIterator> iAttrElem = pNewCompTree->queryPropTree("BaseList")->getAttributes();
                     ForEach(*iAttrElem)
                     {
@@ -4087,7 +4087,7 @@ bool CWsDeployFileInfo::handleInstance(IEspContext &context, IEspHandleInstanceR
             IPropertyTree* pElem = &iterElems->query();
            
             if (!pNode->queryProp(pElem->queryName()))
-              pNode->addPropTree(pElem->queryName(), createPTree(pElem));
+              pNode->addPropTree(pElem->queryName(), createPTreeFromIPT(pElem));
           }
         }
       }
@@ -5356,7 +5356,7 @@ void CWsDeployFileInfo::unlockEnvironment(IEspContext* context, IConstWsDeployRe
         xpath.clear().appendf(XML_TAG_COMPUTER"["XML_ATTR_NETADDRESS"='%s']", pComputer->queryProp(XML_ATTR_NETADDRESS));
 
         if (!m_lockedNodesBeforeEnv->queryPropTree(xpath.str()))
-          lockComputers->addPropTree(XML_TAG_COMPUTER, createPTree(pComputer));
+          lockComputers->addPropTree(XML_TAG_COMPUTER, createPTreeFromIPT(pComputer));
       }
     }
 
@@ -5371,7 +5371,7 @@ void CWsDeployFileInfo::unlockEnvironment(IEspContext* context, IConstWsDeployRe
         xpath.clear().appendf(XML_TAG_COMPUTER"["XML_ATTR_NETADDRESS"='%s']", pComputer->queryProp(XML_ATTR_NETADDRESS));
 
         if (!pComputers->queryPropTree(xpath.str()))
-          unlockComputers->addPropTree(XML_TAG_COMPUTER, createPTree(pComputer));
+          unlockComputers->addPropTree(XML_TAG_COMPUTER, createPTreeFromIPT(pComputer));
       }
     }
 
@@ -5719,8 +5719,8 @@ void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite)
         try
         {
           Owned<IPropertyTree> pDefBldSet = createPTreeFromXMLFile(bldSetFile);
-          pNewTree->addPropTree(XML_TAG_PROGRAMS, createPTree(pDefBldSet->queryPropTree("./Programs")));
-          pNewTree->addPropTree(XML_TAG_SOFTWARE, createPTree(pDefBldSet->queryPropTree("./Software")));
+          pNewTree->addPropTree(XML_TAG_PROGRAMS, createPTreeFromIPT(pDefBldSet->queryPropTree("./Programs")));
+          pNewTree->addPropTree(XML_TAG_SOFTWARE, createPTreeFromIPT(pDefBldSet->queryPropTree("./Software")));
         }
         catch(IException* e)
         {

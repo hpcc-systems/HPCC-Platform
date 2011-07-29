@@ -969,7 +969,7 @@ public:
         IConstDFUfileSpec *source = wu->querySource();
         IConstDFUfileSpec *destination = wu->queryDestination();
         IConstDFUoptions *options = wu->queryOptions();
-        Owned<IPropertyTree> opttree = createPTree(options->queryTree());
+        Owned<IPropertyTree> opttree = createPTreeFromIPT(options->queryTree());
         StringAttr encryptkey;
         StringAttr decryptkey;
         if (options->getEncDec(encryptkey,decryptkey)) {

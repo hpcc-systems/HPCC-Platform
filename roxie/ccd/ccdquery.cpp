@@ -837,7 +837,7 @@ public:
 
     void getGraphStats(StringBuffer &reply, const IPropertyTree &thisGraph) const
     {
-        Owned<IPropertyTree> graph = createPTree(&thisGraph);
+        Owned<IPropertyTree> graph = createPTreeFromIPT(&thisGraph);
         Owned<IPropertyTreeIterator> edges = graph->getElements(".//edge");
         ForEach(*edges)
         {

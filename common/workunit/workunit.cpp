@@ -368,7 +368,7 @@ public:
             newt.setown(createPTree(buf));
             IPropertyTree *running = root->queryPropTree("Running");
             if (running)
-                newt->setPropTree("Running",createPTree(running));
+                newt->setPropTree("Running",createPTreeFromIPT(running));
         }
         else {
             if (!pack)
@@ -376,7 +376,7 @@ public:
             newt.setown(createPTree(wuid));
             IPropertyTree *running = root->queryPropTree("Running");
             if (running) {
-                newt->setPropTree("Running",createPTree(running));
+                newt->setPropTree("Running",createPTreeFromIPT(running));
                 root->removeTree(running);
             }
             root->serialize(buf);
@@ -2842,7 +2842,7 @@ IPropertyTree * pruneBranch(IPropertyTree * from, char const * xpath)
     Owned<IPropertyTree> ret;
     IPropertyTree * branch = from->queryPropTree(xpath);
     if(branch) {
-        ret.setown(createPTree(branch));
+        ret.setown(createPTreeFromIPT(branch));
         from->removeTree(branch);
     }
     return ret.getClear();
@@ -2920,10 +2920,7 @@ void CLocalWorkUnit::loadXML(const char *xml)
     CriticalBlock block(crit);
     init();
     assertex(xml);
-    if ('<' == *xml)
-        p.setown(createPTreeFromXMLString(xml));
-    else
-        p.setown(createPTreeFromXMLFile(xml));
+    p.setown(createPTreeFromXMLString(xml));
 }
 
 void CLocalWorkUnit::serialize(MemoryBuffer &tgt)
@@ -4339,7 +4336,7 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached)
             StringBuffer xpath;
             xpath.append("Variable[@name='").append(name).append("']");
             IPropertyTree *ptTgtVariable = ptTgtVariables->queryPropTree(xpath.str());
-            IPropertyTree *merged = createPTree(ptSrcVariable); // clone entire source info...
+            IPropertyTree *merged = createPTreeFromIPT(ptSrcVariable); // clone entire source info...
             merged->removeProp("Value"); // except value and status
             merged->setProp("@status", "undefined");
             if (!merged->getPropBool("@isScalar"))
@@ -5898,7 +5895,7 @@ IPropertyTree * CLocalWUGraph::getXGMMLTree(bool doMergeProgress) const
     {
         IPropertyTree *src = p->queryPropTree("xgmml/graph");
         if (!src) return NULL;
-        Owned<IPropertyTree> copy = createPTree(src);
+        Owned<IPropertyTree> copy = createPTreeFromIPT(src);
         Owned<IConstWUGraphProgress> _progress;
         if (progress) _progress.set(progress);
         else

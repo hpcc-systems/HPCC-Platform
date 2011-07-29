@@ -2276,7 +2276,7 @@ static IPropertyTree *getOSSdirTree()
     if (envtree) {
         IPropertyTree *ret = envtree->queryPropTree("Software/Directories");
         if (ret) 
-            return createPTree(ret);
+            return createPTreeFromIPT(ret);
     }
     return NULL;
 }

@@ -969,7 +969,7 @@ void fileTree(const char *lfn)
     StringBuffer str;
     toXML(root, str);
     printf("%s\n",str.str());
-    Owned<IPropertyTree> tree2 = createPTree(root);
+    Owned<IPropertyTree> tree2 = createPTreeFromIPT(root);
     expandFileTree(tree2,false);
     toXML(tree2, str.clear());
     printf("%s\n",str.str());
@@ -3627,7 +3627,7 @@ void PrintWUsizes()
     ForEach(*iter) {
         IPropertyTree &wu=iter->query();
         setAllocHook(true);
-        IPropertyTree *wucopy=createPTree(&wu);
+        IPropertyTree *wucopy=createPTreeFromIPT(&wu);
         unsigned tm = setAllocHook(true);
         wucopy->Release();
         tm -= setAllocHook(false);
@@ -4254,7 +4254,7 @@ void fixTilde()
     StringArray todelete;
     ForEach(*iter) {
         IPropertyTree &f = iter->query();
-        IPropertyTree *n = createPTree(&f);
+        IPropertyTree *n = createPTreeFromIPT(&f);
         StringBuffer name;
         if (!n->getProp("@name",name))
             continue;
@@ -4905,7 +4905,7 @@ void convertBinBranch(IPropertyTree &cluster,const char *branch)
 void getDFUXREF(const char *dst)
 {
     Owned<IRemoteConnection> conn = querySDS().connect("DFU/XREF",myProcessSession(),RTM_LOCK_READ, INFINITE);
-    Owned<IPropertyTree> root = createPTree(conn->getRoot());
+    Owned<IPropertyTree> root = createPTreeFromIPT(conn->getRoot());
     Owned<IPropertyTreeIterator> iter = root->getElements("Cluster");
     ForEach(*iter) {
         IPropertyTree &cluster = iter->query();

@@ -527,7 +527,7 @@ void CConfigEnvHelper::setAttribute(IPropertyTree* pNode, const char* szName, co
         pNode->removeTree(pProperties);
       }
       if (pNewProperties)
-        pNode->addPropTree("Properties", createPTree(pNewProperties));
+        pNode->addPropTree("Properties", createPTreeFromIPT(pNewProperties));
     }
     pNode->setProp(szName, szValue);
   }
@@ -592,7 +592,7 @@ void CConfigEnvHelper::mergeServiceAuthenticationWithBinding(IPropertyTree* pBin
 
     if (!pBinding->queryPropTree(xpath.str()))
     {
-      pNode = pBinding->addPropTree(NodeName, createPTree(pNode));
+      pNode = pBinding->addPropTree(NodeName, createPTreeFromIPT(pNode));
       if (bAuthenticateFeature)
         pNode->addProp("@authenticate", "Yes");
     }
@@ -852,7 +852,7 @@ void CConfigEnvHelper::addComponent(const char* pszBuildSet, StringBuffer& sbNew
 
       Owned<IPropertyTree> pProperties = pBuildSet->getPropTree("Properties");
       if (pProperties)
-        pCompTree->addPropTree("Properties", createPTree(pProperties));
+        pCompTree->addPropTree("Properties", createPTreeFromIPT(pProperties));
 
       addNode(pCompTree, m_pRoot->queryPropTree("Software"));
     }

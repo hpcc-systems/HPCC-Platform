@@ -627,7 +627,7 @@ public:
                 overridename.clear();
             else
                 ismulti = ::isMulti(overridename);
-            props.setown(createPTree(pt));
+            props.setown(createPTreeFromIPT(pt));
             //props->removeProp("@num");        // keep these for legacy
             //props->removeProp("@name");
             props->removeProp("@node");
@@ -640,7 +640,7 @@ public:
     {
         partIndex = idx;
         setOverrideName(_tail);
-        props.setown(pt?createPTree(pt):createPTree("Part"));
+        props.setown(pt?createPTreeFromIPT(pt):createPTree("Part"));
     }
 
     CPartDescriptor(CFileDescriptorBase &_parent, unsigned idx, MemoryBuffer &mb)
@@ -782,7 +782,7 @@ public:
             Owned<IPropertyTreeIterator> iter = props->getElements("*");
             ForEach(*iter) {
                 ret = true;
-                pt->addPropTree(iter->query().queryName(),createPTree(&iter->query()));
+                pt->addPropTree(iter->query().queryName(),createPTreeFromIPT(&iter->query()));
             }
         }
         if (!overridename.isEmpty()) {
@@ -1394,7 +1394,7 @@ public:
         }
         piter.clear();
         if (at)
-            attr.setown(createPTree(at));
+            attr.setown(createPTreeFromIPT(at));
         else
             attr.setown(createPTree("Attr"));
         if (totalsize!=(offset_t)-1)
@@ -1473,7 +1473,7 @@ public:
         }
         IPropertyTree *t = &queryProperties();
         if (!isEmptyPTree(t))
-            pt.addPropTree("Attr",createPTree(t));
+            pt.addPropTree("Attr",createPTreeFromIPT(t));
     }
 
     IPropertyTree *getFileTree(unsigned flags)
@@ -2516,7 +2516,7 @@ bool setReplicateDir(const char *dir,StringBuffer &out,bool isrep,const char *ba
 
 IFileDescriptor *createMultiCopyFileDescriptor(IFileDescriptor *in,unsigned num)
 {
-    Owned<IFileDescriptor> out = createFileDescriptor(createPTree(&in->queryProperties()));
+    Owned<IFileDescriptor> out = createFileDescriptor(createPTreeFromIPT(&in->queryProperties()));
     IPropertyTree &t = out->queryProperties();
     __int64 rc = t.getPropInt64("@recordCount",-1);
     if (rc>0)

@@ -485,7 +485,7 @@ public:
         IPropertyTree* pDeploy = tree->queryPropTree("DeployComponents");
         if (pDeploy)
             tree->removeTree(pDeploy);
-        pDeploy = tree->addPropTree("DeployComponents", createPTree(pSelectedComponents));
+        pDeploy = tree->addPropTree("DeployComponents", createPTreeFromIPT(pSelectedComponents));
         
         StringBuffer xml;
         toXML(tree, xml);

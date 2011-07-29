@@ -179,7 +179,6 @@ jlib_decl IPropertyTree *ensurePTree(IPropertyTree *root, const char *xpath);
 jlib_decl bool areMatchingPTrees(IPropertyTree * left, IPropertyTree * right);
 
 jlib_decl IPropertyTree *createPTree(MemoryBuffer &src);
-jlib_decl IPropertyTree *createPTree(const IPropertyTree *srcTree);
 
 jlib_decl IPropertyTree *createPTree(byte flags=ipt_none);
 jlib_decl IPropertyTree *createPTree(const char *name, byte flags=ipt_none);
@@ -189,8 +188,8 @@ jlib_decl IPropertyTree *createPTree(ISimpleReadStream &stream, byte flags=ipt_n
 jlib_decl IPropertyTree *createPTreeFromXMLString(const char *xml, byte flags=ipt_none, XmlReaderOptions readFlags=xr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
 jlib_decl IPropertyTree *createPTreeFromXMLString(unsigned len, const char *xml, byte flags=ipt_none, XmlReaderOptions readFlags=xr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
 jlib_decl IPropertyTree *createPTreeFromXMLFile(const char *filename, byte flags=ipt_none, XmlReaderOptions readFlags=xr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
+jlib_decl IPropertyTree *createPTreeFromIPT(const IPropertyTree *srcTree, ipt_flags flags=ipt_none);
 
-enum { };
 #define XML_SortTags 0x01
 #define XML_Format   0x02
 #define XML_NoEncode 0x04

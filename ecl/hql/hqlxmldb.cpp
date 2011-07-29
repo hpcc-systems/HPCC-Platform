@@ -229,7 +229,7 @@ void CXmlScope::loadXML(const char * text, const char * element)
 HQL_API IXmlScope* loadXML(const char* xml)
 {
     assertex(xml);
-    IPropertyTree * ptree = ('<' == *xml) ? createPTreeFromXMLString(xml, ipt_caseInsensitive) : createPTreeFromXMLFile(xml, ipt_caseInsensitive);
+    IPropertyTree * ptree = createPTreeFromXMLString(xml, ipt_caseInsensitive);
     return ptree ? new CXmlScope(ptree, NULL) : NULL;
 }
 

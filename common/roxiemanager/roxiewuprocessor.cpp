@@ -1658,7 +1658,7 @@ public:
                 if (remoteRoxieClusterName.length())
                     local->setProp("@remoteCluster", remoteRoxieClusterName); 
                 updateLocations(local, 1, useRemoteRoxieLocation, true, true, remoteTopology, dllName);
-                xml->addPropTree("DLL", createPTree(local));
+                xml->addPropTree("DLL", createPTreeFromIPT(local));
             }
 
             Owned<IPropertyTreeIterator> plugins = remoteQuery->getElements("Plugin");
@@ -1674,7 +1674,7 @@ public:
                         local->setProp("@remoteCluster", remoteRoxieClusterName); 
 
                     updateLocations(local, 1, useRemoteRoxieLocation, true, true, remoteTopology, pluginName);
-                    xml->addPropTree("DLL", createPTree(local));
+                    xml->addPropTree("DLL", createPTreeFromIPT(local));
                 }
             }
             if (!copyFileLocationInfo)
@@ -1736,7 +1736,7 @@ public:
                                         updateLocations(local, i, useRemoteRoxieLocation, false, false, remoteTopology, NULL);
                                         //updateLocations(local, i, useRemoteRoxieLocation, (i == numparts) ? true : false, false, topology, NULL);
 
-                                    xml->addPropTree("File", createPTree(local));
+                                    xml->addPropTree("File", createPTreeFromIPT(local));
                                 }
                             }
                         }
@@ -1769,7 +1769,7 @@ public:
                                             for (int i = 1; i <= numparts; i++)
                                                 updateLocations(local, i, useRemoteRoxieLocation, (i == numparts) ? true : false, false, remoteTopology, NULL);
 
-                                            xml->addPropTree("Key", createPTree(local));
+                                            xml->addPropTree("Key", createPTreeFromIPT(local));
                                         }
                                     }
                                 }

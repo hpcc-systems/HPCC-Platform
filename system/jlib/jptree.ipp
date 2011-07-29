@@ -50,10 +50,36 @@ public:
 typedef MapStringTo<IInterfacePtr, IInterfacePtr, MappingStringToOwned> MapStringToOwned;
 
 // case sensitive childmap
-class jlib_decl ChildMap : public SuperHashTableOf<IPropertyTree, constcharptr>
+class jlib_decl ChildMap : protected SuperHashTableOf<IPropertyTree, constcharptr>
 {
+protected:
+// SuperHashTable definitions
+    virtual void onAdd(void *) {}
+
+    virtual void onRemove(void *e)
+    {
+        IPropertyTree &elem= *(IPropertyTree *)e;
+        elem.Release();
+    }
+    virtual unsigned getHashFromElement(const void *e) const;
+    virtual unsigned getHashFromFindParam(const void *fp) const
+    {
+        return hashc((const unsigned char *)fp, (size32_t)strlen((const char *)fp), 0);
+    }
+    virtual const void *getFindParam(const void *e) const
+    {
+        const IPropertyTree &elem=*(const IPropertyTree *)e;
+        return (void *)elem.queryName();
+    }
+    virtual bool matchesFindParam(const void *e, const void *fp, unsigned fphash) const
+    {
+        return (0 == strcmp(((IPropertyTree *)e)->queryName(), (const char *)fp));
+    }
 public: 
+    IMPLEMENT_IINTERFACE;
     IMPLEMENT_SUPERHASHTABLEOF_REF_FIND(IPropertyTree, constcharptr);
+
+    inline unsigned count() const { return SuperHashTableOf<IPropertyTree, constcharptr>::count(); }
 
     ChildMap() : SuperHashTableOf<IPropertyTree, constcharptr>(4)
     { 
@@ -62,6 +88,7 @@ public:
     { 
         kill(); 
     }
+    virtual unsigned numChildren();
     virtual IPropertyTreeIterator *getIterator(bool sort);
     virtual bool set(const char *key, IPropertyTree *tree)
     {
@@ -82,29 +109,6 @@ public:
     virtual bool removeExact(IPropertyTree *child)
     {
         return SuperHashTableOf<IPropertyTree, constcharptr>::removeExact(child);
-    }
-public:
-// SuperHashTable definitions
-    virtual void onAdd(void *) {}
-
-    virtual void onRemove(void *e)
-    {
-        IPropertyTree &elem= *(IPropertyTree *)e;       
-        elem.Release();
-    }
-    virtual unsigned getHashFromElement(const void *e) const;
-    virtual unsigned getHashFromFindParam(const void *fp) const
-    {
-        return hashc((const unsigned char *)fp, (size32_t)strlen((const char *)fp), 0);
-    }
-    virtual const void *getFindParam(const void *e) const
-    {
-        const IPropertyTree &elem=*(const IPropertyTree *)e;
-        return (void *)elem.queryName();
-    }
-    virtual bool matchesFindParam(const void *e, const void *fp, unsigned fphash) const
-    {
-        return (0 == strcmp(((IPropertyTree *)e)->queryName(), (const char *)fp));
     }
 };
 
@@ -298,6 +302,7 @@ class jlib_decl PTree : public CInterface, implements IPropertyTree
 friend class SingleIdIterator;
 friend class PTLocalIteratorBase;
 friend class PTIdMatchIterator;
+friend class ChildMap;
 
 public:
     IMPLEMENT_IINTERFACE;

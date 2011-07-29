@@ -781,7 +781,7 @@ public:
             }
             throw MakeStringException(-1,"CDFUfileSpec: No parts found for file!");
         }
-        IPropertyTree *p = createPTree(queryProperties());
+        IPropertyTree *p = createPTreeFromIPT(queryProperties());
         if (iskey) {
             p->removeProp("@blockCompressed");      // can't compress keys
         }

@@ -1860,7 +1860,7 @@ static void convertBinBranch(IPropertyTree &cluster,const char *branch)
 static void getxref(const char *dst)
 {
     Owned<IRemoteConnection> conn = querySDS().connect("DFU/XREF",myProcessSession(),RTM_LOCK_READ, INFINITE);
-    Owned<IPropertyTree> root = createPTree(conn->getRoot());
+    Owned<IPropertyTree> root = createPTreeFromIPT(conn->getRoot());
     Owned<IPropertyTreeIterator> iter = root->getElements("Cluster");
     ForEach(*iter) {
         IPropertyTree &cluster = iter->query();

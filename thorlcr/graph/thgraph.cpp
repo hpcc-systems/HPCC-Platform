@@ -392,7 +392,7 @@ CGraphElementBase *createGraphElement(IPropertyTree &node, CGraphBase &owner, CG
 
 CGraphElementBase::CGraphElementBase(CGraphBase &_owner, IPropertyTree &_xgmml) : owner(&_owner)
 {
-    xgmml.setown(createPTree(&_xgmml));
+    xgmml.setown(createPTreeFromIPT(&_xgmml));
     eclText.set(xgmml->queryProp("att[@name=\"ecl\"]/@value"));
     id = xgmml->getPropInt("@id", 0);
     kind = (ThorActivityKind)xgmml->getPropInt("att[@name=\"_kind\"]/@value", TAKnone);
@@ -1757,7 +1757,7 @@ void CGraphBase::createFromXGMML(IPropertyTree *_node, CGraphBase *_owner, CGrap
 {
     owner = _owner;
     parent = _parent?_parent:owner;
-    node.setown(createPTree(_node));
+    node.setown(createPTreeFromIPT(_node));
     xgmml = node->queryPropTree("att/graph");
     sink = xgmml->getPropBool("att[@name=\"rootGraph\"]/@value", false);
     graphId = node->getPropInt("@id");

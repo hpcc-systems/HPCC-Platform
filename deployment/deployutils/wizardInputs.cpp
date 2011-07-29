@@ -408,8 +408,8 @@ IPropertyTree* CWizardInputs::createEnvironment()
     }
   }
 
-  Owned<IPropertyTree> pProgramTree = createPTree(m_buildSetTree);
-  pNewEnvTree->addPropTree(XML_TAG_PROGRAMS, createPTree(pProgramTree->queryPropTree("./"XML_TAG_PROGRAMS)));
+  Owned<IPropertyTree> pProgramTree = createPTreeFromIPT(m_buildSetTree);
+  pNewEnvTree->addPropTree(XML_TAG_PROGRAMS, createPTreeFromIPT(pProgramTree->queryPropTree("./"XML_TAG_PROGRAMS)));
 
   Owned<IPropertyTree> pCompTree = createPTree(XML_TAG_HARDWARE);
   generateHardwareHeaders(pNewEnvTree, sbTemp, false, pCompTree);
@@ -449,7 +449,7 @@ IPropertyTree* CWizardInputs::createEnvironment()
     pComputer->addProp(XML_ATTR_NAME, name.str());
     pComputer->addProp(XML_ATTR_NETADDRESS, m_ipaddress.item(i));
   }
-  pNewEnvTree->addPropTree(XML_TAG_HARDWARE, createPTree(pCompTree));
+  pNewEnvTree->addPropTree(XML_TAG_HARDWARE, createPTreeFromIPT(pCompTree));
   //Before we generate software tree check for dependencies of component for do_not_generate ,roxie, thor
   checkForDependencies();
   generateSoftwareTree(pNewEnvTree);
@@ -490,7 +490,7 @@ void CWizardInputs::generateSoftwareTree(IPropertyTree* pNewEnvTree)
       }
     }
 
-    pNewEnvTree->addPropTree(XML_TAG_SOFTWARE,createPTree(m_buildSetTree->queryPropTree("./"XML_TAG_SOFTWARE)));   
+    pNewEnvTree->addPropTree(XML_TAG_SOFTWARE,createPTreeFromIPT(m_buildSetTree->queryPropTree("./"XML_TAG_SOFTWARE)));
     xpath.clear().appendf("%s/%s/%s[%s='%s']/LocalEnvConfFile", XML_TAG_SOFTWARE, XML_TAG_ESPPROCESS, XML_TAG_ESPSERVICE, XML_ATTR_NAME, m_service.str());
     const char* tmp = m_cfg->queryProp(xpath.str());
     if (tmp && *tmp)
@@ -612,7 +612,7 @@ void CWizardInputs::addInstanceToTree(IPropertyTree* pNewEnvTree, StringBuffer a
 void CWizardInputs::getDefaultsForWizard(IPropertyTree* pNewEnvTree)
 {
   StringBuffer xpath, tempName, value;
-  Owned<IPropertyTree> pBuildTree = createPTree(pNewEnvTree->queryPropTree("./"XML_TAG_PROGRAMS));
+  Owned<IPropertyTree> pBuildTree = createPTreeFromIPT(pNewEnvTree->queryPropTree("./"XML_TAG_PROGRAMS));
   xpath.clear().appendf("./%s/%s/", XML_TAG_BUILD, XML_TAG_BUILDSET);
   Owned<IPropertyTreeIterator> buildSetInsts = pBuildTree->getElements(xpath.str());
   bool genOptional = true;
@@ -672,7 +672,7 @@ void CWizardInputs::getDefaultsForWizard(IPropertyTree* pNewEnvTree)
             IPropertyTree* pNewSubElem = pSWCompTree->queryPropTree(pElem->queryName());
             if (!pNewSubElem)
             {
-              pNewSubElem = pSWCompTree->addPropTree(pElem->queryName(), createPTree(pElem));
+              pNewSubElem = pSWCompTree->addPropTree(pElem->queryName(), createPTreeFromIPT(pElem));
               break;
             }
             else
@@ -888,7 +888,7 @@ void CWizardInputs::getEspBindingInformation(IPropertyTree* pNewEnvTree)
            Owned<IPropertyTreeIterator> i = pSvcProps->getElements("Authenticate");
            ForEach(*i)
            {
-             IPropertyTree* pAuthCopy = createPTree(&i->query());
+             IPropertyTree* pAuthCopy = createPTreeFromIPT(&i->query());
              mergeAttributes(pAuthCopy, pCompTree->queryPropTree("Authenticate"));
              IPropertyTree* pNewNode = pEspBindingInfo->addPropTree("Authenticate", pAuthCopy);
            }
@@ -896,7 +896,7 @@ void CWizardInputs::getEspBindingInformation(IPropertyTree* pNewEnvTree)
            i.setown( pSvcProps->getElements("AuthenticateFeature") );
            ForEach(*i)
            {
-             IPropertyTree* pAuthCopy = createPTree(&i->query());
+             IPropertyTree* pAuthCopy = createPTreeFromIPT(&i->query());
              //Adding authentication to true for espbinding.
              pAuthCopy->addProp("@authenticate","Yes");
              mergeAttributes(pAuthCopy, pCompTree->queryPropTree("AuthenticateFeature"));
@@ -905,7 +905,7 @@ void CWizardInputs::getEspBindingInformation(IPropertyTree* pNewEnvTree)
            i.setown( pSvcProps->getElements("AuthenticateSetting") );
            ForEach(*i)
            {
-             IPropertyTree* pAuthCopy = createPTree(&i->query());
+             IPropertyTree* pAuthCopy = createPTreeFromIPT(&i->query());
              mergeAttributes(pAuthCopy, pCompTree->queryPropTree("AuthenticateSetting"));
              IPropertyTree* pNewNode = pEspBindingInfo->addPropTree("AuthenticateSetting", pAuthCopy);
            }

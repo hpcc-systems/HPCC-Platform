@@ -1463,7 +1463,7 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
                     IPropertyTree &part = iter->query();
                     unsigned partno = part.getPropInt("@num",0);
                     if (partno&&(partno!=lastpartno)&&(partno<=numparts)) {
-                        parts.replace(*createPTree(&part),partno-1);
+                        parts.replace(*createPTreeFromIPT(&part),partno-1);
                         lastpartno = partno;
                     }
                 }

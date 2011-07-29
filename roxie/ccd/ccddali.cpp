@@ -178,7 +178,7 @@ private:
             if (conn)
             {
                 Owned <IPropertyTree> daliTree = conn->getRoot();
-                localTree.setown(createPTree(daliTree));
+                localTree.setown(createPTreeFromIPT(daliTree));
             }
             writeCache(xpath, localTree);
         }

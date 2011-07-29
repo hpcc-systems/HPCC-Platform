@@ -1797,81 +1797,6 @@ void TestSDS1()
     return;
 #endif
 #if 1
-    conn = sdsManager.connect("/", myProcessSession(), RTM_LOCK_WRITE, 2000*MDELAY);
-    root = conn->queryRoot();
-
-    // root->removeProp("newTree");
-    IPropertyTree *nt = root->setPropTree("newTree", createPTree());
-    IPropertyTree *s1 = nt->setPropTree("_subNT1", createPTree());
-    IPropertyTree *s2 = nt->setPropTree("_subNT2", createPTree());
-    
-    nt->setPropInt("t1", 1);
-
-    conn->commit();
-
-//  IPropertyTree *t1_2 = nt->addPropTree("t1", createPTree());
-    nt->addPropInt("t1", 2);
-    IPropertyTree *t1_2 = nt->queryPropTree("t1[2]");
-//  nt->addPropInt("t1", 3);
-
-    conn->commit();
-
-    nt->removeTree(s1);
-
-    conn->commit();
-
-    nt->removeProp("_subNT2");
-
-    conn->commit();
-
-//  nt->removeTree(t1_2);
-    nt->removeProp("t1[2]");
-    nt->removeProp("t1[1]");
-
-    conn->commit();
-
-    conn->Release();
-
-    return;
-
-#endif
-#if 0
-    conn = sdsManager.connect("/", myProcessSession(), RTM_LOCK_WRITE | RTM_LOCK_SUB, 2000*MDELAY);
-    Owned<IPropertyTreeIterator> biter = conn->queryRoot()->getElements("baba");
-    ForEach (*biter)
-    {
-        conn->queryRoot()->removeTree(&biter->query());
-    }
-    conn->commit();
-    conn->Release();
-
-    conn = sdsManager.connect("/baba", myProcessSession(), RTM_CREATE_ADD | RTM_LOCK_SUB, 2000*MDELAY);
-    root = conn->queryRoot();
-
-    root->setProp("@bugtest1", "hello");
-    conn->commit();                         // suspect problem here with old..
-
-//  PrintLog("paused");
-//  getchar();
-
-    root->setProp("@bugtest3", "aa");
-    conn->commit();
-
-    conn->Release();
-
-//  PrintLog("paused");
-//  getchar();
-
-    conn = sdsManager.connect("/baba[@bugtest1=\"hello\"]", myProcessSession(), RTM_LOCK_WRITE | RTM_LOCK_SUB, 2000*MDELAY);
-    root = conn->queryRoot();
-    root->addProp("under", "here");
-
-    conn->close(false);
-    conn->Release();
-    
-//  return;
-#endif
-#if 1
     conn = sdsManager.connect("/", myProcessSession(), RTM_LOCK_WRITE | RTM_LOCK_SUB, 2000*MDELAY);
     root = conn->queryRoot();
 
@@ -1905,35 +1830,8 @@ void TestSDS1()
         root->removeTree(&child);
     }
 
-#if 1
-    IPropertyTree *newTree = createPTreeFromXMLFile("c:\\seisint\\deployment\\xmlenv\\jorge.xml");
-    diter.setown(newTree->getElements("*"));
-    ForEach (*diter)
-    {
-        IPropertyTree &child = diter->get();
-        root->setPropTree(child.queryName(), &child);
-    }
-    newTree->Release();
-#endif
     conn->commit();
 
-    conn->Release();
-
-//  return;
-#endif
-
-
-#if 1 // test attribute deletion etc.
-    conn = sdsManager.connect("/", myProcessSession(), RTM_LOCK_WRITE, 2000*MDELAY);
-    root = conn->queryRoot();
-    root->setProp("@test1", "1");
-    root->setProp("@test2", "2a");
-    conn->Release();
-
-    conn = sdsManager.connect("/", myProcessSession(), RTM_LOCK_WRITE, 2000*MDELAY);
-    root = conn->queryRoot();
-    root->removeProp("@test1");
-    root->setProp("@test1", "2");
     conn->Release();
 #endif
 
@@ -1968,7 +1866,6 @@ void TestSDS1()
     root = conn->queryRoot();
     verifyex(root->removeProp("attrtree"));
     conn->Release();
-
 #endif
 
 
@@ -1993,6 +1890,7 @@ void TestSDS1()
     conn->Release();
 
 #endif
+
 #if 1 // test2 qualified add/set
     conn = sdsManager.connect("/", myProcessSession(), RTM_LOCK_WRITE, 2000*MDELAY);
     root = conn->queryRoot();
@@ -2502,7 +2400,7 @@ NULL
 
             Owned<IRemoteConnection> conn = querySDS().connect("/", myProcessSession(), RTM_LOCK_WRITE, 2000*MDELAY);
             conn->queryRoot()->setPropTree("ROOT", LINK(originalTree));
-            tree.setown(createPTree(conn->queryRoot()->queryPropTree("ROOT")));
+            tree.setown(createPTreeFromIPT(conn->queryRoot()->queryPropTree("ROOT")));
         }
         unsigned test = 0;
         while (xpathTests[test] != NULL)
@@ -3079,4 +2977,3 @@ int main(int argc, char* argv[])
     
     return 0;
 }
-

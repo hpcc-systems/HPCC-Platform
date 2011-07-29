@@ -143,7 +143,7 @@ public:
 
          //copy const environment to our member environment
          Owned<IPropertyTree> pSrc = conn2->getRoot();
-         c.setown( new CLocalEnvironment(NULL, createPTree(pSrc)));
+         c.setown( new CLocalEnvironment(NULL, createPTreeFromIPT(pSrc)));
          conn2->rollback();
       }
       else

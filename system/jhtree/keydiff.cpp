@@ -514,7 +514,7 @@ class CKeyFileWriter: public CInterface, extends IKeyFileRowWriter
 public:
     IMPLEMENT_IINTERFACE;
     CKeyFileWriter(const char *filename, IPropertyTree *_header, bool overwrite, unsigned nodeSize)
-        : header(createPTree(_header))
+        : header(createPTreeFromIPT(_header))
     {
         writer.init(filename,overwrite,header->getPropInt("@keyedSize"), header->getPropInt("@rowSize"), header->getPropBool("@variableWidth"), header->getPropBool("@quickCompressed"), header->getPropInt("@nodeSize", NODESIZE));
         size32_t rowsize = header->getPropInt("@rowSize");

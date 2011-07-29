@@ -162,7 +162,7 @@ static IPropertyTreeIterator *getNamedPropIter(IPropertyTree *parent,const char 
 
 static IPropertyTree *addNamedPropTree(IPropertyTree *parent,const char *sub,const char *key,const char *name, IPropertyTree* init=NULL)
 {  
-    IPropertyTree* ret = init?createPTree(init):createPTree(sub);
+    IPropertyTree* ret = init?createPTreeFromIPT(init):createPTree(sub);
     assertex(key[0]=='@');
     ret->setProp(key,name);
     ret = parent->addPropTree(sub,ret);
@@ -1993,7 +1993,7 @@ public:
 
     void setAttr(IPropertyTree &pt)
     {
-        attr.setown(createPTree(&pt));      // take a copy 
+        attr.setown(createPTreeFromIPT(&pt));      // take a copy
         dirty = false;
     }
 
@@ -2989,7 +2989,7 @@ protected:
                 CDistributedFilePart &part = parts.item(0);
                 while ((pt=root->queryPropTree("Part[1]"))!=NULL)
                     root->removeTree(pt);
-                pt = createPTree(part.queryAttr());
+                pt = createPTreeFromIPT(part.queryAttr());
                 pt->setPropInt("@num",1);
                 const char *grp = root->queryProp("@group");
                 if (!grp||!*grp) {
@@ -3186,7 +3186,7 @@ public:
         if (isEmptyPTree(t)) 
             root->removeProp("Attr");
         else
-            root->setPropTree("Attr",createPTree(t));
+            root->setPropTree("Attr",createPTreeFromIPT(t));
     }
 
     void setClusters(IFileDescriptor *fdesc)
@@ -4235,7 +4235,7 @@ protected:
                             if (sub)
                                 sub->setPropInt("@num",j);
                             if (j==1) {
-                                root->setPropTree("Attr",createPTree(sub->queryPropTree("Attr")));
+                                root->setPropTree("Attr",createPTreeFromIPT(sub->queryPropTree("Attr")));
                                 attr.clear();
                             }
                             subtrees.subs[j-1] = sub;
@@ -4281,7 +4281,7 @@ protected:
         sub->setProp("@name",file->queryLogicalName());
         if (pos==0) {
             attr.clear();
-            root->setPropTree("Attr",createPTree(&file->queryProperties()));
+            root->setPropTree("Attr",createPTreeFromIPT(&file->queryProperties()));
         }
         root->addPropTree("SubFile",sub);
         subfiles.add(*file,pos);
@@ -4308,7 +4308,7 @@ protected:
         if (pos==0) {
             attr.clear();
             if (subfiles.ordinality())
-                root->setPropTree("Attr",createPTree(&subfiles.item(0).queryProperties()));
+                root->setPropTree("Attr",createPTreeFromIPT(&subfiles.item(0).queryProperties()));
             else
                 root->setPropTree("Attr",getEmptyAttr());
         }
@@ -8167,7 +8167,7 @@ public:
                         ver = 0;
                 }
                 if (ver==0) {
-                    tree.setown(createPTree(tree));
+                    tree.setown(createPTreeFromIPT(tree));
                     StringBuffer cname;
                     logicalname->getCluster(cname);
                     expandFileTree(tree,true,cname.str()); // resolve @node values that may not be set
@@ -9444,7 +9444,7 @@ public:
             IPropertyTree *tree = srcroot->queryPropTree(subpath.str());
             if (!tree)
                 break;
-            newt = createPTree(tree);
+            newt = createPTreeFromIPT(tree);
             srcroot->removeTree(tree);
             newt = dstroot->addPropTree("SubFile",newt);
             IRemoteConnection *cc = dst.connectChild(newt->queryProp("@name"));
@@ -9459,7 +9459,7 @@ public:
         // replace Attr
         IPropertyTree *attr = srcroot->queryPropTree("Attr[1]");  
         if (attr) {
-            newt = createPTree(attr);
+            newt = createPTreeFromIPT(attr);
             srcroot->removeTree(attr);
         }
         else
@@ -10161,7 +10161,7 @@ bool CDistributedFileDirectory::publishMetaFileXML(const CDfsLogicalFileName &lo
                     StringBuffer tail("META__");
                     splitFilename(path.str(), &outpath, &outpath, &tail, NULL);
                     outpath.append(tail).append(".xml");
-                    Owned<IPropertyTree> pt = createPTree(file);
+                    Owned<IPropertyTree> pt = createPTreeFromIPT(file);
                     filterParts(pt,parts);
                     StringBuffer str;
                     toXML(pt, str);
