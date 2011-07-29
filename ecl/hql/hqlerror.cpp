@@ -20,8 +20,6 @@
 #include "hqlerror.hpp"
 #include "hqlerrors.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hql/hqlerror.cpp $ $Id: hqlerror.cpp 66009 2011-07-06 12:28:32Z ghalliday $");
-
 void MultiErrorReceiver::reportError(int errNo, const char* msg, const char * filename, int lineno, int column, int position)
 {
     Owned<IECLError> err = createECLError(errNo,msg,filename,lineno,column,position);

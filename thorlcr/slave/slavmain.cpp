@@ -43,9 +43,6 @@
 #include "thormisc.hpp"
 #include "thorport.hpp"
 #include "thgraphslave.hpp"
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/slave/slavmain.cpp $ $Id: slavmain.cpp 64376 2011-05-04 11:22:29Z jsmith $");
-
 #include "slave.ipp"
 
 //---------------------------------------------------------------------------

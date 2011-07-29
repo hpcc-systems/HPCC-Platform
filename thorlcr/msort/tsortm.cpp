@@ -40,8 +40,6 @@
 #include "thexception.hpp"
 #include "thgraph.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/msort/tsortm.cpp $ $Id: tsortm.cpp 65756 2011-06-24 15:48:52Z jsmith $");
-
 #define PROGNAME "tsort"
 
 #include "tsorts.hpp"

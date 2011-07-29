@@ -42,8 +42,6 @@
 #include "thmem.hpp"
 #include "thbuf.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/msort/tsorta.cpp $ $Id: tsorta.cpp 63605 2011-03-30 10:42:56Z nhicks $");
-
 #ifdef _DEBUG
 //#define _FULL_TRACE
 #endif

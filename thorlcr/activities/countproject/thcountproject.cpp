@@ -19,9 +19,6 @@
 #include "thcountproject.ipp"
 #include "thbufdef.hpp"
 
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/countproject/thcountproject.cpp $ $Id: thcountproject.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 class CountProjectActivityMaster : public CMasterActivity
 {
 public:

@@ -23,8 +23,6 @@
 #include "jptree.hpp"
 #include "jtime.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/base/daclient.cpp $ $Id: daclient.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 #include "mpcomm.hpp"
 #include "mplog.hpp"
 #include "dasess.hpp"

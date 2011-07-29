@@ -26,6 +26,7 @@
 #include <stdio.h> 
 #include <stdlib.h> 
 
+#include "build-config.h"
 #include "jlib.hpp"
 #include "jdebug.hpp"
 #include "jexcept.hpp"
@@ -50,8 +51,6 @@
 #include "slavmain.hpp"
 
 // #define USE_MP_LOG
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/slave/thslavemain.cpp $ $Id: thslavemain.cpp 65471 2011-06-15 17:29:33Z jsmith $");
 
 static INode *masterNode = NULL;
 MODULE_INIT(INIT_PRIORITY_STANDARD)
@@ -209,7 +208,7 @@ void startSlaveLog(const char *dir)
     StringBuffer url;
     createUNCFilename(logname.str(), url);
     LOG(MCdebugProgress, thorJob, "Opened log file %s", url.toCharArray());
-    CBuildVersion::log();
+    LOG(MCdebugProgress, thorJob, "Build %s", BUILD_TAG);
     globals->setProp("@logURL", url.str());
 }
 

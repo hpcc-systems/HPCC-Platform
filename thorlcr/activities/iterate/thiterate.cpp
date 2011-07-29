@@ -19,9 +19,6 @@
 #include "thiterate.ipp"
 #include "thbufdef.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/iterate/thiterate.cpp $ $Id: thiterate.cpp 62376 2011-02-04 21:59:58Z sort $");
-
-
 class CIterateActivityMaster : public CMasterActivity
 {
 public:

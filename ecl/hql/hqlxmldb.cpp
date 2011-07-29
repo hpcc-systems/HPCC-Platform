@@ -21,9 +21,6 @@
 #include "jexcept.hpp"
 #include "jprop.hpp"
 
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hql/hqlxmldb.cpp $ $Id: hqlxmldb.cpp 65973 2011-07-04 15:37:51Z ghalliday $");
-
 class CXmlScope : public IXmlScope, public CInterface
 {
     friend class CXmlScopeIterator;

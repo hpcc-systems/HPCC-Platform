@@ -36,9 +36,6 @@
 #define ERROR_NO_SERVER                   3
 #define ERROR_CODE_USAGE                  4
 
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/eclplus/main.cpp $ $Id: main.cpp 63912 2011-04-08 09:20:18Z rchapman $");
-
 //copied from workunit.dll to avoid a dependency.  Should possibly go in jlib.
 static bool localLooksLikeAWuid(const char * wuid)
 {

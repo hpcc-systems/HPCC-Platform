@@ -41,8 +41,6 @@
 #include "jdebug.hpp"
 #include "jcomp.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jcomp.cpp $ $Id: jcomp.cpp 65969 2011-07-04 13:03:29Z ghalliday $");
-
 #define CC_EXTRA_OPTIONS        ""
 #ifdef GENERATE_LISTING
 #undef CC_EXTRA_OPTIONS

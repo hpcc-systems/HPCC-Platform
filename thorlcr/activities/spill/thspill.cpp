@@ -17,14 +17,9 @@
 ############################################################################## */
 
 #include "jiface.hpp"
-
 #include "dadfs.hpp"
-
 #include "eclhelper.hpp"
-
 #include "thspill.ipp"
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/spill/thspill.cpp $ $Id: thspill.cpp 62376 2011-02-04 21:59:58Z sort $");
 
 class SpillActivityMaster : public CMasterActivity
 {

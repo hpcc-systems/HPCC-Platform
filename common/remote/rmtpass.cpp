@@ -30,8 +30,6 @@
 #include "rmtfile.hpp"
 #include "rmtpass.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/common/remote/rmtpass.cpp $ $Id: rmtpass.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 void CachedPasswordProvider::addPasswordForFilename(const char * filename)
 {
     RemoteFilename remote;

@@ -28,9 +28,6 @@
 #include "thactivitymaster.ipp"
 #include "thexception.hpp"
 
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/master/thactivitymaster.cpp $ $Id: thactivitymaster.cpp 64945 2011-05-27 13:20:16Z jsmith $");
-
 actmaster_decl CGraphElementBase *createMasterContainer(IPropertyTree &xgmml, CGraphBase &owner, CGraphBase *resultsGraph);
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {

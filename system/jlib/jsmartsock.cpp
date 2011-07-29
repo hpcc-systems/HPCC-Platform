@@ -20,8 +20,6 @@
 #include "jsmartsock.ipp"
 #include "jdebug.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jsmartsock.cpp $ $Id: jsmartsock.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 class SmartSocketListParser
 {
 public:

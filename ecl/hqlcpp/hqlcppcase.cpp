@@ -34,8 +34,6 @@
 #include "hqlcatom.hpp"
 #include "hqlcerrors.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hqlcpp/hqlcppcase.cpp $ $Id: hqlcppcase.cpp 66009 2011-07-06 12:28:32Z ghalliday $");
-
 #define INTEGER_SEARCH_THRESHOLD                    30      // above this, a table search is generated.
 #define MAX_NUM_NOBREAK_CASE                        80      // maximum number of case: without a break - compiler workaround
 #define INLINE_COMPARE_THRESHOLD                    2       // above this, a loop is generated

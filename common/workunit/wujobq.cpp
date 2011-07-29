@@ -26,8 +26,6 @@
 #include "dautils.hpp"
 #include "portlist.h"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/common/workunit/wujobq.cpp $ $Id: wujobq.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 #include "dacoven.hpp"
 #include "daclient.hpp"
 #include "dasds.hpp"

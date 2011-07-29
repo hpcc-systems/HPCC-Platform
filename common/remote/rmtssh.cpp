@@ -33,9 +33,6 @@
 #include <wordexp.h>
 #endif
 
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/common/remote/rmtssh.cpp $ $Id: rmtssh.cpp 64028 2011-04-14 14:28:10Z nhicks $");
-
 //----------------------------------------------------------------------------
 
 //#define PLINK_USE_CMD

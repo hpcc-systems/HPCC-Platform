@@ -39,7 +39,6 @@
 
 #include "workunit.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/mfilemanager/thmfilemanager.cpp $ $Id: thmfilemanager.cpp 63701 2011-04-01 13:43:13Z jsmith $");
 #define CHECKPOINTSCOPE "checkpoints"
 #define TMPSCOPE "temporary"
 

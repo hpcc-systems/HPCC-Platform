@@ -25,8 +25,6 @@
 #include "jlib.hpp"
 #include "rtldistr.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/rtl/eclrtl/rtldistr.cpp $ $Id: rtldistr.cpp 64094 2011-04-19 08:13:22Z ghalliday $");
-
 #define DISTRIBUTION_THRESHOLD 10000
 
 //---------------------------------------------------------------------------

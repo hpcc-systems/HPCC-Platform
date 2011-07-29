@@ -20,19 +20,14 @@
 #include "jio.hpp"
 #include "jtime.hpp"
 #include "jfile.ipp"
-
 #include "thbuf.hpp"
 #include "thexception.hpp"
 #include "thbufdef.hpp"
 #include "thmfilemanager.hpp"
-
 #include "slave.ipp"
 #include "thactivityutil.ipp"
 #include "thorxmlwrite.hpp"
 #include "thxmlwriteslave.ipp"
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/xmlwrite/thxmlwriteslave.cpp $ $Id: thxmlwriteslave.cpp 63466 2011-03-25 11:09:22Z jsmith $");
-
 
 class CXmlWriteSlaveActivity : public CDiskWriteSlaveActivityBase
 {

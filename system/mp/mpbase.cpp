@@ -21,8 +21,6 @@
 #include "jlib.hpp"
 #include "jlog.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/mp/mpbase.cpp $ $Id: mpbase.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 #include "mpbase.hpp"
 
 static INode *MyNode=NULL;

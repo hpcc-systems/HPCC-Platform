@@ -668,15 +668,14 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         if (restarts)
         {
             if (traceLevel)
-                DBGLOG("Roxie restarting: restarts = %d", restarts);
+                DBGLOG("Roxie restarting: restarts = %d build = %s", restarts, BUILD_TAG);
             setStartRuid(restarts);
         }
         else
         {
             if (traceLevel)
             {
-                DBGLOG("Roxie starting");
-                CBuildVersion::log();
+                DBGLOG("Roxie starting, build = %s", BUILD_TAG);
             }
         }
 

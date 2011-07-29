@@ -19,8 +19,6 @@
 #include "thnullslave.ipp"
 #include "thactivityutil.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/null/thnullslave.cpp $ $Id: thnullslave.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 class CNullSinkSlaveActivity : public ProcessSlaveActivity
 {
 public:

@@ -31,9 +31,6 @@
 #include "thdiskbaseslave.ipp"
 #include "thdwslave.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/diskwrite/thdwslave.cpp $ $Id: thdwslave.cpp 63406 2011-03-23 17:33:52Z jsmith $");
-
-
 class CDiskWriteSlaveActivity : public CDiskWriteSlaveActivityBase
 {
 protected:

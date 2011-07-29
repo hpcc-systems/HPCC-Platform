@@ -16,7 +16,7 @@
 ################################################################################
 
 
-# Component: hthor 
+# Component: hthor
 
 #####################################################
 # Description:
@@ -25,73 +25,75 @@
 #####################################################
 
 
-project( hthor ) 
+project( hthor )
 
-set (    SRCS 
-         hthor.cpp 
-         hthorkey.cpp 
-         hthorstep.cpp 
+set (    SRCS
+         hthor.cpp
+         hthorkey.cpp
+         hthorstep.cpp
          ../eclagent/eclagent.cpp
          ../eclagent/eclgraph.cpp
          sourcedoc.xml
     )
 
-set (    INCLUDES 
-         hthor.ipp 
+set (    INCLUDES
+         hthor.ipp
          hthor.hpp
-         hthorstep.ipp 
+         hthorstep.ipp
          ../eclagent/agentctx.hpp
          ../eclagent/eclagent.ipp
     )
 
-include_directories ( 
+include_directories (
          .
-         ./../../common/remote 
-         ./../../system/jhtree 
-         ./../../system/hrpc 
-         ./../../system/mp 
-         ./../../common/ns 
-         ./../../common/workunit 
-         ./../../system/icu/include 
-         ./../../common/deftype 
-         ./../../system/include 
-         ./../../dali/base 
-         ./../../rtl/include 
-         ./../../ecl/eclagent 
-         ./../../system/jlib 
-         ./../../common/thorhelper 
-         ./../../rtl/eclrtl 
-         ./../../roxie/roxiemem 
-         ./../../roxie/roxie
-         ./../../roxie/ccd
-         ./../../common/roxiehelper 
-         ./../../common/dllserver
-         ./../../common/environment
-         ./../schedulectrl
-         ./../../common/commonext
+         ${HPCC_SOURCE_DIR}/common/remote
+         ${HPCC_SOURCE_DIR}/system/jhtree
+         ${HPCC_SOURCE_DIR}/system/hrpc
+         ${HPCC_SOURCE_DIR}/system/mp
+         ${HPCC_SOURCE_DIR}/common/ns
+         ${HPCC_SOURCE_DIR}/common/workunit
+         ${HPCC_SOURCE_DIR}/system/icu/include
+         ${HPCC_SOURCE_DIR}/common/deftype
+         ${HPCC_SOURCE_DIR}/system/include
+         ${HPCC_SOURCE_DIR}/dali/base
+         ${HPCC_SOURCE_DIR}/rtl/include
+         ${HPCC_SOURCE_DIR}/ecl/eclagent
+         ${HPCC_SOURCE_DIR}/system/jlib
+         ${HPCC_SOURCE_DIR}/common/thorhelper
+         ${HPCC_SOURCE_DIR}/rtl/eclrtl
+         ${HPCC_SOURCE_DIR}/roxie/roxiemem
+         ${HPCC_SOURCE_DIR}/roxie/roxie
+         ${HPCC_SOURCE_DIR}/roxie/ccd
+         ${HPCC_SOURCE_DIR}/common/roxiehelper
+         ${HPCC_SOURCE_DIR}/common/dllserver
+         ${HPCC_SOURCE_DIR}/common/environment
+         ${HPCC_SOURCE_DIR}/ecl/schedulectrl
+         ${HPCC_SOURCE_DIR}/common/commonext
+         ${CMAKE_BINARY_DIR}
+         ${CMAKE_BINARY_DIR}/oss
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DHTHOR_EXPORTS -DSTARTQUERY_EXPORTS )
 
 HPCC_ADD_LIBRARY( hthor SHARED ${SRCS} ${INCLUDES} )
 install ( TARGETS hthor DESTINATION ${OSSDIR}/lib )
-target_link_libraries ( hthor 
+target_link_libraries ( hthor
          jlib
-         mp 
-         hrpc 
-         remote 
-         dalibase 
-         environment 
-         dllserver 
-         nbcd 
-         eclrtl 
-         deftype 
-         workunit 
-         jhtree 
-         securesocket 
-         thorhelper 
-         roxiemem 
-         roxiehelper 
+         mp
+         hrpc
+         remote
+         dalibase
+         environment
+         dllserver
+         nbcd
+         eclrtl
+         deftype
+         workunit
+         jhtree
+         securesocket
+         thorhelper
+         roxiemem
+         roxiehelper
          commonext
          schedulectrl
     )

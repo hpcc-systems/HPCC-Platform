@@ -55,6 +55,8 @@ include_directories (
          ./../../rtl/eclrtl 
          ./../master 
          ./../../common/thorhelper 
+         ${CMAKE_BINARY_DIR}
+         ${CMAKE_BINARY_DIR}/oss
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )

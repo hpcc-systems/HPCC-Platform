@@ -20,8 +20,6 @@
 #include "jlog.hpp"
 #include "jsocket.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jbsocket.cpp $ $Id: jbsocket.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 #define BSOCKET_BUFSIZE 1024
 
 class BufferedSocket : public CInterface, implements IBufferedSocket

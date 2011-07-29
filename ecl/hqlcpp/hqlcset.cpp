@@ -41,8 +41,6 @@
 #include "hqlutil.hpp"
 #include "hqliter.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hqlcpp/hqlcset.cpp $ $Id: hqlcset.cpp 66009 2011-07-06 12:28:32Z ghalliday $");
-
 #ifdef CREATE_DEAULT_ROW_IF_NULL
 #define CREATE_DEAULT_ROW_IF_NULL_VALUE 1
 #else

@@ -37,9 +37,6 @@
 #include "daft.ipp"
 #include "daftmc.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/ft/daft.cpp $ $Id: daft.cpp 62376 2011-02-04 21:59:58Z sort $");
-
-
 CDistributedFileSystem::CDistributedFileSystem()
 {
 }

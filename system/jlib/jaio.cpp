@@ -22,8 +22,6 @@
 #include <stdio.h>
 #include "jaio.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jaio.cpp $ $Id: jaio.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 #ifdef _WIN32
 #define ASYNC_READ_TIMEOUT  5000        // milliseconds
 #define ASYNC_MAX_TIMEOUTS  10          // avoid 'deadlock' if something goes very wrong

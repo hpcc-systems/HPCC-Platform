@@ -16,8 +16,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
+#include "build-config.h"
 #include "platform.h"
-
 #include "jarray.hpp"
 #include "jfile.hpp"
 #include "jmutex.hpp"
@@ -44,10 +44,6 @@
 #include "thactivitymaster.ipp"
 #include "thdemonserver.hpp"
 #include "thgraphmanager.hpp"
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/master/thgraphmanager.cpp $ $Id: thgraphmanager.cpp 63990 2011-04-13 11:25:29Z nhicks $");
-
-static const char buildTag[] = "$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/master/thgraphmanager.cpp $";
 
 class CJobManager: public CSimpleInterface, implements IJobManager, implements IExceptionHandler
 {
@@ -638,7 +634,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
 {
     {
         Owned<IWorkUnit> wu = &workunit.lock();
-        wu->setTracingValue("ThorBuild", buildTag);
+        wu->setTracingValue("ThorBuild", BUILD_TAG);
         // expect there to be 1 or 2 of these, so scan/check if log exists already and add if not
         const char *nLog = globals->queryProp("@logURL");
         Owned<IStringIterator> siter = &wu->getDebugValues("ThorLog*");

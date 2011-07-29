@@ -30,8 +30,6 @@
 
 #include "tsorttr.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/msort/tsorttr.cpp $ $Id: tsorttr.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 #define MULTI
 
 #ifdef TRACEINTERCEPT

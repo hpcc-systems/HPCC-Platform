@@ -32,8 +32,6 @@
 #include <sys/wait.h>
 #endif
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jmisc.cpp $ $Id: jmisc.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 #ifdef LOGCLOCK
 #define MSGFIELD_PRINTLOG MSGFIELD_timeDate | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code | MSGFIELD_milliTime
 #else

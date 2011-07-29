@@ -35,8 +35,6 @@
 #include "hqlcpp.ipp"
 #include "hqlcpputil.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hqlcpp/hqlcpputil.cpp $ $Id: hqlcpputil.cpp 65799 2011-06-27 14:07:27Z ghalliday $");
-
 //===========================================================================
 
 static ITypeInfo * cachedVoidType;

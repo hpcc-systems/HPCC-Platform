@@ -19,9 +19,6 @@
 #define da_decl __declspec(dllexport)
 #include "platform.h"
 #include "jlib.hpp"
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/base/dadiags.cpp $ $Id: dadiags.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 #include "dacoven.hpp"
 #include "daclient.hpp"
 #include "mpbuff.hpp"
@@ -31,7 +28,6 @@ static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/ba
 #include "daserver.hpp"
 #include "dasds.hpp"
 #include "dasubs.ipp"
-
 #include "dadiags.hpp"
 
 #ifdef _MSC_VER

@@ -19,9 +19,6 @@
 
 #include "thsampleslave.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/sample/thsampleslave.cpp $ $Id: thsampleslave.cpp 62376 2011-02-04 21:59:58Z sort $");
-
-
 class SampleSlaveActivity : public CSlaveActivity, public CThorDataLink
 {
 

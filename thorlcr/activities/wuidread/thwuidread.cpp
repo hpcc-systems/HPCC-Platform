@@ -17,14 +17,8 @@
 ############################################################################## */
 
 #include "jlib.hpp"
-
-
 #include "thexception.hpp"
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/wuidread/thwuidread.cpp $ $Id: thwuidread.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 #include "thorfile.hpp"
-
 #include "thactivitymaster.ipp"
 #include "../diskread/thdiskread.ipp"
 #include "thwuidread.ipp"

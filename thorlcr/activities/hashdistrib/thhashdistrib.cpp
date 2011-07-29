@@ -29,9 +29,6 @@
 #include "thmem.hpp"
 #include "thexception.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/hashdistrib/thhashdistrib.cpp $ $Id: thhashdistrib.cpp 63849 2011-04-06 15:20:02Z jsmith $");
-
-
 #define NUMINPARALLEL 16
 
 enum DistributeMode { DM_distrib, DM_dedup, DM_join , DM_groupaggregate, DM_index, DM_redistribute, DM_distribmerge };

@@ -18,8 +18,6 @@
 #include "jlib.hpp"
 #include "DumpHelper.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/eclplus/DumpHelper.cpp $ $Id: DumpHelper.cpp 64954 2011-05-27 14:50:31Z jprichard $");
-
 DumpHelper::DumpHelper(IProperties * _globals, IFormatType * _format) : globals(_globals), format(_format), wuclient(createWorkunitsClient(_globals))
 {
 }

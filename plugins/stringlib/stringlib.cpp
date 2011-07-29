@@ -23,8 +23,6 @@
 #include "stringlib.hpp"
 #include "wildmatch.tpp"
 
-static char buildVersion[] = "$HeadURL: https://svn.br.seisint.com/ecl/trunk/plugins/stringlib/stringlib.cpp $ $Id: stringlib.cpp 65375 2011-06-13 13:22:13Z rchapman $";
-
 static const char * compatibleVersions[] = {
     "STRINGLIB 1.1.06 [fd997dc3feb4ca385d59a12b9dc4beab]", // windows version
     "STRINGLIB 1.1.06 [f8305e66ca26a1447dee66d4a36d88dc]", // linux version
@@ -814,7 +812,7 @@ STRINGLIB_API void STRINGLIB_CALL slGetDateYYYYMMDD2(char * ret)
 
 STRINGLIB_API char * STRINGLIB_CALL slGetBuildInfo(void)
 { 
-    return CTXSTRDUP(parentCtx, buildVersion);
+    return CTXSTRDUP(parentCtx, STRINGLIB_VERSION);
 }
 
 STRINGLIB_API void STRINGLIB_CALL slData2String(size32_t & __ret_len,char * & __ret_str,unsigned _len_y, const void * y)
@@ -1196,11 +1194,11 @@ STRINGLIB_API void STRINGLIB_CALL slStringExtract50(char *tgt, unsigned srcLen, 
 
 STRINGLIB_API void STRINGLIB_CALL slGetBuildInfo100(char *tgt)
 {
-    size32_t len = (size32_t)strlen(buildVersion);
+    size32_t len = (size32_t) strlen(STRINGLIB_VERSION);
     if (len >= 100)
         len = 100;
-    memcpy(tgt,buildVersion,len);
-    memset(tgt+len,' ',100-len);
+    memcpy(tgt, STRINGLIB_VERSION, len);
+    memset(tgt+len, ' ', 100-len);
 }
 
 // -----------------------------------------------------------------

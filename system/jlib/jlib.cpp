@@ -199,42 +199,6 @@ ModExit::~ModExit()
 }
 #endif
 
-CBuildVersion::CBuildVersion(const char* this_Version): my_version(this_Version)
-{
-    // Builds straight out of SAOP will not have these substituted
-    // Broken up to avoid SVN substituting this literal!
-    if (strcmp(this_Version, "$Head" "URL$ $I" "d$") != 0)
-    {
-        next = VersionHead;
-        VersionHead = this;
-    }
-}
-
-
-StringBuffer &CBuildVersion::toString(StringBuffer &to)
-{
-    CBuildVersion *finger = VersionHead;
-    while (finger)
-    {
-        to.append(finger->my_version).append('\n');
-        finger = finger->next;
-    }
-    return to;
-}
-
-void CBuildVersion::log()
-{
-    CBuildVersion *finger = VersionHead;
-    while (finger)
-    {
-        LOG(MCdebugInfo, unknownJob, "%s", finger->my_version);
-        finger = finger->next;
-    }
-}
-
-CBuildVersion* CBuildVersion::VersionHead = 0;
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jlib.cpp $ $Id: jlib.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 // check that everything compiles correctly
 #if 0
 

@@ -29,9 +29,6 @@
 #include "eclhelper.hpp"        // for IHThorWorkUnitWriteArg
 #include "slave.ipp"
 
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/wuidwrite/thwuidwriteslave.cpp $ $Id: thwuidwriteslave.cpp 63725 2011-04-01 17:40:45Z jsmith $");
-
 #define PIPE_BUFFER_SIZE         0x20000
 
 class CWorkUnitWriteSlaveBase : public ProcessSlaveActivity

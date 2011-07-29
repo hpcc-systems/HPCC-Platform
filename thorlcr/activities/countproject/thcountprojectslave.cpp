@@ -20,10 +20,6 @@
 #include "thactivityutil.ipp"
 #include "thbufdef.hpp"
 
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/countproject/thcountprojectslave.cpp $ $Id: thcountprojectslave.cpp 63725 2011-04-01 17:40:45Z jsmith $");
-
-
 class BaseCountProjectActivity : public CSlaveActivity,  public CThorDataLink, implements ISmartBufferNotify
 {
 protected:

@@ -22,8 +22,6 @@
 #include "jisem.hpp"
 #include "jmutex.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jsem.cpp $ $Id: jsem.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 #ifndef _WIN32
 
 #include <sys/time.h>

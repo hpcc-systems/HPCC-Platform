@@ -38,8 +38,6 @@
 
 #define DEFAULTTIMEOUT 3600 // 60 minutes 
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/msort/tsortl.cpp $ $Id: tsortl.cpp 62742 2011-02-24 16:57:20Z nhicks $");
-
 #ifdef _MSC_VER
 #pragma warning( disable : 4355 )
 #endif

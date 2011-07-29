@@ -28,8 +28,6 @@
 //#define SUPRESS_REMOVE_ABORTED
 #define TRACE_QWAITING
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/base/dasubs.cpp $ $Id: dasubs.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 #include "dacoven.hpp"
 #include "mpbuff.hpp"
 #include "mpcomm.hpp"

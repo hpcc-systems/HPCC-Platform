@@ -25,8 +25,6 @@
 #include "thpwslave.ipp"
 #include "thexception.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/pipewrite/thpwslave.cpp $ $Id: thpwslave.cpp 65274 2011-06-09 13:42:22Z jsmith $");
-
 #define PIPEWRITE_BUFFER_SIZE (0x10000)
 
 class CPipeWriteSlaveActivity : public ProcessSlaveActivity
