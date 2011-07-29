@@ -116,7 +116,7 @@ StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fn
 {
     if (fname[0]=='~')
         logicalName.append(fname+1);
-    else if (agent.queryResolveFilesLocally() && strchr(fname,(int)PATHSEPCHAR))
+    else if (agent.queryResolveFilesLocally())
         logicalName.append(fname);
     else
     {
@@ -125,6 +125,12 @@ StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fn
         if(lfn.length())
             logicalName.append(lfn.s).append("::");
         logicalName.append(fname);
+    }
+    if (agent.queryResolveFilesLocally())
+    {
+        StringBuffer sb(logicalName.str());
+        sb.replaceString("::",PATHSEPSTR);
+        makeAbsolutePath(sb.str(), logicalName.clear());
     }
     return logicalName;
 }
@@ -487,15 +493,20 @@ void CHThorDiskWriteActivity::resolve()
                 if(extend) 
                     agent.logFileAccess(f->queryDistributedFile(), "HThor", "EXTENDED");
                 else if(overwrite) {
-                    PrintLog("Removing %s from DFS", lfn.str());
-                    agent.logFileAccess(f->queryDistributedFile(), "HThor", "DELETED");
                     if (!agent.queryResolveFilesLocally())
+                    {
+                        PrintLog("Removing %s from DFS", lfn.str());
                         f->queryDistributedFile()->detach();
+                        agent.logFileAccess(f->queryDistributedFile(), "HThor", "DELETED");
+                    }
                     else
                     {
                         Owned<IFile> file = createIFile(lfn);
                         if (file->exists())
+                        {
+                            PrintLog("Deleting %s", lfn.str());
                             file->remove();
+                        }
                     }
                 }
                 else 
@@ -1045,7 +1056,7 @@ CHThorIndexWriteActivity::CHThorIndexWriteActivity(IAgentContext &_agent, unsign
 {
     incomplete = false;
     StringBuffer lfn;
-    Owned<ILocalOrDistributedFile> ldf = agent.resolveLFN(helper.getFileName(),"Cannot write, invalid logical name",true,false,true,&lfn);
+	expandLogicalFilename(lfn, helper.getFileName(), agent);
     if (!agent.queryResolveFilesLocally())
     {
         Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(lfn, agent.queryCodeContext()->queryUserDescriptor(), true);
@@ -1055,11 +1066,20 @@ CHThorIndexWriteActivity::CHThorIndexWriteActivity(IAgentContext &_agent, unsign
             if (TIWoverwrite & helper.getFlags()) 
             {
                 PrintLog("Removing %s from DFS", lfn.str());
-                agent.logFileAccess(f, "HThor", "DELETED");
                 f->detach();
+                agent.logFileAccess(f, "HThor", "DELETED");
             }
             else // not quite sure about raising exceptions in constructors
                 throw MakeStringException(99, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", lfn.str());
+        }
+    }
+    else
+    {
+        Owned<IFile> file = createIFile(lfn);
+        if (file->exists())
+        {
+            PrintLog("Deleting %s", lfn.str());
+            file->remove();
         }
     }
     clusterHandler.setown(createClusterWriteHandler(agent, &helper, NULL, lfn, filename, false));
