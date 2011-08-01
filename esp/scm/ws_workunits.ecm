@@ -168,8 +168,8 @@ ESPStruct [nil_remove] ECLWorkunit
     string Description;
     bool Protected;
     bool Active;
-    //bool Aborting;
     int Action;
+    [min_ver("1.33")] string ActionEx;
     xsdDateTime DateTimeScheduled;
     int PriorityClass;
     int PriorityLevel;
@@ -1046,7 +1046,7 @@ ESPresponse [exceptions_inline] WUQuerySetActionAliasesResponse
 
 
 ESPservice [
-    version("1.32"), default_client_version("1.32"),
+    version("1.33"), default_client_version("1.33"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPuses ESPStruct ECLException;

@@ -551,6 +551,7 @@ public:
     virtual bool aborting() const;
     virtual void forceReload();
     virtual WUAction getAction() const;
+    virtual IStringVal& getActionEx(IStringVal & str) const;
     virtual IStringVal & getApplicationValue(const char * application, const char * propname, IStringVal & str) const;
     virtual int getApplicationValueInt(const char * application, const char * propname, int defVal) const;
     virtual IConstWUAppValueIterator & getApplicationValues() const;
@@ -875,6 +876,8 @@ public:
             { UNIMPLEMENTED; }
     virtual WUAction getAction() const
             { return c->getAction(); }
+    virtual IStringVal& getActionEx(IStringVal & str) const
+            { return c->getActionEx(str); }
     virtual IStringVal & getApplicationValue(const char * application, const char * propname, IStringVal & str) const
             { return c->getApplicationValue(application, propname, str); }
     virtual int getApplicationValueInt(const char * application, const char * propname, int defVal) const
@@ -3658,6 +3661,13 @@ WUAction CLocalWorkUnit::getAction() const
 {
     CriticalBlock block(crit);
     return (WUAction) getEnum(p, "Action", actions);
+}
+
+IStringVal& CLocalWorkUnit::getActionEx(IStringVal & str) const
+{
+    CriticalBlock block(crit);
+    str.set(p->queryProp("Action"));
+    return str;
 }
 
 IStringVal& CLocalWorkUnit::getApplicationValue(const char *app, const char *propname, IStringVal &str) const
