@@ -2827,9 +2827,9 @@ public:
             else if (!lfn.isExternal())
                 gotlocal = false;
             if (gotlocal) {
-                Owned<IFile> file = getPartFile(0,0);
-                if (onlylocal)
+                if (!write)
                     dfile.setown(queryDistributedFileDirectory().lookup(lfn,user,write));
+                Owned<IFile> file = getPartFile(0,0);
                 if (file.get()&&(write||file->exists()))
                     return true;
             }
