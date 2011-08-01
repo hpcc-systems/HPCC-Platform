@@ -1841,6 +1841,7 @@ public:
     virtual void saveRequest();
     virtual IPropertyTree &queryProperties() const;
     virtual IPropertyTreeIterator *getElementsRaw(const char *xpath,INode *remotedali=NULL, unsigned timeout=MP_WAIT_FOREVER);
+    virtual void setConfigOpt(const char *opt, const char *value);
 
 // ISubscriptionManager impl.
     virtual void add(ISubscription *subs,SubscriptionId id);
@@ -5501,7 +5502,9 @@ CCovenSDSManager::CCovenSDSManager(ICoven &_coven, IPropertyTree &_config, const
     clientProps->setPropBool("@serverIterAvailable", true);
     clientProps->setPropBool("@useAppendOpt", true);
     clientProps->setPropBool("@serverGetIdsAvailable", true);
-
+    IPropertyTree *throttle = clientProps->setPropTree("Throttle", createPTree());
+    throttle->setPropInt("@limit", CLIENT_THROTTLE_LIMIT);
+    throttle->setPropInt("@delay", CLIENT_THROTTLE_DELAY);
     // NB: dataPath is assumed to be local
     RemoteFilename rfn;
     if (dataPath.length())
@@ -6752,6 +6755,15 @@ IPropertyTreeIterator *CCovenSDSManager::getElementsRaw(const char *xpath,INode 
     assertex(!remotedali); // only client side 
     CHECKEDDALIREADLOCKBLOCK(dataRWLock, readWriteTimeout);
     return root->getElements(xpath);
+}
+
+void CCovenSDSManager::setConfigOpt(const char *opt, const char *value)
+{
+    IPropertyTree &props = queryProperties();
+    if (props.hasProp(opt) && (0 == strcmp(value, props.queryProp(opt))))
+        return;
+    ensurePTree(&queryProperties(), opt);
+    queryProperties().setProp(opt, value);
 }
 
 void CCovenSDSManager::start()

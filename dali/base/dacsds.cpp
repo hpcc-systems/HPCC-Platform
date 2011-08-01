@@ -39,9 +39,8 @@ static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/ba
 
 #include "dacsds.ipp"
 
-#define CLIENT_THROTTLE_LIMIT 10
-#define CLIENT_THROTTLE_DELAY 1000
-
+static unsigned clientThrottleLimit;
+static unsigned clientThrottleDelay;
 
 #define MIN_GETXPATHS_CONNECT_SVER "3.2"
 #define MIN_APPEND_OPT_SVER "3.3"
@@ -1118,7 +1117,6 @@ void CClientRemoteTree::localizeElements(const char *xpath, bool allTail)
 
 CClientSDSManager::CClientSDSManager() 
 {
-    concurrentRequests.signal(CLIENT_THROTTLE_LIMIT);
     CDaliVersion serverVersionNeeded("2.1"); // to ensure backward compatibility
     childrenCanBeMissing = queryDaliServerVersion().compare(serverVersionNeeded) >= 0;
     CDaliVersion serverVersionNeeded2("3.4"); // to ensure backward compatibility
@@ -1130,11 +1128,15 @@ CClientSDSManager::CClientSDSManager()
         props.removeProp("Client/@serverIter");
     else
         props.setPropBool("Client/@serverIterAvailable", true);
+    clientThrottleLimit = props.getPropInt("Client/Throttle/@limit", CLIENT_THROTTLE_LIMIT);
+    clientThrottleDelay = props.getPropInt("Client/Throttle/@delay", CLIENT_THROTTLE_DELAY);
+
     CDaliVersion appendOptVersionNeeded(MIN_APPEND_OPT_SVER); // min version for append optimization
     props.setPropBool("Client/@useAppendOpt", queryDaliServerVersion().compare(appendOptVersionNeeded) >= 0);
     CDaliVersion serverVersionNeeded4(MIN_GETIDS_SVER); // min version for get xpath with server ids
     if (queryDaliServerVersion().compare(serverVersionNeeded4) >= 0)
         props.setPropBool("Client/@serverGetIdsAvailable", true);
+    concurrentRequests.signal(clientThrottleLimit);
 }
 
 CClientSDSManager::~CClientSDSManager()
@@ -1153,7 +1155,7 @@ bool CClientSDSManager::sendRequest(CMessageBuffer &mb, bool throttle)
 {
     if (throttle)
     {
-        bool avail = concurrentRequests.wait(CLIENT_THROTTLE_DELAY);
+        bool avail = concurrentRequests.wait(clientThrottleDelay);
         if (!avail)
             WARNLOG("Excessive concurrent Dali SDS client transactions. Transaction delayed.");
         bool res;
@@ -1903,6 +1905,45 @@ IPropertyTreeIterator *CClientSDSManager::getElementsRaw(const char *xpath, INod
     return NULL;
 }
 
+void CClientSDSManager::setConfigOpt(const char *opt, const char *value)
+{
+    IPropertyTree &props = queryProperties();
+    if (props.hasProp(opt) && (0 == strcmp(value, props.queryProp(opt))))
+        return;
+    ensurePTree(&queryProperties(), opt);
+    queryProperties().setProp(opt, value);
+    if (0 == strcmp("Client/Throttle/@limit", opt))
+    {
+        unsigned newV = props.getPropInt(opt);
+        int diff = clientThrottleLimit-newV;
+        if (diff)
+        {
+            if (diff>0) // new limit is lower than old
+            {
+                PROGLOG("Reducing concurrentThrottleLimit from %d to %d", clientThrottleLimit, newV);
+                unsigned c=0;
+                loop
+                {
+                    // generally won't be waiting, as would expect this option to typically be called just after component startup time.
+                    if (!concurrentRequests.wait(clientThrottleDelay))
+                        WARNLOG("Waiting on active requests to lower clientThrottleLimit");
+                    else
+                    {
+                        ++c;
+                        if (c == diff)
+                            break;
+                    }
+                }
+            }
+            else
+            {
+                PROGLOG("Increating clientThrottleLimit from %d to %d", clientThrottleLimit, newV);
+                concurrentRequests.signal(-diff); // new limit is higher than old
+            }
+            clientThrottleLimit = newV;
+        }
+    }
+}
 
 //////////////
 

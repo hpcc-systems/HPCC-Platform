@@ -402,6 +402,7 @@ public:
     virtual StringBuffer &getExternalReport(StringBuffer &out);
     virtual IPropertyTree &queryProperties() const;
     virtual IPropertyTreeIterator *getElementsRaw(const char *xpath, INode *remotedali, unsigned timeout);
+    virtual void setConfigOpt(const char *opt, const char *value);
 
 private:
     CriticalSection crit;
