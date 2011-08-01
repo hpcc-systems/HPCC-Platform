@@ -1634,19 +1634,6 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
 {
     DBGLOG("CWsDfuEx::doGetFileDetails\n");
 
-/*  try
-    {
-        comma c(6000);
-        StringBuffer tmpstr;
-        tmpstr<<c;
-
-        throw MakeStringExceptionDirect(-1,"error");;
-    }
-    catch (IException* e)
-    {
-        e->Release();
-    }
-}*/
     Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(name, udesc);
     if(!df)
         throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",name);
@@ -1664,9 +1651,6 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
     CDateTime dt;
     df->getModificationTime(dt);
     const char* lname=df->queryLogicalName(), *fname=strrchr(lname,':');
-
-    ////Owned<IPropertyTree> fileDetail = createPTree("FileDetail", false);
-
     FileDetails.setName(lname);
     FileDetails.setFilename(fname ? fname+1 : lname);
     FileDetails.setDir(df->queryDefaultDir());
@@ -1714,24 +1698,25 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
     FileDetails.setJobName(df->queryProperties().queryProp("@job"));
 
     //#14280
-    if(df->querySuperFile())
+    IDistributedSuperFile *sf = df->querySuperFile();
+    if(sf)
     {
-        Owned<IDFUhelper> dfuhelper = createIDFUhelper();
+        FileDetails.setIsSuperfile(true);
+
         StringArray farray;
-        StringAttrArray subfiles;
-        dfuhelper->listSubFiles(name, subfiles, udesc);
-        for(unsigned i = 0; i < subfiles.length(); i++)
+        Owned<IDistributedFileIterator> iter=sf->getSubFileIterator();
+        ForEach(*iter)
         {
-            StringAttrItem& subfile = subfiles.item(i);
-            farray.append(subfile.text);
+            StringBuffer subfileName;
+            iter->getName(subfileName);
+            farray.append(subfileName.str());
         }
-        
+
         if(farray.length() > 0)
         {
             FileDetails.setSubfiles(farray);
         }
 
-        FileDetails.setIsSuperfile(true);
         return;
     }
     //#14280
@@ -1791,22 +1776,6 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
     if(df->queryProperties().hasProp("ECL"))
         FileDetails.setEcl(df->queryProperties().queryProp("ECL"));
 
-#if 0
-    StringBuffer cluster0; 
-    df->getClusterName(0,cluster0);
-    if (cluster0.length()!=0)
-    {
-        FileDetails.setCluster(cluster0.str());
-        if (!checkFileContent(context, udesc, name, cluster0.str()))
-            FileDetails.setShowFileContent(false);
-    }
-    else
-    {
-        FileDetails.setCluster(cluster);
-        if (!checkFileContent(context, udesc, name, cluster))
-            FileDetails.setShowFileContent(false);
-    }
-#else
     StringBuffer clusterStr;
     if ((!cluster || !*cluster) && clusters.ordinality())
     {
@@ -1816,7 +1785,6 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
     {
         clusterStr.append(cluster);
     }
-#endif
 
     double version = context.getClientVersion();
     if (clusterStr.length() > 0)
@@ -3342,65 +3310,15 @@ bool CWsDfuEx::onDFUGetDataColumns(IEspContext &context, IEspDFUGetDataColumnsRe
             userdesc.setown(createUserDescriptor());
             userdesc->set(username.str(), passwd);
 
-//#define TESTCOLUMEMAPPING
-#ifdef TESTCOLUMEMAPPING
-            Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalNameStr.str(), userdesc, true);
-            if(!df)
-                throw MakeStringException(0,"Could not find file %s", logicalNameStr.str());
-
-            StringBuffer mapping;
-            //df->getColumnMapping(mapping);
-            //if (mapping.length() < 1)
             {
-                //mapping.append("city_code{set(namelib.nameToToken),get(namelib.tokenToName),displayname(city_name)}");
-                mapping.append("dph_lname{set(metaphonelib.DMetaPhone1),displayname(lname)}");
-                df->setColumnMapping(mapping);
-            }
-#else
-            Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalNameStr.str(), userdesc);
-            if(!df)
-                throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Could not find file %s.", logicalNameStr.str());
-#endif
+                Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalNameStr.str(), userdesc);
+                if(!df)
+                    throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Could not find file %s.", logicalNameStr.str());
 
-            if(df->querySuperFile())
-            {
-                Owned<IDFUhelper> dfuhelper = createIDFUhelper();
-                StringAttrArray subfiles;
-                dfuhelper->listSubFiles(logicalNameStr.str(), subfiles, userdesc);
-                if (subfiles.length() > 1)
+                IDistributedSuperFile *sf = df->querySuperFile();
+                if (sf && (sf->numSubFiles() > 1))
                     throw MakeStringException(ECLWATCH_INVALID_ACTION,"This feature is not designed to work with a superfile which contains multiple subfiles.");
             }
-
-            /*Owned<IUserDescriptor> userdesc;
-            userdesc.setown(createUserDescriptor());
-            userdesc->set(username.str(), passwd);
-
-            Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, userdesc);
-            if(!df)
-                throw MakeStringException(0,"Could not find file %s", logicalName);
-
-            StringBuffer eclqueue, cluster;
-            const char* wuid = df->queryProperties().queryProp("@workunit");
-            if (!wuid || !*wuid)
-                throw MakeStringException(0,"Could not find the workunit for file %s", logicalName);
-
-            try
-            {
-                CWUWrapper wu(wuid, context);
-                if (wu)
-                {   
-                    SCMStringBuffer eclqueue0, cluster0;
-                    eclqueue.append(wu->getQueue(eclqueue0).str());
-                    cluster.append(wu->getClusterName(cluster0).str());
-                }
-            }
-            catch(...)
-            {
-                throw MakeStringException(0,"Could not open the workunit %s for file %s", wuid, logicalName);
-            }
-
-            if (cluster.length() < 1 || eclqueue.length() < 1)
-                 throw MakeStringException(0,"Could not find the cluster or eclqueue for file %s", logicalName);*/
 
             Owned<IResultSetFactory> resultSetFactory;
             if (context.querySecManager())
@@ -3419,7 +3337,6 @@ bool CWsDfuEx::onDFUGetDataColumns(IEspContext &context, IEspDFUGetDataColumnsRe
             }
 
             __int64 total=result->getNumRows();
-            //if (total > 0)
             {
                 IArrayOf<IEspDFUDataColumn> dataKeyedColumns[MAX_KEY_ROWS];
                 IArrayOf<IEspDFUDataColumn> dataNonKeyedColumns[MAX_KEY_ROWS];
@@ -3430,7 +3347,6 @@ bool CWsDfuEx::onDFUGetDataColumns(IEspContext &context, IEspDFUGetDataColumnsRe
                 unsigned columnSize = 0;
                 int lineSizeCount = 0;
                 int lineCount = 0;
-                //int numOfDataBlockes = 10;
                 for (int i = 0; i < keyedColumnCount; i++)
                 {
                     Owned<IEspDFUDataColumn> item = createDFUDataColumn("","");
