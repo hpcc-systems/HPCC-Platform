@@ -118,7 +118,17 @@ public:
                 mb.read(numGot);
                 unsigned l=mb.remaining();
                 if (workunitWriteLimit && resultData.length()+l > workunitWriteLimit)
-                    throw MakeThorException(TE_WorkUnitWriteLimitExceeded, "Dataset too large to output to workunit (limit %d megabytes)", workunitWriteLimit/0x100000);
+                {
+                    StringBuffer errMsg("Dataset too large to output to workunit (limit ");
+                    errMsg.append(workunitWriteLimit/0x100000).append(") megabytes, in result (");
+                    const char *name = helper->queryName();
+                    if (name)
+                        errMsg.append("name=").append(name);
+                    else
+                        errMsg.append("sequence=").append(helper->getSequence());
+                    errMsg.append(")");
+                    throw MakeThorException(TE_WorkUnitWriteLimitExceeded, errMsg.str());
+                }
                 resultData.append(l, mb.readDirect(l));
                 mb.clear();
                 numResults += numGot;
