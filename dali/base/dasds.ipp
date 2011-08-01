@@ -44,6 +44,9 @@
 #define ATTRDELETE_TAG "AD"
 #define APPEND_TAG "PA"
 
+#define CLIENT_THROTTLE_LIMIT 10
+#define CLIENT_THROTTLE_DELAY 1000
+
 #if 1
 #define DALI_CATCHALL ...
 #else

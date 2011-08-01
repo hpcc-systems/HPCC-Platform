@@ -101,6 +101,7 @@ interface ISDSManager
     virtual StringBuffer &getExternalReport(StringBuffer &out) = 0;
     virtual IPropertyTree &queryProperties() const = 0;
     virtual IPropertyTreeIterator *getElementsRaw(const char *xpath,INode *remotedali=NULL, unsigned timeout=MP_WAIT_FOREVER) = 0;
+    virtual void setConfigOpt(const char *opt, const char *value) = 0;
 };
 
 extern da_decl const char *queryNotifyHandlerName(IPropertyTree *tree);
