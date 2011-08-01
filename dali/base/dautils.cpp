@@ -2828,6 +2828,8 @@ public:
                 gotlocal = false;
             if (gotlocal) {
                 Owned<IFile> file = getPartFile(0,0);
+                if (onlylocal)
+                    dfile.setown(queryDistributedFileDirectory().lookup(lfn,user,write));
                 if (file.get()&&(write||file->exists()))
                     return true;
             }

@@ -116,8 +116,10 @@ StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fn
 {
     if (fname[0]=='~')
         logicalName.append(fname+1);
-    else if (agent.queryResolveFilesLocally() && strchr(fname,(int)PATHSEPCHAR))
+    else if (agent.queryResolveFilesLocally())
+    {
         logicalName.append(fname);
+    }
     else
     {
         SCMStringBuffer lfn;
@@ -125,6 +127,12 @@ StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fn
         if(lfn.length())
             logicalName.append(lfn.s).append("::");
         logicalName.append(fname);
+    }
+    if (agent.queryResolveFilesLocally())
+    {
+        StringBuffer sb(logicalName.str());
+        sb.replaceString("::",PATHSEPSTR);
+        makeAbsolutePath(sb.str(), logicalName.clear());
     }
     return logicalName;
 }
