@@ -824,6 +824,7 @@ interface IConstWorkUnit : extends IInterface
     virtual bool aborting() const = 0;
     virtual void forceReload() = 0;
     virtual WUAction getAction() const = 0;
+    virtual IStringVal& getActionEx(IStringVal & str) const = 0;
     virtual IStringVal & getApplicationValue(const char * application, const char * propname, IStringVal & str) const = 0;
     virtual int getApplicationValueInt(const char * application, const char * propname, int defVal) const = 0;
     virtual IConstWUAppValueIterator & getApplicationValues() const = 0;

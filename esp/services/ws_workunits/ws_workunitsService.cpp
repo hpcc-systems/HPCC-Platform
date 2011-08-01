@@ -5198,8 +5198,8 @@ void CWsWorkunitsEx::getInfo(IEspContext &context,const char* wuid0,IEspECLWorku
     wuidStr.trim();
     const char* wuid = wuidStr.str();
 
-   CWUWrapper wu(wuid, context);
-   ensureWorkunitAccess(context, *wu, SecAccess_Read);
+    CWUWrapper wu(wuid, context);
+    ensureWorkunitAccess(context, *wu, SecAccess_Read);
 
     bool helpersException = false;
     bool graphsException = false;
@@ -5211,7 +5211,7 @@ void CWsWorkunitsEx::getInfo(IEspContext &context,const char* wuid0,IEspECLWorku
     bool applicationValuesException = false;
     bool workflowsException = false;
 
-   SecAccessFlags accessFlag = getWorkunitAccess(context, *wu);
+    SecAccessFlags accessFlag = getWorkunitAccess(context, *wu);
 
     SCMStringBuffer buf;
     info->setWuid(wu->getWuid(buf).str());
@@ -5221,10 +5221,8 @@ void CWsWorkunitsEx::getInfo(IEspContext &context,const char* wuid0,IEspECLWorku
 
     if ((wu->getState() == WUStateScheduled) && wu->aborting())
     {
-        //info->setAborting(true);
         info->setStateID(WUStateAborting);
         info->setState("aborting");
-        //info->setStateEx(WUStateAborting);
     }
 
     double version = context.getClientVersion();
@@ -5232,8 +5230,11 @@ void CWsWorkunitsEx::getInfo(IEspContext &context,const char* wuid0,IEspECLWorku
     {       
         info->setArchived(false);
     }
+    if (version > 1.32)
+    {
+        info->setActionEx(wu->getActionEx(buf).str());
+    }
     info->setProtected(wu->isProtected() ? 1 : 0);
-    //info->setCluster(wu->getClusterName(buf).str());
 
     SCMStringBuffer roxieClusterName;
     Owned<IConstWURoxieQueryInfo> roxieQueryInfo = wu->getRoxieQueryInfo();
@@ -5241,13 +5242,7 @@ void CWsWorkunitsEx::getInfo(IEspContext &context,const char* wuid0,IEspECLWorku
     if (roxieQueryInfo)
         roxieQueryInfo->getRoxieClusterName(roxieClusterName);
 
-    StringBuffer ClusterName;
-    //if (roxieClusterName.length() == 0)
-    //  ClusterName = wu->getClusterName(buf).str();
-    //else
-    //  ClusterName = roxieClusterName.str();
-
-    ClusterName = wu->getClusterName(buf).str();
+    StringBuffer ClusterName = wu->getClusterName(buf).str();
     info->setCluster(ClusterName.str());
     if (version > 1.06 && roxieClusterName.length() > 0)
     {
@@ -5324,18 +5319,11 @@ void CWsWorkunitsEx::getInfo(IEspContext &context,const char* wuid0,IEspECLWorku
 
     if (version > 1.16)
     {       
-
-        //char countBuf[23];
-        unsigned sectionCount;
-
-        sectionCount = wu->getGraphCount();
+        unsigned sectionCount = wu->getGraphCount();
         info->setGraphCount(sectionCount);
 
         sectionCount = wu->getSourceFileCount();
         info->setSourceFileCount(sectionCount);
-
-        //sectionCount = wu->getResultCount();
-        //info->setResultCount(sectionCount);
 
         sectionCount = wu->getVariableCount();
         info->setVariableCount(sectionCount);
@@ -5545,67 +5533,12 @@ void CWsWorkunitsEx::getInfo(IEspContext &context,const char* wuid0,IEspECLWorku
         }
         else
         {
-//#define TESTSUBFILE
-#ifdef TESTSUBFILE
-int i = 0;
-#endif
             StringArray fileNames;
 
             Owned<IPropertyTreeIterator> f=&wu->getFilesReadIterator();
             ForEach(*f)
             {
-#ifndef TESTSUBFILE
                 IPropertyTree &query = f->query();
-#else
-Owned<IPropertyTree> filesRead = createPTree(false);
-{
-    if (i > 1)
-        break;
-    if (i < 1)
-    {
-    filesRead->setProp("@name", "file1");
-    filesRead->setProp("@cluster", "thor200");
-    filesRead->setPropInt("@useCount", 1);
-
-    Owned<IPropertyTree> subfile = createPTree(false);
-    subfile->setProp("@name", "subfile1");
-    filesRead->addPropTree("Subfile", subfile.getClear());
-
-    Owned<IPropertyTree> subfile2 = createPTree(false);
-    subfile2->setProp("@name", "subfile2");
-    filesRead->addPropTree("Subfile", subfile2.getClear());
-    }
-    else
-    {
-    filesRead->setProp("@name", "file2");
-    filesRead->setProp("@cluster", "thor200");
-    filesRead->setPropInt("@useCount", 1);
-
-    Owned<IPropertyTree> subfile21 = createPTree(false);
-    subfile21->setProp("@name", "subfile21");
-    subfile21->setProp("@cluster", "thor50");
-    filesRead->addPropTree("Subfile", subfile21.getClear());
-
-    Owned<IPropertyTree> subfile22 = createPTree(false);
-    subfile22->setProp("@name", "subfile22");
-    subfile22->setProp("@cluster", "thor50");
-
-    Owned<IPropertyTree> subfile221 = createPTree(false);
-    subfile221->setProp("@name", "subfile221");
-    subfile221->setProp("@cluster", "thor50");
-    subfile22->addPropTree("Subfile", subfile221.getClear());
-
-    Owned<IPropertyTree> subfile222 = createPTree(false);
-    subfile222->setProp("@name", "subfile222");
-    subfile222->setProp("@cluster", "thor50");
-    subfile22->addPropTree("Subfile", subfile222.getClear());
-
-    filesRead->addPropTree("Subfile", subfile22.getClear());
-    }
-    i++;
-}
-IPropertyTree &query = *filesRead;
-#endif
                 const char *clusterName = query.queryProp("@cluster");
                 const char *fileName = query.queryProp("@name");
                 int fileCount = query.getPropInt("@useCount");
