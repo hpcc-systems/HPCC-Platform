@@ -196,7 +196,7 @@ cd ${runtime}/${compName}
 
 #start configesp
 EXEC_COMMAND="${exec_script_path}/init_configesp >> $logFile 2>&1"
-startcmd="${daemon_path}/start-stop-daemon -S -p ${initPidFile} -d ${runtime}/${compName} -m -x ${EXEC_COMMAND} -b"
+startcmd="${daemon_path}/start-stop-daemon -S -p ${initPidFile} -c ${user}:${group} -d ${runtime}/${compName} -m -x ${EXEC_COMMAND} -b"
 eval ${startcmd}
 started=$?
 
