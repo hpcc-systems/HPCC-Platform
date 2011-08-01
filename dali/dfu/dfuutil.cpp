@@ -851,7 +851,7 @@ public:
 
     void addFileXML(const char *lfn,const StringBuffer &xml,IUserDescriptor *user=NULL)
     {
-        Owned<IPropertyTree> t = createPTreeFromXMLString(xml, false);
+        Owned<IPropertyTree> t = createPTreeFromXMLString(xml);
         Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(t,&queryNamedGroupStore(),0);
         Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc,true);
         if (file)

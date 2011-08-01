@@ -2429,7 +2429,7 @@ IExpander *createAESExpander256(size32_t len, const void *key)
 
 IPropertyTree *getBlockedFileDetails(IFile *file)
 {
-    Owned<IPropertyTree> tree = createPTree("BlockedFile",false);
+    Owned<IPropertyTree> tree = createPTree("BlockedFile");
     Owned<IFileIO> fileio = file?file->open(IFOread):NULL;
     if (fileio) {
         offset_t fsize = fileio->size();
@@ -2449,7 +2449,7 @@ IPropertyTree *getBlockedFileDetails(IFile *file)
                         offset_t s = 0;
                         const offset_t *index = (const offset_t *)indexbuf.bufferBase();
                         for (unsigned i=0;i<nb;i++) {
-                            IPropertyTree * t = tree->addPropTree("Block",createPTree("Block",false));
+                            IPropertyTree * t = tree->addPropTree("Block",createPTree("Block"));
                             t->addPropInt64("@start",s);
                             offset_t p = s;
                             s = index[i];

@@ -431,7 +431,7 @@ IPropertyTree* RemoteXmlEclRepository::getModules(timestamp_t from)
     try
     {
         repository.getModules(modNames, user, from);
-        repositoryTree = loadPropertyTree(modNames.str(),true);
+        repositoryTree = createPTreeFromXMLString(modNames.str(), ipt_caseInsensitive);
     }
     catch(IException *e) 
     {
@@ -458,7 +458,7 @@ IPropertyTree* RemoteXmlEclRepository::getAttributes(const char *module, const c
 
         repository.getAttributes(xml, user, module, attr, version, infoLevel, snapshot.length() ? snapshot.str() : NULL, sandbox4snapshot);
         if (xml.length())
-            repositoryTree = loadPropertyTree(xml, true);
+            repositoryTree = createPTreeFromXMLString(xml, ipt_caseInsensitive);
     }
     catch(IException *e) 
     {

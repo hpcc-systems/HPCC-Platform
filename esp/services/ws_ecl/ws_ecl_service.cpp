@@ -803,7 +803,7 @@ void CWsEclBinding::buildSampleResponseXml(StringBuffer& msg, IEspContext &conte
 
     Owned<IPropertyTree> xsds_tree;
     if (xsds.length())
-        xsds_tree.setown(createPTreeFromXMLString(xsds.str(), false));
+        xsds_tree.setown(createPTreeFromXMLString(xsds.str()));
 
     if (xsds_tree)
     {
@@ -830,7 +830,7 @@ int CWsEclBinding::getWsEclLinks(IEspContext &context, CHttpRequest* request, CH
 
     Owned<IPropertyTree> xsdtree;
     if (xsds.length())
-        xsdtree.setown(createPTreeFromXMLString(xsds.str(), false));
+        xsdtree.setown(createPTreeFromXMLString(xsds.str()));
 
     if (xsdtree)
     {
@@ -898,7 +898,7 @@ int CWsEclBinding::getWsEcl2TabView(CHttpRequest* request, CHttpResponse* respon
         wsinfo->getSchemas(xsds);
         Owned<IPropertyTree> xsdtree;
         if (xsds.length())
-            xsdtree.setown(createPTreeFromXMLString(xsds.str(), false));
+            xsdtree.setown(createPTreeFromXMLString(xsds.str()));
 
         if (xsdtree)
         {
@@ -952,7 +952,7 @@ void CWsEclBinding::appendSchemaNamespaces(IPropertyTree *namespaces, IEspContex
 
         Owned<IPropertyTree> xsdtree;
         if (xsds.length())
-            xsdtree.setown(createPTreeFromXMLString(xsds.str(), false));
+            xsdtree.setown(createPTreeFromXMLString(xsds.str()));
 
         if (xsdtree)
         {
@@ -965,7 +965,7 @@ void CWsEclBinding::appendSchemaNamespaces(IPropertyTree *namespaces, IEspContex
                 appendNamespaceSpecificString(urn, wsinfo.queryname.get()).append(":result:");
                 appendNamespaceSpecificString(urn, resultname);
                 VStringBuffer nsxml("<namespace nsvar=\"ds%d\" ns=\"%s\" import=\"1\" location=\"../result/%s.xsd\"/>", count++, urn.toLowerCase().str(), resultname);
-                namespaces->addPropTree("namespace", createPTreeFromXMLString(nsxml.str(), false));
+                namespaces->addPropTree("namespace", createPTreeFromXMLString(nsxml.str()));
             }
         }
 }
@@ -1138,7 +1138,7 @@ void appendEclInputXsds(StringBuffer &content, IPropertyTree *xsd, BoolHash &add
 
 void CWsEclBinding::SOAPSectionToXsd(WsWuInfo &wsinfo, const char *parmXml, StringBuffer &schema, bool isRequest, IPropertyTree *xsdtree)
 {
-    Owned<IPropertyTree> tree = createPTreeFromXMLString(parmXml, false, true, NULL, false, true);
+    Owned<IPropertyTree> tree = createPTreeFromXMLString(parmXml, ipt_none, (XmlReaderOptions)(xr_ignoreWhiteSpace|xr_noRoot));
 
     schema.appendf("<xsd:element name=\"%s%s\">", wsinfo.queryname.sget(), isRequest ? "Request" : "Response");
     schema.append("<xsd:complexType>");
@@ -1194,7 +1194,7 @@ int CWsEclBinding::getXsdDefinition(IEspContext &context, CHttpRequest *request,
         wsinfo.getSchemas(xsds);
         Owned<IPropertyTree> xsdtree;
         if (xsds.length())
-            xsdtree.setown(createPTreeFromXMLString(xsds.str(), false));
+            xsdtree.setown(createPTreeFromXMLString(xsds.str()));
 
         //common types
         content.append(
@@ -1281,7 +1281,7 @@ int CWsEclBinding::getXsdDefinition(IEspContext &context, CHttpRequest *request,
 
 bool CWsEclBinding::getSchema(StringBuffer& schema, IEspContext &ctx, CHttpRequest* req, WsWuInfo &wsinfo)
 {
-    Owned<IPropertyTree> namespaces = createPTree(false);
+    Owned<IPropertyTree> namespaces = createPTree();
     appendSchemaNamespaces(namespaces, ctx, req, wsinfo);
     Owned<IPropertyTreeIterator> nsiter = namespaces->getElements("namespace");
     
@@ -1453,7 +1453,7 @@ void buildParametersXml(IPropertyTree *parmtree, IProperties *parms)
 
 void CWsEclBinding::getWsEcl2XmlRequest(StringBuffer& soapmsg, IEspContext &context, CHttpRequest* request, WsWuInfo &wsinfo, const char *xmltype, const char *ns, unsigned flags)
 {
-    Owned<IPropertyTree> parmtree = createPTree(false);
+    Owned<IPropertyTree> parmtree = createPTree();
     IProperties *parms = context.queryRequestParameters();
 
     buildParametersXml(parmtree, parms);
@@ -1479,7 +1479,7 @@ void CWsEclBinding::getWsEcl2XmlRequest(StringBuffer& soapmsg, IEspContext &cont
 
 void CWsEclBinding::getWsEclJsonRequest(StringBuffer& jsonmsg, IEspContext &context, CHttpRequest* request, WsWuInfo &wsinfo, const char *xmltype, const char *ns, unsigned flags)
 {
-    Owned<IPropertyTree> parmtree = createPTree(false);
+    Owned<IPropertyTree> parmtree = createPTree();
     IProperties *parms = context.queryRequestParameters();
 
     buildParametersXml(parmtree, parms);
@@ -1506,7 +1506,7 @@ void CWsEclBinding::getWsEclJsonRequest(StringBuffer& jsonmsg, IEspContext &cont
 
 void CWsEclBinding::getWsEclJsonResponse(StringBuffer& jsonmsg, IEspContext &context, CHttpRequest *request, const char *xml, WsWuInfo &wsinfo)
 {
-    Owned<IPropertyTree> parmtree = createPTreeFromXMLString(xml, false, true, 0, true);
+    Owned<IPropertyTree> parmtree = createPTreeFromXMLString(xml, ipt_none, (XmlReaderOptions)(xr_ignoreWhiteSpace|xr_ignoreNameSpaces));
 
     StringBuffer element;
     element.append(wsinfo.queryname.sget());
@@ -1818,7 +1818,7 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsWuInfo &wsinfo, 
     workunit->setState(WUStateSubmitted);
     workunit->commit();
 
-    Owned<IPropertyTree> req = createPTreeFromXMLString(xml, false, true, 0, true, false);
+    Owned<IPropertyTree> req = createPTreeFromXMLString(xml, ipt_none, (XmlReaderOptions)(xr_ignoreWhiteSpace|xr_ignoreNameSpaces));
     IPropertyTree *start = req.get();
     if (start->hasProp("Envelope"))
         start=start->queryPropTree("Envelope");
@@ -2252,7 +2252,7 @@ int CWsEclBinding::getWsEclDefinition(CHttpRequest* request, CHttpResponse* resp
 
             Owned<IPropertyTree> xsds_tree;
             if (xsds.length())
-                xsds_tree.setown(createPTreeFromXMLString(xsds.str(), false));
+                xsds_tree.setown(createPTreeFromXMLString(xsds.str()));
             if (xsds_tree)
             {
                 StringBuffer xpath;
@@ -2274,7 +2274,7 @@ int CWsEclBinding::getWsEclDefinition(CHttpRequest* request, CHttpResponse* resp
                     selected_xsd->setProp("@xmlns", urn.str());
                     IPropertyTree *dstree = selected_xsd->queryPropTree("xs:element[@name='Dataset']/xs:complexType");
                     if (dstree && !dstree->hasProp("xs:attribute[@name='name']"))
-                        dstree->addPropTree("xs:attribute", createPTreeFromXMLString("<xs:attribute name=\"name\" type=\"xs:string\"/>", false));
+                        dstree->addPropTree("xs:attribute", createPTreeFromXMLString("<xs:attribute name=\"name\" type=\"xs:string\"/>"));
                     Owned<IPropertyTreeIterator> elements = selected_xsd->getElements("xs:element//xs:element");
                     ForEach(*elements)
                         elements->query().setPropInt("@minOccurs", 0);

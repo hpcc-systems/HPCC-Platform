@@ -7208,7 +7208,7 @@ void exportSymbols(IPropertyTree* data, IHqlScope * scope, HqlLookupContext & ct
         IHqlExpression *cur = &allSymbols.item(i);
         if (cur && cur->isObject(ob_declaration) && (cur->getOperator() != no_remotescope))
         {
-            IPropertyTree * attr=createPropertyTree(true, "Attribute");
+            IPropertyTree * attr=createPTree("Attribute", ipt_caseInsensitive);
             attr->setProp("@name", *cur->queryName());
             unsigned obFlags = cur->getObType();
             if (cur->isExported())
@@ -12064,7 +12064,7 @@ unsigned exportField(IPropertyTree *table, IHqlExpression *field, unsigned & off
     if (field->isAttribute())
         return 0;
     IHqlExpression *defValue = field->queryChild(0);
-    IPropertyTree *f = createPropertyTree(true, "Field");
+    IPropertyTree *f = createPTree("Field", ipt_caseInsensitive);
     ITypeInfo * type = field->queryType();
     if (type->getTypeCode() == type_row)
         type = type->queryChildType();
@@ -12116,7 +12116,7 @@ unsigned exportField(IPropertyTree *table, IHqlExpression *field, unsigned & off
         {
             thisSize = exportRecord(table, record, offset, flatten);
 
-            IPropertyTree *end = createPropertyTree(true, "Field");
+            IPropertyTree *end = createPTree("Field", ipt_caseInsensitive);
             end->setPropBool("@isEnd", true);
             end->setProp("@name", field->queryName()->getAtomNamePtr());
             end = table->addPropTree(end->queryName(), end);
@@ -12152,7 +12152,7 @@ static unsigned exportRecord(IPropertyTree *dataNode, IHqlExpression * record, u
                 }
                 else
                 {
-                    IPropertyTree * ifblock = dataNode->addPropTree("IfBlock", createPropertyTree(true, "IfBlock"));
+                    IPropertyTree * ifblock = dataNode->addPropTree("IfBlock", createPTree("IfBlock", ipt_caseInsensitive));
                     ifblock->setPropInt("@position", idx);
                     exportRecord(ifblock, cur->queryChild(1), flatten);
                     size = UNKNOWN_LENGTH;
@@ -12208,10 +12208,10 @@ void exportMap(IPropertyTree *dataNode, IHqlExpression *destTable, IHqlExpressio
     IPropertyTree *maps = dataNode->queryPropTree("./Map");
     if (!maps)
     {
-        maps = createPropertyTree(true, "Map");
+        maps = createPTree("Map", ipt_caseInsensitive);
         dataNode->addPropTree("Map", maps);
     }
-    IPropertyTree *map = createPropertyTree(true, "MapTables");
+    IPropertyTree *map = createPTree("MapTables", ipt_caseInsensitive);
     StringBuffer name;
     map->setProp("@destTable", getExportName(destTable, name).str());
     map->setProp("@sourceTable", getExportName(sourceTable, name.clear()).str());
@@ -12230,7 +12230,7 @@ void exportData(IPropertyTree *data, IHqlExpression *table, bool flatten)
             mode->toString(prefix);
             prefix.toLowerCase();
             prefix.setCharAt(0, (char)(prefix.charAt(0) - 0x20));
-            tt = createPropertyTree(true, StringBuffer(prefix).append("Table").str());
+            tt = createPTree(StringBuffer(prefix).append("Table").str(), ipt_caseInsensitive);
             StringBuffer name;
             tt->setProp("@name", getExportName(table, name).str());
             CHqlNamedSymbol *a = QUERYINTERFACE(table, CHqlNamedSymbol);
@@ -12253,7 +12253,7 @@ void exportData(IPropertyTree *data, IHqlExpression *table, bool flatten)
             }
             exportMap(data, table, base);
             exportData(data, base);
-            tt = createPropertyTree(true, "LogicalTable");
+            tt = createPTree("LogicalTable", ipt_caseInsensitive);
             StringBuffer name;
             tt->setProp("@name", getExportName(table, name).str());
             CHqlNamedSymbol *a = QUERYINTERFACE(table, CHqlNamedSymbol);
@@ -14631,7 +14631,7 @@ static void safeLookupSymbol(HqlLookupContext & ctx, IHqlScope * modScope, _ATOM
         
         if (!attr)
         {
-            attr = localContext.dependTree->addPropTree("Attr", createPTree(false));
+            attr = localContext.dependTree->addPropTree("Attr", createPTree());
             attr->setProp("@module", moduleName->str());
             attr->setProp("@name", name->str());
         }
@@ -14693,7 +14693,7 @@ static void gatherAttributeDependencies(HqlLookupContext & ctx, const char * ite
 extern HQL_API IPropertyTree * gatherAttributeDependencies(IEclRepository * dataServer, const char * items)
 {
     HqlLookupContext ctx(NULL, NULL, NULL, dataServer);
-    ctx.dependTree.setown(createPTree("Dependencies", false));
+    ctx.dependTree.setown(createPTree("Dependencies"));
 
     if (items && *items)
     {

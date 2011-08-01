@@ -876,7 +876,7 @@ public:
         tgt = NULL;
         PROTECTED_GETRESULT(stepname, sequence, "Raw", "raw",
             Variable2IDataVal result(&tlen, &tgt);
-            Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer, true);
+            Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer);
             Owned<ICsvToRawTransformer> rawCsvTransformer = createCsvRawTransformer(csvTransformer);
             r->getResultRaw(result, rawXmlTransformer, rawCsvTransformer);
         );
@@ -886,7 +886,7 @@ public:
         tgt = NULL;
         PROTECTED_GETRESULT(stepname, sequence, "Raw", "raw",
             Variable2IDataVal result(&tlen, &tgt);
-            Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer, true);
+            Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer);
             Owned<ICsvToRawTransformer> rawCsvTransformer = createCsvRawTransformer(csvTransformer);
             isAll = r->getResultIsAll();
             r->getResultRaw(result, rawXmlTransformer, rawCsvTransformer);
@@ -961,7 +961,7 @@ public:
         PROTECTED_GETRESULT(stepname, sequence, "Rowset", "rowset",
             MemoryBuffer datasetBuffer;
             MemoryBuffer2IDataVal result(datasetBuffer);
-            Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer, true);
+            Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer);
             Owned<ICsvToRawTransformer> rawCsvTransformer = createCsvRawTransformer(csvTransformer);
             r->getResultRaw(result, rawXmlTransformer, rawCsvTransformer);
             rtlDataset2RowsetX(tcount, tgt, _rowAllocator, deserializer, datasetBuffer.length(), datasetBuffer.toByteArray(), isGrouped);
@@ -976,7 +976,7 @@ public:
 
             Variable2IDataVal result(&tlen, &tgt);
             Owned<IConstWUResult> r = getExternalResult(wuid, stepname, sequence);
-            Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer, true);
+            Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer);
             Owned<ICsvToRawTransformer> rawCsvTransformer = createCsvRawTransformer(csvTransformer);
             r->getResultRaw(result, rawXmlTransformer, rawCsvTransformer);
         }
@@ -1305,7 +1305,7 @@ void CJobMaster::initNodeDUCache()
 
 IPropertyTree *CJobMaster::prepareWorkUnitInfo()
 {
-    Owned<IPropertyTree> workUnitInfo = createPTree("workUnitInfo", false);
+    Owned<IPropertyTree> workUnitInfo = createPTree("workUnitInfo");
     workUnitInfo->setProp("wuid", wuid);
     workUnitInfo->setProp("user", user);
     workUnitInfo->setProp("token", token);
@@ -1319,14 +1319,14 @@ IPropertyTree *CJobMaster::prepareWorkUnitInfo()
         if (thisplugin.getPluginThor() || thisplugin.getPluginHole()) // JCSMORE ..Hole..
         {
             if (!plugins)
-                plugins = workUnitInfo->addPropTree("plugins", createPTree(false));
+                plugins = workUnitInfo->addPropTree("plugins", createPTree());
             SCMStringBuffer name;
             thisplugin.getPluginName(name);
-            IPropertyTree *plugin = plugins->addPropTree("plugin", createPTree(false));
+            IPropertyTree *plugin = plugins->addPropTree("plugin", createPTree());
             plugin->setProp("@name", name.str());
         }
     }
-    IPropertyTree *debug = workUnitInfo->addPropTree("Debug", createPTree(true));
+    IPropertyTree *debug = workUnitInfo->addPropTree("Debug", createPTree(ipt_caseInsensitive));
     SCMStringBuffer debugStr, valueStr;
     Owned<IStringIterator> debugIter = &queryWorkUnit().getDebugValues();
     ForEach (*debugIter)
@@ -1360,7 +1360,7 @@ void CJobMaster::sendQuery()
         msg.append(sz);
         read(iFileIO, 0, sz, msg);
     }
-    Owned<IPropertyTree> deps = createPTree(queryXGMML()->queryName(), false);
+    Owned<IPropertyTree> deps = createPTree(queryXGMML()->queryName());
     Owned<IPropertyTreeIterator> edgeIter = queryXGMML()->getElements("edge"); // JCSMORE trim to those actually needed
     ForEach (*edgeIter)
     {

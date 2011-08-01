@@ -251,7 +251,7 @@ int main(int argc, char* argv[])
     
     try
     {
-        Owned<IPropertyTree> cfg = createPTreeFromXMLFile(configfile, false);
+        Owned<IPropertyTree> cfg = createPTreeFromXMLFile(configfile);
         Owned<IPropertyTree> seccfg = cfg->getPropTree(".//ldapSecurity");
         if(seccfg == NULL)
         {

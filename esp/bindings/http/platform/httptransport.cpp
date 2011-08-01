@@ -316,7 +316,7 @@ void CHttpMessage::addRawXMLParameter(const char* path, const char *value)
     Owned<IPropertyTree> tree;
     try
     {
-        tree.setown(createPTreeFromXMLString(value, false));
+        tree.setown(createPTreeFromXMLString(value));
     }
     catch(IException* e)
     {

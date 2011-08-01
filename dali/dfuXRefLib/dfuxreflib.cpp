@@ -89,7 +89,7 @@ void testGetDir()
 
 static IPropertyTree *addBranch(IPropertyTree *dst,const char *name)
 {
-    return dst->addPropTree(name,createPTree(false));
+    return dst->addPropTree(name,createPTree());
 }
 
 
@@ -1454,7 +1454,7 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
             else { // slow but should be going anyway
                 iter.setown(root.getElements("Part")); // use parts
                 IArrayOf<IPropertyTree> parts;
-                Owned<IPropertyTree> empty = createPTree("Attr",false);
+                Owned<IPropertyTree> empty = createPTree("Attr");
                 unsigned i;
                 for (i=0;i<numparts;i++)
                     parts.append(*empty.getLink());
@@ -1463,7 +1463,7 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
                     IPropertyTree &part = iter->query();
                     unsigned partno = part.getPropInt("@num",0);
                     if (partno&&(partno!=lastpartno)&&(partno<=numparts)) {
-                        parts.replace(*createPTree(&part),partno-1);
+                        parts.replace(*createPTreeFromIPT(&part),partno-1);
                         lastpartno = partno;
                     }
                 }
@@ -2484,7 +2484,7 @@ class CXRefManager: public CXRefManagerBase
     IPropertyTree * outputTree()
     {
         log("Collating output");
-        IPropertyTree *out = createPTree("XREF",false);
+        IPropertyTree *out = createPTree("XREF");
         IPropertyTree *orphans = addBranch(out,"Orphans");
         IPropertyTree *found = addBranch(out,"Found");
         IPropertyTree *lost = addBranch(out,"Lost");

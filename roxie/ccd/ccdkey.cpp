@@ -2016,7 +2016,7 @@ protected:
         d.clear();
         di.deprecate();
 
-        Owned<IPropertyTree> keyInfo = createPTreeFromXMLString("<R><FieldSet><Field isLittleEndian='1' isSigned='0' offset='0' size='4'/><Field isLittleEndian='1' isSigned='1' offset='0' size='4'/></FieldSet></R>", false);
+        Owned<IPropertyTree> keyInfo = createPTreeFromXMLString("<R><FieldSet><Field isLittleEndian='1' isSigned='0' offset='0' size='4'/><Field isLittleEndian='1' isSigned='1' offset='0' size='4'/></FieldSet></R>");
         indexes.setKeyInfo(*keyInfo.get());
         Sleep(1000); // to give key time to build!
 

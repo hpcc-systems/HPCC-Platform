@@ -661,7 +661,7 @@ CXmlSchema::CXmlSchema(const char* schemaSrc)
 {
     m_unnamedIdx = 0;
     try {
-        m_schema.setown(createPTreeFromXMLString(schemaSrc,false));     
+        m_schema.setown(createPTreeFromXMLString(schemaSrc));
         setSchemaNamespace();
     } catch (IException* e) {
         StringBuffer msg;
@@ -669,7 +669,7 @@ CXmlSchema::CXmlSchema(const char* schemaSrc)
     }   
 
     if (!m_schema.get())
-        m_schema.setown(createPTree("xsd:schema", false));
+        m_schema.setown(createPTree("xsd:schema"));
 }
 
 CXmlSchema::CXmlSchema(IPTree* schema) 

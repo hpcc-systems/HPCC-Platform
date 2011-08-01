@@ -866,7 +866,7 @@ public:
 
     static IPropertyTree *getAllQueryStats(time_t from, time_t to)
     {
-        Owned<IPTree> result = createPTree("QueryStats", false);
+        Owned<IPTree> result = createPTree("QueryStats");
         SpinBlock b(allStatsCrit);
         ForEachItemIn(idx, allStats)
         {
@@ -907,7 +907,7 @@ public:
     {
         time_t timeNow;
         time(&timeNow);
-        Owned<IPropertyTree> result = createPTree("Query", false);
+        Owned<IPropertyTree> result = createPTree("Query");
         result->setProp("@id", queryName);
         if (expirySeconds && difftime(timeNow, from) <= expirySeconds)
         {

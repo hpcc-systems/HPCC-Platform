@@ -40,7 +40,7 @@ CWizardInputs::CWizardInputs(const char* xmlArg,const char *service,
                              MapStringTo<StringBuffer>* dirMap): m_service(service), 
                              m_cfg(cfg), m_overrideDirs(dirMap)
 {
-  m_pXml.setown(createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>", false));
+  m_pXml.setown(createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>"));
 }
 //----------------------------------------------------------------------
 CWizardInputs::~CWizardInputs()
@@ -109,7 +109,7 @@ void CWizardInputs::setEnvironment()
      fileName.append((pParams->queryProp("buildset") != NULL ? (sb.clear().append(pParams->queryProp("buildset"))) : STANDARD_CONFIG_BUILDSETFILE));
 
      if(fileName.length() && checkFileExists(fileName.str()))
-       m_buildSetTree.setown(createPTreeFromXMLFile(fileName.str(), false));
+       m_buildSetTree.setown(createPTreeFromXMLFile(fileName.str()));
      else
        throw MakeStringException( -1 , "The buildSetFile %s does not exists", fileName.str());
      
@@ -387,9 +387,9 @@ IPropertyTree* CWizardInputs::createEnvironment()
   StringBuffer xpath, sbTemp, name ;
  
   sbTemp.clear().appendf("<%s><%s></%s>", XML_HEADER, XML_TAG_ENVIRONMENT, XML_TAG_ENVIRONMENT);
-  IPropertyTree* pNewEnvTree = createPTreeFromXMLString(sbTemp.str(),false);
+  IPropertyTree* pNewEnvTree = createPTreeFromXMLString(sbTemp.str());
 
-  IPropertyTree* pSettings = pNewEnvTree->addPropTree(XML_TAG_ENVSETTINGS, createPTree(false));
+  IPropertyTree* pSettings = pNewEnvTree->addPropTree(XML_TAG_ENVSETTINGS, createPTree());
   xpath.clear().appendf("%s/%s/%s[%s='%s']/LocalEnvFile", XML_TAG_SOFTWARE, XML_TAG_ESPPROCESS, XML_TAG_ESPSERVICE, XML_ATTR_NAME, m_service.str());
   const char* pConfFile = m_cfg->queryProp(xpath.str());
 
@@ -408,10 +408,10 @@ IPropertyTree* CWizardInputs::createEnvironment()
     }
   }
 
-  Owned<IPropertyTree> pProgramTree = createPTree(m_buildSetTree);
-  pNewEnvTree->addPropTree(XML_TAG_PROGRAMS, createPTree(pProgramTree->queryPropTree("./"XML_TAG_PROGRAMS)));
+  Owned<IPropertyTree> pProgramTree = createPTreeFromIPT(m_buildSetTree);
+  pNewEnvTree->addPropTree(XML_TAG_PROGRAMS, createPTreeFromIPT(pProgramTree->queryPropTree("./"XML_TAG_PROGRAMS)));
 
-  Owned<IPropertyTree> pCompTree = createPTree(XML_TAG_HARDWARE,false);
+  Owned<IPropertyTree> pCompTree = createPTree(XML_TAG_HARDWARE);
   generateHardwareHeaders(pNewEnvTree, sbTemp, false, pCompTree);
   pCompTree->removeProp(XML_TAG_COMPUTER);
   xpath.clear().appendf("./%s/%s", XML_TAG_COMPUTERTYPE, XML_ATTR_MEMORY);
@@ -442,14 +442,14 @@ IPropertyTree* CWizardInputs::createEnvironment()
   pCompTree->setProp(xpath.str(), "linux"); 
   for(unsigned i = 0; i < m_ipaddress.ordinality(); i++)
   { 
-    IPropertyTree* pComputer = pCompTree->addPropTree(XML_TAG_COMPUTER,createPTree(false));
+    IPropertyTree* pComputer = pCompTree->addPropTree(XML_TAG_COMPUTER,createPTree());
     name.clear().appendf("node%03d", (i + 1));
     pComputer->addProp(XML_ATTR_COMPUTERTYPE, "linuxmachine");
     pComputer->addProp(XML_ATTR_DOMAIN, "localdomain");
     pComputer->addProp(XML_ATTR_NAME, name.str());
     pComputer->addProp(XML_ATTR_NETADDRESS, m_ipaddress.item(i));
   }
-  pNewEnvTree->addPropTree(XML_TAG_HARDWARE, createPTree(pCompTree));
+  pNewEnvTree->addPropTree(XML_TAG_HARDWARE, createPTreeFromIPT(pCompTree));
   //Before we generate software tree check for dependencies of component for do_not_generate ,roxie, thor
   checkForDependencies();
   generateSoftwareTree(pNewEnvTree);
@@ -483,14 +483,14 @@ void CWizardInputs::generateSoftwareTree(IPropertyTree* pNewEnvTree)
           pDir->setProp("@dir", dirvalue->str());
         else
         {
-          pDir = m_buildSetTree->queryPropTree(XML_TAG_SOFTWARE"/Directories/")->addPropTree("Category", createPTree(false));
+          pDir = m_buildSetTree->queryPropTree(XML_TAG_SOFTWARE"/Directories/")->addPropTree("Category", createPTree());
           pDir->setProp(XML_ATTR_NAME, (const char*)cur.getKey());
           pDir->setProp("@dir", dirvalue->str());
         }
       }
     }
 
-    pNewEnvTree->addPropTree(XML_TAG_SOFTWARE,createPTree(m_buildSetTree->queryPropTree("./"XML_TAG_SOFTWARE)));   
+    pNewEnvTree->addPropTree(XML_TAG_SOFTWARE,createPTreeFromIPT(m_buildSetTree->queryPropTree("./"XML_TAG_SOFTWARE)));
     xpath.clear().appendf("%s/%s/%s[%s='%s']/LocalEnvConfFile", XML_TAG_SOFTWARE, XML_TAG_ESPPROCESS, XML_TAG_ESPSERVICE, XML_ATTR_NAME, m_service.str());
     const char* tmp = m_cfg->queryProp(xpath.str());
     if (tmp && *tmp)
@@ -596,7 +596,7 @@ void CWizardInputs::addInstanceToTree(IPropertyTree* pNewEnvTree, StringBuffer a
   compName.clear().appendf(pComp->queryProp(XML_ATTR_NAME));//compName
 
   sb.clear().appendf("<Instance buildSet=\"%s\" compName=\"%s\" ><Instance name=\"%s\" /></Instance>", buildSetName, compName.str(), nodeName.str());
-  Owned<IPropertyTree> pInstance = createPTreeFromXMLString(sb.str(),false);
+  Owned<IPropertyTree> pInstance = createPTreeFromXMLString(sb.str());
 
   if(pInstance)
     addInstanceToCompTree(pNewEnvTree, pInstance, sbl.clear(), sb.clear(),NULL);
@@ -612,7 +612,7 @@ void CWizardInputs::addInstanceToTree(IPropertyTree* pNewEnvTree, StringBuffer a
 void CWizardInputs::getDefaultsForWizard(IPropertyTree* pNewEnvTree)
 {
   StringBuffer xpath, tempName, value;
-  Owned<IPropertyTree> pBuildTree = createPTree(pNewEnvTree->queryPropTree("./"XML_TAG_PROGRAMS));
+  Owned<IPropertyTree> pBuildTree = createPTreeFromIPT(pNewEnvTree->queryPropTree("./"XML_TAG_PROGRAMS));
   xpath.clear().appendf("./%s/%s/", XML_TAG_BUILD, XML_TAG_BUILDSET);
   Owned<IPropertyTreeIterator> buildSetInsts = pBuildTree->getElements(xpath.str());
   bool genOptional = true;
@@ -672,7 +672,7 @@ void CWizardInputs::getDefaultsForWizard(IPropertyTree* pNewEnvTree)
             IPropertyTree* pNewSubElem = pSWCompTree->queryPropTree(pElem->queryName());
             if (!pNewSubElem)
             {
-              pNewSubElem = pSWCompTree->addPropTree(pElem->queryName(), createPTree(pElem));
+              pNewSubElem = pSWCompTree->addPropTree(pElem->queryName(), createPTreeFromIPT(pElem));
               break;
             }
             else
@@ -888,7 +888,7 @@ void CWizardInputs::getEspBindingInformation(IPropertyTree* pNewEnvTree)
            Owned<IPropertyTreeIterator> i = pSvcProps->getElements("Authenticate");
            ForEach(*i)
            {
-             IPropertyTree* pAuthCopy = createPTree(&i->query());
+             IPropertyTree* pAuthCopy = createPTreeFromIPT(&i->query());
              mergeAttributes(pAuthCopy, pCompTree->queryPropTree("Authenticate"));
              IPropertyTree* pNewNode = pEspBindingInfo->addPropTree("Authenticate", pAuthCopy);
            }
@@ -896,7 +896,7 @@ void CWizardInputs::getEspBindingInformation(IPropertyTree* pNewEnvTree)
            i.setown( pSvcProps->getElements("AuthenticateFeature") );
            ForEach(*i)
            {
-             IPropertyTree* pAuthCopy = createPTree(&i->query());
+             IPropertyTree* pAuthCopy = createPTreeFromIPT(&i->query());
              //Adding authentication to true for espbinding.
              pAuthCopy->addProp("@authenticate","Yes");
              mergeAttributes(pAuthCopy, pCompTree->queryPropTree("AuthenticateFeature"));
@@ -905,7 +905,7 @@ void CWizardInputs::getEspBindingInformation(IPropertyTree* pNewEnvTree)
            i.setown( pSvcProps->getElements("AuthenticateSetting") );
            ForEach(*i)
            {
-             IPropertyTree* pAuthCopy = createPTree(&i->query());
+             IPropertyTree* pAuthCopy = createPTreeFromIPT(&i->query());
              mergeAttributes(pAuthCopy, pCompTree->queryPropTree("AuthenticateSetting"));
              IPropertyTree* pNewNode = pEspBindingInfo->addPropTree("AuthenticateSetting", pAuthCopy);
            }
@@ -919,7 +919,7 @@ void CWizardInputs::addTopology(IPropertyTree* pNewEnvTree)
 {
   StringBuffer xpath;
   if(!pNewEnvTree->hasProp("./"XML_TAG_SOFTWARE"/"XML_TAG_TOPOLOGY))
-    pNewEnvTree->addPropTree("./"XML_TAG_SOFTWARE"/"XML_TAG_TOPOLOGY, createPTree(false));
+    pNewEnvTree->addPropTree("./"XML_TAG_SOFTWARE"/"XML_TAG_TOPOLOGY, createPTree());
  
   HashIterator sIter(m_compForTopology);
   for(sIter.first();sIter.isValid();sIter.next())
@@ -946,12 +946,12 @@ IPropertyTree* CWizardInputs::createTopologyForComp(IPropertyTree* pNewEnvTree, 
 
    clusterStr.clear().appendf("<Cluster name=\"%s\" prefix=\"%s\"></Cluster>", component, component);
  
-   IPropertyTree* pCluster = createPTreeFromXMLString(clusterStr.str(), false);
+   IPropertyTree* pCluster = createPTreeFromXMLString(clusterStr.str());
    if(pCluster)
    {
      if(pNewEnvTree->hasProp(xpath.str()))
      {
-       IPropertyTree* pComponent = pCluster->addPropTree(xmlTag.str(), createPTree(false));
+       IPropertyTree* pComponent = pCluster->addPropTree(xmlTag.str(), createPTree());
        pComponent->addProp(XML_ATTR_PROCESS, pNewEnvTree->queryProp(xpath.str()));
      }
 
@@ -972,7 +972,7 @@ IPropertyTree* CWizardInputs::createTopologyForComp(IPropertyTree* pNewEnvTree, 
                 const char* processName = pBuildset->queryProp(XML_ATTR_PROCESS_NAME);
                 if(processName && *processName)
                 {
-                   IPropertyTree* pElement = pCluster->addPropTree(processName,createPTree(false));
+                   IPropertyTree* pElement = pCluster->addPropTree(processName,createPTree());
                    xpath.clear().appendf("./%s/%s[1]/%s", XML_TAG_SOFTWARE, processName, XML_ATTR_NAME);
                    if(pElement && pNewEnvTree->hasProp(xpath.str()))
                      pElement->addProp(XML_ATTR_PROCESS, pNewEnvTree->queryProp(xpath.str()));

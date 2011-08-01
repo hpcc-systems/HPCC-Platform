@@ -10844,7 +10844,7 @@ void HqlGram::reportExternalSymbol(IHqlScope * scope, IHqlExpression *expr)
         _ATOM module = scope->queryName();
         if (module)
         {
-            IPropertyTree * depend = lookupCtx.curAttrTree->addPropTree("Depend", createPTree(false));
+            IPropertyTree * depend = lookupCtx.curAttrTree->addPropTree("Depend", createPTree());
             depend->setProp("@module", module->str());
             depend->setProp("@name", expr->queryName()->str());
         }
@@ -10855,7 +10855,7 @@ void HqlGram::reportExternalSymbol(IHqlScope * scope, IHqlExpression *expr)
 
 extern HQL_API IPropertyTree * createAttributeArchive()
 {
-    Owned<IPropertyTree> archive = createPTree("Archive", false);
+    Owned<IPropertyTree> archive = createPTree("Archive");
     archive->setProp("@build", BUILD_TAG);
     archive->setProp("@eclVersion", LANGUAGE_VERSION);
     return archive.getClear();
@@ -10874,7 +10874,7 @@ IPropertyTree * queryEnsureArchiveModule(IPropertyTree * archive, const char * n
     IPropertyTree * module = archive->queryPropTree(xpath);
     if (!module)
     {
-        module = archive->addPropTree("Module", createPTree(false));
+        module = archive->addPropTree("Module", createPTree());
         module->setProp("@name", name ? name : "");
         module->setProp("@key", lowerName);
         if (scope)
@@ -10911,7 +10911,7 @@ extern HQL_API IPropertyTree * createArchiveAttribute(IPropertyTree * module, co
 {
     StringBuffer lowerName;
     lowerName.append(name).toLowerCase();
-    IPropertyTree * attr = module->addPropTree("Attribute", createPTree(false));
+    IPropertyTree * attr = module->addPropTree("Attribute", createPTree());
     attr->setProp("@name", name);
     attr->setProp("@key", lowerName);
     return attr;
@@ -11008,7 +11008,7 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
     HqlLookupContext attrCtx(ctx);
     if (attrCtx.dependTree)
     {
-        IPropertyTree * attr = attrCtx.dependTree->addPropTree("Attr", createPTree(false));
+        IPropertyTree * attr = attrCtx.dependTree->addPropTree("Attr", createPTree());
         attrCtx.curAttrTree.set(attr);
         attr->setProp("@module", scope->queryName()->str());
         attr->setProp("@name", name->str());

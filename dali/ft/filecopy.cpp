@@ -554,9 +554,9 @@ FileSprayer::FileSprayer(IPropertyTree * _options, IPropertyTree * _progress, IR
     recoveryConnection = _recoveryConnection;
     options.set(_options);
     if (!options)
-        options.setown(createPTree(false));
+        options.setown(createPTree());
     if (!progressTree)
-        progressTree.setown(createPTree("progress", true));
+        progressTree.setown(createPTree("progress", ipt_caseInsensitive));
 
     //split prefix messes up recovery because the target filenames aren't saved in the recovery info.
     allowRecovery = !options->getPropBool(ANnoRecover) && !querySplitPrefix();
@@ -1538,7 +1538,7 @@ void FileSprayer::derivePartitionExtra()
             next.whichPartition=idx;
             if (allowRecovery)
             {
-                IPropertyTree * progressInfo = progressTree->addPropTree(PNprogress, createPTree(PNprogress, true));
+                IPropertyTree * progressInfo = progressTree->addPropTree(PNprogress, createPTree(PNprogress, ipt_caseInsensitive));
                 next.tree.set(progressInfo);
                 next.save(progressInfo);
             }
@@ -2229,7 +2229,7 @@ void FileSprayer::savePartition()
     {
         ForEachItemIn(idx, partition)
         {
-            IPropertyTree * child = createPTree(PNpartition, true);
+            IPropertyTree * child = createPTree(PNpartition, ipt_caseInsensitive);
             partition.item(idx).save(child);
             progressTree->addPropTree(PNpartition, child);
         }
@@ -2286,7 +2286,7 @@ void FileSprayer::setReplicate(bool _replicate)
 void FileSprayer::setSource(IDistributedFile * source)
 {
     distributedSource.set(source);
-    srcAttr.setown(createPTree(&source->queryProperties()));
+    srcAttr.setown(createPTreeFromIPT(&source->queryProperties()));
     extractSourceFormat(srcAttr);
     unsigned numParts = source->numParts();
     for (unsigned idx=0; idx < numParts; idx++)
@@ -2322,7 +2322,7 @@ void FileSprayer::setSource(IFileDescriptor * source, unsigned copy, unsigned mi
 {
     IPropertyTree *attr = &source->queryProperties();
     extractSourceFormat(attr);
-    srcAttr.setown(createPTree(&source->queryProperties()));
+    srcAttr.setown(createPTreeFromIPT(&source->queryProperties()));
     extractSourceFormat(srcAttr);
 
     RemoteFilename filename;
@@ -2856,7 +2856,7 @@ void FileSprayer::updateTargetProperties()
             // and simple (top level) elements
             Owned<IPropertyTreeIterator> iter = srcAttr->getElements("*");
             ForEach(*iter) {
-                curProps.addPropTree(iter->query().queryName(),createPTree(&iter->query()));
+                curProps.addPropTree(iter->query().queryName(),createPTreeFromIPT(&iter->query()));
             }
         }
         distributedTarget->unlockProperties();

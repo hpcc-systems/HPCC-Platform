@@ -610,28 +610,28 @@ void LogMsg::fprintTableHead(FILE * handle, unsigned fields)
 
 void PassAllLogMsgFilter::addToPTree(IPropertyTree * tree) const
 {
-    IPropertyTree * filterTree = createPTree(true);
+    IPropertyTree * filterTree = createPTree(ipt_caseInsensitive);
     filterTree->setProp("@type", "all");
     tree->addPropTree("filter", filterTree);
 }
 
 void PassLocalLogMsgFilter::addToPTree(IPropertyTree * tree) const
 {
-    IPropertyTree * filterTree = createPTree(true);
+    IPropertyTree * filterTree = createPTree(ipt_caseInsensitive);
     filterTree->setProp("@type", "local");
     tree->addPropTree("filter", filterTree);
 }
 
 void PassNoneLogMsgFilter::addToPTree(IPropertyTree * tree) const
 {
-    IPropertyTree * filterTree = createPTree(true);
+    IPropertyTree * filterTree = createPTree(ipt_caseInsensitive);
     filterTree->setProp("@type", "none");
     tree->addPropTree("filter", filterTree);
 }
 
 void CategoryLogMsgFilter::addToPTree(IPropertyTree * tree) const
 {
-    IPropertyTree * filterTree = createPTree(true);
+    IPropertyTree * filterTree = createPTree(ipt_caseInsensitive);
     filterTree->setProp("@type", "category");
     filterTree->setPropInt("@audience", audienceMask);
     filterTree->setPropInt("@class", classMask);
@@ -642,7 +642,7 @@ void CategoryLogMsgFilter::addToPTree(IPropertyTree * tree) const
 
 void PIDLogMsgFilter::addToPTree(IPropertyTree * tree) const
 {
-    IPropertyTree * filterTree = createPTree(true);
+    IPropertyTree * filterTree = createPTree(ipt_caseInsensitive);
     filterTree->setProp("@type", "pid");
     filterTree->setPropInt("@pid", pid);
     if(localFlag) filterTree->setPropInt("@local", 1);
@@ -651,7 +651,7 @@ void PIDLogMsgFilter::addToPTree(IPropertyTree * tree) const
 
 void TIDLogMsgFilter::addToPTree(IPropertyTree * tree) const
 {
-    IPropertyTree * filterTree = createPTree(true);
+    IPropertyTree * filterTree = createPTree(ipt_caseInsensitive);
     filterTree->setProp("@type", "tid");
     filterTree->setPropInt("@tid", tid);
     if(localFlag) filterTree->setPropInt("@local", 1);
@@ -660,7 +660,7 @@ void TIDLogMsgFilter::addToPTree(IPropertyTree * tree) const
 
 void NodeLogMsgFilter::addToPTree(IPropertyTree * tree) const
 {
-    IPropertyTree * filterTree = createPTree(true);
+    IPropertyTree * filterTree = createPTree(ipt_caseInsensitive);
     filterTree->setProp("@type", "node");
     StringBuffer buff;
     node.getIpText(buff);
@@ -672,7 +672,7 @@ void NodeLogMsgFilter::addToPTree(IPropertyTree * tree) const
 
 void IpLogMsgFilter::addToPTree(IPropertyTree * tree) const
 {
-    IPropertyTree * filterTree = createPTree(true);
+    IPropertyTree * filterTree = createPTree(ipt_caseInsensitive);
     filterTree->setProp("@type", "ip");
     StringBuffer buff;
     ip.getIpText(buff);
@@ -683,7 +683,7 @@ void IpLogMsgFilter::addToPTree(IPropertyTree * tree) const
 
 void JobLogMsgFilter::addToPTree(IPropertyTree * tree) const
 {
-    IPropertyTree * filterTree = createPTree(true);
+    IPropertyTree * filterTree = createPTree(ipt_caseInsensitive);
     filterTree->setProp("@type", "job");
     filterTree->setPropInt("@job", (int)job);
     if(localFlag) filterTree->setPropInt("@local", 1);
@@ -692,7 +692,7 @@ void JobLogMsgFilter::addToPTree(IPropertyTree * tree) const
 
 void UserLogMsgFilter::addToPTree(IPropertyTree * tree) const
 {
-    IPropertyTree * filterTree = createPTree(true);
+    IPropertyTree * filterTree = createPTree(ipt_caseInsensitive);
     filterTree->setProp("@type", "user");
     filterTree->setPropInt("@user", (int)user);
     if(localFlag) filterTree->setPropInt("@local", 1);
@@ -701,7 +701,7 @@ void UserLogMsgFilter::addToPTree(IPropertyTree * tree) const
 
 void SessionLogMsgFilter::addToPTree(IPropertyTree * tree) const
 {
-    IPropertyTree * filterTree = createPTree(true);
+    IPropertyTree * filterTree = createPTree(ipt_caseInsensitive);
     filterTree->setProp("@type", "session");
     filterTree->setPropInt("@session", (int)session);
     if(localFlag) filterTree->setPropInt("@local", 1);
@@ -710,7 +710,7 @@ void SessionLogMsgFilter::addToPTree(IPropertyTree * tree) const
 
 void ComponentLogMsgFilter::addToPTree(IPropertyTree * tree) const
 {
-    IPropertyTree * filterTree = createPTree(true);
+    IPropertyTree * filterTree = createPTree(ipt_caseInsensitive);
     filterTree->setProp("@type", "component");
     filterTree->setPropInt("@component", component);
     if(localFlag) filterTree->setPropInt("@local", 1);
@@ -726,7 +726,7 @@ bool RegexLogMsgFilter::includeMessage(const LogMsg & msg) const
 
 void RegexLogMsgFilter::addToPTree(IPropertyTree * tree) const
 {
-    IPropertyTree * filterTree = createPTree(true);
+    IPropertyTree * filterTree = createPTree(ipt_caseInsensitive);
     filterTree->setProp("@type", "regex");
     filterTree->setProp("@regex", regexText);
     if(localFlag) filterTree->setPropInt("@local", 1);
@@ -735,7 +735,7 @@ void RegexLogMsgFilter::addToPTree(IPropertyTree * tree) const
 
 void NotLogMsgFilter::addToPTree(IPropertyTree * tree) const
 {
-    IPropertyTree * filterTree = createPTree(true);
+    IPropertyTree * filterTree = createPTree(ipt_caseInsensitive);
     filterTree->setProp("@type", "not");
     arg->addToPTree(filterTree);
     tree->addPropTree("filter", filterTree);
@@ -743,7 +743,7 @@ void NotLogMsgFilter::addToPTree(IPropertyTree * tree) const
 
 void AndLogMsgFilter::addToPTree(IPropertyTree * tree) const
 {
-    IPropertyTree * filterTree = createPTree(true);
+    IPropertyTree * filterTree = createPTree(ipt_caseInsensitive);
     filterTree->setProp("@type", "and");
     arg1->addToPTree(filterTree);
     arg2->addToPTree(filterTree);
@@ -752,7 +752,7 @@ void AndLogMsgFilter::addToPTree(IPropertyTree * tree) const
 
 void OrLogMsgFilter::addToPTree(IPropertyTree * tree) const
 {
-    IPropertyTree * filterTree = createPTree(true);
+    IPropertyTree * filterTree = createPTree(ipt_caseInsensitive);
     filterTree->setProp("@type", "or");
     arg1->addToPTree(filterTree);
     arg2->addToPTree(filterTree);
@@ -761,7 +761,7 @@ void OrLogMsgFilter::addToPTree(IPropertyTree * tree) const
 
 void SwitchLogMsgFilter::addToPTree(IPropertyTree * tree) const
 {
-    IPropertyTree * filterTree = createPTree(true);
+    IPropertyTree * filterTree = createPTree(ipt_caseInsensitive);
     filterTree->setProp("@type", "switch");
     cond->addToPTree(filterTree);
     yes->addToPTree(filterTree);
@@ -787,7 +787,7 @@ void CategoryLogMsgFilter::reset()
 
 void HandleLogMsgHandlerTable::addToPTree(IPropertyTree * tree) const
 {
-    IPropertyTree * handlerTree = createPTree(true);
+    IPropertyTree * handlerTree = createPTree(ipt_caseInsensitive);
     if(handle==stderr)
         handlerTree->setProp("@type", "stderr");
     else
@@ -798,7 +798,7 @@ void HandleLogMsgHandlerTable::addToPTree(IPropertyTree * tree) const
 
 void HandleLogMsgHandlerXML::addToPTree(IPropertyTree * tree) const
 {
-    IPropertyTree * handlerTree = createPTree(true);
+    IPropertyTree * handlerTree = createPTree(ipt_caseInsensitive);
     if(handle==stderr)
         handlerTree->setProp("@type", "stderr");
     else
@@ -870,7 +870,7 @@ void FileLogMsgHandler::enable()
 
 void FileLogMsgHandlerTable::addToPTree(IPropertyTree * tree) const
 {
-    IPropertyTree * handlerTree = createPTree(true);
+    IPropertyTree * handlerTree = createPTree(ipt_caseInsensitive);
     handlerTree->setProp("@type", "file");
     handlerTree->setProp("@filename", filename.get());
     if(headerText) handlerTree->setProp("@headertext", headerText.get());
@@ -883,7 +883,7 @@ void FileLogMsgHandlerTable::addToPTree(IPropertyTree * tree) const
 
 void FileLogMsgHandlerXML::addToPTree(IPropertyTree * tree) const
 {
-    IPropertyTree * handlerTree = createPTree(true);
+    IPropertyTree * handlerTree = createPTree(ipt_caseInsensitive);
     handlerTree->setProp("@type", "file");
     handlerTree->setProp("@filename", filename.get());
     if(headerText) handlerTree->setProp("@headertext", headerText.get());
@@ -928,7 +928,7 @@ void RollingFileLogMsgHandler::enable()
 
 void RollingFileLogMsgHandler::addToPTree(IPropertyTree * tree) const
 {
-    IPropertyTree * handlerTree = createPTree(true);
+    IPropertyTree * handlerTree = createPTree(ipt_caseInsensitive);
     handlerTree->setProp("@type", "rollingfile");
     handlerTree->setProp("@filebase", filebase.get());
     handlerTree->setProp("@fileextn", fileextn.get());
@@ -1035,7 +1035,7 @@ void BinLogMsgHandler::handleMessage(const LogMsg & msg) const
 
 void BinLogMsgHandler::addToPTree(IPropertyTree * tree) const
 {
-    IPropertyTree * handlerTree = createPTree(true);
+    IPropertyTree * handlerTree = createPTree(ipt_caseInsensitive);
     handlerTree->setProp("@type", "binary");
     handlerTree->setProp("@filename", filename.get());
     if(append) handlerTree->setProp("@append", "true");
@@ -1284,7 +1284,7 @@ IException * LogMsgPrepender::report(IException * e, const char * prefix, LogMsg
 
 void LogMsgMonitor::addToPTree(IPropertyTree * tree) const
 {
-    IPropertyTree * monitorTree = createPTree(true);
+    IPropertyTree * monitorTree = createPTree(ipt_caseInsensitive);
     handler->addToPTree(monitorTree);
     filter->addToPTree(monitorTree);
     tree->addPropTree("monitor", monitorTree);
@@ -2497,7 +2497,7 @@ void SysLogMsgHandler::handleMessage(const LogMsg & msg) const
 
 void SysLogMsgHandler::addToPTree(IPropertyTree * tree) const
 {
-    IPropertyTree * handlerTree = createPTree(true);
+    IPropertyTree * handlerTree = createPTree(ipt_caseInsensitive);
     handlerTree->setProp("@type", "audit");
     tree->addPropTree("handler", handlerTree);
 }

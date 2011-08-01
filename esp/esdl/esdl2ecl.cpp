@@ -60,7 +60,7 @@ public:
     
     EsdlIndexedPropertyTrees()
     {
-        all.setown(createPTree("ESDL_files", false));
+        all.setown(createPTree("ESDL_files"));
     }
 
     ~EsdlIndexedPropertyTrees()
@@ -108,7 +108,7 @@ public:
             }
             FileName.append(srcfile).append(".xml");
 
-            IPropertyTree *src = createPTreeFromXMLFile(FileName.str(), false);
+            IPropertyTree *src = createPTreeFromXMLFile(FileName.str());
             if (!src)
             {
                 StringBuffer msg("EsdlInclude file not found - ");
@@ -319,12 +319,12 @@ void addFlatTagList(EsdlIndexedPropertyTrees &trees, IPropertyTree &dst, IProper
             if (flat_tag && *flat_tag)
             {
                 xml.appendf("<InputTag flat_name=\"%s\" path=\"%s/%s\" type=\"%s\"/>", flat_tag, path.str(), item.queryProp("@name"), item.queryProp("@type"));
-                dst.addPropTree("InputTag", createPTreeFromXMLString(xml.str(), false));
+                dst.addPropTree("InputTag", createPTreeFromXMLString(xml.str()));
             }
             else
             {
                 xml.appendf("<NoInputTag path=\"%s/%s\" type=\"%s\"/>", path.str(), item.queryProp("@name"), item.queryProp("@type"));
-                dst.addPropTree("NoInputTag", createPTreeFromXMLString(xml.str(), false));
+                dst.addPropTree("NoInputTag", createPTreeFromXMLString(xml.str()));
             }
 
         }

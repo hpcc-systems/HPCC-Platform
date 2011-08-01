@@ -2452,7 +2452,7 @@ public:
                     }
                 }
                 // add Patch name to delete delta state file info
-                IPropertyTree *goer = createPTree("Patch", false);
+                IPropertyTree *goer = createPTree("Patch");
                 goer->setProp("@id", id);
                 goer->setProp("@mode", "delete");
                 goers->addPropTree("Patch", goer);

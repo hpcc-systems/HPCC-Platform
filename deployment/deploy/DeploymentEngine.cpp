@@ -1794,7 +1794,7 @@ IPropertyTree* CDeploymentEngine::getDeployMapNode(IPropertyTree* buildNode, IPr
     
     // Read in deploy map file and process file elements
     
-    IPropertyTree* deployNode = createPTreeFromXMLFile(deployFile.str(), true);
+    IPropertyTree* deployNode = createPTreeFromXMLFile(deployFile.str(), ipt_caseInsensitive);
     assertex(deployNode);
     return deployNode;
 }
@@ -2357,7 +2357,7 @@ void CDeploymentEngine::siteCertificate(IPropertyTree& process, const char *inst
             IPropertyTree* pCertNode    = pInstanceNode->queryPropTree("Certificate");
             
             if (!pCertNode)
-                pCertNode = pInstanceNode->addPropTree("Certificate", createPTree(false));
+                pCertNode = pInstanceNode->addPropTree("Certificate", createPTree());
             else
                 sCertificate.append( pCertNode->queryProp(NULL) );
             
@@ -2365,7 +2365,7 @@ void CDeploymentEngine::siteCertificate(IPropertyTree& process, const char *inst
             IPropertyTree* pPrivKeyNode = pInstanceNode->queryPropTree("PrivateKey" );
             
             if (!pPrivKeyNode)
-                pPrivKeyNode = pInstanceNode->addPropTree("PrivateKey", createPTree(false));
+                pPrivKeyNode = pInstanceNode->addPropTree("PrivateKey", createPTree());
             else
                 sPrivKey.append( pPrivKeyNode->queryProp(NULL) );
             
@@ -2373,7 +2373,7 @@ void CDeploymentEngine::siteCertificate(IPropertyTree& process, const char *inst
             StringBuffer sCSR;
             
             if (!pCsrNode)
-                pCsrNode = pInstanceNode->addPropTree("CSR", createPTree(false));
+                pCsrNode = pInstanceNode->addPropTree("CSR", createPTree());
             else
                 sCSR.append( pCsrNode->queryProp(NULL) );
             
