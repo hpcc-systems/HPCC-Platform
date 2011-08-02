@@ -246,11 +246,11 @@ void CComputerPicker::NoteUsage(const char *computer, const char* componType,
 void CComputerPicker::CreateComputerFilterTree()
 {
   m_pFilterTree.clear();
-  m_pFilterTree.setown(createPTree("Filter", false));
-  IPropertyTree* pComponents= m_pFilterTree->addPropTree("Components",    createPTree("Components",   false));
-  IPropertyTree* pDomains   = m_pFilterTree->addPropTree("Domains",       createPTree("Domains",       false));
-  IPropertyTree* pCompTypes = m_pFilterTree->addPropTree("ComputerTypes", createPTree("ComputerTypes", false));
-  IPropertyTree* pSubnets   = m_pFilterTree->addPropTree("Subnets",       createPTree("Subnets",       false));
+  m_pFilterTree.setown(createPTree("Filter"));
+  IPropertyTree* pComponents= m_pFilterTree->addPropTree("Components",    createPTree("Components"));
+  IPropertyTree* pDomains   = m_pFilterTree->addPropTree("Domains",       createPTree("Domains"));
+  IPropertyTree* pCompTypes = m_pFilterTree->addPropTree("ComputerTypes", createPTree("ComputerTypes"));
+  IPropertyTree* pSubnets   = m_pFilterTree->addPropTree("Subnets",       createPTree("Subnets"));
 
   // Generate computer usage map
   if (m_pRootNode)
@@ -387,13 +387,13 @@ void CComputerPicker::NoteFilter(IPropertyTree* pFilter, const char *componentTy
     IPropertyTree* pComponentType = pFilter->queryPropTree(xPath);
     if (!pComponentType)
     {
-      pComponentType = pFilter->addPropTree(sComponentType, createPTree(sComponentType, false));
+      pComponentType = pFilter->addPropTree(sComponentType, createPTree(sComponentType));
       pComponentType->addProp("@name", component);
     }
 
     if (computer && *computer)
     {
-      IPropertyTree* pComputer = pComponentType->addPropTree( "Computer", createPTree(false) );
+      IPropertyTree* pComputer = pComponentType->addPropTree( "Computer", createPTree() );
       pComputer->addProp("@name", computer);
       pComputer->addPropBool("@__bHidden", true);
     }
@@ -405,7 +405,7 @@ void CComputerPicker::Refresh()
   // Passed all filters so add the computers left in the usage map
   int iItem = 0;
   m_pComputerTree.clear();
-  m_pComputerTree.setown(createPTree("ComputerList", false));
+  m_pComputerTree.setown(createPTree("ComputerList"));
   Owned<IPropertyTreeIterator> iComputer = m_pRootNode->getElements(XML_TAG_HARDWARE"/"XML_TAG_COMPUTER);
   ForEach (*iComputer)
   {
@@ -416,7 +416,7 @@ void CComputerPicker::Refresh()
 
     if (szComputer && *szComputer && GetUsage(szComputer, sUsage, false))
     {
-      IPropertyTree* pComponentType = m_pComputerTree->addPropTree("Machine", createPTree("Machine", false));
+      IPropertyTree* pComponentType = m_pComputerTree->addPropTree("Machine", createPTree("Machine"));
       pComponentType->addProp("@name", szComputer);
       pComponentType->addProp("@netAddress", pNode->queryProp(XML_ATTR_NETADDRESS));
       pComponentType->addProp("@usage", sUsage.str());

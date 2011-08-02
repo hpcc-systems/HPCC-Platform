@@ -159,8 +159,8 @@ void CDistributedFileSystem::directory(const char * directory, IGroup * machines
 
 void CDistributedFileSystem::physicalCopy(const char * source, const char * target, IPropertyTree * options, IDaftCopyProgress * progress)
 {
-    Owned<IPropertyTree> dirOptions = createPTree("options", false);
-    Owned<IPropertyTree> files = createPTree("files", false);
+    Owned<IPropertyTree> dirOptions = createPTree("options");
+    Owned<IPropertyTree> files = createPTree("files");
 
     dirOptions->setPropBool("@time", false);
     if (options)

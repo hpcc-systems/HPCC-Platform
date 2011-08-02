@@ -756,7 +756,7 @@ public:
     {
         Owned<IRemoteConnection> conn = connectSDS(name,true);
         IPropertyTree * root = conn->queryRoot();
-        IPropertyTree *item = createPTree("Item",false);
+        IPropertyTree *item = createPTree("Item");
         item->setPropBin("",qblen,data);
         if (priority) {
             item->setPropInt("@priority",priority);
@@ -772,7 +772,7 @@ public:
             add = root->queryPropTree(path.str());
             if(!add)
             {
-                add = createPTree(branch, false);
+                add = createPTree(branch);
                 add->setPropInt64("@id", transactionId);
                 add->setPropInt("@count", 0);
                 root->addPropTree(branch, add);

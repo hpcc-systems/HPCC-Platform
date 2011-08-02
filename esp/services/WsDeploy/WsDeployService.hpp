@@ -202,7 +202,7 @@ private:
       m_brokenConnTimeout = brokenConnTimeout;
       StringBuffer sb;
       sb.appendf("<Computers><Computer netAddress='%s'/></Computers>", ip);
-      m_pComputers.setown(createPTreeFromXMLString(sb.str(), false));
+      m_pComputers.setown(createPTreeFromXMLString(sb.str()));
       m_user.clear().append(uname);
     }
     virtual ~CLockerAliveThread() 
@@ -645,7 +645,7 @@ public:
             soapclient->setUsernameToken("soapclient", "", "");
             StringBuffer soapAction, resultbuf;
             int result = soapclient->postRequest("text/xml","", *rpccall.get(), resultbuf, NULL);
-            IPropertyTree* pResult = createPTreeFromXMLString(resultbuf, false);
+            IPropertyTree* pResult = createPTreeFromXMLString(resultbuf);
             StringBuffer xpath;
             xpath.appendf("soap:Body/%sResponse/Msg", getFnString(m_eA));
             const char* msg = pResult->queryProp(xpath.str());

@@ -359,7 +359,7 @@ void CEspConfig::initDali(const char *servers)
 
 void CEspConfig::initPtree(const char *location, bool isDali)
 {
-    IPropertyTree* cfg = createPTreeFromXMLFile(location, true);
+    IPropertyTree* cfg = createPTreeFromXMLFile(location, ipt_caseInsensitive);
     if (cfg)
     {
         cfg->addProp("@config", location);
@@ -425,7 +425,7 @@ void CEspConfig::loadBinding(binding_cfg &xcfg)
                 xcfg.bind.setown(bind);
                 if (serverstatus)
                 {
-                    IPropertyTree *stTree= serverstatus->queryProperties()->addPropTree("ESPservice", createPTree("ESPservice", true));
+                    IPropertyTree *stTree= serverstatus->queryProperties()->addPropTree("ESPservice", createPTree("ESPservice", ipt_caseInsensitive));
                     if (stTree)
                     {
                         stTree->setProp("@type", xcfg.service->getServiceType());

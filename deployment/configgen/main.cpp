@@ -191,7 +191,7 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
                    bool listComps, bool verbose, bool listallComps, bool listdirs, 
                    bool listcommondirs, bool listMachines, bool validateOnly) 
 {
-  Owned<IPropertyTree> pEnv = createPTreeFromXMLFile(in_cfgname, false);
+  Owned<IPropertyTree> pEnv = createPTreeFromXMLFile(in_cfgname);
   short nodeIndex = 1;
   short index = 1;
   short compTypeIndex = 0;

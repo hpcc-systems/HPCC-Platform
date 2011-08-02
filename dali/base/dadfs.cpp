@@ -124,7 +124,7 @@ static IPropertyTree *getCreatePropTree(IPropertyTree *parent,const char * name)
     assertex(strchr(name,'/')==NULL);
     IPropertyTree *t = parent->queryPropTree(name);
     if (!t) {
-        t = parent->setPropTree(name,createPTree(name,false)); // takes ownership
+        t = parent->setPropTree(name,createPTree(name)); // takes ownership
     }
     return LINK(t);
 }
@@ -158,7 +158,7 @@ static IPropertyTreeIterator *getNamedPropIter(IPropertyTree *parent,const char 
 
 static IPropertyTree *addNamedPropTree(IPropertyTree *parent,const char *sub,const char *key,const char *name, IPropertyTree* init=NULL)
 {  
-    IPropertyTree* ret = init?createPTree(init):createPTree(sub,false);
+    IPropertyTree* ret = init?createPTreeFromIPT(init):createPTree(sub);
     assertex(key[0]=='@');
     ret->setProp(key,name);
     ret = parent->addPropTree(sub,ret);
@@ -199,7 +199,7 @@ const char *normalizeLFN(const char *s,StringBuffer &tmp)
 
 static IPropertyTree *getEmptyAttr()
 {
-    return createPTree("Attr",false);
+    return createPTree("Attr");
 }
 
 
@@ -1989,7 +1989,7 @@ public:
 
     void setAttr(IPropertyTree &pt)
     {
-        attr.setown(createPTree(&pt));      // take a copy 
+        attr.setown(createPTreeFromIPT(&pt));      // take a copy
         dirty = false;
     }
 
@@ -2748,7 +2748,7 @@ public:
             while ((pt=t->queryPropTree("Cluster[1]"))!=NULL)
                 t->removeTree(pt);
             ForEachItemIn(i,clusters) {
-                IPropertyTree *pt = createPTree("Cluster",false);
+                IPropertyTree *pt = createPTree("Cluster");
                 clusters.item(i).serializeTree(pt,IFDSF_EXCLUDE_GROUPS);
                 if (!isEmptyPTree(pt)) {
                     t->addPropTree("Cluster",pt);
@@ -2985,7 +2985,7 @@ protected:
                 CDistributedFilePart &part = parts.item(0);
                 while ((pt=root->queryPropTree("Part[1]"))!=NULL)
                     root->removeTree(pt);
-                pt = createPTree(part.queryAttr());
+                pt = createPTreeFromIPT(part.queryAttr());
                 pt->setPropInt("@num",1);
                 const char *grp = root->queryProp("@group");
                 if (!grp||!*grp) {
@@ -3069,7 +3069,7 @@ public:
         LOGFDESC("CDistributedFile.b fdesc",fdesc);
 #endif
         parent = _parent;
-        root.setown(createPTree(queryDfsXmlBranchName(DXB_File),false));
+        root.setown(createPTree(queryDfsXmlBranchName(DXB_File)));
 //      fdesc->serializeTree(*root,IFDSF_EXCLUDE_NODES); 
         setFileAttrs(fdesc,true);
         setClusters(fdesc);
@@ -3182,7 +3182,7 @@ public:
         if (isEmptyPTree(t)) 
             root->removeProp("Attr");
         else
-            root->setPropTree("Attr",createPTree(t));
+            root->setPropTree("Attr",createPTreeFromIPT(t));
     }
 
     void setClusters(IFileDescriptor *fdesc)
@@ -4231,7 +4231,7 @@ protected:
                             if (sub)
                                 sub->setPropInt("@num",j);
                             if (j==1) {
-                                root->setPropTree("Attr",createPTree(sub->queryPropTree("Attr")));
+                                root->setPropTree("Attr",createPTreeFromIPT(sub->queryPropTree("Attr")));
                                 attr.clear();
                             }
                             subtrees.subs[j-1] = sub;
@@ -4272,12 +4272,12 @@ protected:
                 throw MakeStringException(-1,"C(2): Corrupt subfile file part %d cannot be found",i);
             sub->setPropInt("@num",i+1);
         }
-        sub = createPTree(false);
+        sub = createPTree();
         sub->setPropInt("@num",pos+1);
         sub->setProp("@name",file->queryLogicalName());
         if (pos==0) {
             attr.clear();
-            root->setPropTree("Attr",createPTree(&file->queryProperties()));
+            root->setPropTree("Attr",createPTreeFromIPT(&file->queryProperties()));
         }
         root->addPropTree("SubFile",sub);
         subfiles.add(*file,pos);
@@ -4304,7 +4304,7 @@ protected:
         if (pos==0) {
             attr.clear();
             if (subfiles.ordinality())
-                root->setPropTree("Attr",createPTree(&subfiles.item(0).queryProperties()));
+                root->setPropTree("Attr",createPTreeFromIPT(&subfiles.item(0).queryProperties()));
             else
                 root->setPropTree("Attr",getEmptyAttr());
         }
@@ -6231,7 +6231,7 @@ public:
     {
         if (!group)
             return;
-        IPropertyTree *val = createPTree("Group",false);
+        IPropertyTree *val = createPTree("Group");
         val->setProp("@name",name);
         if (cluster)
             val->setPropInt("@cluster",1);
@@ -6241,7 +6241,7 @@ public:
         INodeIterator &gi = *group->getIterator();
         StringBuffer str;
         ForEach(gi) {
-            IPropertyTree *n = createPTree("Node",false);
+            IPropertyTree *n = createPTree("Node");
             n = val->addPropTree("Node",n);
             gi.query().endpoint().getIpText(str.clear());
             n->setProp("@ip",str.str());
@@ -6740,7 +6740,7 @@ IDistributedSuperFile *CDistributedFileDirectory::createSuperFile(const char *_l
     checkLogicalName(logicalname,user,true,true,false,"have a superfile with");
     //assertex(!transaction); // transaction TBD
     StringBuffer tail;
-    IPropertyTree *root = createPTree(false);
+    IPropertyTree *root = createPTree();
     root->setPropInt("@interleaved",_interleaved?2:0);  
     addEntry(logicalname,root,true,ifdoesnotexist);
     StringBuffer query;
@@ -7638,7 +7638,7 @@ class CInitGroups
         }
         if (!group)
             return;
-        IPropertyTree *val = createPTree("Group",false);
+        IPropertyTree *val = createPTree("Group");
         val->setProp("@name",name);
         if (realcluster)
             val->setPropInt("@cluster",1);
@@ -7651,7 +7651,7 @@ class CInitGroups
         INodeIterator &gi = *group->getIterator();
         StringBuffer str;
         ForEach(gi) {
-            IPropertyTree *n = createPTree("Node",false);
+            IPropertyTree *n = createPTree("Node");
             n = val->addPropTree("Node",n);
             gi.query().endpoint().getIpText(str.clear());
             n->setProp("@ip",str.str());
@@ -8163,7 +8163,7 @@ public:
                         ver = 0;
                 }
                 if (ver==0) {
-                    tree.setown(createPTree(tree));
+                    tree.setown(createPTreeFromIPT(tree));
                     StringBuffer cname;
                     logicalname->getCluster(cname);
                     expandFileTree(tree,true,cname.str()); // resolve @node values that may not be set
@@ -8497,7 +8497,7 @@ IPropertyTree *CDistributedFileDirectory::getFileTree(const char *lname, const I
         }
         else
             throw MakeStringException(-1,"Unknown GetFileTree serialization version %d",ver);
-        ret.setown(createPTree(queryDfsXmlBranchName(DXB_File),false));
+        ret.setown(createPTree(queryDfsXmlBranchName(DXB_File)));
         fdesc->serializeTree(*ret,expandnodes?0:CPDMSF_packParts);
         if (!modified.isNull()) {
             StringBuffer dts;
@@ -9339,7 +9339,7 @@ public:
         if (!lock.init(title,lfn,DXB_SuperFile,!readonly,true,timeout)) {
             if (!autocreate)        // NB not !*autocreate here !
                 return false;
-            IPropertyTree *root = createPTree(false);
+            IPropertyTree *root = createPTree();
             root->setPropInt("@interleaved",2); 
             root->setPropInt("@numsubfiles",0); 
             root->setPropTree("Attr",getEmptyAttr());   
@@ -9411,12 +9411,12 @@ public:
         root->setPropInt("@numsubfiles",toadd.ordinality());
         const char *supername = root->queryProp("OrigName");
         ForEachItemIn(i,toadd) {
-            IPropertyTree *t = root->addPropTree("SubFile",createPTree("SubFile",false));
+            IPropertyTree *t = root->addPropTree("SubFile",createPTree("SubFile"));
             const char *sname = toadd.item(i);
             t->setProp("@name",sname);
             t->setPropInt("@num",i+1);
             IRemoteConnection *cc = connectChild(sname);
-            t = cc->queryRoot()->addPropTree("SuperOwner",createPTree("SuperOwner",false));
+            t = cc->queryRoot()->addPropTree("SuperOwner",createPTree("SuperOwner"));
             t->setProp("@name",supername);
         }
         migrateAttr((children.ordinality()==1)?children.item(0).queryRoot():NULL,root);
@@ -9440,7 +9440,7 @@ public:
             IPropertyTree *tree = srcroot->queryPropTree(subpath.str());
             if (!tree)
                 break;
-            newt = createPTree(tree);
+            newt = createPTreeFromIPT(tree);
             srcroot->removeTree(tree);
             newt = dstroot->addPropTree("SubFile",newt);
             IRemoteConnection *cc = dst.connectChild(newt->queryProp("@name"));
@@ -9455,7 +9455,7 @@ public:
         // replace Attr
         IPropertyTree *attr = srcroot->queryPropTree("Attr[1]");  
         if (attr) {
-            newt = createPTree(attr);
+            newt = createPTreeFromIPT(attr);
             srcroot->removeTree(attr);
         }
         else
@@ -9939,7 +9939,7 @@ void CDistributedFileDirectory::addFileRelationship(
 {
     if (!kind||!*kind)
         kind = S_LINK_RELATIONSHIP_KIND;
-    Owned<IPropertyTree> pt = createPTree("Relationship",false);
+    Owned<IPropertyTree> pt = createPTree("Relationship");
     if (isWild(primary,true)||isWild(secondary,true)||isWild(primflds,false)||isWild(secflds,false)||isWild(cardinality,false))
         throw MakeStringException(-1,"Wildcard not allowed in addFileRelation");
     CDfsLogicalFileName pfn;
@@ -9981,7 +9981,7 @@ void CDistributedFileDirectory::addFileRelationship(
             CConnectLock connlock2("addFileRelation.2",querySdsFilesRoot(),true,false,defaultTimeout);
             if (!connlock2.conn)
                 return;
-            Owned<IPropertyTree> ptr = createPTree("Relationships",false);
+            Owned<IPropertyTree> ptr = createPTree("Relationships");
             connlock2.conn->queryRoot()->addPropTree("Relationships",ptr.getClear());
             continue;
         }   
@@ -10157,7 +10157,7 @@ bool CDistributedFileDirectory::publishMetaFileXML(const CDfsLogicalFileName &lo
                     StringBuffer tail("META__");
                     splitFilename(path.str(), &outpath, &outpath, &tail, NULL);
                     outpath.append(tail).append(".xml");
-                    Owned<IPropertyTree> pt = createPTree(file);
+                    Owned<IPropertyTree> pt = createPTreeFromIPT(file);
                     filterParts(pt,parts);
                     StringBuffer str;
                     toXML(pt, str);

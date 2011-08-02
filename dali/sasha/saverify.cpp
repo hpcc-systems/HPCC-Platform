@@ -404,7 +404,7 @@ public:
     {
         Owned<IPropertyTree> verifprops = serverConfig->getPropTree("Verifier");
         if (!verifprops)
-            verifprops.setown(createPTree("Verifier",false));
+            verifprops.setown(createPTree("Verifier"));
         unsigned interval = verifprops->getPropInt("@interval",DEFAULT_VERIFY_INTERVAL);
         if (!interval)
             stopped = true;
@@ -612,7 +612,7 @@ public:
     {
         Owned<IPropertyTree> monprops = serverConfig->getPropTree("DaFileSrvMonitor");
         if (!monprops)
-            monprops.setown(createPTree("DaFSMonitorServer",false));
+            monprops.setown(createPTree("DaFSMonitorServer"));
         unsigned interval = monprops->getPropInt("@interval",DEFAULT_DAFSMONITOR_INTERVAL);
         if (!interval)
             stopped = true;

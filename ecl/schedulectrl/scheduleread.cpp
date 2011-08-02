@@ -339,7 +339,7 @@ protected:
         Owned<IRemoteConnection> connection = querySDS().connect(rootPath.str(), myProcessSession(), RTM_LOCK_READ | RTM_CREATE_QUERY, connectionTimeout);
         Owned<IPropertyTree> root(connection->queryRoot()->getBranch("."));
         if(root)
-            scheduleBranch.setown(createPTree(root));
+            scheduleBranch.setown(createPTreeFromIPT(root));
         if(subscribeAfter)
             subscribe(rootPath.str());
     }
@@ -388,7 +388,7 @@ protected:
         Owned<IRemoteConnection> connection = querySDS().connect(rootPath.str(), myProcessSession(), RTM_LOCK_READ | RTM_CREATE_QUERY, connectionTimeout);
         Owned<IPropertyTree> root(connection->queryRoot()->getBranch(xpath.str()));
         if(root)
-            nameBranch.setown(createPTree(root));
+            nameBranch.setown(createPTreeFromIPT(root));
         if(subscribeAfter)
             subscribe(fullPath.str());
     }

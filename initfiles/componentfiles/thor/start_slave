@@ -16,6 +16,10 @@ hpcc_setenv=$7
 source ${hpcc_setenv}
 PID_NAME="$PID/${hpcc_compname}_slave.pid"
 
+INSTALL_DIR=`dirname ${hpcc_setenv}`/..
+source  ${INSTALL_DIR}/etc/init.d/hpcc_common
+which_pidof
+
 if [ $# -lt 7 ]; then
   echo usage: $0 thordeploydir slaveno logdir workingdir slaveport hpcc_compname hpcc_setenv
   exit 1
@@ -65,7 +69,7 @@ ulimit -n 8192
 
 if [ "$multislaves" != "true" ] && [ "$localthor" != "true" ]; then
     # kill stubborn slave
-    oldpid=`pidof $slaveproc`
+    oldpid=`${PIDOF} $slaveproc`
     if [ -n "$oldpid" ]; then
       # used hard kill as don't want unregistering
       echo killing pid $oldpid $slaveproc

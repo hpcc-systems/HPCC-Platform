@@ -119,7 +119,7 @@ void DirectoryBuilder::rootDirectory(const char * directory, INode * node, IProp
         path.insert(0, drive.str());
     }
 
-    IPropertyTree * dirTree = result->addPropTree(tag, createPTree(true));
+    IPropertyTree * dirTree = result->addPropTree(tag, createPTree(ipt_caseInsensitive));
     dirTree->setProp("@name", path.str());
 
     if (addTimes)
@@ -180,11 +180,11 @@ bool DirectoryBuilder::walkDirectory(const char * path, IPropertyTree * director
             if (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
             {
                 if (implicitWildcard && !recurse)
-                    entry = directory->addPropTree(tag, createPTree(true));
+                    entry = directory->addPropTree(tag, createPTree(ipt_caseInsensitive));
             }
             else
             {
-                entry = directory->addPropTree(tag, createPTree(true));
+                entry = directory->addPropTree(tag, createPTree(ipt_caseInsensitive));
 
                 entry->setPropInt64("@size", ((unsigned __int64)info.nFileSizeHigh) << 32 | info.nFileSizeLow);
                 if (calcCRC)
@@ -247,7 +247,7 @@ bool DirectoryBuilder::walkDirectory(const char * path, IPropertyTree * director
                     if (directory->hasProp(prev.str()))
                         continue;
 
-                    IPropertyTree * entry = directory->addPropTree("directory", createPTree(true));
+                    IPropertyTree * entry = directory->addPropTree("directory", createPTree(ipt_caseInsensitive));
                     entry->setProp("@name", info.cFileName);
                     pending.append(*LINK(entry));
 
@@ -308,7 +308,7 @@ bool DirectoryBuilder::walkDirectory(const char * path, IPropertyTree * director
             if (file->isDirectory()==foundYes)
             {
                 if (implicitWildcard && !recurse)
-                    entry = directory->addPropTree(tag, createPTree(true));
+                    entry = directory->addPropTree(tag, createPTree(ipt_caseInsensitive));
                 else if(recurse)
                 {
                     StringBuffer prev;
@@ -316,13 +316,13 @@ bool DirectoryBuilder::walkDirectory(const char * path, IPropertyTree * director
                     if (directory->hasProp(prev.str()))
                         continue;
 
-                    entry = directory->addPropTree("directory", createPTree(true));
+                    entry = directory->addPropTree("directory", createPTree(ipt_caseInsensitive));
                     pending.append(*LINK(entry));
                 }
             }
             else
             {
-                entry = directory->addPropTree(tag, createPTree(true));
+                entry = directory->addPropTree(tag, createPTree(ipt_caseInsensitive));
 
                 entry->setPropInt64("@size", file->size());
                 if (calcCRC)
@@ -391,7 +391,7 @@ bool processDirCommand(ISocket * masterSocket, MemoryBuffer & cmd, MemoryBuffer 
     DirectoryBuilder builder(masterSocket, options);
     StringBuffer url;
     
-    Owned<IPropertyTree> dirTree = createPTree("machine", true);
+    Owned<IPropertyTree> dirTree = createPTree("machine", ipt_caseInsensitive);
     node->endpoint().getIpText(url.clear());
     dirTree->setProp("@ip", url.str());
 
@@ -547,7 +547,7 @@ void doDirectoryCommand(const char * directory, IGroup * machines, IPropertyTree
     {
         INode & node = machines->queryNode(idx);
         node.endpoint().getIpText(url.clear());
-        IPropertyTree * machine = createPTree("machine", true);
+        IPropertyTree * machine = createPTree("machine", ipt_caseInsensitive);
         machine->setProp("@ip", url.str());
         result->addPropTree("machine", machine);
         builder.rootDirectory(directory, &node, machine);
@@ -784,7 +784,7 @@ void doPhysicalCopy(IPropertyTree * source, const char * target, IPropertyTree *
 
     Linked<IPropertyTree> options = _options;
     if (!options)
-        options.setown(createPTree("options", true));
+        options.setown(createPTree("options", ipt_caseInsensitive));
 
     if (progress)
         options->setPropBool("@verbose", true);

@@ -296,7 +296,7 @@ void CDomXmlValidator::validate()
         // Insert namesapce if necessary: 
         try 
         {
-            Owned<IPTree> xml = createPTreeFromXMLString(m_xmlBuf,false);
+            Owned<IPTree> xml = createPTreeFromXMLString(m_xmlBuf);
 
             bool hasXmlns = false;
             Owned<IAttributeIterator> attrs = xml->getAttributes();

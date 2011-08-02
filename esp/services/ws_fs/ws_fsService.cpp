@@ -1101,7 +1101,7 @@ void CFileSprayEx::getInfoFromSasha(IEspContext &context, const char *sashaServe
     if(res.length() < 1)
         return;
     
-    Owned<IPropertyTree> wu = createPTreeFromXMLString(res.str(),false);
+    Owned<IPropertyTree> wu = createPTreeFromXMLString(res.str());
     if (!wu)
         return;
 
@@ -2668,8 +2668,8 @@ int CFileSprayEx::doFileCheck(const char* mask, const char* netaddr, const char*
         Owned<IConstEnvironment> env = factory->openEnvironmentByFile();
         Owned<IPropertyTree> pEnvRoot = &env->getPTree();
         IPropertyTree* pEnvSoftware = pEnvRoot->queryPropTree("Software");
-        IPropertyTree* pRoot = createPTreeFromXMLString("<Environment/>", false);
-        IPropertyTree* pSoftware = pRoot->addPropTree("Software", createPTree("Software", false));
+        IPropertyTree* pRoot = createPTreeFromXMLString("<Environment/>");
+        IPropertyTree* pSoftware = pRoot->addPropTree("Software", createPTree("Software"));
         if (pEnvSoftware && pSoftware)
         {
             Owned<IPropertyTreeIterator> it = pEnvSoftware->getElements("DropZone");

@@ -240,7 +240,7 @@ void CHThorActivityBase::createRowAllocator()
 
 __int64 CHThorActivityBase::getCount()
 {
-    throw MakeStringException(2, "Internal error: CHThorActivityBase::count");
+    throw MakeStringException(2, "Internal error: CHThorActivityBase::getCount");
     return 0;
 }
 
@@ -633,7 +633,7 @@ void CHThorDiskWriteActivity::publish()
 
     Owned<IPropertyTree> attrs;
     if(clusterHandler) 
-        attrs.setown(createPTree("Part", false)); // clusterHandler is going to set attributes
+        attrs.setown(createPTree("Part")); // clusterHandler is going to set attributes
     else 
     {
         // add cluster
@@ -1085,7 +1085,7 @@ void CHThorIndexWriteActivity::execute()
     unsigned __int64 fileSize = 0;
     if (helper.getDatasetName())
     {
-        Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(helper.getDatasetName(),"IndedWrite::execute",false,true,true);
+        Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(helper.getDatasetName(),"IndexWrite::execute",false,true,true);
         if (ldFile)
         {
             IDistributedFile * dFile = ldFile->queryDistributedFile();
@@ -1184,7 +1184,7 @@ void CHThorIndexWriteActivity::execute()
     //properties of the first file part.
     Owned<IPropertyTree> attrs;
     if(clusterHandler) 
-        attrs.setown(createPTree("Part", false));  // clusterHandler is going to set attributes
+        attrs.setown(createPTree("Part"));  // clusterHandler is going to set attributes
     else 
     {
         // add cluster
@@ -1300,14 +1300,14 @@ void CHThorIndexWriteActivity::buildUserMetadata(Owned<IPropertyTree> & metadata
             throw MakeStringException(0, "Invalid name %s in user metadata for index %s (names beginning with underscore are reserved)", name.str(), helper.getFileName());
         if(!validateXMLTag(name.str()))
             throw MakeStringException(0, "Invalid name %s in user metadata for index %s (not legal XML element name)", name.str(), helper.getFileName());
-        if(!metadata) metadata.setown(createPTree("metadata", false));
+        if(!metadata) metadata.setown(createPTree("metadata"));
         metadata->setProp(name.str(), value.str());
     }
 }
 
 void CHThorIndexWriteActivity::buildLayoutMetadata(Owned<IPropertyTree> & metadata)
 {
-    if(!metadata) metadata.setown(createPTree("metadata", false));
+    if(!metadata) metadata.setown(createPTree("metadata"));
     metadata->setProp("_record_ECL", helper.queryRecordECL());
 
     void * layoutMetaBuff;
@@ -1753,10 +1753,9 @@ const void *CHThorProcessActivity::nextInGroup()
 
 CHThorNormalizeActivity::CHThorNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNormalizeArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
 {
-    // JF: bug - use of null pointer 
     IRecordSize* recSize = outputMeta;
     if (recSize == NULL)
-        throw MakeStringException(2, "Unexpect null pointer from helper.queryOutputMeta()");
+        throw MakeStringException(2, "Unexpected null pointer from helper.queryOutputMeta()");
 }
 
 CHThorNormalizeActivity::~CHThorNormalizeActivity()

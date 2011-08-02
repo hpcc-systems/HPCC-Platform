@@ -78,9 +78,9 @@ inline void XF(IPropertyTree &pt,const char *p,IProperties &from,const char *fp)
 
 IPropertyTree *readOldIni()
 {
-    IPropertyTree *ret = createPTree("DFUSERVER",true);
+    IPropertyTree *ret = createPTree("DFUSERVER", ipt_caseInsensitive);
     ret->setProp("@name","mydfuserver");
-    ret->addPropTree("SSH",createPTree("SSH",true));
+    ret->addPropTree("SSH",createPTree("SSH", ipt_caseInsensitive));
     Owned<IProperties> props = createProperties("dfuserver.ini", true);
     if (props) {
         XF(*ret,"@name",*props,"name");
@@ -107,7 +107,7 @@ int main(int argc, const char *argv[])
 
     Owned<IFile> file = createIFile("dfuserver.xml");
     if (file->exists())
-        globals.setown(createPTreeFromXMLFile("dfuserver.xml", true));
+        globals.setown(createPTreeFromXMLFile("dfuserver.xml", ipt_caseInsensitive));
     else
         globals.setown(readOldIni());
 
@@ -209,7 +209,7 @@ int main(int argc, const char *argv[])
                 if (t)
                     t->setPropInt("@num",t->getPropInt("@num",0)+1);
                 else {
-                    t = createPTree(false);
+                    t = createPTree();
                     t->setProp("@name",subq.str());
                     t->setPropInt("@num",1);
                     serverstatus->queryProperties()->addPropTree("Queue",t);
@@ -230,7 +230,7 @@ int main(int argc, const char *argv[])
                 stopDFUserver(q);
             }
             else {
-                IPropertyTree *t=serverstatus->queryProperties()->addPropTree("MonitorQueue",createPTree(false));
+                IPropertyTree *t=serverstatus->queryProperties()->addPropTree("MonitorQueue",createPTree());
                 t->setProp("@name",q);
                 engine->startMonitor(q,serverstatus,globals->getPropInt("@MONITORINTERVAL",60)*1000);
             }

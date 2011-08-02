@@ -43,7 +43,7 @@ IPropertyTree * createPluginPropertyTree(IEclRepository * plugins, bool includeM
     HqlScopeArray scopes;
     plugins->getRootScopes(scopes, ctx);
 
-    Owned<IPropertyTree> map = createPropertyTree(true, "Plugins");
+    Owned<IPropertyTree> map = createPTree("Plugins", ipt_caseInsensitive);
     ForEachItemIn(idx, scopes)
     {
         IHqlScope * module = &scopes.item(idx);
@@ -51,7 +51,7 @@ IPropertyTree * createPluginPropertyTree(IEclRepository * plugins, bool includeM
         if (!(flags & SOURCEFILE_CONSTANT))
             continue;
 
-        IPropertyTree* prop = createPropertyTree(true,"Module");
+        IPropertyTree* prop = createPTree("Module", ipt_caseInsensitive);
         prop->setProp("@name", module->queryFullName());
         prop->setProp("@path", module->querySourcePath()->str());
         prop->setPropInt("@access", module->getPropInt(accessAtom, 3));

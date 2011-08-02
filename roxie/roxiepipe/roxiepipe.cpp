@@ -275,7 +275,7 @@ public:
                         delete x;
                         StringBuffer xml;
                         xml.append("<Exception>").append(body).append("</Exception>");
-                        Owned<IPropertyTree> ep = createPTreeFromXMLString(xml.str(), false);
+                        Owned<IPropertyTree> ep = createPTreeFromXMLString(xml.str());
                         int code = ep->getPropInt("./Code", 0);
                         SocketEndpoint peerEp;
                         StringBuffer peerStr;
@@ -297,7 +297,7 @@ public:
             }
             else
             {
-                Owned<IPropertyTree> ep = createPTreeFromXMLString(x->length(), x->toByteArray(), false);
+                Owned<IPropertyTree> ep = createPTreeFromXMLString(x->length(), x->toByteArray());
 
                 if (strcmp(ep->queryName(), "Exception") == 0)
                 {
@@ -310,7 +310,7 @@ public:
                     int code = 0;
                     try
                     {
-                        Owned<IPropertyTree> ep = createPTreeFromXMLString(xml.str(), false);
+                        Owned<IPropertyTree> ep = createPTreeFromXMLString(xml.str());
                         code = ep->getPropInt("./Code", 0);
                     }
                     catch (IException *E)

@@ -178,7 +178,7 @@ void getInstalledComponents(const char* pszInstallDir, StringBuffer& sbOutComps,
             Owned<IFile> depfile(createIFile(fileName));
             if(depfile->exists())
             {
-              Owned<IPropertyTree> pInstallSet = createPTreeFromXMLFile(fileName, false);
+              Owned<IPropertyTree> pInstallSet = createPTreeFromXMLFile(fileName);
               const char* szDeployable = pInstallSet->queryProp("@deployable");
               const char* szProcessName = pInstallSet->queryProp("@processName");
               if (!szDeployable || strcmp(szDeployable, "no"))
@@ -558,7 +558,7 @@ public:
           m_colIndex.appendf("colIndex['nameTopology']=%d;", index++); 
           m_colIndex.appendf("colIndex['processTopology']=%d;", index++);
           m_colIndex.appendf("colIndex['netAddressTopology']=%d;", index++);
-          m_jsStrBuf.appendf("compTabToNode['Topology']= 'Topology';");
+          m_jsStrBuf.append("compTabToNode['Topology']= 'Topology';");
         }
       }
 
@@ -581,7 +581,7 @@ public:
             IPropertyTree* pChild = m_pCompTree->queryPropTree(xpath.str());
 
             if(!pChild)
-              pChild = m_pCompTree->addPropTree(childElementName, createPTree(false));
+              pChild = m_pCompTree->addPropTree(childElementName, createPTree());
           }
 
           return;
@@ -591,7 +591,7 @@ public:
         {
           if(attr.hasProp("./xs:annotation/xs:appinfo/autogenforwizard"))
           {
-            value.clear().appendf(attr.queryProp("./xs:annotation/xs:appinfo/autogenforwizard"));
+            value.clear().append(attr.queryProp("./xs:annotation/xs:appinfo/autogenforwizard"));
             if(!strcmp(value.str(),"1"))
             {
                     getValueForTypeInXSD(attr, compName, wizDefVal);  
@@ -616,14 +616,14 @@ public:
           IPropertyTree* pProcess = m_pDefTree->queryPropTree(compName.str());
 
           if (!pProcess)
-            pProcess = m_pDefTree->addPropTree(compName, createPTree(false));
+            pProcess = m_pDefTree->addPropTree(compName, createPTree());
 
           IPropertyTree* pTab = m_pDefTree->queryPropTree(getRealTabName(tabName));
 
           if (!pTab)
-            pTab = pProcess->addPropTree(getRealTabName(tabName), createPTree(false));
+            pTab = pProcess->addPropTree(getRealTabName(tabName), createPTree());
           
-          pField = pTab->addPropTree("Field", createPTree(false));
+          pField = pTab->addPropTree("Field", createPTree());
         }
 
         const char *defaultValue = attr.queryProp("@default");
@@ -659,7 +659,7 @@ public:
             IPropertyTree* pChild = m_pCompTree->queryPropTree(xpath.str());
 
             if(!pChild)
-              pChild = m_pCompTree->addPropTree(childElementName, createPTree(false));
+              pChild = m_pCompTree->addPropTree(childElementName, createPTree());
 
             xpath.clear().append("@").append(attr.queryProp(XML_ATTR_NAME));
             pChild->addProp(xpath, sbdefaultValue.str());
@@ -1127,7 +1127,7 @@ public:
           if (childElementName && !strcmp(childElementName, XML_TAG_INSTANCE))
           {
             const char* pszNameAttr = "<xs:attribute name='name' type='xs:string' use='optional'><xs:annotation><xs:appinfo><viewType>hidden</viewType></xs:appinfo></xs:annotation></xs:attribute>";
-            Owned<IPropertyTree> pSchemaAttrNode = createPTreeFromXMLString(pszNameAttr, false);
+            Owned<IPropertyTree> pSchemaAttrNode = createPTreeFromXMLString(pszNameAttr);
             AddAttributeFromSchema(*pSchemaAttrNode, "", compName, tabName, childElementName);
           }
 
@@ -1242,7 +1242,7 @@ public:
                     IPropertyTree* pNewInstanceNode = pInstanceNode->queryPropTree(szElementName);
 
                     if (!pNewInstanceNode)
-                      pNewInstanceNode = pInstanceNode->addPropTree(szElementName, createPTree(false));
+                      pNewInstanceNode = pInstanceNode->addPropTree(szElementName, createPTree());
 
                     pInstanceNode = pNewInstanceNode;
                   }
@@ -1291,10 +1291,10 @@ public:
                   {
                     StringBuffer sb(sbCompName);
                     if (!m_pCompTree->queryPropTree(sbCompName.str()))
-                      m_pCompTree->addPropTree(sbCompName.str(), createPTree(false));
+                      m_pCompTree->addPropTree(sbCompName.str(), createPTree());
 
                     sb.append("/").append(szElementName);
-                    m_pCompTree->addPropTree(sb.str()/*szElementName*/, createPTree(false));
+                    m_pCompTree->addPropTree(sb.str()/*szElementName*/, createPTree());
                   }
                 }
               }
@@ -1378,7 +1378,7 @@ public:
         StringBuffer sbPropName;
 
         if (!m_pSchemaRoot)
-          m_pSchemaRoot.setown(createPTreeFromXMLFile(m_xsdName, false));
+          m_pSchemaRoot.setown(createPTreeFromXMLFile(m_xsdName));
 
         IPropertyTree *schemaNode = m_pSchemaRoot->queryPropTree("xs:element");
 
@@ -1388,12 +1388,12 @@ public:
         if (!strcmp(m_compName.str(), "Eclserver"))
           m_compName.clear().append(XML_TAG_ECLSERVERPROCESS);
 
-        m_jsStrBuf.appendf("var compTabs = new Array(); ");
+        m_jsStrBuf.append("var compTabs = new Array(); ");
         m_jsStrBuf.appendf("compTabs['%s'] = new Array();", m_compName.str());
-        m_jsStrBuf.appendf("var hiddenTabs = new Array(); ");
+        m_jsStrBuf.append("var hiddenTabs = new Array(); ");
         m_jsStrBuf.appendf("hiddenTabs['%s'] = new Array();", m_compName.str());
-        m_jsStrBuf.appendf("var compTabToNode = new Array(); ");
-        m_jsStrBuf.appendf("var cS = new Array();");
+        m_jsStrBuf.append("var compTabToNode = new Array(); ");
+        m_jsStrBuf.append("var cS = new Array();");
 
         Owned<IPropertyTreeIterator> iter = schemaNode->getElements("*");
         ForEach(*iter)
@@ -1447,9 +1447,9 @@ public:
       void getDefnString(StringBuffer& compDefn, StringBuffer& viewChildNodes, StringBuffer& multiRowNodes)
       {
         m_viewChildNodes.clear();
-        m_viewChildNodes.setown(createPTree("viewChildNodes", false));
+        m_viewChildNodes.setown(createPTree("viewChildNodes"));
         m_multiRowNodes.clear();
-        m_multiRowNodes.setown(createPTree("multiRowNodes", false));
+        m_multiRowNodes.setown(createPTree("multiRowNodes"));
         
         generateHeaders();
         compDefn.clear().append(m_jsStrBuf);
@@ -1541,7 +1541,7 @@ public:
              {
                if(m_wizard->getNumOfNodes(m_pEnv->queryProp(tempPath.str())) > 1)
                {
-                 tempPath.clear().appendf("./xs:annotation/xs:appinfo/autogendefaultformultinode");
+                 tempPath.clear().append("./xs:annotation/xs:appinfo/autogendefaultformultinode");
                  if(attr.hasProp(tempPath.str()))
                    wizDefVal.clear().append(attr.queryProp(tempPath.str()));
                }
@@ -1595,8 +1595,8 @@ public:
                    IPropertyTree* pHard = m_pEnv->queryPropTree(tempPath.str());
                    if(pHard)
                    {
-                     tempPath.clear().appendf("@name");
-                     wizDefVal.clear().appendf(pHard->queryProp(tempPath.str()));
+                     tempPath.clear().append("@name");
+                     wizDefVal.clear().append(pHard->queryProp(tempPath.str()));
                    }
                 }
               }
@@ -1772,7 +1772,7 @@ bool generateHeadersFromXsd(IPropertyTree* pEnv, const char* xsdName, const char
 
 IPropertyTree* generateTreeFromXsd(const IPropertyTree* pEnv, IPropertyTree* pSchema, const char* compName, bool allSubTypes, bool wizFlag, CWizardInputs* pWInputs, bool genOptional)
 {
-  Owned<IPropertyTree> pCompTree(createPTree(compName, false));
+  Owned<IPropertyTree> pCompTree(createPTree(compName));
   CGenerateJSFromXSD obj(pEnv, pSchema, "", compName);
   obj.setCompTree(pCompTree, allSubTypes);
   obj.setWizardFlag(wizFlag);
@@ -1787,7 +1787,7 @@ bool generateHardwareHeaders(const IPropertyTree* pEnv, StringBuffer& sbDefn, bo
   if (pCompTree)
   {
     StringBuffer xpath,sbdefaultValue("");
-    IPropertyTree* pComputerType = pCompTree->addPropTree(XML_TAG_COMPUTERTYPE, createPTree(false));
+    IPropertyTree* pComputerType = pCompTree->addPropTree(XML_TAG_COMPUTERTYPE, createPTree());
     xpath.clear().append(XML_ATTR_NAME);
     pComputerType->addProp(xpath, sbdefaultValue.str());
     xpath.clear().append(XML_ATTR_MANUFACTURER);
@@ -1801,7 +1801,7 @@ bool generateHardwareHeaders(const IPropertyTree* pEnv, StringBuffer& sbDefn, bo
     xpath.clear().append(XML_ATTR_NICSPEED);
     pComputerType->addProp(xpath, sbdefaultValue.str());
 
-    IPropertyTree* pComputer = pCompTree->addPropTree(XML_TAG_COMPUTER, createPTree(false));
+    IPropertyTree* pComputer = pCompTree->addPropTree(XML_TAG_COMPUTER, createPTree());
     xpath.clear().append(XML_ATTR_NAME);
     pComputer->addProp(xpath, sbdefaultValue.str());
     xpath.clear().append(XML_ATTR_NETADDRESS);
@@ -1811,10 +1811,10 @@ bool generateHardwareHeaders(const IPropertyTree* pEnv, StringBuffer& sbDefn, bo
     xpath.clear().append(XML_ATTR_COMPUTERTYPE);
     pComputer->addProp(xpath, sbdefaultValue.str());
 
-    IPropertyTree* pSwitch = pCompTree->addPropTree(XML_TAG_SWITCH, createPTree(false));
+    IPropertyTree* pSwitch = pCompTree->addPropTree(XML_TAG_SWITCH, createPTree());
     xpath.clear().append(XML_ATTR_NAME);
 
-    IPropertyTree* pDomain = pCompTree->addPropTree(XML_TAG_DOMAIN, createPTree(false));
+    IPropertyTree* pDomain = pCompTree->addPropTree(XML_TAG_DOMAIN, createPTree());
     xpath.clear().append(XML_ATTR_NAME);
     pDomain->addProp(xpath, sbdefaultValue.str());
     xpath.clear().append(XML_ATTR_USERNAME);
@@ -1827,9 +1827,9 @@ bool generateHardwareHeaders(const IPropertyTree* pEnv, StringBuffer& sbDefn, bo
   else
   {
     StringBuffer jsStrBuf("var compTabs = new Array();");
-    jsStrBuf.appendf("compTabs['Hardware'] = new Array();");
-    jsStrBuf.appendf("var compTabToNode = new Array();");
-    jsStrBuf.appendf("var cS = new Array();");
+    jsStrBuf.append("compTabs['Hardware'] = new Array();");
+    jsStrBuf.append("var compTabToNode = new Array();");
+    jsStrBuf.append("var cS = new Array();");
     addItem(jsStrBuf, pEnv, XML_TAG_COMPUTERTYPE, TAG_NAME, "", 0, 1, "", 1);
     addItem(jsStrBuf, pEnv, XML_TAG_COMPUTERTYPE,  TAG_MANUFACTURER, "", 0, 1, "", 1);
     addItem(jsStrBuf, pEnv, XML_TAG_COMPUTERTYPE, TAG_COMPUTERTYPE, "", 0, 1, "", 1);
@@ -1845,17 +1845,17 @@ bool generateHardwareHeaders(const IPropertyTree* pEnv, StringBuffer& sbDefn, bo
     addItem(jsStrBuf, pEnv, XML_TAG_COMPUTER,  TAG_NETADDRESS, "", 0, 1, "", 1);
     addItem(jsStrBuf, pEnv, XML_TAG_COMPUTER,  TAG_DOMAIN, "", 0, 1, XML_TAG_HARDWARE"/"XML_TAG_DOMAIN, 4);
     addItem(jsStrBuf, pEnv, XML_TAG_COMPUTER,  TAG_COMPUTERTYPE, "", 0, 1, XML_TAG_HARDWARE"/"XML_TAG_COMPUTERTYPE, 4);
-    jsStrBuf.appendf("compTabs['Hardware'][compTabs['Hardware'].length]= 'Computer Types';");
-    jsStrBuf.appendf("compTabs['Hardware'][compTabs['Hardware'].length]= 'Switches';");
-    jsStrBuf.appendf("compTabs['Hardware'][compTabs['Hardware'].length]= 'Domains';");
-    jsStrBuf.appendf("compTabs['Hardware'][compTabs['Hardware'].length]= 'Computers';");
-    jsStrBuf.appendf("compTabToNode['Computer Types']= 'ComputerType';");
-    jsStrBuf.appendf("compTabToNode['Switches']= 'Switch';");
-    jsStrBuf.appendf("compTabToNode['Domains']= 'Domain';");
-    jsStrBuf.appendf("compTabToNode['Computers']= 'Computer';");
+    jsStrBuf.append("compTabs['Hardware'][compTabs['Hardware'].length]= 'Computer Types';");
+    jsStrBuf.append("compTabs['Hardware'][compTabs['Hardware'].length]= 'Switches';");
+    jsStrBuf.append("compTabs['Hardware'][compTabs['Hardware'].length]= 'Domains';");
+    jsStrBuf.append("compTabs['Hardware'][compTabs['Hardware'].length]= 'Computers';");
+    jsStrBuf.append("compTabToNode['Computer Types']= 'ComputerType';");
+    jsStrBuf.append("compTabToNode['Switches']= 'Switch';");
+    jsStrBuf.append("compTabToNode['Domains']= 'Domain';");
+    jsStrBuf.append("compTabToNode['Computers']= 'Computer';");
 
     int index = 0;
-    jsStrBuf.appendf("var colIndex = new Array();");
+    jsStrBuf.append("var colIndex = new Array();");
     jsStrBuf.appendf("colIndex['nameComputer Types']=%d;", index++);
     jsStrBuf.appendf("colIndex['manufacturerComputer Types']=%d;", index++);
     jsStrBuf.appendf("colIndex['computerTypeComputer Types']=%d;", index++);
@@ -1883,15 +1883,15 @@ bool generateHardwareHeaders(const IPropertyTree* pEnv, StringBuffer& sbDefn, bo
 bool generateHeadersForEnvSettings(const IPropertyTree* pEnv, StringBuffer& sbDefn, bool writeOut)
 {
   StringBuffer jsStrBuf("var compTabs = new Array();");
-  jsStrBuf.appendf("compTabs['EnvSettings'] = new Array();");
-  jsStrBuf.appendf("var compTabToNode = new Array();");
-  jsStrBuf.appendf("var cS = new Array();");
+  jsStrBuf.append("compTabs['EnvSettings'] = new Array();");
+  jsStrBuf.append("var compTabToNode = new Array();");
+  jsStrBuf.append("var cS = new Array();");
   addItem(jsStrBuf, pEnv, "", TAG_SRCPATH, "", 0, 1, "", 0);
   addItem(jsStrBuf, pEnv, "", TAG_LOCK, "", 0, 1, "", 0);
   addItem(jsStrBuf, pEnv, "", TAG_CONFIGS, "", 0, 1, "", 0);
   addItem(jsStrBuf, pEnv, "", TAG_PATH, "", 0, 1, "", 0);
   addItem(jsStrBuf, pEnv, "", TAG_RUNTIME, "", 0, 1, "", 0);
-  jsStrBuf.appendf("compTabs['EnvSettings'][compTabs['EnvSettings'].length]= 'Attributes';");
+  jsStrBuf.append("compTabs['EnvSettings'][compTabs['EnvSettings'].length]= 'Attributes';");
 
   sbDefn.clear().append(jsStrBuf);
 
@@ -1904,10 +1904,10 @@ bool generateHeadersForEnvSettings(const IPropertyTree* pEnv, StringBuffer& sbDe
 bool generateHeadersForEnvXmlView(const IPropertyTree* pEnv, StringBuffer& sbDefn, bool writeOut)
 {
   StringBuffer jsStrBuf("var compTabs = new Array();");
-  jsStrBuf.appendf("compTabs['Environment'] = new Array();");
-  jsStrBuf.appendf("var compTabToNode = new Array();");
-  jsStrBuf.appendf("var cS = new Array();");
-  jsStrBuf.appendf("var colIndex = new Array();");
+  jsStrBuf.append("compTabs['Environment'] = new Array();");
+  jsStrBuf.append("var compTabToNode = new Array();");
+  jsStrBuf.append("var cS = new Array();");
+  jsStrBuf.append("var colIndex = new Array();");
 
   int index = 0;
   jsStrBuf.appendf("colIndex['nameEnvironment']=%d;", index++);
@@ -1945,7 +1945,7 @@ bool generateHeadersForEnvXmlView(const IPropertyTree* pEnv, StringBuffer& sbDef
   jsStrBuf.appendf("attr%s%s.ctrlType = 1;", TAG_VALUE, TAG_ELEMENT);
   jsStrBuf.appendf("cS['%s%s']=attr%s%s;", TAG_VALUE, TAG_ELEMENT, TAG_VALUE, TAG_ELEMENT);
 
-  jsStrBuf.appendf("compTabs['Environment'][compTabs['Environment'].length]= 'Environment';");
+  jsStrBuf.append("compTabs['Environment'][compTabs['Environment'].length]= 'Environment';");
 
   sbDefn.clear().append(jsStrBuf);
 
@@ -1959,17 +1959,17 @@ bool generateHeaderForDeployableComps(const IPropertyTree* pEnv, StringBuffer& s
 {
   short index = 0;
   StringBuffer jsStrBuf("var compTabs = new Array();");
-  jsStrBuf.appendf("compTabs['Deploy'] = new Array();");
-  jsStrBuf.appendf("var compTabToNode = new Array();");
-  jsStrBuf.appendf("var cS = new Array();");
-  jsStrBuf.appendf("var colIndex = new Array();");
+  jsStrBuf.append("compTabs['Deploy'] = new Array();");
+  jsStrBuf.append("var compTabToNode = new Array();");
+  jsStrBuf.append("var cS = new Array();");
+  jsStrBuf.append("var colIndex = new Array();");
   addItem(jsStrBuf, pEnv, XML_TAG_COMPONENT, TAG_BUILD, "", 0, 1, "", 0);
   addItem(jsStrBuf, pEnv, XML_TAG_COMPONENT, TAG_BUILDSET, "", 0, 1, "", 0);
   addItem(jsStrBuf, pEnv, XML_TAG_COMPONENT, TAG_NAME, "", 0, 1, "", 0);
   addItem(jsStrBuf, pEnv, XML_TAG_INSTANCES, TAG_BUILDSET, "", 0, 1, "", 0);
   addItem(jsStrBuf, pEnv, XML_TAG_INSTANCES, TAG_DIRECTORY, "", 0, 1, "", 0);
   addItem(jsStrBuf, pEnv, XML_TAG_INSTANCES, TAG_NODENAME, "", 0, 1, "", 0);
-  jsStrBuf.appendf("compTabs['Deploy'][compTabs['Deploy'].length]= 'Deploy';");
+  jsStrBuf.append("compTabs['Deploy'][compTabs['Deploy'].length]= 'Deploy';");
   jsStrBuf.appendf("colIndex['nameDeploy']=%d;", index++);
   jsStrBuf.appendf("colIndex['buildDeploy']=%d;", index++);
   jsStrBuf.appendf("colIndex['buildSetDeploy']=%d;", index++);
@@ -1985,9 +1985,9 @@ bool generateHeaderForTopology(const IPropertyTree* pEnv, StringBuffer& sbDefn, 
 {
   short index = 0;
   StringBuffer jsStrBuf("var compTabs = new Array();");
-  jsStrBuf.appendf("compTabs['Topology'] = new Array();");
-  jsStrBuf.appendf("var compTabToNode = new Array();");
-  jsStrBuf.appendf("var cS = new Array();");
+  jsStrBuf.append("compTabs['Topology'] = new Array();");
+  jsStrBuf.append("var compTabToNode = new Array();");
+  jsStrBuf.append("var cS = new Array();");
   addTopologyType(jsStrBuf, pEnv, "", TAG_NAME, "", 1, 1, "", 1);
   addTopologyType(jsStrBuf, pEnv, "", TAG_BUILDSET, "", 1, 1, "", 1);
   addTopologyType(jsStrBuf, pEnv, XML_TAG_ECLCCSERVERPROCESS,  TAG_PROCESS, "", 0, 1, XML_TAG_SOFTWARE"/EclCCServerProcess", 4);
@@ -1997,8 +1997,8 @@ bool generateHeaderForTopology(const IPropertyTree* pEnv, StringBuffer& sbDefn, 
   addTopologyType(jsStrBuf, pEnv, XML_TAG_ROXIECLUSTER,  TAG_PROCESS, "", 0, 1, XML_TAG_SOFTWARE"/RoxieCluster", 4);
   addTopologyType(jsStrBuf, pEnv, XML_TAG_CLUSTER,  TAG_NAME, "", 0, 1, "", 1);
   addTopologyType(jsStrBuf, pEnv, XML_TAG_CLUSTER,  TAG_PREFIX, "", 0, 1, "", 1);
-  jsStrBuf.appendf("compTabs['Topology'][compTabs['Topology'].length]= 'Topology';");
-  jsStrBuf.appendf("var colIndex = new Array();");
+  jsStrBuf.append("compTabs['Topology'][compTabs['Topology'].length]= 'Topology';");
+  jsStrBuf.append("var colIndex = new Array();");
   jsStrBuf.appendf("colIndex['nameTopology']=%d;", index++);
   jsStrBuf.appendf("colIndex['valueTopology']=%d;", index++);
 
@@ -2014,9 +2014,9 @@ bool generateBuildHeaders(const IPropertyTree* pEnv, bool isPrograms, StringBuff
 {
   short index = 0;
   StringBuffer jsStrBuf("var compTabs = new Array();");
-  jsStrBuf.appendf("compTabs['Programs'] = new Array();");
-  jsStrBuf.appendf("var compTabToNode = new Array();");
-  jsStrBuf.appendf("var cS = new Array();");
+  jsStrBuf.append("compTabs['Programs'] = new Array();");
+  jsStrBuf.append("var compTabToNode = new Array();");
+  jsStrBuf.append("var cS = new Array();");
   addItem(jsStrBuf, pEnv, XML_TAG_PROGRAMS, TAG_NAME, "", 0, 1, "", 1);
   addItem(jsStrBuf, pEnv, XML_TAG_PROGRAMS,  TAG_URL, "", 0, 1, "", 1);
   addItem(jsStrBuf, pEnv, XML_TAG_PROGRAMS, TAG_PATH, "", 0, 1, "", 1);
@@ -2024,8 +2024,8 @@ bool generateBuildHeaders(const IPropertyTree* pEnv, bool isPrograms, StringBuff
   addItem(jsStrBuf, pEnv, XML_TAG_PROGRAMS,  TAG_PROCESSNAME, "", 0, 1, "", 1);
   addItem(jsStrBuf, pEnv, XML_TAG_PROGRAMS,  TAG_SCHEMA, "", 0, 1, "", 1);
   addItem(jsStrBuf, pEnv, XML_TAG_PROGRAMS,  TAG_DEPLOYABLE, "", 0, 1, "", 1);
-  jsStrBuf.appendf("compTabs['Programs'][compTabs['Programs'].length]= 'Programs';");
-  jsStrBuf.appendf("var colIndex = new Array();");
+  jsStrBuf.append("compTabs['Programs'][compTabs['Programs'].length]= 'Programs';");
+  jsStrBuf.append("var colIndex = new Array();");
   jsStrBuf.appendf("colIndex['namePrograms']=%d;", index++);
   jsStrBuf.appendf("colIndex['pathPrograms']=%d;", index++);
   jsStrBuf.appendf("colIndex['installSetPrograms']=%d;", index++);
@@ -2039,16 +2039,16 @@ bool generateBuildHeaders(const IPropertyTree* pEnv, bool isPrograms, StringBuff
   if (writeOut)
     writeToFile(CONFIGMGR_JSPATH"programs.js", jsStrBuf);
 
-  jsStrBuf.clear().appendf("var compTabs = new Array();");
-  jsStrBuf.appendf("compTabs['BuildSet'] = new Array();");
-  jsStrBuf.appendf("var compTabToNode = new Array();");
-  jsStrBuf.appendf("var cS = new Array();");
+  jsStrBuf.clear().append("var compTabs = new Array();");
+  jsStrBuf.append("compTabs['BuildSet'] = new Array();");
+  jsStrBuf.append("var compTabToNode = new Array();");
+  jsStrBuf.append("var cS = new Array();");
   addItem(jsStrBuf, pEnv, XML_TAG_BUILDSET, TAG_NAME, "", 0, 1, "", 1);
   addItem(jsStrBuf, pEnv, XML_TAG_BUILDSET,  TAG_METHOD, "", 0, 1, "", 1);
   addItem(jsStrBuf, pEnv, XML_TAG_BUILDSET, TAG_SRCPATH, "", 0, 1, "", 1);
   addItem(jsStrBuf, pEnv, XML_TAG_BUILDSET,  TAG_DESTPATH, "", 0, 1, "", 1);
   addItem(jsStrBuf, pEnv, XML_TAG_BUILDSET,  TAG_DESTNAME, "", 0, 1, "", 1);
-  jsStrBuf.appendf("compTabs['BuildSet'][compTabs['BuildSet'].length]= 'BuildSet';");
+  jsStrBuf.append("compTabs['BuildSet'][compTabs['BuildSet'].length]= 'BuildSet';");
 
   if (!isPrograms)
     sbDefn.clear().append(jsStrBuf);
@@ -2817,7 +2817,7 @@ IPropertyTree* getNewRange(const IPropertyTree* pEnv, const char* prefix, const 
    if (sNode.length() > 10)
    {
     sNode.append("</"XML_TAG_HARDWARE">");
-    IPropertyTree* pTree = createPTreeFromXMLString(sNode, false);
+    IPropertyTree* pTree = createPTreeFromXMLString(sNode);
     return pTree;
    }
    else 
@@ -2999,7 +2999,7 @@ bool onChangeAttribute(const IPropertyTree* pEnv,
         StringBuffer ret;
         if (xsltTransform(xml, sXsltPath, params, ret))
         {
-          Owned<IPropertyTree> result = createPTreeFromXMLString(ret.str(), false);
+          Owned<IPropertyTree> result = createPTreeFromXMLString(ret.str());
           
           Owned<IAttributeIterator> iAttr = result->getAttributes();
           ForEach(*iAttr)
@@ -3077,7 +3077,7 @@ void addInstanceToCompTree(const IPropertyTree* pEnvRoot,const IPropertyTree* pI
       dups.appendf("\n%s", pComputerNode->queryProp(XML_ATTR_NETADDRESS));
       continue;
     }
-    IPropertyTree* pNode = pCompTree->addPropTree(XML_TAG_INSTANCE, createPTree(false));
+    IPropertyTree* pNode = pCompTree->addPropTree(XML_TAG_INSTANCE, createPTree());
     if (pSchema)
     {
       Owned<IPropertyTreeIterator> iter = pSchema->getElements("xs:element/xs:complexType/xs:sequence/xs:element[@name=\"Instance\"]/xs:complexType/xs:attribute");
@@ -3199,7 +3199,7 @@ void runScript(StringBuffer& output, StringBuffer& errMsg, const char* pathToScr
   if(checkFileExists(pathToScript))
   {
     char buffer[128];
-    cmdLine.clear().appendf(pathToScript);
+    cmdLine.clear().append(pathToScript);
 #ifdef _WINDOWS
     FILE *fp = _popen(cmdLine.str(), "r");
 #else
@@ -3215,17 +3215,17 @@ void runScript(StringBuffer& output, StringBuffer& errMsg, const char* pathToScr
         }
       }
       if(ferror(fp))
-          errMsg.clear().appendf("Some file operation error");
+          errMsg.clear().append("Some file operation error");
 #ifdef _WINDOWS
       _pclose(fp);
 #else
        pclose(fp);
 #endif
      if( output.length() == 0)
-       errMsg.clear().appendf("No IPAddresses found for environment.");
+       errMsg.clear().append("No IPAddresses found for environment.");
     }
     else
-      errMsg.clear().appendf("Could not open or run autodiscovery script ").appendf(pathToScript);
+      errMsg.clear().append("Could not open or run autodiscovery script ").append(pathToScript);
  }
  else
     throw MakeStringException(-1,"The Script [%s] for getting IP addresses for environment does not exist", pathToScript);
@@ -3257,7 +3257,7 @@ void getSummary(const IPropertyTree* pEnvRoot, StringBuffer& respXmlStr, bool pr
   if(pEnvRoot)
   {
     StringBuffer xpath, compName, ipAssigned, computerName, linkString, buildSetName;
-    Owned<IPropertyTree> pSummaryTree = createPTree("ComponentList", false);
+    Owned<IPropertyTree> pSummaryTree = createPTree("ComponentList");
     IPropertyTree* pSWCompTree  = pEnvRoot->queryPropTree(XML_TAG_SOFTWARE);
         
     if(pSWCompTree)
@@ -3392,7 +3392,7 @@ void getSummary(const IPropertyTree* pEnvRoot, StringBuffer& respXmlStr, bool pr
          
           if(ipAssigned.length() && compName.length())
           {
-            IPropertyTree* pComponentType = pSummaryTree->addPropTree("Component", createPTree("Component", false));
+            IPropertyTree* pComponentType = pSummaryTree->addPropTree("Component", createPTree("Component"));
             pComponentType->addProp("@name", compName.str());
             pComponentType->addProp("@netaddresses", ipAssigned.str());
             pComponentType->addProp("@buildset", ( buildSetName.length() ? buildSetName.str(): ""));
@@ -3409,7 +3409,7 @@ void getSummary(const IPropertyTree* pEnvRoot, StringBuffer& respXmlStr, bool pr
            DelimToStringArray(linkString.str(), sArray, "-");
            if(sArray.ordinality() == 3)
            {
-             IPropertyTree* pEspServiceType = pSummaryTree->addPropTree("Component", createPTree("Component", false));
+             IPropertyTree* pEspServiceType = pSummaryTree->addPropTree("Component", createPTree("Component"));
              pEspServiceType->addProp("@name", sArray.item(0));
              pEspServiceType->addProp("@buildset", sArray.item(1));
              pEspServiceType->addProp("@netaddresses", sArray.item(2));
@@ -3441,7 +3441,7 @@ void mergeAttributes(IPropertyTree* pTo, IPropertyTree* pFrom)
 
 void addEspBindingInformation(const char* xmlArg, IPropertyTree* pEnvRoot, StringBuffer& sbNewName, IConstEnvironment* pEnvironment)
 {
-  Owned<IPropertyTree> pBindings = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<EspServiceBindings/>", false);
+  Owned<IPropertyTree> pBindings = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<EspServiceBindings/>");
   const char* type = pBindings->queryProp(XML_ATTR_TYPE);
   const char* espName = pBindings->queryProp("@compName");
 

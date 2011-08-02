@@ -699,11 +699,11 @@ extern THORHELPER_API IRecordLayoutTranslator * createRecordLayoutTranslator(siz
 
 IPropertyTree * convertFieldMappingsToPTree(FieldMapping::List const & mappings)
 {
-    Owned<IPropertyTree> tree = createPTree("Record", false);
+    Owned<IPropertyTree> tree = createPTree("Record");
     ForEachItemIn(mappingIdx, mappings)
     {
         FieldMapping const & m = mappings.item(mappingIdx);
-        Owned<IPropertyTree> branch = createPTree(false);
+        Owned<IPropertyTree> branch = createPTree();
         branch->setPropInt("@diskFieldNum", m.queryDiskFieldNum());
         branch->setProp("@diskFieldName", m.queryDiskFieldName());
         switch(m.queryType())

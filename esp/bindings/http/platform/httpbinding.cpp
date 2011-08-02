@@ -153,7 +153,7 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                         realm = srv_cfg->queryProp("@type");
                         const char *ssfile=srv_cfg->queryProp("@subservices");
                         if (ssfile && checkFileExists(ssfile))
-                            m_subservices.setown(loadPropertyTree(ssfile, true));
+                            m_subservices.setown(createPTreeFromXMLFile(ssfile, ipt_caseInsensitive));
                     }
                 }
                 
@@ -811,7 +811,7 @@ static void filterXmlBySchema(IPTree* in, IXmlType* type, const char* tag, Strin
 static void filterXmlBySchema(StringBuffer& in, StringBuffer& schema, StringBuffer& out)
 {
     Owned<IXmlSchema> sp = createXmlSchema(schema);
-    Owned<IPTree> tree = createPTreeFromXMLString(in,false);
+    Owned<IPTree> tree = createPTreeFromXMLString(in);
 
     //VStringBuffer name("tns:%s", tree->queryName());
     const char* name = tree->queryName();
@@ -927,7 +927,7 @@ static void filterXmlBySchema(IPTree* in, IXmlType* type, const char* tag, Strin
 static void filterXmlBySchema(StringBuffer& in, StringBuffer& schema, StringBuffer& out,int indent)
 {
     Owned<IXmlSchema> sp = createXmlSchema(schema);
-    Owned<IPTree> tree = createPTreeFromXMLString(in,false);
+    Owned<IPTree> tree = createPTreeFromXMLString(in);
 
     //VStringBuffer name("tns:%s", tree->queryName());
     const char* name = tree->queryName();
@@ -1235,7 +1235,7 @@ bool EspHttpBinding::getSchema(StringBuffer& schema, IEspContext &ctx, CHttpRequ
     const char *sqName = serviceQName.str();
     const char *mqName = methodQName.str();
 
-    Owned<IPropertyTree> namespaces = createPTree(false);
+    Owned<IPropertyTree> namespaces = createPTree();
     appendSchemaNamespaces(namespaces, ctx, req, service, method);
     Owned<IPropertyTreeIterator> nsiter = namespaces->getElements("namespace");
 
@@ -2130,7 +2130,7 @@ int EspHttpBinding::onGetForm(IEspContext &context, CHttpRequest* request, CHttp
                           
 int EspHttpBinding::formatHtmlResultSet(IEspContext &context, const char *serv, const char *method, const char *resultsXml, StringBuffer &html)
 {
-    Owned<IPropertyTree> ptree = createPTreeFromXMLString(resultsXml, false);
+    Owned<IPropertyTree> ptree = createPTreeFromXMLString(resultsXml);
     
     Owned<IPropertyTreeIterator> exceptions = ptree->getElements("//Exception");
     ForEach(*exceptions.get())
@@ -2305,7 +2305,7 @@ void EspHttpBinding::validateResponse(IEspContext& context, CHttpRequest* reques
     // XML
     Owned<IPropertyTree> tree; 
     try {
-        tree.setown(createPTreeFromXMLString(content.length(), content.toByteArray(),false));
+        tree.setown(createPTreeFromXMLString(content.length(), content.toByteArray()));
         // format it for better error message
         toXML(tree, xml, 1);
 
@@ -2354,8 +2354,8 @@ void EspHttpBinding::validateResponse(IEspContext& context, CHttpRequest* reques
     v->setSchemaSource(xsd, strlen(xsd));
     v->setTargetNamespace(ns);
 
-    Owned<IPropertyTree> result = createPTree("ModifiedResponse",false);
-    IPropertyTree* e = createPTree(false);
+    Owned<IPropertyTree> result = createPTree("ModifiedResponse");
+    IPropertyTree* e = createPTree();
     try {
         v->validate();
         e->appendProp("Result", "No error found");

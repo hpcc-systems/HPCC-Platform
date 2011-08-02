@@ -167,7 +167,7 @@ const StringBuffer &CEspApplicationPort::getNavBarContent(IEspContext &context, 
 {
     if (xslp)
     {
-        Owned<IPropertyTree> navtree=createPTree("EspNavigationData", false);
+        Owned<IPropertyTree> navtree=createPTree("EspNavigationData");
         int count = getBindingCount();
         for (int idx = 0; idx<count; idx++)
             bindings[idx]->queryBinding()->getNavigationData(context, *navtree.get());
@@ -209,7 +209,7 @@ const StringBuffer &CEspApplicationPort::getNavBarContent(IEspContext &context, 
 const StringBuffer &CEspApplicationPort::getDynNavData(IEspContext &context, IProperties *params, StringBuffer &content, 
                                                        StringBuffer &contentType, bool& bVolatile)
 {
-    Owned<IPropertyTree> navtree=createPTree("EspDynNavData", false);
+    Owned<IPropertyTree> navtree=createPTree("EspDynNavData");
     bVolatile = false;
     int count = getBindingCount();
     for (int idx = 0; idx<count; idx++)
@@ -344,7 +344,7 @@ IPropertyTree *CEspBinding::ensureNavFolder(IPropertyTree &root, const char *nam
     IPropertyTree *ret = root.queryPropTree(xpath.str());
     if (!ret)
     {
-        ret=createPTree("Folder", false);
+        ret=createPTree("Folder");
         ret->addProp("@name", name);
         ret->addProp("@tooltip", tooltip);
         ret->setProp("@menu", menuname);
@@ -366,7 +366,7 @@ IPropertyTree *CEspBinding::ensureNavMenu(IPropertyTree &root, const char *name)
     IPropertyTree *ret = root.queryPropTree(xpath.str());
     if (!ret)
     {
-        ret=createPTree("Menu", false);
+        ret=createPTree("Menu");
         ret->addProp("@name", name);
         root.addPropTree("Menu", ret);
     }
@@ -380,7 +380,7 @@ IPropertyTree *CEspBinding::ensureNavMenuItem(IPropertyTree &root, const char *n
     IPropertyTree *ret = root.queryPropTree(xpath.str());
     if (!ret)
     {
-        ret=createPTree("MenuItem", false);
+        ret=createPTree("MenuItem");
         ret->addProp("@name", name);
         ret->addProp("@tooltip", tooltip);
         ret->addProp("@action", action);
@@ -397,7 +397,7 @@ IPropertyTree *CEspBinding::ensureNavDynFolder(IPropertyTree &root, const char *
     IPropertyTree *ret = root.queryPropTree(xpath.str());
     if (!ret)
     {
-        ret=createPTree("DynamicFolder", false);
+        ret=createPTree("DynamicFolder");
         ret->addProp("@name", name);
         ret->addProp("@tooltip", tooltip);
         ret->addProp("@params", params);
@@ -424,7 +424,7 @@ IPropertyTree *CEspBinding::ensureNavLink(IPropertyTree &folder, const char *nam
     }
 
     if (addNew)
-        ret=createPTree("Link", false);
+        ret=createPTree("Link");
 
     ret->setProp("@name", name);
     ret->setProp("@tooltip", tooltip);
@@ -443,7 +443,7 @@ IPropertyTree *CEspBinding::ensureNavLink(IPropertyTree &folder, const char *nam
 
 IPropertyTree *CEspBinding::addNavException(IPropertyTree &folder, const char *message/*=NULL*/, int code/*=0*/, const char *source/*=NULL*/)
 {
-    IPropertyTree *ret = folder.addPropTree("Exception", createPTree(false));
+    IPropertyTree *ret = folder.addPropTree("Exception", createPTree());
     ret->addProp("@message", message ? message : "Unknown exception");
     ret->setPropInt("@code", code); 
     ret->setProp("@source", source);
@@ -465,7 +465,7 @@ void CEspBinding::getNavigationData(IEspContext &context, IPropertyTree & data)
         if (params.length())
             params.setCharAt(0,'&');
         
-        IPropertyTree *folder=createPTree("Folder", false);
+        IPropertyTree *folder=createPTree("Folder");
         folder->addProp("@name", serviceName.str());
         folder->addProp("@info", serviceName.str());
         folder->addProp("@urlParams", params.str());
@@ -477,7 +477,7 @@ void CEspBinding::getNavigationData(IEspContext &context, IPropertyTree & data)
         ForEachItemIn(idx, methods)
         {
             CMethodInfo &method = methods.item(idx);
-            IPropertyTree *link=createPTree("Link", false);
+            IPropertyTree *link=createPTree("Link");
             link->addProp("@name", method.m_label.str());
             link->addProp("@info", method.m_label.str());
             StringBuffer path;

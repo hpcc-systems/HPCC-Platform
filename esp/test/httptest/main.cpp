@@ -220,7 +220,7 @@ int main(int argc, char* argv[])
     {
         Owned<IPropertyTree> sslconfig;
         if(scfname.length() > 0)
-            sslconfig.setown(createPTreeFromXMLFile(scfname.str(), true));
+            sslconfig.setown(createPTreeFromXMLFile(scfname.str(), ipt_caseInsensitive));
         FILE* ofile = NULL;
         if(out_fname.length() != 0)
         {

@@ -46,7 +46,7 @@
 
 IPropertyTree * addGraphAttribute(IPropertyTree * node, const char * name)
 {
-    IPropertyTree * att = createPTree(false);
+    IPropertyTree * att = createPTree();
     att->setProp("@name", name);
     return node->addPropTree("att", att);
 }
@@ -69,7 +69,7 @@ void addGraphAttributeBool(IPropertyTree * node, const char * name, bool value)
 
 void addSimpleGraphEdge(IPropertyTree * subGraph, unsigned __int64 source, unsigned __int64 target, unsigned outputIndex, unsigned inputIndex, _ATOM kind, const char * label, bool nWay)
 {
-    IPropertyTree *edge = createPTree(false);
+    IPropertyTree *edge = createPTree();
     edge->setPropInt64("@target", target);
     edge->setPropInt64("@source", source);
     if (outputIndex != 0)
@@ -94,7 +94,7 @@ void addSimpleGraphEdge(IPropertyTree * subGraph, unsigned __int64 source, unsig
 void addComplexGraphEdge(IPropertyTree * graph, unsigned __int64 sourceGraph, unsigned __int64 targetGraph, unsigned __int64 sourceActivity, unsigned __int64 targetActivity, unsigned outputIndex, _ATOM kind, const char * label)
 {
     StringBuffer idText;
-    IPropertyTree *edge = createPTree(false);
+    IPropertyTree *edge = createPTree();
     edge->setProp("@id", idText.clear().append(sourceGraph).append('_').append(targetGraph).append("_").append(outputIndex).str());
     edge->setPropInt64("@target", sourceGraph);
     edge->setPropInt64("@source", targetGraph);
@@ -180,7 +180,7 @@ void LogicalGraphCreator::addAttributeBool(const char * name, bool value)
 
 void LogicalGraphCreator::beginActivity(const char * label, unique_id_t id)
 {
-    activityNode.set(curSubGraph()->addPropTree("node", createPTree(false)));
+    activityNode.set(curSubGraph()->addPropTree("node", createPTree()));
     if (label)
         activityNode->setProp("@label", label);
     activityNode->setPropInt64("@id", id);
@@ -200,12 +200,12 @@ void LogicalGraphCreator::beginSubGraph(const char * label, bool nested)
     }
 
     subGraphId = ++seq;
-    IPropertyTree * node = createPTree("node", false);
+    IPropertyTree * node = createPTree("node");
     node = curSubGraph()->addPropTree("node", node);
     node->setPropInt64("@id", subGraphId);
 
-    IPropertyTree * graphAttr = node->addPropTree("att", createPTree("att", false));
-    IPropertyTree * subGraph = graphAttr->addPropTree("graph", createPTree("graph", false));
+    IPropertyTree * graphAttr = node->addPropTree("att", createPTree("att"));
+    IPropertyTree * subGraph = graphAttr->addPropTree("graph", createPTree("graph"));
     subGraphs.append(*LINK(subGraph));
     if (!rootSubGraph)
     {
@@ -242,7 +242,7 @@ void LogicalGraphCreator::connectActivities(IHqlExpression * fromExpr, IHqlExpre
 
 void LogicalGraphCreator::createLogicalGraph(HqlExprArray & exprs)
 {
-    graph.setown(createPTree("graph", false));
+    graph.setown(createPTree("graph"));
 
 //  beginSubGraph(NULL, false);
     ForEachItemIn(i, exprs)

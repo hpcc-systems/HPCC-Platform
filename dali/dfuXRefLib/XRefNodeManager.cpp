@@ -77,7 +77,7 @@ IXRefNode * CXRefNodeManager::CreateXRefNode(const char* NodeName)
 {
     Owned<IRemoteConnection> conn = querySDS().connect("/DFU/XREF",myProcessSession(),RTM_CREATE_QUERY|RTM_LOCK_WRITE ,INFINITE);
     IPropertyTree* xref_ptree = conn->queryRoot();
-    IPropertyTree* cluster_ptree = xref_ptree->addPropTree("Cluster", createPTree(false));
+    IPropertyTree* cluster_ptree = xref_ptree->addPropTree("Cluster", createPTree());
     cluster_ptree->setProp("@name",NodeName);
     conn->commit();
     conn->changeMode(RTM_NONE);
@@ -145,7 +145,7 @@ bool CXRefNode::useSasha()
 IPropertyTree& CXRefNode::getDataTree()
 {
     if(m_XRefDataTree.get() == 0)
-        m_XRefDataTree.setown(createPTreeFromXMLString(m_dataStr.str(),false ));
+        m_XRefDataTree.setown(createPTreeFromXMLString(m_dataStr.str()));
 
     return *m_XRefDataTree.get();
 
@@ -189,7 +189,7 @@ IXRefFilesNode* CXRefNode::getLostFiles()
         IPropertyTree* lostBranch = m_XRefTree->queryPropTree("Lost");
         if(lostBranch == 0)
         {
-            lostBranch = m_XRefTree->addPropTree("Lost",createPTree(false));
+            lostBranch = m_XRefTree->addPropTree("Lost",createPTree());
             commit();
         }
         const char *rootdir = m_XRefTree.get()?m_XRefTree->queryProp("@rootdir"):NULL;
@@ -206,7 +206,7 @@ IXRefFilesNode* CXRefNode::getFoundFiles()
         IPropertyTree* foundBranch = m_XRefTree->queryPropTree("Found");
         if(foundBranch == 0)
         {
-            foundBranch = m_XRefTree->addPropTree("Found",createPTree(false));
+            foundBranch = m_XRefTree->addPropTree("Found",createPTree());
             commit();
         }
         const char *rootdir = m_XRefTree.get()?m_XRefTree->queryProp("@rootdir"):NULL;
@@ -223,7 +223,7 @@ IXRefFilesNode* CXRefNode::getOrphanFiles()
         IPropertyTree* orphanBranch = m_XRefTree->queryPropTree("Orphans");
         if(orphanBranch == 0)
         {
-            orphanBranch = m_XRefTree->addPropTree("Orphans",createPTree(false));
+            orphanBranch = m_XRefTree->addPropTree("Orphans",createPTree());
             commit();
         }
         const char *rootdir = m_XRefTree.get()?m_XRefTree->queryProp("@rootdir"):NULL;
@@ -240,7 +240,7 @@ StringBuffer &CXRefNode::serializeMessages(StringBuffer &buf)
         IPropertyTree* messagesBranch = m_XRefTree->queryPropTree("Messages");
         if(messagesBranch == 0)
         {
-            messagesBranch = m_XRefTree->addPropTree("Messages",createPTree(false));
+            messagesBranch = m_XRefTree->addPropTree("Messages",createPTree());
             commit();
         }
         StringBuffer tmpbuf;
@@ -263,7 +263,7 @@ void CXRefNode::deserializeMessages(IPropertyTree& inTree)
         IPropertyTree* messagesBranch = m_XRefTree->queryPropTree("Messages");
         if(messagesBranch == 0)
         {
-            messagesBranch = m_XRefTree->addPropTree("Messages",createPTree(false));
+            messagesBranch = m_XRefTree->addPropTree("Messages",createPTree());
             commit();
         }
         StringBuffer tmpbuf;
@@ -281,7 +281,7 @@ StringBuffer &CXRefNode::serializeDirectories(StringBuffer &buf)
         IPropertyTree* directoriesBranch = m_XRefTree->queryPropTree("Directories");
         if(directoriesBranch == 0)
         {
-            directoriesBranch = m_XRefTree->addPropTree("Directories",createPTree(false));
+            directoriesBranch = m_XRefTree->addPropTree("Directories",createPTree());
             commit();
         }
         StringBuffer tmpbuf;
@@ -304,7 +304,7 @@ void CXRefNode::deserializeDirectories(IPropertyTree& inTree)
         IPropertyTree* directoriesBranch = m_XRefTree->queryPropTree("Directories");
         if(directoriesBranch == 0)
         {
-            directoriesBranch = m_XRefTree->addPropTree("Directories",createPTree(false));
+            directoriesBranch = m_XRefTree->addPropTree("Directories",createPTree());
             commit();
         }
         StringBuffer tmpbuf;
@@ -405,7 +405,7 @@ bool CXRefNode::removeEmptyDirectories(StringBuffer &errstr)
     serializeDirectories(dataStr);
     if (dataStr.length()==0)
         return true;
-    Owned<IPropertyTree> t = createPTreeFromXMLString(dataStr.str(),false );
+    Owned<IPropertyTree> t = createPTreeFromXMLString(dataStr.str());
     Owned<IPropertyTreeIterator> iter = t->getElements("Directory");
     const char *clustername = t->queryProp("Cluster");
     if (!clustername||!*clustername)

@@ -64,7 +64,7 @@ private:
         IPropertyTree * r = NULL;
         try
         {
-            r = createPTreeFromXMLFile(fname, false);
+            r = createPTreeFromXMLFile(fname);
         }
         catch(IException * e)
         {

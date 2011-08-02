@@ -596,7 +596,7 @@ void dfsFile(const char *lname,const char *dali, bool lookup)
 //**
             Owned<IFileDescriptor> fdesc = file->getFileDescriptor();
             printf("compressed = %s\n", fdesc->isCompressed()?"true":"false");
-            Owned<IPropertyTree> t = createPropertyTree(false,"File");
+            Owned<IPropertyTree> t = createPTree("File");
             fdesc->serializeTree(*t);
             toXML(t, str.clear());
             printf("%s\n",str.str());
@@ -969,7 +969,7 @@ void fileTree(const char *lfn)
     StringBuffer str;
     toXML(root, str);
     printf("%s\n",str.str());
-    Owned<IPropertyTree> tree2 = createPTree(root);
+    Owned<IPropertyTree> tree2 = createPTreeFromIPT(root);
     expandFileTree(tree2,false);
     toXML(tree2, str.clear());
     printf("%s\n",str.str());
@@ -1810,7 +1810,7 @@ void import(const char *path,const char *src,bool add)
     size32_t sz = iFile->size();
     StringBuffer xml;
     iFileIO->read(0, sz, xml.reserve(sz));
-    Owned<IPropertyTree> branch = createPTreeFromXMLString(xml.str(), false, true);
+    Owned<IPropertyTree> branch = createPTreeFromXMLString(xml.str());
     StringBuffer head;
     StringBuffer tmp;
     const char *tail=splitpath(path,head,tmp);
@@ -1870,7 +1870,7 @@ void bimport(const char *path,const char *src,bool add)
     size32_t sz = iFile->size();
     StringBuffer xml;
     iFileIO->read(0, sz, xml.reserve(sz));
-    Owned<IPropertyTree> branch = createPTree(false);
+    Owned<IPropertyTree> branch = createPTree();
     branch->setPropBin("data",xml.length(),(void*)xml.toCharArray());
     StringBuffer head;
     StringBuffer tmp;
@@ -3627,7 +3627,7 @@ void PrintWUsizes()
     ForEach(*iter) {
         IPropertyTree &wu=iter->query();
         setAllocHook(true);
-        IPropertyTree *wucopy=createPTree(&wu);
+        IPropertyTree *wucopy=createPTreeFromIPT(&wu);
         unsigned tm = setAllocHook(true);
         wucopy->Release();
         tm -= setAllocHook(false);
@@ -4009,7 +4009,7 @@ void makeTestFile(const char *lname,const char *cluster, offset_t fsize, size32_
         ERRLOG("File %s already exists",lname);
         return;
     }
-    IPropertyTree* attr = createPTree("Attr",false);
+    IPropertyTree* attr = createPTree("Attr");
     attr->setProp("@owner","sdsfix");
     attr->setPropInt64("@size",fsize);
     attr->setPropInt("@recordSize",rs);
@@ -4254,7 +4254,7 @@ void fixTilde()
     StringArray todelete;
     ForEach(*iter) {
         IPropertyTree &f = iter->query();
-        IPropertyTree *n = createPTree(&f);
+        IPropertyTree *n = createPTreeFromIPT(&f);
         StringBuffer name;
         if (!n->getProp("@name",name))
             continue;
@@ -4264,7 +4264,7 @@ void fixTilde()
         if (!top) {
             top = root->queryPropTree("Scope[@name=\".\"]");
             if (!top) {
-                top = createPTree("Scope",false);
+                top = createPTree("Scope");
                 top->setProp("@name",".");
                 top = root->addPropTree("Scope",top);
             }
@@ -4324,7 +4324,7 @@ void dirtocsv(const char *src)
     size32_t sz = iFile->size();
     StringBuffer xml;
     iFileIO->read(0, sz, xml.reserve(sz));
-    Owned<IPropertyTree> branch = createPTreeFromXMLString(xml.str(), false, true);
+    Owned<IPropertyTree> branch = createPTreeFromXMLString(xml.str());
     IPropertyTree *dirs = branch->queryPropTree("Directories");
     Owned<IPropertyTreeIterator> iter = dirs->getElements("Directory");
     ForEach(*iter) {
@@ -4434,7 +4434,7 @@ void testFileDescriptor()
         RemoteFilename rfn;
         constructPartFilename(grp,1,2,"test::xxx","file._$P$_of_$N$","/c$/roxiedata",0,mspec,rfn);
     }
-    Owned<IPropertyTree> pp = createPTree("Part",false);
+    Owned<IPropertyTree> pp = createPTree("Part");
     Owned<IFileDescriptor> fdesc = createFileDescriptor();
     fdesc->setDefaultDir("/c$/thordata/test");
     Owned<INode> node = createINode("192.168.0.1");
@@ -4757,7 +4757,7 @@ void XmlMemSize(const char *filename)
     size32_t sz = iFile->size();
     StringBuffer xml;
     iFileIO->read(0, sz, xml.reserve(sz));
-    Owned<IPropertyTree> branch = createPTreeFromXMLString(xml.str(), false, true);
+    Owned<IPropertyTree> branch = createPTreeFromXMLString(xml.str());
     unsigned tm = setAllocHook(true);
     branch.clear();
     tm -= setAllocHook(false);
@@ -4777,7 +4777,7 @@ void xmlFormat(const char *fni,const char *fno)
     PROGLOG("%s",trc.str());
     PROGLOG("Loading...");
     unsigned t = msTick();
-    Owned<IPropertyTree> pt = createPTreeFromXMLFile(fni, false);
+    Owned<IPropertyTree> pt = createPTreeFromXMLFile(fni);
     PROGLOG("Loaded took %dms",msTick()-t);
     getSystemTraceInfo(trc.clear(),PerfMonStandard);
     PROGLOG("%s",trc.str());
@@ -4793,7 +4793,7 @@ void xmlFormat(const char *fni,const char *fno)
 void xmlScan(const char *fni,const char *pat,bool mem)
 {
     StringArray results;
-    Owned<IPropertyTree> pt = createPTreeFromXMLFile(fni, false);
+    Owned<IPropertyTree> pt = createPTreeFromXMLFile(fni);
     StringBuffer full;
     PTreeScan(pt,pat,full,results,mem);
     ForEachItemIn(i,results)
@@ -4816,12 +4816,12 @@ static int scompare(const char **s1,const char **s2)
 void xmlCompare(const char *fni1,const char *fni2,const char *pat)
 {
     StringArray results1;
-    Owned<IPropertyTree> pt = createPTreeFromXMLFile(fni1, false);
+    Owned<IPropertyTree> pt = createPTreeFromXMLFile(fni1);
     StringBuffer full;
     PTreeScan(pt,pat,full,results1,false);
     StringArray results2;
     pt.clear();
-    pt.setown(createPTreeFromXMLFile(fni2, false));
+    pt.setown(createPTreeFromXMLFile(fni2));
     PTreeScan(pt,pat,full,results2,false);
     results1.sort(scompare);
     results2.sort(scompare);
@@ -4895,7 +4895,7 @@ void convertBinBranch(IPropertyTree &cluster,const char *branch)
     if (buf.length()) {
         StringBuffer xml;
         xml.append(buf.length(),buf.toByteArray());
-        t = createPTreeFromXMLString(xml.str(),false );
+        t = createPTreeFromXMLString(xml.str());
         cluster.removeProp(query.str());
         cluster.addPropTree(query.str(),t);
     }
@@ -4905,7 +4905,7 @@ void convertBinBranch(IPropertyTree &cluster,const char *branch)
 void getDFUXREF(const char *dst)
 {
     Owned<IRemoteConnection> conn = querySDS().connect("DFU/XREF",myProcessSession(),RTM_LOCK_READ, INFINITE);
-    Owned<IPropertyTree> root = createPTree(conn->getRoot());
+    Owned<IPropertyTree> root = createPTreeFromIPT(conn->getRoot());
     Owned<IPropertyTreeIterator> iter = root->getElements("Cluster");
     ForEach(*iter) {
         IPropertyTree &cluster = iter->query();
@@ -5336,8 +5336,8 @@ void testbinsz(const char *path)
     size32_t sz = iFile->size();
     StringBuffer xml;
     iFileIO->read(0, sz, xml.reserve(sz));
-    Owned<IPropertyTree> branch = createPTreeFromXMLString(xml.str(), false, true);
-    Owned<IPropertyTree> t1 = createPTree("test1",false);
+    Owned<IPropertyTree> branch = createPTreeFromXMLString(xml.str());
+    Owned<IPropertyTree> t1 = createPTree("test1");
     StringBuffer str;
     toXML(branch,str);
     t1->setPropBin("data",str.length(),str.str());
@@ -5346,7 +5346,7 @@ void testbinsz(const char *path)
     Owned<IFileIO> io1 = f1->open(IFOcreate);
     Owned<IFileIOStream> fstream1 = createBufferedIOStream(io1);
     toXML(t1, *fstream1);           // formatted (default)
-    Owned<IPropertyTree> t2 = createPTree("test2",false);
+    Owned<IPropertyTree> t2 = createPTree("test2");
     MemoryBuffer mb;
     branch->serialize(mb);
     t2->setPropBin("data",mb.length(),mb.toByteArray());
@@ -5425,7 +5425,7 @@ void testLostFile(const char *_lfn)
     StringBuffer tmpname;
     StringBuffer tmp;
     CDateTime dt;
-    Owned<IPropertyTree> ft = createPTree("File",false);
+    Owned<IPropertyTree> ft = createPTree("File");
     if (file->getModificationTime(dt)) {
         CDateTime now;
         now.setNow();
@@ -5483,7 +5483,7 @@ void testLostFile(const char *_lfn)
             if (!ok)
                 break;
             if (lost) {
-                Owned<IPropertyTree> pt = createPTree("Part",false);
+                Owned<IPropertyTree> pt = createPTree("Part");
                 StringBuffer tmp;
                 rfn.queryEndpoint().getIpText(tmp);
                 pt->setProp("Node",tmp.str());
@@ -5703,7 +5703,7 @@ void XMLscanfix(IPropertyTree &tree,StringBuffer &path, bool fix, bool check)
 
 void XMLscanfix(const char *filename,bool fix,bool check)
 {
-    Owned<IPropertyTree> tree = createPTreeFromXMLFile(filename, false);
+    Owned<IPropertyTree> tree = createPTreeFromXMLFile(filename);
     StringBuffer path("/");
     XMLscanfix(*tree,path,fix,check);
 }
@@ -6254,7 +6254,7 @@ int main(int argc, char* argv[])
                     }
                 }
                 else {
-                    Owned<IPropertyTree> pt = loadPropertyTree(argv[3], false);
+                    Owned<IPropertyTree> pt = createPTreeFromXMLFile(argv[3]);
                     DumpWorkunitTimings(pt);
                 }
             }

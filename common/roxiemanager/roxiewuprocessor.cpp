@@ -146,7 +146,7 @@ private:
     // helper methods
     inline static IPropertyTree *addAttribute(IPropertyTree &node, const char * name)
     {
-        IPropertyTree * att = createPTree(false);
+        IPropertyTree * att = createPTree();
         att->setProp("@name", name);
         return node.addPropTree("att", att);
     }
@@ -181,7 +181,7 @@ private:
     void addDllFile(IPropertyTree *xml, const char* name, StringBuffer &fileLocation, const char* version, int codeVersion, unsigned crc, const char* fileType, bool loaddataonly)
     {
         // only 1 part for a dll file
-        IPropertyTree *file = createPTree(false);
+        IPropertyTree *file = createPTree();
         file->setProp("@id", name);
         if (stricmp(fileType, "plugin") == 0)
             file->setProp("@version", version);
@@ -199,8 +199,8 @@ private:
     
         if (fileLocation.length())
         {
-            IPropertyTree *part = createPTree(false);
-            IPropertyTree *location = createPTree(false);
+            IPropertyTree *part = createPTree();
+            IPropertyTree *location = createPTree();
             location->setProp(NULL, fileLocation);
             part->addPropTree("Loc", location);
             part->setPropInt("@num", 1);
@@ -392,7 +392,7 @@ private:
             processFileInfoInDali(xml, numParts, file_crc, recordCount, totalSize, formatCrc, isCompressed, fileName, remoteRoxieClusterName, epStr, processingInfo.queryUserDescriptor(), (isPatch || isBaseIndex) ? false :updateDali);
         }
 
-        IPropertyTree *file = createPTree(false);
+        IPropertyTree *file = createPTree();
         file->setProp("@mode", "add");
 
         if (numParts > 1)
@@ -445,12 +445,12 @@ private:
 
                 }
 
-                IPropertyTree *patchTree = createPTree(false);
+                IPropertyTree *patchTree = createPTree();
                 patchName.insert(0, "~");
                 patchTree->setProp("@name", patchName);
                 patchTree->setPropInt64("@crc", patch_crc);
                 
-                IPropertyTree *baseIndex = createPTree(false);
+                IPropertyTree *baseIndex = createPTree();
                 baseIndexName.insert(0, "~");
                 baseIndex->setProp("@name", baseIndexName);
                 baseIndex->setPropInt64("@crc", baseIndex_crc);
@@ -554,7 +554,7 @@ private:
 
         if (superPackageTree)
         {
-            IPropertyTree *subFileTree = createPTree("SubFile", false);
+            IPropertyTree *subFileTree = createPTree("SubFile");
             subFileTree->addProp("@value", fileName);
             superPackageTree->addPropTree("SubFile", subFileTree);
         }
@@ -564,7 +564,7 @@ private:
             IPartDescriptor *partdesc = fdesc->queryPart(partIdx);
             IPropertyTree &partProps = partdesc->queryProperties();
             offset_t dfsSize = partProps.getPropInt64("@size", -1);
-            IPropertyTree *part = createPTree(false);
+            IPropertyTree *part = createPTree();
             part->setPropInt64("@size", dfsSize);
             StringBuffer modifiedDt;
             partProps.getProp("@modified", modifiedDt);
@@ -593,7 +593,7 @@ private:
                             delim.append(common_dir_name[common_dir_name.length()-1]);
                     }
 
-                    IPropertyTree *location = createPTree(false);
+                    IPropertyTree *location = createPTree();
                     location->setProp("@path", origName.str());
                     part->addPropTree("Loc", location);
                 }
@@ -763,7 +763,7 @@ private:
 
                     if (superkeyFileInfo)
                     {
-                        temptree = superkeyFileInfo->addPropTree("SKeyName", createPTree(false));
+                        temptree = superkeyFileInfo->addPropTree("SKeyName", createPTree());
                         temptree->addProp("@name", fullName.str() + 1);
                         temptree->addPropInt("@numsubfiles", n);
                         temptree->addProp("@filetype", filetype);
@@ -773,15 +773,15 @@ private:
                     IPropertyTree *superPackageTree = 0;
                     if (queryPackageTree)
                     {
-                        ptree = createPTree("Package", false);
+                        ptree = createPTree("Package");
 
                         ptree->addProp("@id", non_foreignSuperName.str()+1);
                     
-                        IPropertyTree *basePackageTree = createPTree("Base", false);
+                        IPropertyTree *basePackageTree = createPTree("Base");
                         basePackageTree->addProp("@id", non_foreignSuperName.str()+1);
                         queryPackageTree->addPropTree("Base", basePackageTree);
                     }
-                    superPackageTree = createPTree("SuperFile", false);
+                    superPackageTree = createPTree("SuperFile");
                     superPackageTree->addProp("@id", non_foreignSuperName.str());
                     
                     StringBuffer path;
@@ -819,7 +819,7 @@ private:
                             
                             if (strcmp(subtree->queryName(),"SuperFile")==0)
                             {
-                                Owned<IPropertyTree> newNameNode = createPTree("att", false);
+                                Owned<IPropertyTree> newNameNode = createPTree("att");
                                 newNameNode->setProp("@value", subName.str());
                                 newNameNode->setProp("@superOwner", non_foreignSuperName.str());
                     
@@ -947,7 +947,7 @@ public:
         , roxieCommClient(_roxieCommClient)
         , logLevel(_logLevel)
     {
-        packageInfo.setown(createPTree("RoxiePackages", false));
+        packageInfo.setown(createPTree("RoxiePackages"));
     }
 
     bool lookupFileNames(IWorkUnit *wu, IRoxieQueryProcessingInfo &processingInfo, SCMStringBuffer &status)
@@ -975,7 +975,7 @@ public:
         SCMStringBuffer dllName;
         wu->getDebugValue("queryId", dllName);
 
-        IPropertyTree *xml = createPTree("FILES", false);
+        IPropertyTree *xml = createPTree("FILES");
         IPropertyTree *queryPackageTree = NULL;
         
         if (dllName.length() == 0)
@@ -984,7 +984,7 @@ public:
             q->getQueryDllName(dllName);        
         }
 
-        Owned<IPropertyTree> superKeyInfo = createPTree("SuperKeyInfo", true);
+        Owned<IPropertyTree> superKeyInfo = createPTree("SuperKeyInfo", ipt_caseInsensitive);
                         
         ForEach(*graphs)
         {
@@ -1172,11 +1172,11 @@ public:
         if (useRemoteRoxieLocation)  // only do the work here if the source has the files already copied to it
         {
             StringBuffer elem;
-            elem.appendf("Part[@num='%d']");
+            elem.appendf("Part[@num='%d']", partno);
             IPropertyTree *partlocation = location->queryPropTree(elem.str());
             if (!partlocation)
             {
-                elem.clear().appendf("Part_%d");
+                elem.clear().appendf("Part_%d", partno);
                 partlocation = location->queryPropTree(elem.str());  // legacy format
             }
 
@@ -1185,7 +1185,7 @@ public:
                 Owned<IAttributeIterator> aIter = partlocation->getAttributes();
 
                 location->removeTree(partlocation);
-                partlocation = location->addPropTree(elem.str(), createPTree(false));
+                partlocation = location->addPropTree(elem.str(), createPTree());
 
                 ForEach (*aIter)
                 {
@@ -1200,7 +1200,7 @@ public:
                 {
                     StringBuffer filelocation(peerLocations.item(idx));
 
-                    IPropertyTree *t = partlocation->addPropTree("Loc", createPTree(false));
+                    IPropertyTree *t = partlocation->addPropTree("Loc", createPTree());
                     if (isDll)
                     {
                         if (name)
@@ -1249,7 +1249,7 @@ public:
                     Owned<IPropertyTree> tree;
 
                     if (storeResults)
-                        tree.setown(createPTree(false));
+                        tree.setown(createPTree());
 
                     dfuHelper->cloneFileRelationships(lookupDaliIp,// where src relationships are retrieved from (can be NULL for local)
                                                       srcfiles,     // file names on source
@@ -1284,7 +1284,7 @@ public:
                                 IPropertyTree *relTree = primTree->queryPropTree("AllRelationships");
                                 if (!relTree)
                                 {
-                                    relTree = primTree->addPropTree("AllRelationships", createPTree(false));
+                                    relTree = primTree->addPropTree("AllRelationships", createPTree());
                                     relTree->addProp("@origClusterName", roxieClusterName.str());
                                 }
                                 if (relTree)
@@ -1304,7 +1304,7 @@ public:
                                 IPropertyTree *relTree = secTree->queryPropTree("AllRelationships");
                                 if (!relTree)
                                 {
-                                    relTree = secTree->addPropTree("AllRelationships", createPTree(false));
+                                    relTree = secTree->addPropTree("AllRelationships", createPTree());
                                     relTree->addProp("@origClusterName", roxieClusterName.str());
                                 }
 
@@ -1347,7 +1347,7 @@ public:
                 removeForeign(primary, primaryName, foreignIP);
                 removeForeign(secondary, secondaryName, foreignIP);
 
-                IPropertyTree *tree = relationshipTree->addPropTree("Relationship", createPTree(false));
+                IPropertyTree *tree = relationshipTree->addPropTree("Relationship", createPTree());
                 tree->addProp("@primaryName", primaryName);
                 tree->addProp("@secondaryName", secondaryName);
 
@@ -1452,16 +1452,16 @@ public:
             {
                 IPropertyTree *metaTree = xml->queryPropTree("MetaFileInfo");
                 if (!metaTree)
-                    metaTree = xml->addPropTree("MetaFileInfo", createPTree(false));
+                    metaTree = xml->addPropTree("MetaFileInfo", createPTree());
 
                 IPropertyTree *relationshipTree = metaTree->queryPropTree("Relationships");
                 if (!relationshipTree)
-                    relationshipTree = metaTree->addPropTree("Relationships", createPTree(false));
+                    relationshipTree = metaTree->addPropTree("Relationships", createPTree());
 
                 if (buf.length() == 0)
                     throw MakeStringException(ROXIEMANAGER_DALI_LOOKUP_ERROR, "No meta file information found.");
 
-                IPropertyTree *tree = metaTree->addPropTree("File", createPTreeFromXMLString(buf.str(), false));
+                IPropertyTree *tree = metaTree->addPropTree("File", createPTreeFromXMLString(buf.str()));
                 if (!tree)
                     throw MakeStringException(ROXIEMANAGER_DALI_LOOKUP_ERROR, "Could not parse information");
                 StringBuffer id(dest_filename);
@@ -1512,8 +1512,8 @@ public:
         if (!dfuHelper)
             dfuHelper.setown(createIDFUhelper());
 
-        Owned<IPropertyTree> tree = createPTree("Relationships", false);
-        IPropertyTree *relationshipTree = tree->addPropTree("Relationships", createPTree(false));
+        Owned<IPropertyTree> tree = createPTree("Relationships");
+        IPropertyTree *relationshipTree = tree->addPropTree("Relationships", createPTree());
 
         lookupRelationships(relationshipTree, src_filename, NULL, remoteRoxieClusterName, lookupDaliIp);
         lookupRelationships(relationshipTree, NULL, src_filename, remoteRoxieClusterName, lookupDaliIp);
@@ -1622,7 +1622,7 @@ public:
 
                     DBGLOG("ERROR!!!! = \n%s", errMsg.str());
 
-                    IPropertyTree *err = createPTree(false);
+                    IPropertyTree *err = createPTree();
                     err->setProp("@error", errMsg.str());
                     err->setProp("@id", dest_filename.str());
                     xml->addPropTree("File_Error", err);
@@ -1658,7 +1658,7 @@ public:
                 if (remoteRoxieClusterName.length())
                     local->setProp("@remoteCluster", remoteRoxieClusterName); 
                 updateLocations(local, 1, useRemoteRoxieLocation, true, true, remoteTopology, dllName);
-                xml->addPropTree("DLL", createPTree(local));
+                xml->addPropTree("DLL", createPTreeFromIPT(local));
             }
 
             Owned<IPropertyTreeIterator> plugins = remoteQuery->getElements("Plugin");
@@ -1674,7 +1674,7 @@ public:
                         local->setProp("@remoteCluster", remoteRoxieClusterName); 
 
                     updateLocations(local, 1, useRemoteRoxieLocation, true, true, remoteTopology, pluginName);
-                    xml->addPropTree("DLL", createPTree(local));
+                    xml->addPropTree("DLL", createPTreeFromIPT(local));
                 }
             }
             if (!copyFileLocationInfo)
@@ -1736,7 +1736,7 @@ public:
                                         updateLocations(local, i, useRemoteRoxieLocation, false, false, remoteTopology, NULL);
                                         //updateLocations(local, i, useRemoteRoxieLocation, (i == numparts) ? true : false, false, topology, NULL);
 
-                                    xml->addPropTree("File", createPTree(local));
+                                    xml->addPropTree("File", createPTreeFromIPT(local));
                                 }
                             }
                         }
@@ -1769,7 +1769,7 @@ public:
                                             for (int i = 1; i <= numparts; i++)
                                                 updateLocations(local, i, useRemoteRoxieLocation, (i == numparts) ? true : false, false, remoteTopology, NULL);
 
-                                            xml->addPropTree("Key", createPTree(local));
+                                            xml->addPropTree("Key", createPTreeFromIPT(local));
                                         }
                                     }
                                 }

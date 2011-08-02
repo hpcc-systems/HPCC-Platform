@@ -18,12 +18,15 @@
 
 ###<REPLACE>###
 
+source  ${INSTALL_DIR}/etc/init.d/hpcc_common
+which_pidof
+
 if [ $# -lt 1 ]; then
     echo usage: $0 thorinstance 
     exit 1
 fi
 
-pid=`pidof backupnode`
+pid=`${PIDOF} backupnode`
 if [ -n "$pid" ]; then
    echo stopping previous backupnode processes $pid
    killall backupnode
@@ -84,7 +87,7 @@ echo ------------------------------ >> $LOGFILE
 echo Waiting for backup to complete >> $LOGFILE
 
 nohup backupnode -W $DEPLOY_DIR/slaves $DEPLOY_DIR/last_backup >> $LOGFILE &
-pid=`pidof backupnode`
+pid=`${PIDOF} backupnode`
 trap "echo start_backupnode exiting, backupnode process $pid still continuing; exit 0" 2
 if [ -n "$pid" ]; then
   tail --pid $pid -f $LOGFILE 2>nul

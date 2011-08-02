@@ -15,6 +15,30 @@
 
 ###<REPLACE>###
 
+which_service(){
+    SERV=`which service`
+    if [ "${SERV}" == "" ]; then
+        if [ -e "/sbin/service" ]; then
+            SERV=/sbin/service
+        elif [ -e "/usr/sbin/service" ]; then
+            SERV=/usr/sbin/service
+        fi
+    fi
+}
+
+which_pidof(){
+    PIDOF=`which pidof`
+    if [ "${PIDOF}" == "" ]; then
+        if [ -e /bin/pidof ]; then
+	    PIDOF=/bin/pidof
+	elif [ -e /sbin/pidof  ]; then
+            PIDOF=/sbin/pidof
+        elif [ -e /usr/sbin/pidof ]; then
+            PIDOF=/usr/sbin/pidof
+        fi
+    fi
+}
+
 source  ${INSTALL_DIR}/etc/init.d/lock.sh
 source  ${INSTALL_DIR}/etc/init.d/pid.sh
 source  ${INSTALL_DIR}/etc/init.d/init-functions
@@ -550,14 +574,6 @@ stop_component() {
         RCSTOP=3
     fi
     return ${RCSTOP}
-}
-
-which_service(){
-    if [ -e "/sbin/service" ]; then
-        SERV=/sbin/service
-    elif [ -e "/usr/sbin/service" ]; then
-        SERV=/usr/sbin/service
-    fi
 }
 
 

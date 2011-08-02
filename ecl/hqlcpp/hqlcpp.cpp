@@ -1128,12 +1128,12 @@ void HqlCppInstance::addPlugin(const char *plugin, const char *version, bool inT
             p->setPluginHole(true);
     }
     if (!plugins)
-        plugins.setown(createPTree("Plugins", false));
+        plugins.setown(createPTree("Plugins"));
     StringBuffer xpath;
     xpath.append("Plugin[@dll='").append(dllname).append("']");
     if (!plugins->hasProp(xpath.str()))
     {
-        IPropertyTree * pluginNode = createPTree("Plugin", false);
+        IPropertyTree * pluginNode = createPTree("Plugin");
         pluginNode->setProp("@dll", dllname.str());
         pluginNode->setProp("@version", version);
         plugins->addPropTree("Plugin", pluginNode);
@@ -1272,7 +1272,7 @@ void HqlCppInstance::flushHints()
 IPropertyTree * HqlCppInstance::ensureWebServiceInfo()
 {
     if (!webServiceInfo)
-        webServiceInfo.setown(createPTree("WebServicesInfo", false));
+        webServiceInfo.setown(createPTree("WebServicesInfo"));
     return webServiceInfo;
 }
 

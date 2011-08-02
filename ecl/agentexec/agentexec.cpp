@@ -60,7 +60,7 @@ void CEclAgentExecutionServer::start(StringBuffer & codeDir)
     try
     {
         DBGLOG("AgentExec: Loading properties file '%s'\n", propertyFile.str());
-        properties.setown(createPTreeFromXMLFile(propertyFile.str(), false));
+        properties.setown(createPTreeFromXMLFile(propertyFile.str()));
     }
     catch (IException *e) 
     {

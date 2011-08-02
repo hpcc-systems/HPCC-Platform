@@ -106,7 +106,7 @@ int main(int argc, char* argv[])
 
     Owned<IPropertyTree> env;
     try {
-        env.setown(createPTreeFromXMLFile(argv[1],false));
+        env.setown(createPTreeFromXMLFile(argv[1]));
         if (!env.get()) {
             fprintf(stderr,"Could not load Environment from %s\n",argv[1]);
             return 1;
