@@ -240,7 +240,7 @@ void CHThorActivityBase::createRowAllocator()
 
 __int64 CHThorActivityBase::getCount()
 {
-    throw MakeStringException(2, "Internal error: CHThorActivityBase::count");
+    throw MakeStringException(2, "Internal error: CHThorActivityBase::getCount");
     return 0;
 }
 
@@ -1085,7 +1085,7 @@ void CHThorIndexWriteActivity::execute()
     unsigned __int64 fileSize = 0;
     if (helper.getDatasetName())
     {
-        Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(helper.getDatasetName(),"IndedWrite::execute",false,true,true);
+        Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(helper.getDatasetName(),"IndexWrite::execute",false,true,true);
         if (ldFile)
         {
             IDistributedFile * dFile = ldFile->queryDistributedFile();
@@ -1753,10 +1753,9 @@ const void *CHThorProcessActivity::nextInGroup()
 
 CHThorNormalizeActivity::CHThorNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNormalizeArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
 {
-    // JF: bug - use of null pointer 
     IRecordSize* recSize = outputMeta;
     if (recSize == NULL)
-        throw MakeStringException(2, "Unexpect null pointer from helper.queryOutputMeta()");
+        throw MakeStringException(2, "Unexpected null pointer from helper.queryOutputMeta()");
 }
 
 CHThorNormalizeActivity::~CHThorNormalizeActivity()
