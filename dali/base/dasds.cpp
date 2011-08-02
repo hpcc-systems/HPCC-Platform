@@ -5502,7 +5502,7 @@ CCovenSDSManager::CCovenSDSManager(ICoven &_coven, IPropertyTree &_config, const
     clientProps->setPropBool("@serverIterAvailable", true);
     clientProps->setPropBool("@useAppendOpt", true);
     clientProps->setPropBool("@serverGetIdsAvailable", true);
-    IPropertyTree *throttle = clientProps->setPropTree("Throttle", createPTree());
+    IPropertyTree *throttle = clientProps->setPropTree("Throttle", createPTree(false));
     throttle->setPropInt("@limit", CLIENT_THROTTLE_LIMIT);
     throttle->setPropInt("@delay", CLIENT_THROTTLE_DELAY);
     // NB: dataPath is assumed to be local
