@@ -122,6 +122,7 @@ expandPayload(){
 }
 
 runPayload(){
+    basepkg=`basename ${PKG}`
     expect -c "set timeout 3;
         spawn ssh $USER@$1;
         expect {
@@ -137,7 +138,7 @@ runPayload(){
             }
         }
         expect "${USER}@" {
-            send \"${CMDPREFIX} ${REMOTE_INSTALL}/remote-install-engine.sh ${REMOTE_INSTALL}/${PKG}\r\";
+            send \"${CMDPREFIX} ${REMOTE_INSTALL}/remote-install-engine.sh ${REMOTE_INSTALL}/${basepkg}\r\";
             expect *?assword* {
                 send \"${PASS}\r\";
             }
