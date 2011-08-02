@@ -1270,7 +1270,7 @@ bool CConfigEnvHelper::AddNewNodes(IPropertyTree* pThor, const char* szType, int
 
     if (validate)
     {
-        for (size_t i = 0; i < computers.size(); i++)
+        for (int i = 0; i < (int) computers.size(); i++)
             CheckTopologyComputerUse(computers[i], pThor, usageList);
     }
 
@@ -1278,7 +1278,7 @@ bool CConfigEnvHelper::AddNewNodes(IPropertyTree* pThor, const char* szType, int
         return false;
 
     // Iterate through computer list
-    for (size_t i = 0; i < computers.size(); i++)
+    for (int i = 0; i < (int) computers.size(); i++)
     {
         // Check if we can add this computer
         if (skipExisting && !CheckTopologyComputerUse(computers[i], pThor, usageList))

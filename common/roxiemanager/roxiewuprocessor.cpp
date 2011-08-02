@@ -1172,11 +1172,11 @@ public:
         if (useRemoteRoxieLocation)  // only do the work here if the source has the files already copied to it
         {
             StringBuffer elem;
-            elem.appendf("Part[@num='%d']");
+            elem.appendf("Part[@num='%d']", partno);
             IPropertyTree *partlocation = location->queryPropTree(elem.str());
             if (!partlocation)
             {
-                elem.clear().appendf("Part_%d");
+                elem.clear().appendf("Part_%d", partno);
                 partlocation = location->queryPropTree(elem.str());  // legacy format
             }
 

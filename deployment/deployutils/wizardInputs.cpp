@@ -471,11 +471,11 @@ void CWizardInputs::generateSoftwareTree(IPropertyTree* pNewEnvTree)
       {
         IMapping &cur = iter.query();
         StringBuffer* dirvalue = m_overrideDirs->mapToValue(&cur);
-        xpath.clear().appendf(XML_TAG_SOFTWARE"/Directories/Category[@name='%s']", cur.getKey());
-        StringBuffer sbkey((const char*)cur.getKey());
-        if (!strcmp(sbkey.str(), "log"))
+        const char * key = (const char*)cur.getKey();
+        xpath.clear().appendf(XML_TAG_SOFTWARE"/Directories/Category[@name='%s']", key);
+        if (!strcmp(key, "log"))
           ovrLog = false;
-        else if (!strcmp(sbkey.str(), "run"))
+        else if (!strcmp(key, "run"))
           ovrRun = false;
 
         IPropertyTree* pDir = m_buildSetTree->queryPropTree(xpath.str());
@@ -542,7 +542,7 @@ void CWizardInputs::generateSoftwareTree(IPropertyTree* pNewEnvTree)
             for(unsigned i = 0; i < m_ipaddress.ordinality(); i++)
             {
               sbl.clear().appendf("s").append(i+1);
-              assignedIP.clear().appendf(m_ipaddress.item(i));
+              assignedIP.clear().append(m_ipaddress.item(i));
               addInstanceToTree(pNewEnvTree, assignedIP, processName, buildSetName,sbl.str());
             }
           }
@@ -588,12 +588,12 @@ void CWizardInputs::addInstanceToTree(IPropertyTree* pNewEnvTree, StringBuffer a
   xpath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_HARDWARE, XML_TAG_COMPUTER, XML_ATTR_NETADDRESS, attrName.str());
   IPropertyTree* pHardTemp = pNewEnvTree->queryPropTree(xpath.str());
   if(pHardTemp)
-    nodeName.clear().appendf(pHardTemp->queryProp("./"XML_ATTR_NAME));//NodeName
+    nodeName.clear().append(pHardTemp->queryProp("./"XML_ATTR_NAME));//NodeName
 
   xpath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, processName, XML_ATTR_BUILDSET, buildSetName);
   
   IPropertyTree* pComp = pNewEnvTree->queryPropTree(xpath.str());
-  compName.clear().appendf(pComp->queryProp(XML_ATTR_NAME));//compName
+  compName.clear().append(pComp->queryProp(XML_ATTR_NAME));//compName
 
   sb.clear().appendf("<Instance buildSet=\"%s\" compName=\"%s\" ><Instance name=\"%s\" /></Instance>", buildSetName, compName.str(), nodeName.str());
   Owned<IPropertyTree> pInstance = createPTreeFromXMLString(sb.str(),false);
