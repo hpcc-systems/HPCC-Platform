@@ -32,16 +32,16 @@ getDali(){
 }
 
 buildCmd(){
-        if [ -z $3 ]; then
-                CMD="sudo /etc/init.d/$1 $2"
-        else
-                CMD="sudo /etc/init.d/$1 -c $3 $2"
-        fi
+    if [ -z $3 ]; then
+        CMD="sudo /etc/init.d/$1 $2"
+    else
+        CMD="sudo /etc/init.d/$1 -c $3 $2"
+    fi
 }
 
 runCmd(){
-        echo "$IP: Running $@";
-        ssh -i $home/$user/.ssh/id_rsa $user@$IP $@;
+    echo "$IP: Running $@";
+    ssh -i $home/$user/.ssh/id_rsa $user@$IP $@;
 }
 
 set_envrionmentvars
@@ -49,9 +49,6 @@ envfile=$configs/$environment
 
 getIPS
 getDali
-
-IPS=${IPS//$DIP[^0-9]/ }
-
 
 TEMP=`/usr/bin/getopt -o a:c:h --long help,action -n 'hpcc-run' -- "$@"`
 if [ $? != 0 ] ; then echo "Failure to parse commandline." >&2 ; exit 1 ; fi
@@ -98,7 +95,7 @@ for arg; do
 done
 
 if [ ${cnt} -gt 1 ]; then
-        print_usage
+    print_usage
 fi
 
 case "$action" in
@@ -133,6 +130,9 @@ if [ "${cmd}" == "restart" ]; then
         fi
 
         for IP in $IPS; do
+            if [ "$IP" == "$DIP" ]; then
+                continue
+            fi
             if ping -c 1 -w 5 -n $IP > /dev/null 2>&1; then
                 echo "$IP: Host is alive."
                 CAN_SSH="`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@$IP exit > /dev/null 2>&1; echo $?`"
@@ -181,6 +181,9 @@ else
     fi
 
     for IP in $IPS; do
+        if [ "$IP" == "$DIP" ]; then
+            continue
+        fi
         if ping -c 1 -w 5 -n $IP > /dev/null 2>&1; then
             echo "$IP: Host is alive."
             CAN_SSH="`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@$IP exit > /dev/null 2>&1; echo $?`"
