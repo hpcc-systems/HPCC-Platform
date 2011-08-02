@@ -26,9 +26,6 @@
 
 #include "thwuidreadslave.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/wuidread/thwuidreadslave.cpp $ $Id: thwuidreadslave.cpp 62376 2011-02-04 21:59:58Z sort $");
-
-
 class CWuidReadSlaveActivity : public CSlaveActivity, public CThorDataLink
 {
     Owned<ISerialStream> replyStream;

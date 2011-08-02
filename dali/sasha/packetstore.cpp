@@ -14,9 +14,6 @@
   get changed
 */
 
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/sasha/packetstore.cpp $ $Id: packetstore.cpp 36518 2007-03-09 00:15:14Z pkapp $");
-
 #include "mpbuff.hpp"
 #include "mpcomm.hpp"
 #include "mputil.hpp"

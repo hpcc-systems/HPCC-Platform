@@ -25,9 +25,6 @@
 #include "eclrtl_imp.hpp"
 #include "rtlfield_imp.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/rtl/eclrtl/rtlfield.cpp $ $Id: rtlfield.cpp 62376 2011-02-04 21:59:58Z sort $");
-
-
 static const char * queryXPath(const RtlFieldInfo * field)
 {
     const char * xpath = field->xpath;

@@ -20,10 +20,6 @@
 #include "mpbase.hpp"
 #include "rmtfile.hpp"
 
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/dfuXRefLib/dfurdir.cpp $ $Id: dfurdir.cpp 62376 2011-02-04 21:59:58Z sort $");
-
-
 #define REMOVE_DUPLICATE_DIRS
 //#define LOGERRORS
 

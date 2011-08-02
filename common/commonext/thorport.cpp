@@ -36,8 +36,6 @@
 #include "portlist.h"
 #include "thorport.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/shared/thorport.cpp $ $Id: thorport.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 #define WATCHDOGINC        1
 
 static CriticalSection *portallocsection;

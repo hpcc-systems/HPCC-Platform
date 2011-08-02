@@ -24,9 +24,6 @@
 #include "thdiskbase.ipp"
 #include "thindexread.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/indexread/thindexread.cpp $ $Id: thindexread.cpp 64422 2011-05-05 16:51:53Z jsmith $");
-
-
 class CIndexReadBase : public CMasterActivity
 {
 protected:

@@ -34,8 +34,6 @@
 #include "hqlcpputil.hpp"
 #include "hqlutil.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hqlcpp/hqlstmt.cpp $ $Id: hqlstmt.cpp 65973 2011-07-04 15:37:51Z ghalliday $");
-
 #define CLEAR_COPY_THRESHOLD            100
 
 //---------------------------------------------------------------------------

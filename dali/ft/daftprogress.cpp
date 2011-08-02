@@ -44,8 +44,6 @@
 #include "jlog.hpp"
 #include "daftprogress.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/ft/daftprogress.cpp $ $Id: daftprogress.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 DaftProgress::DaftProgress() 
 { 
     startTime = get_cycles_now(); 

@@ -46,8 +46,6 @@
 #endif
 
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jdebug.cpp $ $Id: jdebug.cpp 65715 2011-06-23 14:10:16Z rchapman $");
-
 //===========================================================================
 #ifdef _DEBUG
 //#define _USE_MALLOC_HOOK  

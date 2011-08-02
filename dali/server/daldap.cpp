@@ -22,8 +22,6 @@
 #include "jencrypt.hpp"
 #include "thirdparty.h"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/server/daldap.cpp $ $Id: daldap.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 #include "dasds.hpp"
 #include "daldap.hpp"
 

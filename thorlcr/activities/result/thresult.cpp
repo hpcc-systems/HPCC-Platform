@@ -27,9 +27,6 @@
 #include "thresult.ipp"
 #include "deftype.hpp"
 
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/result/thresult.cpp $ $Id: thresult.cpp 63725 2011-04-01 17:40:45Z jsmith $");
-
 class CResultActivityMaster : public CMasterActivity
 {
     mptag_t replyTag;

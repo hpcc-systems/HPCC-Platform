@@ -21,10 +21,6 @@
 #include "jmisc.hpp"
 #include "jregexp.hpp"
 
-
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jregexp.cpp $ $Id: jregexp.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 #define FAIL(s) { /*assert(!s);*/ return NULL; }
 
 #define SUBPARENL '{'

@@ -48,8 +48,6 @@
 #include "thbuf.hpp"
 #include "thmem.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/thorutil/thmem.cpp $ $Id: thmem.cpp 63807 2011-04-05 16:07:37Z nhicks $");
-
 #ifdef _DEBUG
 //#define _TESTING
 #define ASSERTEX(c) assertex(c)

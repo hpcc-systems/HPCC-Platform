@@ -20,8 +20,6 @@
 
 #define NUMCOLUMNS 4
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/eclplus/ListHelper.cpp $ $Id: ListHelper.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 static StringAttr columns[NUMCOLUMNS] = {"WUID", "OWNER", "JOBNAME", "STATUS"};
 
 ListHelper::ListHelper(IProperties * _globals, IFormatType * _format) : globals(_globals), format(_format), wuclient(createWorkunitsClient(_globals))

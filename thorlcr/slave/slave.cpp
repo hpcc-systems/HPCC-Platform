@@ -34,8 +34,6 @@
 
 #include "thgraphslave.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/slave/slave.cpp $ $Id: slave.cpp 64945 2011-05-27 13:20:16Z jsmith $");
-
 #include "slave.ipp"
 
 #define FATAL_ACTJOIN_TIMEOUT (5*60*1000)

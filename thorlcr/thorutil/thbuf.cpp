@@ -36,8 +36,6 @@
 #include "eclrtl.hpp"
 #include "thgraph.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/thorutil/thbuf.cpp $ $Id: thbuf.cpp 63605 2011-03-30 10:42:56Z nhicks $");
-
 #ifdef _DEBUG
 //#define _FULL_TRACE
 //#define TRACE_CREATE

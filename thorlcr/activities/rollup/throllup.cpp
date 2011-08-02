@@ -22,8 +22,6 @@
 #include "throllup.ipp"
 #include "thbufdef.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/rollup/throllup.cpp $ $Id: throllup.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 class DedupRollupActivityMaster : public CMasterActivity
 {
 public:

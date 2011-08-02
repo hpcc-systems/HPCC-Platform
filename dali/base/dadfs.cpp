@@ -37,11 +37,7 @@
 #include "danqs.hpp"
 #include "mputil.hpp"
 #include "rmtfile.hpp"
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/base/dadfs.cpp $ $Id: dadfs.cpp 63465 2011-03-25 10:43:19Z nhicks $");
-
 #include "dadfs.hpp"
-
 
 #ifdef _DEBUG
 //#define EXTRA_LOGGING

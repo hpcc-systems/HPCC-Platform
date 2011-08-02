@@ -23,8 +23,6 @@
 #include "thexception.hpp"
 #include "thbufdef.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/nsplitter/thnsplitterslave.cpp $ $Id: thnsplitterslave.cpp 65545 2011-06-17 15:25:30Z jsmith $");
-
 interface ISharedSmartBuffer;
 class NSplitterSlaveActivity;
 

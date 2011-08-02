@@ -35,8 +35,6 @@
 #include "jdebug.hpp"
 #include "jutil.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jstring.cpp $ $Id: jstring.cpp 62922 2011-03-03 14:18:20Z nhicks $");
-
 #define DOUBLE_FORMAT   "%.16g"
 #define FLOAT_FORMAT    "%.7g"
 

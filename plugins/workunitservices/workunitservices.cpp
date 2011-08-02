@@ -52,8 +52,6 @@ Persists changed?
 #include "workunitservices.hpp"
 #include "workunitservices.ipp"
 
-static char buildVersion[] = "$HeadURL: https://svn.br.seisint.com/ecl/trunk/plugins/workunitservices/workunitservices.cpp $ $Id: workunitservices.cpp 62376 2011-02-04 21:59:58Z sort $";
-
 #define WORKUNITSERVICES_VERSION "WORKUNITSERVICES 1.0.1"
 
 static const char * compatibleVersions[] = {
@@ -705,5 +703,5 @@ WORKUNITSERVICES_API void setPluginContext(IPluginContext * _ctx) { parentCtx = 
 
 WORKUNITSERVICES_API char * WORKUNITSERVICES_CALL fsGetBuildInfo(void)
 { 
-    return CTXSTRDUP(parentCtx, buildVersion);
+    return CTXSTRDUP(parentCtx, WORKUNITSERVICES_VERSION);
 }

@@ -39,8 +39,6 @@
 #include "daftsize.hpp"
 #include "daftmc.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/ft/daftsize.cpp $ $Id: daftsize.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 bool processSizesCommand(ISocket *, MemoryBuffer & cmd, MemoryBuffer & result)
 {
     LOG(MCdebugProgress, unknownJob, "Start gather remote file sizes");

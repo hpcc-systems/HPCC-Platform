@@ -23,9 +23,6 @@
 #include "jptree.hpp"
 #include "mpbase.hpp"
 #include "mpcomm.hpp"
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/dfuXRefLib/dfuxreflib.cpp $ $Id: dfuxreflib.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 #include "daclient.hpp"
 #include "dadiags.hpp"
 #include "danqs.hpp"

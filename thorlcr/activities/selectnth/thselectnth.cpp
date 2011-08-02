@@ -19,10 +19,6 @@
 #include "thselectnth.ipp"
 #include "eclhelper.hpp"        // for IHThorSelectNthArg
 
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/selectnth/thselectnth.cpp $ $Id: thselectnth.cpp 62376 2011-02-04 21:59:58Z sort $");
-
-
 class CSelectNthActivityMaster : public CMasterActivity
 {
 public:

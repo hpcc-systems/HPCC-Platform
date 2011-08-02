@@ -648,7 +648,6 @@ const char* getBuildVersion()
 {
     return g_buildVersion.str();
 }
-
 static StringBuffer g_buildLevel;
 
 void setBuildLevel(const char* buildLevel)

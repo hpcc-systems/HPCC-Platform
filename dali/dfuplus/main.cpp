@@ -17,6 +17,7 @@
 ############################################################################## */
 
 #pragma warning (disable : 4786)
+#include <build-config.h>
 #include "daftcfg.hpp"
 #include "dfuerror.hpp"
 #include "dfuplus.hpp"
@@ -24,14 +25,9 @@
 #include "termios.h"
 #endif
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/dfuplus/main.cpp $ $Id: main.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 void printVersion()
 {
-    StringBuffer buildVersion;
-    CBuildVersion::toString(buildVersion);
-    if (buildVersion.length() == 0) buildVersion.append("\n");
-    printf("DFU Version: %d %s", DAFT_VERSION, buildVersion.str());
+    printf("DFU Version: %d %s\n", DAFT_VERSION, BUILD_TAG);
 }
 
 void handleSyntax()

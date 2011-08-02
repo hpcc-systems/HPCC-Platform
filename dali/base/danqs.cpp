@@ -20,9 +20,6 @@
 #include "platform.h"
 #include "jlib.hpp"
 #include "jsuperhash.hpp"
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/base/danqs.cpp $ $Id: danqs.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 #include "dacoven.hpp"
 #include "daclient.hpp"
 #include "dasds.hpp"
@@ -31,7 +28,6 @@ static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/ba
 #include "mputil.hpp"
 #include "mputil.hpp"
 #include "daserver.hpp"
-
 #include "danqs.hpp"
 
 #ifdef _MSC_VER

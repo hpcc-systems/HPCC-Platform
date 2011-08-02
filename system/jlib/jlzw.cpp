@@ -26,8 +26,6 @@
 #include "jencrypt.hpp"
 #include "jflz.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jlzw.cpp $ $Id: jlzw.cpp 64790 2011-05-20 15:20:41Z jsmith $");
-
 #ifdef _WIN32
 #include <io.h>
 #endif

@@ -42,8 +42,6 @@ static const char *trcfile="hrpctrc.txt";
 #include <time.h>
 #include "jdebug.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/hrpc/hrpc.cpp $ $Id: hrpc.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 void HRPCtrace(const char *fmt, ...)
 {
     static char buf[0x4000];

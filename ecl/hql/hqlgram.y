@@ -50,8 +50,6 @@
 #include "hqlattr.hpp"
 #include "hqlmeta.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hql/hqlgram.y $ $Id: hqlgram.y 66009 2011-07-06 12:28:32Z ghalliday $");
-
 #define REDEF_MSG(name)     StringBuffer msg;           \
                             msg.append(w"Identifier '"); \
                             msg.append(name.queryExpr()->queryName()->str()); \

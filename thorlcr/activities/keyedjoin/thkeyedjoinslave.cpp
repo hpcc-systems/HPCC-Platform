@@ -68,7 +68,6 @@
 
 #endif // NEWFETCHSTRESS
 #define KJ_BUFFER_SIZE (0x100000*8)
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/keyedjoin/thkeyedjoinslave.cpp $ $Id: thkeyedjoinslave.cpp 66093 2011-07-08 12:52:18Z jsmith $");
 
 #define KEYLOOKUP_HEADER_SIZE (sizeof(offset_t)+sizeof(CJoinGroup *))
 #define FETCHKEY_HEADER_SIZE (sizeof(offset_t)+sizeof(void *))

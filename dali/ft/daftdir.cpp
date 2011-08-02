@@ -32,8 +32,6 @@
 #include <glob.h>
 #endif
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/ft/daftdir.cpp $ $Id: daftdir.cpp 64047 2011-04-15 09:01:54Z nhicks $");
-
 #ifdef _WIN32
 #define DEFAULT_DRIVE       "c:"                    // What about solaris machines.
 #else

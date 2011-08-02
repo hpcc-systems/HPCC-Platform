@@ -21,9 +21,6 @@
 #include "thactivityutil.ipp"
 #include "thorport.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/group/thgroupslave.cpp $ $Id: thgroupslave.cpp 63605 2011-03-30 10:42:56Z nhicks $");
-
-
 class GroupSlaveActivity : public CSlaveActivity, public CThorDataLink
 {
 

@@ -19,8 +19,6 @@
 #include <string.h>
 #include "hqlstack.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hql/hqlstack.cpp $ $Id: hqlstack.cpp 65973 2011-07-04 15:37:51Z ghalliday $");
-
 FuncCallStack::FuncCallStack() {
     sp = 0;
     tos = DEFAULTSTACKSIZE;

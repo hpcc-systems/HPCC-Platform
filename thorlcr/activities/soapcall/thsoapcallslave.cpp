@@ -19,8 +19,6 @@
 #include "thsoapcallslave.ipp"
 #include "thactivityutil.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/soapcall/thsoapcallslave.cpp $ $Id: thsoapcallslave.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 //---------------------------------------------------------------------------
 
 class SoapRowCallSlaveActivity : public CSlaveActivity, public CThorDataLink, implements ISoapCallRowProvider

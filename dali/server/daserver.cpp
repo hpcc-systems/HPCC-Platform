@@ -16,6 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
+#include "build-config.h"
 #include "platform.h"
 #include "thirdparty.h"
 #include "jlib.hpp"
@@ -193,8 +194,7 @@ int main(int argc, char* argv[])
         fileMsgHandler = getRollingFileLogMsgHandler(logName.str(), ".log", MSGFIELD_STANDARD, false, true, NULL, aliasLogName.str());
         queryLogMsgManager()->addMonitorOwn(fileMsgHandler, getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail));
 
-        CBuildVersion::log();
-
+        DBGLOG("Build %s", BUILD_TAG);
 
         if (serverConfig)
         {

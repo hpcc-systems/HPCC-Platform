@@ -41,8 +41,6 @@
 
 #include "thdiskbaseslave.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/thdiskbaseslave.cpp $ $Id: thdiskbaseslave.cpp 63725 2011-04-01 17:40:45Z jsmith $");
-
 void getPartsMetaInfo(ThorDataLinkMetaInfo &metaInfo, CThorDataLink &link, unsigned nparts, IPartDescriptor **partDescs, CDiskPartHandlerBase *partHandler)
 {
     ThorDataLinkMetaInfo *metaInfos = new ThorDataLinkMetaInfo[nparts];

@@ -20,8 +20,6 @@
 
 #include "daftmc.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/ft/daftmc.cpp $ $Id: daftmc.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 const LogMsgCategory MCdebugInfoDetail(MCdebugInfo(1000));
 const LogMsgCategory MCdebugProgressDetail(MCdebugProgress(1000));
 

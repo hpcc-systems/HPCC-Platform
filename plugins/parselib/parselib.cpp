@@ -24,8 +24,6 @@
 #include "thorparse.hpp"
 #include "parselib.hpp"
 
-static char buildVersion[] = "$HeadURL: https://svn.br.seisint.com/ecl/trunk/plugins/parselib/parselib.cpp $ $Id: parselib.cpp 62376 2011-02-04 21:59:58Z sort $";
-
 #define PARSELIB_VERSION "PARSELIB 1.0.1"
 
 _ATOM separatorTagAtom;

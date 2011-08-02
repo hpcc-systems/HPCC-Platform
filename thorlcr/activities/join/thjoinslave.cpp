@@ -37,15 +37,7 @@
 #include "tsortm.hpp"
 
 #define BUFFERSIZE 0x10000
-
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/join/thjoinslave.cpp $ $Id: thjoinslave.cpp 62878 2011-03-02 13:14:35Z jsmith $");
-
-
-
-
 #define NUMSLAVEPORTS 2     // actually should be num MP tags
-
 
 class JoinSlaveActivity : public CSlaveActivity, public CThorDataLink, implements ISmartBufferNotify
 {

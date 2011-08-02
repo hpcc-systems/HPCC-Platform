@@ -33,9 +33,6 @@
 #include "thorxmlread.hpp"
 #include "thdiskbaseslave.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/xmlread/thxmlreadslave.cpp $ $Id: thxmlreadslave.cpp 65930 2011-06-30 11:02:57Z ghalliday $");
-
-
 class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDataLink
 {
     IHThorXmlReadArg *helper;

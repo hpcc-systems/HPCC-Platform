@@ -20,8 +20,6 @@
 #include "thmem.hpp"
 #include "tsorta.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/merge/thmerge.cpp $ $Id: thmerge.cpp 63725 2011-04-01 17:40:45Z jsmith $");
-
 #ifdef _DEBUG
 #define _TRACE
 #endif

@@ -22,8 +22,6 @@
 #include "mplog.ipp"
 #include "mpcomm.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/mp/mplog.cpp $ $Id: mplog.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 LogMsgChildReceiverThread * childReceiver;
 LogMsgParentReceiverThread * parentReceiver;
 ILogMsgManager * listener;

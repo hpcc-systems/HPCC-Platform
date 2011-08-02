@@ -20,9 +20,6 @@
 #include "thactivityutil.ipp"
 #include "thbufdef.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/selectnth/thselectnthslave.cpp $ $Id: thselectnthslave.cpp 65251 2011-06-08 08:38:02Z jsmith $");
-
-
 class CSelectNthSlaveActivity : public CSlaveActivity, public CThorDataLink, implements ISmartBufferNotify
 {
     bool first, isLocal, seenNth;
