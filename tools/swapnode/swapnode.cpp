@@ -489,7 +489,7 @@ static bool doSingleSwapNode(IRemoteConnection *connEnv,IRemoteConnection *connF
 
             // TBD tie up with bad node in auto?
 
-            IPropertyTree *swap = info->addPropTree("Swap",createPTree("Swap",false));
+            IPropertyTree *swap = info->addPropTree("Swap",createPTree("Swap"));
             swap->setProp("@inNetAddress",newip);
             swap->setProp("@outNetAddress",oldip);
             swap->setProp("@time",times.str());
@@ -538,7 +538,7 @@ static bool doSwapNode(IPropertyTree *options,bool doswap,const char* cluster,co
             ensureThorIsDown(cluster,false,false);
             Owned<IPropertyTree> info;
 #ifndef _ESP
-            Owned<IPropertyTree> opt = createPTree(true);
+            Owned<IPropertyTree> opt = createPTree(ipt_caseInsensitive);
             opt->setProp("@nodeGroup",cluster);
             Owned<IGroup> grp;
             Owned<IRemoteConnection> connSwapNode;
@@ -1165,13 +1165,13 @@ int main(int argc,char** argv)
             const char* daliserver;
             Owned<IPropertyTree> options;
             if (isauto||ishistory|isswapped|isemail) {
-                options.setown(createPTreeFromXMLFile("thor.xml", true));
+                options.setown(createPTreeFromXMLFile("thor.xml", ipt_caseInsensitive));
                 daliserver = options?options->queryProp("@daliServers"):NULL;
                 if (!daliserver||!*daliserver)
                     throw MakeStringException(-1,"Either thor.xml not found or DALISERVERS not found in thor.xml");
             }
             else {
-                options.setown(createPTree(true)); // don't use thor.xml
+                options.setown(createPTree(ipt_caseInsensitive)); // don't use thor.xml
                 daliserver = argv[1];
             }
 

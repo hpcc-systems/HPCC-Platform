@@ -379,7 +379,7 @@ public:
         crecsize.maxrecsize = buffer.buffSize();
         crecsize.frecsize = isvar?0:crecsize.maxrecsize;
 
-        header.setown(createPTree("Index",false));
+        header.setown(createPTree("Index"));
         header->setPropInt("@rowSize",rowsize);
         header->setPropInt("@keyedSize",reader.queryKeyedSize());
         header->setPropBool("@variableWidth",isvar);
@@ -514,7 +514,7 @@ class CKeyFileWriter: public CInterface, extends IKeyFileRowWriter
 public:
     IMPLEMENT_IINTERFACE;
     CKeyFileWriter(const char *filename, IPropertyTree *_header, bool overwrite, unsigned nodeSize)
-        : header(createPTree(_header))
+        : header(createPTreeFromIPT(_header))
     {
         writer.init(filename,overwrite,header->getPropInt("@keyedSize"), header->getPropInt("@rowSize"), header->getPropBool("@variableWidth"), header->getPropBool("@quickCompressed"), header->getPropInt("@nodeSize", NODESIZE));
         size32_t rowsize = header->getPropInt("@rowSize");

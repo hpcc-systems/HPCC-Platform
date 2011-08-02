@@ -74,7 +74,7 @@ void doStuff()
     else {
         // save as tree
         printf("TestBranch3: set (as tree)\n",s.str());
-        br3 =  createPTreeFromXMLString(MyTestXML,false); // parses and creates object tree
+        br3 =  createPTreeFromXMLString(MyTestXML); // parses and creates object tree
         root->setPropTree("TestBranch3", br3);
     }
 }

@@ -57,7 +57,7 @@ PermissionProcessor::PermissionProcessor(IPropertyTree* config)
         throw MakeStringException(-1, "PermissionProcessor() - config is NULL");
     m_cfg.set(config);
 
-    m_sidcache.setown(createPTree(false));
+    m_sidcache.setown(createPTree());
     m_cfg->getProp(".//@ldapAddress", m_server);
 }
 

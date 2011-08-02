@@ -1528,7 +1528,7 @@ void CWsDfuEx::getDefFile(IUserDescriptor* udesc, const char* FileName,StringBuf
     if(!record)
         throw MakeStringException(ECLWATCH_CANNOT_PARSE_ECL_QUERY, "Failed in parsing ECL query.");
 
-    Owned<IPropertyTree> data = createPropertyTree(true, "Table");
+    Owned<IPropertyTree> data = createPTree("Table", ipt_caseInsensitive);
     exportData(data, record);
 
     const char* fname=strrchr(FileName,':');
@@ -4501,7 +4501,7 @@ void CWsDfuEx::readColumnsForDisplay(StringBuffer& schemaText, StringArray& colu
     if (schemaText.length() < 1)
         return;
 
-    Owned<IPropertyTree> schema = createPTreeFromXMLString(schemaText.str(),false);
+    Owned<IPropertyTree> schema = createPTreeFromXMLString(schemaText.str());
     if (!schema)
         return;
 
@@ -4540,8 +4540,8 @@ void CWsDfuEx::mergeSchema(IRelatedBrowseFile * file, StringBuffer& schemaText, 
 //DBGLOG("First schema returns:%s", schemaText.str());
 //DBGLOG("Second schema returns:%s", schemaText2.str());
 
-    Owned<IPropertyTree> schema = createPTreeFromXMLString(schemaText.str(),false);
-    Owned<IPropertyTree> schema2 = createPTreeFromXMLString(schemaText2.str(),false);
+    Owned<IPropertyTree> schema = createPTreeFromXMLString(schemaText.str());
+    Owned<IPropertyTree> schema2 = createPTreeFromXMLString(schemaText2.str());
     if (!schema || !schema2)
         return;
 
@@ -4765,8 +4765,8 @@ void CWsDfuEx::mergeDataRow(StringBuffer& newRow, StringBuffer dataRow1, StringB
     if (dataRow2.length() < 1)
         return;
 
-    Owned<IPropertyTree> data1 = createPTreeFromXMLString(dataRow1.str(),false);
-    Owned<IPropertyTree> data2 = createPTreeFromXMLString(dataRow2.str(),false);
+    Owned<IPropertyTree> data1 = createPTreeFromXMLString(dataRow1.str());
+    Owned<IPropertyTree> data2 = createPTreeFromXMLString(dataRow2.str());
     if (!data1 || !data2)
         return;
 

@@ -892,7 +892,7 @@ AciProcessor::AciProcessor(IPropertyTree* cfg)
         throw MakeStringException(-1, "AciProcessor() - config is NULL");
     m_cfg.set(cfg);
 
-    m_sidcache.setown(createPTree(false));
+    m_sidcache.setown(createPTree());
     m_cfg->getProp(".//@ldapAddress", m_server);
 }
 

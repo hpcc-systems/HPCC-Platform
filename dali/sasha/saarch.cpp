@@ -181,7 +181,7 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
                             bool haseclcontains = eclcontains&&*eclcontains;
                             if ((cmd->getAction()==SCA_GET)||haswusoutput||hasowner||hasstate||hascluster||hasjobname||hascommand||(hasoutput&&inrange)||haspriority||hasfileread||hasfilewritten||hasroxiecluster||haseclcontains) {
                                 try {
-                                    t.setown(createPTree(di2->query(), false));
+                                    t.setown(createPTree(di2->query()));
                                     if (!t)
                                         continue;
                                     if (hasowner&&(!t->getProp("@submitID",val.clear())||!WildMatch(val.str(),owner,true))) 
@@ -401,7 +401,7 @@ public:
         if (archprops->hasProp(branchname))
             props.setown(archprops->getPropTree(branchname));
         else
-            props.setown(createPTree(branchname,false));
+            props.setown(createPTree(branchname));
         schedule.init(props,definterval,definterval/4);
         limit = props->getPropInt("@limit",deflimit);
         cutoffdays = props->getPropInt("@cutoff",defcutoff);
@@ -682,7 +682,7 @@ static bool doRestoreDfuWorkUnit(const char *wuid, StringBuffer &res)
         if (file) {
             Owned<IFileIO> fileio = file->open(IFOread);
             if (fileio) {
-                Owned<IPropertyTree> pt = createPTree(*fileio, false);
+                Owned<IPropertyTree> pt = createPTree(*fileio);
                 StringBuffer buf;
                 StringBuffer xpath("DFU/WorkUnits");
                 Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, 5*60*1000);  
@@ -1205,7 +1205,7 @@ public:
     {
         Owned<IPropertyTree> archprops = serverConfig->getPropTree("Archiver");
         if (!archprops)
-            archprops.setown(createPTree("Archiver",false));
+            archprops.setown(createPTree("Archiver"));
         unsigned definterval = archprops->getPropInt("@interval",DEFAULT_INTERVAL); // no longer used
         if (definterval==0)
             definterval = DEFAULT_INTERVAL;

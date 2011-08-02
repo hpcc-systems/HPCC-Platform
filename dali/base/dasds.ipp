@@ -109,7 +109,7 @@ class ChangeInfo : public CInterface, implements IInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    ChangeInfo(IPropertyTree &_owner) : owner(&_owner) { INIT_NAMEDCOUNT; tree.setown(createPTree(RESERVED_CHANGE_NODE, false)); }
+    ChangeInfo(IPropertyTree &_owner) : owner(&_owner) { INIT_NAMEDCOUNT; tree.setown(createPTree(RESERVED_CHANGE_NODE)); }
     const IPropertyTree *queryOwner() const { return owner; }
     const void *queryFindParam() const { return &owner; }
 public: // data
@@ -236,7 +236,6 @@ public:
 
     CRemoteTreeBase(MemoryBuffer &mb, CPState _state=CPS_Unchanged);
     CRemoteTreeBase(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL, CPState _state=CPS_Unchanged);
-    ~CRemoteTreeBase();
     void reset(unsigned state, bool sub=false);
 
     void deserializeRT(MemoryBuffer &src);
@@ -260,7 +259,7 @@ public:
 
 // PTree
     virtual bool isEquivalent(IPropertyTree *tree) { return (NULL != QUERYINTERFACE(tree, CRemoteTreeBase)); }
-    virtual IPropertyTree *create(const char *name=NULL, bool nocase=false, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false) = 0;
+    virtual IPropertyTree *create(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false) = 0;
     virtual IPropertyTree *create(MemoryBuffer &mb) = 0;
 
 // ITrackChanges
@@ -303,7 +302,7 @@ public:
     void registerRenamed(IPropertyTree &owner, const char *newName, const char *oldName, unsigned pos, __int64 id)
     {
         ChangeInfo *changes = queryCreateChangeInfo(owner);
-        IPropertyTree *t = createPTree(false);
+        IPropertyTree *t = createPTree();
         t->setProp("@from", oldName);
         t->setProp("@to", newName);
         t->setPropInt64("@id", id);
@@ -316,7 +315,7 @@ public:
     void registerDeleted(IPropertyTree &owner, const char *name, unsigned pos, __int64 id)
     {
         ChangeInfo *changes = queryCreateChangeInfo(owner);
-        IPropertyTree *t = createPTree(false);
+        IPropertyTree *t = createPTree();
         t->setProp("@name", name);
         t->setPropInt64("@id", id);
 #ifdef SIBLING_MOVEMENT_CHECK
@@ -332,7 +331,7 @@ public:
         if (t) t->removeProp(attr);
         t = changes->tree->queryPropTree("AC");
         if (!t)
-            t = changes->tree->addPropTree("AC", createPTree(false));
+            t = changes->tree->addPropTree("AC", createPTree());
         t->setProp(attr, "");
     }
 
@@ -343,7 +342,7 @@ public:
         if (t) t->removeProp(attr);
         t = changes->tree->queryPropTree("AD");
         if (!t)
-            t = changes->tree->addPropTree("AD", createPTree(false));
+            t = changes->tree->addPropTree("AD", createPTree());
         t->addProp(attr, "");
     }
 
@@ -352,7 +351,7 @@ public:
         ChangeInfo *changes = queryCreateChangeInfo(owner);
         IPropertyTree *t = changes->tree->queryPropTree(APPEND_TAG);
         if (!t)
-            t = changes->tree->setPropTree(APPEND_TAG, createPTree(false));
+            t = changes->tree->setPropTree(APPEND_TAG, createPTree());
         t->setPropInt(NULL, l);
     }
 

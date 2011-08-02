@@ -678,7 +678,7 @@ void adjustRowvalues(IPropertyTree* xgmml, const char* popupId)
 
             try
             {
-                IPropertyTree *rv_dataset=value.setPropTree("Dataset",createPTreeFromXMLString(value.queryProp("@value"),true));
+                IPropertyTree *rv_dataset=value.setPropTree("Dataset",createPTreeFromXMLString(value.queryProp("@value"), ipt_caseInsensitive));
                 value.setProp("@value","");
                     rv_dataset->setProp("@xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
 
@@ -5027,7 +5027,7 @@ void CWsWorkunitsEx::getResult(IEspContext &context, IConstWUResult &r,IArrayOf<
             SCMStringBuffer x;
             r.getResultXml(x);
 
-            Owned<IPropertyTree> props = loadPropertyTree(x.str(), true);
+            Owned<IPropertyTree> props = createPTreeFromXMLString(x.str(), ipt_caseInsensitive);
             
             //StringBuffer buf;
             //toXML(props, buf);
@@ -5036,7 +5036,7 @@ void CWsWorkunitsEx::getResult(IEspContext &context, IConstWUResult &r,IArrayOf<
             //  DBGLOG("getResult returns:%s", buf.str());
             //}
             IPropertyTree *val = props->queryPropTree("Row/*");
-         if(val)
+            if(val)
             {
                 value<<val->queryProp(NULL);
             }
@@ -6205,7 +6205,7 @@ bool CWsWorkunitsEx::getInfoFromSasha(IEspContext &context, const char *sashaSer
         return false;
     
     //DBGLOG("Result: %s", res.str());
-    Owned<IPropertyTree> wu = createPTreeFromXMLString(res.str(),false);
+    Owned<IPropertyTree> wu = createPTreeFromXMLString(res.str());
     if (!wu)
         return false;
 
@@ -6962,7 +6962,7 @@ IPropertyTree * getArchivedWorkUnitProperties(const char * wuid)
             cmd->getResult(0,res);
             if(res.length() > 0)
             {
-                Owned<IPropertyTree> wuTree = createPTreeFromXMLString(res.str(),false);
+                Owned<IPropertyTree> wuTree = createPTreeFromXMLString(res.str());
                 return wuTree.getLink();
             }
             break;
@@ -8170,7 +8170,7 @@ bool CWsWorkunitsEx::onWUCompileECL(IEspContext &context, IEspWUCompileECLReques
                 wu->getApplicationValue("SyntaxCheck",StringBuffer("Dependency").append(count).str(),buf);
                 if(!buf.length())
                     break;
-                Owned<IPropertyTree> res=createPTreeFromXMLString(buf.str(),true);
+                Owned<IPropertyTree> res=createPTreeFromXMLString(buf.str(), ipt_caseInsensitive);
                 if(!res)
                     continue;
 

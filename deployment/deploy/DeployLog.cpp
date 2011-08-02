@@ -34,7 +34,7 @@ public:
       m_filename(filename)
    {
       assertex(filename);
-      m_tree.setown(createPTree("DeployLog", false));
+      m_tree.setown(createPTree("DeployLog"));
       m_tree->addProp("@environmentArchive", envFilename);
       m_tree->addProp("@startTime", getTimestamp());
    }
@@ -60,7 +60,7 @@ public:
       assertex(tasksNode);
 
       // Add new task
-      IPropertyTree* node = createPTree("Task", false);
+      IPropertyTree* node = createPTree("Task");
       node->addProp("@action", task.getCaption());
       node->addProp("@source", task.getFileSpec(DT_SOURCE));
       node->addProp("@target", task.getFileSpec(DT_TARGET));
@@ -99,7 +99,7 @@ public:
       char ppath[_MAX_PATH];
       strcpy(ppath, path);
       removeTrailingPathSepChar(ppath);
-      IPropertyTree* node = createPTree("Directory", false);
+      IPropertyTree* node = createPTree("Directory");
       node->addProp("@name", ppath);
       getDirList(ppath, node);
       return compNode->addPropTree("Directory", node);
@@ -122,9 +122,9 @@ private:
       }
 
       // If node not found, create it and add Tasks subnode
-      IPropertyTree* compNode = createPTree("Component", false);
+      IPropertyTree* compNode = createPTree("Component");
       compNode->addProp("@name", comp);
-      compNode->addPropTree("Tasks", createPTree("Tasks", false));
+      compNode->addPropTree("Tasks", createPTree("Tasks"));
       return m_tree->addPropTree("Component", compNode);
    }
    //---------------------------------------------------------------------------
@@ -145,7 +145,7 @@ private:
             StringBuffer newPath(path);
             newPath.append('\\').append(dirEntryName);
 
-            IPropertyTree* node = createPTree("Directory", false);
+            IPropertyTree* node = createPTree("Directory");
             node->addProp("@name", newPath.str());
 
             getDirList(newPath.str(), parentNode->addPropTree("Directory", node));
@@ -161,7 +161,7 @@ private:
 
             offset_t filesize = iFile.size();
 
-            IPropertyTree* node = createPTree("File", false);
+            IPropertyTree* node = createPTree("File");
             node->addProp("@name", dirEntryName);
             node->addProp("@date", timestamp.str());
             node->addPropInt64("@size", filesize);

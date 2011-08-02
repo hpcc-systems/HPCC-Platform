@@ -197,9 +197,9 @@ class CConstGraphProgress : public CInterface, implements IConstWUGraphProgress
         IPropertyTree *node = progress->queryPropTree(path.str());
         if (!node)
         {
-            node = progress->addPropTree("node", createPTree(false));
+            node = progress->addPropTree("node", createPTree());
             node->setPropInt("@id", (int)nodeId);
-            elem = node->addPropTree(elemName, createPTree(false));
+            elem = node->addPropTree(elemName, createPTree());
             elem->setProp("@id", id);
         }
         else
@@ -208,7 +208,7 @@ class CConstGraphProgress : public CInterface, implements IConstWUGraphProgress
             elem = node->queryPropTree(path.str());
             if (!elem)
             {
-                elem = node->addPropTree(elemName, createPTree(false));
+                elem = node->addPropTree(elemName, createPTree());
                 elem->setProp("@id", id);
             }
         }
@@ -302,7 +302,7 @@ public:
         IPropertyTree *node = progress->queryPropTree(path.str());
         if (!node)
         {
-            node = progress->addPropTree("node", createPTree(false));
+            node = progress->addPropTree("node", createPTree());
             node->setPropInt("@id", (int)nodeId);
         }
         node->setPropInt("@_state", (unsigned)state);
@@ -313,7 +313,7 @@ public:
             {
                 StringBuffer path;
                 Owned<IRemoteConnection> conn = querySDS().connect(path.append("/GraphProgress/").append(wuid).str(), myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
-                IPropertyTree *running = conn->queryRoot()->setPropTree("Running", createPTree(false));
+                IPropertyTree *running = conn->queryRoot()->setPropTree("Running", createPTree());
                 running->setProp("@graph", graphName);
                 running->setPropInt64("@subId", nodeId);
                 break;
@@ -368,15 +368,15 @@ public:
             newt.setown(createPTree(buf));
             IPropertyTree *running = root->queryPropTree("Running");
             if (running)
-                newt->setPropTree("Running",createPTree(running));
+                newt->setPropTree("Running",createPTreeFromIPT(running));
         }
         else {
             if (!pack)
                 return true;
-            newt.setown(createPTree(wuid,false));
+            newt.setown(createPTree(wuid));
             IPropertyTree *running = root->queryPropTree("Running");
             if (running) {
-                newt->setPropTree("Running",createPTree(running));
+                newt->setPropTree("Running",createPTreeFromIPT(running));
                 root->removeTree(running);
             }
             root->serialize(buf);
@@ -2532,7 +2532,7 @@ CLocalWorkUnit::CLocalWorkUnit(const char *_wuid, const char *parentWuid, ISecMa
 {
     connectAtRoot = true;
     init();
-    p.setown(createPTree(_wuid, false));
+    p.setown(createPTree(_wuid));
     p->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
     if (parentWuid)
         p->setProp("@parentWuid", parentWuid);
@@ -2710,7 +2710,7 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
     xpath.append(wuid);
     Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
     if (conn) {
-        Owned<IPropertyTree> tmp = createPTree("GraphProgress",false);
+        Owned<IPropertyTree> tmp = createPTree("GraphProgress");
         mergePTree(tmp,conn->queryRoot());
         toXML(tmp,extraWorkUnitXML,1,XML_Format);
         conn->close();
@@ -2733,14 +2733,14 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
     Owned<IException> exception;
     Owned<IDllLocation> loc;
     StringBuffer dst, locpath;
-    Owned<IPropertyTree> generatedDlls = createPTree("GeneratedDlls", false);
+    Owned<IPropertyTree> generatedDlls = createPTree("GeneratedDlls");
     ForEach(*iter) {
         IConstWUAssociatedFile & cur = iter->query();
         cur.getName(name);
         if (name.length()) {
             Owned<IDllEntry> entry = queryDllServer().getEntry(name.str());
             if (entry.get()) {
-                Owned<IPropertyTree> generatedDllBranch = createPTree(false);
+                Owned<IPropertyTree> generatedDllBranch = createPTree();
                 generatedDllBranch->setProp("@name", entry->queryName());
                 generatedDllBranch->setProp("@kind", entry->queryKind());
                 bool removeDllFiles = true;
@@ -2845,7 +2845,7 @@ IPropertyTree * pruneBranch(IPropertyTree * from, char const * xpath)
     Owned<IPropertyTree> ret;
     IPropertyTree * branch = from->queryPropTree(xpath);
     if(branch) {
-        ret.setown(createPTree(branch));
+        ret.setown(createPTreeFromIPT(branch));
         from->removeTree(branch);
     }
     return ret.getClear();
@@ -2863,7 +2863,7 @@ bool restoreWorkUnit(const char *base,const char *wuid)
     Owned<IFileIO> fileio = file->open(IFOread);
     if (!fileio)
         return false;
-    Owned<IPropertyTree> pt = createPTree(*fileio, false);
+    Owned<IPropertyTree> pt = createPTree(*fileio);
     if (!pt)
         return false;
     CDateTime dt;
@@ -2922,7 +2922,8 @@ void CLocalWorkUnit::loadXML(const char *xml)
 {
     CriticalBlock block(crit);
     init();
-    p.setown(loadPropertyTree(xml, false));
+    assertex(xml);
+    p.setown(createPTreeFromXMLString(xml));
 }
 
 void CLocalWorkUnit::serialize(MemoryBuffer &tgt)
@@ -4345,7 +4346,7 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached)
             StringBuffer xpath;
             xpath.append("Variable[@name='").append(name).append("']");
             IPropertyTree *ptTgtVariable = ptTgtVariables->queryPropTree(xpath.str());
-            IPropertyTree *merged = createPTree(ptSrcVariable); // clone entire source info...
+            IPropertyTree *merged = createPTreeFromIPT(ptSrcVariable); // clone entire source info...
             merged->removeProp("Value"); // except value and status
             merged->setProp("@status", "undefined");
             if (!merged->getPropBool("@isScalar"))
@@ -4512,7 +4513,7 @@ IWUQuery* CLocalWorkUnit::updateQuery()
     {
         IPropertyTree *s = p->queryPropTree("Query");
         if (!s)
-            s = p->addPropTree("Query", createPTreeFromXMLString("<Query fetchEntire='1'/>", false));
+            s = p->addPropTree("Query", createPTreeFromXMLString("<Query fetchEntire='1'/>"));
         s->Link();
         query.setown(new CLocalWUQuery(s)); 
     }
@@ -4653,7 +4654,7 @@ void CLocalWorkUnit::setTimerInfo(const char *name, const char *subname, unsigne
     CriticalBlock block(crit);
     IPropertyTree *timings = p->queryPropTree("Timings");
     if (!timings)
-        timings = p->addPropTree("Timings", createPTree("Timings", false));
+        timings = p->addPropTree("Timings", createPTree("Timings"));
     StringBuffer fullname;
     if (subname)
         fullname.append('.').append(subname);
@@ -4663,7 +4664,7 @@ void CLocalWorkUnit::setTimerInfo(const char *name, const char *subname, unsigne
     IPropertyTree *timing = timings->queryPropTree(xpath.str());
     if (!timing)
     {
-        timing = timings->addPropTree("Timing", createPTree("Timing", false));
+        timing = timings->addPropTree("Timing", createPTree("Timing"));
         timing->setProp("@name", fullname.str());
     }
     timing->setPropInt("@count", count);
@@ -4690,7 +4691,7 @@ void CLocalWorkUnit::setTimeStamp(const char *application, const char *instance,
 #endif //_WIN32
     IPropertyTree *ts = p->queryPropTree("TimeStamps");
     if (!ts) {
-        ts = p->addPropTree("TimeStamps", createPTree("TimeStamps", false));
+        ts = p->addPropTree("TimeStamps", createPTree("TimeStamps"));
         add = true;
     }
     IPropertyTree *t=NULL;
@@ -4700,7 +4701,7 @@ void CLocalWorkUnit::setTimeStamp(const char *application, const char *instance,
         t = ts->queryBranch(path.str());
     }
     if (!t) {
-        t = createPTree("TimeStamp", false);
+        t = createPTree("TimeStamp");
         t->setProp("@application", application);
         add = true;
     }
@@ -4770,9 +4771,9 @@ IWUPlugin* CLocalWorkUnit::updatePluginByName(const char *qname)
     if (existing)
         return (IWUPlugin *) existing;
     if (!plugins.length())
-        p->addPropTree("Plugins", createPTree("Plugins", false));
+        p->addPropTree("Plugins", createPTree("Plugins"));
     IPropertyTree *pl = p->queryPropTree("Plugins");
-    IPropertyTree *s = pl->addPropTree("Plugin", createPTree("Plugin", false));
+    IPropertyTree *s = pl->addPropTree("Plugin", createPTree("Plugin"));
     s->Link();
     IWUPlugin* q = new CLocalWUPlugin(s); 
     q->Link();
@@ -4806,9 +4807,9 @@ IWULibrary* CLocalWorkUnit::updateLibraryByName(const char *qname)
     if (existing)
         return (IWULibrary *) existing;
     if (!libraries.length())
-        p->addPropTree("Libraries", createPTree("Libraries", false));
+        p->addPropTree("Libraries", createPTree("Libraries"));
     IPropertyTree *pl = p->queryPropTree("Libraries");
-    IPropertyTree *s = pl->addPropTree("Library", createPTree("Library", false));
+    IPropertyTree *s = pl->addPropTree("Library", createPTree("Library"));
     s->Link();
     IWULibrary* q = new CLocalWULibrary(s); 
     q->Link();
@@ -4868,9 +4869,9 @@ IWUException* CLocalWorkUnit::createException()
     loadExceptions();
 
     if (!exceptions.length())
-        p->addPropTree("Exceptions", createPTree("Exceptions", false));
+        p->addPropTree("Exceptions", createPTree("Exceptions"));
     IPropertyTree *r = p->queryPropTree("Exceptions");
-    IPropertyTree *s = r->addPropTree("Exception", createPTree("Exception", false));
+    IPropertyTree *s = r->addPropTree("Exception", createPTree("Exception"));
     IWUException* q = new CLocalWUException(LINK(s)); 
     exceptions.append(*LINK(q));
 
@@ -4907,7 +4908,7 @@ IWUWebServicesInfo* CLocalWorkUnit::updateWebServicesInfo(bool create)
         if (!s)
         {
             if (create)
-                s = p->addPropTree("WebServicesInfo", createPTreeFromXMLString("<WebServicesInfo />", false));
+                s = p->addPropTree("WebServicesInfo", createPTreeFromXMLString("<WebServicesInfo />"));
             else
                 return NULL;
         }
@@ -4941,7 +4942,7 @@ IWURoxieQueryInfo* CLocalWorkUnit::updateRoxieQueryInfo(const char *wuid, const 
     {
         IPropertyTree *s = p->queryPropTree("RoxieQueryInfo");
         if (!s)
-            s = p->addPropTree("RoxieQueryInfo", createPTreeFromXMLString("<RoxieQueryInfo />", false));
+            s = p->addPropTree("RoxieQueryInfo", createPTreeFromXMLString("<RoxieQueryInfo />"));
         if (wuid && *wuid)
             s->addProp("@wuid", wuid);
 
@@ -5021,9 +5022,9 @@ IWUResult* CLocalWorkUnit::createResult()
     // For this to be legally called, we must have the write-able interface. So we are already locked for write.
     loadResults();
     if (!results.length())
-        p->addPropTree("Results", createPTree("Results", false));
+        p->addPropTree("Results", createPTree("Results"));
     IPropertyTree *r = p->queryPropTree("Results");
-    IPropertyTree *s = r->addPropTree("Result", createPTreeFromXMLString("<Result fetchEntire='1'/>", false));
+    IPropertyTree *s = r->addPropTree("Result", createPTreeFromXMLString("<Result fetchEntire='1'/>"));
 
     s->Link();
     IWUResult* q = new CLocalWUResult(s); 
@@ -5173,9 +5174,9 @@ IWUResult* CLocalWorkUnit::updateTemporaryByName(const char *qname)
     if (existing)
         return (IWUResult *) existing;
     if (!temporaries.length())
-        p->addPropTree("Temporaries", createPTree("Temporaries", false));
+        p->addPropTree("Temporaries", createPTree("Temporaries"));
     IPropertyTree *vars = p->queryPropTree("Temporaries");
-    IPropertyTree *s = vars->addPropTree("Variable", createPTree("Variable", false));
+    IPropertyTree *s = vars->addPropTree("Variable", createPTree("Variable"));
     s->Link();
     IWUResult* q = new CLocalWUResult(s); 
     q->Link();
@@ -5191,9 +5192,9 @@ IWUResult* CLocalWorkUnit::updateVariableByName(const char *qname)
     if (existing)
         return (IWUResult *) existing;
     if (!variables.length())
-        p->addPropTree("Variables", createPTree("Variables", false));
+        p->addPropTree("Variables", createPTree("Variables"));
     IPropertyTree *vars = p->queryPropTree("Variables");
-    IPropertyTree *s = vars->addPropTree("Variable", createPTree("Variable", false));
+    IPropertyTree *s = vars->addPropTree("Variable", createPTree("Variable"));
     s->Link();
     IWUResult* q = new CLocalWUResult(s); 
     q->Link();
@@ -5261,7 +5262,7 @@ static void _noteFileRead(IDistributedFile *file, IPropertyTree *filesRead)
     {
         StringBuffer cluster;
         file->getClusterName(0,cluster);
-        fileTree = createPTree(false);
+        fileTree = createPTree();
         fileTree->setProp("@name", fname.str());
         fileTree->setProp("@cluster", cluster.str());
         fileTree->setPropInt("@useCount", 1);
@@ -5276,7 +5277,7 @@ static void _noteFileRead(IDistributedFile *file, IPropertyTree *filesRead)
             IDistributedFile &file = iter->query();
             StringBuffer fname;
             file.getLogicalName(fname);
-            Owned<IPropertyTree> subfile = createPTree(false);
+            Owned<IPropertyTree> subfile = createPTree();
             subfile->setProp("@name", fname.str());
             fileTree->addPropTree("Subfile", subfile.getClear());
             _noteFileRead(&file, filesRead);
@@ -5289,7 +5290,7 @@ void CLocalWorkUnit::noteFileRead(IDistributedFile *file)
     CriticalBlock block(crit);
     IPropertyTree *files = p->queryPropTree("FilesRead");
     if (!files)
-        files = p->addPropTree("FilesRead", createPTree(false));
+        files = p->addPropTree("FilesRead", createPTree());
     _noteFileRead(file, files);
 }
 
@@ -5301,7 +5302,7 @@ static void addFile(IPropertyTree *files, const char *fileName, const char *clus
         path.append("[@cluster=\"").append(cluster).append("\"]");
     IPropertyTree *file = files->queryPropTree(path.str());
     if (file) files->removeTree(file);
-    file = createPTree(false);
+    file = createPTree();
     file->setProp("@name", fileName);
     if (cluster)
         file->setProp("@cluster", cluster);
@@ -5318,7 +5319,7 @@ void CLocalWorkUnit::addFile(const char *fileName, StringArray *clusters, unsign
     CriticalBlock block(crit);
     IPropertyTree *files = p->queryPropTree("Files");
     if (!files)
-        files = p->addPropTree("Files", createPTree(false));
+        files = p->addPropTree("Files", createPTree());
     if (!clusters)
         addFile(fileName, NULL, usageCount, fileKind, graphOwner);
     else
@@ -5394,7 +5395,7 @@ void CLocalWorkUnit::addDiskUsageStats(__int64 _avgNodeUsage, unsigned _minNode,
         maxNodeUsage = stats->getPropInt64("@maxNodeUsage");
     else
     {
-        stats = p->addPropTree("DiskUsageStats", createPTree(false));
+        stats = p->addPropTree("DiskUsageStats", createPTree());
         maxNodeUsage = 0;
     }
 
@@ -5437,9 +5438,9 @@ IWUActivity * CLocalWorkUnit::updateActivity(__int64 id)
     if (existing)
         return (IWUActivity *) existing;
     if (!activities.length())
-        p->addPropTree("Activities", createPTree("Activities", false));
+        p->addPropTree("Activities", createPTree("Activities"));
     IPropertyTree *pl = p->queryPropTree("Activities");
-    IPropertyTree *s = pl->addPropTree("Activity", createPTree("Activity", false));
+    IPropertyTree *s = pl->addPropTree("Activity", createPTree("Activity"));
     IWUActivity * q = new CLocalWUActivity(LINK(s), id); 
     activities.append(*LINK(q));
     return q;
@@ -5668,7 +5669,7 @@ const IPropertyTree *CLocalWorkUnit::getXmlParams() const
 void CLocalWorkUnit::setXmlParams(const char *params)
 {
     CriticalBlock block(crit);
-    p->setPropTree("Parameters", createPTreeFromXMLString(params, false));
+    p->setPropTree("Parameters", createPTreeFromXMLString(params));
 }
 
 void CLocalWorkUnit::setXmlParams(IPropertyTree *tree)
@@ -5764,9 +5765,9 @@ IWUGraph* CLocalWorkUnit::createGraph()
     ensureGraphsUnpacked();
     loadGraphs();
     if (!graphs.length())
-        p->addPropTree("Graphs", createPTree("Graphs", false));
+        p->addPropTree("Graphs", createPTree("Graphs"));
     IPropertyTree *r = p->queryPropTree("Graphs");
-    IPropertyTree *s = r->addPropTree("Graph", createPTreeFromXMLString("<Graph fetchEntire='1'/>", false));
+    IPropertyTree *s = r->addPropTree("Graph", createPTreeFromXMLString("<Graph fetchEntire='1'/>"));
     s->Link();
     IWUGraph* q = new CLocalWUGraph(s, p->queryName());
     q->Link();
@@ -5806,13 +5807,13 @@ void CLocalWUGraph::setName(const char *str)
 
 void CLocalWUGraph::setXGMML(const char *str)
 {
-    setXGMMLTree(createPTreeFromXMLString(str, false, true));
+    setXGMMLTree(createPTreeFromXMLString(str));
 }
 
 void CLocalWUGraph::setXGMMLTree(IPropertyTree *graph)
 {
     assertex(strcmp(graph->queryName(), "graph")==0);
-    IPropertyTree *xgmml = createPTree("xgmml", false);
+    IPropertyTree *xgmml = createPTree("xgmml");
     xgmml->setPropTree("graph", graph);
     p->setPropTree("xgmml", xgmml);
 }
@@ -5846,7 +5847,7 @@ void CLocalWUGraph::mergeProgress(IPropertyTree &rootNode, IPropertyTree &progre
                         const char *aName = aIter->queryName()+1;
                         if (0 != stricmp("id", aName)) // "id" reserved.
                         {
-                            IPropertyTree *att = graphEdge->addPropTree("att", createPTree(false));
+                            IPropertyTree *att = graphEdge->addPropTree("att", createPTree());
                             att->setProp("@name", aName);
                             att->setProp("@value", aIter->queryValue());
                         }
@@ -5856,7 +5857,7 @@ void CLocalWUGraph::mergeProgress(IPropertyTree &rootNode, IPropertyTree &progre
                     ForEach (*iter)
                     {
                         IPropertyTree &t = iter->query();
-                        IPropertyTree *att = graphEdge->addPropTree("att", createPTree(false));
+                        IPropertyTree *att = graphEdge->addPropTree("att", createPTree());
                         att->setProp("@name", t.queryName());
                         att->setProp("@value", t.queryProp(NULL));
                     }
@@ -5882,7 +5883,7 @@ void CLocalWUGraph::mergeProgress(IPropertyTree &rootNode, IPropertyTree &progre
                         const char *aName = aIter->queryName()+1;
                         if (0 != stricmp("id", aName)) // "id" reserved.
                         {
-                            IPropertyTree *att = _node->addPropTree("att", createPTree(false));
+                            IPropertyTree *att = _node->addPropTree("att", createPTree());
                             att->setProp("@name", aName);
                             att->setProp("@value", aIter->queryValue());
                         }
@@ -5904,7 +5905,7 @@ IPropertyTree * CLocalWUGraph::getXGMMLTree(bool doMergeProgress) const
     {
         IPropertyTree *src = p->queryPropTree("xgmml/graph");
         if (!src) return NULL;
-        Owned<IPropertyTree> copy = createPTree(src);
+        Owned<IPropertyTree> copy = createPTreeFromIPT(src);
         Owned<IConstWUGraphProgress> _progress;
         if (progress) _progress.set(progress);
         else
@@ -6029,7 +6030,7 @@ IStringVal& CLocalWUQuery::getQueryShortText(IStringVal &str) const
     const char * text = p->queryProp("Text");
     if (isArchiveQuery(text))
     {
-        Owned<IPropertyTree> xml = createPTreeFromXMLString(text, true);
+        Owned<IPropertyTree> xml = createPTreeFromXMLString(text, ipt_caseInsensitive);
         const char * path = xml->queryProp("Query/@attributePath");
         if (path)
         {
@@ -6098,9 +6099,9 @@ void CLocalWUQuery::addAssociatedFile(WUFileType type, const char * name, const 
     CriticalBlock block(crit);
     loadAssociated();
     if (!associated.length())
-        p->addPropTree("Associated", createPTree("Associated", false));
+        p->addPropTree("Associated", createPTree("Associated"));
     IPropertyTree *pl = p->queryPropTree("Associated");
-    IPropertyTree *s = pl->addPropTree("File", createPTree("File", false));
+    IPropertyTree *s = pl->addPropTree("File", createPTree("File"));
     setEnum(s, "@type", type, queryFileTypes);
     s->setProp("@filename", name);
     s->setProp("@ip", ip);
@@ -6141,7 +6142,7 @@ void CLocalWUQuery::addSpecialCaseAssociated(WUFileType type, const char * propn
     const char * name = p->queryProp(propname);
     if (name)
     {
-        IPropertyTree *s = createPTree("File", false);
+        IPropertyTree *s = createPTree("File");
         setEnum(s, "@type", type, queryFileTypes);
         s->setProp("@filename", name);
         if (crc)
@@ -6361,7 +6362,7 @@ void CLocalWURoxieQueryInfo::setQueryInfo(const char *info)
     if (queryTree)
         p->removeTree(queryTree);
 
-    IPropertyTree * tempTree = p->addPropTree("query", createPTreeFromXMLString(info, false));
+    IPropertyTree * tempTree = p->addPropTree("query", createPTreeFromXMLString(info));
 
     if (!p->hasProp("@roxieClusterName"))
     {
@@ -7262,7 +7263,7 @@ void CLocalWULibrary::addActivity(unsigned id)
     StringBuffer s;
     s.append("activity[@id=\"").append(id).append("\"]");
     if (!p->hasProp(s.str()))
-        p->addPropTree("activity", createPTree(false))->setPropInt("@id", id); 
+        p->addPropTree("activity", createPTree())->setPropInt("@id", id);
 }
 
 //==========================================================================================
@@ -7590,7 +7591,7 @@ IWorkflowItem * CLocalWorkUnit::addWorkflowItem(unsigned wfid, WFType type, WFMo
     workflowIteratorCached = false;
     IPropertyTree * s = p->queryPropTree("Workflow");
     if(!s)
-        s = p->addPropTree("Workflow", createPTree("Workflow", false));
+        s = p->addPropTree("Workflow", createPTree("Workflow"));
     return createWorkflowItem(s, wfid, type, mode, success, failure, recovery, retriesAllowed, contingencyFor);
 }
 
@@ -7602,7 +7603,7 @@ IWorkflowItemIterator * CLocalWorkUnit::updateWorkflowItems()
     {
         IPropertyTree * s = p->queryPropTree("Workflow");
         if(!s)
-            s = p->addPropTree("Workflow", createPTree("Workflow", false));
+            s = p->addPropTree("Workflow", createPTree("Workflow"));
         workflowIterator.setown(createWorkflowItemIterator(s)); 
         workflowIteratorCached = true;
     }
@@ -7723,7 +7724,7 @@ public:
     CLocalFileUpload(IPropertyTree * _tree) : tree(_tree) {}
     CLocalFileUpload(unsigned id, LocalFileUploadType type, char const * source, char const * destination, char const * eventTag)
     {
-        tree.setown(createPTree(false));
+        tree.setown(createPTree());
         tree->setPropInt("@id", id);
         setEnum(tree, "@type", type, localFileUploadTypes);
         tree->setProp("@source", source);
@@ -7803,7 +7804,7 @@ unsigned CLocalWorkUnit::addLocalFileUpload(LocalFileUploadType type, char const
     CriticalBlock block(crit);
     IPropertyTree * s = p->queryPropTree("LocalFileUploads");
     if(!s)
-        s = p->addPropTree("LocalFileUploads", createPTree(false));
+        s = p->addPropTree("LocalFileUploads", createPTree());
     unsigned id = s->numChildren();
     Owned<CLocalFileUpload> upload = new CLocalFileUpload(id, type, source, destination, eventTag);
     s->addPropTree("LocalFileUpload", upload->getTree());
@@ -8384,7 +8385,7 @@ public:
         Owned<IPropertyTree> root = baseconn->getRoot();
         ensurePTree(root, "EventQueue");
         Owned<IPropertyTree> eventQueue = root->getPropTree("EventQueue");
-        Owned<IPropertyTree> eventItem = createPTree(false);
+        Owned<IPropertyTree> eventItem = createPTree();
         eventItem->setProp("@name", name);
         eventItem->setProp("@text", text);
         eventQueue->addPropTree("Item", eventItem.getLink());
@@ -8540,7 +8541,7 @@ IPropertyTree * addNamedQuery(IPropertyTree * queryRegistry, const char * name, 
 
     StringBuffer id;
     id.append(lcName).append(".").append(seq);
-    IPropertyTree * newEntry = createPTree("Query", true);
+    IPropertyTree * newEntry = createPTree("Query", ipt_caseInsensitive);
     newEntry->setProp("@name", lcName);
     newEntry->setProp("@wuid", wuid);
     newEntry->setProp("@dll", dll);
@@ -8594,7 +8595,7 @@ void setQueryAlias(IPropertyTree * queryRegistry, const char * name, const char 
     IPropertyTree * match = queryRegistry->queryPropTree(xpath);
     if (!match)
     {
-        IPropertyTree * newEntry = createPTree("Alias", false);
+        IPropertyTree * newEntry = createPTree("Alias");
         newEntry->setProp("@name", lcName);
         match = queryRegistry->addPropTree("Alias", newEntry);
     }
@@ -8694,7 +8695,7 @@ extern WORKUNIT_API IPropertyTree * getQueryRegistry(const char * wsEclId, bool 
     {
         if (readonly)
             return NULL;
-        Owned<IPropertyTree> querySet = createPTree(false);
+        Owned<IPropertyTree> querySet = createPTree();
         querySet->setProp("@id", wsEclId);
         globalLock->queryRoot()->addPropTree("QuerySet", querySet.getClear());
         globalLock->commit();
@@ -8751,7 +8752,7 @@ extern WORKUNIT_API IPropertyTree * getPackageSetRegistry(const char * wsEclId, 
     { 
         if (readonly)
             return NULL;
-        Owned<IPropertyTree> querySet = createPTree(false);
+        Owned<IPropertyTree> querySet = createPTree();
         querySet->setProp("@id", wsEclId);
         globalLock->queryRoot()->addPropTree("PackageSet", querySet.getClear());
         globalLock->commit();

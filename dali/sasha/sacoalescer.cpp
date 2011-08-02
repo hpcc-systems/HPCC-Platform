@@ -33,7 +33,7 @@ void coalesceDatastore(bool force)
     {
         Owned<IPropertyTree> coalesceProps = serverConfig->getPropTree("Coalescer");
         if (!coalesceProps)
-            coalesceProps.setown(createPTree("Coalescer",false));
+            coalesceProps.setown(createPTree("Coalescer"));
         StringBuffer dataPath, backupPath;
         IPropertyTree &confProps = querySDS().queryProperties();
         confProps.getProp("@dataPathUrl", dataPath); 
@@ -92,14 +92,14 @@ void coalesceDatastore(bool force)
             if (storeIFile->exists())
             {
                 PROGLOG("Loading store: %s, size=%"I64F"d", storeFilename.str(), storeIFile->size());
-                _root.setown(createPTreeFromXMLFile(storeFilename.str(), false));
+                _root.setown(createPTreeFromXMLFile(storeFilename.str()));
                 PROGLOG("Loaded: %s", storeFilename.str());
             }
             else
             {
                 if (baseEdition==0) {
                     PROGLOG("Creating base store");
-                    _root.setown(createPTree("SDS", false));
+                    _root.setown(createPTree("SDS"));
                 }
                 else {
                     ERRLOG("Base store %d not found, exiting",baseEdition);
@@ -234,7 +234,7 @@ public:
         {
             Owned<IPropertyTree> coalesceProps = serverConfig->getPropTree("Coalescer");
             if (!coalesceProps)
-                coalesceProps.setown(createPTree("Coalescer",false));
+                coalesceProps.setown(createPTree("Coalescer"));
             unsigned interval = coalesceProps->getPropInt("@interval",DEFAULT_INTERVAL);
             if (!interval)
             {

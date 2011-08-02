@@ -317,10 +317,9 @@ public:
 
     virtual bool setLazyFetch(bool fetch) { return connection.setLazyFetch(fetch); }
     virtual ChildMap *checkChildren() const;
-    virtual IPropertyTree *create(IPTArrayValue *value=NULL);
-    virtual IPropertyTree *create(const char *name, bool nocase=false, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false);
+    virtual IPropertyTree *create(const char *name, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false);
     virtual IPropertyTree *create(MemoryBuffer &mb);
-    virtual void createChildMap(bool caseInsensitive=false);
+    virtual void createChildMap();
     virtual IPropertyTree *ownPTree(IPropertyTree *tree);
     virtual void setLocal(size32_t size, const void *data, bool _binary);
     virtual void appendLocal(size32_t size, const void *data, bool binary);

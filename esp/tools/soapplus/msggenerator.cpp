@@ -50,7 +50,7 @@ MessageGenerator::MessageGenerator(const char* path, bool keepfile, SchemaType s
     {
         StringBuffer cfg;
         if (loadFile(cfg, globals->queryProp("cfg")))
-            m_cfg.setown(createPTreeFromXMLString(cfg,false));
+            m_cfg.setown(createPTreeFromXMLString(cfg));
         else
             ERRLOG("Can not load cfg file; ignored");
     }
@@ -96,7 +96,7 @@ MessageGenerator::MessageGenerator(const char* path, bool keepfile, SchemaType s
         throw MakeStringException(-1, "wsdl is empty");
     }
 
-    Owned<IPropertyTree> schema = createPTreeFromXMLString(m_schema.str(), false);
+    Owned<IPropertyTree> schema = createPTreeFromXMLString(m_schema.str());
     if (m_isRoxie)
         m_roxieSchemaRoot.set(schema->queryBranch("//Result"));
     else
@@ -352,7 +352,7 @@ void MessageGenerator::genNonRoxieMessage(const char* method, const char* templa
 
                 if (templatemsg && *templatemsg)
                 {
-                    Owned<IPropertyTree> tmplat = createPTreeFromXMLString(templatemsg, false);
+                    Owned<IPropertyTree> tmplat = createPTreeFromXMLString(templatemsg);
                     if(!tmplat.get())
                         throw MakeStringException(-1, "can't generate property tree from input, please make sure it's valid xml.");
                     IPropertyTree* tmp = NULL;
@@ -384,7 +384,7 @@ void MessageGenerator::genRoxieMessage(const char* templatemsg, StringBuffer& me
 
     if (templatemsg)
     {
-        tmplat.setown(createPTreeFromXMLString(templatemsg, false));
+        tmplat.setown(createPTreeFromXMLString(templatemsg));
         if(!tmplat.get())
             throw MakeStringException(-1, "can't generate property tree from input, please make sure it's valid xml.");
         root = tmplat->queryName();

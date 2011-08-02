@@ -421,7 +421,7 @@ static IPropertyTree *getWorkUnitBranch(ICodeContext *ctx,const char *wuid,const
         IPropertyTree *ret = t->queryBranch(branch);
         if (!ret)
             return NULL;
-        return createPTree(ret);
+        return createPTreeFromIPT(ret);
     }
     // look up in sasha - this could be improved with server support
     SocketEndpointArray sashaeps;
@@ -437,7 +437,7 @@ static IPropertyTree *getWorkUnitBranch(ICodeContext *ctx,const char *wuid,const
             if (cmd->numIds()) {
                 StringBuffer res;
                 if (cmd->getResult(0,res)) 
-                    return createPTreeFromXMLString(res.str(),false);
+                    return createPTreeFromXMLString(res.str());
             }
             if (i+1>=sashaeps.ordinality()) 
                 break;

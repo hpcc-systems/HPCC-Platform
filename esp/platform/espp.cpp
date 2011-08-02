@@ -286,7 +286,7 @@ int init_main(int argc, char* argv[])
         if(!cfgfile || !*cfgfile)
             cfgfile = "esp.xml";
 
-        Owned<IPropertyTree> envpt= createPTreeFromXMLFile(cfgfile, true);
+        Owned<IPropertyTree> envpt= createPTreeFromXMLFile(cfgfile, ipt_caseInsensitive);
         Owned<IPropertyTree> procpt = NULL;
         if (envpt)
         {

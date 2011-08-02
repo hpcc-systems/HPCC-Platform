@@ -124,10 +124,10 @@ const char * CLogicalView::getXsd()
 {
     if (xsd_.length() == 0)
     {
-        Owned<IPropertyTree> dataset = createPTree("DataSet", true);
+        Owned<IPropertyTree> dataset = createPTree("DataSet", ipt_caseInsensitive);
         dataset->setProp("@xmlns", "urn:hpccsystems:ws:dfu");
 
-        IPropertyTree * schema = createPTree("xsd:schema", true);
+        IPropertyTree * schema = createPTree("xsd:schema", ipt_caseInsensitive);
         schema->setProp("@id", "DFUDataSet");
 //      schema->setProp("@targetNamespace", "http://tempuri.org/colTotals.xsd");
 //      schema->setProp("@elementFormDefault", "qualified");
@@ -137,25 +137,25 @@ const char * CLogicalView::getXsd()
         schema->setProp("@xmlns:xsd", "http://www.w3.org/2001/XMLSchema");
         schema->setProp("@xmlns:msdata", "urn:schemas-microsoft-com:xml-msdata");
 
-        IPropertyTree * element = createPTree("xsd:element", true);
+        IPropertyTree * element = createPTree("xsd:element", ipt_caseInsensitive);
         element->setProp("@name", "DFUDataSet");
         element->setProp("@msdata:IsDataSet", "true");
 
-        IPropertyTree * complexType = createPTree("xsd:complexType", true);
+        IPropertyTree * complexType = createPTree("xsd:complexType", ipt_caseInsensitive);
 
-        IPropertyTree * choice = createPTree("xsd:choice", true);
+        IPropertyTree * choice = createPTree("xsd:choice", ipt_caseInsensitive);
         choice->setProp("@maxOccurs", "unbounded");
 
-        IPropertyTree * element2 = createPTree("xsd:element", true);
+        IPropertyTree * element2 = createPTree("xsd:element", ipt_caseInsensitive);
         element2->setProp("@name", label_.str());
 
-        IPropertyTree * complexType2 = createPTree("xsd:complexType", true);
+        IPropertyTree * complexType2 = createPTree("xsd:complexType", ipt_caseInsensitive);
 
-        IPropertyTree * sequence = createPTree("xsd:sequence", true);
+        IPropertyTree * sequence = createPTree("xsd:sequence", ipt_caseInsensitive);
 
         for (int i = 0; i < rsmd_->getColumnCount(); ++i)
         {
-            IPropertyTree * element3 = createPTree("xsd:element", true);
+            IPropertyTree * element3 = createPTree("xsd:element", ipt_caseInsensitive);
             CStringVal label, type;
             rsmd_->getColumnLabel(label, i);
             element3->setProp("@name", label.str());
@@ -180,7 +180,7 @@ const char * CLogicalView::getXsd()
 
 void CLogicalView::getPage(StringBuffer &page, StringBuffer &state, bool backFlag)
 {
-    Owned<IPropertyTree> dataset = createPTree("dataset", true);
+    Owned<IPropertyTree> dataset = createPTree("dataset", ipt_caseInsensitive);
 
     int prevState = atoi(state.str());
     if (rs_->absolute(prevState))
@@ -193,7 +193,7 @@ void CLogicalView::getPage(StringBuffer &page, StringBuffer &state, bool backFla
             else if (!backFlag && rs_->isAfterLast())
                 break;
 
-            IPropertyTree *datarow = createPTree("table", true);
+            IPropertyTree *datarow = createPTree("table", ipt_caseInsensitive);
             for(int i = 0; i < rsmd_->getColumnCount(); ++i)
             {
                 CStringVal label, val;

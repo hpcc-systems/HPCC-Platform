@@ -88,22 +88,22 @@ bool CRoxieEx::onIndex(IEspContext &context, IEspIndexRequest &req, IEspIndexRes
 
 bool CRoxieEx::onContent(IEspContext &context, IEspContentRequest &req, IEspContentResponse &resp)
 {
-    Owned<IPropertyTree> Index = createPTree("Index", false);
-    IPropertyTree * Contents = Index->addPropTree("Contents", createPTree("Contents", false));
+    Owned<IPropertyTree> Index = createPTree("Index");
+    IPropertyTree * Contents = Index->addPropTree("Contents", createPTree("Contents"));
 
-    IPropertyTree * Content = Contents->addPropTree("Content", createPTree("Content", false));
+    IPropertyTree * Content = Contents->addPropTree("Content", createPTree("Content"));
     Content->setProp("Label", "Local Configuration");
     Content->setProp("URL", "GetQueryList?");
 
-    Content = Contents->addPropTree("Content", createPTree("Content", false));
+    Content = Contents->addPropTree("Content", createPTree("Content"));
     Content->setProp("Label", "Publish Doxie Query");
     Content->setProp("URL", "GetDoxieList?");
 
-    Content = Contents->addPropTree("Content", createPTree("Content", false));
+    Content = Contents->addPropTree("Content", createPTree("Content"));
     Content->setProp("Label", "Add Query");
     Content->setProp("URL", "AddQuery?");
 
-    Content = Contents->addPropTree("Content", createPTree("Content", false));
+    Content = Contents->addPropTree("Content", createPTree("Content"));
     Content->setProp("Label", "View Config XML");
     Content->setProp("URL", "DebugXML?");
 
@@ -130,11 +130,11 @@ bool CRoxieEx::onAddQuery(IEspContext &context, IEspAddQueryRequest &req, IEspAd
     StringArray items, infos;
     if (attrResolver->getIndex("GOSMITH","PASSWORD", module, "SOAP", items, infos))
     {
-        Owned<IPropertyTree> moduleTree = createPTree("Module", false);
+        Owned<IPropertyTree> moduleTree = createPTree("Module");
         moduleTree->setProp("@Label", module);
         for (int i = 0; i < items.ordinality(); ++i)
         {
-            IPropertyTree *attr = moduleTree->addPropTree("Attribute", createPTree("Attribute", false)); 
+            IPropertyTree *attr = moduleTree->addPropTree("Attribute", createPTree("Attribute"));
             attr->setProp("@Label", items.item(i));
             attr->setProp("Description", infos.item(i));
         }
@@ -388,8 +388,8 @@ void CRoxieEx::GenerateCurrentXml(const char * localXml, const char * statusXml,
 //  DBGLOG(localXml);
 //  writeFile("c:\\roxie.xml", statusXml);
 //  DBGLOG(statusXml);
-    Owned<IPropertyTree> local = createPTreeFromXMLString(localXml, false);
-    Owned<IPropertyTree> status = createPTreeFromXMLString(statusXml, false);
+    Owned<IPropertyTree> local = createPTreeFromXMLString(localXml);
+    Owned<IPropertyTree> status = createPTreeFromXMLString(statusXml);
 
     Owned<IPropertyTreeIterator> itr = status->getElements("Summary/File");
     ForEach(*itr)
@@ -400,7 +400,7 @@ void CRoxieEx::GenerateCurrentXml(const char * localXml, const char * statusXml,
         xpath.appendf("Query[@dll=\"%s\"]", dll.str());
         if (!local->hasProp(xpath.str()))
         {
-            IPropertyTree * orphan = local->addPropTree("Orphan", createPTree("Orphan", false));
+            IPropertyTree * orphan = local->addPropTree("Orphan", createPTree("Orphan"));
             orphan->setProp("@dll", dll.str());
             if (file.hasProp("@locked") && strcmp(file.queryProp("@locked"), "true") == 0)
                 orphan->setProp("@locked", "true");

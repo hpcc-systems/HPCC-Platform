@@ -160,7 +160,7 @@ bool CXmlDiff::compare()
         Owned<IPropertyTree> ltree;
         try
         {
-            ltree.setown(createPTreeFromXMLFile(left, false));
+            ltree.setown(createPTreeFromXMLFile(left));
         }
         catch(...)
         {
@@ -174,7 +174,7 @@ bool CXmlDiff::compare()
 
                 if(leftxml)
                 {
-                    ltree.setown(createPTreeFromXMLString(leftxml, false));
+                    ltree.setown(createPTreeFromXMLString(leftxml));
                 }
             }
             catch(...)
@@ -186,7 +186,7 @@ bool CXmlDiff::compare()
 
         try
         {
-            rtree.setown(createPTreeFromXMLFile(right, false));
+            rtree.setown(createPTreeFromXMLFile(right));
         }
         catch(...)
         {
@@ -200,7 +200,7 @@ bool CXmlDiff::compare()
 
                 if(rightxml)
                 {
-                    rtree.setown(createPTreeFromXMLString(rightxml, false));
+                    rtree.setown(createPTreeFromXMLString(rightxml));
                 }
             }
             catch(...)

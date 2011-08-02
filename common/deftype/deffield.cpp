@@ -254,7 +254,7 @@ extern DEFTYPE_API IDefRecordMeta * deserializeRecordMeta(const IPropertyTree * 
 static void addElementToPTree(IPropertyTree * root, IDefRecordElement * elem)
 {
     byte kind = elem ? elem->getKind() : DEKnone;
-    Owned<IPTree> branch = createPTree(false);
+    Owned<IPTree> branch = createPTree();
     StringAttr branchName;
     switch (kind)
     {
@@ -303,7 +303,7 @@ static void addElementToPTree(IPropertyTree * root, IDefRecordElement * elem)
 
 extern DEFTYPE_API StringBuffer & getRecordMetaAsString(StringBuffer & out, IDefRecordMeta const * meta)
 {
-    Owned<IPropertyTree> tree = createPTree("RecordMeta", false);
+    Owned<IPropertyTree> tree = createPTree("RecordMeta");
     tree->setPropInt("@numKeyedFields", meta->numKeyedFields());
     addElementToPTree(tree, meta->queryRecord());
     toXML(tree, out);

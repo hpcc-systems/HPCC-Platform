@@ -189,7 +189,7 @@ class CDFUengine: public CInterface, implements IDFUengine
             mask.clear().appendf("Job[@wuid=\"%s\"]",wuid);
             if (set&&!t->hasProp(mask.str())) {
                 
-                t->addPropTree("Job",createPTree(false))->setProp("@wuid",wuid);
+                t->addPropTree("Job",createPTree())->setProp("@wuid",wuid);
             }
             else 
                 t->removeProp(mask.str());
@@ -969,7 +969,7 @@ public:
         IConstDFUfileSpec *source = wu->querySource();
         IConstDFUfileSpec *destination = wu->queryDestination();
         IConstDFUoptions *options = wu->queryOptions();
-        Owned<IPropertyTree> opttree = createPTree(options->queryTree());
+        Owned<IPropertyTree> opttree = createPTreeFromIPT(options->queryTree());
         StringAttr encryptkey;
         StringAttr decryptkey;
         if (options->getEncDec(encryptkey,decryptkey)) {

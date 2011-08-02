@@ -506,7 +506,7 @@ void checkExternals(unsigned argc, char **args)
         // Check referenced externals have corresponding external declaration.
         Owned<IPropertyTree> externalTree;
         if (createExternalBranch)
-            externalTree.setown(createPTree("External", false));
+            externalTree.setown(createPTree("External"));
         ForEachItemIn(r, parser.matches)
         {
             unsigned index = parser.matches.item(r);
@@ -538,7 +538,7 @@ void checkExternals(unsigned argc, char **args)
                 referencedFiles.append(filename.str());
             if (createExternalBranch)
             {
-                Owned<IPropertyTree> ext = createPTree(false);
+                Owned<IPropertyTree> ext = createPTree();
                 ext->setPropInt("@index", index);
                 ext->setProp("@format", "EFBinaryV2");
                 StringBuffer name(EXTERNAL_NAME_PREFIX);
@@ -570,7 +570,7 @@ void checkExternals(unsigned argc, char **args)
         void *dst = extMb.reserveTruncate(externalEnd-externalStart);
         inFileStream->read(externalEnd-externalStart, dst);
         Owned<IFileIO> memIFileIO = createIFileIO(extMb);
-        Owned<IPropertyTree> externalTree = createPTree(*memIFileIO, false);
+        Owned<IPropertyTree> externalTree = createPTree(*memIFileIO);
 
         // Check referenced externals have corresponding external declaration.
         ForEachItemIn(r, parser.matches)
@@ -584,7 +584,7 @@ void checkExternals(unsigned argc, char **args)
                 if (fixXml)
                 {
                     PROGLOG("Creating replacement declaration for missing reference: %d", index);
-                    IPropertyTree *ext = createPTree(false);
+                    IPropertyTree *ext = createPTree();
                     ext->setPropInt("@index", index);
                     ext->setProp("@format", "EFBinaryV2");
                     StringBuffer name(EXTERNAL_NAME_PREFIX);
@@ -728,7 +728,7 @@ void coalesceStore()
     StringBuffer storeFilename(daliDataPath);
     iStoreHelper->getCurrentStoreFilename(storeFilename);
     PROGLOG("Loading store: %s", storeFilename.str());
-    Owned<IPropertyTree> root = createPTreeFromXMLFile(storeFilename.str(), false);
+    Owned<IPropertyTree> root = createPTreeFromXMLFile(storeFilename.str());
     PROGLOG("Loaded: %s", storeFilename.str());
 
     if (baseEdition != iStoreHelper->queryCurrentEdition())

@@ -1425,7 +1425,7 @@ bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesReques
                 continue;
             }
 
-            Owned<IPropertyTree> desc = createPTreeFromXMLString(tmpBuf.str(),false);
+            Owned<IPropertyTree> desc = createPTreeFromXMLString(tmpBuf.str());
             if (!desc)
             {
                 DBGLOG("Invalid description file for %s", folder.str());

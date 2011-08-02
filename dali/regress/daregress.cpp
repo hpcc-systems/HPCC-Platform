@@ -74,7 +74,7 @@ static unsigned fn(unsigned n, unsigned m, unsigned seed, unsigned depth, IPrope
     name[i] = 0;
     IPropertyTree *child = parent->queryPropTree(name);
     if (!child) 
-        child = parent->addPropTree(name, createPTree(name,false));
+        child = parent->addPropTree(name, createPTree(name));
     return fn(fn(n,seed,seed*17+11,depth+1,child),fn(seed,m,seed*11+17,depth+1,child),seed*19+7,depth+1,child);
 }
 
@@ -131,7 +131,7 @@ static unsigned fn2(unsigned n, unsigned m, unsigned seed, unsigned depth, Strin
     parentname.append(name);
     IPropertyTree *child = parent->queryPropTree(name);
     if (!child) 
-        child = parent->addPropTree(name, createPTree(name,false));
+        child = parent->addPropTree(name, createPTree(name));
     unsigned ret = fn2(fn2(n,seed,seed*17+11,depth+1,parentname),fn2(seed,m,seed*11+17,depth+1,parentname),seed*19+7,depth+1,parentname);
     parentname.setLength(l);
     return ret;
@@ -141,7 +141,7 @@ static unsigned fn2(unsigned n, unsigned m, unsigned seed, unsigned depth, Strin
 static void test1()
 {
     printf("Test SDS read/write\n");
-    Owned<IPropertyTree> ref = createPTree("DAREGRESS",false);
+    Owned<IPropertyTree> ref = createPTree("DAREGRESS");
     fn(1,2,3,0,ref);
     StringBuffer refstr;
     toXML(ref,refstr,0,XML_SortTags|XML_Format);
@@ -213,7 +213,7 @@ static void test2()
         ERROR("named group lookup failed");
     printf("Named group created    - 400 nodes\n");
     for (i=0;i<100;i++) {
-        Owned<IPropertyTree> pp = createPTree("Part",false);
+        Owned<IPropertyTree> pp = createPTree("Part");
         Owned<IFileDescriptor>fdesc = createFileDescriptor();
         fdesc->setDefaultDir("c:\\thordata\\regress");
         n = 9;
@@ -428,7 +428,7 @@ void testSubscription(bool subscriber, int subs, int comms)
                 i = _i%subscriptions;
                     StringBuffer key;
                     key.append("TEST").append(i);
-                    root->setPropTree(key.str(), createPTree(false));
+                    root->setPropTree(key.str(), createPTree());
 
             }
             conn->commit();
