@@ -32,6 +32,19 @@
 #include <map>
 using namespace std;
 
+class ActiveRequests
+{
+public:
+
+    ActiveRequests() { inc(); }
+    ~ActiveRequests()  { dec(); }
+
+    void inc();
+    void dec();
+
+    static long getCount();
+};
+
 class CEspBindingEntry : public CInterface
 {
 private:

@@ -584,6 +584,8 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
         return authorized;
 
     m_secmgr->updateSettings(*user,securitySettings);
+
+    ctx->addTraceSummaryTimeStamp("basicAuth");
     return authorized;
 }
     

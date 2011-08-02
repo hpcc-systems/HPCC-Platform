@@ -28,6 +28,7 @@
 #include "espcontext.hpp"
 #include "http/platform/httptransport.ipp"
 #include "sechandler.hpp"
+#include "espprotocol.hpp"
 
 class CEspContext : public CInterface, implements IEspContext
 {
@@ -39,7 +40,9 @@ private:
     StringAttr      m_peer;
     StringAttr      m_useragent;
 
+    StringBuffer    m_HTTPMethod;
     StringBuffer    m_servName;
+    StringBuffer    m_servMethod;
     StringBuffer    m_servHost;
     short           m_servPort;
 
@@ -66,11 +69,23 @@ private:
     SecHandler m_SecurityHandler;
     BoolHash  m_optGroups;
 
+    StringArray m_traceValues;
+    unsigned created;
+    unsigned active;
+
 public:
     IMPLEMENT_IINTERFACE;
 
-    CEspContext() : m_servPort(0), m_bindingValue(0), m_serviceValue(0), 
-        m_toBeAuthenticated(false), options(0), m_clientVer(-1) { }
+    CEspContext() : m_servPort(0), m_bindingValue(0), m_serviceValue(0), m_toBeAuthenticated(false), options(0), m_clientVer(-1)
+    {
+        created = msTick();
+        active=ActiveRequests::getCount();
+    }
+
+    ~CEspContext()
+    {
+        flushTraceSummary();
+    }
 
     virtual void addOptions(unsigned opts){options|=opts;}
     virtual void removeOptions(unsigned opts){opts&=~opts;}
@@ -157,14 +172,31 @@ public:
     {
         return m_user.get();
     }
+    virtual void setHTTPMethod(const char *name)
+    {
+        m_HTTPMethod.clear().append(name);
+    }
+    virtual const char * queryHTTPMethod()
+    {
+        return m_HTTPMethod.str();
+    }
+
     virtual void setServiceName(const char *name)
     {
         m_servName.clear().append(name).toLowerCase();
     }
-
     virtual const char * queryServiceName(const char *name)
     {
         return m_servName.str();
+    }
+
+    virtual void setServiceMethod(const char *name)
+    {
+        m_servMethod.clear().append(name);
+    }
+    virtual const char * queryServiceMethod()
+    {
+        return m_servMethod.str();
     }
 
     virtual void setResources(ISecResourceList* rlist)
@@ -338,6 +370,58 @@ public:
         m_custom_headers.append(StringBuffer(name).appendf(": %s", val?val:"").str());
     }
 
+    virtual void addTraceSummaryValue(const char *name, const char *value)
+    {
+        StringBuffer str;
+        if (name && *name)
+            str.append(name).append('=');
+        if (value && *value)
+            str.append(value);
+        m_traceValues.append(str.str());
+    }
+
+    virtual void addTraceSummaryValue(const char *name, int value)
+    {
+        StringBuffer str;
+        if (name && *name)
+            str.append(name).append('=');
+        str.append(value);
+        m_traceValues.append(str.str());
+    }
+
+    virtual void addTraceSummaryTimeStamp(const char *name)
+    {
+        if (name && *name)
+        {
+            unsigned timeval=msTick()-created;
+            StringBuffer value;
+            value.append(name).append('=').appendulong(timeval).append("ms");
+            m_traceValues.append(value.str());
+        }
+    }
+    virtual void flushTraceSummary()
+    {
+        if (m_traceValues.length())
+        {
+            addTraceSummaryTimeStamp("total");
+            StringBuffer logstr;
+            logstr.appendf("activeReqs=").append(active).append(';');
+            logstr.append("user=").append(queryUserId());
+            if (m_peer.length())
+                logstr.append('@').append(m_peer.get());
+            logstr.append(';');
+            if (m_HTTPMethod.length())
+                logstr.appendf("HTTP %s;", m_HTTPMethod.str());
+            if (m_servName.length())
+                logstr.appendf("service=%s;", m_servName.str());
+            if (m_servMethod.length())
+                logstr.appendf("method=%s;", m_servMethod.str());
+            ForEachItemIn(idx, m_traceValues)
+                logstr.append(m_traceValues.item(idx)).append(";");
+            DBGLOG("TxSummary[%s]", logstr.str());
+            m_traceValues.kill();
+        }
+    }
 };
 
 //---------------------------------------------------------

@@ -157,6 +157,10 @@ interface IEspContext : extends IInterface
 
     virtual void setServiceName(const char *name)=0;
     virtual const char * queryServiceName(const char *name)=0;
+    virtual void setServiceMethod(const char *name)=0;
+    virtual const char * queryServiceMethod()=0;
+    virtual void setHTTPMethod(const char *name)=0;
+    virtual const char * queryHTTPMethod()=0;
 
     virtual IProperties *   queryRequestParameters()=0;
     virtual void            setRequestParameters(IProperties * Parameters)=0;
@@ -184,6 +188,11 @@ interface IEspContext : extends IInterface
     
     virtual StringArray& queryCustomHeaders() = 0;
     virtual void addCustomerHeader(const char* name, const char* val) = 0;
+
+    virtual void addTraceSummaryValue(const char *name, const char *value)=0;
+    virtual void addTraceSummaryValue(const char *name, int value)=0;
+    virtual void addTraceSummaryTimeStamp(const char *name)=0;
+    virtual void flushTraceSummary()=0;
 };
 
 

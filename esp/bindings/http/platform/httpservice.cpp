@@ -41,10 +41,10 @@
  ***************************************************************************/
 CEspHttpServer::CEspHttpServer(ISocket& sock, bool viewConfig, int maxRequestEntityLength):m_socket(sock), m_MaxRequestEntityLength(maxRequestEntityLength)
 {
+    IEspContext* ctx = createEspContext();
     m_request.setown(new CHttpRequest(sock));
     m_request->setMaxRequestEntityLength(maxRequestEntityLength);
     m_response.setown(new CHttpResponse(sock));
-    IEspContext* ctx = createEspContext();
     m_request->setOwnContext(ctx);
     m_response->setOwnContext(LINK(ctx));
     m_viewConfig=viewConfig;
@@ -52,10 +52,10 @@ CEspHttpServer::CEspHttpServer(ISocket& sock, bool viewConfig, int maxRequestEnt
 
 CEspHttpServer::CEspHttpServer(ISocket& sock, CEspApplicationPort* apport, bool viewConfig, int maxRequestEntityLength):m_socket(sock), m_MaxRequestEntityLength(maxRequestEntityLength)
 {
+    IEspContext* ctx = createEspContext();
     m_request.setown(new CHttpRequest(sock));
     m_request->setMaxRequestEntityLength(maxRequestEntityLength);
     m_response.setown(new CHttpResponse(sock));
-    IEspContext* ctx = createEspContext();
     m_request->setOwnContext(ctx);
     m_response->setOwnContext(LINK(ctx));
     m_apport = apport;
@@ -222,6 +222,8 @@ int CEspHttpServer::processRequest()
         m_request->updateContext();
         IEspContext* ctx = m_request->queryContext();
         ctx->setServiceName(serviceName.str());
+        ctx->setServiceMethod(methodName.str());
+        ctx->setHTTPMethod(method.toUpperCase().str());
 
         bool isSoapPost=(stricmp(method.str(), POST_METHOD) == 0 && m_request->isSoapMessage());
         if (!isSoapPost)
@@ -402,6 +404,8 @@ int CEspHttpServer::processRequest()
                 else
                     unsupported();
             }
+
+            ctx->addTraceSummaryTimeStamp("httpServ");
         }
     }
     catch(IEspHttpException* e)
