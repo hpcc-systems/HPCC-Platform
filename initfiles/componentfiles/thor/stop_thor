@@ -3,6 +3,11 @@
 ## Copyright © 2011 HPCC Systems.  All rights reserved.
 ################################################################################
 
+PATH_PRE=`type -path hpcc_setenv`
+INSTALL_DIR=`dirname ${PATH_PRE}`/..
+source  ${INSTALL_DIR}/etc/init.d/hpcc_common
+
+which_pidof
 
 if [ $# -lt 1 ]; then
     echo usage: $0 thordeploydir 
@@ -24,7 +29,7 @@ if [ "$#" -lt "2" ] || [ "$2" != "keep_sentinel" ]; then
     sleep 1
 fi
 
-while [ "`pidof thormaster_$THORMASTERPORT`" != "" ]
+while [ "`${PIDOF} thormaster_$THORMASTERPORT`" != "" ]
 do
   echo --------------------------
   echo stopping thormaster $THORMASTER 

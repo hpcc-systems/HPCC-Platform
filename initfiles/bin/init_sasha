@@ -5,23 +5,28 @@ PATH_PRE=`type -path hpcc_setenv`
 source ${PATH_PRE}
 PID_NAME="$PID/`basename $PWD`.pid"
 
+INSTALL_DIR=`dirname ${PATH_PRE}`/..
+source  ${INSTALL_DIR}/etc/init.d/hpcc_common
+
 INIT_PID_NAME="$PID/init_`basename $PWD`.pid"
 echo $$ > $INIT_PID_NAME
 
 ulimit -c unlimited
 ulimit -n 8192
 
+which_pidof
+
 killed() {
 
     rm -f saserver_sentinel*.txt
-    pid=`pidof saserver`
+    pid=`${PIDOF} saserver`
     if [ -n "$pid" ]; then
         sasha server=. action=stop
         I=1
         while [ -n "$pid" ] && [ $I -lt 30 ]; do
             echo "Waiting for saserver to stop"
             sleep 2
-            pid=`pidof saserver`
+            pid=`${PIDOF} saserver`
             let I=I+1
         
         done
