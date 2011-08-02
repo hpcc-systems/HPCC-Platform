@@ -22,8 +22,6 @@
 #include "thfirstn.ipp"
 #include "thbufdef.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/firstn/thfirstn.cpp $ $Id: thfirstn.cpp 63725 2011-04-01 17:40:45Z jsmith $");
-
 class CFirstNActivityMaster : public CMasterActivity
 {
     static CriticalSection singlefirstnterm;

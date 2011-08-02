@@ -27,8 +27,6 @@
 #include "jarray.hpp"
 #include "jfile.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/security/dacaplib.cpp $ $Id: dacaplib.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 #include "dacaplib.hpp"
 #include "dasess.hpp"
 

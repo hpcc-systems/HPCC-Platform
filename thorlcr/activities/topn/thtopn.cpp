@@ -17,12 +17,8 @@
 ############################################################################## */
 
 #include "jiface.hpp"
-
 #include "eclhelper.hpp"
-
 #include "thtopn.ipp"
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/topn/thtopn.cpp $ $Id: thtopn.cpp 62376 2011-02-04 21:59:58Z sort $");
 
 #define MERGE_GRANULARITY 4
 

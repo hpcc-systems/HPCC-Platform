@@ -24,7 +24,6 @@
 #include "jexcept.hpp"
 #include "jerror.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jtime.cpp $ $Id: jtime.cpp 62376 2011-02-04 21:59:58Z sort $");
 static int tzDelta = 0;                 // Mainly for testing, but could be used for a cache
 
 #ifndef __GNUC__

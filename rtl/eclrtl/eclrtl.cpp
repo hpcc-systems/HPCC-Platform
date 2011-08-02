@@ -55,8 +55,6 @@
 #define UTF8_CODEPAGE "UTF-8"
 #define UTF8_MAXSIZE     4
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/rtl/eclrtl/eclrtl.cpp $ $Id: eclrtl.cpp 66106 2011-07-08 15:27:44Z ghalliday $");
-
 IRandomNumberGenerator * random_;
 static CriticalSection random_Sect;
 

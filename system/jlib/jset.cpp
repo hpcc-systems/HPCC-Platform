@@ -22,8 +22,6 @@
 #include "jmutex.hpp"
 #include "jexcept.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jset.cpp $ $Id: jset.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 //-----------------------------------------------------------------------
 
 // Simple BitSet // 0 based all, intermediate items exist, operations threadsafe and atomic

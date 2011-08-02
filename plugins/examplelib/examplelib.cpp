@@ -22,8 +22,6 @@
 #include <ctype.h>
 #include "examplelib.hpp"
 
-static char buildVersion[] = "$HeadURL: https://svn.br.seisint.com/ecl/trunk/plugins/examplelib/examplelib.cpp $ $Id: examplelib.cpp 62376 2011-02-04 21:59:58Z sort $";
-
 #define EXAMPLELIB_VERSION "EXAMPLELIB 1.0.00"
 
 const char * HoleDefinition = NULL;

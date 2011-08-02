@@ -25,10 +25,6 @@
 
 #include "rmtsmtp.hpp"
 
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/common/remote/rmtsmtp.cpp $ $Id: rmtfile.cpp 59036 2010-08-31 17:54:39Z nhicks $");
-
-
 class CSMTPValidator
 {
 public:

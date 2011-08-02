@@ -17,21 +17,15 @@
 ############################################################################## */
 
 #include "thgraph.hpp"
-
 #include "jptree.hpp"
-
 #include "commonext.hpp"
 #include "dasess.hpp"
 #include "jhtree.hpp"
-
 #include "thcodectx.hpp"
 #include "thcrc.hpp"
 #include "thbuf.hpp"
 #include "thormisc.hpp"
 #include "thbufdef.hpp"
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/graph/thgraph.cpp $ $Id: thgraph.cpp 65511 2011-06-16 16:12:24Z jsmith $");
-
 
 PointerArray createFuncs;
 void registerCreateFunc(CreateFunc func)

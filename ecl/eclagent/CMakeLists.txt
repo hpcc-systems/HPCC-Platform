@@ -16,33 +16,35 @@
 ################################################################################
 
 
-# Component: eclagent 
+# Component: eclagent
 #####################################################
 # Description:
 # ------------
 #    Cmake Input File for eclagent
 #####################################################
 
-project( eclagent ) 
+project( eclagent )
 
-set ( SRCS 
-      eclagentmain.cpp 
+set ( SRCS
+      eclagentmain.cpp
     )
 
-include_directories ( 
-      .
-      ./../hthor 
-      ./../../system/jlib
-      ./../../system/include
-      ./../../rtl/include
+include_directories (
+         .
+         ${HPCC_SOURCE_DIR}/ecl/hthor
+         ${HPCC_SOURCE_DIR}/system/jlib
+         ${HPCC_SOURCE_DIR}/system/include
+         ${HPCC_SOURCE_DIR}/rtl/include
+         ${CMAKE_BINARY_DIR}
+         ${CMAKE_BINARY_DIR}/oss
     )
 
 ADD_DEFINITIONS( -DNO_SYBASE -D_CONSOLE )
 
 add_executable ( eclagent ${SRCS} )
 install ( TARGETS eclagent DESTINATION ${OSSDIR}/bin )
-target_link_libraries ( eclagent 
-      hthor            
+target_link_libraries ( eclagent
+      hthor           
       ${CPPUNIT_LIBRARIES}
     )
 

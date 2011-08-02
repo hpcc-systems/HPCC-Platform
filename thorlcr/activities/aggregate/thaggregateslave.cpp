@@ -30,9 +30,6 @@
 #include "thactivityutil.ipp"
 #include "thaggregateslave.ipp"
 
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/aggregate/thaggregateslave.cpp $ $Id: thaggregateslave.cpp 63725 2011-04-01 17:40:45Z jsmith $");
-
 class AggregateSlaveBase : public CSlaveActivity, public CThorDataLink
 {
 public:

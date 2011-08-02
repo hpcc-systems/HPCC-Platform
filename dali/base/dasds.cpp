@@ -30,8 +30,6 @@
 #include "jptree.ipp"
 #include "jqueue.tpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/dali/base/dasds.cpp $ $Id: dasds.cpp 63291 2011-03-18 16:21:00Z jsmith $");
-
 #define DEBUG_DIR "debug"
 #define DEFAULT_KEEP_LASTN_STORES 1
 #define MAXDELAYS 5

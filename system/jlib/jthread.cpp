@@ -40,8 +40,6 @@
  #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
 #endif
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jthread.cpp $ $Id: jthread.cpp 64340 2011-05-03 09:41:15Z rchapman $");
-
 #define LINUX_STACKSIZE_CAP (0x200000)
 
 //#define NO_CATCHALL

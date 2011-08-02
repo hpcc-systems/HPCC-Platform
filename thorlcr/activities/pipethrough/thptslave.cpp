@@ -30,8 +30,6 @@
 #include "thexception.hpp"
 #include "thbufdef.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/pipethrough/thptslave.cpp $ $Id: thptslave.cpp 65274 2011-06-09 13:42:22Z jsmith $");
-
 //---------------------------------------------------------------------------
 
 class CPipeThroughSlaveActivity;

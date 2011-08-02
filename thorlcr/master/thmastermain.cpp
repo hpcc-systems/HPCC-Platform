@@ -30,6 +30,7 @@
 #include <direct.h> 
 #endif
 
+#include "build-config.h"
 #include "jlib.hpp"
 #include "jdebug.hpp"
 #include "jfile.hpp"
@@ -507,7 +508,7 @@ int main( int argc, char *argv[]  )
         openLogFile(logName.toCharArray());
         createUNCFilename(logName.str(), logUrl, false);
         LOG(MCdebugProgress, thorJob, "Opened log file %s", logUrl.toCharArray());
-        CBuildVersion::log();
+        LOG(MCdebugProgress, thorJob, "Build %s", BUILD_TAG);
         globals->setProp("@logURL", logUrl.str());
 
         Owned<IGroup> serverGroup = createIGroup(daliServer.str(), DALI_SERVER_PORT);

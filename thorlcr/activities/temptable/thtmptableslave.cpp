@@ -21,11 +21,7 @@
 #include "thormisc.hpp"
 #include "thtmptableslave.ipp"
 #include "thorport.hpp"
-
 #include "thactivityutil.ipp"
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/temptable/thtmptableslave.cpp $ $Id: thtmptableslave.cpp 62939 2011-03-03 18:47:12Z jsmith $");
-
 
 class CTempTableSlaveActivity : public CSlaveActivity, public CThorDataLink
 {

@@ -30,8 +30,6 @@
 #include "thbufdef.hpp"
 #include "thorxmlwrite.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/selfjoin/thselfjoinslave.cpp $ $Id: thselfjoinslave.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 #define NUMSLAVEPORTS 2     // actually should be num MP tags
 
 class SelfJoinSlaveActivity : public CSlaveActivity, public CThorDataLink

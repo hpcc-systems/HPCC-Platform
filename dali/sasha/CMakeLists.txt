@@ -56,6 +56,8 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/jlib 
          ${HPCC_SOURCE_DIR}/common/remote 
          ${HPCC_SOURCE_DIR}/plugins/workunitservices 
+         ${CMAKE_BINARY_DIR}
+         ${CMAKE_BINARY_DIR}/oss
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )

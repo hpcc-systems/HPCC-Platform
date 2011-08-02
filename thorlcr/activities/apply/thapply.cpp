@@ -18,8 +18,6 @@
 
 #include "thapply.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/apply/thapply.cpp $ $Id: thapply.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 class CApplyActivityMaster : public CMasterActivity
 {
 public:

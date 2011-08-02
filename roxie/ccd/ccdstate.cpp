@@ -18,7 +18,7 @@
 
 #include <platform.h>
 #include <jlib.hpp>
-#include <build-config.h>
+#include "build-config.h"
 
 #include "jisem.hpp"
 #include "jsort.hpp"

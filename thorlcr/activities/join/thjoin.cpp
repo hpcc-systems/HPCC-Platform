@@ -31,9 +31,6 @@
 
 #define JOIN_SOCKETS 2
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/join/thjoin.cpp $ $Id: thjoin.cpp 65756 2011-06-24 15:48:52Z jsmith $");
-
-
 class JoinActivityMaster : public CMasterActivity
 {
     IThorSorterMaster *imaster;

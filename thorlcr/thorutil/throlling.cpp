@@ -21,8 +21,6 @@
 
 #include "throlling.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/thorutil/throlling.cpp $ $Id: throlling.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 const unsigned RollingArray::defaultSize = 20;
 
 RollingArray::RollingArray(unsigned _size)

@@ -41,8 +41,6 @@
     memcpy((char *) name, (src), (length)); \
     *(char *) (name+(length)) = '\0';
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jptree.cpp $ $Id: jptree.cpp 62962 2011-03-04 11:10:12Z jsmith $");
-
 #include "jfile.hpp"
 #include "jlog.hpp"
 #include "jptree.ipp"

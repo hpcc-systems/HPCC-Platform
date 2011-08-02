@@ -31,8 +31,6 @@
 #include <dllserver.hpp>
 #include <thorplugin.hpp>
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/eclserver/eclserver.cpp $ $Id: eclserver.cpp 59036 2010-08-31 17:54:39Z sort $");
-
 static unsigned traceLevel;
 static StringAttr dllPath;
 Owned<IPropertyTree> globals;

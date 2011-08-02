@@ -25,9 +25,6 @@
 #include "thexception.hpp"
 #include "thkeydiff.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/keydiff/thkeydiff.cpp $ $Id: thkeydiff.cpp 65578 2011-06-20 11:49:27Z jsmith $");
-
-
 class CKeyDiffMaster : public CMasterActivity
 {
     IHThorKeyDiffArg *helper;

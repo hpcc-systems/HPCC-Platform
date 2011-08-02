@@ -35,9 +35,6 @@
 #include "hqlfold.hpp"
 #include "hqlthql.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hql/hqlfold.cpp $ $Id: hqlfold.cpp 66009 2011-07-06 12:28:32Z ghalliday $");
-
-
 //---------------------------------------------------------------------------
 // The following functions work purely on constant expressions - they do not attempt to process datasets.
 

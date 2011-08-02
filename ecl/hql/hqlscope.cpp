@@ -27,8 +27,6 @@
 #include "hqlthql.hpp"
 #include "hqlerror.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hql/hqlscope.cpp $ $Id: hqlscope.cpp 66009 2011-07-06 12:28:32Z ghalliday $");
-
 static void getECL(IHqlExpression * expr, StringBuffer & s)
 {
     toUserECL(s, expr, false);

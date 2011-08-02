@@ -39,8 +39,6 @@
 #define USE_DALIDFS
 #define SDS_LOCK_TIMEOUT  10000
 
-static char buildVersion[] = "$HeadURL: https://svn.br.seisint.com/ecl/trunk/plugins/fileservices/fileservices.cpp $ $Id: fileservices.cpp 64628 2011-05-17 13:19:55Z ghalliday $";
-
 #define FILESERVICES_VERSION "FILESERVICES 2.1.3"
 
 static const char * compatibleVersions[] = {
@@ -338,7 +336,7 @@ FILESERVICES_API void setPluginContext(IPluginContext * _ctx) { parentCtx = _ctx
 
 FILESERVICES_API char * FILESERVICES_CALL fsGetBuildInfo(void)
 {
-    return CTXSTRDUP(parentCtx, buildVersion);
+    return CTXSTRDUP(parentCtx, FILESERVICES_VERSION);
 }
 
 //-------------------------------------------------------------------------------------------------------------------------------------------

@@ -38,9 +38,6 @@
 #include "thexception.hpp"
 #include "jhtree.hpp"
 #include "thalloc.hpp"
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/hashdistrib/thhashdistribslave.cpp $ $Id: thhashdistribslave.cpp 64790 2011-05-20 15:20:41Z jsmith $");
-
-
 
 #ifdef _DEBUG
 //#define TRACE_UNIQUE

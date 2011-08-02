@@ -28,8 +28,6 @@
 
 #define SORT_SOCKETS 2
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/msort/thmsort.cpp $ $Id: thmsort.cpp 65756 2011-06-24 15:48:52Z jsmith $");
-
 //
 // CMSortActivityMaster
 //

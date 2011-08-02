@@ -22,8 +22,6 @@
 #include "jerror.hpp"
 #include "junicode.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/junicode.cpp $ $Id: junicode.cpp 64453 2011-05-09 08:23:35Z ghalliday $");
-
 /* Based on code extracted from the following source...  Changed quite signficantly */
 
 /*

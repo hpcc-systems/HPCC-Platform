@@ -25,8 +25,6 @@
 #include <stdio.h>
 #include <assert.h>
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jmutex.cpp $ $Id: jmutex.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 //===========================================================================
 #ifndef _WIN32
 

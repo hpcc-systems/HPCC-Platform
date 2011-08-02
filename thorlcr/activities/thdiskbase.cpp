@@ -29,8 +29,6 @@
 #include "eclhelper.hpp" // tmp for IHThorArg interface
 #include "thdiskbase.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/thdiskbase.cpp $ $Id: thdiskbase.cpp 65337 2011-06-10 18:02:00Z ghalliday $");
-
 CDiskReadMasterBase::CDiskReadMasterBase(CMasterGraphElement *info) : CMasterActivity(info)
 {
     hash = NULL;

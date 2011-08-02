@@ -27,10 +27,7 @@
 #include "eclrtl.hpp"
 #include "bcd.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/rtl/eclrtl/rtlint.cpp $ $Id: rtlint.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 //#define _FAST_AND_LOOSE_
-
 
 #ifdef _FAST_AND_LOOSE_
 

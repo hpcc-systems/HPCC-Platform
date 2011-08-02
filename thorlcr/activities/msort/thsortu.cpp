@@ -39,10 +39,6 @@
 
 #include "thsortu.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/msort/thsortu.cpp $ $Id: thsortu.cpp 65200 2011-06-07 13:00:18Z jsmith $");
-
-
-
 struct CRollingCacheElem
 {
     int cmp;

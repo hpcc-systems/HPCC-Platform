@@ -33,9 +33,6 @@
 #include "jsort.hpp"
 #include "thactivityutil.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/msort/thgroupsortslave.cpp $ $Id: thgroupsortslave.cpp 63605 2011-03-30 10:42:56Z nhicks $");
-
-
 class CCGroupSortSlaveActivity : public CSlaveActivity, public CThorDataLink
 {
 private:

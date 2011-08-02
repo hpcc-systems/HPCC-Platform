@@ -28,8 +28,6 @@
 
 #include "thmergeslave.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/merge/thmergeslave.cpp $ $Id: thmergeslave.cpp 62878 2011-03-02 13:14:35Z jsmith $");
-
 #ifdef _DEBUG
 //#define _FULL_TRACE
 #endif

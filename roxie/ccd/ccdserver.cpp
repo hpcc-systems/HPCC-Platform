@@ -99,10 +99,6 @@ using roxiemem::IRowManager;
 
 #define TRACE_STARTSTOP  // This determines if it is available - it is enabled/disabled by a configuration option
  
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/roxie/ccd/ccdserver.cpp $ $Id: ccdserver.cpp 65965 2011-07-04 09:57:58Z rchapman $");
-
-static const char buildTag[] = "$HeadURL: https://svn.br.seisint.com/ecl/trunk/roxie/ccd/ccdserver.cpp $";
-
 static const SmartStepExtra dummySmartStepExtra(SSEFreadAhead, NULL);
 
 typedef IEclProcess* (* EclProcessFactory)();

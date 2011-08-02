@@ -19,9 +19,6 @@
 #include "thdistributionslave.ipp"
 #include "thactivityutil.ipp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/distribution/thdistributionslave.cpp $ $Id: thdistributionslave.cpp 62742 2011-02-24 16:57:20Z nhicks $");
-
-
 class CDistributionSlaveActivity : public ProcessSlaveActivity
 {
     IHThorDistributionArg * helper;

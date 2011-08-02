@@ -26,8 +26,6 @@
 #include "eclrtl.hpp"
 #include "thorfile.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/indexwrite/thindexwrite.cpp $ $Id: thindexwrite.cpp 65578 2011-06-20 11:49:27Z jsmith $");
-
 class IndexWriteActivityMaster : public CMasterActivity
 {
     rowcount_t recordsProcessed;

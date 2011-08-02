@@ -18,10 +18,7 @@
 
 #include "platform.h"
 #include "eclhelper.hpp"
-
 #include "thlimit.ipp"
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/limit/thlimit.cpp $ $Id: thlimit.cpp 63725 2011-04-01 17:40:45Z jsmith $");
 
 #define NUMINPARALLEL 16
 

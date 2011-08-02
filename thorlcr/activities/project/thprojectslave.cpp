@@ -20,10 +20,6 @@
 #include "thprojectslave.ipp"
 #include "eclrtl_imp.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/project/thprojectslave.cpp $ $Id: thprojectslave.cpp 62376 2011-02-04 21:59:58Z sort $");
-
-
-
 //  IThorDataLink needs only be implemented once, since there is only one output,
 //  therefore may as well implement it here.
 

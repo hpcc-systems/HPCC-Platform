@@ -27,8 +27,6 @@
 #include "thcrc.hpp"
 #include "thexception.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/activities/piperead/thprslave.cpp $ $Id: thprslave.cpp 65337 2011-06-10 18:02:00Z ghalliday $");
-
 /////////////////////////
 
 class CPipeSlaveBase : public CSlaveActivity

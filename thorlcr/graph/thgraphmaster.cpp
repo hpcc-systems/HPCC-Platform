@@ -24,38 +24,26 @@
 #include "jsocket.hpp"
 #include "jset.hpp"
 #include "jsort.hpp"
-
 #include "portlist.h"
 #include "jhtree.hpp"
 #include "mputil.hpp"
-
 #include "dllserver.hpp"
-
 #include "dautils.hpp"
 #include "danqs.hpp"
 #include "daclient.hpp"
 #include "daaudit.hpp"
-
 #include "wujobq.hpp"
-
-
-
 #include "thorport.hpp"
 #include "commonext.hpp"
 #include "thorxmlread.hpp"
 #include "thorplugin.hpp"
-
 #include "thormisc.hpp"
 #include "thgraphmaster.ipp"
 #include "thdemonserver.hpp"
-
 #include "rtlds_imp.hpp"
 #include "eclhelper.hpp"
 #include "thexception.hpp"
-
 #include "thactivitymaster.ipp"
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/graph/thgraphmaster.cpp $ $Id: thgraphmaster.cpp 65511 2011-06-16 16:12:24Z jsmith $");
 
 static CriticalSection *jobManagerCrit;
 MODULE_INIT(INIT_PRIORITY_STANDARD)

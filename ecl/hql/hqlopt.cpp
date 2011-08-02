@@ -28,8 +28,6 @@
 #include "hqlattr.hpp"
 #include "hqlmeta.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/ecl/hql/hqlopt.cpp $ $Id: hqlopt.cpp 66009 2011-07-06 12:28:32Z ghalliday $");
-
 #define MIGRATE_JOIN_CONDITIONS             // This works, but I doubt it is generally worth the effort. - maybe on a flag.
 //#define TRACE_USAGE
 

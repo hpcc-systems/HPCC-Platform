@@ -26,8 +26,6 @@
 #include "jmutex.hpp"
 #include "jthread.hpp"
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/hrpc/hrpcutil.cpp $ $Id: hrpcutil.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 void SplitIpPort(StringAttr & ip, unsigned & port, const char * address)
 {
   const char * colon = strchr(address, ':');

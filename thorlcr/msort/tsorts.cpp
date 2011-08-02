@@ -18,33 +18,21 @@
 
 #include "platform.h"
 #include <limits.h>
-
 #include <mpbase.hpp>
 #include <mpcomm.hpp>
 #include "thorport.hpp"
-
 #include "jsocket.hpp"
 #include "jthread.hpp"
-
 #include "thormisc.hpp"
-
 #include "jlib.hpp"
 #include "jsort.hpp"
-
-
 #include "tsorts.hpp"
 #include "tsorta.hpp"
 #include "tsortm.hpp"
 #include "tsortmp.hpp"
 #include "thbuf.hpp"
 #include "thcrc.hpp"
-
-
 #include "thmem.hpp"
-
-
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/thorlcr/msort/tsorts.cpp $ $Id: tsorts.cpp 64678 2011-05-18 15:57:28Z jsmith $");
-
 
 #define _TRACE
 

@@ -26,8 +26,6 @@
 
 #include <assert.h>
 
-static CBuildVersion _bv("$HeadURL: https://svn.br.seisint.com/ecl/trunk/system/jlib/jarray.cpp $ $Id: jarray.cpp 62376 2011-02-04 21:59:58Z sort $");
-
 #define FIRST_CHUNK_SIZE  8
 #define DOUBLE_LIMIT      0x100000          // must be a power of 2
 #define ALLOCA_LIMIT      64
