@@ -1733,7 +1733,7 @@ IConstWorkUnit * EclAgent::resolveLibrary(const char * libraryName, unsigned exp
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
     Owned<IConstWorkUnit> wu = factory->openWorkUnit(libraryWuid, false);
     if (!wu)
-        throw MakeStringException(0, "Could not open workunit %s implementating library %s", libraryWuid, libraryName);
+        throw MakeStringException(0, "Could not open workunit %s implementing library %s", libraryWuid, libraryName);
 
     unsigned interfaceHash = wu->getApplicationValueInt("LibraryModule", "interfaceHash", 0);
     if (interfaceHash != expectedInterfaceHash)
