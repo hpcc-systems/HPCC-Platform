@@ -59,9 +59,10 @@ pidofproc () {
             fi
         fi
     fi
-    if [ -x /bin/pidof -a ! "$specified" ]; then
+    which_pidof
+    if [ -x ${PIDOF} -a ! "$specified" ]; then
         status="0"
-        /bin/pidof -o %PPID -x $1 || status="$?"
+        ${PIDOF} -o %PPID -x $1 || status="$?"
         if [ "$status" = 1 ]; then
             return 3 # program is not running
         fi
