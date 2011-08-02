@@ -1023,7 +1023,7 @@ void CInspectorTreeCtrl::OnAddProperty()
     {
         if(connection->lockWrite())
         {
-            IPropertyTree * t = createPTree(false);
+            IPropertyTree * t = createPTree();
             t->setProp(NULL, value);
             t = GetTreeListItem(hParent)->queryPropertyTree()->addPropTree(name, t);    
 

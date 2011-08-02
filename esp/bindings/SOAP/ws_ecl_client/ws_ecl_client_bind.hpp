@@ -352,7 +352,7 @@ public:
             // child elements
             if (m_children.length())
             {
-                Owned<IPropertyTree> pChildIndexMap = createPTree(false);
+                Owned<IPropertyTree> pChildIndexMap = createPTree();
                 ForEachItemIn(idx, m_children)
                 {
                     CClientRequestNode* child = (CClientRequestNode *)m_children.item(idx);
@@ -439,7 +439,7 @@ public:
 
     virtual void appendSerializedContent(const char* content) 
     { 
-        Owned<IPropertyTree> pTree = createPTreeFromXMLString(content, false);
+        Owned<IPropertyTree> pTree = createPTreeFromXMLString(content);
         Owned<IPTreeIterator> it = pTree->getElements("*");
         // NOTE: this does not support hierarchy yet (which is sufficient for flat style roxie request).
         ForEach(*it)

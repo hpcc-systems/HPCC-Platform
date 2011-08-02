@@ -140,7 +140,7 @@ IPropertyTree *loadInstallSet(IPropertyTree *pBuild, IPropertyTree *pBuildSet, I
     else
       sFilename.append(DEFAULT_INSTALLSET);
 
-    pInstallSet = createPTreeFromXMLFile(sFilename, false);
+    pInstallSet = createPTreeFromXMLFile(sFilename);
   }
   return pInstallSet;
 }
@@ -158,7 +158,7 @@ IPropertyTree *loadSchema(IPropertyTree *pBuild, IPropertyTree *pBuildSet, Strin
       if (schemaName && *schemaName)
       {
         sSchemaPath.append(schemaName);
-        pSchema = createPTreeFromXMLFile(sSchemaPath, false);
+        pSchema = createPTreeFromXMLFile(sSchemaPath);
       }
       else
       {
@@ -181,7 +181,7 @@ IPropertyTree *loadSchema(IPropertyTree *pBuild, IPropertyTree *pBuildSet, Strin
             sSchemaPath = szXsdPath;
           }
 
-          pSchema = createPTreeFromXMLFile(sSchemaPath, false);
+          pSchema = createPTreeFromXMLFile(sSchemaPath);
           if (pSchema)
           {
             IPropertyTree* pNode = pSchema->queryPropTree("xs:element");
@@ -248,5 +248,5 @@ IPropertyTree *loadDefaultSchema()
     "       </xs:complexType>"
     "   </xs:element>"
     "</xs:schema>"
-    , false);
+    );
 }

@@ -1683,7 +1683,7 @@ int SimpleServer::start()
                 if(xmlBuf.length())
                 {
                     bool bfound = false;
-                    Owned<IPropertyTree> intree(createPTreeFromXMLString(xmlBuf.str(), false));
+                    Owned<IPropertyTree> intree(createPTreeFromXMLString(xmlBuf.str()));
                     Owned<IPropertyTreeIterator> elems = intree->getElements("soap:Body");
 
                     for (elems->first(); elems->isValid() && !bfound; elems->next())

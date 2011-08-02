@@ -407,7 +407,7 @@ public:
         }
         xml.append("</QueryNames>");
 
-        Owned<IPropertyTree> tree = createPTreeFromXMLString(xml, false);
+        Owned<IPropertyTree> tree = createPTreeFromXMLString(xml);
         return tree.getClear();
     }
 

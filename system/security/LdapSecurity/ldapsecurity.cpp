@@ -500,7 +500,7 @@ ISecProperty* CLdapSecResourceList::findProperty(const char* name)
  **********************************************************/
 CLdapSecManager::CLdapSecManager(const char *serviceName, const char *config)
 {
-    IPropertyTree* cfg = createPTreeFromXMLString(config, true);
+    IPropertyTree* cfg = createPTreeFromXMLString(config, ipt_caseInsensitive);
 
     if(cfg == NULL)
     {

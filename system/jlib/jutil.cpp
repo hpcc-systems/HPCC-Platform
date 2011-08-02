@@ -2261,7 +2261,7 @@ IPropertyTree *getHPCCenvironment(const char *confloc)
             if (file) {
                 Owned<IFileIO> fileio = file->open(IFOread);
                 if (fileio)
-                    return createPTree(*fileio, false);
+                    return createPTree(*fileio);
             }
         }
     }
@@ -2274,7 +2274,7 @@ static IPropertyTree *getOSSdirTree()
     if (envtree) {
         IPropertyTree *ret = envtree->queryPropTree("Software/Directories");
         if (ret) 
-            return createPTree(ret);
+            return createPTreeFromIPT(ret);
     }
     return NULL;
 }

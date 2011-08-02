@@ -988,7 +988,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
 
 void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML)
 {
-    Owned<IPropertyTree> xml = createPTreeFromXMLString(archiveXML, true);
+    Owned<IPropertyTree> xml = createPTreeFromXMLString(archiveXML, ipt_caseInsensitive);
     Owned<IEclRepository> dataServer = createXmlDataServer(xml, libraryRepository);
     Owned<IPropertyTreeIterator> iter = xml->getElements("Option");
     ForEach(*iter) 

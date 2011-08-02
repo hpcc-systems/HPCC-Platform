@@ -428,7 +428,7 @@ void mt(const char *s)
 void dispFDesc(IFileDescriptor *fdesc)
 {
     printf("======================================\n");
-    Owned<IPropertyTree> pt = createPTree("File",false);
+    Owned<IPropertyTree> pt = createPTree("File");
     fdesc->serializeTree(*pt);
     StringBuffer out;
     toXML(pt,out);
@@ -481,7 +481,7 @@ void dispFDesc(IFileDescriptor *fdesc)
                     );
                     if (strcmp(out.str(),out2.str())!=0)
                         printf("FAILED!\n%s\n%s\n",out.str(),out2.str());
-                    pt.setown(createPTree("File",false));
+                    pt.setown(createPTree("File"));
                     copypart->queryOwner().serializeTree(*pt);
                     StringBuffer out;
                     toXML(pt,out);
@@ -573,7 +573,7 @@ void testGrp()
 void testDF1()
 {
     Owned<IFileDescriptor> fdesc = createFileDescriptor();
-    Owned<IPropertyTree> pt = createPTree("Attr",false);
+    Owned<IPropertyTree> pt = createPTree("Attr");
     RemoteFilename rfn;
     rfn.setRemotePath("//10.150.10.80/c$/thordata/test/part._1_of_3");
     pt->setPropInt("@size",123);
@@ -594,7 +594,7 @@ void testDF1()
 void testDF2() // 4*3 superfile
 {
     Owned<IFileDescriptor> fdesc = createFileDescriptor();
-    Owned<IPropertyTree> pt = createPTree("Attr",false);
+    Owned<IPropertyTree> pt = createPTree("Attr");
     RemoteFilename rfn;
     rfn.setRemotePath("//10.150.10.80/c$/thordata/test/partone._1_of_3");
     pt->setPropInt("@size",1231);

@@ -373,7 +373,7 @@ public:
 
             try
             {
-                queryXml.setown(createPTreeFromXMLString(rawText.str(), true, true, NULL, true));
+                queryXml.setown(createPTreeFromXMLString(rawText.str(), ipt_caseInsensitive, (XmlReaderOptions)(xr_ignoreWhiteSpace|xr_ignoreNameSpaces)));
             }
             catch (IException *E)
             {
@@ -528,15 +528,15 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
     logfile.getRemotePath(logname);
     if (wu->getDebugValueBool("Debug", false))
     {
-        Owned<IPropertyTree> destTree = createPTree("Query", false);
+        Owned<IPropertyTree> destTree = createPTree("Query");
         Owned<IConstWUGraphIterator> graphs = &wu->getGraphs(GraphTypeActivities);
         SCMStringBuffer graphName;
         ForEach(*graphs)
         {
             graphs->query().getName(graphName);
-            Owned<IPropertyTree> graphTree = createPTree("Graph", false);
+            Owned<IPropertyTree> graphTree = createPTree("Graph");
             graphTree->addProp("@id", graphName.str());
-            Owned<IPropertyTree> xgmmlTree = createPTree("xgmml", false);
+            Owned<IPropertyTree> xgmmlTree = createPTree("xgmml");
             Owned<IPropertyTree> graphXgmml = graphs->query().getXGMMLTree(false);
             xgmmlTree->addPropTree("graph", graphXgmml.getClear());
             graphTree->addPropTree("xgmml", xgmmlTree.getClear());
@@ -955,7 +955,7 @@ void EclAgent::getResultRaw(unsigned & tlen, void * & tgt, const char * stepname
     tgt = NULL;
     PROTECTED_GETRESULT(stepname, sequence, "Raw", "raw",
         Variable2IDataVal result(&tlen, &tgt);
-        Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer, true);
+        Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer);
         Owned<ICsvToRawTransformer> rawCsvTransformer = createCsvRawTransformer(csvTransformer);
         r->getResultRaw(result, rawXmlTransformer, rawCsvTransformer);
     );
@@ -966,7 +966,7 @@ void EclAgent::getResultSet(bool & tisAll, size32_t & tlen, void * & tgt, const 
     tgt = NULL;
     PROTECTED_GETRESULT(stepname, sequence, "Raw", "raw",
         Variable2IDataVal result(&tlen, &tgt);
-        Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer, true);
+        Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer);
         Owned<ICsvToRawTransformer> rawCsvTransformer = createCsvRawTransformer(csvTransformer);
         tisAll = r->getResultIsAll();
         r->getResultRaw(result, rawXmlTransformer, rawCsvTransformer);
@@ -1007,7 +1007,7 @@ void EclAgent::getExternalResultRaw(unsigned & tlen, void * & tgt, const char * 
         if (!r) failv(0, "Failed to find raw value %s:%d in workunit %s", nullText(stepname),sequence, wuid);
         
         Variable2IDataVal result(&tlen, &tgt);
-        Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer, true);
+        Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer);
         Owned<ICsvToRawTransformer> rawCsvTransformer = createCsvRawTransformer(csvTransformer);
         r->getResultRaw(result, rawXmlTransformer, rawCsvTransformer);
     }
@@ -1030,7 +1030,7 @@ void EclAgent::getResultRowset(size32_t & tcount, byte * * & tgt, const char * s
     PROTECTED_GETRESULT(stepname, sequence, "Rowset", "rowset",
         MemoryBuffer datasetBuffer;
         MemoryBuffer2IDataVal result(datasetBuffer);
-        Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer, true);
+        Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer);
         Owned<ICsvToRawTransformer> rawCsvTransformer = createCsvRawTransformer(csvTransformer);
         r->getResultRaw(result, rawXmlTransformer, rawCsvTransformer);
         rtlDataset2RowsetX(tcount, tgt, _rowAllocator, deserializer, datasetBuffer.length(), datasetBuffer.toByteArray(), isGrouped);
@@ -2993,15 +2993,15 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     {
         try
         {
-            agentTopology.setown(createPTreeFromXMLFile("agentexec.xml", true));
+            agentTopology.setown(createPTreeFromXMLFile("agentexec.xml", ipt_caseInsensitive));
         }
         catch (IException *) 
         {
-            agentTopology.setown(createPTree("AGENTEXEC", false));
+            agentTopology.setown(createPTree("AGENTEXEC"));
         }
     }
     else
-        agentTopology.setown(createPTree("AGENTEXEC", false));
+        agentTopology.setown(createPTree("AGENTEXEC"));
 
     StringBuffer logfilespec;
     if (!globals->getProp("LOGFILE", logfilespec) && !standAloneExe)
@@ -3089,9 +3089,9 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
         if (queryXML)
         {
             if (queryXML[0]=='@')
-                query.setown(createPTreeFromXMLFile(queryXML+1, false));
+                query.setown(createPTreeFromXMLFile(queryXML+1));
             else
-                query.setown(createPTreeFromXMLString(queryXML, false));
+                query.setown(createPTreeFromXMLString(queryXML));
         }
         Owned<IPropertyIterator> it = globals->getIterator();
         ForEach(*it)
@@ -3100,11 +3100,11 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
             if (key && key[0] == '/')
             {
                 if (!query)
-                    query.setown(createPTree("Query", false));
+                    query.setown(createPTree("Query"));
                 const char *val = globals->queryProp(key);
                 if (val[0]=='<')
                 {
-                    Owned<IPropertyTree> valtree = createPTreeFromXMLString(val, false);
+                    Owned<IPropertyTree> valtree = createPTreeFromXMLString(val);
                     query->setPropTree(key+1, valtree.getClear());
                 }
                 else 

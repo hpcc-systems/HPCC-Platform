@@ -2543,7 +2543,7 @@ void Cws_machineEx::getTargetClusterProcesses(StringArray& targetClusters, Strin
         if (type && !stricmp(type, eqHoleCluster) && (roxieClusters->first() || thorClusters->first()))
             continue;
 
-        IPropertyTree *pTargetClusterInfo = pTargetClusterTree->addPropTree("TargetCluster", createPropertyTree(false, "TargetCluster"));
+        IPropertyTree *pTargetClusterInfo = pTargetClusterTree->addPropTree("TargetCluster", createPTree("TargetCluster"));
         if (!pTargetClusterInfo)
             throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed in creating an XML tree");
 
@@ -2563,7 +2563,7 @@ void Cws_machineEx::getTargetClusterProcesses(StringArray& targetClusters, Strin
                 const char* process = thorCluster.queryProp("@process");
                 if (process && *process)
                 {
-                    IPropertyTree *pThorClusterInfo = pTargetClusterInfo->addPropTree("Process", createPropertyTree(false, "Process"));
+                    IPropertyTree *pThorClusterInfo = pTargetClusterInfo->addPropTree("Process", createPTree("Process"));
                     if (!pThorClusterInfo)
                         throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed in creating an XML tree");
 
@@ -2608,7 +2608,7 @@ void Cws_machineEx::getTargetClusterProcesses(StringArray& targetClusters, Strin
                 const char* process = roxieCluster.queryProp("@process");
                 if (process && *process)
                 {
-                    IPropertyTree *pRoxieClusterInfo = pTargetClusterInfo->addPropTree("Process", createPropertyTree(false, "Process"));
+                    IPropertyTree *pRoxieClusterInfo = pTargetClusterInfo->addPropTree("Process", createPTree("Process"));
                     if (!pRoxieClusterInfo)
                         throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed in creating an XML tree");
 
@@ -2648,7 +2648,7 @@ void Cws_machineEx::getTargetClusterProcesses(StringArray& targetClusters, Strin
             const char* process = eclCCServerProcess.queryProp("@process");
             if (process && *process)
             {
-                IPropertyTree *pEclCCServerInfo = pTargetClusterInfo->addPropTree("Process", createPropertyTree(false, "Process"));
+                IPropertyTree *pEclCCServerInfo = pTargetClusterInfo->addPropTree("Process", createPTree("Process"));
                 if (!pEclCCServerInfo)
                     throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed in creating an XML tree");
 
@@ -2679,7 +2679,7 @@ void Cws_machineEx::getTargetClusterProcesses(StringArray& targetClusters, Strin
             const char* process = eclAgentProcess.queryProp("@process");
             if (process && *process)
             {
-                IPropertyTree *pEclAgentInfo = pTargetClusterInfo->addPropTree("Process", createPropertyTree(false, "Process"));
+                IPropertyTree *pEclAgentInfo = pTargetClusterInfo->addPropTree("Process", createPTree("Process"));
                 if (!pEclAgentInfo)
                     throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed in creating an XML tree");
 
@@ -2710,7 +2710,7 @@ void Cws_machineEx::getTargetClusterProcesses(StringArray& targetClusters, Strin
             const char* process = eclSchedulerProcess.queryProp("@process");
             if (process && *process)
             {
-                IPropertyTree *pEclSchedulerInfo = pTargetClusterInfo->addPropTree("Process", createPropertyTree(false, "Process"));
+                IPropertyTree *pEclSchedulerInfo = pTargetClusterInfo->addPropTree("Process", createPTree("Process"));
                 if (!pEclSchedulerInfo)
                     throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed in creating an XML tree");
 
@@ -2776,7 +2776,7 @@ bool Cws_machineEx::onGetTargetClusterInfo(IEspContext &context, IEspGetTargetCl
 
         StringArray& targetClusters = req.getTargetClusters();
         StringArray processTypes, processNames, processAddresses;
-        Owned<IPropertyTree> pTargetClusterTree = createPTreeFromXMLString("<Root/>",false);
+        Owned<IPropertyTree> pTargetClusterTree = createPTreeFromXMLString("<Root/>");
 
         getTargetClusterProcesses(targetClusters, processTypes, processNames, processAddresses, pTargetClusterTree);
 

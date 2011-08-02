@@ -53,7 +53,7 @@
 //  ===========================================================================
 CSoapMsgBuilder::CSoapMsgBuilder(const char * xml)
 {
-    m_properties.setown(createPTreeFromXMLString(xml, false));
+    m_properties.setown(createPTreeFromXMLString(xml));
 }
 
 void CSoapMsgBuilder::setPropertyValue(const char * key, const char * val)
@@ -130,7 +130,7 @@ StringBuffer & CSoapMsgArrayBuilder::getSoapResponse(StringBuffer & soapResponse
 
 CSoapMsgXsdBuilder::CSoapMsgXsdBuilder(const char * structLabel, const char * var)
 {
-    m_properties.set(createPTree(structLabel, false));
+    m_properties.set(createPTree(structLabel));
     m_structLabel.append(structLabel);
     m_var.append(var);
 }
@@ -196,7 +196,7 @@ const char * CSoapMsgXsdBuilder::getXsdTypeLabel(XSD_TYPES type)
 
 CSoapMsgBuilder * CSoapMsgXsdBuilder::newMsgBuilder()
 {
-    Owned<IPropertyTree>newXml = createPTree(m_structLabel.str(), false);
+    Owned<IPropertyTree>newXml = createPTree(m_structLabel.str());
 
     IPropertyTreeIterator * itr = m_properties->getElements("*");
     itr->first();

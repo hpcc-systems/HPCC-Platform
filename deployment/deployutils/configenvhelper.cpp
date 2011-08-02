@@ -42,7 +42,7 @@ bool CConfigEnvHelper::handleThorTopologyOp(const char* cmd, const char* xmlArg,
     bool retVal = false;
     StringBuffer xpath;
 
-    Owned<IPropertyTree> pParams = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<ThorData/>", false);
+    Owned<IPropertyTree> pParams = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<ThorData/>");
     const char* thorName = pParams->queryProp(XML_ATTR_NAME);
     const char* newType = pParams->queryProp(XML_ATTR_TYPE);
     const char* validate = pParams->queryProp("@validateComputers");
@@ -172,7 +172,7 @@ IPropertyTree* CConfigEnvHelper::getSoftwareNode(const char* compType, const cha
 
 bool CConfigEnvHelper::addRoxieServers(const char* xmlArg)
 {
-  Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<RoxieData/>", false);
+  Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<RoxieData/>");
   const char* pszFarm = pSrcTree->queryProp("@parentName");
   const char* pszRoxieCluster = pSrcTree->queryProp("@roxieName");
   unsigned int nComputers = 0;//computers.size();
@@ -251,7 +251,7 @@ bool CConfigEnvHelper::addRoxieServers(const char* xmlArg)
     }
 
     xpath.clear().appendf("RoxieCluster[@name='%s']/"XML_TAG_ROXIE_FARM, pszRoxieCluster);
-    pFarm = pParent->addPropTree(xpath.str(), createPTree(false));
+    pFarm = pParent->addPropTree(xpath.str(), createPTree());
     pFarm->addProp    (XML_ATTR_NAME,       sFarmName.str());
     pFarm->addPropInt("@port",          9876);
     pFarm->addProp    (XML_ATTR_DATADIRECTORY,  sDataDir.str());
@@ -278,7 +278,7 @@ bool CConfigEnvHelper::addRoxieServers(const char* xmlArg)
       createUniqueName(sServerName.str(), xpath.str(), sbUniqueName);
 
       // Add process node
-      IPropertyTree* pServer = createPTree( XML_TAG_ROXIE_SERVER, false );
+      IPropertyTree* pServer = createPTree(XML_TAG_ROXIE_SERVER);
       pServer->setProp(XML_ATTR_NAME, sbUniqueName.str());
       pServer->addProp(XML_ATTR_COMPUTER, pszName);
       addNode(pServer, pFarm);
@@ -310,7 +310,7 @@ bool CConfigEnvHelper::addRoxieServers(const char* xmlArg)
 
 bool CConfigEnvHelper::handleReplaceRoxieServer(const char* xmlArg)
 {
-  Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<RoxieData/>", false);
+  Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<RoxieData/>");
   const char* pszRoxieCluster = pSrcTree->queryProp("@roxieName");
   IPropertyTree* pParent = m_pRoot->queryPropTree("Software");
   StringBuffer xpath;
@@ -527,7 +527,7 @@ void CConfigEnvHelper::setAttribute(IPropertyTree* pNode, const char* szName, co
         pNode->removeTree(pProperties);
       }
       if (pNewProperties)
-        pNode->addPropTree("Properties", createPTree(pNewProperties));
+        pNode->addPropTree("Properties", createPTreeFromIPT(pNewProperties));
     }
     pNode->setProp(szName, szValue);
   }
@@ -592,7 +592,7 @@ void CConfigEnvHelper::mergeServiceAuthenticationWithBinding(IPropertyTree* pBin
 
     if (!pBinding->queryPropTree(xpath.str()))
     {
-      pNode = pBinding->addPropTree(NodeName, createPTree(pNode));
+      pNode = pBinding->addPropTree(NodeName, createPTreeFromIPT(pNode));
       if (bAuthenticateFeature)
         pNode->addProp("@authenticate", "Yes");
     }
@@ -638,7 +638,7 @@ void CConfigEnvHelper::createUniqueName(const char* szPrefix, const char* parent
 //---------------------------------------------------------------------------
 IPropertyTree* CConfigEnvHelper::addNode(const char* szTag, IPropertyTree* pParentNode, IPropertyTree* pInsertAfterNode)
 {
-  IPropertyTree* pNode = createPTree(szTag, false);
+  IPropertyTree* pNode = createPTree(szTag);
   if (pNode)
   {
     addNode(pNode, pParentNode, pInsertAfterNode);
@@ -731,7 +731,7 @@ IPropertyTree* CConfigEnvHelper::findLegacyServer(IPropertyTree* pRoxieCluster, 
 
 bool CConfigEnvHelper::deleteRoxieServers(const char* xmlArg)
 {
-  Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<RoxieData/>", false);
+  Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<RoxieData/>");
   const char* pszRoxieCluster = pSrcTree->queryProp("@roxieName");
   unsigned int nComputers = 0;//computers.size();
   StringBuffer xpath;
@@ -852,7 +852,7 @@ void CConfigEnvHelper::addComponent(const char* pszBuildSet, StringBuffer& sbNew
 
       Owned<IPropertyTree> pProperties = pBuildSet->getPropTree("Properties");
       if (pProperties)
-        pCompTree->addPropTree("Properties", createPTree(pProperties));
+        pCompTree->addPropTree("Properties", createPTreeFromIPT(pProperties));
 
       addNode(pCompTree, m_pRoot->queryPropTree("Software"));
     }
@@ -898,7 +898,7 @@ bool CConfigEnvHelper::handleRoxieSlaveConfig(const char* xmlArg)
 {
     try
     {
-        Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<RoxieData/>", false);
+        Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<RoxieData/>");
         const char* type = pSrcTree->queryProp(XML_ATTR_TYPE);
         const char* pszRoxie = pSrcTree->queryProp("@roxieName");
         const char* val1 = pSrcTree->queryProp("@val1");
@@ -1039,12 +1039,12 @@ void CConfigEnvHelper::addReplicateConfig(IPropertyTree* pSlaveNode, int channel
     directory.appendf("%s", dir);
     makePlatformSpecificAbsolutePath( pSlaveNode->queryProp(XML_ATTR_COMPUTER), directory);
 
-    IPropertyTree* pInstance = pSlaveNode->addPropTree(XML_TAG_ROXIE_CHANNEL, createPTree(false));
+    IPropertyTree* pInstance = pSlaveNode->addPropTree(XML_TAG_ROXIE_CHANNEL, createPTree());
     pInstance->setPropInt("@number", channel);
     pInstance->addProp(XML_ATTR_DATADIRECTORY, directory.str());
     
     //maintain a copy as an old style slave procss
-    IPropertyTree* pSlaveProcess = pRoxie->addPropTree(XML_TAG_ROXIE_SLAVE, createPTree(false));
+    IPropertyTree* pSlaveProcess = pRoxie->addPropTree(XML_TAG_ROXIE_SLAVE, createPTree());
     pSlaveProcess->addProp(XML_ATTR_COMPUTER, pSlaveNode->queryProp(XML_ATTR_COMPUTER));
     pSlaveProcess->addPropInt("@channel", channel);
     pSlaveProcess->addProp(XML_ATTR_DATADIRECTORY, directory.str());
@@ -1086,7 +1086,7 @@ bool CConfigEnvHelper::GenerateCyclicRedConfig(IPropertyTree* pRoxie, IPropertyT
         StringBuffer name;
         name.appendf("s%d", i+1);
 
-        IPropertyTree* pSlave = pRoxie->addPropTree(XML_TAG_ROXIE_ONLY_SLAVE, createPTree(false));
+        IPropertyTree* pSlave = pRoxie->addPropTree(XML_TAG_ROXIE_ONLY_SLAVE, createPTree());
         pSlave->addProp(XML_ATTR_NAME, name.str());
         pSlave->addProp(XML_ATTR_COMPUTER, szComputer);
 
@@ -1129,7 +1129,7 @@ bool CConfigEnvHelper::GenerateOverloadedConfig(IPropertyTree* pRoxie, IProperty
         StringBuffer name;
         name.appendf("s%d", i+1);
 
-        IPropertyTree* pSlave = pRoxie->addPropTree(XML_TAG_ROXIE_ONLY_SLAVE, createPTree(false));
+        IPropertyTree* pSlave = pRoxie->addPropTree(XML_TAG_ROXIE_ONLY_SLAVE, createPTree());
         pSlave->addProp(XML_ATTR_NAME, name.str());
         pSlave->addProp(XML_ATTR_COMPUTER, szComputer);
 
@@ -1172,7 +1172,7 @@ bool CConfigEnvHelper::GenerateFullRedConfig(IPropertyTree* pRoxie, int copies, 
         StringBuffer name;
         name.appendf("s%d", i+1);
 
-        IPropertyTree* pSlave = pRoxie->addPropTree(XML_TAG_ROXIE_ONLY_SLAVE, createPTree(false));
+        IPropertyTree* pSlave = pRoxie->addPropTree(XML_TAG_ROXIE_ONLY_SLAVE, createPTree());
         pSlave->addProp(XML_ATTR_NAME, name.str());
         pSlave->addProp(XML_ATTR_COMPUTER, szComputer);
 
@@ -1290,7 +1290,7 @@ bool CConfigEnvHelper::AddNewNodes(IPropertyTree* pThor, const char* szType, int
             sName.appendf("temp%d", i + j + 1);
 
             // Add process node
-            IPropertyTree* pProcessNode = createPTree(szType, false);
+            IPropertyTree* pProcessNode = createPTree(szType);
             pProcessNode->addProp(XML_ATTR_NAME, sName);
             pProcessNode->addProp(XML_ATTR_COMPUTER, computers[i]->queryProp(XML_ATTR_NAME));
             if (nPort != 0) pProcessNode->addPropInt(XML_ATTR_PORT, nPort);
@@ -1318,12 +1318,12 @@ bool CConfigEnvHelper::AddNewNodes(IPropertyTree* pThor, const char* szType, int
             if (!pNode)
             {
                 // Add topology node
-                pNode = createPTree(XML_TAG_NODE, false);
+                pNode = createPTree(XML_TAG_NODE);
                 pNode->addProp(XML_ATTR_PROCESS, sName);
 
                 IPropertyTree* pTopoNode = pThor->queryPropTree(XML_TAG_TOPOLOGY);
                 if (!pTopoNode)
-                    pTopoNode = pThor->addPropTree(XML_TAG_TOPOLOGY, createPTree(false));
+                    pTopoNode = pThor->addPropTree(XML_TAG_TOPOLOGY, createPTree());
 
                 if (!strcmp(szType, XML_TAG_THORSLAVEPROCESS))
                 {

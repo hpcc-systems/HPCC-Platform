@@ -297,7 +297,7 @@ int main(int argc, const char* argv[])
 #endif
 
     OwnedIFile ifile = createIFile("sashaconf.xml");
-    serverConfig.setown(ifile->exists()?createPTreeFromXMLFile("sashaconf.xml", false):createPTree(false));
+    serverConfig.setown(ifile->exists()?createPTreeFromXMLFile("sashaconf.xml"):createPTree());
     StringBuffer daliServer;
     if (!serverConfig->getProp("@DALISERVERS", daliServer)||(daliServer.length()==0)) {
         printf("DALISERVERS not specified in sashaconf.xml");

@@ -137,6 +137,7 @@ interface jlib_thrown_decl IXMLReadException : extends IException
 extern jlib_decl IXMLReadException *createXmlReadException(int code, const char *msg, const char *context, unsigned line, offset_t offset);
 
 enum XmlReaderOptions { xr_none=0x00, xr_ignoreWhiteSpace=0x01, xr_noRoot=0x02, xr_ignoreNameSpaces=0x04 };
+
 interface IXMLReader : extends IInterface
 {
     virtual void load() = 0;
@@ -161,8 +162,10 @@ interface IPTreeNodeCreator : extends IInterface
     virtual IPropertyTree *create(const char *tag) = 0;
 };
 
-jlib_decl IPTreeMaker *createPTreeMaker(bool caseInsensitive, IPropertyTree *root=NULL, IPTreeNodeCreator *nodeCreator=NULL);
-jlib_decl IPTreeMaker *createRootLessPTreeMaker(bool caseInsensitive, IPropertyTree *root=NULL, IPTreeNodeCreator *nodeCreator=NULL);
+// NB ipt_ext5 - used by SDS
+enum ipt_flags { ipt_none=0x00, ipt_caseInsensitive=0x01, ipt_ordered=0x02, ipt_binary=0x04, ipt_ext1=0x08, ipt_ext2=16, ipt_ext3=32, ipt_ext4=64, ipt_ext5=128 };
+jlib_decl IPTreeMaker *createPTreeMaker(byte flags=ipt_none, IPropertyTree *root=NULL, IPTreeNodeCreator *nodeCreator=NULL);
+jlib_decl IPTreeMaker *createRootLessPTreeMaker(byte flags=ipt_none, IPropertyTree *root=NULL, IPTreeNodeCreator *nodeCreator=NULL);
 jlib_decl IXMLReader *createXMLStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions=xr_ignoreWhiteSpace, size32_t bufSize=0);
 jlib_decl IXMLReader *createXMLStringReader(const char *xml, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions=xr_ignoreWhiteSpace);
 jlib_decl IXMLReader *createXMLBufferReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions=xr_ignoreWhiteSpace);
@@ -170,22 +173,22 @@ jlib_decl IPullXMLReader *createPullXMLStreamReader(ISimpleReadStream &stream, I
 jlib_decl IPullXMLReader *createPullXMLStringReader(const char *xml, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions=xr_ignoreWhiteSpace);
 jlib_decl IPullXMLReader *createPullXMLBufferReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions=xr_ignoreWhiteSpace);
 
-jlib_decl IPropertyTree *createPTree(bool nocase);
-jlib_decl IPropertyTree *createPTree(const char *name, bool nocase);
-jlib_decl IPropertyTree *createPTree(MemoryBuffer &src);
-jlib_decl IPropertyTree *createPTree(const IPropertyTree *srcTree);
 jlib_decl void mergePTree(IPropertyTree *target, IPropertyTree *toMerge);
 jlib_decl void synchronizePTree(IPropertyTree *target, IPropertyTree *source);
 jlib_decl IPropertyTree *ensurePTree(IPropertyTree *root, const char *xpath);
 jlib_decl bool areMatchingPTrees(IPropertyTree * left, IPropertyTree * right);
 
-jlib_decl IPropertyTree *createPTree(IFile &ifile, bool caseInsensitive, bool ignoreWhiteSpace=true, IPTreeMaker *iMaker=NULL, bool ignoreCheckRoot=false);
-jlib_decl IPropertyTree *createPTree(IFileIO &ifileio, bool caseInsensitive, bool ignoreWhiteSpace=true, IPTreeMaker *iMaker=NULL, bool ignoreCheckRoot=false);
-jlib_decl IPropertyTree *createPTree(ISimpleReadStream &stream, bool caseInsensitive, bool ignoreWhiteSpace=true, IPTreeMaker *iMaker=NULL, bool ignoreCheckRoot=false);
-jlib_decl IPropertyTree *createPTreeFromXMLString(const char *xml, bool caseInsensitive, bool ignoreWhiteSpace=true, IPTreeMaker *iMaker=NULL, bool ignoreNameSpaces=false, bool ignoreCheckRoot=false);
-jlib_decl IPropertyTree *createPTreeFromXMLString(unsigned len, const char *xml, bool caseInsensitive, bool ignoreWhiteSpace=true, IPTreeMaker *iMaker=NULL, bool ignoreCheckRoot=false);
-jlib_decl IPropertyTree *createPTreeFromXMLFile(const char *filename, bool caseInsensitive, bool ignoreWhiteSpace=true, IPTreeMaker *iMaker=NULL, bool ignoreCheckRoot=false);
-jlib_decl void loadXMLFileToPTree(IPropertyTree *tree, const char *filename, bool caseInsensitive, bool ignoreWhiteSpace=true, IPTreeMaker *iMaker=NULL, bool ignoreCheckRoot=false);
+jlib_decl IPropertyTree *createPTree(MemoryBuffer &src);
+
+jlib_decl IPropertyTree *createPTree(byte flags=ipt_none);
+jlib_decl IPropertyTree *createPTree(const char *name, byte flags=ipt_none);
+jlib_decl IPropertyTree *createPTree(IFile &ifile, byte flags=ipt_none, XmlReaderOptions readFlags=xr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
+jlib_decl IPropertyTree *createPTree(IFileIO &ifileio, byte flags=ipt_none, XmlReaderOptions readFlags=xr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
+jlib_decl IPropertyTree *createPTree(ISimpleReadStream &stream, byte flags=ipt_none, XmlReaderOptions readFlags=xr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
+jlib_decl IPropertyTree *createPTreeFromXMLString(const char *xml, byte flags=ipt_none, XmlReaderOptions readFlags=xr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
+jlib_decl IPropertyTree *createPTreeFromXMLString(unsigned len, const char *xml, byte flags=ipt_none, XmlReaderOptions readFlags=xr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
+jlib_decl IPropertyTree *createPTreeFromXMLFile(const char *filename, byte flags=ipt_none, XmlReaderOptions readFlags=xr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
+jlib_decl IPropertyTree *createPTreeFromIPT(const IPropertyTree *srcTree, ipt_flags flags=ipt_none);
 
 #define XML_SortTags 0x01
 #define XML_Format   0x02
@@ -201,8 +204,6 @@ jlib_decl void saveXML(const char *filename, const IPropertyTree *tree, unsigned
 jlib_decl void saveXML(IFile &ifile, const IPropertyTree *tree, unsigned indent = 0, byte flags=XML_Format);
 jlib_decl void saveXML(IFileIO &ifileio, const IPropertyTree *tree, unsigned indent = 0, byte flags=XML_Format);
 jlib_decl void saveXML(IIOStream &stream, const IPropertyTree *tree, unsigned indent = 0, byte flags=XML_Format);
-jlib_decl IPropertyTree *loadPropertyTree(const char *filename, bool nocase, bool ignoreWhiteSpace=true);
-#define createPropertyTree(CASE, NAME) createPTree(NAME, CASE)
 
 jlib_decl const char *splitXPath(const char *xpath, StringBuffer &head); // returns tail, fills 'head' with leading xpath
 jlib_decl bool validateXPathSyntax(const char *xpath, StringBuffer *error=NULL);

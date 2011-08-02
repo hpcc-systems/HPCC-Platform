@@ -33,7 +33,7 @@
 
 CBaseSecurityManager::CBaseSecurityManager(const char *serviceName, const char *config)
 {
-    Owned<IPropertyTree> cfg = createPTreeFromXMLString(config, true);
+    Owned<IPropertyTree> cfg = createPTreeFromXMLString(config, ipt_caseInsensitive);
     if(cfg.get() == NULL)
         throw MakeStringException(-1, "createPTreeFromXMLString() failed for %s", config);
     init(serviceName,cfg);

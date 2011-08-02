@@ -466,13 +466,13 @@ public:
         IPropertyTree  *t=NULL;
         OwnedIFile ifile = createIFile(storename.get());
         if (ifile->exists())
-            t = createPTree(*ifile, true);
+            t = createPTree(*ifile, ipt_caseInsensitive);
         if (t) {
             setServerId(myrank,t->getPropInt64("ServerID"));
             setCovenId(t->getPropInt64("CovenID"));
         }
         else {
-            t = createPTree("Coven",false);
+            t = createPTree("Coven");
             t->setPropInt("UIDbase",1);
             t->setPropInt("SDSedition",0);
             if (myrank==0) {

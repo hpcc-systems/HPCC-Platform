@@ -195,7 +195,7 @@ static IPropertyTree *getEnvironment()
     if (daliClientActive()) {
         Owned<IRemoteConnection> conn = querySDS().connect("/Environment", myProcessSession(), 0, SDS_LOCK_TIMEOUT);
         if (conn)
-            env.setown(createPTree(conn->queryRoot())); // we don't really need to copy here
+            env.setown(createPTreeFromIPT(conn->queryRoot())); // we don't really need to copy here
     }
     if (!env.get())
         env.setown(getHPCCenvironment());

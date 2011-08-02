@@ -395,7 +395,7 @@ public:
         
         if (strncmp(xml, "<Exceptions>", 12))
             xml = wrapper.appendf("<Exceptions>%s</Exceptions>", xml).str();
-        Owned<IPropertyTree> pTree = createPTreeFromXMLString(xml, false, true);
+        Owned<IPropertyTree> pTree = createPTreeFromXMLString(xml);
         if (!pTree)
             throw MakeStringException(-1, "Failed to deserialize IMultiException!");
         Owned<IPropertyTreeIterator> i = pTree->getElements("Exception");

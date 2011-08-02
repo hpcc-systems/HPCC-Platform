@@ -253,7 +253,7 @@ static void import(const char *path,const char *src,bool add)
     size32_t sz = (size32_t)iFile->size();
     StringBuffer xml;
     iFileIO->read(0, sz, xml.reserve(sz));
-    Owned<IPropertyTree> branch = createPTreeFromXMLString(xml.str(), false, true);
+    Owned<IPropertyTree> branch = createPTreeFromXMLString(xml.str());
     StringBuffer head;
     StringBuffer tmp;
     const char *tail=splitpath(path,head,tmp);
@@ -538,7 +538,7 @@ static void dfsfile(const char *lname,IUserDescriptor *userDesc, UnsignedArray *
         Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,userDesc);
         if (file) {
             Owned<IFileDescriptor> fdesc = file->getFileDescriptor();
-            Owned<IPropertyTree> t = createPropertyTree(false,"File");
+            Owned<IPropertyTree> t = createPTree("File");
             fdesc->serializeTree(*t);
             filterParts(t,*partslist);
             toXML(t, str.clear());
@@ -1119,7 +1119,7 @@ static void checksuperfile(const char *lfn,bool fix=false)
                     OUTLOG("Candidate %s",pname.str());
                 }
                 if (fix&&doFix()) {
-                    Owned<IPropertyTree> t = createPTree("SuperOwner",false);
+                    Owned<IPropertyTree> t = createPTree("SuperOwner");
                     t->setProp("@name",lname.get());
                     subroot->addPropTree("SuperOwner",t.getClear());
 
@@ -1767,7 +1767,7 @@ static void coalesce()
     StringBuffer storeFilename(daliDataPath);
     iStoreHelper->getCurrentStoreFilename(storeFilename);
     OUTLOG("Loading store: %s", storeFilename.str());
-    Owned<IPropertyTree> root = createPTreeFromXMLFile(storeFilename.str(), false);
+    Owned<IPropertyTree> root = createPTreeFromXMLFile(storeFilename.str());
     OUTLOG("Loaded: %s", storeFilename.str());
 
     if (baseEdition != iStoreHelper->queryCurrentEdition())
@@ -1851,7 +1851,7 @@ static void convertBinBranch(IPropertyTree &cluster,const char *branch)
     if (buf.length()) {
         StringBuffer xml;
         xml.append(buf.length(),buf.toByteArray());
-        t = createPTreeFromXMLString(xml.str(),false );
+        t = createPTreeFromXMLString(xml.str());
         cluster.removeProp(query.str());
         cluster.addPropTree(query.str(),t);
     }
@@ -1860,7 +1860,7 @@ static void convertBinBranch(IPropertyTree &cluster,const char *branch)
 static void getxref(const char *dst)
 {
     Owned<IRemoteConnection> conn = querySDS().connect("DFU/XREF",myProcessSession(),RTM_LOCK_READ, INFINITE);
-    Owned<IPropertyTree> root = createPTree(conn->getRoot());
+    Owned<IPropertyTree> root = createPTreeFromIPT(conn->getRoot());
     Owned<IPropertyTreeIterator> iter = root->getElements("Cluster");
     ForEach(*iter) {
         IPropertyTree &cluster = iter->query();

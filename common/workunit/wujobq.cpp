@@ -116,7 +116,7 @@ public:
 
     IPropertyTree *createBranch(CJobQueueItem)
     {
-        IPropertyTree *item = createPTree("Item",false);
+        IPropertyTree *item = createPTree("Item");
         assignBranch(item,this);
         return item;
     }
@@ -517,7 +517,7 @@ public:
                         StringBuffer cpath;
                         cpath.appendf("Queue[@name=\"%s\"]",qd->qname.get());
                         if (!proot->hasProp(cpath.str())) {
-                            IPropertyTree *pt = proot->addPropTree("Queue",createPTree("Queue",false));
+                            IPropertyTree *pt = proot->addPropTree("Queue",createPTree("Queue"));
                             pt->setProp("@name",qd->qname.get());
                             pt->setProp("@state","active");
                             pt->setPropInt("@count", 0);
@@ -680,7 +680,7 @@ public:
         IPropertyTree *ret = qd.root->queryPropTree(path.str());
         if (!ret&&(idx==(unsigned)-1)) {
             Cconnlockblock block(this,true);
-            ret = createPTree("Client",false);
+            ret = createPTree("Client");
             ret = qd.root->addPropTree("Client",ret);
             ret->setPropInt64("@session",sessionid);
             StringBuffer eps;
@@ -965,7 +965,7 @@ public:
                 idx--;
             }
         }
-        CJobQueueItem::assignBranch(addItem(qd,createPTree("Item",false),idx,count),qi);
+        CJobQueueItem::assignBranch(addItem(qd,createPTree("Item"),idx,count),qi);
         qd.root->setPropInt("@count",count+1);
     }
 

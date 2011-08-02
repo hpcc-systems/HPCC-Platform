@@ -181,14 +181,14 @@ bool CWUXMLInfo::buildXmlGraphList(IConstWorkUnit &wu,IPropertyTree& XMLStructur
     try {
       SCMStringBuffer buf;
 
-        IPropertyTree* resultTree = XMLStructure.addPropTree("WUGraphs", createPTree(true));    
+        IPropertyTree* resultTree = XMLStructure.addPropTree("WUGraphs", createPTree(ipt_caseInsensitive));
         Owned<IConstWUGraphIterator> graphs = &wu.getGraphs(GraphTypeAny);
         ForEach(*graphs)
         {
             IConstWUGraph &graph = graphs->query();
             if(!graph.isValid())
                 continue;
-            IPropertyTree * p   =   resultTree->addPropTree("WUGraph", createPTree(true));
+            IPropertyTree * p   =   resultTree->addPropTree("WUGraph", createPTree(ipt_caseInsensitive));
             p->setProp("Wuid",      wu.getWuid(buf).str());
          buf.clear();
             p->setProp("Name",      graph.getName(buf).str());
@@ -218,7 +218,7 @@ bool CWUXMLInfo::buildXmlExceptionList(IConstWorkUnit &wu,IPropertyTree& XMLStru
             ForEach(*exceptions)
             {
                 SCMStringBuffer x, y;
-                IPropertyTree * p   =   XMLStructure.addPropTree("Exceptions", createPTree(true));
+                IPropertyTree * p   =   XMLStructure.addPropTree("Exceptions", createPTree(ipt_caseInsensitive));
                 p->setProp("Source",exceptions->query().getExceptionSource(x).str());
                 p->setProp("Message",exceptions->query().getExceptionMessage(y).str());
             }
@@ -239,7 +239,7 @@ bool CWUXMLInfo::buildXmlExceptionList(IConstWorkUnit &wu,IPropertyTree& XMLStru
 bool CWUXMLInfo::buildXmlResultList(IConstWorkUnit &wu,IPropertyTree& XMLStructure)
 {
     try{
-        IPropertyTree* resultsTree = XMLStructure.addPropTree("WUResults", createPTree(true));  
+        IPropertyTree* resultsTree = XMLStructure.addPropTree("WUResults", createPTree(ipt_caseInsensitive));
         Owned<IConstWUResultIterator> results = &wu.getResults();
         ForEach(*results)
         {
@@ -264,7 +264,7 @@ bool CWUXMLInfo::buildXmlResultList(IConstWorkUnit &wu,IPropertyTree& XMLStructu
                     r.getResultXml(x);
                     try
                     {
-                        Owned<IPropertyTree> props = loadPropertyTree(x.str(), true);
+                        Owned<IPropertyTree> props = createPTreeFromXMLString(x.str(), ipt_caseInsensitive);
                         IPropertyTree *row = props->queryPropTree("Row");
                         IPropertyTree *val = row->queryPropTree("*");
                         value.append(val->queryProp(NULL));
@@ -281,7 +281,7 @@ bool CWUXMLInfo::buildXmlResultList(IConstWorkUnit &wu,IPropertyTree& XMLStructu
                     value.append(" rows]");
                     link.append(r.getResultSequence());
                 }
-                IPropertyTree* result = resultsTree->addPropTree("WUResult", createPTree(true));    
+                IPropertyTree* result = resultsTree->addPropTree("WUResult", createPTree(ipt_caseInsensitive));
                 result->setProp("Name",x.str());
                 result->setProp("Link",link.str());
                 result->setProp("Value",value.str());
@@ -312,7 +312,7 @@ bool CWUXMLInfo::buildXmlResultList(IConstWorkUnit &wu,IPropertyTree& XMLStructu
 bool CWUXMLInfo::buildXmlTimimgList(IConstWorkUnit &wu,IPropertyTree& XMLStructure)
 {
     try{
-        IPropertyTree* timingTree = XMLStructure.addPropTree("Timings", createPTree(true)); 
+        IPropertyTree* timingTree = XMLStructure.addPropTree("Timings", createPTree(ipt_caseInsensitive));
         Owned<IStringIterator> times = &wu.getTimers();
         ForEach(*times)
         {
@@ -327,7 +327,7 @@ bool CWUXMLInfo::buildXmlTimimgList(IConstWorkUnit &wu,IPropertyTree& XMLStructu
                 if (name.s.charAt(i)=='_') 
                     name.s.setCharAt(i, ' ');
 
-            IPropertyTree* Timer = timingTree->addPropTree("Timer", createPTree(true)); 
+            IPropertyTree* Timer = timingTree->addPropTree("Timer", createPTree(ipt_caseInsensitive));
             Timer->setProp("Name",name.str());
             Timer->setProp("Value",fd.str());
             Timer->setPropInt("Count",count);
@@ -349,7 +349,7 @@ bool CWUXMLInfo::buildXmlTimimgList(IConstWorkUnit &wu,IPropertyTree& XMLStructu
 bool CWUXMLInfo::buildXmlLogList(IConstWorkUnit &wu,IPropertyTree& XMLStructure)
 {
     try{
-        IPropertyTree* logTree = XMLStructure.addPropTree("WULog", createPTree(true));  
+        IPropertyTree* logTree = XMLStructure.addPropTree("WULog", createPTree(ipt_caseInsensitive));
         Owned <IConstWUQuery> query = wu.getQuery();
         if(query)
         {

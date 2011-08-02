@@ -48,7 +48,7 @@ class XREFDirectoryBuilder
         mask.appendf("directory[@name=\"%s\"]",tail);
         IPropertyTree *ret = parent->queryPropTree(mask.str());
         if (!ret) {
-            ret = parent->addPropTree("directory", createPTree(false));
+            ret = parent->addPropTree("directory", createPTree());
             ret->setProp("@name", tail);
         }
         return ret;
@@ -83,7 +83,7 @@ public:
         }
         StringBuffer path;
         const char * tag = "directory";
-        IPropertyTree * dirTree = result->addPropTree(tag, createPTree(false));
+        IPropertyTree * dirTree = result->addPropTree(tag, createPTree());
         dirTree->setProp("@name", directory);
         walkDirectory(dir,"", dirTree);
     }
@@ -159,7 +159,7 @@ public:
                     }
                 }
                 mask.clear().appendf("file[@name=\"%s\"]",tailname);
-                IPropertyTree *entry = parent->addPropTree("file", createPTree(false));
+                IPropertyTree *entry = parent->addPropTree("file", createPTree());
                 __int64 fsz = iter->getFileSize();
                 entry->setPropInt64("@size", fsz);
                 parentfsz += fsz;
@@ -181,7 +181,7 @@ IPropertyTree *getDirectory(const char * directory, INode * node, unsigned short
     loop {
         StringAttr nextDir;
         try {
-            Owned<IPropertyTree> dirTree = createPTree("machine",false);
+            Owned<IPropertyTree> dirTree = createPTree("machine");
             StringBuffer url;
             node->endpoint().getIpText(url);
             dirTree->setProp("@ip", url.str());

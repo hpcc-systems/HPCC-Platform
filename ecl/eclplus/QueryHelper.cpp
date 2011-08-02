@@ -121,7 +121,7 @@ bool QueryHelper::doit(FILE * fp)
                 const char *xml = globals->queryProp(key);
                 try
                 {
-                    Owned<IPropertyTree> checkValid = createPTreeFromXMLString(xml, false);
+                    Owned<IPropertyTree> checkValid = createPTreeFromXMLString(xml);
                 }
                 catch (IException *E)
                 {
@@ -147,7 +147,7 @@ bool QueryHelper::doit(FILE * fp)
                 }
                 try
                 {
-                    Owned<IPropertyTree> checkValid = createPTreeFromXMLString(xml, false);
+                    Owned<IPropertyTree> checkValid = createPTreeFromXMLString(xml);
                 }
                 catch (IException *E)
                 {

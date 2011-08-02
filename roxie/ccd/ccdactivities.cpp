@@ -77,7 +77,7 @@ extern void putStatsValue(IPropertyTree *node, const char *statName, const char 
         IPropertyTree *att = node->queryPropTree(xpath.str());
         if (!att)
         {
-            att = node->addPropTree("att", createPTree(false));
+            att = node->addPropTree("att", createPTree());
             att->setProp("@name", statName);
         }
         att->setProp("@type", statType);
@@ -238,14 +238,14 @@ protected:
             const char *id = strchr(levelx, '[');
             if (!id)
             {
-                child = createPTree(levelx, false);
+                child = createPTree(levelx);
                 parent->addPropTree(levelx, child);
             }
             else
             {
                 StringBuffer elem;
                 elem.append(id-levelx, levelx);
-                child = createPTree(elem, false);
+                child = createPTree(elem);
                 parent->addPropTree(elem, child);
                 loop
                 {

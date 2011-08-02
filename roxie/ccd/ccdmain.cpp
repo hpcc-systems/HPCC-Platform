@@ -84,7 +84,7 @@ bool fieldTranslationEnabled = false;
 bool syncCluster = false;  // should we sync an out of sync cluster (always send a trap)
 bool useTreeCopy = true;
 bool mergeSlaveStatistics = true;
-bool defaultStripLeadingWhitespace = true;
+XmlReaderOptions defaultXmlReadFlags = xr_ignoreWhiteSpace;
 bool runOnce = false;
 
 unsigned udpMulticastBufferSize = 262142;
@@ -258,7 +258,7 @@ void getAccessList(const char *aclName, IPropertyTree *topology, IPropertyTree *
     xpath.append("ACL[@name='").append(aclName).append("']");
     if (serverInfo->queryPropTree(xpath))
         throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - recursive ACL definition of %s", aclName);
-    Owned<IPropertyTree> X = createPTree("ACL", false);
+    Owned<IPropertyTree> X = createPTree("ACL");
     X->setProp("@name", aclName);
     serverInfo->addPropTree("ACL", X.getClear());
 
@@ -292,7 +292,7 @@ void addServerChannel(const char *dataDirectory, unsigned port, unsigned threads
         if (f.getPropInt("@port", 0) == port)
             throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - Roxie server port repeated");
     }
-    IPropertyTree *ci = createPTree("RoxieServerProcess", false);
+    IPropertyTree *ci = createPTree("RoxieServerProcess");
     ci->setProp("@dataDirectory", dataDirectory);
     ci->setPropInt("@port", port);
     ci->setPropInt("@numThreads", threads);
@@ -314,7 +314,7 @@ void addSlaveChannel(unsigned channel, const char *dataDirectory, bool suspended
     xpath.appendf("RoxieSlaveProcess[@channel=\"%d\"]", channel);
     if (ccdChannels->hasProp(xpath.str()))
         throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - channel %d repeated", channel);
-    IPropertyTree *ci = createPTree("RoxieSlaveProcess", false);
+    IPropertyTree *ci = createPTree("RoxieSlaveProcess");
     ci->setPropInt("@channel", channel);
     ci->setPropBool("@suspended", suspended);
     ci->setPropInt("@subChannel", numSlaves[channel]);
@@ -462,7 +462,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
     Thread::setDefaultStackSize(0x10000);   // NB under windows requires linker setting (/stack:)
 #endif
     srand( (unsigned)time( NULL ) );
-    ccdChannels = createPTree("Channels", false);
+    ccdChannels = createPTree("Channels");
     EnableSEHtoExceptionMapping();
     setTerminateOnSEH();
 
@@ -498,7 +498,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         if (checkFileExists(topologyFile.str()))
         {
             DBGLOG("Loading topology file %s", topologyFile.str());
-            topology = createPTreeFromXMLFile(topologyFile.str(), false, true);
+            topology = createPTreeFromXMLFile(topologyFile.str());
         }
         else
         {
@@ -511,8 +511,8 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 "<RoxieTopology numChannels='1' localSlave='1'>"
                  "<RoxieServerProcess dataDirectory='.' netAddress='.'/>"
                  "<RoxieSlaveProcess dataDirectory='.' netAddress='.' channel='1'/>"
-                "</RoxieTopology>", 
-                false, true);
+                "</RoxieTopology>"
+                );
             int port = globals->getPropInt("port", 9876);
             topology->setPropInt("RoxieServerProcess/@port", port);
             topology->setProp("@daliServers", globals->queryProp("daliServers"));
@@ -766,7 +766,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         defaultWarnTimeLimit[1] = (unsigned) topology->getPropInt64("@defaultHighPriorityTimeWarning", 0);
         defaultWarnTimeLimit[2] = (unsigned) topology->getPropInt64("@defaultSLAPriorityTimeWarning", 0);
 
-        defaultStripLeadingWhitespace = topology->getPropBool("@defaultStripLeadingWhitespace", true);
+        defaultXmlReadFlags = topology->getPropBool("@defaultStripLeadingWhitespace", true) ? xr_ignoreWhiteSpace : xr_none;
         defaultParallelJoinPreload = topology->getPropInt("@defaultParallelJoinPreload", 0);
         defaultConcatPreload = topology->getPropInt("@defaultConcatPreload", 0);
         defaultFetchPreload = topology->getPropInt("@defaultFetchPreload", 0);
