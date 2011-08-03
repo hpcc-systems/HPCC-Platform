@@ -4,6 +4,29 @@
     <title>ecl/regress</title>
 
     <para>
-        The ecl/regress directory contains the sources for the ecl/regress library.
+The ecl/regress directory contains the sources for the compiler regression suite.  This regression suite is used to
+check any changes to the eclcc compiler.  The recommended approach is
+
+a) Run the regression suite and save the generated output.
+b) Make the changes to the source code.
+c) Re run the regression suite, compare the generated code, and check that all the changes are expected.
+
+The regression suite should contain at least one example of any language feature that is added to the system.
+
+
+
+
+
+To run the regression suite under windows:
+a) Ensure path to eclcc is set up correctly
+b) Copy setreg.bat.sample to setreg.bat and modify the contents to reflect your set up.
+c) Copy rcompare.bat.sample to rcompare.bat and update to reflect your comparison program.
+
+r1.bat.sample can be used to run the regression test for a single file.
+E.g.,
+r1 dataset.ecl
+
+rall.bat runs the full regression test
+
     </para>
 </section>

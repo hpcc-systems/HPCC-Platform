@@ -17,7 +17,9 @@ rem     You should have received a copy of the GNU Affero General Public License
 rem     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 rem ############################################################################## */
 
-setlocal enableextensions
-md %regresstgt% 2>nul
-call %~dp0\regress1 -m %*
-if EXIST %~dp0\rcompare.bat. call %~dp0\rcompare %*
+if '%1'=='' goto compareall;
+call "\Program Files (x86)\Beyond Compare 2"\bc2.exe "/filters=%1*" /expandall %regresstgt% %regresskey%
+goto end;
+:compareall
+call "\Program Files (x86)\Beyond Compare 2"\bc2.exe /expandall %regresstgt% %regresskey%
+:end
