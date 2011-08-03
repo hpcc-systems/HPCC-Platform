@@ -18,7 +18,7 @@
 
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -26,7 +26,7 @@ string10        forename;
 
 namesTable1 := dataset('namesToWatch',namesRecord,FLAT);
 namesTable2 := dataset([
-        {'Halliday','Gavin'},
+        {'Hawthorn','Gavin'},
         {'Simth','John'},
         {'Cartright','Wheely'},
         {'X','Mr'}], namesRecord);
@@ -40,7 +40,7 @@ numToWatch := count(namesTable) : once;
 badNumToWatch := count(watchNames) : once;
 
 searchNames := dataset([
-        {'Halliday','Gavin'},
+        {'Hawthorn','Gavin'},
         {'Hickland','Brenda'},
         {'Smith','Joe'},
         {'X','Z'}], namesRecord);

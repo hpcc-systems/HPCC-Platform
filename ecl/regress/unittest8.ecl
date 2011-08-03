@@ -19,18 +19,18 @@
 testStringlib := MODULE
   EXPORT AaaStartup := OUTPUT('Begin test');
 
-  EXPORT Test0 := 'This should not be output by evaluate';  
+  EXPORT Test0 := 'This should not be output by evaluate';
 
   EXPORT TestConstant := MODULE
     EXPORT Test1 := dataset([1],{integer x});
     EXPORT Test2 := dataset([2,3],{integer xx});
   END;
-  
+
   EXPORT TestOther := MODULE
     EXPORT Test1 := dataset([99],{integer xy});
     EXPORT Test2 := dataset([98,87],{integer xz});
   END;
-  
+
   EXPORT ZzzClosedown := OUTPUT('End test');
 END;
 

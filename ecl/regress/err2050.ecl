@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-f(x) := MACRO 
+f(x) := MACRO
      g(x)+3
 ENDMACRO;
 

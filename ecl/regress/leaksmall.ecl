@@ -23,7 +23,7 @@ export integer physicallength(ebcdic string s) := StringLib.EbcdicStringUnbounde
 export string load(ebcdic string s) := s[1..StringLib.EbcdicStringUnboundedUnsafeFind(s,del)-1];
 export ebcdic string store(string s) := (ebcdic string)s+del;
 END;
- 
+
 
 layout_L90_source := record
        ebcdic_dstring((ebcdic string2) x'bf02') name;

@@ -18,7 +18,7 @@
 
 #option ('pickBestEngine', false);
 
-namesRecord := 
+namesRecord :=
             RECORD
 unsigned4       id;
 string          text;

@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -34,9 +34,9 @@ set of string10 searchForenames := all : stored('searchForenames');
 filterByAge(dataset(recordof(i)) in) := in(keyed(age = 10, opt));
 
 
-output(filterByAge(i(keyed(surname='Halliday'),keyed(true or forename='abcdefghij'))));
-output(filterByAge(i(keyed(surname='Halliday' and forename='Gavin'))));
-output(filterByAge(i(keyed(surname='Halliday' and forename in searchForenames))));
+output(filterByAge(i(keyed(surname='Hawthorn'),keyed(true or forename='abcdefghij'))));
+output(filterByAge(i(keyed(surname='Hawthorn' and forename='Gavin'))));
+output(filterByAge(i(keyed(surname='Hawthorn' and forename in searchForenames))));
 
 output(i(WILD(surname),KEYED(forename='Gavin'),keyed(age=10,opt)));
-output(i(keyed(surname='Halliday',opt),KEYED(forename='Gavin',opt),keyed(age=10,opt)));
+output(i(keyed(surname='Hawthorn',opt),KEYED(forename='Gavin',opt),keyed(age=10,opt)));

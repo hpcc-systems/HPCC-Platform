@@ -27,7 +27,7 @@ string f1(interface1 ctx) := '[' + ctx.firstName + ',' + ctx.lastName + ']';
 
 options := module(interface1)
 export firstName := 'Gavin';
-export lastName := 'Halliday';
+export lastName := 'Hawthorn';
     end;
 
 

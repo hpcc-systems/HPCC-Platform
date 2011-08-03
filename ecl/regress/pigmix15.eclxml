@@ -28,15 +28,15 @@
     Group_Key := InFile.Fld;
     InFile_Label := DATASET(ROW(InFile));
   END;
-    
+
 #uniquename(agg)
 %r% %agg%(%r% le,%r% ri) := TRANSFORM
   SELF.Group_Key := le.Group_Key;
     SELF.InFile_Label := le.InFile_Label+ri.InFile_label;
   END;
-    
+
 outf := ROLLUP( SORT( DISTRIBUTE( table(InFile,%r%), HASH(TRIM((STRING)Group_Key))), Group_Key, LOCAL ), LEFT.Group_Key=RIGHT.Group_Key, %agg%(left,right), LOCAL );
-    
+
   ENDMACRO;
   </Attribute>
  </Module>

@@ -30,7 +30,7 @@ r norm(r l, integer c) := transform
 
 HashRecs := normalize( BlankSet, 300, norm(left, counter));
 
-a := output(DISTRIBUTE(HashRecs,ID),,'REGRESS::IDX::TestFile', overwrite); 
+a := output(DISTRIBUTE(HashRecs,ID),,'REGRESS::IDX::TestFile', overwrite);
 
 ds := dataset('REGRESS::IDX::TestFile',{r,unsigned8 __filpos    {virtual(fileposition)}},thor);
 
@@ -66,16 +66,16 @@ d := dataset([{'ds(id=1) = 1',count(ds(id=1))},
                          ],
                          {string12 txt,integer val});
 
-f1 := fetch(ds,i(id=1),right.__filpos); 
-f2 := fetch(ds,i(id=2),right.__filpos); 
-f3 := fetch(ds,i(id=3),right.__filpos); 
-f4 := fetch(ds,i(id=4),right.__filpos); 
-f5 := fetch(ds,i(id=5),right.__filpos); 
-f6 := fetch(ds,i(id=6),right.__filpos); 
-f7 := fetch(ds,i(id=7),right.__filpos); 
-f8 := fetch(ds,i(id=8),right.__filpos); 
-f9 := fetch(ds,i(id=9),right.__filpos); 
-f10:= fetch(ds,i(id=10),right.__filpos); 
+f1 := fetch(ds,i(id=1),right.__filpos);
+f2 := fetch(ds,i(id=2),right.__filpos);
+f3 := fetch(ds,i(id=3),right.__filpos);
+f4 := fetch(ds,i(id=4),right.__filpos);
+f5 := fetch(ds,i(id=5),right.__filpos);
+f6 := fetch(ds,i(id=6),right.__filpos);
+f7 := fetch(ds,i(id=7),right.__filpos);
+f8 := fetch(ds,i(id=8),right.__filpos);
+f9 := fetch(ds,i(id=9),right.__filpos);
+f10:= fetch(ds,i(id=10),right.__filpos);
 
 output(d);
 output(f1);

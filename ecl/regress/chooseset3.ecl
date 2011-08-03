@@ -16,13 +16,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-export system := 
+export system :=
     SERVICE
 unsigned integer4 node() : library='graph', ctxmethod, entrypoint='getNodeNum';
     END;
 
 
-arec := 
+arec :=
             RECORD
 unsigned1       a;
 unsigned1       b;
@@ -31,67 +31,67 @@ unsigned4       node := 0;
             END;
 
 alpha := dataset([
-        {1,1}, 
+        {1,1},
         {1,2},
         {2,1},
         {2,2},
         {0,0},
         {3,1},
-        {1,1}, 
+        {1,1},
         {1,2},
         {2,1},
         {2,2},
         {0,0},
         {3,1},
-        {1,1}, 
+        {1,1},
         {1,2},
         {2,1},
         {2,2},
         {0,0},
         {3,1},
-        {1,1}, 
+        {1,1},
         {1,2},
         {2,1},
         {2,2},
         {0,0},
         {3,1},
-        {1,1}, 
+        {1,1},
         {1,2},
         {2,1},
         {2,2},
         {0,0},
         {3,1},
-        {1,1}, 
+        {1,1},
         {1,2},
         {2,1},
         {2,2},
         {0,0},
         {3,1},
-        {1,1}, 
+        {1,1},
         {1,2},
         {2,1},
         {2,2},
         {0,0},
         {3,1},
-        {1,1}, 
+        {1,1},
         {1,2},
         {2,1},
         {2,2},
         {0,0},
         {3,1},
-        {1,1}, 
+        {1,1},
         {1,2},
         {2,1},
         {2,2},
         {0,0},
         {3,1},
-        {1,1}, 
+        {1,1},
         {1,2},
         {2,1},
         {2,2},
         {0,0},
         {3,1},
-        {1,1}, 
+        {1,1},
         {1,2},
         {2,1},
         {2,2},
@@ -99,7 +99,7 @@ alpha := dataset([
         {3,1}
         ], arec);
 
-arec t(arec l, unsigned4 c) := 
+arec t(arec l, unsigned4 c) :=
     TRANSFORM
         SELF.sequence := c;
         SELF.node := system.node();

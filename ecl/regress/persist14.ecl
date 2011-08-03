@@ -18,7 +18,7 @@
 
 import lib_FileServices;
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -26,9 +26,9 @@ integer2        age := 25;
             END;
 
 namesTable1 := dataset([
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
-        {'Salter','Abi',10},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
+        {'Smithe','Pru',10},
         {'X','Z'}], namesRecord);
 
 o1 := output(namesTable1(age>10),,'~testing::out1');
@@ -63,7 +63,7 @@ per := super(age <> 0) : persist('per');
 a4 := output(per);
 
 unsigned action := 4;
-case (action, 
+case (action,
         1=>a1,
         2=>a2,
         3=>a3,

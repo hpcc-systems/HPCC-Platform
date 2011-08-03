@@ -19,7 +19,7 @@
 STRING cat(STRING s1, STRING s2) := s1 + s2;
 
 MyRec1 := RECORD
-   cat('abc','def'); 
+   cat('abc','def');
 END;
 
 

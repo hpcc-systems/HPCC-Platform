@@ -18,13 +18,13 @@
 
 d := dataset('~local::rkc::person', { string15 f1, string15 f2, string15 f3, string15 f4, unsigned8 filepos{virtual(fileposition)} }, flat);
 
-i := index(d, { d } ,'\\seisint\\person.name_first.key');
+i := index(d, { d } ,'\\home\\person.name_first.key');
 
 
 count(i(keyed(f1='Gavin1')));
-count(i(keyed(f1='Gavin2' and f2='Halliday')));
+count(i(keyed(f1='Gavin2' and f2='Hawthorn')));
 count(i(keyed(f2='Gavin3') and wild(f1)));
-count(i(f2='Halliday'));
+count(i(f2='Hawthorn'));
 
 count(i(keyed(f1='Gavin3') and keyed(f2='Gavin4') and wild(f1)));
 count(i(f1='Gavin3' and keyed(f2='Gavin4') and wild(f1)));

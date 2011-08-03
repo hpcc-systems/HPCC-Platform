@@ -25,8 +25,8 @@
 [1,2]>[1];
 [2]>[1,2];
 
-['Gavin','Halliday']>=['Elizabeth','Halliday'];
-['Gavin','Halliday']>=['Gavin   ','Hall'];
+['Gavin','Hawthorn']>=['Elizabeth','Hawthorn'];
+['Gavin','Hawthorn']>=['Gavin   ','Hall'];
 
 [1]=[1];
 []<[1];

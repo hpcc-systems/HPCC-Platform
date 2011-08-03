@@ -29,12 +29,12 @@ rawfile := dataset('regress::stringkey', rec, THOR, preload);
 
 //filtered := rawfile(keyed(state in [searchstate[1..2]]));
 filtered := rawfile(keyed(state = searchstate[1..2]));
- 
+
 output(filtered);
 
 
 set of string searchstate2 := ['FL'] : stored('searchState2');
 
 filtered2 := rawfile(keyed(state in searchstate2));
- 
+
 //output(filtered2);

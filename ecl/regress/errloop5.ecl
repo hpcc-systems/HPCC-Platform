@@ -18,7 +18,7 @@
 
 LOADXML('<xml></xml>');
 #LOOP
-  #LOOP   
+  #LOOP
     #BREAK
   #END
   #BREAK

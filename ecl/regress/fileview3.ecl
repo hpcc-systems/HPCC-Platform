@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-namesRecord := 
+namesRecord :=
             RECORD
 string      surname;
 string      forename;
@@ -27,9 +27,9 @@ string          occupation;
             END;
 
 namesTable := dataset([
-        {'Halliday','Gavin',34,'Tea boy'},
-        {'Halliday','Liz',34, 'Doctor'},
-        {'Salter','Abi',10},
+        {'Hawthorn','Gavin',34,'Tea boy'},
+        {'Hawthorn','Mia',34, 'Doctor'},
+        {'Smithe','Pru',10},
         {'X','Z'}], namesRecord);
 
 output(namesTable,,'out.d00',overwrite);

@@ -21,8 +21,8 @@ import text;
 RULE WORD := Text.alpha+;
 RULE Article := 'the' | 'a' | 'an';
 RULE NounPhraseComponent := (Word penalty(1)) | (article Text.ws Word);
-rs := 
-RECORD 
+rs :=
+RECORD
     STRING100 line;
 END;
 ds := DATASET([{'the fox or the hen'}], rs);

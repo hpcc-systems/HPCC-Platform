@@ -21,7 +21,7 @@ r1 := { unsigned id, string name; string name2};
 
 r2 := { unsigned id, dataset(r1) children, dataset(r1) children2 };
 
-s := dataset([{0,[{1,'Gavin','Halliday'},{2,'Jason','Jones'}],[]}], r2) : persist('s');
+s := dataset([{0,[{1,'Gavin','Hawthorn'},{2,'Jason','Jones'}],[]}], r2) : persist('s');
 
 g0 := s[1];
 g1 := global(g0,few);

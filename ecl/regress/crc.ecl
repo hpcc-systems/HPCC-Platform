@@ -17,7 +17,7 @@
 ############################################################################## */
 
 export DataLib := SERVICE
-  string    PreferredFirst(const string scr)  : c, pure, entrypoint='dataCalcPreferredFirst'; 
+  string    PreferredFirst(const string scr)  : c, pure, entrypoint='dataCalcPreferredFirst';
 END;
 
 qstring20 lnameField := '' : stored('lnameField');

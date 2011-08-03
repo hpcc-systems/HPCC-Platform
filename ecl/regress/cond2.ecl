@@ -19,7 +19,7 @@
 #option ('targetClusterType', 'roxie');
 #option ('minimizeSpillSize', true);
 
-mainRecord := 
+mainRecord :=
         RECORD
 integer8            sequence;
 string20            forename;
@@ -51,7 +51,7 @@ peopleDataset0 := peopleDataset;
 peopleDataset1 := peopleDataset;
 peopleDataset2 := peopleDataset;
 
-joinedRecord := 
+joinedRecord :=
         RECORD
 integer8            id;
 string20            forename;

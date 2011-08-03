@@ -18,7 +18,7 @@
 
 //NoThor
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
             END;
@@ -30,7 +30,7 @@ dataset(namesRecord) people{maxcount(20)};
 
 
 ds := dataset([
-        {false,[{'Gavin'},{'Liz'}]},
+        {false,[{'Gavin'},{'Mia'}]},
         {true,[{'Richard'},{'Jim'}]},
         {false,[]}], idRecord);
 

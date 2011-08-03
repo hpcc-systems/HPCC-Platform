@@ -30,7 +30,7 @@ string20            per_surname;
 dataset(countRecord) counts;
     END;
 
-parentRecord := 
+parentRecord :=
                 RECORD
 unsigned8           id;
 DATASET(childRecord)   children;
@@ -42,7 +42,7 @@ unsigned8               id;
 dataset(parentRecord)   xx;
 parentRecord            yy;
                 END;
-                
+
 parentDataset := DATASET('test',parentRecord,FLAT);
 
 

@@ -17,7 +17,7 @@
 ############################################################################## */
 
 person := dataset('person', { unsigned8 person_id, string1 per_sex, unsigned per_ssn, string40 per_first_name, string40 per_last_name}, thor);
-myRec := record                                                         
+myRec := record
     string15 per_last_name := person.per_last_name;
     integer4 personCount := 1;
 end : deprecated('Use my new rec instead');

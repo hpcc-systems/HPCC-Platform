@@ -24,7 +24,7 @@ countRecord := RECORD
 unsigned8           xcount;
                 END;
 
-parentRecord := 
+parentRecord :=
                 RECORD
 unsigned8           id;
 boolean                isSpecial;

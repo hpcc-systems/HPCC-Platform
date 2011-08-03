@@ -28,17 +28,17 @@
     Group_Key := InFile.Fld;
     InFile_Label := DATASET(ROW(InFile));
   END;
-    
+
 #uniquename(agg)
 %r% %agg%(inFile le,dataset(recordof(inFile)) allRows) := TRANSFORM
   SELF.Group_Key := le.Fld;
     SELF.InFile_Label := allRows;
   END;
-    
+
 #uniquename(s)
 %s% := SORT( DISTRIBUTE( InFile , HASH(TRIM((STRING)Fld))), Fld, LOCAL );
 outf := UNGROUP(ROLLUP( GROUP(%s%, Fld, LOCAL), GROUP, %agg%(left,rows(left))));
-    
+
   ENDMACRO;
   </Attribute>
  </Module>

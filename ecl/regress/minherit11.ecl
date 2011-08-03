@@ -43,13 +43,13 @@ string f3(interface3 ctx) := f1(ctx.ibyname) + f2(ctx.ibyaddr);
 
 options := module(interface3)
 
-export ibyname := 
+export ibyname :=
                 module(interface1)
     export boolean useName := true;
     export boolean useAvailable := false;
                 end;
 
-export ibyaddr := 
+export ibyaddr :=
                 module(interface2)
     export boolean useName := true;
     export boolean useAddress := true;

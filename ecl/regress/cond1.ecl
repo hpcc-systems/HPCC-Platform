@@ -21,7 +21,7 @@
 #option ('targetClusterType', 'roxie');
 #option ('spillMultiCondition', true);
 
-mainRecord := 
+mainRecord :=
         RECORD
 integer8            sequence;
 string20            forename;
@@ -53,7 +53,7 @@ peopleDataset0 := if(0=0, peopleDataset,peopleDataset);
 peopleDataset1 := if(1=1, peopleDataset,peopleDataset);
 peopleDataset2 := if(2=2, peopleDataset,peopleDataset);
 
-joinedRecord := 
+joinedRecord :=
         RECORD
 integer8            id;
 string20            forename;

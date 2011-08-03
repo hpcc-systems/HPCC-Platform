@@ -111,16 +111,16 @@ DG_FetchFilePreloadIndexed := PRELOAD(DATASET(DG_FetchFilePreloadIndexedName,{DG
 DG_OutRec := RECORD
     unsigned4  DG_ParentID;
     string10  DG_firstname;
-    string10  DG_lastname; 
-    unsigned1 DG_Prange;   
+    string10  DG_lastname;
+    unsigned1 DG_Prange;
 END;
 
 DG_OutRecChild := RECORD
     unsigned4  DG_ParentID;
     unsigned4  DG_ChildID;
     string10  DG_firstname;
-    string10  DG_lastname; 
-    unsigned1 DG_Prange;   
+    string10  DG_lastname;
+    unsigned1 DG_Prange;
 END;
 
 #if(DG_GenVar = TRUE)
@@ -218,19 +218,19 @@ DG_GrandChildFile := DATASET(DG_GrandChildFileOut,{DG_OutRecChild,UNSIGNED8 file
 
 //define data atoms - each set has 16 elements
 SET OF STRING10 DG_Fnames := ['DAVID','CLAIRE','KELLY','KIMBERLY','PAMELA','JEFFREY','MATTHEW','LUKE',
-                              'JOHN' ,'EDWARD','CHAD' ,'KEVIN'   ,'KOBE'  ,'RICHARD','GEORGE' ,'DIRK']; 
+                              'JOHN' ,'EDWARD','CHAD' ,'KEVIN'   ,'KOBE'  ,'RICHARD','GEORGE' ,'DIRK'];
 SET OF STRING10 DG_Lnames := ['BAYLISS','DOLSON','BILLINGTON','SMITH'   ,'JONES'   ,'ARMSTRONG','LINDHORFF','SIMMONS',
-                              'WYMAN'  ,'MORTON','MIDDLETON' ,'NOWITZKI','WILLIAMS','TAYLOR'   ,'CHAPMAN'  ,'BRYANT']; 
+                              'WYMAN'  ,'MORTON','MIDDLETON' ,'NOWITZKI','WILLIAMS','TAYLOR'   ,'DRIMBAD'  ,'BRYANT'];
 SET OF UNSIGNED1 DG_PrangeS := [1, 2, 3, 4, 5, 6, 7, 8,
-                                9,10,11,12,13,14,15,16]; 
+                                9,10,11,12,13,14,15,16];
 SET OF STRING10 DG_Streets := ['HIGH'  ,'CITATION'  ,'MILL','25TH' ,'ELGIN'    ,'VICARAGE','YAMATO' ,'HILLSBORO',
-                               'SILVER','KENSINGTON','MAIN','EATON','PARK LANE','HIGH'    ,'POTOMAC','GLADES']; 
+                               'SILVER','KENSINGTON','MAIN','EATON','PARK LANE','HIGH'    ,'POTOMAC','GLADES'];
 SET OF UNSIGNED1 DG_ZIPS := [101,102,103,104,105,106,107,108,
-                             109,110,111,112,113,114,115,116]; 
+                             109,110,111,112,113,114,115,116];
 SET OF UNSIGNED1 DG_AGES := [31,32,33,34,35,36,37,38,
-                             39,40,41,42,43,44,45,56]; 
+                             39,40,41,42,43,44,45,56];
 SET OF STRING2 DG_STATES := ['FL','GA','SC','NC','TX','AL','MS','TN',
-                             'KY','CA','MI','OH','IN','IL','WI','MN'];  
+                             'KY','CA','MI','OH','IN','IL','WI','MN'];
 SET OF STRING3 DG_MONTHS := ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG',
                              'SEP','OCT','NOV','DEC','ABC','DEF','GHI','JKL'];
 
@@ -239,7 +239,7 @@ SET OF STRING3 DG_MONTHS := ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG',
 
 // Raw record definitions:
 
-sqHouseRec := 
+sqHouseRec :=
             record
 string          addr;
 string10        postcode;
@@ -247,7 +247,7 @@ unsigned2       yearBuilt := 0;
             end;
 
 
-sqPersonRec := 
+sqPersonRec :=
             record
 string          forename;
 string          surname;
@@ -256,7 +256,7 @@ udecimal8       booklimit := 0;
 unsigned2       aage := 0;
             end;
 
-sqBookRec := 
+sqBookRec :=
             record
 string          name;
 string          author;
@@ -333,18 +333,18 @@ dataset(sqPersonBookIdRec) persons;
             end;
 
 
-sqPersonBookRelatedIdRec := 
+sqPersonBookRelatedIdRec :=
             RECORD
                 sqPersonBookIdRec;
 unsigned4       houseid;
             END;
 
-sqNestedBlob := 
+sqNestedBlob :=
             RECORD
 udecimal8       booklimit := 0;
             END;
 
-sqSimplePersonBookRec := 
+sqSimplePersonBookRec :=
             RECORD
 string20        surname;
 string10        forename;
@@ -550,7 +550,7 @@ fetched2 := fetch(sqSimplePersonBookDs, myPeople, right.filepos, makeRec2(left, 
 fetched3 := fetch(sqSimplePersonBookDs, myPeople, right.filepos, makeRec3(left, right));
 
 // temporary hack to get around codegen optimizing platform(),once call into global (and therefore hthor) context.
-nononcelib := 
+nononcelib :=
     SERVICE
 varstring platform() : library='graph', include='eclhelper.hpp', ctxmethod, entrypoint='getPlatform';
     END;

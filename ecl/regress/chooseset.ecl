@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-zpr := 
+zpr :=
             RECORD
 string20        per_cms_pname;
 string20        per_cms_qname := '';
@@ -25,8 +25,8 @@ string20        per_cms_qname := '';
 zperson := dataset([{'a'}], zpr);
 
 
-x := choosesets(zperson, per_cms_pname='Gavin'=>100,per_cms_pname='Richard'=>20,per_cms_pname='Liz'=>1000,94);
+x := choosesets(zperson, per_cms_pname='Gavin'=>100,per_cms_pname='Richard'=>20,per_cms_pname='Mia'=>1000,94);
 output(x,,'out1.d00');
 
-y := choosesets(zperson, per_cms_pname='Gavin'=>100,per_cms_pname='Richard'=>20,per_cms_pname='Liz'=>1000,94,EXCLUSIVE);
+y := choosesets(zperson, per_cms_pname='Gavin'=>100,per_cms_pname='Richard'=>20,per_cms_pname='Mia'=>1000,94,EXCLUSIVE);
 output(y,,'out1.d00');

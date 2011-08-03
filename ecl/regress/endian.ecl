@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-export svc1 := 
+export svc1 :=
     SERVICE
         echo(integer4 value) : eclrtl,library='eclrtl',entrypoint='rtlEcho';
     END;

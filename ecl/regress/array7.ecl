@@ -38,7 +38,7 @@ string20  surname;
 string20  forename;
     END;
 
-combinedRecord := 
+combinedRecord :=
                 RECORD
 householdRecord;
 unsigned4           numPeople;
@@ -47,7 +47,7 @@ childPersonRecord   children[SELF.numPeople];
 
 combinedDataset := DATASET('combined',combinedRecord,FLAT);
 
-personRecord doNormalize(combinedRecord l, integer c) := 
+personRecord doNormalize(combinedRecord l, integer c) :=
                 TRANSFORM
                     SELF.house_id := l.house_id;
                     SELF := l.children[c];      // notice different levels...

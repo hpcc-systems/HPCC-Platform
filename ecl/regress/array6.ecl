@@ -38,7 +38,7 @@ string20  surname;
 string20  forename;
     END;
 
-combinedRecord := 
+combinedRecord :=
                 RECORD
 householdRecord;
 unsigned4           numPeople;
@@ -49,7 +49,7 @@ childPersonRecord   children[SELF.numPeople];
 personDataset := DATASET('person',personRecord,FLAT);
 householdDataset := DATASET('household',householdRecord,FLAT);
 
-combinedRecord householdToCombined(householdRecord l) := 
+combinedRecord householdToCombined(householdRecord l) :=
                 TRANSFORM
                     SELF.numPeople := 0;
                     SELF := l;
@@ -58,7 +58,7 @@ combinedRecord householdToCombined(householdRecord l) :=
                 END;
 
 
-combinedRecord doDenormalize(combinedRecord l, personRecord r, integer c) := 
+combinedRecord doDenormalize(combinedRecord l, personRecord r, integer c) :=
                 TRANSFORM
                     SELF.numPeople := l.numPeople + 1;
                     SELF := l;

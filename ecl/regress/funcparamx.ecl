@@ -37,10 +37,10 @@ output(doApplyValue(2, 3));                 // non func passed to func
 
 //Phew: An attribute taking functional parameters which themselves have parameters which are functional...
 //check it all binds correctly
-string doMany(integer v1, 
+string doMany(integer v1,
                 integer firstAction(integer v1, integer actionFunc(integer v1, integer v2)),
                 integer secondAction(integer v1, integer actionFunc(integer v1, integer v2)),
-                integer actionFunc(integer v1, integer v2)) := 
+                integer actionFunc(integer v1, integer v2)) :=
                 (string)firstAction(v1, actionFunc) + ':' + (string)secondaction(v1, actionFunc);
 
 

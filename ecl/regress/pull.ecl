@@ -18,7 +18,7 @@
 
 person := dataset('person', { unsigned8 person_id, string1 per_sex, unsigned per_ssn, string40 per_first_name, data9 per_cid, unsigned8 xpos }, thor);
 
-person copyAll(person l, person r) := 
+person copyAll(person l, person r) :=
 TRANSFORM
     SELF := r;
 END;

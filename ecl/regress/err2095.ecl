@@ -18,5 +18,5 @@
 
 s := 'abc;cdbbcdc
 
-d := 'ab\' 
+d := 'ab\'
 

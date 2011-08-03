@@ -25,7 +25,7 @@ string20  per_forename;
 unsigned8 holepos;
     END;
 
-parentRecord := 
+parentRecord :=
                 RECORD
 unsigned8           id;
 string20            address1;
@@ -47,7 +47,7 @@ string20  per_forename;
     END;
 
 
-outRecord normalizeChildren(parentRecord l, childRecord r, integer c) := 
+outRecord normalizeChildren(parentRecord l, childRecord r, integer c) :=
                 TRANSFORM
                     SELF.household_id := l.id;
                     SELF := r;

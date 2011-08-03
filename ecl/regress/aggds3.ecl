@@ -23,7 +23,7 @@ AggCommon.CommonDefinitions();
 output(table(sqNamesTable1, { surname, sum(group, aage) }, surname, few, keyed));
 
 //Filtered disk aggregate, which also requires a beenProcessed flag
-output(table(sqNamesTable2(surname != 'Halliday'), { max(group, aage), surname }, surname, few, keyed));
+output(table(sqNamesTable2(surname != 'Hawthorn'), { max(group, aage), surname }, surname, few, keyed));
 
 //check literals are assigned
 output(table(sqNamesTable3(forename = 'Gavin'), { 'Count: ', count(group), 'Name: ', surname }, surname, few, keyed));

@@ -18,7 +18,7 @@
 
 #option ('globalFold', false);
 // getDayNumOfWeek
-/* returns the day number of week from parameter list that is 
+/* returns the day number of week from parameter list that is
 the day, month, and year numbers. */
 /* days are numbered Sunday = 1, Monday = 2, ... */
 integer adjMonth(integer mo) := if(mo <= 2, 10 + mo, mo - 2);
@@ -30,13 +30,13 @@ integer getYearCorr(integer mo, integer yr) := (adjYear(mo, yr) % 100) +
 integer getDayNumWk(integer mo, integer dy, integer yr) := (integer)(dy +
    ((integer)(26 * adjMonth(mo) - 2) / 10) +
    getYearCorr(mo, yr)) % 7 + 1;
-export getDayNumOfWeek(integer m, integer d, integer y) := 
+export getDayNumOfWeek(integer m, integer d, integer y) :=
    getDayNumWk(m, d, y);
 
 // datestr is in the format 'YYYYMMDD'
-export getDayNumOfWeekStr(String8 datestr) :=  
-  if(datestr='', 8, 
-         getDayNumOfWeek((integer2)(datestr[5..6]), 
+export getDayNumOfWeekStr(String8 datestr) :=
+  if(datestr='', 8,
+         getDayNumOfWeek((integer2)(datestr[5..6]),
                   (integer2)(datestr[7..8]),
                   (integer2)(datestr[1..4])));
 

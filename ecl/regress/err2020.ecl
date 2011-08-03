@@ -27,13 +27,13 @@ END;
 
 NamesTable := DATASET([
         {1, 'Gavin', '10 Slapdash Lane'},
-        {2, 'Liz', '10 Slapdash Lane', '3 The Cottages'},
+        {2, 'Mia', '10 Slapdash Lane', '3 The Cottages'},
         {0, 'Mr Nobody'},
         {4, 'Mr Everywhere', 'Here', 'There', 'Near', 'Far'}
         ], NamesRec);
 
 OutRec := RECORD
-    UNSIGNED1 order; 
+    UNSIGNED1 order;
         UNSIGNED1 numRows;
         STRING20  thename;
         STRING20  addr;
@@ -46,6 +46,6 @@ OutRec NormalizeAddresses(NamesRec L, INTEGER C) := TRANSFORM
     END;
 
 NormalizeAddrs := NORMALIZE(namesTable, LEFT.numRows,
-    NormalizeAddresses(LEFT,COUNT)); 
+    NormalizeAddresses(LEFT,COUNT));
 
 OUTPUT(NormalizeAddrs);

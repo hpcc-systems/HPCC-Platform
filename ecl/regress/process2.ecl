@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-inputRecord := 
+inputRecord :=
             record
 string          next;
             end;
@@ -27,7 +27,7 @@ stackRecord :=
 unsigned        value;
 string1         op;
             end;
-    
+
 outputRecord :=
             record
 unsigned        value;
@@ -48,23 +48,23 @@ inputDataset := dataset(['10','20','*',15,10,'+','-'], inputRecord) : stored('in
 firstState := dataset(row(stateRecord, { State:readNext });
 
 StateCode := enum(StateReadNext, StateReduce);
- 
-stateRecord doReadNext(dataset(inputRecord) in, stateRecord l) := 
+
+stateRecord doReadNext(dataset(inputRecord) in, stateRecord l) :=
     transform
         nextValue = in[l.nextSymbol].value;
         nextCode = case(nextValue, '+'=>CodePlus, '-'=>CodeMinus, ''=>CodeEnd, CodeValue);
         self.values = left.values + IF(nextCode = CodeValue, dataset(row(valuerecord, {nextValue}))));
-        self.state = CASE(nextCode, 
-                        CodeValue=>StateReadNext, 
+        self.state = CASE(nextCode,
+                        CodeValue=>StateReadNext,
                         CodePlus=>StateReducePlus,
                         CodeMinus=>StateReduceMinus,
                         StateDone);
         self.nextSymbol = left.nextSymbol + 1;
         self := l;
     end;
- 
 
-stateRecord doReducePlus(dataset(inputRecord) in, stateRecord l) := 
+
+stateRecord doReducePlus(dataset(inputRecord) in, stateRecord l) :=
     transform
         numValues := count(l.values);
         self.state := State:ReadNext;
@@ -88,7 +88,7 @@ output(doProcess, {  values[1]; });
 
 processed := process(inputDataset, stackRecord, resultRecord, readNextState,
                      readNextState      := INPUT(createStack(LEFT), outputState), NEXT(reduceState)
-                     reduceState        := CASE(RIGHT.op, 
+                     reduceState        := CASE(RIGHT.op,
                                                 '0'=>readNextState,
                                                 '+'=>doAddState,
                                                 '-'=>doSubState,

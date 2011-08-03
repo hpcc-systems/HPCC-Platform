@@ -24,7 +24,7 @@ rec := record
 unsigned8       did;
 dataset(didRecord) x;
 unsigned8       filepos{virtual(fileposition)};
-        end;    
+        end;
 
 
 ds := dataset('ds', rec, thor);
@@ -38,7 +38,7 @@ z := dataset([{did},{did}], didRecord);
     SELF := l;
     end;
 
-    
+
 p := project(ds, t(left));
 
 

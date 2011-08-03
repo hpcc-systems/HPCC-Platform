@@ -23,7 +23,7 @@ AggCommon.CommonDefinitions();
 output(table(sqNamesTable1, { sum(group, aage),exists(group),exists(group,aage>0),exists(group,aage>100),count(group,aage>20) }, keyed));
 
 //Filtered disk aggregate, which also requires a beenProcessed flag
-output(table(sqNamesTable2(surname != 'Halliday'), { max(group, aage) }, keyed));
+output(table(sqNamesTable2(surname != 'Hawthorn'), { max(group, aage) }, keyed));
 
 //Special case count.
 output(table(sqNamesTable3(forename = 'Gavin'), { count(group) }, keyed));

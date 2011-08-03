@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-stepRecord := 
+stepRecord :=
             record
 string          next;
             end;
@@ -25,7 +25,7 @@ stackRecord :=
             record
 unsigned        value;
             end;
-    
+
 stateRecord :=
             record
 unsigned        step;
@@ -52,8 +52,8 @@ newStateRecord processNext(stateRecord in) := TRANSFORM
                        '~'=>in.stack[1..tos-1] + row(transform(stackRecord, self.value := -in.stack[tos].value)),
                        in.stack + row(transform(stackRecord, self.value := (integer)next)));
     END;
-            
-            
+
+
 initial := dataset([{1,[]}], stateRecord);
 
 result := LOOP(initial, actions[left.step].next != '.', project(rows(left), processNext(LEFT)));

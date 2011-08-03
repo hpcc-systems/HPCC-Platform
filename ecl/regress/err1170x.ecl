@@ -23,7 +23,7 @@ END;
 
 NamesTable := DATASET([
     {'Gavin', '10 Slapdash Lane'},
-    {'Liz', '10 Slapdash Lane'},
+    {'Mia', '10 Slapdash Lane'},
     {'Mr Nobody'},
     {4, 'Mr Everywhere'}
     ], NamesRec);

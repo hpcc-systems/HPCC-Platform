@@ -19,7 +19,7 @@
 __set_debug_option__('staticResource',1);
 __set_debug_option__('optimizeDiskRead', 0);
 
-baseRecord := 
+baseRecord :=
             RECORD
 unsigned8       id;
 string20        surname;
@@ -29,8 +29,8 @@ unsigned8       filepos{virtual(fileposition)}
 
 baseTable := DATASET('base', baseRecord, THOR);
 
-filteredTable1 := baseTable(surname <> 'Halliday');
-filteredTable2 := baseTable(surname <> 'Chapman');
+filteredTable1 := baseTable(surname <> 'Hawthorn');
+filteredTable2 := baseTable(surname <> 'Drimbad');
 
 //-------------------------------------------
 

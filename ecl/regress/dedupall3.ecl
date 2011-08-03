@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname := '?????????????';
 string10        forename := '?????????????';
@@ -31,15 +31,15 @@ string30        addr := 'Unknown';
             END;
 
 namesTable := dataset([
-        {'Salter','Abi',10},
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
+        {'Smithe','Pru',10},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
         {'Smith','Jo'},
         {'Smith','Matthew'},
         {'X','Z'}], namesRecord);
 
 addressTable := dataset([
-        {'Halliday','10 Slapdash Lane'},
+        {'Hawthorn','10 Slapdash Lane'},
         {'Smith','Leicester'},
         {'Smith','China'},
         {'Smith','St Barnabas House'},

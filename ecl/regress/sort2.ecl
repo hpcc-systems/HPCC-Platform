@@ -31,7 +31,7 @@ Use at your own risk
 
 export fdle_keys_test := macro
 
-namesRecord := 
+namesRecord :=
 RECORD
     string5  zip5;
     string20        surname := '?????????????';
@@ -47,15 +47,15 @@ RECORD
 END;
 
 namesTable := dataset([
-        {'12345','Salter','Abi',10},
-        {'12345','Halliday','Gavin',31},
-        {'12345','Halliday','Liz',30},
+        {'12345','Smithe','Pru',10},
+        {'12345','Hawthorn','Gavin',31},
+        {'12345','Hawthorn','Mia',30},
         {'12345','Smith','Jo'},
         {'12345','Smith','Matthew'},
         {'12345','X','Z'}], namesRecord);
 
 addressTable := dataset([
-        {'12345','Halliday','10 Slapdash Lane'},
+        {'12345','Hawthorn','10 Slapdash Lane'},
         {'12345','Smith','Leicester'},
         {'12345','Smith','China'},
         {'12345','X','12 The burrows'},
@@ -66,7 +66,7 @@ addressTable := dataset([
 dNamesTable := namesTable;//distribute(namesTable, hash(surname));
 dAddressTable := addressTable;//distributed(addressTable, hash(surname));
 
-JoinRecord := 
+JoinRecord :=
 RECORD
     string5         zip5;
     string20        surname;
@@ -75,15 +75,15 @@ RECORD
     string30        addr;
 END;
 
-JoinRecord JoinTransform (namesRecord l, addressRecord r) := 
+JoinRecord JoinTransform (namesRecord l, addressRecord r) :=
 TRANSFORM
     SELF.addr := r.addr;
     SELF := l;
 END;
 
 
-JoinedF := join (dNamesTable, dAddressTable, 
-                LEFT.surname[1..10] = RIGHT.surname[1..10] AND 
+JoinedF := join (dNamesTable, dAddressTable,
+                LEFT.surname[1..10] = RIGHT.surname[1..10] AND
                 LEFT.surname[11..16] = RIGHT.surname[11..16] AND
                 LEFT.forename[1] <> RIGHT.addr[1],
                 JoinTransform (LEFT, RIGHT), keep(1), LEFT OUTER);

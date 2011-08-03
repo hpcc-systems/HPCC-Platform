@@ -26,7 +26,7 @@ string20  per_forename;
 unsigned8 holepos;
     END;
 
-parentRecord := 
+parentRecord :=
                 RECORD
 integer8            id;
 string20            address1;
@@ -45,7 +45,7 @@ parentDataset := DATASET('test',parentRecord,FLAT);
 i := index(parentDataset, { id, address1, address2, address3 }, { parentDataset }, 'superkey');
 
 
-string searchSurname := 'Halliday' : stored('searchName');
+string searchSurname := 'Hawthorn' : stored('searchName');
 unsigned8 searchId := 12345 : stored('id');
 string2 searchState := 'FL' : stored('state');
 
@@ -57,7 +57,7 @@ output(i(id = searchId, exists(children(per_surname=searchSurname)), searchState
 
 
 
-idRecord := 
+idRecord :=
                 RECORD
 unsigned8           id;
                 END;

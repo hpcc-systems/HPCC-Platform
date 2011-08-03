@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-export namesRecord := 
+export namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -34,4 +34,4 @@ namesTable := dataset('x',namesRecord,FLAT);
 
 output(predict_sics(namesTable, namesTable));
 
- 
+

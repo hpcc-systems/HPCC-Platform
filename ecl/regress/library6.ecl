@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -31,7 +31,7 @@ export dataset(namesRecord) excluded;
 
 
 outputResults(INameFilter processor) := parallel(
-    
+
     output(processor.included,,named('Included')),
     output(processor.excluded,,named('Excluded'))
 );
@@ -42,9 +42,9 @@ NameFilterLibrary(dataset(namesRecord) ds, string search, boolean onlyOldies) :=
 filterDataset(dataset(namesRecord) ds, string search, boolean onlyOldies) := LIBRARY('NameLibrary_1_0', NameFilterLibrary(ds, search, onlyOldies));
 
 namesTable := dataset([
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
-        {'Salter','Abi',10},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
+        {'Smithe','Pru',10},
         {'X','Z'}], namesRecord);
 
 outputResults(filterDataset(namesTable, 'Smith', true));

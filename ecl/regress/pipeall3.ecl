@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-namesRecord := 
+namesRecord :=
         RECORD
 string10            forename;
 string10            surname;

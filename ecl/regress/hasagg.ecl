@@ -36,26 +36,26 @@ tmpR :=
     end;
 
 tmpR tmpTrans(tmpR L, tmpR R) :=
-    transform    
+    transform
         self.seqNum := r.seqNum + 1;
         self := l;
     end;
 
 t3 := table(t1, tmpR);
 t4 := iterate(t3, tmpTrans(left, right));
- 
+
 r2 := record
 person_id := t4.person_id;
 per_marital_status := t4.per_marital_status;
 per_sex := t4.per_sex;
 per_suffix := t4.per_suffix;
     end;
- 
+
 t5 := table(t4(seqNum <= 20), r2);
- 
+
 t6 := table(t4(seqNum > 20), r2);
- 
+
 t7 := t5 + t6(per_sex or per_suffix);
- 
+
 count(t7);
 

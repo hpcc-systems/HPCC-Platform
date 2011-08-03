@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-phoneRecord := 
+phoneRecord :=
             RECORD
 string5         areaCode{xpath('@areaCode')};
 string12        number{xpath('@number')};
@@ -24,7 +24,7 @@ string12        number{xpath('@number')};
 
 nullPhones := dataset('ph', phoneRecord, thor);
 
-contactrecord := 
+contactrecord :=
             RECORD
 phoneRecord     phone;
 boolean         hasemail;
@@ -33,7 +33,7 @@ string              email;
                 end;
             END;
 
-personRecord := 
+personRecord :=
             RECORD
 string20        surname;
 string20        forename;
@@ -43,8 +43,8 @@ dataset(phoneRecord) phones{xpath('/Phone')} := _EMPTY_(phoneRecord); //nullPhon
             END;
 
 namesTable := dataset([
-        {'Halliday','Gavin'},
-        {'Halliday','Abigail'}
+        {'Hawthorn','Gavin'},
+        {'Hawthorn','Abigail'}
         ], personRecord);
 
 personRecord t(personrecord l) := transform

@@ -22,7 +22,7 @@ export dstring(string del) := TYPE
     export string store(string s) := s+del; // Untested (vlength output generally broken)
 END;
 
-namesRecord := 
+namesRecord :=
             RECORD
 qstring20       surname;
 dstring('!')    forename;
@@ -30,9 +30,9 @@ integer2        age := 25;
             END;
 
 namesTable2 := dataset([
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
-        {'Salter','Abi',10},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
+        {'Smithe','Pru',10},
         {'X','Z'}], namesRecord);
 
 output(namesTable2);

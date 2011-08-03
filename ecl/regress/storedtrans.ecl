@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string10        forename;
 integer2        rid;

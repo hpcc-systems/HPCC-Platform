@@ -27,5 +27,5 @@ layout_output := RECORD
   DATASET (layout_dids) id {MAXCOUNT(1)};
 END;
 
-ds := DATASET ([{1, 'aaa', [{5}, {6}], []}, {2, 'bbb', [{7}, {8}], []}], layout_output); 
+ds := DATASET ([{1, 'aaa', [{5}, {6}], []}, {2, 'bbb', [{7}, {8}], []}], layout_output);
 OUTPUT (ds, NAMED ('ds'));

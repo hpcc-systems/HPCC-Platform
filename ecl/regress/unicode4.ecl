@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-inRecord := 
+inRecord :=
     RECORD,maxlength(10000)
         unicode100 firstname;
     END;

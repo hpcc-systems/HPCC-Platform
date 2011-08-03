@@ -33,7 +33,7 @@ names := dataset([
     {2, 'Richard'},
     {3, 'Tony'},
     {4, 'Isaac'}], rec) : stored('in', few);
-    
+
 rec t(rec l) := transform
     self.id := l.id + names[1].id;
     self := l;

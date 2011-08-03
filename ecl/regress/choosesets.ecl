@@ -18,7 +18,7 @@
 
 #option ('optimizeDiskSource', 1);
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string      forename;

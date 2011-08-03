@@ -162,8 +162,8 @@ doTestGroupedJoins := true;
 
 SEQUENTIAL(
 #if (doPrepareFiles)
-  prepareFiles, 
-  prepareKeys, 
+  prepareFiles,
+  prepareKeys,
 #end
 #if (doTestKeyedJoins)
   halfkeyed,

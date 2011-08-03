@@ -82,8 +82,8 @@ rec fillRow(rec L, unsigned4 c) := transform
 #set(CLUSTERMAX,400)
 
 #loop
-  #if (%MYCLUSTERSIZE%>%CLUSTERMAX%) 
-    #break 
+  #if (%MYCLUSTERSIZE%>%CLUSTERMAX%)
+    #break
   #end
   #uniquename(one_per_node)
   #uniquename(outdata)
@@ -92,7 +92,7 @@ rec fillRow(rec L, unsigned4 c) := transform
   #uniquename(dist)
 
   %one_per_node% := distribute(normalize(seed, %MYCLUSTERSIZE%, addNodeNum(LEFT, COUNTER)), (unsigned) seq);
-  %outdata% := NORMALIZE(%one_per_node%, numrecs, fillRow(LEFT, counter));  
+  %outdata% := NORMALIZE(%one_per_node%, numrecs, fillRow(LEFT, counter));
   %in% := DATASET('nhtest::in_'+'%MYCLUSTERSIZE%',rec,FLAT);
   unsigned4 %radix% := ((9023+%MYCLUSTERSIZE%) DIV %MYCLUSTERSIZE%);
   %dist% := DISTRIBUTE(%in%,(((((unsigned4)(>unsigned1<)key[1])-32)*95+ (unsigned4)(>unsigned1<)key[2]-32) DIV %radix%));

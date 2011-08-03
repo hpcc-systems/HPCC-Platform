@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-zpr := 
+zpr :=
             RECORD
 string20        forename;
 string20        surname;
@@ -24,15 +24,15 @@ unsigned4       age;
             END;
 
 zperson := dataset([
-        {'Gavin','Halliday',32},
-        {'Jason','Halliday',28},
-        {'Liz','Malloy',28},
-        {'Liz','Stevenson',32},
+        {'Gavin','Hawthorn',32},
+        {'Jason','Hawthorn',28},
+        {'Mia','Malloy',28},
+        {'Mia','Stevenson',32},
         {'James','Mildew',46},
         {'Arther','Dent',60},
-        {'Liz','Halliday',31},
+        {'Mia','Hawthorn',31},
         {'Ronald','Regan',84},
-        {'Liz','Zappa',12}
+        {'Mia','Zappa',12}
         ], zpr);
 
 

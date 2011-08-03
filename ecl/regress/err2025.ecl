@@ -19,7 +19,7 @@
 aaa := DATASET('aaa',{STRING1 fa; }, FLAT);
 bbb := DATASET('bbb',{STRING1 fb; }, FLAT);
 
-ResultRec := RECORD 
+ResultRec := RECORD
     STRING1 x;
     END;
 

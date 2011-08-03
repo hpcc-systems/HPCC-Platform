@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -25,16 +25,16 @@ integer2        age := 25;
             END;
 
 namesTable1 := dataset([
-        {'Halliday','Gavin',31},
+        {'Hawthorn','Gavin',31},
         {'X','Z'}], namesRecord);
 
 o1 := output(namesTable1,,'~names1',overwrite);
 
 
 namesTable2 := dataset([
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',31},
-        {'Halliday','Robert',0},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',31},
+        {'Hawthorn','Robert',0},
         {'X','Z'}], namesRecord);
 
 o2 := output(namesTable2,,'~names2',overwrite);

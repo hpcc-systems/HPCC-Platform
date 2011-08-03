@@ -17,7 +17,7 @@
 ############################################################################## */
 
 EXPORT BOOLEAN DEBUG_FLAG := TRUE;
-  
+
 EXPORT DEBUG := MODULE
   EXPORT MAC_OUTPUT(RSET, RSET_NAME=#TEXT('')) := MACRO
            #IF(DEBUG_FLAG)
@@ -33,7 +33,7 @@ EXPORT DEBUG := MODULE
         return evaluate(0);
   END;
   EXPORT LOG2(string RSET, string RSET_NAME='') := function
-            maxLineLen := 1024; 
+            maxLineLen := 1024;
             outRec := { string line{maxlength(maxLineLen)} };
             outLine := RSET[1..MIN(LENGTH(RSET),maxLineLen)];
             RSN := IF(RSET_NAME <> '', RSET_NAME, 'DEBUG_LOG');
@@ -44,7 +44,7 @@ END;
 
 EXPORT BOOLEAN debugTrace := TRUE : labelled('debugTrace');
 EXPORT BOOLEAN debugTrace2 := TRUE : labelled('debugTrace2');
-  
+
 #constant ('debugTrace2', false);
 
 x:='Sanjay';

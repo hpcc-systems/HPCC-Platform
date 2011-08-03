@@ -29,11 +29,11 @@ unsigned4 ageInDecades(udecimal8 dob) := ((todaysDate - dob) / 100000D);
 
 
 // How many people of each decade, and total number of books they have.
-summaryRec := 
+summaryRec :=
         RECORD
-            decade := ageInDecades(sqHousePersonBookDs.persons.dob), 
-            cntpersons := count(group), 
-            cntbooks := sum(group, count(sqHousePersonBookDs.persons.books)) 
+            decade := ageInDecades(sqHousePersonBookDs.persons.dob),
+            cntpersons := count(group),
+            cntbooks := sum(group, count(sqHousePersonBookDs.persons.books))
         END;
 
 ageSummary := table(sqHousePersonBookDs.persons, summaryRec, ageInDecades(sqHousePersonBookDs.persons.dob));

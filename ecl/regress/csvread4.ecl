@@ -18,7 +18,7 @@
 
 
 
-nameRecord := 
+nameRecord :=
         RECORD
 string20    forename;
 string20    surname;

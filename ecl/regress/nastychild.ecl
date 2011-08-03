@@ -48,14 +48,14 @@ getInput(unsigned graphCounter) := function
     end;
 
     ds2 := nofold(project(ds1, transform(masterrec, self.id := left.id + graphCounter * numIterations; self.children := createChildren(left.id, counter))));
-    
+
     return ds2;
 end;
 
 
 initialResults := dataset([], masterrec);
 
-processStage(unsigned c, set of dataset(masterrec) _in) := 
+processStage(unsigned c, set of dataset(masterrec) _in) :=
     CASE(c, 1=>getInput(c),
             2=>getInput(c),
             3=>_in[1]+_in[2]);

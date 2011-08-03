@@ -18,7 +18,7 @@
 
 __set_debug_option__('optimizeDiskRead',0);
 
-baseRecord := 
+baseRecord :=
             RECORD
 unsigned8       id;
 string20        surname;
@@ -29,15 +29,15 @@ unsigned8       filepos{virtual(fileposition)}
 baseTable1 := DATASET('base', baseRecord, THOR);
 baseTable2 := DATASET('base', baseRecord, THOR);
 
-baseRecord t(baseRecord l) := 
+baseRecord t(baseRecord l) :=
     TRANSFORM
         SELF := l;
     END;
-    
+
 //-------------------------------------------
 
-x1 := baseTable1(surname <> 'Halliday');
-x2 := baseTable2(surname <> 'Chapman');
+x1 := baseTable1(surname <> 'Hawthorn');
+x2 := baseTable2(surname <> 'Drimbad');
 
 y1 := x1 + x2;
 y2 := x2 + x1;

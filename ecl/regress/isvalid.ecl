@@ -23,7 +23,7 @@ loadxml('<section><ditem><val>person_id</val></ditem></section>');
 
 #SET (attrib_name, 'perssson.')
 
-#FOR (ditem)  
+#FOR (ditem)
      #APPEND (attrib_name, %'val'%)     // Now ... attrib_name = 'dms_person.dms_per_id'
      #SET(flag, #ISVALID(%attrib_name%))
 #END

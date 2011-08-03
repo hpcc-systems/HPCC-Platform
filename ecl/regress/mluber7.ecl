@@ -18,12 +18,12 @@
 
 import text;
 
-rULE WORD := text.alpha+; 
-RULE Article := 'The' | 'A' | 'An'; 
-RULE NounPhraseComponent := (Word penalty(1)) | (article Text.ws Word); 
+rULE WORD := text.alpha+;
+RULE Article := 'The' | 'A' | 'An';
+RULE NounPhraseComponent := (Word penalty(1)) | (article Text.ws Word);
 
-rs := 
-RECORD 
+rs :=
+RECORD
 STRING100 line;
 END;
 

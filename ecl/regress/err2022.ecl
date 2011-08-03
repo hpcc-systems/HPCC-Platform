@@ -30,7 +30,7 @@ OutRec := RECORD
     STRING20  thename;
 END;
 
-OutRec NormalizeAddresses(NamesRec L, INTEGER C) := 
+OutRec NormalizeAddresses(NamesRec L, INTEGER C) :=
     TRANSFORM
       SELF := LEFT; // SELF := L;
     END;

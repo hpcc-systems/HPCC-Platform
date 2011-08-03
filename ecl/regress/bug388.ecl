@@ -21,9 +21,9 @@ string20 year_model;
 string20 corp_maker_number;
 string20 division_number;
 string20 group_number;
-string20 sub_group_number; 
+string20 sub_group_number;
 string20 id_number;
-END; 
+END;
 
 cars_tbl := DATASET('car',MyRec,THOR);
 
@@ -36,13 +36,13 @@ cars_tbl.group_number,
 cars_tbl.sub_group_number,
 cars_tbl.id_number);
 
-hh_deduped_vehicles := DEDUP(Sorted_cars, (LEFT.year_model = 
+hh_deduped_vehicles := DEDUP(Sorted_cars, (LEFT.year_model =
 RIGHT.year_model AND
 LEFT.corp_maker_number = RIGHT.corp_maker_number AND
 LEFT.division_number = RIGHT.division_number AND
 LEFT.group_number = RIGHT.group_number AND
 LEFT.sub_group_number = RIGHT.sub_group_number AND
-LEFT.id_number = RIGHT.id_number)); 
+LEFT.id_number = RIGHT.id_number));
 
 
 output(hh_deduped_vehicles);

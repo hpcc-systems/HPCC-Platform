@@ -24,7 +24,7 @@ inRecord := record
 
 inDataset := dataset('xxx', inRecord, flat);
 
-p1 := inDataset(name <> 'Halliday');
+p1 := inDataset(name <> 'Hawthorn');
 p2 := p1(name IN ['Gavin','Jason','Emma','Vicky']);
 
 output(p2,, 'ccc')

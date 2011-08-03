@@ -18,7 +18,7 @@
 
 #option ('globalFold', false);
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -26,10 +26,10 @@ integer2        age := 25;
 unsigned8       filepos{virtual(fileposition)}
             END;
 
-string searchNameLow := 'Halliday' : stored('SearchNameLow');
-string searchNameHigh := 'Halliday' : stored('SearchNameHigh');
-string20 searchNameLow20 := 'Halliday' : stored('SearchNameLow20');
-string20 searchNameHigh20 := 'Halliday' : stored('SearchNameHigh20');
+string searchNameLow := 'Hawthorn' : stored('SearchNameLow');
+string searchNameHigh := 'Hawthorn' : stored('SearchNameHigh');
+string20 searchNameLow20 := 'Hawthorn' : stored('SearchNameLow20');
+string20 searchNameHigh20 := 'Hawthorn' : stored('SearchNameHigh20');
 
 namesTable := dataset('x',namesRecord,FLAT);
 

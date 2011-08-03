@@ -18,7 +18,7 @@
 
 idRec := { unsigned4 id; };
 
-namesRecord := 
+namesRecord :=
         RECORD
 string          forename{maxlength(100)};
 string          surname{maxlength(200)};
@@ -28,5 +28,5 @@ dataset(idRec)  ids{maxcount(10)};
 
 //Very strange!!
 names := dataset('names', namesRecord, thor);
-x := PIPE(names,'pipeWrite -s'+sizeof(names),repeat); 
+x := PIPE(names,'pipeWrite -s'+sizeof(names),repeat);
 output(x);

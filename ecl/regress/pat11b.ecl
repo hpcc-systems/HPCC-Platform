@@ -26,12 +26,12 @@ rule sentance := sentance0(p1, p2);
 
 infile := dataset([
         {'$one$ !two! three'},
-        {'gavin $Halliday$'},
+        {'gavin $Hawthorn$'},
         {''}
         ], { string line });
 
 
-results := 
+results :=
     record
         parseLib.getParseTree();
         MATCHED(p1);                        //patWord('$')[1];

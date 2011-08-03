@@ -21,14 +21,14 @@ r := record
   end;
 d := dataset([{'KEYA:Fred; KEYB:Edith KEYC:John'}],r);
 
-PATTERN labels := ['KEYA:','KEYB:','KEYC:']; 
+PATTERN labels := ['KEYA:','KEYB:','KEYC:'];
 PATTERN termin := (';' OR '||' OR ' ');
 PATTERN termination :=  (termin+ before ( labels or last )) or last;
 
-//PATTERN val1 := ANY+ before labels; 
-//PATTERN val2 := ANY+ before ('||' or last); 
+//PATTERN val1 := ANY+ before labels;
+//PATTERN val2 := ANY+ before ('||' or last);
 pattern body := (ANY not in termin)+;
-PATTERN items := opt(labels) body termination; 
+PATTERN items := opt(labels) body termination;
 
 
 r1 := record

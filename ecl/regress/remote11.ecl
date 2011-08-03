@@ -20,7 +20,7 @@
 //Check thisnode is handled as a scalar
 //(using a mock up of the main text processing loop...)
 
-mainRecord := 
+mainRecord :=
         RECORD
 string20            word;
 unsigned8           doc;
@@ -29,7 +29,7 @@ unsigned4           relevance;
         END;
 
 
-childRecord := 
+childRecord :=
         RECORD
 string20            word;
 unsigned8           doc;

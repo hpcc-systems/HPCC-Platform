@@ -29,9 +29,9 @@ personDataset := dataset([
         {'0002','Spiders','2'},
         {'0001','Gavin'},
         {'0002','Gavin'},
-        {'0002','Liz'},
+        {'0002','Mia'},
         {'0003','Extra'},
-        {'0001','Liz'},
+        {'0001','Mia'},
         {'0004','King'},
         {'0004','Queen'}], personRecord);
 
@@ -40,7 +40,7 @@ DIATRec := Record
 
   totalcount := SUM(GROUP, IF(TRUE, 1, 0));
 
-  X000100__Gender__0000100_1_M_Male := SUM(GROUP,IF(personDataset.per_gender_code 
+  X000100__Gender__0000100_1_M_Male := SUM(GROUP,IF(personDataset.per_gender_code
 IN ['1'], 1, 0));
   X000100__Gender__0000100_1_M_Male2 := COUNT(GROUP,personDataset.per_gender_code IN ['1']);
   X000100__Gender__0000200_2_3_4_F_Female := SUM(GROUP,IF

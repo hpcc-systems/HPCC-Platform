@@ -28,6 +28,6 @@ END;
 
 ds := dataset('ds', r, thor);
 
-//Should be supported as a generate time constant 
+//Should be supported as a generate time constant
 //ASSERT(SIZEOF(TYPEOF(r.id)) = 4);
 ASSERT(SIZEOF(TYPEOF(r.id)) = 4, CONST);

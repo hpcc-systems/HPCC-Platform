@@ -25,7 +25,7 @@ unsigned    dups := 0;
 end;
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 dataset(childRecord) children;
@@ -34,7 +34,7 @@ dataset(childRecord) children;
 
 ds := dataset(
 [
-    {'Gavin', 
+    {'Gavin',
         [{'Smith'},{'Jones'},{'Jones'},{'Doe'},{'Smith'}]
     },
     {'John',

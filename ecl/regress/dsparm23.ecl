@@ -18,7 +18,7 @@
 
 // A join example
 
-// To make this example more useful and more interesting, 
+// To make this example more useful and more interesting,
 // we may need implement "abstract"
 // record type for transform so that the transform
 // is not as trial as this.
@@ -34,10 +34,10 @@ rec tranx(string10 id) := transform
   self.id := id;
 end;
 
-SimpleJoin(virtual dataset({string10 id}) d1, virtual dataset({string10 id}) d2) := 
+SimpleJoin(virtual dataset({string10 id}) d1, virtual dataset({string10 id}) d2) :=
   join(d1, d2, left.id = right.id, tranx(left.id));
 
-// 
+//
 // test the func
 
 r1 := record
@@ -46,7 +46,7 @@ r1 := record
 end;
 
 r2 := record
- String10 first_name2; 
+ String10 first_name2;
  string20 last_name2;
 end;
 

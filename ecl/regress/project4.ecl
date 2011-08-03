@@ -37,7 +37,7 @@ unsigned1   id3;
 pperson := DATASET('in.d00', ppersonRecord, FLAT);
 
 
-ppersonRecordEx projectFunction(ppersonRecord incoming) := 
+ppersonRecordEx projectFunction(ppersonRecord incoming) :=
     TRANSFORM
         SELF.id := random();
         SELF.id1 := 0;
@@ -49,7 +49,7 @@ ppersonRecordEx projectFunction(ppersonRecord incoming) :=
 
 ppersonEx := project(pperson, projectFunction(left));
 
-ppersonRecordEx projectFunction2(ppersonRecordEx l) := 
+ppersonRecordEx projectFunction2(ppersonRecordEx l) :=
     TRANSFORM,skip(l.id=0)
         SELF.id1 := (l.id DIV 10000) % 100;
         SELF.id2 := (l.id DIV 100) % 100;

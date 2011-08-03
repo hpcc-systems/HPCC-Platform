@@ -16,14 +16,14 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-nameRecord := 
+nameRecord :=
                 RECORD
 string              idx{xpath('@index')};
 string              name{xpath('')};
 string              txt{xpath('<>')};
                 END;
 
-legalRecord := 
+legalRecord :=
                 RECORD
 unsigned2           seq{xpath('@seq')};
 string              name{xpath('')};

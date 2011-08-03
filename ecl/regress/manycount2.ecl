@@ -18,7 +18,7 @@
 
 person := dataset('person', { unsigned8 person_id, string1 per_sex, unsigned per_ssn, string40 per_first_name, data9 per_cid, unsigned8 xpos }, thor);
 x := record
-v1 := count(GROUP, person.per_ssn > 50); 
+v1 := count(GROUP, person.per_ssn > 50);
 v2 := count(GROUP, person.per_ssn > 60);
 v3 := count(GROUP, person.per_ssn > 70);
 v4 := count(GROUP, person.per_ssn > 80);

@@ -49,7 +49,7 @@ in1Table := dataset('in1',in1,FLAT);
 in2Table := dataset('in2',in2,FLAT);
 
 
-outr JoinTransform (in1 l, in2 r) := 
+outr JoinTransform (in1 l, in2 r) :=
                 TRANSFORM
                     SELF.a := l.a;
                     SELF.n := r.n;

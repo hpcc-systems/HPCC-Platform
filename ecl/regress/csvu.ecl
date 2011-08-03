@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 unicode20       surname;
 unicode10       forename;
@@ -27,9 +27,9 @@ integer2        age := 25;
 namesTable := dataset('x',namesRecord,FLAT);
 
 namesTable2 := dataset([
-        {'Halliday',U'Gaéëvin',31},
-        {'Halliday',U'τετελεσταιι',30},
-        {'Salter','Abi',10},
+        {'Hawthorn',U'Gaéëvin',31},
+        {'Hawthorn',U'τετελεσταιι',30},
+        {'Smithe','Pru',10},
         {'X','Z'}], namesRecord);
 
 output(namesTable2,,'out1.d00',CSV);

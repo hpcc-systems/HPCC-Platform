@@ -33,13 +33,13 @@ GetAttributeInRecord := RECORD
     dataset(GetAttributeItemRecord)     attributes{xpath('Attributes/CheckoutAttributeRequest')} := attrs;
     integer encode := 0;
 END;
-    
+
     GetAttributeOutRecord := RECORD
             string      ModuleName{xpath
 ('ECLAttribute/ModuleName')};
        END;
-    
-results := SOAPCALL('http://127.0.0.1:8145/WsAttributes', 
+
+results := SOAPCALL('http://127.0.0.1:8145/WsAttributes',
                     'CheckoutAttributes', GetAttributeInRecord, GetAttributeOutRecord,
                     XPATH('/UpdateAttributesResponse/outAttributes')
                             ); // todo change output

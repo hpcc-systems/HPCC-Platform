@@ -23,7 +23,7 @@ string20  per_forename;
 unsigned8 holepos;
     END;
 
-parentRecord := 
+parentRecord :=
                 RECORD,maxlength(40000)
 unsigned8           id;
 string20            address1;

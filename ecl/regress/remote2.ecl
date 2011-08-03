@@ -18,7 +18,7 @@
 
 #option ('targetClusterType', 'hthor');
 
-mainRecord := 
+mainRecord :=
         RECORD
 string20            word;
 unsigned8           doc;

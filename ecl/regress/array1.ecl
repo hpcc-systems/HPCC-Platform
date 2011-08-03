@@ -32,7 +32,7 @@ unsigned1           numPeople;
 string10            forenames,dim(self.numPeople);
                 END;
 
-outRecord gatherFamily(familyRecord l, namesRecord r, unsigned c) := 
+outRecord gatherFamily(familyRecord l, namesRecord r, unsigned c) :=
                 TRANSFORM
                     SELF.surname := l.surname);
                     SELF.numPeople := l.numPeople+1;

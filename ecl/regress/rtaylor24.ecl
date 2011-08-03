@@ -19,7 +19,7 @@
 InRec := RECORD
     string UIDstr;
     string LeftInStr;
-    string RightInStr; 
+    string RightInStr;
 END;
 InDS := DATASET([
 {'1','the quick brown fox jumped over the lazy red dog','quick fox red dog'},

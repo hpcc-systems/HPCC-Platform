@@ -19,8 +19,8 @@
 import text;
 token WORD := Text.alpha+;
 
-rs := 
-        RECORD 
+rs :=
+        RECORD
             STRING100 line;
         END;
 

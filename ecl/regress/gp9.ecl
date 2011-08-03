@@ -18,9 +18,9 @@
 
 person := dataset('person', { unsigned8 person_id, string1 per_sex, string40 per_first_name, unsigned8 xpos }, thor);
 
-gettrd_drpt(num) := 
+gettrd_drpt(num) :=
 CASE(num, 1 => 7,
-          0 
-); 
+          0
+);
 
 output(person, { gettrd_drpt(1) });

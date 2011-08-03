@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-namesRecord := 
+namesRecord :=
         RECORD
 string10            forename;
 string10            surname;
@@ -25,5 +25,5 @@ string2             nl := '\r\n';
 
 d := dataset('names.d00', namesRecord, THOR);
 t := PIPE(d, 'pipeThrough');
-output(t,,'lower.d00'); 
+output(t,,'lower.d00');
 

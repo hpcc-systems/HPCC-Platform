@@ -27,8 +27,8 @@ unsigned1 nl2 := 10;
 pperson1 := DATASET('~names.d00', ppersonRecord, THOR);
 
 
-y := pperson1(forename>'Jake') : persist('jake');
-z := pperson1(surname>'Pete') : persist('pete');
+y := pperson1(forename>'Zack') : persist('zack');
+z := pperson1(surname>'Paul') : persist('paul');
 
 count(y);
 count(z);

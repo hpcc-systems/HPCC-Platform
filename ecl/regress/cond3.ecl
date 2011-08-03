@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -35,7 +35,7 @@ b := namesTable(age < c);
 
 boolean uselower := true : stored('useLower');
 
-d := if(uselower, 
+d := if(uselower,
         output('Value = ' + (string2)c),
         output('Value != ' + (string3)c));
 d;

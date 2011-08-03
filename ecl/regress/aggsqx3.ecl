@@ -23,7 +23,7 @@ AggCommon.CommonDefinitions();
 output(preload(sqHousePersonBookDs), { dataset people := table(persons, { surname, sum(group, aage) }, surname, few)});
 
 //Filtered disk aggregate, which also requires a beenProcessed flag
-output(sqHousePersonBookDs, { dataset people := table(persons(surname != 'Halliday'), { max(group, aage), surname }, surname, few)});
+output(sqHousePersonBookDs, { dataset people := table(persons(surname != 'Hawthorn'), { max(group, aage), surname }, surname, few)});
 
 //check literals are assigned
 output(sqHousePersonBookDs, { dataset people := table(persons(forename = 'Gavin'), { 'Count: ', count(group), 'Name: ', surname }, surname, few)});

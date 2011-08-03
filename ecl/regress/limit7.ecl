@@ -18,7 +18,7 @@
 
 #option ('targetClusterType', 'roxie');
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -28,7 +28,7 @@ unsigned8       filepos{virtual(fileposition)};
 
 d := dataset('x',namesRecord,FLAT);
 
-i1 := index(d, { d } ,'\\seisint\\person.name_first.key1');
+i1 := index(d, { d } ,'\\home\\person.name_first.key1');
 nameIndexRecord := recordof(i1);
 
 errorRecord := RECORD
@@ -66,7 +66,7 @@ res1c := limit(res1a, 1000, ONFAIL(createError(99, 'Too many matching names 1 ke
 output(res1c);
 
 //Separate limit activity
-res2a := project(i1(surname='Chapman'), t(LEFT));
+res2a := project(i1(surname='Drimbad'), t(LEFT));
 res2b := nofold(sort(res2a, forename, age));
 res2c := limit(res2b, 99, ONFAIL(createError(99, 'Too many matching names 2')));
 output(res2c);

@@ -17,15 +17,15 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
 integer2        age := 25;
             END;
 
-d := dataset([{'Halliday','Gavin',35},
-              {'Halliday','Abigail',2},
+d := dataset([{'Hawthorn','Gavin',35},
+              {'Hawthorn','Abigail',2},
               {'Smith','John',57},
               {'Smith','Gavin',12}
               ], namesRecord);

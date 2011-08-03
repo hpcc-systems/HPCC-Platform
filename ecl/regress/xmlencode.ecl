@@ -17,12 +17,12 @@
 ############################################################################## */
 
 #option ('globalFold', false);
-export checkMatch(got, expected) := 
+export checkMatch(got, expected) :=
     macro
         output(IF(got = expected, 'OK', 'Fail: Got(' + got + ') Expected(' + expected + ')'))
     endmacro;
 
-export checkUMatch(got, expected) := 
+export checkUMatch(got, expected) :=
     macro
         output(IF(got = expected, U'OK', U'Fail: Got(' + got + U') Expected(' + expected + U')'))
     endmacro;

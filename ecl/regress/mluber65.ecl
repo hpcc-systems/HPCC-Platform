@@ -23,7 +23,7 @@ RECORD
 END;
 
 
-wordds := dataset([{'MARK',1},{'LUBER',1},{'CHAPMAN',2},{'MARK',2}],l);
+wordds := dataset([{'MARK',1},{'LUBER',1},{'DRIMBAD',2},{'MARK',2}],l);
 
 
 I := INDEX(wordds,{wordds},'~thor::wordsearchtest');
@@ -90,7 +90,7 @@ Layout_WordsExpanded rollPhrase(Layout_WordsExpanded le, Layout_WordsExpanded ri
 TRANSFORM
     setofdocs := SET(le.docs,docid);
 
-    SELF.docs := PROJECT(i(keyed(le.word=word) AND 
+    SELF.docs := PROJECT(i(keyed(le.word=word) AND
                                                                                 (fpos IN setofdocs OR setofdocs=[])),TRANSFORM(Doc,SELF.docid := LEFT.fpos));
     SELF := le;
 END;
@@ -107,7 +107,7 @@ END;
 Results proj(Conjunction le) :=
 TRANSFORM
     phrasesExpanded := PROJECT(le.phrases,expandCons(LEFT));
-    
+
     SELF.Docs := ROLLUP(phrasesExpanded,true,rollCons(LEFT,RIGHT))[1].docs;
 END;
 

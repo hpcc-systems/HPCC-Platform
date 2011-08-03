@@ -30,9 +30,9 @@ ebcdic string s;
     end;
 
 ds := dataset('ds', rec, thor);
-ds2 := table(ds, 
-            { 
-            ebcdic string s2 := if(x < 10, (ebcdic string)i, (ebcdic string)j); 
-            data s3 := if(x < 10, (data)i, (data)j); 
+ds2 := table(ds,
+            {
+            ebcdic string s2 := if(x < 10, (ebcdic string)i, (ebcdic string)j);
+            data s3 := if(x < 10, (data)i, (data)j);
             });
 output(ds2);

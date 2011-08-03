@@ -39,7 +39,7 @@ DG_OutRec := RECORD
     #IF(DG_MaxField>=3) unsigned1 DG_Prange;    #end
     #IF(DG_MaxField>=4) string10  DG_Street;    #end
     #IF(DG_MaxField>=5) unsigned1 DG_zip;       #end
-    #IF(DG_MaxField>=6) unsigned1 DG_age;       #end    
+    #IF(DG_MaxField>=6) unsigned1 DG_age;       #end
     #IF(DG_MaxField>=7) string2   DG_state;     #end
     #IF(DG_MaxField>=8) string3   DG_month;     #end
 END;
@@ -66,7 +66,7 @@ Layout_DG_Totals := RECORD
   DG_IndexFile.DG_lastName;
                 UNSIGNED Counts := COUNT(GROUP);
                 END;
-                
+
 DG_Totals := table(DG_IndexFile,Layout_DG_Totals,DG_FirstName,DG_LastName,FEW);
 
 output(DG_Totals)

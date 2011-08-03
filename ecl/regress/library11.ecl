@@ -18,7 +18,7 @@
 
 #option ('targetClusterType', 'roxie');
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -42,9 +42,9 @@ filterDataset(dataset(namesRecord) ds, string search, boolean onlyOldies) := lib
 
 //namesTable := dataset('x',namesRecord,FLAT);
 namesTable := dataset([
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
-        {'Salter','Abi',10},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
+        {'Smithe','Pru',10},
         {'X','Z'}], namesRecord);
 pr := dedup(namesTable, surname);
 s := sort(pr, surname, forename, age);
@@ -52,7 +52,7 @@ s := sort(pr, surname, forename, age);
 filtered := filterDataset(pr, 'Smith', false);
 output(filtered.included,,named('Included'));
 
-filtered2 := filterDataset(pr, 'Halliday', false);
+filtered2 := filterDataset(pr, 'Hawthorn', false);
 output(filtered2.excluded,,named('Excluded'));
 
 

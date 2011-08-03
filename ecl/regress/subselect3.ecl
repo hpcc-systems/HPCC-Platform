@@ -30,7 +30,7 @@ unsigned4 person_id;
 unsigned8 holepos;
     END;
 
-parentRecord := 
+parentRecord :=
                 RECORD
 unsigned8           id;
 string20            address1;
@@ -43,7 +43,7 @@ string10            postcode;
 
 parentDataset := DATASET('test',parentRecord,FLAT);
 
-slimParentRecord := 
+slimParentRecord :=
                 RECORD
 unsigned8           id;
 dataset(slimChildRecord) children;
@@ -54,7 +54,7 @@ slimChildRecord slimChild(childRecord l) := transform
         SELF := l;
     END;
 
-slimParentRecord slimPeople(parentRecord l) := 
+slimParentRecord slimPeople(parentRecord l) :=
 TRANSFORM
     SELF.children := project(l.children, slimChild(LEFT));
     SELF := l;

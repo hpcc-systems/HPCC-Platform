@@ -17,13 +17,13 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
             END;
 
-namesRecordEx := 
+namesRecordEx :=
             RECORD
 qstring20       surname;
 qstring10       forename;

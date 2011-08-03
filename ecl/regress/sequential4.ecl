@@ -18,7 +18,7 @@
 
 #option ('resourceSequential', true);
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -28,9 +28,9 @@ integer2        age := 25;
 namesTable := dataset('names',namesRecord,FLAT);
 
 
-d1 := dataset([{'Halliday','Gavin',34}], namesRecord);
-d2 := dataset([{'Halliday','Liz',34}], namesRecord);
-d3 := dataset([{'Halliday','Abigail',2}], namesRecord);
+d1 := dataset([{'Hawthorn','Gavin',34}], namesRecord);
+d2 := dataset([{'Hawthorn','Mia',34}], namesRecord);
+d3 := dataset([{'Hawthorn','Abigail',2}], namesRecord);
 
 boolean change := false : stored('change');
 

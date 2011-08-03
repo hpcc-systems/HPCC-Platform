@@ -37,16 +37,16 @@ JoinRecord := RECORD
   // dup:  string20 surname;
 END;
 
-namesTable := dataset([{'Salter','Abi',10}], r1);
-addressTable := dataset([{'Halliday','10 Slapdash Lane'}], r2);
+namesTable := dataset([{'Smithe','Pru',10}], r1);
+addressTable := dataset([{'Hawthorn','10 Slapdash Lane'}], r2);
 
 JoinRecord tranx(r1 l, r2 r) := TRANSFORM
   SELF := l;
   SELF := r;
 END;
 
-join_with_trans := join (namesTable, addressTable, 
-  LEFT.surname[1..10] = RIGHT.surname[1..10] AND 
+join_with_trans := join (namesTable, addressTable,
+  LEFT.surname[1..10] = RIGHT.surname[1..10] AND
   LEFT.surname[11..16] = RIGHT.surname[11..16] AND
   LEFT.forename[1] <> RIGHT.addr[1],
   tranx(LEFT,RIGHT),LEFT RIGHT OUTER);

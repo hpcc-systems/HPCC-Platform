@@ -22,7 +22,7 @@ unsigned        code;
 string8         num;
         end;
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

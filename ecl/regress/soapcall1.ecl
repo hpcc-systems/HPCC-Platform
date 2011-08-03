@@ -16,13 +16,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-phoneRecord := 
+phoneRecord :=
             RECORD
 string5         areaCode;
 string12        number;
             END;
 
-contactrecord := 
+contactrecord :=
             RECORD
 phoneRecord     phone;
 boolean         hasemail;
@@ -31,7 +31,7 @@ string              email;
                 end;
             END;
 
-personRecord := 
+personRecord :=
             RECORD
 string20        surname;
 string20        forename;
@@ -39,9 +39,9 @@ set of string   middle{xpath('MiddleName/Instance')} := [];
             END;
 
 namesTable := dataset([
-        {'Halliday','Gavin',['Charles']},
-        {'Halliday','Abigail',['Anabelle','Spandex']},
-        {'Halliday','',[]},
+        {'Hawthorn','Gavin',['Charles']},
+        {'Hawthorn','Abigail',['Anabelle','Spandex']},
+        {'Hawthorn','',[]},
         {'Smith','John',ALL}
         ], personRecord);
 

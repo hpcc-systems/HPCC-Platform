@@ -18,7 +18,7 @@
 
 //Illegal, cannot use stored inside a library module
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

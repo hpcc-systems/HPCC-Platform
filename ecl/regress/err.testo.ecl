@@ -34,10 +34,10 @@ Four := 4;
 
 count(pperson(pperson.age=20));
 
-Three * Four 
-+ map(pperson.age=1=>1,pperson.age=2=>1,pperson.age=3=>3,5) 
-+ if(pperson.surname IN ['ab','cd','de'],3,4) 
-+ if(pperson.age IN [1,2,3,4,7,8,9],1,2) 
+Three * Four
++ map(pperson.age=1=>1,pperson.age=2=>1,pperson.age=3=>3,5)
++ if(pperson.surname IN ['ab','cd','de'],3,4)
++ if(pperson.age IN [1,2,3,4,7,8,9],1,2)
 + if(pperson.age = 10, 99, -99) + (3 % 6);
 
 pperson.forename + pperson.forename;

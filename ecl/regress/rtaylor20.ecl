@@ -30,7 +30,7 @@ END;
 %InTbl% := TABLE(InFile,%Layout_Plus_RecID%);
 
 #uniquename(IDRecs)
-%Layout_Plus_RecID% %IDRecs%(%Layout_Plus_RecID% L, 
+%Layout_Plus_RecID% %IDRecs%(%Layout_Plus_RecID% L,
                            %Layout_Plus_RecID% R) := TRANSFORM
   SELF.RecID := IF(L.RecID=0,thorlib.node()+1,L.RecID+thorlib.nodes());
 SELF := R;
@@ -40,7 +40,7 @@ END;
 %UID_Recs% := ITERATE(%InTbl%,%IDRecs%(LEFT,RIGHT),LOCAL);
 
 
-//generate 
+//generate
 #uniquename(WholeSet)
 %WholeSet% := COUNT(InFile) : GLOBAL;
 output(%WholeSet%);

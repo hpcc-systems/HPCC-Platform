@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-mainRecord := 
+mainRecord :=
         RECORD
 integer8            sequence;
 string20            forename;
@@ -30,4 +30,4 @@ mainTable := dataset('~keyed.d00',mainRecord,THOR);
 nameKey := INDEX(mainTable, { mainTable }, 'name.idx');
 
 //legal, but hard to spot because one condition gets constant folded away.
-output(nameKey(keyed(sequence=100 and (true or forename='x')),keyed(alias='Halliday')));
+output(nameKey(keyed(sequence=100 and (true or forename='x')),keyed(alias='Hawthorn')));

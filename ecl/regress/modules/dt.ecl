@@ -47,8 +47,8 @@ export ebcdic_dstring(ebcdic string del) := TYPE
     export string load(ebcdic string s) := s[1..StringLib.EbcdicStringUnboundedUnsafeFind(s,del)-1];
     export ebcdic string store(string s) := (ebcdic string)s+del;
 END;
- 
- 
+
+
 // data type to handle delimited data
 
 export dstring(string del) := TYPE
@@ -56,7 +56,7 @@ export dstring(string del) := TYPE
     export string load(string s) := s[1..StringLib.StringUnboundedUnsafeFind(s,del)-1];
     export string store(string s) := s+del; // Untested (vlength output generally broken)
 END;
- 
+
 export ustring(unicode del) := TYPE
     export integer physicallength(unicode s) := (UnicodeLib.UnicodeFind(s,del,1)+length(del)-1)*2;
     export unicode load(unicode s) := s[1..UnicodeLib.UnicodeFind(s,del,1)-1];

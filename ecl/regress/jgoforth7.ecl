@@ -18,14 +18,14 @@
 
 #option ('childQueries', true);
 
-personRecord := 
+personRecord :=
             RECORD
 string20        surname;
 string10        forename;
 integer2        age := 25;
             END;
 
-namesRecord := 
+namesRecord :=
             RECORD
 unsigned        id;
 personRecord;
@@ -44,7 +44,7 @@ string2         st;
             END;
 
 
-personRecord tc0(namesRecord l) := 
+personRecord tc0(namesRecord l) :=
     TRANSFORM
         SELF := l;
     END;
@@ -59,7 +59,7 @@ p0 := project(namesTable, t0(LEFT));
 output(p0);
 
 
-personRecord tc1(namesRecord l) := 
+personRecord tc1(namesRecord l) :=
     TRANSFORM
         SELF := l;
     END;
@@ -87,7 +87,7 @@ p2 := project(namesTable, t2(LEFT));
 //p3 := table(namesTable, { dataset(personRecord) people := dataset(row(namesTable,personRecord)); });
 //output(p3);
 
-personRecord tc4(namesRecord l) := 
+personRecord tc4(namesRecord l) :=
     TRANSFORM
         SELF := l;
     END;
@@ -123,7 +123,7 @@ output(p6);
 
 
 //ugly, but allow assignment of a datarow to a dataset.  Remain undocumented for the moment.
-personRecord t7(namesRecord l) := 
+personRecord t7(namesRecord l) :=
         TRANSFORM
             SELF := l;
         END;

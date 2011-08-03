@@ -16,19 +16,19 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-UNSIGNED4 LengthOfTheFirstStringInSet(set of string s) := BEGINC++ 
+UNSIGNED4 LengthOfTheFirstStringInSet(set of string s) := BEGINC++
 //unsigned int LengthOfTheFirstStringInSet(bool isAllS, unsigned lenS, void *s)
-// The length of the first string is either lenS or *((unsigned int *) s depending on on whether // a single string set or multiple string set is passed in. This is an inconsistency that // needs to be corrected, because the code in the BEGINC++ structure cannot distinguish // those two cases. In my opinion the length of the first string in the set // should be stored at *((unsigned int *) s in both cases. 
+// The length of the first string is either lenS or *((unsigned int *) s depending on on whether // a single string set or multiple string set is passed in. This is an inconsistency that // needs to be corrected, because the code in the BEGINC++ structure cannot distinguish // those two cases. In my opinion the length of the first string in the set // should be stored at *((unsigned int *) s in both cases.
    return *(unsigned *)s;
  ENDC++;
 
-string5 TextOfTheFirstString10InSet(set of string10 s) := BEGINC++ 
+string5 TextOfTheFirstString10InSet(set of string10 s) := BEGINC++
 //unsigned int LengthOfTheFirstStringInSet(char * __result, bool isAllS, unsigned lenS, void *s)
-// The length of the first string is either lenS or *((unsigned int *) s depending on on whether // a single string set or multiple string set is passed in. This is an inconsistency that // needs to be corrected, because the code in the BEGINC++ structure cannot distinguish // those two cases. In my opinion the length of the first string in the set // should be stored at *((unsigned int *) s in both cases. 
+// The length of the first string is either lenS or *((unsigned int *) s depending on on whether // a single string set or multiple string set is passed in. This is an inconsistency that // needs to be corrected, because the code in the BEGINC++ structure cannot distinguish // those two cases. In my opinion the length of the first string in the set // should be stored at *((unsigned int *) s in both cases.
     memcpy(__result, (char *)s+lenS-10, 5);
  ENDC++;
 
-UNSIGNED4 LengthOfTheFirstStringInSet2(set of string s) := 
+UNSIGNED4 LengthOfTheFirstStringInSet2(set of string s) :=
     LengthOfTheFirstStringInSet(set(dataset(s, { string x}), x));
 
 LengthOfTheFirstStringInSet(['DAVID']);

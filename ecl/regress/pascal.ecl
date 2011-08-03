@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-TypeHelper := 
+TypeHelper :=
                     SERVICE
 unsigned4               getPascalLength(const data physical) : eclrtl,library='eclrtl',entrypoint='rtlGetPascalLength';
 string                  pascalToString(const data src) : eclrtl,library='eclrtl',entrypoint='rtlPascalToString';

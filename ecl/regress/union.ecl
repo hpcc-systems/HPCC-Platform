@@ -22,11 +22,11 @@ string10            forename;
 END;
 
 input1 := nofold(dataset([
-        {'Halliday','Gavin'},
-        {'Halliday','Liz'},
-        {'Salter','Abi'},
+        {'Hawthorn','Gavin'},
+        {'Hawthorn','Mia'},
+        {'Smithe','Pru'},
         {'X','Z'}], namesRecord));
 
-input2 := (input1(surname='Halliday'));
+input2 := (input1(surname='Hawthorn'));
 
 output(input2+input1,,'out.d00');

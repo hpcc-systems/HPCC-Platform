@@ -37,7 +37,7 @@ r2                f4;
 
 d := DATASET('d3', r3, FLAT);
 
-r3 t(r3 l) := 
+r3 t(r3 l) :=
     TRANSFORM
         self.r3f1 := l.r3f1;
         self.r3f2.r2f2 := l.r3f2.r2f2;

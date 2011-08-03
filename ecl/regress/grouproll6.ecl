@@ -19,7 +19,7 @@
 #option ('targetClusterType', 'roxie');
 //This should be legal, but we need to revisit the way items are serialied to the keyed join slave to handle it.
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

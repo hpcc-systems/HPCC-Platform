@@ -27,7 +27,7 @@ OutRec := RECORD
     STRING20  addr;
 END;
 
-OutRec Trans(NamesRec L, INTEGER C) := 
+OutRec Trans(NamesRec L, INTEGER C) :=
     TRANSFORM
       SELF := L;
       SELF.addr := CHOOSE(C, L.addr1, L.addr2);

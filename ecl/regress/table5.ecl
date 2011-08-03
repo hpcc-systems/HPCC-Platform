@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string      surname;
 qstring     forename;
@@ -35,10 +35,10 @@ namesTable := dataset('x',namesRecord,FLAT);
 
 namesTable2 := dataset([
         {'Time','Old Father',1000000},
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
-        {'Salter','Abi',10},
-        {'Halliday','Abigail',0},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
+        {'Smithe','Pru',10},
+        {'Hawthorn','Abigail',0},
         {'South','Ami',2},
         {'X','Z'}], namesRecord);
 

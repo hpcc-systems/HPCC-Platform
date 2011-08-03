@@ -18,7 +18,7 @@
 
 #option ('targetClusterType', 'roxie');
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname := '?????????????';
 string10        forename := '?????????????';
@@ -26,20 +26,20 @@ integer2        age := 25;
             END;
 
 namesTable := dataset([
-        {'Salter','Abi',10},
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
+        {'Smithe','Pru',10},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
         {'Smith','Jo'},
         {'Smith','Matthew'},
         {'X','Z'}], namesRecord);
 
-JoinRecord := 
+JoinRecord :=
             RECORD
 namesRecord;
 string20        otherforename;
             END;
 
-JoinRecord JoinTransform (namesRecord l, namesRecord r) := 
+JoinRecord JoinTransform (namesRecord l, namesRecord r) :=
                 TRANSFORM
                     SELF.otherforename := r.forename;
                     SELF := l;

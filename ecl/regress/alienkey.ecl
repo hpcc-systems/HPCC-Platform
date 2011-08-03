@@ -60,6 +60,6 @@ filtered := rawfile(
 // keyed(primary.fname in ['JOHN         ','a'])
 // keyed(primary.fname in values)
 );
- 
+
 output(filtered,,'fout', XML, OVERWRITE)
 

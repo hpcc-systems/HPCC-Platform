@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-choiceRecord := 
+choiceRecord :=
             RECORD
 boolean         include1;
 boolean         include2;
@@ -76,7 +76,7 @@ resultRecord t2(boolean include) := transform
     t := transform(valueRecord, self.value := 10);
     ds := dataset([1,2,3], valueRecord);
     r := row(transform(valueRecord, self.value := 1234));
-    
+
     if not include then
         integer age := 20;
         string name := 'Richard';
@@ -107,7 +107,7 @@ resultRecord t3(boolean include, boolean flag2) := transform
     t := transform(valueRecord, self.value := 10);
     dataset ds := dataset([1,2,3], valueRecord);
     r := row(transform(valueRecord, self.value := 1234));
-    
+
     if not include then
         integer age := 20;
         string name := 'Richard';
@@ -118,13 +118,13 @@ resultRecord t3(boolean include, boolean flag2) := transform
 
     if flag2 then
         integer age := age * 2;
-        string name := name + ' Halliday';
+        string name := name + ' Hawthorn';
         t := transform(valueRecord, self.value := 10);
         dataset ds := ds & dataset([11,12,13], valueRecord);
         row r := project(r, transform(valueRecord, self.value := left.value - 1000000));
     else
         integer age := age * 5;
-        string name := name + ' Chapman';
+        string name := name + ' Drimbad';
         t := transform(valueRecord, self.value := 15);
         dataset ds := ds & dataset([15,16,17], valueRecord);
         row r := project(r, transform(valueRecord, self.value := left.value + 1000000));

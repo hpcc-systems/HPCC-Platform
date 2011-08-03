@@ -16,11 +16,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-rt_fixed1_ebcdic := 
+rt_fixed1_ebcdic :=
   record
 string1 col1;
   end;
-d1 := DATASET('~file::127.0.0.1::temp::people', rt_fixed1_ebcdic, 
+d1 := DATASET('~file::127.0.0.1::temp::people', rt_fixed1_ebcdic,
 Flat);
 ebcd := ebcdic(d1);
 ascd := ascii(ebcd);

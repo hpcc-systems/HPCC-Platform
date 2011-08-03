@@ -41,7 +41,7 @@ string20  forename;
 dt.pstring x;
     END;
 
-combinedRecord := 
+combinedRecord :=
                 RECORD
 householdRecord;
 unsigned4           numPeople;

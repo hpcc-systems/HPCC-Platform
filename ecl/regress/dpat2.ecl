@@ -30,7 +30,7 @@ rule NounPhraseComponent := Word penalty(1) | article Word;
 rule NounPhrase := NounPhraseComponent opt(conjunction NounPhraseComponent);
 rule clause := NounPhrase Verb NounPhrase;
 
-results := 
+results :=
     record
         MATCHED;
         Subject :=  MATCHTEXT(NounPhrase[1]);

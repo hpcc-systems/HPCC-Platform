@@ -28,7 +28,7 @@ filterByName(virtual dataset({ string surname }) ds, opt <?> string filterField 
     return ds(<filterField> = search);
 END;
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -36,10 +36,10 @@ integer2        age := 25;
             END;
 
 namesTable2 := dataset([
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
-        {'Salter','Abi',10},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
+        {'Smithe','Pru',10},
         {'X','Z'}], namesRecord);
 
-//output(filterByName(namesTable2, namesTable2.forename, 'Liz'));
-output(filterByName(namesTable2, 'Halliday'));
+//output(filterByName(namesTable2, namesTable2.forename, 'Mia'));
+output(filterByName(namesTable2, 'Hawthorn'));

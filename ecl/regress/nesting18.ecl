@@ -37,7 +37,7 @@ r2                f4;
 
 d := DATASET('d3', r3, FLAT);
 
-r3 t(r3 l) := 
+r3 t(r3 l) :=
     TRANSFORM
         self.r3f1 := l.r3f1;
         //Completely obscure code to cover a case where replacing assigning a single row project, and replacing LEFT in the input dataset

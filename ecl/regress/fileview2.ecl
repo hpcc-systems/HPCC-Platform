@@ -28,7 +28,7 @@ export qdstring(qstring del, decimal8_2 x) := TYPE
     export string store(string s) := s+del; // Untested (vlength output generally broken)
 END;
 
-namesRecord := 
+namesRecord :=
             RECORD
 dstring('\\\'') surname;
 dstring('\'\t\377\\')   forename;
@@ -37,9 +37,9 @@ qdstring(Q'\'\t\377abc\\',123.4D)   extra := 0;
             END;
 
 namesTable2 := dataset([
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
-        {'Salter','Abi',10},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
+        {'Smithe','Pru',10},
         {'X','Z'}], namesRecord);
 
 output(namesTable2,,'out.d00');

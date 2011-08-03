@@ -25,7 +25,7 @@ string20  per_forename;
 unsigned8 holepos;
     END;
 
-parentRecord := 
+parentRecord :=
                 RECORD
 unsigned8           id;
 string20            address1;
@@ -38,7 +38,7 @@ string10            postcode;
 
 parentDataset := DATASET('test',parentRecord,FLAT);
 
-rollupParentRecord := 
+rollupParentRecord :=
                 RECORD
 unsigned8           id;
 string20            address1;
@@ -50,7 +50,7 @@ string20            max_per_surname;
 string20            min_per_forename;
                 END;
 
-childAggRecord(parentRecord l) := 
+childAggRecord(parentRecord l) :=
             RECORD
                f1 := COUNT(GROUP);
                f2 := SUM(GROUP, l.children.person_id);
@@ -60,7 +60,7 @@ childAggRecord(parentRecord l) :=
             END;
 
 
-rollupParentRecord rollupPeople(parentRecord l) := 
+rollupParentRecord rollupPeople(parentRecord l) :=
 TRANSFORM
     SELF := l;
 //    SELF.count_person_id := l.children[1].holepos;

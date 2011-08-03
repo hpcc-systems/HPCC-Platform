@@ -19,7 +19,7 @@
 person := dataset('person', { unsigned8 person_id, string1 per_sex, string10 per_first_name, string10 per_last_name, data9 per_cid }, thor);
 a0 := person(per_last_name='XX');
 output(a0,{ (string15) per_first_name, per_cid }, 'RKC::rkc');
-a1 := dataset('RKC::rkc', { string15 per_first_name, data9 per_cid }, flat); 
+a1 := dataset('RKC::rkc', { string15 per_first_name, data9 per_cid }, flat);
 /* both syntax should work */
 a0 t1(a0 L, a1 R) := transform SELF:=L END;
 typeof(a0) t2(a0 L, a1 R) := transform SELF:=L END;

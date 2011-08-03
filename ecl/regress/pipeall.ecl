@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-namesRecord := 
+namesRecord :=
         RECORD
 string10            forename;
 string10            surname;
@@ -27,11 +27,11 @@ cmd := 'pipeWrite \\thordata\\names.new' : stored('cmd');
 
 d := PIPE('pipeRead 200', namesRecord);
 t := PIPE(d, 'pipeThrough');
-output(t,,PIPE('pipeWrite \\thordata\\names.all')); 
-output(t,{surname,forename},PIPE(cmd)); 
-output(t,,PIPE('pipeWrite \\thordata\\names.all '+t.surname,repeat)); 
-output(t,,PIPE('pipeWriteNext ' ,repeat)); 
+output(t,,PIPE('pipeWrite \\thordata\\names.all'));
+output(t,{surname,forename},PIPE(cmd));
+output(t,,PIPE('pipeWrite \\thordata\\names.all '+t.surname,repeat));
+output(t,,PIPE('pipeWriteNext ' ,repeat));
 //output(t,{surname},PIPE('pipeWrite \\thordata\\names.all '+t.surname,repeat));        // currently unsupported
 
-output(PIPE(t,'pipeWrite \\thordata\\names.all '+t.surname,repeat)); 
+output(PIPE(t,'pipeWrite \\thordata\\names.all '+t.surname,repeat));
 

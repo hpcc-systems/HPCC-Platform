@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 integer2        age := 25;
 unsigned8       fileposition{virtual(fileposition)}

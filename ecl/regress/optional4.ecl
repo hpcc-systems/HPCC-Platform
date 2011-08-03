@@ -25,7 +25,7 @@ filterByName(virtual dataset({ string surname, integer age }) ds, opt string sea
     return ds((OMITTED(searchName) or (surname = searchName)), (OMITTED(searchAge) or (age = searchAge)));
 END;
 
-namesRecord1 := 
+namesRecord1 :=
             RECORD
 string20        surname;
 string10        forename;
@@ -33,16 +33,16 @@ integer2        age := 25;
             END;
 
 namesTable1 := nofold(dataset([
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
-        {'Salter','Abi',10},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
+        {'Smithe','Pru',10},
         {'X','Z'}], namesRecord1));
 
-output(filterByName(namesTable1, 'Halliday',31));
-output(filterByName(namesTable1, 'Salter'));
+output(filterByName(namesTable1, 'Hawthorn',31));
+output(filterByName(namesTable1, 'Smithe'));
 output(filterByName(namesTable1, 30));
 
-namesRecord2 := 
+namesRecord2 :=
             RECORD
 string20        lastname;
 string10        firstname;
@@ -50,11 +50,11 @@ integer2        age := 25;
             END;
 
 namesTable2 := nofold(dataset([
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
-        {'Salter','Abi',10},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
+        {'Smithe','Pru',10},
         {'X','Z'}], namesRecord2));
 
-output(filterByName(namesTable2 { surname := lastname }, 'Halliday',31));
-output(filterByName(namesTable2 { surname := lastname }, 'Salter'));
+output(filterByName(namesTable2 { surname := lastname }, 'Hawthorn',31));
+output(filterByName(namesTable2 { surname := lastname }, 'Smithe'));
 output(filterByName(namesTable2 { surname := lastname }, 30));

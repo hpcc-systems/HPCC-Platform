@@ -38,15 +38,15 @@ d := choosen(rollup(dp,right.line[4]<>':',roll(left,right)), 200);
 */
 pattern ws := [' ','\t',',']*;
 token article := ['A','The','Thou','a','the','thou'];
-token patWord := PATTERN('[a-zA-Z]+');      
-token Name := PATTERN('[A-Z][a-zA-Z]+');    
+token patWord := PATTERN('[a-zA-Z]+');
+token Name := PATTERN('[A-Z][a-zA-Z]+');
 rule Namet := name opt('the' name);
 rule produced := opt(article) ['begat','father of','mother of'];
 rule produced_by := opt(article) ['son of','daughter of'];
 rule produces_with := opt(article) ['wife of'];
 rule progeny := namet ( produced | produced_by | produces_with ) namet;
 
-results := 
+results :=
     record
         string Le :=  '!'+MATCHTEXT(Namet[1])+'!';
         string Ri :=  '!'+MATCHTEXT(Namet[2])+'!';

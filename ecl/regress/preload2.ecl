@@ -17,9 +17,9 @@
 ############################################################################## */
 
 export xxNameLib := SERVICE
-  data      FirstNameToToken(const string20 name) : c, pure, entrypoint='nameFirstNameToToken'; 
-  string20  TokenToFirstName(const data0 name) : c, pure, entrypoint='nameTokenToFirstName'; 
-  unsigned4 TokenToLength(const data name) : c, pure, entrypoint='nameTokenToLength'; 
+  data      FirstNameToToken(const string20 name) : c, pure, entrypoint='nameFirstNameToToken';
+  string20  TokenToFirstName(const data0 name) : c, pure, entrypoint='nameTokenToFirstName';
+  unsigned4 TokenToLength(const data name) : c, pure, entrypoint='nameTokenToLength';
 END;
 
 export fnstring20 := TYPE
@@ -49,5 +49,5 @@ filtered := rawfile(
  keyed(did in didSeek),
  keyed(title in titleSeek),
  keyed(fname in fnameSeek));
- 
+
 output(filtered)

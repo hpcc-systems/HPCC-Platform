@@ -19,7 +19,7 @@
 #option ('targetClusterType', 'roxie');
 //Ensure that local is correctly added to sub queries and all children.
 
-mainRecord := 
+mainRecord :=
         RECORD
 string20            word;
 unsigned8           doc;

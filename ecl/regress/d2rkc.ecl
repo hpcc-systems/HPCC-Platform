@@ -23,14 +23,14 @@ legacy_file := dataset('legacy', { string9 cid; integer8 attr1; }, FLAT);
 person := dataset('person', { unsigned8 person_id }, thor);
 hole_result := TABLE(person,{ string9 cid := ''; integer8 atr1 := 0; });
 
-join_rec := 
+join_rec :=
     RECORD
         string9 cid;
         integer8 oldval;
         integer8 newval;
     END;
 
-join_rec join_em(hole_result l, legacy_file r) := 
+join_rec join_em(hole_result l, legacy_file r) :=
     TRANSFORM
         self.cid := l.cid;
         self.newval := l.atr1;

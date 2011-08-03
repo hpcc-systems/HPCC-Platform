@@ -31,7 +31,7 @@ and REPLACE
 */
 
 
-inputRecord := 
+inputRecord :=
             record
 string          next;
             end;
@@ -40,11 +40,11 @@ valueRecord :=
             record
 integer         value;
             end;
-    
+
 inputDataset := dataset(['10','20','*',15,10,'+','-','.'], inputRecord);
 
 processed := process(inputDataset, stackRecord, resultRecord,
-                     CASE(LEFT.op, 
+                     CASE(LEFT.op,
                             '+'=>REPLACE(transform(stackRecord, self.value := MATCHED[2].value+MATCHED[1].value), 2),
                             '-'=>REPLACE(transform(stackRecord, self.value := MATCHED[2].value-MATCHED[1].value), 2),
                             '*'=>REPLACE(transform(stackRecord, self.value := MATCHED[2].value*MATCHED[1].value), 2),

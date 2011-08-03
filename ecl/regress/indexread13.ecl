@@ -19,6 +19,6 @@
 d := dataset('~local::rkc::person', { string15 name, unsigned8 filepos{virtual(fileposition)} }, flat)(name <> '') : persist('d');
 d2 := dataset('~local::rkc::person', { string15 name, unsigned8 filepos{virtual(fileposition)} }, flat);
 
-i := index(d, { name, filepos } ,'\\seisint\\person.name_first.key');
+i := index(d, { name, filepos } ,'\\home\\person.name_first.key');
 
 output(i(name='RICHARD'));

@@ -21,7 +21,7 @@
 GenderEnum := enum(unsigned1, Male,Female,Either,Unknown);
 PersonFlags := enum(None = 0, Dead=1, Foreign=2,Terrorist=4,Wanted=Terrorist*2);
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -30,7 +30,7 @@ integer2        age := 25;
             END;
 
 namesTable2 := dataset([
-        {'Halliday','Gavin',GenderEnum.Male,PersonFlags.Foreign},
+        {'Hawthorn','Gavin',GenderEnum.Male,PersonFlags.Foreign},
         {'Bin Laden','Osama',GenderEnum.Male,PersonFlags.Foreign+PersonFlags.Terrorist+PersonFlags.Wanted}
         ], namesRecord);
 

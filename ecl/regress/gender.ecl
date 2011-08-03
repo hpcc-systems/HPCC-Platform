@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string9         cid;
 string20        firstn;
@@ -31,15 +31,15 @@ string30        addr := 'Unknown';
             END;
 
 namesTable := dataset([
-        {'Salter','Abi','10'},
-        {'Halliday','Gavin','31'},
-        {'Halliday','Liz','30'},
+        {'Smithe','Pru','10'},
+        {'Hawthorn','Gavin','31'},
+        {'Hawthorn','Mia','30'},
         {'Smith','Jo','x'},
         {'Smith','Matthew','y'},
         {'X','Z','Z'}], namesRecord);
 
 genderTable := dataset([
-        {'Halliday','10 Slapdash Lane'},
+        {'Hawthorn','10 Slapdash Lane'},
         {'Smith','Leicester'},
         {'Smith','China'},
         {'X','12 The burrows'},

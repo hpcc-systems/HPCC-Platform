@@ -37,7 +37,7 @@ rec makeRec(rec L, rec R, string name) := TRANSFORM
     self.value := R.value;
 END;
 
-output(ROLLUP(group(sortedseed100, sequence), 
-       left.sequence=right.sequence, 
+output(ROLLUP(group(sortedseed100, sequence),
+       left.sequence=right.sequence,
        makeRec(left, right, 'grouped')));
 

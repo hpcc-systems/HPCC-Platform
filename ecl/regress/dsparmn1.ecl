@@ -20,7 +20,7 @@
 f(virtual dataset d) := d;
 
 g(virtual dataset({integer n}) d1)
-  := count(f(d1)); 
+  := count(f(d1));
 
 dd := dataset('dd1',{integer n1;}, FLAT);
 

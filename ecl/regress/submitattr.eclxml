@@ -3,7 +3,7 @@
    <Module key="tutoriallorraine" name="TutorialLorraine">
       <Attribute key="fetchpeoplebyzipservice" name="fetchpeoplebyzipservice"
                  sourcePath="TutorialLorraine\FetchPeopleByZipService.ecl">
-#WORKUNIT(&apos;Name&apos;,&apos;FetchPeopleByZip&apos;) 
+#WORKUNIT(&apos;Name&apos;,&apos;FetchPeopleByZip&apos;)
 IMPORT TutorialLorraine; STRING10 ZipFilter := &apos;&apos;
          :STORED(&apos;ZIPValue&apos;); resultSet :=
          FETCH(TutorialLorraine.File_TutorialPerson,

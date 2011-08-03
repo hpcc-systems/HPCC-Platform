@@ -16,14 +16,14 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-fixedRecord := 
+fixedRecord :=
         RECORD
 string20            forename;
 string20            surname;
 string2             nl := '\r\n';
         END;
 
-variableRecord := 
+variableRecord :=
         RECORD
 string              forename;
 string              surname;
@@ -42,8 +42,8 @@ variableRecord fixed2Var(fixedRecord l) :=
         SELF := l;
     END;
 
-/* 
-    Disk reading, 
+/*
+    Disk reading,
     i) project the dataset - which will can then be combined using the optimizeDiskRead
     ii) two null filters, to force a splitter.
     iii) outputs that can then be compared.

@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -30,7 +30,7 @@ T1 := TABLE(namesTable,{seq := 0,namesTable});
 
 typeof(T1) P1(T1 L, integer C) := transform
   self.seq := C;
-  self := L;  
+  self := L;
 end;
 
 X1 := project(T1,P1(LEFT,COUNTER));

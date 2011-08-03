@@ -33,7 +33,7 @@ pattern b := a nocase(a) a;
 
 pattern S := b;
 
-results := 
+results :=
     record
         string x := MATCHTEXT;
         string y := MATCHTEXT(a);

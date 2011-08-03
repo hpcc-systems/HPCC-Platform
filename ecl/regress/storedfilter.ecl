@@ -22,7 +22,7 @@ string name1 := 'Gavin' : stored('name1');
 data name2 := D'Richard' : stored('name2');
 varstring name3 := 'Nigel' : stored('name3');
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

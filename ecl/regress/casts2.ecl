@@ -20,7 +20,7 @@
 
 
 // add columns in here if you want more arguments to test in your processing.
-inRecord := 
+inRecord :=
             RECORD
 integer         len;
 string100       text;

@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-nameRecord := 
+nameRecord :=
             RECORD
 string20        surname;
 string10        forename;

@@ -20,7 +20,7 @@ LOADXML('<xml></xml>');
 
 #LOOP
   #IF (false)
-    #BREAK  
+    #BREAK
   #END
 #END
 

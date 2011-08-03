@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -27,7 +27,7 @@ integer2        age := 25;
 namesTable := dataset('x',namesRecord,FLAT);
 
 
-exRecord := 
+exRecord :=
             RECORD(namesRecord)
 integer2        score;
             END;

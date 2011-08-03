@@ -16,5 +16,5 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-a := 10 : when('now'); 
+a := 10 : when('now');
 a;

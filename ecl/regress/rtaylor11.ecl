@@ -17,11 +17,11 @@
 ############################################################################## */
 
 d := nofold(dataset([
-    {'407WDISNEY '}, 
+    {'407WDISNEY '},
     {'800GETCOKEAH '},
     {'800GETCOKE'}
     ],{string number}));
-    
+
 TranslateLetter(string1 input) :=
   map(input in ['0','1','2','3','4','5','6','7','8','9'] => input,
       (input) in ['A','B','C'] => '2',
@@ -54,7 +54,7 @@ TranslateLetter2(string1 input) :=
       (input) in ['T','U','V'] => '8',
       (input) in ['W','X','Y','Z'] => '9',
             ''); //or you could default to return the input if anything else
-            
+
 outrec := record
   string letters;
     string numbers;
@@ -64,11 +64,11 @@ outrec L2N(d L) := transform
   string12 TempNo := (L.number);
   self.letters := L.number;
   self.numbers := TranslateLetter(TempNo[1]) +
-                  TranslateLetter(TempNo[2]) +            
-                  TranslateLetter(TempNo[3]) + 
+                  TranslateLetter(TempNo[2]) +
+                  TranslateLetter(TempNo[3]) +
                   TranslateLetter(TempNo[4]) +
-                  TranslateLetter(TempNo[5]) +        
-                  TranslateLetter(TempNo[6]) +            
+                  TranslateLetter(TempNo[5]) +
+                  TranslateLetter(TempNo[6]) +
                   TranslateLetter2(TempNo[7]) +
                   TranslateLetter2(TempNo[8]) +
                   TranslateLetter2(TempNo[9]) +

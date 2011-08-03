@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-#DECLARE(abc)  
+#DECLARE(abc)
 #DECLARE(b)
 #IFELSE
 i:=3;;

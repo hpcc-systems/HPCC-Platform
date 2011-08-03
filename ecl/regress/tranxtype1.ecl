@@ -32,7 +32,7 @@ end;
 record1x := record
     integer i;
 // note the types for b ans s are different from these in record1.
-    string1 b;  
+    string1 b;
     boolean s;
 end;
 
@@ -43,7 +43,7 @@ end;
 
 // child dataset
 record2 := record
-    record1 r21; 
+    record1 r21;
     record1 r22;
 end;
 

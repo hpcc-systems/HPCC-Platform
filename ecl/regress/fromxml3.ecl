@@ -22,6 +22,6 @@ string10 somexml := '';
   END;
 
 ds1 := DATASET('afile', rec, FLAT, OPT);
-ds2 := PROJECT(ds1, TRANSFORM(rec, SELF := FROMXML(rec, LEFT.somexml, TRIM))); 
+ds2 := PROJECT(ds1, TRANSFORM(rec, SELF := FROMXML(rec, LEFT.somexml, TRIM)));
 output(ds2);
 

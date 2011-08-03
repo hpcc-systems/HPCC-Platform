@@ -20,7 +20,7 @@ recL := record
   VARSTRING name {MAXLENGTH(11)};
   unsigned  val;
 END;
-  
+
 recR := record
   VARSTRING name {MAXLENGTH(12)};
   unsigned2     val;
@@ -38,7 +38,7 @@ dsL := DATASET([
   {'BARBARB',3},
   {'BEBO',4}
 ], recL);
-  
+
 dsR := DATASET([
   {'BABARA',5},
   {'BABATUNDE',6},
@@ -56,7 +56,7 @@ recO T(recL l,recR r) := TRANSFORM
   self.rname := r.name;
 END;
 
-  
+
 J1 := JOIN(dsL,dsR,left.name[1..*]=right.name[3..*] and left.val<right.val,T(LEFT,RIGHT), ATMOST(left.name[1..*]=right.name[3..*],3));
 
 output(J1);

@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-parentRecord := 
+parentRecord :=
                 RECORD
 unsigned8           id;
 string20            name1_last;
@@ -31,7 +31,7 @@ string5             reason;
 parentDataset := DATASET('test',parentRecord,FLAT);
 
 
-string5 bword(string le,string ri,string5 wo) := if ( le = '' OR ri 
+string5 bword(string le,string ri,string5 wo) := if ( le = '' OR ri
 = '', 'BLANK',wo);
 
 

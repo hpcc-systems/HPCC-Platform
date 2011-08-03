@@ -29,7 +29,7 @@ Layout_SearchBy := record
             string10 PhoneNumber {xpath('PhoneNumber')};
 //            layout_address  Address {xpath('Address')};
 end;
- 
+
 export Layout_Targus_Out := record
             layout_SearchBy                       SearchBy {xpath('SearchBy')};
 //            layout_ResponseHeader ResponseHeader {xpath('ResponseHeader')};
@@ -37,7 +37,7 @@ export Layout_Targus_Out := record
             //layout_VerifyExpressResult VerifyExpressResult {xpath('VerifyExpressResult')};
 end;
 
- 
+
 
 ds := dataset('ds', Layout_Targus_Out, xml);
 output(ds);

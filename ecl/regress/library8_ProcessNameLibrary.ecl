@@ -18,7 +18,7 @@
 
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 unsigned6       did;
 string20        surname;
@@ -27,7 +27,7 @@ integer2        age := 25;
 string100       extra;
             END;
 
-slimRecord := 
+slimRecord :=
             RECORD
 unsigned6       did;
 string20        surname;

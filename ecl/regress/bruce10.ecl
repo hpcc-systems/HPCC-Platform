@@ -55,7 +55,7 @@ exset := project(ep, mapexport(left));
 
 dsaddthem := dataset([{2098,'TN','Memphis FTZ'}, {2308, 'TX', 'San Antonio'},
     {3411, 'ND', 'Fargo'}, {4113, 'IN', 'Evansville'}], newstruct);
-    
+
 outset := exset + newports+dsaddthem;
 outsort := sort(outset, portnumber);
 outdedup := dedup(outsort, portnumber);

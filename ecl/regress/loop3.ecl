@@ -21,7 +21,7 @@
 //conclusion - it would probably be ugly because of the count(left) kind of semantics.
 //also loop4 is preferred because less messy.
 
-stepRecord := 
+stepRecord :=
             record
 string          next;
             end;
@@ -30,7 +30,7 @@ stackRecord :=
             record
 unsigned        value;
             end;
-    
+
 stateRecord :=
             record
 unsigned        step;
@@ -51,13 +51,13 @@ stateRow processNext(stateRow in, dataset(stackRecord) in) := FUNCTION
                        '~'=>in[1..tos-1] + row(stackRecord, self.value := -in[tos].value);
                        in + row(stackRecord, self.value = (integer)next));
     END;
-            
-            
+
+
 initialRows := dataset([], stackRecord);
 initialState := dataset([{1}], stateRecord);
 
-result := LOOP(initialRows, initialState, 
-                actions[rows(right)[1].state] != '.', 
+result := LOOP(initialRows, initialState,
+                actions[rows(right)[1].state] != '.',
                 processNext(actions[rows(right)[1].step], rows(left)),
                 project(rows(right),transform(stateRecord, self.step = right.step+1)))
 

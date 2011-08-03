@@ -26,7 +26,7 @@ fi i1(fi l,fi r) := transform
   end;
 
 fs := sort(fg,-per_dob);
-fit := iterate(fs,i1(left,right)); 
+fit := iterate(fs,i1(left,right));
 
 fd := dedup(fit,per_dob);
 f := group(fd);

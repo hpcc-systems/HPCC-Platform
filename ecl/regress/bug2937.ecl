@@ -17,8 +17,8 @@
 ############################################################################## */
 
 rec := record
- string10 lname; 
- string10 fname;  
+ string10 lname;
+ string10 fname;
 end;
 
 head := dataset('header',rec,flat);
@@ -35,7 +35,7 @@ new_head := rollup(head, true, keep_newest(left, right));
 
 typeof(head) keep_newestx(rec l, rec r) := transform
  self.lname := if(l.lname='gavin', l, r).lname;
- self := if(l.lname='richard', l, r);    
+ self := if(l.lname='richard', l, r);
 end;
 
 new_headx := rollup(head, true, keep_newestx(left, right));

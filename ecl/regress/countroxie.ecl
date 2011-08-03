@@ -18,7 +18,7 @@
 
 #option ('targetClusterType', 'roxie');
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        duns_business_id;
 string10        forename;

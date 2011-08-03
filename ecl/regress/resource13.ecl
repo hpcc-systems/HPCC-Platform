@@ -19,7 +19,7 @@
 #option ('optimizeGraph', false);
 __set_debug_option__('optimizeDiskRead', 0);
 
-baseRecord := 
+baseRecord :=
             RECORD
 unsigned8       id;
 string20        surname;
@@ -32,15 +32,15 @@ unsigned8       age;
 integer xxthreshold := 10           : stored('threshold');
 
 baseTable := nofold(dataset([
-        {1, 'Halliday','Gavin',31},
-        {2, 'Halliday','Liz',30},
-        {3, 'Salter','David',10},
-        {4, 'Salter','Abi',10},
-        {5, 'Stott','Liz',30},
+        {1, 'Hawthorn','Gavin',31},
+        {2, 'Hawthorn','Mia',30},
+        {3, 'Smithe','David',10},
+        {4, 'Smithe','Pru',10},
+        {5, 'Stott','Mia',30},
         {6, 'X','Z', 99}], baseRecord));
 
 
-filteredTable := baseTable(surname <> 'Halliday');
+filteredTable := baseTable(surname <> 'Hawthorn');
 
 //-------------------------------------------
 
