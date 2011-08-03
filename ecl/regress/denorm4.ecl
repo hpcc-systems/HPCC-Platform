@@ -22,7 +22,7 @@ householdRecord := RECORD
 string8   house_id;
 string20  address1;
 string20  zip;
-string2   nl;   
+string2   nl;
     END;
 
 
@@ -38,7 +38,7 @@ string8      person_houseid;
 childPersonRecord x;
     END;
 
-combinedRecord := 
+combinedRecord :=
                 RECORD
 householdRecord;
 unsigned4           numPeople;
@@ -51,7 +51,7 @@ householdDataset := DATASET('househ.d01',householdRecord,FLAT);
 
 
 
-combinedRecord householdToCombined(householdRecord l) := 
+combinedRecord householdToCombined(householdRecord l) :=
                 TRANSFORM
                     SELF.numPeople := 0;
                     SELF.children := [];
@@ -59,7 +59,7 @@ combinedRecord householdToCombined(householdRecord l) :=
                 END;
 
 
-combinedRecord doDenormalize(combinedRecord l, personRecord r) := 
+combinedRecord doDenormalize(combinedRecord l, personRecord r) :=
                 TRANSFORM
                     SELF.numPeople := l.numPeople + 1;
                     SELF.children := l.children + r.x;

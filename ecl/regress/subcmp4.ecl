@@ -37,7 +37,7 @@ dataset(tradeRecord, count(SELF.numTrades)) personTrades;
 unsigned8 holepos;
     END;
 
-householdRecord := 
+householdRecord :=
                 RECORD
 unsigned8           household_id;
 string20            address1;
@@ -56,7 +56,7 @@ boolean                     sameChildren;
 boolean                     sameFirstChild;
     END;
 
-outRecord compareChildren(householdDataset l, householdDataset r) := 
+outRecord compareChildren(householdDataset l, householdDataset r) :=
                 TRANSFORM
                     SELF.household_id := l.household_id;
                     SELF.sameFirstChild := (l.people[1] = r.people[1]);

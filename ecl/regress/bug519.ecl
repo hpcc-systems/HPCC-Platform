@@ -22,7 +22,7 @@ string isEmpty(set of integer a) := IF ( a = [], 'yes','no' );
 string isOneTwoThree(set of integer a) := IF ( a = [1,2,3], 'yes','no' );
 string aboveOneTwo(set of integer a) := IF ( a > [1,2], 'yes','no' );
 string aboveOneThousandEtc(set of integer1 a) := IF ( a > [1000,1001], 'yes','no' );
-string biggerThanMe(set of string a) := IF ( a > ['Gavin','Halliday'], 'yes','no' );
+string biggerThanMe(set of string a) := IF ( a > ['Gavin','Hawthorn'], 'yes','no' );
 
 isEmpty([1,2]);
 isEmpty([]);
@@ -33,4 +33,4 @@ aboveOneTwo([1]);
 aboveOneTwo([1,2]);
 aboveOneTwo([1,2,3]);
 aboveOneThousandEtc([1,2,3]);
-biggerThanMe(['Richard','Chapman']);
+biggerThanMe(['Richard','Drimbad']);

@@ -19,12 +19,12 @@
 
 
 
-doSomething(boolean isFCRA, integer x, integer y) := define function 
+doSomething(boolean isFCRA, integer x, integer y) := define function
 
     unknown := IF(isFCRA, 0, 99) : stored('unknown');
 
 
-   return x+y*unknown; 
+   return x+y*unknown;
 end;
 
 one := 1 : stored('one');

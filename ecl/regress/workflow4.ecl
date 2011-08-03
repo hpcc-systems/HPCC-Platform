@@ -31,6 +31,6 @@ layout_hi Copy(ds l) := TRANSFORM
 END;
 
 norm := NORMALIZE(ds, 2, Copy(LEFT));
-norm2 := norm  : SUCCESS(OUTPUT(norm,, 'adtemp::wf_test', OVERWRITE)); 
+norm2 := norm  : SUCCESS(OUTPUT(norm,, 'adtemp::wf_test', OVERWRITE));
 OUTPUT(COUNT(norm2));
 

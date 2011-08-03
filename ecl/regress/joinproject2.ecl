@@ -18,21 +18,21 @@
 
 #option ('targetClusterType', 'hthor');
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
 integer2        age := 25;
             END;
 
-names2Record := 
+names2Record :=
             RECORD
 string20        surname;
 string10        forename;
 integer2        age2 := 25;
             END;
 
-combRecord := 
+combRecord :=
             RECORD
 string20        surname;
 string10        forename;

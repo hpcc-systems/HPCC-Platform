@@ -37,7 +37,7 @@ dataset(tradeRecord, count(SELF.numTrades)) personTrades;
 unsigned8 holepos;
     END;
 
-householdRecord := 
+householdRecord :=
                 RECORD
 unsigned8           household_id;
 string20            address1;
@@ -55,7 +55,7 @@ typeof(householdDataset.household_id)   household_id;
 dataset(tradeRecord)                    firstPeople;
     END;
 
-outRecord t(householdDataset l) := 
+outRecord t(householdDataset l) :=
                 TRANSFORM
                     SELF.household_id := l.household_id;
                     SELF.firstPeople := (l.people[1].personTrades);

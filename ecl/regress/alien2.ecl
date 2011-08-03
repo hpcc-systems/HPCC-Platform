@@ -30,7 +30,7 @@ ppstring := xstring(2);
 pppstring := xstring(3);
 nameString := string20;
 
-namesRecord := 
+namesRecord :=
             RECORD
 pstring         surname;
 nameString      forename;
@@ -40,9 +40,9 @@ pppString       addr;
 namesTable := dataset('x',namesRecord,FLAT);
 
 namesTable2 := dataset([
-        {'Halliday','Gavin','Slapdash Lane'},
-        {'Halliday','Liz','Slapdash Lane'},
-        {'Salter','Abi','Ashley Road'},
+        {'Hawthorn','Gavin','Slapdash Lane'},
+        {'Hawthorn','Mia','Slapdash Lane'},
+        {'Smithe','Pru','Ashley Road'},
         {'X','Z','Mars'}], namesRecord);
 
 output(namesTable2,,'x');

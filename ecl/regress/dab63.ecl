@@ -32,7 +32,7 @@ r := record,maxlength(2000)
             unicode f13;
   end;
 
-            
+
 
 d1 := dataset('~thor::in::docket_data_cr20041111',r,csv(separator('¦')));
 output(d1);
@@ -40,5 +40,5 @@ output(d1);
 d2 := dataset('~thor::in::docket_data_cr20041111',r,csv(separator(U'¦')));
 output(d2);
 
- 
- 
+
+

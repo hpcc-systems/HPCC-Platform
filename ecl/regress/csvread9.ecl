@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-accountRecord := 
+accountRecord :=
             RECORD
 string      field1{maxlength(100000)};
             END;

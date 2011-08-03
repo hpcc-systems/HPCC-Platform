@@ -16,19 +16,19 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-AkaRecord := 
+AkaRecord :=
   RECORD
     string20 forename;
     string20 surname;
   END;
 
-outputPersonRecord := 
+outputPersonRecord :=
   RECORD
     unsigned id;
     DATASET(AkaRecord) children;
   END;
 
-inputPersonRecord := 
+inputPersonRecord :=
   RECORD
     unsigned id;
     string20 forename;
@@ -37,18 +37,18 @@ inputPersonRecord :=
 
 /*
 inPeople := DATASET (
-  [{1,'Gavin','Halliday'},{1,'Gavin', 'Hall'},{1,'Gawain',''},
-   {2,'Liz','Halliday'},{2,'Elizabeth', 'Halliday'},
+  [{1,'Gavin','Hawthorn'},{1,'Gavin', 'Hall'},{1,'Gawain',''},
+   {2,'Mia','Hawthorn'},{2,'Elizabeth', 'Hawthorn'},
 {2,'Elizabeth','MaidenName'},
-   {3,'Lorraine','Chapman'},
-   {4,'Richard','Chapman'},{4,'John','Doe'}], inputPersonRecord);
+   {3,'Lorraine','Drimbad'},
+   {4,'Richard','Drimbad'},{4,'John','Doe'}], inputPersonRecord);
 */
-inPeople := DATASET ([{1,'Gavin','Halliday'}], inputPersonRecord);
+inPeople := DATASET ([{1,'Gavin','Hawthorn'}], inputPersonRecord);
 
-outputPersonRecord makeChildren(outputPersonRecord l, outputPersonRecord r) := 
+outputPersonRecord makeChildren(outputPersonRecord l, outputPersonRecord r) :=
 TRANSFORM
     SELF.id := l.id;
-    SELF.children := l.children + 
+    SELF.children := l.children +
                      row({r.children[1].forename, r.children[1].surname}, AkaRecord) +
                      row(r.children[3], AkaRecord) +
                      row({r.children(forename<>'')[1].forename, r.children(forename<>'')[1].surname}, AkaRecord) +

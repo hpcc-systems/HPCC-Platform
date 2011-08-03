@@ -24,13 +24,13 @@ rec := record
    string1 EOL := x'0a';
 end;
 
-rec TR(rec l,rec r) := TRANSFORM  
+rec TR(rec l,rec r) := TRANSFORM
    SELF.K1 := r.K1;
    SELF.K2 := r.K2;
    SELF.N := (string3)((integer)l.N + (integer)r.N);
    SELF.EOL := r.EOL;
 end;
-  
+
 
 DS1 := dataset('testddru', rec, flat);
 DS2 := dataset('testddrj', rec, flat);

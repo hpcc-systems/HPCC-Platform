@@ -26,14 +26,14 @@ record1 := record
 end;
 
 record2 := record
-    record1 r21; 
+    record1 r21;
     record1 r22;
 end;
 
 record3 := record
     integer i1;
     integer i2;
-    record1 r1; 
+    record1 r1;
     record1 r1x;
     record2 r2;
     record2 r2x;
@@ -44,7 +44,7 @@ end;
 record3 tranx1(record1 L1, record2 L2, integer i) := transform
     self := L1;
 
-        self.r1.i1 := 1;    
+        self.r1.i1 := 1;
     self.r1.i2 := 2;
     self.r1x := L1;
 

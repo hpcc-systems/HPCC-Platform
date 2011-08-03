@@ -35,7 +35,7 @@ output(pperson, {hashmd5(df),hashmd5(nl)});
 output(pperson, {data20 hashsurname := hashmd5(surname), data10 hashforename := hashmd5(forename)});
 
 
-string compareMD5(data16 l, data16 r) := 
+string compareMD5(data16 l, data16 r) :=
     if(l=r,'MD5 match', 'MD5 do not match "' + l + '","' + r);
 
 

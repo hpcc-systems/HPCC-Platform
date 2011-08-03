@@ -17,8 +17,8 @@
 ############################################################################## */
 
 #option ('targetClusterType', 'hthor');
-//Example of nested 
-namesRecord := 
+//Example of nested
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -51,7 +51,7 @@ impFilterLibrary(dataset(namesRecord) ds, string search, boolean onlyOldies) := 
     export excluded := g(surname = search);
 end;
 
-baseLibrary(dataset(namesRecord) ds) := LIBRARY('FilterLibrary', filterLibrary(ds, 'Halliday', false));
+baseLibrary(dataset(namesRecord) ds) := LIBRARY('FilterLibrary', filterLibrary(ds, 'Hawthorn', false));
 impHallidayLibrary(dataset(namesRecord) ds) := module(baseLibrary(ds)),library(HallidayLibrary)
     export both := group(included,false) + group(excluded, false);
 end;

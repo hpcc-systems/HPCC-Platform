@@ -61,7 +61,7 @@ END;
 %Biggest% := %cnt%;
 SET OF INTEGER %keepem% := [%Smallest%, %FirstQ%, %MeanQ%, %ThirdQ%, %Biggest%];
 #uniquename(stats)
-%stats% := %p%(%temp_id% IN %keepem%); 
+%stats% := %p%(%temp_id% IN %keepem%);
 
 #uniquename(slimmer)
 ds %slimmer%(%newRS% L) :=

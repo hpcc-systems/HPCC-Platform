@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-TypeHelper := 
+TypeHelper :=
                     SERVICE
 string                  padTruncString(unsigned4 len, const string text) : eclrtl,library='eclrtl',entrypoint='rtlPadTruncString';
 unsigned4               getPascalLength(const string physical) : eclrtl,library='eclrtl',entrypoint='rtlGetPascalLength';
@@ -36,7 +36,7 @@ string4                 integerToBcdFixed(unsigned4 digits, integer value) : ecl
 //4. parameter not needed on physicalLength
 
 
-VariableString(integer len) := 
+VariableString(integer len) :=
                 TYPE
 export integer              physicalLength(string physical) := (integer)len;
 export string               load(string physical) := physical;

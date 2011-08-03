@@ -124,7 +124,7 @@ output(IF(r=i,TRUE,FALSE));        // = TRUE
 output(IF(r4=i,TRUE,FALSE));           // = TRUE
 output(IF(r8=i,FALSE,TRUE));           // = TRUE
 
-DECIMAL4_1 d4_1   := 255.1; 
+DECIMAL4_1 d4_1   := 255.1;
 DECIMAL5_2 d5_2   := 255.12;
 
 output('------ DECIMAL                 = 255.1 & 255.12 ?');
@@ -137,10 +137,10 @@ output(ISVALID(transfer(x'ffffff',decimal3)));  // = FALSE;
 
 output('------ QSTRING,STRING & LENGTH = 8 ?');
 
-QSTRING qs120   := 'Seisint';
-output(qs120);                      // = SEISINT
+QSTRING qs120   := 'MixedCase';
+output(qs120);                      // = MIXEDCASE
 STRING s        := qs120;
-output(s);                          // = SEISINT
+output(s);                          // = MIXEDCASE
 output(LENGTH(s));                  // = 8;
 
 SET OF INTEGER1 soI1 := [1,2,3,4,5,6];
@@ -154,14 +154,14 @@ output(IF(0 IN soI1,TRUE,FALSE));   // = FALSE
 
 output('------ STRING SETs;            = TRUE, TRUE & FALSE ?');
 
-output(IF('1' IN soS1,TRUE,FALSE)); // = TRUE 
-output(IF('6' IN soS1,TRUE,FALSE)); // = TRUE 
+output(IF('1' IN soS1,TRUE,FALSE)); // = TRUE
+output(IF('6' IN soS1,TRUE,FALSE)); // = TRUE
 output(IF('0' IN soS1,TRUE,FALSE)); // = FALSE
 
-output('------ TYPEOF;                 = SEISINT & TRUE ?');
+output('------ TYPEOF;                 = MIXEDCASE & TRUE ?');
 
 TYPEOF(s) tos := s;
-output(s);                          // = SEISINT
+output(s);                          // = MIXEDCASE
 output(IF(tos=s,TRUE,FALSE));       // = TRUE
 
 output('------ BOOLEAN to INTEGER      = 1, 0 ?');
@@ -241,8 +241,8 @@ output((INTEGER)'1');               // = 1
 output((INTEGER)'100');             // = 100
 output((INTEGER)'ABC');             // = 0
 
-output('------ STRING  to QSTRING      = SEISINT, INC. BOCA RATON, FL. 33487 ?');
+output('------ STRING  to QSTRING      = MIXED CASE, INC. BOCA RATON, FL. 33487 ?');
 
-output((QSTRING)'Seisint, Inc.');   // = SEISINT, INC.
+output((QSTRING)'Mixed Case, Inc.');   // = MIXED CASE, INC.
 output((QSTRING)'Boca Raton, Fl.'); // = BOCA RATON, FL.
 output((QSTRING)'33487');           // = 33487

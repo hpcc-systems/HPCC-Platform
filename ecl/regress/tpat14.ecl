@@ -33,7 +33,7 @@ pattern p1 := any+?;
 pattern p2 := PATTERN('[^[]');
 pattern s := p1 p2;
 
-results := 
+results :=
     record
         MATCHTEXT;
     end;

@@ -27,5 +27,5 @@ WelcomeFunction := WelcomeEnglish;
 WelcomeFunction := WelcomeFrench;
 #end
 
-WelcomeFunction('Gavin Halliday');
+WelcomeFunction('Gavin Hawthorn');
 

@@ -37,7 +37,7 @@ dataset(tradeRecord, count(SELF.numTrades)) personTrades;
 unsigned8 holepos;
     END;
 
-householdRecord := 
+householdRecord :=
                 RECORD
 unsigned8           household_id;
 string20            address1;
@@ -50,7 +50,7 @@ string10            postcode;
 
 householdDataset := DATASET('test',householdRecord,FLAT);
 
-householdRecord copyAll(householdRecord l, householdRecord r) := 
+householdRecord copyAll(householdRecord l, householdRecord r) :=
 TRANSFORM
     SELF := r;
 END;

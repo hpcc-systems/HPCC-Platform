@@ -21,7 +21,7 @@ import lib_fileservices;
 rec := RECORD
       STRING10 S;
        END;
-       
+
 srcnode := '10.150.199.2';
 srcdir  := '/c$/test/';
 

@@ -24,7 +24,7 @@ EXPORT string1 Source_Group(string2 sr) := MAP(sr  IN  ['MA', 'RV', 'ED', 'WD', 
      sr  IN  ['DC', 'MW'] => 'E',
      'C');
 
-EXPORT string1 Source_Group2(string2 sr) := 
+EXPORT string1 Source_Group2(string2 sr) :=
     CASE(sr,
     'MA'=>'A', 'RV'=>'A', 'ED'=>'A', 'WD'=>'A', 'ID'=>'A', 'MD'=>'A', 'ND'=>'A', 'FD'=>'A', 'OD'=>'A', 'TD'=>'A', 'VD'=>'A', 'CD'=>'A', 'RD'=>'A', 'AD'=>'A', 'AV'=>'A', 'EV'=>'A', 'IV'=>'A', 'XV'=>'A', 'FV'=>'A', 'TV'=>'A', 'MV'=>'A', 'WV'=>'A', 'OV'=>'A', 'SV'=>'A', 'NV'=>'A',
     'JD'=>'B', 'PD'=>'B',
@@ -38,7 +38,7 @@ EXPORT boolean Source_is_XQMZ(string2 src) := Source_Group(src)  IN  ['A', 'B'];
 
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

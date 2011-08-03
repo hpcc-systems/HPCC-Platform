@@ -47,7 +47,7 @@ rule EXPx := use(EXPx) '+' T
         | T
         ;
 
-results := 
+results :=
     record
         string Le :=  '!'+MATCHTEXT(EXPx)+'!';
         string tree := 'Tree: '+parseLib.getParseTree();

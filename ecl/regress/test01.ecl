@@ -16,19 +16,19 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-tRec1 := 
+tRec1 :=
     record
         String15 K;
         String10 F1;
     end;
 
-tRec2 := 
+tRec2 :=
     record
         String5  F2;
         String15 K;
     end;
 
-tRec3 := 
+tRec3 :=
     record
         String15 K;
         String10 F1;

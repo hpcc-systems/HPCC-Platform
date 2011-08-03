@@ -18,7 +18,7 @@
 
 #option ('slidingJoins', true);
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -27,7 +27,7 @@ integer2        dadAge;
 integer2        mumAge;
             END;
 
-namesRecord2 := 
+namesRecord2 :=
             record
 string10        extra;
 namesRecord;

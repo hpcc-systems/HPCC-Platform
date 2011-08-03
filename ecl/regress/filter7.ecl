@@ -18,7 +18,7 @@
 
 #option ('optimizeDiskRead', 1);
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

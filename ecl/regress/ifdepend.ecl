@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -25,15 +25,15 @@ integer2        age := 25;
             END;
 
 namesTable := dataset([
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
-        {'Zingo','Abi',10},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
+        {'Zingo','Pru',10},
         {'X','Z'}], namesRecord);
 
 
 boolean isOk := true : stored('isOkay');
 
-x := if(isOk, 
+x := if(isOk,
             namesTable,
             FAIL(namesRecord, 'Not Ok'));
 

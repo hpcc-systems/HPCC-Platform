@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -38,7 +38,7 @@ filterDataset(dataset(namesRecord) ds, string search, boolean onlyOldies) := mod
 end;
 
 
-filtered := filterDataset(namesTable, 'Halliday', true);
+filtered := filterDataset(namesTable, 'Hawthorn', true);
 output(filtered.included,,named('Included'));
 output(filtered.excluded,,named('Excluded'));
 
@@ -47,5 +47,5 @@ grAggregateDataset(grouped dataset(namesRecord) ds, string search, boolean onlyO
     export included := f(cnt != 0);
 end;
 
-grfiltered := grAggregateDataset(group(namesTable, surname), 'Halliday', true);
+grfiltered := grAggregateDataset(group(namesTable, surname), 'Hawthorn', true);
 output(grfiltered.included,,named('GrIncluded'));

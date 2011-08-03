@@ -27,7 +27,7 @@ LOADXML('<section><dataitem>1.1</dataitem></section>');
     #SET (s, '2')
         #FOR (dataitem)
         #DECLARE (s)
-        #SET (s, '3')       
+        #SET (s, '3')
     #END
 #END
 

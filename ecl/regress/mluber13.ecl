@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-rs := 
+rs :=
 RECORD
     STRING line;
 END;
@@ -31,11 +31,11 @@ PATTERN Front := (ANY NOT IN Alpha) | FIRST;
 PATTERN Word := Alpha+;
 PATTERN TrueWord := ((Word BEFORE Back) AFTER Front);
 
-Matches := 
+Matches :=
     record
         STRING50 wrd := MATCHTEXT(Word);
         UNSIGNED4 MatchPos  := MATCHPOSITION(Word);
-        UNSIGNED2 MatchLen  := MATCHLENGTH(Word);       
+        UNSIGNED2 MatchLen  := MATCHLENGTH(Word);
     end;
 
 found := PARSE(ds, line, TrueWord, Matches, BEST, MANY, MAX);
@@ -46,11 +46,11 @@ output(found,, 'a.out',csv,overwrite);
 
 token Word2 := Alpha+;
 
-Matches2 := 
+Matches2 :=
     record
         STRING50 wrd := MATCHTEXT(Word2);
         UNSIGNED4 MatchPos  := MATCHPOSITION(Word2);
-        UNSIGNED2 MatchLen  := MATCHLENGTH(Word2);      
+        UNSIGNED2 MatchLen  := MATCHLENGTH(Word2);
     end;
 
 found2 := PARSE(ds, line, Word2, Matches2);

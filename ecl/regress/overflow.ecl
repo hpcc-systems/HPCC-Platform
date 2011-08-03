@@ -17,17 +17,17 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string          surname{maxlength(24)};
 integer2        age := 25;
             END;
 
 namesTable2 := dataset([
-        {'Halliday',31},
-        {'Halliday Abcdefghij',30},
-        {'Halliday Abcdefghijz',30},
-        {'Halliday Abcdefghijz' + (string)random(),30},
+        {'Hawthorn',31},
+        {'Hawthorn Abcdefghij',30},
+        {'Hawthorn Abcdefghijz',30},
+        {'Hawthorn Abcdefghijz' + (string)random(),30},
         {'X'}], namesRecord);
 
 output(namesTable2);

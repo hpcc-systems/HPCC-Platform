@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-outRecord := 
+outRecord :=
 RECORD
 string500 Current_Did{xpath('Current_Did')};
 END;

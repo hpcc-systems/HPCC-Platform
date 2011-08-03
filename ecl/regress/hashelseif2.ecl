@@ -20,7 +20,7 @@ LOADXML('<xml/>');
 
 
 value := 1;
-#if (value<5) 
+#if (value<5)
   #loop
     #else
     #break

@@ -21,7 +21,7 @@ string20          forename;
 unsigned1         age;
     END;
 
-personRecord := 
+personRecord :=
                 RECORD
 string20            forename;
 string20            surname;
@@ -36,7 +36,7 @@ unsigned1           age;
                 END;
 
 personDataset := DATASET(
-            [{'Gavin','Halliday',[{'Abigail',2},{'Nathan',2}]},
+            [{'Gavin','Hawthorn',[{'Abigail',2},{'Nathan',2}]},
              {'John','Simmons',[{'Jennifer',18},{'Alison',16},{'Andrew',13},{'Fiona',10}]}],personRecord);
 
 

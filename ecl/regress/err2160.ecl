@@ -18,7 +18,7 @@
 
 aaa := DATASET('aaa', {STRING1 f1, STRING1 f2}, hole);
 OUTPUT(aaa, {f1,SIZEOF(aaa),SIZEOF(f1)});
-  
+
 INTEGER4 x := 3;
 sizeOfInt := SIZEOF(x);
 sizeOfInt4 := SIZEOF(INTEGER4);

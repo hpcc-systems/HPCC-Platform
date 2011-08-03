@@ -38,7 +38,7 @@ rule afterId := pattern('');
 rule E := beforeId id afterId;
 
 
-results := 
+results :=
     record
         beforePos := matchposition(beforeId);
         afterPos := matchposition(afterId);

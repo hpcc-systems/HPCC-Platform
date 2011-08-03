@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-inRecord := 
+inRecord :=
             RECORD
 unsigned        box;
 string          text{maxlength(10)};

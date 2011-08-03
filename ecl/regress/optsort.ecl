@@ -30,7 +30,7 @@ test := DATASET('test',testRecord,FLAT);
 
 a := sort(test, {per_surname});
 
-b := a(per_surname <> 'Halliday');
+b := a(per_surname <> 'Hawthorn');
 
 c := sort(test, {per_forename});
 

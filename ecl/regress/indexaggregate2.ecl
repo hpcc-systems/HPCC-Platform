@@ -37,7 +37,7 @@ i := INDEX(d1, irec, '~bsidx');
 
 outrec := RECORD
   unsigned id;
- string ov; 
+ string ov;
 END;
 
 outrec mytr(irec l, outrec r) := TRANSFORM

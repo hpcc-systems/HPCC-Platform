@@ -19,8 +19,8 @@
 DG_OutRec := RECORD
       unsigned4  DG_ParentID;
       string10  DG_firstname;
-      string10  DG_lastname; 
-      unsigned1 DG_Prange;   
+      string10  DG_lastname;
+      unsigned1 DG_Prange;
 END;
 
 DG_FlatFile      := DATASET('FLAT',{DG_OutRec/*,UNSIGNED8 filepos{virtual(fileposition)}*/},FLAT);

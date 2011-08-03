@@ -18,7 +18,7 @@
 
 import macro7b;
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

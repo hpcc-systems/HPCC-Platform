@@ -18,7 +18,7 @@
 
 //Illegal, cannot use stored inside a library module
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -32,13 +32,13 @@ end;
 
 namesTable := dataset('x',namesRecord,FLAT);
 namesTable2 := dataset([
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
-        {'Salter','Abi',10},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
+        {'Smithe','Pru',10},
         {'X','Z'}], namesRecord);
 
 filtered := LIBRARY('NameFilter', NameFilterLibrary(namesTable, 'Smith'));
 output(filtered.included,,named('Included'));
 
-filtered2 := LIBRARY('NameFilter', NameFilterLibrary(namesTable, 'Halliday'));
+filtered2 := LIBRARY('NameFilter', NameFilterLibrary(namesTable, 'Hawthorn'));
 output(filtered2.excluded,,named('Excluded'));

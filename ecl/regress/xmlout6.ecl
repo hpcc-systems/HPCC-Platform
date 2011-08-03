@@ -17,13 +17,13 @@
 ############################################################################## */
 
 //noroxie
-phoneRecord := 
+phoneRecord :=
             RECORD
 string5         areaCode{xpath('@areaCode')};
 udecimal12      number{xpath('@number')};
             END;
 
-contactrecord := 
+contactrecord :=
             RECORD
 phoneRecord     phone;
 boolean         hasemail{xpath('@hasEmail')};
@@ -32,13 +32,13 @@ string              email;
                 end;
             END;
 
-bookRec := 
+bookRec :=
     RECORD
 string      title;
 string      author;
     END;
 
-personRecord := 
+personRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -54,8 +54,8 @@ string2         endmarker := '$$';
             END;
 
 namesTable := dataset([
-        {'Halliday','Gavin','09876',123456,true,'07967',838690, 'n/a','n/a',true,'gavin@edata.com',[{'To kill a mocking bird','Lee'},{'Zen and the art of motorcycle maintainence','Pirsig'}], ALL},
-        {'Halliday','Abigail','09876',654321,false,'','',false,[{'The cat in the hat','Suess'},{'Wolly the sheep',''}], ['Red','Yellow']}
+        {'Hawthorn','Gavin','09876',123456,true,'07967',838690, 'n/a','n/a',true,'gavin@edata.com',[{'To kill a mocking bird','Lee'},{'Zen and the art of motorcycle maintainence','Pirsig'}], ALL},
+        {'Hawthorn','Abigail','09876',654321,false,'','',false,[{'The cat in the hat','Suess'},{'Wolly the sheep',''}], ['Red','Yellow']}
         ], personRecord);
 
 output(namesTable,,'REGRESS::TEMP::output.xml',overwrite,xml(heading('','')));

@@ -24,8 +24,8 @@ childRecord := RECORD
   unsigned id;
   string10 name;
 END;
-  
-namesRecord := 
+
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

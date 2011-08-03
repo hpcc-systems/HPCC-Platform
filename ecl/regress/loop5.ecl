@@ -19,7 +19,7 @@
 //Variation on loop3 except the rhs is a row rather than a dataset.  It makes the code cleaner,
 //but still ugly because of count(rows(left))
 
-stepRecord := 
+stepRecord :=
             record
 string          next;
             end;
@@ -28,7 +28,7 @@ stackRecord :=
             record
 unsigned        value;
             end;
-    
+
 stateRecord :=
             record
 unsigned        step;
@@ -48,13 +48,13 @@ processNext(string next, dataset(stackRecord) in) := FUNCTION
                        '~'=>in[1..tos-1] + row(transform(stackRecord, self.value := -in[tos].value)),
                        in + row(transform(stackRecord, self.value := (integer)next)));
     END;
-            
-            
+
+
 initialRows := dataset([], stackRecord);
 initialState := dataset([1], stateRecord);
 
-result := LOOP(initialRows, initialState, 
-                actions[right.step].next != '.', 
+result := LOOP(initialRows, initialState,
+                actions[right.step].next != '.',
                 processNext(actions[right.step].next, rows(left)),
                 project(rows(right), transform(stateRecord, self.step := left.step+1)));
 

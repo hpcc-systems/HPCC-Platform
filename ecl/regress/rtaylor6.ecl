@@ -33,9 +33,9 @@ Self.field5 := '';
 END;
 
 SeedRec := dataset([{'ZZZ','ZZZ-12345678','ZZZZ12345789','ZZZZZZ',''}],layout);
-fake_data := normalize(seedrec,88377,tra(Left)); 
+fake_data := normalize(seedrec,88377,tra(Left));
 output(fake_data,,'RTTEMP::fake_data',OVERWRITE);
 
-foo := DATASET('RTTEMP::fake_data',layout,THOR); 
+foo := DATASET('RTTEMP::fake_data',layout,THOR);
 output(foo(field4='ZZZZZZ'));
 

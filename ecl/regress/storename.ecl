@@ -42,7 +42,7 @@ output(z(id > 10));
 string2 previous_file := '' : stored('AccessPreviousFile');
 boolean prev_file := previous_file = 'on';
 
-export version := 
+export version :=
     if(prev_file,
         '20021031',
         '20021125');

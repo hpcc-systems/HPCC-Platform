@@ -18,7 +18,7 @@
 
 #option ('globalFold', false);
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -28,7 +28,7 @@ integer2        age := 25;
 namesTable := dataset('x',namesRecord,FLAT);
 
 integer whichcolumn := 1 : stored('whichcolumn');
-string firstsurname := 'Halliday' : stored('name');
+string firstsurname := 'Hawthorn' : stored('name');
 
 //ensure the name/rundate are generated at the head and commoned up...
 x := sort(namesTable, (case(whichcolumn,1=>surname,2=>forename,(string)age)));

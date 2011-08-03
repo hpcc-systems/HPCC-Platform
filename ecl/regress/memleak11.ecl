@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-StringLibx := service 
+StringLibx := service
   string CleanAddress(const string src) : olertl,library='dab',
-  entrypoint='rtlCleanAddress'; 
+  entrypoint='rtlCleanAddress';
   stringlibx.cleanAddress(stringLibx.CleanAddress('13165,,ST'));

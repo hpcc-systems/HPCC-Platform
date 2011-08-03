@@ -19,5 +19,5 @@
 import std.system.thorlib;
 
 d := dataset('CFB::rawfile', {integer4 aa}, pipe('hello ' + thorlib.node()));
-output(d); 
+output(d);
 

@@ -16,8 +16,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-//Example of nested 
-namesRecord := 
+//Example of nested
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -33,7 +33,7 @@ filterLibrary(dataset(namesRecord) ds, string search, boolean onlyOldies) := mod
 end;
 
 
-hallidayLibrary(dataset(namesRecord) ds) := module(filterLibrary(ds, 'Halliday', false))
+hallidayLibrary(dataset(namesRecord) ds) := module(filterLibrary(ds, 'Hawthorn', false))
     export both := group(included,false) + group(excluded, false);
 end;
 

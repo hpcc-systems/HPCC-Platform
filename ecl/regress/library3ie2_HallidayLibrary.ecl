@@ -16,8 +16,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-//Example of nested 
-namesRecord := 
+//Example of nested
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -45,7 +45,7 @@ impHallidayLibrary(dataset(namesRecord) ds) := module,library(HallidayLibrary)
     filterArgs := MODULE(IFilterLibraryArgs)
         export integer SomeUndefinedMember;
         export dataset(namesRecord) ds := ^.ds;         // phew scope access syntax saved me
-        export search := 'Halliday';
+        export search := 'Hawthorn';
         export onlyOldies := (SomeUndefinedMember <> 99);
     end;
     shared baseLibrary := LIBRARY('FilterLibrary', filterLibrary(filterArgs));

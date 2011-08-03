@@ -50,7 +50,7 @@ string20            middle;
               end;
 
 
-LayoutContact0 := 
+LayoutContact0 :=
             record
 unsigned        id;
 integer2        flags;
@@ -59,7 +59,7 @@ LayoutName      master;
 LayoutName      slave;
             end;
 
-LayoutContact1 := 
+LayoutContact1 :=
             record
 unsigned        id;
 integer2        flags;
@@ -88,7 +88,7 @@ output(i01(id=10 and value < 1000));
 
 ds1 := dataset('ds1', LayoutContact1, thor);
 i1 := index(ds1, { id, flags }, { ds1 }, 'i1');
-buildindex(i1);             
+buildindex(i1);
 output(i1(id=10));// and value < 1000));
 output(i1(id=10 and value < 1000));
 output(i1(id=10 and master.forename = 'Gavin'));

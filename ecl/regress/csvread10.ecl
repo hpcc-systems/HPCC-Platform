@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-inRecord := 
+inRecord :=
             RECORD
 unsigned        line;
 string20        className;

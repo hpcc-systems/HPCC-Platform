@@ -18,7 +18,7 @@
 
 import lib_stringlib;
 
-InValid_CITY(string s) := 
+InValid_CITY(string s) :=
     WHICH(s[1]=' ' and length(trim(s))>0,
         stringlib.stringfind('"\'',s[1],1)<>0 and stringlib.stringfind('"\'',s[length(trim(s))],1)<>0,
         stringlib.stringtouppercase(s)<>s,length(trim(s))<>length(trim(stringlib.stringfilter(s,'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\' <>{}[]-^=!+&,./'))),

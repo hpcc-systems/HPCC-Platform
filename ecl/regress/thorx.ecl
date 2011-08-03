@@ -29,13 +29,13 @@ cityzips := dataset('cityzips2.hex', citylayout, flat);
 cityascii := record
   string2 state;
   string4 abbr_city;
-  string3 zip; 
+  string3 zip;
   integer1 metro_code;
   string20 city;
 end;
 
-cityascii fixem(citylayout input) := 
-    transform 
+cityascii fixem(citylayout input) :=
+    transform
       self.state := input.state;
       self.abbr_city := input.abbr_city;
       self.zip := input.zip;

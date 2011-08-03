@@ -56,6 +56,6 @@ rawfile := dataset('regress::nestfile', rec, THOR, preload);
 filtered := rawfile(
  keyed(abc.mangleRec(100, 10, unkeyable) = 37)
 );
- 
+
 output(filtered,,'fout', XML, OVERWRITE)
 

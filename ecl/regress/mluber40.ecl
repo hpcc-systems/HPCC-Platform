@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -34,7 +34,7 @@ string20 surname;
 unsigned8 seq;
     end;
 
-r t(namesRecord l, unsigned8 c) := 
+r t(namesRecord l, unsigned8 c) :=
     transform
         self.seq := c;
         self := l;

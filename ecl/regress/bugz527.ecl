@@ -22,7 +22,7 @@ rec := Record
   male := SUM(GROUP,IF(person.per_sex IN ['1'], 1, 0));
 END;
 
-tab := TABLE (person, rec); // This works against ***SOME*** clusters 
-//tab := TABLE (person, rec, 1);    // This works against ***ALL*** clusters 
+tab := TABLE (person, rec); // This works against ***SOME*** clusters
+//tab := TABLE (person, rec, 1);    // This works against ***ALL*** clusters
 OUTPUT(tab);
 

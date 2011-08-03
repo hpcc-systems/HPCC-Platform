@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-nameRecord := 
+nameRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -48,7 +48,7 @@ end;
 
 
 //output(project(addressTable, t(LEFT)));
-                
+
 addressRecord t2(addressRecord l) := transform
     nameRecord tname(nameRecord lname) := transform
         self.age := if(lname.age = 11, skip, lname.age + 1);
@@ -61,7 +61,7 @@ end;
 
 
 //output(project(addressTable, t2(LEFT)));
-                
+
 
 addressRecord t3(addressRecord l) := transform
     nameRecord tname(nameRecord lname) := transform,skip(lname.age != 12)
@@ -75,7 +75,7 @@ end;
 
 
 output(project(addressTable, t3(LEFT)));
-                
+
 addressRecord t4(addressRecord l) := transform
     nameRecord tname(nameRecord lname) := transform
         self.age := if(lname.age = 11, skip, lname.age + 1);
@@ -88,4 +88,4 @@ end;
 
 
 output(project(addressTable, t4(LEFT)));
-                
+

@@ -18,7 +18,7 @@
 
 #option('targetClusterType', 'roxie');
 
-mainRecord := 
+mainRecord :=
         RECORD
 qstring14           surname;
 integer8            sequence;

@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname := '?????????????';
 string10        forename := '?????????????';
@@ -33,7 +33,7 @@ string30        addr := 'Unknown';
 namesTable := dataset('nt', namesRecord, thor);
 addressTable := dataset('at', addressRecord, thor);
 
-JoinRecord := 
+JoinRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -41,7 +41,7 @@ integer2        age := 25;
 string30        addr;
             END;
 
-JoinRecord JoinTransform1 (namesRecord lo, namesRecord l, addressRecord r) := 
+JoinRecord JoinTransform1 (namesRecord lo, namesRecord l, addressRecord r) :=
                 TRANSFORM
                     SELF.addr := r.addr;
                     SELF.age := hash64(l.forename, hash64(lo.surname,2,3));
@@ -51,7 +51,7 @@ JoinRecord JoinTransform1 (namesRecord lo, namesRecord l, addressRecord r) :=
 
 //output(join (NamesTable, AddressTable, LEFT.surname = RIGHT.surname, JoinTransform1 (LEFT, RIGHT), LEFT OUTER));
 
-JoinRecord JoinTransform2 (namesRecord lo, namesRecord l, addressRecord r) := 
+JoinRecord JoinTransform2 (namesRecord lo, namesRecord l, addressRecord r) :=
                 TRANSFORM
                     SELF.addr := r.addr;
                     SELF.age := hash64(l.forename, hash64(lo.surname,2,3));

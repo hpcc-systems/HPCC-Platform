@@ -24,5 +24,5 @@ actions := sequential(
     output((string)random(),named('activeInstanceNumber')),
     output(currentNumber),
     output(currentNumber + '!'));
-    
+
 actions : WHEN(CRON('*/9 * * * *'));

@@ -20,22 +20,22 @@ person := dataset('person', { unsigned8 person_id, string1 per_sex, string2 per_
 tr001 := COUNT(person);
 
 LayoutProject6_Formatted:= record
-String18 Cid; 
-String9 per_cid; 
-String3 U1; 
-String3 U8; 
-String9 U17; 
-String4 U21; 
-String3 U33; 
-String3 U46; 
-String3 U53; 
-String3 U56; 
-String3 S2; 
-String3 S8; 
-String3 S12; 
-String9 S22; 
-String4 S23; 
-String5 S41; 
+String18 Cid;
+String9 per_cid;
+String3 U1;
+String3 U8;
+String9 U17;
+String4 U21;
+String3 U33;
+String3 U46;
+String3 U53;
+String3 U56;
+String3 S2;
+String3 S8;
+String3 S12;
+String9 S22;
+String4 S23;
+String5 S41;
 String3 S60;
 end;
 
@@ -52,7 +52,7 @@ JoinRecord := record
                 integer8 __masterpos;
               end;
 
-JoinRecord JoinTransform (SuperComputerOutput l, fileProject6_formatted r) := 
+JoinRecord JoinTransform (SuperComputerOutput l, fileProject6_formatted r) :=
                 transform
                    self.ValuesMatchFlag := ((integer2) l.tr001 = (integer2) r.u8);
                    self.MyValue := l.tr001;
@@ -60,9 +60,9 @@ JoinRecord JoinTransform (SuperComputerOutput l, fileProject6_formatted r) :=
                    self := l;
                  end;
 
-JoinedCompare := join (SuperComputerOutput, fileProject6_formatted, 
-//                     LEFT.per_cid[1..7] = RIGHT.per_cid[1..7], 
-                       LEFT.per_cid = (data)RIGHT.per_cid, 
+JoinedCompare := join (SuperComputerOutput, fileProject6_formatted,
+//                     LEFT.per_cid[1..7] = RIGHT.per_cid[1..7],
+                       LEFT.per_cid = (data)RIGHT.per_cid,
                        JoinTransform (LEFT, RIGHT));
 
 output (choosen (JoinedCompare, 100), , 'out.d00');

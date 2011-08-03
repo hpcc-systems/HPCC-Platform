@@ -17,13 +17,13 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
             END;
 
-personRecord := 
+personRecord :=
             RECORD(namesRecord)
 integer2        age := 25;
             END;

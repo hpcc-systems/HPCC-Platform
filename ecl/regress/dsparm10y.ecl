@@ -20,7 +20,7 @@
 ds := dataset('ds', {String10 name; string20 last_name; }, FLAT);
 
 dataset f(virtual dataset({String10 name;}) d) := d(name = 'fred');
-   
-integer g(virtual dataset d) := count(f(d));      
+
+integer g(virtual dataset d) := count(f(d));
 
 g(ds);

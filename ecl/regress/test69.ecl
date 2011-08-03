@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-tRec1 := 
+tRec1 :=
     record
         String15 K := '!';
         String9 N := '0';

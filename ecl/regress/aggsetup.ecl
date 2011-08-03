@@ -19,8 +19,8 @@
 import AggCommon;
 AggCommon.CommonDefinitions();
 
-d := dataset([{'Halliday','Gavin',35,['Pride and Predudice','Treasure Island']},
-              {'Halliday','Abigail',2,['Where the wild things are','Maisy']},
+d := dataset([{'Hawthorn','Gavin',35,['Pride and Predudice','Treasure Island']},
+              {'Hawthorn','Abigail',2,['Where the wild things are','Maisy']},
               {'Smith','John',57,['Budgetting']},
               {'Smith','Gavin',12,['100 things to do with a dead cat','The bookseller of Kabul']}
               ], namesRecord);

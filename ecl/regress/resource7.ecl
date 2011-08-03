@@ -18,7 +18,7 @@
 
 __set_debug_option__('staticResource',1);
 
-baseRecord := 
+baseRecord :=
             RECORD
 unsigned8       id;
 string20        surname;
@@ -31,11 +31,11 @@ baseTable := DATASET('base', baseRecord, THOR);
 filteredTable2 := dedup(baseTable, forename, all);
 
 
-baseRecord t(baseRecord l) := 
+baseRecord t(baseRecord l) :=
     TRANSFORM
         SELF := l;
     END;
-    
+
 //-------------------------------------------
 
 x := JOIN(baseTable, filteredTable2, LEFT.forename = RIGHT.forename, t(LEFT));

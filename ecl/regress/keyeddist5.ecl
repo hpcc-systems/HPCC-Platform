@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-mainRecord := 
+mainRecord :=
         RECORD
 integer8            sequence;
 string20            forename;

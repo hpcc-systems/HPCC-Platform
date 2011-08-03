@@ -18,7 +18,7 @@
 
 //BUG: #13964 IF() needs to inherit the interesction of dataset information, not just 1st.
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

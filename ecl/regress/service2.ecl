@@ -16,17 +16,17 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-export svc1 := 
+export svc1 :=
     SERVICE
         echo(const string src) : eclrtl,library='eclrtl',entrypoint='rtlEcho';
     END;
 
 
-export integer svc2 := 
+export integer svc2 :=
     SERVICE
         echo(const string src) : entrypoint='rtlEcho';
     END;
-export string svc3 := 
+export string svc3 :=
     SERVICE
         echo(const string src) : eclrtl,library='eclrtl',entrypoint='rtlEcho';
     END;

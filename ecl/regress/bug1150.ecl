@@ -23,14 +23,14 @@ person := dataset('person', { unsigned8 person_id }, thor);
 
 string x1:='a';
 string y1:='b';
- 
+
 x1=y1; //Produces TRUE when it should produce false.
 
 
 output(person,{x1=y1}); //Gives the correct FALSE result.
 
-string x:='a'; 
-string y:='b'; 
+string x:='a';
+string y:='b';
 
 perrec := RECORD
 BOOLEAN flag;

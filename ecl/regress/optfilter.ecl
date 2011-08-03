@@ -31,6 +31,6 @@ test := DATASET('test',testRecord,FLAT);
 
 a := table(test,{per_surname,per_forename});
 
-b:= a(per_surname <> 'Halliday');
+b:= a(per_surname <> 'Hawthorn');
 
 output(b,,'out.d00');

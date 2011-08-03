@@ -20,12 +20,12 @@
 #option ('tempDatasetsUseLinkedRows', true);
 #option ('implicitLinkedChildRows', true);
 
-fileprefix := 'hthor'; 
+fileprefix := 'hthor';
 //----------------------------- Child query related definitions ----------------------------------
 
 // Raw record definitions:
 
-sqHouseRec := 
+sqHouseRec :=
             record
 string          addr;
 string10        postcode;
@@ -33,7 +33,7 @@ unsigned2       yearBuilt := 0;
             end;
 
 
-sqPersonRec := 
+sqPersonRec :=
             record
 string          forename;
 string          surname;
@@ -42,7 +42,7 @@ udecimal8       booklimit := 0;
 unsigned2       aage := 0;
             end;
 
-sqBookRec := 
+sqBookRec :=
             record
 string          name;
 string          author;
@@ -119,18 +119,18 @@ dataset(sqPersonBookIdRec) persons;
             end;
 
 
-sqPersonBookRelatedIdRec := 
+sqPersonBookRelatedIdRec :=
             RECORD
                 sqPersonBookIdRec;
 unsigned4       houseid;
             END;
 
-sqNestedBlob := 
+sqNestedBlob :=
             RECORD
 udecimal8       booklimit := 0;
             END;
 
-sqSimplePersonBookRec := 
+sqSimplePersonBookRec :=
             RECORD
 string20        surname;
 string10        forename;

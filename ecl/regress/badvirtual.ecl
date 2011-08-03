@@ -16,14 +16,14 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-houseRec := 
+houseRec :=
             record
 string          addr;
 string10        postcode;
 unsigned2       yearBuilt := 0;
             end;
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

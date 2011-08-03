@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname := '?????????????';
 string10        forename := '?????????????';
@@ -37,7 +37,7 @@ addressIndex := index(addressRecord, 'address');
 indexRecord := recordof(addressIndex);
 fakeAddressIndex := dataset('addressDs', indexRecord, thor);
 
-JoinRecord := 
+JoinRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -45,11 +45,11 @@ integer2        age := 25;
 string30        addr;
             END;
 
-doAggregate(grouped dataset(JoinRecord) lDs) := 
+doAggregate(grouped dataset(JoinRecord) lDs) :=
     table(lDs, { count(group) });
 
 doJoin(grouped dataset(namesRecord) l, dataset(indexRecord) r) := function
-    JoinRecord JoinTransform (namesRecord l, indexRecord r) := 
+    JoinRecord JoinTransform (namesRecord l, indexRecord r) :=
                     TRANSFORM
                         SELF.addr := r.addr;
                         SELF := l;

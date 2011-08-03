@@ -21,13 +21,13 @@ NamesRec := RECORD
     STRING20  thename;
     STRING20  addr1 := '';
     STRING20  addr2 := '';
-    STRING20  addr3 := '';          
+    STRING20  addr3 := '';
     STRING20  addr4 := '';
 END;
 
 NamesTable := DATASET([
     {1, 'Gavin', '10 Slapdash Lane'},
-    {2, 'Liz', '10 Slapdash Lane', '3 The Cottages'},
+    {2, 'Mia', '10 Slapdash Lane', '3 The Cottages'},
     {0, 'Mr Nobody'},
     {4, 'Mr Everywhere', 'Here', 'There', 'Near', 'Far'}
     ], NamesRec);
@@ -39,7 +39,7 @@ OutRec := RECORD
 END;
 
 
-OutRec NormalizeAddresses(NamesRec L, INTEGER C) := 
+OutRec NormalizeAddresses(NamesRec L, INTEGER C) :=
     TRANSFORM
       SELF := L;
 //      SELF.addr := CHOOSE(C, L.addr1, L.addr2, L.addr3, L.addr4);
@@ -61,13 +61,13 @@ NamesRec := RECORD
     STRING20  thename;
     STRING20  addr1 := '';
     STRING20  addr2 := '';
-    STRING20  addr3 := '';          
+    STRING20  addr3 := '';
     STRING20  addr4 := '';
 END;
 
 NamesTable := DATASET([
     {1, 'Gavin', '10 Slapdash Lane'},
-    {2, 'Liz', '10 Slapdash Lane', '3 The Cottages'},
+    {2, 'Mia', '10 Slapdash Lane', '3 The Cottages'},
     {0, 'Mr Nobody'},
     {4, 'Mr Everywhere', 'Here', 'There', 'Near', 'Far'}
     ], NamesRec);
@@ -79,7 +79,7 @@ OutRec := RECORD
     STRING20  addr;
 END;
 
-OutRec NormalizeAddresses(NamesRec L, INTEGER C) := 
+OutRec NormalizeAddresses(NamesRec L, INTEGER C) :=
     TRANSFORM
 //      SELF := L;
 //      SELF.addr := CHOOSE(C, L.addr1, L.addr2, L.addr3, L.addr4);

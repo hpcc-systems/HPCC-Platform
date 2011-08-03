@@ -24,7 +24,7 @@ string20  per_surname;
 string20  per_forename;
     END;
 
-householdRecord := 
+householdRecord :=
                 RECORD
 unsigned8           id;
 string20            addressText;
@@ -33,12 +33,12 @@ string10            postcode;
                 END;
 
 householdDataset := DATASET([
-        {1,'10 Slapdash Lane',[{1,'Halliday','Gavin'},{2,'Halliday','Liz'}],'SG8'},
+        {1,'10 Slapdash Lane',[{1,'Hawthorn','Gavin'},{2,'Hawthorn','Mia'}],'SG8'},
         {2,'Buck House',[{3,'Windsor','Elizabeth'},{4,'Corgi','Rolph'}],'WC1'},
         {3,'An empty location',[],'WC1'}
         ],householdRecord);
 
-personAggRecord(personRecord ds) := 
+personAggRecord(personRecord ds) :=
             RECORD
                f1 := COUNT(GROUP);
                f2 := SUM(GROUP, ds.person_id);
@@ -48,8 +48,8 @@ personAggRecord(personRecord ds) :=
 
 personSummary := table(householdDataset.people, personAggRecord(householdDataset.people))[1];
 
-rolleduphousehold := table(householdDataset, { id, addressText, postCode, 
-                                               unsigned8 countGroup := personSummary.f1, 
+rolleduphousehold := table(householdDataset, { id, addressText, postCode,
+                                               unsigned8 countGroup := personSummary.f1,
                                                unsigned8 sumGroup := personSummary.f2,
                                                string20 maxSurname := personSummary.f3,
                                                string20 minForename := personSummary.f4  } );

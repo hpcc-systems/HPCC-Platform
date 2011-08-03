@@ -28,7 +28,7 @@ PATTERN before_as := name word_as;
 pattern sentance := before_as ;
 
 
-results := 
+results :=
     record
 //      MATCHTEXT;
         MATCHTEXT(before_as);

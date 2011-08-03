@@ -37,7 +37,7 @@ unsigned1   id3;
 pperson := DATASET('in.d00', ppersonRecord, FLAT);
 
 
-ppersonRecordEx projectFunction(ppersonRecord incoming) := 
+ppersonRecordEx projectFunction(ppersonRecord incoming) :=
     TRANSFORM
         integer rand := random();
         SELF.id := rand;
@@ -50,7 +50,7 @@ ppersonRecordEx projectFunction(ppersonRecord incoming) :=
 
 ppersonEx := project(pperson, projectFunction(left));
 
-ppersonRecordEx projectFunction2(ppersonRecordEx l) := 
+ppersonRecordEx projectFunction2(ppersonRecordEx l) :=
     TRANSFORM,skip(l.id=0)
         string2 init := l.forename[1]+l.surname[1];
         boolean isOk := init='GH';

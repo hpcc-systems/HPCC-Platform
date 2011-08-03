@@ -18,7 +18,7 @@
 
 import dt;
 
-namesRecord := 
+namesRecord :=
             RECORD,maxlength(999)
 string      surname;
 unsigned4   len;

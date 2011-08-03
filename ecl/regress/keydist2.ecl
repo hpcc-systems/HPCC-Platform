@@ -33,7 +33,7 @@ unsigned8 __filepos {virtual(fileposition)};
 
 tmptable2 := dataset([
         {'801', 'YYY','Git', 13, 10},
-        {'811', 'Smith','Gordon', 13, 10},
+        {'811', 'Smith','Horatio', 13, 10},
         {'901', 'Nicholson','Jack', 13, 10},
         {'902', 'Jackson','Samuel', 13, 10},
         {'903', 'Hardy','Laurel', 13, 10},

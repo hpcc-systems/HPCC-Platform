@@ -28,7 +28,7 @@ ds := dataset([
 pattern S := pattern('(ab|cd)+');
 
 
-results := 
+results :=
     record
         string x := MATCHTEXT;
     end;

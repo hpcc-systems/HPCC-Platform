@@ -21,7 +21,7 @@ import std.system.thorlib;
 export MAC_Sequence_Records_StrField(infile,idfield,outfile) := macro
 
 //-- Transform that assigns id field
-//   Assigns idfield according to node.  
+//   Assigns idfield according to node.
 //   Sequential records on a node will have id fields that differ by the total number of nodes.
 #uniquename(tra)
 typeof(infile) %tra%(infile lef,infile ref) := transform
@@ -35,7 +35,7 @@ outfile := iterate(infile,%tra%(left,right),local);
 
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

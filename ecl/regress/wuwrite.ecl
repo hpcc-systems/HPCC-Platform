@@ -24,7 +24,7 @@ export pstring := type
 end;
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -36,9 +36,9 @@ string20            casino := 'Unknown';
             END;
 
 namesTable := dataset([
-        {'Halliday','Gavin',31, '10 Slapdash Lane', 'Las Vegas'},
-        {'Halliday','Liz',30,'Ditto'},
-        {'Salter','Abi',10},
+        {'Hawthorn','Gavin',31, '10 Slapdash Lane', 'Las Vegas'},
+        {'Hawthorn','Mia',30,'Ditto'},
+        {'Smithe','Pru',10},
         {'X','Z'}], namesRecord);
 
 //output(namesTable, THOR);

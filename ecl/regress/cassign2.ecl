@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-choiceRecord := 
+choiceRecord :=
             RECORD
 boolean         include1;
 boolean         include2;
@@ -76,7 +76,7 @@ resultRecord t2(boolean include) := transform
     t(unsigned i) := transform(valueRecord, self.value := i);
     ds(unsigned i) := dataset([1,i,3], valueRecord);
     r(unsigned i) := row(transform(valueRecord, self.value := i*1234));
-    
+
     if not include then
         integer age(unsigned i) := 20 * i;
         string name(string s) := 'Richard ' +  s;
@@ -107,7 +107,7 @@ resultRecord t3(boolean include, boolean flag2) := transform
     t(unsigned i) := transform(valueRecord, self.value := i);
     ds(unsigned i) := dataset([1,i,3], valueRecord);
     r(unsigned i) := row(transform(valueRecord, self.value := i*1234));
-    
+
     if not include then
         integer age(unsigned i) := 20 * i;
         string name(string s) := 'Richard ' +  s;
@@ -118,13 +118,13 @@ resultRecord t3(boolean include, boolean flag2) := transform
 
     if flag2 then
         integer age(unsigned i) := age(i) * 2;
-        string name(string s) := name(s + ' Halliday');
+        string name(string s) := name(s + ' Hawthorn');
 //      t(unsigned i) := t(i+100);
         dataset ds(unsigned i) := ds(i+111);
         row r(unsigned i) := r(i *2);
     else
         integer age(unsigned i) := age(i) * 5;
-        string name(string s) := name(s + ' Chapman');
+        string name(string s) := name(s + ' Drimbad');
 //      t(unsigned i) := t(i-100);
         dataset ds(unsigned i) := ds(i-111);
         row r(unsigned i) := r(i *8);

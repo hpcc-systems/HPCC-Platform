@@ -18,7 +18,7 @@
 
 export SimpleRepro () := function
     STRING inWuid := '' : STORED('workUnitId');
-    string declaredWuid := 'W20090604-173624'; 
+    string declaredWuid := 'W20090604-173624';
     ds := dataset(workunit(inWuid,0), {STRING Value1}); // this gets a compile error
     // ds := dataset(workunit(declaredWuid,0), {STRING Value1});  //this works
     return sequential(output(ds));

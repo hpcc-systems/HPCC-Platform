@@ -36,7 +36,7 @@ END;
 d_in := dataset([{1, 1}, {1, 2}, {1, 3}, {2, 1}, {3, 2}, {3, 3}], Layout_in);
 output(d_in);
 
-// We want to denormalize some incoming dataset into a 
+// We want to denormalize some incoming dataset into a
 // sequence number and child records
 blank_inner := dataset([{0}], Layout_inner)(false);
 

@@ -17,7 +17,7 @@
 ############################################################################## */
 
 person := dataset('person', { unsigned8 person_id, string2 per_st, string10 per_first_name, string10 per_last_name }, thor);
-tmp_r := 
+tmp_r :=
   record
     st := person.per_st;
   end;
@@ -26,7 +26,7 @@ tmp_t:= table(person(per_st in ['FL']), tmp_r);
 inputTable := tmp_t;
 inputRecord := tmp_r;
 
-seedRecord := 
+seedRecord :=
   record
     string25 per_last_name;
     string15 per_first_name;

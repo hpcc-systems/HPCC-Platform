@@ -17,7 +17,7 @@
 ############################################################################## */
 
 #option ('globalFold', false);
-export display := 
+export display :=
     SERVICE
         echo(const string src) : eclrtl,library='eclrtl',entrypoint='rtlEcho';
     END;

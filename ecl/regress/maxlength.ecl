@@ -37,7 +37,7 @@ r3 := record
     f1a := t2.f1;
     f1b{maxlength(10)} := t2.f1;
     end;
-      
+
 t3 := dataset('d3', r3, thor);
 output(t3);
 

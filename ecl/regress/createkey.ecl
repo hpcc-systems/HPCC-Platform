@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 data10          forename;
@@ -36,7 +36,7 @@ big_endian unsigned6 filepos{virtual(fileposition)};
 empty := dataset(row(transform(namesRecord, self := [])));
 
 forenames := ['Gavin', 'Emma', 'John'];
-surnames := ['Halliday', 'Hicks', 'Jones'];
+surnames := ['Hawthorn', 'Hewit', 'Jones'];
 salaries := [15000,20000,19000,40000];
 cities := ['Rome','London','Mousehole'];
 allnotes := ['', 'Watch list','','Xy13', 'Visa violation'];

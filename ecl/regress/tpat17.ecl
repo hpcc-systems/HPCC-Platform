@@ -21,7 +21,7 @@ r := record
   string line;
   end;
 
-d := dataset(['one','two','THREE','four','Gavin','Halliday','123AGE','WHEN123']
+d := dataset(['one','two','THREE','four','Gavin','Hawthorn','123AGE','WHEN123']
 ,r);
 
 
@@ -29,7 +29,7 @@ token x := pattern('[a-zA-Z]+');
 rule xupper := x in pattern('[A-Z]+');
 rule xlower := x in pattern('[a-z]+');
 rule xgavin := validate(x, matchtext = 'Gavin');
-rule xhalliday := validate(x, matchtext = 'Halliday');
+rule xhalliday := validate(x, matchtext = 'Hawthorn');
 rule x4     := x length(4);
 rule x5_7   := x length(5..7);
 rule xfirst := first x;
@@ -40,7 +40,7 @@ rule xafter := x after pattern('[0-9]+');
 
 rule s := xupper | xlower | xgavin | xhalliday | x4 | x5_7 | xfirst | xlast | xbefore | xafter;
 
-results := 
+results :=
     record
         MATCHTEXT;
         matched(xupper);

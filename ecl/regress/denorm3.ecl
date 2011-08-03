@@ -36,7 +36,7 @@ unsigned4 house_id;
 childPersonRecord x;
     END;
 
-combinedRecord := 
+combinedRecord :=
                 RECORD
 householdRecord;
 unsigned4           numPeople;
@@ -50,7 +50,7 @@ combinedDataset := DATASET('combined',combinedRecord,FLAT);
 
 
 
-combinedRecord householdToCombined(householdRecord l) := 
+combinedRecord householdToCombined(householdRecord l) :=
                 TRANSFORM
                     SELF.numPeople := 0;
                     SELF.children := [];
@@ -58,10 +58,10 @@ combinedRecord householdToCombined(householdRecord l) :=
                 END;
 
 
-combinedRecord doDenormalize(combinedRecord l, personRecord r) := 
+combinedRecord doDenormalize(combinedRecord l, personRecord r) :=
                 TRANSFORM
                     SELF.numPeople := l.numPeople + 1;
-                    SELF.children := l.children + r.x + ROW({99,'Halliday','Gavin'},childPersonRecord);
+                    SELF.children := l.children + r.x + ROW({99,'Hawthorn','Gavin'},childPersonRecord);
                     SELF := l;
                 END;
 

@@ -38,7 +38,7 @@ ppersonEx := DATASET('inex.d00', ppersonRecordEx, FLAT);
 
 ppersonRecordEx projectFunction(ppersonRecord incoming) := Transform
     SELF.age := ppersonEx[1].age;
-    SELF.sex := 1;  
+    SELF.sex := 1;
 
     SELF := incoming;
 END;

@@ -28,7 +28,7 @@ RECORD
         string1 idR;
 END;
 
-sv1 := 1  : stored('sv1'); 
+sv1 := 1  : stored('sv1');
 
 ds1 := nofold(DATASET([{1,'A'}, {1,'B'}, {1,'C'}], rec));
 ds2 := nofold(DATASET([{1,'D'}], rec));

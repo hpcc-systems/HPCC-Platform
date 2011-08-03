@@ -19,7 +19,7 @@
 d := dataset('~local::rkc::person', { string15 name }, flat);
 
 // NOTE: This sntax error used to cause the compiler to crash
-i := index(d, { string11) name }, '\\seisint\\perosn.name_first.key');
+i := index(d, { string11) name }, '\\home\\perosn.name_first.key');
 
 output(i(name='RICHARD'));
 

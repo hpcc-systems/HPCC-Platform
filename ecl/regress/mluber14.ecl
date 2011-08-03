@@ -54,7 +54,7 @@ RECORD
     MatchIObject := MATCHTEXT(Sentence/VP/IObject);
 END;
 
-ParseIt := PARSE(ds, line, Sentence, NLPRec, 
+ParseIt := PARSE(ds, line, Sentence, NLPRec,
                     SKIP([' ','\n','\t','\r']*), PARSE, BEST, many, scan all, NOCASE);
 
 output(ParseIt);

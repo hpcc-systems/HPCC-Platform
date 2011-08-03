@@ -20,7 +20,7 @@
 #option ('filteredReadSpillThreshold',0);
 #option ('optimizeGraph', false);
 
-baseRecord := 
+baseRecord :=
             RECORD
 unsigned8       id;
 string20        surname;
@@ -30,10 +30,10 @@ unsigned8       filepos{virtual(fileposition)}
 
 baseTable := DATASET('base', baseRecord, THOR);
 
-filteredTable := baseTable(surname <> 'Halliday');
+filteredTable := baseTable(surname <> 'Hawthorn');
 
 //-------------------------------------------
 
-x := IF(count(filteredTable) > 99, filteredTable(forename <> 'Gavin'), filteredTable(forename <> 'Liz'));
+x := IF(count(filteredTable) > 99, filteredTable(forename <> 'Gavin'), filteredTable(forename <> 'Mia'));
 
 output(x,,'out.d00');

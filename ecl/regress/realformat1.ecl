@@ -29,4 +29,4 @@ s := x : stored('z');
 output(realx(x));
 output(realx(nofold(x)));
 output(realx(s));
-   
+

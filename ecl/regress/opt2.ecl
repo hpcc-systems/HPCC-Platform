@@ -34,10 +34,10 @@ test := DATASET('test',testRecord,FLAT);
 testRecord ta(test le) := TRANSFORM
         SELF := le;
     END;
-    
+
 a := project(test,ta(LEFT));
 
-b:= a(per_surname <> 'Halliday' and a.per_forename <> 'Gavin');
+b:= a(per_surname <> 'Hawthorn' and a.per_forename <> 'Gavin');
 
 output(b,,'out.d00');
 

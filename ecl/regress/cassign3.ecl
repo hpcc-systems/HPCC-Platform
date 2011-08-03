@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-choiceRecord := 
+choiceRecord :=
             RECORD
 unsigned        value;
             END;
@@ -80,7 +80,7 @@ resultRecord t2(unsigned value) := transform
     t := transform(valueRecord, self.value := 10);
     ds := dataset([1,2,3], valueRecord);
     r := row(transform(valueRecord, self.value := 1234));
-    
+
     if value = 1 then
     elseif value = 2 then
         integer age := 15;

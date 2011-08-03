@@ -39,7 +39,7 @@ string20  surname;
 string20  forename;
     END;
 
-combinedRecord := 
+combinedRecord :=
                 RECORD
 householdRecord;
 unsigned4            numPeople;
@@ -55,7 +55,7 @@ combinedDataset := DATASET('combined',combinedRecord,FLAT);
 
 
 
-combinedRecord householdToCombined(householdRecord l) := 
+combinedRecord householdToCombined(householdRecord l) :=
                 TRANSFORM
                     SELF.numPeople := 0;
                     SELF.hasGavin := 'N';
@@ -65,11 +65,11 @@ combinedRecord householdToCombined(householdRecord l) :=
                 END;
 
 
-combinedRecord doDenormalize(combinedRecord l, personRecord r) := 
+combinedRecord doDenormalize(combinedRecord l, personRecord r) :=
                 TRANSFORM
                     SELF.numPeople := l.numPeople + 1;
                     SELF.hasGavin := if(r.forename='Gavin','Y',l.hasGavin);
-                    SELF.hasLiz := if(r.forename='Liz','Y',l.hasLiz);
+                    SELF.hasLiz := if(r.forename='Mia','Y',l.hasLiz);
                     SELF.code := IF(R.pcode = '7' AND L.code IN  ['1', '5'], '4', L.code);
                     SELF := l;
                 END;

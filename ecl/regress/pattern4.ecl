@@ -45,7 +45,7 @@ infile := DATASET(
      {'aba'}
      ], { string line, string expected := ''});
 
-results := 
+results :=
     record
         MATCHTEXT(grammar);
         MATCHTEXT(y2);          // ZZZ

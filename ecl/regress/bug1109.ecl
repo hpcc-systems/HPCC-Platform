@@ -17,7 +17,7 @@
 ############################################################################## */
 
 person := dataset('person', { unsigned8 person_id }, thor);
-anytablename := person;  
+anytablename := person;
 
 assignx(t) := macro
     self.x := 99;
@@ -32,7 +32,7 @@ end;
 r tra(anytablename l) := transform
     self.y := 99;
     assignx(t)
-    self.z := 1;   
+    self.z := 1;
 end;
 
 c := project(anytablename, tra(left));

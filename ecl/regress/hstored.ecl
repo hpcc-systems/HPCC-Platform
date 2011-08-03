@@ -18,7 +18,7 @@
 
 xx := dataset('ff', {string20 per_last_name, unsigned8 holepos}, thor);
 
-ds := xx(per_last_name='Halliday');
+ds := xx(per_last_name='Hawthorn');
 pagesize := 100 : stored('pagesize');
 fpos := 0 : stored('fpos');
 

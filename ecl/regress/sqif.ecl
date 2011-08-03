@@ -23,7 +23,7 @@ sq.DeclareCommon();
 
 
 trueValue := true : stored('true');
-string20 searchName := 'Gavin Halliday' : stored('SearchName');
+string20 searchName := 'Gavin Hawthorn' : stored('SearchName');
 
 
 lhs := sqHousePersonBookDs;

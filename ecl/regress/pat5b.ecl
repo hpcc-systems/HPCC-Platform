@@ -37,7 +37,7 @@ infile := dataset([
         ], { string line });
 
 
-results := 
+results :=
     record
         '\'' + MATCHTEXT(patWord[1]) + '\'';
         '\'' + MATCHTEXT(patWord[2]) + '\'';

@@ -34,7 +34,7 @@ bound5 := 11 : stored('boound5');
 bound6 := 11 : stored('boound6');
 
 test := nofold(dataset([
-                {'Gavin','Halliday','Slapdash Lane','Great',U'Chishilll',U'Herts'}
+                {'Gavin','Hawthorn','Slapdash Lane','Great',U'Chishilll',U'Herts'}
                 ], rec1));
 
 

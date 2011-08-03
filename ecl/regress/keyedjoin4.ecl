@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-mainRecord := 
+mainRecord :=
         RECORD
 integer8            sequence;
 string20            forename;
@@ -47,7 +47,7 @@ string20        addr;
 peopleDataset := DATASET([{3000,'London'},{3500,'Miami'},{30,'Houndslow'}], peopleRecord);
 
 
-joinedRecord := 
+joinedRecord :=
         RECORD
 integer8            sequence;
 string20            forename;

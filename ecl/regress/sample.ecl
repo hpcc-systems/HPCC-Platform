@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -27,12 +27,12 @@ integer2        age := 25;
 namesTable := dataset('x',namesRecord,FLAT);
 
 namesTable2 := dataset([
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
-        {'Halliday','Emma',30},
-        {'Halliday','Vicky',30},
-        {'Halliday','Jason',30},
-        {'Salter','Abi',10},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
+        {'Hawthorn','Emma',30},
+        {'Hawthorn','Vicky',30},
+        {'Hawthorn','Jason',30},
+        {'Smithe','Pru',10},
         {'X','Z'}], namesRecord);
 
 output(sample(group(namesTable2,surname),2),,'out.d00');

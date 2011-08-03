@@ -40,14 +40,14 @@ pattern ws := [' ','\t',',']*;
 pattern patStart := FIRST | ws;
 pattern patEnd := LAST | ws;
 pattern article := ['A','The','Thou','a','the','thou'];
-pattern patWord := PATTERN('[a-zA-Z]+');        
-pattern Name := PATTERN('[A-Z][a-zA-Z]+');  
+pattern patWord := PATTERN('[a-zA-Z]+');
+pattern Name := PATTERN('[A-Z][a-zA-Z]+');
 pattern Namet := name opt(ws 'the' ws name);
 pattern produced := opt(article ws) ['begat','father of','mother of'];
 pattern produced_by := opt(article ws) ['son of','daughter of'];
 pattern produces_with := opt(article ws) ['wife of'];
 rule progeny := namet ws ( produced | produced_by | produces_with ) ws namet;
-results := 
+results :=
     record
         string Le :=  '!'+MATCHTEXT(Namet[1])+'!';
         string Ri :=  '!'+MATCHTEXT(Namet[2])+'!';
@@ -78,7 +78,7 @@ results2 := record
 
 t := table(p_claims,results2,le,ri);*/
 
-//output(t); 
+//output(t);
 count(outfile1);
 output(choosen(outfile1,1000));
 

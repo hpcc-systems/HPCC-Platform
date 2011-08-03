@@ -37,19 +37,19 @@ rule NP := n
     | use(NP) use(PP)
     ;
 
-rule VP := v NP 
+rule VP := v NP
   | use(VP) penalty(1) use(PP)      // make pp bind to noun if possible.
   ;
 
 rule PP := p NP;
- 
+
 rule S := NP VP
   | self VP
   ;
 
 
 
-results := 
+results :=
     record
         parseLib.getXmlParseTree();
     end;

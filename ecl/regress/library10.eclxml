@@ -19,7 +19,7 @@
  <Module name="example">
   <Attribute name="namesRecord">
 
-export namesRecord := 
+export namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -43,15 +43,15 @@ export filterDataset(dataset(namesRecord) ds, string search, boolean onlyOldies)
     import example;
 #option ('noCache', true);
 namesTable := dataset([
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
-        {'Salter','Abi',10},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
+        {'Smithe','Pru',10},
         {'X','Z'}], example.namesRecord);
 
 filtered := example.filterDataset(namesTable, 'Smith', false);
 output(filtered.included,,named('Included'));
 
-filtered2 := example.filterDataset(namesTable, 'Halliday', false);
+filtered2 := example.filterDataset(namesTable, 'Hawthorn', false);
 output(filtered2.excluded,,named('Excluded'));
  </Query>
 </Archive>

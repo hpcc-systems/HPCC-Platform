@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -25,20 +25,10 @@ integer2        age := 25;
             END;
 
 namesTable := dataset([
-        {'Hwang', 'HClaudia'},
-        {'Halliday', 'Gavin'},
-        {'Ciocanel', 'Ilka'},
-        {'Cobbett-Smith', 'Jacob'},
-        {'Abdo', 'John '},
-        {'Mechkour', 'Mourad'},
-        {'Hicks', 'Nigel'},
-        {'Poulsen', 'Ole'},
-        {'Chapman', 'Richard'},
-        {'Hawkes', 'Roy'},
-        {'Ferrett', 'Scott'},
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
-        {'Salter','Abi',10},
+        {'Hwang', 'James'},
+        {'Hawthorn', 'Gavin'},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Hilda',30},
         {'X','Z'}], namesRecord);
 
 namesRecord t(namesRecord r) := TRANSFORM

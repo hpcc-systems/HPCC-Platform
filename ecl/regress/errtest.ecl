@@ -25,7 +25,7 @@ sum := aaa + bbb;
 
 xx := JOIN(3,4);
 
-ResultRec := RECORD 
+ResultRec := RECORD
     INTEGER fa;
     END;
 

@@ -53,9 +53,9 @@ END;
 // n10 := sizeof(vvss);
 n10x := sizeof(VariableString(10));
 
-//=== record === 
+//=== record ===
 
-r1 := record  
+r1 := record
    string2 sx;
    IFBLOCK(true)
       boolean bx;
@@ -74,5 +74,5 @@ n12 := sizeof(r2);
 r3 := record
    VariableString(10) vsx;
 end;
- 
+
 n13 := sizeof(r3);

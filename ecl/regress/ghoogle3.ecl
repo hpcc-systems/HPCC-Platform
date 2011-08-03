@@ -85,8 +85,8 @@ boolean connectorMatchWpos(searchRecord search, termRecord l, wordPosType rwPos)
 
     wordPosType upperBound(wordPosType oldpos) := oldpos+search.distance;
 
-    return 
-        ((search.distance = 0 and not search.preceeds) OR 
+    return
+        ((search.distance = 0 and not search.preceeds) OR
                 exists(l.words(rwPos >= lowerBound(wPos)))) AND
         ((search.distance = 0) OR
                 exists(l.words(rwPos <= upperBound(wpos))));
@@ -143,7 +143,7 @@ END;
 
 getJoinWord(dataset(candidateRecord) candidate, searchRecord search, wordMatchPrototype matcher, connectorMatchPrototype connector) := function
 
-    candidateRecord extendMatches(candidateRecord l, dataset(wordIndexRecord) matches) := 
+    candidateRecord extendMatches(candidateRecord l, dataset(wordIndexRecord) matches) :=
             TRANSFORM
                 extracted := project(matches, transform(minimalMatchRecord, SELF := LEFT));
                 SELF.matches := l.matches + row(wordsToTerm(extracted, search.termnum));
@@ -154,7 +154,7 @@ getJoinWord(dataset(candidateRecord) candidate, searchRecord search, wordMatchPr
                         keyed(left.doc = right.doc) and
                         matcher(right, search) and
                         connector(search, left.matches(termnum = search.leftTerm), right) and
-                        wordExtraMatch(right, search), GROUP, 
+                        wordExtraMatch(right, search), GROUP,
                         extendMatches(LEFT, rows(RIGHT)));
 
     return matches;
@@ -209,7 +209,7 @@ noninput2(dataset(candidateRecord) in, stageType search1, stageType search2) := 
 doProcessReadAction(searchRecord search, dataset(candidateRecord) in, wordMatchPrototype matcher = wordMatchPrototype) := function
 
     compoundMatchSingleWord(wordIndex wIndex, searchRecord search) := matcher(wIndex, search) AND matchSingleWord(wIndex, search);
-   
+
     return case(search.termKind,
         atomEnum.PlainWord  => in+getReadWord(search, compoundMatchSingleWord),
 //      atomEnum.QuotedWord =>
@@ -220,11 +220,11 @@ doProcessReadAction(searchRecord search, dataset(candidateRecord) in, wordMatchP
 END;
 
 processReadAction(searchRecord search, dataset(candidateRecord) in) := doProcessReadAction(search, in);
-         
+
 processJoinReadAction(searchRecord search, dataset(candidateRecord) in) := function
-    
+
     stageInput := input(in, search.leftStage);
-    matches := 
+    matches :=
         case(search.termKind,
             atomEnum.PlainWord  => getJoinWord(stageInput, search, matchSingleWord, defaultConnectorMatch),
     //      atomEnum.QuotedWord =>
@@ -232,17 +232,17 @@ processJoinReadAction(searchRecord search, dataset(candidateRecord) in) := funct
     //      atomEnum.WildWord   =>
             atomEnum.Date       => getJoinDate(stageInput, search),
             FAIL(candidateRecord, 'Unknown term kind '+(string)(search.termKind)));
-    
-    return noninput(in, search.leftStage) + matches;        
+
+    return noninput(in, search.leftStage) + matches;
 end;
-         
+
 processJoinAction(searchRecord search, dataset(candidateRecord) in) :=
-        noninput2(in, search.leftStage, search.rightTerm) + 
+        noninput2(in, search.leftStage, search.rightTerm) +
         getJoin(input2(in, search.leftStage, search.rightStage), search);
-         
+
 
 processLocalOrAction(searchRecord search, dataset(candidateRecord) in) := function
-    
+
     notAlreadyExists(wordIndex wIndex, searchRecord search) := (wIndex.doc not in set(in, doc));
 
     return case(search.termKind,
@@ -252,7 +252,7 @@ processLocalOrAction(searchRecord search, dataset(candidateRecord) in) := functi
 end;
 
 //--------------------------------- Core processing loop ---------------------------------//
-         
+
 processStage(searchRecord search, dataset(candidateRecord) in) :=
     case(search.action,
         actionEnum.Read         =>processReadAction(search, in),

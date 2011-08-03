@@ -50,8 +50,8 @@ END;
 P_Recs := TABLE(ParentFile, MyOutRec);
 /* P_Recs result set is:
     Rec#    Value1  PVal2       CVal2_1     CVal2_2
-    1       C       A           
-    2       B       B           
+    1       C       A
+    2       B       B
     3       A       C               */
 
 MyOutRec DeNormThem(MyOutRec L, ChildRec R, INTEGER C) := TRANSFORM

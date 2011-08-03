@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -34,7 +34,7 @@ namesTable := dataset('x',namesRecord,FLAT);
 
 i := index(namesTable, { namesTable }, 'i');
 
-f := i(surname = 'Halliday');
+f := i(surname = 'Hawthorn');
 
 l := limit(f, 1000, keyed);
 

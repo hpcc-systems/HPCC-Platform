@@ -18,7 +18,7 @@
 
 #option ('targetClusterType', 'hthor');
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -27,14 +27,14 @@ integer2        age := 25;
             END;
 
 namesTable := dataset([
-        {'Halliday','Gavin','700117',31},
-        {'Halliday','Liz','723213', 30},
-        {'Salter','Abi','900120', 10},
+        {'Hawthorn','Gavin','700117',31},
+        {'Hawthorn','Mia','723213', 30},
+        {'Smithe','Pru','900120', 10},
         {'X','Z'}], namesRecord);
 
 namesRecord filter1(namesRecord le, namesRecord ri) := transform
     chooser1 := ri.dt_last_seen[1..6] > le.dt_last_seen[1..6];
-    self := if(chooser1, ri, le);                           
+    self := if(chooser1, ri, le);
 end;
 
 one_gong := rollup(namesTable, true, filter1(left, right));                     //do the actual rollup to narrow down to one record

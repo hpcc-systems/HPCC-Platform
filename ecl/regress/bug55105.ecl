@@ -29,7 +29,7 @@ layout throwError(layout rec) := transform
    self.i1 := if(rec.i1 != 0,   rec.i1, error('message1'));
    self.s2 := if(rec.s2 != 'c', rec.s2, error('message2'));
 
-   // Without the cast to unicode, syntax check will fail with 
+   // Without the cast to unicode, syntax check will fail with
    // "Error: Incompatible types: expected unicode, given "
    self.u3 := if(rec.u3 != u'x', rec.u3, (unicode) error('message3'));
 

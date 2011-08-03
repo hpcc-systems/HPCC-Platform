@@ -29,6 +29,6 @@ DS := DATASET([{'001','Rec1','Acc001','001'}], RI01_Rec);
 combinedRec := record
 string16 combined;
     end;
-    
+
 p := project(ds, transform(combinedRec, SELF.combined := transfer(LEFT, string16)));
 output(p);

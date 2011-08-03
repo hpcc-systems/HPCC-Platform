@@ -16,19 +16,19 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-rawfile1a := DATASET([{'CHAPMAN'},{'HALLIDAY'},{'RUSHTON'},{'BAYLISS'}], { 
+rawfile1a := DATASET([{'DRIMBAD'},{'HALLIDAY'},{'RUSHTON'},{'BAYLISS'}], {
 string25 xlname});
 outputraw1 := OUTPUT(rawfile1a,,'RKC::TestKeyedJoin', OVERWRITE);
 
-rawfile1 := DATASET('RKC::TestKeyedJoin', { string25 xlname, UNSIGNED8 
+rawfile1 := DATASET('RKC::TestKeyedJoin', { string25 xlname, UNSIGNED8
 __filepos {virtual(fileposition)}}, FLAT);
 
 index1 := INDEX(rawfile1, {xlname,__filepos}, 'RKC::lname.key');
 bld1 := BUILDINDEX(index1, OVERWRITE);
 
-rawfile2a := DATASET([{'CHAPMAN'},{'SMITH'},{'BAYLISS'}], { string25 lname});
+rawfile2a := DATASET([{'DRIMBAD'},{'SMITH'},{'BAYLISS'}], { string25 lname});
 outputraw2 := OUTPUT(rawfile2a,,'RKC::TestKeyedJoin2', OVERWRITE);
-rawfile2 := DATASET('RKC::TestKeyedJoin2', { string25 lname, UNSIGNED8 
+rawfile2 := DATASET('RKC::TestKeyedJoin2', { string25 lname, UNSIGNED8
 __filepos {virtual(fileposition)}}, FLAT);
 
 rawfile2 doJoin(rawfile2 l) := TRANSFORM
@@ -45,9 +45,9 @@ out1 := output(hkjoin);
 out2 := output(fkjoin);
 
 SEQUENTIAL(
-  outputraw1, 
+  outputraw1,
   bld1, //<--- remove the comment and you get an internal error from the code generator
-  outputraw2, 
+  outputraw2,
   out1,
   out2
 )

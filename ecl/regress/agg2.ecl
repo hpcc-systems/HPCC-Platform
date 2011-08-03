@@ -17,7 +17,7 @@
 ############################################################################## */
 
 SHARED friendrec := RECORD
-integer inc; 
+integer inc;
 integer age;
 string2 state := 'fl';
 END;
@@ -47,7 +47,7 @@ counts := TABLE(MyFriends, CountRec);
 count_inc1 := counts[1].NAge;   // Does Not Work !!
 count_inc2 := counts[1].NAge+1;   // Does Not Work !!
 count_inc3 := evaluate(counts[1],counts.NAge);   // Does Not Work !!
-count_age := counts[1].NInc;   
+count_age := counts[1].NInc;
 
 evaluate(counts[1],counts.NAge);
 evaluate(counts[1],counts.NAge2);

@@ -17,9 +17,9 @@
 ############################################################################## */
 
 d := dataset('~local::rkc::person', { string15 name, unsigned8 filepos{virtual(fileposition)} }, flat);
-f := d(name <> 'Halliday') : persist('f');
+f := d(name <> 'Hawthorn') : persist('f');
 
-i := index(f, { f_name := (string11) name, filepos } ,'\\seisint\\person.name_first.key', opt);
+i := index(f, { f_name := (string11) name, filepos } ,'\\home\\person.name_first.key', opt);
 
 
 a1 := i(f_name='RICHARD');

@@ -19,7 +19,7 @@
 #option ('targetClusterType', 'roxie');
 //Check thisnode is handled, this time inside a nested allnodes, with thisnode repeated
 
-mainRecord := 
+mainRecord :=
         RECORD
 string20            word;
 unsigned8           doc;

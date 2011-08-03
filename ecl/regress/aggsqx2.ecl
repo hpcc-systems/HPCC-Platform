@@ -20,7 +20,7 @@ import AggCommon;
 AggCommon.CommonDefinitions();
 
 forceSubQuery(a) := macro
-    { dedup(a+a,true)[1] } 
+    { dedup(a+a,true)[1] }
 endmacro;
 
 persons := sqHousePersonBookDs.persons;

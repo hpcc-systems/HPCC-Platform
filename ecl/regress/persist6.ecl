@@ -17,14 +17,14 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string20        forename;
 integer2        age := 25;
             END;
 
-namesRecord2 := 
+namesRecord2 :=
             RECORD
 string20        forename;
 string20        surname;
@@ -33,7 +33,7 @@ integer2        age := 25;
 
 x := dataset('x',namesRecord,FLAT);
 
-dx := x(surname <> 'Halliday') : persist('storedx');
+dx := x(surname <> 'Hawthorn') : persist('storedx');
 
 dy1 := dx(forename <> 'Gavin') : persist('dy1');
 dy2 := dx(forename <> 'Jason') : persist('dy2');

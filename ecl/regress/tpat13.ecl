@@ -46,7 +46,7 @@ PATTERN roman_numeral := roman_digits in roman_sequence;
 pattern S := roman_numeral;
 
 
-results := 
+results :=
     record
         string outline := MATCHTEXT;
     end;

@@ -42,7 +42,7 @@ AUTHORITY</ATTRIBUTE>
 */
 
 //You should really be able to define this inline....
-passportRec := 
+passportRec :=
                 RECORD
 string              id{xpath('ATTRIBUTE[@name="idNumber"]'),xmldefault('?')};
 string              idType{xpath('ATTRIBUTE[@name="idType"]')};
@@ -66,7 +66,7 @@ output(test,,'out.d00',XML);
 
 <?xml version="1.0" encoding="UTF-8">
 <QLDataset qldsid="dfkj">
-<QLRecord qlrid="afasdf"><Name><Forename>Gavin</Forename><surname>Halliday</surname></Name><age>33</age></QLRecord>
+<QLRecord qlrid="afasdf"><Name><Forename>Gavin</Forename><surname>Hawthorn</surname></Name><age>33</age></QLRecord>
 <QLRecord qlrid="afavsdf"><Name><Forename>David</Forename><surname>Bayliss</surname></Name><age>35</age></QLRecord>
 </QLDataset>
 
@@ -74,7 +74,7 @@ output(test,,'out.d00',XML);
 
 
 
-nameRecord := 
+nameRecord :=
                 RECORD
 string              forename{xpath('Forename')};
 string              surname;

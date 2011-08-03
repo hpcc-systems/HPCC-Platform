@@ -23,7 +23,7 @@ END;
 ds := DATASET('test',r,FLAT);
 
 // legal
-r tranx0(r p1, r p2) := 
+r tranx0(r p1, r p2) :=
 TRANSFORM
     SELF := p1;
 END;
@@ -38,7 +38,7 @@ rst0v := ITERATE(ds,tranx0(LEFT,LEFT));
 rst0u := ITERATE(ds,tranx0(LEFT,ds));
 
 // legal
-r tranx1(r p1) := 
+r tranx1(r p1) :=
 TRANSFORM
     SELF := p1;
 END;
@@ -51,7 +51,7 @@ rst1z := ITERATE(ds,tranx1(LEFT,RIGHT));
 
 
 // illegal
-r tranx2(r p1,r p2, r p3) := 
+r tranx2(r p1,r p2, r p3) :=
 TRANSFORM
     SELF := p1;
 END;

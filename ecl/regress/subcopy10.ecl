@@ -24,7 +24,7 @@ string20  per_surname;
 string20  per_forename;
     END;
 
-householdRecord := 
+householdRecord :=
                 RECORD
 unsigned8           id;
 string20            addressText;
@@ -33,7 +33,7 @@ string10            postcode;
                 END;
 
 householdDataset := DATASET([
-        {1,'10 Slapdash Lane',[{1,'Halliday','Gavin'},{2,'Halliday','Liz'}],'SG8'},
+        {1,'10 Slapdash Lane',[{1,'Hawthorn','Gavin'},{2,'Hawthorn','Mia'}],'SG8'},
         {2,'Buck House',[{3,'Windsor','Elizabeth'},{4,'Corgi','Rolph'}],'WC1'},
         {3,'An empty location',[],'WC1'}
         ],householdRecord);
@@ -42,7 +42,7 @@ forenameRecord := RECORD
 string20  per_forename;
     END;
 
-forenamerecord extractForename(personRecord l) := 
+forenamerecord extractForename(personRecord l) :=
             TRANSFORM
                 SELF := l;
             END;
@@ -57,19 +57,19 @@ output(slimHousehold1);
 slimHousehold1b := table(householdDataset, { id, newPeople := slimmedChildren; });
 output(slimHousehold1b);
 
-slimHouseholdRecord := 
+slimHouseholdRecord :=
                 RECORD
 unsigned8           id;
 DATASET(forenameRecord)   people;
                 END;
 
 
-slimHouseholdRecord slimHousehold(householdRecord l) := 
+slimHouseholdRecord slimHousehold(householdRecord l) :=
             TRANSFORM
                 SELF.people := project(l.people((person_id & 1) <> 0), extractForename(LEFT));
                 SELF := l;
             END;
 
-//Much nicer using 
+//Much nicer using
 slimHousehold2 := project(householdDataset, slimHousehold(LEFT));
 output(slimHousehold2);

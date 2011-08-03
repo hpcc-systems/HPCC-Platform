@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -30,7 +30,7 @@ namesTable := dataset('x',namesRecord,FLAT);
 
 a := LIMIT(namesTable, 1000);
 
-b := a(surname <> 'Halliday');
+b := a(surname <> 'Hawthorn');
 
 c := LIMIT(b, 800, FAIL(99, 'Oh dear too many people'));
 
@@ -38,7 +38,7 @@ output(c,,'out.d00');
 
 d := CASE(namesTable.age, 10=>'Ok',11=>'Poor',99=>ERROR('99 Not allowed'), 'Pass');
 
-e := CASE(namesTable.surname, 'Halliday'=>1,'Chapman'=>2,ERROR('Not a know surname'));
+e := CASE(namesTable.surname, 'Hawthorn'=>1,'Drimbad'=>2,ERROR('Not a know surname'));
 
 f := IF(namesTable.forename = 'Gavin', 'Ok', ERROR('Just not good enough'));
 
@@ -46,9 +46,9 @@ output(namesTable, {surname, forename, age, d, e, f});
 
 
 
-i := index(namesTable, { surname, forename, filepos } ,'\\seisint\\person.name_first.key');
+i := index(namesTable, { surname, forename, filepos } ,'\\home\\person.name_first.key');
 
-string10 searchName := 'Halliday'       : stored('SearchName');
+string10 searchName := 'Hawthorn'       : stored('SearchName');
 
 x := limit(i(surname=searchName), 100);
 
@@ -62,7 +62,7 @@ k := LIMIT(j, 99);
 output(k);
 
 
-l := limit(a(surname <> 'Chapman'), 800, FAIL(99, 'Oh dear too many people'));
+l := limit(a(surname <> 'Drimbad'), 800, FAIL(99, 'Oh dear too many people'));
 
 output(l);
 

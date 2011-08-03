@@ -43,7 +43,7 @@ compute_score(unsigned6 leftdid, unsigned6 rightdid, integer2 leftscore, integer
        );   //take the bigger (might be zero)
 
 format add_score(format l, k2 r) := transform
-        self.score := 
+        self.score :=
             compute_score(l.did, r.did, l.score, 100 div 999) * 1;
     self := l;
 end;

@@ -30,7 +30,7 @@ string20  per_surname;
 unsigned8 holepos;
     END;
 
-parentRecord := 
+parentRecord :=
                 RECORD
 unsigned8           id;
 string20            address1;
@@ -49,7 +49,7 @@ unsigned4 person_id;
 string20  per_surname;
     END;
 
-newParentRecord := 
+newParentRecord :=
                 RECORD
 unsigned8           id;
 string20            address1;
@@ -65,7 +65,7 @@ newChildRecord copyChild(childRecord l) := TRANSFORM
         SELF := l;
     END;
 
-newParentRecord copyProjectChoose(parentRecord l) := 
+newParentRecord copyProjectChoose(parentRecord l) :=
 TRANSFORM
     SELF.children := project(choosen(l.children, 2), copyChild(LEFT));
     SELF := l;
@@ -73,7 +73,7 @@ END;
 
 output(PROJECT(parentDataset,copyProjectChoose(LEFT)),,'out1.d00');
 
-newParentRecord copyChooseProject(parentRecord l) := 
+newParentRecord copyChooseProject(parentRecord l) :=
 TRANSFORM
     SELF.children := choosen(project(l.children, copyChild(LEFT)), 2);
     SELF := l;

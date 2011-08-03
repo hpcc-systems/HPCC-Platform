@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname := '?????????????';
 string10        forename := '?????????????';
@@ -37,7 +37,7 @@ addressTable := dataset('address', addressRecord, THOR);
 dNamesTable := distribute(namesTable, hash(surname));
 dAddressTable := distributed(addressTable, hash(surname));
 
-JoinRecord := 
+JoinRecord :=
             RECORD
 string20        surname1;
 string20        surname2;
@@ -46,7 +46,7 @@ integer2        age := 25;
 string30        addr;
             END;
 
-JoinRecord j1 (namesRecord l, addressRecord r) := 
+JoinRecord j1 (namesRecord l, addressRecord r) :=
                 TRANSFORM
                     SELF.surname1 := l.surname;
                     SELF.surname2 := '';
@@ -56,7 +56,7 @@ JoinRecord j1 (namesRecord l, addressRecord r) :=
 
 Join1 := join (dNamesTable, addressTable, LEFT.surname = RIGHT.surname, j1(LEFT, RIGHT), LEFT OUTER, local) :persist('j1');
 
-JoinRecord j2 (namesRecord l, addressRecord r) := 
+JoinRecord j2 (namesRecord l, addressRecord r) :=
                 TRANSFORM
                     SELF.surname1 := '';
                     SELF.surname2 := r.surname;
@@ -67,7 +67,7 @@ JoinRecord j2 (namesRecord l, addressRecord r) :=
 Join2 := join (namesTable, dAddressTable, LEFT.surname = RIGHT.surname, j2(LEFT, RIGHT), local) :persist('j2');
 
 
-JoinRecord j3 (namesRecord l, addressRecord r) := 
+JoinRecord j3 (namesRecord l, addressRecord r) :=
                 TRANSFORM
                     SELF.surname1 := '';
                     SELF.surname2 := r.surname;

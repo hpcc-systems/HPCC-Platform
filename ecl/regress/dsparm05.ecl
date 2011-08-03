@@ -26,6 +26,6 @@ r := record
 end;
 
 // a function return dataset
-dataset copy_ds(virtual dataset(r) d) := d; 
+dataset copy_ds(virtual dataset(r) d) := d;
 
 count(copy_ds(person{name:=per_first_name,name2:=per_last_name}));

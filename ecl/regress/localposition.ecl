@@ -20,7 +20,7 @@
 #option ('globalFold', false);
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        forename;
 string20        surname;
@@ -55,7 +55,7 @@ namesTable := DATASET([
         { 'Stuart', 'Vilanueva' }
         ], namesRecord);
 
-diskNamesRecord := 
+diskNamesRecord :=
             RECORD
                 namesRecord;
 unsigned8       filepos{virtual(fileposition)};
@@ -67,7 +67,7 @@ string2 hex2(unsigned4 i) := hex1(i DIV 0x10) + hex1(i & 0x0F);
 string4 hex4(unsigned4 i) := hex2(i DIV 0x100) + hex2(i & 0xFF);
 string8 hex8(unsigned4 i) := hex4(i DIV 0x10000) + hex4(i & 0xFFFF);
 string16 hex16(unsigned8 i) := hex8(i DIV (unsigned8)0x100000000) + hex8(i & 0xFFFFFFFF);
- 
+
 diskTable := dataset('~names', diskNamesRecord, thor);
 
 sequential(

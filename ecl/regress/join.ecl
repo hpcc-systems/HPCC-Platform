@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname := '?????????????';
 string10        forename := '?????????????';
@@ -31,15 +31,15 @@ string30        addr := 'Unknown';
             END;
 
 namesTable := dataset([
-        {'Salter','Abi',10},
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
+        {'Smithe','Pru',10},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
         {'Smith','Jo'},
         {'Smith','Matthew'},
         {'X','Z'}], namesRecord);
 
 addressTable := dataset([
-        {'Halliday','10 Slapdash Lane'},
+        {'Hawthorn','10 Slapdash Lane'},
         {'Smith','Leicester'},
         {'Smith','China'},
         {'Smith','St Barnabas House'},
@@ -51,7 +51,7 @@ addressTable := dataset([
 dNamesTable := namesTable;//distribute(namesTable, hash(surname));
 dAddressTable := addressTable;//distributed(addressTable, hash(surname));
 
-JoinRecord := 
+JoinRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -59,7 +59,7 @@ integer2        age := 25;
 string30        addr;
             END;
 
-JoinRecord JoinTransform (namesRecord l, addressRecord r) := 
+JoinRecord JoinTransform (namesRecord l, addressRecord r) :=
                 TRANSFORM
                     SELF.addr := r.addr;
                     SELF := l;
@@ -69,11 +69,11 @@ JoinRecord JoinTransform (namesRecord l, addressRecord r) :=
 
 five := 5 : stored('five');
 
-JoinedF := join (dNamesTable, dAddressTable, 
-                LEFT.surname[1..10] = RIGHT.surname[1..10] AND 
+JoinedF := join (dNamesTable, dAddressTable,
+                LEFT.surname[1..10] = RIGHT.surname[1..10] AND
                 LEFT.surname[11..16] = RIGHT.surname[11..16] AND
                 LEFT.forename[1] <> RIGHT.addr[1],
-                JoinTransform (LEFT, RIGHT), atmost(LEFT.surname[1..10] = RIGHT.surname[1..10] AND 
+                JoinTransform (LEFT, RIGHT), atmost(LEFT.surname[1..10] = RIGHT.surname[1..10] AND
                 LEFT.surname[11..16] = RIGHT.surname[11..16], 10), keep(five), sequential);
 
 

@@ -17,8 +17,8 @@
 ############################################################################## */
 
 #option ('targetClusterType', 'hthor');
-//Example of nested 
-namesRecord := 
+//Example of nested
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

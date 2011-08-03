@@ -19,13 +19,13 @@
 // this may cause memory leak
 //  dd := 3;
 
-  s1 := service 
+  s1 := service
     integer dd() : entrypoint='dd';   //* redefiniton error although it should be ok. <== BUG
     integer ddx() : entrypoint='ddx';
     integer dd() : entrypoint='dd';
   end;
-  
-  s2 := service 
+
+  s2 := service
     integer dd() : entrypoint='dd';   //* redefiniton error although it should be ok. <== BUG
     integer ddx() : entrypoint='ddx';  //* OK although it is already defined in s1
   end;
@@ -34,16 +34,16 @@
 
   s1.dd() + s2.dd();
 
-  r := record 
+  r := record
      integer1 dd;
      integer1 dd;
      integer1 ddx;
      integer1 r_f;
   end;
 
-  r2 := record 
+  r2 := record
      integer1 dd;
      integer1 ddx;
   end;
-  
+
   r_f := 3;

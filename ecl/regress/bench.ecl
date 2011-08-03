@@ -33,14 +33,14 @@ rtl := SERVICE
 END;
 
 unsigned TimeMS() := rtl.msTick();
-    
+
 rec1 := RECORD
      string40 payload1;
          string20 key;
      string40 payload2;
         END;
-       
-       
+
+
 seed := dataset([{'A','0','Z'}], rec1);
 
 rec1 addNodeNum(rec1 L, unsigned4 c) := transform
@@ -83,7 +83,7 @@ test4 := SEQUENTIAL(
 sds := SORT(dsin,key);
 
 rec1 checksort(rec1 l, rec1 r) := TRANSFORM
-  self.key := IF (l.key <= r.key, r.key, 
+  self.key := IF (l.key <= r.key, r.key,
                   ERROR('ERROR: records not in sequence! "' + l.key + '", "'+ r.key + '"'));
   self := r;
 END;
@@ -92,8 +92,8 @@ rollup_ds := ROLLUP(ROLLUP(sds,checksort(LEFT, RIGHT),TRUE,LOCAL),checksort(LEFT
 
 
 test5 := SEQUENTIAL(
-  IF (COUNT(rollup_ds) = 1, 
-     output('Sort order verified'), 
+  IF (COUNT(rollup_ds) = 1,
+     output('Sort order verified'),
      FAIL('ERROR: rollup count did not match expected!')
   ),
   OUTPUT('test5 - read/sort done')
@@ -102,7 +102,7 @@ test5 := SEQUENTIAL(
 
 hds := DISTRIBUTE(dsin,hash(key));
 rec1 checkdist(rec1 l, rec1 r) := TRANSFORM
-  self.key := if (HASH(l.key)%CLUSTERSIZE = HASH(r.key)%CLUSTERSIZE, r.key, 
+  self.key := if (HASH(l.key)%CLUSTERSIZE = HASH(r.key)%CLUSTERSIZE, r.key,
                   ERROR('ERROR: records have different hash values! "' + l.key + '", "'+ r.key + '"'));
   self := r;
 END;
@@ -113,7 +113,7 @@ test6 := SEQUENTIAL(
 );
 
 
-SEQUENTIAL(      
+SEQUENTIAL(
   FileServices.DeleteLogicalFile('bench::wr1',true),
   FileServices.DeleteLogicalFile('bench::wr2',true),
   OUTPUT(TimeMS(),NAMED('time1')),

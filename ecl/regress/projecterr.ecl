@@ -36,7 +36,7 @@ unsigned4   seq;
 
 ppersonRecordEx projectFunction(ppersonRecord incoming, unsigned4 c) := Transform
     SELF.age := 33;
-    SELF.sex := incoming;   
+    SELF.sex := incoming;
     SELF.seq := c;
     SELF := incoming;
 END;

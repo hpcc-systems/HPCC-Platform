@@ -27,4 +27,4 @@ Layout_FormerName := record
 end;
 
 FormerName := dataset('former_name', Layout_FormerName, flat);
-Output(formername( not fnm_suffix in[] )); 
+Output(formername( not fnm_suffix in[] ));

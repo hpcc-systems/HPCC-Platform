@@ -20,7 +20,7 @@ person := dataset('person', { unsigned8 person_id, string2 per_st, unsigned per_
 
 HHSKey := person.per_st + person.per_last_name;
 
-outrec := 
+outrec :=
 {
 integer2 position := 0;
 HHSKey,

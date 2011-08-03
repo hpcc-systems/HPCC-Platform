@@ -25,8 +25,8 @@ RULE WORD := alpha+;
 RULE Article := 'The' | 'A' | 'An';
 RULE NounPhraseComponent := (Word penalty(1)) | (article ws Word);
 
-rs := 
-        RECORD 
+rs :=
+        RECORD
 STRING100   line;
         END;
 

@@ -18,7 +18,7 @@
 
 #option ('globalFold', false);
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -28,13 +28,13 @@ integer2        age := 25;
 ds := dataset('x',namesRecord,FLAT);
 
 
-inRecord := 
+inRecord :=
     RECORD
         string name{xpath('Name')};
         unsigned6 id{xpath('ADL')};
     END;
 
-outRecord := 
+outRecord :=
     RECORD
         string name{xpath('Name')};
         unsigned6 id{xpath('ADL')};
@@ -66,6 +66,6 @@ namesRecord genDefault3(namesRecord l) := TRANSFORM
     SELF := [];
     END;
 
-output(SOAPCALL('ip', 'service', { string20 surname := 'Halliday', string20 forename := 'Gavin';}, DATASET(outRecord), ONFAIL(genDefault1())));
+output(SOAPCALL('ip', 'service', { string20 surname := 'Hawthorn', string20 forename := 'Gavin';}, DATASET(outRecord), ONFAIL(genDefault1())));
 output(SOAPCALL(ds, 'ip', 'service', inRecord, t(LEFT), DATASET(outRecord), ONFAIL(genDefault2(LEFT))));
 output(SOAPCALL(ds, 'ip', 'service', inRecord, t(LEFT), DATASET(outRecord), ONFAIL(SKIP), retry(99), timeout(12345)));

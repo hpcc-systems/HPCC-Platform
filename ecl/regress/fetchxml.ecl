@@ -17,7 +17,7 @@
 ############################################################################## */
 
 //You should really be able to define this inline....
-passportRec := 
+passportRec :=
                 RECORD
 string              id{xpath('ATTRIBUTE[@name="idNumber"]')};
 string              idType{xpath('ATTRIBUTE[@name="idType"]')};

@@ -39,7 +39,7 @@ r ta(personDataset le) := TRANSFORM
 
 a := project(hint(personDataset,tigerwoods), ta(LEFT),hint(gogogo(99)));
 
-b := a(surname > 'Halliday');
+b := a(surname > 'Hawthorn');
 
 output(b,,'out.d00');
 output(hint(personDataset,outputonlyOnce),,'out.d00');

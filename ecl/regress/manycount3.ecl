@@ -20,7 +20,7 @@ person := dataset('person', { unsigned8 person_id, string1 per_sex, unsigned per
 z := dedup(person, per_ssn);
 
 x := record
-v1 := count(GROUP, z.per_ssn > 50); 
+v1 := count(GROUP, z.per_ssn > 50);
 v2 := count(GROUP, z.per_ssn > 60);
 v3 := count(GROUP, z.per_ssn > 70);
 v4 := count(GROUP, z.per_ssn > 80);

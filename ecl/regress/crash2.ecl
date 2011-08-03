@@ -29,8 +29,8 @@ personRecord := RECORD
         END;
 
 //                            [{'Abigail',2}], {'Nathan', 2}},
-        
-personDataset := DATASET ([{'Gavin', 'Halliday', 2,
+
+personDataset := DATASET ([{'Gavin', 'Hawthorn', 2,
                             [{'Abigail',2}]},
                                                                                                          {'John', 'Simmons', 3,
                             [{'Alison',16}, {'Andrew', 10}, {'Jennifer', 18}]}],
@@ -41,7 +41,7 @@ DATASET procKids := TRANSFORM
 END;
 
 kids := iterate (personDataset, procKids);
-OUTPUT (kids);                                                                                                  
+OUTPUT (kids);
 //OUTPUT (personDataset.children, {personDataset.forename, forename, age});
 /*
 r := RECORD

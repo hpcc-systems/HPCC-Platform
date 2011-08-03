@@ -21,7 +21,7 @@
 //Check that nonempty branches aren't merged unnecessarily - effectively conditional
 //equivalent to if (exists(x), x, y) - sort should be in different subgraph.
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

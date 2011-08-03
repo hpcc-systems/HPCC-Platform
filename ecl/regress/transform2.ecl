@@ -40,7 +40,7 @@ outr := record
 in1Table := dataset('in1',in1,FLAT);
 
 
-outr zTransform (in1 l) := 
+outr zTransform (in1 l) :=
                 TRANSFORM
                     SELF.a := l.a;
                     SELF.b := l.b;

@@ -25,12 +25,12 @@ DeclareCommon();
 
 myPeople := sqSimplePersonBookDs(surname <> '');
 
-childBookRec := 
+childBookRec :=
             RECORD
 dataset(sqBookIdRec)        books{blob};
             END;
 
-slimPeopleRec := 
+slimPeopleRec :=
             RECORD
 string20        surname;
 childBookRec        child;

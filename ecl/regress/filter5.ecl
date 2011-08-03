@@ -20,14 +20,14 @@ person := dataset('person', { unsigned8 person_id, string1 per_sex, string40 per
 
 filtered1 := person(xpos < 1000);
 
-filter2 := filtered1(per_last_name = 'Halliday');
-filter3 := filtered1(per_last_name = 'Chapman');
+filter2 := filtered1(per_last_name = 'Hawthorn');
+filter3 := filtered1(per_last_name = 'Drimbad');
 
 output(filter2,,'out2.d00');
 output(filter3,,'out3.d00');
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        per_last_name;
 string10        forename;
@@ -38,8 +38,8 @@ namesTable := dataset('x',namesRecord,FLAT);
 
 afiltered1 := namesTable(holepos < 1000);
 
-afilter2 := afiltered1(per_last_name = 'Halliday');
-afilter3 := afiltered1(per_last_name = 'Chapman');
+afilter2 := afiltered1(per_last_name = 'Hawthorn');
+afilter3 := afiltered1(per_last_name = 'Drimbad');
 
 output(afilter2,,'aout2.d00');
 output(afilter3,,'aout3.d00');

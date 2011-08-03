@@ -21,7 +21,7 @@
 d := dataset('~local::rkc::person', { string15 name, unsigned8 filepos{virtual(fileposition)} }, flat);
 d2 := dataset('~local::rkc::person', { string15 name, unsigned8 filepos{virtual(fileposition)} }, flat);
 
-i := index(d, { d } ,'\\seisint\\person.name_first.key');
+i := index(d, { d } ,'\\home\\person.name_first.key');
 
 string15 searchName := '' : stored('searchName');
 string15 searchName2 := '' : stored('searchName2');

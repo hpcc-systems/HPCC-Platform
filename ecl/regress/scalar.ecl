@@ -16,13 +16,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-export display := 
+export display :=
     SERVICE
         echo(const string src) : eclrtl,library='eclrtl',entrypoint='rtlEcho';
     END;
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -32,10 +32,10 @@ integer2        age := 25;
 namesTable := dataset('x',namesRecord,FLAT);
 
 namesTable2 := nofold(dataset([
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
-        {'Salter','Abi',10},
-        {'Halliday','Emma',30},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
+        {'Smithe','Pru',10},
+        {'Hawthorn','Emma',30},
         {'X','Z'}], namesRecord));
 
 display.echo('**** ' + (string)count(namesTable2) + ' ****');

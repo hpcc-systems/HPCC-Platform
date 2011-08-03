@@ -34,7 +34,7 @@ string20  forename;
 
 personDataset := DATASET('person',personRecord,FLAT);
 
-combinedRecord := 
+combinedRecord :=
                 RECORD
 householdRecord;
 DATASET(RECORDOF(PersonDataset))   children;
@@ -44,14 +44,14 @@ DATASET(RECORDOF(PersonDataset))   children;
 householdDataset := DATASET('household',householdRecord,FLAT);
 
 
-combinedRecord householdToCombined(householdRecord l) := 
+combinedRecord householdToCombined(householdRecord l) :=
                 TRANSFORM
                     SELF.children := [];
                     SELF := l;
                 END;
 
 
-combinedRecord doDenormalize(combinedRecord l, personRecord r) := 
+combinedRecord doDenormalize(combinedRecord l, personRecord r) :=
                 TRANSFORM
                     SELF.children := l.children + r;
                     SELF := l;

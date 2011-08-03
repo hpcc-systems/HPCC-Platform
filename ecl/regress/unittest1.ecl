@@ -23,7 +23,7 @@ string const_a := 'a' : stored('const_a');
 testStringlib := MODULE
   EXPORT AaaStartup := OUTPUT('Begin test');
 
-  EXPORT Test0 := 'This should not be output by evaluate';  
+  EXPORT Test0 := 'This should not be output by evaluate';
 
   EXPORT TestConstant := MODULE
     EXPORT Test1 := ASSERT(stringLib.StringCompareIgnoreCase('a', 'a') = 0, CONST);
@@ -33,7 +33,7 @@ testStringlib := MODULE
     EXPORT Test5 := ASSERT(stringLib.StringCompareIgnoreCase('A', 'z') < 0, CONST);
     EXPORT Test6 := ASSERT(stringLib.StringCompareIgnoreCase('a', 'aa') < 0, CONST);
   END;
-  
+
   EXPORT TestOther := MODULE
     EXPORT Test11 := ASSERT(stringLib.StringCompareIgnoreCase(const_a, 'a') = 0);
     EXPORT Test12 := ASSERT(stringLib.StringCompareIgnoreCase(const_a, 'A') = 0);
@@ -42,7 +42,7 @@ testStringlib := MODULE
     EXPORT Test15 := ASSERT(stringLib.StringCompareIgnoreCase(const_a, 'z') > 0);
     EXPORT Test16 := ASSERT(stringLib.StringCompareIgnoreCase(const_a, 'aa') < 0);
   END;
-  
+
   EXPORT ZzzClosedown := OUTPUT('End test');
 END;
 

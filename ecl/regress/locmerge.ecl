@@ -39,21 +39,21 @@ trec addNodeNum(trec L, unsigned4 c) := transform
 dataset one_per_node(dataset(trec) seed) := distribute(normalize(seed, CLUSTERSIZE, addNodeNum(LEFT, COUNTER)), nodenum);
 
 trec generatePseudoRandom(trec L, unsigned4 c) := transform
-    SELF.seq := c;   
+    SELF.seq := c;
     SELF.key := (RANDOM()%900);
     SELF := L;
   END;
 
-dataset bigstream(dataset(trec) seed) := NORMALIZE(one_per_node(seed), numrecs, generatePseudoRandom(LEFT, counter)); 
-dataset sortedrecs(dataset(trec) seed) := sort(bigstream(seed), key, local); 
+dataset bigstream(dataset(trec) seed) := NORMALIZE(one_per_node(seed), numrecs, generatePseudoRandom(LEFT, counter));
+dataset sortedrecs(dataset(trec) seed) := sort(bigstream(seed), key, local);
 mergedrecs :=      merge(sortedrecs(seed1),sortedrecs(seed2),sortedrecs(seed3),sortedrecs(seed4),sortedrecs(seed5), local);
 
 trec checksort(trec l, trec r) := TRANSFORM
-    SELF.key := if (l.key <= r.key, 
-                r.key, 
+    SELF.key := if (l.key <= r.key,
+                r.key,
                 ERROR('ERROR - records not in order!'));
     SELF.seq := if ((l.key != r.key) or (l.strm <= r.strm),
-                r.seq, 
+                r.seq,
                     ERROR('ERROR - records not in sequence!'));
     SELF := L;
 END;

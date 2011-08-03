@@ -21,7 +21,7 @@ little_endian unsigned3 searchDob := 99 : stored('dob');
 
 d := dataset('~local::rkc::person', { string15 name, unsigned3 dob, unsigned8 filepos{virtual(fileposition)} }, flat);
 
-i := index(d, { dob, name, filepos } ,'\\seisint\\person.name_first.key');
+i := index(d, { dob, name, filepos } ,'\\home\\person.name_first.key');
 
 a1 := i(dob=searchDob or dob=searchDob2);
 

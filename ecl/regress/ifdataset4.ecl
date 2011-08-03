@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-arec := 
+arec :=
             RECORD
 unsigned1       a;
 unsigned1       b;
@@ -25,12 +25,12 @@ unsigned4       node := 0;
             END;
 
 alpha := nofold(dataset([
-        {1,1}, 
+        {1,1},
         {1,2}
         ], arec));
 
 beta := nofold(dataset([
-        {2,2}, 
+        {2,2},
         {3,2}
         ], arec));
 

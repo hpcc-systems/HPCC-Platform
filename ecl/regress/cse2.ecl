@@ -23,7 +23,7 @@ unsigned6   did;
         end;
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 unsigned        jobid;
 dataset(didRec) didin;

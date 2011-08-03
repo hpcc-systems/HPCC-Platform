@@ -18,7 +18,7 @@
 
 #option ('targetClusterType', 'roxie');
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -28,7 +28,7 @@ unsigned8       filepos{virtual(fileposition)};
 
 d := dataset('x',namesRecord,FLAT);
 
-i1 := index(d, { d } ,'\\seisint\\person.name_first.key1');
+i1 := index(d, { d } ,'\\home\\person.name_first.key1');
 nameIndexRecord := recordof(i1);
 
 errorRecord := RECORD
