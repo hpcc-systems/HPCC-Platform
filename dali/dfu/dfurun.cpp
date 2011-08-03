@@ -253,7 +253,13 @@ class CDFUengine: public CInterface, implements IDFUengine
                         case DFUservermode_run: {
                                 PROGLOG("DFU %s running job: %s",serv,wuid.get());
                                 setRunningStatus(queuename.get(),wuid,true);
-                                parent->runWU(wuid);
+                                try {
+                                    parent->runWU(wuid);
+                                }
+                                catch (IException *) {
+                                    setRunningStatus(queuename.get(),wuid,false);
+                                    throw;
+                                }
                                 if (!ismon) {
                                     setRunningStatus(queuename.get(),wuid,false);
                                     PROGLOG("DFU %s finished job: %s",serv,wuid.get());
