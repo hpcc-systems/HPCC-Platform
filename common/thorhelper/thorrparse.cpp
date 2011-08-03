@@ -1974,15 +1974,16 @@ void RegexNamedPattern::getTraceText(StringBuffer & s)
 
 RegexMatchAction RegexNamedPattern::match(RegexState & state)
 {
-    //RegexMatchState matched(def);
-    //return def->match(state, &end, matched);
-    {
+#ifdef __64BIT__
+    RegexMatchState matched(def);
+    return def->match(state, &end, matched);
+#else
     //Allocate on the heap to make a stack fault less likely
     RegexMatchState * matched = new RegexMatchState(def);
     RegexMatchAction ret = def->match(state, &end, *matched);
     delete matched;
     return ret;
-    }
+#endif
 }
 
 void RegexNamedPattern::dispose()
@@ -3110,7 +3111,7 @@ RegexPattern * deserializeRegex(MemoryBuffer & in)
 
 void RegexState::processPattern(RegexPattern * grammar)
 {
-    if (implementation == NLPAregex)
+    if (implementation == NLPAregexStack)
     {
         grammar->MATCH(*this);
         return;
