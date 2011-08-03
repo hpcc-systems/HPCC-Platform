@@ -30,14 +30,14 @@ inRec := { string line, dataset(stringRec) search; };
 
 infile := dataset([
         {'one two three', [{'one'}] },
-        {'Gavin Halliday', [{'one'}] },
+        {'Gavin Hawthorn', [{'one'}] },
         {'I went out I went in', [{'I'}] }
         ], inRec);
 
 
 //test matched inside a sub query - to ensure it is evaluated in the correct place
 
-results := 
+results :=
     record
         infile.line;
         exists(dedup(infile.search, value)(value = MATCHTEXT(patWord[1])));

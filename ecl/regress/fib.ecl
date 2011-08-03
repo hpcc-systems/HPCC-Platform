@@ -17,12 +17,12 @@
 ############################################################################## */
 
 
-export Display := 
+export Display :=
     SERVICE
         echo(const string src) : eclrtl,library='eclrtl',entrypoint='rtlEcho';
     END;
 
-fibRecord := 
+fibRecord :=
             RECORD
 integer         fib1 := 1;
 integer         fib2 := 1;
@@ -40,7 +40,7 @@ fibRecord makeFibs(fibRecord l, fibRecord r) := TRANSFORM
             END;
 
 ret := iterate(fibTable, makeFibs(LEFT, RIGHT));
-apply(ret, 
+apply(ret,
     display.echo((string)fib1 + ','),
     display.echo((string)fib2 + ','),
     display.echo((string)mycounter),

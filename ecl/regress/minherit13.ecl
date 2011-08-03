@@ -48,7 +48,7 @@ lookupFile := dataset('lookup', lookupRecord, thor);
 lookupKey := index(lookupFile, { lookupFile }, 'lookupIndex');
 
 getScoredDataset(IAbcHelper helper, dataset(inputRecord) inFile) := function
-    
+
     input := helper.processInput(inFile);
 
     joinToFile := join(input, lookupFile, left.surname = right.surname and left.forename = right.forename, helper.createRecord(LEFT, RIGHT));
@@ -57,7 +57,7 @@ getScoredDataset(IAbcHelper helper, dataset(inputRecord) inFile) := function
 
     return helper.processOutput(joinedResult);
 end;
-    
+
 
 GavinAbcHelper := module(IAbcHelper)
 export createRecord(inputRecord l, lookupRecord r) := transform(outputRecord, self := l, self.score := 100000 DIV r.frequency);

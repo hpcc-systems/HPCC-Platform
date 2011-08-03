@@ -18,7 +18,7 @@
 
 #option ('childQueries', true);
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -26,15 +26,15 @@ integer2        age := 25;
             END;
 
 namesTable1 := dataset([
-        {'Halliday','Liz',34},
-        {'Halliday','Gavin',35}], namesRecord);
+        {'Hawthorn','Mia',34},
+        {'Hawthorn','Gavin',35}], namesRecord);
 
 namesTable2 := dataset([
-        {'Halliday','Nathan',2},
-        {'Halliday','Abigail',2}], namesRecord);
+        {'Hawthorn','Nathan',2},
+        {'Hawthorn','Abigail',2}], namesRecord);
 
 
-combinedRecord := 
+combinedRecord :=
             record
 unsigned        id;
 unsigned        maxChildren;

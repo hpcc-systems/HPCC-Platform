@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -26,7 +26,7 @@ integer2        age := 25;
 
 namesTable := dataset('x',namesRecord,FLAT);
 
-countRecord := 
+countRecord :=
             RECORD
                 cnt := count(group);
             END;

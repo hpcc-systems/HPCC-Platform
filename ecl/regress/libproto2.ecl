@@ -22,7 +22,7 @@ export library_interface(integer8 i) := INTERFACE
 END;
 
 export library_impl(integer8 i) := module,library(library_interface)
- export integer6 results := (integer8)(-10*(integer8)i);        
-END;    
+ export integer6 results := (integer8)(-10*(integer8)i);
+END;
 
 BUILD(library_impl);

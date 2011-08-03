@@ -18,7 +18,7 @@
 
 __set_debug_option__('targetClusterType', 'hthor');
 
-mainRecord := 
+mainRecord :=
         RECORD
 integer8            sequence;
 string20            forename;
@@ -42,7 +42,7 @@ string20        addr;
 peopleDataset := DATASET([{3000,'London'},{3500,'Miami'},{30,'Houndslow'}], peopleRecord);
 
 
-joinedRecord := 
+joinedRecord :=
         RECORD
 integer8            sequence;
 string20            forename;

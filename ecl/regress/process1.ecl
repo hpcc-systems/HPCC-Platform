@@ -72,7 +72,7 @@ END
 */
 
 
-inputRecord := 
+inputRecord :=
             record
 string          next;
             end;
@@ -82,7 +82,7 @@ stackRecord :=
 unsigned        value;
 string1         op;
             end;
-    
+
 outputRecord :=
             record
 unsigned        value;
@@ -102,7 +102,7 @@ inputDataset := dataset(['10','20','*',15,10,'+','-'], inputRecord);
 
 processed := process(inputDataset, stackRecord, resultRecord, readNextState,
                      readNextState      := INPUT(createStack(LEFT), outputState), NEXT(reduceState)
-                     reduceState        := CASE(RIGHT.op, 
+                     reduceState        := CASE(RIGHT.op,
                                                 '0'=>readNextState,
                                                 '+'=>doAddState,
                                                 '-'=>doSubState,

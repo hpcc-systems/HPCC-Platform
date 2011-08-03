@@ -24,7 +24,7 @@ LOADXML('<xml>dummy</xml>');
 
 #IF (false)
  #IF (false)
-  #APPEND(s, '1') 
+  #APPEND(s, '1')
  #ELSE
   #APPEND(s, '1.2')
  #END

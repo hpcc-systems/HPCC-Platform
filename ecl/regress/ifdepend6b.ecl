@@ -54,7 +54,7 @@ if (falseSimple1, output(complex1, named('IncorrectOutput1')));
 if (trueSimple2, output(complex1(x != '1'), named('CorrectOutput2')));
 
 
-if (trueSimple3, 
+if (trueSimple3,
     parallel(
         output(complex2, named('CorrectOutput3')),
         output(complex3, named('CorrectOutput4'))),

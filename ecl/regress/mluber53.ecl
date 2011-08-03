@@ -61,7 +61,7 @@ unsigned1       score;
 
 r2 t(r l) := transform
 self.id := l.id;
-self.score := 
+self.score :=
         addup(l.t1) + addup(l.t2) + addup(l.t3) + addup(l.t4) + addup(l.t5) + addup(l.t6) + addup(l.t7) + addup(l.t8) + addup(l.t9) +
         addup(l.t10) + addup(l.t11) + addup(l.t12) + addup(l.t13) + addup(l.t14) + addup(l.t15) + addup(l.t16) + addup(l.t17) + addup(l.t18) + addup(l.t19) +
         addup(l.t20) + addup(l.t21) + addup(l.t22) + addup(l.t23) + addup(l.t24) + addup(l.t25) + addup(l.t26) + addup(l.t27) + addup(l.t28) + addup(l.t29);
@@ -70,4 +70,4 @@ self.score :=
 
 output(project(ds, t(LEFT)));
 
-    
+

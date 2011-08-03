@@ -24,7 +24,7 @@ codePageText(varstring codepage, unsigned4 len) := TYPE
     END;
 
 
-externalRecord := 
+externalRecord :=
     RECORD
         unsigned8 id;
         codePageText('utf' + '-16be',20) firstname;
@@ -32,7 +32,7 @@ externalRecord :=
         string40 addr;
     END;
 
-internalRecord := 
+internalRecord :=
     RECORD
         unsigned8 id;
         unicode10 firstname;
@@ -42,7 +42,7 @@ internalRecord :=
 
 external := DATASET('input', externalRecord, THOR);
 
-internalRecord t(externalRecord l) := 
+internalRecord t(externalRecord l) :=
     TRANSFORM
         SELF := l;
     END;

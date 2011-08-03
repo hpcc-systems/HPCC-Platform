@@ -19,7 +19,7 @@
 //C++ file failed to generate for ECL:
 //Error: Could not find dataset aggregate(aggregate(GROUP(SORT(DISTRIBUTE(NEWTABLE(NEWTABLE(CHOOSEN(DISTRIBUTED(<table>(...
 
-EXPORT zh__Layout_zh := 
+EXPORT zh__Layout_zh :=
  RECORD
   unsigned integer6 xyz := 0;
   unsigned integer6 rid;
@@ -68,24 +68,24 @@ EXPORT unsigned integer6 Jingo__Dummy_Base := 100000000000;
 
 df := CHOOSEN(zh__File_zhs, 100);
 
-xyzrec := 
+xyzrec :=
 { unsigned integer6 xyz := RANDOM(), unsigned integer1 score := RANDOM() % 100 };
 
 df2 := TABLE(df, xyzrec);
 
-__15801__ := 
+__15801__ :=
 { df2.xyz };
 
 __15802__ := TABLE(df2, __15801__);
 
-__15803__ := 
+__15803__ :=
 { __15802__.xyz, integer8 xyz_count := COUNT(group), unsigned integer1 xyz_type := MAP(__15802__.xyz = 0 => 0,
      __15802__.xyz < Jingo__Dummy_Base => 1,
      2) };
 
 __15804__ := TABLE(DISTRIBUTE(__15802__, HASH(xyz)), __15803__, xyz);
 
-__15805__ := 
+__15805__ :=
 { __15804__.xyz_count, __15804__.xyz_type, integer8 xyz_freq := COUNT(group) };
 
 __15806__ := TABLE(__15804__, __15805__, xyz_count, xyz_type);

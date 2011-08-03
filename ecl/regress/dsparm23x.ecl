@@ -24,14 +24,14 @@ r1 := record
 end;
 
 r2 := record
- String10 first_name2; 
+ String10 first_name2;
  string20 last_name2;
 end;
 
 ds := dataset('ds', r1, FLAT);
 dsx := dataset('dsx', r2, FLAT);
 
-rec := record 
+rec := record
   string10 id;
 end;
 

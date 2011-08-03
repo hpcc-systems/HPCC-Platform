@@ -68,12 +68,12 @@ denormCandidateRecord wordsToDenormCandidate(minimalMatchRecord firstin, dataset
 
 createDenormCandidateFromWordMatches(searchRecord search, dataset(wordIndexRecord) matches) := function
 
-    
+
     extracted := project(matches, transform(minimalMatchRecord, SELF := LEFT));
 
     extractedS := sorted(extracted, doc);           // Should be an assertion really, a requirement of the input
-    
-    groupedDs := group(extractedS, doc, local); 
+
+    groupedDs := group(extractedS, doc, local);
 
     rolled:= rollup(groupedDs, group, wordsToDenormCandidate(LEFT, rows(LEFT), search.term, search.stage));
 
@@ -144,7 +144,7 @@ boolean doMatchWildcards(unsigned4 len, wordType word, wordType wildMask, wordTy
 
 ENDC++;
 
-boolean matchWildcards(wordType word, wordType wildMask, wordType wildMatch) := 
+boolean matchWildcards(wordType word, wordType wildMask, wordType wildMatch) :=
     doMatchWildcards(length(wildMask), word, wildMask, wildMatch);
 
 
@@ -192,8 +192,8 @@ boolean validProximity(searchRecord search, wordPosType lwPos, wordPosType rwPos
 
     wordPosType upperBound(wordPosType oldpos) := oldpos+search.distance;
 
-    return 
-        ((search.distance = 0 and not search.preceeds) OR 
+    return
+        ((search.distance = 0 and not search.preceeds) OR
                 rwPos >= lowerBound(lwPos)) AND
         ((search.distance = 0) OR
                 rwPos <= upperBound(lwpos));
@@ -262,9 +262,9 @@ doNormTermAndProxTerm(searchRecord search, dataset(normCandidateRecord) in) := f
     inRight := sort(in(stage = search.rightStage), doc);        // NB: change to sorted() not sort
     others := in(stage not in [search.leftStage, search.rightStage]);       // generates poor code: why?
 
-    matches := join(inLeft, inRight, 
-                    left.doc = right.doc and 
-                    validNormProximity(search, left.matches(term = search.leftTerm)[1], right.matches(term = search.rightTerm)[1].wPos), 
+    matches := join(inLeft, inRight,
+                    left.doc = right.doc and
+                    validNormProximity(search, left.matches(term = search.leftTerm)[1], right.matches(term = search.rightTerm)[1].wPos),
                     combineNormCandidateTransform(search.stage, LEFT, RIGHT), INNER);
     return others + matches;
 END;
@@ -276,9 +276,9 @@ doNormTermAndNotProxTerm(searchRecord search, dataset(normCandidateRecord) in) :
     inRight := sort(in(stage = search.rightStage), doc);        // NB: change to sorted() not sort
     others := in(stage not in [search.leftStage, search.rightStage]);       // generates poor code: why?
 
-    matches := join(inLeft, inRight, 
-                    left.doc = right.doc and 
-                    validNormProximity(search, left.matches(term = search.leftTerm)[1], right.matches(term = search.rightTerm)[1].wPos), 
+    matches := join(inLeft, inRight,
+                    left.doc = right.doc and
+                    validNormProximity(search, left.matches(term = search.leftTerm)[1], right.matches(term = search.rightTerm)[1].wPos),
                     combineNormCandidateTransform(search.stage, LEFT, RIGHT), left only);
     return others + matches;
 end;
@@ -315,9 +315,9 @@ doNormTermAndWordBad(searchRecord search, dataset(normCandidateRecord) in) := fu
     inLeft := sort(in(stage = search.leftStage), doc);          // NB: change to sorted() not sort
     others := in(stage != search.leftStage);
 
-    matches := join(inLeft, wordIndex, 
+    matches := join(inLeft, wordIndex,
                     keyed(left.doc = right.doc) AND
-                    matchSingleWord(RIGHT, search), 
+                    matchSingleWord(RIGHT, search),
                     extendNormCandidateTransform(search.stage, LEFT, search.term, right.wpos), INNER);
     return others + matches;
 END;
@@ -328,14 +328,14 @@ doNormTermAndWord(searchRecord search, dataset(normCandidateRecord) in) := funct
 
     //Only return a single row per input doc
     dedupLeft := rollup(group(inLeft, doc), group, transform(docRecord, SELF.doc := LEFT.doc));
-    
-    wordMatches := join(dedupLeft, wordIndex, 
+
+    wordMatches := join(dedupLeft, wordIndex,
                     keyed(left.doc = right.doc) AND
-                    matchSingleWord(RIGHT, search), 
+                    matchSingleWord(RIGHT, search),
                     transform(docPosRecord, self.doc := left.doc, self.wpos := right.wpos), INNER);
 
     //NB: Both inputs should be sorted... so this should be a merge
-    matches := join(inLeft, wordMatches, 
+    matches := join(inLeft, wordMatches,
                     left.doc = right.doc,
                     extendNormCandidateTransform(search.stage, LEFT, search.term, right.wpos), INNER);
 
@@ -359,9 +359,9 @@ doNormTermAdjacentWord(searchRecord search, dataset(normCandidateRecord) in) := 
     end;
 
     dedupLeft := rollup(group(inLeft, doc), group, transform(docPosSetRecord, SELF.doc := LEFT.doc, self.positions := dedupPositions(rows(left))));
-    
+
     //Keyed join to get a list of candidates for each document
-    wordMatches := join(dedupLeft, wordIndex, 
+    wordMatches := join(dedupLeft, wordIndex,
                     keyed(left.doc = right.doc) AND
                     matchSingleWord(RIGHT, search) and
                     (search.original = '' or right.original=search.original) and                            // also used for original word checking.
@@ -369,7 +369,7 @@ doNormTermAdjacentWord(searchRecord search, dataset(normCandidateRecord) in) := 
                     transform(docPosRecord, self.doc := left.doc, self.wpos := right.wpos), INNER);
 
     //Now join them back to the full set of information
-    matches := join(inLeft, wordMatches, 
+    matches := join(inLeft, wordMatches,
                     left.doc = right.doc and
                     validAdjacent(search, left.matches(term = search.leftTerm)[1].wpos, right.wpos),
                     extendNormCandidateTransform(search.stage, LEFT, search.term, right.wpos), INNER);
@@ -428,7 +428,7 @@ doNormAtleast(searchRecord search, dataset(normCandidateRecord) in) := function
 
     gr := group(inLeft, doc);
 
-    recordof(in) createAtleastResult(normCandidateRecord firstRow, dataset(normCandidateRecord) allRows) := 
+    recordof(in) createAtleastResult(normCandidateRecord firstRow, dataset(normCandidateRecord) allRows) :=
         transform, skip(count(allRows) < search.minCount)
             self.doc := firstRow.doc;
             self.stage := search.stage;
@@ -451,7 +451,7 @@ doNormAtleastTerms(searchRecord search, dataset(normCandidateRecord) in) := func
     srt1 := sort(pr1, transfer(matches, data));
     gr := group(srt1, doc, transfer(matches, data));
 
-    recordof(in) createAtleastResult(normCandidateRecord firstRow, dataset(normCandidateRecord) allRows) := 
+    recordof(in) createAtleastResult(normCandidateRecord firstRow, dataset(normCandidateRecord) allRows) :=
         transform, skip(count(allRows) < search.minCount)
             self.doc := firstRow.doc;
             self.stage := search.stage;
@@ -569,13 +569,13 @@ doSimpleReadWordX(searchRecord search, boolean checkOriginal) := FUNCTION
 END;
 
 
-doSimpleReadWord(searchRecord search) := 
+doSimpleReadWord(searchRecord search) :=
     doSimpleReadWordX(search, false);
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-doSimpleReadQuotedWord(searchRecord search) := 
+doSimpleReadQuotedWord(searchRecord search) :=
     doSimpleReadWordX(search, true);
 
 
@@ -646,9 +646,9 @@ doSimpleTermAndWord(searchRecord search, dataset(simpleCandidateRecord) in) := f
     inLeft := sort(in(stage = search.leftStage), doc);          // NB: change to sorted() not sort
     others := in(stage != search.leftStage);
 
-    matches := join(inLeft, wordIndex, 
+    matches := join(inLeft, wordIndex,
                     keyed(left.doc = right.doc) AND
-                    matchSingleWord(RIGHT, search), 
+                    matchSingleWord(RIGHT, search),
                     createSimpleCandidateTransform(search.stage, LEFT), INNER, keep(1));
     return others + matches;
 END;

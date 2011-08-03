@@ -28,4 +28,3 @@ gr := group(ds, val1);
 f1 := having(gr, count(rows(left)) > 1);
 output(f1) : independent;
 
-        

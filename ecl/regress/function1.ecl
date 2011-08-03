@@ -25,7 +25,7 @@ string20  per_surname;
 unsigned8 holepos;
     END;
 
-parentRecord := 
+parentRecord :=
                 RECORD
 unsigned8           id;
 string20            address1;
@@ -44,7 +44,7 @@ unsigned4 person_id;
 string20  per_surname;
     END;
 
-newParentRecord := 
+newParentRecord :=
                 RECORD
 unsigned8           id;
 string20            address1;
@@ -57,14 +57,14 @@ string10            postcode;
 
 
 //MORE: Really need a way of passing dataset parameters...
-doProjectParent(unsigned8 idAdjust, unsigned8 numChildren) := 
+doProjectParent(unsigned8 idAdjust, unsigned8 numChildren) :=
 FUNCTION
-    newParentRecord copyChooseProject(parentRecord l) := 
+    newParentRecord copyChooseProject(parentRecord l) :=
         TRANSFORM
 
-            doProjectChild(unsigned8 idAdjust2) := 
+            doProjectChild(unsigned8 idAdjust2) :=
             FUNCTION
-                newChildRecord copyChild(childRecord l) := 
+                newChildRecord copyChild(childRecord l) :=
                     TRANSFORM
                         SELF.person_id := l.person_id + idAdjust2;
                         SELF := l;

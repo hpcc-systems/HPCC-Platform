@@ -18,7 +18,7 @@
 
 #option ('allJoinGeneratesCompare', true);
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -35,7 +35,7 @@ namesTable := dataset('name', namesRecord, thor);
 
 addressTable := dataset('addr', addressRecord, thor);
 
-JoinRecord := 
+JoinRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -43,14 +43,14 @@ integer2        age := 25;
 string30        addr;
             END;
 
-JoinRecord JoinTransform (namesRecord l, addressRecord r) := 
+JoinRecord JoinTransform (namesRecord l, addressRecord r) :=
                 TRANSFORM
                     SELF.addr := r.addr;
                     SELF := l;
                 END;
 
-JoinedF := join (namesTable, addressTable, 
-                LEFT.surname[1..10] = RIGHT.surname[1..10] AND 
+JoinedF := join (namesTable, addressTable,
+                LEFT.surname[1..10] = RIGHT.surname[1..10] AND
                 LEFT.surname[11..16] = RIGHT.surname[11..16] AND
                 LEFT.forename[1] <> RIGHT.addr[1],
                 JoinTransform (LEFT, RIGHT), LEFT OUTER, all);

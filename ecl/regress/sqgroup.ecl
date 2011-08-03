@@ -42,7 +42,7 @@ booksDsDsDs := sqBookDs(personid = personsDsDs.id);
 personSummaryRec := { persons.surname, cnt := count(books) };
 personSummary := table(persons, personSummaryRec);
 grPersonSummary := group(personSummary, surname, all);
-personSummaryRec tr1(personSummaryRec l, personSummaryRec r) := 
+personSummaryRec tr1(personSummaryRec l, personSummaryRec r) :=
         transform
             self.cnt := l.cnt + r.cnt;
             self := l;
@@ -53,7 +53,7 @@ output(house, { addr, dataset(personSummaryRec) summary := group(ruPersonSummary
 // Daft way #2a - using aggregate
 tgPersonSummary := table(grPersonSummary, { integer cnt := sum(group, grPersonSummary.cnt), surname });
 
-personSummaryRec tr2a(tgPersonSummary l) := 
+personSummaryRec tr2a(tgPersonSummary l) :=
         transform
             self := l;
         end;
@@ -62,7 +62,7 @@ tpgPersonSummary := project(tgPersonSummary, tr2a(LEFT));
 output(house, { addr, dataset(personSummaryRec) summary := tpgPersonSummary; });
 
 // Daft way #2b - using aggregate - need to support sum(group) etc inside transform parameters
-personSummaryRec tr2b(personSummaryRec l) := 
+personSummaryRec tr2b(personSummaryRec l) :=
         transform
             self.cnt := sum(group, l.cnt);
             self := l;
@@ -72,7 +72,7 @@ agPersonSummary := project(grPersonSummary, tr2b(LEFT));
 //output(house, { addr, dataset(personSummaryRec) summary := agPersonSummary; });
 
 // Daft way #3 - using iterate and dedup!
-personSummaryRec tr3(personSummaryRec l, personSummaryRec r) := 
+personSummaryRec tr3(personSummaryRec l, personSummaryRec r) :=
         transform
             self.cnt := l.cnt + r.cnt;
             self := r;
@@ -83,7 +83,7 @@ gdpPersonSummary := dedup(gitPersonSummary, right);
 output(house, { addr, dataset(personSummaryRec) summary := group(gdpPersonSummary); });
 
 // Finally a Daft way #4 - using non-grouped iterate and dedup!
-personSummaryRec tr4(personSummaryRec l, personSummaryRec r) := 
+personSummaryRec tr4(personSummaryRec l, personSummaryRec r) :=
         transform
             self.cnt := if (l.surname=r.surname, l.cnt + r.cnt, r.cnt);
             self := r;

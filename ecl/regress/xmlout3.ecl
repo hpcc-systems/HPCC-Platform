@@ -16,13 +16,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-phoneRecord := 
+phoneRecord :=
             RECORD
 string5         areaCode;
 string12        number;
             END;
 
-contactrecord := 
+contactrecord :=
             RECORD
 phoneRecord     phone;
 boolean         hasemail;
@@ -31,7 +31,7 @@ string              email;
                 end;
             END;
 
-personRecord := 
+personRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -45,8 +45,8 @@ string2         endmarker := '$$';
             END;
 
 namesTable2 := dataset([
-        {'Halliday','Gavin','09876','123987',true,'07967','123987', 'n/a','n/a',true,'gavin@edata.com'},
-        {'Halliday','Abigail','09876','123987',false,'','',false}
+        {'Hawthorn','Gavin','09876','123987',true,'07967','123987', 'n/a','n/a',true,'gavin@edata.com'},
+        {'Hawthorn','Abigail','09876','123987',false,'','',false}
         ], personRecord);
 
 output(namesTable2,,'out0.xml',overwrite,xml);

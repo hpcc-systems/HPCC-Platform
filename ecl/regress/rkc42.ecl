@@ -16,13 +16,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-VarString EmptyString1() := BEGINC++ 
-return strdup(""); ENDC++; 
+VarString EmptyString1() := BEGINC++
+return strdup(""); ENDC++;
 
 output(EmptyString1());
 
-VarString EmptyString2 := BEGINC++ 
-strdup("") ENDC++; 
+VarString EmptyString2 := BEGINC++
+strdup("") ENDC++;
 
 
 output(EmptyString2);

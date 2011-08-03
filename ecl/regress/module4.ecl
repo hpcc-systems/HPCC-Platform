@@ -19,7 +19,7 @@
 
 customerNames := module
     output('customer file used by user <x>');
-    export Layout := 
+    export Layout :=
                 RECORD
     string20        surname;
     string10        forename;

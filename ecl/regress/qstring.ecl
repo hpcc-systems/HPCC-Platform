@@ -29,7 +29,7 @@ END;
 
 
 
-ghString(unsigned4 len) := 
+ghString(unsigned4 len) :=
     TYPE
         export integer physicalLength := (((len+1)*3) DIV 4);
         export string load(string physical) := rtl.expandQString(physical[1..physicalLength]);
@@ -45,8 +45,8 @@ ghString(20)    surname;
 
 
 test := nofold(dataset([
-                {'Gavin','Halliday'},
-                {'Richard','Chapman'},
+                {'Gavin','Hawthorn'},
+                {'Richard','Drimbad'},
                 {'David','Bayliss'}
                 ], rec1));
 

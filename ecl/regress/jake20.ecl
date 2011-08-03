@@ -50,7 +50,7 @@ b1 := BUILDINDEX(idx, OVERWRITE);
 
 
 // SEQUENTIAL(genbase, b1, OUTPUT(COUNT(idx)));
-x := global(COUNT(idx)); 
+x := global(COUNT(idx));
 
 baserec ff(baserec L) := TRANSFORM
     SELF.blah := x;

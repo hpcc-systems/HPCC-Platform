@@ -33,15 +33,15 @@ loopBody(DATASET(namesRec) ds, unsigned4 c) :=
                                                                     SELF.age := LEFT.age*c;
                                                                     SELF.ctr := COUNTER ;
                                                                     SELF := LEFT));
-                                                                    
+
 //Form 1:
-OUTPUT(LOOP(namesTable2, 4, PROJECT(ROWS(LEFT), 
-                                                                        TRANSFORM(namesRec, 
-                                                                                             SELF.ctr:=COUNTER, 
+OUTPUT(LOOP(namesTable2, 4, PROJECT(ROWS(LEFT),
+                                                                        TRANSFORM(namesRec,
+                                                                                             SELF.ctr:=COUNTER,
                                                                                              SELF:=LEFT))
-                                                    & PROJECT(ROWS(LEFT), 
+                                                    & PROJECT(ROWS(LEFT),
                                                                          TRANSFORM(namesRec,
-                                                                                             SELF.ctr:=COUNTER*10, 
+                                                                                             SELF.ctr:=COUNTER*10,
                                                                                              SELF:=LEFT))),
              NAMED('Form_1_Count'));
 
@@ -71,7 +71,7 @@ OUTPUT(LOOP(namesTable2,
                                                             SELF.ctr := COUNTER,
                                                             SELF := LEFT))),
                 NAMED('Form_4_Condition_ChildQ_ROWS'));
-                
+
 OUTPUT(LOOP(namesTable2,
                         COUNTER <= 10,
                         PROJECT(ROWS(LEFT),

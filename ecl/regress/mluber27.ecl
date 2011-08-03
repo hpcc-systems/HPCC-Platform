@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-loadxml('<__x_xr/>'); 
+loadxml('<__x_xr/>');
 
 //Constant fold at generate time
 #declare(constMyYear)

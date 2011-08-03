@@ -18,7 +18,7 @@
 
 import std.system.job;
 
-//Would be nice if we could have a fully qualified path e.g., 
+//Would be nice if we could have a fully qualified path e.g.,
 //output(#text(x) + ' = ' + system.job.x + '\n')
 
 show(x) := MACRO

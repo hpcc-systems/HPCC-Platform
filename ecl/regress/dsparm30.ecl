@@ -18,7 +18,7 @@
 
 person := dataset('person', { unsigned8 person_id, string1 per_sex, string40 per_first_name, string40 per_last_name }, thor);
 
-f(virtual dataset({string10 n;}) d, string name) := 
+f(virtual dataset({string10 n;}) d, string name) :=
             d(n=name)+person(per_first_name='tom');
 
 d := f(person{n:=per_last_name}, 'fred');

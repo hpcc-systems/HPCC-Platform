@@ -25,4 +25,4 @@ LOADXML('<?xml version="1.0"?><root/>');
   #APPEND (result, '+ 3')
 #END
   3
-  %result%    
+  %result%

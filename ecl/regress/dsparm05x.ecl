@@ -24,7 +24,7 @@ r := record
 end;
 
 // a function return dataset
-dataset copy_ds(virtual dataset(r) d) := d; 
+dataset copy_ds(virtual dataset(r) d) := d;
 
 // the map is optional
 count(person);

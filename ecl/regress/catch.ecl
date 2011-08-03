@@ -25,7 +25,7 @@ string          getAString(string location) : entrypoint='getAString',ctxmethod;
 oneHundred := 100 : stored('x100');
 ninetyNine := 99 : stored('x99');
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

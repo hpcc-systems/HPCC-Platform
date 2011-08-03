@@ -28,7 +28,7 @@ ds := dataset([
 
 pattern S := pattern('[^z]*?');
 
-results := 
+results :=
     record
         string x := trim(MATCHTEXT);
     end;

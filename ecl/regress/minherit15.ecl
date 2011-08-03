@@ -20,7 +20,7 @@
 
 baseModule := module
 export string50 firstName := 'Gavin';
-export string50 lastName := 'Halliday';
+export string50 lastName := 'Hawthorn';
         end;
 
 string f1(baseModule ctx) := '[' + ctx.firstName + ',' + ctx.lastName + ']';

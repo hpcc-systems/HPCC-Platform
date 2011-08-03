@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string1         s1;
@@ -30,12 +30,12 @@ integer2        age := 25;
 
 namesTable := dataset('x',namesRecord,FLAT);
 
-f := namesTable(s1 = '1', 
-                     s2 = '6', 
+f := namesTable(s1 = '1',
+                     s2 = '6',
                      s3 = '5',
                      s4 = '6',
                      s5 = '2',
                      s6 = '0');
-                     
+
 output(f, NAMED('test'), EXTEND);
 output(f, NAMED('test'), EXTEND);

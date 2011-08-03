@@ -42,11 +42,11 @@ unicode unicodeStrip(unicode original, unicode search) := BEGINC++
         if (i == lenSearch)
             break;
     }
-    
+
     size32_t len = end-start;
     UChar * value = (UChar *)rtlMalloc(len);
     memcpy(value, original+start, len*sizeof(UChar));
-    
+
     __lenResult = len;
     __result = value;
 ENDC++;

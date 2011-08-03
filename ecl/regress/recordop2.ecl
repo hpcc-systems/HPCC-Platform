@@ -20,13 +20,13 @@ childRecord := RECORD
 string10            location;
 boolean             found;
                 end;
-                                
+
 baseRecord := RECORD
 unsigned8       id;
 string20        surname;
             end;
 
-namesRecord := 
+namesRecord :=
             RECORD(baseRecord)
 string10        forename;
 integer2        age := 25;

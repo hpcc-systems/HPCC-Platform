@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -28,17 +28,17 @@ namesTable := dataset('x',namesRecord,FLAT);
 
 teenagers := dataset(namesTable(age between 13 and 19), 'teenagers', thor);
 
-count(teenagers(surname = 'Halliday'));
+count(teenagers(surname = 'Hawthorn'));
 
 oldies :=  dataset(namesTable(age >= 65), 'oldies', thor);
 
 build(oldies,overwrite);
 build(oldies, 'snowbirds',named('BuildSnowbirds'));
 
-count(oldies(surname = 'Halliday'));
+count(oldies(surname = 'Hawthorn'));
 
 babies :=  dataset(namesTable(age < 2), 'babies', thor);
 
 build(babies, persist,backup, update, expire(99));
 
-count(babies(surname = 'Halliday'));
+count(babies(surname = 'Hawthorn'));

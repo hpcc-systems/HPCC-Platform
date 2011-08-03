@@ -25,7 +25,7 @@ string25 city_val := '' : stored('City');
   ENDMACRO;
 
 
-export IFileSearch := interface 
+export IFileSearch := interface
 export string120  company_name;
 export string2 state_val;
 export string2 prev_state_val1l;

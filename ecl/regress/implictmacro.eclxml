@@ -19,7 +19,7 @@
  <Module name="myModule">
   <Attribute name="myService">
      export myService := MACRO
-   
+
       myValue := 10;
       sampleDataset := dataset([1,2,myValue],{unsigned i});
       output(count(sampleDataset));

@@ -20,7 +20,7 @@ contactRecord := RECORD
 string10        number;
             END;
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

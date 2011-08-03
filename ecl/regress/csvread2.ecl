@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-accountRecord := 
+accountRecord :=
             RECORD
 string20        field1;
 string20        field2;

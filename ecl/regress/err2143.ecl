@@ -20,7 +20,7 @@
 attr := 4;
 attr := 3;
 
-// func 
+// func
 func(x) := x*2;
 func := 3;
 func(STRING1 x) := x+2;

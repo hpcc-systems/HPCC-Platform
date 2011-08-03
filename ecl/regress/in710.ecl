@@ -21,7 +21,7 @@
 #option ('globalFold', false);
 import dt;
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        phone;
@@ -40,9 +40,9 @@ namesTable := dataset('x',namesRecord,FLAT);
 h10 := namesTable;
 h7 := namesTable;
 
-FindPhone(set of string10 fp, set of string7 sp ) := 
-  dedup( 
-    sort ( 
+FindPhone(set of string10 fp, set of string7 sp ) :=
+  dedup(
+    sort (
        h10(phone IN fp)+h7(phone IN sp)
     ,did,-short_match,-ssn )
     , did );

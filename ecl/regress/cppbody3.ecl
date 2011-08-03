@@ -19,21 +19,21 @@
 // check that crcs are recalculated for C++ blocks (bug #17873)
 
 
-real8 s1 := 
+real8 s1 :=
 BEGINC++
 sqrt(2.0)
 ENDC++;
 s1p := s1 : persist('s1');
 output(s1p);
 
-real8 s2 := 
+real8 s2 :=
 BEGINC++
 sqrt(2.0)
 ENDC++;
 s2p := s2 : persist('s2');
 output(s2p);
 
-real8 s3 := 
+real8 s3 :=
 BEGINC++
 sqrt(3.0)
 ENDC++;
@@ -43,7 +43,7 @@ output(s3p);
 
 export dummy := 1;
 
-real8 s1f(real a) := 
+real8 s1f(real a) :=
 BEGINC++
 return sqrt(a);
 ENDC++;
@@ -52,7 +52,7 @@ output(s1fp);
 
 export dummy2 := 1;
 
-real8 s1f(real a) := 
+real8 s1f(real a) :=
 BEGINC++
 return sqrt(a);
 ENDC++;
@@ -61,7 +61,7 @@ output(s1fp);
 
 export dummy3 := 1;
 
-real8 s1f(real a) := 
+real8 s1f(real a) :=
 BEGINC++
 return sqrt(a)+1;
 ENDC++;

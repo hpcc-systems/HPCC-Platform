@@ -43,8 +43,8 @@ output(%stats%, { varx, (sxx-sx*sx/c)/c,
                 vary, (syy-sy*sy/c)/c,
                 varxy, (sxy-sx*sy/c)/c,
                 rc, (varxy/sqrt(varx*vary)) });
-                
-                
+
+
 output(%stats%, { 'bestFit: y=' + (string)((sy-sx*varxy/varx)/c)+ ' + ' +(string)(varxy/varx)+'x' });
 
 endmacro;

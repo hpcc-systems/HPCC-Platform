@@ -30,7 +30,7 @@ r norm(r l, integer c) := transform
 
 HashRecs := normalize( BlankSet, 3000000, norm(left, counter));
 
-a := output(DISTRIBUTE(HashRecs,ID),,'REGRESS::IDX::TestFile', overwrite); 
+a := output(DISTRIBUTE(HashRecs,ID),,'REGRESS::IDX::TestFile', overwrite);
 
 ds := dataset('REGRESS::IDX::TestFile',{r,unsigned8 __filpos    {virtual(fileposition)}},thor);
 

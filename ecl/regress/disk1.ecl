@@ -34,10 +34,10 @@ unsigned4 person_id;
 
 personDataset := DATASET('person',personRecord,FLAT);
 
-o1 := personDataset(surname <> 'Halliday');
+o1 := personDataset(surname <> 'Hawthorn');
 output(o1,,'out1.d00');
 
-o2 := personDataset(surname <> 'Halliday',forename <>'Gavin');
+o2 := personDataset(surname <> 'Hawthorn',forename <>'Gavin');
 output(o2,,'out2.d00');
 
 newPersonRecord t(personRecord l) := TRANSFORM SELF := l; END;
@@ -51,12 +51,12 @@ o4b := project(o4a, t(LEFT));
 output(o4b,,'out4.d00');
 
 o5a := project(personDataset, t(LEFT));
-o5b := o5a(surname <> 'Hicks');
+o5b := o5a(surname <> 'Hewit');
 output(o5b,,'out5.d00');
 
 o6a := personDataset(forename <> 'Richard');
 o6b := project(o6a, t(LEFT));
-o6c := o6b(surname <> 'Chapman');
+o6c := o6b(surname <> 'Drimbad');
 output(o6c,,'out6.d00');
 
 o7a := project(personDataset, t(LEFT));

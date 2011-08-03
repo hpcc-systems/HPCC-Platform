@@ -28,7 +28,7 @@ ds := dataset([
 
 pattern S := ANY*;
 
-results := 
+results :=
     record
         string x{maxlength(10000000)} := '!'+MATCHTEXT+'!';
     end;

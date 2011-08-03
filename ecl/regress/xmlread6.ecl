@@ -74,7 +74,7 @@ pattern train := first (VALIDATE(pattern('[A-Z]+ [A-Z]+'), MATCHTEXT='WAGN RAILW
 pattern boots := first 'BOOTS /' pattern('[0-9]{4}') '/' ANY + last;
 pattern mobilePhone := first validate(word, MATCHUNICODE = U'ORANGE');
 pattern lifeInsurance := (first 'SCOTTISH PROVIDENT' last) or (first U'CGNU LIFE ASS LTD' last);
-pattern grammar := isCash or isChildBenefit or isPaidIn or chequePayment or groceries or petrol or heatingOil or train or 
+pattern grammar := isCash or isChildBenefit or isPaidIn or chequePayment or groceries or petrol or heatingOil or train or
                    boots or mobilePhone or lifeInsurance;
 
 
@@ -123,7 +123,7 @@ newrec  extractMatched3(newrec l) := transform
                             l.description=U'Cheque Payment' and l.amount in [-325.02D] => U'Car',
                             l.description=U'Cheque Payment'=>U'Unknown '+l.description,
 //                          l.description=U'Cheque Payment'=>U'Unknown '+l.description+U' ' +(unicode)l.amount,
-                            l.description=U'CHRIS PAGE GAVIN AND LIZ '=>U'CHRIS PAGE',
+                            l.description=U'CHRIS PAGE GAVIN'=>U'CHRIS PAGE',
                             (string)l.description[lengthDescription]='.'=>l.description[1..lengthDescription-1],
                             unicodelib.UnicodeToLowerCase(l.description)[1..16] =U'victory outreach'=>U'Victory Outreach',
                             l.description);

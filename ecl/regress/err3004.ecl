@@ -17,7 +17,7 @@
 ############################################################################## */
 
 ReverseString4 := TYPE
-    EXPORT INTEGER Load(INTEGER x) := x+1;  
+    EXPORT INTEGER Load(INTEGER x) := x+1;
     MyType := TYPE
         EXPORT INTEGER Load(INTEGER x) := x+1;
         EXPORT INTEGER Store(INTEGER x) := x-1;

@@ -17,7 +17,7 @@
 ############################################################################## */
 
 //#########################################
-//Set Execution Flags 
+//Set Execution Flags
 
 doTestSimple       := true;     //automated = true
 doTestGrouped      := true;     //automated = true
@@ -25,7 +25,7 @@ doTestFiltered     := true;     //automated = true
 
 
 //#########################################
-//Prepare Test Data 
+//Prepare Test Data
 MyRec := RECORD
   STRING1 Value1;
   integer1 Value2;
@@ -71,7 +71,7 @@ P_Recs := TABLE(ParentFile, OutRec);
 GP_Recs := GROUP(TABLE(SortedParent, OutRec),Value2);
 
 //#########################################
-//All TRANSFORMs 
+//All TRANSFORMs
 
 outrec makeRec(outrec L, MyRec R, string name) := TRANSFORM
     self.name := name;
@@ -114,7 +114,7 @@ outrec makeRecCtrSkip(outrec L, MyRec R, integer c, string name) := TRANSFORM
 END;
 
 //#########################################
-//All MACROs 
+//All MACROs
 
 // Simple denormalize, no unkeyed filter....
 MAC_simpledenorm(result, leftinput, rightinput, name, filters='TRUE') := MACRO
@@ -133,7 +133,7 @@ ENDMACRO;
 
 
 //#########################################
-//All MACRO Calls 
+//All MACRO Calls
 
 MAC_simpledenorm(straightdenorm,P_recs,Childfile,'straight');
 MAC_simpledenorm(straightdenormgrouped,GP_recs,Childfile,'grouped');
@@ -142,7 +142,7 @@ MAC_simpledenorm(straightdenormfiltered,P_recs,Childfile,'filtered',value1 <> 'C
 MAC_simpledenorm(straightdenormgroupedfiltered,GP_recs,Childfile,'grouped filtered',value1 <> 'C');
 
 //#########################################
-//All Actions 
+//All Actions
            #if (doTestSimple)
              straightdenorm;
            #end

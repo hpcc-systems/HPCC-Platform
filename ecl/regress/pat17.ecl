@@ -26,13 +26,13 @@ pattern next := ws | patWord | patInvalid;
 
 infile := dataset([
         {U'one two three'},
-        {U'Gavin Halliday'},
+        {U'Gavin Hawthorn'},
         {U'I \u01ff\u31ffout I went in'},
         {U''}
         ], { unicode line });
 
 
-results := 
+results :=
     record
         MATCHED(patWord[1]);
         MATCHED(patInvalid);

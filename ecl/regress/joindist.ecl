@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname := '?????????????';
 string10        forename := '?????????????';
@@ -38,7 +38,7 @@ ya2 := table(ya1, {surname, forename, unsigned8 cnt := count(group)}, surname, f
 yb1 := dedup(sort(y, age), age);
 yb2 := table(yb1, {surname, forename, unsigned8 cnt := count(group)}, surname, forename, local);
 
-JoinRecord := 
+JoinRecord :=
             RECORD
 namesTable.surname;
 namesTable.forename;
@@ -46,7 +46,7 @@ unsigned8       cnt_abc;
 unsigned8       cnt_age;
             END;
 
-JoinRecord JoinTransform (ya2 l, yb2 r) := 
+JoinRecord JoinTransform (ya2 l, yb2 r) :=
                 TRANSFORM
                     SELF.cnt_abc := l.cnt;
                     SELF.cnt_age := r.cnt;

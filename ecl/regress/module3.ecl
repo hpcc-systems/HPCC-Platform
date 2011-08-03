@@ -18,7 +18,7 @@
 
 
 customerNames := module
-    export Layout := 
+    export Layout :=
                 RECORD
     string20        surname;
     string10        forename;

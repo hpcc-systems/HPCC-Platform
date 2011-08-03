@@ -40,7 +40,7 @@ infile := dataset([
         ], { string line });
 
 
-results := 
+results :=
     record
         infile.line+': ';
         parseLib.getParseTree();

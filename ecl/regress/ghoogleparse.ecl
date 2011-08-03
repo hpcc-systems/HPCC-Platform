@@ -21,7 +21,7 @@ import ghoogle;
 ghoogle.ghoogleDefine();
 
 
-productionRecord  := 
+productionRecord  :=
             record
 dataset(searchRecord) actions;
             end;
@@ -67,7 +67,7 @@ rule compare
     |   'bef'
     ;
 
-ARULE proximity 
+ARULE proximity
     := 'PRE/'                                   ProdProximityFilter(true, 0)
     |  pattern('PRE/[0-9]+')                    ProdProximityFilter(true, (integer)$1[5..])
     |  'PRE/P'                                  CmdParagraphFilter(0, 0, 0, true)
@@ -94,15 +94,15 @@ rule segmentName
     := validate(word, matchtext not in ['CAPS','NOCAPS','ALLCAPS']);
     ;
 
-ARULE term0 
+ARULE term0
     := word                                     CmdReadWord(unknownTerm, 0, 0, $1, 0, 0)
     |  suffixed                                 CmdReadWildWord(unknownTerm, 0, 0, $1[1..length(trim($1))-1], '', '')
     |  wildcarded                               CmdDummy()
     |  range                                    CmdDummy()
     |  '(' forwardExpr ')'                      CmdDummy()
-    | 'CAPS' '(' forwardExpr ')'                transform(searchRecord, 
-                                                    self.action := actionEnum.FlagModifier; 
-                                                    self.wordFlagMask := wordFlags.HasLower+wordFlags.HasUpper, 
+    | 'CAPS' '(' forwardExpr ')'                transform(searchRecord,
+                                                    self.action := actionEnum.FlagModifier;
+                                                    self.wordFlagMask := wordFlags.HasLower+wordFlags.HasUpper,
                                                     self.wordFlagCompare := wordFlags.HasUpper,
                                                     self := []
                                                     )
@@ -132,7 +132,7 @@ PRULE term
 PRULE combined
     := term
     |  SELF 'AND' term                          transform(productionRecord, self.actions := $1.actions + $3.actions + row(CmdSimple(actionEnum.TermAndTerm)))
-    |  SELF proximity term                      transform(productionRecord, 
+    |  SELF proximity term                      transform(productionRecord,
                                                         self.actions := $1.actions + $3.actions + row(CmdSimple(actionEnum.TermAndTerm)) + $2
                                                 )
     |  SELF 'AND' 'NOT' term                    transform(productionRecord, self.actions := $1.actions + $4.actions + row(CmdSimple(actionEnum.TermAndNotTerm)))
@@ -145,23 +145,23 @@ PRULE expr
     ;
 
 infile := dataset([
-        {'gavin and halliday'},
-        {'(gavin or jason) pre/3 halliday'},
+        {'gavin and hawthorn'},
+        {'(gavin or jason) pre/3 hawthorn'},
         {''}
         ], { string line });
 
-resultsRecord := 
+resultsRecord :=
         record(recordof(infile))
 dataset(searchRecord) actions;
         end;
 
 
-resultsRecord extractResults(infile l, dataset(searchRecord) actions) := 
+resultsRecord extractResults(infile l, dataset(searchRecord) actions) :=
         TRANSFORM
             SELF := l;
             SELF.actions := actions;
         END;
-            
+
 output(PARSE(infile,line,expr,extractResults(LEFT, $1.actions),first,whole,skip(ws),parse));
 
 

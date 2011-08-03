@@ -32,20 +32,20 @@ namesTable2 := DATASET([{'Flintstone','Fred',35},
 
                                                 {'Mr. T','Z-man'}], namesRec);
 
- 
+
 
 loopBody(set of DATASET(namesRec) ds, unsigned4 c) :=
 
-            PROJECT(ds[c-1], 
+            PROJECT(ds[c-1],
 
-                          TRANSFORM(namesRec, 
+                          TRANSFORM(namesRec,
 
-                                                SELF.age := LEFT.age+c; 
+                                                SELF.age := LEFT.age+c;
 
                                                 SELF.ctr := COUNTER ;
 
                                                 SELF := LEFT));
 
- 
+
 g1 := GRAPH(namesTable2,10,loopBody(RANGE(ROWSET(LEFT), [1,2,3]),COUNTER));
 output(g1);

@@ -16,14 +16,14 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-stepRecord := 
+stepRecord :=
             record
 string          next{maxlength(20)};
 unsigned        leftStep;
 unsigned        rightStep;
             end;
 
-    
+
 stateRecord :=
             record
 unsigned        step;
@@ -44,13 +44,13 @@ processExpression(dataset(stepRecord) actions) := function
         otherSteps := in(step != action.leftStep and step != action.rightStep);
 
         result := case(action.next,
-                           '+'=>join(sorted(thisLeft, docid), sorted(thisRight, docid), left.docid = right.docid, 
+                           '+'=>join(sorted(thisLeft, docid), sorted(thisRight, docid), left.docid = right.docid,
                                      mkState(thisStep, left.value + right.value, left.docid)),
-                           '-'=>join(sorted(thisLeft, docid), sorted(thisRight, docid), left.docid = right.docid, 
+                           '-'=>join(sorted(thisLeft, docid), sorted(thisRight, docid), left.docid = right.docid,
                                      mkState(thisStep, left.value - right.value, left.docid)),
-                           '*'=>join(sorted(thisLeft, docid), sorted(thisRight, docid), left.docid = right.docid, 
+                           '*'=>join(sorted(thisLeft, docid), sorted(thisRight, docid), left.docid = right.docid,
                                      mkState(thisStep, left.value * right.value, left.docid)),
-                           '/'=>join(sorted(thisLeft, docid), sorted(thisRight, docid), left.docid = right.docid, 
+                           '/'=>join(sorted(thisLeft, docid), sorted(thisRight, docid), left.docid = right.docid,
                                      mkState(thisStep, left.value / right.value, left.docid)),
                            '~'=>project(thisLeft, mkState(thisStep, -left.value, left.docid)),
                            //make two rows for the default action, to ensure that join is grouping correctly.
@@ -58,12 +58,12 @@ processExpression(dataset(stepRecord) actions) := function
 
         return otherSteps + result;
     END;
-                
+
     initial := dataset([], stateRecord);
     result := LOOP(initial, count(actions), processNext(rows(left), counter, actions[NOBOUNDCHECK counter]));
     return result;
 end;
 
-actions := dataset([mkValue(10), mkValue(20), mkOp('*', 1, 2), 
+actions := dataset([mkValue(10), mkValue(20), mkOp('*', 1, 2),
                     mkValue(15), mkValue(10), mkOp('+', 4, 5), mkOp('~', 6), mkOp('-', 3, 7)]);
 output(processExpression(actions));

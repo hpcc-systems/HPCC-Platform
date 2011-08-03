@@ -28,7 +28,7 @@ ds := dataset([
 
 pattern S := 'b' 'a'* 'b';
 
-results := 
+results :=
     record
         string x := MATCHTEXT;
     end;

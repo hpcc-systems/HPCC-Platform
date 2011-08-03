@@ -20,25 +20,25 @@
 
 
 
-favorites(string name) := 
+favorites(string name) :=
     CASE(name,
         'Gavin'=>['Olives','Goats cheese'],
-        'Liz'=>['Pinapple','Cheese'],
+        'Mia'=>['Pinapple','Cheese'],
         'Nathan'=>['Mushroom'],
         'Robert'=>['Cheese','Yoghurt','Apple','Mango'],
         []);
 
 
-favoritePudding(string name) := 
+favoritePudding(string name) :=
     MAP(name='Gavin'=>['Christmas','Suet'],
-        name='Liz'=>['Ice cream','Chocolate'],
+        name='Mia'=>['Ice cream','Chocolate'],
         name='Nathan'=>['Fruit'],
         name='Robert'=>ALL,
         []);
 
 
 
-names := dataset(['Gavin','Liz','Nathan','Robert'], { string name });
+names := dataset(['Gavin','Mia','Nathan','Robert'], { string name });
 
 
 output(names, { name, 'Cheese' in favorites(name)});

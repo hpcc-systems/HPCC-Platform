@@ -33,7 +33,7 @@ NameRecord dt(const string name, const string server = 'x') : c,entrypoint='aclC
 END;
 
 
-MyRecord := 
+MyRecord :=
 record
   unsigned id;
   string uncleanedName;

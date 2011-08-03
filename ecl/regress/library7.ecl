@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -45,10 +45,10 @@ output(filtered.included,,named('Included'));
 addressTable := dataset('y', addressRecord, flat);
 
 
-p := project(addressTable, 
-            transform(addressRecord, 
-                    self.names := sort(filterNames(left.names, 'Halliday', false).included, surname); 
-                    self.names2 := sort(filterNames(left.names, 'Halliday', false).excluded, surname); 
+p := project(addressTable,
+            transform(addressRecord,
+                    self.names := sort(filterNames(left.names, 'Hawthorn', false).included, surname);
+                    self.names2 := sort(filterNames(left.names, 'Hawthorn', false).excluded, surname);
                     self := left));
 
 output(p);

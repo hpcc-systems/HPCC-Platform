@@ -27,7 +27,7 @@ integer3        value;
 derivedRecord := record(baseRecord), maxlength(100)
 string              extra;
                 end;
-mainRecord := 
+mainRecord :=
         RECORD
 integer8            sequence;
 string20            forename;
@@ -54,7 +54,7 @@ string20        addr;
 peopleDataset := DATASET([{3000,'London'},{3500,'Miami'},{30,'Houndslow'}], peopleRecord);
 
 
-joinedRecord := 
+joinedRecord :=
         RECORD
 integer8            sequence;
 string20            forename;

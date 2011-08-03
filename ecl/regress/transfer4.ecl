@@ -21,7 +21,7 @@ unsigned integer4 x1:=1;
 unsigned integer4 x2:=2;
 data8 y := transfer(x1, data4)+transfer(x2, data4);
 y;
-order_rec:=record 
+order_rec:=record
 data8 z := y;
 end;
 SHARED tab := TABLE(person, order_rec);

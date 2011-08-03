@@ -17,7 +17,7 @@
 ############################################################################## */
 
 #option ('globalFold', false);
-//Demonstrates a cse problem.  PIPE() is done 3 times, when should only really be done once.  Problem is that 
+//Demonstrates a cse problem.  PIPE() is done 3 times, when should only really be done once.  Problem is that
 //the condition is executed in eclagent, and the conditional filenames stop the graphs being rearranged.
 // We only know they can't be grouped together pretty late.  It would then require another pass to spot global cse's
 // between different graphs, and make those global.  Would be possible.
@@ -26,7 +26,7 @@
 
 string outname := '' : stored('outname');
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

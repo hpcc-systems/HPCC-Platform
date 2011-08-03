@@ -22,8 +22,8 @@ sq.DeclareCommon();
 udecimal8 baseDate := 20050101;
 
 rawHouse := dataset([
-    { '10 Slapdash Lane', 'SW1A0AA', 1720, 
-        [{ 'Gavin', 'Halliday', 19700101, 1000, 0,
+    { '10 Slapdash Lane', 'SW1A0AA', 1720,
+        [{ 'Gavin', 'Hawthorn', 19700101, 1000, 0,
             [
             { 'To kill a mocking bird', 'Harper Lee', 95},
             { 'Clarion Language Manual', 'Richard Taylor', 1, 399.99 },
@@ -32,7 +32,7 @@ rawHouse := dataset([
             { 'Lord of the Rings', 'JRR Tolkien', 95 }
             ]
         },
-        { 'Abigail', 'Halliday', 20000101, 40, 0,
+        { 'Abigail', 'Hawthorn', 20000101, 40, 0,
             [
             { 'The thinks you can think', 'Dr. Seuss', 90, 5.99 },
             { 'Where is flop?', '', 85, 4.99 },
@@ -40,7 +40,7 @@ rawHouse := dataset([
             { 'The story of Jonah', '', 80, 6.99 }
             ]
         },
-        { 'Liz', 'Halliday', 19700909, 0, 0,
+        { 'Mia', 'Hawthorn', 19700909, 0, 0,
             [
             { 'The Life of Pi', 'Yan Martel', 90 },
             { 'BNF', 'Various', 60 },
@@ -69,7 +69,7 @@ rawHouse := dataset([
     },
     { 'Bedrock', '', 0,
         [{'Fred', 'Flintstone', 00000101, 0, 0, [] },
-        {'Wilma', 'Flintstone', 00020202, 0, 0, 
+        {'Wilma', 'Flintstone', 00020202, 0, 0,
             [
             { 'Dinosaur stews', 'Trog', 55 }
             ]
@@ -102,15 +102,15 @@ rawHouse := dataset([
     ], sqHousePersonBookRec);
 
 
-//First reproject the datasets to 
+//First reproject the datasets to
 
-sqBookIdRec addIdToBook(sqBookRec l) := 
+sqBookIdRec addIdToBook(sqBookRec l) :=
             transform
                 self.id := 0;
                 self := l;
             end;
 
-sqPersonBookIdRec addIdToPerson(sqPersonBookRec l) := 
+sqPersonBookIdRec addIdToPerson(sqPersonBookRec l) :=
             transform
                 unsigned2 aage := if (l.dob < baseDate, (unsigned2)((baseDate - l.dob) / 10000), 0);
                 self.id := 0;
@@ -119,7 +119,7 @@ sqPersonBookIdRec addIdToPerson(sqPersonBookRec l) :=
                 self := l;
             end;
 
-sqHousePersonBookIdRec addIdToHouse(sqHousePersonBookRec l) := 
+sqHousePersonBookIdRec addIdToHouse(sqHousePersonBookRec l) :=
             transform
                 self.id := 0;
                 self.persons := project(l.persons, addIdToPerson(LEFT));
@@ -132,14 +132,14 @@ projected := project(rawHouse, addIdToHouse(LEFT));
 //version 1 assign unique ids a really inefficient way...
 //doesn't actually work....
 
-sqBookIdRec setBookId(sqHousePersonBookIdRec lh, sqBookIdRec l, unsigned4 basebookid) := 
+sqBookIdRec setBookId(sqHousePersonBookIdRec lh, sqBookIdRec l, unsigned4 basebookid) :=
             transform
                 unsigned maxbookid := max(lh.persons, max(lh.persons.books, id));
                 self.id := if(maxbookid=0, basebookid, maxbookid)+1;
                 self := l;
             end;
 
-sqPersonBookIdRec setPersonId(sqHousePersonBookIdRec lh, sqPersonBookIdRec l, unsigned4 basepersonid, unsigned4 basebookid) := 
+sqPersonBookIdRec setPersonId(sqHousePersonBookIdRec lh, sqPersonBookIdRec l, unsigned4 basepersonid, unsigned4 basebookid) :=
             transform
                 unsigned4 maxpersonid := max(lh.persons, id);
                 self.id := if(maxpersonid=0, basepersonid, maxpersonid)+1;
@@ -147,7 +147,7 @@ sqPersonBookIdRec setPersonId(sqHousePersonBookIdRec lh, sqPersonBookIdRec l, un
                 self := l;
             end;
 
-sqHousePersonBookIdRec setHouseId(sqHousePersonBookIdRec l, sqHousePersonBookIdRec r, unsigned4 id) := 
+sqHousePersonBookIdRec setHouseId(sqHousePersonBookIdRec l, sqHousePersonBookIdRec r, unsigned4 id) :=
             transform
                 unsigned prevmaxpersonid := max(l.persons, id);
                 unsigned prevmaxbookid := max(l.persons, max(l.persons.books, id));
@@ -192,7 +192,7 @@ sqBookRelatedIdRec extractBook(sqBookIdRec l, unsigned4 personid) :=
 
 DoAssignSeq(ds, o) := macro
 #uniquename (trans)
-typeof(ds) %trans%(ds l, unsigned c) := 
+typeof(ds) %trans%(ds l, unsigned c) :=
         transform
             self.id := c;
             self := l;

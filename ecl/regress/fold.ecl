@@ -25,7 +25,7 @@ export mydataset := DATASET('household', RECORD
             unsigned integer8 holepos
             END, THOR);
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

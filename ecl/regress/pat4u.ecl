@@ -26,7 +26,7 @@ infile := dataset([
         ], { unicode line });
 
 
-results := 
+results :=
     record
         MATCHTEXT;
     end;

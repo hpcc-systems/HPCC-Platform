@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -25,9 +25,9 @@ integer2        age := 25;
             END;
 
 namesTable := dataset([
-        {'Salter','Abi',10},
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
+        {'Smithe','Pru',10},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
         {'X','Z'}], namesRecord);
 
 person := dataset('person', { unsigned8 person_id, string1 per_sex, string2 per_st, string40 per_first_name, string40 per_last_name}, thor);

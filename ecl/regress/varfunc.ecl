@@ -18,14 +18,14 @@
 
 #option ('globalFold', false);
 
-export sys := 
+export sys :=
     SERVICE
 varstring strdup(const varstring src) : c,sys,entrypoint='strdup';
     END;
 
 
 
-export display := 
+export display :=
     SERVICE
         echo(const string src) : eclrtl,library='eclrtl',entrypoint='rtlEcho';
     END;

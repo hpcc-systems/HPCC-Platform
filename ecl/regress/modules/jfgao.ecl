@@ -25,7 +25,7 @@ ENDMACRO;
 EXPORT myfunc(x) := 2*x;
 /* similar to StringLib, but not in default module */
 export MyStringLib := SERVICE
-   integer4 TestExternalFunc(integer4 x) : 
+   integer4 TestExternalFunc(integer4 x) :
             pure,c,library='dab',entrypoint='rtlTestExternalFunc';
 END;
 

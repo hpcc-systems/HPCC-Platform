@@ -47,7 +47,7 @@ ppersonRecordEx projectFunction(ppersonRecord incoming) := Transform
 END;
 
 
-pperson := DATASET([{'Halliday','Gavin',''},{'','James',''}], ppersonRecord);
+pperson := DATASET([{'Hawthorn','Gavin',''},{'','James',''}], ppersonRecord);
 
 ppersonEx := project(pperson, projectFunction(left));
 

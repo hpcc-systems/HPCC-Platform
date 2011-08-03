@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-r1 := 
+r1 :=
   record
     typeof(something) x;
   end;

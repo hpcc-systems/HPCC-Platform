@@ -20,8 +20,8 @@
 // Self recursive calls
 
 f(x) := MACRO
-    4 + 
-    f(x) 
+    4 +
+    f(x)
 ENDMACRO;
 
 c := f(5);

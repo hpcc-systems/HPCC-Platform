@@ -19,7 +19,7 @@
 /* should detect */
 LOADXML('<xml></xml>');
 #LOOP
-  #LOOP 
+  #LOOP
     #BREAK
   #END
 #END

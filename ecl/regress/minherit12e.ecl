@@ -19,7 +19,7 @@
 
 
 interface1 := module,interface
-string50 firstName;                     // should be exported   
+string50 firstName;                     // should be exported
 export string50 lastName;
         end;
 

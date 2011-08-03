@@ -18,7 +18,7 @@
 
 #option ('optimizeChildSource',true);
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -29,7 +29,7 @@ indirectRecord :=
             RECORD
 dataset(namesRecord) extra;
             END;
-            
+
 
 houseRecord :=
             RECORD
@@ -40,10 +40,10 @@ dataset(indirectRecord) occupants;
 
 d := dataset([
             {
-                'Great Chishill', 
+                'Great Chishill',
                 [{[
-                    {'Halliday','Gavin',35},
-                    {'Halliday','Abigail',2},
+                    {'Hawthorn','Gavin',35},
+                    {'Hawthorn','Abigail',2},
                     {'Smith','John',57}
                 ]}]
             },

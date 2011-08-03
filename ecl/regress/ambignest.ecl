@@ -19,7 +19,7 @@
 //Illustates bug #19786 - l.y is potentially ambiguous in the context of the project if only done on type.
 //And yes I have seen silly code like this!
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

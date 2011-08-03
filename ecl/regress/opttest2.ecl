@@ -19,7 +19,7 @@
 #option ('optimizeGraph', false);
 #option ('globalOptimize', true);
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

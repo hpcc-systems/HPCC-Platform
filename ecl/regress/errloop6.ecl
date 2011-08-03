@@ -18,23 +18,23 @@
 
 LOADXML('<xml></xml>');
 #LOOP
-  #LOOP 
-//  #BREAK  
+  #LOOP
+//  #BREAK
     #LOOP
 //      #BREAK
     #END
     #BREAK
-  #END  
+  #END
   #BREAK
 #END
 
 
 #LOOP
-  #LOOP 
+  #LOOP
     #LOOP
-      #BREAK  
+      #BREAK
     #END
-  #END  
+  #END
   #BREAK
 #END
 

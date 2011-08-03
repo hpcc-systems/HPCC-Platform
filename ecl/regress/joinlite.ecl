@@ -18,7 +18,7 @@
 
 #option ('spotLocalMerge', true);
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname := '?????????????';
 string10        forename := '?????????????';
@@ -32,15 +32,15 @@ string20        surname;
             END;
 
 namesTable := dataset([
-        {'Salter','Abi',10},
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
+        {'Smithe','Pru',10},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
         {'Smith','Jo'},
         {'Smith','Matthew'},
         {'X','Z'}], namesRecord);
 
 addressTable := dataset([
-        {'Halliday','10 Slapdash Lane'},
+        {'Hawthorn','10 Slapdash Lane'},
         {'Smith','Leicester'},
         {'Smith','China'},
         {'X','12 The burrows'},
@@ -51,7 +51,7 @@ addressTable := dataset([
 dNamesTable := sorted(namesTable,surname,local);
 dAddressTable := sorted(addressTable,surname,local);
 
-JoinRecord := 
+JoinRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -59,7 +59,7 @@ integer2        age := 25;
 string30        addr;
             END;
 
-JoinRecord JoinTransform (namesRecord l, addressRecord r) := 
+JoinRecord JoinTransform (namesRecord l, addressRecord r) :=
                 TRANSFORM
                     SELF.addr := r.addr;
                     SELF := l;

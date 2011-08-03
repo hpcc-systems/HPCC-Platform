@@ -18,13 +18,13 @@
 
 #option ('targetClusterType', 'roxie');
 
-import lib_stringlib,std.system.thorlib; 
-prefix := 'hthor'; 
-useLayoutTrans := false; 
-useLocal := false; 
-usePayload := false; 
-useVarIndex := false; 
-useDynamic := false; 
+import lib_stringlib,std.system.thorlib;
+prefix := 'hthor';
+useLayoutTrans := false;
+useLocal := false;
+usePayload := false;
+useVarIndex := false;
+useDynamic := false;
 //define constants
 DG_GenFlat           := true;   //TRUE gens FlatFile
 DG_GenChild          := true;   //TRUE gens ChildFile
@@ -105,16 +105,16 @@ DG_FetchFilePreloadIndexed := PRELOAD(DATASET(DG_FetchFilePreloadIndexedName,{DG
 DG_OutRec := RECORD
     unsigned4  DG_ParentID;
     string10  DG_firstname;
-    string10  DG_lastname; 
-    unsigned1 DG_Prange;   
+    string10  DG_lastname;
+    unsigned1 DG_Prange;
 END;
 
 DG_OutRecChild := RECORD
     unsigned4  DG_ParentID;
     unsigned4  DG_ChildID;
     string10  DG_firstname;
-    string10  DG_lastname; 
-    unsigned1 DG_Prange;   
+    string10  DG_lastname;
+    unsigned1 DG_Prange;
 END;
 
 #if(DG_GenVar = TRUE)

@@ -17,11 +17,11 @@
 ############################################################################## */
 
 aaa := DATASET('aaa',{STRING1 a; }, FLAT);
-iftotal := IF(TRUE, 1, 0);  
+iftotal := IF(TRUE, 1, 0);
 
-countrec := RECORD  
+countrec := RECORD
      1;
-     total := SUM(GROUP, iftotal);  
-END;  
+     total := SUM(GROUP, iftotal);
+END;
 
 a := OUTPUT(TABLE(aaa,countrec,1));

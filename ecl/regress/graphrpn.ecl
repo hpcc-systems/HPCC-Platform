@@ -16,14 +16,14 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-stepRecord := 
+stepRecord :=
             record
 string          next{maxlength(20)};
 unsigned        leftStep;
 unsigned        rightStep;
             end;
 
-    
+
 stateRecord :=
             record
 unsigned        step;
@@ -49,12 +49,12 @@ processExpression(dataset(stepRecord) actions) := function
 
         return dataset(row(transform(stateRecord, self.step := step; self.value := newValue)));
     END;
-                
+
     initial := dataset([], stateRecord);
     result := GRAPH(initial, count(actions), processNext(rowset(left), counter, actions[counter]), local);
     return result[1].value;
 end;
 
-actions := dataset([mkValue(10), mkValue(20), mkOp('*', 1, 2), 
+actions := dataset([mkValue(10), mkValue(20), mkOp('*', 1, 2),
                     mkValue(15), mkValue(10), mkOp('+', 4, 5), mkOp('-', 3, 6)]);
 output(processExpression(global(actions,few)));

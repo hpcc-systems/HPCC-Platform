@@ -19,7 +19,7 @@
         STRING20 s20   := 'constant string';
         STRING20 s20a  := 'fred\'s place';
         STRING20 s20b  := 'fred\\ginger\'s place';
- 
+
         OUTPUT(s20);
         OUTPUT(s20a);
         OUTPUT(s20b);

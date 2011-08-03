@@ -20,11 +20,11 @@ import sq;
 sq.DeclareCommon();
 
 searchPeople := dataset([
-            { 'Gavin', 'Halliday'},
+            { 'Gavin', 'Hawthorn'},
             {'Elizabeth', 'Windsor'},
             {'Fred','Flintstone'}], { string forename, string surname });
-            
-            
+
+
 recordof(sqSimplePersonBookIndex) t(searchPeople l, sqSimplePersonBookDs r) := TRANSFORM
     SELF := l;
     SELF := r;

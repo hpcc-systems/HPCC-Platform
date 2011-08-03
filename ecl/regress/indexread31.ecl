@@ -20,13 +20,13 @@ d := dataset('~local::rkc::person', { string15 name, boolean myBool; string20 fo
 
 x := 'x' : stored('x');
 
-i := index(d, { d } ,'\\seisint\\person.name_first.key.' + x);
+i := index(d, { d } ,'\\home\\person.name_first.key.' + x);
 
 sequential(
     output(i(keyed(name = 'Gavin'),keyed(myBool = false)));
     output(i(keyed(name = 'Gavin'),keyed(not myBool)));
     output(i(keyed(name = 'Gavin'),keyed(myBool = true)));
     output(i(keyed(name = 'Gavin'),keyed(myBool)))
-);  
+);
 
 

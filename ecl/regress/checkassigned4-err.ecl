@@ -28,14 +28,14 @@ record1 := record
 end;
 
 record2 := record
-    record1 r21; 
+    record1 r21;
     record1 r22;
 end;
 
 record3 := record
     integer i1;
     integer i2;
-    record1 r1; 
+    record1 r1;
     record1 r1x;
     record2 r2;
     record2 r2x;
@@ -44,13 +44,13 @@ end;
 record4 := record
     integer i1;
     integer i2;
-    record1 r1; 
+    record1 r1;
     record1 r1x;
     record2 r2;
     record2 r2x;
     record3 r3;
     record3 r3x;
-end;    
+end;
 
 /* leave any of the assignment out should cause errors */
 /* total 42 fields plus on empty transform error: 43 errors */
@@ -58,7 +58,7 @@ record4 tranx1(record1 L1, record2 L2, record3 L3,integer i) := transform
 /*
     self := L1;
 
-        self.r1.i1 := 1;    
+        self.r1.i1 := 1;
     self.r1.i2 := 2;
     self.r1x := L1;
 
@@ -69,7 +69,7 @@ record4 tranx1(record1 L1, record2 L2, record3 L3,integer i) := transform
     self.r2x := L2;
 
     // level 3
-        self.r3 := L3;    
+        self.r3 := L3;
     self.r3x.i1 := 1;
     self.r3x.i2 := 2;
     self.r3x.r1 := L1;

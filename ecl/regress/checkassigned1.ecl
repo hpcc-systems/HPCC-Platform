@@ -26,14 +26,14 @@ record1 := record
 end;
 
 record2 := record
-    record1 r1; 
+    record1 r1;
     record1 r2;
 end;
 
 record3 := record
     integer i1;
     integer i2;
-    record1 r1; 
+    record1 r1;
     record1 r2;
 end;
 
@@ -44,7 +44,7 @@ record1 tranx0(integer i, integer j) := transform
 end;
 
 record2 tranx1(record1 L, integer i) := transform
-        self.r1.i1 := 1;    
+        self.r1.i1 := 1;
     self.r1.i2 := 2;
     self.r2.i1 := 3;
     self.r2.i2 := i;
@@ -58,14 +58,14 @@ end;
 record3 tranx3(record1 L, integer i) := transform
     self := L;
         self.r1 := L;
-    self.r2.i1 := 1;    
+    self.r2.i1 := 1;
     self.r2.i2 := 2;
 end;
 
 record3 tranx4(record1 L, integer i) := transform
     self := L;
         self.r1 := L;
-    self.r2.i1 := 1;    
+    self.r2.i1 := 1;
     self.r2.i2 := i;
 end;
 
@@ -74,7 +74,7 @@ record3 tranx5(integer i, integer j) := transform
     self.i2 := j;
         self.r1.i1 := i;
         self.r1.i2 := j;
-    self.r2.i1 := i;    
+    self.r2.i1 := i;
     self.r2.i2 := j;
 end;
 

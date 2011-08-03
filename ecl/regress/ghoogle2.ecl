@@ -57,13 +57,13 @@ tokenIndex      := index({ wordIdType wordid }, { wordType word, wordIdType norm
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 atomEnum  := ENUM(NoAtom, PlainWordAtom,QuotedWordAtom,TruncWordAtom,WildWordAtom,DateAtom);
-actionEnum := ENUM(ReadAction, 
-                   JoinReadAction, JoinAction, 
-                   OrAction, 
+actionEnum := ENUM(ReadAction,
+                   JoinReadAction, JoinAction,
+                   OrAction,
                    AtmostCountAction,
                    AtmostAction);
 
-actionRecord := 
+actionRecord :=
             RECORD
 atomEnum        atom;
 wordType        word;
@@ -123,8 +123,8 @@ END;
 
 dataset(candidateRecord) doReadPlainWord1(actionRecord in) := FUNCTION
     matches := doReadPlainWord(in);
-    
-    candidateRecord createCandidate(termRecord term) := 
+
+    candidateRecord createCandidate(termRecord term) :=
             transform
                 SELF.matches := dataset(term);
                 SELF := term;
@@ -137,12 +137,12 @@ termRecord getTerm(candidateRecord l, termType searchTermNum) := l.matches(termN
 
 dataset(candidateRecord) doJoinReadPlainWord(actionRecord in, dataset(candidateRecord) candidates) := FUNCTION
 
-    candidateRecord addTerm(candidateRecord l, wordIndex r, termType termnum) := 
+    candidateRecord addTerm(candidateRecord l, wordIndex r, termType termnum) :=
             transform
                 SELF.matches := l.matches + row(wordToTerm(r, termnum));
                 SELF := l;
             END;
-        
+
     wordPosType lowerBound(wordPosType oldpos, actionRecord in) :=
         IF (in.preceeds, oldpos+1, IF(oldpos >= in.distance, oldpos-in.distance, 1));
 

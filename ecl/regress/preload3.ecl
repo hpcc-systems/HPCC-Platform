@@ -39,5 +39,5 @@ filtered := rawfile(
  keyed(secondary.id = searchId),
  keyed(primary.score = secondaryScore)
 );
- 
+
 output(filtered)

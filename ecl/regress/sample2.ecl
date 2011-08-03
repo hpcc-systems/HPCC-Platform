@@ -20,7 +20,7 @@
 
 person := dataset('person', { unsigned8 person_id, string1 per_sex, string2 per_st, string40 per_first_name, string40 per_last_name}, thor);
 p1 := person(per_first_name[1] = 'V');
- 
+
 p1s := sample(p1,100);
 count(person);
 count(p1);

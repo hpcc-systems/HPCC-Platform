@@ -20,7 +20,7 @@ r := { string15 name := '', unsigned8 filepos{virtual(fileposition)} := 0};
 
 d := dataset('~local::rkc::person', r, flat);
 
-i := index(d, r,'\\seisint\\person.name_first.key');
+i := index(d, r,'\\home\\person.name_first.key');
 
 a1 := i(name='RICHARD');
 

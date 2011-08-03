@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-// test: mapping 
+// test: mapping
 ds := dataset('ds', {String10 first_name; string20 last_name; }, FLAT);
 
 integer ct(virtual dataset({String10 name;}) d) := count(d(name = 'fred'));

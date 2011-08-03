@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-LOADXML('<ABCSERVICE><ABC>129970464</ABC><DID></DID><name>Gavin</name></ABCSERVICE>'); 
+LOADXML('<ABCSERVICE><ABC>129970464</ABC><DID></DID><name>Gavin</name></ABCSERVICE>');
 
 string9 abc_value := %'abc'% : stored('abc');
 string14 did_value := %'did'% : stored('did');

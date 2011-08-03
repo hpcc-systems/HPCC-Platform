@@ -41,13 +41,13 @@ infile := dataset([
         {''}
         ], { string line });
 
-outRec := 
-        record 
+outRec :=
+        record
 string      line;
 string      tree;
         end;
 
-outRec t(infile l) := 
+outRec t(infile l) :=
     transform
         self.line := l.line+': ';
         self.tree := parseLib.getXmlParseTree();

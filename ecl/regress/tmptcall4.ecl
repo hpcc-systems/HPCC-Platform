@@ -21,7 +21,7 @@
 // Everything in local scope works
 
 MyStringLib := SERVICE
-   integer4 TestExternalFunc(integer4 x) : 
+   integer4 TestExternalFunc(integer4 x) :
             pure,C,library='dab',entrypoint='rtlTestExternalFunc';
 END;
 

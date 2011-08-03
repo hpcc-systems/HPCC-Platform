@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-nameRecord := 
+nameRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -33,6 +33,6 @@ dataset(nameRecord) occupants;
 
 
 
-addressTable := dataset([{'10 Malt','sg8','',[{'Halliday','Gavin',36},{'Halliday','Robert',1}]}], addressRecord);
+addressTable := dataset([{'10 Malt','sg8','',[{'Hawthorn','Gavin',36},{'Hawthorn','Robert',1}]}], addressRecord);
 a := nofold(addressTable)(phone != '');
 output(a[1].occupants[1].age);

@@ -24,7 +24,7 @@ ds := dataset([{u'a'},{u''},{u'b'}], layout);
 
 layout skipEmpty(layout rec) := transform
 
-   // Error: Incompatible types: expected unicode, given 
+   // Error: Incompatible types: expected unicode, given
    // self.u1 := if(rec.u1 != u'', rec.u1, SKIP);
 
    // works correctly

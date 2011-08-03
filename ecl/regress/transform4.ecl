@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -25,7 +25,7 @@ integer2        age := 25;
 unsigned8       filepos{virtual(fileposition)};
             END;
 
-namesIdRecord := 
+namesIdRecord :=
             RECORD
 namesRecord;
 unsigned        id;
@@ -39,7 +39,7 @@ output(projected);
 
 
 //Not sure why you would want to do this... but we may as well be consistent.
-namesIdRecord doClear := 
+namesIdRecord doClear :=
         transform
             self := [];
         end;

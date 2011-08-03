@@ -18,7 +18,7 @@
 
 #option ('targetClusterType', 'roxie');
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -29,7 +29,7 @@ namesTable := dataset('x',namesRecord,FLAT);
 s := sort(namesTable, forename);
 
 
-ds1 := table(dataset([{0}],{integer i}), 
+ds1 := table(dataset([{0}],{integer i}),
 {
 '--',
 if(count(s) > 0, s[1].age, 0),
@@ -43,7 +43,7 @@ if(count(s) > 1, s[2].forename, ''),
 output(ds1);
 
 
-ds2 := table(dataset([{5}],{integer i}), 
+ds2 := table(dataset([{5}],{integer i}),
 {
 '--',
 if(count(s) > 1, s[1].forename, ''),

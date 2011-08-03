@@ -33,18 +33,18 @@ NameRecord dt(const string name, const string server = 'x') : c,entrypoint='aclC
 END;
 
 
-MyRecord := 
+MyRecord :=
 record
   unsigned id;
   string uncleanedName;
   NameRecord   Name;
 end;
 
-x := LocalAddrCleanLib.dt('Gavin Halliday') : global;
+x := LocalAddrCleanLib.dt('Gavin Hawthorn') : global;
 
 output(x.lname);
 
 
-output(LocalAddrCleanLib.dt('Jason Halliday').fname);
-output(LocalAddrCleanLib.dt('Jason Halliday').name_score);
+output(LocalAddrCleanLib.dt('Jason Hawthorn').fname);
+output(LocalAddrCleanLib.dt('Jason Hawthorn').name_score);
 

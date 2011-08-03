@@ -22,7 +22,7 @@ loadxml('myxml.xml');
 #DECLARE(s)
 #SET(s, 1)
 
-// #FOR 
+// #FOR
 
 #IF (TRUE)
     #SET(s, 1)

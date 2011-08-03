@@ -23,10 +23,10 @@ tab1 := person(person.per_x = '1');
 
 segmentid1 := '9480';
 
-countrec1 := RECORD  
+countrec1 := RECORD
 segmentid1 ;
 total := SUM(GROUP, 1);
-marital_status := SUM(GROUP, IF(person.per_marital_status = ' ', 0, 
+marital_status := SUM(GROUP, IF(person.per_marital_status = ' ', 0,
 1));
 END;
 
@@ -42,10 +42,10 @@ tab2 := person(person.per_x = '1');
 
 segmentid2 := '9480';
 
-countrec2 := RECORD  
+countrec2 := RECORD
 segmentid2 ;
 total := SUM(GROUP, 1);
-marital_status := SUM(GROUP, IF(person.per_marital_status = ' ', 0, 
+marital_status := SUM(GROUP, IF(person.per_marital_status = ' ', 0,
 1));
 END;
 
@@ -54,11 +54,11 @@ pricetable2 := TABLE(tab2, countrec2, segmentid2, FEW) ;
 OUTPUT(pricetable2) ;
 //------------------------------------------------------------------
 
-//i.e. we don't need to specify the 
+//i.e. we don't need to specify the
 //
-//   ", segmentid, FEW) " 
+//   ", segmentid, FEW) "
 //
 //in the last TABLE line.
 //
-//Also we need to make sure that while grouping constants (for eg. "segmentid" in 
+//Also we need to make sure that while grouping constants (for eg. "segmentid" in
 //the ECL above), the constant value that is finally generated is correct.

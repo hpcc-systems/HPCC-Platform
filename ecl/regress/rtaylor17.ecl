@@ -20,8 +20,8 @@ ParentRec := RECORD
         INTEGER1  NameID;
         STRING20  Name;
 END;
-ds := DATASET([{1,'Gavin'},{2,'Liz'},{3,'Mr Nobody'},{4,'Anywhere'}], 
-ParentRec);    
+ds := DATASET([{1,'Gavin'},{2,'Mia'},{3,'Mr Nobody'},{4,'Anywhere'}],
+ParentRec);
 ChildRec := RECORD
         INTEGER1  NameID;
         STRING20  Name;

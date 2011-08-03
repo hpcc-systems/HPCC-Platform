@@ -18,24 +18,24 @@
 
 person := dataset('person', { unsigned8 person_id, string2 per_st, string40 per_first_name, unsigned8 per_dact }, thor);
 
-section_GEOGRAPHY_STATES :=  person.per_st = 'MI' ;    
+section_GEOGRAPHY_STATES :=  person.per_st = 'MI' ;
 
-section_GEOGRAPHY := section_GEOGRAPHY_STATES ;  
+section_GEOGRAPHY := section_GEOGRAPHY_STATES ;
 
-SEGMENT_SELECTS := section_GEOGRAPHY  ;  
+SEGMENT_SELECTS := section_GEOGRAPHY  ;
 
-qset := person(person.per_dact = 1  AND 
-                    SEGMENT_SELECTS ) ;  
+qset := person(person.per_dact = 1  AND
+                    SEGMENT_SELECTS ) ;
 
-iftotal := IF(TRUE, 1, 0);  
+iftotal := IF(TRUE, 1, 0);
 
-segmentid := '482'; 
+segmentid := '482';
 
-countrec := RECORD  
-    segmentid ;  
-    total := SUM(GROUP, iftotal);  
-END;  
+countrec := RECORD
+    segmentid ;
+    total := SUM(GROUP, iftotal);
+END;
 
-EXPORT counttable_482 := TABLE(qset, countrec, 1, segmentid);  
-OUTPUT(counttable_482) ; 
+EXPORT counttable_482 := TABLE(qset, countrec, 1, segmentid);
+OUTPUT(counttable_482) ;
 

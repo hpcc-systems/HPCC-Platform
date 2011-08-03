@@ -33,7 +33,7 @@ d := SORT(testDataset, forename, JOINED(b), LOCAL);
 e := SORT(testDataset, forename, LOCAL, JOINED(b));
 f := HASH(testDataset.forename);
 
-testRecord t(testRecord l, testRecord r) := TRANSFORM 
+testRecord t(testRecord l, testRecord r) := TRANSFORM
 SELF := l
     END;
 

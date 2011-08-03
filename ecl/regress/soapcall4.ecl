@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-xyzServiceOutRecord := 
+xyzServiceOutRecord :=
     RECORD
         string name{xpath('Name')};
         unsigned6 id{xpath('ADL')};
@@ -31,7 +31,7 @@ serviceName := if(useForce, 'ForceXyzService', 'XyzService');
 callXyzService(_NAME, _ID, _SCORE, OUTF) := macro
         outF := SOAPCALL('myip',serviceName,
                         {
-                            string Name{xpath('Name')} := _NAME, 
+                            string Name{xpath('Name')} := _NAME,
                             unsigned id{xpath('ADL')} := _ID,
                             real8 score := _SCORE,
                         }, soapaction('MicroAction'))
@@ -39,6 +39,6 @@ callXyzService(_NAME, _ID, _SCORE, OUTF) := macro
 
 
 
-callXyzService('Gavin Halliday', 1234567, 3.14159267, results);
+callXyzService('Gavin Hawthorn', 1234567, 3.14159267, results);
 
 results;

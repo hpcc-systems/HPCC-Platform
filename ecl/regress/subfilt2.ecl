@@ -25,7 +25,7 @@ string20  per_forename;
 unsigned8 holepos;
     END;
 
-parentRecord := 
+parentRecord :=
                 RECORD
 unsigned8           id;
 string20            address1;
@@ -38,11 +38,11 @@ string10            postcode;
 
 parentDataset := DATASET('test',parentRecord,FLAT);
 
-parentRecord copyAll(parentRecord l, parentRecord r) := 
+parentRecord copyAll(parentRecord l, parentRecord r) :=
 TRANSFORM
     SELF := r;
 END;
 
-filtered := parentDataset(EXISTS(children(per_surname!='Halliday')));
+filtered := parentDataset(EXISTS(children(per_surname!='Hawthorn')));
 
 output(filtered,,'out.d00');

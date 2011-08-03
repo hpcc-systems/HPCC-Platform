@@ -27,7 +27,7 @@ string f1(interface1 ctx) := '[' + ctx.firstName + ',' + ctx.lastName + ']';
 
 options := module(interface1)
 export string10 firstName := 'Gavin';       //incompatible explicit types
-export string lastName := 'Halliday';       //incompatible explicit types
+export string lastName := 'Hawthorn';       //incompatible explicit types
     end;
 
 

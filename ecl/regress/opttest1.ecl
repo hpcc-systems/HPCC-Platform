@@ -18,8 +18,8 @@
 
 #option ('optimizeGraph', false);
 rec := record
- string10 lname; 
- string10 fname;  
+ string10 lname;
+ string10 fname;
 end;
 
 head := dataset('infile',rec,flat);
@@ -31,7 +31,7 @@ x2 := sort(x1, lname);
 
 x3 := table(x2, {fname, lname, cnt});
 
-x4 := x3(lname > 'Halliday');
+x4 := x3(lname > 'Hawthorn');
 
 output(x4);
 

@@ -38,7 +38,7 @@ rule C := 'c' self
 rule S := C C
         ;
 
-results := 
+results :=
     record
         string Le :=  '!'+MATCHTEXT(S)+'!';
         string tree := 'Tree: '+parseLib.getParseTree();

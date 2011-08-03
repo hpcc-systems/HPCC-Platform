@@ -59,7 +59,7 @@ DG_MaxGrandChildren  := 3;    //maximum (1 to n) number of grandchild recs
 
 // Raw record definitions:
 
-sqHouseRec := 
+sqHouseRec :=
             record
 string          addr;
 string10        postcode;
@@ -67,7 +67,7 @@ unsigned2       yearBuilt := 0;
             end;
 
 
-sqPersonRec := 
+sqPersonRec :=
             record
 string          forename;
 string          surname;
@@ -76,7 +76,7 @@ udecimal8       booklimit := 0;
 unsigned2       aage := 0;
             end;
 
-sqBookRec := 
+sqBookRec :=
             record
 string          name;
 string          author;
@@ -153,18 +153,18 @@ dataset(sqPersonBookIdRec) persons;
             end;
 
 
-sqPersonBookRelatedIdRec := 
+sqPersonBookRelatedIdRec :=
             RECORD
                 sqPersonBookIdRec;
 unsigned4       houseid;
             END;
 
-sqNestedBlob := 
+sqNestedBlob :=
             RECORD
 udecimal8       booklimit := 0;
             END;
 
-sqSimplePersonBookRec := 
+sqSimplePersonBookRec :=
             RECORD
 string20        surname;
 string10        forename;
@@ -251,8 +251,8 @@ o2 := normalize(sqNamesTable1, sort(left.books, -rating100, +author), transform(
 o3 := normalize(sqNamesTable1, sort(left.books, +author, +name), transform({string name, string author}, self := right));
 
 sequential(
-    output(o1), 
-    output(o2), 
+    output(o1),
+    output(o2),
     output(o3),
     output('done')
 );

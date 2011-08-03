@@ -23,7 +23,7 @@ SMatch(string s1, string s2) :=  MAP(s1=s2 =>0, 1);
 NSMatch(string s1, string s2) :=
   IF ( s1='' or s2='',0, SMatch(s1,s2));
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

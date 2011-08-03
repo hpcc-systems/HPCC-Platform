@@ -18,7 +18,7 @@
 
 #option ('globalFold', false);
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -26,9 +26,9 @@ string10        userdate;
             END;
 
 namesTable := dataset([
-                {'Halliday','Gavin','10/14/1998'},
-                {'Halliday','Liz','12/01/1998'},
-                {'Halliday','Jason','01/01/2000'},
+                {'Hawthorn','Gavin','10/14/1998'},
+                {'Hawthorn','Mia','12/01/1998'},
+                {'Hawthorn','Jason','01/01/2000'},
                 {'MacPherson','Jimmy','03/14/2003'}
                 ]
                 ,namesRecord);
@@ -49,12 +49,12 @@ REGEXFIND(searchpattern, search, 1);
 REGEXFIND(searchpattern, search, 2);
 REGEXFIND(searchpattern, search, 3);
 
-regexfind('Gavin','Gavin Halliday');
+regexfind('Gavin','Gavin Hawthorn');
 
-regexfind('GAVIN','Gavin Halliday') AND
-regexfind('GAVIN','Gavin x Halliday') AND 
-regexfind('GAVIN','Gavin Halliday',NOCASE);
-regexfind('GAVIN','Gavin x Halliday') AND regexfind('GAVIN','Gavin x Halliday',1) <> 'x';
-regexfind('GAVIN','Gavin x Halliday',NOCASE) AND regexfind('GAVIN','Gavin x Halliday',1,NOCASE) <> 'x';
-regexfind('GAVIN','Gavin x Halliday') AND regexfind('GAVIN','Gavin x Halliday',1,NOCASE) <> 'x';
-regexfind('GAVIN','Gavin x Halliday',NOCASE) AND regexfind('GAVIN','Gavin x Halliday',1) <> 'x';
+regexfind('GAVIN','Gavin Hawthorn') AND
+regexfind('GAVIN','Gavin x Hawthorn') AND
+regexfind('GAVIN','Gavin Hawthorn',NOCASE);
+regexfind('GAVIN','Gavin x Hawthorn') AND regexfind('GAVIN','Gavin x Hawthorn',1) <> 'x';
+regexfind('GAVIN','Gavin x Hawthorn',NOCASE) AND regexfind('GAVIN','Gavin x Hawthorn',1,NOCASE) <> 'x';
+regexfind('GAVIN','Gavin x Hawthorn') AND regexfind('GAVIN','Gavin x Hawthorn',1,NOCASE) <> 'x';
+regexfind('GAVIN','Gavin x Hawthorn',NOCASE) AND regexfind('GAVIN','Gavin x Hawthorn',1) <> 'x';

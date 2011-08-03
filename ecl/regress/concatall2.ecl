@@ -59,7 +59,7 @@ output(table(d, { utf8 value := vutf810 + value }));
 output(table(d, { utf8_13 value := vutf810 + value }));
 output(table(d, { utf8_15 value := vutf810 + value }));
 output(dataset([
-        (utf8)(vutf810 + U8'iday'), 
+        (utf8)(vutf810 + U8'iday'),
         (utf8_13)(vutf810 + U8'idby'),
         (utf8_14)(vutf810 + U8'idcy'),
         (utf8_15)(vutf810 + U8'iddy')], { utf8 value }));

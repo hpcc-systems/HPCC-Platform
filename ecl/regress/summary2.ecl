@@ -19,7 +19,7 @@
 
 /* Demo hql file using the CSV stuff to summarise my account transactions.... */
 
-accountRecord := 
+accountRecord :=
             RECORD
 string10        strDate;
 string40        category;

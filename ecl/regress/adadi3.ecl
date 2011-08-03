@@ -50,7 +50,7 @@ SetIgnoreTags := ['script', 'style', 'select'];
 SetBlockTags := ['p', 'div', 'td', 'th', 'table', 'br', 'hr', 'li', 'ul', 'ol', 'dt', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'center', 'blockquote'];
 SetEndSentence := ['.', '?', '!', ':'];
 
-STRING entityclean(STRING txt) := 
+STRING entityclean(STRING txt) :=
     stringlib.StringFindReplace(
      stringlib.StringFindReplace(
       stringlib.StringFindReplace(txt, '&nbsp;', ' '),

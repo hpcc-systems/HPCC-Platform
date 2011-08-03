@@ -22,7 +22,7 @@ unsigned sv1 := 0 : stored('sv1');
 unsigned sv2 := 0 : stored('sv2');
 unsigned sv3 := 0 : stored('sv3');
 
-mainRecord := 
+mainRecord :=
         RECORD
 integer8            sequence;
 string20            forename;

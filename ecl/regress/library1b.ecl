@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -30,13 +30,13 @@ end;
 
 namesTable := dataset('x',namesRecord,FLAT);
 namesTable2 := dataset([
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
-        {'Salter','Abi',10},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
+        {'Smithe','Pru',10},
         {'X','Z'}], namesRecord);
 
 filtered := LIBRARY('NameFilter', INameFilter(namesTable, 'Smith', true));
 output(filtered.included,,named('Included'));
 
-filtered2 := LIBRARY('NameFilter', INameFilter(namesTable, 'Halliday', true));
+filtered2 := LIBRARY('NameFilter', INameFilter(namesTable, 'Hawthorn', true));
 output(filtered2.excluded,,named('Excluded'));

@@ -71,34 +71,34 @@ unsigned4       f5;
 d5 := DATASET('d5', r5, FLAT);
 
 
-r1 t21(r2 l) := 
+r1 t21(r2 l) :=
     TRANSFORM
         self.f1 := l.f2;
     END;
 
-r2 t12(r1 l) := 
+r2 t12(r1 l) :=
     TRANSFORM
         self.f1 := l.f1;
         self.f2 := l.f1;
     END;
 
-r3 t43(r4 l) := 
+r3 t43(r4 l) :=
     TRANSFORM
         self := l;
     END;
 
 
-r4 t34(r3 l) := 
+r4 t34(r3 l) :=
     TRANSFORM
         self := l;
     END;
 
-r4 t44(r4 l) := 
+r4 t44(r4 l) :=
     TRANSFORM
         self := l;
     END;
 
-r5 t55(r5 l) := 
+r5 t55(r5 l) :=
     TRANSFORM
         self := l;
     END;

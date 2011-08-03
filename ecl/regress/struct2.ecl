@@ -37,7 +37,7 @@ nameRecord;
 nameRecord          parent;
                 END;
 
-outRecord normalizeAddresses(namesRecord l) := 
+outRecord normalizeAddresses(namesRecord l) :=
                 TRANSFORM
                     SELF.parent.age := IF(l.mother.age > l.father.age, l.mother.age, l.father.age);
                     SELF.parent := l.father;

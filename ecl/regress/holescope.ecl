@@ -18,7 +18,7 @@
 
 person := dataset('person', { unsigned8 person_id, string1 per_sex, string40 per_first_name, data9 per_cid, unsigned8 xpos }, thor);
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

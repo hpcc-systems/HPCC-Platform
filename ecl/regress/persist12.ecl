@@ -25,10 +25,10 @@ unsigned1 nl2 := 10;
   END;
 
 tmptable := dataset([
-        {'001', 'Halliday','Gavin', 13, 10},
-        {'002', 'Smith','Jake', 13, 10},
-        {'003', 'Hicks','Nigel', 13, 10},
-        {'004', 'Gillin','Pete', 13, 10}], ppersonRecord);
+        {'001', 'Hawthorn','Gavin', 13, 10},
+        {'002', 'Smith','Zack', 13, 10},
+        {'003', 'Hewit','Nigel', 13, 10},
+        {'004', 'Gillin','Paul', 13, 10}], ppersonRecord);
 
 // OUTPUT(tmptable, , 'tmp.d00', OVERWRITE);
 

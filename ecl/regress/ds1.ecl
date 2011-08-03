@@ -23,7 +23,7 @@ unsigned1         age;
 set of string     pets := [];
     END;
 
-personRecord := 
+personRecord :=
                 RECORD
 string20            forename;
 string20            surname;
@@ -32,7 +32,7 @@ DATASET(childPersonRecord)   children;
 
 
 personDataset := DATASET(
-            [{'Gavin','Halliday',[{'Abigail',2},{'Nathan',2}]},
+            [{'Gavin','Hawthorn',[{'Abigail',2},{'Nathan',2}]},
              {'John','Simmons',[{'Jennifer',18},{'Alison',16},{'Andrew',13,ALL},{'Fiona',10,['Pinky','Perky']}]}],personRecord);
 
 output(personDataset);//,,'~nested.xml',XML,overwrite);
@@ -45,7 +45,7 @@ string        forename;
 unsigned1         age;
     END;
 
-personRecord2 := 
+personRecord2 :=
                 RECORD
 string20            forename;
 string20            surname;
@@ -55,7 +55,7 @@ DATASET(childPersonRecord2,count(self.numChildren))   children;
 
 
 personDataset2 := DATASET(
-            [{'Gavin','Halliday',3,[{'Abigail',2},{'Nathan',2}]},
+            [{'Gavin','Hawthorn',3,[{'Abigail',2},{'Nathan',2}]},
              {'John','Simmons',2,[{'Jennifer',18},{'Alison',16},{'Andrew',13},{'Fiona',10}]}],personRecord2);
 
 //output(personDataset2,,'~nested2.xml',XML,overwrite);

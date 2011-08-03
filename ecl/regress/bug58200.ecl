@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-SHARED rec := RECORD 
+SHARED rec := RECORD
   INTEGER1 num;
 END;
 
@@ -40,7 +40,7 @@ ds2 := GROUP(SORTED(DATASET([{1},{2},{3}],rec),num),num);
 
 // ----- This will not syntax check
 // ----------- Gives error "Error: Explicit type for Records doesn't match definitin in base module (30,2)"
-// ------------------ code 2346  
+// ------------------ code 2346
 context2 := MODULE(Interface_Def2)
     EXPORT GROUPED DATASET(rec) Records := ds2;
 END;

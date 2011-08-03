@@ -34,5 +34,5 @@ NeedC(INTEGER len) := TYPE
 Rec := RECORD
    NeedC(3)   good;
    NeedC(3,5) abc;
-   NeedC xyz;   
+   NeedC xyz;
 END;

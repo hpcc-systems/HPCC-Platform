@@ -28,7 +28,7 @@ d := dataset([
 
 pattern s := 'AB' any* 'BA';
 
-results := 
+results :=
     record
         MATCHTEXT;
     end;

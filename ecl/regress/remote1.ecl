@@ -18,7 +18,7 @@
 
 #option ('targetClusterType', 'roxie');
 
-mainRecord := 
+mainRecord :=
         RECORD
 string20            word;
 unsigned8           doc;

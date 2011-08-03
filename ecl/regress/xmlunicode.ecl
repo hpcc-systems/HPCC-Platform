@@ -19,11 +19,11 @@
 
 inDs := dataset([U'gavin', U'gävin', U'Gæv¥n'], { unicode text{maxlength(100)}; });
 
-p := table(nofold(inDs), { 
+p := table(nofold(inDs), {
         string s{maxlength(100)} := (string)text;
         data d{maxlength(100)} := (data)text;
         utf8 u8{maxlength(100)} := (utf8)text;
         unicode u{maxlength(100)} := (unicode)text;
     });
-    
+
 output(p,,'~xml.out',overwrite);

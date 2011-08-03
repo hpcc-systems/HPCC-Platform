@@ -16,14 +16,14 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-namesRecord := 
+namesRecord :=
         RECORD
 string20            forename;
 string20            surname;
 string2             nl{virtual(fileposition)};
         END;
 
-mainRecord := 
+mainRecord :=
         RECORD
 integer8            sequence;
 string20            forename;
@@ -32,7 +32,7 @@ string20            surname;
 
 d := PIPE('pipeRead 500000 20', namesRecord);
 
-mainRecord t(namesRecord l, unsigned4 c) := 
+mainRecord t(namesRecord l, unsigned4 c) :=
     TRANSFORM
         SELF.sequence := c;
         SELF := l;
@@ -40,5 +40,5 @@ mainRecord t(namesRecord l, unsigned4 c) :=
 
 seqd := project(d, t(left, counter));
 
-output(seqd,,'~keyed.d00',overwrite); 
+output(seqd,,'~keyed.d00',overwrite);
 

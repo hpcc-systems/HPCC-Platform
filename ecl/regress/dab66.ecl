@@ -21,7 +21,7 @@
 
 EXPORT string8 Xyz__version_file := '20040629';
 
-EXPORT Xyz__Layout_Xyz := 
+EXPORT Xyz__Layout_Xyz :=
  RECORD
   string10 pty_key;
   string60 source;

@@ -16,30 +16,30 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-testRecord := RECORD 
-    string10 forename; 
-    string10 surname; 
-    string10 salary; 
-    string2 nl; 
-END; 
+testRecord := RECORD
+    string10 forename;
+    string10 surname;
+    string10 salary;
+    string2 nl;
+END;
 
 testDataset := DATASET('inagg.d00', testRecord, FLAT);
 
-a := GROUP(testDataset, forename, ALL); 
-b0 := SORT(testDataset, forename); 
+a := GROUP(testDataset, forename, ALL);
+b0 := SORT(testDataset, forename);
 
-b := SORT(testDataset, LOCAL); 
+b := SORT(testDataset, LOCAL);
 /*
-c := SORT(testDataset, forename, JOINED(b)); 
-d := SORT(testDataset, forename, JOINED(b), LOCAL); 
-e := SORT(testDataset, forename, LOCAL, JOINED(b)); 
-f := HASH(testDataset.forename); 
+c := SORT(testDataset, forename, JOINED(b));
+d := SORT(testDataset, forename, JOINED(b), LOCAL);
+e := SORT(testDataset, forename, LOCAL, JOINED(b));
+f := HASH(testDataset.forename);
 
-t(testRecord l, testRecord r) := TRANSFORM 
-    SELF := l 
-END; 
+t(testRecord l, testRecord r) := TRANSFORM
+    SELF := l
+END;
 
-g:= JOIN(testDataset, testDataset, LEFT.surname = RIGHT.surname, t(LEFT,RIGHT)); 
-output(b,,'out.d00'); 
-output(b,,'out.d00'); 
+g:= JOIN(testDataset, testDataset, LEFT.surname = RIGHT.surname, t(LEFT,RIGHT));
+output(b,,'out.d00');
+output(b,,'out.d00');
 */

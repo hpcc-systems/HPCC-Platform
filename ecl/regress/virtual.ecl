@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-namesRecord := 
+namesRecord :=
         RECORD
 string10            forename;
 string10            surname;
@@ -26,5 +26,5 @@ unsigned2           size{virtual(sizeof)};
         END;
 
 d := DATASET('names.d00', namesRecord, THOR);
-output(d); 
+output(d);
 

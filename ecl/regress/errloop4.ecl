@@ -18,9 +18,9 @@
 
 /* should detect */
 LOADXML('<xml></xml>');
-#LOOP  
+#LOOP
   #DECLARE(s)
-   #LOOP 
+   #LOOP
     #DECLARE(t)
    #END
   #BREAK

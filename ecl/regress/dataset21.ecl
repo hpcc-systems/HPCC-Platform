@@ -18,7 +18,7 @@
 
 //Deliberately baroque to catch error #13510 missing a dependancy from a inline dataset to a temporary result
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

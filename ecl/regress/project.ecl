@@ -36,7 +36,7 @@ string2     nl;
 ppersonRecordEx projectFunction(ppersonRecord incoming) := Transform
     SELF.age := 33;
     ;;;;;;
-    SELF.sex := 1;  
+    SELF.sex := 1;
     ; ; ; ; ; ; ;
     SELF := incoming;;;;;
 END;

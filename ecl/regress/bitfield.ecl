@@ -19,7 +19,7 @@
 #option ('foldAssign', false);
 #option ('globalFold', false);
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 bitfield10      age;

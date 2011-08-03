@@ -20,7 +20,7 @@ testrec := RECORD
                           string26 date;
                           unsigned4 n;
                    END;
-                   
+
 inds := DATASET('testin',testrec,thor);
 
 set of unsigned4 DaysSinceFirstMonday := [ // NB only 2007-2010 for this benchmark

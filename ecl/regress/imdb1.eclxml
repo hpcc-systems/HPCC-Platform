@@ -18,23 +18,23 @@
     along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.
 
 
- ATTRIBUTE PURPOSE: 
+ ATTRIBUTE PURPOSE:
  Produce a series of sets for Actors and Movies that are : distance-0
- away (KBacons Direct movies ), distance-2 Away KBacon&apos;s Costars Movies , 
+ away (KBacons Direct movies ), distance-2 Away KBacon&apos;s Costars Movies ,
  distance-3 away - Movies of Costars of Costars etc all the way upto level 7
- 
- The nested attributes below are shown here together for the benefit of the reader. 
- 
+
+ The nested attributes below are shown here together for the benefit of the reader.
+
  Notes on variable naming convention used for costars and movies
  KBMovies               :  Movies  Kevin Bacon Worked in    (distance 0)
  KBCoStars              :  Stars who worked in KBMovies      (distance 1)
- KBCoStarMovies         :  Movies worked in by KBCoStars   
+ KBCoStarMovies         :  Movies worked in by KBCoStars
                              except KBMovies   (distance 1)
  KBCo2Stars             :  Stars(Actors) who worked in KBCoStarMovies (distance 2)
- KBCo2StarMovies        :  Movies worked  in by KBCo2Stars 
+ KBCo2StarMovies        :  Movies worked  in by KBCo2Stars
                              except KBCoStarMovies    (distance 2)
  KBCo3Stars             :  Stars(Actors) who worked in KBCo2StarMovies (distance 3)
- KBCo3StarMovies        :  Movies worked  in by KBCo3Stars  
+ KBCo3StarMovies        :  Movies worked  in by KBCo3Stars
                              except KBCo2StarMovies   (distance 3)
 etc..
 ******************************************************************************* */
@@ -47,7 +47,7 @@ EXPORT KevinBaconNumberSets := MODULE
   // For simplicity we will define a name as matching if both first and last name are found within the string
 
   NameMatch(string full_name, string fname,string lname) :=
-    Std.Str.Find(full_name,fname,1) &gt; 0 AND 
+    Std.Str.Find(full_name,fname,1) &gt; 0 AND
     Std.Str.Find(full_name,lname,1) &gt; 0;
 
   //------ Get KBacon Movies
@@ -85,7 +85,7 @@ EXPORT KevinBaconNumberSets := MODULE
   EXPORT KBCo2Stars := JOIN(KBCo2S, KBCoStars, LEFT.actor=RIGHT.actor, TRANSFORM(LEFT), LEFT ONLY);
 
   //------- bacon # 2 Movies
-  // Co2SM = what movies have all the Co2Stars been in? 
+  // Co2SM = what movies have all the Co2Stars been in?
   Co2SM := DEDUP(JOIN(IMDB.ActorsInMovies, KBCo2Stars, LEFT.actor=RIGHT.actor,
                       TRANSFORM(LEFT), LOOKUP),
                  movie, ALL);
@@ -111,7 +111,7 @@ EXPORT KevinBaconNumberSets := MODULE
   // The LEFT ONLY join removes items in one list from another
   // There should not be any direct CoStars in this list (or the movie would have been a CoStarMovie not a CoCoStarMovie)
 
-  EXPORT KBCo3Stars := JOIN(KBCo3S, KBCo2Stars, LEFT.actor=RIGHT.actor, 
+  EXPORT KBCo3Stars := JOIN(KBCo3S, KBCo2Stars, LEFT.actor=RIGHT.actor,
                             TRANSFORM(LEFT),LEFT ONLY);
 
   //----- bacon #3 Movies
@@ -225,7 +225,7 @@ END;&#13;&#10;&#13;&#10;
 ******************************************************************************* */
 
 /**
-  * Produce a slimmed down version of the IMDB actor AND actress files to 
+  * Produce a slimmed down version of the IMDB actor AND actress files to
   * permit more efficient join operations.
   * Filter out the movie records we do not want in building our KBacon Number sets.
   *
@@ -271,10 +271,10 @@ export ActorsInMovies := IMDB_Names;&#13;&#10;
 
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.
-    
- ATTRIBUTE PURPOSE: 
- 1. Process and Transform the raw sprayed files for actor and actresses into formats 
-    more suitable for subsequent processing &amp; analysis      
+
+ ATTRIBUTE PURPOSE:
+ 1. Process and Transform the raw sprayed files for actor and actresses into formats
+    more suitable for subsequent processing &amp; analysis
  2. This will strip out the headers and footers from the files,combine them into
     one file, eliminate some&apos;dirty&apos;  or incompete records, and parse the free form
         text lines into formatted records.
@@ -346,7 +346,7 @@ into_three(dataset(raw_rec) ds_in) := FUNCTION
     SELF           := R;
   END;
 
-  // Iterate the prep dataset using the FillActor Transform to get the structure we want 
+  // Iterate the prep dataset using the FillActor Transform to get the structure we want
   RETURN ITERATE(prep_ds1,FillActor(LEFT,RIGHT));
 END;
 
@@ -358,7 +358,7 @@ ThreeColumns := into_three(raw_male)+into_three(raw_female);
 // to be able to see the data format without having to wade through all the low level code.
 
 // Here we encapsulate the code to pull data out from between boundary markers such as (){} etc
-FindWithin(string Src,String ToFind,String ToEnd) := 
+FindWithin(string Src,String ToFind,String ToEnd) :=
    IF ( Std.Str.Find(Src,ToFind,1) &gt; 0,
         Src[Std.Str.Find(Src,ToFind,1)+length(ToFind)..Std.Str.Find(Src,ToEnd,1)-1],
         &apos;&apos; );
@@ -383,9 +383,9 @@ IMDB.LayoutActors tActors(ThreeColumns L) := TRANSFORM
   SELF              := L; // Copy across everything but movie name
 END;
 
-// The year filter is a quick fix of tackling the actual problem  which is 
+// The year filter is a quick fix of tackling the actual problem  which is
 // that we have a &apos;tail&apos; on the file which contains &apos;junk&apos; as far as the
-// database is concerned..This solution filters out all date-less entries; 
+// database is concerned..This solution filters out all date-less entries;
 // some of these are NOT in the tail - but all of them are non valid anyway.
 
 EXPORT FileActors := PROJECT(ThreeColumns,tActors(LEFT))(year&lt;&gt;&apos;&apos;) : persist(&apos;~temp::file_actorsv2&apos;);&#13;&#10;
@@ -435,7 +435,7 @@ END;&#13;&#10;
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.
 
- ATTRIBUTE PURPOSE: 
+ ATTRIBUTE PURPOSE:
  1. This is to specify the record layout of the IMDB actors file
     The raw input file is transformed into this record structure by the
         attribute: file_actors.
@@ -450,7 +450,7 @@ EXPORT LayoutActors:= RECORD
   STRING1   isTVseries;   // Y|N Flag
   STRING4   year;         // year movie was made
   STRING50  rolename;     // actors character role in the movie
-  INTEGER2  credit_pos;   // Position # in credits  
+  INTEGER2  credit_pos;   // Position # in credits
 
   //the following only have values if movie is a TV series
   STRING100 episode_name;
@@ -490,96 +490,96 @@ IMPORT * FROM lib_stringlib;
 /*
  * Compares the two strings case insensitively.  Returns a negative integer, zero, or a positive integer according to
  * whether the first string is less than, equal to, or greater than the second.
- * 
+ *
  * @param src1          The first string to be compared.
  * @param src2          The second string to be compared.
  * @see                 Str.EqualIgnoreCase
  */
- 
+
 EXPORT INTEGER4 CompareIgnoreCase(STRING src1, STRING src2) :=
   StringLib.StringCompareIgnoreCase(src1, src2);
 
 /*
  * Tests whether the two strings are identical ignoring differences in case.
- * 
+ *
  * @param src1          The first string to be compared.
  * @param src2          The second string to be compared.
  * @see                 Str.CompareIgnoreCase
  */
- 
+
 EXPORT BOOLEAN EqualIgnoreCase(STRING src1, STRING src2) := CompareIgnoreCase(src1, src2) = 0;
 
 /*
  * Returns the character position of the nth match of the search string with the first string.
  * If no match is found the attribute returns 0.
  * If an instance is omitted the position of the first instance is returned.
- * 
+ *
  * @param src           The string that is searched
  * @param sought        The string being sought.
  * @param instance      Which match instance are we interested in?
  */
- 
+
 EXPORT UNSIGNED4 Find(STRING src, STRING sought, UNSIGNED4 instance = 1) :=
   StringLib.StringFind(src, sought, instance);
 
 /*
  * Returns the number of occurences of the second string within the first string.
- * 
+ *
  * @param src           The string that is searched
  * @param sought        The string being sought.
  */
- 
+
 EXPORT UNSIGNED4 FindCount(STRING src, STRING sought) := StringLib.StringFindCount(src, sought);
 
 /*
  * Tests if the search string matches the pattern.
  * The pattern can contain wildcards &apos;?&apos; (single character) and &apos;*&apos; (multiple character).
- * 
+ *
  * @param src           The string that is being tested.
  * @param pattern       The pattern to match against.
  * @ignore_case         Whether to ignore differences in case between characters
  */
- 
+
 EXPORT BOOLEAN WildMatch(STRING src, STRING _pattern, BOOLEAN ignore_case) :=
   StringLib.StringWildExactMatch(src, _pattern, ignore_case);
 
 /*
  * Tests if the search string contains each of the characters in the pattern.
  * If the pattern contains duplicate characters those characters will match once for each occurence in the pattern.
- * 
+ *
  * @param src           The string that is being tested.
  * @param pattern       The pattern to match against.
  * @ignore_case         Whether to ignore differences in case between characters
  */
- 
+
 EXPORT BOOLEAN Contains(STRING src, STRING _pattern, BOOLEAN ignore_case) :=
   StringLib.StringContains(src, _pattern, ignore_case);
 
 /*
  * Returns the first string with all characters within the second string removed.
- * 
+ *
  * @param src           The string that is being tested.
  * @param filter        The string containing the set of characters to be excluded.
  * @see                 Str.Filter
  */
- 
+
 EXPORT STRING FilterOut(STRING src, STRING filter) := StringLib.StringFilterOut(src, filter);
 
 /*
  * Returns the first string with all characters not within the second string removed.
- * 
+ *
  * @param src           The string that is being tested.
  * @param filter        The string containing the set of characters to be included.
  * @see                 Str.FilterOut
  */
- 
+
 EXPORT STRING Filter(STRING src, STRING filter) := StringLib.StringFilter(src, filter);
 
 /*
  * Returns the source string with the replacement character substituted for all characters included in the
  * filter string.
  * MORE: Should this be a general string substitution?
- * 
+ *
  * @param src           The string that is being tested.
  * @param filter        The string containing the set of characters to be included.
  * @param replace_char  The character to be substituted into the result.
@@ -593,7 +593,7 @@ EXPORT STRING SubstituteIncluded(STRING src, STRING filter, STRING replace_char)
  * Returns the source string with the replacement character substituted for all characters not included in the
  * filter string.
  * MORE: Should this be a general string substitution?
- * 
+ *
  * @param src           The string that is being tested.
  * @param filter        The string containing the set of characters to be included.
  * @param replace_char  The character to be substituted into the result.
@@ -605,7 +605,7 @@ EXPORT STRING SubstituteExcluded(STRING src, STRING filter, STRING replace_char)
 
 /*
  * Returns the argument string with all upper case characters converted to lower case.
- * 
+ *
  * @param src           The string that is being converted.
  */
 
@@ -613,7 +613,7 @@ EXPORT STRING ToLowerCase(STRING src) := StringLib.StringToLowerCase(src);
 
 /*
  * Return the argument string with all lower case characters converted to upper case.
- * 
+ *
  * @param src           The string that is being converted.
  */
 
@@ -623,7 +623,7 @@ EXPORT STRING ToUpperCase(STRING src) := StringLib.StringToUpperCase(src);
  * Returns the argument string with the first letter of each word in upper case and all other
  * letters left as-is.
  * A contiguous sequence of alphabetic characters is treated as a word.
- * 
+ *
  * @param src           The string that is being converted.
  */
 
@@ -632,7 +632,7 @@ EXPORT STRING ToCapitalCase(STRING src) := StringLib.StringToCapitalCase(src);
 /*
  * Returns the argument string with all characters in reverse order.
  * Note the argument is not TRIMMED before it is reversed.
- * 
+ *
  * @param src           The string that is being reversed.
  */
 
@@ -640,7 +640,7 @@ EXPORT STRING Reverse(STRING src) := StringLib.StringReverse(src);
 
 /*
  * Returns the source string with the replacement string substituted for all instances of the search string.
- * 
+ *
  * @param src           The string that is being transformed.
  * @param sought        The string to be replaced.
  * @param replacement   The string to be substituted into the result.
@@ -651,7 +651,7 @@ EXPORT STRING FindReplace(STRING src, STRING sought, STRING replacement) :=
 
 /*
  * Returns the nth element from a comma separated string.
- * 
+ *
  * @param src           The string containing the comma separated list.
  * @param instance      Which item to select from the list.
  */
@@ -662,17 +662,17 @@ EXPORT STRING Extract(STRING src, UNSIGNED4 instance) := StringLib.StringExtract
  * Returns the source string with all instances of multiple adjacent space characters (2 or more spaces together)
  * reduced to a single space character.  Leading and trailing spaces are removed, and tab characters are converted
  * to spaces.
- * 
+ *
  * @param src           The string to be cleaned.
  */
 
 EXPORT STRING CleanSpaces(STRING src) := StringLib.StringCleanSpaces(src);
 
 /*
- * Returns true if the prefix string matches the leading characters in the source string.  Trailing spaces are 
+ * Returns true if the prefix string matches the leading characters in the source string.  Trailing spaces are
  * stripped from the prefix before matching.
  * // x.myString.StartsWith(&apos;x&apos;) as an alternative syntax would be even better
- * 
+ *
  * @param src           The string being searched in.
  * @param prefix        The prefix to search for.
  */
@@ -680,9 +680,9 @@ EXPORT STRING CleanSpaces(STRING src) := StringLib.StringCleanSpaces(src);
 EXPORT BOOLEAN StartsWith(STRING src, STRING prefix) := src[1..LENGTH(TRIM(prefix))]=prefix;
 
 /*
- * Returns true if the suffix string matches the trailing characters in the source string.  Trailing spaces are 
+ * Returns true if the suffix string matches the trailing characters in the source string.  Trailing spaces are
  * stripped from both strings before matching.
- * 
+ *
  * @param src           The string being searched in.
  * @param suffix        The prefix to search for.
  */
@@ -690,9 +690,9 @@ export BOOLEAN EndsWith(STRING src, STRING suffix) := src[LENGTH(TRIM(src))-LENG
 
 
 /*
- * Removes the suffix from the search string, if present, and returns the result.  Trailing spaces are 
+ * Removes the suffix from the search string, if present, and returns the result.  Trailing spaces are
  * stripped from both strings before matching.
- * 
+ *
  * @param src           The string being searched in.
  * @param suffix        The prefix to search for.
  */
@@ -707,9 +707,9 @@ EXPORT UNSIGNED4 EditDistance(string l, string r) := StringLib.EditDistance(l, r
 EXPORT BOOLEAN EditDistanceWithinRadius(string l, string r, unsigned4 radius) := StringLib.EditDistanceWithinRadius(l, r, radius);
 
 /*
- * Returns the number of words that the string contains.  Words are separated by one or more separator strings. No 
+ * Returns the number of words that the string contains.  Words are separated by one or more separator strings. No
  * spaces are stripped from either string before matching.
- * 
+ *
  * @param src           The string being searched in.
  * @param separator     The string used to separate words
  */
@@ -717,10 +717,10 @@ EXPORT BOOLEAN EditDistanceWithinRadius(string l, string r, unsigned4 radius) :=
 export UNSIGNED4 CountWords(STRING src, STRING separator) := BEGINC++
     if (lenSrc == 0)
         return 0;
-            
+
     if ((lenSeparator == 0) || (lenSrc &lt; lenSeparator))
         return 1;
-    
+
     unsigned numWords=0;
     const char * end = src + lenSrc;
     const char * max = end - (lenSeparator - 1);
@@ -754,10 +754,10 @@ ENDC++;
 SHARED UNSIGNED4 calcWordSetSize(STRING src, STRING separator) := BEGINC++
     if (lenSrc == 0)
         return 0;
-            
+
     if ((lenSeparator == 0) || (lenSrc &lt; lenSeparator))
         return sizeof(size32_t) + lenSrc;
-    
+
     unsigned sizeWords=0;
     const char * end = src + lenSrc;
     const char * max = end - (lenSeparator - 1);
@@ -798,17 +798,17 @@ SHARED SET OF STRING doSplitWords(STRING src, STRING separator, unsigned calcula
     __isAllResult = false;
     __lenResult = calculatedsize;
     __result = result;
-    
+
     if (lenSrc == 0)
         return;
-            
+
     if ((lenSeparator == 0) || (lenSrc &lt; lenSeparator))
     {
         rtlWriteSize32t(result, lenSrc);
         memcpy(result+sizeof(size32_t), src, lenSrc);
         return;
     }
-    
+
     unsigned sizeWords=0;
     const char * end = src + lenSrc;
     const char * max = end - (lenSeparator - 1);
@@ -847,13 +847,13 @@ SHARED SET OF STRING doSplitWords(STRING src, STRING separator, unsigned calcula
 ENDC++;
 
 /*
- * Returns the list of words extracted from the string.  Words are separated by one or more separator strings. No 
+ * Returns the list of words extracted from the string.  Words are separated by one or more separator strings. No
  * spaces are stripped from either string before matching.
- * 
+ *
  * @param src           The string being searched in.
  * @param separator     The string used to separate words
  */
- 
+
 EXPORT SET OF STRING SplitWords(STRING src, STRING separator) := doSplitWords(src, separator, calcWordSetSize(src, separator));
 
 END;&#13;&#10;
@@ -867,17 +867,17 @@ END;&#13;&#10;
          sourcePath="lib_stringlib"
          version="STRINGLIB 1.1.09">
   <Text>export StringLib := SERVICE
-  string StringFilterOut(const string src, const string _within) : c, pure,entrypoint=&apos;slStringFilterOut&apos;; 
-  string StringFilter(const string src, const string _within) : c, pure,entrypoint=&apos;slStringFilter&apos;; 
-  string StringSubstituteOut(const string src, const string _within, const string _newchar) : c, pure,entrypoint=&apos;slStringSubsOut&apos;; 
-  string StringSubstitute(const string src, const string _within, const string _newchar) : c, pure,entrypoint=&apos;slStringSubs&apos;; 
-  string StringRepad(const string src, unsigned4 size) : c, pure,entrypoint=&apos;slStringRepad&apos;; 
-  unsigned integer4 StringFind(const string src, const string tofind, unsigned4 instance ) : c, pure,entrypoint=&apos;slStringFind&apos;; 
-  unsigned integer4 StringUnboundedUnsafeFind(const string src, const string tofind ) : c, pure,entrypoint=&apos;slStringFind2&apos;; 
-  unsigned integer4 StringFindCount(const string src, const string tofind) : c, pure,entrypoint=&apos;slStringFindCount&apos;; 
-  unsigned integer4 EbcdicStringFind(const ebcdic string src, const ebcdic string tofind , unsigned4 instance ) : c,pure,entrypoint=&apos;slStringFind&apos;; 
-  unsigned integer4 EbcdicStringUnboundedUnsafeFind(const ebcdic string src, const ebcdic string tofind ) : c,pure,entrypoint=&apos;slStringFind2&apos;; 
-  string StringExtract(const string src, unsigned4 instance) : c,pure,entrypoint=&apos;slStringExtract&apos;; 
+  string StringFilterOut(const string src, const string _within) : c, pure,entrypoint=&apos;slStringFilterOut&apos;;
+  string StringFilter(const string src, const string _within) : c, pure,entrypoint=&apos;slStringFilter&apos;;
+  string StringSubstituteOut(const string src, const string _within, const string _newchar) : c, pure,entrypoint=&apos;slStringSubsOut&apos;;
+  string StringSubstitute(const string src, const string _within, const string _newchar) : c, pure,entrypoint=&apos;slStringSubs&apos;;
+  string StringRepad(const string src, unsigned4 size) : c, pure,entrypoint=&apos;slStringRepad&apos;;
+  unsigned integer4 StringFind(const string src, const string tofind, unsigned4 instance ) : c, pure,entrypoint=&apos;slStringFind&apos;;
+  unsigned integer4 StringUnboundedUnsafeFind(const string src, const string tofind ) : c, pure,entrypoint=&apos;slStringFind2&apos;;
+  unsigned integer4 StringFindCount(const string src, const string tofind) : c, pure,entrypoint=&apos;slStringFindCount&apos;;
+  unsigned integer4 EbcdicStringFind(const ebcdic string src, const ebcdic string tofind , unsigned4 instance ) : c,pure,entrypoint=&apos;slStringFind&apos;;
+  unsigned integer4 EbcdicStringUnboundedUnsafeFind(const ebcdic string src, const ebcdic string tofind ) : c,pure,entrypoint=&apos;slStringFind2&apos;;
+  string StringExtract(const string src, unsigned4 instance) : c,pure,entrypoint=&apos;slStringExtract&apos;;
   string8 GetDateYYYYMMDD() : c,once,entrypoint=&apos;slGetDateYYYYMMDD2&apos;;
   varstring GetBuildInfo() : c,once,entrypoint=&apos;slGetBuildInfo&apos;;
   string Data2String(const data src) : c,pure,entrypoint=&apos;slData2String&apos;;
@@ -889,13 +889,13 @@ END;&#13;&#10;
   integer4 StringCompareIgnoreCase(const string src1, string src2) : c,pure,entrypoint=&apos;slStringCompareIgnoreCase&apos;;
   string StringReverse(const string src) : c,pure,entrypoint=&apos;slStringReverse&apos;;
   string StringFindReplace(const string src, const string stok, const string rtok) : c,pure,entrypoint=&apos;slStringFindReplace&apos;;
-  string StringCleanSpaces(const string src) : c,pure,entrypoint=&apos;slStringCleanSpaces&apos;; 
-  boolean StringWildMatch(const string src, const string _pattern, boolean _noCase) : c, pure,entrypoint=&apos;slStringWildMatch&apos;; 
-  boolean StringWildExactMatch(const string src, const string _pattern, boolean _noCase) : c, pure,entrypoint=&apos;slStringWildExactMatch&apos;; 
-  boolean StringContains(const string src, const string _pattern, boolean _noCase) : c, pure,entrypoint=&apos;slStringContains&apos;; 
-  string StringExtractMultiple(const string src, unsigned8 mask) : c,pure,entrypoint=&apos;slStringExtractMultiple&apos;; 
-  unsigned integer4 EditDistance(const string l, const string r) : c, pure,entrypoint=&apos;slEditDistance&apos;; 
-  boolean EditDistanceWithinRadius(const string l, const string r, unsigned4 radius) : c,pure,entrypoint=&apos;slEditDistanceWithinRadius&apos;; 
+  string StringCleanSpaces(const string src) : c,pure,entrypoint=&apos;slStringCleanSpaces&apos;;
+  boolean StringWildMatch(const string src, const string _pattern, boolean _noCase) : c, pure,entrypoint=&apos;slStringWildMatch&apos;;
+  boolean StringWildExactMatch(const string src, const string _pattern, boolean _noCase) : c, pure,entrypoint=&apos;slStringWildExactMatch&apos;;
+  boolean StringContains(const string src, const string _pattern, boolean _noCase) : c, pure,entrypoint=&apos;slStringContains&apos;;
+  string StringExtractMultiple(const string src, unsigned8 mask) : c,pure,entrypoint=&apos;slStringExtractMultiple&apos;;
+  unsigned integer4 EditDistance(const string l, const string r) : c, pure,entrypoint=&apos;slEditDistance&apos;;
+  boolean EditDistanceWithinRadius(const string l, const string r, unsigned4 radius) : c,pure,entrypoint=&apos;slEditDistanceWithinRadius&apos;;
 END;</Text>
  </Module>
  <Module key="std.system" name="std.system">
@@ -925,8 +925,8 @@ RETURN MODULE
  *
  * This module is provisional and subject to change without notice.
  */
- 
-shared externals := 
+
+shared externals :=
     SERVICE
 varstring daliServer() : once, ctxmethod, entrypoint=&apos;getDaliServers&apos;;
 varstring jobname() : once, ctxmethod, entrypoint=&apos;getJobName&apos;;
@@ -940,57 +940,57 @@ unsigned integer4 logString(const varstring text) : ctxmethod, entrypoint=&apos;
 /*
  * How many nodes in the cluster that this code will be executed on.
  */
- 
+
 export nodes() := CLUSTERSIZE;
 
 /*
  * Returns the name of the current workunit.
  */
- 
+
 export wuid() := WORKUNIT;
 
 /*
  * Returns the dali server this thor is connected to.
  */
- 
+
 export daliServer() := externals.daliServer();
 
 /*
- * Returns the name of the current job. 
+ * Returns the name of the current job.
  */
- 
+
 export name() := externals.jobname();
 
 /*
  * Returns the name of the user associated with the current job.
  */
- 
+
 export user() := externals.jobowner();
 
 /*
  * Returns the name of the cluster the current job is targetted at.
  */
- 
+
 export target() := externals.cluster();
 
 /*
  * Returns the platform type the job is running on.
  */
- 
+
 export platform() := externals.platform();
 
 /*
  * Returns a string representing the target operating system.
  */
- 
+
 export os() := externals.os();
 
 /*
  * Adds the string argument to the current logging context.
- * 
+ *
  * @param text          The string to add to the logging.
  */
- 
+
 export logString(const varstring text) := externals.logString(text);
 
 END;&#13;&#10;
@@ -998,7 +998,7 @@ END;&#13;&#10;
  </Module>
  <Query originalFilename="C:\Users\lorraine\AppData\Local\Temp\TFRCA3E.tmp">
     #option ('targetClusterType', 'thor');
-  IMPORT IMDB; 
+  IMPORT IMDB;
 IMDB.KevinBaconNumberSets.doCounts;&#32;
  </Query>
 </Archive>

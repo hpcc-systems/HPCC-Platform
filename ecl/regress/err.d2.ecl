@@ -33,7 +33,7 @@ r_new       := RECORD
                 integer attr2;
                END;
 
-r_new conv_leg(r_legacy l) := 
+r_new conv_leg(r_legacy l) :=
                TRANSFORM
                 self.attr2 := (integer8) l.attr2;
                 self := l;
@@ -54,7 +54,7 @@ Result_type := RECORD
                 boolean was_same_attr2;
                END;
 
-Result_type CompareFunc(r_new l, r_legacy r) := 
+Result_type CompareFunc(r_new l, r_legacy r) :=
                TRANSFORM
                 SELF.cid := l.cid;
                 SELF.was_same_attr1 := l.attr1 = r.attr1;
@@ -73,7 +73,7 @@ with_hole   := RECORD
                 integer8 attr_legacy;
                END;
 
-with_hole join_hole_val(result_type l, r_new r) := 
+with_hole join_hole_val(result_type l, r_new r) :=
                TRANSFORM
                 SELF.cid := l.cid;
                 SELF.attr_hole := r.attr1;
@@ -83,7 +83,7 @@ x := theresult(was_same_attr1);
 
 CompVals    := JOIN(TheResult(NOT was_same_attr1), hole_result, LEFT.cid = RIGHT.cid, join_hole_val(LEFT, RIGHT));
 
-with_hole join_legacy_val(with_hole l, r_legacy r) := 
+with_hole join_legacy_val(with_hole l, r_legacy r) :=
                TRANSFORM
                 SELF.attr_legacy := r.attr1;
                 SELF := l;

@@ -20,7 +20,7 @@ r := record
   string20 f;
     end;
 d := dataset([],r);
-    
+
 j := (typeof(d.f))'';
 i := (typeof(r.f))'';
 x := (typeof(d.f))'';

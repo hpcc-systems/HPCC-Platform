@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-namesRecord := 
+namesRecord :=
         RECORD
 string10            forename;
 string10            surname;
@@ -24,7 +24,7 @@ set of string       invalidin;
 string2             nl := '\r\n';
         END;
 
-names2Record := 
+names2Record :=
         RECORD
 string10            forename;
 string10            surname;

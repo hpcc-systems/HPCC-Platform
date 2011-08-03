@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-namesRecord := 
+namesRecord :=
         RECORD
 string10            forename;
 string10            surname;
@@ -24,6 +24,6 @@ string2             nl := '\r\n';
         END;
 
 d := PIPE('pipeRead 5000', namesRecord);
-//output(CHOOSEN(d,0), {(string)thorlib.node(), TRIM(forename), TRIM(surname)}); 
-output(CHOOSEN(d,ALL)); 
+//output(CHOOSEN(d,0), {(string)thorlib.node(), TRIM(forename), TRIM(surname)});
+output(CHOOSEN(d,ALL));
 

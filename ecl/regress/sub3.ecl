@@ -18,14 +18,14 @@
 
 #option ('globalFold', false);
 
-export display := 
+export display :=
     SERVICE
         echo(const string src) : eclrtl,library='eclrtl',entrypoint='rtlEcho';
     END;
 
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -35,17 +35,17 @@ integer2        age := 25;
 namesTable := dataset('x',namesRecord,FLAT);
 
 namesTable2 := dataset([
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
-        {'Salter','Abi',10},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
+        {'Smithe','Pru',10},
         {'X','Z'}], namesRecord);
 
 apply(namesTable2,display.echo(
-   surname[1] + ':' + 
-   surname[1..0-1] + ':' + 
-   surname[10..0-1] + ':' + 
-   surname[0-1..4] + ':' + 
-   surname[..0-1] + ':' + 
+   surname[1] + ':' +
+   surname[1..0-1] + ':' +
+   surname[10..0-1] + ':' +
+   surname[0-1..4] + ':' +
+   surname[..0-1] + ':' +
    forename + ':' + (string)age));
 
 

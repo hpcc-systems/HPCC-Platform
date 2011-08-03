@@ -26,7 +26,7 @@ END;
 
 d := dataset([{0,'CONFUSED'}], layout);
 output(d,, 'myfile', OVERWRITE);
-m := dataset('myfile', layout, FLAT);   
+m := dataset('myfile', layout, FLAT);
 output(m(KEYED(extra='CONFUSED')));
 output(m);
 

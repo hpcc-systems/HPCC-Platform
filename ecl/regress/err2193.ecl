@@ -26,6 +26,6 @@ OutRec := RECORD
 END;
 
 
-OutRec Trans(NamesRec L, INTEGER C) := 
+OutRec Trans(NamesRec L, INTEGER C) :=
     TRANSFORM
     END;

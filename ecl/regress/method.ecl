@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-export display := 
+export display :=
     SERVICE
 unsigned4  Node() : ctxmethod,entrypoint='getNodeNum';
     END;

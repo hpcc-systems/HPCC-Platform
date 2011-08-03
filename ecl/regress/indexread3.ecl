@@ -21,7 +21,7 @@ __set_debug_option__('targetClusterType', 'hthor');
 
 d := dataset('~local::rkc::person', { string15 name, unsigned8 filepos{virtual(fileposition)} }, flat);
 
-i := index(d, { f_name := (string11) name, filepos, } ,'\\seisint\\person.name_first.key', sorted);
+i := index(d, { f_name := (string11) name, filepos, } ,'\\home\\person.name_first.key', sorted);
 
 a1 := sort(i, f_name)(f_name='RICHARD');
 a2 := sort(i, -f_name)(f_name='GAVIN');

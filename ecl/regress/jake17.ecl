@@ -65,7 +65,7 @@ text := 'running on ' + thornodes + ' nodes.' : global;
 SEQUENTIAL(
 //output(text),
 o1,
-BUILDINDEX(idx, OVERWRITE), 
+BUILDINDEX(idx, OVERWRITE),
 OUTPUT((unsigned)(COUNT(idx(key>3))/thornodes))
 /*,
 

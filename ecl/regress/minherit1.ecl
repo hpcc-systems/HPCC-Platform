@@ -40,7 +40,7 @@ export dataset values           := dataset([100,101,120], rec);
 
 
 
-displayValues(optionsClass options) := 
+displayValues(optionsClass options) :=
     output(options.values[options.firstItem..options.lastItem]);
 
 //Check correct values picked up

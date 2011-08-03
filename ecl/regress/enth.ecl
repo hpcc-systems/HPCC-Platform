@@ -17,4 +17,4 @@
 ############################################################################## */
 
 person := dataset('person', { unsigned8 person_id, string1 per_sex, string40 per_first_name, string40 per_last_name }, thor);
-output(sample(person,25,25)) 
+output(sample(person,25,25))

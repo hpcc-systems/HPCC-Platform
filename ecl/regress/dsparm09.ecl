@@ -22,7 +22,7 @@ ds := dataset('ds', {String10 first_name; string20 last_name; }, FLAT);
 
 dataset f(virtual dataset({String10 name}) d) := d(name = 'fred');
 
-dataset g(virtual dataset({String20 name2}) d) := d(name2='tom');      
+dataset g(virtual dataset({String20 name2}) d) := d(name2='tom');
 
 dataset h(virtual dataset d) := g(f(d));
 

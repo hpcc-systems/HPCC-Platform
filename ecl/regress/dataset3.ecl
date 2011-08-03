@@ -19,7 +19,7 @@
 //Check that reads from grouped input, where all of a group is removed
 //don't add an extra end of group.
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -27,12 +27,12 @@ integer2        age := 25;
             END;
 
 namesTable := dataset([
-        {'Halliday','Gavin',33},
-        {'Halliday','Liz',32},
-        {'Halliday','Abigail',0},
+        {'Hawthorn','Gavin',33},
+        {'Hawthorn','Mia',32},
+        {'Hawthorn','Abigail',0},
         {'Page','John',62},
         {'Page','Chris',26},
-        {'Salter','Abigail',13},
+        {'Smithe','Abigail',13},
         {'X','Za'}], namesRecord);
 
 x := group(namesTable, surname);// : persist('~GroupedNames2');
@@ -41,7 +41,7 @@ y := table(x, { countAll := count(group)});
 
 output(y);
 
-z := x(surname <> 'Halliday');
+z := x(surname <> 'Hawthorn');
 
 
 output(z, { countNonHalliday := count(group)});

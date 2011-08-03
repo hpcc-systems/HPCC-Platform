@@ -17,9 +17,9 @@
 ############################################################################## */
 
 ds := dataset('ds', {String10 first_name; string20 last_name; }, FLAT);
-   
+
 dataset f(virtual dataset({String10 first_name;}) d) := d(first_name = 'fred');
-   
+
 g(virtual dataset({String20 last_name}) d) := output(f(d), {last_name});
 
 g(ds);

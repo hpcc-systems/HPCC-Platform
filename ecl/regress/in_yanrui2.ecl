@@ -20,7 +20,7 @@
 varstring vs1 := (varstring)('ab'+'cde');
 varstring vs2 := (varstring)('cde' + 'ef');
 
-// Will be "No" because 'abcd' in the set will be promoted to varstring, while 'abcd' outside is 
+// Will be "No" because 'abcd' in the set will be promoted to varstring, while 'abcd' outside is
 // String, so the types don't match.
 s := if('abcd' in [vs1, 'abcd'], 'Yes', 'No');
 s;

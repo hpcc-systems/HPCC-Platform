@@ -44,19 +44,19 @@ boolean     dead;
 
 
 in1 := dataset([
-        {1,'Gavin','Halliday','',33,'Mr'},
-        {2,'Liz','Halliday','',33,'Dr'},
+        {1,'Gavin','Hawthorn','',33,'Mr'},
+        {2,'Mia','Hawthorn','',33,'Dr'},
         {3,'Elizabeth','Windsor',99,'Queen'}
         ], in1rec);
 
 
 in2 := dataset([
-        {1,'Gavin','Halliday','',33,false},
-        {2,'Liz','','Jean',33,false},
+        {1,'Gavin','Hawthorn','',33,false},
+        {2,'Mia','','Jean',33,false},
         {3,'Elizabeth','Windsor',99.1,false}
         ], in2rec);
 
-outrec := 
+outrec :=
         record
 unsigned        id;
 string35        diff1;

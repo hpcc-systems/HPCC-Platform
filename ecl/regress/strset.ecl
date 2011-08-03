@@ -24,4 +24,4 @@ layout_temp := RECORD
 END;
 
 ds_set := DATASET ([{['a', 'b', 'c']}], layout_temp);
-OUTPUT (ds_set, NAMED ('dataset')); 
+OUTPUT (ds_set, NAMED ('dataset'));

@@ -18,7 +18,7 @@
 
 #option ('mainRowsAreLinkCounted', false);
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

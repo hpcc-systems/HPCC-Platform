@@ -31,7 +31,7 @@ unsigned1 numNotes;
 
 export personDataset := DATASET('person',personRecord,THOR);
 
-export display := 
+export display :=
     SERVICE
         echo(const string src) : eclrtl,library='eclrtl',entrypoint='rtlEcho';
     END;
@@ -39,8 +39,8 @@ export display :=
 
 //x := count(personDataset) : stored('gavin');
 a := count(personDataset);
-x := count(personDataset) : success(display.echo('success')), 
-                        failure(display.echo('failed')), failure(display.echo('failed again')), 
+x := count(personDataset) : success(display.echo('success')),
+                        failure(display.echo('failed')), failure(display.echo('failed again')),
                         recovery(display.echo('retry once')), recovery(display.echo('retry 5 times'),5),
                         stored('gavin');
 

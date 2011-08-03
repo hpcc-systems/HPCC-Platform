@@ -18,7 +18,7 @@
 
 #option ('targetClusterType', 'thor');
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname := '?????????????';
 string10        forename := '?????????????';
@@ -28,7 +28,7 @@ integer2        age := 25;
 namesTable := sort(dataset('namesTable', namesRecord, thor), surname);
 
 
-namesRecord JoinTransform (namesRecord l, namesRecord r) := 
+namesRecord JoinTransform (namesRecord l, namesRecord r) :=
                 TRANSFORM
                     SELF.forename := r.forename;
                     SELF := l;

@@ -16,5 +16,5 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-ASCII INTEGER s1 := 123; 
-EBCDIC BOOLEAN b := TRUE; 
+ASCII INTEGER s1 := 123;
+EBCDIC BOOLEAN b := TRUE;

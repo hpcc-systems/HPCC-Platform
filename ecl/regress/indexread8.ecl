@@ -18,15 +18,15 @@
 
 //import stringlib;
 
-d := dataset('~local::rkc::person', 
-    { 
-        string15 name, 
+d := dataset('~local::rkc::person',
+    {
+        string15 name,
         string20 xname;
         string5  other;
         unsigned8 filepos{virtual(fileposition)} }, flat);
 
 
-i := index(d, { string80 coname := trim(name) + trim(xname) + trim(other), filepos } ,'\\seisint\\person.name_first.key');
+i := index(d, { string80 coname := trim(name) + trim(xname) + trim(other), filepos } ,'\\home\\person.name_first.key');
 
 string tag := 'USLEC' ;
 nspacetag := stringlib.stringfilterout(tag,' ');

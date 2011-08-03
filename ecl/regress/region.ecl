@@ -19,7 +19,7 @@
 #option ('importAllModules', true);
 
 #region namesRecord definition
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -32,9 +32,9 @@ namesTable := dataset('x',namesRecord,FLAT);
 #endregion
 
 namesTable2 := dataset([
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
-        {'Salter','Abi',10},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
+        {'Smithe','Pru',10},
         {'X','Z'}], namesRecord);
 
 #region This is the main processing code

@@ -37,7 +37,7 @@ unsigned1           numPeople;
 familyNameRecord    names,dim(numPeople);
                 END;
 
-outRecord gatherFamily(familyRecord l, namesRecord r, unsigned c) := 
+outRecord gatherFamily(familyRecord l, namesRecord r, unsigned c) :=
                 TRANSFORM
                     SELF.surname := IF(c=1,r.surname,l.surname);
                     SELF.numPeople := l.numPeople+1;

@@ -19,7 +19,7 @@
 #option ('targetClusterType', 'roxie');
 #option ('allowActivityForKeyedJoin', true);
 
-mainRecord := 
+mainRecord :=
         RECORD
 qstring14           surname;
 integer8            sequence;

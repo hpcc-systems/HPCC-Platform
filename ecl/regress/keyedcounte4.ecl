@@ -18,12 +18,12 @@
 
 #option ('optimizeIndexSource', true);
 
-childRecord := 
+childRecord :=
             record
 unsigned6       id;
             end;
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

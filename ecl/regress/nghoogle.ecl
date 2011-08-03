@@ -51,7 +51,7 @@ NameSentenceIndex   := ghoogle.NameSentenceIndex;
 NameParagraphIndex  := ghoogle.NameParagraphIndex;
 NameDocMetaIndex        := ghoogle.NameDocMetaIndex;
 NameDateDocIndex        := ghoogle.NameDateDocIndex;
-NameDocPosIndex     := ghoogle.NameDocPosIndex; 
+NameDocPosIndex     := ghoogle.NameDocPosIndex;
 NameTokenisedDocIndex:= ghoogle.NameTokenisedDocIndex;
 NameTokenIndex      := ghoogle.NameTokenIndex;
 
@@ -85,9 +85,9 @@ actionEnum := ENUM(
 //Minimal operations required to implement the searching.
     ReadWord,           // termNum, source, segment, word, wordFlagMask, wordFlagCompare,
     ReadWordSet,        // termNum, source, segment, words, wordFlagMask, wordFlagCompare,
-    AndTerms,           // 
-    OrTerms,            // 
-    AndNotTerms,        // 
+    AndTerms,           //
+    OrTerms,            //
+    AndNotTerms,        //
     PhraseAnd,          //
     ProximityAnd,       // distanceBefore, distanceAfter
     MofNTerms,          // minMatches, maxMatches
@@ -97,7 +97,7 @@ actionEnum := ENUM(
 
 //The following aren't very sensible as far as text searching goes, but are here to test the underlying functionality
     AndJoinTerms,       // join on non-proximity
-    AndNotJoinTerms,    // 
+    AndNotJoinTerms,    //
     MofNJoinTerms,      // minMatches, maxMatches
     RankJoinTerms,      // left outer join
     ProximityMergeAnd,  // merge join on proximity
@@ -107,13 +107,13 @@ actionEnum := ENUM(
 
     //The following are only used in the production
     FlagModifier,       // wordFlagMask, wordFlagCompare
-    QuoteModifier,      // 
+    QuoteModifier,      //
     Max
 );
 
 //  FAIL(stageType, 'Missing entry: ' + (string)action));
 
-boolean definesTerm(actionEnum action) := 
+boolean definesTerm(actionEnum action) :=
     (action in [actionEnum.ReadWord, actionEnum.ReadWordSet]);
 
 stageRecord := { stageType stage };
@@ -121,7 +121,7 @@ wordRecord := { wordType word; };
 wordSet := set of wordType;
 stageSet := set of stageType;
 
-searchRecord := 
+searchRecord :=
             RECORD
 stageType       stage;
 actionEnum      action;
@@ -188,7 +188,7 @@ CmdReadWord(wordType word, sourceType source = 0, segmentType segment = 0, wordF
                 SELF.source := source;
                 SELF.segment := segment;
                 SELF.word := word;
-                SELF.wordFlagMask := wordFlagMask;              
+                SELF.wordFlagMask := wordFlagMask;
                 SELF.wordFlagCompare:= wordFlagCompare;
                 SELF.maxWip := 1;
                 SELF := []);
@@ -396,7 +396,7 @@ END;
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 // PhraseAnd
 
-steppedPhraseCondition(matchRecord l, matchRecord r, distanceType maxWip) := 
+steppedPhraseCondition(matchRecord l, matchRecord r, distanceType maxWip) :=
         (l.doc = r.doc) and (l.segment = r.segment) and
         (r.wpos between l.wpos+1 and l.wpos+maxWip);
 
@@ -404,7 +404,7 @@ doPhraseAnd(searchRecord search, SetOfInputs inputs) := FUNCTION
 
     steppedCondition(matchRecord l, matchRecord r) := steppedPhraseCondition(l, r, search.maxWipLeft);
 
-    condition(matchRecord l, matchRecord r) :=  
+    condition(matchRecord l, matchRecord r) :=
         (r.wpos = l.wpos + l.wip);
 
     matchRecord createMatch(matchRecord l, dataset(matchRecord) allRows) := transform
@@ -426,7 +426,7 @@ steppedProximityCondition(matchRecord l, matchRecord r, distanceType maxWipLeft,
         maxRightBeforeLeft := IF(maxDistanceRightBeforeLeft >= 0, maxDistanceRightBeforeLeft + maxWipRight, maxDistanceRightBeforeLeft);
         maxRightAfterLeft := IF(maxDistanceRightAfterLeft >= 0, maxDistanceRightAfterLeft + maxWipLeft, maxDistanceRightAfterLeft);
 
-        return 
+        return
             (l.doc = r.doc) and (l.segment = r.segment) and
             (r.wpos + maxRightBeforeLeft >= l.wpos) and             // (right.wpos + right.wip + maxRightBeforeLeft >= left.wpos)
             (r.wpos <= l.wpos + (maxRightAfterLeft));               // (right.wpos <= left.wpos + left.wip + maxRightAfterLeft)
@@ -437,14 +437,14 @@ doProximityAnd(searchRecord search, SetOfInputs inputs) := FUNCTION
 
     steppedCondition(matchRecord l, matchRecord r) := steppedProximityCondition(l, r, search.maxWipLeft, search.maxWipRight, search.maxDistanceRightBeforeLeft, search.maxDistanceRightAfterLeft);
 
-    condition(matchRecord l, matchRecord r) :=  
+    condition(matchRecord l, matchRecord r) :=
         (r.wpos + r.wip + search.maxDistanceRightBeforeLeft >= l.wpos) and
         (r.wpos <= l.wpos + l.wip + search.maxDistanceRightAfterLeft);
 
     overlaps(wordPosType wpos, childMatchRecord r) := (wpos between r.wpos and r.wpos + (r.wip - 1));
 
     createMatch(matchRecord l, matchRecord r) := function
-    
+
         wpos := if(l.wpos < r.wpos, l.wpos, r.wpos);
         wend := if(l.wpos + l.wip > r.wpos + r.wip, l.wpos + l.wip, r.wpos + r.wip);
 
@@ -477,14 +477,14 @@ doProximityMergeAnd(searchRecord search, SetOfInputs inputs) := FUNCTION
 
     steppedCondition(matchRecord l, matchRecord r) := steppedProximityCondition(l, r, search.maxWipLeft, search.maxWipRight, search.maxDistanceRightBeforeLeft, search.maxDistanceRightAfterLeft);
 
-    condition(matchRecord l, matchRecord r) :=  
+    condition(matchRecord l, matchRecord r) :=
         (r.wpos + r.wip + search.maxDistanceRightBeforeLeft >= l.wpos) and
         (r.wpos <= l.wpos + l.wip + search.maxDistanceRightAfterLeft);
 
     overlaps(wordPosType wpos, childMatchRecord r) := (wpos between r.wpos and r.wpos + (r.wip - 1));
 
     anyOverlaps (matchRecord l, matchRecord r) := function
-    
+
         wpos := if(l.wpos < r.wpos, l.wpos, r.wpos);
         wend := if(l.wpos + l.wip > r.wpos + r.wip, l.wpos + l.wip, r.wpos + r.wip);
 
@@ -600,7 +600,7 @@ executeAndNotTerms(SetOfInputs stages) :=
 
 executeMofNTerms(SetOfInputs stages, unsigned minMatches, unsigned maxMatches = 999999999) :=
     doMofNTerms(row(CmdMofNTerms([], minMatches, maxMatches)), stages);
-    
+
 executeOrTerms(SetOfInputs stages) :=
     doOrTerms(row(CmdOrTerms([])), stages);
 
@@ -615,12 +615,12 @@ executeProximity(SetOfInputs stages, distanceType maxDistanceRightBeforeLeft, di
 // A simplified query language
 parseQuery(string queryText) := function
 
-searchParseRecord := 
+searchParseRecord :=
             RECORD(searchRecord)
 unsigned        numInputs;
             END;
 
-productionRecord  := 
+productionRecord  :=
             record
 unsigned        termCount;
 dataset(searchParseRecord) actions{maxcount(MaxActions)};
@@ -645,23 +645,23 @@ token quotedword := quotechar wordpat quotechar;
 
 PRULE forwardExpr := use(productionRecord, 'ExpressionRule');
 
-ARULE term0 
+ARULE term0
     := quotedword                               transform(searchParseRecord,
                                                     SELF.action := actionEnum.ReadWord;
                                                     SELF.word := $1[2..length($1)-1];
                                                     SELF := []
                                                 )
-    | 'CAPS' '(' SELF ')'                       transform(searchParseRecord, 
+    | 'CAPS' '(' SELF ')'                       transform(searchParseRecord,
                                                     SELF.wordFlagMask := wordFlags.hasUpper;
                                                     SELF.wordFlagCompare := wordFlags.hasUpper;
                                                     SELF := $3;
                                                 )
-    | 'NOCAPS' '(' SELF ')'                     transform(searchParseRecord, 
+    | 'NOCAPS' '(' SELF ')'                     transform(searchParseRecord,
                                                     SELF.wordFlagMask := wordFlags.hasUpper;
                                                     SELF.wordFlagCompare := 0;
                                                     SELF := $3;
                                                 )
-    | 'ALLCAPS' '(' SELF ')'                    transform(searchParseRecord, 
+    | 'ALLCAPS' '(' SELF ')'                    transform(searchParseRecord,
                                                     SELF.wordFlagMask := wordFlags.hasUpper+wordFlags.hasLower;
                                                     SELF.wordFlagCompare := wordFlags.hasUpper;
                                                     SELF := $3;
@@ -711,11 +711,11 @@ PRULE term1
                                                     )
                                                 )
     | 'RANK' '(' forwardExpr ',' forwardExpr ')'
-                                                transform(productionRecord, 
+                                                transform(productionRecord,
                                                     self.termCount := 1;
                                                     self.actions := $3.actions + $5.actions + row(
-                                                        transform(searchParseRecord, 
-                                                            self.action := actionEnum.RankMergeTerms; 
+                                                        transform(searchParseRecord,
+                                                            self.action := actionEnum.RankMergeTerms;
                                                             self.numInputs := 2;
                                                             self := []
                                                         )
@@ -766,11 +766,11 @@ PRULE term1
                                                     )
                                                 )
     | 'PROXIMITY' '(' forwardExpr ',' forwardExpr ',' number ',' number ')'
-                                                transform(productionRecord, 
+                                                transform(productionRecord,
                                                     self.termCount := 1;
                                                     self.actions := $3.actions + $5.actions + row(
-                                                        transform(searchParseRecord, 
-                                                            self.action := actionEnum.ProximityAnd; 
+                                                        transform(searchParseRecord,
+                                                            self.action := actionEnum.ProximityAnd;
                                                             self.numInputs := 2;
                                                             self.maxDistanceRightBeforeLeft := (integer)$7;
                                                             self.maxDistanceRightAfterLeft := (integer)$9;
@@ -779,11 +779,11 @@ PRULE term1
                                                     )
                                                 )
     | 'PRE' '(' forwardExpr ',' forwardExpr ')'
-                                                transform(productionRecord, 
+                                                transform(productionRecord,
                                                     self.termCount := 1;
                                                     self.actions := $3.actions + $5.actions + row(
-                                                        transform(searchParseRecord, 
-                                                            self.action := actionEnum.ProximityAnd; 
+                                                        transform(searchParseRecord,
+                                                            self.action := actionEnum.ProximityAnd;
                                                             self.numInputs := 2;
                                                             self.maxDistanceRightBeforeLeft := -1;
                                                             self.maxDistanceRightAfterLeft := MaxWordsInDocument;
@@ -792,11 +792,11 @@ PRULE term1
                                                     )
                                                 )
     | 'AFT' '(' forwardExpr ',' forwardExpr ')'
-                                                transform(productionRecord, 
+                                                transform(productionRecord,
                                                     self.termCount := 1;
                                                     self.actions := $3.actions + $5.actions + row(
-                                                        transform(searchParseRecord, 
-                                                            self.action := actionEnum.ProximityAnd; 
+                                                        transform(searchParseRecord,
+                                                            self.action := actionEnum.ProximityAnd;
                                                             self.numInputs := 2;
                                                             self.maxDistanceRightBeforeLeft := MaxWordsInDocument;
                                                             self.maxDistanceRightAfterLeft := -1;
@@ -805,10 +805,10 @@ PRULE term1
                                                     )
                                                 )
     | 'PROXMERGE' '(' forwardExpr ',' forwardExpr ',' number ',' number ')'
-                                                transform(productionRecord, 
+                                                transform(productionRecord,
                                                     self.termCount := 1;
                                                     self.actions := $3.actions + $5.actions + row(
-                                                        transform(searchParseRecord, 
+                                                        transform(searchParseRecord,
                                                             self.action := actionEnum.ProximityMergeAnd;
                                                             self.numInputs := 2;
                                                             self.maxDistanceRightBeforeLeft := (integer)$7;
@@ -862,11 +862,11 @@ PRULE term1
                                                     )
                                                 )
     | 'RANKJOIN' '(' forwardExpr ',' forwardExpr ')'
-                                                transform(productionRecord, 
+                                                transform(productionRecord,
                                                     self.termCount := 1;
                                                     self.actions := $3.actions + $5.actions + row(
-                                                        transform(searchParseRecord, 
-                                                            self.action := actionEnum.RankJoinTerms; 
+                                                        transform(searchParseRecord,
+                                                            self.action := actionEnum.RankJoinTerms;
                                                             self.numInputs := 2;
                                                             self := []
                                                         )
@@ -913,11 +913,11 @@ dataset(searchParseRecord) actions{maxcount(MaxActions)};
         end;
 
 
-resultsRecord extractResults(dataset(searchParseRecord) actions) := 
+resultsRecord extractResults(dataset(searchParseRecord) actions) :=
         TRANSFORM
             SELF.actions := actions;
         END;
-            
+
 p1 := PARSE(infile,line,expr,extractResults($1.actions),first,whole,skip(ws),nocase,parse);
 
 pnorm := normalize(p1, left.actions, transform(right));

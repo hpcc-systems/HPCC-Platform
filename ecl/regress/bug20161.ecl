@@ -16,14 +16,14 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-PSTRING := TYPE 
-EXPORT string load(string rawdata) := rawdata[2..TRANSFER(rawdata[1], unsigned integer1)]; 
-EXPORT integer8 physicallength(string ecldata) := TRANSFER(LENGTH(ecldata), unsigned integer1) + 1; 
-EXPORT string store(string ecldata) := TRANSFER(LENGTH(ecldata), string1) + ecldata; 
-END; 
+PSTRING := TYPE
+EXPORT string load(string rawdata) := rawdata[2..TRANSFER(rawdata[1], unsigned integer1)];
+EXPORT integer8 physicallength(string ecldata) := TRANSFER(LENGTH(ecldata), unsigned integer1) + 1;
+EXPORT string store(string ecldata) := TRANSFER(LENGTH(ecldata), string1) + ecldata;
+END;
 
-r := { unsigned integer8 id, PSTRING firstname, PSTRING lastname }; 
+r := { unsigned integer8 id, PSTRING firstname, PSTRING lastname };
 
-ds := dataset([{1,'Gavin','Halliday'},{2,'Jim','Peck'}], r);
+ds := dataset([{1,'Gavin','Hawthorn'},{2,'Jim','Peck'}], r);
 output(ds);
 

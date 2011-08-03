@@ -17,7 +17,7 @@
 ############################################################################## */
 
 datalibx := service
-        unsigned4 NameMatch(const string le_f, const string le_m, const string le_l, 
+        unsigned4 NameMatch(const string le_f, const string le_m, const string le_l,
                       const string ri_f,const string ri_m,const string ri_l)  : c, pure, entrypoint='dataNameMatch';
     end;
 
@@ -28,7 +28,7 @@ endmacro;
 
 
 
-r1 := 
+r1 :=
             RECORD
 qstring20       fname;
 qstring20       mname;

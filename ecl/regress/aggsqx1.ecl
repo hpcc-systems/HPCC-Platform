@@ -20,7 +20,7 @@ import AggCommon;
 AggCommon.CommonDefinitions();
 
 forceSubQuery(a) := macro
-    { dedup(a+a,true)[1] } 
+    { dedup(a+a,true)[1] }
 endmacro;
 
 trueValue := true : stored('trueValue');
@@ -33,7 +33,7 @@ a1 := table(persons, { firstForename := (string20)forename, sum(group, aage),exi
 output(sqHousePersonBookDs, forceSubQuery(a1((firstForename='zzzzzzz') = falseValue)));
 
 //Filtered disk aggregate, which also requires a beenProcessed flag
-a2 := table(persons(surname != 'Halliday'), { max(group, aage) });
+a2 := table(persons(surname != 'Hawthorn'), { max(group, aage) });
 output(sqHousePersonBookDs, forceSubQuery(a2));
 
 //Special case count.

@@ -19,7 +19,7 @@
 
 
 //Slightly weird - no parameters, so c++ is expanded inline instead of generating a function.
-real8 sqrt2 := 
+real8 sqrt2 :=
 BEGINC++
 sqrt(2.0)
 ENDC++
@@ -51,7 +51,7 @@ ENDC++              // obscure comment test
 output(reverseString('Gavin'));
 
 
-r := 
+r :=
 record
     string10 name;
     unsigned4 id;

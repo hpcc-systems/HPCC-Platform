@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -39,11 +39,11 @@ output(y3);
 
 
 d := dataset('~local::rkc::person', { string15 name, unsigned8 filepos{virtual(fileposition)} }, flat);
-i1 := index(d, { f_name := (string11) name, filepos } ,'\\seisint\\person.name_first.key',preload);
+i1 := index(d, { f_name := (string11) name, filepos } ,'\\home\\person.name_first.key',preload);
 output(i1(f_name='Gavin'));
 
-i2 := index(d, { f_name := (string11) name, filepos } ,'\\seisint\\person.name_first.key');
-output(preload(i2)(f_name='Halliday'));
+i2 := index(d, { f_name := (string11) name, filepos } ,'\\home\\person.name_first.key');
+output(preload(i2)(f_name='Hawthorn'));
 
 namesTable3 := dataset('x',namesRecord,FLAT,preload(1+2+3+4));
 output(namesTable3(age=3));

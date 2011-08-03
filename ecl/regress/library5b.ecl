@@ -17,7 +17,7 @@
 ############################################################################## */
 
 //Errorneous example - a module with no parameters
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

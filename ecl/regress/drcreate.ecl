@@ -16,14 +16,14 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-fixedRecord := 
+fixedRecord :=
         RECORD
 string20            forename;
 string20            surname;
 string2             nl := '\r\n';
         END;
 
-variableRecord := 
+variableRecord :=
         RECORD
 string              forename;
 string              surname;
@@ -43,8 +43,8 @@ variableRecord fixed2Var(fixedRecord l) :=
     END;
 
 d := PIPE('pipeRead 20000 20', fixedRecord);
-output(d,,'dtfixed'); 
+output(d,,'dtfixed');
 
 
 d2 := PROJECT(d, fixed2Var(LEFT));
-output(d2,,'dtvar'); 
+output(d2,,'dtvar');

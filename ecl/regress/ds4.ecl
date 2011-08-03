@@ -21,7 +21,7 @@ string20          forename;
 unsigned1         age;
     END;
 
-export personRecord := 
+export personRecord :=
                 RECORD
 string20            forenamex;
 string20            surname;
@@ -39,7 +39,7 @@ dataset dataset2DatasetX(const dataset src) :                   eclrtl,pure,libr
 
 
 personDataset := DATASET(
-            [{'Gavin','Halliday',[{'Abigail',2},{'Nathan',2}]},
+            [{'Gavin','Hawthorn',[{'Abigail',2},{'Nathan',2}]},
              {'John','Simmons',[{'Jennifer',18},{'Alison',16},{'Andrew',13},{'Fiona',10}]}],personRecord);
 
 processed := testService.dataset2datasetX(personDataset);

@@ -20,7 +20,7 @@ export display := SERVICE
  echo(const string src) : eclrtl,library='eclrtl',entrypoint='rtlEcho';
 END;
 
-namesRecord := 
+namesRecord :=
             RECORD
 unsigned4       holeid;
 string20        surname;

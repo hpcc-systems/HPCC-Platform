@@ -35,13 +35,13 @@ end;
 XYZFile := dataset ('ecl_test::smth_XYZ', LayoutXYZSection, flat);
 
 /*Change EBCDIC to ASCII*/
-     
+
 LayoutXYZSectionNew := record
  string14 XYZ_newkey;
  end;
 
 
-layoutXYZSectionNew XYZTrans(layoutXYZSection L) := transform 
+layoutXYZSectionNew XYZTrans(layoutXYZSection L) := transform
 
 self.XYZ_newkey := 'boo';
 self := L;
@@ -53,7 +53,7 @@ end;
 
 DOut := project(XYZFile,XYZTrans(left));
 
-layoutXYZSectionNew XYZTrans2(layoutXYZSectionNew L) := transform 
+layoutXYZSectionNew XYZTrans2(layoutXYZSectionNew L) := transform
 
 self.XYZ_newkey :='Hello';
 

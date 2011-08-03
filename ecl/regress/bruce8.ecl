@@ -20,7 +20,7 @@ bigrec := record
 string body{maxlength(400000)};
 end;
 
-fc := dataset('~in::samplefiles',bigrec, 
+fc := dataset('~in::samplefiles',bigrec,
 csv ( separator(''), terminator('</HTML>'),maxlength(400000)));
 
 //pattern tonexttag := pattern('.')* BEFORE '<!-';
@@ -50,7 +50,7 @@ pattern caselist := tagstart pattern('name') tagend crlf ((plaintiff vs defendan
 pattern contents := ANY+ before tagstart;
 pattern numberpunc := (' '|'.'|','|'-');
 pattern casefile := (pattern('[0-9]')|numberpunc)+;
-pattern caseno := (nocase('No.') | nocase('Nos.')) casefile; 
+pattern caseno := (nocase('No.') | nocase('Nos.')) casefile;
 pattern namecourt := nocase('ABCDEF' pattern('[A-Z, ,0-9]')+);
 pattern courtname := tagstart pattern('court') tagend ANY+ namecourt ANY+ caseno;
 pattern getall := caselist ANY+ courtname;

@@ -17,16 +17,16 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 varstring       surname;
 varstring       forename;
             END;
 
 namesTable := nofold(dataset([
-        {'Halliday','Gavin'},
-        {'Halliday','Liz'},
-        {'Salter','Abi'},
+        {'Hawthorn','Gavin'},
+        {'Hawthorn','Mia'},
+        {'Smithe','Pru'},
         {'X','Z'}], namesRecord));
 
 output(namesTable(surname<>V'',V''=forename),,'~temp',overwrite);

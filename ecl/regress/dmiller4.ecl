@@ -24,7 +24,7 @@ unsigned1 CurPrecision := length(StringVersion) - stringlib.StringFind( StringVe
 RETURN( MAP ( precision = 0  => TRUNCATE(num),
               CurPrecision <= precision         => num,
         ROUND( (num * POWER(10,precision)) ) / POWER(10,precision) ) );
-                                          
+
 END;
 
 

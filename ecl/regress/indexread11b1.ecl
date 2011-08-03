@@ -18,11 +18,11 @@
 
 d := dataset('~local::rkc::person', { string15 f1, string15 f2, string15 f3, string15 f4, unsigned8 filepos{virtual(fileposition)} }, flat);
 
-i := index(d, { d } ,'\\seisint\\person.name_first.key');
+i := index(d, { d } ,'\\home\\person.name_first.key');
 
 
 
-count(i(keyed(f3='Gavin3' and f2='Halliday'))); // missing before keyed
-//count(i(keyed(f3='Gavin3') and f2='Halliday'));   // missing before keyed after valid field
+count(i(keyed(f3='Gavin3' and f2='Hawthorn'))); // missing before keyed
+//count(i(keyed(f3='Gavin3') and f2='Hawthorn'));   // missing before keyed after valid field
 //count(i(keyed(f3='Gavin3') and wild(f2)));        // missing before a wild
-//count(i(wild(f3) and f2='Halliday'));             // missing before wild after valid field
+//count(i(wild(f3) and f2='Hawthorn'));             // missing before wild after valid field

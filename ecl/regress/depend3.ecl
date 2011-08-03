@@ -22,5 +22,5 @@ output(d,{(string20) per_last_name},'rkc::x11');
 output(d,{(string20) per_last_name},'rkc::x12');
 d1 := dataset('rkc::x11', { string20 per_last_name }, THOR);
 d2 := dataset('rkc::x12', { string20 per_last_name }, THOR);
-output(choosen(d1(per_last_name='CHAPMAN')+d2(per_last_name='CHAPMAN'),1000000));
+output(choosen(d1(per_last_name='DRIMBAD')+d2(per_last_name='DRIMBAD'),1000000));
 

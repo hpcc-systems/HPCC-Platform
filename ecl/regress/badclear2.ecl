@@ -26,7 +26,7 @@ searchSet := dataset(mySet, { string x{maxlength(50)} });
 
 
 v1 := true : stored('v1');
-v2 := 4 : stored('v2'); 
+v2 := 4 : stored('v2');
 
 ds := dataset([{1},{2},{3},{4},{5},{6},{4},{6}],{ unsigned4 id });
 

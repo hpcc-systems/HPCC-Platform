@@ -17,7 +17,7 @@
 ############################################################################## */
 
 infile := dataset([
-        {'Gavin, Liz and Abigail and Nathan'}
+        {'Gavin, Mia and Abigail and Nathan'}
         ], { string line });
 
 pattern ws := ' ' | '\t';
@@ -26,7 +26,7 @@ token comma := ',';
 token t_and := 'and';
 
 
-rule listNext 
+rule listNext
     := comma name
     |  t_and name
     ;
@@ -40,7 +40,7 @@ rule listFull := name listContinue;
 
 rule S := listFull;
 
-results := 
+results :=
     record
         infile.line+': ';
         parseLib.getParseTree();
