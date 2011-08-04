@@ -1403,7 +1403,7 @@ void TomitaContext::generateLexer()
     //nested scope
     try
     {
-        RegexContext regex(expr, wu(), translatorOptions, timeReporter);
+        RegexContext regex(expr, wu(), translatorOptions, timeReporter, NLPAregexStack);
 
         regex.beginLexer();
         ForEachItemIn(idx, tokens)
@@ -1426,7 +1426,7 @@ void TomitaContext::generateLexer()
     IHqlExpression * separator = expr->queryProperty(separatorAtom);
     if (separator)
     {
-        RegexContext regex2(expr, wu(), translatorOptions, timeReporter);
+        RegexContext regex2(expr, wu(), translatorOptions, timeReporter, NLPAregexStack);
 
         regex2.beginLexer();
         regex2.addLexerToken(1, separator->queryChild(0));

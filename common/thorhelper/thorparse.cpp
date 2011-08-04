@@ -716,8 +716,8 @@ INlpParseAlgorithm * createThorParser(MemoryBuffer & buffer, IOutputMetaData * o
 
     switch (kind)
     {
-    case NLPAregex:
-    case NLPAregex2:
+    case NLPAregexStack:
+    case NLPAregexHeap:
         return createRegexParser(buffer, outRecordSize, kind);
     case NLPAtomita:
         return createTomitaParser(buffer, outRecordSize);
