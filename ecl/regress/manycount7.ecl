@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -25,12 +25,12 @@ integer2        age := 25;
             END;
 
 namesTable := dataset([
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
-        {'Salter','Abi',10},
-        {'Salter','Abi',10},
-        {'Salter','Abi',10},
-        {'Salter','Abi',10},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
+        {'Smithe','Pru',10},
+        {'Smithe','Pru',10},
+        {'Smithe','Pru',10},
+        {'Smithe','Pru',10},
         {'X','Z'}], namesRecord);
 
 x := table(namesTable, {unsigned4 c1 := count(group,age=10), unsigned4 c2 := count(group,age>30), unsigned4 c3 := count(group,age>20), string m1 := max(group, forename); });

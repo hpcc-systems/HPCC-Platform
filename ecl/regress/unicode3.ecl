@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-externalRecord := 
+externalRecord :=
     RECORD
         unsigned8 id;
         data20 firstname;
@@ -24,7 +24,7 @@ externalRecord :=
         string40 addr;
     END;
 
-internalRecord := 
+internalRecord :=
     RECORD
         unsigned8 id;
         unicode10 firstname;
@@ -40,7 +40,7 @@ external := DATASET('input', externalRecord, THOR);
 string encoding := 'utf-' + '8';
 string encoding2 := 'utf-' + '8n';
 
-internalRecord t(externalRecord l) := 
+internalRecord t(externalRecord l) :=
     TRANSFORM
         SELF.firstname := TOUNICODE(l.firstname, 'utf' + '-16be');
         SELF.lastname := U'!' + TOUNICODE(l.lastname, encoding) + U'!#';

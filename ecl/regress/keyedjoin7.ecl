@@ -22,7 +22,7 @@ gavLib := service
     set of integer4 getZipCodes(unsigned4 location) : eclrtl,pure,library='eclrtl',entrypoint='rtlGetZipCodes',oldSetFormat;
 end;
 
-mainRecord := 
+mainRecord :=
         RECORD
 integer8            sequence;
 string20            forename;
@@ -45,7 +45,7 @@ string20        addr;
 peopleDataset := DATASET([{3000,'London'},{3500,'Miami'},{30,'Houndslow'}], peopleRecord);
 
 
-joinedRecord := 
+joinedRecord :=
         RECORD
 integer8            sequence;
 string20            forename;

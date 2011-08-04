@@ -18,14 +18,14 @@
 
 person := dataset('person', { unsigned8 person_id, string2 per_st, string10 per_first_name, string10 per_last_name }, thor);
 prevTable := person;
-inputRecord := 
+inputRecord :=
   record
     person.per_last_name;
     person.per_st;
   end;
 inputTable := prevTable;
 
-seedRecord := 
+seedRecord :=
   record
     string25 per_last_name;
     string15 per_first_name;

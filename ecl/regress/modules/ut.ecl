@@ -24,7 +24,7 @@ export MAC_Append_Id(infile,link_Field,append_field,patchfile,left_field,right_f
 //   If there is a new ID in the patchfile, replace the old ID.  Otherwise retain it.
 #uniquename(tra)
 typeof(infile) %tra%(infile l, patchfile rec) := transform
-  self.append_field := if(rec.right_field<>0,rec.right_field,l.append_field); 
+  self.append_field := if(rec.right_field<>0,rec.right_field,l.append_field);
   self := l;
   end;
 
@@ -50,7 +50,7 @@ export string word(string s,integer1 n) := if (n = 1, s[1..sp(s,1)],
                  s[sp(s,n-1)+1..sp(s,n)]);
 
 
-EXPORT datalibx := 
+EXPORT datalibx :=
 SERVICE
 unsigned integer4 SlidingMatch(string src, string arg) : c, pure, entrypoint='dataSlidingMatch';
 unsigned integer4 PositionalMatch(string src, string search) : c, pure, entrypoint='dataPositionalMatch';
@@ -66,17 +66,17 @@ c3(integer l, integer r, integer s) := (l-r)*2/3+r-s;
 
 c3a(integer l, integer r, integer s) := round(100/l * c3(l,r,s));
 
-export StringSimilar100(string l, string r) := 
+export StringSimilar100(string l, string r) :=
 c3a( maxi(length(trim(l)),length(trim(r))),
     mini(length(trim(l)),length(trim(r))),
-    maxi( datalibx.slidingmatch(trim(l),trim(r)) , 
+    maxi( datalibx.slidingmatch(trim(l),trim(r)) ,
           datalibx.positionalmatch(trim(l),trim(r)))
 );
 
 export StringSimilar(string l, string r) := ROUND(StringSimilar100(l,r)/10);
 
 
-export date_overlap_first(unsigned8 lf, unsigned8 ll, 
+export date_overlap_first(unsigned8 lf, unsigned8 ll,
                          unsigned8 rf, unsigned8 rl) :=
 
   MAP ( lf > rl => 0,
@@ -84,7 +84,7 @@ export date_overlap_first(unsigned8 lf, unsigned8 ll,
         lf > rf => lf,
         rf );
 
-export date_overlap_last(unsigned8 lf, unsigned8 ll, 
+export date_overlap_last(unsigned8 lf, unsigned8 ll,
                          unsigned8 rf, unsigned8 rl) :=
 
   MAP ( lf > rl => 0,
@@ -92,7 +92,7 @@ export date_overlap_last(unsigned8 lf, unsigned8 ll,
         ll > rl => rl,
         ll );
 
-export date_overlap(unsigned8 lf, unsigned8 ll, 
+export date_overlap(unsigned8 lf, unsigned8 ll,
                          unsigned8 rf, unsigned8 rl) :=
 
   MAP( date_overlap_last(lf,ll,rf,rl)=0 => if (date_overlap_first(lf,ll,rf,rl)=0,0,1),
@@ -174,7 +174,7 @@ export MAC_Field_Count_Thresholded(infile,infield,thres,outname = '\'field_count
     #end
   end;
 
-//****** Push infile into table that groups by infield, 
+//****** Push infile into table that groups by infield,
 //       producing a count for each value using r_macro above
 #uniquename(t_macro)
 %t_macro% := table(infile,%r_macro%,infield,few);

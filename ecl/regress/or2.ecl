@@ -19,7 +19,7 @@
 #option ('foldAssign', false);
 #option ('globalFold', false);
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -27,9 +27,9 @@ integer2        age := 25;
             END;
 
 namesTable2 := nofold(dataset([
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
-        {'Salter','Abi',10},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
+        {'Smithe','Pru',10},
         {'X','Z'}], namesRecord));
 
 output(namesTable2(age=10 or age > 20 or age in [4,5,6] or age < 2 or age = 8 or age = 5),,'out.d00');

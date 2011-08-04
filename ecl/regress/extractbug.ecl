@@ -44,7 +44,7 @@ nonLocalProcess(dataset(r2) inFile, string skipper) := function
 
     px := inFile((string)id != skipper);
     kj := join(inFile, i, left.id = right.id, transform(r2, self.x := right.x, self := left));
-    
+
 
     r2 t2(r2 l) := transform
         self.cr := sort(removeSkips(l.cr)(name != skipName), name);
@@ -55,7 +55,7 @@ nonLocalProcess(dataset(r2) inFile, string skipper) := function
 
     return p2;
 end;
-    
+
 
 
 ds t1(ds l) := transform

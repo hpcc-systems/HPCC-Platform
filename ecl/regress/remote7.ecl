@@ -19,7 +19,7 @@
 #option ('targetClusterType', 'roxie');
 //Check thisnode is handled
 
-mainRecord := 
+mainRecord :=
         RECORD
 string20            word;
 unsigned8           doc;

@@ -19,7 +19,7 @@
 ds := dataset('ds', {integer m1; integer m2; }, THOR);
 
   r := record
-    integer n;        
+    integer n;
   end;
 
   f(virtual dataset(r) d1, virtual dataset(r) d2) := count(d1(n=10))+count(d2(n=20));

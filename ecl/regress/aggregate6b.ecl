@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-inRecord := 
+inRecord :=
             RECORD
 unsigned        box;
 string          text{maxlength(10)};

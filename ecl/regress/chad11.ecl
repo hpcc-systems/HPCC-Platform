@@ -31,7 +31,7 @@ tot_recs := count(old);
 diff_rec := record
     integer8 total_records := tot_recs;
     integer8 any_change := count(group);
-    integer8 percent_change := percentage_diff(tot_recs, tot_recs + count(group)); 
+    integer8 percent_change := percentage_diff(tot_recs, tot_recs + count(group));
 end;
 
 did_diff := old;

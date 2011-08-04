@@ -25,7 +25,7 @@ string20  per_forename;
 unsigned8 holepos;
     END;
 
-parentRecord := 
+parentRecord :=
                 RECORD
 unsigned8           id;
 string20            address1;
@@ -46,7 +46,7 @@ boolean                     sameChildren;
 
 
 
-outRecord compareChildren(parentRecord l, parentRecord r) := 
+outRecord compareChildren(parentRecord l, parentRecord r) :=
                 TRANSFORM
                     SELF.household_id := l.id;
                     SELF.sameChildren := l.children = r.children;

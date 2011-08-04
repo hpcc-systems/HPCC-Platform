@@ -21,7 +21,7 @@ LOADXML('<body></body>');
 export person := dataset('person', { unsigned8 person_id, string1 per_sex, string40 per_first_name, unsigned8 xpos }, thor);
 
 #DECLARE(x)
-#EXPORT(x, 
+#EXPORT(x,
     person
 )
 

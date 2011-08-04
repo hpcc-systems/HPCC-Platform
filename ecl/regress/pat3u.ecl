@@ -39,7 +39,7 @@ infile := dataset([
         ], { unicode line });
 
 
-results := 
+results :=
     record
         MATCHTEXT(phoneNumber);
         'Prefix:' + (string)MATCHED(phonePrefix) + '"' + MATCHTEXT(phonePrefix) + '"';

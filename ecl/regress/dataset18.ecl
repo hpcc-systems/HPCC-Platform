@@ -17,15 +17,15 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
 integer2        age := 25;
             END;
 
-d := dataset([{'Halliday','Gavin',35},
-              {'Halliday','Abigail',2},
+d := dataset([{'Hawthorn','Gavin',35},
+              {'Hawthorn','Abigail',2},
               {'Smith','John',57},
               {'Smith','Gavin',12}
               ], namesRecord);
@@ -50,6 +50,6 @@ f2 := t(seq < 50);
 
 t2 := table(f2, { surname, forename, unsigned4 seq := random() % age, cnt := count(i(surname = f2.surname)) });
 
-f3 := t2(surname <> 'Halliday', seq != 0);
+f3 := t2(surname <> 'Hawthorn', seq != 0);
 
 output(f3);

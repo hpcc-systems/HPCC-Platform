@@ -29,7 +29,7 @@ OUTPUT(SORT(distibuted_aaax, fa, LOCAL));
 /*
 bbb := DATASET('aaa',{STRING1 fb; }, FLAT);
 
-RECORD ResultRec := RECORD 
+RECORD ResultRec := RECORD
     aaa.fa;
     END;
 

@@ -36,14 +36,14 @@ export wordFlags        := ghoogle.wordFlags;
 export wordIdType       := ghoogle.wordIdType;
 export corpusFlags      := ghoogle.corpusFlags;
 export indexWipType     := ghoogle.indexWipType;
- 
+
 export NameCorpusIndex      := ghoogle.NameCorpusIndex;
 export NameWordIndex        := ghoogle.NameWordIndex;
 export NameSentenceIndex    := ghoogle.NameSentenceIndex;
 export NameParagraphIndex   := ghoogle.NameParagraphIndex;
 export NameDocMetaIndex     := ghoogle.NameDocMetaIndex;
 export NameDateDocIndex     := ghoogle.NameDateDocIndex;
-export NameDocPosIndex      := ghoogle.NameDocPosIndex; 
+export NameDocPosIndex      := ghoogle.NameDocPosIndex;
 export NameTokenisedDocIndex:= ghoogle.NameTokenisedDocIndex;
 export NameTokenIndex       := ghoogle.NameTokenIndex;
 
@@ -125,13 +125,13 @@ unsigned8           size;
 
 DirectoryPath := '~file::127.0.0.1::temp::asv2::';
 
-p1 := project(documents, 
-            transform(docMetaRecord, 
-                    self.name := directoryPath+left.name; 
-                    self.doc := ghoogle.createDocId(left.source, 1); 
+p1 := project(documents,
+            transform(docMetaRecord,
+                    self.name := directoryPath+left.name;
+                    self.doc := ghoogle.createDocId(left.source, 1);
                     self.date := (left.source-1)*4000 + 10*counter;     // any old values
                     self.size := 20000 - counter;                   // ditto
-                    self := left; 
+                    self := left;
                     self := []));
 
 annotatedDocuments  := global(iterate(p1, transform(docMetaRecord, self.doc := if (left.source = right.source, left.doc+1, right.doc+1); self := right)), few);
@@ -148,7 +148,7 @@ docPosType      dpos;
 boolean         beginSegment;           // could be set to {x:1} to separate title and chapters - would probably be useful.
 boolean         endOfSentence;
 boolean         endOfParagraph;
-            end;    
+            end;
 
 
 

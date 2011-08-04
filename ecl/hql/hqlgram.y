@@ -9809,6 +9809,7 @@ parseFlag
                             $$.setExpr(createAttribute(parallelAtom));
                             $$.setPosition($1);
                         }
+    | hintAttribute
     ;
 
 xmlParseFlags

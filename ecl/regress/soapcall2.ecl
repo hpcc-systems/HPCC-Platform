@@ -18,7 +18,7 @@
 
 #option ('globalFold', false);
 
-xyzServiceOutRecord := 
+xyzServiceOutRecord :=
     RECORD
         unsigned6 id;
         unsigned8 score;
@@ -27,7 +27,7 @@ xyzServiceOutRecord :=
 callXyzService(_NAME, _ZIPCODES, _NUMRESULTS, OUTF) := macro
         outF := SOAPCALL('myip','XyzService',
                         {
-                            string Name{xpath('Name')} := _NAME, 
+                            string Name{xpath('Name')} := _NAME,
                             set of string zips{xpath('Zips/Item')} := _ZIPCODES,
                             unsigned numResults := _NUMRESULTS
                         }, DATASET(xyzServiceOutRecord), LOG, trim)

@@ -21,7 +21,7 @@
 r := record
 unsigned id;
     end;
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

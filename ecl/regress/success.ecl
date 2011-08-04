@@ -21,7 +21,7 @@
 unsigned low := 10 : stored('low');
 unsigned high := 20 : stored('high');
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

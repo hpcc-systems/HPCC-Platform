@@ -20,7 +20,7 @@
 
 idRecord := { unsigned id };
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        name;
 dataset(idRecord)   x{maxcount(100)};
@@ -43,7 +43,7 @@ output(p);
 
 id2Record := { string id{maxlength(100)} };
 
-names2Record := 
+names2Record :=
             RECORD
 string20        name;
 dataset(id2Record)  x{maxcount(100)};

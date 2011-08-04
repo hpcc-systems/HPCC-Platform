@@ -18,12 +18,12 @@
 
 #option ('optimizeIndexSource', true);
 
-childRecord := 
+childRecord :=
             record
 unsigned6       id;
             end;
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -41,5 +41,5 @@ set of string20 surnames := [] : stored('surnames');
 
 output(count(i(keyed(surname in surnames), keyed(forename <> 'Gavin', opt))));
 output(count(i(keyed(surname in surnames), keyed(forename <> 'Gavin', opt)), keyed));
-output(count(i(keyed(surname = 'Halliday'), age / 10 = 5)));
-output(count(i(keyed(surname = 'Halliday'), age / 10 = 5), keyed));
+output(count(i(keyed(surname = 'Hawthorn'), age / 10 = 5)));
+output(count(i(keyed(surname = 'Hawthorn'), age / 10 = 5), keyed));

@@ -19,7 +19,7 @@
 #option ('foldAssign', false);
 #option ('globalFold', false);
 
-namesRecord := 
+namesRecord :=
             RECORD
 string10        surname;
 string10        forename;
@@ -27,7 +27,7 @@ integer2        age := 25;
             END;
 
 namesTable := dataset([
-        {'Halliday','Gavin',31},
+        {'Hawthorn','Gavin',31},
         {'X','Z'}], namesRecord);
 
 outr :=     RECORD

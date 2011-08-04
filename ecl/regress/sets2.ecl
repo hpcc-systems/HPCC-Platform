@@ -42,12 +42,12 @@ search2 in y;
 
 
 set of string z1 := ['Gavin', 'Jason', 'Emma', 'Vicky'];
-set of string z2 := ['Liz', 'Rochelle', '?', 'David'];
+set of string z2 := ['Mia', 'Rochelle', '?', 'David'];
 
 set of string z := if(useX1, z1, z2);
 
 string ssearch1 := 'Gavin'  : stored('ssearch1');
-string ssearch2 := 'Liz'    : stored('ssearch2');
+string ssearch2 := 'Mia'    : stored('ssearch2');
 
 ssearch1 in z;
 ssearch2 in z;

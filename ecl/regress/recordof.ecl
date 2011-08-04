@@ -21,8 +21,8 @@ r := record
   end;
 
 d := dataset([
-{'Gavin Halliday'},
-{'Gavin C Halliday'},
+{'Gavin Hawthorn'},
+{'Gavin C Hawthorn'},
 {'John Holt'},
 {'George W Bush'},
 {''}],r);
@@ -35,13 +35,13 @@ pattern id := PATTERN('[a-zA-Z]+');
 
 pattern twoNames := id ws id;
 
-firstLastRecord := 
+firstLastRecord :=
         record
 string      firstName;
 string      lastName;
         end;
 
-firstLastRecord extractFirstLast() := 
+firstLastRecord extractFirstLast() :=
     TRANSFORM
         SELF.firstName := MATCHTEXT(id[1]);
         SELF.lastName := MATCHTEXT(id[2]);
@@ -51,14 +51,14 @@ firstLastRecord extractFirstLast() :=
 
 pattern threeNames := id ws id ws id;
 
-firstMidLastRecord := 
+firstMidLastRecord :=
         record
 string      firstName;
 string      middleName;
 string      lastName;
         end;
 
-firstMidLastRecord extractFirstMidLast() := 
+firstMidLastRecord extractFirstMidLast() :=
     TRANSFORM
         SELF.firstName := MATCHTEXT(id[1]);
         SELF.middleName := MATCHTEXT(id[2]);

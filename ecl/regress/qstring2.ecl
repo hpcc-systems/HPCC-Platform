@@ -32,17 +32,17 @@ qstring20   surname;
 
 
 test := nofold(dataset([
-                {'Gavin','Halliday'},
-                {'Richard','Chapman'},
+                {'Gavin','Hawthorn'},
+                {'Richard','Drimbad'},
                 {'David','Bayliss'}
                 ], rec1));
 
 
-rec2 t(rec1 l) := TRANSFORM 
+rec2 t(rec1 l) := TRANSFORM
         SELF.forename1 := TRIM(l.forename) + 'a' + TRIM(l.middle);
         SELF.forename2 := TRIM(l.forename) + 'b' + TRIM(l.middle);
         SELF.forename3 := TRIM(l.forename) + 'c' + TRIM(l.middle);
-        SELF:=l; 
+        SELF:=l;
     END;
 
 test2 := project(test, t(LEFT));

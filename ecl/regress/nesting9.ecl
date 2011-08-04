@@ -18,7 +18,7 @@
 
 
 
-nameRecord := 
+nameRecord :=
         RECORD
 string20    forename;
 string20    surname;
@@ -34,7 +34,7 @@ nameRecord  employee;
 
 
 inTable := dataset([
-            {'Richard','Chapman',50,'Gavin','Halliday',33},
+            {'Robert','Zimmerman',50,'Gavin','Hawthorn',33},
             {'Elizabeth','Queen',75,'Tony','Blair',50}], inRecord);
 
 output(inTable);

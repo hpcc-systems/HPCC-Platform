@@ -18,7 +18,7 @@
 
 #option ('targetClusterType', 'roxie');
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -29,12 +29,12 @@ unsigned8       filepos{virtual(fileposition)};
 d := dataset('x',namesRecord,FLAT);
 
 
-i1 := index(d, { d } ,'\\seisint\\person.name_first.key1');
-i2 := index(d, { d } ,'\\seisint\\person.name_first.key2');
+i1 := index(d, { d } ,'\\home\\person.name_first.key1');
+i2 := index(d, { d } ,'\\home\\person.name_first.key2');
 
 boolean whichIndex := false : stored('which');
 
 i := if(whichIndex, i1, i2);
-a1 := i(keyed(surname='Halliday'));
+a1 := i(keyed(surname='Hawthorn'));
 a2 := limit(a1, 2000, keyed,count);
 output(a2);

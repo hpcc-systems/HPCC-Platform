@@ -20,15 +20,15 @@
 
 
 export checkReals(real pi, string version) := FUNCTION
- 
+
     r1 := round(pi/0.1)*0.1;
     r2 := round(pi*10)/10;
 
-    RETURN PARALLEL(       
+    RETURN PARALLEL(
       output(r1=r2, named('r1_eq_r2'+version)),
       output((string)r1, named('r1'+version)),
       output((string)r2, named('r2'+version)),
-       
+
       output(r1<=3.1, named('r1_le_3_1'+version)),
       output(r2<=3.1, named('r2_le_3_1'+version)),
       output(r1=3.1, named('r1_eq_3_1'+version)),

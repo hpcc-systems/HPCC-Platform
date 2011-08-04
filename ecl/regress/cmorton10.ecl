@@ -16,12 +16,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-mychoice := 2;  //which query below   
+mychoice := 2;  //which query below
 
-#if(mychoice = 1) 
+#if(mychoice = 1)
 
-'1'; 
-#elseif(mychoice = 2) 
+'1';
+#elseif(mychoice = 2)
 
- '2'; 
+ '2';
 #end

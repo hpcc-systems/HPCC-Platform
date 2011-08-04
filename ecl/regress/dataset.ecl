@@ -18,7 +18,7 @@
 
 #option ('importAllModules', true);
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -28,9 +28,9 @@ integer2        age := 25;
 namesTable := dataset('x',namesRecord,FLAT);
 
 namesTable2 := dataset([
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
-        {'Salter','Abi',10},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
+        {'Smithe','Pru',10},
         {'X','Z'}], namesRecord);
 
 output(nofold(namesTable2)(surname[1] in ['0','1','3']),,'out.d00',overwrite);

@@ -19,7 +19,7 @@
 #option ('applyInstantEclTransformations', true);
 #option ('applyInstantEclTransformationsLimit', 999);
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -31,9 +31,9 @@ namesTable := dataset('x',namesRecord,FLAT);
 
 
 sequential(
-    output(count(namesTable)), 
+    output(count(namesTable)),
     parallel(
-        if (count(namesTable) > 10, 
+        if (count(namesTable) > 10,
             output(namesTable,,named('one'))
         )
     )

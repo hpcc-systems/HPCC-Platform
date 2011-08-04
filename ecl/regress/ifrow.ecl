@@ -17,14 +17,14 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
 integer2        age := 25;
             END;
 
-personRecord := 
+personRecord :=
             RECORD
 namesRecord     name;
 integer2        age := 25;
@@ -33,7 +33,7 @@ integer2        age := 25;
 personTable := dataset('x',personRecord,FLAT);
 
 
-personRecord x(personRecord l) := 
+personRecord x(personRecord l) :=
     TRANSFORM
         SELF.name := if(l.age <> 0, l.name, row([], namesRecord));
         SELF := l;
@@ -42,7 +42,7 @@ personRecord x(personRecord l) :=
 output(project(personTable, x(LEFT)));
 
 
-personRecord x2(personRecord l) := 
+personRecord x2(personRecord l) :=
     TRANSFORM
         SELF.name := if(l.age <> 0, l.name);
         SELF := l;

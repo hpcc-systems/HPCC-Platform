@@ -18,7 +18,7 @@
 
 #option ('globalFold', false);
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -28,13 +28,13 @@ integer2        age := 25;
 ds := dataset('x',namesRecord,FLAT);
 
 
-inRecord := 
+inRecord :=
     RECORD
         string name{xpath('Name')};
         unsigned6 id{xpath('ADL')};
     END;
 
-outRecord := 
+outRecord :=
     RECORD
         string name{xpath('Name')};
         unsigned6 id{xpath('ADL')};

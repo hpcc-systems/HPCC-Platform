@@ -18,7 +18,7 @@
 
 #option ('targetClusterType', 'roxie');
 
-mainRecord := 
+mainRecord :=
         RECORD
 integer8            sequence;
 string20            forename;

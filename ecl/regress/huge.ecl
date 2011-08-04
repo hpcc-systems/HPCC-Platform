@@ -18,11 +18,11 @@
 
 #option ('defaultMaxLengthRecord', 1000000);
 
-namesRecord := 
+namesRecord :=
             RECORD
 string      surname;
             END;
 
 namesTable := dataset('x',namesRecord,FLAT);
 
-output(namesTable(surname != 'Halliday'));
+output(namesTable(surname != 'Hawthorn'));

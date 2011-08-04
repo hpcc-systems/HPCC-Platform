@@ -20,7 +20,7 @@ d := dataset('~local::rkc::person', { string15 name, string20 forename, unsigned
 
 x := 'x' : stored('x');
 
-i := index(d, { d } ,'\\seisint\\person.name_first.key.' + x);
+i := index(d, { d } ,'\\home\\person.name_first.key.' + x);
 
 output(i(forename = 'Gavin'));
 

@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -37,4 +37,4 @@ namesRecord t(namesRecord l) := transform
     self := l;
 end;
 
-output(project(myIndex(surname = 'Halliday'), t(left)));
+output(project(myIndex(surname = 'Hawthorn'), t(left)));

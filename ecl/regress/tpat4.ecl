@@ -41,7 +41,7 @@ rule S := L '=' R
         | R
         ;
 
-results := 
+results :=
     record
         string Le :=  '!'+MATCHTEXT(S)+'!';
         string tree := 'Tree: '+parseLib.getParseTree();

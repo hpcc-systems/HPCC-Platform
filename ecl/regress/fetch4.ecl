@@ -16,9 +16,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-LOADXML('<root><did>1234567</did></root>'); 
+LOADXML('<root><did>1234567</did></root>');
 
-layout_relatives_plus := 
+layout_relatives_plus :=
         RECORD
 integer8    person1;
 boolean     same_lname;
@@ -36,9 +36,9 @@ d := File_Relatives_Plus;
 
 Key_Relatives := INDEX(d, {person1,same_lname,person2, fpos}, '~key::relatives');
 
-relas := Key_Relatives(person1=%did% or person1 between 10 and 20 or person1 in [100,101,102]); 
-//relas := Key_Relatives(person1=%did% or ((person1 >= 10) and (person1 <= 20))); 
-//relas := Key_Relatives(person1=%did% and person1=97); 
+relas := Key_Relatives(person1=%did% or person1 between 10 and 20 or person1 in [100,101,102]);
+//relas := Key_Relatives(person1=%did% or ((person1 >= 10) and (person1 <= 20)));
+//relas := Key_Relatives(person1=%did% and person1=97);
 
 output(relas);
 
@@ -46,10 +46,10 @@ relas2 := Key_Relatives(person1=%did% or person1 between 10 and 20 or person1 in
 
 output(relas2);
 
-relas3 := Key_Relatives(person1=%did% or 
-                            ((person1 >= 10) and 
-                             (person1 <= 2000) and 
-                             ((person1 between 80 and 200) or 
+relas3 := Key_Relatives(person1=%did% or
+                            ((person1 >= 10) and
+                             (person1 <= 2000) and
+                             ((person1 between 80 and 200) or
                               (person1 not between 30 and 1900)
                              )
                             ));

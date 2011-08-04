@@ -21,7 +21,7 @@ sq.DeclareCommon();
 
 #option ('childQueries', true);
 
-// Kind of Joining datasets 
+// Kind of Joining datasets
 
 
 udecimal8 todaysDate := 20040602D;
@@ -41,30 +41,30 @@ booksDsDsDs := sqBookDs(personid = personsDsDs.id);
 
 //How many other people also have the same book, and return any books someone else has got.
 sharedBooks := books(count(sqBookDs(name = books.name, author = books.author)) > 1);
-output(persons, { surname, dataset(sqBookIdRec) xshared := sharedBooks }); 
+output(persons, { surname, dataset(sqBookIdRec) xshared := sharedBooks });
 
 //The same but this time build a sub-query invariant list of potential matches
 allSharedBooks := table(sqBookDs, { unsigned8 cnt := count(group), name, author }, name, author)(cnt > 1);
 sharedBooks2 := books(exists(allSharedBooks(name = books.name, author = books.author)));
-output(persons, { surname, dataset(sqBookIdRec) xshared := sharedBooks2 }); 
+output(persons, { surname, dataset(sqBookIdRec) xshared := sharedBooks2 });
 
 //MORE: We need a way of aliasing a dataset, otherwise the following doesn't work
 booksDsDsLite := sqBookDs(personid = sqPersonDs.id);
 sqBookDsAlias := sqBookDs;//alias(sqBookDs);
 sharedBooksDs := booksDsDsLite(count(sqBookDsAlias(name = books.name, author = booksDsDsLite.author)) > 1);
-output(sqPersonDs, { surname, dataset(sqBookIdRec) xshared := sharedBooksDs }); 
+output(sqPersonDs, { surname, dataset(sqBookIdRec) xshared := sharedBooksDs });
 
 
 //Now do the same thing using a project instead of a table.
 
-simpleResultRec := 
+simpleResultRec :=
         record
 string      surname;
 dataset(sqBookIdRec) xshared;
         end;
 
 //How many other people also have the same book, and return any books someone else has got.
-simpleResultRec t1(sqPersonBookIdRec l) := 
+simpleResultRec t1(sqPersonBookIdRec l) :=
         transform
             self.xshared := l.books(count(sqBookDs(name = l.books.name, author = l.books.author)) > 1);
             self := l;
@@ -72,7 +72,7 @@ simpleResultRec t1(sqPersonBookIdRec l) :=
 output(project(persons, t1(LEFT)));
 
 
-simpleResultRec t2(sqPersonBookIdRec l) := 
+simpleResultRec t2(sqPersonBookIdRec l) :=
         transform
             self.xshared := l.books(exists(allSharedBooks(name = l.books.name, author = l.books.author)));
             self := l;
@@ -85,7 +85,7 @@ sqBookIdRec removeBookRelation(sqBookRelatedIdRec l) :=
                 SELF := l;
             END;
 
-simpleResultRec t3(sqPersonRelatedIdRec l) := 
+simpleResultRec t3(sqPersonRelatedIdRec l) :=
         transform
             joinedBooks := project(sqBookDs(personid = l.id), removeBookRelation(LEFT));
             self.xshared := joinedBooks(count(sqBookDs(name = joinedBooks.name, author = joinedBooks.author)) > 1);
@@ -93,7 +93,7 @@ simpleResultRec t3(sqPersonRelatedIdRec l) :=
         end;
 output(project(sqPersonDs, t3(LEFT)));
 
-simpleResultRec t4(sqPersonRelatedIdRec l) := 
+simpleResultRec t4(sqPersonRelatedIdRec l) :=
         transform
             joinedBooks := project(sqBookDs(personid = l.id), removeBookRelation(LEFT));
             self.xshared := joinedBooks(exists(allSharedBooks(name = joinedBooks.name, author = joinedBooks.author)));

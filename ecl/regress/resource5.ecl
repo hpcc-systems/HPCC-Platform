@@ -19,7 +19,7 @@
 __set_debug_option__('staticResource',1);
 __set_debug_option__('optimizeDiskRead', 0);
 
-baseRecord := 
+baseRecord :=
             RECORD
 unsigned8       id;
 string20        surname;
@@ -29,15 +29,15 @@ unsigned8       filepos{virtual(fileposition)}
 
 baseTable := DATASET('base', baseRecord, THOR);
 
-filteredTable1 := baseTable(surname <> 'Halliday');
-filteredTable2 := baseTable(surname <> 'Chapman');
+filteredTable1 := baseTable(surname <> 'Hawthorn');
+filteredTable2 := baseTable(surname <> 'Drimbad');
 
 
-baseRecord t(baseRecord l) := 
+baseRecord t(baseRecord l) :=
     TRANSFORM
         SELF := l;
     END;
-    
+
 //-------------------------------------------
 
 x := JOIN(filteredTable1, filteredTable2, LEFT.forename = RIGHT.forename, t(LEFT));

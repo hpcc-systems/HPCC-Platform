@@ -28,13 +28,13 @@ ghoogle.ghoogleDefine()
 
 parseTextQuery(string query) := function
 
-tokKind := enum(None, 
-                Word, Wildcarded, Suffixed, 
-                CloseBra, 
-                OpenBra, Atleast, Caps, NoCaps, AllCaps, Segment, 
+tokKind := enum(None,
+                Word, Wildcarded, Suffixed,
+                CloseBra,
+                OpenBra, Atleast, Caps, NoCaps, AllCaps, Segment,
                 TNot,
-                Proximity, TAnd, 
-                TOr, 
+                Proximity, TAnd,
+                TOr,
 
                 //Pseudo ops used later.
                 Terminal);
@@ -123,7 +123,7 @@ termType numTerms;
     END;
 
 
-createTerm(ModifierRecord modifiers, lexerRecord term, termType termNum) := 
+createTerm(ModifierRecord modifiers, lexerRecord term, termType termNum) :=
     dataset(
         row(transform(searchRecord,
         SELF.word := term.text;
@@ -134,8 +134,8 @@ createTerm(ModifierRecord modifiers, lexerRecord term, termType termNum) :=
         )));
 
 
-processRecord processAddTerminal(processRecord in) := 
-    PROJECT(in, 
+processRecord processAddTerminal(processRecord in) :=
+    PROJECT(in,
         TRANSFORM(processRecord,
             SELF.terms := in.terms + createTerm(in.modifiers, in.input[1], in.numTerms+1);
             SELF.input := in.input[2..];
@@ -144,26 +144,26 @@ processRecord processAddTerminal(processRecord in) :=
 
 processRecord processShift(processRecord in) := function
     nextSymbol := in.input[NOBOUNDCHECK 1];
-    return PROJECT(in, 
+    return PROJECT(in,
         TRANSFORM(processRecord,
             SELF.stack := in.stack + row(transform(stackRecord, self := nextSymbol; self := []));
             SELF.input := in.input[2..];
             SELF.savedModifiers := left.savedModifiers + left.modifiers;
             SELF.modifiers := CASE(nextSymbol.kind,
-                tokKind.Segment=>row(transform(ModifierRecord, 
+                tokKind.Segment=>row(transform(ModifierRecord,
                         self.segment := 0;  // more: need to look up.
                         self := in.modifiers)),
-                tokKind.Caps=>row(transform(ModifierRecord, 
-                        self.wordFlagMask := in.modifiers.wordFlagMask | WordFlags.HasUpper; 
-                        self.wordFlagCompare := in.modifiers.wordFlagCompare | WordFlags.hasUpper; 
+                tokKind.Caps=>row(transform(ModifierRecord,
+                        self.wordFlagMask := in.modifiers.wordFlagMask | WordFlags.HasUpper;
+                        self.wordFlagCompare := in.modifiers.wordFlagCompare | WordFlags.hasUpper;
                         self := in.modifiers)),
-                tokKind.NoCaps=>row(transform(ModifierRecord, 
-                        self.wordFlagMask := in.modifiers.wordFlagMask | WordFlags.HasUpper; 
-                        self.wordFlagCompare := in.modifiers.wordFlagCompare & ((wordFlags)(-1) - WordFlags.hasUpper); 
+                tokKind.NoCaps=>row(transform(ModifierRecord,
+                        self.wordFlagMask := in.modifiers.wordFlagMask | WordFlags.HasUpper;
+                        self.wordFlagCompare := in.modifiers.wordFlagCompare & ((wordFlags)(-1) - WordFlags.hasUpper);
                         self := in.modifiers)),
-                tokKind.AllCaps=>row(transform(ModifierRecord, 
-                        self.wordFlagMask := in.modifiers.wordFlagMask | (WordFlags.HasUpper|WordFlags.HasLower); 
-                        self.wordFlagCompare := (in.modifiers.wordFlagCompare & ((wordFlags)(-1) - WordFlags.hasUpper) | wordFlags.hasUpper); 
+                tokKind.AllCaps=>row(transform(ModifierRecord,
+                        self.wordFlagMask := in.modifiers.wordFlagMask | (WordFlags.HasUpper|WordFlags.HasLower);
+                        self.wordFlagCompare := (in.modifiers.wordFlagCompare & ((wordFlags)(-1) - WordFlags.hasUpper) | wordFlags.hasUpper);
                         self := in.modifiers)),
                 in.modifiers);
             SELF := in));
@@ -176,14 +176,14 @@ processRecord processReduce(processRecord in) := function
     stackRecord reduceOp := in.stack[count(in.stack)];
     numTermsReduced := MAP(reduceOp.kind in [tokKind.Proximity, tokKind.TAnd, tokKind.TOr] => 2, 1);
 
-    searchRecord createCommand() := 
+    searchRecord createCommand() :=
         case(reduceOp.kind,
             tokKind.TAnd=>row(CmdTermAndTerm(in.terms[numTerms-1].term, in.terms[numTerms-2].term)),
             row(transform(searchRecord, SELF := [])));
 
 
-    return project(in, 
-        transform(processRecord, 
+    return project(in,
+        transform(processRecord,
             SELF.commands := in.commands + createCommand();
             SELF.stack := in.stack[1..count(in.stack)-1];
             SELF.terms := in.terms[1..count(in.terms)-numTermsReduced] + createCommand();
@@ -212,7 +212,7 @@ end;
 
 
 
-boolean doShift(tokKind l, tokKind r) := 
+boolean doShift(tokKind l, tokKind r) :=
     map (
         r in [tokKind.OpenBra, tokKind.Atleast, tokKind.Caps, tokKind.NoCaps, tokKind.AllCaps, tokKind.Segment]=>true,
         r in [tokKind.TNot]=>true,
@@ -244,5 +244,5 @@ return normalize(sequence, left.commands, transform(right));
 
 end;
 
-output(parseTextQuery('Gavin and Liz'));
+output(parseTextQuery('Gavin and Mia'));
 

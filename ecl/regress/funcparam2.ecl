@@ -41,10 +41,10 @@ output(doApplyValue(2, multiValues));       // 24
 
 //Phew: An attribute taking functional parameters which themselves have parameters which are functional...
 //check it all binds correctly
-string doMany(integer v1, 
+string doMany(integer v1,
                 applyPrototype firstAction,
                 applyPrototype secondAction,
-                actionPrototype actionFunc) := 
+                actionPrototype actionFunc) :=
                 (string)firstAction(v1, actionFunc) + ':' + (string)secondaction(v1, actionFunc);
 
 

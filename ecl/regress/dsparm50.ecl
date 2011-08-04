@@ -19,10 +19,10 @@
 // test type mismatch
 
 ds := dataset('ds', {String10 first_name; string20 last_name; }, FLAT);
-   
+
 dataset f(virtual dataset({String10 name;}) d) := d(name = 'fred');
-   
-g(virtual dataset({integer id}) d) := output(f(d), {id});      
+
+g(virtual dataset({integer id}) d) := output(f(d), {id});
 
 g(ds{name:=first_name; id:=last_name});
 

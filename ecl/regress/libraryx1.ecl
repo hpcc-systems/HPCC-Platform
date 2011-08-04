@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -59,9 +59,9 @@ end;
 
 //namesTable := dataset('x',namesRecord,FLAT);
 namesTable := dataset([
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
-        {'Salter','Abi',10},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
+        {'Smithe','Pru',10},
         {'X','Z'}], namesRecord);
 
 
@@ -76,5 +76,5 @@ output(filtered.included,,named('Included'));
 
 //Use a library, but include it internally this time - a unique id will be created for the library name
 //use the parameter creation function inline....
-filtered2 := LIBRARY(INTERNAL(nameFilterLibrary), FilterLibrary, createFilterLibrary('Halliday', namesTable));
+filtered2 := LIBRARY(INTERNAL(nameFilterLibrary), FilterLibrary, createFilterLibrary('Hawthorn', namesTable));
 output(filtered2.excluded,,named('Excluded'));

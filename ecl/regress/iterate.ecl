@@ -18,7 +18,7 @@
 
 //Check a single child records can be treated as a blob
 
-parentRecord := 
+parentRecord :=
                 RECORD
 unsigned4           flags;
                     ifblock(self.flags & 2 <> 0)
@@ -33,7 +33,7 @@ string10            postcode;
 
 parentDataset := DATASET('test',parentRecord,FLAT);
 
-parentRecord copyAll(parentRecord l, parentRecord r) := 
+parentRecord copyAll(parentRecord l, parentRecord r) :=
 TRANSFORM
     SELF := r;
 END;

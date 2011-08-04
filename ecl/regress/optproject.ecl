@@ -37,7 +37,7 @@ string20  new_forename;
 unsigned8 holepos2;
     END;
 
-testRecord2 doTransform(testRecord l) := 
+testRecord2 doTransform(testRecord l) :=
         TRANSFORM
 SELF.new_surname := l.per_surname;
 SELF.new_forename := l.per_forename;

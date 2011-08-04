@@ -88,7 +88,7 @@ export actionEnum := ENUM(
     ReadQuotedWord,     // termNum, source, segment, word, original
     ReadWildWord,       // termNum, source, segment, word, wildMask, wildMatch, wordFlagMask, wordFlagCompare
     ReadDate,           // termNum, source, dateLow, dateHigh
-    TermAndTerm,        // leftStage, rightStage, 
+    TermAndTerm,        // leftStage, rightStage,
     TermAndNotTerm,     // leftStage, rightStage
     TermAdjacentTerm,   // leftStage, leftTerm, rightStage, rightTerm, precedes
     TermOrTerm,         // leftStage, rightStage
@@ -114,7 +114,7 @@ export actionEnum := ENUM(
 
     //The following are only used in the production
     FlagModifier,       // wordFlagMask, wordFlagCompare
-    QuoteModifier,      // 
+    QuoteModifier,      //
     Max
 );
 
@@ -146,23 +146,23 @@ export integer numInputStages(actionEnum action) := CASE(action,
     0);
 //  FAIL(stageType, 'Missing entry: ' + (string)action));
 
-export boolean definesTerm(actionEnum action) := 
+export boolean definesTerm(actionEnum action) :=
     (action in [actionEnum.ReadWord, actionEnum.ReadQuotedWord, actionEnum.ReadWildWord, actionEnum.ReadDate]);
 
 export boolean isProximityOperator(actionEnum action) :=
     (action in [actionEnum.TermAndProxTerm, actionEnum.TermAndNotProxTerm, actionEnum.ProximityFilter]);
 
-export actionEnum getQuotedAction(actionEnum action) := 
+export actionEnum getQuotedAction(actionEnum action) :=
     CASE(action, actionEnum.ReadWord=>actionEnum.ReadQuotedWord,
-                 actionEnum.TermAndWord=>actionEnum.TermAndQuoted, 
-                 actionEnum.TermAdjacentWord=>actionEnum.TermAdjacentQuoted, 
+                 actionEnum.TermAndWord=>actionEnum.TermAndQuoted,
+                 actionEnum.TermAdjacentWord=>actionEnum.TermAdjacentQuoted,
                  action);
 
 export invertPrecedes(orderType order) := IF(order <> orderType.None, 3-order, 0);
 
 export termRecord := { termType term };
 
-export searchRecord := 
+export searchRecord :=
             RECORD
 stageType       stage;
 actionEnum      action;
@@ -287,7 +287,7 @@ export CmdReadWord(termType term, sourceType source, segmentType segment, wordTy
                 SELF.source := source;
                 SELF.segment := segment;
                 SELF.word := word;
-                SELF.wordFlagMask := wordFlagMask;              
+                SELF.wordFlagMask := wordFlagMask;
                 SELF.wordFlagCompare:= wordFlagCompare;
                 SELF := []);
 
@@ -299,7 +299,7 @@ export CmdReadQuoted(termType term, sourceType source, segmentType segment, word
                 SELF.segment := segment;
                 SELF.word := word;
                 SELF.original := original;
-                SELF.wordFlagMask := 0;             
+                SELF.wordFlagMask := 0;
                 SELF.wordFlagCompare:= 0;
                 SELF := []);
 
@@ -312,7 +312,7 @@ export CmdReadWildWord(termType term, sourceType source, segmentType segment, wo
                 SELF.word := word;
                 SELF.wildMask:= wildMask;
                 SELF.wildMatch:= wildMatch;
-                SELF.wordFlagMask := wordFlagMask;              
+                SELF.wordFlagMask := wordFlagMask;
                 SELF.wordFlagCompare:= wordFlagCompare;
                 SELF := []);
 
@@ -379,7 +379,7 @@ shared defineCmdTermAndWord(actionEnum action, termType term, stageType leftStag
                 SELF.precedes := precedes;
                 SELF.distance := distance;
                 SELF.word := word;
-                SELF.wordFlagMask := wordFlagMask;              
+                SELF.wordFlagMask := wordFlagMask;
                 SELF.wordFlagCompare:= wordFlagCompare;
                 SELF.leftStage := leftStage;
                 SELF.leftTerm := leftTerm;
@@ -421,10 +421,10 @@ export CmdAtleastTerm(stageType leftStage, set of termType terms, wordCountType 
 //-------------------------------------------------------------------------------------------------------------
 
 
-shared renumberEntries(dataset(searchRecord) query, integer delta) := 
+shared renumberEntries(dataset(searchRecord) query, integer delta) :=
     project(query, transform(searchRecord, self.stage := left.stage + delta; self.changed := true; self := left));
 
-shared removeEntries(dataset(searchRecord) query, stageType newStage) := 
+shared removeEntries(dataset(searchRecord) query, stageType newStage) :=
     project(query, transform(recordof(query), self.action := actionEnum.Passthrough, self.leftStage := newStage; self.changed := true; self := left));
 
 
@@ -433,7 +433,7 @@ shared removeNullEntries(dataset(searchRecord) query) := function
     removeCount := project(query, transform(countRecord, self.cnt := if(left.action = actionEnum.Passthrough, 1, 0)));
     deltas := iterate(removeCount, transform(countRecord, self.cnt := left.cnt + right.cnt));
 
-    searchRecord adjustStagesTransform(searchRecord l, integer _cnt) := 
+    searchRecord adjustStagesTransform(searchRecord l, integer _cnt) :=
         TRANSFORM,SKIP(l.action = actionEnum.PassThrough)
             cnt := l.stage;     // if we used the passed in cnt it doesn't work counter is not seed to be used...
             SELF.stage := l.stage - deltas[l.stage].cnt;
@@ -451,8 +451,8 @@ swapEntries(dataset(searchRecord) query, integer x, integer y, integer z) := fun
     low := if (x < y, x, y);
     high := if (x < y, y, x);
 
-    return  query[1..low-1] + 
-            renumberEntries(query[high..high], low-high) + 
+    return  query[1..low-1] +
+            renumberEntries(query[high..high], low-high) +
             query[low+1..high-1] +
             renumberEntries(query[low..low], high-low) +
             query[high+1..z-1] +
@@ -493,13 +493,13 @@ optimizeTermAndWord(dataset(searchRecord) query, searchRecord cur) := function
             self := rhs));
 
     return if (optimizedAction != actionEnum.None,
-        query[1..cur.rightStage-1] + removeEntries(query[cur.rightStage..cur.rightStage], 0) + 
-        query[cur.rightStage+1..cur.stage-1] + createCombinedAction() + 
+        query[1..cur.rightStage-1] + removeEntries(query[cur.rightStage..cur.rightStage], 0) +
+        query[cur.rightStage+1..cur.stage-1] + createCombinedAction() +
         query[cur.stage+1..],
         query);
 end;
 
-optimizeEntry(dataset(searchRecord) query, searchRecord cur) := 
+optimizeEntry(dataset(searchRecord) query, searchRecord cur) :=
     optimizeTermAndWord(optimizeSwapInputs(query, cur), cur);
 
 optimizeSequence(dataset(searchRecord) query) := function
@@ -513,7 +513,7 @@ export optimizeQuery(dataset(searchRecord) query) := function
     return LOOP(query, true, counter = 1 or exists(rows(left)(changed)), optimizeSequence(rows(left)));
 end;
 
-export cleanupUnusedEntries(dataset(searchRecord) query) := 
+export cleanupUnusedEntries(dataset(searchRecord) query) :=
     removeNullEntries(query);
 
 export annotateQuery(dataset(searchRecord) query) := function
@@ -533,7 +533,7 @@ end;
 
 export parseLNQuery(string queryText) := function
 
-productionRecord  := 
+productionRecord  :=
             record
 dataset(searchRecord) actions;
             end;
@@ -580,7 +580,7 @@ rule compare
     |   'bef'
     ;
 
-ARULE proximity 
+ARULE proximity
     := 'PRE/'                                   ProdProximityFilter(orderType.Precedes, 0)
     |  pattern('PRE/[0-9]+')                    ProdProximityFilter(orderType.Precedes, (integer)$1[5..])
     |  'PRE/P'                                  CmdParagraphFilter(0, 0, 0, orderType.Precedes)
@@ -611,7 +611,7 @@ rule segmentName
 //rule word := wordpat not in ['AND', 'OR', 'NOT'];
 rule word := validate(wordpat, StringLib.StringToLowerCase(matchtext) not in ['and', 'or', 'not']);
 
-ARULE term0 
+ARULE term0
     := word                                     CmdReadWord(unknownTerm, 0, 0, $1, 0, 0)
     |  suffixed                                 CmdReadWildWord(unknownTerm, 0, 0, $1[1..length(trim($1))-1], '', '')
     |  wildcarded                               CmdSimple(__LINE__*100)
@@ -622,25 +622,25 @@ PRULE term1
     := term0                                    transform(productionRecord, self.actions := dataset($1))
     | '(' forwardExpr ')'
     | 'CAPS' '(' forwardExpr ')'                transform(productionRecord, self.actions := $3.actions + row(
-                                                    transform(searchRecord, 
-                                                        self.action := actionEnum.FlagModifier; 
-                                                        self.wordFlagMask := wordFlags.HasUpper, 
+                                                    transform(searchRecord,
+                                                        self.action := actionEnum.FlagModifier;
+                                                        self.wordFlagMask := wordFlags.HasUpper,
                                                         self.wordFlagCompare := wordFlags.HasUpper,
                                                         self := []
                                                     )
                                                 ))
     | 'NOCAPS' '(' forwardExpr ')'              transform(productionRecord, self.actions := $3.actions + row(
-                                                    transform(searchRecord, 
-                                                        self.action := actionEnum.FlagModifier; 
-                                                        self.wordFlagMask := wordFlags.HasUpper, 
+                                                    transform(searchRecord,
+                                                        self.action := actionEnum.FlagModifier;
+                                                        self.wordFlagMask := wordFlags.HasUpper,
                                                         self.wordFlagCompare := 0,
                                                         self := []
                                                     )
                                                 ))
     | 'ALLCAPS' '(' forwardExpr ')'             transform(productionRecord, self.actions := $3.actions + row(
-                                                    transform(searchRecord, 
-                                                        self.action := actionEnum.FlagModifier; 
-                                                        self.wordFlagMask := wordFlags.HasLower+wordFlags.HasUpper, 
+                                                    transform(searchRecord,
+                                                        self.action := actionEnum.FlagModifier;
+                                                        self.wordFlagMask := wordFlags.HasLower+wordFlags.HasUpper,
                                                         self.wordFlagCompare := wordFlags.HasUpper,
                                                         self := []
                                                     )
@@ -655,7 +655,7 @@ PRULE term1
 
 
 PRULE phrase
-    :=  term1                               
+    :=  term1
     |   SELF term1                              transform(productionRecord, self.actions := $1.actions + $2.actions + row(ProdTermAdjacentTerm(orderType.Precedes)))
     ;
 
@@ -679,7 +679,7 @@ PRULE term
 PRULE combined
     := term
     |  SELF 'AND' term                          transform(productionRecord, self.actions := $1.actions + $3.actions + row(CmdSimple(actionEnum.TermAndTerm)))
-    |  SELF proximity term                      transform(productionRecord, 
+    |  SELF proximity term                      transform(productionRecord,
                                                         self.actions := $1.actions + $3.actions + row(CmdSimple(actionEnum.TermAndTerm)) + $2
                                                 )
     |  SELF 'AND' 'NOT' term                    transform(productionRecord, self.actions := $1.actions + $4.actions + row(CmdSimple(actionEnum.TermAndNotTerm)))
@@ -698,11 +698,11 @@ dataset(searchRecord) actions;
         end;
 
 
-resultsRecord extractResults(dataset(searchRecord) actions) := 
+resultsRecord extractResults(dataset(searchRecord) actions) :=
         TRANSFORM
             SELF.actions := actions;
         END;
-            
+
 p1 := PARSE(infile,line,expr,extractResults($1.actions),first,whole,skip(ws),nocase,parse);
 
 pnorm := normalize(p1, left.actions, transform(right));
@@ -786,7 +786,7 @@ smod := sort(norm, term, stage);
 
 gmod := group(smod, term);
 
-rmod := rollup(gmod, true, transform(actRecord, 
+rmod := rollup(gmod, true, transform(actRecord,
                         self.isQuote := left.isQuote or right.isQuote,
                         self.wordFlagMask := if (left.wordFlagMask <> 0, left.wordFlagMask, right.wordFlagMask),
                         self.wordFlagCompare := if (left.wordFlagMask <> 0, left.wordFlagCompare, right.wordFlagCompare),
@@ -797,9 +797,9 @@ extraRecord applyModifiers(extraRecord l, actRecord r) := TRANSFORM
         SELF.word := IF(r.isQuote, l.word, StringLib.StringToLowerCase(l.word));
         SELF.wordFlagMask := r.wordFlagMask;
         SELF.wordFlagCompare := r.wordFlagCompare;
-        SELF.action :=  IF(l.action in [actionEnum.FlagModifier, actionEnum.QuoteModifier], 
-                            actionEnum.PassThrough, 
-                            IF(r.isQuote, 
+        SELF.action :=  IF(l.action in [actionEnum.FlagModifier, actionEnum.QuoteModifier],
+                            actionEnum.PassThrough,
+                            IF(r.isQuote,
                                 getQuotedAction(l.action),
                                 l.action));
         SELF := l;
@@ -869,12 +869,12 @@ shared denormCandidateRecord wordsToDenormCandidate(minimalMatchRecord firstin, 
 
 shared createDenormCandidateFromWordMatches(searchRecord search, dataset(wordIndexRecord) matches) := function
 
-    
+
     extracted := project(matches, transform(minimalMatchRecord, SELF := LEFT));
 
     extractedS := sorted(extracted, doc);           // Should be an assertion really, a requirement of the input
-    
-    groupedDs := group(extractedS, doc, local); 
+
+    groupedDs := group(extractedS, doc, local);
 
     rolled:= rollup(groupedDs, group, wordsToDenormCandidate(LEFT, rows(LEFT), search.term, search.stage));
 
@@ -945,7 +945,7 @@ shared boolean doMatchWildcards(unsigned4 len, wordType word, wordType wildMask,
 
 ENDC++;
 
-shared boolean matchWildcards(wordType word, wordType wildMask, wordType wildMatch) := 
+shared boolean matchWildcards(wordType word, wordType wildMask, wordType wildMatch) :=
     doMatchWildcards(length(wildMask), word, wildMask, wildMatch);
 
 
@@ -991,11 +991,11 @@ shared boolean validProximity(searchRecord search, wordPosType lwPos, wordPosTyp
     wordPosType lowerBound(wordPosType oldpos) :=
         IF (search.precedes = orderType.Precedes, oldpos+1, IF(oldpos >= search.distance, oldpos-search.distance, 1));
 
-    wordPosType upperBound(wordPosType oldpos) := 
+    wordPosType upperBound(wordPosType oldpos) :=
         IF (search.precedes = orderType.Follows, oldpos-1, oldpos+search.distance);
 
-    return 
-        ((search.distance = 0 and (search.precedes != orderType.Precedes)) OR 
+    return
+        ((search.distance = 0 and (search.precedes != orderType.Precedes)) OR
                 rwPos >= lowerBound(lwPos)) AND
         ((search.distance = 0 and (search.precedes != orderType.Follows)) OR
                 rwPos <= upperBound(lwpos));
@@ -1064,9 +1064,9 @@ shared doNormTermAndProxTerm(searchRecord search, dataset(normCandidateRecord) i
     inRight := sort(in(stage = search.rightStage), doc);        // NB: change to sorted() not sort
     others := in(stage not in [search.leftStage, search.rightStage]);       // generates poor code: why?
 
-    matches := join(inLeft, inRight, 
-                    left.doc = right.doc and 
-                    validNormProximity(search, left.matches(term = search.leftTerm)[1], right.matches(term = search.rightTerm)[1].wPos), 
+    matches := join(inLeft, inRight,
+                    left.doc = right.doc and
+                    validNormProximity(search, left.matches(term = search.leftTerm)[1], right.matches(term = search.rightTerm)[1].wPos),
                     combineNormCandidateTransform(search.stage, LEFT, RIGHT), INNER);
     return others + matches;
 END;
@@ -1078,9 +1078,9 @@ shared doNormTermAndNotProxTerm(searchRecord search, dataset(normCandidateRecord
     inRight := sort(in(stage = search.rightStage), doc);        // NB: change to sorted() not sort
     others := in(stage not in [search.leftStage, search.rightStage]);       // generates poor code: why?
 
-    matches := join(inLeft, inRight, 
-                    left.doc = right.doc and 
-                    validNormProximity(search, left.matches(term = search.leftTerm)[1], right.matches(term = search.rightTerm)[1].wPos), 
+    matches := join(inLeft, inRight,
+                    left.doc = right.doc and
+                    validNormProximity(search, left.matches(term = search.leftTerm)[1], right.matches(term = search.rightTerm)[1].wPos),
                     combineNormCandidateTransform(search.stage, LEFT, RIGHT), left only);
     return others + matches;
 end;
@@ -1117,9 +1117,9 @@ shared doNormTermAndWordBad(searchRecord search, dataset(normCandidateRecord) in
     inLeft := sort(in(stage = search.leftStage), doc);          // NB: change to sorted() not sort
     others := in(stage != search.leftStage);
 
-    matches := join(inLeft, wordIndex, 
+    matches := join(inLeft, wordIndex,
                     keyed(left.doc = right.doc) AND
-                    matchSingleWord(RIGHT, search), 
+                    matchSingleWord(RIGHT, search),
                     extendNormCandidateTransform(search.stage, LEFT, search.term, right.wpos), INNER);
     return others + matches;
 END;
@@ -1130,14 +1130,14 @@ shared doNormTermAndWord(searchRecord search, dataset(normCandidateRecord) in) :
 
     //Only return a single row per input doc
     dedupLeft := rollup(group(inLeft, doc), group, transform(docRecord, SELF.doc := LEFT.doc));
-    
-    wordMatches := join(dedupLeft, wordIndex, 
+
+    wordMatches := join(dedupLeft, wordIndex,
                     keyed(left.doc = right.doc) AND
-                    matchSingleWord(RIGHT, search), 
+                    matchSingleWord(RIGHT, search),
                     transform(docPosRecord, self.doc := left.doc, self.wpos := right.wpos), INNER);
 
     //NB: Both inputs should be sorted... so this should be a merge
-    matches := join(inLeft, wordMatches, 
+    matches := join(inLeft, wordMatches,
                     left.doc = right.doc,
                     extendNormCandidateTransform(search.stage, LEFT, search.term, right.wpos), INNER);
 
@@ -1161,9 +1161,9 @@ shared doNormTermAdjacentWord(searchRecord search, dataset(normCandidateRecord) 
     end;
 
     dedupLeft := rollup(group(inLeft, doc), group, transform(docPosSetRecord, SELF.doc := LEFT.doc, self.positions := dedupPositions(rows(left))));
-    
+
     //Keyed join to get a list of candidates for each document
-    wordMatches := join(dedupLeft, wordIndex, 
+    wordMatches := join(dedupLeft, wordIndex,
                     keyed(left.doc = right.doc) AND
                     matchSingleWord(RIGHT, search) and
                     (search.original = '' or right.original=search.original) and                            // also used for original word checking.
@@ -1171,7 +1171,7 @@ shared doNormTermAdjacentWord(searchRecord search, dataset(normCandidateRecord) 
                     transform(docPosRecord, self.doc := left.doc, self.wpos := right.wpos), INNER);
 
     //Now join them back to the full set of information
-    matches := join(inLeft, wordMatches, 
+    matches := join(inLeft, wordMatches,
                     left.doc = right.doc and
                     validAdjacent(search, left.matches(term = search.leftTerm)[1].wpos, right.wpos),
                     extendNormCandidateTransform(search.stage, LEFT, search.term, right.wpos), INNER);
@@ -1230,7 +1230,7 @@ shared doNormAtleast(searchRecord search, dataset(normCandidateRecord) in) := fu
 
     gr := group(inLeft, doc);
 
-    recordof(in) createAtleastResult(normCandidateRecord firstRow, dataset(normCandidateRecord) allRows) := 
+    recordof(in) createAtleastResult(normCandidateRecord firstRow, dataset(normCandidateRecord) allRows) :=
         transform, skip(count(allRows) < search.minCount)
             self.doc := firstRow.doc;
             self.stage := search.stage;
@@ -1253,7 +1253,7 @@ shared doNormAtleastTerms(searchRecord search, dataset(normCandidateRecord) in) 
     srt1 := sort(pr1, transfer(matches, data));
     gr := group(srt1, doc, transfer(matches, data));
 
-    recordof(in) createAtleastResult(normCandidateRecord firstRow, dataset(normCandidateRecord) allRows) := 
+    recordof(in) createAtleastResult(normCandidateRecord firstRow, dataset(normCandidateRecord) allRows) :=
         transform, skip(count(allRows) < search.minCount)
             self.doc := firstRow.doc;
             self.stage := search.stage;
@@ -1370,13 +1370,13 @@ shared doSimpleReadWordX(searchRecord search, boolean checkOriginal) := FUNCTION
 END;
 
 
-shared doSimpleReadWord(searchRecord search) := 
+shared doSimpleReadWord(searchRecord search) :=
     doSimpleReadWordX(search, false);
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-shared doSimpleReadQuotedWord(searchRecord search) := 
+shared doSimpleReadQuotedWord(searchRecord search) :=
     doSimpleReadWordX(search, true);
 
 
@@ -1447,9 +1447,9 @@ shared doSimpleTermAndWord(searchRecord search, dataset(simpleCandidateRecord) i
     inLeft := sort(in(stage = search.leftStage), doc);          // NB: change to sorted() not sort
     others := in(stage != search.leftStage);
 
-    matches := join(inLeft, wordIndex, 
+    matches := join(inLeft, wordIndex,
                     keyed(left.doc = right.doc) AND
-                    matchSingleWord(RIGHT, search), 
+                    matchSingleWord(RIGHT, search),
                     createSimpleCandidateTransform(search.stage, LEFT), INNER, keep(1));
     return others + matches;
 END;
@@ -1590,8 +1590,8 @@ export dataset(userOutputRecord) results;
 
 export GhoogleQuery(string searchString) := library('Ghoogle', GhoogleLibrary(searchString));
 
-q1 := '"Gavin" and Halliday';
-q2 := 'caps(gavin or jason) pre/3 halliday';
+q1 := '"Gavin" and Hawthorn';
+q2 := 'caps(gavin or jason) pre/3 hawthorn';
 q3 := 'Abraham and not jesus';
 
 q := q3;//'abraham and isaac';

@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-ds := DATASET('tmp::29186027::0', 
+ds := DATASET('tmp::29186027::0',
  RECORD
   unsigned integer2 per_birth_date;
   unsigned integer8 _holepos;

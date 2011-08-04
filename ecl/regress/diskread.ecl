@@ -39,6 +39,6 @@ r ta(personDataset le) := TRANSFORM
 
 a := project(personDataset, ta(LEFT));
 
-b := a(surname > 'Halliday');
+b := a(surname > 'Hawthorn');
 
 output(b,,'out.d00');

@@ -40,20 +40,20 @@ ds := dataset([1,2,3,4,5,6], inrec);
 dsg := group(ds, row);
 
 i1 := dataset([
-            {1, 'Gavin', 10}, 
-            {2, 'Richard', 5}, 
+            {1, 'Gavin', 10},
+            {2, 'Richard', 5},
             {5,'Nigel', 2},
             {0, '', 0}], outrec);
 i2 := dataset([
-            {1, 'Gavin Halliday', 12}, 
-            {2, 'Richard Chapman', 15}, 
-            {3, 'Jake Smith', 20},
-            {5,'Nigel Hicks', 100},
+            {1, 'Gavin Hawthorn', 12},
+            {2, 'Richard Drimbad', 15},
+            {3, 'Zack Smith', 20},
+            {5,'Nigel Hewit', 100},
             {0, '', 0}], outrec);
 i3 := dataset([
-            {1, 'Halliday', 8}, 
-            {2, 'Richard', 8}, 
-            {6, 'Pete', 4},
+            {1, 'Hawthorn', 8},
+            {2, 'Richard', 8},
+            {6, 'Paul', 4},
             {6, 'Peter', 8},
             {6, 'Petie', 1},
             {0, '', 0}], outrec);

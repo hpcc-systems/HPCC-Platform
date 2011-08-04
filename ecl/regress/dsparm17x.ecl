@@ -25,7 +25,7 @@ dataset f(virtual dataset(r) d) := d(n=10);
 dataset g(virtual dataset(r) d) := d(n=20);
 
 // one way. another way is in ds17
-dataset h(virtual dataset({integer n1; integer n2;}) d) := 
+dataset h(virtual dataset({integer n1; integer n2;}) d) :=
     g(f(d{n:=n1;}){n:=n2;});
 
 ds1 := dd(m1=10);

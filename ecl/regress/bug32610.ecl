@@ -30,7 +30,7 @@ string do(data s) := do3(s);
 MAC_ScanFile(IP, infile, scansize) := MACRO
     ds := DATASET(FileServices.ExternalLogicalFileName(IP, infile),{DATA1 S}, THOR )[1..scansize];
     output(ds);
-    Rec := RECORD,MAXLENGTH(64* 1024) 
+    Rec := RECORD,MAXLENGTH(64* 1024)
         UNSIGNED2 C;
         DATA S;
     END;
@@ -49,5 +49,5 @@ MAC_ScanFile(IP, infile, scansize) := MACRO
     OUTPUT(transferred[1].S);
 ENDMACRO;
 
-MAC_ScanFile('10.173.9.4', 'C:\\training\\import\\NamePhones', 100) 
+MAC_ScanFile('10.173.9.4', 'C:\\training\\import\\NamePhones', 100)
 

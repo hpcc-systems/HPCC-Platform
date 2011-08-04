@@ -18,7 +18,7 @@
 
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -26,7 +26,7 @@ string10        forename;
 
 namesTable1 := dataset('namesToWatch',namesRecord,FLAT);
 namesTable2 := nofold(dataset([
-        {'Halliday','Gavin'},
+        {'Hawthorn','Gavin'},
         {'Simth','John'},
         {'Cartright','Wheely'},
         {'X','Mr'}], namesRecord));
@@ -38,7 +38,7 @@ watchNames := sortedNames : once;
 numToWatch := count(sortedNames) : once;
 
 searchNames := dataset([
-        {'Halliday','Gavin'},
+        {'Hawthorn','Gavin'},
         {'Hickland','Brenda'},
         {'Smith','Joe'},
         {'X','Z'}], namesRecord);

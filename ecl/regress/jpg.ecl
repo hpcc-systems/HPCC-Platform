@@ -17,39 +17,39 @@
 ############################################################################## */
 
 JPEG(INTEGER len) := TYPE
- 
+
             EXPORT DATA LOAD(DATA D) := D[1..len];
- 
+
             EXPORT DATA STORE(DATA D) := D[1..len];
- 
+
             EXPORT INTEGER PHYSICALLENGTH(DATA D) := len;
- 
+
 END;
- 
- 
- 
+
+
+
 export Layout_imgdb := RECORD, MAXLENGTH(50000)
- 
+
             STRING1 ID_L;
- 
+
             UNSIGNED5 ID_N;
- 
+
             UNSIGNED2 DATE;
- 
+
             UNSIGNED2 LEN;
- 
+
             JPEG(SELF.LEN) PHOTO;
- 
+
             UNSIGNED8 _FPOS { VIRTUAL(FILEPOSITION) };
- 
+
 END;
- 
- 
- 
+
+
+
 
 d := dataset('victor::imga', Layout_imgdb, flat);
- 
+
 // e := distribute(d, RANDOM());
 // output(e,,'victor::imga.dist', overwrite);
- 
+
 output(choosen(d, 50));

@@ -40,13 +40,13 @@ personDataset := dataset([
         {'0002','Spiders'},
         {'0001','Gavin'},
         {'0002','Gavin'},
-        {'0002','Liz'},
+        {'0002','Mia'},
         {'0003','Extra'},
-        {'0001','Liz'},
+        {'0001','Mia'},
         {'0004','King'},
         {'0004','Queen'}], personRecord);
 
-householdRecord doDenormalize(householdRecord l, personRecord r) := 
+householdRecord doDenormalize(householdRecord l, personRecord r) :=
                 TRANSFORM
                     SELF.allNames := IF(l.allNames<>'', TRIM(l.allNames) + ',' + r.forename, r.forename);
                     SELF := l;

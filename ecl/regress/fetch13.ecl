@@ -49,7 +49,7 @@ fetched2 := fetch(sqSimplePersonBookDs, myPeople, right.filepos, makeRec2(left, 
 fetched3 := fetch(sqSimplePersonBookDs, myPeople, right.filepos, makeRec3(left, right));
 
 // temporary hack to get around codegen optimizing platform(),once call into global (and therefore hthor) context.
-nononcelib := 
+nononcelib :=
     SERVICE
 varstring platform() : library='graph', include='eclhelper.hpp', ctxmethod, entrypoint='getPlatform';
     END;

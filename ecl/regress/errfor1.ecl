@@ -32,8 +32,8 @@ LOADXML('<sec><item>a</item></sec>');
 #FOR (i)
   #LOOP
 //   #IF (i=0)
-//     #BREAK  
-//   #END  
+//     #BREAK
+//   #END
 //   #SET(i,i-1)
   #END
 #END

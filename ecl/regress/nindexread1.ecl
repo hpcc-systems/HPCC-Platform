@@ -42,7 +42,7 @@ output(i(keyed(seq = 3)));
 output(i(keyed(seq in u4set)));
 output(i(keyed(seq in u8set)));
 
-output(i(keyed(seq=1 and lname = 'Halliday')));
+output(i(keyed(seq=1 and lname = 'Hawthorn')));
 output(i(keyed(seq=1 and lname in s20set)));
 output(i(keyed(seq=1 and lname in s40set)));
 
@@ -57,21 +57,21 @@ output(i(keyed(guard1 or seq = 3)));
 output(i(keyed(guard1 or seq in u4set)));
 output(i(keyed((guard1 or seq=1) and (guard1 or lname in s40set))));
 output(i(keyed(guard1 or seq = 3 or seq=2)));
-output(i(keyed(guard1 or (seq=1 and lname in s40set))));                    // more natural expression of 
+output(i(keyed(guard1 or (seq=1 and lname in s40set))));                    // more natural expression of
 
 //Both kinds of guard conditions:
 output(i(keyed(guard1 and (guard2 or seq = 3))));
 output(i(keyed(guard1 and (guard2 or seq in u4set))));
 output(i(keyed((guard1 and (guard2 or seq=1) and (guard3 or lname in s40set)))));
 output(i(keyed(guard1 and (guard2 or seq = 3 or seq=2))));
-output(i(keyed(guard1 and (guard2 or (seq=1 and lname in s40set)))));                   // more natural expression of) 
+output(i(keyed(guard1 and (guard2 or (seq=1 and lname in s40set)))));                   // more natural expression of)
 
 //Both kinds of guard conditions:
 output(i(keyed(guard1 or (guard2 and seq = 3))));
 output(i(keyed(guard1 or (guard2 and seq in u4set))));
 output(i(keyed((guard1 or ((guard2 and seq=1) and (guard2 and lname in s40set))))));
 output(i(keyed(guard1 or (guard2 and (seq = 3 or seq=2)))));
-output(i(keyed(guard1 or (guard2 and (seq=1 and lname in s40set)))));                   // more natural expression of) 
+output(i(keyed(guard1 or (guard2 and (seq=1 and lname in s40set)))));                   // more natural expression of)
 
 
 //Complex conditions on a single field
@@ -85,12 +85,12 @@ output(i(guard1 or seq=1 or seq*seq=2));                // can't key.... so don'
 
 // this is theoretically the only way of triggering the duplicate code, but doesn't actually trigger it at the moment.
 // probably worth considering deleteing all referece to duplicate
-//output(i(keyed((integer1)seq<>1)));           
+//output(i(keyed((integer1)seq<>1)));
 
 //More complicated conditions on multiple fields.
-output(i(keyed(guard1 or (seq=1 and lname = 'Halliday'))));
-output(i(keyed((seq=2) and (guard1 or seq=1) and (guard1 or lname = 'Halliday'))));     //equivalent to below
-output(i(keyed((seq=2) and (guard1 or (seq=1 and lname = 'Halliday')))));
+output(i(keyed(guard1 or (seq=1 and lname = 'Hawthorn'))));
+output(i(keyed((seq=2) and (guard1 or seq=1) and (guard1 or lname = 'Hawthorn'))));     //equivalent to below
+output(i(keyed((seq=2) and (guard1 or (seq=1 and lname = 'Hawthorn')))));
 
 //Conditional expressions......
 output(i(keyed(IF(guard1,seq = 3,seq=2))));
@@ -100,12 +100,12 @@ output(i(keyed(guard2 or IF(guard1,seq = 3,seq=2))));
 output(i(keyed(guard2 or IF(guard1,seq = 3,true))));
 
 //Conditional, with different fields affected.in diff branches.
-output(i(wild(seq) and keyed(IF(guard1,seq = 3,lname='Halliday'))));
-output(i(keyed(IF(guard1,seq = 3,seq=2 and lname='Halliday'))));
-output(i(keyed(IF(guard1,seq = 3,seq=2 and (guard3 or lname='Halliday')))));
-output(i(wild(seq) and keyed(guard2 or IF(guard1,seq = 3,lname='Halliday'))));
-output(i(keyed(guard2 or IF(guard1,seq = 3,seq=2 and lname='Halliday'))));
-output(i(keyed(guard2 or IF(guard1,seq = 3,seq=2 and (guard3 or lname='Halliday')))));
+output(i(wild(seq) and keyed(IF(guard1,seq = 3,lname='Hawthorn'))));
+output(i(keyed(IF(guard1,seq = 3,seq=2 and lname='Hawthorn'))));
+output(i(keyed(IF(guard1,seq = 3,seq=2 and (guard3 or lname='Hawthorn')))));
+output(i(wild(seq) and keyed(guard2 or IF(guard1,seq = 3,lname='Hawthorn'))));
+output(i(keyed(guard2 or IF(guard1,seq = 3,seq=2 and lname='Hawthorn'))));
+output(i(keyed(guard2 or IF(guard1,seq = 3,seq=2 and (guard3 or lname='Hawthorn')))));
 
 output(i(keyed(guard2 or IF(guard1,seq in u8set,seq=2 and (guard3 or lname in s40set)))));
 

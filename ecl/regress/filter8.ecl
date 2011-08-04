@@ -18,13 +18,13 @@
 
 //Test case was swapping filter with project - was going wrong in mluber28.hql
 
-EXPORT Standard__ssn := 
+EXPORT Standard__ssn :=
   RECORD
    string9 ssn;
   END;
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

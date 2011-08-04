@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -31,9 +31,9 @@ end;
 
 //namesTable := dataset('x',namesRecord,FLAT);
 namesTable := dataset([
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
-        {'Salter','Abi',10},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
+        {'Smithe','Pru',10},
         {'X','Z'}], namesRecord);
 
 boolean isFCRA := false : stored('isFCRA');
@@ -42,5 +42,5 @@ NameFilterName := IF(isFCRA, 'NameFilter.FCRA', 'NameFilter');
 filtered := LIBRARY(NameFilterName, FilterDatasetLibrary('Smith', namesTable, false));
 output(filtered.included,,named('Included'));
 
-filtered2 := LIBRARY(NameFilterName, FilterDatasetLibrary, 'Halliday', namesTable, false);
+filtered2 := LIBRARY(NameFilterName, FilterDatasetLibrary, 'Hawthorn', namesTable, false);
 output(filtered2.excluded,,named('Excluded'));

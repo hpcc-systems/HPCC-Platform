@@ -32,7 +32,7 @@ d := dataset([
 
 pattern ws := [' ','\t',',']*;
 
-results := 
+results :=
     record
         MATCHTEXT;
     end;

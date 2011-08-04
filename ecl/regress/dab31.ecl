@@ -19,7 +19,7 @@
 I := record
  unsigned integer1 presflag2;
  ifblock(self.presflag2 & 0x08 != 0)
-    decimal3 mem_num1; 
+    decimal3 mem_num1;
  end;
 
 end;
@@ -28,7 +28,7 @@ tempdataset := dataset('ecl_test::fb38_sample', I, flat);
 O := record
  unsigned integer1 presflag2;
 
- decimal3 mem_num1; 
+ decimal3 mem_num1;
 end;
 
 O trans(i l) := transform

@@ -18,7 +18,7 @@
 
 #option ('foldAssign', false);
 #option ('globalFold', false);
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -26,7 +26,7 @@ varstring20     vsurname;
 integer2        age := 25;
             END;
 
-names := dataset([{'Halliday','Gavin','Halliday',10}],namesRecord);
+names := dataset([{'Hawthorn','Gavin','Hawthorn',10}],namesRecord);
 
 output(nofold(names),{
         'ab'='ab',

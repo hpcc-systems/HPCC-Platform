@@ -23,10 +23,10 @@ string const_a := 'a' : stored('const_a');
 testStringlib := MODULE
   EXPORT AaaStartup := OUTPUT('Begin test');
 
-  EXPORT Test0 := 'This should not be output by evaluate';  
+  EXPORT Test0 := 'This should not be output by evaluate';
 
    EXPORT Test11 := ASSERT(stringLib.StringCompareIgnoreCase('A', 'a') = 0, const_a + ' doesn\'t match "A"', const);    //oh no it isn't
-  
+
   EXPORT ZzzClosedown := OUTPUT('End test');
 END;
 

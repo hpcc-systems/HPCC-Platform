@@ -18,7 +18,7 @@
 
 #option ('globalFold', false);
 //#########################################
-//Set Execution Flags 
+//Set Execution Flags
 
 doTestSimple       := true;     //automated = true
 doTestGrouped      := true;     //automated = true
@@ -26,7 +26,7 @@ doTestFiltered     := true;     //automated = true
 
 
 //#########################################
-//Prepare Test Data 
+//Prepare Test Data
 rec := record
     string20  name;
     unsigned4 value;
@@ -41,7 +41,7 @@ seed100 := dataset([{'',1,0},{'',2,0},{'',3,0},{'',4,0},{'',5,0},{'',6,0},{'',7,
                    ], rec);
 
 //#########################################
-//All TRANSFORMs 
+//All TRANSFORMs
 rec makeRec(rec L, rec R, string name) := TRANSFORM
     self.name := name;
     self.value := R.value;
@@ -67,7 +67,7 @@ rec makeRecCtrSkip(rec L, rec R, integer c, string name) := TRANSFORM
 END;
 
 //#########################################
-//All MACROs 
+//All MACROs
 
 // Simple ITERATE, no unkeyed filter....
 simpleITERATE(result, input, name, filters='TRUE') := MACRO
@@ -90,7 +90,7 @@ ENDMACRO;
 
 
 //#########################################
-//All MACRO Calls 
+//All MACRO Calls
 
 simpleITERATE(straightiter,seed100,'straight');
 counterITERATE(counteriter,seed100,'straight');
@@ -103,8 +103,8 @@ simpleITERATE(straightitergroupedfiltered,group(seed100, value),'grouped filtere
 counterITERATE(counteritergroupedfiltered,group(seed100, value),'grouped filtered',value > 3);
 
 //#########################################
-//All Actions 
-SEQUENTIAL( 
+//All Actions
+SEQUENTIAL(
            #if (doTestSimple)
              straightiter,
              counteriter,

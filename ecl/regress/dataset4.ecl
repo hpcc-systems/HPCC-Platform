@@ -18,7 +18,7 @@
 
 #option ('optimizeGraph', false);
 //Check that spilling continues to read all the records, even if input is terminated.
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -26,12 +26,12 @@ integer2        age := 25;
             END;
 
 namesTable := dataset([
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
-        {'Halliday','Abigail',0},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
+        {'Hawthorn','Abigail',0},
         {'Page','John',62},
         {'Page','Chris',26},
-        {'Salter','Abi',10},
+        {'Smithe','Pru',10},
         {'X','Z'}], namesRecord);
 
 w := sort(namesTable, surname);

@@ -24,7 +24,7 @@ B := DATASET([{'Fred','Bell'},
               {'George','Blanda'},
               {'Sam',''}
               ], OutputFormat1);
-OUTPUT(B,,'RTTEMP::fred.xml', XML); // writes B to the fred.xml file  
+OUTPUT(B,,'RTTEMP::fred.xml', XML); // writes B to the fred.xml file
 /* the Fred.XML file looks like this:
 <Dataset>
 <Row><fname>Fred</fname><lname>Bell</lname></Row>
@@ -32,8 +32,8 @@ OUTPUT(B,,'RTTEMP::fred.xml', XML); // writes B to the fred.xml file
 </Dataset>
 */
 OUTPUT(B,,'RTTEMP::fred2.xml',XML('MyRow',
-                  HEADING('<?xml version=1.0 ...?>\n<filetag>\n', 
-                        '</filetag>\n')));  
+                  HEADING('<?xml version=1.0 ...?>\n<filetag>\n',
+                        '</filetag>\n')));
 /* the Fred2.XML file looks like this:
 <?xml version=1.0 ...?>
 <filetag>
@@ -41,7 +41,7 @@ OUTPUT(B,,'RTTEMP::fred2.xml',XML('MyRow',
 <MyRow><fname>George     </fname><lname>Blanda      </lname></MyRow>
 </filetag>
 */
-OUTPUT(B,,'RTTEMP::fred3.xml',XML('MyRow',TRIM,OPT));   
+OUTPUT(B,,'RTTEMP::fred3.xml',XML('MyRow',TRIM,OPT));
 /* the Fred3.XML file looks like this:
 <Dataset>
 <MyRow><fname>Fred</fname><lname>Bell</lname></MyRow>

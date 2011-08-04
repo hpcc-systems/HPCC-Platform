@@ -31,7 +31,7 @@ gr := record
   qstring20 name_first := '';
   string10 phone10 := '';
   end;
-  
+
 g := dataset('g', gr, thor);
 
 sg := record
@@ -44,14 +44,14 @@ sg := record
   qstring20 name_first := '';
   unsigned8 phone := 0;
   end;
-  
+
 sg into(g le) := transform
   self.name_last := if ( le.name_last <> '', le.name_last, ut.word(le.listed_name,1));
   self.name_first := if ( le.name_first <> '', le.name_first, ut.word(le.listed_name,2));
   self.z5 := (unsigned4)le.z5;
   self.phone := (unsigned8)le.phone10;
   self := le;
-  end;  
+  end;
 
 t := project(g(st<>'',v_city_name<>'',phone10<>''),into(left));
 

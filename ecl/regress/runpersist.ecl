@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -25,13 +25,13 @@ integer2        age := 25;
             END;
 
 namesTable := dataset([
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
-        {'Salter','Abi',10},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
+        {'Smithe','Pru',10},
         {'X','Z'}], namesRecord);
 
 saved1 := namesTable : persist('saved1');
 
-saved2 := saved1(surname <> 'Halliday') : persist('saved2');
+saved2 := saved1(surname <> 'Hawthorn') : persist('saved2');
 
 output(saved2);

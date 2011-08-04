@@ -23,7 +23,7 @@ AggCommon.CommonDefinitions();
 output(table(sqNamesIndex1, { surname, sum(group, aage) }, surname, few));
 
 //Filtered disk aggregate, which also requires a beenProcessed flag
-output(table(sqNamesIndex2(surname != 'Halliday'), { max(group, aage), surname }, surname, few));
+output(table(sqNamesIndex2(surname != 'Hawthorn'), { max(group, aage), surname }, surname, few));
 
 //Special case count.
 output(table(sqNamesIndex3(forename = 'Gavin'), { count(group), surname }, surname, few));

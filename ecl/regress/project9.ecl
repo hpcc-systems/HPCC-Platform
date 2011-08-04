@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecordEx := 
+namesRecordEx :=
             RECORD
 qstring20       surname;
 qstring10       forename;

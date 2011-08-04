@@ -26,10 +26,10 @@ myModule(integer SomeValue2) := module
     export integer SomeValue := 110;
 
     export anotherFunction(integer SomeValue2) := function
-        
+
         integer SomeValue := 120;
 
-        result := table(ds, { 
+        result := table(ds, {
                         sum(group, someValue),      // 1
                         sum(group, ^.someValue),    // 120
                         sum(group, ^^.someValue),   // 110

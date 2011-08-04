@@ -53,7 +53,7 @@ norm := normalize(seed, CLUSTERSIZE, addNodeNum(LEFT, COUNTER));
 #declare(I)
 #set(I,1)
 #loop
-  #if (%I%>%NUMDISTS%) 
+  #if (%I%>%NUMDISTS%)
     #break
   #end
 

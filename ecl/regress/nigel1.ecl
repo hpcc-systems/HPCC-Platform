@@ -18,17 +18,17 @@
 
 // TEST1
 
-tFile := 
+tFile :=
     record
         String5 K;
         String5 F;
     end;
 
-tFile JoinTransform(tFile L, tFile R) := 
+tFile JoinTransform(tFile L, tFile R) :=
     transform
         self.K := L.K;
         self.F := R.F;
-    end;                                                                                 
+    end;
 
 
 File1           := DATASET ('testjoin01', tFile, flat);

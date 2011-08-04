@@ -19,5 +19,5 @@
 person := dataset('person', { unsigned8 person_id, string1 per_sex, unsigned per_ssn, string40 per_first_name, data9 per_cid, unsigned8 xpos }, thor);
 
 X := MAP((data1)x'00' = x'00' => 'A', ' ');
- 
+
 Output(person, {X});

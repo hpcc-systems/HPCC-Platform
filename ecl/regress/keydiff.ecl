@@ -18,18 +18,18 @@
 
 string outname := 'rubbish' : stored('outname');
 
-d := dataset('~local::rkc::person', 
-    { 
-        string15 name, 
+d := dataset('~local::rkc::person',
+    {
+        string15 name,
         string20 xname;
         string5  other;
         unsigned8 filepos{virtual(fileposition)} }, flat);
 
 
-i1 := index(d, { d } ,'\\seisint\\person.name_first.key.1');
-i2 := index(d, { d } ,'\\seisint\\person.name_first.key.2');
+i1 := index(d, { d } ,'\\home\\person.name_first.key.1');
+i2 := index(d, { d } ,'\\home\\person.name_first.key.2');
 
 keydiff(i1, i2, 'abc.out', overwrite, expire);
-keypatch(i1, 'abc.out', '\\seisint\\person.name_first.key.3');
+keypatch(i1, 'abc.out', '\\home\\person.name_first.key.3');
 keypatch(i1, 'def.out', outname, expire(100));
 

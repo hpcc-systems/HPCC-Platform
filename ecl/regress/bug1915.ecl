@@ -17,20 +17,20 @@
 ############################################################################## */
 
   EXPORT Layout_Revenue := RECORD
-  STRING30 subsidiary;         
+  STRING30 subsidiary;
   END;
 
   EXPORT File_RevenueList :=   DATASET('TEMP::RevenueList',Layout_Revenue,flat);
 
   Layout_Rev_Sub_BU_Prod := RECORD
-   STRING30 subsidiary    := File_RevenueList.subsidiary ;       
+   STRING30 subsidiary    := File_RevenueList.subsidiary ;
   END;
 
   Layout_Rev_Sub_BU_Prod2 := RECORD
    STRING30 subsidiary;
   END;
 
-  Rev_Sub_BU_Prod_tbl := TABLE(File_RevenueList, Layout_Rev_Sub_BU_Prod, subsidiary); 
+  Rev_Sub_BU_Prod_tbl := TABLE(File_RevenueList, Layout_Rev_Sub_BU_Prod, subsidiary);
 
   Layout_Rev_Sub_BU_Prod ProjectMoney(Layout_Rev_Sub_BU_Prod L) := TRANSFORM
     SELF.subsidiary := L.subsidiary;  // even explict assignment does not work

@@ -20,7 +20,7 @@
 #option ('countFile', false);
 #option ('targetClusterType', 'roxie');
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

@@ -29,8 +29,8 @@ dd2 := dataset('dd2',{integer n2;}, THOR);
 
 mx := 30;
 
-result := count(dd1(n1=count(dd(n=20)))) 
-    + nx 
+result := count(dd1(n1=count(dd(n=20))))
+    + nx
     + count(dd2(dd2.n2=mx)) + f(mx)
     + count(mod1.dd);
 

@@ -16,12 +16,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-m(x) := MACRO 
+m(x) := MACRO
    10+x
 ENDMACRO;
 m();
 
-m2(x,y) := MACRO 
+m2(x,y) := MACRO
    10+x
 ENDMACRO;
 m2(1);

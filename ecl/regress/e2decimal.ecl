@@ -25,5 +25,5 @@ y1;
 y2;
 
 
-(ebcdic string3)123D + 
+(ebcdic string3)123D +
 (ebcdic string5)123.0;

@@ -16,8 +16,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-//Example of nested 
-namesRecord := 
+//Example of nested
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -44,7 +44,7 @@ end;
 
 
 impHallidayLibrary(dataset(namesRecord) ds) := module,library(HallidayLibrary)
-    shared baseLibrary := LIBRARY('FilterLibrary', filterLibrary(ds, 'Halliday', false));
+    shared baseLibrary := LIBRARY('FilterLibrary', filterLibrary(ds, 'Hawthorn', false));
     export included := baseLibrary.included;
     export excluded := baseLibrary.excluded;
 end;

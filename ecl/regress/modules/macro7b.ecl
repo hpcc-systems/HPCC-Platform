@@ -36,13 +36,13 @@ endmacro;
 
 
 export ageSplit(inf) := functionmacro
-    
+
     result := module
         export young := inf(age < 18);
         export old := inf(age > 70);
         export others := inf(age between 18 and 70);
     end;
     return result;
-endmacro; 
+endmacro;
 
 END;

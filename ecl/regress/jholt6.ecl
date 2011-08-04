@@ -28,7 +28,7 @@ pattern match := validate(word, MATCHTEXT in searchSet or MATCHTEXT = matchName)
 pattern S := match ws match;
 
 
-ds := dataset([{'Gavin Halliday'}],{string line});
+ds := dataset([{'Gavin Hawthorn'}],{string line});
 
 
 x := parse(ds, line, S, TRANSFORM(LEFT));

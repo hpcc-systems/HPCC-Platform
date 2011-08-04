@@ -22,7 +22,7 @@ export dstring(string del) := TYPE
     export string store(string s) := s+del; // Untested (vlength output generally broken)
 END;
 
-accountRecord := 
+accountRecord :=
             RECORD
 dstring(',')    field1;
 dstring(',')    field2;

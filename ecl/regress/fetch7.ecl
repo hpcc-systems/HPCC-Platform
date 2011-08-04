@@ -18,7 +18,7 @@
 
 #option ('globalFold', false);
 //#########################################
-//Set Execution Flags 
+//Set Execution Flags
 
 doPrepareFiles     := true;     //automated = true
 doTestSimple       := true;     //automated = true
@@ -31,7 +31,7 @@ KeyFileName1  := 'fetchtest::valuekey';
 
 //#########################################
 
-//Prepare Test Data 
+//Prepare Test Data
 rec := record
     string20  name;
     unsigned4 value;
@@ -63,7 +63,7 @@ valuekey    := INDEX(file500, {value, __fpos}, KeyFileName1);
 prepareKeys := buildindex(valuekey, overwrite);
 
 //#########################################
-//All TRANSFORMs 
+//All TRANSFORMs
 
 recplus makeRec(recplus L, string name) := TRANSFORM
     self.name := name;
@@ -76,7 +76,7 @@ recplus makeRecSkip(recplus L, string name) := TRANSFORM
 END;
 
 //#########################################
-//All MACROs 
+//All MACROs
 
 // Simple fetch, no unkeyed filter....
 MAC_simplefetch(result, baseinput, keyinput, name, filters='TRUE') := MACRO
@@ -91,16 +91,16 @@ ENDMACRO;
 
 
 //#########################################
-//All MACRO Calls 
+//All MACRO Calls
 
 MAC_simplefetch(straightfetch,File500,valuekey,'straight');
 
 MAC_simplefetch(straightfetchfiltered,File500,valuekey,'filtered',value <> 2);
 //#########################################
-//All Actions 
+//All Actions
            #if (doPrepareFiles)
-             prepareFiles; 
-             prepareKeys; 
+             prepareFiles;
+             prepareKeys;
            #end
            #if (doTestSimple)
              straightfetch;

@@ -25,9 +25,9 @@ integer2        age := 25;
 
 unsigned zero := 0 : stored('zero');
 namesTable2 := dataset([
-        {'Halliday','Gavin',31+zero},
-        {'Halliday','Peter',30+zero},
-        {'Salter','Simon',10+zero},
+        {'Hawthorn','Gavin',31+zero},
+        {'Hawthorn','Peter',30+zero},
+        {'Smithe','Simon',10+zero},
         {'X','Z',zero}], namesRecord);
 
 output(namesTable2,,'out.d00',overwrite);

@@ -33,8 +33,8 @@ END;
 //DATASET allows us to clean and process XML further
 // d := DATASET('~music::in::bandsartists', ArtistRecord, XML('musicmoz/category'));
 d := DATASET('~file::192.168.16.111::c$::thor_trunk::ecl::musicmoz.bandsandartists.xml', ArtistRecord, XML('musicmoz/category'));
-//~music::in::bandsartists                          
-//~music::bmf::in                           
+//~music::in::bandsartists
+//~music::bmf::in
 //************************
 //New Artist record - clean and extract artist name and assign unique ID
 NArtistRecord := RECORD
@@ -61,20 +61,20 @@ NArtistRecord CleanRecs(ArtistRecord L,
 SELF.Recid     := C;
 TempString     := L.Name[21..];
 InstanceSlash  := Str.Find(TempString,'/');
-EndPos         := InstanceSlash - 1; 
-SELF.ArtistName:= TempString[1 .. EndPos]; 
+EndPos         := InstanceSlash - 1;
+SELF.ArtistName:= TempString[1 .. EndPos];
 SELF.NewTracks := L.Tracks;
 SELF           := L;
 END;
-                                                
-                            
+
+
 Clean_BandsArtists := PROJECT(d(formats<>'',
                                 item<>''),
                                                                 CleanRecs(LEFT,COUNTER));
 
 
-//Other options applied while testing:                                                               
-//Clean_BandsArtists(artistname = '311'); //Implicit output to ECL IDE  
+//Other options applied while testing:
+//Clean_BandsArtists(artistname = '311'); //Implicit output to ECL IDE
 //OUTPUT(Clean_BandsArtists,{recid,artistname,item,genre});
 
 OUTPUT(Clean_BandsArtists,,'~music::in::cleanartists');

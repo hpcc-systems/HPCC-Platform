@@ -38,10 +38,10 @@ taR := RECORD
 taR ta(test le) := TRANSFORM
         SELF := le;
     END;
-    
+
 a := project(test,ta(LEFT));
 
-b:= a(per_surname <> 'Halliday' and a.per_forename <> 'Gavin');
+b:= a(per_surname <> 'Hawthorn' and a.per_forename <> 'Gavin');
 
 output(b,,'out.d00');
 
@@ -52,7 +52,7 @@ tcR := RECORD
 tcR tc(test le) := TRANSFORM
         SELF := le;
     END;
-    
+
 c := project(test,tc(LEFT));
 
 tdR := RECORD
@@ -62,7 +62,7 @@ tdR := RECORD
 tdR td(c le) := TRANSFORM
         SELF := le;
     END;
-    
+
 d := project(c,td(LEFT));
 
 e := d(d.holepos > 10 and per_surname <> '');

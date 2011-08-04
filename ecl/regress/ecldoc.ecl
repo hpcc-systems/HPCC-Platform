@@ -21,7 +21,7 @@
 /**
  * Defines a record that contains information about a person
  */
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -38,7 +38,7 @@ namesTable := dataset('x',namesRecord,FLAT);
 
 /**
     Allows the name table to be filtered.
-    
+
     @param  ages    The ages that are allowed to be processed.
             badForename Forname to avoid.
 

@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -28,4 +28,4 @@ namesTable := dataset('x',namesRecord,FLAT);
 namesTable2 := dataset('y',namesRecord,FLAT);
 namesTable3 := dataset('z',namesRecord,FLAT);
 
-output(namesTable + namesTable2 + namesTable3 + row({'Halliday','Gavin',33},namesRecord));
+output(namesTable + namesTable2 + namesTable3 + row({'Hawthorn','Gavin',33},namesRecord));

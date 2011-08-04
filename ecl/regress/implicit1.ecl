@@ -20,7 +20,7 @@
 #option ('optimizeProjects', true);
 #option ('recordOptimizedProjects', 1);
 
-mainRecord := 
+mainRecord :=
         RECORD
 integer8            sequence;
 string20            forename;

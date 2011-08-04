@@ -18,7 +18,7 @@
 
 #option ('foldAssign', false);
 #option ('globalFold', false);
-namesRecord := 
+namesRecord :=
             RECORD
 decimal9_2      v1;
 udecimal8_2     v2;

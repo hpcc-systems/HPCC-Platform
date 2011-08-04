@@ -18,7 +18,7 @@
 
 import std.system.thorlib;
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

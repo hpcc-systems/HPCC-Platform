@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 unsigned1       numRows;
 string20        name;
@@ -29,12 +29,12 @@ string20        addr4 := '';
 
 namesTable := dataset([
         {1,'Gavin','10 Slapdash Lane'},
-        {2,'Liz','10 Slapdash Lane','3 The cottages'},
+        {2,'Mia','10 Slapdash Lane','3 The cottages'},
         {0,'Mr Nobody'},
         {4,'Mr Everywhere','Here','There','Near','Far'}
         ], namesRecord);
 
-outRecord := 
+outRecord :=
             RECORD
 unsigned1       numRows;
 string20        name;
@@ -42,7 +42,7 @@ string20        addr;
             END;
 
 
-outRecord normalizeAddresses(namesRecord l, integer c) := 
+outRecord normalizeAddresses(namesRecord l, integer c) :=
                 TRANSFORM
                     SELF := l;
                     SELF.addr := CHOOSE(c, l.addr1, l.addr2, l.addr3, l.addr4);
@@ -50,14 +50,14 @@ outRecord normalizeAddresses(namesRecord l, integer c) :=
 
 normalizedNames := normalize(namesTable, LEFT.numRows, normalizeAddresses(LEFT, COUNTER));
 
-outRecord rollupPeople(outRecord l, outRecord r) := 
+outRecord rollupPeople(outRecord l, outRecord r) :=
                 TRANSFORM
                     SELF := l;
                 END;
 
 singleNames := rollup(normalizedNames, name, rollupPeople(LEFT, RIGHT));
 
-namesRecord denormalizeAddresses(outRecord l, outRecord r, integer c) := 
+namesRecord denormalizeAddresses(outRecord l, outRecord r, integer c) :=
                 TRANSFORM
                     SELF.numRows := c;
                     SELF.name := l.name;

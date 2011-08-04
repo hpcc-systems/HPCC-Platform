@@ -111,16 +111,16 @@ DG_FetchFilePreloadIndexed := PRELOAD(DATASET(DG_FetchFilePreloadIndexedName,{DG
 DG_OutRec := RECORD
     unsigned4  DG_ParentID;
     string10  DG_firstname;
-    string10  DG_lastname; 
-    unsigned1 DG_Prange;   
+    string10  DG_lastname;
+    unsigned1 DG_Prange;
 END;
 
 DG_OutRecChild := RECORD
     unsigned4  DG_ParentID;
     unsigned4  DG_ChildID;
     string10  DG_firstname;
-    string10  DG_lastname; 
-    unsigned1 DG_Prange;   
+    string10  DG_lastname;
+    unsigned1 DG_Prange;
 END;
 
 #if(DG_GenVar = TRUE)
@@ -218,19 +218,19 @@ DG_GrandChildFile := DATASET(DG_GrandChildFileOut,{DG_OutRecChild,UNSIGNED8 file
 
 //define data atoms - each set has 16 elements
 SET OF STRING10 DG_Fnames := ['DAVID','CLAIRE','KELLY','KIMBERLY','PAMELA','JEFFREY','MATTHEW','LUKE',
-                              'JOHN' ,'EDWARD','CHAD' ,'KEVIN'   ,'KOBE'  ,'RICHARD','GEORGE' ,'DIRK']; 
+                              'JOHN' ,'EDWARD','CHAD' ,'KEVIN'   ,'KOBE'  ,'RICHARD','GEORGE' ,'DIRK'];
 SET OF STRING10 DG_Lnames := ['BAYLISS','DOLSON','BILLINGTON','SMITH'   ,'JONES'   ,'ARMSTRONG','LINDHORFF','SIMMONS',
-                              'WYMAN'  ,'MORTON','MIDDLETON' ,'NOWITZKI','WILLIAMS','TAYLOR'   ,'CHAPMAN'  ,'BRYANT']; 
+                              'WYMAN'  ,'MORTON','MIDDLETON' ,'NOWITZKI','WILLIAMS','TAYLOR'   ,'DRIMBAD'  ,'BRYANT'];
 SET OF UNSIGNED1 DG_PrangeS := [1, 2, 3, 4, 5, 6, 7, 8,
-                                9,10,11,12,13,14,15,16]; 
+                                9,10,11,12,13,14,15,16];
 SET OF STRING10 DG_Streets := ['HIGH'  ,'CITATION'  ,'MILL','25TH' ,'ELGIN'    ,'VICARAGE','YAMATO' ,'HILLSBORO',
-                               'SILVER','KENSINGTON','MAIN','EATON','PARK LANE','HIGH'    ,'POTOMAC','GLADES']; 
+                               'SILVER','KENSINGTON','MAIN','EATON','PARK LANE','HIGH'    ,'POTOMAC','GLADES'];
 SET OF UNSIGNED1 DG_ZIPS := [101,102,103,104,105,106,107,108,
-                             109,110,111,112,113,114,115,116]; 
+                             109,110,111,112,113,114,115,116];
 SET OF UNSIGNED1 DG_AGES := [31,32,33,34,35,36,37,38,
-                             39,40,41,42,43,44,45,56]; 
+                             39,40,41,42,43,44,45,56];
 SET OF STRING2 DG_STATES := ['FL','GA','SC','NC','TX','AL','MS','TN',
-                             'KY','CA','MI','OH','IN','IL','WI','MN'];  
+                             'KY','CA','MI','OH','IN','IL','WI','MN'];
 SET OF STRING3 DG_MONTHS := ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG',
                              'SEP','OCT','NOV','DEC','ABC','DEF','GHI','JKL'];
 
@@ -266,7 +266,7 @@ END, THOR);
 
 // Raw record definitions:
 
-sqHouseRec := 
+sqHouseRec :=
             record
 string          addr;
 string10        postcode;
@@ -274,7 +274,7 @@ unsigned2       yearBuilt := 0;
             end;
 
 
-sqPersonRec := 
+sqPersonRec :=
             record
 string          forename;
 string          surname;
@@ -283,7 +283,7 @@ udecimal8       booklimit := 0;
 unsigned2       aage := 0;
             end;
 
-sqBookRec := 
+sqBookRec :=
             record
 string          name;
 string          author;
@@ -360,18 +360,18 @@ dataset(sqPersonBookIdRec) persons;
             end;
 
 
-sqPersonBookRelatedIdRec := 
+sqPersonBookRelatedIdRec :=
             RECORD
                 sqPersonBookIdRec;
 unsigned4       houseid;
             END;
 
-sqNestedBlob := 
+sqNestedBlob :=
             RECORD
 udecimal8       booklimit := 0;
             END;
 
-sqSimplePersonBookRec := 
+sqSimplePersonBookRec :=
             RECORD
 string20        surname;
 string10        forename;
@@ -644,7 +644,7 @@ fileServices.AddFileRelationship( DG_ParentFileOut, DG_FileOut+'XML', '', '', 'v
 EvensFilter := DG_ParentRecs.DG_firstname in [DG_Fnames[2],DG_Fnames[4],DG_Fnames[6],DG_Fnames[8],
                                               DG_Fnames[10],DG_Fnames[12],DG_Fnames[14],DG_Fnames[16]];
 
-SEQUENTIAL( 
+SEQUENTIAL(
     PARALLEL(output(DG_ParentRecs,,DG_FileOut+'FLAT',overwrite),
              output(DG_ParentRecs(EvensFilter),,DG_FileOut+'FLAT_EVENS',overwrite)),
     PARALLEL(buildindex(DG_IndexFile,overwrite
@@ -704,8 +704,8 @@ sequential(
 udecimal8 baseDate := 20050101;
 
 rawHouse := dataset([
-    { 'Maltings Road', 'SW1A0AA', 1720, 
-        [{ 'Gavin', 'Halliday', 19700101, 1000, 0,
+    { 'Maltings Road', 'SW1A0AA', 1720,
+        [{ 'Gavin', 'Hawthorn', 19700101, 1000, 0,
             [
             { 'To kill a mocking bird', 'Harper Lee', 95},
             { 'Clarion Language Manual', 'Richard Taylor', 1, 399.99 },
@@ -714,7 +714,7 @@ rawHouse := dataset([
             { 'Lord of the Rings', 'JRR Tolkien', 95 }
             ]
         },
-        { 'Abigail', 'Halliday', 20000101, 40, 0,
+        { 'Abigail', 'Hawthorn', 20000101, 40, 0,
             [
             { 'The thinks you can think', 'Dr. Seuss', 90, 5.99 },
             { 'Where is flop?', '', 85, 4.99 },
@@ -722,7 +722,7 @@ rawHouse := dataset([
             { 'The story of Jonah', '', 80, 6.99 }
             ]
         },
-        { 'Liz', 'Halliday', 19700909, 0, 0,
+        { 'Mia', 'Hawthorn', 19700909, 0, 0,
             [
             { 'The Life of Pi', 'Yan Martel', 90 },
             { 'BNF', 'Various', 60 },
@@ -751,7 +751,7 @@ rawHouse := dataset([
     },
     { 'Bedrock', '', 0,
         [{'Fred', 'Flintstone', 00000101, 0, 0, [] },
-        {'Wilma', 'Flintstone', 00020202, 0, 0, 
+        {'Wilma', 'Flintstone', 00020202, 0, 0,
             [
             { 'Dinosaur stews', 'Trog', 55 }
             ]
@@ -784,15 +784,15 @@ rawHouse := dataset([
     ], sqHousePersonBookRec);
 
 
-//First reproject the datasets to 
+//First reproject the datasets to
 
-sqBookIdRec addIdToBook(sqBookRec l) := 
+sqBookIdRec addIdToBook(sqBookRec l) :=
             transform
                 self.id := 0;
                 self := l;
             end;
 
-sqPersonBookIdRec addIdToPerson(sqPersonBookRec l) := 
+sqPersonBookIdRec addIdToPerson(sqPersonBookRec l) :=
             transform
                 unsigned2 aage := if (l.dob < baseDate, (unsigned2)((baseDate - l.dob) / 10000), 0);
                 self.id := 0;
@@ -801,7 +801,7 @@ sqPersonBookIdRec addIdToPerson(sqPersonBookRec l) :=
                 self := l;
             end;
 
-sqHousePersonBookIdRec addIdToHouse(sqHousePersonBookRec l) := 
+sqHousePersonBookIdRec addIdToHouse(sqHousePersonBookRec l) :=
             transform
                 self.id := 0;
                 self.persons := project(l.persons, addIdToPerson(LEFT));
@@ -814,14 +814,14 @@ projected := project(rawHouse, addIdToHouse(LEFT));
 //version 1 assign unique ids a really inefficient way...
 //doesn't actually work....
 
-sqBookIdRec setBookId(sqHousePersonBookIdRec lh, sqBookIdRec l, unsigned4 basebookid) := 
+sqBookIdRec setBookId(sqHousePersonBookIdRec lh, sqBookIdRec l, unsigned4 basebookid) :=
             transform
                 unsigned maxbookid := max(lh.persons, max(lh.persons.books, id));
                 self.id := if(maxbookid=0, basebookid, maxbookid)+1;
                 self := l;
             end;
 
-sqPersonBookIdRec setPersonId(sqHousePersonBookIdRec lh, sqPersonBookIdRec l, unsigned4 basepersonid, unsigned4 basebookid) := 
+sqPersonBookIdRec setPersonId(sqHousePersonBookIdRec lh, sqPersonBookIdRec l, unsigned4 basepersonid, unsigned4 basebookid) :=
             transform
                 unsigned4 maxpersonid := max(lh.persons, id);
                 self.id := if(maxpersonid=0, basepersonid, maxpersonid)+1;
@@ -829,7 +829,7 @@ sqPersonBookIdRec setPersonId(sqHousePersonBookIdRec lh, sqPersonBookIdRec l, un
                 self := l;
             end;
 
-sqHousePersonBookIdRec setHouseId(sqHousePersonBookIdRec l, sqHousePersonBookIdRec r, unsigned4 id) := 
+sqHousePersonBookIdRec setHouseId(sqHousePersonBookIdRec l, sqHousePersonBookIdRec r, unsigned4 id) :=
             transform
                 unsigned prevmaxpersonid := max(l.persons, id);
                 unsigned prevmaxbookid := max(l.persons, max(l.persons.books, id));
@@ -874,7 +874,7 @@ sqBookRelatedIdRec extractBook(sqBookIdRec l, unsigned4 personid) :=
 
 DoAssignSeq(ds, o) := macro
 #uniquename (trans)
-typeof(ds) %trans%(ds l, unsigned c) := 
+typeof(ds) %trans%(ds l, unsigned c) :=
         transform
             self.id := c;
             self := l;
@@ -946,7 +946,7 @@ buildindex(
 #if (useLocal=true)
   DISTRIBUTE(sqSimplePersonBookDs, IF(surname > 'G', 0, 1)),
 #else
-  sqSimplePersonBookDs, 
+  sqSimplePersonBookDs,
 #end
   { surname, forename, aage  }, { sqSimplePersonBookDs }, sqSimplePersonBookIndexName, overwrite
 #if (useLocal=true)

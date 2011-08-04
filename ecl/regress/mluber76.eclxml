@@ -26,7 +26,7 @@
    export library_interface(String1 ba) := INTERFACE
 
             export String business_code;
-        
+
         END;
   </Attribute>
  </Module>

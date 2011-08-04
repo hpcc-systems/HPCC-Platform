@@ -18,7 +18,7 @@
 
 filetype := 'x';
 
-key_id (inf, myID, myFiletype) := 
+key_id (inf, myID, myFiletype) :=
 
 MACRO
 
@@ -26,7 +26,7 @@ MACRO
 
 ENDMACRO;
 
- 
+
 
 ds := dataset([],{string50 id});
 

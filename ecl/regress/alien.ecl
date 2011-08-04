@@ -18,7 +18,7 @@
 
 import dt;
 
-namesRecord := 
+namesRecord :=
             RECORD
 dt.pstring      surname;
 string10        forename;
@@ -29,7 +29,7 @@ namesTable := dataset('x',namesRecord,FLAT);
 
 output(namesTable, {length(surname),length(forename),trim(surname), surname IN ['a','b','c','d','e','f','0','1','2','3','4','5','6','7','8','9']});
 
-unamesRecord := 
+unamesRecord :=
             RECORD
 dt.ustring(u'\r')   surname;
             END;

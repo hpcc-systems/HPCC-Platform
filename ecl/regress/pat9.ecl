@@ -27,12 +27,12 @@ pattern ws := [' ','\t'];
 pattern patStart := FIRST | ws;
 pattern patEnd := LAST | ws;
 article := ['A','The','Thou'];
-token patWord := PATTERN('[a-zA-Z]+');      
+token patWord := PATTERN('[a-zA-Z]+');
 // Line below
 token Namet := PATTERN('[A-Z][a-zA-Z]+') NOT IN article;
 pattern produced := ['begat','son of','father of'];
 rule progeny := Namet ws produced ws Namet;
-results := 
+results :=
     record
         Le :=  MATCHTEXT(Namet[1]);
         Ri :=  MATCHTEXT(Namet[2]);

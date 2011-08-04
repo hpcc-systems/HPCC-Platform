@@ -20,20 +20,20 @@ ParentRec := RECORD
     INTEGER1  NameID;
     STRING20  Name;
 END;
-ParentTable := DATASET([ {1,'Gavin'},{2,'Liz'},{3,'Mr Nobody'},
-                {4,'Anywhere'}], ParentRec);    
+ParentTable := DATASET([ {1,'Gavin'},{2,'Mia'},{3,'Mr Nobody'},
+                {4,'Anywhere'}], ParentRec);
 
 ChildRec := RECORD
     INTEGER1  NameID;
     STRING20  Addr;
 END;
-ChildTable := DATASET([{1,'10 Malt Lane'},  
-               {2,'10 Malt Lane'},  
-               {2,'3 The cottages'},    
-               {4,'Here'},  
-               {4,'There'}, 
-               {4,'Near'},  
-               {4,'Far'}],ChildRec);    
+ChildTable := DATASET([{1,'10 Malt Lane'},
+               {2,'10 Malt Lane'},
+               {2,'3 The cottages'},
+               {4,'Here'},
+               {4,'There'},
+               {4,'Near'},
+               {4,'Far'}],ChildRec);
 
 DenormedRec := RECORD
     INTEGER1   NameID;
@@ -46,13 +46,13 @@ DenormedRec ParentMove(ParentRec L) := TRANSFORM
   SELF.NumRows := 0;
   SELF.Children := [];
   SELF := L;
-END;  
+END;
 
 ParentOnly := PROJECT(ParentTable, ParentMove(LEFT));
-        
+
 DenormedRec ChildMove(DenormedRec L, ChildRec R, INTEGER C) := TRANSFORM
   SELF.NumRows := C;
-  SELF.Children := L.Children + R;   
+  SELF.Children := L.Children + R;
   SELF := L;
 END;
 

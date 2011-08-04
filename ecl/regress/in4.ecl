@@ -26,4 +26,4 @@ Layout_FormerName := record
 end;
 
 FormerName := dataset('former_name', Layout_FormerName, flat);
-Output(formername( person_id in[1,10,105,116,117,119,129,135,139,142,146,3,30,46,64,66,7,73,74,75,85,88,9,92,98])); 
+Output(formername( person_id in[1,10,105,116,117,119,129,135,139,142,146,3,30,46,64,66,7,73,74,75,85,88,9,92,98]));

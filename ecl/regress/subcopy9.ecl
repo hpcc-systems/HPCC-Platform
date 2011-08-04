@@ -29,7 +29,7 @@ string20  per_surname;
 unsigned8 holepos;
     END;
 
-parentRecord := 
+parentRecord :=
                 RECORD
 unsigned8           id;
 string20            address1;
@@ -43,7 +43,7 @@ string10            postcode;
 parentDataset := DATASET('test',parentRecord,FLAT);
 
 
-childRecord selectBestChild(parentRecord l) := 
+childRecord selectBestChild(parentRecord l) :=
 TRANSFORM
     SELF := sort(l.children, per_surname, -per_forename)[1];
 END;

@@ -16,15 +16,15 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-fooRec := RECORD 
-STRING foo; 
-END; 
+fooRec := RECORD
+STRING foo;
+END;
 
-records := DATASET([{'foo'},{''},{'bar'},{' '}],fooRec); 
+records := DATASET([{'foo'},{''},{'bar'},{' '}],fooRec);
 
-fooRec T(fooRec L, fooRec R) := TRANSFORM 
-Self.foo := if(L.foo != '',L.foo,R.foo); 
-END; 
+fooRec T(fooRec L, fooRec R) := TRANSFORM
+Self.foo := if(L.foo != '',L.foo,R.foo);
+END;
 
-ds := ITERATE(records,T(Left,Right)); 
-output(ds); 
+ds := ITERATE(records,T(Left,Right));
+output(ds);

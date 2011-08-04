@@ -16,10 +16,10 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-import lib_stringlib,std.system.thorlib; 
-prefix := 'hthor'; 
-usePayload := false; 
-useVarIndex := false; 
+import lib_stringlib,std.system.thorlib;
+prefix := 'hthor';
+usePayload := false;
+useVarIndex := false;
 //define constants
 DG_GenFlat           := true;   //TRUE gens FlatFile
 DG_GenChild          := true;   //TRUE gens ChildFile
@@ -79,7 +79,7 @@ DG_OutRec := RECORD
     #IF(DG_MaxField>=3) unsigned1 DG_Prange;    #end
     #IF(DG_MaxField>=4) string10  DG_Street;    #end
     #IF(DG_MaxField>=5) unsigned1 DG_zip;       #end
-    #IF(DG_MaxField>=6) unsigned1 DG_age;       #end    
+    #IF(DG_MaxField>=6) unsigned1 DG_age;       #end
     #IF(DG_MaxField>=7) string2   DG_state;     #end
     #IF(DG_MaxField>=8) string3   DG_month;     #end
 END;
@@ -91,7 +91,7 @@ DG_OutRecChild := RECORD
     #IF(DG_MaxField>=3) unsigned1 DG_Prange;    #end
     #IF(DG_MaxField>=4) string10  DG_Street;    #end
     #IF(DG_MaxField>=5) unsigned1 DG_zip;       #end
-    #IF(DG_MaxField>=6) unsigned1 DG_age;       #end    
+    #IF(DG_MaxField>=6) unsigned1 DG_age;       #end
     #IF(DG_MaxField>=7) string2   DG_state;     #end
     #IF(DG_MaxField>=8) string3   DG_month;     #end
 END;
@@ -106,28 +106,28 @@ END;
 #end
 
 //DATASET declarations
-#IF(DG_MaxField=1) 
+#IF(DG_MaxField=1)
 DG_BlankSet := dataset([{0,''}],DG_OutRec);
 #end
-#IF(DG_MaxField=2) 
+#IF(DG_MaxField=2)
 DG_BlankSet := dataset([{0,'',''}],DG_OutRec);
 #end
-#IF(DG_MaxField=3) 
+#IF(DG_MaxField=3)
 DG_BlankSet := dataset([{0,'','',0}],DG_OutRec);
 #end
-#IF(DG_MaxField=4) 
+#IF(DG_MaxField=4)
 DG_BlankSet := dataset([{0,'','',0,''}],DG_OutRec);
 #end
-#IF(DG_MaxField=5) 
+#IF(DG_MaxField=5)
 DG_BlankSet := dataset([{0,'','',0,'',0}],DG_OutRec);
 #end
-#IF(DG_MaxField=6) 
+#IF(DG_MaxField=6)
 DG_BlankSet := dataset([{0,'','',0,'',0,0}],DG_OutRec);
 #end
-#IF(DG_MaxField=7) 
+#IF(DG_MaxField=7)
 DG_BlankSet := dataset([{0,'','',0,'',0,0,''}],DG_OutRec);
 #end
-#IF(DG_MaxField=8) 
+#IF(DG_MaxField=8)
 DG_BlankSet := dataset([{0,'','',0,'',0,0,'',''}],DG_OutRec);
 #end
 
@@ -146,7 +146,7 @@ DG_indexFile      := INDEX(DG_FlatFile,
     #IF(DG_MaxField>=3) DG_Prange;    #end
     #IF(DG_MaxField>=4) DG_Street;    #end
     #IF(DG_MaxField>=5) DG_zip;       #end
-    #IF(DG_MaxField>=6) DG_age;       #end  
+    #IF(DG_MaxField>=6) DG_age;       #end
     #IF(DG_MaxField>=7) DG_state;     #end
     #IF(DG_MaxField>=8) DG_month;     #end
         filepos
@@ -161,7 +161,7 @@ DG_indexFileEvens := INDEX(DG_FlatFileEvens,
     #IF(DG_MaxField>=3) DG_Prange;    #end
     #IF(DG_MaxField>=4) DG_Street;    #end
     #IF(DG_MaxField>=5) DG_zip;       #end
-    #IF(DG_MaxField>=6) DG_age;       #end  
+    #IF(DG_MaxField>=6) DG_age;       #end
     #IF(DG_MaxField>=7) DG_state;     #end
     #IF(DG_MaxField>=8) DG_month;     #end
         filepos
@@ -193,19 +193,19 @@ DG_GrandChildFile := DATASET(DG_GrandChildFileOut,{DG_OutRecChild,UNSIGNED8 file
 
 //define data atoms - each set has 16 elements
 SET OF STRING10 DG_Fnames := ['DAVID','CLAIRE','KELLY','KIMBERLY','PAMELA','JEFFREY','MATTHEW','LUKE',
-                              'JOHN' ,'EDWARD','CHAD' ,'KEVIN'   ,'KOBE'  ,'RICHARD','GEORGE' ,'DIRK']; 
+                              'JOHN' ,'EDWARD','CHAD' ,'KEVIN'   ,'KOBE'  ,'RICHARD','GEORGE' ,'DIRK'];
 SET OF STRING10 DG_Lnames := ['BAYLISS','DOLSON','BILLINGTON','SMITH'   ,'JONES'   ,'ARMSTRONG','LINDHORFF','SIMMONS',
-                              'WYMAN'  ,'MORTON','MIDDLETON' ,'NOWITZKI','WILLIAMS','TAYLOR'   ,'CHAPMAN'  ,'BRYANT']; 
+                              'WYMAN'  ,'MORTON','MIDDLETON' ,'NOWITZKI','WILLIAMS','TAYLOR'   ,'DRIMBAD'  ,'BRYANT'];
 SET OF UNSIGNED1 DG_PrangeS := [1, 2, 3, 4, 5, 6, 7, 8,
-                                9,10,11,12,13,14,15,16]; 
+                                9,10,11,12,13,14,15,16];
 SET OF STRING10 DG_Streets := ['HIGH'  ,'CITATION'  ,'MILL','25TH' ,'ELGIN'    ,'VICARAGE','YAMATO' ,'HILLSBORO',
-                               'SILVER','KENSINGTON','MAIN','EATON','PARK LANE','HIGH'    ,'POTOMAC','GLADES']; 
+                               'SILVER','KENSINGTON','MAIN','EATON','PARK LANE','HIGH'    ,'POTOMAC','GLADES'];
 SET OF UNSIGNED1 DG_ZIPS := [101,102,103,104,105,106,107,108,
-                             109,110,111,112,113,114,115,116]; 
+                             109,110,111,112,113,114,115,116];
 SET OF UNSIGNED1 DG_AGES := [31,32,33,34,35,36,37,38,
-                             39,40,41,42,43,44,45,56]; 
+                             39,40,41,42,43,44,45,56];
 SET OF STRING2 DG_STATES := ['FL','GA','SC','NC','TX','AL','MS','TN',
-                             'KY','CA','MI','OH','IN','IL','WI','MN'];  
+                             'KY','CA','MI','OH','IN','IL','WI','MN'];
 SET OF STRING3 DG_MONTHS := ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG',
                              'SEP','OCT','NOV','DEC','ABC','DEF','GHI','JKL'];
 
@@ -214,7 +214,7 @@ SET OF STRING3 DG_MONTHS := ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG',
 
 // Raw record definitions:
 
-sqHouseRec := 
+sqHouseRec :=
             record
 string          addr;
 string10        postcode;
@@ -222,7 +222,7 @@ unsigned2       yearBuilt := 0;
             end;
 
 
-sqPersonRec := 
+sqPersonRec :=
             record
 string          forename;
 string          surname;
@@ -231,7 +231,7 @@ udecimal8       booklimit := 0;
 unsigned2       aage := 0;
             end;
 
-sqBookRec := 
+sqBookRec :=
             record
 string          name;
 string          author;
@@ -308,18 +308,18 @@ dataset(sqPersonBookIdRec) persons;
             end;
 
 
-sqPersonBookRelatedIdRec := 
+sqPersonBookRelatedIdRec :=
             RECORD
                 sqPersonBookIdRec;
 unsigned4       houseid;
             END;
 
-sqNestedBlob := 
+sqNestedBlob :=
             RECORD
 udecimal8       booklimit := 0;
             END;
 
-sqSimplePersonBookRec := 
+sqSimplePersonBookRec :=
             RECORD
 string20        surname;
 string10        forename;

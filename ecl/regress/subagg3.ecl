@@ -25,7 +25,7 @@ string20  per_forename;
 unsigned8 holepos;
     END;
 
-parentRecord := 
+parentRecord :=
                 RECORD
 unsigned8           id;
 string20            address1;
@@ -38,13 +38,13 @@ string10            postcode;
 
 parentDataset := DATASET('test',parentRecord,FLAT);
 
-rollupParentRecord := 
+rollupParentRecord :=
                 RECORD
 unsigned8           id;
 unsigned4           count_person_id;
                 END;
 
-rollupParentRecord rollupPeople(parentRecord l) := 
+rollupParentRecord rollupPeople(parentRecord l) :=
 TRANSFORM
     SELF := l;
     SELF.count_person_id := COUNT(l.children(l.children.per_surname != l.children[1].per_surname));

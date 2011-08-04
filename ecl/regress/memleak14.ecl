@@ -17,8 +17,8 @@
 ############################################################################## */
 
 xstring := type
-    export string1 load( string1 x) := x; 
-    export string1 store(string1 x) := x; 
+    export string1 load( string1 x) := x;
+    export string1 store(string1 x) := x;
 end;
 
 r := RECORD
@@ -32,4 +32,4 @@ ds := DATASET('test',r,FLAT);
 
 // this causes mem leak
 output(ds,,'out.d00');
-                   
+

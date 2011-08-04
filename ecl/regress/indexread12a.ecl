@@ -18,12 +18,12 @@
 
 __set_debug_option__('targetClusterType', 'hthor');
 
-d := dataset('~local::rkc::person', 
-{ string10 f1, 
+d := dataset('~local::rkc::person',
+{ string10 f1,
   unsigned4 f2;
   unsigned8 filepos{virtual(fileposition)} }, flat);
 
-i := index(d, { d } ,'\\seisint\\person.name_first.key', sorted);
+i := index(d, { d } ,'\\home\\person.name_first.key', sorted);
 
 string5 s5 := '' : stored('s5');
 string10 s10 := '' : stored('s10');
@@ -34,6 +34,6 @@ unsigned4 u4 := 0 : stored('u4');
 unsigned8 u8 := 0 : stored('u8');
 
 // should fail - casting from string10 to unsigned2 can produce the same value for several different source strings
-output(i(keyed((unsigned2)f1 = u2)));       
+output(i(keyed((unsigned2)f1 = u2)));
 
 

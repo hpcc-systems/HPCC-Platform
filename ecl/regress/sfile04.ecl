@@ -32,13 +32,13 @@ LOADXML('<defaultscope/>');
 
 
 dotest(unsigned sfnum,unsigned subnum) := FUNCTION
-  return sequential( 
+  return sequential(
     FileServices.StartSuperFileTransaction(),
     IF (FileServices.FindSuperFileSubName('TESTSUPER::SubSuper'+sfnum,'TESTSUPER::Sub'+subnum) = 0,
     FileServices.AddSuperFile('TESTSUPER::SubSuper'+sfnum, 'TESTSUPER::Sub'+subnum),
     FileServices.RemoveSuperFile('TESTSUPER::SubSuper'+sfnum, 'TESTSUPER::Sub'+subnum)
     ),
-    
+
     FileServices.FinishSuperFileTransaction()
   );
 END;
@@ -47,36 +47,36 @@ END;
 
 FileServices.DeleteSuperFile('TESTSUPER::Super');
 #set(I,1)
-#loop 
+#loop
 FileServices.DeleteSuperFile('TESTSUPER::SubSuper'+%I%,);
   #set(I,%I%+1)
-  #if (%I%>5) 
-    #break 
+  #if (%I%>5)
+    #break
   #end
 #end
 #set(I,1)
-#loop 
+#loop
 output(InitFile1,,'TESTSUPER::Sub'+%I%,overwrite);
   #set(I,%I%+1)
-  #if (%I%>50) 
-    #break 
+  #if (%I%>50)
+    #break
   #end
 #end
 FileServices.CreateSuperFile('TESTSUPER::Super');
 #set(I,1)
-#loop 
+#loop
 FileServices.CreateSuperFile('TESTSUPER::SubSuper'+%I%);
 FileServices.AddSuperFile('TESTSUPER::Super','TESTSUPER::SubSuper'+%I%);
   #set(I,%I%+1)
-  #if (%I%>5) 
-    #break 
+  #if (%I%>5)
+    #break
   #end
 #end
 #set(I,1)
-#loop 
+#loop
   dotest(RANDOM()%5+1,RANDOM()%10+1);
   #set(I,%I%+1)
-  #if (%I%>20) 
-    #break 
+  #if (%I%>20)
+    #break
   #end
 #end

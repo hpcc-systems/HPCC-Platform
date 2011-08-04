@@ -16,11 +16,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-// test: mapped output fields 
+// test: mapped output fields
 
 ds := dataset('ds', {String10 first_name; string20 last_name; }, FLAT);
-   
-f(virtual dataset({string10 first_name;string20 last_name}) d) := output(d(first_name='fred'), {last_name});      
+
+f(virtual dataset({string10 first_name;string20 last_name}) d) := output(d(first_name='fred'), {last_name});
 
 f(ds);
 

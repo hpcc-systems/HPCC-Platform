@@ -33,17 +33,17 @@ output(sqNamesTable2.books(rating100>50), { name, author, rating100 });
 
 //Normalized, filter on outer level
 #if (mask & 0x08 != 0)
-output(sqNamesTable3.books(sqNamesTable3.surname='Halliday'), { name, author, rating100 });
+output(sqNamesTable3.books(sqNamesTable3.surname='Hawthorn'), { name, author, rating100 });
 #end
 
 //Normalized, filter on both levels
 #if (mask & 0x10 != 0)
-output(sqNamesTable4.books(rating100>50, sqNamesTable4.surname='Halliday'), { name, author, rating100 });
+output(sqNamesTable4.books(rating100>50, sqNamesTable4.surname='Hawthorn'), { name, author, rating100 });
 #end
 
 //Normalized, filter on both levels - diff syntax, location of filter is optimized.
 #if (mask & 0x20 != 0)
-output(sqNamesTable5(surname='Halliday').books(rating100>50), { name, author, rating100 });
+output(sqNamesTable5(surname='Hawthorn').books(rating100>50), { name, author, rating100 });
 #end
 
 //No filter or project - need to make sure we create correctly

@@ -16,9 +16,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-LOADXML('<root><did>1234567</did></root>'); 
+LOADXML('<root><did>1234567</did></root>');
 
-layout_relatives_plus := 
+layout_relatives_plus :=
         RECORD
 integer8    person1;
 boolean     same_lname;
@@ -35,7 +35,7 @@ d := File_Relatives_Plus;
 
 Key_Relatives := INDEX(d, {person1,same_lname,person2, fpos}, '~thor::key::relatives');
 
-relas := Key_Relatives(person1=%did%); 
+relas := Key_Relatives(person1=%did%);
 
 output(relas)
 

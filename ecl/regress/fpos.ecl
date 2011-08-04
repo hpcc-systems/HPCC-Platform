@@ -32,10 +32,10 @@ xRecord;
 
 xDataset := DATASET('x',xRecord,FLAT);
 output(xDataset,, 'outx.d00');
- 
+
 yDataset := DATASET('y',yRecord,FLAT);
 output(yDataset,{per_cid,__filepos}, 'outy.d00');
- 
+
 output(yDataset,,'outz.d00');
 
 aDataset := DATASET('a',aRecord,FLAT);

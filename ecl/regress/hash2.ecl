@@ -18,7 +18,7 @@
 
 d := dataset('~local::rkc::person', { string15 name, unsigned8 filepos{virtual(fileposition)} }, flat);
 
-i := index(d, { f_name := (string11) name, filepos } ,'\\seisint\\person.name_first.key');
+i := index(d, { f_name := (string11) name, filepos } ,'\\home\\person.name_first.key');
 
 r := record
     unsigned8 myhash;

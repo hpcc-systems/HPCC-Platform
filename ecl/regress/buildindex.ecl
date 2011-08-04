@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 big_endian integer2     age := 25;
 integer2        age2 := 25;

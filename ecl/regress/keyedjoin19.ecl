@@ -22,7 +22,7 @@
 //2. That different variations of range checking can be keyed
 //See bug 18731 for original report
 
-mainRecord := 
+mainRecord :=
         RECORD
 qstring14           surname;
 integer8            sequence;
@@ -61,7 +61,7 @@ output(join(peopleDataset1, sequenceKey, keyed(left.idx.id = right.surname[1..le
 output(join(peopleDataset1, sequenceKey, keyed((qstring)left.id2 = left.id2 and left.id2 = right.surname[1..length(trim(left.id2))])));
 output(join(peopleDataset1, sequenceKey, keyed((qstring)left.idx.id = left.idx.id and left.idx.id = right.surname[1..length(trim(left.idx.id))])));
 output(join(peopleDataset1, sequenceKey, keyed(right.surname[1..length(trim(left.idx.id))] in [left.idx.id, left.id2])));
-output(join(peopleDataset1, sequenceKey, keyed(right.surname[1..length(trim(left.idx.id))] = left.idx.id or 
+output(join(peopleDataset1, sequenceKey, keyed(right.surname[1..length(trim(left.idx.id))] = left.idx.id or
                                                right.surname[1..length(trim(left.idx.id))] = left.id2)));
 output(join(peopleDataset1, sequenceKey, keyed(right.surname[1..length(trim(left.idx.id))] in [left.idx.id, left.id2]), atmost(100)));
 

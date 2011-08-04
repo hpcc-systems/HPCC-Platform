@@ -61,8 +61,8 @@ var := PROJECT(r, DoProject(LEFT));
 OUTPUT(var);
 
 layout_p Concatenate(layout_p le, layout_p ri) := TRANSFORM
-    SELF.txt := le.txt +  
-            IF(le.space_at_end, 
+    SELF.txt := le.txt +
+            IF(le.space_at_end,
                 IF(ri.txt = '', '', ri.txt),
                 ri.txt);
 END;

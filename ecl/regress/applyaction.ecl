@@ -18,7 +18,7 @@
 
 //nothor
 
-fibRecord := 
+fibRecord :=
             RECORD
 integer         fib1 := 1;
 integer         fib2 := 1;
@@ -38,7 +38,7 @@ fibRecord makeFibs(fibRecord l, fibRecord r) := TRANSFORM
 doDisplay(string x) := output(dataset([x], { string line}),named('results'),extend);
 
 ret := iterate(fibTable, makeFibs(LEFT, RIGHT));
-apply(ret, 
+apply(ret,
     doDisplay((string)fib1 + ','),
     doDisplay((string)fib2 + ','),
     doDisplay((string)mycounter),

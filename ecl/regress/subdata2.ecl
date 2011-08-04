@@ -46,7 +46,7 @@ unsigned4           numPeople;
 DATASET(childPersonRecord, COUNT(SELF.numPeople))   children;
         END;
 
-combinedRecord := 
+combinedRecord :=
                 RECORD
 householdRecord;
 dt.pstring x;

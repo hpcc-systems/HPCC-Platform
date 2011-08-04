@@ -39,7 +39,7 @@ string20  surname;
 string20  forename;
     END;
 
-combinedRecord := 
+combinedRecord :=
                 RECORD
 householdRecord;
 unsigned4            numPeople;
@@ -50,7 +50,7 @@ DATASET(childPersonRecord, COUNT(SELF.numPeople))   children;
 personDataset := DATASET('person',personRecord,FLAT);
 householdDataset := DATASET('household',householdRecord,FLAT);
 
-combinedRecord doDenormalize(householdRecord l, dataset(personRecord) r) := 
+combinedRecord doDenormalize(householdRecord l, dataset(personRecord) r) :=
                 TRANSFORM
                     SELF.numPeople := count(r);
                     SELF.children := sort(project(r, transform(childPersonRecord, self := left)), person_id);

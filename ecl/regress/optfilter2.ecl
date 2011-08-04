@@ -29,7 +29,7 @@ unsigned8 holepos;
 
 test := DATASET('test',testRecord,FLAT);
 
-a := test(per_surname <> 'Halliday');
+a := test(per_surname <> 'Hawthorn');
 
 b := table(a,{per_surname,per_forename});
 

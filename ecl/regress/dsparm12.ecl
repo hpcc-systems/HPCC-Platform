@@ -17,13 +17,13 @@
 ############################################################################## */
 
 // test: more than one level of dataset passing (w/ mapping)
-// 
+//
 
 ds := dataset('ds', {String10 first_name; string20 last_name; }, FLAT);
 
 integer f(virtual dataset({String10 name}) d) := count(d(name = 'fred'));
 
-dataset g(virtual dataset({String20 name2}) d) := d(name2='tom');      
+dataset g(virtual dataset({String20 name2}) d) := d(name2='tom');
 
 integer h(virtual dataset d) := count(g(d))+f(d);
 

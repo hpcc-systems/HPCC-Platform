@@ -28,15 +28,15 @@ export getTime() := function
 string6 getTime() := BEGINC++
 #ifdef _WIN32
 #include <time.h>
-#endif  
+#endif
 #body
     // Declarations
     struct tm localt; // localtime in 'tm' structure
     time_t timeinsecs;  // variable to store time in secs
     char temp[7];
-    
+
     // Get time in sec since Epoch
-    time(&timeinsecs);  
+    time(&timeinsecs);
     // Convert to local time
 #ifdef _WIN32
     localtime_s(&localt,&timeinsecs);
@@ -60,15 +60,15 @@ export getTimeDate() := function
 string17 getTimeDate() := BEGINC++
 #ifdef _WIN32
 #include <time.h>
-#endif  
+#endif
 #body
     // Declarations
     struct tm localt; // localtime in 'tm' structure
     time_t timeinsecs;  // variable to store time in secs
     char temp[18];
-    
+
     // Get time in sec since Epoch
-    time(&timeinsecs);  
+    time(&timeinsecs);
     // Convert to local time
 #ifdef _WIN32
     localtime_s(&localt,&timeinsecs);

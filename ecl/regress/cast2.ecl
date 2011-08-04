@@ -19,7 +19,7 @@
 
 
 // add columns in here if you want more arguments to test in your processing.
-inRecord := 
+inRecord :=
             RECORD
 string10        val1 := 'x';
 ebcdic string10 val2 := 'y';
@@ -32,7 +32,7 @@ data10          val3 := 'z';
 
 inDataset := dataset('in', inRecord, FLAT);
 
-inRecord t(inRecord l) := TRANSFORM 
+inRecord t(inRecord l) := TRANSFORM
     SELF.val1 := (string10)'x';
     SELF.val2 := (ebcdic string10)'y';
     SELF.val3 := (data10)'z';

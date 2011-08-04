@@ -46,7 +46,7 @@ output(Tangent45);
 
 TangentH45  := TANH(Angle45);           // get tagent of 45 degree angle
 output(TangentH45);
-    
+
 ArcTangent  := ATAN(Tangent45);     // get inverse of tangent of 45 degree angle
 output(ArcTangent);
 

@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-mainRecord := 
+mainRecord :=
         RECORD
 string20            forename;
 string20            surname;
@@ -28,7 +28,7 @@ mainTable := dataset('~keyed.d00',mainRecord,THOR);
 
 nameKey := INDEX(mainTable, { mainTable }, 'name.idx');
 
-output(nameKey(forename='Gavin',surname!='Halliday'));
-output(nameKey(KEYED(forename='Gavin'),surname!='Halliday'));
-output(nameKey(KEYED(forename='Gavin'),KEYED(surname!='Halliday'),WILD(surname)));
-output(nameKey(KEYED(forename='Gavin'),surname!='Halliday',WILD(surname)));
+output(nameKey(forename='Gavin',surname!='Hawthorn'));
+output(nameKey(KEYED(forename='Gavin'),surname!='Hawthorn'));
+output(nameKey(KEYED(forename='Gavin'),KEYED(surname!='Hawthorn'),WILD(surname)));
+output(nameKey(KEYED(forename='Gavin'),surname!='Hawthorn',WILD(surname)));

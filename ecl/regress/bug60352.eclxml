@@ -42,18 +42,18 @@ endmacro;
          version="STRINGLIB 1.1.07">
   <Attribute name="stringlib">
    export StringLib := SERVICE
-  string StringFilterOut(const string src, const string _within) : c, pure,entrypoint=&apos;slStringFilterOut&apos;; 
-  string StringFilter(const string src, const string _within) : c, pure,entrypoint=&apos;slStringFilter&apos;; 
-  string StringSubstituteOut(const string src, const string _within, const string _newchar) : c, pure,entrypoint=&apos;slStringSubsOut&apos;; 
-  string StringSubstitute(const string src, const string _within, const string _newchar) : c, pure,entrypoint=&apos;slStringSubs&apos;; 
-  string StringRepad(const string src, unsigned4 size) : c, pure,entrypoint=&apos;slStringRepad&apos;; 
-  unsigned integer4 StringFind(const string src, const string tofind, unsigned4 instance ) : c, pure,entrypoint=&apos;slStringFind&apos;, hole; 
-  unsigned integer4 StringFind2(const string src, const string tofind ) : c, pure,entrypoint=&apos;slStringFind2&apos;, hole; 
-  unsigned integer4 StringFindCount(const string src, const string tofind) : c, pure,entrypoint=&apos;slStringFindCount&apos;; 
-  unsigned integer4 EbcdicStringFind(const ebcdic string src, const ebcdic string tofind , unsigned4 instance ) : c,pure,entrypoint=&apos;slStringFind&apos;; 
-  unsigned integer4 EbcdicStringFind2(const ebcdic string src, const ebcdic string tofind ) : c,pure,entrypoint=&apos;slStringFind2&apos;; 
-  string StringExtract(const string src, unsigned4 instance) : c,pure,entrypoint=&apos;slStringExtract&apos;; 
-  string50 StringExtract50(const string src, unsigned4 instance) : c,pure,entrypoint=&apos;slStringExtract50&apos;, hole; 
+  string StringFilterOut(const string src, const string _within) : c, pure,entrypoint=&apos;slStringFilterOut&apos;;
+  string StringFilter(const string src, const string _within) : c, pure,entrypoint=&apos;slStringFilter&apos;;
+  string StringSubstituteOut(const string src, const string _within, const string _newchar) : c, pure,entrypoint=&apos;slStringSubsOut&apos;;
+  string StringSubstitute(const string src, const string _within, const string _newchar) : c, pure,entrypoint=&apos;slStringSubs&apos;;
+  string StringRepad(const string src, unsigned4 size) : c, pure,entrypoint=&apos;slStringRepad&apos;;
+  unsigned integer4 StringFind(const string src, const string tofind, unsigned4 instance ) : c, pure,entrypoint=&apos;slStringFind&apos;, hole;
+  unsigned integer4 StringFind2(const string src, const string tofind ) : c, pure,entrypoint=&apos;slStringFind2&apos;, hole;
+  unsigned integer4 StringFindCount(const string src, const string tofind) : c, pure,entrypoint=&apos;slStringFindCount&apos;;
+  unsigned integer4 EbcdicStringFind(const ebcdic string src, const ebcdic string tofind , unsigned4 instance ) : c,pure,entrypoint=&apos;slStringFind&apos;;
+  unsigned integer4 EbcdicStringFind2(const ebcdic string src, const ebcdic string tofind ) : c,pure,entrypoint=&apos;slStringFind2&apos;;
+  string StringExtract(const string src, unsigned4 instance) : c,pure,entrypoint=&apos;slStringExtract&apos;;
+  string50 StringExtract50(const string src, unsigned4 instance) : c,pure,entrypoint=&apos;slStringExtract50&apos;, hole;
   string8 GetDateYYYYMMDD() : c,once,entrypoint=&apos;slGetDateYYYYMMDD2&apos;, hole;
   varstring GetBuildInfo() : c,once,entrypoint=&apos;slGetBuildInfo&apos;;
   string100 GetBuildInfo100() : c,once,entrypoint=&apos;slGetBuildInfo100&apos;, hole;
@@ -68,14 +68,14 @@ endmacro;
   string StringReverse(const string src) : c,pure,entrypoint=&apos;slStringReverse&apos;;
   string StringFindReplace(const string src, const string stok, const string rtok) : c,pure,entrypoint=&apos;slStringFindReplace&apos;;
   string80 StringFindReplace80(const string src, const string stok, const string rtok) : c,pure,entrypoint=&apos;slStringFindReplace80&apos;, hole;
-  string25 StringCleanSpaces25(const string src) : c,pure,entrypoint=&apos;slStringCleanSpaces25&apos;, hole; 
-  string80 StringCleanSpaces80(const string src) : c,pure,entrypoint=&apos;slStringCleanSpaces80&apos;, hole; 
-  string StringCleanSpaces(const string src) : c,pure,entrypoint=&apos;slStringCleanSpaces&apos;; 
-  boolean StringWildMatch(const string src, const string _pattern, boolean _noCase) : c, pure,entrypoint=&apos;slStringWildMatch&apos;, hole; 
-  boolean StringContains(const string src, const string _pattern, boolean _noCase) : c, pure,entrypoint=&apos;slStringContains&apos;, hole; 
-  string StringExtractMultiple(const string src, unsigned8 mask) : c,pure,entrypoint=&apos;slStringExtractMultiple&apos;; 
-  unsigned integer4 EditDistance(const string l, const string r) : c, pure,entrypoint=&apos;slEditDistance&apos;; 
-  boolean EditDistanceWithinRadius(const string l, const string r, unsigned4 radius) : c,pure,entrypoint=&apos;slEditDistanceWithinRadius&apos;; 
+  string25 StringCleanSpaces25(const string src) : c,pure,entrypoint=&apos;slStringCleanSpaces25&apos;, hole;
+  string80 StringCleanSpaces80(const string src) : c,pure,entrypoint=&apos;slStringCleanSpaces80&apos;, hole;
+  string StringCleanSpaces(const string src) : c,pure,entrypoint=&apos;slStringCleanSpaces&apos;;
+  boolean StringWildMatch(const string src, const string _pattern, boolean _noCase) : c, pure,entrypoint=&apos;slStringWildMatch&apos;, hole;
+  boolean StringContains(const string src, const string _pattern, boolean _noCase) : c, pure,entrypoint=&apos;slStringContains&apos;, hole;
+  string StringExtractMultiple(const string src, unsigned8 mask) : c,pure,entrypoint=&apos;slStringExtractMultiple&apos;;
+  unsigned integer4 EditDistance(const string l, const string r) : c, pure,entrypoint=&apos;slEditDistance&apos;;
+  boolean EditDistanceWithinRadius(const string l, const string r, unsigned4 radius) : c,pure,entrypoint=&apos;slEditDistanceWithinRadius&apos;;
 END;
   </Attribute>
  </Module>

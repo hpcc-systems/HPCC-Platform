@@ -17,14 +17,14 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD,maxlength(10000)
 string10        forename := 'Unknown';
 unsigned4       age := 99;
             END;
 
 
-names := [ 'Gavin','Liz','Richard','David','Graham'] ;
+names := [ 'Gavin','Mia','Richard','David','Graham'] ;
 ages := 10;
 
 namesTable2 := dataset([{ names, ages }], namesRecord);

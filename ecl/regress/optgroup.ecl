@@ -31,7 +31,7 @@ test := DATASET('test',testRecord,FLAT);
 
 a := group(test, per_surname);
 
-b := a(per_surname <> 'Halliday');
+b := a(per_surname <> 'Hawthorn');
 
 c := group(test, per_forname);
 

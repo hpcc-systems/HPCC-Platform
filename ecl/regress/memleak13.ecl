@@ -16,18 +16,18 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-namesRecord := RECORD 
-string20 surname; 
-string10 forename; 
-varstring20 vsurname; 
-integer2 age := 25; 
-END; 
+namesRecord := RECORD
+string20 surname;
+string10 forename;
+varstring20 vsurname;
+integer2 age := 25;
+END;
 
-names := dataset([{'Halliday','Gavin','Halliday',10}],namesRecord); 
+names := dataset([{'Hawthorn','Gavin','Hawthorn',10}],namesRecord);
 
 /*
 // don't break the line: may lose the memory leak!
-//output(names, { 'ab'='ab', 'ab' = 'ab ', 'ab' = 'ab '[1..3+0], = ', 'ab'[1..2+0] = 'ab '[1..3+0], true },'out.d00'); },'out.d00'); },'out.d00'); },'out.d00'); 
+//output(names, { 'ab'='ab', 'ab' = 'ab ', 'ab' = 'ab '[1..3+0], = ', 'ab'[1..2+0] = 'ab '[1..3+0], true },'out.d00'); },'out.d00'); },'out.d00'); },'out.d00');
 */
 
 output(names, { 'ab' = 'ab '[1..3+0],}

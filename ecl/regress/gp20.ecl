@@ -22,7 +22,7 @@
 
 stringextract(const string src, integer x) := src[x..x+0];
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        per_street;
 string10        forename;
@@ -30,9 +30,9 @@ integer2        age := 25;
             END;
 
 namesTable := dataset([
-        {'Halliday','Gavin',31},
-        {'Halliday','Liz',30},
-        {'Salter','Abi',10},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
+        {'Smithe','Pru',10},
         {'X','Z'}], namesRecord);
 
 
@@ -48,7 +48,7 @@ self.per_street :=(string45)stringextract(l.per_street,1)+' '+
 (string45)stringextract(l.per_street,2)+' '+
 (string45)stringextract(l.per_street,3);
 self := l;
-end; 
+end;
 
 p := project(ps,remcom(left));
 
@@ -71,7 +71,7 @@ self.per_street :=(string45)(stringlib.stringextract(l.per_street,1)+'
 stringlib.stringextract(l.per_street,2)+' '+
 stringlib.stringextract(l.per_street,3));
 self := l;
-end; 
+end;
 
 p := project(ps,remcom(left));
 

@@ -16,8 +16,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-//BUG: #14105 - duplicate 
-export namesRecord := 
+//BUG: #14105 - duplicate
+export namesRecord :=
             RECORD
 string20        surname;
 string10        forename;

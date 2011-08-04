@@ -23,13 +23,13 @@ filePrefix := 'GAVIN';
 //noroxie           - shame but it outputs to files etc.
 TOXMLPREFIX := '~REGRESS::' + filePrefix + '::RESULT::';
 
-phoneRecord := 
+phoneRecord :=
             RECORD
 string5         areaCode{xpath('@areaCode')};
 udecimal12      number{xpath('@number')};
             END;
 
-contactrecord := 
+contactrecord :=
             RECORD
 phoneRecord     phone;
 boolean         hasemail{xpath('@hasEmail')};
@@ -38,13 +38,13 @@ string              email;
                 end;
             END;
 
-bookRec := 
+bookRec :=
     RECORD
 unicode     title;
 string      author;
     END;
 
-personRecord := 
+personRecord :=
             RECORD
 unicode20       surname;
 unicode10       forename;
@@ -61,7 +61,7 @@ string2         endmarker := '$$';
 
 namesTable := dataset([
         {U'Hälliday','Gavin','09876',123987,true,'07967',123987, 'n/a','n/a',true,'gavin@edata.com',[{U'εν αρχη ην ο λογος', 'john'}, {U'To kill a mocking bird','Lee'},{U'Zen and the art of motorcycle maintainence','Pirsig'}], ALL},
-        {U'Halliday','Abigäil','09876',123987,false,'','',false,[{U'The cat in the hat','Suess'},{U'Wolly the sheep',''}], ['Red','Yellow']}
+        {U'Hawthorn','Abigäil','09876',123987,false,'','',false,[{U'The cat in the hat','Suess'},{U'Wolly the sheep',''}], ['Red','Yellow']}
         ], personRecord);
 
 output(U'<row>'+(utf8)U'εν αρχη ην ο λογος'+U'</row>');

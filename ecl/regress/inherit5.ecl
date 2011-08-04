@@ -19,13 +19,13 @@
 //BUG: 13645 Check maxlength is inherited correctly
 //It should really extend it if child only contains fixed length fields, but that isn't implemented yet.
 
-namesRecord := 
+namesRecord :=
             RECORD,maxlength(12345)
 string          surname;
 string          forename;
             END;
 
-personRecord := 
+personRecord :=
             RECORD(namesRecord)
 integer2        age := 25;
             END;
@@ -35,7 +35,7 @@ personRecordEx :=
 unsigned8       filepos{virtual(fileposition)};
             END;
 
-personRecord2 := 
+personRecord2 :=
             RECORD(namesRecord),maxlength(1000)
 integer2        age := 25;
             END;

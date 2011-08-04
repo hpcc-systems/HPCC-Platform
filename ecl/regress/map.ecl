@@ -20,7 +20,7 @@
 
 import dt;
 
-parentRecord := 
+parentRecord :=
                 RECORD
 unsigned8           id;
 string20            address1;

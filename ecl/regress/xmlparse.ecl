@@ -19,7 +19,7 @@
 lineRec := { string line; };
 
 //You should really be able to define this inline....
-passportRec := 
+passportRec :=
                 RECORD
 string              id;
 string              idType;
@@ -37,7 +37,7 @@ string          line;
             END;
 
 
-rec t(lineRec l) := 
+rec t(lineRec l) :=
         TRANSFORM
             self.id := xmltext('@eid');
             self.fullname := xmlunicode('ATTRIBUTE[@name="fullname"]');
@@ -69,7 +69,7 @@ output(test,,'out.d00', OVERWRITE);
 
 
 in2 := dataset([
-        {'<QLRecord qlrid="afasdf"><Name><Forename>Gavin</Forename><surname>Halliday</surname></Name><age>33</age></QLRecord>'},
+        {'<QLRecord qlrid="afasdf"><Name><Forename>Gavin</Forename><surname>Hawthorn</surname></Name><age>33</age></QLRecord>'},
         {'<QLRecord qlrid="afavsdf"><Name><Forename>David</Forename><surname>Bayliss</surname></Name><age>35</age></QLRecord>'}], lineRec);
 
 dataRecord :=   RECORD

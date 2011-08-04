@@ -18,7 +18,7 @@
 
 #option ('globalFold', false);
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -28,17 +28,17 @@ unsigned8       filepos{virtual(fileposition)}
 
 namesTable := dataset('x',namesRecord,FLAT);
 
-i := index(namesTable, { surname, forename, filepos } ,'\\seisint\\person.name_first.key');
+i := index(namesTable, { surname, forename, filepos } ,'\\home\\person.name_first.key');
 
-string searchNameLow := 'Halliday' : stored('SearchNameLow');
-string searchNameHigh := 'Halliday' : stored('SearchNameHigh');
+string searchNameLow := 'Hawthorn' : stored('SearchNameLow');
+string searchNameHigh := 'Hawthorn' : stored('SearchNameHigh');
 
 dsx := i(surname >= searchNameLow and surname < searchNameHigh);
 x := catch(dsx, skip);
 output(x);
 
-string20 searchNameLow20 := 'Halliday' : stored('SearchNameLow20');
-string20 searchNameHigh20 := 'Halliday' : stored('SearchNameHigh20');
+string20 searchNameLow20 := 'Hawthorn' : stored('SearchNameLow20');
+string20 searchNameHigh20 := 'Hawthorn' : stored('SearchNameHigh20');
 
 dsy := i(surname >= searchNameLow20 and surname < searchNameHigh20);
 y := catch(dsy, onfail(transform(recordof(dsy), self.surname := FAILMESSAGE; self.filepos := FAILCODE; self := [])));

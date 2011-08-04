@@ -2319,16 +2319,7 @@ with some clever code to walk through and retain lists of which ones are active.
 
 //---------------------------------------------------------------------------
 
-inline byte queryRegexKind(const HqlCppOptions & options)
-{
-    switch (options.regexVersion)
-    {
-    case 1: return NLPAregex;
-    default: return NLPAregex2;
-    }
-}
-
-RegexContext::RegexContext(IHqlExpression * _expr, IWorkUnit * _wu, const HqlCppOptions & _options, ITimeReporter * _timeReporter) : NlpParseContext(_expr, _wu, _options, _timeReporter), parser(NULL, queryRegexKind(_options))
+RegexContext::RegexContext(IHqlExpression * _expr, IWorkUnit * _wu, const HqlCppOptions & _options, ITimeReporter * _timeReporter, byte _algorithm) : NlpParseContext(_expr, _wu, _options, _timeReporter), parser(NULL, _algorithm)
 {
     info.addedSeparators = false;
     switch (info.type)
@@ -2705,9 +2696,9 @@ void RegexContext::getDebugText(StringBuffer & s, unsigned detail)
     regexToXml(s, parser.grammar, detail);
 }
 
-NlpParseContext * createRegexContext(IHqlExpression * expr, IWorkUnit * wu, const HqlCppOptions & options, ITimeReporter * timeReporter)
+NlpParseContext * createRegexContext(IHqlExpression * expr, IWorkUnit * wu, const HqlCppOptions & options, ITimeReporter * timeReporter, byte algorithm)
 {
-    return new RegexContext(expr, wu, options, timeReporter);
+    return new RegexContext(expr, wu, options, timeReporter, algorithm);
 }
 
 //-- Lexer creation

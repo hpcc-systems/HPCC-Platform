@@ -51,17 +51,17 @@ TransformAssignments1() := macro
 endmacro;
 
 TransformAssignments2() := macro
-    self.document := left.document+1; 
+    self.document := left.document+1;
     self.children := (left.children + left.children);
 endmacro;
 
 TransformAssignments3() := macro
-    self.document := left.document+1; 
+    self.document := left.document+1;
     self.children := (left.children + left.children)(kwp < 999999);
 endmacro;
 
 TransformAssignments4() := macro
-    self.document := left.document+1; 
+    self.document := left.document+1;
     self.children := sort(left.children, kwp, -wip);
 endmacro;
 

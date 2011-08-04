@@ -16,34 +16,34 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-h := dataset('~local::rkc::person', { string1 fname, 
-string1 lname, 
-string1 mname, 
-string1 prim_range, 
-string1 prim_name, 
-string1 zip, 
-string1 did, 
+h := dataset('~local::rkc::person', { string1 fname,
+string1 lname,
+string1 mname,
+string1 prim_range,
+string1 prim_name,
+string1 zip,
+string1 did,
 string1 sec_range,
 string1 name_suffix,
 string6 filler
-}, thor, opt); 
+}, thor, opt);
 
 t := h; //table(h,layout_name_address);
 
-dis_t :=  group( 
-            sort( 
-              distribute(t,hash(fname,lname)), 
-              fname, 
-              lname, 
-              prim_range, 
-              prim_name, 
-              zip, 
+dis_t :=  group(
+            sort(
+              distribute(t,hash(fname,lname)),
+              fname,
+              lname,
+              prim_range,
+              prim_name,
+              zip,
               local ),
-              fname, 
-              lname, 
-              prim_range, 
-              prim_name, 
-              zip, 
+              fname,
+              lname,
+              prim_range,
+              prim_name,
+              zip,
               local );
 
 dt := dedup( sort(dis_t,mname,name_suffix,sec_range,did ),mname,name_suffix,sec_range,did );

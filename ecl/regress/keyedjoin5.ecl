@@ -21,7 +21,7 @@ export check := SERVICE
  unsigned8 localHash(const string src) : eclrtl,library='eclrtl',entrypoint='checkLocalHash';
 END;
 
-mainRecord := 
+mainRecord :=
         RECORD
 integer8            sequence;
 string20            forename;
@@ -52,7 +52,7 @@ string20        addr;
 peopleDataset := DATASET([{3000,'London'},{3500,'Miami'},{30,'Houndslow'}], peopleRecord);
 
 
-joinedRecord := 
+joinedRecord :=
         RECORD
 integer8            sequence;
 string20            forename;

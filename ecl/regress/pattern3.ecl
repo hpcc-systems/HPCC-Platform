@@ -30,11 +30,11 @@ infile := DATASET(
     [{'abababcd', 'ababa'},         // two matches
      {'ababababcd', 'ababa'},       // 3 matches
      {'ababababcd', 'ababa'},       // 3 matches
-     {'gavin aba halliday aaaba'},
+     {'gavin aba hawthorn aaaba'},
      {'aba'}
      ], { string line, string expected := ''});
 
-results := 
+results :=
     record
         MATCHTEXT(grammar);
         MATCHTEXT(abstar);

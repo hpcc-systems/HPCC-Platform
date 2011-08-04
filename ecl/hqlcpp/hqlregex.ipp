@@ -307,7 +307,7 @@ class RegexContext : public NlpParseContext
     friend class HqlNamedRegex;
     friend class HqlRegexExpr;
 public:
-    RegexContext(IHqlExpression * _expr, IWorkUnit * wu, const HqlCppOptions & options, ITimeReporter * _timeReporter);
+    RegexContext(IHqlExpression * _expr, IWorkUnit * wu, const HqlCppOptions & options, ITimeReporter * _timeReporter, byte _algorithm);
     ~RegexContext();
 
     virtual void compileSearchPattern();

@@ -27,13 +27,13 @@ rule sentance2 := patWord+;
 
 infile := dataset([
         {'one two three'},
-        {'Gavin Halliday'},
+        {'Gavin Hawthorn'},
         {'I went out I went in'},
         {''}
         ], { string line });
 
 
-results := 
+results :=
     record
         MATCHED(patWord[1]);
         MATCHTEXT(patWord[1]);

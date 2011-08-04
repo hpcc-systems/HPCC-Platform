@@ -31,14 +31,14 @@ nameRecord          father;
 testDataset := DATASET('inagg.d00', testRecord, FLAT);
 
 
-outRecord := 
+outRecord :=
             RECORD
 unsigned1       kind;
 nameRecord;
             END;
 
 
-outRecord normalizeAddresses(namesRecord l, integer c) := 
+outRecord normalizeAddresses(namesRecord l, integer c) :=
                 TRANSFORM
                     SELF.kind := c;
                     SELF := CHOOSE(c, l, l.mother, l.father);

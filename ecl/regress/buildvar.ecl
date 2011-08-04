@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-mainRecord := 
+mainRecord :=
         RECORD
 integer8            sequence;
 string20            forename;
@@ -35,10 +35,10 @@ integer8            sequence;
 pstring         forename;
 pstring         surname;
     END;
-            
+
 d := DATASET('keyed.d00', mainRecord, THOR);
 
-varRecord t(mainRecord l) := 
+varRecord t(mainRecord l) :=
     TRANSFORM
         SELF.forename := TRIM(l.forename);
         SELF.surname := TRIM(l.surname);
@@ -47,5 +47,5 @@ varRecord t(mainRecord l) :=
 
 x := project(d, t(left));
 
-output(x,,'var.d00'); 
+output(x,,'var.d00');
 

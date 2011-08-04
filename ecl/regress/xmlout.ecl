@@ -25,7 +25,7 @@ SET OF STRING10 Fnames := ['DAVID','CLARE','KELLY','KIMBERLY','PAMELA','JEFFREY'
                           'JOHN','EDWARD','CHAD','KEVIN','KOBE','RICHARD','GEORGE','DIRK']; //max 16 recs
 
 SET OF STRING10 Lnames := ['BAYLISS','DOLSON','BILLINGTON','SMITH','JONES','ARMSTRONG','LINDHORFF',
-                          'SIMMONS','WYMAN','MIDDLETON','MORTON','NOWITZKI','WILLIAMS','TAYLOR','CHAPMAN','BRYANT']; //max 256 recs
+                          'SIMMONS','WYMAN','MIDDLETON','MORTON','NOWITZKI','WILLIAMS','TAYLOR','DRIMBAD','BRYANT']; //max 256 recs
 
 SET OF UNSIGNED1 PRANGES := [1,2,3,4,5,6,7,8,
                              9,10,11,12,13,14,15,16]; //max 4096 recs
@@ -45,36 +45,36 @@ SET OF STRING3 MONTHS := ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG',
                           'SEP','OCT','NOV','DEC','ABC','DEF','GHI','JKL'];  //max 4,294,967,296 recs
 
 //record structure
-#IF(MaxField=1) 
-OutRec := {string10 firstname}; 
+#IF(MaxField=1)
+OutRec := {string10 firstname};
 BlankSet := dataset([{''}],OutRec);
 #end
-#IF(MaxField=2) 
-OutRec := {string10 firstname; string10  lastname}; 
+#IF(MaxField=2)
+OutRec := {string10 firstname; string10  lastname};
 BlankSet := dataset([{'',''}],OutRec);
 #end
-#IF(MaxField=3) 
-OutRec := {string10 firstname; string10  lastname; unsigned1 prange}; 
+#IF(MaxField=3)
+OutRec := {string10 firstname; string10  lastname; unsigned1 prange};
 BlankSet := dataset([{'','',0}],OutRec);
 #end
-#IF(MaxField=4) 
-OutRec := {string10 firstname; string10  lastname; unsigned1 prange; string10  street}; 
+#IF(MaxField=4)
+OutRec := {string10 firstname; string10  lastname; unsigned1 prange; string10  street};
 BlankSet := dataset([{'','',0,''}],OutRec);
 #end
-#IF(MaxField=5) 
-OutRec := {string10 firstname; string10  lastname; unsigned1 prange; string10  street; unsigned1 zip}; 
+#IF(MaxField=5)
+OutRec := {string10 firstname; string10  lastname; unsigned1 prange; string10  street; unsigned1 zip};
 BlankSet := dataset([{'','',0,'',0}],OutRec);
 #end
-#IF(MaxField=6) 
-OutRec := {string10 firstname; string10  lastname; unsigned1 prange; string10  street; unsigned1 zip; unsigned1 age}; 
+#IF(MaxField=6)
+OutRec := {string10 firstname; string10  lastname; unsigned1 prange; string10  street; unsigned1 zip; unsigned1 age};
 BlankSet := dataset([{'','',0,'',0,0}],OutRec);
 #end
-#IF(MaxField=7) 
-OutRec := {string10 firstname; string10  lastname; unsigned1 prange; string10  street; unsigned1 zip; unsigned1 age; string2 state}; 
+#IF(MaxField=7)
+OutRec := {string10 firstname; string10  lastname; unsigned1 prange; string10  street; unsigned1 zip; unsigned1 age; string2 state};
 BlankSet := dataset([{'','',0,'',0,0,''}],OutRec);
 #end
-#IF(MaxField=8) 
-OutRec := {string10 firstname; string10  lastname; unsigned1 prange; string10  street; unsigned1 zip; unsigned1 age; string2 state; string3 month}; 
+#IF(MaxField=8)
+OutRec := {string10 firstname; string10  lastname; unsigned1 prange; string10  street; unsigned1 zip; unsigned1 age; string2 state; string3 month};
 BlankSet := dataset([{'','',0,'',0,0,'',''}],OutRec);
 #end
 

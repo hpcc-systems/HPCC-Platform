@@ -17,7 +17,7 @@
 ############################################################################## */
 
 
-namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
@@ -27,7 +27,7 @@ integer2        age := 25;
 namesTable := distributed(dataset('x',namesRecord,FLAT),hash(forename));
 
 
-qnamesRecord := 
+qnamesRecord :=
             RECORD
 qstring20       surname;
 qstring10       forename;

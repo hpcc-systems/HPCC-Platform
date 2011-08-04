@@ -33,7 +33,7 @@ record1 tranx1(integer i) := TRANSFORM
 END;
 
 record2 := record
-    record1 r21; 
+    record1 r21;
     record1 r22;
 end;
 
@@ -41,7 +41,7 @@ record2 tranx2(record1 r, integer i) := TRANSFORM
     SELF.r21.i1 := i;
     SELF.r21.i1 := i;
     SELF.r21 := r;
-    SELF.r21 := r; 
+    SELF.r21 := r;
     SELF.r21.i1 := i; // X
     SELF.r22.i1 := i;
     SELF.r22.i1 := i; // X

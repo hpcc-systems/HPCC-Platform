@@ -25,10 +25,10 @@ END;
 
 myDS := dataset([{'359 Very Rocky River Dr'}],myrec);
 
-outrec := if(myint<2,myDS,FAIL(myrec,99,'ouch')) : RECOVERY(output(dataset([true],{boolean flag}),,named('isRecovering'))); 
+outrec := if(myint<2,myDS,FAIL(myrec,99,'ouch')) : RECOVERY(output(dataset([true],{boolean flag}),,named('isRecovering')));
 
 output(count(outrec),NAMED('Count'));
 
 output(outrec,NAMED('Outrec'));
 
- 
+

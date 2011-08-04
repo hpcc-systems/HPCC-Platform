@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-namesRecord := 
+namesRecord :=
         RECORD
 string10            forename;
 string10            surname;
@@ -24,6 +24,6 @@ string2             nl := '\r\n';
         END;
 
 d := PIPE('pipeRead 200', namesRecord);
-output(d,,'names.d00'); 
-//output(d,{TRIM(forename),TRIM(surname)},'varnames.d00'); 
+output(d,,'names.d00');
+//output(d,{TRIM(forename),TRIM(surname)},'varnames.d00');
 
