@@ -575,7 +575,7 @@ void TransferServer::deserializeAction(MemoryBuffer & msg, unsigned action)
 {
     SocketEndpoint ep;
     ep.deserialize(msg);
-    if (!ep.isHost())
+    if (!ep.isLocal())
         assertex(!"Command transferred to the wrong computer!!!");
 
     srcFormat.deserialize(msg);
