@@ -46,7 +46,7 @@ public:
     virtual bool generatePackage(const char * packageName) = 0;
     virtual bool processQuery(IHqlExpression * expr, EclGenerateTarget generateTarget) = 0;
     virtual void setMaxCompileThreads(unsigned max) = 0;
-    virtual void setWebServiceInfo(IPropertyTree * webServiceInfo) = 0;
+    virtual void setManifestInfo(IPropertyTree * manifestInfo) = 0;
     virtual void setSaveGeneratedFiles(bool value) = 0;
 };
 

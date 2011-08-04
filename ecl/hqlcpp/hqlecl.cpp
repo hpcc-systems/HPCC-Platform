@@ -74,7 +74,7 @@ public:
     virtual bool generateExe(ICppCompiler * compiler);
     virtual bool generatePackage(const char * packageName);
     virtual void setMaxCompileThreads(unsigned value) { defaultMaxCompileThreads = value; }
-    virtual void setWebServiceInfo(IPropertyTree * webServiceInfo) { if (webServiceInfo) code->addWebServices(webServiceInfo); }
+    virtual void setManifestInfo(IPropertyTree * manifestInfo) { if (manifestInfo) code->addManifestInfo(manifestInfo); }
 
     virtual double getECLcomplexity(IHqlExpression * exprs);
     virtual void generateCppPrototypes(IHqlScope * scope);
