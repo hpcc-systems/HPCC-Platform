@@ -341,20 +341,4 @@ struct DynamicScopeCtx
 typedef CIArrayOf<StringAttrItem> StringAttrArray;
 class StringBuffer;
 
-// put CBuildVersion _x("$Head URL$ $I d$") at the top of your files to have its SVN build version automatically logged
-// (take the spaces out first)
-
-class jlib_decl CBuildVersion
-{
-public:
-    CBuildVersion(const char *this_Version);
-    static StringBuffer &toString(StringBuffer &out);
-    static void log();
-
-private:
-    static CBuildVersion *VersionHead;
-    CBuildVersion *next;
-    const char *my_version;
-};
-
 #endif
