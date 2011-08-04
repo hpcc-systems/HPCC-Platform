@@ -4,29 +4,47 @@
     <title>ecl/regress</title>
 
     <para>
-The ecl/regress directory contains the sources for the compiler regression suite.  This regression suite is used to
-check any changes to the eclcc compiler.  The recommended approach is
+        The ecl/regress directory contains the sources for the compiler regression suite.  This regression suite is used to
+        check any changes to the eclcc compiler.  The recommended approach is
+    </para>
 
-a) Run the regression suite and save the generated output.
-b) Make the changes to the source code.
-c) Re run the regression suite, compare the generated code, and check that all the changes are expected.
+    <orderedlist numeration="loweralpha">
+        <listitem>
+Run the regression suite and save the generated output.
+        </listitem>
+        <listitem>
+Make the changes to the source code.
+        </listitem>
+        <listitem>
+Re run the regression suite, compare the generated code, and check that all the changes are expected.
+        </listitem>
+    </orderedlist>
 
-The regression suite should contain at least one example of any language feature that is added to the system.
 
+    <para>
+        The regression suite should contain at least one example of any language feature that is added to the system.
+    </para>
+    <para>
+        To run the regression suite under windows:
+    <orderedlist numeration="loweralpha">
+        <listitem>
+Ensure path to eclcc is set up correctly
+        </listitem>
+        <listitem>
+Copy setreg.bat.sample to setreg.bat and modify the contents to reflect your set up.
+        </listitem>
+        <listitem>
+Copy rcompare.bat.sample to rcompare.bat and update to reflect your comparison program.
+        </listitem>
+    </orderedlist>
 
-
-
-
-To run the regression suite under windows:
-a) Ensure path to eclcc is set up correctly
-b) Copy setreg.bat.sample to setreg.bat and modify the contents to reflect your set up.
-c) Copy rcompare.bat.sample to rcompare.bat and update to reflect your comparison program.
-
-r1.bat.sample can be used to run the regression test for a single file.
-E.g.,
-r1 dataset.ecl
-
-rall.bat runs the full regression test
-
+        r1.bat.sample can be used to run the regression test for a single file, e.g.,
+        <programlisting>
+        r1 dataset.ecl
+</programlisting>
+To run the full regression test use rall.bat, e.g.,
+ <programlisting>
+        rall
+</programlisting>
     </para>
 </section>
