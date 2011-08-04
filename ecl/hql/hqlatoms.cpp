@@ -26,6 +26,7 @@ _ATOM activeFailureAtom;
 _ATOM activeNlpAtom;
 _ATOM afterAtom;
 _ATOM aggregateAtom;
+_ATOM algorithmAtom;
 _ATOM allAtom;
 _ATOM allocatorAtom;
 _ATOM alreadyVisitedAtom;
@@ -396,6 +397,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(activeNlp);
     MAKEATOM(after);
     MAKEATOM(aggregate);
+    MAKEATOM(algorithm);
     MAKEATOM(all);
     MAKEATOM(allocator);
     MAKEATOM(alreadyVisited);

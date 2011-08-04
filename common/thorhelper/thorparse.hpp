@@ -30,7 +30,7 @@
 #endif
 
 typedef unsigned regexid_t;
-enum { NLPAregex, NLPAtomita, NLPAregex2 };
+enum { NLPAregexStack, NLPAtomita, NLPAregexHeap };
 
 interface IMatchWalker : public IInterface
 {

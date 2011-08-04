@@ -153,7 +153,7 @@ void getCheckRange(IHqlExpression * range, unsigned & minLength, unsigned & maxL
 enum ValidateKind { ValidateIsString, ValidateIsUnicode, ValidateIsEither };
 ValidateKind getValidateKind(IHqlExpression * expr);
 
-NlpParseContext * createRegexContext(IHqlExpression * expr, IWorkUnit * wu, const HqlCppOptions & options, ITimeReporter * timeReporter);
+NlpParseContext * createRegexContext(IHqlExpression * expr, IWorkUnit * wu, const HqlCppOptions & options, ITimeReporter * timeReporter, byte algorithm);
 NlpParseContext * createTomitaContext(IHqlExpression * expr, IWorkUnit * wu, const HqlCppOptions & options, ITimeReporter * timeReporter);
 
 #endif

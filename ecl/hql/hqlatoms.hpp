@@ -30,6 +30,7 @@ extern HQL_API _ATOM activeNlpAtom;
 extern HQL_API _ATOM afterAtom;
 extern HQL_API _ATOM aggregateAtom;
 extern HQL_API _ATOM allAtom;
+extern HQL_API _ATOM algorithmAtom;
 extern HQL_API _ATOM allocatorAtom;
 extern HQL_API _ATOM _alreadyAssignedNestedTag_Atom;
 extern HQL_API _ATOM alreadyVisitedAtom;

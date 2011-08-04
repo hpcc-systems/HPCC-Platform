@@ -687,7 +687,16 @@ ABoundActivity * HqlCppTranslator::doBuildActivityParse(BuildCtx & ctx, IHqlExpr
     if (expr->hasProperty(tomitaAtom))
         nlpParse = createTomitaContext(expr, code->workunit, options, reporter);
     else
-        nlpParse = createRegexContext(expr, code->workunit, options, reporter);
+    {
+        byte algorithm = (options.regexVersion == 1) ? NLPAregexStack : NLPAregexHeap;
+        IHqlExpression * algorithmHint = queryHintChild(expr, algorithmAtom, 0);
+        if (matchesConstantString(algorithmHint, "stack", true))
+            algorithm = NLPAregexStack;
+        else if (matchesConstantString(algorithmHint, "heap", true))
+            algorithm = NLPAregexHeap;
+
+        nlpParse = createRegexContext(expr, code->workunit, options, reporter, algorithm);
+    }
 
     gatherExplicitMatched(expr);
     doBuildParseTransform(instance->startctx, expr);            // also gathers all the MATCHED() definitions.
