@@ -80,6 +80,7 @@ createPayload(){
     fi
     cp -r ${PKG} ${REMOTE_INSTALL}
     cp -r ${CONFIG_DIR}/${ENV_XML_FILE} ${REMOTE_INSTALL}
+    cp -r ${CONFIG_DIR}/${ENV_CONF_FILE} ${REMOTE_INSTALL}
     cp -r ${INSTALL_DIR}/sbin/remote-install-engine.sh ${REMOTE_INSTALL}
     tar -zcvf remote_install.tgz ${REMOTE_INSTALL}/*
 	rm -rf ${REMOTE_INSTALL}
@@ -191,7 +192,7 @@ for IP in $IPS; do
         if [ "$CAN_SSH" -eq 255 ]; then
             echo "$IP: Cannot SSH to host with key..";
             echo "$IP: Connecting with password.";
-			createPayload;
+                        createPayload;
 			copyPayload $IP;
 			expandPayload $IP;
 			runPayload $IP;
