@@ -173,6 +173,10 @@ if [ -e ${REMOTE_INSTALL}/${ENV_XML_FILE} ]; then
 	cp -r ${REMOTE_INSTALL}/${ENV_XML_FILE}  ${CONFIG_DIR}/${ENV_XML_FILE} 
 	chown hpcc:hpcc ${CONFIG_DIR}/${ENV_XML_FILE}
 fi
+if [ -e ${REMOTE_INSTALL}/${ENV_CONF_FILE} ]; then
+	cp -r ${REMOTE_INSTALL}/${ENV_CONF_FILE}  ${CONFIG_DIR}/${ENV_CONF_FILE}
+	chown hpcc:hpcc ${CONFIG_DIR}/${ENV_CONF_FILE}
+fi
 rm -rf ${REMOTE_INSTALL}
 rm -rf ~/remote_install.tgz
 exit 0

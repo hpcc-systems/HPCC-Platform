@@ -80,6 +80,7 @@ createPayload(){
     fi
     cp -r ${PKG} ${REMOTE_INSTALL}
     cp -r ${CONFIG_DIR}/${ENV_XML_FILE} ${REMOTE_INSTALL}
+    cp -r ${CONFIG_DIR}/${ENV_CONF_FILE} ${REMOTE_INSTALL}
     cp -r ${INSTALL_DIR}/sbin/remote-install-engine.sh ${REMOTE_INSTALL}
     tar -zcvf remote_install.tgz ${REMOTE_INSTALL}/*
 	rm -rf ${REMOTE_INSTALL}
