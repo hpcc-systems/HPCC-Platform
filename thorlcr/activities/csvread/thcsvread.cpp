@@ -38,7 +38,7 @@ public:
             IHThorCsvReadArg *helper = (IHThorCsvReadArg *)queryHelper();
             if (fileDesc->queryProperties().hasProp("@csvQuote")) dst.append(true).append(fileDesc->queryProperties().queryProp("@csvQuote"));
             else dst.append(false);
-            if (fileDesc->queryProperties().hasProp("@csvSeperate")) dst.append(true).append(fileDesc->queryProperties().queryProp("@csvSeperate"));
+            if (fileDesc->queryProperties().hasProp("@csvSeparate")) dst.append(true).append(fileDesc->queryProperties().queryProp("@csvSeparate"));
             else dst.append(false);
             if (fileDesc->queryProperties().hasProp("@csvTerminate")) dst.append(true).append(fileDesc->queryProperties().queryProp("@csvTerminate"));
             else dst.append(false);
