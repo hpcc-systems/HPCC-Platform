@@ -16,9 +16,17 @@ rem
 rem     You should have received a copy of the GNU Affero General Public License
 rem     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 rem ############################################################################## */
+rem
+rem Rename this file, and then modify the following values below to match your local system
+rem
+rem The directory you wanr the target results to be written to
+set regresstgt=d:\regression
 
-setlocal
-set numParallel=6
-set files=*.ecl *.eclxml
-cmd /e:on /v:on /c regress.bat %files% %*
-endlocal
+rem The directory that contains the "correct" results from a previous run
+set regresskey=c:\regression
+
+rem Any includes which need to be passed to eclcc
+set regressinclude=-I<hppc-directory>\ecl\regress\modules
+
+rem Number of processes to run in parallel from rall.bat
+set regressprocesses=7
