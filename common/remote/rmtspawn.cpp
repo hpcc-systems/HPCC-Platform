@@ -137,7 +137,7 @@ ISocket * spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoin
 #if defined(_WIN32)
         //Run the program directly if it is being run on the local machine - so ssh doesn't need to be running...
         //Change once we have solved the problems with ssh etc. on windows?
-        if (childEP.isHost())
+        if (childEP.isLocal())
         {
             DWORD runcode;
             if (!invoke_program(cmd.str(), runcode, false))
