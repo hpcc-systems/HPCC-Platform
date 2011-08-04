@@ -107,9 +107,13 @@ export PATH=${PATH}:${runtime}/bin:${path}/sbin
 
 # Creating runtime environment for ConfigMgr
 mkdir -p ${runtime}/$compName
+chown -R ${user}:${group} ${runtime}/$compName
 mkdir -p ${log}/$compName
+chown -R ${user}:${group} ${log}/$compName
 mkdir -p ${lock}/$compName
+chown -R ${user}:${group} ${lock}/$compName
 mkdir -p ${pid}/$compName
+chown -R ${user}:${group} ${pid}/$compName
 logFile=${log}/${compName}/${compName}.log
 
 initPidFile=${pid}/${compName}_init.pid
@@ -143,6 +147,7 @@ elif [ $# -eq 0 ]; then
        createDir ${sourcedir}
        cp ${configs}/${environment} ${sourcedir} > /dev/null 2<&1
        chmod 755 ${sourcedir}/${environment}
+       chown -R ${user}:${group} ${sourcedir}
     else
         if [ ! -e ${filename} ];
         then
@@ -151,6 +156,7 @@ elif [ $# -eq 0 ]; then
             fi
             cp ${configs}/${environment} ${sourcedir}/environment.xml > /dev/null 2<&1
             chmod 755 ${sourcedir}/environment.xml
+            chown -R ${user}:${group} ${sourcedir}
         fi
     fi
 else
@@ -158,6 +164,7 @@ else
 fi
 
 createConf "${filename}" "${portnum}" "${conffile}"
+chown ${user}:${group} ${conffile}
 
 # Configgen checking step
 echo -n "Validating environment file ${filename} using configgen ..."
