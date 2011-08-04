@@ -1269,35 +1269,43 @@ void HqlCppInstance::flushHints()
     }
 }
 
-IPropertyTree * HqlCppInstance::ensureWebServiceInfo()
+IPropertyTree * HqlCppInstance::ensureManifestInfo()
 {
-    if (!webServiceInfo)
-        webServiceInfo.setown(createPTree("WebServicesInfo"));
-    return webServiceInfo;
+    if (!manifestInfo)
+        manifestInfo.setown(createPTree("ManifestInfo", false));
+    return manifestInfo;
 }
 
 
-void HqlCppInstance::addWebServicesResource()
+void HqlCppInstance::addManifestResources()
 {
-    if (webServiceInfo)
+    if (manifestInfo)
     {
-        StringBuffer webXML;
-        toXML(webServiceInfo, webXML);
-        addCompressResource("SOAPINFO", 1000, webXML.length(), webXML.str());
+        Owned<IPropertyTreeIterator> itres = manifestInfo->getElements("resource");
+        ForEach(*itres)
+        {
+            IPropertyTree &resource = itres->query();
+            if (resource.hasProp("@type"))
+            {
+                StringBuffer resXML;
+                toXML(&resource, resXML);
+                addCompressResource(resource.queryProp("@type"), resource.getPropInt("@id"), resXML.length(), resXML.str());
+            }
+        }
     }
 }
 
 
-void HqlCppInstance::addWebServices(IPropertyTree * info)
+void HqlCppInstance::addManifestInfo(IPropertyTree * info)
 {
     if (info)
-        mergePTree(ensureWebServiceInfo(), info);
+        mergePTree(ensureManifestInfo(), info);
 }
 
 void HqlCppInstance::flushResources(const char *filename, ICodegenContextCallback * ctxCallback)
 {
     addPluginsAsResource();
-    addWebServicesResource();
+    addManifestResources();
     if (resources.count())
     {
         bool flushText = workunit->getDebugValueBool("flushResourceAsText", false);

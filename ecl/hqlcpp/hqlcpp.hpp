@@ -126,7 +126,7 @@ public:
     virtual HqlStmts * querySection(_ATOM section) = 0;
     virtual void addResource(const char * type, unsigned id, unsigned len, const void * data) = 0;
     virtual void addCompressResource(const char * type, unsigned id, unsigned len, const void * data) = 0;
-    virtual void addWebServices(IPropertyTree * info) = 0;
+    virtual void addManifestInfo(IPropertyTree * info)=0;
     virtual void flushHints() = 0;
     virtual void flushResources(const char *filename, ICodegenContextCallback * ctxCallback) = 0;
 };

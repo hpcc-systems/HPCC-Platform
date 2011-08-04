@@ -137,6 +137,54 @@ static bool extractOption(StringAttr & option, IProperties * globals, const char
 
 //=========================================================================================
 
+IPropertyTree * expandManifestResource(IPropertyTree &resource)
+{
+    if (resource.hasProp("@filepath"))
+    {
+        StringBuffer content;
+        content.loadFile(resource.queryProp("@filepath"));
+        resource.setProp(NULL, content.str());
+    }
+    else
+    {
+        Owned<IPropertyTreeIterator> resources = resource.getElements("resource");
+        ForEach(*resources)
+            expandManifestResource(resources->query());
+    }
+    return &resource;
+}
+
+IPropertyTree * expandManifestInfo(StringAttr &manifestFilename, unsigned int start)
+{
+    unsigned int id = start;
+    Owned<IPropertyTree> expandedTree = createPTree(false);
+    Owned<IPropertyTree> manifestTree = createPTreeFromXMLFile(manifestFilename, false);
+    Owned<IPropertyTreeIterator> resources = manifestTree->getElements("resource");
+    ForEach(*resources)
+    {
+        IPropertyTree &res=resources->query();
+        res.setPropInt("@id", ++id);
+        if (!res.hasProp("@type")
+            res.setProp("@type", "UNKNOWN");
+    }
+
+    //manifest itself is a resource
+    StringBuffer manifestInfo;
+    toXML(manifestTree, manifestInfo);
+    expandedTree->setProp("resource", manifestInfo.str());
+
+    IPropertyTree *manifestRes = expandedTree->queryPropTree("resource");
+    manifestRes->setProp("@type", "MANIFEST");
+    manifestRes->setPropInt("@id", id++);
+
+    ForEach(*resources)
+        expandedTree->addPropTree("resource", LINK(expandManifestResource(resources->query())));
+
+    return expandedTree.getClear();
+}
+
+//=========================================================================================
+
 class IndirectErrorReceiver : public CInterface, implements IErrorReceiver
 {
 public:
@@ -221,7 +269,7 @@ public:
     Linked<IPropertyTree> archive;
     Linked<IErrorReceiver> errs;
     Linked<IWorkUnit> wu;
-    Linked<IPropertyTree> webServiceInfo;
+    Linked<IPropertyTree> manifestInfo;
     StringAttr eclVersion;
     const char * outputFilename;
     FILE * errout;
@@ -291,6 +339,7 @@ protected:
     StringBuffer cclogFilename;
     StringAttr optLogfile;
     StringAttr optIniFilename;
+    StringAttr optManifestFilename;
     StringAttr optOutputDirectory;
     StringAttr optOutputFilename;
     FILE * batchLog;
@@ -530,7 +579,7 @@ void EclCC::reportCompileErrors(IErrorReceiver *errs, const char * processName)
 
 //=========================================================================================
 
-void EclCC::instantECL(IWorkUnit *wu, IHqlExpression * query, IPropertyTree * webServiceInfo, const char * queryFullName, IErrorReceiver *errs, const char * outputFile)
+void EclCC::instantECL(IWorkUnit *wu, IHqlExpression * query, IPropertyTree * manifestInfo, const char * queryFullName, IErrorReceiver *errs, const char * outputFile)
 {
     OwnedHqlExpr qquery = LINK(query);
     StringBuffer processName(outputFile);
@@ -549,7 +598,7 @@ void EclCC::instantECL(IWorkUnit *wu, IHqlExpression * query, IPropertyTree * we
                 if (!optShared)
                     wu->setDebugValueInt("standAloneExe", 1, true);
                 EclGenerateTarget target = optWorkUnit ? EclGenerateNone : (optNoCompile ? EclGenerateCpp : optShared ? EclGenerateDll : EclGenerateExe);
-                generator->setWebServiceInfo(webServiceInfo);
+                generator->setManifestInfo(manifestInfo);
                 generator->setSaveGeneratedFiles(optSaveCpp);
 
                 bool generateOk = generator->processQuery(qquery, target);
@@ -923,7 +972,8 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
         if (instance.wu->getDebugValueBool("addTimingToWorkunit", true))
             instance.wu->setTimerInfo("EclServer: parse query", NULL, msTick()-startTime, 1, 0);
 
-        instance.webServiceInfo.setown(retrieveWebServicesInfo(queryText, ctx));
+        if (!optManifestFilename.isEmpty())
+            instance.manifestInfo.setown(expandManifestInfo(optManifestFilename, 1000));
 
         if (qquery && !syntaxChecking)
             qquery.setown(convertAttributeToQuery(instance, qquery, ctx));
@@ -966,7 +1016,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
         targetFilename.append(".eclout");
 
     if (errs->errCount() == prevErrs)
-        instantECL(instance.wu, qquery, instance.webServiceInfo, scope->queryFullName(), errs, targetFilename);
+        instantECL(instance.wu, qquery, instance.manifestInfo, scope->queryFullName(), errs, targetFilename);
     else 
     {
         if (stdIoHandle(targetFilename) == -1)
@@ -1263,6 +1313,14 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
                 return false;
             }
         }
+        else if (iter.matchOption(optManifestFilename, "-manifest"))
+        {
+            if (!checkFileExists(optManifestFilename))
+            {
+                ERRLOG("Error: Manifest file '%s' does not exist",optManifestFilename.get());
+                return false;
+            }
+        }
         else if (iter.matchOption(tempArg, "-split"))
         {
             batchPart = atoi(tempArg)-1;
@@ -1361,6 +1419,7 @@ void EclCC::usage()
            "    -Ppath        Specify the path of the output files\n"
            "    -Wc,xx        Supply option for the c++ compiler\n"
            "    -save-temps   Do not delete intermediate files (implied if -g)\n"
+           "    -manifest     Specify name path of manifest file listing resources to add\n"
            "\nECL options:\n"
            "    -E            Output preprocessed ECL in xml archive form\n"
            "    -S            Generate c++ output, but don't compile\n"

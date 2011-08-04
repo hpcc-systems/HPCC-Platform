@@ -125,8 +125,8 @@ public:
     virtual void flushResources(const char *filename, ICodegenContextCallback * ctxCallback);
     virtual void addResource(const char * type, unsigned id, unsigned len, const void * data);
     virtual void addCompressResource(const char * type, unsigned id, unsigned len, const void * data);
-    virtual void addWebServices(IPropertyTree * info);
-    virtual IPropertyTree * ensureWebServiceInfo();
+    virtual void addManifestInfo(IPropertyTree * info);
+    virtual IPropertyTree * ensureManifestInfo();
     
     bool useFunction(IHqlExpression * funcdef);
     void useInclude(const char * include);
@@ -139,7 +139,7 @@ public:
         
 private:
     void addPluginsAsResource();
-    void addWebServicesResource();
+    void addManifestResources();
     void appendHintText(const char * xml);
 
 public:
@@ -153,7 +153,7 @@ public:
     StringAttr          wupathname;
     Owned<IPropertyTree> plugins;
     Owned<IFileIOStream> hintFile;
-    Owned<IPropertyTree> webServiceInfo;
+    Owned<IPropertyTree> manifestInfo;
 };
 
 //---------------------------------------------------------------------------
