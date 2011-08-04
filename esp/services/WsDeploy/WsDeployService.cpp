@@ -1346,7 +1346,8 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
             resp.setRefresh("true");
         }
 
-        if (!strcmp(pszCompType, XML_TAG_ROXIECLUSTER) && !strcmp(pszSubType, XML_TAG_ROXIE_FARM)
+        if (pszCompType && *pszCompType && pszSubType && *pszSubType &&
+            !strcmp(pszCompType, XML_TAG_ROXIECLUSTER) && !strcmp(pszSubType, XML_TAG_ROXIE_FARM)
             && pszAttrName && *pszAttrName)
         {
           Owned<IPropertyTreeIterator> iter = pComp->getElements(XML_TAG_ROXIE_SERVER);
