@@ -655,7 +655,7 @@ protected: friend class CMPPacketReader;
                     return false;
                 }
                 if (remaining<10000)
-                    remaining = 10000; // 10s min granuality for MP
+                    remaining = 10000; // 10s min granularity for MP
                 newsock = ISocket::connect_timeout(remoteep,remaining);
                 newsock->set_keep_alive(true);
 #ifdef _FULLTRACE
@@ -686,7 +686,7 @@ protected: friend class CMPPacketReader;
                     if (attachSocket(newsock,remoteep,hostep,true, NULL)) {
                         newsock->Release();
 #ifdef _TRACE
-                        LOG(MCdebugInfo(100), unknownJob, "MP: connnected to %s",str.toCharArray());
+                        LOG(MCdebugInfo(100), unknownJob, "MP: connected to %s",str.toCharArray());
 #endif
                         lastxfer = msTick();
                         closed = false;
@@ -1331,7 +1331,7 @@ CMPChannel::~CMPChannel()
     reader->Release();
 }
 
-bool CMPChannel::attachSocket(ISocket *newsock,const SocketEndpoint &remoteep,const SocketEndpoint &_localep,bool ismaster, size32_t *confirm) // takes ownership if succeeeds
+bool CMPChannel::attachSocket(ISocket *newsock,const SocketEndpoint &remoteep,const SocketEndpoint &_localep,bool ismaster, size32_t *confirm) // takes ownership if succeeds
 {
 #ifdef _FULLTRACE       
     PROGLOG("MP: attachSocket on entry");
@@ -1348,7 +1348,7 @@ bool CMPChannel::attachSocket(ISocket *newsock,const SocketEndpoint &remoteep,co
         StringBuffer ep2;
         _localep.getUrlStr(ep1);
         remoteep.getUrlStr(ep2);
-        LOG(MCdebugInfo(100), unknownJob, "MP: Possible clash beween %s->%s %d(%d)",ep1.str(),ep2.str(),(int)ismaster,(int)master);
+        LOG(MCdebugInfo(100), unknownJob, "MP: Possible clash between %s->%s %d(%d)",ep1.str(),ep2.str(),(int)ismaster,(int)master);
         try {
             if (ismaster!=master) {
                 if (ismaster) {
@@ -2020,7 +2020,7 @@ public:
             msg->transferFrom(mbuf);
             msg->init(dst->endpoint(),tag,reply);
             parent->getReceiveQ().enqueue(msg);
-            mbuf.clear(); // for consistant semantics
+            mbuf.clear(); // for consistent semantics
             return true;
         }
 
@@ -2031,7 +2031,7 @@ public:
             return false;
         if (!channel.send(mbuf,tag,mbuf.getReplyTag(),tm,false))
             return false;
-        mbuf.clear(); // for consistant semantics
+        mbuf.clear(); // for consistent semantics
         return true;
     }
 

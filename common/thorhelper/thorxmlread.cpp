@@ -1003,7 +1003,7 @@ public:
     }
     ~CMarkReadStream()
     {
-        free(bufLowerHalf); // pointer to whole buf infact
+        free(bufLowerHalf); // pointer to whole buf in fact
         stream.Release();
     }
 

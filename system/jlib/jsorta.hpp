@@ -27,7 +27,7 @@
 
 
 
-/* the following somewhat inellegantly implements:
+/* the following somewhat inelegantly implements:
 
 template <class C> 
 void qsortarray(C *a, size32_t n, sortCompareFunction compare, sortSwapFunction doswap)

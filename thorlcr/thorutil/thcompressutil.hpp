@@ -35,7 +35,7 @@
 
 /*
     Note: The first sizeof(size32_t) bytes of the compressed buffer contain the
-    orgininal (uncompressed) size of the data or 0. If 0, it indicates that
+    original (uncompressed) size of the data or 0. If 0, it indicates that
     buffer is uncompressed - this happens if the data could not be compressed 
     by a minimum of 80%.
 */

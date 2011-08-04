@@ -199,7 +199,7 @@ class CSkipCatchSlaveActivity : public CCatchSlaveActivityBase
             throw;
         }
         if (global)
-            return barrier->wait(false); // if canceled returns false
+            return barrier->wait(false); // if cancelled returns false
         return true;
     }
 

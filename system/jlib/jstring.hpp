@@ -331,7 +331,7 @@ public:
 
 // --$appendURL-----------------------------------------------------------------
 // appends the URL encoded version of src to dest 
-// if len is unspecied, then src is assumed to be an NTS 
+// if len is unspecified, then src is assumed to be an NTS 
 // if lower is TRUE a-f is used for hex numbers, otherwise A-F is used 
 // -----------------------------------------------------------------------------
 #define ENCODE_SPACES 1

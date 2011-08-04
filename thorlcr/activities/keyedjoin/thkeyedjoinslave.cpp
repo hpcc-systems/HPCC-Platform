@@ -1576,7 +1576,7 @@ public:
     }
     inline void resetLastStats()
     {
-// NB: part manager retains seek/scan counts accross setKey calls
+// NB: part manager retains seek/scan counts across setKey calls
 //      lastSeeks = lastScans = 0;
     }
 

@@ -269,7 +269,7 @@ void CWriteMasterBase::init()
         if (blockCompressed)
             props.setPropBool("@blockCompressed", true);
         if (TAKdiskwrite == container.getKind() && (0 != (diskHelperBase->getFlags() & TDXtemporary)) && container.queryOwner().queryOwner() && (!container.queryOwner().isGlobal())) // I am in a child query
-        { // do early, becasue this will be local act. and will not come back to master until end of owning graph.
+        { // do early, because this will be local act. and will not come back to master until end of owning graph.
             publish();
         }
     }

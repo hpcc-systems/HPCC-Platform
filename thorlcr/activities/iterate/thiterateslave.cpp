@@ -442,7 +442,7 @@ public:
         ActivityTimer t(totalCycles, timeActivities, NULL);
         if (dohere) {
             OwnedConstThorRow row;
-            row.set(helper->next()); // needs linking alledgedly
+            row.set(helper->next()); // needs linking allegedly
             if (row.get()) {
                 dataLinkIncrement();
                 return row.getClear();

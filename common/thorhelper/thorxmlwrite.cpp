@@ -624,7 +624,7 @@ CommonXmlWriter * CreateCommonXmlWriter(unsigned _flags, unsigned _initialIndent
     switch (xmlType)
     {
     case WTStandard:
-        return new CommonXmlWriter(_flags, _initialIndent, _flusher);//standart XML writer
+        return new CommonXmlWriter(_flags, _initialIndent, _flusher);//standard XML writer
     case WTEncodingData64:
         return new CommonEncoded64XmlWriter(_flags, _initialIndent, _flusher);//writes xsd type attributes, and all data as base64binary
     case WTEncoding:

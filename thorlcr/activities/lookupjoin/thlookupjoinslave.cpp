@@ -539,7 +539,7 @@ public:
         // will have to merge rhsMatchSets in a tree as there can be a large number of outer records per node.
         // topn does something similar, reuse.
         // when all merged, have complete merged set on node 0 only.
-        // either output all from node 0, or parition set and distribute parition info to each node for output.
+        // either output all from node 0, or partition set and distribute partition info to each node for output.
 
         // If right only, no need to broadcast rhs record set, can look for matches in local input and merge match etc. set as above.
 

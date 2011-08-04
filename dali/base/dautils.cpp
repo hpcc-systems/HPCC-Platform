@@ -908,7 +908,7 @@ bool CDfsLogicalFileName::getExternalPath(StringBuffer &dir, StringBuffer &tail,
         char c=*(s++);
         if (isPathSepChar(c)) {
             if (e)
-                *e = MakeStringException(-1,"Path cannot contain separators, use '::' to seperate directories: (%s)",get());
+                *e = MakeStringException(-1,"Path cannot contain separators, use '::' to separate directories: (%s)",get());
             return false;
         }
         if ((c==':')&&(s!=t1)&&(*s==':')) {

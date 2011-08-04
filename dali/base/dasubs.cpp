@@ -599,7 +599,7 @@ public:
             MemoryBuffer qb;
             size32_t dlen;
             mb.read(dlen);
-            qb.append(dlen,mb.readDirect(dlen)); // this is bit inefficent - perhaps could be improved
+            qb.append(dlen,mb.readDirect(dlen)); // this is bit inefficient - perhaps could be improved
             managers.item(i).notify(id,qb);
         }
     }

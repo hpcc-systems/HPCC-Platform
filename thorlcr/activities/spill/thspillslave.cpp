@@ -161,7 +161,7 @@ public:
         mb.append(crc);
         CDateTime createTime, modifiedTime, accessedTime;
         ifile->getTime(&createTime, &modifiedTime, &accessedTime);
-        // round file time down to nearest sec. Nanosec accurancy is not preserved elsewhere and can lead to mismatch later.
+        // round file time down to nearest sec. Nanosec accuracy is not preserved elsewhere and can lead to mismatch later.
         unsigned hour, min, sec, nanosec;
         modifiedTime.getTime(hour, min, sec, nanosec);
         modifiedTime.setTime(hour, min, sec, 0);

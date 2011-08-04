@@ -1632,7 +1632,7 @@ public:
         DWORD numRead;
         if (ReadFile(file,data,len,&numRead,NULL) == 0) {
             DWORD err = GetLastError();
-            if (err==ERROR_BROKEN_PIPE)  // windows returs this at end of pipe
+            if (err==ERROR_BROKEN_PIPE)  // windows returns this at end of pipe
                 return 0;
             throw MakeOsException(GetLastError(),"CSequentialFileIO::read"); 
         }
@@ -3025,7 +3025,7 @@ StringBuffer& getFullFileName(StringBuffer& filename, bool noExtension)
     return filename;
 }
 
-/* Get the file name only. If noExtension is true, the extesion (if any) will be trimmed */ 
+/* Get the file name only. If noExtension is true, the extension (if any) will be trimmed */ 
 StringBuffer& getFileNameOnly(StringBuffer& filename, bool noExtension)
 {
     char drive[_MAX_DRIVE];
@@ -4207,7 +4207,7 @@ StringBuffer & RemoteFilename::getPath(StringBuffer & name) const
         return getRemotePath(name);
 }
 
-bool RemoteFilename::isUnixPath() const // bit arbitary
+bool RemoteFilename::isUnixPath() const // bit arbitrary
 {
     if (tailpath.length()!=0) {
         char c = tailpath[0];

@@ -192,7 +192,7 @@ interface IRowStream : extends IInterface
 
 interface IRowWriter: extends IInterface
 {
-    virtual void putRow(const void *row) = 0; // takes ownershop of row
+    virtual void putRow(const void *row) = 0; // takes ownership of row
     virtual void flush() = 0;
 };
 

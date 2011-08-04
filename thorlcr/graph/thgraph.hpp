@@ -196,7 +196,7 @@ protected:
     Owned<CActivityBase> activity;
     CGraphBase *resultsGraph, *owner;
     CGraphDependencyArray dependsOn;
-    Owned<IThorBoundLoopGraph> loopGraph; // really only here as master and slave derivities set/use
+    Owned<IThorBoundLoopGraph> loopGraph; // really only here as master and slave derivatives set/use
     MemoryBuffer createCtxMb, startCtxMb;
     bool haveCreateCtx, haveStartCtx;
 

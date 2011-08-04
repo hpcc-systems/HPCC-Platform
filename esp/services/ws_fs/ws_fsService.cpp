@@ -1830,7 +1830,7 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
             rmfn.setEp(ep);
             StringBuffer fnamebuf(srcfile);
             fnamebuf.trim();
-            rmfn.append(fnamebuf.str());    // handles comma seperated files
+            rmfn.append(fnamebuf.str());    // handles comma separated files
             source->setMultiFilename(rmfn);
         }
         else
@@ -1989,7 +1989,7 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
             rmfn.setEp(ep);
             StringBuffer fnamebuf(srcfile);
             fnamebuf.trim();
-            rmfn.append(fnamebuf.str());    // handles comma seperated files
+            rmfn.append(fnamebuf.str());    // handles comma separated files
             source->setMultiFilename(rmfn);
         }
         else
