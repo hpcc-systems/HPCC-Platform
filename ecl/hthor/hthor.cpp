@@ -1043,7 +1043,7 @@ CHThorIndexWriteActivity::CHThorIndexWriteActivity(IAgentContext &_agent, unsign
 {
     incomplete = false;
     StringBuffer lfn;
-    Owned<ILocalOrDistributedFile> ldf = agent.resolveLFN(helper.getFileName(),"Cannot write, invalid logical name",true,false,true,&lfn);
+    expandLogicalFilename(lfn, helper.getFileName(), agent);
     if (!agent.queryResolveFilesLocally())
     {
         Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(lfn, agent.queryCodeContext()->queryUserDescriptor(), true);
