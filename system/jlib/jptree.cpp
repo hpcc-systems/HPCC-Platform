@@ -5874,7 +5874,7 @@ class COrderedPTree : public PTree
         IMPLEMENT_SUPERHASHTABLEOF_REF_FIND(IPropertyTree, constcharptr);
 
         COrderedChildMap<BASECHILDMAP>() : BASECHILDMAP() { }
-        ~COrderedChildMap<BASECHILDMAP>() { kill(); }
+        ~COrderedChildMap<BASECHILDMAP>() { SELF::kill(); }
 
         virtual unsigned numChildren() { return order.ordinality(); }
         virtual IPropertyTreeIterator *getIterator(bool sort)
