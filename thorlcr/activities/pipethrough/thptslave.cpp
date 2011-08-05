@@ -285,7 +285,7 @@ public:
         if (wrexc)
             throw wrexc.getClear();
         if (retcode!=0)
-            throw MakeThorException(TE_PipeReturnedFailure, "PIPETHROUGH(%"ACTPF"d), Process returned %d", container.queryId(), retcode);
+            throw MakeActivityException(this, TE_PipeReturnedFailure, "Process returned %d", retcode);
     }
     void abort()
     {
@@ -333,7 +333,7 @@ public:
                         e->Release();
                     }
                 }
-                throw MakeThorException(TE_PipeReturnedFailure, "PIPETHROUGH(%"ACTPF"d), Process returned %d:%s - PIPE(%s)", container.queryId(), retcode, stdError.str(), pipeCommand.get());
+                throw MakeActivityException(this, TE_PipeReturnedFailure, "Process returned %d:%s - PIPE(%s)", retcode, stdError.str(), pipeCommand.get());
             }
         }
     }

@@ -273,7 +273,7 @@ public:
         if (ret && prev && icompare->docompare(prev, ret) > 0)
         {
             // MORE - better to give mismatching rows than indexes?
-            throw MakeActivityException(this, TE_NotSorted, "detected incorrectly sorted rows (row %"ACTPF"d,  %"ACTPF"d))", getDataLinkCount(), getDataLinkCount()+1);
+            throw MakeActivityException(this, TE_NotSorted, "detected incorrectly sorted rows (row %"RCPF"d,  %"RCPF"d))", getDataLinkCount(), getDataLinkCount()+1);
         }
         prev.set(ret);
         if (ret)
@@ -292,7 +292,7 @@ public:
         if (ret && prev && stepCompare->docompare(prev, ret, numFields) > 0)
         {
             // MORE - better to give mismatching rows than indexes?
-            throw MakeActivityException(this, TE_NotSorted, "detected incorrectly sorted rows (row %"ACTPF"d,  %"ACTPF"d))", getDataLinkCount(), getDataLinkCount()+1);
+            throw MakeActivityException(this, TE_NotSorted, "detected incorrectly sorted rows (row %"RCPF"d,  %"RCPF"d))", getDataLinkCount(), getDataLinkCount()+1);
         }
         prev.set(ret);
         if (ret)

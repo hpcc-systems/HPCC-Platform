@@ -106,7 +106,7 @@ public:
                 }
                 catch (IThorRowArrayException *e)
                 {
-                    IException *e2 = MakeActivityException(this, e, "Group (%"ACTPF"d) [during rollover]", container.queryId());
+                    IException *e2 = MakeActivityException(this, e, "Group [rollover]");
                     e->Release();
                     throw e2;
                 }

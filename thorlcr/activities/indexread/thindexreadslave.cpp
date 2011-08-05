@@ -54,7 +54,7 @@ static IKeyIndex *openKeyPart(CActivityBase *activity, const char *logicalFilena
     if (!(globals->getPropBool("@autoCopyBackup", true)?ensurePrimary(activity, partDesc, ifile, location, filePath):getBestFilePart(activity, partDesc, ifile, location, filePath, activity)))
     {
         StringBuffer locations;
-        IException *e = MakeActivityException(activity, TE_FileNotFound, "INDEXREAD(%"ACTPF"d): no physical file part for logical key file %s, found at given locations: %s (Error = %d)", activity->queryContainer().queryId(), logicalFilename, getFilePartLocations(partDesc, locations).str(), GetLastError());
+        IException *e = MakeActivityException(activity, TE_FileNotFound, "No physical file part for logical key file %s, found at given locations: %s (Error = %d)", logicalFilename, getFilePartLocations(partDesc, locations).str(), GetLastError());
         EXCLOG(e, NULL);
         throw e;
     }
