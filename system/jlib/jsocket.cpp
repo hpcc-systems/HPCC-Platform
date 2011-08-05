@@ -2586,7 +2586,7 @@ IpAddress &GetHostIp(IpAddress &ip)
 
 IpAddress &localHostToNIC(IpAddress &ip)
 {
-    if (ip. isLoopBack())
+    if (ip.isLoopBack())
         GetHostIp(ip);
     return ip;
 }
