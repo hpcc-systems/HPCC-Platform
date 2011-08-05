@@ -142,7 +142,7 @@ class StringArray : public ArrayOf<const char *, const char *>
 {
 };
 
-// seperated list to array
+// separated list to array
 extern jlib_decl void DelimToStringArray(const char *csl, StringArray &dst, const char * delim, bool deldup=false);
 extern jlib_decl void CslToStringArray(const char *csl, StringArray &dst, bool deldup=false);
 

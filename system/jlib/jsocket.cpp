@@ -861,7 +861,7 @@ void CSocket::open(int listen_queue_size,bool reuseports)
     int saverr;
     if (::bind(sock, &u.sa, ul) != 0) {
         saverr = ERRNO();
-        if (saverr==EADDRINUSE) {   // don't log as error (some useages probe ports)
+        if (saverr==EADDRINUSE) {   // don't log as error (some usages probe ports)
 ErrPortInUse:
             closesock();
             char msg[1024]; 
@@ -3252,7 +3252,7 @@ bool SocketListParser::next(StringAttr & ip, unsigned & port)
             }
         }
 done:
-        //copy up to the appropraite dot from the previous ip.
+        //copy up to the appropriate dot from the previous ip.
         const unsigned dotCount = 3;        //more what about 6 digit ip's
         cur = lastIp;
         loop
@@ -3560,7 +3560,7 @@ class CSocketSelectThread: public Thread
 #define HASHNULL (HASHTABSIZE-1)
 #define HASHTABMASK (HASHTABSIZE-1)
     byte hashtab[HASHTABSIZE];
-#define HASHSOCKET(s) ((((unsigned)s)>>2)&HASHTABMASK)      // with some knowlege of windows handles
+#define HASHSOCKET(s) ((((unsigned)s)>>2)&HASHTABMASK)      // with some knowledge of windows handles
 
     void inithash()
     {

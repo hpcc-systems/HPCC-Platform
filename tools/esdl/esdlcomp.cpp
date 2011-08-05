@@ -1041,7 +1041,7 @@ static EspMethodInfo* sortMethods(EspMethodInfo* ms)
         }
     }
 
-    // recurively sort
+    // recursively sort
     smallest->next = sortMethods(smallest->next);
 
     return smallest;

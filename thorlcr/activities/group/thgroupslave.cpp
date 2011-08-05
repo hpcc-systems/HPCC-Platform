@@ -75,7 +75,7 @@ public:
 #endif
             lastNode = (container.queryJob().queryMyRank() == container.queryJob().querySlaves());
 
-            rollover.clear(); // JCSMORE - should be albe to reuse the CGroupTranser obj.
+            rollover.clear(); // JCSMORE - should be able to reuse the CGroupTranser obj.
             rollover.setown(new CGroupTransfer(&container, queryRowAllocator(), queryRowSerializer(), queryRowDeserializer(), transferAcceptPort));
         }
 

@@ -307,7 +307,7 @@ public:
     static ModInit glue(modInit, __LINE__) (& glue(_modInit, __LINE__), PRIORITY, MODULE_PRIORITY); \
     static bool glue(_modInit, __LINE__) ()
 
-// Assumes related MODULE_INIT preceeded the use of MODULE_EXIT
+// Assumes related MODULE_INIT preceded the use of MODULE_EXIT
 #define MODULE_EXIT()                                   \
     static void glue(_modExit, __LINE__)();         \
     static ModExit glue(modExit, __LINE__)(& glue(_modExit, __LINE__)); \

@@ -45,7 +45,7 @@
 #define NSPLITTER_BLOCK_BUFFER_SIZE             (0x10000)               // 64K
 #define DISTRIBUTE_PULL_BUFFER_SIZE             (0x100000*32)           // 32MB
 #define SORT_BUFFER_TOTAL                       (0x100000*20)           // 20MB (estimate)
-#define DISTRIBUTE_SINGLE_BUFFER_SIZE           (0x10000)               // 64K  - NB per node and multiplied by asyc send
+#define DISTRIBUTE_SINGLE_BUFFER_SIZE           (0x10000)               // 64K  - NB per node and multiplied by async send
 #define FUNNEL_MIN_BUFF_SIZE                    (0x100000*2)            // 2MB
 #define FUNNEL_MAX_BUFF_SIZE                    (0x100000*20)           // 20MB
 #define COMBINE_MAX_BUFF_SIZE                   (0x100000*20)           // 20MB

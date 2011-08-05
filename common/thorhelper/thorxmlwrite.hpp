@@ -102,7 +102,7 @@ public:
     virtual void outputUtf8(unsigned len, const char *field, const char *fieldname);
 };
 
-//Writed all encoded DATA fields as base64Binary
+//Writes all encoded DATA fields as base64Binary
 class thorhelper_decl CommonEncoded64XmlWriter : public CommonEncodedXmlWriter
 {
 public:

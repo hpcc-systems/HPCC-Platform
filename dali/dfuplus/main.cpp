@@ -109,7 +109,7 @@ void handleSyntax()
     out.append("        dstfile=<destination-file-path>\n");
     out.append("    remove options:\n");
     out.append("        name=<logical-name>\n");
-    out.append("        names=<multiple-logical-names-seperated-by-comma>\n");
+    out.append("        names=<multiple-logical-names-separated-by-comma>\n");
     out.append("        namelist=<logical-name-list-in-file>\n");
     out.append("        nodelete=0|1    -- optional\n");
     out.append("    rename options:\n");

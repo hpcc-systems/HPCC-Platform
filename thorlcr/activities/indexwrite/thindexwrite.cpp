@@ -96,7 +96,7 @@ public:
                 {
                     IGroup &group = groups.item(g);
                     if (gwidth != groups.item(g).ordinality())
-                        throw MakeActivityException(this, 0, "Unsupported, cannot output multiple refactored widths, targetting cluster '%s' and '%s'", clusters.item(0), clusters.item(g));
+                        throw MakeActivityException(this, 0, "Unsupported, cannot output multiple refactored widths, targeting cluster '%s' and '%s'", clusters.item(0), clusters.item(g));
                     if (gwidth != restrictedWidth)
                         groups.replace(*group.subset((unsigned)0, restrictedWidth), g);
                 }

@@ -41,7 +41,7 @@ interface IThorRowManager : extends IInterface
     virtual memsize_t remaining() = 0;
     virtual void reportLeaks() = 0;
     virtual void setLCRrowCRCchecking(bool on=true) = 0;
-    // the followng are used to extend row with slack
+    // the following are used to extend row with slack
     virtual void *extendRow(void * original, size32_t newsize, unsigned activityId, size32_t &size) = 0;
     virtual void *allocateExt(size32_t size, unsigned activityId, size32_t &outsize) = 0;
 };

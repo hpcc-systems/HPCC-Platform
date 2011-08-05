@@ -1740,7 +1740,7 @@ IPropertyTree &CClientSDSManager::queryProperties() const
     CMessageBuffer mb;
     mb.append((int)DAMP_SDSCMD_GETPROPS);
     if (!queryCoven().sendRecv(mb, RANK_RANDOM, MPTAG_DALI_SDS_REQUEST))
-        throw MakeSDSException(SDSExcpt_FailedToCommunicateWithServer, "querying sds diagnositc info");
+        throw MakeSDSException(SDSExcpt_FailedToCommunicateWithServer, "querying sds diagnostic info");
     SdsReply replyMsg;  
     mb.read((int &)replyMsg);
     switch (replyMsg)
@@ -1926,7 +1926,7 @@ void CClientSDSManager::setConfigOpt(const char *opt, const char *value)
             }
             else
             {
-                PROGLOG("Increating clientThrottleLimit from %d to %d", clientThrottleLimit, newV);
+                PROGLOG("Increasing clientThrottleLimit from %d to %d", clientThrottleLimit, newV);
                 concurrentRequests.signal(-diff); // new limit is higher than old
             }
             clientThrottleLimit = newV;

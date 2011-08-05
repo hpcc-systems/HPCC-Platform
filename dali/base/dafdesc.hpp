@@ -306,7 +306,7 @@ extern da_decl void setBaseDirectory(const char * dir,bool replicatedir=false,DF
 extern da_decl const char *queryPartMask();
 extern da_decl StringBuffer &getPartMask(StringBuffer &ret,const char *lname=NULL,unsigned partmax=0);
 extern da_decl void setPartMask(const char * mask);
-extern da_decl bool setReplicateDir(const char *name,StringBuffer &out, bool isrep=true,const char *baseDir=NULL,const char *repDir=NULL); // changes direcctory of name pssed to backup directory
+extern da_decl bool setReplicateDir(const char *name,StringBuffer &out, bool isrep=true,const char *baseDir=NULL,const char *repDir=NULL); // changes direcctory of name passed to backup directory
 
 extern da_decl IFileDescriptor *createFileDescriptor();
 extern da_decl IFileDescriptor *createFileDescriptor(IPropertyTree *attr);      // ownership of attr tree is taken
@@ -329,7 +329,7 @@ extern da_decl void removePartFiles(IFileDescriptor *desc,IMultiException *mexce
 
 extern da_decl StringBuffer &setReplicateFilename(StringBuffer &filename,unsigned drvnum,const char *baseDir=NULL,const char *repDir=NULL);
 
-// path seperator utility routines (work for both host and non-host OS)
+// path separator utility routines (work for both host and non-host OS)
 
 inline char OsSepChar(DFD_OS os)
 {

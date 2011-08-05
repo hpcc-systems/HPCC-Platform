@@ -714,7 +714,7 @@ public:
             }
             if ((gotsz||denormGot||fret.get())&&(keepremaining!=(unsigned)-1))
                 keepremaining--;
-            // treat SKIP and exclude as match sucess
+            // treat SKIP and exclude as match success
             leftmatched = true;
         }
         if (gotsz)
@@ -1177,7 +1177,7 @@ retry:
                                     }
                                     if (ret.get()&&(keepremaining!=(unsigned)-1))
                                         keepremaining--;
-                                    // treat SKIP and exclude as match sucess
+                                    // treat SKIP and exclude as match success
                                     if (rightouter)
                                         rightmatched[rightidx] = true;
                                     leftmatched = true;

@@ -154,7 +154,7 @@ enum MessagePassingError
     MPERR_ok,
     MPERR_connection_failed,            // connection dropped (or could not be made)
     MPERR_process_not_in_group,         // using an 'inner' communicator when not part of it's group 
-    MPERR_protocol_version_mismatch,    // inconpatible version of MP being used
+    MPERR_protocol_version_mismatch,    // incompatible version of MP being used
     MPERR_link_closed                   // raised if other end closed (e.g. aborted) during a specific recv or probe
 };
 

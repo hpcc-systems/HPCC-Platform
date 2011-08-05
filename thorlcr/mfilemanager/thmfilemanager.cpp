@@ -72,7 +72,7 @@ class CFileManager : public CSimpleInterface, implements IThorFileManager
             if (file)
             {
                 file.clear();
-                // JCSMORE delete orphanes file parts here..
+                // JCSMORE delete orphan file parts here..
                 // i.e. shouldn't it call
                 // dfd.removeEntry(scopedName.str(), userDesc);
                 // And/Or queryDistributedFileDirectory().removePhysical(scopedName.str(), 0, NULL, NULL, userDesc);

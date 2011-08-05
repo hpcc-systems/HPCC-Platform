@@ -263,7 +263,7 @@ void copyCompress(const char *from, const char *to, size32_t rowsize, bool fast,
     }
 #ifdef __linux__
     // this is not really needed in windows - if it is we will have to
-    // test the file extenstion - .exe, .bat
+    // test the file extension - .exe, .bat
 
     struct stat info;
     if (stat(from, &info) == 0)  // cannot fail - exception would have been thrown above

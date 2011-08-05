@@ -377,7 +377,7 @@ SplitterOutput::SplitterOutput(NSplitterSlaveActivity &_activity, unsigned _outp
 
 void SplitterOutput::addCycles(unsigned __int64 elapsedCycles)
 {
-    totalCycles += elapsedCycles; // per output time, inquired by pulling acts.
+    totalCycles += elapsedCycles; // per output
     SpinBlock b(activity.timingLock);
     activity.getTotalCyclesRef() += elapsedCycles; // Splitter act aggregate time.
 }

@@ -931,7 +931,7 @@ ICompare *CDistributorBase::dedupcompare;
 // protocol is:
 // 1) 0 byte block              - indicates end of input - no ack required
 // 2) 1 byte block {1}          - request to send - ack required
-// 3) >1 byte block {...,0} - block sent following RTS recieved - no ack required
+// 3) >1 byte block {...,0} - block sent following RTS received - no ack required
 // 4) >1 byte block {...,1}    - block sent - ack required
 // ack is always a single byte 0 for stop and 1 for continue
 
@@ -1001,7 +1001,7 @@ Restart:
                 comm.recv(msg,sender,tag);
                 sz = msg.length();
 #ifdef _FULL_TRACE
-                ActPrintLog("HDIST MP recieved block from %d size %d",(int)sender,sz);
+                ActPrintLog("HDIST MP received block from %d size %d",(int)sender,sz);
 #endif
             }
             else
@@ -1589,7 +1589,7 @@ public:
 
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL); // careful not to call again in derivates
+        ActivityTimer t(totalCycles, timeActivities, NULL); // careful not to call again in derivatives
         if (abortSoon||eofin) {
             eofin = true;
             return NULL;

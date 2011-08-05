@@ -1,6 +1,6 @@
 <!--
 
-## Copyright © 2011 HPCC Systems.  All rights reserved.
+## Copyright Â© 2011 HPCC Systems.  All rights reserved.
 -->
 
 <?xml version="1.0" encoding="UTF-8"?>
@@ -383,7 +383,7 @@
         <xs:attribute name="xrefList" type="xs:string" use="optional" default="*">
             <xs:annotation>
                 <xs:appinfo>
-                    <tooltip>comma seperated list of clusters to xref (* for all clusters).</tooltip>
+                    <tooltip>comma separated list of clusters to xref (* for all clusters).</tooltip>
                 </xs:appinfo>
             </xs:annotation>
         </xs:attribute>
@@ -422,7 +422,7 @@
         <xs:attribute name="thorQMonQueues" type="xs:string" use="optional" default="*">
             <xs:annotation>
                 <xs:appinfo>
-                    <tooltip>comma seperated list of Thor queues to monitor (* for all).</tooltip>
+                    <tooltip>comma separated list of Thor queues to monitor (* for all).</tooltip>
                 </xs:appinfo>
             </xs:annotation>
         </xs:attribute>
@@ -459,7 +459,7 @@
         <xs:attribute name="dafsmonList" type="xs:string" use="optional" default="*">
             <xs:annotation>
                 <xs:appinfo>
-                    <tooltip>comma seperated list of clusters and IPs to monitor (* for all clusters).</tooltip>
+                    <tooltip>comma separated list of clusters and IPs to monitor (* for all clusters).</tooltip>
                 </xs:appinfo>
             </xs:annotation>
         </xs:attribute>
