@@ -510,7 +510,7 @@ public:
 
     void removeSubscriber(SubscriptionId id)
     {
-        ForEachItemIn(s, subscriptions) // do not expect a lot of subscripers per connection - probably ~ 1.
+        ForEachItemIn(s, subscriptions) // do not expect a lot of subscribers per connection - probably ~ 1.
         {
             if (id == subscriptions.item(s).queryId())
             {
@@ -2330,7 +2330,7 @@ CRemoteTreeBase *CRemoteTreeBase::createChild(int pos, const char *childName)
 
 ///////////
 
-static CheckedCriticalSection suppressedOrphanUnlockCrit; // to temporarily supress unlockall
+static CheckedCriticalSection suppressedOrphanUnlockCrit; // to temporarily suppress unlockall
 static bool suppressedOrphanUnlock=false;
 
 #ifdef __64BIT__
@@ -3068,7 +3068,7 @@ public:
     bool unlock(ConnectionId id)
     {
         bool ret = false;
-        CPendingLockBlock b(*this); // carefully placed, removePending can destroy this, therefore must be destoyed last
+        CPendingLockBlock b(*this); // carefully placed, removePending can destroy this, therefore must be destroyed last
         {
             CHECKEDCRITICALBLOCK(crit, fakeCritTimeout);    
             LockData *ld = connectionInfo.getValue(id);
@@ -3237,7 +3237,7 @@ public:
     bool lock(unsigned mode, unsigned timeout, ConnectionId id, SessionId sessionId, IUnlockCallback &callback)
     {
         bool ret = false;
-        CPendingLockBlock b(*this); // carefully placed, removePending can destroy this, therefore must be destoyed last
+        CPendingLockBlock b(*this); // carefully placed, removePending can destroy this, therefore must be destroyed last
         { CHECKEDCRITICALBLOCK(crit, fakeCritTimeout);
             return _lock(mode, timeout, id, sessionId, callback);
         }
@@ -4151,7 +4151,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                     }
                     mb.clear();
                     mb.append((int)DAMP_SDSREPLY_OK);
-                    mb.append(newIds); // JCSMORE not particualry efficent change later
+                    mb.append(newIds); // JCSMORE not particularly efficient change later
                     if (block0.slow())
                     {
                         block0.appendMsg(", xpath=").append(connection->queryXPath());
@@ -4298,7 +4298,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
         StringBuffer s;
         e->errorMessage(s);
         // NB: wanted to do this in a catch (IPTreeException *) block, but did catch,
-        // inspite of being able to query with dynamic cast
+        // in spite of being able to query with dynamic cast
         // something to do with rethrow, if I changed to catch early as IPT then it would catch here correctly.
         if (QUERYINTERFACE(e, IPTreeException))
         {
@@ -8253,7 +8253,7 @@ bool CCovenSDSManager::fireException(IException *e)
             if (handled)
             {
                 LOG(MCdisaster, unknownJob, e, "FATAL, too many exceptions");
-                return false; // did not sucessfully handle.
+                return false; // did not successfully handle.
             }
             LOG(MCoperatorError, unknownJob, e, "Exception while restarting or shutting down");
             return true;
@@ -8261,7 +8261,7 @@ bool CCovenSDSManager::fireException(IException *e)
         handled = false;
         processingUnhandled = true;
     }
-    // Handle exception on a seperate thread, to avoid complication with joining/restarting deadlocks.
+    // Handle exception on a separate thread, to avoid complication with joining/restarting deadlocks.
     class CHandleException : public Thread
     {
         CCovenSDSManager &manager;

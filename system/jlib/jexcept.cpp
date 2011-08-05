@@ -732,7 +732,7 @@ static void doPrintStackReport( size_t ip, size_t _bp, size_t sp )
 {
     if (_bp==0) {
 #ifdef _AMD64_
-        PrintLog("inline assembler is not suported in 64bit AMD compiler; StackReport incomplete bp tend to not be used");
+        PrintLog("inline assembler is not supported in 64bit AMD compiler; StackReport incomplete bp tend to not be used");
 #else
         __asm { 
             mov eax,ebp

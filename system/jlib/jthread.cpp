@@ -57,7 +57,7 @@ MODULE_EXIT()
 
 void addThreadExceptionHandler(IExceptionHandler *handler)
 {
-    assertex(exceptionHandlers); // have to ensure MODULE_INIT has appropriate proirity.
+    assertex(exceptionHandlers); // have to ensure MODULE_INIT has appropriate priority.
     exceptionHandlers->append(handler);
 }
 

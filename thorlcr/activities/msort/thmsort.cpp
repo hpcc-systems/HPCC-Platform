@@ -97,7 +97,7 @@ protected:
         for (; s<container.queryJob().querySlaves(); s++)
         {
             SocketEndpoint ep;
-            ep.deserialize(queryInitializationData(s)); // this is a bit of a Kludge untill we get proper MP Thor
+            ep.deserialize(queryInitializationData(s)); // this is a bit of a Kludge until we get proper MP Thor
             imaster->AddSlave(&container.queryJob().queryJobComm(), s+1, ep,mpTagRPC);
         }
     }

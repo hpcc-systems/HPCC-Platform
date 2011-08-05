@@ -131,7 +131,7 @@ interface jlib_thrown_decl IOutOfMemException: extends IException
 void  jlib_decl EnableSEHtoExceptionMapping(); // return value can be used to disable
 void  jlib_decl DisableSEHtoExceptionMapping();         
 // NB only enables for current thread or threads started after call
-// requres /EHa option to be set in VC++ options (after /GX)
+// requires /EHa option to be set in VC++ options (after /GX)
 
 void jlib_decl *setSEHtoExceptionHandler(IExceptionHandler *handler); // sets handler and return old value
 

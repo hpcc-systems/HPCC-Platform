@@ -1222,7 +1222,7 @@ void DelimToStringArray(const char *csl, StringArray &dst, const char * delim,bo
     loop {
         while (isspace(*s))
             s++;
-        if (!*s&&(dst.ordinality()==dstlen)) // this check is to allow trailing seperators (e.g. ",," is 3 (NULL) entries) but not generate an entry for ""
+        if (!*s&&(dst.ordinality()==dstlen)) // this check is to allow trailing separators (e.g. ",," is 3 (NULL) entries) but not generate an entry for ""
             break;
         const char *e = s;
         while (*e) {

@@ -300,7 +300,7 @@ public:
     virtual bool set_nagle(bool on) = 0; // returns old state
 
 
-    // set 'linger' time - time close will linger so that outstanding unsent data will be transmited
+    // set 'linger' time - time close will linger so that outstanding unsent data will be transmitted
     //
     virtual void set_linger(int lingersecs) = 0;  
 

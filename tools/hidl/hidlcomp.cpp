@@ -4614,7 +4614,7 @@ void EspMessageInfo::write_esp()
                 else
                 {
                     outf("\t{\n");
-                    outf("\t\t//*** defualt kind: %s; type=%s, name=%s\n", getTypeKindName(pi->kind), pi->typname, uname);
+                    outf("\t\t//*** default kind: %s; type=%s, name=%s\n", getTypeKindName(pi->kind), pi->typname, uname);
                     outf("\t\tbuffer.append(\"<%s>\");\n", pi->getXmlTag());
                     outf("\t\tbuffer.append(src.get%s());\n", uname);
                     outf("\t\tbuffer.append(\"</%s>\");\n", pi->getXmlTag());
@@ -4833,14 +4833,14 @@ void EspMessageInfo::write_esp()
                     indentOuts("{\n");
                     if (nilRemove)
                     {
-                        indentOutf(1,"//*** defualt kind: %s; type=%s, name=%s\n", getTypeKindName(pi->kind), pi->typname, uname);
+                        indentOutf(1,"//*** default kind: %s; type=%s, name=%s\n", getTypeKindName(pi->kind), pi->typname, uname);
                         indentOutf("StringBuffer tmp(src.get%s());\n",uname);
                         indentOutf("if (tmp.length()>0)\n");
                         indentOutf1(1,"buffer.appendf(\"<%s>%%s</%s>\",tmp.str());\n", pi->name,pi->name);
                     }
                     else
                     {
-                        indentOutf(1,"//*** defualt kind: %s; type=%s, name=%s\n", getTypeKindName(pi->kind), pi->typname, uname);
+                        indentOutf(1,"//*** default kind: %s; type=%s, name=%s\n", getTypeKindName(pi->kind), pi->typname, uname);
                         indentOutf("buffer.append(\"<%s>\");\n", pi->getXmlTag());
                         indentOutf("buffer.append(src.get%s());\n", uname);
                         indentOutf("buffer.append(\"</%s>\");\n", pi->getXmlTag());

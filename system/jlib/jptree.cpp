@@ -3121,7 +3121,7 @@ bool PTree::checkPattern(const char *&xxpath) const
                     if (legacynumeric)
                     {
                         if (isdigit(*rhs))
-                            WARNLOG("Possible depreicated use of quoted numeric comparison operation: %s", xxpath);
+                            WARNLOG("Possible deprecated use of quoted numeric comparison operation: %s", xxpath);
                     }
 #endif
                 }
@@ -3405,7 +3405,7 @@ IPropertyTree &PTStackIterator::query()
 
 bool PTStackIterator::next()
 {
-    bool seperator = false;
+    bool separator = false;
     if (iter)
     {
         IPropertyTree *element = NULL;
@@ -3438,8 +3438,8 @@ bool PTStackIterator::next()
                     current = element;
                     return true;
                 case '.':
-                    if (seperator) throw MakeXPathException(xpath, PTreeExcpt_XPath_ParseError, 0, "Syntax error");
-                    seperator=false;
+                    if (separator) throw MakeXPathException(xpath, PTreeExcpt_XPath_ParseError, 0, "Syntax error");
+                    separator=false;
                     ++xxpath;
                     if (*xpath && '/' != *xpath)
                         throw MakeXPathException(xpath-1, PTreeExcpt_XPath_Unsupported, 0, "");
@@ -3455,10 +3455,10 @@ bool PTStackIterator::next()
                         xxpath = "";
                         element = NULL;
                     }
-                    seperator=true;
+                    separator=true;
                     break;
                 default:
-                    seperator=false;
+                    separator=false;
                     if (iter->isValid()) 
                         pushToStack(iter, xxpath);
 
@@ -3874,7 +3874,7 @@ protected:
     }
     void error(const char *msg=NULL, bool giveContext=true, XmlReadExcptCode code=XmlRead_syntax)
     {
-        // NB: there is little validataion in parse, error can be late.
+        // NB: there is little validation in parse, error can be late.
         StringBuffer context;
         if (giveContext)
         {

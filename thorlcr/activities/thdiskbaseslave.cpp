@@ -108,7 +108,7 @@ void CDiskPartHandlerBase::setPart(IPartDescriptor *_partDesc, unsigned partNoSe
     firstInGroup = true;
     which = partDesc->queryPartIndex();
 
-    activity.helper->setCallback(this); // NB, if we were to have >1 of these objects, would prob. need seperate helper instances also
+    activity.helper->setCallback(this); // NB, if we were to have >1 of these objects, would prob. need separate helper instances also
     open();
 }
 
@@ -155,7 +155,7 @@ void CDiskPartHandlerBase::open()
                 ActPrintLog(&activity, "Calculated crc = %x, storedCrc = %x", calcCrc, storedCrc);
                 if (calcCrc != storedCrc)
                 {
-                    IThorException *e = MakeActivityException(&activity, TE_FileCrc, "CRC Failure validaing compressed file: %s", iFile->queryFilename());
+                    IThorException *e = MakeActivityException(&activity, TE_FileCrc, "CRC Failure validating compressed file: %s", iFile->queryFilename());
                     e->setAudience(MSGAUD_operator);
                     throw e;
                 }
@@ -537,7 +537,7 @@ void CDiskWriteSlaveActivityBase::processDone(MemoryBuffer &mb)
 
     CDateTime createTime, modifiedTime, accessedTime;
     ifile->getTime(&createTime, &modifiedTime, &accessedTime);
-    // round file time down to nearest sec. Nanosec accurancy is not preserved elsewhere and can lead to mismatch later.
+    // round file time down to nearest sec. Nanosec accuracy is not preserved elsewhere and can lead to mismatch later.
     unsigned hour, min, sec, nanosec;
     modifiedTime.getTime(hour, min, sec, nanosec);
     modifiedTime.setTime(hour, min, sec, 0);

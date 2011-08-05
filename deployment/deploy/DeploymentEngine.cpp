@@ -1474,7 +1474,7 @@ void CDeploymentEngine::copyInstallFiles(const char* instanceName, int instanceI
          //any dynamically generated paths are generated with '\\'
          //In configenv, remote copying takes care of the paths
          //if this is configgen, and we are on linux, replace
-         //paths with right seperator
+         //paths with right separator
          if (PATHSEPCHAR == '/' && os == MachineOsLinux)
            src.replace('\\', '/');
 

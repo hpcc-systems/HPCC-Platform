@@ -365,7 +365,7 @@ class jlib_decl NonReentrantSpinLock
 {
     atomic_t value;
     struct { volatile ThreadId tid; } owner; // atomic
-    inline NonReentrantSpinLock(NonReentrantSpinLock & value) { assert(false); } // dummy to prevent inadvetant use as block
+    inline NonReentrantSpinLock(NonReentrantSpinLock & value) { assert(false); } // dummy to prevent inadvertent use as block
 public:
     inline NonReentrantSpinLock()       
     {

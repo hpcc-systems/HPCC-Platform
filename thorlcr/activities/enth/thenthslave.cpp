@@ -64,7 +64,7 @@ protected:
             abortSoon = true;
 #if THOR_TRACE_LEVEL >= 5
         ActPrintLog("ENTH: init - Numerator = %"RCPF"d, Denominator = %"RCPF"d", numerator, denominator);   
-        ActPrintLog("%s: Inital value of counter %"RCPF"d", actStr.str(), counter);
+        ActPrintLog("%s: Initial value of counter %"RCPF"d", actStr.str(), counter);
 #endif
     }
 

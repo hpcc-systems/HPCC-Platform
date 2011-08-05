@@ -127,7 +127,7 @@ class SuperHashTableOf : public SuperHashTable
       { return SuperHashTable::removeExact(et); }
 };
 
-// Macro to provice find method taking reference instead of pointer
+// Macro to provide find method taking reference instead of pointer
 
 #define IMPLEMENT_SUPERHASHTABLEOF_REF_FIND(ET, FP)                        \
     inline ET *      find(FP & fp) const                                   \
@@ -371,7 +371,7 @@ public:
     ~LinkedHTMapping() { this->et.Release(); }
 };
 
-// template mapping object for string to arbitary object
+// template mapping object for string to arbitrary object
 template <class ET>
 class StringHTMapping : public CInterface
 {

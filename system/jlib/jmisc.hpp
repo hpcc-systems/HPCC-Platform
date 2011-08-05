@@ -65,7 +65,7 @@ jlib_decl ILogMsgHandler * queryLegacyLogMsgHandler();
 #ifndef DISABLE_PRINTLOG
 jlib_decl void PrintLogDirect(const char *msg);
 jlib_decl int  PrintLog(const char *fmt, ...);
-jlib_decl void SPrintLog(const char *fmt,...); // not tertminated by LF
+jlib_decl void SPrintLog(const char *fmt,...); // not terminated by LF
 #define PrintExceptionLog(_e,_txt) EXCLOG(_e, _txt)
 
 #ifdef _DEBUG

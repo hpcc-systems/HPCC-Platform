@@ -2174,7 +2174,7 @@ public:
 
     
     IConstWorkUnitIterator* getWorkUnitsSorted( WUSortField *sortorder, // list of fields to sort by (terminated by WUSFterm)
-                                                WUSortField *filters,   // NULL or list of fields to folteron (terminated by WUSFterm)
+                                                WUSortField *filters,   // NULL or list of fields to filter on (terminated by WUSFterm)
                                                 const void *filterbuf,  // (appended) string values for filters
                                                 unsigned startoffset,
                                                 unsigned maxnum,
@@ -2402,7 +2402,7 @@ public:
     }
 
     virtual IConstWorkUnitIterator* getWorkUnitsSorted( WUSortField *sortorder, // list of fields to sort by (terminated by WUSFterm)
-                                                        WUSortField *filters,   // NULL or list of fields to folteron (terminated by WUSFterm)
+                                                        WUSortField *filters,   // NULL or list of fields to filter on (terminated by WUSFterm)
                                                         const void *filterbuf,  // (appended) string values for filters
                                                         unsigned startoffset,
                                                         unsigned maxnum,

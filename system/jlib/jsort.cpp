@@ -814,7 +814,7 @@ class CRowStreamMerger
     inline bool siftDown(unsigned p)
     {
         //MTIME_SECTION(defaultTimer, "CJStreamMergerBase::siftDown");
-        // assumimg that all descendents of p form a heap, sift p down to its correct position, and so include it in the heap
+        // assuming that all descendants of p form a heap, sift p down to its correct position, and so include it in the heap
         bool nochange = true;
         while(1)
         {

@@ -236,7 +236,7 @@ CActivityBase *createIfActionSlave(CGraphElementBase *container);
 
 class CGenericSlaveGraphElement : public CSlaveGraphElement
 {
-    bool wuidread2diskread; // master decides after interoggating result and sneaks in info before slave creates
+    bool wuidread2diskread; // master decides after interrogating result and sneaks in info before slave creates
     StringAttr wuidreadFilename;
 public:
     CGenericSlaveGraphElement(CGraphBase &_owner, IPropertyTree &xgmml) : CSlaveGraphElement(_owner, xgmml)

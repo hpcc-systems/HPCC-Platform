@@ -534,7 +534,7 @@ public:
                     }
                     while (qd2!=qd);
                     PROGLOG("Job Queue contention - delaying before retrying");
-                    Sleep(getRandom()%5000);    // dining phisosopher delay
+                    Sleep(getRandom()%5000);    // dining philosopher delay
                     wait = getRandom()%4000+3000; // try and prevent sync
                     qd  = qdata;
                 }
