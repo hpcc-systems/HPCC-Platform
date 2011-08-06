@@ -1722,7 +1722,7 @@ public:
                     {
                         inputHelper->queryOutputMeta()->toXML((byte *) jg->queryLeft(), xmlwrite);
                     }
-                    throw MakeThorException(0, "KEYEDJOIN(%"ACTPF"d): More than %d match candidates in keyed join for row %s", container.queryId(), abortLimit, xmlwrite.str());
+                    throw MakeActivityException(this, 0, "More than %d match candidates in keyed join for row %s", abortLimit, xmlwrite.str());
                 }
                 catch (IException *_e)
                 {
