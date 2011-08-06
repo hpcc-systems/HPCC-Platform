@@ -541,7 +541,7 @@ public:
         Owned<IPropertyTree> lFProps = createPTree(data);
 
         const char * quotes = lFProps->hasProp("@csvQuote")?lFProps->queryProp("@csvQuote"):NULL;
-        const char * separators = lFProps->hasProp("@csvSeperate")?lFProps->queryProp("@csvSeperate"):NULL;
+        const char * separators = lFProps->hasProp("@csvSeparate")?lFProps->queryProp("@csvSeparate"):NULL;
         const char * terminators = lFProps->hasProp("@csvTerminate")?lFProps->queryProp("@csvTerminate"):NULL;      
         csvSplitter.init(helper->getMaxColumns(), csvInfo, quotes, separators, terminators);
     }
