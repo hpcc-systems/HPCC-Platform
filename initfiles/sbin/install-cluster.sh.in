@@ -61,19 +61,19 @@ getIPS(){
 
 
 generateKey(){
-	GENKEY=${PWD}/new_ssh
-	if [ -d ${GENKEY} ]; then
-		rm -rf ${GENKEY}
-	fi
-	mkdir -p ${GENKEY}
-	ssh-keygen -t rsa -f ${GENKEY}/id_rsa -P ""
+    GENKEY=${PWD}/new_ssh
+    if [ -d ${GENKEY} ]; then
+        rm -rf ${GENKEY}
+    fi
+    mkdir -p ${GENKEY}
+    ssh-keygen -t rsa -f ${GENKEY}/id_rsa -P ""
 }
 
 createPayload(){
-	if [ -d ${REMOTE_INSTALL} ]; then
-		rm -rf ${REMOTE_INSTALL};
-	fi
-	mkdir -p ${REMOTE_INSTALL};
+    if [ -d ${REMOTE_INSTALL} ]; then
+        rm -rf ${REMOTE_INSTALL};
+    fi
+    mkdir -p ${REMOTE_INSTALL};
     if [ ${NEW_KEY} -eq 1 ]; then
         mkdir -p ${NEW}
         cp -r ${GENKEY}/* ${NEW}/
@@ -82,13 +82,17 @@ createPayload(){
     cp -r ${CONFIG_DIR}/${ENV_XML_FILE} ${REMOTE_INSTALL}
     cp -r ${CONFIG_DIR}/${ENV_CONF_FILE} ${REMOTE_INSTALL}
     cp -r ${INSTALL_DIR}/sbin/remote-install-engine.sh ${REMOTE_INSTALL}
-    tar -zcvf remote_install.tgz ${REMOTE_INSTALL}/*
-	rm -rf ${REMOTE_INSTALL}
+    tar -zcvf /tmp/remote_install.tgz ${REMOTE_INSTALL}/*
+    rm -rf ${REMOTE_INSTALL}
+}
+
+removePayload(){
+    rm /tmp/remote_install.tgz
 }
 
 copyPayload(){
     expect -c "set timeout -1;
-        spawn scp remote_install.tgz $USER@$1:~;
+        spawn scp /tmp/remote_install.tgz $USER@$1:~;
         expect {
             *?assword:* {
                     send \"$PASS\r\";
@@ -144,9 +148,9 @@ runPayload(){
                 send \"${PASS}\r\";
             }
         }
-	    expect "${USER}@" {
+        expect "${USER}@" {
             send \"exit\r\";
-	    }
+        }
         interact;"
 }
 
@@ -164,7 +168,7 @@ eval set -- "$TEMP"
 while true ; do
     case "$1" in
         -k|--newkey) NEW_KEY=1
-            shift ;;	
+            shift ;;
         -h|--help) print_usage
                    shift ;;
         --) shift ; break ;;
@@ -198,9 +202,9 @@ for IP in $IPS; do
         if [ "$CAN_SSH" -eq 255 ]; then
             echo "$IP: Cannot SSH to host with key..";
             echo "$IP: Connecting with password.";
-			copyPayload $IP;
-			expandPayload $IP;
-			runPayload $IP;
+            copyPayload $IP;
+            expandPayload $IP;
+            runPayload $IP;
             echo "$IP: Done.";
         else
             echo "$IP: Has SSH Key, No install actions done.";
@@ -209,3 +213,5 @@ for IP in $IPS; do
         echo "$IP: FAIL"
     fi
 done
+
+removePayload;
