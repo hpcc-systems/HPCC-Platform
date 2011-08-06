@@ -110,7 +110,7 @@ public:
                     e->Release();
                 }
             }
-            throw MakeActivityException(this, TE_PipeReturnedFailure, "Process returned %d:%s - PIPE(%s)", container.queryId(), retcode, stdError.str(), pipeCommand.get());    
+            throw MakeActivityException(this, TE_PipeReturnedFailure, "Process returned %d:%s - PIPE(%s)", retcode, stdError.str(), pipeCommand.get());    
         }
     }
     void process()
