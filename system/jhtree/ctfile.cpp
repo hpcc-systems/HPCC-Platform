@@ -793,7 +793,7 @@ extern jhtree_decl void validateKeyFile(const char *filename, offset_t nodePos)
     if (hdr.phyrec != size-1)
         throw MakeStringException(5, "Invalid key %s: phyrec was %"I64F"d, expected %"I64F"d", filename, hdr.phyrec, size-1);
     if (size % hdr.nodeSize)
-        throw MakeStringException(3, "Invalid key %s: size %d is not a multiple of key node size (%d)", filename, size, hdr.nodeSize);
+        throw MakeStringException(3, "Invalid key %s: size %"I64F"d is not a multiple of key node size (%d)", filename, size, hdr.nodeSize);
     if (!hdr.root || hdr.root % hdr.nodeSize !=0)
         throw MakeStringException(6, "Invalid key %s: invalid root pointer %"I64F"x", filename, hdr.root);
     NodeHdr root;

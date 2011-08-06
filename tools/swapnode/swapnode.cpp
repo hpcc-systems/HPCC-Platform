@@ -650,7 +650,7 @@ void swapNodeHistory(IPropertyTree *options,unsigned days,StringBuffer *out)
     if (out) 
         out->append("\nSwapped, Time, NodeNum, OutIp, InIp\n-----------------------------------\n");
     else {
-        PROGLOG("");
+        PROGLOG("%s", "");
         PROGLOG("Swapped, Time, NodeNum, OutIp, InIp");
         PROGLOG("-----------------------------------");
     }

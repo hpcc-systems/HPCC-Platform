@@ -9957,12 +9957,12 @@ public:
     virtual void reportError(int errNo, const char *msg, const char *filename, int lineno, int column, int pos)
     {
         errors->reportError(errNo, msg, filename, lineno, column, pos);
-        throw MakeStringException(HQLERR_ErrorAlreadyReported, "");
+        throw MakeStringException(HQLERR_ErrorAlreadyReported, "%s", "");
     }
     virtual void report(IECLError* error)
     {
         errors->report(error);
-        throw MakeStringException(HQLERR_ErrorAlreadyReported, "");
+        throw MakeStringException(HQLERR_ErrorAlreadyReported, "%s", "");
     }
     virtual void reportWarning(int warnNo, const char *msg, const char *filename, int lineno, int column, int pos)
     {

@@ -357,7 +357,7 @@ void testNxN()
         DBGLOG("Node %d All Sent %"I64F"d bytes total, rate = %.2f MB/s", myIndex, sentTotal, (((double)sentTotal)/1048576.0)/((msTick()-start)/1000.0));
         while (!sendMgr->allDone())
         {
-            DBGLOG("Node %d waiting for queued data to be flushed", myIndex, sentTotal, (((double)sentTotal)/1048576.0)/((msTick()-start)/1000.0));
+            DBGLOG("Node %d waiting for queued data to be flushed", myIndex);
             Sleep(1000);
         }
         DBGLOG("All data sent");

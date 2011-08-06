@@ -337,7 +337,7 @@ void addItem(StringBuffer& jsStrBuf,
   jsStrBuf.appendf("attr%s%s.tab = '%s';", attrName, tabName, *tabName ? getRealTabName(tabName): sbAttr.str());
   jsStrBuf.appendf("attr%s%s.tip = '%s';", attrName, tabName, tip);
   jsStrBuf.appendf("attr%s%s.hidden = %d;", attrName, tabName, hidden);
-  jsStrBuf.appendf("attr%s%s.required = 1;", attrName, tabName, required);
+  jsStrBuf.appendf("attr%s%s.required = 1;", attrName, tabName);
   jsStrBuf.appendf("attr%s%s.ctrlType = %d;", attrName, tabName, ctrlType);
   jsStrBuf.appendf("cS['%s%s']=attr%s%s;", attrName, tabName, attrName, tabName);
 
@@ -360,7 +360,7 @@ void addTopologyType(StringBuffer& jsStrBuf, const IPropertyTree* pEnv, const ch
   jsStrBuf.appendf("attr%s%s.tab = '%s';", attrName, tabName, "Topology");
   jsStrBuf.appendf("attr%s%s.tip = '%s';", attrName, tabName, tip);
   jsStrBuf.appendf("attr%s%s.hidden = %d;", attrName, tabName, hidden);
-  jsStrBuf.appendf("attr%s%s.required = 1;", attrName, tabName, required);
+  jsStrBuf.appendf("attr%s%s.required = 1;", attrName, tabName);
   jsStrBuf.appendf("attr%s%s.ctrlType = %d;", attrName, tabName, ctrlType);
   jsStrBuf.appendf("cS['%s%s']=attr%s%s;", attrName, tabName, attrName, tabName);
 

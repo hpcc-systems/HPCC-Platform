@@ -6774,7 +6774,7 @@ bool CDistributedFileDirectory::cannotRemove(CDfsLogicalFileName &dlfn,IProperty
     const char *logicalname = dlfn.get();
     if (!checkprotonly) {
         if (!logicalname||!*logicalname) {
-            reason.appendf("empty filename",logicalname);
+            reason.appendf("empty filename");
             return true;
         }
         if (dlfn.isQuery()) {
@@ -6854,7 +6854,7 @@ bool CDistributedFileDirectory::doRemoveEntry(CDfsLogicalFileName &dlfn,IUserDes
         }
         if (cname.length()) {
             if (bkind==DXB_SuperFile) {
-                ERRLOG("Trying to remove cluster %s from superfile %s",logicalname);
+                ERRLOG("Trying to remove cluster %s from superfile %s",logicalname,cname.str());
                 return false;
             }
             const char *group = froot->queryProp("@group"); 
@@ -6866,7 +6866,7 @@ bool CDistributedFileDirectory::doRemoveEntry(CDfsLogicalFileName &dlfn,IUserDes
                     return froot->removeTree(t);    
                 }
                 else {
-                    ERRLOG("Cluster %s not present in file %s",logicalname);
+                    ERRLOG("Cluster %s not present in file %s",logicalname,cname.str());
                     return false;
                 }
             }           
@@ -7021,7 +7021,7 @@ bool CDistributedFileDirectory::renamePhysical(const char *oldname,const char *n
     if (newfile) {
         if (newcluster.length()) {
             if (oldcluster.length()) 
-                throw MakeStringException(-1,"cannot specify both source and destination clusters on rename",oldname);
+                throw MakeStringException(-1,"cannot specify both source and destination clusters on rename");
             if (newfile->findCluster(newcluster.str())!=NotFound) 
                 throw MakeStringException(-1,"renamePhysical cluster %s already part of file %s",newcluster.str(),newname);
             if (file->numClusters()!=1) 
@@ -7037,7 +7037,7 @@ bool CDistributedFileDirectory::renamePhysical(const char *oldname,const char *n
     }
     else if (oldcluster.length()) {
         if (newcluster.length()) 
-            throw MakeStringException(-1,"cannot specify both source and destination clusters on rename",oldname);
+            throw MakeStringException(-1,"cannot specify both source and destination clusters on rename");
         if (file->numClusters()==1) 
             throw MakeStringException(-1,"cannot rename sole cluster %s",oldcluster.str());
         if (file->findCluster(oldcluster.str())==NotFound) 

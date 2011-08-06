@@ -539,24 +539,24 @@ interface jlib_decl ILogMsgManager : public ILogMsgListener
     virtual void              resetQueueLimit() = 0;
     virtual bool              flushQueue(unsigned timeout) = 0;
     virtual void              resetMonitors() = 0;
-    virtual void              report(const LogMsgCategory & cat, const char * format, ...) = 0;
+    virtual void              report(const LogMsgCategory & cat, const char * format, ...) __attribute__((format(printf, 3, 4))) = 0;
     virtual void              report_va(const LogMsgCategory & cat, const char * format, va_list args) = 0;
-    virtual void              report(const LogMsgCategory & cat, LogMsgCode code , const char * format, ...) = 0;
+    virtual void              report(const LogMsgCategory & cat, LogMsgCode code , const char * format, ...) __attribute__((format(printf, 4, 5))) = 0;
     virtual void              report_va(const LogMsgCategory & cat, LogMsgCode code , const char * format, va_list args) = 0;
     virtual void              report(const LogMsgCategory & cat, const IException * e, const char * prefix = NULL) = 0;
-    virtual void              report(unsigned compo, const LogMsgCategory & cat, const char * format, ...) = 0;
+    virtual void              report(unsigned compo, const LogMsgCategory & cat, const char * format, ...) __attribute__((format(printf, 4, 5))) = 0;
     virtual void              report_va(unsigned compo, const LogMsgCategory & cat, const char * format, va_list args) = 0;
-    virtual void              report(unsigned compo, const LogMsgCategory & cat, LogMsgCode code , const char * format, ...) = 0;
+    virtual void              report(unsigned compo, const LogMsgCategory & cat, LogMsgCode code , const char * format, ...) __attribute__((format(printf, 5, 6))) = 0;
     virtual void              report_va(unsigned compo, const LogMsgCategory & cat, LogMsgCode code , const char * format, va_list args) = 0;
     virtual void              report(unsigned compo, const LogMsgCategory & cat, const IException * e, const char * prefix = NULL) = 0;
-    virtual void              report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...) = 0;
+    virtual void              report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...) __attribute__((format(printf, 4, 5))) = 0;
     virtual void              report_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args) = 0;
-    virtual void              report(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code , const char * format, ...) = 0;
+    virtual void              report(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code , const char * format, ...) __attribute__((format(printf, 5, 6))) = 0;
     virtual void              report_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code , const char * format, va_list args) = 0;
     virtual void              report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const IException * e, const char * prefix = NULL) = 0;
-    virtual void              report(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...) = 0;
+    virtual void              report(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...) __attribute__((format(printf, 5, 6))) = 0;
     virtual void              report_va(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args) = 0;
-    virtual void              report(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code , const char * format, ...) = 0;
+    virtual void              report(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code , const char * format, ...) __attribute__((format(printf, 6, 7))) = 0;
     virtual void              report_va(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code , const char * format, va_list args) = 0;
     virtual void              report(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, const IException * e, const char * prefix = NULL) = 0;
     virtual void              report(const LogMsg & msg) const = 0;
@@ -572,14 +572,14 @@ class jlib_decl LogMsgComponentReporter
 {
 public:
     LogMsgComponentReporter(unsigned _compo) : component(_compo) {}
-    void                  report(const LogMsgCategory & cat, const char * format, ...);
+    void                  report(const LogMsgCategory & cat, const char * format, ...) __attribute__((format(printf, 3, 4)));
     void                  report_va(const LogMsgCategory & cat, const char * format, va_list args);
-    void                  report(const LogMsgCategory & cat, LogMsgCode code, const char * format, ...);
+    void                  report(const LogMsgCategory & cat, LogMsgCode code, const char * format, ...) __attribute__((format(printf, 4, 5)));
     void                  report_va(const LogMsgCategory & cat, LogMsgCode code, const char * format, va_list args);
     void                  report(const LogMsgCategory & cat, const IException * e, const char * prefix = NULL);
-    void                  report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...);
+    void                  report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...) __attribute__((format(printf, 4, 5)));
     void                  report_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args);
-    void                  report(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, ...);
+    void                  report(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, ...) __attribute__((format(printf, 5, 6)));
     void                  report_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, va_list args);
     void                  report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const IException * e, const char * prefix = NULL);
     void                  report(const LogMsg & msg);
@@ -595,14 +595,14 @@ public:
     // N.B. This method locks the critical section...
     LogMsgPrepender * setContext(LogMsgComponentReporter * r, char const * f, unsigned l);
     // ... and these ones unlock it. So they should be used in pairs.
-    void                      report(const LogMsgCategory & cat, const char * format, ...);
+    void                      report(const LogMsgCategory & cat, const char * format, ...) __attribute__((format(printf, 3, 4)));
     void                      report_va(const LogMsgCategory & cat, const char * format, va_list args);
-    void                      report(const LogMsgCategory & cat, LogMsgCode code, const char * format, ...);
+    void                      report(const LogMsgCategory & cat, LogMsgCode code, const char * format, ...) __attribute__((format(printf, 4, 5)));
     void                      report_va(const LogMsgCategory & cat, LogMsgCode code, const char * format, va_list args);
     void                      report(const LogMsgCategory & cat, const IException * e, const char * prefix = NULL);
-    void                      report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...);
+    void                      report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...) __attribute__((format(printf, 4, 5)));
     void                      report_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args);
-    void                      report(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, ...);
+    void                      report(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, ...) __attribute__((format(printf, 5, 6)));
     void                      report_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, va_list args);
     void                      report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const IException * e, const char * prefix = NULL);
     IException *              report(IException * e, const char * prefix = NULL, LogMsgClass cls = MSGCLS_error); // uses MCexception(e, cls), unknownJob, handy for EXCLOG
@@ -722,6 +722,7 @@ inline void LOG(const LogMsg & msg)
 {
     LOGMSGREPORTER->report(msg);
 }
+void LOG(const LogMsgCategory & cat, const char * format, ...) __attribute__((format(printf, 2, 3)));
 inline void LOG(const LogMsgCategory & cat, const char * format, ...)
 {
     va_list args;
@@ -729,6 +730,7 @@ inline void LOG(const LogMsgCategory & cat, const char * format, ...)
     LOGMSGREPORTER->report_va(cat, format, args);
     va_end(args);
 }
+void LOG(const LogMsgCategory & cat, LogMsgCode code , const char * format, ...) __attribute__((format(printf, 3, 4)));
 inline void LOG(const LogMsgCategory & cat, LogMsgCode code , const char * format, ...)
 {
     va_list args;
@@ -736,6 +738,7 @@ inline void LOG(const LogMsgCategory & cat, LogMsgCode code , const char * forma
     LOGMSGREPORTER->report_va(cat, code , format, args);
     va_end(args);
 }
+inline void LOG(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...) __attribute__((format(printf, 3, 4)));
 inline void LOG(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...)
 {
     va_list args;
@@ -743,6 +746,7 @@ inline void LOG(const LogMsgCategory & cat, const LogMsgJobInfo & job, const cha
     LOGMSGREPORTER->report_va(cat, job, format, args);
     va_end(args);
 }
+inline void LOG(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code , const char * format, ...) __attribute__((format(printf, 4, 5)));
 inline void LOG(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code , const char * format, ...)
 {
     va_list args;
@@ -788,6 +792,7 @@ inline void VALOG(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgC
 #define TOSTRLOG(category, job, prefix, func) { if (!REJECTLOG(category)) { StringBuffer buff; func(buff); LOGMSGREPORTER->report(category, job, prefix"'%s'", buff.str()); } }
 #define EVENTLOG(code, extra) LOGMSGREPORTER->report(MCevent, unknownJob, code, extra)
 
+inline void DBGLOG(char const * format, ...) __attribute__((format(printf, 1, 2)));
 inline void DBGLOG(char const * format, ...)
 {
     va_list args;
@@ -796,6 +801,7 @@ inline void DBGLOG(char const * format, ...)
     va_end(args);
 }
 
+inline void DISLOG(char const * format, ...) __attribute__((format(printf, 1, 2)));
 inline void DISLOG(char const * format, ...)
 {
     va_list args;
@@ -804,7 +810,8 @@ inline void DISLOG(char const * format, ...)
     va_end(args);
 }
 
-inline void ERRLOG(char const * format, ...)
+inline void ERRLOG(char const * format, ...) __attribute__((format(printf, 1, 2)));
+inline void ERRLOG(char const * format, ...) 
 {
     va_list args;
     va_start(args, format);
@@ -812,6 +819,7 @@ inline void ERRLOG(char const * format, ...)
     va_end(args);
 }
 
+inline void OERRLOG(char const * format, ...) __attribute__((format(printf, 1, 2)));
 inline void OERRLOG(char const * format, ...)
 {
     va_list args;
@@ -820,6 +828,7 @@ inline void OERRLOG(char const * format, ...)
     va_end(args);
 }
 
+inline void IERRLOG(char const * format, ...) __attribute__((format(printf, 1, 2)));
 inline void IERRLOG(char const * format, ...)
 {
     va_list args;
@@ -828,6 +837,7 @@ inline void IERRLOG(char const * format, ...)
     va_end(args);
 }
 
+inline void WARNLOG(char const * format, ...) __attribute__((format(printf, 1, 2)));
 inline void WARNLOG(char const * format, ...)
 {
     va_list args;
@@ -836,6 +846,7 @@ inline void WARNLOG(char const * format, ...)
     va_end(args);
 }
 
+inline void PROGLOG(char const * format, ...) __attribute__((format(printf, 1, 2)));
 inline void PROGLOG(char const * format, ...)
 {
     va_list args;
@@ -844,6 +855,7 @@ inline void PROGLOG(char const * format, ...)
     va_end(args);
 }
 
+inline void DBGLOG(LogMsgCode code, char const * format, ...) __attribute__((format(printf, 2, 3)));
 inline void DBGLOG(LogMsgCode code, char const * format, ...)
 {
     va_list args;
@@ -852,6 +864,7 @@ inline void DBGLOG(LogMsgCode code, char const * format, ...)
     va_end(args);
 }
 
+inline void DISLOG(LogMsgCode code, char const * format, ...) __attribute__((format(printf, 2, 3)));
 inline void DISLOG(LogMsgCode code, char const * format, ...)
 {
     va_list args;
@@ -860,6 +873,7 @@ inline void DISLOG(LogMsgCode code, char const * format, ...)
     va_end(args);
 }
 
+inline void ERRLOG(LogMsgCode code, char const * format, ...) __attribute__((format(printf, 2, 3)));
 inline void ERRLOG(LogMsgCode code, char const * format, ...)
 {
     va_list args;
@@ -868,6 +882,7 @@ inline void ERRLOG(LogMsgCode code, char const * format, ...)
     va_end(args);
 }
 
+inline void IERRLOG(LogMsgCode code, char const * format, ...) __attribute__((format(printf, 2, 3)));
 inline void IERRLOG(LogMsgCode code, char const * format, ...)
 {
     va_list args;
@@ -876,6 +891,7 @@ inline void IERRLOG(LogMsgCode code, char const * format, ...)
     va_end(args);
 }
 
+inline void WARNLOG(LogMsgCode code, char const * format, ...) __attribute__((format(printf, 2, 3)));
 inline void WARNLOG(LogMsgCode code, char const * format, ...)
 {
     va_list args;
@@ -884,6 +900,7 @@ inline void WARNLOG(LogMsgCode code, char const * format, ...)
     va_end(args);
 }
 
+inline void PROGLOG(LogMsgCode code, char const * format, ...) __attribute__((format(printf, 2, 3)));
 inline void PROGLOG(LogMsgCode code, char const * format, ...)
 {
     va_list args;
@@ -973,9 +990,9 @@ extern jlib_decl void UseSysLogForOperatorMessages(bool use=true);
 
 interface IContextLogger : extends IInterface
 {
-    virtual void CTXLOG(const char *format, ...) const = 0;
+    virtual void CTXLOG(const char *format, ...) const  __attribute__((format(printf, 2, 3))) = 0;
     virtual void CTXLOGva(const char *format, va_list args) const = 0;
-    virtual void logOperatorException(IException *E, const char *file, unsigned line, const char *format, ...) const = 0;
+    virtual void logOperatorException(IException *E, const char *file, unsigned line, const char *format, ...) const  __attribute__((format(printf, 5, 6))) = 0;
     virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const = 0;
     virtual void noteStatistic(unsigned statCode, unsigned __int64 value, unsigned count) const = 0; // Values for statcode defined in jstats.h
     virtual unsigned queryTraceLevel() const = 0;

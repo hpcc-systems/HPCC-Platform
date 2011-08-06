@@ -179,9 +179,9 @@ void Thread::adjustPriority(char delta)
         case +2: param.sched_priority =  sched_get_priority_max(SCHED_RR); policy =SCHED_RR;    break;
         }
         if(( rc = pthread_setschedparam(threadid, policy, &param)) != 0) 
-            DBGLOG("pthread_setschedparam error: %d policy=%i pr=%i id=%i PID=%i", rc,policy,param.sched_priority,threadid,getpid());
+            DBGLOG("pthread_setschedparam error: %d policy=%i pr=%i id=%"I64F"u PID=%i", rc,policy,param.sched_priority,(unsigned __int64) threadid,getpid());
         else
-            DBGLOG("priority set id=%i policy=%i pri=%i PID=%i",threadid,policy,param.sched_priority,getpid());
+            DBGLOG("priority set id=%"I64F"u policy=%i pri=%i PID=%i",(unsigned __int64) threadid,policy,param.sched_priority,getpid());
 #endif
     }
 }

@@ -1561,7 +1561,7 @@ void CWsEclBinding::getWsEclJsonResponse(StringBuffer& jsonmsg, IEspContext &con
         }
     }
 
-    jsonmsg.appendf("    }\n  }\n}", wsinfo.queryname.sget());
+    jsonmsg.append("    }\n  }\n}");
 
 }
 

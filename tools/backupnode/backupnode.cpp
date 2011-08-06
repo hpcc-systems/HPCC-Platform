@@ -187,14 +187,14 @@ void syncFile(const char *src, const char *dst)
     offset_t srcsz;
     if (srcfile->getInfo(isdir,srcsz,srcdt)) { // ignore if not there
         if (isdir)
-            printerr("src file %s is directory, ignoring copy");
+            printerr("src file %s is directory, ignoring copy", src);
         else {
             Owned<IFile> dstfile = createIFile(dst);
             CDateTime dstdt;
             offset_t dstsz;
             if (dstfile->getInfo(isdir,dstsz,dstdt)) { // check if there
                 if (isdir) {
-                    printerr("dst file %s is directory, ignoring copy");
+                    printerr("dst file %s is directory, ignoring copy", dst);
                     return;
                 }
                 if ((srcsz==dstsz)&&srcdt.equals(dstdt,!inexactDateMatch))
@@ -648,7 +648,7 @@ int main(int argc, const char *argv[])
             if (!slaveNum || slaveNum>numSlaves)
             {
                 printerr("'%s' is not a valid slave number (range is 1 to %d)", args.item(1), numSlaves);
-                throw MakeStringException(-1, "'%s' is not a valid slave number (range is 1 to %d)", numSlaves);
+                throw MakeStringException(-1, "'%s' is not a valid slave number (range is 1 to %d)", args.item(1), numSlaves);
             }
             if (!forceSlaveIP)
             {

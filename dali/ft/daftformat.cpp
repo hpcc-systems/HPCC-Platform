@@ -605,7 +605,7 @@ size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
     }
     if (!ateof)
         throwError(DFTERR_EndOfRecordNotFound);
-    LOG(MCdebugProgress, unknownJob, "CSV splitRecordSize(%d) at end of file",end - start);
+    LOG(MCdebugProgress, unknownJob, "CSV splitRecordSize(%d) at end of file", (unsigned) (end - start));
     return end - start;
 }
 
@@ -739,7 +739,7 @@ size32_t CUtfPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
 
     if (!ateof)
         throwError(DFTERR_EndOfRecordNotFound);
-    LOG(MCdebugProgress, unknownJob, "UTF splitRecordSize(%d) at end of file",end - start);
+    LOG(MCdebugProgress, unknownJob, "UTF splitRecordSize(%d) at end of file", (unsigned) (end - start));
 
     return end - start;
 }

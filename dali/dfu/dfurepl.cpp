@@ -274,7 +274,7 @@ struct ReplicateFileItem: extends CInterface
         // see if already replicating
         Owned<IRemoteConnection> pconn = querySDS().connect("DFU/Replicating", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY,  SDS_TIMEOUT);
         if (!pconn.get()) {
-            ERRLOG(LOGPFX "Connect to DFU/Replicating failed",lfn);
+            ERRLOG(LOGPFX "Connect to DFU/Replicating %s failed",lfn);
             return;
         }
         StringBuffer xpath;
@@ -294,7 +294,7 @@ struct ReplicateFileItem: extends CInterface
         // now as long as SDS doesn't lock children this should be OK
         conn.setown(querySDS().connect("DFU/Replicating/File", myProcessSession(), RTM_CREATE_ADD | RTM_LOCK_READ, 5*60*1000));
         if (!conn.get()) {
-            ERRLOG(LOGPFX "Create of DFU/Replicating/File failed",lfn);
+            ERRLOG(LOGPFX "Create of DFU/Replicating/File %s failed",lfn);
             return;
         }
         genUUID(tmp.clear(),true);  // true for windows

@@ -854,7 +854,11 @@ void MappingParser::parseAttribute(FieldTransformInfo & output)
         lexToken();
     }
     else
-        throwError1(FVERR_ExpectedX, "Definition name");
+    {
+        unsigned len = lenInput-offset;
+        if (len>10) len = 10;
+        throwError3(FVERR_ExpectedX, "Definition name", len, input+offset);
+    }
 }
 
 void MappingParser::parseColumnMapping(FieldTransformInfo & output)

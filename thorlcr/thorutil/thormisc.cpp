@@ -829,7 +829,7 @@ memsize_t queryLargeMemSize()
             largeMemSize = globals->getPropInt("@largeMemSize") * 0x100000;
         else
             largeMemSize = DEFAULT_LARGEMEM_BUFFER_SIZE;
-        PROGLOG("Setting largemem to %d",largeMemSize);
+        PROGLOG("Setting largemem to %"I64F"d", (unsigned __int64) largeMemSize);
     }
     return largeMemSize;
 }

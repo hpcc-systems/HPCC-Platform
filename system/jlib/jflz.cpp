@@ -696,7 +696,7 @@ public:
         else
             inbuf = (byte *)inma.bufferBase();
         if (blksz<1024)
-            throw MakeStringException(-1,"CFastLZCompressor::open - block size (%d) not large enough");
+            throw MakeStringException(-1,"CFastLZCompressor::open - block size (%d) not large enough", blksz);
         *(size32_t *)outbuf = 0;
         outlen = sizeof(size32_t);
         inlen = 0;

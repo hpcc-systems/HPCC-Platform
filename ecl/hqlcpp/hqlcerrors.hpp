@@ -469,7 +469,7 @@
 #define HQLERR_CouldNotFindDataset_Text         "Could not find dataset %s"
 #define HQLERR_CouldNotAnyDatasetX_Text         "Could not find dataset %s (no tables in scope)"
 #define HQLERR_NestedThorNodes_Text             "INTERNAL: Thor nodes should not be nested"
-#define HQLERR_MissingTransformAssignXX_Text    "INTERNAL: Missing assignment from transform to %s[%lx]"
+#define HQLERR_MissingTransformAssignXX_Text    "INTERNAL: Missing assignment from transform to %s[%p]"
 #define HQLERR_JoinXTooComplex_Text             "JOIN%s contains no equality conditions - use ,ALL to allow"
 #define HQLERR_GlobalDedupFuzzy_Text            "A global DEDUP(ALL) or local hash dedup cannot include comparisons in the dedup criteria"
 #define HQLERR_GlobalDedupNoEquality_Text       "Global dedup,ALL must have a field to partition"

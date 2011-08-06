@@ -1152,7 +1152,7 @@ void CDeploymentEngine::connectToNetworkPath(const char* uncPath, const char* us
 
     // No sense in continuing if connection falied
     if (task->getErrorCode() != 0)
-        throw MakeStringException(0, ""); //message already displayed!
+        throw MakeStringException(0, "%s", ""); //message already displayed!
 
     // Save connections for disconnecting during destructor
     m_connections.insert( path.str() );

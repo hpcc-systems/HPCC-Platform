@@ -5135,7 +5135,7 @@ void CWsDeployFileInfo::getNavigationData(IEspContext &context, IPropertyTree* p
         context.getUserID(sbName);
         context.getPeer(sbUserIp);
         if (strcmp(sbName.str(), m_userWithLock.str()) || strcmp(sbUserIp.str(), m_userIp.str()))
-          throw MakeStringException(-1, "%A user on machine %s is accessing the file. Please try after sometime.", m_userIp.str());
+          throw MakeStringException(-1, "A user on machine %s is accessing the file. Please try again later.", m_userIp.str());
       }
 
       initFileInfo(false);

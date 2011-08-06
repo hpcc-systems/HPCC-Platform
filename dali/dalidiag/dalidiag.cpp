@@ -289,7 +289,7 @@ void partInfo(const char *name,unsigned copy)
         }
     }
     else
-        DBGLOG("ERROR: %s not found");
+        DBGLOG("ERROR: %s not found", name);
 }
 
 
@@ -373,7 +373,7 @@ void backupList(const char *cluster)
         }
     }
     else 
-        DBGLOG("ERROR: cluster %s not found");
+        DBGLOG("ERROR: cluster %s not found", cluster);
 }
 
 void filePermissions(const char *lname,const char *username,const char *password)

@@ -874,7 +874,7 @@ static void treeCopyFile(RemoteFilename &srcfn, RemoteFilename &dstfn, const cha
             }
             // all locations busy
             if (msTick()-start>TREECOPYTIMEOUT) {
-                WARNLOG("Treecopy %s wait timed out");
+                WARNLOG("Treecopy %s wait timed out", srcfile->queryFilename());
                 break;
             }
             treeCopyWaiting++; // note this isn't precise - just indication
@@ -1935,7 +1935,7 @@ public:
         rfn.serialize(sendBuffer);
         const char *d = dest->queryFilename();
         if (!isAbsolutePath(d)) 
-            throw MakeStringException(-1,"treeCopyFile destination '%s' is not an absolute path");
+            throw MakeStringException(-1,"treeCopyFile destination '%s' is not an absolute path", d);
         rfn.setRemotePath(d);
         rfn.serialize(sendBuffer);
         StringBuffer tmp;
@@ -2987,7 +2987,7 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer, imple
             if (TF_TRACE_FULL)
                 PROGLOG("notifySelected %d,%d",toread,left);
             if ((left!=0)&&(avail==0)) {
-                WARNLOG("notifySelected: Closing mid packet, %d remaining");
+                WARNLOG("notifySelected: Closing mid packet, %d remaining", left);
                 toread = left;
                 buf.clear();
             }
@@ -3828,7 +3828,7 @@ public:
         }
 
         if (TF_TRACE)
-            PROGLOG("GetDir,  '%s'",name.get(),mask.get());
+            PROGLOG("GetDir,  '%s', '%s'",name.get(),mask.get());
         try {
             Owned<IFile> dir=createIFile(name);
 
@@ -3883,7 +3883,7 @@ public:
             prev.setown(di);
         }
         if (TF_TRACE)
-            PROGLOG("MonitorDir,  '%s'",name.get(),mask.get());
+            PROGLOG("MonitorDir,  '%s' '%s'",name.get(),mask.get());
         try {
             Owned<IFile> dir=createIFile(name);
             Owned<IDirectoryDifferenceIterator> iter=dir->monitorDirectory(prev,mask.length()?mask.get():NULL,sub,includedir,checkinterval,timeout);
