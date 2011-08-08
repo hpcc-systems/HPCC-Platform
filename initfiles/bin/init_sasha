@@ -17,8 +17,7 @@ ulimit -n 8192
 which_pidof
 
 killed() {
-
-    rm -f saserver_sentinel*.txt
+    rm -f saserver_sentinel.txt
     pid=`${PIDOF} saserver`
     if [ -n "$pid" ]; then
         sasha server=. action=stop
@@ -28,7 +27,7 @@ killed() {
             sleep 2
             pid=`${PIDOF} saserver`
             let I=I+1
-        
+
         done
         if [ -n "$pid" ]; then
             kill -9 $pid
@@ -40,14 +39,13 @@ killed() {
 
 trap "killed" SIGINT SIGTERM SIGKILL
 export LANG=en_US
-echo rerun > saserver_sentinel_$$.txt
 saserver 1>/dev/null 2>/dev/null &
 echo $! > $PID_NAME
 wait
 
-while [ -e saserver_sentinel_$$.txt ]; do
+while [ -e saserver_sentinel.txt ]; do
     sleep 5
-    if [ -e saserver_sentinel_$$.txt ]; then
+    if [ -e saserver_sentinel.txt ]; then
         saserver 1>/dev/null 2>/dev/null &
         echo $! > $PID_NAME
         wait
