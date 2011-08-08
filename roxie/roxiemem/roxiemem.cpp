@@ -93,8 +93,8 @@ void initializeHeap(unsigned pages)
 #else
     int ret;
     if ((ret = posix_memalign((void **) &heapBase, HEAP_ALIGNMENT_SIZE, memsize)) != 0) {
-        DBGLOG("RoxieMemMgr: posix_memalign (alignment=%u, size=%u) failed - ret=%d", 
-                HEAP_ALIGNMENT_SIZE, memsize, ret);
+        DBGLOG("RoxieMemMgr: posix_memalign (alignment=%"I64F"u, size=%"I64F"u) failed - ret=%d", 
+                (unsigned __int64) HEAP_ALIGNMENT_SIZE, (unsigned __int64) memsize, ret);
         HEAPERROR("RoxieMemMgr: Unable to create heap");
     }
 #endif
@@ -103,8 +103,8 @@ void initializeHeap(unsigned pages)
     heapLWM = 0;
 
     if (memTraceLevel)
-        DBGLOG("RoxieMemMgr: %u Pages successfully allocated for the pool - memsize=%u base=%p alignment=%u bitmapSize=%u", 
-                heapBitmapSize * UNSIGNED_BITS, memsize, heapBase, HEAP_ALIGNMENT_SIZE, heapBitmapSize);
+        DBGLOG("RoxieMemMgr: %u Pages successfully allocated for the pool - memsize=%"I64F"u base=%p alignment=%"I64F"u bitmapSize=%u", 
+                heapBitmapSize * UNSIGNED_BITS, (unsigned __int64) memsize, heapBase, (unsigned __int64) HEAP_ALIGNMENT_SIZE, heapBitmapSize);
 }
 
 extern void releaseRoxieHeap()
@@ -1300,7 +1300,7 @@ public:
         pageLimit = (unsigned) (bytes / HEAP_ALIGNMENT_SIZE);
 
         if (memTraceLevel >= 2)
-            logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::setMemoryLimit new memlimit=%u pageLimit=%u rowMgr=%p", bytes, pageLimit, this);
+            logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::setMemoryLimit new memlimit=%"I64F"u pageLimit=%u rowMgr=%p", (unsigned __int64) bytes, pageLimit, this);
     }
 
     virtual void *resizeRow(void * original, unsigned oldsize, unsigned newsize, unsigned activityId)

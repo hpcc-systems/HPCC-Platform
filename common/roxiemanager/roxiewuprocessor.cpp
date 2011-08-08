@@ -423,7 +423,7 @@ private:
                 if (baseIndexName.length())
                 {
                     if (useSourceClusterName)
-                        fullBaseIndexName.appendf("~%s::s",processingInfo.querySourceRoxieClusterName(), baseIndexName.str());
+                        fullBaseIndexName.appendf("~%s::%s",processingInfo.querySourceRoxieClusterName(), baseIndexName.str());
                     else
                         fullBaseIndexName.appendf("~%s", baseIndexName.str());
 

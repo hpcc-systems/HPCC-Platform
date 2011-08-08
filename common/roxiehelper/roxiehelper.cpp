@@ -930,9 +930,9 @@ void FlushingStringBuffer::flushXML(StringBuffer &current, bool isClosing)
                 logctx.CTXLOG("Sending reply: Sending blocked %s data", (isXml)?"xml":"raw");
             else
 #ifdef _DEBUG
-                logctx.CTXLOG("Sending reply length %d: %.1024s", s.length() - sizeof(size32_t), s.str()+sizeof(size32_t));
+                logctx.CTXLOG("Sending reply length %d: %.1024s", (unsigned) (s.length() - sizeof(size32_t)), s.str()+sizeof(size32_t));
 #else
-                logctx.CTXLOG("Sending reply length %d: %.40s", s.length() - sizeof(size32_t), s.str()+sizeof(size32_t));
+                logctx.CTXLOG("Sending reply length %d: %.40s", (unsigned) (s.length() - sizeof(size32_t)), s.str()+sizeof(size32_t));
 #endif
         }
         *(size32_t *) s.str() = revLen;

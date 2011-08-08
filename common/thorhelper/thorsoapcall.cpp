@@ -1666,7 +1666,7 @@ private:
     inline void checkTimeLimitExceeded()
     {
         if (master->isTimeLimitExceeded())
-            throw MakeStringException(TIMELIMIT_EXCEEDED, "%sCALL TIMELIMIT(%d) exceeded", master->wscType == STsoap ? "SOAP" : "HTTP", master->timeLimit);
+            throw MakeStringException(TIMELIMIT_EXCEEDED, "%sCALL TIMELIMIT(%"I64F"u) exceeded", master->wscType == STsoap ? "SOAP" : "HTTP", (unsigned __int64) master->timeLimit);
     }
 
 public:
@@ -1742,7 +1742,7 @@ public:
                 {
                     if (master->timeLimitExceeded)
                     {
-                        master->logctx.CTXLOG("%sCALL exiting: time limit (%d) exceeded",master->wscType == STsoap ? "SOAP" : "HTTP", master->timeLimit);
+                        master->logctx.CTXLOG("%sCALL exiting: time limit (%"I64F"d) exceeded",master->wscType == STsoap ? "SOAP" : "HTTP", (unsigned __int64) master->timeLimit);
                         processException(url, inputRows, e);
                         return;
                     }
@@ -1840,7 +1840,7 @@ public:
                 if (master->timeLimitExceeded)
                 {
                     processException(url, inputRows, e);
-                    master->logctx.CTXLOG("%sCALL exiting: time limit (%d) exceeded",master->wscType == STsoap ? "SOAP" : "HTTP",master->timeLimit);
+                    master->logctx.CTXLOG("%sCALL exiting: time limit (%"I64F"d) exceeded", master->wscType == STsoap ? "SOAP" : "HTTP", (unsigned __int64) master->timeLimit);
                     break;
                 }
 

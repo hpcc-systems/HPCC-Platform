@@ -3608,7 +3608,7 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
                         return LINK(lastInput);
                     }
                 default:
-                    DBGLOG("Folder: Remove %d inputs from", expr->numChildren()-args.ordinality(), getOpString(op));
+                    DBGLOG("Folder: Remove %d inputs from %s", expr->numChildren()-args.ordinality(), getOpString(op));
                     return expr->clone(args);
                 }
             }

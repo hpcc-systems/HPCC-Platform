@@ -103,7 +103,7 @@ public:
 // Bit risky if *very* out of memory so protect against recursion and catch exceptions
             try { 
                 // try to log
-                PROGLOG("Jbuff: Out of Memory (%d,%d,%dk)",_errcode,_wanted,_got/1024);
+                PROGLOG("Jbuff: Out of Memory (%d,%d,%"I64F"dk)",_errcode,_wanted,(unsigned __int64) (got/1024));
                 PrintStackReport();
                 PrintMemoryReport();
             }

@@ -403,7 +403,7 @@ CGraphElementBase::CGraphElementBase(CGraphBase &_owner, IPropertyTree &_xgmml) 
     xgmml->getProp("@id", helperName);
     helperFactory = (EclHelperFactory) queryJob().queryDllEntry().getEntry(helperName.str());
     if (!helperFactory)
-        throw MakeOsException(GetLastError(), "Failed to load helper factory method: %s (dll handle = %x)", helperName.str(), queryJob().queryDllEntry().getInstance());
+        throw MakeOsException(GetLastError(), "Failed to load helper factory method: %s (dll handle = %p)", helperName.str(), queryJob().queryDllEntry().getInstance());
     alreadyUpdated = false;
     whichBranch = (unsigned)-1;
     whichBranchBitSet.setown(createBitSet());

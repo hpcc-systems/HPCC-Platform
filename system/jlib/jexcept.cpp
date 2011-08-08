@@ -961,15 +961,15 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
     PROGLOG("================================================");
     PROGLOG("Signal:    %d %s",signum,strsignal(signum));
     PROGLOG("Fault IP:  "I64X"", ip);
-    PROGLOG("Accessing: "I64X"", info->si_addr);
+    PROGLOG("Accessing: "I64X"", (unsigned __int64) info->si_addr);
     PROGLOG("Registers:" );
     PROGLOG("EAX:"I64X"  EBX:"I64X"  ECX:"I64X"  EDX:"I64X"  ESI:"I64X"  EDI:"I64X"",
-        uc->uc_mcontext.gregs[REG_RAX], uc->uc_mcontext.gregs[REG_RBX], 
-        uc->uc_mcontext.gregs[REG_RCX], uc->uc_mcontext.gregs[REG_RDX], 
-        uc->uc_mcontext.gregs[REG_RSI], uc->uc_mcontext.gregs[REG_RDI] );
+        (unsigned __int64) uc->uc_mcontext.gregs[REG_RAX], (unsigned __int64)uc->uc_mcontext.gregs[REG_RBX], 
+        (unsigned __int64) uc->uc_mcontext.gregs[REG_RCX], (unsigned __int64) uc->uc_mcontext.gregs[REG_RDX], 
+        (unsigned __int64) uc->uc_mcontext.gregs[REG_RSI], (unsigned __int64) uc->uc_mcontext.gregs[REG_RDI] );
     
-    PROGLOG( "CS:EIP:%04X:"I64X"", ((unsigned)uc->uc_mcontext.gregs[REG_CSGSFS])&0xffff, ip );
-    PROGLOG( "   ESP:"I64X"  EBP:"I64X"",sp, uc->uc_mcontext.gregs[REG_RBP] );  
+    PROGLOG( "CS:EIP:%04X:"I64X"", ((unsigned) uc->uc_mcontext.gregs[REG_CSGSFS])&0xffff, ip );
+    PROGLOG( "   ESP:"I64X"  EBP:"I64X"", sp, (unsigned __int64) uc->uc_mcontext.gregs[REG_RBP] );  
     
     for (unsigned i=0;i<8;i++) {
         StringBuffer s;

@@ -1114,7 +1114,7 @@ public:
     {
         // addDependency is expected to fail occasionally on slave, but never on Roxie server
         if (!doAddDependency(sourceIdx, sourceId, targetId, controlId, edgeId, activities))
-            throw MakeStringException(ROXIE_ADDDEPENDENCY_ERROR, "Failed to create dependency from %s on %s", sourceId, targetId);
+            throw MakeStringException(ROXIE_ADDDEPENDENCY_ERROR, "Failed to create dependency from %u on %u", sourceId, targetId);
     }
 
     virtual ActivityArray *loadGraph(IPropertyTree &graph, const char *graphName)

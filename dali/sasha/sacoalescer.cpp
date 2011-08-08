@@ -52,7 +52,7 @@ void coalesceDatastore(bool force)
         offset_t minDeltaSize = force?0:coalesceProps->getPropInt64("@minDeltaSize", DEFAULT_MINDELTASIZE);
 
         loop {
-            PROGLOG("COALESCER: dataPath=%s, backupPath=%s, minDeltaSize = %dK", dataPath.str(), backupPath.str(), minDeltaSize);
+            PROGLOG("COALESCER: dataPath=%s, backupPath=%s, minDeltaSize = %"I64F"dK", dataPath.str(), backupPath.str(), (unsigned __int64) minDeltaSize);
             unsigned configFlags = SH_External|SH_CheckNewDelta;
             configFlags |= coalesceProps->getPropBool("@recoverFromIncErrors", false) ? SH_RecoverFromIncErrors : 0;
             configFlags |= coalesceProps->getPropBool("@backupErrorFiles", true) ? SH_BackupErrorFiles : 0;

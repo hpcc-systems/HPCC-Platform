@@ -1670,7 +1670,7 @@ public:
             out.append(' ');
         }
         if (totalcpu)
-          out.appendf("CPU: usr=%d sys=%d iow=%d", (unsigned)(cpu.user*100/totalcpu), (unsigned)(cpu.system*100/totalcpu), (unsigned)(cpu.iowait*100/totalcpu), (unsigned)(cpu.idle*100/totalcpu));
+          out.appendf("CPU: usr=%d sys=%d iow=%d idle=%d", (unsigned)(cpu.user*100/totalcpu), (unsigned)(cpu.system*100/totalcpu), (unsigned)(cpu.iowait*100/totalcpu), (unsigned)(cpu.idle*100/totalcpu));
         return true;
     }
 

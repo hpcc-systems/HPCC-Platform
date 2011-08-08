@@ -6373,7 +6373,7 @@ void CFileContents::ensureUtf8(MemoryBuffer & contents)
         if (convertToUtf8(translated, contents.length(), contents.bufferBase()))
             contents.swapWith(translated);
         else
-            throw MakeStringException(1, "File doesn't appear to be UTF8", file->queryFilename());
+            throw MakeStringException(1, "File %s doesn't appear to be UTF8", file->queryFilename());
     }
 }
 

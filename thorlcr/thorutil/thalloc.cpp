@@ -347,7 +347,7 @@ public:
             PROGLOG("%s: %p, {cnt=%d,crc=%x,flg=%x} %u: %s",prefix?prefix:"row", row, (int)atomic_read(&h->count), (unsigned)h->extra, (unsigned)h->flags, us, s.str());
         }
         else 
-            PROGLOG("%s: NULL row",row);
+            PROGLOG("%s: NULL row",prefix?prefix:"row");
     }
 
 };

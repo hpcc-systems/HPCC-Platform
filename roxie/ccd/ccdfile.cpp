@@ -955,7 +955,7 @@ public:
     {
         bctStarted.signal();
         if (traceLevel)
-            DBGLOG("Background copy thread %x starting", this);
+            DBGLOG("Background copy thread %p starting", this);
         try
         {
             int fileCopiedCount = 0;
@@ -1024,7 +1024,7 @@ public:
             DBGLOG("Unknown exception in background copy thread");
         }
         if (traceLevel)
-            DBGLOG("Background copy thread %x exiting", this);
+            DBGLOG("Background copy thread %p exiting", this);
         return 0;
     }
 
@@ -1032,7 +1032,7 @@ public:
     {
         hctStarted.signal();
         if (traceLevel)
-            DBGLOG("HandleCloser thread %x starting", this);
+            DBGLOG("HandleCloser thread %p starting", this);
         try
         {
             loop
@@ -1055,7 +1055,7 @@ public:
             DBGLOG("Unknown exception in handle closer thread");
         }
         if (traceLevel)
-            DBGLOG("Handle closer thread %x exiting", this);
+            DBGLOG("Handle closer thread %p exiting", this);
         return 0;
     }
 
@@ -1625,7 +1625,7 @@ public:
     {
         if (part > numParts || part == 0)
         {
-            throw MakeStringException(ROXIE_FILE_FAIL, "Internal error - requesting base for non-existant file part %s (valid are 1-%d)", part, numParts);
+            throw MakeStringException(ROXIE_FILE_FAIL, "Internal error - requesting base for non-existant file part %d (valid are 1-%d)", part, numParts);
         }
         return map[part-1].base;
     }
