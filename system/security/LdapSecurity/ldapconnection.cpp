@@ -1052,7 +1052,7 @@ public:
 
             for(int retries = 0; retries <= LDAPSEC_MAX_RETRIES; retries++)
             {
-                DBGLOG("LdapBind for user %s.", username, retries);
+                DBGLOG("LdapBind for user %s (retries=%d).", username, retries);
                 {
                     LDAP* user_ld = LdapUtils::LdapInit(m_ldapconfig->getProtocol(), hostbuf.str(), m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort());
                     rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getDomain(), username, password, userdnbuf.str(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());

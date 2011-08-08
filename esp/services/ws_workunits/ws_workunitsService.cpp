@@ -4361,7 +4361,7 @@ bool CWsWorkunitsEx::onWUDeployWorkunit(IEspContext &context, IEspWUDeployWorkun
     IConstWorkUnit* wu= factory->openWorkUnit(wuid.str(), false);
     if (!wu)
     {
-        throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot find the workunit for file %s.");
+        throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot find the workunit %s", wuid.str());
     }
 
     SCMStringBuffer queryName;
@@ -7008,14 +7008,14 @@ void CWsWorkunitsEx::getWorkunitCluster(IEspContext &context, const char* wuid, 
 void CWsWorkunitsEx::getWorkunitXml(IEspContext &context, const char* wuid, const char* plainText, MemoryBuffer& buf)
 {
     SCMStringBuffer x;
-   CWUWrapper wu(wuid, context);
-   exportWorkUnitToXML(wu, x);
+    CWUWrapper wu(wuid, context);
+    exportWorkUnitToXML(wu, x);
    
-    char* header="<?xml version=\"1.0\" encoding=\"UTF-8\"?><?xml-stylesheet href=\"../esp/xslt/xmlformatter.xsl\" type=\"text/xsl\"?>";
+    const char* header="<?xml version=\"1.0\" encoding=\"UTF-8\"?><?xml-stylesheet href=\"../esp/xslt/xmlformatter.xsl\" type=\"text/xsl\"?>";
     if (plainText && (!stricmp(plainText, "yes")))
         header="<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 
-   buf.append(strlen(header),header);
+    buf.append(strlen(header),header);
     buf.append(x.length(),x.str());
 }
 

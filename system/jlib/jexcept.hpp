@@ -92,27 +92,27 @@ interface IExceptionHandler
    virtual bool fireException(IException *e) = 0;
 };
 
-IException jlib_decl *MakeStringException(int code,const char *why, ...);
+IException jlib_decl *MakeStringException(int code,const char *why, ...) __attribute__((format(printf, 2, 3)));
 IException jlib_decl *MakeStringExceptionVA(int code,const char *why, va_list args);
 IException jlib_decl *MakeStringExceptionDirect(int code,const char *why);
-IException jlib_decl *MakeStringException(MessageAudience aud,int code,const char *why, ...);
+IException jlib_decl *MakeStringException(MessageAudience aud,int code,const char *why, ...) __attribute__((format(printf, 3, 4)));
 IException jlib_decl *MakeStringExceptionVA(MessageAudience aud,int code,const char *why, va_list args);
 IException jlib_decl *MakeStringExceptionDirect(MessageAudience aud,int code,const char *why);
-void jlib_decl ThrowStringException(int code,const char *format, ...);
+void jlib_decl ThrowStringException(int code,const char *format, ...) __attribute__((format(printf, 2, 3)));
 
 interface jlib_thrown_decl IOSException: extends IException{};
 IOSException jlib_decl *MakeOsException(int code);
-IOSException jlib_decl *MakeOsException(int code, const char *msg, ...);
+IOSException jlib_decl *MakeOsException(int code, const char *msg, ...) __attribute__((format(printf, 2, 3)));
 
 #define DISK_FULL_EXCEPTION_CODE ENOSPC
 
 interface jlib_thrown_decl IErrnoException: extends IException{};
 IErrnoException jlib_decl *MakeErrnoException(int errn=-1);
-IErrnoException jlib_decl *MakeErrnoException(int errn, const char *why, ...);
-IErrnoException jlib_decl *MakeErrnoException(const char *why, ...);
+IErrnoException jlib_decl *MakeErrnoException(int errn, const char *why, ...) __attribute__((format(printf, 2, 3)));
+IErrnoException jlib_decl *MakeErrnoException(const char *why, ...) __attribute__((format(printf, 1, 2)));
 IErrnoException jlib_decl *MakeErrnoException(MessageAudience aud,int errn=-1);
-IErrnoException jlib_decl *MakeErrnoException(MessageAudience aud,int errn, const char *why, ...);
-IErrnoException jlib_decl *MakeErrnoException(MessageAudience aud,const char *why, ...);
+IErrnoException jlib_decl *MakeErrnoException(MessageAudience aud,int errn, const char *why, ...) __attribute__((format(printf, 3, 4)));
+IErrnoException jlib_decl *MakeErrnoException(MessageAudience aud,const char *why, ...) __attribute__((format(printf, 2, 3)));
 
 void jlib_decl pexception(const char *msg,IException *e); // like perror except for exceptions
 jlib_decl StringBuffer & formatSystemError(StringBuffer & out, unsigned errcode);

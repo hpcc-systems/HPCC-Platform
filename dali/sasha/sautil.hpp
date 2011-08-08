@@ -112,7 +112,7 @@ public:
             }
             if (maxduration) {
                 if (msTick()-start>maxduration) {
-                    PROGLOG("Maximum duration (%d) exceeded");
+                    PROGLOG("Maximum duration (%d) exceeded", maxduration);
                     return false;
                 }
             }

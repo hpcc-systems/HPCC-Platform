@@ -295,7 +295,7 @@ bool uninstallService(const char *servicename,const char *servicedisplayname)
 
 void sighandler(int signum, siginfo_t *info, void *extra) 
 {
-    PROGLOG("Caught signal %d, %x", signum, info?info->si_addr:0);
+    PROGLOG("Caught signal %d, %p", signum, info?info->si_addr:0);
     if (server)
         server->stop();
 }

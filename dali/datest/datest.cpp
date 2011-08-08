@@ -659,7 +659,7 @@ void Test_MultiFile()
             RemoteMultiFilename rmfn;
             fdesc->getMultiFilename(p,cpy,rmfn);
             bool iswild = rmfn.isWild();
-            printf("Part %d[%d]%s\n",p+1,cpy,fdesc->isMulti(p)?", MULTI":"",iswild?", WILD":"");
+            printf("Part %d[%d]%s%s\n",p+1,cpy,fdesc->isMulti(p)?", MULTI":"",iswild?", WILD":"");
             unsigned nc = rmfn.ordinality();
             StringBuffer rfns;
             for (unsigned j=0;j<nc;j++) {

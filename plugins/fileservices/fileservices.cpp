@@ -1957,7 +1957,7 @@ static void checkExternalFileRights(ICodeContext *ctx, CDfsLogicalFileName &lfn,
     }
     else if (rd) {
         if (!HASREADPERMISSION(perm)) {
-            throw MakeStringException(-1,"Read permission denied for",extpath.get());
+            throw MakeStringException(-1,"Read permission denied for %s",extpath.get());
         }
     }
 }
@@ -1967,7 +1967,7 @@ FILESERVICES_API void  FILESERVICES_CALL fsMoveExternalFile(ICodeContext * ctx,c
 {
     SocketEndpoint ep(location);
     if (ep.isNull())
-        throw MakeStringException(-1,"fsMoveExternalFile: Cannot resolve location",location);
+        throw MakeStringException(-1,"fsMoveExternalFile: Cannot resolve location %s",location);
     CDfsLogicalFileName from;
     from.setExternal(location,frompath);
     CDfsLogicalFileName to;
@@ -1994,7 +1994,7 @@ FILESERVICES_API void  FILESERVICES_CALL fsDeleteExternalFile(ICodeContext * ctx
 {
     SocketEndpoint ep(location);
     if (ep.isNull())
-        throw MakeStringException(-1,"fsDeleteExternalFile: Cannot resolve location",location);
+        throw MakeStringException(-1,"fsDeleteExternalFile: Cannot resolve location %s",location);
     CDfsLogicalFileName lfn;
     lfn.setExternal(location,path);
     checkExternalFileRights(ctx,lfn,false,true);
@@ -2012,7 +2012,7 @@ FILESERVICES_API void  FILESERVICES_CALL fsCreateExternalDirectory(ICodeContext 
 {
     SocketEndpoint ep(location);
     if (ep.isNull())
-        throw MakeStringException(-1,"fsCreateExternalDirectory: Cannot resolve location",location);
+        throw MakeStringException(-1,"fsCreateExternalDirectory: Cannot resolve location %s",location);
     CDfsLogicalFileName lfn;
     lfn.setExternal(location,path);
     checkExternalFileRights(ctx,lfn,false,true);

@@ -1529,7 +1529,7 @@ IFileIO *_createIFileIO(const void *buffer, unsigned sz, bool readOnly)
         virtual size32_t read(offset_t pos, size32_t len, void * data)
         {
             if (pos>sz)
-                throw MakeStringException(-1, "CMemoryBufferIO: read beyond end of buffer pos=%d, len=%d, buffer length=%d", pos, len, mb.length());
+                throw MakeStringException(-1, "CMemoryBufferIO: read beyond end of buffer pos=%"I64F"d, len=%d, buffer length=%d", pos, len, mb.length());
             if (pos+len > sz)
                 len = (size32_t)(sz-pos);
             memcpy(data, (byte *)buffer+pos, len);
@@ -1541,7 +1541,7 @@ IFileIO *_createIFileIO(const void *buffer, unsigned sz, bool readOnly)
         {
             assertex(!readOnly);
             if (pos+len>sz)
-                throw MakeStringException(-1, "CMemoryBufferIO: UNIMPLEMENTED, writing beyond buffer, pos=%d, len=%d, buffer length=%d", pos, len, mb.length());
+                throw MakeStringException(-1, "CMemoryBufferIO: UNIMPLEMENTED, writing beyond buffer, pos=%"I64F"d, len=%d, buffer length=%d", pos, len, mb.length());
             memcpy((byte *)buffer+pos, data, len);
             return len;
         }
@@ -1549,7 +1549,7 @@ IFileIO *_createIFileIO(const void *buffer, unsigned sz, bool readOnly)
         virtual void setSize(offset_t size)
         {
             if (size > mb.length())
-                throw MakeStringException(-1, "CMemoryBufferIO: UNIMPLEMENTED, setting size beyond end of buffer, pos="I64F"d, buffer length=%d", size, mb.length());
+                throw MakeStringException(-1, "CMemoryBufferIO: UNIMPLEMENTED, setting size %"I64F"d beyond end of buffer, buffer length=%d", size, mb.length());
             mb.setLength((size32_t)size);
         }
 

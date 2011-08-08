@@ -255,7 +255,7 @@ public:
             // Initialize an LDAP session
             if ((ld = ldap_init( (char*)host, port )) == NULL)
             {
-                throw MakeStringException(-1, "ldap_init error %s");
+                throw MakeStringException(-1, "ldap_init error");
             }
         }
         return ld;
@@ -381,7 +381,7 @@ public:
                 }
                 else
                 {
-                    DBGLOG("LDAP bind error for user %s with 0x%lx - %s", username, rc, ldap_err2string(rc));
+                    DBGLOG("LDAP bind error for user %s with 0x%"I64F"x - %s", username, (unsigned __int64) rc, ldap_err2string(rc));
                     return rc;
                 }
             }

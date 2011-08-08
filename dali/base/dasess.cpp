@@ -1212,7 +1212,7 @@ public:
                     if (first50==0)
                         first50 = msTick();
                     else if (msTick()-first50>60*1000) {
-                        LOG(MCoperatorError, unknownJob, "LDAP stalled - aborting (returning 0 for %s)"); 
+                        LOG(MCoperatorError, unknownJob, "LDAP stalled - aborting (returning 0 for %s)", obj); 
                         if (err)
                             *err = CLDAPE_getpermtimeout;
                         break;

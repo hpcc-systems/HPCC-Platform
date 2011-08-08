@@ -71,7 +71,7 @@ IRowManager * queryRowManager()
 
 void throwOOMException(size_t size, char const * label)
 {
-    throw MakeStringException(0, "Out of Memory in hthor: trying to allocate %u bytes for %s", size, label);
+    throw MakeStringException(0, "Out of Memory in hthor: trying to allocate %"I64F"u bytes for %s", (unsigned __int64) size, label);
 }
 
 void * checked_malloc(size_t size, char const * label)

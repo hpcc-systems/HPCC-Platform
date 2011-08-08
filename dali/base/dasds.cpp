@@ -4102,7 +4102,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 if (TransactionLogging)
                 {
                     CServerConnection *conn = manager.queryConnection(connectionId);
-                    PROGLOG(">>> DAMP_SDSCMD_DATA",conn?conn->queryXPath():"???");
+                    PROGLOG(">>> DAMP_SDSCMD_DATA %s",conn?conn->queryXPath():"???");
                 }
                 byte disconnect; // kludge, high bit to indicate new client format. (for backward compat.)
                 bool deleteRoot;
@@ -4175,7 +4175,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 if (TransactionLogging)
                 {
                     CServerConnection *conn = manager.queryConnection(connectionId);
-                    PROGLOG(">>> DAMP_SDSCMD_CHANGEMODE",conn?conn->queryXPath():"???");
+                    PROGLOG(">>> DAMP_SDSCMD_CHANGEMODE %s",conn?conn->queryXPath():"???");
                 }   
                 CHECKEDDALIWRITELOCKBLOCK(manager.dataRWLock, readWriteTimeout);
                 Linked<CServerConnection> connection = manager.queryConnection(connectionId);
@@ -4209,7 +4209,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 mb.read(xpath);
                 if (TransactionLogging)
                 {
-                    PROGLOG(">>> DAMP_SDSCMD_GETXPATHS",xpath.get()?xpath.get():"???");
+                    PROGLOG(">>> DAMP_SDSCMD_GETXPATHS %s",xpath.get()?xpath.get():"???");
                 }
                 mb.clear();
                 Owned<IPropertyTree> matchTree = SDSManager->getXPaths(serverId, xpath, DAMP_SDSCMD_GETXPATHSPLUSIDS==action);
@@ -4231,7 +4231,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 mb.read(xpath);
                 if (TransactionLogging)
                 {
-                    PROGLOG(">>> DAMP_SDSCMD_GETXPATHSCRITERIA",xpath.get()?xpath.get():"???");
+                    PROGLOG(">>> DAMP_SDSCMD_GETXPATHSCRITERIA %s",xpath.get()?xpath.get():"???");
                 }
                 mb.read(matchXPath);
                 mb.read(sortBy);
@@ -4265,7 +4265,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 mb.read(_xpath);
                 if (TransactionLogging)
                 {
-                    PROGLOG(">>> DAMP_SDSCMD_GETELEMENTSRAW",xpath.get()?xpath.get():"???");
+                    PROGLOG(">>> DAMP_SDSCMD_GETELEMENTSRAW %s",xpath.get()?xpath.get():"???");
                 }
                 CMessageBuffer replyMb;
                 replyMb.init(mb.getSender(), mb.getTag(), mb.getReplyTag());
@@ -6451,7 +6451,7 @@ bool CCovenSDSManager::setSDSDebug(StringArray &params, StringBuffer &reply)
         unsigned ms = atoi(params.item(1));
         readWriteTimeout = ms;
 
-        PROGLOG("datalock, readWriteTimeout timing set to %d", readWriteStackTracing?"on":"off");
+        PROGLOG("datalock, readWriteTimeout timing set to %s", readWriteStackTracing?"on":"off");
     }
     else if (0 == stricmp("fakecritTiming", params.item(0)))
     {

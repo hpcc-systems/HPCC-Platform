@@ -48,7 +48,7 @@ void testAbort(const char *wuid)
         wu->requestAbort();
     }
     else
-        ERRLOG("WUID %s not found");
+        ERRLOG("WUID %s not found", wuid);
 }
 
 StringBuffer& constructFileMask(const char* filename, StringBuffer& filemask)
@@ -551,7 +551,7 @@ void testRoxieCopies()
         destination->setNumPartsOverride(np);
         destination->setWrap(true); //??
 #endif
-        PROGLOG("%d:A======================");
+        PROGLOG("A======================");
         StringBuffer buf;
         wu->toXML(buf);
         PROGLOG("\n%s",buf.str());
@@ -686,7 +686,7 @@ void testDFUwuqueue(const char *name)
         const char *wuid = wulist.item(i).text.get();
         Owned<IConstDFUWorkUnit> wu = getDFUWorkUnitFactory()->openWorkUnit(wuid,false);
         if (wu) 
-            PROGLOG("%s: %s,%s,%s,%s",wuid,i<running?"Running":"Queued",
+            PROGLOG("%s: %s,%s,%s,%s,%s",wuid,i<running?"Running":"Queued",
               encodeDFUcommand(wu->getCommand(),cmd.clear()).str(),
               wu->getClusterName(cname.clear()).str(),
               wu->getUser(uname.clear()).str(),

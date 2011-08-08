@@ -522,7 +522,7 @@ IPropertyTree *getCachedFileTree(const char *lname,const INode *foreigndali,IUse
     cachename.append("::").append(lfn.get());
     Owned<IRemoteConnection> conn = querySDS().connect(cachename,myProcessSession(),RTM_CREATE_QUERY|RTM_LOCK_WRITE, timeout);
     if (!conn) 
-        throw MakeStringException(DFSERR_ForeignDaliTimeout, "getFileTree: Timeout connecting to ", cachename.str());
+        throw MakeStringException(DFSERR_ForeignDaliTimeout, "getFileTree: Timeout connecting to %s", cachename.str());
 
     MemoryBuffer mb;
     IPropertyTree &root = *conn->queryRoot();
@@ -1822,7 +1822,7 @@ void import(const char *path,const char *src,bool add)
             Owned<IPropertyTree> broot = bconn->getRoot();
             StringBuffer bakname(src);
             bakname.append(".bak");
-            DBGLOG("Saving backup of %s to %s",path,tail,bakname.str());
+            DBGLOG("Saving backup of %s%s to %s",path,tail,bakname.str());
             Owned<IFile> f = createIFile(bakname.str());
             Owned<IFileIO> io = f->open(IFOcreate);
             Owned<IFileIOStream> fstream = createBufferedIOStream(io);
@@ -1883,7 +1883,7 @@ void bimport(const char *path,const char *src,bool add)
             Owned<IPropertyTree> broot = bconn->getRoot();
             StringBuffer bakname(src);
             bakname.append(".bak");
-            DBGLOG("Saving backup of %s to %s",path,tail,bakname.str());
+            DBGLOG("Saving backup of %s%s to %s",path,tail,bakname.str());
             Owned<IFile> f = createIFile(bakname.str());
             Owned<IFileIO> io = f->open(IFOcreate);
             Owned<IFileIOStream> fstream = createBufferedIOStream(io);
@@ -4536,7 +4536,7 @@ IPropertyTree *getFileTree(const char *lname,const INode *foreigndali,IUserDescr
     cachename.append("::").append(lfn.get());
     Owned<IRemoteConnection> conn = querySDS().connect(cachename,myProcessSession(),RTM_CREATE_QUERY|RTM_LOCK_WRITE, timeout);
     if (!conn) 
-        throw MakeStringException(DFSERR_ForeignDaliTimeout, "getFileTree: Timeout connecting to ", cachename.str());
+        throw MakeStringException(DFSERR_ForeignDaliTimeout, "getFileTree: Timeout connecting to %s", cachename.str());
 
     MemoryBuffer mb;
     IPropertyTree &root = *conn->queryRoot();
@@ -5129,12 +5129,12 @@ public:
     IMPLEMENT_IINTERFACE;
     bool take(memsize_t tot)
     {
-        PROGLOG("take %d",tot);
+        PROGLOG("take %"I64F"u", (unsigned __int64) tot);
         return true;
     }
     void give(memsize_t tot)
     {
-        PROGLOG("take %d",tot);
+        PROGLOG("take %"I64F"u", (unsigned __int64) tot);
     }
 };
 
@@ -5635,7 +5635,7 @@ void XMLcheckfix(IPropertyTree &tree,StringBuffer &path,const char *name,const c
         return;
     StringBuffer compressedout;
     if (compressRepeatedEscape(value,compressedout)) {
-        PROGLOG("%s%s from %d to %d '%s'",path.str(),name,strlen(value),compressedout.length(),compressedout.str());
+        PROGLOG("%s%s from %d to %d '%s'",path.str(),name,(int)strlen(value),compressedout.length(),compressedout.str());
         if (fix||check) {
             try {
                 Owned<IRemoteConnection> conn = querySDS().connect(path.str(), myProcessSession(), 0, 5*60*1000);  
@@ -5712,7 +5712,7 @@ void testLock(const char *lock,bool read)
 {
     Owned<IRemoteConnection> conn = querySDS().connect(lock,myProcessSession(),read?RTM_LOCK_READ:RTM_LOCK_WRITE, 1000*60);
     if (!conn) 
-        throw MakeStringException(DFSERR_ForeignDaliTimeout, "testLock: Timeout connecting to ", lock);
+        throw MakeStringException(DFSERR_ForeignDaliTimeout, "testLock: Timeout connecting to %s", lock);
     Sleep(1000*60*10);
 }
 

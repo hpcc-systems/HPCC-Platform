@@ -1372,7 +1372,7 @@ CMemKeyIndex::CMemKeyIndex(int _iD, IMemoryMappedFile *_io, const char *_name, b
     assertex(io->length()==io->fileSize());     // mapped whole file
     KeyHdr hdr;
     if (io->length() < sizeof(hdr))
-        throw MakeStringException(0, "Failed to read key header: file too small, could not read %u bytes", sizeof(hdr));
+        throw MakeStringException(0, "Failed to read key header: file too small, could not read %u bytes", (unsigned) sizeof(hdr));
     memcpy(&hdr, io->base(), sizeof(hdr));
     init(hdr, isTLK, false);
 }
@@ -1399,7 +1399,7 @@ CDiskKeyIndex::CDiskKeyIndex(int _iD, IFileIO *_io, const char *_name, bool isTL
     io.setown(_io);
     KeyHdr hdr;
     if (io->read(0, sizeof(hdr), &hdr) != sizeof(hdr))
-        throw MakeStringException(0, "Failed to read key header: file too small, could not read %u bytes", sizeof(hdr));
+        throw MakeStringException(0, "Failed to read key header: file too small, could not read %u bytes", (unsigned) sizeof(hdr));
     init(hdr, isTLK, allowPreload);
 }
 

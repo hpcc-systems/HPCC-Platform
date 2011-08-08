@@ -289,7 +289,7 @@ private:
 
     void fail(char const * msg)
     {
-        throw MakeStringException(0, "bad %s (%s at character %u): %s", label, msg, finger-value, value);
+        throw MakeStringException(0, "bad %s (%s at character %u): %s", label, msg, (unsigned) (finger-value), value);
     }
 
     bool badAtomChar(char c)
@@ -635,7 +635,7 @@ public:
     CMailPart(char const * mimeType, char const * filename)
     {
         if(strlen(mimeTypeHeader) + strlen(mimeType) > 998)
-            throw MakeStringException(0, "Email attachment mime type too long: %u characters", strlen(mimeType));
+            throw MakeStringException(0, "Email attachment mime type too long: %u characters", (unsigned) strlen(mimeType));
         CSMTPValidator validator;
         validator.validateValue(mimeType, "email attachment mime type");
         mime.append(mimeType);
@@ -645,7 +645,7 @@ public:
             StringBuffer qfilename;
             validator.escapeQuoted(filename, qfilename, "email attachment filename");
             if(strlen(dispositionHeader) + strlen("attachment; filename=\"\"") + qfilename.length() > 998)
-                throw MakeStringException(0, "Email attachment filename too long: %u characters", strlen(filename));
+                throw MakeStringException(0, "Email attachment filename too long: %u characters", (unsigned) strlen(filename));
             disposition.append("attachment; filename=\"").append(qfilename.str()).append("\"");
         }
         else

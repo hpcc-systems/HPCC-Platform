@@ -450,7 +450,7 @@ bool DirectoryThread::performCommand()
     if (!canSpawnChildProcess(node->endpoint()))
         throwError(DFTERR_NoSolarisDir);
 
-    LOG(MCdebugProgressDetail, job, "Starting to generate part %s [%lx]", url.str(), this);
+    LOG(MCdebugProgressDetail, job, "Starting to generate part %s [%p]", url.str(), this);
     StringBuffer tmp;
     Owned<ISocket> socket = spawnRemoteChild(SPAWNdfu, queryFtSlaveExecutable(node->endpoint(), tmp), node->endpoint(), DAFT_VERSION, queryFtSlaveLogDir(), NULL, NULL);
     if (socket)
@@ -505,7 +505,7 @@ bool DirectoryThread::performCommand()
     {
         throwError1(DFTERR_FailedStartSlave, url.str());
     }
-    LOG(MCdebugProgressDetail, job, "Completed generating part %s [%lx]", url.str(), this);
+    LOG(MCdebugProgressDetail, job, "Completed generating part %s [%p]", url.str(), this);
 
     return ok;
 }

@@ -17492,7 +17492,7 @@ void HqlCppTranslator::traceExpressions(const char * title, WorkflowArray & work
         {
             StringBuffer s;
             processedTreeToECL(compound, s);
-            LOG(debug500, unknownJob, "%s: #%d: id[%d,%d]", title, idx1, cur.queryWfid());
+            LOG(debug500, unknownJob, "%s: #%d: id[%d]", title, idx1, cur.queryWfid());
             logECL(debug500, s.length(), s.str());
         }
     }

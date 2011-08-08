@@ -112,7 +112,7 @@ void createPTreeFromJsonString(const char *json, bool caseInsensitive, StringBuf
     const char *finger = json;
     for (; *finger ; finger++) {
         if (!JSON_parser_char(jc, *finger)) {
-            throw MakeStringException(-1, "JSON_parser_char: syntax error, byte %d\n", finger - json);
+            throw MakeStringException(-1, "JSON_parser_char: syntax error, byte %d\n", (int) (finger - json));
         }
     }
     if (!JSON_parser_done(jc)) {

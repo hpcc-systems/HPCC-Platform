@@ -279,7 +279,7 @@ bool FileTransferThread::performTransfer()
     StringBuffer url;
     ep.getUrlStr(url);
 
-    LOG(MCdebugProgress, job, "Transferring part %s [%lx]", url.str(), this);
+    LOG(MCdebugProgress, job, "Transferring part %s [%p]", url.str(), this);
     started = true;
     allDone = true;
     if (sprayer.isSafeMode || action == FTactionpush)
@@ -309,17 +309,17 @@ bool FileTransferThread::performTransfer()
 
     if (allDone)
     {
-        LOG(MCdebugInfo, job, "Creation of part %s already completed\n", url.str());
+        LOG(MCdebugInfo, job, "Creation of part %s already completed", url.str());
         return true;
     }
 
     if (partition.empty())
     {
-        LOG(MCdebugInfo, job, "No elements to transfer for this slave\n", url.str());
+        LOG(MCdebugInfo, job, "No elements to transfer for this slave");
         return true;
     }
 
-    LOG(MCdebugProgressDetail, job, "Start generate part %s [%lx]", url.str(), this);
+    LOG(MCdebugProgressDetail, job, "Start generate part %s [%p]", url.str(), this);
     StringBuffer tmp;
     Owned<ISocket> socket = spawnRemoteChild(SPAWNdfu, sprayer.querySlaveExecutable(ep, tmp), ep, DAFT_VERSION, queryFtSlaveLogDir(), this, wuid);
     if (socket)
@@ -389,7 +389,7 @@ bool FileTransferThread::performTransfer()
         msg.read(ok);
         setErrorOwn(deserializeException(msg));
 
-        LOG(MCdebugProgressDetail, job, "Finished generating part %s [%lx] ok(%d) error(%d)", url.str(), this, (int)ok, (int)(error!=NULL));
+        LOG(MCdebugProgressDetail, job, "Finished generating part %s [%p] ok(%d) error(%d)", url.str(), this, (int)ok, (int)(error!=NULL));
 
         msg.clear().append(true);
         catchWriteBuffer(socket, msg);
@@ -400,7 +400,7 @@ bool FileTransferThread::performTransfer()
     {
         throwError1(DFTERR_FailedStartSlave, url.str());
     }
-    LOG(MCdebugProgressDetail, job, "Stopped generate part %s [%lx]", url.str(), this);
+    LOG(MCdebugProgressDetail, job, "Stopped generate part %s [%p]", url.str(), this);
 
     allDone = true;
     return ok;

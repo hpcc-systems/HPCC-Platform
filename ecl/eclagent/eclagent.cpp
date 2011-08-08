@@ -2476,7 +2476,7 @@ void EclAgent::getPersistReadLock(const char * logicalName)
     StringBuffer lfn;
     expandLogicalName(lfn, logicalName);
     if (!lfn.length())
-        throw MakeStringException(0, "Invalid persist name used : '%'", logicalName);
+        throw MakeStringException(0, "Invalid persist name used : '%s'", logicalName);
 
     const char * name = lfn;
 

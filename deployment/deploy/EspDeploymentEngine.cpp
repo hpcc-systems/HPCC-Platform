@@ -113,7 +113,7 @@ int CEspDeploymentEngine::determineInstallFiles(IPropertyTree& node, CInstallFil
 
       const char* pszBuild = pService->queryProp("@build");
       if (!pszBuild || 0 != strcmp(pszBuild, myBuild))
-         throw MakeStringException(0, "ESP service '%s' used by ESP process '%s'\n has a different build than its ESP process!", 
+         throw MakeStringException(0, "ESP service '%s' used by ESP process '%s'\n has a different build (%s) to its ESP process!", 
                                    szService, m_name.get(), pszBuild);
 
          // Get plugin file list from the plugin process

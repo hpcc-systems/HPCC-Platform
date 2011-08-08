@@ -1193,7 +1193,7 @@ BreakpointActionMode CBaseDebugContext::checkBreakpoint(DebugState state, IActiv
         running = false;
         currentState = state;
         if (currentActivity)
-            logctx.CTXLOG("DEBUG: paused waiting for debugger, state %s, edge %d", queryStateString(state), currentActivity->queryEdgeId());
+            logctx.CTXLOG("DEBUG: paused waiting for debugger, state %s, edge %s", queryStateString(state), currentActivity->queryEdgeId());
         else
             logctx.CTXLOG("DEBUG: paused waiting for debugger, state %s, edge '(none)'", queryStateString(state));
         if (debuggerActive) // Was the debugger actively waiting for the program to hit a breakpoint?

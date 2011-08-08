@@ -1484,7 +1484,7 @@ bool CFileSprayEx::onDFUWorkunitsAction(IEspContext &context, IEspDFUWorkunitsAc
                 {
                     StringBuffer reply;
                     cmd->getId(0,reply);
-                    msg.appendf("Restore: %s, reply: $s", wuid, reply.str());
+                    msg.appendf("Restore: %s, reply: %s", wuid, reply.str());
                 }
 
                 Owned<IEspDFUActionResult> res = createDFUActionResult("", "");

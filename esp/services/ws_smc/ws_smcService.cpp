@@ -70,7 +70,7 @@ struct QueueWrapper
         if (!cluster || !*cluster)
             return;
 
-        char* type = eqThorCluster;
+        const char* type = eqThorCluster;
         if (clusterType < 1)
             type = eqRoxieCluster;
 
@@ -129,7 +129,7 @@ void CWsSMCEx::init(IPropertyTree *cfg, const char *process, const char *service
     m_BannerScroll = "2";
 
     StringBuffer xpath;
-    xpath.appendf("Software/EspProcess[@name='%s']/@portalurl", process, service);
+    xpath.appendf("Software/EspProcess[@name='%s']/@portalurl", process);
     const char* portalURL = cfg->queryProp(xpath.str());
     if (portalURL && *portalURL)
         m_PortalURL.append(portalURL);

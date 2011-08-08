@@ -156,7 +156,7 @@ bool SteppingCondition::extractSteppingCondition(IHqlExpression * expr, IHqlExpr
     }
 
     if (stepArgs.ordinality())
-        throwError(HQLERR_SteppingNotMatchSortCondition);
+        throwError1(HQLERR_SteppingNotMatchSortCondition, "");
 
     //Walk the list of non stepped condition, and retain any that are dependent on rows(left)
     ForEachItemIn(i3, args)
