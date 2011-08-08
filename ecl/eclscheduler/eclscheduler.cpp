@@ -171,12 +171,9 @@ int main(int argc, const char *argv[])
     initSignals();
     NoQuickEditSection x;
 
-    StringBuffer sentinelName;
-    splitFilename(argv[0], &sentinelName, &sentinelName, NULL, NULL);
-    sentinelName.append("eclscheduler_sentinel.txt");
-    Owned<IFile> sentinelFile = createIFile(sentinelName.str());
+    Owned<IFile> sentinelFile = createSentinelTarget("eclscheduler");
     // We remove any existing sentinel until we have validated that we can successfully start (i.e. all options are valid...)
-    sentinelFile->remove();
+    removeSentinelFile(sentinelFile);
 
     const char *iniFileName;
     if (checkFileExists("eclscheduler.xml") )
@@ -213,10 +210,7 @@ int main(int argc, const char *argv[])
         initClientProcess(serverGroup, DCR_EclServer);
         // if we got here, eclscheduler is successfully started and all options are good, so create the "sentinel file" for re-runs from the script
         // put in its own "scope" to force the flush
-        DBGLOG("Creating sentinel file %s for rerun from script", sentinelName.str());
-        Owned<IFileIO> sentinel = sentinelFile->open(IFOcreate);
-        sentinel->write(0, 5, "rerun");
-        sentinel.clear();
+        writeSentinelFile(sentinelFile);
         Owned <IStringIterator> targetClusters = getTargetClusters("EclSchedulerProcess", globals->queryProp("@name"));
         if (!targetClusters->first())
             throw MakeStringException(0, "No clusters found to schedule for");

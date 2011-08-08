@@ -13,7 +13,7 @@ echo $$ > $INIT_PID_NAME
 rm -f ${PID_DIR}/hthortemp/*
 
 killed (){
-    rm -f agentexec_sentinel*.txt
+    rm -f agentexec.sentinel
 
     killall agentexec
     killall eclagent
@@ -32,9 +32,9 @@ agentexec 1>/dev/null 2>/dev/null &
 echo $! > $PID_NAME
 wait
 
-if [ -e agentexec_sentinel.txt ]; then
+if [ -e agentexec.sentinel ]; then
     sleep 1
-    if [ -e agentexec_sentinel.txt ]; then
+    if [ -e agentexec.sentinel ]; then
         agentexec 1>/dev/null 2>/dev/null &
         echo $! > $PID_NAME
         wait

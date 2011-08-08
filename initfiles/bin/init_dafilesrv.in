@@ -19,7 +19,7 @@ INIT_PID_NAME="$PID/init_`basename $PWD`.pid"
 echo $$ > $INIT_PID_NAME
 
 killed(){
-    rm -f dafilesrv_sentinel.txt
+    rm -f dafilesrv.sentinel
     killall -9 dafilesrv 2> /dev/null
     sleep 2
     exit 255
@@ -28,13 +28,12 @@ killed(){
 
 trap "killed" SIGINT SIGTERM SIGKILL
 dafilesrv -L $log &
-echo "rerun" > dafilesrv_sentinel.txt
 echo $! > $PID_NAME
 wait
 
-while [ -e dafilesrv_sentinel.txt ]; do
+while [ -e dafilesrv.sentinel ]; do
         sleep 5
-        if [ -e dafilesrv_sentinel.txt ]; then
+        if [ -e dafilesrv.sentinel ]; then
         trap "killed" SIGINT SIGTERM SIGKILL
         dafilesrv -L $log &
                 echo $! > $PID_NAME

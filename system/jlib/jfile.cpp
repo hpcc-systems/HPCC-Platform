@@ -6313,20 +6313,36 @@ IFileIOCache* createFileIOCache(unsigned max)
     return new CLazyFileIOCache(max);
 }
 
-
-extern jlib_decl IFile * createSentinelTarget(const char * argv0, const char * component)
+extern jlib_decl IFile * createSentinelTarget(const char * name, const char * ext)
 {
-    StringBuffer sentinelName;
-    splitFilename(argv0, &sentinelName, &sentinelName, NULL, NULL);
-    sentinelName.append(component).append("_sentinel.txt");
-    return createIFile(sentinelName.str());
+    StringBuffer sentinelFilename(name);
+    sentinelFilename.append(".").append(ext);
+    return createIFile(sentinelFilename.str());
+}
+
+extern jlib_decl void removeSentinelFile(IFile * sentinelFile)
+{
+    if( sentinelFile->exists() && !sentinelFile->isDirectory() ){
+        DBGLOG("Removing sentinel file %s", sentinelFile->queryFilename());
+        try{
+            sentinelFile->remove();
+        }catch(IException *E){
+            ERRLOG("Failed to remove sentinel file %s", sentinelFile->queryFilename());
+            throw MakeOsException(errno, "removeSentinelFile - file cannot be removed.");
+        }
+    }
 }
 
 extern jlib_decl void writeSentinelFile(IFile * sentinelFile)
 {
     DBGLOG("Creating sentinel file %s for rerun from script", sentinelFile->queryFilename());
-    Owned<IFileIO> sentinel = sentinelFile->open(IFOcreate);
-    sentinel->write(0, 5, "rerun");
+    try{
+        Owned<IFileIO> sentinel = sentinelFile->open(IFOcreate);
+        sentinel->write(0, 5, "rerun");
+    }catch(IException *E){
+        ERRLOG("Failed to create sentinel file %s for rerun from script", sentinelFile->queryFilename());
+        throw MakeOsException(errno, "writeSentinelFile - file not created.");
+    }
 }
 
 jlib_decl StringBuffer & appendCurrentDirectory(StringBuffer & target, bool blankIfFails)

@@ -14,7 +14,7 @@ export LANG=en_US
 SNMPID=$$
 
 killed() {
-    rm -rf configesp_sentinel.txt
+    rm -rf esp.sentinel
     killall -9 configesp 2>/dev/null
     sleep 1
     exit 255
@@ -26,9 +26,9 @@ nohup configesp 1>/dev/null 2>/dev/null &
 echo $! > $PID_NAME
 wait
 
-while [ -e configesp_sentinel.txt ]; do
+while [ -e esp.sentinel ]; do
         sleep 5
-        if [ -e configesp_sentinel.txt ]; then
+        if [ -e esp.sentinel ]; then
                 nohup configesp 1>/dev/null 2>/dev/null &
         echo $! > $PID_NAME
         wait

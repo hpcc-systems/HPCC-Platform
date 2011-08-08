@@ -10,7 +10,7 @@ echo $$ > $INIT_PID_NAME
 
 
 killed(){
-    rm -rf eclscheduler_sentinel.txt
+    rm -rf eclscheduler.sentinel
     killall -9 eclscheduler
     sleep
     exit 255
@@ -18,19 +18,18 @@ killed(){
 
 
 trap "killed" SIGINT SIGTERM SIGKILL
-echo "rerun" > eclscheduler_sentinel.txt
 eclscheduler 1>/dev/null 2>/dev/null &
 echo $! > $PID_NAME
 wait
 
 
-while [ -e eclscheduler_sentinel.txt ]; do
-        sleep 5
-        if [ -e eclscheduler_sentinel.txt ]; then
-                trap "killed" SIGINT SIGTERM SIGKILL
+while [ -e eclscheduler.sentinel ]; do
+    sleep 5
+    if [ -e eclscheduler.sentinel ]; then
+        trap "killed" SIGINT SIGTERM SIGKILL
         eclscheduler 1>/dev/null 2>/dev/null &
-                echo $! > $PID_NAME
-                wait
-        fi
+        echo $! > $PID_NAME
+        wait
+    fi
 done
 

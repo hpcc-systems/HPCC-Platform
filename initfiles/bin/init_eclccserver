@@ -13,8 +13,8 @@ killed() {
     source ${PATH_PRE}
     PID_NAME="$PID/`basename $PWD`.pid"
 
-    if [ -e eclccserver_sentinel.txt ]; then
-            rm -f eclccserver_sentinel.txt
+    if [ -e eclccserver.sentinel ]; then
+            rm -f eclccserver.sentinel
             if [ -e ${PID_NAME} ]; then
                     pidwait_fn `cat ${PID_NAME}` 3
             fi
@@ -24,15 +24,13 @@ killed() {
 }
 
 trap "killed" SIGINT SIGTERM SIGKILL
-rm -f eclccserver_sentinel.txt
 eclccserver 1>/dev/null 2>/dev/null &
 echo $! > $PID_NAME
 wait
 
-while [ -e eclccserver_sentinel.txt ]; do
+while [ -e eclccserver.sentinel ]; do
     sleep 5
-    if [ -e eclccserver_sentinel.txt ]; then
-        rm -f eclccserver_sentinel.txt
+    if [ -e eclccserver.sentinel ]; then
         eclccserver 1>/dev/null 2>/dev/null & 
         echo $! > $PID_NAME
         wait

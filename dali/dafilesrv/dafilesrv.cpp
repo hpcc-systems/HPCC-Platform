@@ -338,7 +338,8 @@ int main(int argc,char **argv)
         logname.append("/c$/");
 #endif
 
-
+    Owned<IFile> sentinelFile = createSentinelTarget("dafilesrv");
+    removeSentinelFile(sentinelFile);
 
     SocketEndpoint listenep;
     unsigned sendbufsize = 0;
@@ -532,6 +533,7 @@ int main(int argc,char **argv)
             return ret;
 #endif
     }
+    writeSentinelFile(sentinelFile);
     logname.append("DAFILESRV");
     ILogMsgHandler * fileMsgHandler = getRollingFileLogMsgHandler(logname.str(), ".log", MSGFIELD_STANDARD, false, true, NULL);
     queryLogMsgManager()->addMonitorOwn(fileMsgHandler, getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail));
