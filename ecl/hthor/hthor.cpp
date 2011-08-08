@@ -5675,7 +5675,17 @@ void CHThorWorkUnitWriteActivity::execute()
         }
         size32_t thisSize = inputMeta->getRecordSize(nextrec);
         if(outputLimit && ((rowdata.length() + thisSize) > outputLimit))
-            throw MakeStringException(0, "Dataset too large to output to workunit (limit %d megabytes)", outputLimit/0x100000);
+        {
+            StringBuffer errMsg("Dataset too large to output to workunit (limit "); 
+            errMsg.append(outputLimit/0x100000).append(") megabytes, in result ("); 
+            const char *name = helper.queryName();
+            if (name)
+                errMsg.append("name=").append(name);
+            else
+                errMsg.append("sequence=").append(helper.getSequence());
+            errMsg.append(")");
+            throw MakeStringException(0, "%s", errMsg.str());
+         }
         if (rowSerializer)
         {
             CThorDemoRowSerializer serializerTarget(rowdata);
