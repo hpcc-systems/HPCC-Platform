@@ -36,6 +36,7 @@
       <script type="text/javascript" src="/esp/files/stringbuffer.js"/>
 
 <script type="text/javascript">
+var showhttp = '<xsl:value-of select="$showhttp"/>';
 <![CDATA[ 
   var xmlhttp = null;
 
@@ -46,7 +47,7 @@ function isSpace(ch) {
 }
  
 // return true if succeeded
-function loadXMLDoc(url, user, passwd)
+function loadXMLDoc(url)
 {
   // code for Mozilla, etc.
    if (window.XMLHttpRequest)  {
@@ -72,7 +73,7 @@ function loadXMLDoc(url, user, passwd)
    if (xmlhttp)  {
      xmlhttp.onreadystatechange = xmlhttpChange;
 //   alert("url: "+url);
-     xmlhttp.open("POST",url,true, user, passwd);
+     xmlhttp.open("POST",url);
 
      //Set headers
      try {
@@ -306,7 +307,8 @@ function setResponseBodyHeader()
            document.getElementById("resp_body").value = prettifyXMLDom(xmlhttp.responseXML);
       else
            document.getElementById("resp_body").value = xmlhttp.responseText;
-      document.getElementById("resp_header").value = xmlhttp.getAllResponseHeaders();
+      if (showhttp == 'true')
+           document.getElementById("resp_header").value = xmlhttp.getAllResponseHeaders();
       if (xmlhttp.responseXML && xmlhttp.responseXML.parseError && xmlhttp.responseXML.parseError.errorCode!=0)
       {
           var parseError = xmlhttp.responseXML.parseError;
@@ -356,12 +358,11 @@ function onSendRequest()
    
     // clear
     document.getElementById("resp_body").value = "";
-    document.getElementById("resp_header").value = "";
+    if (showhttp == 'true')
+       document.getElementById("resp_header").value = "";
     
     var url = "]]><xsl:value-of select="$destination"/><![CDATA[";
-    var user = document.getElementById("username").value;
-    var passwd = document.getElementById("password").value;
-    loadXMLDoc(url,user,passwd);
+    loadXMLDoc(url);
     return true;
 }
 
@@ -731,29 +732,30 @@ var gMethodName = "<xsl:value-of select="$methodName"/>";;
             </h3>
                     <b>&nbsp;&nbsp;Destination:  </b> <xsl:value-of select="$destination"/>
             <p/> 
-            <xsl:if test="$showhttp">
-                <input type="checkbox" ><b>HTTP Authentication:</b></input>
-                 <span id="auth_" style="display:none"> Username: <input type="text" name="username" id="username" value="" size="10"/>
-                            Password:   <input type="password" name="password" id="password" size="10"/>
-                </span>
-            </xsl:if>
-
-                      <hr/>                      
              <table width="100%">
                 <tr><th align="left">Request: </th> <th align="left">Response: </th></tr>
                 <tr>
                   <td width="50%">
                  <table width="100%" border="0" cellspacing="0" cellpadding="1">
-                    <xsl:if test="$showhttp">
-                        <tr>
-                            <td> <b>Headers:</b> </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <textarea id="req_header" style="width:100%" rows="4"><xsl:value-of select="$header"/></textarea>
-                            </td>
-                        </tr>
-                    </xsl:if>
+                    <xsl:choose>
+                         <xsl:when test="$showhttp">
+                             <tr>
+                                 <td>
+                                     <b>Headers:</b>
+                                 </td>
+                             </tr>
+                             <tr>
+                                 <td>
+                                     <textarea id="req_header" style="width:100%" rows="4">
+                                         <xsl:value-of select="$header"/>
+                                     </textarea>
+                                 </td>
+                             </tr>
+                         </xsl:when>
+                         <xsl:otherwise>
+                             <input type="hidden" id="req_header" name="req_header" value="{$header}"/>
+                         </xsl:otherwise>
+                    </xsl:choose>
                     <tr>
                         <td> 
                            <table width="100%">
@@ -779,15 +781,17 @@ var gMethodName = "<xsl:value-of select="$methodName"/>";;
                            <td width="50%">
                   <table width="100%" border="0" cellspacing="0" cellpadding="1">
                     <xsl:if test="$showhttp">
-                    <tr>
-                        <td> <b>Headers:</b> </td>
-                    </tr>
-                    <tr>
+                      <tr>
                         <td>
-                            <textarea id="resp_header" cols="10" style="width:100%" rows="4" readonly="true"></textarea>
+                          <b>Headers:</b>
                         </td>
-                    </tr>
-                    </xsl:if>                           
+                      </tr>
+                      <tr>
+                        <td>
+                          <textarea id="resp_header" cols="10" style="width:100%" rows="4" readonly="true"></textarea>
+                        </td>
+                      </tr>
+                    </xsl:if>
                     <tr>
                       <td>
                        <table width="100%">
