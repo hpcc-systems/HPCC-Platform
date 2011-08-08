@@ -331,7 +331,7 @@ bool CRemoteParentInfo::sendReply(unsigned version)
                             //can remove when all .exes have new code.
                             if (connectKind != kind)
                             {
-                                LOG(MCdebugInfo(1000), unknownJob, "Connection for wrong slave kind (%d vs %d)- ignore", connectKind, kind);
+                                LOG(MCdebugInfo(1000), unknownJob, "Connection for wrong slave kind (%u vs %u)- ignore", connectKind, kind);
                                 replyVersion = connectVersion;
                             }
                         }

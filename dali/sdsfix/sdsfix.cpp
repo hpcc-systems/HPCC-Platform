@@ -1502,7 +1502,7 @@ void deleteBranch(const char *path,bool backup)
             if (bakname.charAt(i)==':')
                 bakname.setCharAt(i,'_');
         bakname.append(".bak");
-        DBGLOG("Saving backup of %s/%s to %s",head.str(),tail,bakname.str());
+        DBGLOG("Saving backup of %s to %s",path,bakname.str());
         Owned<IFile> f = createIFile(bakname.str());
         Owned<IFileIO> io = f->open(IFOcreate);
         Owned<IFileIOStream> fstream = createBufferedIOStream(io);
@@ -1822,7 +1822,7 @@ void import(const char *path,const char *src,bool add)
             Owned<IPropertyTree> broot = bconn->getRoot();
             StringBuffer bakname(src);
             bakname.append(".bak");
-            DBGLOG("Saving backup of %s%s to %s",path,tail,bakname.str());
+            DBGLOG("Saving backup of %s to %s",path,bakname.str());
             Owned<IFile> f = createIFile(bakname.str());
             Owned<IFileIO> io = f->open(IFOcreate);
             Owned<IFileIOStream> fstream = createBufferedIOStream(io);
@@ -1883,7 +1883,7 @@ void bimport(const char *path,const char *src,bool add)
             Owned<IPropertyTree> broot = bconn->getRoot();
             StringBuffer bakname(src);
             bakname.append(".bak");
-            DBGLOG("Saving backup of %s%s to %s",path,tail,bakname.str());
+            DBGLOG("Saving backup of %s to %s",path,bakname.str());
             Owned<IFile> f = createIFile(bakname.str());
             Owned<IFileIO> io = f->open(IFOcreate);
             Owned<IFileIOStream> fstream = createBufferedIOStream(io);
@@ -5635,7 +5635,7 @@ void XMLcheckfix(IPropertyTree &tree,StringBuffer &path,const char *name,const c
         return;
     StringBuffer compressedout;
     if (compressRepeatedEscape(value,compressedout)) {
-        PROGLOG("%s%s from %d to %d '%s'",path.str(),name,(int)strlen(value),compressedout.length(),compressedout.str());
+        PROGLOG("%s%s from %u to %u '%s'",path.str(),name,(unsigned)strlen(value),compressedout.length(),compressedout.str());
         if (fix||check) {
             try {
                 Owned<IRemoteConnection> conn = querySDS().connect(path.str(), myProcessSession(), 0, 5*60*1000);  
