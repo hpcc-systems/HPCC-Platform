@@ -63,6 +63,7 @@ include_directories ( ${OPENLDAP_INCLUDE_DIR} )
 ADD_DEFINITIONS( -D_USRDLL -DWS_SMC_EXPORTS )
 
 HPCC_ADD_LIBRARY( ws_smc SHARED ${SRCS}  )
+add_dependencies ( ws_smc espscm )
 install ( TARGETS ws_smc DESTINATION ${OSSDIR}/lib )
 target_link_libraries ( ws_smc 
          jlib

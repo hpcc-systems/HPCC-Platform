@@ -25,12 +25,12 @@
 project( hidl ) 
 
 add_custom_command ( OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/hidlgram.cpp ${CMAKE_CURRENT_BINARY_DIR}/hidlgram.h
-    COMMAND ${bisoncmd} --defines=${CMAKE_CURRENT_BINARY_DIR}/hidlgram.h --output=${CMAKE_CURRENT_BINARY_DIR}/hidlgram.cpp ${CMAKE_CURRENT_SOURCE_DIR}/hidlgram.y
+    COMMAND ${bisoncmdprefix} ${bisoncmd} --defines=${CMAKE_CURRENT_BINARY_DIR}/hidlgram.h --output=${CMAKE_CURRENT_BINARY_DIR}/hidlgram.cpp ${CMAKE_CURRENT_SOURCE_DIR}/hidlgram.y
     DEPENDS hidlgram.y
 )
 
-add_custom_command ( OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/hidllex.cpp 
-    COMMAND ${flexcmd} --outfile=${CMAKE_CURRENT_BINARY_DIR}/hidllex.cpp ${CMAKE_CURRENT_SOURCE_DIR}/hidllex.l
+add_custom_command ( OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/hidllex.cpp
+    COMMAND ${flexcmdprefix} ${flexcmd} --outfile=${CMAKE_CURRENT_BINARY_DIR}/hidllex.cpp ${CMAKE_CURRENT_SOURCE_DIR}/hidllex.l
     DEPENDS hidllex.l
 )
 

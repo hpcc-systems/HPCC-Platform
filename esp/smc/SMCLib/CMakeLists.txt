@@ -62,6 +62,7 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL -DSMCLIB_EXPORTS )
 
 HPCC_ADD_LIBRARY( SMCLib SHARED ${SRCS} )
+add_dependencies(SMCLib espscm)
 install ( TARGETS SMCLib DESTINATION ${OSSDIR}/lib )
 target_link_libraries ( SMCLib
          jlib

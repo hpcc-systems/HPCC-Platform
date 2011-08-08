@@ -63,6 +63,7 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL )
 
 HPCC_ADD_LIBRARY( ws_fs SHARED ${SRCS} )
+add_dependencies ( ws_fs espscm )
 install ( TARGETS ws_fs DESTINATION ${OSSDIR}/lib )
 target_link_libraries ( ws_fs
          jlib
