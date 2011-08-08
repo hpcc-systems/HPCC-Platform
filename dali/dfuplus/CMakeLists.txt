@@ -16,41 +16,41 @@
 ################################################################################
 
 
-# Component: dfuplus 
+# Component: dfuplus
 #####################################################
 # Description:
 # ------------
 #    Cmake Input File for dfuplus
 #####################################################
 
-project( dfuplus ) 
+project( dfuplus )
 
 include(${HPCC_SOURCE_DIR}/esp/scm/smcscm.cmake)
 
-set (    SRCS 
-         ../../esp/bindings/bindutil.cpp 
-         ${ESPSCM_GENERATED_DIR}/ws_dfu_esp.cpp 
+set (    SRCS
+         ../../esp/bindings/bindutil.cpp
+         ${ESPSCM_GENERATED_DIR}/ws_dfu_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_fs_esp.cpp
-         ../../common/remote/rmtfile.cpp 
-         ../../common/remote/sockfile.cpp 
-         dfuplus.cpp 
-         main.cpp 
+         ../../common/remote/rmtfile.cpp
+         ../../common/remote/sockfile.cpp
+         dfuplus.cpp
+         main.cpp
     )
 
-include_directories ( 
+include_directories (
          ./../../system/security/shared
-         ./../../esp/bindings/SOAP/xpp 
-         ./../dfu 
-         ./../ft 
-         ./../../system/xmllib 
-         ./../../esp/platform 
-         ./../../esp/clients 
-         ./../../rtl/include 
-         ./../../system/include 
-         ./../../system/jlib 
-         ./../../esp/bindings 
-         ./../../common/workunit 
-         ./../../common/remote 
+         ./../../esp/bindings/SOAP/xpp
+         ./../dfu
+         ./../ft
+         ./../../system/xmllib
+         ./../../esp/platform
+         ./../../esp/clients
+         ./../../rtl/include
+         ./../../system/include
+         ./../../system/jlib
+         ./../../esp/bindings
+         ./../../common/workunit
+         ./../../common/remote
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
     )
@@ -61,11 +61,12 @@ set_source_files_properties (dfuplus.cpp PROPERTIES COMPILE_FLAGS -DDAFILESRV_LO
 ADD_DEFINITIONS( -D_CONSOLE )
 
 add_executable ( dfuplus ${SRCS} )
+add_dependencies ( dfuplus espscm )
 install ( TARGETS dfuplus DESTINATION ${OSSDIR}/bin )
-target_link_libraries ( dfuplus  
+target_link_libraries ( dfuplus
          jlib
-         xmllib 
-         esphttp 
+         xmllib
+         esphttp
          ws_fs
          ws_dfu
     )
