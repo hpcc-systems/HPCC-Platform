@@ -27,12 +27,12 @@
 project( esdl ) 
 
 add_custom_command ( OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/esdlgram.cpp ${CMAKE_CURRENT_BINARY_DIR}/esdlgram.h
-    COMMAND ${bisoncmd} --defines=${CMAKE_CURRENT_BINARY_DIR}/esdlgram.h --output=${CMAKE_CURRENT_BINARY_DIR}/esdlgram.cpp ${CMAKE_CURRENT_SOURCE_DIR}/esdlgram.y
+    COMMAND ${bisoncmdprefix} ${bisoncmd} --defines=${CMAKE_CURRENT_BINARY_DIR}/esdlgram.h --output=${CMAKE_CURRENT_BINARY_DIR}/esdlgram.cpp ${CMAKE_CURRENT_SOURCE_DIR}/esdlgram.y
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/esdlgram.y
 )
 
 add_custom_command ( OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/esdllex.cpp 
-    COMMAND ${flexcmd} --outfile=${CMAKE_CURRENT_BINARY_DIR}/esdllex.cpp ${CMAKE_CURRENT_SOURCE_DIR}/esdllex.l
+    COMMAND ${flexcmdprefix} ${flexcmd} --outfile=${CMAKE_CURRENT_BINARY_DIR}/esdllex.cpp ${CMAKE_CURRENT_SOURCE_DIR}/esdllex.l
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/esdllex.l
 )
 

@@ -72,6 +72,7 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL -DWS_DFU_EXPORTS )
 
 HPCC_ADD_LIBRARY( ws_dfu SHARED ${SRCS} )
+add_dependencies ( ws_dfu espscm )
 install ( TARGETS ws_dfu DESTINATION ${OSSDIR}/lib )
 target_link_libraries ( ws_dfu
          jlib
