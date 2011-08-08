@@ -996,8 +996,8 @@ public:
                     pollStr.append(" ALL (mcast) nodes");
                     mcastSock->write(header, sizeof(MCPacketHeader));
                 }
-                LOG(MCdebugProgress(30), unknownJob, pollStr.str());
-                LOG(MCdebugProgress(40), unknownJob, ackStr.str());
+                LOG(MCdebugProgress(30), unknownJob, "%s", pollStr.str());
+                LOG(MCdebugProgress(40), unknownJob, "%s", ackStr.str());
                 lastPoll = msTick();
             }
             else

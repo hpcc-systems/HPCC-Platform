@@ -2051,7 +2051,7 @@ public:
         int code = et->getPropInt("@exceptionCode");
         StringBuffer msg;
         et->getProp("@exceptionMessage",msg);
-        cur.setown(MakeStringException(code,msg.str()));
+        cur.setown(MakeStringException(code, "%s", msg.str()));
         return true;
     }
 

@@ -2431,7 +2431,7 @@ public:
             if(rc == LDAP_UNWILLING_TO_PERFORM)
                 errmsg.append(" The ldap server refused to execute the password change action, one of the reasons might be that the new password you entered doesn't satisfy the policy requirement.");
 
-            throw MakeStringException(-1, errmsg.str());
+            throw MakeStringException(-1, "%s", errmsg.str());
         }
 
         return true;
@@ -2584,7 +2584,7 @@ public:
                 if(rc == LDAP_UNWILLING_TO_PERFORM)
                     errmsg.append(" The ldap server refused to execute the password change action, one of the reasons might be that the new password you entered doesn't satisfy the policy requirement.");
 
-                throw MakeStringException(-1, errmsg.str());
+                throw MakeStringException(-1, "%s", errmsg.str());
             }
         }
         return true;

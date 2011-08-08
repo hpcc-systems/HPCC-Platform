@@ -99,7 +99,7 @@ public:
         e->errorMessage(text);
         rtlAddExceptionTag(text, "url", getUrlString(url).str());
         if (text.length() <= 1024)
-            return MakeStringException(e->errorCode(), text.str());
+            return MakeStringException(e->errorCode(), "%s", text.str());
         else
             return MakeStringExceptionDirect(e->errorCode(), text.str());
     }
@@ -272,7 +272,7 @@ private:
             catch (IException *e)
             {
                 StringBuffer s;
-                throw MakeStringException(ROXIE_ABORT_EVENT, e->errorMessage(s).str());
+                throw MakeStringException(ROXIE_ABORT_EVENT, "%s", e->errorMessage(s).str());
             }
         }
     }
@@ -1338,7 +1338,7 @@ private:
             catch (IException *e)
             {
                 StringBuffer s;
-                throw MakeStringException(ROXIE_ABORT_EVENT, e->errorMessage(s).str());
+                throw MakeStringException(ROXIE_ABORT_EVENT, "%s", e->errorMessage(s).str());
             }
         }
     }
@@ -1731,7 +1731,7 @@ public:
                                 err.append("Failure to establish secure connection to ");
                                 connUrl.getUrlString(err);
                                 err.append(": returned ").append(status);
-                                throw MakeStringException(0, err.str());
+                                throw MakeStringException(0, "%s", err.str());
                             }
                             socket.setown(ssock.getLink());
                         }

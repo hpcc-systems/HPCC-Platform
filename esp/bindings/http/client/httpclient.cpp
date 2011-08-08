@@ -206,7 +206,7 @@ int CHttpClient::connect(StringBuffer& errmsg)
         if (!ep.set(m_host.get(), m_port))
         {
             errmsg.appendf("Bad host name/ip: %s", m_host.get());
-            ERRLOG(errmsg);
+            ERRLOG("%s", errmsg.str());
             return -1;
         }
         //TODO: should it be 443 for HTTPS??
@@ -218,7 +218,7 @@ int CHttpClient::connect(StringBuffer& errmsg)
         if (!ep.set(m_proxy.str()))
         {
             errmsg.appendf("Bad proxy name/ip: %s", m_proxy.str());
-            ERRLOG(errmsg);
+            ERRLOG("%s", errmsg.str());
             return -1;
         }
         //TODO: should it be 443 for HTTPS??
@@ -254,7 +254,7 @@ int CHttpClient::connect(StringBuffer& errmsg)
     {
         StringBuffer errMsg;
         errmsg.appendf("Exception in CHttpClient::connect... %d==>%s", excpt->errorCode(), excpt->errorMessage(errMsg).str());
-        DBGLOG(errmsg);
+        DBGLOG("%s", errmsg.str());
         StringBuffer url;
         ERRLOG("Connect to %s failed: %s", ep.getUrlStr(url).str(),errMsg.str());
         excpt->Release();
@@ -265,7 +265,7 @@ int CHttpClient::connect(StringBuffer& errmsg)
     {
         DBGLOG(">>Exception in CHttpClient::connect...");
         errmsg.appendf("Internal error: unexpected exception in CHttpClient::connect()");
-        ERRLOG(errmsg);
+        ERRLOG("%s", errmsg.str());
         m_socket = NULL;
         return -1;
     }
@@ -717,7 +717,7 @@ int CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp)
     }
     else
     {
-        DBGLOG(errmsg.str());
+        DBGLOG("%s", errmsg.str());
 
         StringBuffer msg;
         if (me->ordinality())

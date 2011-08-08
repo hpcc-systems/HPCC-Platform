@@ -5681,8 +5681,8 @@ StringBuffer & CDistributedFilePart::getPartName(StringBuffer &partname)
     const char *mask=parent.queryPartMask();
     if (!mask||!*mask) {
         const char *err ="CDistributedFilePart::getPartName cannot determine part name (no mask)";
-        ERRLOG(err);
-        throw MakeStringException(-1,err);
+        ERRLOG("%s", err);
+        throw MakeStringException(-1, "%s", err);
     }
     expandMask(partname,mask,partIndex,parent.numParts());
     return partname;

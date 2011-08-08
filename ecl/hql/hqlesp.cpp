@@ -191,8 +191,8 @@ void WebServicesExtractor::getAttributeText(StringBuffer & text, const char* att
     {
         StringBuffer txt;
         txt.append("Could not read attribute: ").append(attributeName);
-        DBGLOG(txt.toCharArray());
-        throw MakeStringException(ERR_NO_ATTRIBUTE_TEXT, txt.str());
+        DBGLOG("%s", txt.toCharArray());
+        throw MakeStringException(ERR_NO_ATTRIBUTE_TEXT, "%s", txt.str());
     }
 
     symbol->getTextBuf(text);

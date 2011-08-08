@@ -153,7 +153,7 @@ inline void FORWARDEXCEPTION(IException *e, unsigned codeNew)
     {
         StringBuffer eMsg_Display;
         eMsg_Display.appendf("%s: %s", timeStamp, eMsg.str());
-        throw MakeStringException(err, eMsg_Display.str());
+        throw MakeStringException(err, "%s", eMsg_Display.str());
     }
         
     return;

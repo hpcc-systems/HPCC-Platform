@@ -1271,7 +1271,7 @@ public:
         if ((unsigned)-1 == sz)
         {
             StringBuffer s("Missing external file ");
-            Owned<IException> e = MakeSDSException(SDSExcpt_MissingExternalFile, filename.str());
+            Owned<IException> e = MakeSDSException(SDSExcpt_MissingExternalFile, "%s", filename.str());
             LOG(MCoperatorWarning, unknownJob, e, s.str()); 
             StringBuffer str("EXTERNAL BINARY FILE: \"");
             str.append(filename.str()).append("\" MISSING");
@@ -1306,7 +1306,7 @@ public:
             StringBuffer s("Missing external file ");
             if (*_name)
                 s.append("in property ").append(_name);
-            Owned<IException> e = MakeSDSException(SDSExcpt_MissingExternalFile, filename.str());
+            Owned<IException> e = MakeSDSException(SDSExcpt_MissingExternalFile, "%s", filename.str());
             LOG(MCoperatorWarning, unknownJob, e, s.str()); 
             if (withValue)
             {
@@ -1376,7 +1376,7 @@ public:
         if ((unsigned)-1 == sz)
         {
             StringBuffer s("Missing external file ");
-            Owned<IException> e = MakeSDSException(SDSExcpt_MissingExternalFile, filename.str());
+            Owned<IException> e = MakeSDSException(SDSExcpt_MissingExternalFile, "%s", filename.str());
             LOG(MCoperatorWarning, unknownJob, e, s.str());
             StringBuffer str("EXTERNAL BINARY FILE: \"");
             str.append(filename.str()).append("\" MISSING");
@@ -1407,7 +1407,7 @@ public:
             StringBuffer s("Missing external file ");
             if (*_name)
                 s.append("in property ").append(_name);
-            Owned<IException> e = MakeSDSException(SDSExcpt_MissingExternalFile, filename.str());
+            Owned<IException> e = MakeSDSException(SDSExcpt_MissingExternalFile, "%s", filename.str());
             LOG(MCoperatorWarning, unknownJob, e, s.str());
             if (withValue)
             {
@@ -1476,7 +1476,7 @@ public:
         if (!ifile->exists())
         {
             StringBuffer s("Missing external file ");
-            Owned<IException> e = MakeSDSException(SDSExcpt_MissingExternalFile, filename.str());
+            Owned<IException> e = MakeSDSException(SDSExcpt_MissingExternalFile, "%s", filename.str());
             LOG(MCoperatorWarning, unknownJob, e, s.str());
             StringBuffer str("EXTERNAL XML FILE: \"");
             str.append(filename.str()).append("\" MISSING");
@@ -1506,7 +1506,7 @@ public:
             const char *name = owner.queryName();
             if (name && *name)
                 s.append("in property ").append(name);
-            Owned<IException> e = MakeSDSException(SDSExcpt_MissingExternalFile, filename.str());
+            Owned<IException> e = MakeSDSException(SDSExcpt_MissingExternalFile, "%s", filename.str());
             LOG(MCoperatorWarning, unknownJob, e, s.str());
             StringBuffer str("EXTERNAL XML FILE: \"");
             str.append(filename.str()).append("\" MISSING");
@@ -2993,7 +2993,7 @@ class CLockInfo : public CInterface, implements IInterface
                             StringBuffer out("Removing stale connection session [");
                             out.appendf("%"I64F"x], connectionId [%"I64F"x]", lD->sessId, * ((ConnectionId *) imap.getKey()));
                             out.append(" xpath [").append(xpath).append("]");
-                            PROGLOG(out.str());
+                            PROGLOG("%s", out.str());
                             querySessionManager().stopSession(lD->sessId, true);
                             ret = true;
                         }
@@ -3009,7 +3009,7 @@ class CLockInfo : public CInterface, implements IInterface
                                 out.append(" [");
                                 out.appendf("%"I64F"x], connectionId [%"I64F"x]", lD->sessId, * ((ConnectionId *) imap.getKey()));
                                 out.append(" xpath [").append(xpath).append("]");
-                                PROGLOG(out.str());
+                                PROGLOG("%s", out.str());
                                 queryCoven().disconnect(node);
                                 ret = true;
                             }
@@ -3171,7 +3171,7 @@ public:
                             waiting--;
                             StringBuffer s("Infinite timeout lock still waiting: ");
                             getLockInfo(s);
-                            PROGLOG(s.str());
+                            PROGLOG("%s", s.str());
                         }
                         {
                             CHECKEDCRITICALUNBLOCK(crit, fakeCritTimeout);
@@ -3874,7 +3874,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                     {
                         StringBuffer str("Dali client passing sessionid=0 to connect (xpath=");
                         str.append(xpath).append(", mode=").append(mode).append(", connectionId=").appendf("%"I64F"x", connectionId).append(")");
-                        WARNLOG(str.str());
+                        WARNLOG("%s", str.str());
                     }
                     mb.clear();
                     mb.append((int)DAMP_SDSREPLY_OK);
@@ -3930,7 +3930,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                             {
                                 StringBuffer str("Dali client passing sessionid=0 to multi connect (xpath=");
                                 str.append(xpath).append(", mode=").append(mode).append(", connectionId=").appendf("%"I64F"x", connectionId).append(")");
-                                WARNLOG(str.str());
+                                WARNLOG("%s", str.str());
                             }
                             CRemoteConnection *conn = new CRemoteConnection(*SDSManager, connectionId, xpath, id, mode, timeout);
                             assertex(conn);
@@ -4304,7 +4304,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
         {
             s.append(" in xpath '").append(xpath).append("'");
             e->Release();
-            e = MakeSDSException(SDSExcpt_IPTError, s.str());   
+            e = MakeSDSException(SDSExcpt_IPTError, "%s", s.str());
         }
         mb.append(e->errorCode());
         mb.append(e->errorMessage(s.clear()));
@@ -4531,7 +4531,7 @@ IPropertyTree *loadStore(const char *storeFilename, IPTreeMaker *iMaker, unsigne
         OwnedIFile iFileStore = createIFile(storeFilename);
         OwnedIFileIO iFileIOStore = iFileStore->open(IFOread);
         if (!iFileIOStore)
-            throw MakeSDSException(SDSExcpt_OpenStoreFailed, storeFilename);
+            throw MakeSDSException(SDSExcpt_OpenStoreFailed, "%s", storeFilename);
 
         Owned<IFileIOStream> fstream = createIOStream(iFileIOStore);
         Owned<ICrcIOStream> crcPipeStream = createCrcPipeStream(fstream);
@@ -5090,7 +5090,7 @@ public:
             {
                 noErrors = false;
                 StringBuffer s;
-                LOG(MCoperatorWarning, unknownJob, s.append("Delta '").append(filename).append("' crc mismatch").str());
+                LOG(MCoperatorWarning, unknownJob, "%s", s.append("Delta '").append(filename).append("' crc mismatch").str());
             }
         }
         return noErrors;
@@ -6893,7 +6893,7 @@ CServerConnection *CCovenSDSManager::createConnectionInstance(CRemoteTreeBase *r
                 if (tree)
                 {
                     if (match)
-                        throw MakeSDSException(SDSExcpt_AmbiguousXpath, "Ambiguous: ", _xpath);
+                        throw MakeSDSException(SDSExcpt_AmbiguousXpath, "Ambiguous: %s", _xpath);
                 }
                 else
                 {

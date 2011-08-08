@@ -5448,7 +5448,7 @@ IHqlExpression * WorkflowTransformer::extractCommonWorkflow(IHqlExpression * exp
         if (expr->queryName())
             s.append("[").append(expr->queryName()).append("] ");
         s.append(" to common up code between workflow items");
-        DBGLOG(s.str());
+        DBGLOG("%s", s.str());
         translator.addWorkunitException(ExceptionSeverityInformation, HQLWRN_TryAddingIndependent, s.str(), location);
         if (!translator.queryOptions().performWorkflowCse)
             return LINK(transformed);
@@ -5462,7 +5462,7 @@ IHqlExpression * WorkflowTransformer::extractCommonWorkflow(IHqlExpression * exp
     if (expr->queryName())
         s.append("[").append(expr->queryName()).append("] ");
     s.append(" to common up between workflow items [").append(wfid).append("]");
-    DBGLOG(s.str());
+    DBGLOG("%s", s.str());
     translator.addWorkunitException(ExceptionSeverityInformation, 0, s.str(), location);
 
     GlobalAttributeInfo info("spill::wfa", "wfa");
@@ -7369,7 +7369,7 @@ IHqlExpression * AutoScopeMigrateTransformer::createTransformed(IHqlExpression *
         if (expr->queryName())
             s.append("[").append(expr->queryName()).append("] ");
         s.append("as an item to hoist");
-        DBGLOG(s.str());
+        DBGLOG("%s", s.str());
 
         GlobalAttributeInfo info("spill::auto","auto");
         info.extractGlobal(transformed, isRoxie);

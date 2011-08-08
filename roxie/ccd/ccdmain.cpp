@@ -357,7 +357,7 @@ void FatalError(const char *format, ...)
     StringBuffer errMsg;
     errMsg.valist_appendf(format, args);
     va_end(args);
-    Owned<IException> E = MakeStringException(MSGAUD_operator, ROXIE_INTERNAL_ERROR, errMsg.str());
+    Owned<IException> E = MakeStringException(MSGAUD_operator, ROXIE_INTERNAL_ERROR, "%s", errMsg.str());
     EXCLOG(E, "Fatal error");
     Sleep(5000);
     _exit(1);

@@ -61,7 +61,7 @@ ProcessSlaveActivity::~ProcessSlaveActivity()
     // NB: The activity thread should have already stopped,
     //     if it is still alive at job shutdown and cannot be joined then the thread is in an unknown state.
     if (!threaded.join(FATAL_ACTJOIN_TIMEOUT))
-        throw MakeThorFatal(NULL, TE_FailedToAbortSlaves, "Activity %"ACTPF"%d failed to stop", container.queryId());
+        throw MakeThorFatal(NULL, TE_FailedToAbortSlaves, "Activity %"ACTPF"d failed to stop", container.queryId());
     ActPrintLog("AFTER ProcessSlaveActivity : joining process thread");
 }
 
@@ -113,7 +113,7 @@ void ProcessSlaveActivity::main()
             m.append("standard library exception (std::exception ").append(es.what()).append(")");
         m.appendf(" in %"ACTPF"d",container.queryId());
         ActPrintLogEx(&queryContainer(), thorlog_null, MCerror, "%s", m.str());
-        exception.setown(MakeThorFatal(NULL, TE_UnknownException, m.str()));
+        exception.setown(MakeThorFatal(NULL, TE_UnknownException, "%s", m.str()));
     }
     catch (CATCHALL)
     {

@@ -670,13 +670,13 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
           else
             sMsg.append(":\n\n").append(sErrMsg);
 
-          throw MakeStringException(0, sMsg);
+          throw MakeStringException(0, "%s", sMsg.str());
         }
         else
         {
           StringBuffer sMsg;
           sMsg.append("Error locking environment. ").append(sErrMsg.str());
-          throw MakeStringException(-1, sMsg.str());
+          throw MakeStringException(-1, "%s", sMsg.str());
         }
       }
     }
@@ -764,13 +764,13 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
           else
             sMsg.append(":\n\n").append(sErrMsg);
 
-          throw MakeStringException(0, sMsg);
+          throw MakeStringException(0, "%s", sMsg.str());
         }
         else
         {
           StringBuffer sMsg;
           sMsg.append("Error unlocking environment. ").append(sErrMsg.str());
-          throw MakeStringException(-1, sMsg.str());
+          throw MakeStringException(-1, "%s", sMsg.str());
         }
       }
     }
@@ -2593,9 +2593,9 @@ bool CWsDeployFileInfo::getValue(IEspContext &context, IEspGetValueRequest &req,
           if(m_userWithLock.length())
           {
            if (strcmp(sbName.str(), m_userWithLock.str()) || strcmp(sbUserIp.str(), m_userIp.str()))
-             sbMultiple.appendf(sArray.item(i)).append("=").appendf("Cannot get access to Wizard mode as Environment is currently being configured in wizard mode on machine ").append(m_userIp.str());
+             sbMultiple.append(sArray.item(i)).append("=").append("Cannot get access to Wizard mode as Environment is currently being configured in wizard mode on machine ").append(m_userIp.str());
            else if(!strcmp(sbName.str(), m_userWithLock.str()) && !strcmp(sbUserIp.str(),m_userIp.str()))
-             sbMultiple.appendf(sArray.item(i)).append("=").appendf("Another browser window already has write access on machine ").append(m_userIp.str()).appendf(".Please use that window.");
+             sbMultiple.append(sArray.item(i)).append("=").append("Another browser window already has write access on machine ").append(m_userIp.str()).append(".Please use that window.");
            else
             sbMultiple.append(sArray.item(i)).append("=''");
 
@@ -5332,7 +5332,7 @@ void CWsDeployFileInfo::saveEnvironment(IEspContext* pContext, IConstWsDeployReq
       else
         sMsg.append(":\n\n").append(sErrMsg);
 
-      throw MakeStringException(0, sMsg);
+      throw MakeStringException(0, "%s", sMsg.str());
     }
   }
 }
@@ -6038,7 +6038,7 @@ bool CWsDeployExCE::onGetValue(IEspContext &context, IEspGetValueRequest &req, I
             {
               StringBuffer encryptedPasswd ;
               encrypt(encryptedPasswd , sArray.item(x));
-              sbMultiple.appendf(encryptedPasswd.str()); 
+              sbMultiple.append(encryptedPasswd.str()); 
                 if(sbMultiple.length())
                  sbMultiple.append(",");
             }

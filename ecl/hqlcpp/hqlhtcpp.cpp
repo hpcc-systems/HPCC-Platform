@@ -6105,7 +6105,7 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
             case no_preload:
                 {
                     StringBuffer s;
-                    DBGLOG(getExprECL(expr, s).str());
+                    DBGLOG("%s", getExprECL(expr, s).str());
                     throwError(HQLERR_TooComplicatedToPreload);
                 }
             case no_sub:

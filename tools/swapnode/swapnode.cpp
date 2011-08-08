@@ -129,10 +129,10 @@ static IRemoteConnection* GetRemoteLock(const char* path, unsigned int mode, boo
                WARNLOG("%s",sMsg.str());
                return NULL;
            }
-           throw ::MakeStringException(-1, sMsg.str());
+           throw ::MakeStringException(-1, "%s", sMsg.str());
        }
        else
-           throw ::MakeStringException(-1, sErrMsg.str());
+           throw ::MakeStringException(-1, "%s", sErrMsg.str());
     }
 
     return pRemoteConnection;

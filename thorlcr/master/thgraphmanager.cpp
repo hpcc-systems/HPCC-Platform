@@ -407,7 +407,7 @@ void CJobManager::run()
                                 msg.append("Nothing found on jobq::dequeue");
                             if (e>=5000)
                                 msg.append(" - acceptConversation took ").append(e/1000).append(" secs");
-                            PROGLOG(msg.str());
+                            PROGLOG("%s", msg.str());
                             if (_item.get())
                             {
                                 if (_item->isValidSession())
@@ -591,7 +591,7 @@ void CJobManager::reply(IConstWorkUnit *workunit, const char *wuid, IException *
     s.append(" to agent ");
     agentep.getUrlStr(s);
     s.append(" for workunit(").append(wuid).append(")");
-    PROGLOG(s.str());
+    PROGLOG("%s", s.str());
     MemoryBuffer replyMb;
     workunit->forceReload();
     if (!allDone && (WUActionPause == workunit->getAction() || WUActionPauseNow == workunit->getAction()))

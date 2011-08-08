@@ -461,7 +461,7 @@ private:
     StringBuffer errMsg;
 };
 
-ISDSException *MakeSDSException(int errorCode, const char *errorMsg = NULL, ...);
+ISDSException *MakeSDSException(int errorCode, const char *errorMsg = NULL, ...) __attribute__((format(printf, 2, 3)));
 
 inline void throwMbException(const char *errorMsg, MemoryBuffer &mb)
 {

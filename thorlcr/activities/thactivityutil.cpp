@@ -724,7 +724,7 @@ void doReplicate(CActivityBase *activity, IPartDescriptor &partDesc, ICopyFilePr
     }
     catch (IException *e)
     {
-        Owned<IThorException> e2 = MakeActivityWarning(activity, e, "");
+        Owned<IThorException> e2 = MakeActivityWarning(activity, e, "doReplicate");
         e->Release();
         activity->fireException(e2);
     }
@@ -863,7 +863,7 @@ IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc,
         if (!fileio)
         {
             compress = false;
-            Owned<IThorException> e = MakeActivityWarning(activity, TE_LargeBufferWarning, "Could not write file '%s' compressed");
+            Owned<IThorException> e = MakeActivityWarning(activity, TE_LargeBufferWarning, "Could not write file '%s' compressed", outLocationName.str());
             activity->fireException(e);
             fileio.setown(file->open(extend&&file->exists()?IFOwrite:IFOcreate)); 
         }
@@ -970,7 +970,7 @@ void CThorRowAggregator::checkMem()
     {
         StringBuffer errMsg("Large Group Aggregate table, memory usage=");
         errMsg.append((unsigned __int64)queryMem());
-        Owned<IThorException> e = MakeActivityException(&activity, TE_LargeAggregateTable, errMsg.str());
+        Owned<IThorException> e = MakeActivityException(&activity, TE_LargeAggregateTable, "%s", errMsg.str());
         EXCLOG(e, NULL);
         if (grow && (ThorRowMemoryAvailable()-(queryLargeMemSize()/10) > queryLargeMemSize()/8)) // if plenty left warn but let it grow
         {

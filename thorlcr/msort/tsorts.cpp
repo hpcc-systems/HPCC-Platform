@@ -103,7 +103,7 @@ private:
                     StringBuffer err;
                     err.append("Cannot create ").append(outidxfile->queryFilename());
                     LOG(MCerror, thorJob, "%s", err.str());
-                    throw MakeStringException(-1,err.str());
+                    throw MakeStringException(-1, "%s", err.str());
                 }
                 offset_t s = 0;
                 while (s<=lastofs) {

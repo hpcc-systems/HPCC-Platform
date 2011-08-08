@@ -230,7 +230,7 @@ void CSlaveMessageHandler::main()
                         e->setSlave(sender);
                         StringBuffer tmpStr("Slave ");
                         job.queryJobGroup().queryNode(sender).endpoint().getUrlStr(tmpStr);
-                        GraphPrintLog(graph, e, tmpStr.append(": slave initialization error").str());
+                        GraphPrintLog(graph, e, "%s", tmpStr.append(": slave initialization error").str());
                         throw e.getClear();
                     }
                     break;
@@ -1220,7 +1220,7 @@ void CJobMaster::broadcastToSlaves(CMessageBuffer &msg, mptag_t mptag, unsigned 
     {
         // think this should always be fatal, could check link down here, or in general and flag as _shutdown.
         StringBuffer msg("General failure communicating to slaves [");
-        Owned<IThorException> e = MakeThorException(0, msg.append(errorMsg).append("]").str());
+        Owned<IThorException> e = MakeThorException(0, "%s", msg.append(errorMsg).append("]").str());
         e->setAction(tea_shutdown);
         EXCLOG(e, NULL);
         abort(e);
@@ -2036,7 +2036,7 @@ void CMasterGraph::sendActivityInitData()
                 {
                     StringBuffer tmpStr("Slave ");
                     queryJob().queryJobGroup().queryNode(sender).endpoint().getUrlStr(tmpStr);
-                    GraphPrintLog(se, tmpStr.append(": slave initialization error").str());
+                    GraphPrintLog(se, "%s", tmpStr.append(": slave initialization error").str());
                     e.setown(se.getClear());
                 }
                 continue; // to read other slave responses.

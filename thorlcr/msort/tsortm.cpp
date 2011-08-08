@@ -572,7 +572,7 @@ public:
             else if (cmp>0)
                 ActPrintLog(activity, "ERROR: Min > Max!");
         }
-        ActPrintLog(activity, "Tot = %""d\n",tot);
+        ActPrintLog(activity, "Tot = %"I64F"d", tot);
 #endif
         return tot;
     }
@@ -1377,7 +1377,7 @@ public:
                     CSortNode &slave = slaves.item(i);
                     char url[100];
                     slave.endpoint.getUrlStr(url,sizeof(url));
-                    ActPrintLog(activity, "Split point %d: %d rows on %s",i,tot[i],url);
+                    ActPrintLog(activity, "Split point %d: %"RCPF"d rows on %s", i, tot[i], url);
                 }
                 if (CheckSkewed(threshold,skewWarning,skewError,numnodes,total,max)) {
 #ifdef _TRACE_SKEW_SPLIT

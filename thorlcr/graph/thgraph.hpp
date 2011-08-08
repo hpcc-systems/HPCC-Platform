@@ -243,8 +243,8 @@ public:
     void releaseIOs();
     void addDependsOn(CGraphBase *graph, int controlId);
     IThorGraphDependencyIterator *getDependsIterator();
-    void ActPrintLog(const char *format, ...);
-    void ActPrintLog(IException *e, const char *format, ...);
+    void ActPrintLog(const char *format, ...)  __attribute__((format(printf, 2, 3)));
+    void ActPrintLog(IException *e, const char *format, ...) __attribute__((format(printf, 3, 4)));
 
     void setBoundGraph(IThorBoundLoopGraph *graph) { loopGraph.set(graph); }
     IThorBoundLoopGraph *queryLoopGraph() { return loopGraph; }
@@ -668,8 +668,8 @@ public:
     virtual void init() { }
     IThorActivityIterator *getTraverseIterator(bool connected=true);
     IThorActivityIterator *getTraverseIteratorCond();
-    void GraphPrintLog(const char *msg, ...);
-    void GraphPrintLog(IException *e, const char *msg, ...);
+    void GraphPrintLog(const char *msg, ...) __attribute__((format(printf, 2, 3)));
+    void GraphPrintLog(IException *e, const char *msg, ...) __attribute__((format(printf, 3, 4)));
     void createFromXGMML(IPropertyTree *node, CGraphBase *owner, CGraphBase *parent, CGraphBase *resultsGraph);
     const bool &queryAborted() const { return aborted; }
     CJobBase &queryJob() const { return job; }
@@ -1014,8 +1014,8 @@ public:
     virtual MemoryBuffer &queryInitializationData(unsigned slave) const = 0;
     virtual MemoryBuffer &getInitializationData(unsigned slave, MemoryBuffer &mb) const = 0;
 
-    void ActPrintLog(const char *format, ...);
-    void ActPrintLog(IException *e, const char *format, ...);
+    void ActPrintLog(const char *format, ...) __attribute__((format(printf, 2, 3)));
+    void ActPrintLog(IException *e, const char *format, ...) __attribute__((format(printf, 3, 4)));
 
 // IExceptionHandler
     bool fireException(IException *e);

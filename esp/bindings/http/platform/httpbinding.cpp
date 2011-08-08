@@ -774,7 +774,7 @@ static void filterXmlBySchema(IPTree* in, IXmlType* type, const char* tag, Strin
         {
             VStringBuffer s("*** Invalid array definition: tag=%s, itemName=%s", tag, itemName?itemName:"NULL");
             out.append(s);
-            ERRLOG(s);
+            ERRLOG("%s", s.str());
             return;
         }
 

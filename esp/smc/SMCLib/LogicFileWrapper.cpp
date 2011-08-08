@@ -48,7 +48,7 @@ void LogicFileWrapper::FindClusterName(const char* logicalName, StringBuffer& re
     catch(IException* e){   
       StringBuffer msg;
       e->errorMessage(msg);
-        WARNLOG(msg.str());
+        WARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...){
@@ -81,7 +81,7 @@ bool LogicFileWrapper::doDeleteFile(const char* LogicalFileName,const char *clus
         if (errorStr.length() > 0)
         {
             returnStr.appendf("<Message><Value>%s</Value></Message>",errorStr.str());
-            DBGLOG(errorStr.str());
+            DBGLOG("%s", errorStr.str());
         }
         else {
             PrintLog("Deleted Logical File: %s\n",LogicalFileName);
@@ -124,7 +124,7 @@ bool LogicFileWrapper::doCompressFile(const char* name,StringBuffer& returnStr, 
     catch(IException* e){   
       StringBuffer msg;
       e->errorMessage(msg);
-        WARNLOG(msg.str());
+        WARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...){

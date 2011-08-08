@@ -540,7 +540,7 @@ void Cws_machineEx::RunMachineQuery(IEspContext &context, StringArray &addresses
          {
             StringBuffer msg;
             e->errorMessage(msg);
-              WARNLOG(msg.str());
+              WARNLOG("%s", msg.str());
               e->Release();
           }
           catch(...)

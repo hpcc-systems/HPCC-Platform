@@ -853,7 +853,7 @@ void CFile::copySection(const RemoteFilename &dest, offset_t toOfs, offset_t fro
         StringBuffer s;
         s.append("copyFile target=").append(target->queryFilename()).append(" source=").append(queryFilename()).append("; read/write failure").append(": ");
         e->errorMessage(s);
-        IException *e2 = MakeOsException(e->errorCode(), s.str());
+        IException *e2 = MakeOsException(e->errorCode(), "%s", s.str());
         e->Release();
         throw e2;
     }
@@ -2778,7 +2778,7 @@ void doCopyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFilePr
         // try to delete partial copy
         StringBuffer s;
         s.append("copyFile target=").append(dest->queryFilename()).append(" source=").append(source->queryFilename()).appendf("; read/write failure (%d): ",e->errorCode());
-        exc.setown(MakeStringException(e->errorCode(), s.str()));
+        exc.setown(MakeStringException(e->errorCode(), "%s", s.str()));
         e->Release();
         EXCLOG(exc, "doCopyFile");
     }

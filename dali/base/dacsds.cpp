@@ -1534,10 +1534,7 @@ IRemoteConnections *CClientSDSManager::connect(IMultipleConnector *mConnect, Ses
         throw MakeSDSException(SDSExcpt_VersionMismatch, "Multiple connect not supported by server versions prior to "MIN_MCONNECT_SVER);
 
     if (0 == id || id != myProcessSession())
-    {
-        StringBuffer s(", in multi connect");
-        throw MakeSDSException(SDSExcpt_InvalidSessionId, s.append(", sessionid=").appendf("%"I64F"x", id).str());
-    }
+        throw MakeSDSException(SDSExcpt_InvalidSessionId, ", in multi connect, sessionid=%"I64F"x", id);
 
     CMessageBuffer mb;
     mb.append((unsigned)DAMP_SDSCMD_MCONNECT | lazyExtFlag);
@@ -1548,7 +1545,7 @@ IRemoteConnections *CClientSDSManager::connect(IMultipleConnector *mConnect, Ses
     {
         StringBuffer s(", making multiple connect to ");
         getMConnectString(mConnect, s);
-        throw MakeSDSException(SDSExcpt_FailedToCommunicateWithServer, s.str());
+        throw MakeSDSException(SDSExcpt_FailedToCommunicateWithServer, "%s", s.str());
     }
 
     SdsReply replyMsg;
@@ -1593,10 +1590,7 @@ IRemoteConnections *CClientSDSManager::connect(IMultipleConnector *mConnect, Ses
 IRemoteConnection *CClientSDSManager::connect(const char *xpath, SessionId id, unsigned mode, unsigned timeout)
 {
     if (0 == id || id != myProcessSession())
-    {
-        StringBuffer s(", connecting to ");
-        throw MakeSDSException(SDSExcpt_InvalidSessionId, s.append(xpath).append(", sessionid=").appendf("%"I64F"x", id).str());
-    }
+        throw MakeSDSException(SDSExcpt_InvalidSessionId, ", connecting to %s, sessionid=%"I64F"x", xpath, id);
 
     CMessageBuffer mb;
     mb.append((int)DAMP_SDSCMD_CONNECT | lazyExtFlag);
@@ -1604,10 +1598,7 @@ IRemoteConnection *CClientSDSManager::connect(const char *xpath, SessionId id, u
     mb.append(xpath);
 
     if (!sendRequest(mb, true))
-    {
-        StringBuffer s(", connecting to ");
-        throw MakeSDSException(SDSExcpt_FailedToCommunicateWithServer, s.append(xpath).str());
-    }
+        throw MakeSDSException(SDSExcpt_FailedToCommunicateWithServer, ", connecting to %s", xpath);
 
     SdsReply replyMsg;
     

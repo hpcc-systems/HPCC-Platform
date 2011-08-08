@@ -134,7 +134,7 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
                 StringBuffer s("XMLRead actId(");
                 s.append(activity.queryContainer().queryId()).append(") out of memory.").newline();
                 s.append("INTERNAL ERROR ").append(e->errorCode());
-                Owned<IException> e2 = MakeActivityException(&activity, e, s.str());
+                Owned<IException> e2 = MakeActivityException(&activity, e, "%s", s.str());
                 e->Release();
                 throw e2.getClear();
             }
@@ -143,7 +143,7 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
                 StringBuffer s("XMLRead actId(");
                 s.append(activity.queryContainer().queryId());
                 s.append(") INTERNAL ERROR ").append(e->errorCode());
-                Owned<IException> e2 = MakeActivityException(&activity, e, s.str());
+                Owned<IException> e2 = MakeActivityException(&activity, e, "%s", s.str());
                 e->Release();
                 throw e2.getClear();
             }

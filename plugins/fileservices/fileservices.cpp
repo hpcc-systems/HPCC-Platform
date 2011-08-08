@@ -555,7 +555,7 @@ void blockUntilComplete(const char * label, IClientFileSpray &server, ICodeConte
         {
             StringBuffer errmsg;
             excep->errorMessage(errmsg);
-            throw MakeStringException(0, errmsg.str());
+            throw MakeStringException(0, "%s", errmsg.str());
         }
 
         IConstDFUWorkunit & dfuwu = result->getResult();
@@ -677,7 +677,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfSprayFixed(ICodeContext *ctx, const
         {
             StringBuffer errmsg;
             excep->errorMessage(errmsg);
-            throw MakeStringException(0, errmsg.str());
+            throw MakeStringException(0, "%s", errmsg.str());
         }
         else
         {
@@ -731,7 +731,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfSprayVariable(ICodeContext *ctx, co
         {
             StringBuffer errmsg;
             excep->errorMessage(errmsg);
-            throw MakeStringException(0, errmsg.str());
+            throw MakeStringException(0, "%s", errmsg.str());
         }
         else
         {
@@ -789,7 +789,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfSprayXml(ICodeContext *ctx, const c
         {
             StringBuffer errmsg;
             excep->errorMessage(errmsg);
-            throw MakeStringException(0, errmsg.str());
+            throw MakeStringException(0, "%s", errmsg.str());
         }
         else
         {
@@ -835,7 +835,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfDespray(ICodeContext *ctx, const ch
         {
             StringBuffer errmsg;
             excep->errorMessage(errmsg);
-            throw MakeStringException(0, errmsg.str());
+            throw MakeStringException(0, "%s", errmsg.str());
         }
         else
         {
@@ -895,7 +895,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfCopy(ICodeContext *ctx, const char 
         {
             StringBuffer errmsg;
             excep->errorMessage(errmsg);
-            throw MakeStringException(0, errmsg.str());
+            throw MakeStringException(0, "%s", errmsg.str());
         }
         else
         {
@@ -938,7 +938,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfReplicate(ICodeContext *ctx, const 
         {
             StringBuffer errmsg;
             excep->errorMessage(errmsg);
-            throw MakeStringException(0, errmsg.str());
+            throw MakeStringException(0, "%s", errmsg.str());
         }
         else
         {
@@ -1730,7 +1730,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfRemotePull(ICodeContext *ctx,
         {
             StringBuffer errmsg;
             excep->errorMessage(errmsg);
-            throw MakeStringException(0, errmsg.str());
+            throw MakeStringException(0, "%s", errmsg.str());
         }
         else
         {

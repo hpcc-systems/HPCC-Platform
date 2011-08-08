@@ -2515,7 +2515,7 @@ CThorRowAggregator *mergeLocalAggs(CActivityBase &activity, IHThorRowAggregator 
 
     activity.ActPrintLog("HASHAGGREGATE: Read %"RCPF"d records to build hash table", readCount);
     StringBuffer str("HASHAGGREGATE: After distribution merge contains ");
-    activity.ActPrintLog(str.append(globalAggTable->elementCount()).append("entries").str());
+    activity.ActPrintLog("%s", str.append(globalAggTable->elementCount()).append("entries").str());
     return globalAggTable.getClear();
 }
 
@@ -2567,7 +2567,7 @@ public:
                 localAggTable->addRow(row);
             }
             StringBuffer str("HASHAGGREGATE: Table before distribution contains ");
-            ActPrintLog(str.append(localAggTable->elementCount()).append(" entries").str());
+            ActPrintLog("%s", str.append(localAggTable->elementCount()).append(" entries").str());
         }
         catch (IException *)
         {

@@ -370,16 +370,16 @@ int CXslTransform::transform(StringBuffer &target)
     {
         StringBuffer estr("[Exception running XSLT stylesheet]");
         estr.appendf("[%s]", m_XalanTransformer.getLastError());
-        DBGLOG(estr.str());
-        throw MakeStringException(2, estr.str());
+        DBGLOG("%s", estr.str());
+        throw MakeStringException(2, "%s", estr.str());
     }
 
     if (rc < 0)
     {
         StringBuffer estr;
         estr.appendf("[%s]", m_XalanTransformer.getLastError());
-        DBGLOG(estr.str());
-        throw MakeStringException(2, estr.str());
+        DBGLOG("%s", estr.str());
+        throw MakeStringException(2, "%s", estr.str());
     }
 
     return rc;
@@ -414,15 +414,15 @@ int CXslTransform::transform()
     {
         StringBuffer estr("[Exception running XSLT stylesheet]");
         estr.appendf("[%s]", m_XalanTransformer.getLastError());
-        DBGLOG(estr.str());
-        throw MakeStringException(2, estr.str());
+        DBGLOG("%s", estr.str());
+        throw MakeStringException(2, "%s", estr.str());
     }
     if (rc < 0)
     {
         StringBuffer estr;
         estr.appendf("[%s]", m_XalanTransformer.getLastError());
-        DBGLOG(estr.str());
-        throw MakeStringException(2, estr.str());
+        DBGLOG("%s", estr.str());
+        throw MakeStringException(2, "%s", estr.str());
     }
 
     return rc;
@@ -458,15 +458,15 @@ int CXslTransform::transform(ISocket* targetSocket)
     {
         StringBuffer estr("[Exception running XSLT stylesheet]");
         estr.appendf("[%s]", m_XalanTransformer.getLastError());
-        DBGLOG(estr.str());
-        throw MakeStringException(2, estr.str());
+        DBGLOG("%s", estr.str());
+        throw MakeStringException(2, "%s", estr.str());
     }
     if (rc < 0)
     {
         StringBuffer estr;
         estr.appendf("[%s]", m_XalanTransformer.getLastError());
-        DBGLOG(estr.str());
-        throw MakeStringException(2, estr.str());
+        DBGLOG("%s", estr.str());
+        throw MakeStringException(2, "%s", estr.str());
     }
 
     return rc;
@@ -494,16 +494,16 @@ int CXslTransform::setXmlSource(const char *pszFileName)
         m_ParsedSource = NULL;
         StringBuffer estr("[Exception compiling xml]");
         estr.appendf("[%s]", m_XalanTransformer.getLastError());
-        DBGLOG(estr.str());
-        throw MakeStringException(2, estr.str());
+        DBGLOG("%s", estr.str());
+        throw MakeStringException(2, "%s", estr.str());
     }
 
     if (!m_ParsedSource)
     {
         StringBuffer estr("[failed to compile xml]");
         estr.appendf("[%s]", m_XalanTransformer.getLastError());
-        DBGLOG(estr.str());
-        throw MakeStringException(2, estr.str());
+        DBGLOG("%s", estr.str());
+        throw MakeStringException(2, "%s", estr.str());
     }
 
     return theResult;
@@ -530,16 +530,16 @@ int CXslTransform::setXmlSource(const char *pszBuffer, unsigned int nSize)
         m_ParsedSource = NULL;
         StringBuffer estr("[Exception compiling xml]");
         estr.appendf("[%s]", m_XalanTransformer.getLastError());
-        DBGLOG(estr.str());
-        throw MakeStringException(2, estr.str());
+        DBGLOG("%s", estr.str());
+        throw MakeStringException(2, "%s", estr.str());
     }
 
     if (!m_ParsedSource)
     {
         StringBuffer estr("[failed to compile xml]");
         estr.appendf("[%s]", m_XalanTransformer.getLastError());
-        DBGLOG(estr.str());
-        throw MakeStringException(2, estr.str());
+        DBGLOG("%s", estr.str());
+        throw MakeStringException(2, "%s", estr.str());
     }
 
     return theResult;

@@ -207,7 +207,7 @@ int CHttpSoapBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* re
         const char* detail = soapresponse->get_err();
         if (detail && *detail)
             msg.appendf(" [%s]", detail);
-        throw MakeStringException(500,msg);
+        throw MakeStringException(500, "%s", msg.str());
     }
     else if(status == SOAP_CLIENT_ERROR || status == SOAP_REQUEST_TYPE_ERROR)
     {
@@ -215,7 +215,7 @@ int CHttpSoapBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* re
         const char* detail = soapresponse->get_err();
         if (detail && *detail)
             msg.appendf(" [%s]", detail);
-        throw MakeStringException(400,msg);
+        throw MakeStringException(400, "%s", msg.str());
     }
     else if(status == SOAP_AUTHENTICATION_REQUIRED)
         response->sendBasicChallenge(m_challenge_realm.str(), false);

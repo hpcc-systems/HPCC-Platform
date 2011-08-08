@@ -728,7 +728,7 @@ void FileSprayer::afterTransfer()
                 }
                 if (recoveryConnection)
                     recoveryConnection->commit();
-                throw MakeStringException(DFTERR_InputCrcMismatch, errorText.str());
+                throw MakeStringException(DFTERR_InputCrcMismatch, "%s", errorText.str());
             }
         }
     }
@@ -2253,7 +2253,7 @@ void FileSprayer::setError(const SocketEndpoint & ep, IException * e)
     {
         StringBuffer url;
         ep.getUrlStr(url);
-        error.setown(MakeStringException(e->errorCode(), e->errorMessage(url.append(": ")).str()));
+        error.setown(MakeStringException(e->errorCode(), "%s", e->errorMessage(url.append(": ")).str()));
     }
 }
 
@@ -2819,7 +2819,7 @@ void FileSprayer::updateTargetProperties()
         }
 
         if (failedParts.length())
-            error.setown(MakeStringException(DFTERR_InputOutputCrcMismatch, failedParts.str()));
+            error.setown(MakeStringException(DFTERR_InputOutputCrcMismatch, "%s", failedParts.str()));
 
         IPropertyTree &curProps = distributedTarget->lockProperties();
         if (calcCRC())

@@ -1638,7 +1638,7 @@ void EclAgent::executeThorGraph(const char * graphName)
         if (!conversation->send(msg)) {
             StringBuffer s("Failed to send query to Thor on ");
             thorMaster.getUrlStr(s);
-            throw MakeStringException(-1, s.str()); // maybe retry?
+            throw MakeStringException(-1, "%s", s.str()); // maybe retry?
         }
 
         StringBuffer eps;
@@ -1650,7 +1650,7 @@ void EclAgent::executeThorGraph(const char * graphName)
             {
                 StringBuffer s("Failed to receive reply from thor ");
                 thorMaster.getUrlStr(s);
-                throw MakeStringException(-1, s.str());
+                throw MakeStringException(-1, "%s", s.str());
             }
         }
         catch (IException *e)
@@ -1659,7 +1659,7 @@ void EclAgent::executeThorGraph(const char * graphName)
             thorMaster.getUrlStr(s);
             s.append("; (").append(e->errorCode()).append(", ");
             e->errorMessage(s).append(")");
-            throw MakeStringException(-1, s.str());
+            throw MakeStringException(-1, "%s", s.str());
         }
         ThorReplyCodes replyCode;
         reply.read((unsigned &)replyCode);

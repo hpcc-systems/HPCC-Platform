@@ -116,7 +116,7 @@ public:
         CriticalBlock b(crit);
         activeGraphs.append(*LINK(&graph));
         StringBuffer str("Watchdog: Start Job ");
-        LOG(MCdebugProgress, thorJob, str.append(graph.queryGraphId()).str());
+        LOG(MCdebugProgress, thorJob, "%s", str.append(graph.queryGraphId()).str());
     }
     void stopGraph(CGraphBase &graph, HeartBeatPacket *hb)
     {
@@ -124,7 +124,7 @@ public:
         if (NotFound != activeGraphs.find(graph))
         {
             StringBuffer str("Watchdog: Stop Job ");
-            LOG(MCdebugProgress, thorJob, str.append(graph.queryGraphId()).str());
+            LOG(MCdebugProgress, thorJob, "%s", str.append(graph.queryGraphId()).str());
             if (hb)
                 gatherData(*hb);
             activeGraphs.zap(graph);
