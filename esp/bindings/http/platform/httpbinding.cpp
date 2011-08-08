@@ -1009,6 +1009,7 @@ int EspHttpBinding::onGetSoapBuilder(IEspContext &context, CHttpRequest* request
     xform->setStringParameter("methodName", methodQName.str());
     xform->setStringParameter("soapbody", soapmsg.str());
     xform->setStringParameter("header", header.str());
+    xform->setStringParameter("showhttp", "true()");
 
     ISecUser* user = context.queryUser();
     bool inhouse = user && (user->getStatus()==SecUserStatus_Inhouse);
