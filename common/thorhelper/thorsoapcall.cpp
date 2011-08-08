@@ -735,7 +735,7 @@ public:
         if (timeLimit == 0  ||  timeLimit == (unsigned)-1)
             timeLimit = WAIT_FOREVER;   //default
         else
-            timeLimitMon.reset((unsigned int)timeLimit*1000);
+            timeLimitMon.reset(timeLimit*1000);
 
         if (wscType == STsoap)
         {
@@ -1026,8 +1026,8 @@ protected:
     unsigned numRowThreads;
     unsigned numUrlThreads;
     unsigned maxRetries;
-    time_t timeout;//seconds
-    time_t timeLimit;//seconds
+    unsigned timeout; //seconds
+    unsigned timeLimit; //seconds
     bool logXML, aborted;
     const IContextLogger &logctx;
     unsigned flags;
@@ -1413,7 +1413,7 @@ private:
         do {
             checkTimeLimitExceeded();
             checkRoxieAbortMonitor(master->roxieAbortMonitor);
-            socket->read(buffer+read, 0, WSCBUFFERSIZE-read, bytesRead, (unsigned)master->timeout);
+            socket->read(buffer+read, 0, WSCBUFFERSIZE-read, bytesRead, master->timeout);
             checkTimeLimitExceeded();
             checkRoxieAbortMonitor(master->roxieAbortMonitor);
 
@@ -1458,7 +1458,7 @@ private:
                             read chunk-size and CRLF
                         }
 */
-                        dataProvider.setown(new CSocketDataProvider(buffer, payloadofs, read, WSCBUFFERSIZE, socket, (unsigned)master->timeout));
+                        dataProvider.setown(new CSocketDataProvider(buffer, payloadofs, read, WSCBUFFERSIZE, socket, master->timeout));
                         dataProvider->getBytes(&ch, 1);
                         while (isalpha(ch) || isdigit(ch))
                         {   //get chunk-size
@@ -1519,7 +1519,7 @@ private:
                 while (read<payloadsize) {
                     checkTimeLimitExceeded();
                     checkRoxieAbortMonitor(master->roxieAbortMonitor);
-                    socket->read(response.reserve(payloadsize-read), 0, payloadsize-read, bytesRead, (unsigned)master->timeout);
+                    socket->read(response.reserve(payloadsize-read), 0, payloadsize-read, bytesRead, master->timeout);
                     checkTimeLimitExceeded();
                     checkRoxieAbortMonitor(master->roxieAbortMonitor);
 
@@ -1535,7 +1535,7 @@ private:
                 loop {
                     checkTimeLimitExceeded();
                     checkRoxieAbortMonitor(master->roxieAbortMonitor);
-                    socket->read(buffer, 0, WSCBUFFERSIZE, bytesRead, (unsigned)master->timeout);
+                    socket->read(buffer, 0, WSCBUFFERSIZE, bytesRead, master->timeout);
                     checkTimeLimitExceeded();
                     checkRoxieAbortMonitor(master->roxieAbortMonitor);
 
@@ -1666,7 +1666,7 @@ private:
     inline void checkTimeLimitExceeded()
     {
         if (master->isTimeLimitExceeded())
-            throw MakeStringException(TIMELIMIT_EXCEEDED, "%sCALL TIMELIMIT(%"I64F"u) exceeded", master->wscType == STsoap ? "SOAP" : "HTTP", (unsigned __int64) master->timeLimit);
+            throw MakeStringException(TIMELIMIT_EXCEEDED, "%sCALL TIMELIMIT(%u) exceeded", master->wscType == STsoap ? "SOAP" : "HTTP", master->timeLimit);
     }
 
 public:
@@ -1717,7 +1717,7 @@ public:
                 {
                     checkTimeLimitExceeded();
                     Url &connUrl = master->proxyUrlArray.empty() ? url : master->proxyUrlArray.item(0);
-                    socket.setown(blacklist->connect(connUrl.port, connUrl.host, master->logctx, (unsigned)master->maxRetries, (unsigned)master->timeout, master->roxieAbortMonitor));
+                    socket.setown(blacklist->connect(connUrl.port, connUrl.host, master->logctx, (unsigned)master->maxRetries, master->timeout, master->roxieAbortMonitor));
                     if (stricmp(url.method, "https") == 0)
                     {
                         Owned<ISecureSocket> ssock = master->createSecureSocket(socket.getClear());
@@ -1742,7 +1742,7 @@ public:
                 {
                     if (master->timeLimitExceeded)
                     {
-                        master->logctx.CTXLOG("%sCALL exiting: time limit (%"I64F"d) exceeded",master->wscType == STsoap ? "SOAP" : "HTTP", (unsigned __int64) master->timeLimit);
+                        master->logctx.CTXLOG("%sCALL exiting: time limit (%u) exceeded",master->wscType == STsoap ? "SOAP" : "HTTP", master->timeLimit);
                         processException(url, inputRows, e);
                         return;
                     }
@@ -1840,7 +1840,7 @@ public:
                 if (master->timeLimitExceeded)
                 {
                     processException(url, inputRows, e);
-                    master->logctx.CTXLOG("%sCALL exiting: time limit (%"I64F"d) exceeded", master->wscType == STsoap ? "SOAP" : "HTTP", (unsigned __int64) master->timeLimit);
+                    master->logctx.CTXLOG("%sCALL exiting: time limit (%u) exceeded", master->wscType == STsoap ? "SOAP" : "HTTP", master->timeLimit);
                     break;
                 }
 
