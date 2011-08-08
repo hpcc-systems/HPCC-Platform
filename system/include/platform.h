@@ -211,6 +211,9 @@ typedef unsigned long MaxCard;
 
 #endif // (_MSC_VER>=1400)
 
+// DEPRECATED function macro to allow for deprecation warnings to be added to source.
+#define DEPRECATED(func) __declspec(deprecated) func
+
 // **** END   OF WIN32 SPECIFIC SECTION ****
 #else
 // **** START OF UNIX GENERAL SECTION ****
@@ -418,6 +421,9 @@ typedef int socklen_t;
 
 #define ThreadId pthread_t
 #define MutexId pthread_mutex_t
+
+// DEPRECATED function macro to allow for deprecation warnings to be added to source.
+#define DEPRECATED(func) func __attribute__ ((deprecated))
 
 // **** END   OF UNIX SPECIFIC SECTION ****
 #endif

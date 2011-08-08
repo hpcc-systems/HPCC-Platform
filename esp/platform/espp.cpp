@@ -264,11 +264,8 @@ int init_main(int argc, char* argv[])
 
     CEspAbortHandler abortHandler;
 
-    StringBuffer sentinel_filename;
-    splitFilename(argv[0], &sentinel_filename, &sentinel_filename, NULL, NULL);
-    sentinel_filename.append("esp_sentinel.txt");
-    Owned<IFile> sentinel_File = createIFile(sentinel_filename.str());
-    sentinel_File->remove();
+    Owned<IFile> sentinelFile = createSentinelTarget("esp");
+    sentinelFile->remove();
 
     Owned<CEspConfig> config;
     Owned<CEspServer> server;
@@ -407,9 +404,7 @@ int init_main(int argc, char* argv[])
         // if we got here, the initial load is ok, so create the "sentinel file" for re-runs from the script
         // put in its own "scope" to force the flush
         {
-            DBGLOG("Creating sentinel file %s for rerun from script", sentinel_filename.str());
-            Owned<IFileIO> fileIO = sentinel_File->open(IFOcreate);
-            fileIO->write(0, 5, "rerun");
+            writeSentinelFile(sentinelFile);
         }
         result = work_main(*config, *server.get());
     }

@@ -140,7 +140,7 @@ int CEclAgentExecutionServer::run()
         ERRLOG("Terminating unexpectedly");
     }
 
-    Owned<IFile> sentinelFile = createSentinelTarget(codeDirectory, "eclagent");
+    Owned<IFile> sentinelFile = createSentinelTarget("eclagent");
     writeSentinelFile(sentinelFile);
 
     try 

@@ -6313,12 +6313,12 @@ IFileIOCache* createFileIOCache(unsigned max)
     return new CLazyFileIOCache(max);
 }
 
-
-extern jlib_decl IFile * createSentinelTarget(const char * argv0, const char * component)
+extern jlib_decl IFile * createSentinelTarget(const char * component)
 {
-    StringBuffer sentinelName;
-    splitFilename(argv0, &sentinelName, &sentinelName, NULL, NULL);
-    sentinelName.append(component).append("_sentinel.txt");
+    char dir[_MAX_PATH];
+    GetCurrentDirectory(sizeof(dir), dir);
+    StringBuffer sentinelName(dir);
+    addPathSepChar(sentinelName).append(component).append("_sentinel.txt");
     return createIFile(sentinelName.str());
 }
 

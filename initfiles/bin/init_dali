@@ -20,7 +20,6 @@ killed(){
 
 
 trap "killed" SIGINT SIGTERM SIGKILL
-echo "rerun" > daserver_sentinel.txt
 daserver 1>/dev/null 2>/dev/null &
 echo $! > $PID_NAME
 wait
@@ -28,10 +27,10 @@ wait
 
 while [ -e daserver_sentinel.txt ]; do
     sleep 5
-        if [ -e daserver_sentinel.txt ]; then
-            trap "killed" SIGINT SIGTERM SIGKILL
+    if [ -e daserver_sentinel.txt ]; then
+        trap "killed" SIGINT SIGTERM SIGKILL
         daserver 1>/dev/null 2>/dev/null &
-                echo $! > $PID_NAME
-                wait
-        fi
+        echo $! > $PID_NAME
+        wait
+    fi
 done
