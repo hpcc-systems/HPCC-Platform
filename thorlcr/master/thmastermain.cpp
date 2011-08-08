@@ -473,11 +473,9 @@ int main( int argc, char *argv[]  )
     setMasterPortBase(thorEp.port); // both same
     thorEp.port = getMasterPortBase();
 
-    // Remove sentinel asap
-    StringBuffer sentinelFilename("thor_sentinel_");
-    sentinelFilename.append(thorEp.port).append(".txt");
-    Owned<IFile> sentinelFile = createIFile(sentinelFilename.str());
-    sentinelFile->remove();
+    Owned<IFile> sentinelFile = createSentinelTarget();
+    // We remove any existing sentinel until we have validated that we can successfully start (i.e. all options are valid...)
+    removeSentinelFile(sentinelFile);
 
     setMachinePortBase(thorEp.port);
     unsigned slavePort = globals->hasProp("@slaveport")?atoi(globals->queryProp("@slaveport")):THOR_BASESLAVE_PORT;
@@ -714,10 +712,7 @@ int main( int argc, char *argv[]  )
         addAbortHandler(ControlHandler);
         masterSlaveMpTag = allocateClusterMPTag();
 
-        DBGLOG("Creating sentinel file %s for rerun from script", sentinelFilename.str());
-        Owned<IFileIO> sentinel = sentinelFile->open(IFOcreate);
-        sentinel->write(0, 5, "rerun");
-        sentinel.clear();
+        writeSentinelFile(sentinelFile);
 
         if (registry->connect())
         {

@@ -598,7 +598,8 @@ extern jlib_decl bool isDirectory(const char * path);
 
 extern jlib_decl IFileIOCache* createFileIOCache(unsigned max);
 extern jlib_decl void setIORetryCount(unsigned _ioRetryCount); // default 0 == off, retries if read op. fails, linux only
-extern jlib_decl IFile * createSentinelTarget(const char * argv0, const char * component);
+extern jlib_decl IFile * createSentinelTarget();
+extern jlib_decl void removeSentinelFile(IFile * file);
 extern jlib_decl void writeSentinelFile(IFile * file);
 extern jlib_decl StringBuffer & appendCurrentDirectory(StringBuffer & target, bool blankIfFails);
 
