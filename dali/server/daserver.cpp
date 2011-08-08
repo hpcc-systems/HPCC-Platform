@@ -23,6 +23,7 @@
 #include "jlog.ipp"
 #include "jptree.hpp"
 #include "jmisc.hpp"
+#include "jfile.hpp"
 
 #include "mpbase.hpp"
 #include "mpcomm.hpp"
@@ -125,7 +126,7 @@ bool actionOnAbort()
 {
     stopServer();
     return true;
-} 
+}
 
 #ifdef _WIN32
 class CReleaseMutex : public CInterface, public Mutex
@@ -133,7 +134,7 @@ class CReleaseMutex : public CInterface, public Mutex
 public:
     CReleaseMutex(const char *name) : Mutex(name) { }
     ~CReleaseMutex() { if (owner) unlock(); }
-}; 
+};
 #endif
 
 USE_JLIB_ALLOC_HOOK;
@@ -162,6 +163,11 @@ int main(int argc, char* argv[])
                 return 0;
             }
         }
+
+        Owned<IFile> sentinelFile = createSentinelTarget(argv[0], "daserver");
+        // We remove any existing sentinel until we have validated that we can successfully start (i.e. all options are valid...)
+        sentinelFile->remove();
+
         OwnedIFile confIFile = createIFile(DALICONF);
         StringBuffer logName;
         StringBuffer auditDir;
@@ -199,7 +205,7 @@ int main(int argc, char* argv[])
         if (serverConfig)
         {
             StringBuffer dataPath;
-            if (getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"data","dali",serverConfig->queryProp("@name"),dataPath)) 
+            if (getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"data","dali",serverConfig->queryProp("@name"),dataPath))
                 serverConfig->setProp("@dataPath",dataPath.str());
             else
                 serverConfig->getProp("@dataPath",dataPath);
@@ -218,7 +224,7 @@ int main(int argc, char* argv[])
 
             // JCSMORE remoteBackupLocation should not be a property of SDS section really.
             StringBuffer mirrorPath;
-            if (!getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"mirror","dali",serverConfig->queryProp("@name"),mirrorPath)) 
+            if (!getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"mirror","dali",serverConfig->queryProp("@name"),mirrorPath))
                 serverConfig->getProp("SDS/@remoteBackupLocation",mirrorPath);
 
             if (mirrorPath.length())
@@ -270,8 +276,8 @@ int main(int argc, char* argv[])
                             if (mirrorPath.length()<=2 || !isPathSepChar(mirrorPath.charAt(0)) || !isPathSepChar(mirrorPath.charAt(1)))
                                 rfn.setLocalPath(mirrorPath.str());
                             else
-                                rfn.setRemotePath(mirrorPath.str());                
-                            
+                                rfn.setRemotePath(mirrorPath.str());
+
                             if (!rfn.getPort() && !rfn.isLocal())
                             {
                                 StringBuffer mountPoint;
@@ -307,7 +313,7 @@ int main(int argc, char* argv[])
                             OwnedIFile iFileBackup = createIFile(backupCheck.str());
                             if (iFileBackup->exists())
                             {
-                                PROGLOG("remoteBackupLocation and dali data path point to same location! : %s", mirrorPath.str()); 
+                                PROGLOG("remoteBackupLocation and dali data path point to same location! : %s", mirrorPath.str());
                                 iFileDataDir->remove();
                                 return 0;
                             }
@@ -374,10 +380,10 @@ int main(int argc, char* argv[])
         unsigned short myport = epa.item(myrank).port;
         startMPServer(myport,true);
         setMsgLevel(serverConfig->getPropInt("SDS/@msgLevel", 100));
-        startLogMsgChildReceiver(); 
+        startLogMsgChildReceiver();
         startLogMsgParentReceiver();
 
-        IGroup *group = createIGroup(epa); 
+        IGroup *group = createIGroup(epa);
         initCoven(group,serverConfig);
         group->Release();
         epa.kill();
@@ -386,7 +392,7 @@ int main(int argc, char* argv[])
         ILogMsgHandler *msgh = getRollingFileLogMsgHandler(auditLogName, ".log", MSGFIELD_timeDate | MSGFIELD_code, false, true, NULL);
         queryLogMsgManager()->addMonitorOwn(msgh, getCategoryLogMsgFilter(MSGAUD_audit, MSGCLS_all, TopDetail, false));
 
-// SNMP logging     
+// SNMP logging
         bool enableSNMP = serverConfig->getPropBool("SDS/@enableSNMP");
         if (serverConfig->getPropBool("SDS/@enableSysLog",true))
             UseSysLogForOperatorMessages();
@@ -449,6 +455,7 @@ int main(int argc, char* argv[])
 
         }
         if (ok) {
+            writeSentinelFile(sentinelFile);
             covenMain();
             removeAbortHandler(actionOnAbort);
         }
