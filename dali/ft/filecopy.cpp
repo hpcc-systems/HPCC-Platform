@@ -2798,7 +2798,7 @@ void FileSprayer::updateTargetProperties()
 
                     curProps.setProp("@modified", temp.getString(timestr).str());
                 }
-                if (replicate && (distributedSource != distributedTarget))
+                if (replicate && distributedSource && (distributedSource != distributedTarget))
                 {
                     Owned<IDistributedFilePart> curSourcePart = distributedSource->getPart(cur.whichInput);
                     Owned<IAttributeIterator> aiter = curSourcePart->queryProperties().getAttributes();
