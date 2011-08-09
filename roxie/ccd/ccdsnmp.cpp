@@ -470,7 +470,7 @@ long CRoxieMetricsManager::getValue(const char * name)
     if (m)
         ret = m->getValue();
 #ifdef _DEBUG
-    DBGLOG("getValue(%s) returning %d", name, ret);
+    DBGLOG("getValue(%s) returning %ld", name, ret);
 #endif
     return ret;
 }
