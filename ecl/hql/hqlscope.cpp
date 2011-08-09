@@ -131,7 +131,7 @@ void ScopeConsistencyChecker::ensureActive(IHqlExpression * ds)
         s.append("Dataset isn't normalized");
     else
         s.append("Dataset isn't in scope");
-    throw MakeStringException(ERR_ASSERT_WRONGSCOPING, s.str());
+    throw MakeStringException(ERR_ASSERT_WRONGSCOPING, "%s", s.str());
 }
 
 

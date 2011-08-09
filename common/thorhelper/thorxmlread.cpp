@@ -1210,7 +1210,7 @@ class CColumnProvider : public CInterface, implements IColumnProvider
             else
                 appendDataAsHex(errMsg, length, data);
             errMsg.append("'");
-            throw MakeStringException(0, errMsg.str());
+            throw MakeStringException(0, "%s", errMsg.str());
         } else if (length > rl)
             mb.setLength(rl);
     }

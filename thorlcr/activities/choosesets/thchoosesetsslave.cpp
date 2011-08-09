@@ -398,7 +398,7 @@ class ChooseSetsLastActivity : public ChooseSetsPlusActivity
                 numToReturn[idx] = (unsigned)(priorCounts[idx] + counts[idx] - firstToCopy);
                 skipAll = false;
 #if THOR_TRACE_LEVEL >= 5
-                ActPrintLog("CHOOSESETSLAST: Selection %d.  Range(%d,%d)", idx, numToSkip[idx], counts[idx]);
+                ActPrintLog("CHOOSESETSLAST: Selection %d.  Range(%d,%"RCPF"d)", idx, numToSkip[idx], counts[idx]);
 #endif
             }
         }

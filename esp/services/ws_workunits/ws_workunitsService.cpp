@@ -3469,7 +3469,7 @@ private:
 
             StringBuffer msg;
             msg.appendf("ESP Access Denied: User %s does not have rights to access any workunits.", context.queryUserId());
-            throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, msg.str());
+            throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "%s", msg.str());
         }
     }
 
@@ -3769,7 +3769,7 @@ void CWsWorkunitsEx::doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest 
 
         StringBuffer msg;
         msg.appendf("ESP Access Denied: User %s does not have rights to access any workunits.", context.queryUserId());
-        throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, msg.str());
+        throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "%s", msg.str());
     }
 
     StringBuffer user;
@@ -4440,7 +4440,7 @@ void CWsWorkunitsEx::processWorkunit(IConstWorkUnit *workunit, const char* wuid,
         StringBuffer msg;
         e->errorMessage(msg);
         e->Release();
-        throw MakeStringException(ECLWATCH_QUERY_NOT_FOUND_FOR_WU, msg.str());
+        throw MakeStringException(ECLWATCH_QUERY_NOT_FOUND_FOR_WU, "%s", msg.str());
     }
 
 
@@ -4467,7 +4467,7 @@ void CWsWorkunitsEx::doWUQueryForArchivedWUs(IEspContext &context, IEspWUQueryRe
 
         StringBuffer msg;
         msg.appendf("ESP Access Denied: User %s does not have rights to access any workunits.", context.queryUserId());
-        throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, msg.str());
+        throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "%s", msg.str());
     }
 
     double version = context.getClientVersion();
@@ -4602,7 +4602,7 @@ void CWsWorkunitsEx::doWUQueryForArchivedWUs(IEspContext &context, IEspWUQueryRe
                 {
                     StringBuffer msg;
                     msg.appendf("Cannot connect to archive server at %s.",sashaAddress);
-                    throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER, msg.str());
+                    throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER, "%s", msg.str());
                 }
 
                 unsigned actualCount = cmd->numIds();
@@ -5408,7 +5408,7 @@ void CWsWorkunitsEx::getInfo(IEspContext &context,const char* wuid0,IEspECLWorku
 
         StringBuffer eMsg;
         e->errorMessage(eMsg);
-        ERRLOG(eMsg.str()); //log original exception
+        ERRLOG("%s", eMsg.str()); //log original exception
         e->Release();
     }
 
@@ -5458,7 +5458,7 @@ void CWsWorkunitsEx::getInfo(IEspContext &context,const char* wuid0,IEspECLWorku
 
         StringBuffer eMsg;
         e->errorMessage(eMsg);
-        ERRLOG(eMsg.str()); //log original exception
+        ERRLOG("%s", eMsg.str()); //log original exception
         e->Release();
     }
 
@@ -5482,7 +5482,7 @@ void CWsWorkunitsEx::getInfo(IEspContext &context,const char* wuid0,IEspECLWorku
 
         StringBuffer eMsg;
         e->errorMessage(eMsg);
-        ERRLOG(eMsg.str()); //log original exception
+        ERRLOG("%s", eMsg.str()); //log original exception
         e->Release();
     }
 
@@ -5593,7 +5593,7 @@ void CWsWorkunitsEx::getInfo(IEspContext &context,const char* wuid0,IEspECLWorku
 
         StringBuffer eMsg;
         e->errorMessage(eMsg);
-        ERRLOG(eMsg.str()); //log original exception
+        ERRLOG("%s", eMsg.str()); //log original exception
         e->Release();
     }
 
@@ -5652,7 +5652,7 @@ void CWsWorkunitsEx::getInfo(IEspContext &context,const char* wuid0,IEspECLWorku
 
         StringBuffer eMsg;
         e->errorMessage(eMsg);
-        ERRLOG(eMsg.str()); //log original exception
+        ERRLOG("%s", eMsg.str()); //log original exception
         e->Release();
     }
 
@@ -5744,7 +5744,7 @@ void CWsWorkunitsEx::getInfo(IEspContext &context,const char* wuid0,IEspECLWorku
 
         StringBuffer eMsg;
         e->errorMessage(eMsg);
-        ERRLOG(eMsg.str()); //log original exception
+        ERRLOG("%s", eMsg.str()); //log original exception
         e->Release();
     }
 
@@ -5816,7 +5816,7 @@ void CWsWorkunitsEx::getInfo(IEspContext &context,const char* wuid0,IEspECLWorku
 
          StringBuffer eMsg;
          e->errorMessage(eMsg);
-         ERRLOG(eMsg.str()); //log original exception
+         ERRLOG("%s", eMsg.str()); //log original exception
          e->Release();
      }
 
@@ -5847,7 +5847,7 @@ void CWsWorkunitsEx::getInfo(IEspContext &context,const char* wuid0,IEspECLWorku
 
         StringBuffer eMsg;
         e->errorMessage(eMsg);
-        ERRLOG(eMsg.str()); //log original exception
+        ERRLOG("%s", eMsg.str()); //log original exception
         e->Release();
     }
 
@@ -5880,7 +5880,7 @@ void CWsWorkunitsEx::getInfo(IEspContext &context,const char* wuid0,IEspECLWorku
 
         StringBuffer eMsg;
         e->errorMessage(eMsg);
-        ERRLOG(eMsg.str()); //log original exception
+        ERRLOG("%s", eMsg.str()); //log original exception
         e->Release();
     }
 
@@ -9069,7 +9069,7 @@ bool CWsWorkunitsEx::onWUClusterJobQueueXLS(IEspContext &context, IEspWUClusterJ
 
             StringBuffer msg;
             msg.appendf("ESP Access Denied: User %s does not have rights to access any workunits.", context.queryUserId());
-            throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, msg.str());
+            throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "%s", msg.str());
         }
 
         MemoryBuffer text;
@@ -9139,7 +9139,7 @@ bool CWsWorkunitsEx::onWUClusterJobQueueLOG(IEspContext &context,IEspWUClusterJo
 
             StringBuffer msg;
             msg.appendf("ESP Access Denied: User %s does not have rights to access any workunits.", context.queryUserId());
-            throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, msg.str());
+            throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "%s", msg.str());
         }
 
         const char* cluster = req.getCluster();
@@ -9239,7 +9239,7 @@ bool CWsWorkunitsEx::onWUClusterJobXLS(IEspContext &context, IEspWUClusterJobXLS
 
             StringBuffer msg;
             msg.appendf("ESP Access Denied: User %s does not have rights to access any workunits.", context.queryUserId());
-            throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, msg.str());
+            throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "%s", msg.str());
         }
 
         MemoryBuffer text;
@@ -9305,7 +9305,7 @@ bool CWsWorkunitsEx::onWUClusterJobSummaryXLS(IEspContext &context, IEspWUCluste
 
             StringBuffer msg;
             msg.appendf("ESP Access Denied: User %s does not have rights to access any workunits.", context.queryUserId());
-            throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, msg.str());
+            throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "%s", msg.str());
         }
 
         MemoryBuffer text;

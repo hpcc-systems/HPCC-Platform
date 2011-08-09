@@ -772,7 +772,7 @@ public:
     virtual void addWuException(const char * text, unsigned code, unsigned severity)
     {
         DBGLOG("%s", text);
-        Owned<IThorException> e = MakeThorException(code, text);
+        Owned<IThorException> e = MakeThorException(code, "%s", text);
         e->setAction(tea_warning);
         e->setOrigin("user");
         e->setAction(tea_warning);
@@ -814,7 +814,7 @@ public:
     virtual void addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort)
     {
         DBGLOG("%s", text);
-        Owned<IThorException> e = MakeThorException(code, text);
+        Owned<IThorException> e = MakeThorException(code, "%s", text);
         e->setAssert(filename, lineno, column);
         e->setOrigin("user");
         e->setSeverity(ExceptionSeverityError);
@@ -922,15 +922,15 @@ void CJobSlave::startJob()
     unsigned __int64 freeSpaceRep = getFreeSpace(queryBaseDirectory(true));
     PROGLOG("Disk space: %s = %"I64F"d, %s = %"I64F"d", queryBaseDirectory(), freeSpace/0x100000, queryBaseDirectory(true), freeSpaceRep/0x100000);
 
-    unsigned __int64 minFreeSpace = getWorkUnitValueInt("MINIMUM_DISK_SPACE", 0);
+    unsigned minFreeSpace = getWorkUnitValueInt("MINIMUM_DISK_SPACE", 0);
     if (minFreeSpace)
     {
-        if (freeSpace < minFreeSpace*0x100000)
+        if (freeSpace < ((unsigned __int64)minFreeSpace)*0x100000)
         {
             SocketEndpoint ep;
             ep.setLocalHost(0);
             StringBuffer s;
-            throw MakeThorException(TE_NotEnoughFreeSpace, "Node %s has %d MB(s) of available disk space, specified minimum for this job: %d MB(s)", ep.getUrlStr(s).str(), (unsigned) freeSpace / 0x100000, minFreeSpace);
+            throw MakeThorException(TE_NotEnoughFreeSpace, "Node %s has %u MB(s) of available disk space, specified minimum for this job: %u MB(s)", ep.getUrlStr(s).str(), (unsigned) freeSpace / 0x100000, minFreeSpace);
         }
     }
     unsigned keyNodeCacheMB = (unsigned)getWorkUnitValueInt("keyNodeCacheMB", 0);

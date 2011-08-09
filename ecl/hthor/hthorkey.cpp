@@ -124,7 +124,7 @@ IRecordLayoutTranslator * getRecordLayoutTranslator(IDefRecordMeta const * activ
         StringBuffer activityMetaDesc;
         getRecordMetaAsString(activityMetaDesc, activityMeta);
         ERRLOG("RecordLayoutTranslator error: %s\nDisk meta: %s\nActivity meta: %s", m.str(), diskMetaDesc.str(), activityMetaDesc.str());
-        throw MakeStringException(0, m.str());
+        throw MakeStringException(0, "%s", m.str());
     }
 }
 
@@ -305,7 +305,7 @@ public:
 
     virtual void fail(char const * msg)
     {
-        throw MakeStringException(0, msg);
+        throw MakeStringException(0, "%s", msg);
     }
 
 protected:
@@ -4064,7 +4064,7 @@ protected:
 
     virtual void fail(char const * msg)
     {
-        throw MakeStringException(0, msg);
+        throw MakeStringException(0, "%s", msg);
     }
 };
 

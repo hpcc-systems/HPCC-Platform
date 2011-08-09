@@ -1489,6 +1489,6 @@ IRecordLayoutTranslator * createRecordLayoutTranslator(const char *logicalName, 
         E->errorMessage(m);
         E->Release();
         DBGLOG("%s", m.str());
-        throw MakeStringException(ROXIE_RCD_LAYOUT_TRANSLATOR, m.str());
+        throw MakeStringException(ROXIE_RCD_LAYOUT_TRANSLATOR, "%s", m.str());
     }
 }

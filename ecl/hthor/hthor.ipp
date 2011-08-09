@@ -296,7 +296,7 @@ static bool verifyFormatCrc(unsigned helperCrc, IDistributedFile * df, char cons
             if(super)
                 msg.append(" (in super").append(isIndex ? "index" : "file").append(" ").append(super).append(")");
             if(fail)
-                throw MakeStringException(0, msg.str());
+                throw MakeStringException(0, "%s", msg.str());
             WARNLOG("%s", msg.str());
             return false;
         }

@@ -1341,7 +1341,7 @@ void CGraphBase::doExecute(size32_t parentExtractSz, const byte *parentExtract, 
         if (exception && !queryOwner())
         {
             StringBuffer str;
-            Owned<IThorException> e = MakeThorException(exception->errorCode(), exception->errorMessage(str).str());
+            Owned<IThorException> e = MakeThorException(exception->errorCode(), "%s", exception->errorMessage(str).str());
             e->setGraphId(graphId);
             e->setAction(tea_abort);
             fireException(e);
@@ -2341,7 +2341,7 @@ public:
                         if (r != running.ordinality()-1)
                             str.append(", ");
                     }
-                    PROGLOG(str.str());
+                    PROGLOG("%s", str.str());
                 }
                 if (stack.ordinality())
                 {
@@ -2353,7 +2353,7 @@ public:
                         if (s != stack.ordinality()-1)
                             str.append(", ");
                     }
-                    PROGLOG(str.str());
+                    PROGLOG("%s", str.str());
                 }
             }
         }

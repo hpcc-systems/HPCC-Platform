@@ -678,7 +678,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
         {
             StringBuffer err;
             err.appendf("Insufficient disk space.  File %s needs %"I64F"d bytes, but only %"I64F"d remains, and %"I64F"d is needed as a reserve", targetFilename, targetFile->size(), freeDiskSpace, minFreeDiskSpace   );
-            IException *E = MakeStringException(ROXIE_DISKSPACE_ERROR, err.str());
+            IException *E = MakeStringException(ROXIE_DISKSPACE_ERROR, "%s", err.str());
             EXCLOG(MCoperatorError, E);
             E->Release();
         }
@@ -777,7 +777,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
         {
             StringBuffer err;
             err.appendf("Insufficient disk space.  File %s needs %"I64F"d bytes, but only %"I64F"d remains, and %"I64F"d is needed as a reserve", targetFilename, sourceFile->size(), freeDiskSpace, minFreeDiskSpace);
-            IException *E = MakeStringException(ROXIE_DISKSPACE_ERROR, err.str());
+            IException *E = MakeStringException(ROXIE_DISKSPACE_ERROR, "%s", err.str());
             EXCLOG(MCoperatorError, E);
             E->Release();
         }

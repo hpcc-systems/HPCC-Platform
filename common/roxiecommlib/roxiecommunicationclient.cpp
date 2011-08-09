@@ -124,7 +124,7 @@ protected:
             if (!exception && sendlen > 11 && memicmp(block, "<Exception>", 11) == 0)
             {
                 Owned<IPropertyTree> eTree = createPTreeFromXMLString(sendlen, block, ipt_caseInsensitive);
-                exception.setown(MakeStringException(eTree->getPropInt("Code", 0), eTree->queryProp("Message")));
+                exception.setown(MakeStringException(eTree->getPropInt("Code", 0), "%s", eTree->queryProp("Message")));
             }
         }
         if (exception)
@@ -184,7 +184,7 @@ protected:
             else
                 ep.getUrlStr(buf);
 
-            throw MakeStringException(ROXIECOMM_SOCKET_ERROR, buf.str());
+            throw MakeStringException(ROXIECOMM_SOCKET_ERROR, "%s", buf.str());
         }
         return s;
     }

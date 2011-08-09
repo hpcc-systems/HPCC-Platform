@@ -170,7 +170,7 @@ public:
                     if (sz) {
                         StringBuffer s;
                         fio->read(0,sz,s.reserve(sz));
-                        throw MakeStringException(-1,s.str());
+                        throw MakeStringException(-1, "%s", s.str());
                     }
                     try {
                         fio.clear();
@@ -225,7 +225,7 @@ static void runKDPNodes(const char *title,CIArrayOf<CDKDPitem> &nodes)
                         StringBuffer err;
                         err.append(title).append(" failed to start on node ");
                         it.queryEP().getUrlStr(err);
-                        throw MakeStringException(-1,err.str());
+                        throw MakeStringException(-1, "%s", err.str());
                     }
                     Sleep(5000); // no point in rushing when some left
                 }
@@ -246,7 +246,7 @@ static void runKDPNodes(const char *title,CIArrayOf<CDKDPitem> &nodes)
                         StringBuffer err;
                         err.append(title).append(" failed to finish on node ");
                         it.queryEP().getUrlStr(err);
-                        throw MakeStringException(-1,err.str());
+                        throw MakeStringException(-1, "%s", err.str());
                     }
                     Sleep(5000); // no point in rushing when some left
                 }

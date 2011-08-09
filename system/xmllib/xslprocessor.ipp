@@ -262,16 +262,16 @@ public:
                 m_CompiledStylesheet = NULL;
                 StringBuffer estr("[Exception compiling XSLT stylesheet]");
                 estr.appendf("[%s]", m_XalanTransformer.getLastError());
-                DBGLOG(estr.str());
-                throw MakeStringException(2, estr.str());
+                DBGLOG("%s", estr.str());
+                throw MakeStringException(2, "%s", estr.str());
             }
 
             if (!m_CompiledStylesheet)
             {
                 StringBuffer estr("[failed to compile XSLT stylesheet]");
                 estr.appendf("[%s]", m_XalanTransformer.getLastError());
-                DBGLOG(estr.str());
-                throw MakeStringException(2, estr.str());
+                DBGLOG("%s", estr.str());
+                throw MakeStringException(2, "%s", estr.str());
             }
 
         }

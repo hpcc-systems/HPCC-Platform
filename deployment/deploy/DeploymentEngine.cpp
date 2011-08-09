@@ -901,7 +901,7 @@ void CDeploymentEngine::writeFile(const char* filename, const char* str, EnvMach
             String* perr = errmsg.substring(0, index > 0? index : errmsg.length());
             output.clear().appendf("%s", perr->toCharArray());
             delete perr;
-            throw MakeStringException(-1, output.str());
+            throw MakeStringException(-1, "%s", output.str());
         }
     }
     else

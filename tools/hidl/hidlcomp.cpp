@@ -5592,7 +5592,7 @@ void EspServInfo::write_esp_binding()
     outs("\tresponse->set_status(SOAP_CLIENT_ERROR);\n");
     outs("\tStringBuffer msg, svcName;\n");
     outs("\tmsg.appendf(\"Method %s not available in service %s\",thecall->get_name(),getServiceName(svcName).str());\n");
-    outs("\tERRLOG(msg);\n");
+    outs("\tERRLOG(\"%s\", msg.str());\n");
     outs("\tresponse->set_err(msg);\n");
     outs("\treturn -1;\n");
     outs("}\n");

@@ -784,7 +784,7 @@ void CHThorDiskWriteActivity::checkSizeLimit()
     {
         StringBuffer msg;
         msg.append("Exceeded disk write size limit of ").append(sizeLimit).append(" while writing file ").append(mangledHelperFileName.str());
-        throw MakeStringException(0, msg.str());
+        throw MakeStringException(0, "%s", msg.str());
     }
 }
 
@@ -974,7 +974,7 @@ void throwPipeProcessError(unsigned err, char const * preposition, char const * 
             e->Release();
         }
     }
-    throw MakeStringException(2, msg.str());
+    throw MakeStringException(2, "%s", msg.str());
 }
 
 CHThorPipeWriteActivity::CHThorPipeWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorPipeWriteArg &_arg, ThorActivityKind _kind) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
@@ -1161,7 +1161,7 @@ void CHThorIndexWriteActivity::execute()
             {
                 StringBuffer msg;
                 msg.append("Exceeded disk write size limit of ").append(sizeLimit).append(" while writing index ").append(helper.getFileName());
-                throw MakeStringException(0, msg.str());
+                throw MakeStringException(0, "%s", msg.str());
             }
             reccount++;
         }
@@ -7503,7 +7503,7 @@ void CHThorDiskReadBaseActivity::gatherInfo(IFileDescriptor * fileDesc)
             {
                 StringBuffer msg;
                 msg.append("DFS and code generated group info. differs: DFS(").append(grouped ? "grouped" : "ungrouped").append("), CodeGen(").append(grouped ? "ungrouped" : "grouped").append("), using DFS info");
-                WARNLOG(msg.str());
+                WARNLOG("%s", msg.str());
                 agent.addWuException(msg.str(), 0, ExceptionSeverityWarning, "hthor");
             }
         }
@@ -7540,7 +7540,7 @@ void CHThorDiskReadBaseActivity::gatherInfo(IFileDescriptor * fileDesc)
             {
                 StringBuffer msg;
                 msg.append("Ignoring compression attribute on file ").append(mangledHelperFileName.str()).append(", which is not published as compressed");
-                WARNLOG(msg.str());
+                WARNLOG("%s", msg.str());
                 agent.addWuException(msg.str(), 0, ExceptionSeverityWarning, "hthor");
                 compressed = true;
             }

@@ -889,7 +889,7 @@ bool CConfigEnvHelper::EnsureInRange(const char* psz, UINT low, UINT high, const
     if (!rc)
     {
         msg.append('.');
-        throw MakeStringException(-1, msg.str());
+        throw MakeStringException(-1, "%s", msg.str());
     }
     return rc;
 }
@@ -1021,7 +1021,7 @@ bool CConfigEnvHelper::handleRoxieSlaveConfig(const char* xmlArg)
     catch (IException *e)
     {
         StringBuffer msg;
-        throw MakeStringException(-1, e->errorMessage(msg).str());
+        throw MakeStringException(-1, "%s", e->errorMessage(msg).str());
     }
     catch (...)
     {

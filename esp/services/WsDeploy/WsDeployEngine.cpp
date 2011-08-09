@@ -651,7 +651,7 @@ bool CWsDeployEngine::processException(const char* processType, const char* proc
     if (szCaption && *szCaption)
       DBGLOG("%s: %s", szCaption, msg.str());
     else
-      DBGLOG(msg.str());
+      DBGLOG("%s", msg.str());
 
   }
 

@@ -125,7 +125,7 @@ public:
                     else
                         errMsg.append("sequence=").append(helper->getSequence());
                     errMsg.append(")");
-                    throw MakeThorException(TE_WorkUnitWriteLimitExceeded, errMsg.str());
+                    throw MakeThorException(TE_WorkUnitWriteLimitExceeded, "%s", errMsg.str());
                 }
                 resultData.append(l, mb.readDirect(l));
                 mb.clear();

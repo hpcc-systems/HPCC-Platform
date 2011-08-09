@@ -65,7 +65,7 @@ void CWUXMLInfo::buildXmlActiveWuidStatus(const char* ClusterName, IEspECLWorkun
     catch(IException* e){   
       StringBuffer msg;
       e->errorMessage(msg);
-        WARNLOG(msg.str());
+        WARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...){
@@ -105,7 +105,7 @@ bool CWUXMLInfo::buildXmlWuidInfo(IConstWorkUnit &wu, IEspECLWorkunit& wuStructu
     catch(IException* e){   
       StringBuffer msg;
       e->errorMessage(msg);
-        WARNLOG(msg.str());
+        WARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...){
@@ -129,7 +129,7 @@ bool CWUXMLInfo::buildXmlWuidInfo(const char* wuid, IEspECLWorkunit& wuStructure
     catch(IException* e){   
       StringBuffer msg;
       e->errorMessage(msg);
-        WARNLOG(msg.str());
+        WARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...){
@@ -166,7 +166,7 @@ bool CWUXMLInfo::buildXmlWuidInfo(IConstWorkUnit &wu, StringBuffer& wuStructure,
     catch(IException* e){   
       StringBuffer msg;
       e->errorMessage(msg);
-        WARNLOG(msg.str());
+        WARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...){
@@ -200,7 +200,7 @@ bool CWUXMLInfo::buildXmlGraphList(IConstWorkUnit &wu,IPropertyTree& XMLStructur
     catch(IException* e){   
       StringBuffer msg;
       e->errorMessage(msg);
-        WARNLOG(msg.str());
+        WARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...){
@@ -227,7 +227,7 @@ bool CWUXMLInfo::buildXmlExceptionList(IConstWorkUnit &wu,IPropertyTree& XMLStru
     catch(IException* e){   
       StringBuffer msg;
       e->errorMessage(msg);
-        WARNLOG(msg.str());
+        WARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...){
@@ -300,7 +300,7 @@ bool CWUXMLInfo::buildXmlResultList(IConstWorkUnit &wu,IPropertyTree& XMLStructu
     catch(IException* e){   
       StringBuffer msg;
       e->errorMessage(msg);
-        WARNLOG(msg.str());
+        WARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...){
@@ -336,7 +336,7 @@ bool CWUXMLInfo::buildXmlTimimgList(IConstWorkUnit &wu,IPropertyTree& XMLStructu
     catch(IException* e){   
       StringBuffer msg;
       e->errorMessage(msg);
-        WARNLOG(msg.str());
+        WARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...){
@@ -382,7 +382,7 @@ bool CWUXMLInfo::buildXmlLogList(IConstWorkUnit &wu,IPropertyTree& XMLStructure)
     catch(IException* e){   
       StringBuffer msg;
       e->errorMessage(msg);
-        WARNLOG(msg.str());
+        WARNLOG("%s", msg.str());
         e->Release();
     }
     catch(...){
