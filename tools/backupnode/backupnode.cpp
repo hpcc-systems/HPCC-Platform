@@ -65,7 +65,7 @@ static bool inexactDateMatch = false;
 #define println PROGLOG
 #define printerr ERRLOG
 #else
-static void println(const char *format, ...)
+static void println(const char *format, ...) __attribute__((format(printf, 1, 2)))
 {
     va_list x;
     va_start(x, format);
@@ -75,7 +75,7 @@ static void println(const char *format, ...)
     va_end(x);
 }
 
-static void printerr(const char *format, ...)
+static void printerr(const char *format, ...) __attribute__((format(printf, 1, 2)))
 {
     va_list x;
     va_start(x, format);

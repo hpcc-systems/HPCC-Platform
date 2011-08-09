@@ -34,7 +34,7 @@ class SecHandler : public CInterface
     Owned<IAuthMap> m_feature_authmap;
 private:
     bool authorizeTrial(ISecUser& user,const char* pszFeatureUrl, SecAccessFlags & required_access);
-    void AuditMessage(AuditType type, const char *filterType, const char *title, const char *parms, ...);
+    void AuditMessage(AuditType type, const char *filterType, const char *title, const char *parms, ...) __attribute__((format(printf, 5, 6)));
 
 public:
     IMPLEMENT_IINTERFACE;

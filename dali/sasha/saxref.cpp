@@ -475,7 +475,7 @@ public:
     Owned<IPropertyTree> orphansbranch;
     Owned<IPropertyTree> dirbranch;
 
-    void log(const char * format, ...)
+    void log(const char * format, ...) __attribute__((format(printf, 2, 3)))
     {
         CriticalBlock block(logsect);
         va_list args;
@@ -490,7 +490,7 @@ public:
         }
     }
 
-    void statlog(const char * format, ...)
+    void statlog(const char * format, ...) __attribute__((format(printf, 2, 3)))
     {
         CriticalBlock block(logsect);
         va_list args;
@@ -504,7 +504,7 @@ public:
         }
     }
 
-    void error(const char *lname,const char * format, ...)
+    void error(const char *lname,const char * format, ...) __attribute__((format(printf, 3, 4)))
     {
         CriticalBlock block(logsect);
         va_list args;
@@ -521,7 +521,7 @@ public:
         ERRLOG("%s: %s",lname,line.str());
     }
 
-    void warn(const char *lname,const char * format, ...)
+    void warn(const char *lname,const char * format, ...) __attribute__((format(printf, 3, 4)))
     {
         CriticalBlock block(logsect);
         va_list args;
@@ -1657,7 +1657,7 @@ public:
         CNewXRefManagerBase::start(updateeclwatch,"SuperFiles");
     }
 
-    void errornotrecent(const char *lname,const char * format, ...)
+    void errornotrecent(const char *lname,const char * format, ...) __attribute__((format(printf, 3, 4)))
     {
         // checks can lock LFN and not recently changed
         CriticalBlock block(logsect);

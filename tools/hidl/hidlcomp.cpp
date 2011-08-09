@@ -315,8 +315,7 @@ void outf(const char *fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    voutf(fmt,args);
-    
+    voutf(fmt,args);    
 }
 
 void outf(int indents, const char *fmt, ...)
@@ -802,7 +801,7 @@ static char* getToBeDefinedType(const char* type)
     {
         char msg[128];
         sprintf(msg, "*** unhandled type: %s", type);
-        outf(msg);
+        outs(msg);
         yyerror(msg);
         return NULL;
     }
@@ -1037,8 +1036,8 @@ void ParamInfo::write_esp_init(bool &isFirst, bool msgRemoveNil)
             {
             case MetaTagInfo::mt_string: outf("%s",deftag->getString()); break;
             case MetaTagInfo::mt_int:    outf("\"%d\"", deftag->getInt()); break;
-            case MetaTagInfo::mt_double: outf("%\"g\"", deftag->getDouble()); break;
-            case MetaTagInfo::mt_const_id: outf("%\"s\"", deftag->getName()); break;
+            case MetaTagInfo::mt_double: outf("\"%g\"", deftag->getDouble()); break;
+            case MetaTagInfo::mt_const_id: outf("\"%s\"", deftag->getName()); break;
             case MetaTagInfo::mt_none: assert(false); break;
             }
             outf(")");
@@ -1364,7 +1363,7 @@ void ParamInfo::write_esp_attr_method(const char *msgname, bool isSet, bool parN
             }
             else
             {
-                outf("{ m_%s.copy(ifrom); }\n", name, typname);
+                outf("{ m_%s.copy(ifrom); }\n", name);
             }
         }
         else if (kind==TK_ESPENUM)
@@ -1598,7 +1597,7 @@ void ParamInfo::write_esp_attr_method(const char *msgname, bool isSet, bool parN
                     outs("\t");
                 if (isDecl && isPure)
                     outs("virtual ");
-                outf("const char* ", typname);
+                outs("const char* ");
                 if (!isDecl && msgname)
                     outf("C%s::", msgname);
                 outf("get%sAsString()", methName);
@@ -2092,8 +2091,6 @@ void ProcInfo::out_method(const char *classpfx, int omitvirt)
         }
         else
             rettype->out_type();
-        if (isSCM)
-            outf("");
         if (classpfx)
             outf(" %s::%s",classpfx,name);
         else
@@ -2147,15 +2144,15 @@ void ProcInfo::write_body_method_structs2(const char * modname)
         if (a>0) {
             dummy++;
             if (a>1)
-                outf("\tchar __dummy%d[%d];\n",dummy,a);
+                outf("\tchar __dummy%d[%u];\n",dummy,(unsigned)a);
             else
-                outf("\tchar __dummy%d;\n",dummy,a);
+                outf("\tchar __dummy%d;\n",dummy);
         }
         p->write_body_struct_elem(0);
     }
     if (align>0) {
         dummy++;
-        outf("\tchar _dummy%d[%d];\n",dummy,4-align);
+        outf("\tchar _dummy%d[%u];\n",dummy,(unsigned)(4-align));
         align = 0;
     }
     ForEachParam(this,p,PF_IN,PF_OUT|PF_SIMPLE) {
@@ -2172,7 +2169,7 @@ void ProcInfo::write_body_method_structs2(const char * modname)
         rettype->write_body_struct_elem(0);
         if (align>0) {
             dummy++;
-            outf("\tchar _dummy%d[%d];\n",dummy,4-align);
+            outf("\tchar _dummy%d[%u];\n",dummy,(unsigned)(4-align));
             align = 0;
         }
     }
@@ -2650,7 +2647,7 @@ void ModuleInfo::write_body_class_stub(int cb)
             switchdone = 1;
         }
         outf("\tcase %d: {\n",fn);
-        outf("\t\t\tHRPC_d_%s__%s _params;\n",name,pi->name,name,pi->name);
+        outf("\t\t\tHRPC_d_%s__%s _params;\n",name,pi->name);
         outs("\t\t\t_params.popparams(_b);\n");
         if (pi->async) {
             outs("\t\t\t_returnasync(_br);\n");
@@ -2957,7 +2954,7 @@ void EspMessageInfo::write_esp_ipp()
         outf("\t{ doInit(); }\n");
         outf("\tCX%s(C%s defvalue_) : SoapEnumParamNew<C%s>(defvalue_)\n", name_, name_, name_);
         outf("\t{ doInit(); }\n");
-        outf("\tCX%s(const char* defvalue_) : SoapEnumParamNew<C%s>()\n", name_, name_, name_);
+        outf("\tCX%s(const char* defvalue_) : SoapEnumParamNew<C%s>()\n", name_, name_);
         outf("\t{ doInit(); setDefaultValue(defvalue_); }\n");
 
 
@@ -2968,7 +2965,7 @@ void EspMessageInfo::write_esp_ipp()
         // getMapInfo()
         outs("\tstatic void getMapInfo(IMapInfo& info, BoolHash& added) { getSharedInstance().getMapInfo_(info,added); }\n\n");
         outf("\tstatic const char* stringOf(C%s val) { return getSharedInstance().toString(val); }\n\n",name_);
-        outf("\tstatic C%s enumOf(const char* s) { return getSharedInstance().toEnum(s); }\n\n",name_, name_);
+        outf("\tstatic C%s enumOf(const char* s) { return getSharedInstance().toEnum(s); }\n\n",name_);
 
         outf("static const char *queryXsdElementName() { return \"%s\"; }\n", name_);
 

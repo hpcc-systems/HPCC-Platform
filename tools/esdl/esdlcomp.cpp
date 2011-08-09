@@ -292,7 +292,6 @@ void outf(const char *fmt, ...)
     va_list args;
     va_start(args, fmt);
     voutf(fmt,args);
-    
 }
 
 void outf(int indents, const char *fmt, ...)
@@ -701,7 +700,7 @@ static char* getToBeDefinedType(const char* type)
     {
         char msg[128];
         sprintf(msg, "*** unhandled type: %s", type);
-        outf(msg);
+        outs(msg);
         yyerror(msg);
         return NULL;
     }

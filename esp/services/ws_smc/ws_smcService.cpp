@@ -33,7 +33,7 @@ const char* THORQUEUE_FEATURE = "ThorQueueAccess";
 
 const char* PERMISSIONS_FILENAME = "espsmc_permissions.xml";
 
-void AccessSuccess(IEspContext& context, char const * msg,...)
+void AccessSuccess(IEspContext& context, char const * msg,...) __attribute__((format(printf, 2, 3)))
 {
     StringBuffer buf;
     buf.appendf("User %s: ",context.queryUserId());
@@ -44,7 +44,7 @@ void AccessSuccess(IEspContext& context, char const * msg,...)
     AUDIT(AUDIT_TYPE_ACCESS_SUCCESS,buf.str());
 }
 
-void AccessFailure(IEspContext& context, char const * msg,...)
+void AccessFailure(IEspContext& context, char const * msg,...) __attribute__((format(printf, 2, 3)))
 {
     StringBuffer buf;
     buf.appendf("User %s: ",context.queryUserId());

@@ -19,6 +19,8 @@
 #ifndef __ESDL_UTILS_HPP__
 #define __ESDL_UTILS_HPP__
 
+#include "platform.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -60,8 +62,8 @@ public:
     StrBuffer &  append(const char * value);
     StrBuffer &  append(unsigned len, const char * value);
 
-    StrBuffer &  appendf(const char *format, ...);
-    StrBuffer &  setf(const char* format, ...);
+    StrBuffer &  appendf(const char *format, ...) __attribute__((format(printf, 2, 3)));
+    StrBuffer &  setf(const char* format, ...) __attribute__((format(printf, 2, 3)));
     StrBuffer &  set(const char* val) { return clear().append(val); }
     StrBuffer &  clear() { curLen = 0; return *this; }
     
@@ -105,7 +107,7 @@ private:
 class VStrBuffer : public StrBuffer
 {
 public:
-    VStrBuffer(const char* format, ...);
+    VStrBuffer(const char* format, ...) __attribute__((format(printf, 2, 3)));
 };
 
 

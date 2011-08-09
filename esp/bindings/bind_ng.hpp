@@ -112,7 +112,7 @@ public:
     bool validateFeatureAccess(const char * pszFeatureUrl, unsigned required, bool throwExcpt){return true;}
     void setServAddress(const char * host, short port){}
     void getServAddress(StringBuffer & host, short & port){}
-    void AuditMessage(AuditType type, const char * filterType, const char * title, const char * parms, ...){}
+    void AuditMessage(AuditType type, const char * filterType, const char * title, const char * parms, ...) {}
 
     void setServiceName(const char *name){servname.clear().append(servname);}
     const char * queryServiceName(const char *name){return servname.str();}

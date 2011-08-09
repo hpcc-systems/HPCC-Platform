@@ -334,7 +334,7 @@ enum KeyExceptionCodes
     KeyExcpt_IncompatVersion = 1,
 };
 interface IKeyException : extends IException { };
-IKeyException *MakeKeyException(int code, const char *format, ...);
+IKeyException *MakeKeyException(int code, const char *format, ...) __attribute__((format(printf, 2, 3)));
 
 
 #endif

@@ -28,7 +28,7 @@
 IHRPC_Exception *MakeHRPCexception(int code);
 IHRPC_Exception *MakeHRPCexception(int code,IException *e);
 #ifdef _HRPCTRACE
-void HRPCtrace(const char *fmt, ...);
+void HRPCtrace(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 
 #define THROWHRPCEXCEPTION(code) { HRPCtrace("\nRaising HRPC exception %d at %s line %d\n",code, __FILE__, __LINE__);\
    throw MakeHRPCexception(code); }

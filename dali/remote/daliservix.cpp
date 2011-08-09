@@ -103,7 +103,7 @@ void Log(const char *s)
     sem_post(logsem);
 }
 
-void LogF(const char *fmt, ...)
+void LogF(const char *fmt, ...) __attribute__((format(printf, 1, 2)))
 {
     static char logbuf[1024*16];
     va_list args;

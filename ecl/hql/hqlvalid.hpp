@@ -22,7 +22,7 @@
 
 //Error reporting helpers.
 void HQL_API reportErrorVa(IErrorReceiver * errors, int errNo, const ECLlocation & loc, const char* format, va_list args);
-void HQL_API reportError(IErrorReceiver * errors, int errNo, const ECLlocation & loc, const char * format, ...);
+void HQL_API reportError(IErrorReceiver * errors, int errNo, const ECLlocation & loc, const char * format, ...) __attribute__((format(printf, 4, 5)));
 void HQL_API expandReportError(IErrorReceiver * errors, IECLError* error);
 
 class HQL_API ThrowingErrorReceiver : public CInterface, implements IErrorReceiver

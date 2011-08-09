@@ -106,9 +106,9 @@ enum  clarion_special_type_enum { cte_normal,cte_longref,cte_constcstr,cte_cstr 
 
 void out(const char*, size_t);
 void outs(const char*);
-void outf(const char*,...);
+void outf(const char*,...) __attribute__((format(printf, 1, 2)));
 void outs(int indent, const char*);
-void outf(int indent, const char*,...);
+void outf(int indent, const char*,...) __attribute__((format(printf, 2, 3)));
 
 char *appendstr(char *text,const char *str);
 
@@ -190,7 +190,7 @@ public:
         strcpy(name_,(value)? value : (char *)"");
     }
     
-    void setNameF(const char *format, ...)
+    void setNameF(const char *format, ...) __attribute__((format(printf, 2, 3)))
     {
         va_list args;
         va_start(args, format);

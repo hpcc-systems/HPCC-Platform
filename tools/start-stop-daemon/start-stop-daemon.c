@@ -221,6 +221,8 @@ static bool pid_is_exec(pid_t pid, const struct stat *esb);
 
 static void fatal(const char *format, ...)
     DPKG_ATTR_NORET DPKG_ATTR_PRINTF(1);
+static void warning(const char *format, ...)
+    DPKG_ATTR_NORET DPKG_ATTR_PRINTF(1);
 static void badusage(const char *msg)
     DPKG_ATTR_NORET;
 

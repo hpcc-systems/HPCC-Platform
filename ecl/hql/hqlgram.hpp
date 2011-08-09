@@ -558,15 +558,15 @@ public:
 
 // Error handling
     void doReportWarning(int warnNo, const char *msg, const char *filename, int lineno, int column, int pos);
-    void reportError(int errNo, const attribute& a, const char* format, ...);
-    void reportError(int errNo, const ECLlocation & pos, const char* format, ...);
+    void reportError(int errNo, const attribute& a, const char* format, ...) __attribute__((format(printf, 4, 5)));
+    void reportError(int errNo, const ECLlocation & pos, const char* format, ...) __attribute__((format(printf, 4, 5)));
     void reportMacroExpansionPosition(int errNo, HqlLex * lexer, bool isError);
     void reportErrorUnexpectedX(const attribute & errpos, _ATOM unexpected);
 
     // Don't use overloading: va_list is the same as char*!!
     void reportErrorVa(int errNo, const ECLlocation & a, const char* format, va_list args);
     void reportError(int errNo, const char *msg, int lineno, int column, int position=0);
-    void reportWarning(int warnNo, const ECLlocation & pos, const char* format, ...);
+    void reportWarning(int warnNo, const ECLlocation & pos, const char* format, ...) __attribute__((format(printf, 4, 5)));
     void reportWarningVa(int errNo, const attribute& a, const char* format, va_list args);
     void reportWarning(int warnNo, const char *msg, int lineno, int column);
     void addResult(IHqlExpression *query, const attribute& errpos);
@@ -1078,8 +1078,8 @@ class HqlLex
         IXmlScope *ensureTopXmlScope(const YYSTYPE & errpos);
 
         IHqlExpression *lookupSymbol(_ATOM name, const attribute& errpos);
-        void reportError(const YYSTYPE & returnToken, int errNo, const char *format, ...);
-        void reportWarning(const YYSTYPE & returnToken, int warnNo, const char *format, ...);
+        void reportError(const YYSTYPE & returnToken, int errNo, const char *format, ...) __attribute__((format(printf, 4, 5)));
+        void reportWarning(const YYSTYPE & returnToken, int warnNo, const char *format, ...) __attribute__((format(printf, 4, 5)));
 
         void beginNestedHash(unsigned kind) { hashendKinds.append(kind); hashendDepths.append(1); }
         unsigned endNestedHash() { hashendKinds.pop(); return hashendDepths.pop(); }

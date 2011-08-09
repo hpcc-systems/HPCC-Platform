@@ -27,7 +27,7 @@
 
 static const char* FEATURE_URL = "DfuXrefAccess";
 
-static void appendReplyMessage(StringBuffer &reply, const char *href,const char *format,...)
+static void appendReplyMessage(StringBuffer &reply, const char *href,const char *format,...) __attribute__((format(printf, 3, 4)))
 {
     va_list args;
     va_start(args, format);

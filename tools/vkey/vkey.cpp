@@ -173,7 +173,7 @@ unsigned long mcrc32(const char *buf, unsigned len, unsigned long crc)
     return(crc);
 }
 
-void noteError(offset_t offset, const char *format, ...)
+void noteError(offset_t offset, const char *format, ...) __attribute__((format(printf, 2, 3)))
 {
     va_list arg;
     va_start(arg, format);
