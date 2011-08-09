@@ -3316,7 +3316,7 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
     toECL(expr, msg, true);
 //  expr->toString(msg);
     msg.append(")");
-    throw MakeStringException(HQLERR_UnexpectedOperator, msg.str());
+    throw MakeStringException(HQLERR_UnexpectedOperator, "%s", msg.str());
     doBuildPureSubExpr(ctx, expr, tgt);
 }
 

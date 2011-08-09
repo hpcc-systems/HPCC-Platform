@@ -1241,7 +1241,7 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
                     if (errorStr.length() > 0)
                     {
                         returnStr.appendf("<Message><Value>%s</Value></Message>",errorStr.str());
-                        DBGLOG(errorStr.str());
+                        DBGLOG("%s", errorStr.str());
                     }
                     else 
                     {

@@ -1091,7 +1091,7 @@ void LogMsgComponentReporter::report(const LogMsgCategory & cat, const IExceptio
     StringBuffer buff;
     if(prefix) buff.append(prefix).append(" : ");
     exception->errorMessage(buff);
-    queryLogMsgManager()->report(component, cat, unknownJob, exception->errorCode(), buff.str());
+    queryLogMsgManager()->report(component, cat, unknownJob, exception->errorCode(), "%s", buff.str());
 }
 
 void LogMsgComponentReporter::report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...)
@@ -1125,7 +1125,7 @@ void LogMsgComponentReporter::report(const LogMsgCategory & cat, const LogMsgJob
     StringBuffer buff;
     if(prefix) buff.append(prefix).append(" : ");
     exception->errorMessage(buff);
-    queryLogMsgManager()->report(component, cat, job, exception->errorCode(), buff.str());
+    queryLogMsgManager()->report(component, cat, job, exception->errorCode(), "%s", buff.str());
 }
 
 void LogMsgComponentReporter::report(const LogMsg & msg)

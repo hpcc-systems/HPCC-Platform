@@ -620,7 +620,7 @@ void ComplexImplicitProjectInfo::trace()
     if (original->queryName())
         s.append(original->queryName()).append(" := ");
     s.append(getOpString(original->getOperator()));
-    DBGLOG(s.str());
+    DBGLOG("%s", s.str());
 
     switch (childDatasetType)
     {
@@ -657,7 +657,7 @@ void ComplexImplicitProjectInfo::trace(const char * label, const UsedFieldSet & 
     s.append("  ").append(label).append(": ");
     fields.getText(s);
 
-    DBGLOG(s.str());
+    DBGLOG("%s", s.str());
 }
 
 

@@ -486,10 +486,10 @@ RegexMatchAction RegexPattern::traceMatch(RegexState & state)
     if (len > 10) len = 10;
     getTraceText(t);
     s.appendN(i++, ' ').appendf("Begin %s [%p] >%.*s<", t.str(), this, len, state.cur);
-    DBGLOG(s);
+    DBGLOG("%s", s.str());
     RegexMatchAction ret = match(state);
     s.clear().appendN(--i, ' ').appendf("End   %s [%p] = %s", t.str(), this, resultText[ret]);
-    DBGLOG(s);
+    DBGLOG("%s", s.str());
     return ret;
 }
 

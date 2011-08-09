@@ -207,7 +207,7 @@ public:
                             break; // never reading from node 0 (0 == terminator)
                         StringBuffer s;
                         s.appendN(indent, ' ').append("Merging from node: ").append(node);
-                        ActPrintLog(s.str());
+                        ActPrintLog("%s", s.str());
                         streams.append(*createRowStreamFromNode(*this, node+1, container.queryJob().queryJobComm(), mpTag, abortSoon));
                     }
                     Owned<IRowLinkCounter> linkcounter = new CThorRowLinkCounter;

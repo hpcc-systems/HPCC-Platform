@@ -730,7 +730,7 @@ void ResourceGraphInfo::display()
     s.append(")");
     if (isUnconditional)
         s.append(" <unconditional>");
-    DBGLOG(s.str());
+    DBGLOG("%s", s.str());
 }
 
 void ResourceGraphInfo::expandDependants(ResourceGraphArray & target)
@@ -4383,7 +4383,7 @@ void EclResourcer::trace()
 {
     StringBuffer s;
     display(s);
-    DBGLOG(s.str());
+    DBGLOG("%s", s.str());
 }
 
 //---------------------------------------------------------------------------

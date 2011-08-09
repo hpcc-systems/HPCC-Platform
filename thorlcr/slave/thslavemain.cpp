@@ -82,7 +82,7 @@ static void replyError(const char *errorMsg)
     StringBuffer str("Node '");
     myEp.getUrlStr(str);
     str.append("' exception: ").append(errorMsg);
-    Owned<IException> e = MakeStringException(0, str.str());
+    Owned<IException> e = MakeStringException(0, "%s", str.str());
     CMessageBuffer msg;
     serializeException(e, msg);
     queryClusterComm().send(msg, 0, MPTAG_THORREGISTRATION);

@@ -229,7 +229,7 @@ jlib_decl void appendLogFile(const char *filename, unsigned detail, bool enterQu
 
 jlib_decl void PrintLogDirect(const char *msg)
 {
-    LOG(MClegacy, unknownJob, msg);
+    LOG(MClegacy, unknownJob, "%s", msg);
 }
 
 jlib_decl int PrintLog(const char *fmt, ...)
@@ -592,7 +592,7 @@ bool invoke_program(const char *command_line, DWORD &runcode, bool wait, const c
 
         ERRLOG("%s",s.toCharArray());
         if(throwException)
-            throw MakeStringException(-1, s.str());
+            throw MakeStringException(-1, "%s", s.str());
         return false;
     }
 

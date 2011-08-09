@@ -678,7 +678,7 @@ bool CFileSprayEx::GetArchivedDFUWorkunits(IEspContext &context, IEspGetDFUWorku
     {
         StringBuffer msg;
         msg.appendf("Cannot connect to archive server at %s",sashaAddress.str());
-        throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER, msg.str());
+        throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER, "%s", msg.str());
     }
 
     IArrayOf<IEspDFUWorkunit> results;

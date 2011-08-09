@@ -2652,7 +2652,7 @@ void throwRemoteException(IMessageUnpackCursor *extra)
         const char *msg = p->queryProp("Message");
         if (!msg)
             msg = xml;
-        throw MakeStringException(code, msg);
+        throw MakeStringException(code, "%s", msg);
     }
     throwUnexpected();
 }
@@ -30015,8 +30015,8 @@ public:
                     {
                         StringBuffer err;
                         err.appendf("doControlQuery::do (%d of %d): %.80s received invalid response %s", i, numChildren, queryText, childReply.str());
-                        logctx.CTXLOG(err.str());
-                        throw MakeStringException(ROXIE_INTERNAL_ERROR, err.str());
+                        logctx.CTXLOG("%s", err.str());
+                        throw MakeStringException(ROXIE_INTERNAL_ERROR, "%s", err.str());
                     }
                     Owned<IPropertyTreeIterator> meat = xml->getElements("Endpoint");
                     ForEach(*meat)
@@ -30511,8 +30511,8 @@ public:
         }
         else
         {
-            IException *E = MakeStringException(ROXIE_TOO_MANY_QUERIES, err.str());
-            logctx.logOperatorException(E, __FILE__, __LINE__, message.str());
+            IException *E = MakeStringException(ROXIE_TOO_MANY_QUERIES, "%s", err.str());
+            logctx.logOperatorException(E, __FILE__, __LINE__, "%s", message.str());
             E->Release();
         }
 

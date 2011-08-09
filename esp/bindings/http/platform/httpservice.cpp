@@ -637,7 +637,7 @@ int CEspHttpServer::onRunCGI(CHttpRequest* request, CHttpResponse* response, con
                     StringBuffer hstr;
                     hstr.append(("HTTP_")).append(hname).append('=').append(finger);
                     env.append(hstr.str());
-                    DBGLOG(hstr.str());
+                    DBGLOG("%s", hstr.str());
                 }
             }
         }

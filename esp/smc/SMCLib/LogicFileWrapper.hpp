@@ -101,7 +101,7 @@ struct DeleteTask: public CInterface, implements ITask
                 {
                     StringBuffer e;
                     e.appendf("Failed to remove file part %s\n",file->queryFilename());
-                    LOG(MCerror, unknownJob, e.str());
+                    LOG(MCerror, unknownJob, "%s", e.str());
                     errs.append(e);
                 }
             }
@@ -118,7 +118,7 @@ struct DeleteTask: public CInterface, implements ITask
             }
         }
         if(errs.length())
-            throw MakeStringException(0,errs.str());
+            throw MakeStringException(0, "%s", errs.str());
 
         return 0;
     }
@@ -147,7 +147,7 @@ struct CompressTask: public CInterface, implements ITask
         {
             StringBuffer err;
             e->errorMessage(err);
-            LOG(MCerror, unknownJob, err.str());
+            LOG(MCerror, unknownJob, "%s", err.str());
             e->Release();
         }
         catch(...)

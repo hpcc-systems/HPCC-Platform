@@ -107,7 +107,7 @@ class CThorBackupHandler : public CSimpleInterface, implements IBackup, implemen
             {
                 StringBuffer errMsg;
                 if (!currentAbort)
-                    LOG(MCwarning, thorJob, errMsg.append("Backup inconsistency detected, backup aborted: ").append(item->dst).str());
+                    LOG(MCwarning, thorJob, "%s", errMsg.append("Backup inconsistency detected, backup aborted: ").append(item->dst).str());
                 backupIFile->remove();
             }
         }

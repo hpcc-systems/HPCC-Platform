@@ -1034,7 +1034,7 @@ public:
             errStr.append(exception->errorCode()).append(", ");
             exception->errorMessage(errStr);
             errStr.append(")");
-            IException *e2 = MakeActivityException(this, TE_TooMuchData, errStr.str());
+            IException *e2 = MakeActivityException(this, TE_TooMuchData, "%s", errStr.str());
             ActPrintLog(e2, NULL);
             throw e2;
         }

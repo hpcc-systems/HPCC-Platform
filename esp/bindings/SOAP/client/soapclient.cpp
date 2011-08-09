@@ -193,7 +193,7 @@ int CSoapClient::postRequest(const char* contenttype, const char* soapaction, IR
         if (soap_response->get_err())
             errmsg.appendf("[%s]", soap_response->get_err());
 
-        throw MakeStringException(retstatus, errmsg);
+        throw MakeStringException(retstatus, "%s", errmsg.str());
     }
 
 #if defined(DEBUG_HTTP_)
@@ -373,7 +373,7 @@ int CSoapClient::postRequest(IRpcMessage & rpccall, StringBuffer & responsebuf, 
         else if(retstatus == SOAP_AUTHENTICATION_ERROR)
             errmsg = "SOAP authentication error";
 
-        throw MakeStringException(retstatus, errmsg);
+        throw MakeStringException(retstatus, "%s", errmsg);
     }
 
     if(soap_response->get_text_length() == 0)

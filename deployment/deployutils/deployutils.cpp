@@ -3683,7 +3683,7 @@ bool validateEnv(IConstEnvironment* pConstEnv)
       }
 
       e->Release();
-      throw MakeStringException(-1, newMsg.append(errMsg.str()));
+      throw MakeStringException(-1, "%s", newMsg.append(errMsg.str()).str());
     }
     else
       throw e;

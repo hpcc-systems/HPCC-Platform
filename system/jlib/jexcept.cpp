@@ -329,7 +329,7 @@ public:
                 StringBuffer msg;
                 msg.appendf("[%s] ",source);
                 e.errorMessage(msg);
-                array_.append(*MakeStringException(e.errorAudience(), e.errorCode(), msg));
+                array_.append(*MakeStringException(e.errorAudience(), e.errorCode(), "%s", msg.str()));
             }
             else
                 array_.append(*LINK(&e));
@@ -510,7 +510,7 @@ void RaiseAssertException(const char *assertion, const char *file, unsigned line
 #endif
 #endif
 
-    throw MakeStringException(3000,s.toCharArray()); // 3000: internal error
+    throw MakeStringException(3000, "%s", s.toCharArray()); // 3000: internal error
 }
 
 void RaiseAssertCore(const char *assertion, const char *file, unsigned line)
@@ -1171,7 +1171,7 @@ IException * deserializeException(MemoryBuffer & in)
     StringAttr text;
     in.read(code);
     in.read(text);
-    return MakeStringException(code, text);
+    return MakeStringException(code, "%s", text.get());
 }
 
 void jlib_decl serializeException(IException * e, MemoryBuffer & out)
@@ -1269,7 +1269,7 @@ void SignalToException::processSetJmpResult(int res)
             break;
         }
         buf.append(" as exception");
-        throw MakeStringException(res, buf.toCharArray());
+        throw MakeStringException(res, "%s", buf.toCharArray());
     }
 }
 

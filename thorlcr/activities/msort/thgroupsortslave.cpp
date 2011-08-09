@@ -105,7 +105,7 @@ public:
                         StringBuffer errStr("GROUPSORT");
                         errStr.append("(").append(container.queryId()).append(") ");
                         errStr.append("exceeded available memory. records=").append(group.ordinality()).append(", memory usage=").append((unsigned)(group.totalSize()/1024)).append('k');
-                        IException *e = MakeActivityException(this, TE_TooMuchData, errStr.str());
+                        IException *e = MakeActivityException(this, TE_TooMuchData, "%s", errStr.str());
                         EXCLOG(e, NULL);
                         throw e;
                     }
@@ -124,7 +124,7 @@ public:
                 errStr.append(": ").append(e->errorCode()).append(", ");
                 e->errorMessage(errStr);
                 e->Release();
-                IException *e2 = MakeActivityException(this, TE_TooMuchData, errStr.str());
+                IException *e2 = MakeActivityException(this, TE_TooMuchData, "%s", errStr.str());
                 EXCLOG(e2, NULL);
                 throw e2;
             }

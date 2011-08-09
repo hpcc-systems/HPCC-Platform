@@ -80,7 +80,7 @@ bool SortSlaveMP::sendRecv(CMessageBuffer &mb, unsigned timeout)
             mb.read(err);
             StringAttr errstr;
             mb.read(errstr);
-            throw MakeStringException(err,errstr.get());
+            throw MakeStringException(err, "%s", errstr.get());
         }
     }
     throw MakeStringException(-1,"SortSlaveMP::sendRecv() protocol error %d",(int)ok);
