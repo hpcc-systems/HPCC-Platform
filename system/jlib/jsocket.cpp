@@ -287,7 +287,11 @@ struct MCASTREQ
 
 };
 
-
+#ifdef __APPLE__
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0x4000
+#endif
+#endif
 
 #if defined( _WIN32)
 #define T_SOCKET SOCKET
@@ -299,7 +303,7 @@ struct MCASTREQ
 #define SEND_FLAGS 0
 #define BADSOCKERR(err) ((err==WSAEBADF)||(err==WSAENOTSOCK))
 #define CHECKSOCKRANGE(s)
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) || defined(__APPLE__)
 #define XFD_SETSIZE FD_SETSIZE
 #define T_FD_SET fd_set
 #define XFD_ZERO(s) FD_ZERO(s)

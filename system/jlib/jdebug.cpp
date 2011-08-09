@@ -334,6 +334,7 @@ cycle_t jlib_decl get_cycles_now()
 {
     if (useRDTSC)
         return getTSC();
+#ifndef __APPLE__
     if (!use_gettimeofday) {
         timespec tm;
         if (clock_gettime(CLOCK_MONOTONIC, &tm)>=0)
@@ -341,6 +342,7 @@ cycle_t jlib_decl get_cycles_now()
         use_gettimeofday = true;
         fprintf(stderr,"clock_gettime CLOCK_MONOTONIC returns %d",errno);   // don't use PROGLOG
     }
+#endif
     struct timeval tm;
     gettimeofday(&tm,NULL);
     return ((cycle_t)tm.tv_sec)*1000000000L+(cycle_t)tm.tv_usec*1000L; 
@@ -968,7 +970,7 @@ void getMemStats(StringBuffer &out, unsigned &memused, unsigned &memtot)
     memused = mu+su;
     memtot = mt+st;
 #endif
-#ifdef __FreeBSD__
+#if defined (__FreeBSD__) || defined (__APPLE__)
     UNIMPLEMENTED;
 #endif
 }
@@ -998,7 +1000,7 @@ void getDiskUsage(char const * path, unsigned __int64 & total, unsigned __int64 
         }
     }
 #endif
-#ifdef __FreeBSD__
+#if defined (__FreeBSD__) || defined (__APPLE__)
     UNIMPLEMENTED;
 #endif
 }
@@ -1180,7 +1182,7 @@ public:
                 processes.remove(i3);
         }
 #endif
-#ifdef __FreeBSD__
+#if defined (__FreeBSD__) || defined (__APPLE__)
         UNIMPLEMENTED;
 #endif
     }
@@ -1562,7 +1564,7 @@ class CExtendedStats  // Disk network and cpu stats
             kbuf = NULL;
         }
 #endif
-#ifdef __FreeBSD__
+#if defined (__FreeBSD__) || defined (__APPLE__)
         UNIMPLEMENTED;
 #endif
         data = NULL;

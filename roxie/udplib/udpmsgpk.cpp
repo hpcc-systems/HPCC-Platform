@@ -45,6 +45,7 @@ using roxiemem::IRowManager;
 bool streamingSupported = false;
 
 #ifdef _DEBUG
+#ifndef __APPLE__
 #define ASSERT_SINGLE_THREADED \
 {   \
     static SpinLock paranoid;   \
@@ -60,6 +61,9 @@ bool streamingSupported = false;
         lastTID = GetCurrentThreadId(); \
     }   \
 }   
+#else
+#define ASSERT_SINGLE_THREADED {}
+#endif
 #else
 #define ASSERT_SINGLE_THREADED {}
 #endif
