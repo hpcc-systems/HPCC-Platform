@@ -6,11 +6,13 @@
 /*global YAHOO*/
 (function() {
   var loader = new YAHOO.util.YUILoader();
-  loader.loadOptional = true;
 
-  loader.require("reset-fonts-grids", "base", "datatable", "selector", "progressbar");
   loader.insert({
-    filter: 'raw',
+    require: ["reset-fonts-grids", "base", "datatable", "selector", "progressbar"],
+    base: '/esp/files/yui/build/',
+    loadOptional: true,
+    filter: "MIN",
+    allowRollup: true,
     onSuccess: function() {
       var invokeWiz = true;
     
