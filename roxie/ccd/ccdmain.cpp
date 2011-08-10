@@ -578,14 +578,10 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             StringBuffer log;
             globals->getProp("logfile", log);
             logFileParam.append(log);
-            
+
             // If it's in the form mm_dd_yyyy_hh_mm_ss, and we have rolled over, then use rolled-over form
             unsigned year,month,day,hour,min,sec;
-            
-            StringBuffer log_format;
-            log_format.append("%2u_%2u_%4u_%2u_%2u_%2u");
-                
-            if (sscanf(log.str(), log_format.str(), &month, &day, &year, &hour, &min, &sec)==6)
+            if (sscanf(log.str(), "%2u_%2u_%4u_%2u_%2u_%2u", &month, &day, &year, &hour, &min, &sec)==6)
             {
                 timescan = true;
                 time_t tNow;
