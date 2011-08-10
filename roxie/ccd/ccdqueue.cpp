@@ -1060,7 +1060,7 @@ public:
                 {
                     StringBuffer x;
                     logctx.CTXLOG("------------ TestSlaveFailure to do the following (testCase=%u freq=%u tot=%u parm=%u ROXIE_ALIVE is %s - val=0x%.8X) for %s", 
-                        testCaseType, testCaseFreq, activitiesStarted, testCaseParm, (testSlaveFailure & 0x800) ? "OFF" : "ON",
+                        testCaseType, testCaseFreq, (unsigned) atomic_read(&activitiesStarted), testCaseParm, (testSlaveFailure & 0x800) ? "OFF" : "ON",
                         testSlaveFailure, header.toString(x).str());
                     switch (testCaseType)
                     {

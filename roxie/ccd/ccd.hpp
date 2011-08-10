@@ -54,7 +54,7 @@
 
 #define ROXIE_STATEFILE_VERSION 2
 
-extern IException *MakeRoxieException(int code, const char *format, ...);
+extern IException *MakeRoxieException(int code, const char *format, ...) __attribute__((format(printf, 2, 3)));
 extern Owned<ISocket> multicastSocket;
 extern size32_t channelWrite(unsigned channel, void const* buf, size32_t size);
 void addEndpoint(unsigned channel, const IpAddress &slaveIp, unsigned port);
@@ -442,7 +442,7 @@ inline unsigned getBondedChannel(unsigned partNo)
     return ((partNo - 1) % numChannels) + 1;
 }
 
-extern void FatalError(const char *format, ...);
+extern void FatalError(const char *format, ...)  __attribute__((format(printf, 1, 2)));
 extern unsigned getNextInstanceId();
 
 #define LOGGING_INTERCEPTED     0x01
@@ -783,7 +783,7 @@ public:
         }
     };
 
-    virtual void CTXLOG(const char *format, ...) const
+    virtual void CTXLOG(const char *format, ...) const  __attribute__((format(printf, 2, 3)))
     {
         va_list args;
         va_start(args, format);
@@ -816,7 +816,7 @@ public:
             flush(false, false);
         }
     }
-    virtual void logOperatorException(IException *E, const char *file, unsigned line, const char *format, ...) const
+    virtual void logOperatorException(IException *E, const char *file, unsigned line, const char *format, ...) const  __attribute__((format(printf, 5, 6)))
     {
         va_list args;
         va_start(args, format);
@@ -828,7 +828,7 @@ public:
         CTXLOGaeva(E, file, line, 0, format, args);
     }
 
-    virtual void CTXLOGae(IException *E, const char *file, unsigned line, const char *prefix, const char *format, ...) const
+    virtual void CTXLOGae(IException *E, const char *file, unsigned line, const char *prefix, const char *format, ...) const __attribute__((format(printf, 6, 7)))
     {
         va_list args;
         va_start(args, format);
