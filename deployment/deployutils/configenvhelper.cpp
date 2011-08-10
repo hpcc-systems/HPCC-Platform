@@ -164,199 +164,199 @@ bool CConfigEnvHelper::handleThorTopologyOp(const char* cmd, const char* xmlArg,
 
 IPropertyTree* CConfigEnvHelper::getSoftwareNode(const char* compType, const char* compName)
 {
-  StringBuffer xpath;
-  xpath.appendf("Software/%s[@name='%s']", compType, compName);
+    StringBuffer xpath;
+    xpath.appendf("Software/%s[@name='%s']", compType, compName);
 
-  return m_pRoot->queryPropTree(xpath.str());
+    return m_pRoot->queryPropTree(xpath.str());
 }
 
 bool CConfigEnvHelper::addRoxieServers(const char* xmlArg)
 {
-  Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<RoxieData/>");
-  const char* pszFarm = pSrcTree->queryProp("@parentName");
-  const char* pszRoxieCluster = pSrcTree->queryProp("@roxieName");
-  unsigned int nComputers = 0;//computers.size();
-  IPropertyTree* pParent = m_pRoot->queryPropTree("Software");
-  IPropertyTree* pFarm;
-  bool bNewFarm;
-  StringBuffer sFarmName;
-  StringBuffer xpath;
+    Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<RoxieData/>");
+    const char* pszFarm = pSrcTree->queryProp("@parentName");
+    const char* pszRoxieCluster = pSrcTree->queryProp("@roxieName");
+    unsigned int nComputers = 0;//computers.size();
+    IPropertyTree* pParent = m_pRoot->queryPropTree("Software");
+    IPropertyTree* pFarm;
+    bool bNewFarm;
+    StringBuffer sFarmName;
+    StringBuffer xpath;
 
-  if (strlen(pszFarm))
-  {
-    xpath.clear().appendf("RoxieCluster[@name='%s']/"XML_TAG_ROXIE_FARM, pszRoxieCluster);
-    pFarm = getSoftwareNode(xpath.str(), pszFarm);
-    sFarmName = pFarm->queryProp(XML_ATTR_NAME);
-    bNewFarm = false;
-
-    if (!pFarm->hasProp("@port"))
-      pFarm->addPropInt("@port", 9876);
-
-    if (!pFarm->hasProp("@listenQueue"))
-      pFarm->addPropInt("@listenQueue", 200);
-
-    if (!pFarm->hasProp("@numThreads"))
-      pFarm->getPropInt("@numThreads", 30);
-
-    if (!pFarm->hasProp("@requestArrayThreads"))
-      pFarm->addPropInt("@requestArrayThreads", 5);
-
-    if (!pFarm->hasProp("@aclName"))
-      pFarm->addProp("@aclName", "");
-
-    StringBuffer dataDir = pFarm->queryProp(XML_ATTR_DATADIRECTORY);
-    if (dataDir.length()==0)
-      dataDir.append(RUNTIME_DIR"/roxiedata");
-
-    if (!pFarm->queryPropTree(XML_TAG_ROXIE_SERVER"[1]")) //no servers in farm
+    if (strlen(pszFarm))
     {
-      //if (nComputers > 0)
-      //g_pDocument->makePlatformSpecificAbsolutePath(computers[0]->queryProp(XML_ATTR_NAME), dataDir);
-      Owned<IPropertyTreeIterator> iter = pSrcTree->getElements(XML_TAG_COMPONENT);
-      
-      ForEach (*iter)
-      {
-        IPropertyTree* pFolder = &iter->query();
-        makePlatformSpecificAbsolutePath(pFolder->queryProp(XML_ATTR_NAME), dataDir);
-        break;
-      }
+        xpath.clear().appendf("RoxieCluster[@name='%s']/"XML_TAG_ROXIE_FARM, pszRoxieCluster);
+        pFarm = getSoftwareNode(xpath.str(), pszFarm);
+        sFarmName = pFarm->queryProp(XML_ATTR_NAME);
+        bNewFarm = false;
 
-      pFarm->setProp(XML_ATTR_DATADIRECTORY, dataDir.str());
-    }
-  }
-  else
-  {
-    xpath.clear().appendf("RoxieCluster[@name='%s']/"XML_TAG_ROXIE_FARM, pszRoxieCluster);
-    createUniqueName("farm", xpath.str(), sFarmName);
-    bNewFarm = true;
+        if (!pFarm->hasProp("@port"))
+            pFarm->addPropInt("@port", 9876);
 
-    StringBuffer sDataDir;
-    sDataDir.append(RUNTIME_DIR"/roxiedata");
+        if (!pFarm->hasProp("@listenQueue"))
+            pFarm->addPropInt("@listenQueue", 200);
 
-    //get datadir from existing farm if any
-    xpath.clear().appendf("Software/RoxieCluster[@name='%s']/"XML_TAG_ROXIE_FARM"[1]", pszRoxieCluster);
-    IPropertyTree* pFarm1 =  m_pRoot->queryPropTree(xpath.str());
-    if (pFarm1)
-      sDataDir.clear().append(pFarm1->queryProp(XML_ATTR_DATADIRECTORY));
+        if (!pFarm->hasProp("@numThreads"))
+            pFarm->getPropInt("@numThreads", 30);
 
-    //if (nComputers > 0)
-    //g_pDocument->makePlatformSpecificAbsolutePath(computers[0]->queryProp(XML_ATTR_NAME), sDataDir);
-    Owned<IPropertyTreeIterator> iter = pSrcTree->getElements(XML_TAG_COMPONENT);
-      
-    ForEach (*iter)
-    {
-      IPropertyTree* pFolder = &iter->query();
-      makePlatformSpecificAbsolutePath(pFolder->queryProp(XML_ATTR_NAME), sDataDir);
-      break;
-    }
+        if (!pFarm->hasProp("@requestArrayThreads"))
+            pFarm->addPropInt("@requestArrayThreads", 5);
 
-    xpath.clear().appendf("RoxieCluster[@name='%s']/"XML_TAG_ROXIE_FARM, pszRoxieCluster);
-    pFarm = pParent->addPropTree(xpath.str(), createPTree());
-    pFarm->addProp    (XML_ATTR_NAME,       sFarmName.str());
-    pFarm->addPropInt("@port",          9876);
-    pFarm->addProp    (XML_ATTR_DATADIRECTORY,  sDataDir.str());
-    pFarm->addPropInt("@listenQueue", 200);
-    pFarm->addPropInt("@numThreads",    30);
-    pFarm->addPropInt("@requestArrayThreads", 5);
-    pFarm->addProp("@aclName", "");
-  }
+        if (!pFarm->hasProp("@aclName"))
+            pFarm->addProp("@aclName", "");
 
-  Owned<IPropertyTreeIterator> iter = pSrcTree->getElements(XML_TAG_COMPONENT);
-  StringBuffer sNotAdded;
-  xpath.clear().appendf("RoxieCluster[@name='%s']/"XML_TAG_ROXIE_FARM"[@name='%s']/"XML_TAG_ROXIE_SERVER, pszRoxieCluster, sFarmName.str());
-  ForEach (*iter)
-  {
-    IPropertyTree* pFolder = &iter->query();
+        StringBuffer dataDir = pFarm->queryProp(XML_ATTR_DATADIRECTORY);
+        if (dataDir.length()==0)
+            dataDir.append(RUNTIME_DIR"/roxiedata");
 
-    const char* pszName = pFolder->queryProp(XML_ATTR_NAME);
+        if (!pFarm->queryPropTree(XML_TAG_ROXIE_SERVER"[1]")) //no servers in farm
+        {
+            //if (nComputers > 0)
+            //g_pDocument->makePlatformSpecificAbsolutePath(computers[0]->queryProp(XML_ATTR_NAME), dataDir);
+            Owned<IPropertyTreeIterator> iter = pSrcTree->getElements(XML_TAG_COMPONENT);
 
-    // Check if we can add this computer
-    if (checkComputerUse(pszName, pFarm)) 
-    {
-      StringBuffer sServerName( sFarmName), sbUniqueName;
-      sServerName.append("_s");
-      createUniqueName(sServerName.str(), xpath.str(), sbUniqueName);
+            ForEach (*iter)
+            {
+                IPropertyTree* pFolder = &iter->query();
+                makePlatformSpecificAbsolutePath(pFolder->queryProp(XML_ATTR_NAME), dataDir);
+                break;
+            }
 
-      // Add process node
-      IPropertyTree* pServer = createPTree(XML_TAG_ROXIE_SERVER);
-      pServer->setProp(XML_ATTR_NAME, sbUniqueName.str());
-      pServer->addProp(XML_ATTR_COMPUTER, pszName);
-      addNode(pServer, pFarm);
-
-      IPropertyTree* pLegacyServer = addLegacyServer(sbUniqueName, pServer, pFarm, pszRoxieCluster);
+            pFarm->setProp(XML_ATTR_DATADIRECTORY, dataDir.str());
+        }
     }
     else
     {
-      sNotAdded.append('\n');
-      sNotAdded.append(pszName);
-      sNotAdded.append(" ( ");
-      sNotAdded.append( pFolder->queryProp(XML_ATTR_NETADDRESS) );
-      sNotAdded.append(" )");
+        xpath.clear().appendf("RoxieCluster[@name='%s']/"XML_TAG_ROXIE_FARM, pszRoxieCluster);
+        createUniqueName("farm", xpath.str(), sFarmName);
+        bNewFarm = true;
+
+        StringBuffer sDataDir;
+        sDataDir.append(RUNTIME_DIR"/roxiedata");
+
+        //get datadir from existing farm if any
+        xpath.clear().appendf("Software/RoxieCluster[@name='%s']/"XML_TAG_ROXIE_FARM"[1]", pszRoxieCluster);
+        IPropertyTree* pFarm1 =  m_pRoot->queryPropTree(xpath.str());
+        if (pFarm1)
+            sDataDir.clear().append(pFarm1->queryProp(XML_ATTR_DATADIRECTORY));
+
+        //if (nComputers > 0)
+        //g_pDocument->makePlatformSpecificAbsolutePath(computers[0]->queryProp(XML_ATTR_NAME), sDataDir);
+        Owned<IPropertyTreeIterator> iter = pSrcTree->getElements(XML_TAG_COMPONENT);
+
+        ForEach (*iter)
+        {
+            IPropertyTree* pFolder = &iter->query();
+            makePlatformSpecificAbsolutePath(pFolder->queryProp(XML_ATTR_NAME), sDataDir);
+            break;
+        }
+
+        xpath.clear().appendf("RoxieCluster[@name='%s']/"XML_TAG_ROXIE_FARM, pszRoxieCluster);
+        pFarm = pParent->addPropTree(xpath.str(), createPTree());
+        pFarm->addProp    (XML_ATTR_NAME,       sFarmName.str());
+        pFarm->addPropInt("@port",          9876);
+        pFarm->addProp    (XML_ATTR_DATADIRECTORY,  sDataDir.str());
+        pFarm->addPropInt("@listenQueue", 200);
+        pFarm->addPropInt("@numThreads",    30);
+        pFarm->addPropInt("@requestArrayThreads", 5);
+        pFarm->addProp("@aclName", "");
     }
-  }
 
-  xpath.clear().appendf("Software/RoxieCluster[@name='%s']", pszRoxieCluster);
-  IPropertyTree* pRoxieCluster = m_pRoot->queryPropTree(xpath.str());   
-  renameInstances(pRoxieCluster);
+    Owned<IPropertyTreeIterator> iter = pSrcTree->getElements(XML_TAG_COMPONENT);
+    StringBuffer sNotAdded;
+    xpath.clear().appendf("RoxieCluster[@name='%s']/"XML_TAG_ROXIE_FARM"[@name='%s']/"XML_TAG_ROXIE_SERVER, pszRoxieCluster, sFarmName.str());
+    ForEach (*iter)
+    {
+        IPropertyTree* pFolder = &iter->query();
 
-  if (sNotAdded.length())
-  {
-    StringBuffer sMsg("The following servers were already allocated to the farm and could not be added:\n");
-    sMsg.append(sNotAdded.str());
-  }
+        const char* pszName = pFolder->queryProp(XML_ATTR_NAME);
 
-  return true;
+        // Check if we can add this computer
+        if (checkComputerUse(pszName, pFarm)) 
+        {
+            StringBuffer sServerName( sFarmName), sbUniqueName;
+            sServerName.append("_s");
+            createUniqueName(sServerName.str(), xpath.str(), sbUniqueName);
+
+            // Add process node
+            IPropertyTree* pServer = createPTree(XML_TAG_ROXIE_SERVER);
+            pServer->setProp(XML_ATTR_NAME, sbUniqueName.str());
+            pServer->addProp(XML_ATTR_COMPUTER, pszName);
+            addNode(pServer, pFarm);
+
+            IPropertyTree* pLegacyServer = addLegacyServer(sbUniqueName, pServer, pFarm, pszRoxieCluster);
+        }
+        else
+        {
+            sNotAdded.append('\n');
+            sNotAdded.append(pszName);
+            sNotAdded.append(" ( ");
+            sNotAdded.append( pFolder->queryProp(XML_ATTR_NETADDRESS) );
+            sNotAdded.append(" )");
+        }
+    }
+
+    xpath.clear().appendf("Software/RoxieCluster[@name='%s']", pszRoxieCluster);
+    IPropertyTree* pRoxieCluster = m_pRoot->queryPropTree(xpath.str());   
+    renameInstances(pRoxieCluster);
+
+    if (sNotAdded.length())
+    {
+        StringBuffer sMsg("The following servers were already allocated to the farm and could not be added:\n");
+        sMsg.append(sNotAdded.str());
+    }
+
+    return true;
 }
 
 bool CConfigEnvHelper::handleReplaceRoxieServer(const char* xmlArg)
 {
-  Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<RoxieData/>");
-  const char* pszRoxieCluster = pSrcTree->queryProp("@roxieName");
-  IPropertyTree* pParent = m_pRoot->queryPropTree("Software");
-  StringBuffer xpath;
+    Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<RoxieData/>");
+    const char* pszRoxieCluster = pSrcTree->queryProp("@roxieName");
+    IPropertyTree* pParent = m_pRoot->queryPropTree("Software");
+    StringBuffer xpath;
 
-  if (pszRoxieCluster && *pszRoxieCluster)
-  {
-    xpath.clear().appendf(XML_TAG_ROXIECLUSTER"[@name='%s']/"XML_TAG_ROXIE_FARM, pszRoxieCluster);
-    IPropertyTree* pFarm = pParent->queryPropTree(xpath.str());
-    if (!pFarm)
-      throw MakeStringException(-1, "Could not find a RoxieCluster with name '%s'", pszRoxieCluster);
-
-    Owned<IPropertyTreeIterator> iter = pSrcTree->getElements("Nodes/Node");
-      
-    ForEach (*iter)
+    if (pszRoxieCluster && *pszRoxieCluster)
     {
-      IPropertyTree* pNode = &iter->query();
-      const char* pszFarm = pNode->queryProp("@farm");
-      const char* pszName = pNode->queryProp(XML_ATTR_NAME);
-      const char* pszNewComputer = pNode->queryProp("@newComputer");
+        xpath.clear().appendf(XML_TAG_ROXIECLUSTER"[@name='%s']/"XML_TAG_ROXIE_FARM, pszRoxieCluster);
+        IPropertyTree* pFarm = pParent->queryPropTree(xpath.str());
+        if (!pFarm)
+            throw MakeStringException(-1, "Could not find a RoxieCluster with name '%s'", pszRoxieCluster);
 
-      xpath.clear().appendf(XML_TAG_ROXIE_SERVER"[@computer='%s']", pszNewComputer);
+        Owned<IPropertyTreeIterator> iter = pSrcTree->getElements("Nodes/Node");
 
-      if (pFarm->queryPropTree(xpath.str()))
-        return false;
-
-      xpath.clear().appendf(XML_TAG_ROXIE_SERVER"[@name='%s']", pszName);
-      
-      IPropertyTree* pServer = pFarm->queryPropTree(xpath.str());
-      if (pServer && pszNewComputer && *pszNewComputer)
-      {
-        pServer->setProp(XML_ATTR_COMPUTER, pszNewComputer);
-        xpath.clear().appendf(XML_TAG_ROXIECLUSTER"[@name='%s']/"XML_TAG_ROXIE_SERVER"[@name='%s']", pszRoxieCluster, pszName);
-        IPropertyTree* pOldVerRoxieServer = pParent->queryPropTree(xpath.str());
-        if (pOldVerRoxieServer)
+        ForEach (*iter)
         {
-          pOldVerRoxieServer->setProp(XML_ATTR_COMPUTER, pszNewComputer);
-          xpath.clear().appendf("Hardware/"XML_TAG_COMPUTER"["XML_ATTR_NAME"='%s']", pszNewComputer);
-          IPropertyTree* pComputer = m_pRoot->queryPropTree(xpath.str());
-          if (pComputer)
-            pOldVerRoxieServer->setProp(XML_ATTR_NETADDRESS, pComputer->queryProp(XML_ATTR_NETADDRESS));
-        }
-      }
-    }
-  }
+            IPropertyTree* pNode = &iter->query();
+            const char* pszFarm = pNode->queryProp("@farm");
+            const char* pszName = pNode->queryProp(XML_ATTR_NAME);
+            const char* pszNewComputer = pNode->queryProp("@newComputer");
 
-  return true;
+            xpath.clear().appendf(XML_TAG_ROXIE_SERVER"[@computer='%s']", pszNewComputer);
+
+            if (pFarm->queryPropTree(xpath.str()))
+                return false;
+
+            xpath.clear().appendf(XML_TAG_ROXIE_SERVER"[@name='%s']", pszName);
+
+            IPropertyTree* pServer = pFarm->queryPropTree(xpath.str());
+            if (pServer && pszNewComputer && *pszNewComputer)
+            {
+                pServer->setProp(XML_ATTR_COMPUTER, pszNewComputer);
+                xpath.clear().appendf(XML_TAG_ROXIECLUSTER"[@name='%s']/"XML_TAG_ROXIE_SERVER"[@name='%s']", pszRoxieCluster, pszName);
+                IPropertyTree* pOldVerRoxieServer = pParent->queryPropTree(xpath.str());
+                if (pOldVerRoxieServer)
+                {
+                    pOldVerRoxieServer->setProp(XML_ATTR_COMPUTER, pszNewComputer);
+                    xpath.clear().appendf("Hardware/"XML_TAG_COMPUTER"["XML_ATTR_NAME"='%s']", pszNewComputer);
+                    IPropertyTree* pComputer = m_pRoot->queryPropTree(xpath.str());
+                    if (pComputer)
+                        pOldVerRoxieServer->setProp(XML_ATTR_NETADDRESS, pComputer->queryProp(XML_ATTR_NETADDRESS));
+                }
+            }
+        }
+    }
+
+    return true;
 }
 
 //---------------------------------------------------------------------------
@@ -364,89 +364,89 @@ bool CConfigEnvHelper::handleReplaceRoxieServer(const char* xmlArg)
 //---------------------------------------------------------------------------
 bool CConfigEnvHelper::checkComputerUse(/*IPropertyTree* pComputerNode*/ const char* szComputer, IPropertyTree* pParentNode) const
 {
-  StringBuffer xpath;
-  xpath.append(XML_TAG_ROXIE_SERVER "[@computer='").append( szComputer ).append("']");
+    StringBuffer xpath;
+    xpath.append(XML_TAG_ROXIE_SERVER "[@computer='").append( szComputer ).append("']");
 
-  Owned<IPropertyTreeIterator> iter = pParentNode->getElements(xpath.str());
-  return !(iter->first() && iter->isValid());
+    Owned<IPropertyTreeIterator> iter = pParentNode->getElements(xpath.str());
+    return !(iter->first() && iter->isValid());
 }
 
 
 bool CConfigEnvHelper::makePlatformSpecificAbsolutePath(const char* computer, StringBuffer& path)
 {
-  bool rc = false;
-  if (computer && *computer && path.length())
-  {
-    IPropertyTree* pComputer = lookupComputerByName(computer);
-    const char* computerType = pComputer ? pComputer->queryProp(XML_ATTR_COMPUTERTYPE) : NULL;
-    if (computerType && *computerType)
+    bool rc = false;
+    if (computer && *computer && path.length())
     {
-      StringBuffer xpath;
-      xpath.appendf("Hardware/ComputerType[@name='%s']", computerType);
-
-      Owned<IPropertyTreeIterator> iter = m_pRoot->getElements(xpath.str());
-      if (iter->first() && iter->isValid())
-      {
-        const char* os = iter->query().queryProp("@opSys");
-        if (os && *os)
+        IPropertyTree* pComputer = lookupComputerByName(computer);
+        const char* computerType = pComputer ? pComputer->queryProp(XML_ATTR_COMPUTERTYPE) : NULL;
+        if (computerType && *computerType)
         {
-          const bool bLinux = 0 != stricmp(os, "W2K");
-          if (bLinux)
-          {
-            path.replace('\\', '/');
-            path.replace(':', '$');
-            if (*path.str() != '/')
-              path.insert(0, '/');
-          }
-          else
-          {
-            path.replace('/', '\\');
-            path.replace('$', ':');
-            if (*path.str() == '\\')
-              path.remove(0, 1);
-          }
-          rc = true;
+            StringBuffer xpath;
+            xpath.appendf("Hardware/ComputerType[@name='%s']", computerType);
+
+            Owned<IPropertyTreeIterator> iter = m_pRoot->getElements(xpath.str());
+            if (iter->first() && iter->isValid())
+            {
+                const char* os = iter->query().queryProp("@opSys");
+                if (os && *os)
+                {
+                    const bool bLinux = 0 != stricmp(os, "W2K");
+                    if (bLinux)
+                    {
+                        path.replace('\\', '/');
+                        path.replace(':', '$');
+                        if (*path.str() != '/')
+                            path.insert(0, '/');
+                    }
+                    else
+                    {
+                        path.replace('/', '\\');
+                        path.replace('$', ':');
+                        if (*path.str() == '\\')
+                            path.remove(0, 1);
+                    }
+                    rc = true;
+                }
+            }
         }
-      }
     }
-  }
-  return rc;
+    return rc;
 }
 
 IPropertyTree* CConfigEnvHelper::addLegacyServer(const char* name, IPropertyTree* pServer, 
                                                  IPropertyTree* pFarm, const char* roxieClusterName)
 {
-  IPropertyTree* pLegacyServer;
-  StringBuffer xpath;
-  xpath.clear().appendf("Software/RoxieCluster[@name='%s']", roxieClusterName);
-  IPropertyTree* pParentNode = m_pRoot->queryPropTree(xpath.str());
-  if (pParentNode)
-  {
-    const char* szComputer = pServer->queryProp(XML_ATTR_COMPUTER);
-    xpath.clear().appendf("Hardware/Computer/[@name='%s']", szComputer);
-    IPropertyTree* pComputer= m_pRoot->queryPropTree(xpath.str());
-    const char* netAddress = pComputer->queryProp(XML_ATTR_NETADDRESS);
-    //derive the new server from pFarm since it has most of the attributes
-    pLegacyServer = addNode(XML_TAG_ROXIE_SERVER, pParentNode);
-    pLegacyServer->setProp( XML_ATTR_NAME, name);
-    pLegacyServer->setProp( XML_ATTR_COMPUTER, szComputer );
-    pLegacyServer->setProp( XML_ATTR_NETADDRESS, netAddress);
-    Owned<IAttributeIterator> iAttr = pFarm->getAttributes();
-    ForEach(*iAttr)
+    IPropertyTree* pLegacyServer;
+    StringBuffer xpath;
+    xpath.clear().appendf("Software/RoxieCluster[@name='%s']", roxieClusterName);
+    IPropertyTree* pParentNode = m_pRoot->queryPropTree(xpath.str());
+    if (pParentNode)
     {
-      const char* attrName = iAttr->queryName();
-      if (0 != strcmp(attrName, XML_ATTR_COMPUTER)  && //skip
-        0 != strcmp(attrName, XML_ATTR_NETADDRESS) &&
-        0 != strcmp(attrName, XML_ATTR_NAME))
-      {
-        pLegacyServer->addProp(attrName, iAttr->queryValue());
-      }
+        const char* szComputer = pServer->queryProp(XML_ATTR_COMPUTER);
+        xpath.clear().appendf("Hardware/Computer/[@name='%s']", szComputer);
+        IPropertyTree* pComputer= m_pRoot->queryPropTree(xpath.str());
+        const char* netAddress = pComputer->queryProp(XML_ATTR_NETADDRESS);
+        //derive the new server from pFarm since it has most of the attributes
+        pLegacyServer = addNode(XML_TAG_ROXIE_SERVER, pParentNode);
+        pLegacyServer->setProp( XML_ATTR_NAME, name);
+        pLegacyServer->setProp( XML_ATTR_COMPUTER, szComputer );
+        pLegacyServer->setProp( XML_ATTR_NETADDRESS, netAddress);
+        Owned<IAttributeIterator> iAttr = pFarm->getAttributes();
+        ForEach(*iAttr)
+        {
+            const char* attrName = iAttr->queryName();
+            if (0 != strcmp(attrName, XML_ATTR_COMPUTER)  && //skip
+                0 != strcmp(attrName, XML_ATTR_NETADDRESS) &&
+                0 != strcmp(attrName, XML_ATTR_NAME))
+            {
+                pLegacyServer->addProp(attrName, iAttr->queryValue());
+            }
+        }
     }
-  }
-  else
-    pLegacyServer = NULL;
+    else
+        pLegacyServer = NULL;
 
-  return pLegacyServer;
+    return pLegacyServer;
 }
 
 
@@ -455,7 +455,7 @@ IPropertyTree* CConfigEnvHelper::addLegacyServer(const char* name, IPropertyTree
 //---------------------------------------------------------------------------
 void CConfigEnvHelper::setComputerState(IPropertyTree* pNode, COMPUTER_STATE state)
 {
-  setAttribute(pNode, XML_ATTR_STATE, g_szComputerState[state]);
+    setAttribute(pNode, XML_ATTR_STATE, g_szComputerState[state]);
 }
 
 //---------------------------------------------------------------------------
@@ -463,74 +463,74 @@ void CConfigEnvHelper::setComputerState(IPropertyTree* pNode, COMPUTER_STATE sta
 //---------------------------------------------------------------------------
 void CConfigEnvHelper::setAttribute(IPropertyTree* pNode, const char* szName, const char* szValue)
 {
-  // Check attribute already has specified value
-  const char* szValueOld = pNode->queryProp(szName);
-  if (!szValueOld || strcmp(szValueOld, szValue))
-  {
-    //UpdateComputerMap(pNode, false);
-    // ptree does not like missing intermediates...
-    const char *finger = szName;
-    StringBuffer subpath;
-    while (strchr(finger, '/'))
+    // Check attribute already has specified value
+    const char* szValueOld = pNode->queryProp(szName);
+    if (!szValueOld || strcmp(szValueOld, szValue))
     {
-      while (*finger!='/')
-        subpath.append(*finger++);
-      if (!pNode->hasProp(subpath.str()))
-        pNode->addProp(subpath.str(), "");
-      subpath.append(*finger++);
-    }
-
-    if (!strcmp(szName, XML_ATTR_BUILD) && !strcmp(pNode->queryName(), XML_TAG_ESPSERVICE))
-    {
-      //remove previous Properties, if any, that this component inherited from its
-      //previous build
-      IPropertyTree* pProperties = pNode->queryPropTree("Properties");
-      IPropertyTree* pNewProperties;
-
-      //if the new build has any properties then let the node inherit them
-      const char* buildSet = pNode->queryProp(XML_ATTR_BUILDSET);
-      if (buildSet)
-      {
-        StringBuffer sPath;
-        sPath.append("Programs/Build[@name='").append(szValue).append("']/BuildSet[@name='")
-          .append(buildSet).append("']/Properties");
-
-        pNewProperties = m_pRoot->queryPropTree(sPath.str());
-      }
-      else
-        pNewProperties = NULL;
-
-      //if we just changed build for an ESP service then enumerate all bindings for all
-      //ESP server processes and if any binding uses this service then replace its 
-      //Authenticate and AuthenticateFeature nodes with those from the properties of 
-      //this service from the new build.  However, we only remove the nodes that are 
-      //not in the new build preserving the others (so their attributes are preserved - 
-      //in case they have been changed by the user).  We also add new nodes that did 
-      //not exist before.  In essence, a merge is needed.
-      //
-      if (pProperties || pNewProperties)
-      {
-        StringBuffer xpath;
-        xpath.appendf("Software/EspProcess/EspBinding[@service='%s']", pNode->queryProp(XML_ATTR_NAME));
-
-        Owned<IPropertyTreeIterator> iBinding = m_pRoot->getElements(xpath.str());
-        ForEach(*iBinding)
+        //UpdateComputerMap(pNode, false);
+        // ptree does not like missing intermediates...
+        const char *finger = szName;
+        StringBuffer subpath;
+        while (strchr(finger, '/'))
         {
-          IPropertyTree* pBinding = &iBinding->query();
-
-          //remove existing Authenticate and AuthenticateFeature nodes that are not in the new buildset's properties
-          //
-          mergeServiceAuthenticationWithBinding(pBinding, pProperties, pNewProperties, "Authenticate");
-          mergeServiceAuthenticationWithBinding(pBinding, pProperties, pNewProperties, "AuthenticateFeature");
-          mergeServiceAuthenticationWithBinding(pBinding, pProperties, pNewProperties, "AuthenticateSetting");
+            while (*finger!='/')
+                subpath.append(*finger++);
+            if (!pNode->hasProp(subpath.str()))
+                pNode->addProp(subpath.str(), "");
+            subpath.append(*finger++);
         }
-        pNode->removeTree(pProperties);
-      }
-      if (pNewProperties)
-        pNode->addPropTree("Properties", createPTreeFromIPT(pNewProperties));
+
+        if (!strcmp(szName, XML_ATTR_BUILD) && !strcmp(pNode->queryName(), XML_TAG_ESPSERVICE))
+        {
+            //remove previous Properties, if any, that this component inherited from its
+            //previous build
+            IPropertyTree* pProperties = pNode->queryPropTree("Properties");
+            IPropertyTree* pNewProperties;
+
+            //if the new build has any properties then let the node inherit them
+            const char* buildSet = pNode->queryProp(XML_ATTR_BUILDSET);
+            if (buildSet)
+            {
+                StringBuffer sPath;
+                sPath.append("Programs/Build[@name='").append(szValue).append("']/BuildSet[@name='")
+                    .append(buildSet).append("']/Properties");
+
+                pNewProperties = m_pRoot->queryPropTree(sPath.str());
+            }
+            else
+                pNewProperties = NULL;
+
+            //if we just changed build for an ESP service then enumerate all bindings for all
+            //ESP server processes and if any binding uses this service then replace its 
+            //Authenticate and AuthenticateFeature nodes with those from the properties of 
+            //this service from the new build.  However, we only remove the nodes that are 
+            //not in the new build preserving the others (so their attributes are preserved - 
+            //in case they have been changed by the user).  We also add new nodes that did 
+            //not exist before.  In essence, a merge is needed.
+            //
+            if (pProperties || pNewProperties)
+            {
+                StringBuffer xpath;
+                xpath.appendf("Software/EspProcess/EspBinding[@service='%s']", pNode->queryProp(XML_ATTR_NAME));
+
+                Owned<IPropertyTreeIterator> iBinding = m_pRoot->getElements(xpath.str());
+                ForEach(*iBinding)
+                {
+                    IPropertyTree* pBinding = &iBinding->query();
+
+                    //remove existing Authenticate and AuthenticateFeature nodes that are not in the new buildset's properties
+                    //
+                    mergeServiceAuthenticationWithBinding(pBinding, pProperties, pNewProperties, "Authenticate");
+                    mergeServiceAuthenticationWithBinding(pBinding, pProperties, pNewProperties, "AuthenticateFeature");
+                    mergeServiceAuthenticationWithBinding(pBinding, pProperties, pNewProperties, "AuthenticateSetting");
+                }
+                pNode->removeTree(pProperties);
+            }
+            if (pNewProperties)
+                pNode->addPropTree("Properties", createPTreeFromIPT(pNewProperties));
+        }
+        pNode->setProp(szName, szValue);
     }
-    pNode->setProp(szName, szValue);
-  }
 }
 
 void CConfigEnvHelper::mergeServiceAuthenticationWithBinding(IPropertyTree* pBinding, 
@@ -538,65 +538,65 @@ void CConfigEnvHelper::mergeServiceAuthenticationWithBinding(IPropertyTree* pBin
                                                              IPropertyTree* pNewProperties, 
                                                              const char* NodeName)
 {
-  StringBuffer xpath;
+    StringBuffer xpath;
 
-  //remove existing Authenticate and AuthenticateFeature nodes that are not in the new buildset's properties
-  //
-  Owned<IPropertyTreeIterator> iDest = pBinding->getElements(NodeName);
-  for (iDest->first(); iDest->isValid(); )
-  {
-    IPropertyTree* pDest = &iDest->query();
-    iDest->next();
-
-    const char* path = pDest->queryProp("@path");
-    xpath.clear().appendf("%s[@path='%s']", NodeName, path);
-
-    IPropertyTree* pNewPropChild = pNewProperties->queryPropTree(xpath.str());
-    if (pNewPropChild)
+    //remove existing Authenticate and AuthenticateFeature nodes that are not in the new buildset's properties
+    //
+    Owned<IPropertyTreeIterator> iDest = pBinding->getElements(NodeName);
+    for (iDest->first(); iDest->isValid(); )
     {
-      IPropertyTree* pPropChild = pProperties->queryPropTree(xpath.str());
+        IPropertyTree* pDest = &iDest->query();
+        iDest->next();
 
-      if (pPropChild)
-      {
-        //same path so merge individual attributes, retaining any that may have been changed by user
-        //but replacing ones that are different in newer build but not changed by user
-        Owned<IAttributeIterator> iAttr = pDest->getAttributes();
-        ForEach(*iAttr)
+        const char* path = pDest->queryProp("@path");
+        xpath.clear().appendf("%s[@path='%s']", NodeName, path);
+
+        IPropertyTree* pNewPropChild = pNewProperties->queryPropTree(xpath.str());
+        if (pNewPropChild)
         {
-          const char* attrName = iAttr->queryName();
-          if (0 != strcmp(attrName, "@path"))
-          {
-            const char* attrDest = iAttr->queryValue();
-            const char* attrProp = pPropChild->queryProp(attrName);
-            const char* attrNewProp = pNewPropChild->queryProp(attrName);
-            if (attrProp && attrNewProp && !strcmp(attrDest, attrProp))
-              pDest->setProp(attrName, attrNewProp);
-          }
+            IPropertyTree* pPropChild = pProperties->queryPropTree(xpath.str());
+
+            if (pPropChild)
+            {
+                //same path so merge individual attributes, retaining any that may have been changed by user
+                //but replacing ones that are different in newer build but not changed by user
+                Owned<IAttributeIterator> iAttr = pDest->getAttributes();
+                ForEach(*iAttr)
+                {
+                    const char* attrName = iAttr->queryName();
+                    if (0 != strcmp(attrName, "@path"))
+                    {
+                        const char* attrDest = iAttr->queryValue();
+                        const char* attrProp = pPropChild->queryProp(attrName);
+                        const char* attrNewProp = pNewPropChild->queryProp(attrName);
+                        if (attrProp && attrNewProp && !strcmp(attrDest, attrProp))
+                            pDest->setProp(attrName, attrNewProp);
+                    }
+                }
+            }
         }
-      }
+        else
+            pBinding->removeTree(pDest);
     }
-    else
-      pBinding->removeTree(pDest);
-  }
 
-  //add nodes from buildset properties that are missing in binding
-  //
-  bool bAuthenticateFeature = !strcmp(NodeName, "AuthenticateFeature");
-  Owned<IPropertyTreeIterator> iSrc = pNewProperties->getElements(NodeName);
-  ForEach(*iSrc)
-  {
-    IPropertyTree* pNode = &iSrc->query();
-    const char* path = pNode->queryProp("@path");
-
-    xpath.clear().appendf("%s[@path='%s']", NodeName, path);
-
-    if (!pBinding->queryPropTree(xpath.str()))
+    //add nodes from buildset properties that are missing in binding
+    //
+    bool bAuthenticateFeature = !strcmp(NodeName, "AuthenticateFeature");
+    Owned<IPropertyTreeIterator> iSrc = pNewProperties->getElements(NodeName);
+    ForEach(*iSrc)
     {
-      pNode = pBinding->addPropTree(NodeName, createPTreeFromIPT(pNode));
-      if (bAuthenticateFeature)
-        pNode->addProp("@authenticate", "Yes");
+        IPropertyTree* pNode = &iSrc->query();
+        const char* path = pNode->queryProp("@path");
+
+        xpath.clear().appendf("%s[@path='%s']", NodeName, path);
+
+        if (!pBinding->queryPropTree(xpath.str()))
+        {
+            pNode = pBinding->addPropTree(NodeName, createPTreeFromIPT(pNode));
+            if (bAuthenticateFeature)
+                pNode->addProp("@authenticate", "Yes");
+        }
     }
-  }
 }
 
 //---------------------------------------------------------------------------
@@ -604,32 +604,32 @@ void CConfigEnvHelper::mergeServiceAuthenticationWithBinding(IPropertyTree* pBin
 //---------------------------------------------------------------------------
 IPropertyTree* CConfigEnvHelper::lookupComputerByName(const char* szName) const
 {
-  if (!szName || !*szName) return NULL;
+    if (!szName || !*szName) return NULL;
 
-  Owned<IPropertyTreeIterator> iter = m_pRoot->getElements(XML_TAG_HARDWARE"/"XML_TAG_COMPUTER);
-  for (iter->first(); iter->isValid(); iter->next())
-  {
-    const char* szValue = iter->query().queryProp(XML_ATTR_NAME);
-    if (szValue && strcmp(szValue, szName) == 0)
-      return &iter->query();
-  }
-  return NULL;
+    Owned<IPropertyTreeIterator> iter = m_pRoot->getElements(XML_TAG_HARDWARE"/"XML_TAG_COMPUTER);
+    for (iter->first(); iter->isValid(); iter->next())
+    {
+        const char* szValue = iter->query().queryProp(XML_ATTR_NAME);
+        if (szValue && strcmp(szValue, szName) == 0)
+            return &iter->query();
+    }
+    return NULL;
 }
 
 
 void CConfigEnvHelper::createUniqueName(const char* szPrefix, const char* parent, StringBuffer& sbName)
 {
-  sbName.clear().append(szPrefix).append("1");
+    sbName.clear().append(szPrefix).append("1");
 
-  if (getSoftwareNode(parent, sbName.str()))
-  {
-    int iIdx = 2;
-    do 
+    if (getSoftwareNode(parent, sbName.str()))
     {
-      sbName.clear().append(szPrefix).append(iIdx++);
+        int iIdx = 2;
+        do 
+        {
+            sbName.clear().append(szPrefix).append(iIdx++);
+        }
+        while (getSoftwareNode(parent, sbName.str()));
     }
-    while (getSoftwareNode(parent, sbName.str()));
-  }
 }
 
 
@@ -638,12 +638,12 @@ void CConfigEnvHelper::createUniqueName(const char* szPrefix, const char* parent
 //---------------------------------------------------------------------------
 IPropertyTree* CConfigEnvHelper::addNode(const char* szTag, IPropertyTree* pParentNode, IPropertyTree* pInsertAfterNode)
 {
-  IPropertyTree* pNode = createPTree(szTag);
-  if (pNode)
-  {
-    addNode(pNode, pParentNode, pInsertAfterNode);
-  }
-  return pNode;
+    IPropertyTree* pNode = createPTree(szTag);
+    if (pNode)
+    {
+        addNode(pNode, pParentNode, pInsertAfterNode);
+    }
+    return pNode;
 }
 
 //---------------------------------------------------------------------------
@@ -651,23 +651,23 @@ IPropertyTree* CConfigEnvHelper::addNode(const char* szTag, IPropertyTree* pPare
 //---------------------------------------------------------------------------
 IPropertyTree* CConfigEnvHelper::addNode(IPropertyTree*& pNode, IPropertyTree* pParentNode, IPropertyTree* pInsertAfterNode)
 {
-  StringBuffer sTag(pNode->queryName()); // need to pass in a copy of the name
+    StringBuffer sTag(pNode->queryName()); // need to pass in a copy of the name
 
-  // Check is node is to be added at specific location relative to nodes with same name
-  if (pInsertAfterNode)
-  {
-    int idx = 1; // this will insert into first position
-    if (strcmp(pInsertAfterNode->queryName(), pNode->queryName()) == 0)
+    // Check is node is to be added at specific location relative to nodes with same name
+    if (pInsertAfterNode)
     {
-      idx = pParentNode->queryChildIndex(pInsertAfterNode) + 2;
+        int idx = 1; // this will insert into first position
+        if (strcmp(pInsertAfterNode->queryName(), pNode->queryName()) == 0)
+        {
+            idx = pParentNode->queryChildIndex(pInsertAfterNode) + 2;
+        }
+        // Only append qualifier is not inserting at end position
+        if (pParentNode->queryPropTree(StringBuffer(sTag).appendf("[%d]", idx).str()))
+            sTag.appendf("[%d]", idx);
     }
-    // Only append qualifier is not inserting at end position
-    if (pParentNode->queryPropTree(StringBuffer(sTag).appendf("[%d]", idx).str()))
-      sTag.appendf("[%d]", idx);
-  }
 
-  pNode = pParentNode->addPropTree(sTag.str(), pNode);
-  return pNode;
+    pNode = pParentNode->addPropTree(sTag.str(), pNode);
+    return pNode;
 }
 
 //---------------------------------------------------------------------------
@@ -675,87 +675,87 @@ IPropertyTree* CConfigEnvHelper::addNode(IPropertyTree*& pNode, IPropertyTree* p
 //---------------------------------------------------------------------------
 void CConfigEnvHelper::renameInstances(IPropertyTree* pRoxieCluster)
 {
-  // Iterate through farms
+    // Iterate through farms
 
-  int nFarm = 0;
-  StringBuffer xpath;
-  Owned<IPropertyTreeIterator> iFarm = pRoxieCluster->getElements(XML_TAG_ROXIE_FARM);
-  ForEach(*iFarm)
-  {
-    IPropertyTree* pFarm = &iFarm->query();
-    int nServer = 0;
+    int nFarm = 0;
+    StringBuffer xpath;
+    Owned<IPropertyTreeIterator> iFarm = pRoxieCluster->getElements(XML_TAG_ROXIE_FARM);
+    ForEach(*iFarm)
+    {
+        IPropertyTree* pFarm = &iFarm->query();
+        int nServer = 0;
 
-    StringBuffer sFarmName("farm");
-    sFarmName.append(++nFarm);
+        StringBuffer sFarmName("farm");
+        sFarmName.append(++nFarm);
 
-    setAttribute(pFarm, XML_ATTR_NAME, sFarmName.str());
-    Owned<IPropertyTreeIterator> iServer = pFarm->getElements(XML_TAG_ROXIE_SERVER);
+        setAttribute(pFarm, XML_ATTR_NAME, sFarmName.str());
+        Owned<IPropertyTreeIterator> iServer = pFarm->getElements(XML_TAG_ROXIE_SERVER);
+        ForEach(*iServer)
+        {
+            IPropertyTree* pServer = &iServer->query();
+            StringBuffer sServerName( sFarmName );
+            sServerName.append("_s");
+            sServerName.append(++nServer);
+
+            const char* prevName = pServer->queryProp(XML_ATTR_NAME);
+            if (prevName && *prevName)
+            {
+                IPropertyTree* pLegacyServer = findLegacyServer(pRoxieCluster, prevName);
+                if (pLegacyServer)
+                    setAttribute(pLegacyServer, "@_name", sServerName.str());
+            }
+            setAttribute(pServer, XML_ATTR_NAME, sServerName.str());
+        }
+    }
+
+    Owned<IPropertyTreeIterator> iServer =  pRoxieCluster->getElements(XML_TAG_ROXIE_SERVER);
     ForEach(*iServer)
     {
-      IPropertyTree* pServer = &iServer->query();
-      StringBuffer sServerName( sFarmName );
-      sServerName.append("_s");
-      sServerName.append(++nServer);
-
-      const char* prevName = pServer->queryProp(XML_ATTR_NAME);
-      if (prevName && *prevName)
-      {
-        IPropertyTree* pLegacyServer = findLegacyServer(pRoxieCluster, prevName);
-        if (pLegacyServer)
-          setAttribute(pLegacyServer, "@_name", sServerName.str());
-      }
-      setAttribute(pServer, XML_ATTR_NAME, sServerName.str());
+        IPropertyTree* pServer = &iServer->query();
+        const char* newName = pServer->queryProp("@_name");
+        if (newName)
+        {
+            pServer->setProp(XML_ATTR_NAME, newName);
+            pServer->removeProp("@_name");
+        }
     }
-  }
-
-  Owned<IPropertyTreeIterator> iServer =  pRoxieCluster->getElements(XML_TAG_ROXIE_SERVER);
-  ForEach(*iServer)
-  {
-    IPropertyTree* pServer = &iServer->query();
-    const char* newName = pServer->queryProp("@_name");
-    if (newName)
-    {
-      pServer->setProp(XML_ATTR_NAME, newName);
-      pServer->removeProp("@_name");
-    }
-  }
 }
 
 
 IPropertyTree* CConfigEnvHelper::findLegacyServer(IPropertyTree* pRoxieCluster, const char* pszServer)
 {
-  StringBuffer xpath;
-  xpath.appendf(XML_TAG_ROXIE_SERVER"[@name='%s']", pszServer);
-  return pRoxieCluster->queryPropTree( xpath.str() );
+    StringBuffer xpath;
+    xpath.appendf(XML_TAG_ROXIE_SERVER"[@name='%s']", pszServer);
+    return pRoxieCluster->queryPropTree( xpath.str() );
 }
 
 bool CConfigEnvHelper::deleteRoxieServers(const char* xmlArg)
 {
-  Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<RoxieData/>");
-  const char* pszRoxieCluster = pSrcTree->queryProp("@roxieName");
-  unsigned int nComputers = 0;//computers.size();
-  StringBuffer xpath;
-  xpath.clear().appendf("Software/RoxieCluster[@name='%s']", pszRoxieCluster);
-  IPropertyTree* pRoxieCluster = m_pRoot->queryPropTree(xpath.str());
-  StringBuffer sFarmName;
+    Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<RoxieData/>");
+    const char* pszRoxieCluster = pSrcTree->queryProp("@roxieName");
+    unsigned int nComputers = 0;//computers.size();
+    StringBuffer xpath;
+    xpath.clear().appendf("Software/RoxieCluster[@name='%s']", pszRoxieCluster);
+    IPropertyTree* pRoxieCluster = m_pRoot->queryPropTree(xpath.str());
+    StringBuffer sFarmName;
 
-  Owned<IPropertyTreeIterator> iterFarm = pSrcTree->getElements(XML_TAG_ROXIE_FARM);
-  ForEach (*iterFarm)
-  {
-    IPropertyTree* pFarm = &iterFarm->query();
-    const char* pszFarm = pFarm->queryProp(XML_ATTR_NAME);
-    deleteFarm(pRoxieCluster, pszFarm);
-  }
+    Owned<IPropertyTreeIterator> iterFarm = pSrcTree->getElements(XML_TAG_ROXIE_FARM);
+    ForEach (*iterFarm)
+    {
+        IPropertyTree* pFarm = &iterFarm->query();
+        const char* pszFarm = pFarm->queryProp(XML_ATTR_NAME);
+        deleteFarm(pRoxieCluster, pszFarm);
+    }
 
-  Owned<IPropertyTreeIterator> iterServer = pSrcTree->getElements(XML_TAG_ROXIE_SERVER);
-  ForEach (*iterServer)
-  {
-    IPropertyTree* pServer = &iterServer->query();
+    Owned<IPropertyTreeIterator> iterServer = pSrcTree->getElements(XML_TAG_ROXIE_SERVER);
+    ForEach (*iterServer)
+    {
+        IPropertyTree* pServer = &iterServer->query();
 
-    const char* pszName = pServer->queryProp(XML_ATTR_NAME);
-    const char* pszFarm = pServer->queryProp("@parent");
-    deleteServer(pRoxieCluster, pszFarm, pszName);
-  }
+        const char* pszName = pServer->queryProp(XML_ATTR_NAME);
+        const char* pszFarm = pServer->queryProp("@parent");
+        deleteServer(pRoxieCluster, pszFarm, pszName);
+    }
 
     Owned<IPropertyTreeIterator> iterSlaves = pSrcTree->getElements(XML_TAG_ROXIE_ONLY_SLAVE);
     ForEach (*iterSlaves)
@@ -771,96 +771,96 @@ bool CConfigEnvHelper::deleteRoxieServers(const char* xmlArg)
         break;
     }
 
-  renameInstances(pRoxieCluster);
+    renameInstances(pRoxieCluster);
 
-  return true;
+    return true;
 }
 
 
 void CConfigEnvHelper::deleteFarm(IPropertyTree* pRoxieCluster, const char* pszFarm)
 {
-  StringBuffer xpath;
-  xpath.clear().appendf(XML_TAG_ROXIE_FARM"[@name='%s']", pszFarm);
-  IPropertyTree* pFarm = pRoxieCluster->queryPropTree(xpath.str());
-  Owned<IPropertyTreeIterator> it = pFarm->getElements(XML_TAG_ROXIE_SERVER);
+    StringBuffer xpath;
+    xpath.clear().appendf(XML_TAG_ROXIE_FARM"[@name='%s']", pszFarm);
+    IPropertyTree* pFarm = pRoxieCluster->queryPropTree(xpath.str());
+    Owned<IPropertyTreeIterator> it = pFarm->getElements(XML_TAG_ROXIE_SERVER);
 
-  ForEach(*it)
-  {
-    IPropertyTree* pServer = &it->query();
-    const char* pszServer = pServer->queryProp(XML_ATTR_NAME);
-    IPropertyTree* pLegacyServer = findLegacyServer(pRoxieCluster, pszServer);
-    if (pLegacyServer)
-      pRoxieCluster->removeTree(pLegacyServer);
-  }
+    ForEach(*it)
+    {
+        IPropertyTree* pServer = &it->query();
+        const char* pszServer = pServer->queryProp(XML_ATTR_NAME);
+        IPropertyTree* pLegacyServer = findLegacyServer(pRoxieCluster, pszServer);
+        if (pLegacyServer)
+            pRoxieCluster->removeTree(pLegacyServer);
+    }
 
-  pRoxieCluster->removeTree(pFarm);
+    pRoxieCluster->removeTree(pFarm);
 }
 
 void CConfigEnvHelper::deleteServer(IPropertyTree* pRoxieCluster, const char* pszFarm, const char* pszServer)
 {
-  StringBuffer xpath;
+    StringBuffer xpath;
 
-  IPropertyTree* pLegacyServer = findLegacyServer(pRoxieCluster, pszServer);
-  if (pLegacyServer)
-    pRoxieCluster->removeTree(pLegacyServer);
+    IPropertyTree* pLegacyServer = findLegacyServer(pRoxieCluster, pszServer);
+    if (pLegacyServer)
+        pRoxieCluster->removeTree(pLegacyServer);
 
-  xpath.clear().appendf(XML_TAG_ROXIE_FARM"[@name='%s']", pszFarm);
-  IPropertyTree* pFarm = pRoxieCluster->queryPropTree(xpath.str());
-  if (pFarm)
-  {
-    xpath.clear().appendf(XML_TAG_ROXIE_SERVER"[@name='%s']", pszServer);
-    IPropertyTree* pServer = pFarm->queryPropTree(xpath.str());
+    xpath.clear().appendf(XML_TAG_ROXIE_FARM"[@name='%s']", pszFarm);
+    IPropertyTree* pFarm = pRoxieCluster->queryPropTree(xpath.str());
+    if (pFarm)
+    {
+        xpath.clear().appendf(XML_TAG_ROXIE_SERVER"[@name='%s']", pszServer);
+        IPropertyTree* pServer = pFarm->queryPropTree(xpath.str());
 
-    if (pServer)
-      pFarm->removeTree(pServer);
-  }
+        if (pServer)
+            pFarm->removeTree(pServer);
+    }
 }
 
 
 
 void CConfigEnvHelper::addComponent(const char* pszBuildSet, StringBuffer& sbNewName, IPropertyTree* pCompTree)
 {
-  try
-  {
-    // NOTE - we are assuming buildSet is unique in a build.
-    StringBuffer xPath, value;
-    xPath.appendf("./Programs/Build/BuildSet[@name=\"%s\"]", pszBuildSet);
-    Owned<IPropertyTreeIterator> buildSet = m_pRoot->getElements(xPath.str());
-    buildSet->first();
-    IPropertyTree* pBuildSet = &buildSet->query();
-    const char* buildSetName = pBuildSet->queryProp(XML_ATTR_NAME);
-    const char* processName = pBuildSet->queryProp(XML_ATTR_PROCESS_NAME);
-    const char* buildName = m_pRoot->queryPropTree("./Programs/Build[1]")->queryProp(XML_ATTR_NAME);
-    if (!processName) //support non-generic components as well
-      processName = buildSetName;
-
+    try
     {
-      // Use lower case version of type for name prefix
-      StringBuffer sName(buildSetName);
-      sName.toLowerCase();
-      sName.replaceString("process","");
+        // NOTE - we are assuming buildSet is unique in a build.
+        StringBuffer xPath, value;
+        xPath.appendf("./Programs/Build/BuildSet[@name=\"%s\"]", pszBuildSet);
+        Owned<IPropertyTreeIterator> buildSet = m_pRoot->getElements(xPath.str());
+        buildSet->first();
+        IPropertyTree* pBuildSet = &buildSet->query();
+        const char* buildSetName = pBuildSet->queryProp(XML_ATTR_NAME);
+        const char* processName = pBuildSet->queryProp(XML_ATTR_PROCESS_NAME);
+        const char* buildName = m_pRoot->queryPropTree("./Programs/Build[1]")->queryProp(XML_ATTR_NAME);
+        if (!processName) //support non-generic components as well
+            processName = buildSetName;
 
-      if(sbNewName.length())
-        value.append(sbNewName.str()).append(getUniqueName(m_pRoot.get(), sName, processName, "Software"));
-      else
-        value.append(getUniqueName(m_pRoot.get(), sName, processName, "Software"));
+        {
+            // Use lower case version of type for name prefix
+            StringBuffer sName(buildSetName);
+            sName.toLowerCase();
+            sName.replaceString("process","");
 
-      pCompTree->setProp(XML_ATTR_NAME,value);
-      sbNewName.clear().append(sName);
-      pCompTree->setProp(XML_ATTR_BUILD,   buildName);
-      pCompTree->setProp(XML_ATTR_BUILDSET,pszBuildSet);
+            if(sbNewName.length())
+                value.append(sbNewName.str()).append(getUniqueName(m_pRoot.get(), sName, processName, "Software"));
+            else
+                value.append(getUniqueName(m_pRoot.get(), sName, processName, "Software"));
 
-      Owned<IPropertyTree> pProperties = pBuildSet->getPropTree("Properties");
-      if (pProperties)
-        pCompTree->addPropTree("Properties", createPTreeFromIPT(pProperties));
+            pCompTree->setProp(XML_ATTR_NAME,value);
+            sbNewName.clear().append(sName);
+            pCompTree->setProp(XML_ATTR_BUILD,   buildName);
+            pCompTree->setProp(XML_ATTR_BUILDSET,pszBuildSet);
 
-      addNode(pCompTree, m_pRoot->queryPropTree("Software"));
+            Owned<IPropertyTree> pProperties = pBuildSet->getPropTree("Properties");
+            if (pProperties)
+                pCompTree->addPropTree("Properties", createPTreeFromIPT(pProperties));
+
+            addNode(pCompTree, m_pRoot->queryPropTree("Software"));
+        }
     }
-  }
-  catch (IException* e)
-  {
-    throw e;
-  }
+    catch (IException* e)
+    {
+        throw e;
+    }
 }
 
 bool CConfigEnvHelper::EnsureInRange(const char* psz, UINT low, UINT high, const char* caption)

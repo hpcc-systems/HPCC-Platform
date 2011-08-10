@@ -44,23 +44,26 @@ char * key_name="Software\\Seisint\\newagent\\0.01.00";
 
 void write_key(const char * name, LPBYTE val, UINT len)
 {
-  HKEY k;
-  if (!RegCreateKey(HKEY_LOCAL_MACHINE,key_name,&k))
-  { RegSetValueEx(k,name,NULL,REG_BINARY,val,len);
-    RegCloseKey(k);
-  }
+    HKEY k;
+    if (!RegCreateKey(HKEY_LOCAL_MACHINE,key_name,&k))
+    {
+        RegSetValueEx(k,name,NULL,REG_BINARY,val,len);
+        RegCloseKey(k);
+    }
 }
 
 BOOL read_key(const char * name,LPBYTE val, DWORD len)
-{ HKEY k;
-  DWORD typ;
-  BOOL res=FALSE;
-  typ = REG_BINARY;
-  if (!RegOpenKey(HKEY_LOCAL_MACHINE,key_name,&k))
-  { res=!RegQueryValueEx(k,name,NULL,&typ,val,&len);
-    RegCloseKey(k);
-  }
-  return res;
+{
+    HKEY k;
+    DWORD typ;
+    BOOL res=FALSE;
+    typ = REG_BINARY;
+    if (!RegOpenKey(HKEY_LOCAL_MACHINE,key_name,&k))
+    {
+        res=!RegQueryValueEx(k,name,NULL,&typ,val,&len);
+        RegCloseKey(k);
+    }
+    return res;
 }
 
 char * unscr(char * s) { 
@@ -87,14 +90,15 @@ static bool drive_maped=false;
 
 void unmap_drive()
 { 
-  if (server_user&&drive_maped)
-  { logfile("unmap\r\n");
-    ImpersonateLoggedOnUser(server_user);
-    int ec=WNetCancelConnection2(maped_drive,CONNECT_UPDATE_PROFILE,true);
-    if (NO_ERROR!=ec) logfile("WNetCancelConnection2 failed %i\r\n",ec);
-    RevertToSelf();
-    drive_maped=false;
-  }
+    if (server_user&&drive_maped)
+    {
+        logfile("unmap\r\n");
+        ImpersonateLoggedOnUser(server_user);
+        int ec=WNetCancelConnection2(maped_drive,CONNECT_UPDATE_PROFILE,true);
+        if (NO_ERROR!=ec) logfile("WNetCancelConnection2 failed %i\r\n",ec);
+        RevertToSelf();
+        drive_maped=false;
+    }
 }
 
 
@@ -168,20 +172,22 @@ void do_map_drive(int & error_code) {
 
 int newagent::account(const char * user,
                       const char * password)
-{ int res=0;
+{
+    int res=0;
 #ifdef _WIN32
-  if (user)              write_key("01",(LPBYTE)user,strlen((char*)user)+1);
-  if (password)          write_key("02",(LPBYTE)password,strlen((char*)password)+1);
-  unmap_drive();
-  CloseHandle(server_user);
-  server_user=0;
-  logon(res);
+    if (user)              write_key("01",(LPBYTE)user,strlen((char*)user)+1);
+    if (password)          write_key("02",(LPBYTE)password,strlen((char*)password)+1);
+    unmap_drive();
+    CloseHandle(server_user);
+    server_user=0;
+    logon(res);
 #endif
-  return res;
+    return res;
 }
 
 int newagent::set_map_dir(char * dir)
-{ int res=0;
+{
+    int res=0;
 #ifdef _WIN32
     if (dir) write_key("03",(LPBYTE)dir,strlen((char*)dir)+1);
     do_map_drive(res);
@@ -198,18 +204,20 @@ int newagent::set_map_dir(char * dir)
     }
     *p = '\0';
 #endif
-  logfile("set_map_dir %s\n",dir);
-  return res;
+    logfile("set_map_dir %s\n",dir);
+    return res;
 }
 
 
 int newagent::alive(int x)
-{ return  x+1; 
+{
+    return  x+1; 
 }
 
 
  
-int newagent::start_process(const char *command,int & error_code,const char * local_dir,const char * user,const char * password) {
+int newagent::start_process(const char *command,int & error_code,const char * local_dir,const char * user,const char * password)
+{
     error_code=0;
 #ifdef _WIN32
     PROCESS_INFORMATION process;
@@ -322,35 +330,36 @@ int newagent::start_process(const char *command,int & error_code,const char * lo
 int newagent::stop_process(int process)
 {
 #ifdef _WIN32
-  TerminateProcess( (HANDLE) process,-1);
+    TerminateProcess( (HANDLE) process,-1);
 #else
     kill(process, 9); // JCSMOE : both these may leak resources, no?
 #endif
-  return 0; 
+    return 0; 
 }
 
 
 HRPCserver *serverp=0;
 
 void RunAgentServer(unsigned port)
-{ logfile("agent start %u\r\n",port);
-  IHRPCtransport *transport = TryMakeServerTransport(port, "Cannot start NewAgent");
-  if (!transport) return;
-  HRPCserver server(transport);
-  serverp=&server;
-  newagent stub;
-  server.AttachStub(&stub);
-  ListenUntilDead(server,"NewAgent terminated");
-  serverp=0;
-  transport->Release();
+{
+    logfile("agent start %u\r\n",port);
+    IHRPCtransport *transport = TryMakeServerTransport(port, "Cannot start NewAgent");
+    if (!transport) return;
+    HRPCserver server(transport);
+    serverp=&server;
+    newagent stub;
+    server.AttachStub(&stub);
+    ListenUntilDead(server,"NewAgent terminated");
+    serverp=0;
+    transport->Release();
 }
 
 
 void KillAgentServer()
 {
 #ifdef _WIN32
-  unmap_drive();
+    unmap_drive();
 #endif
-  logfile("KillAgentServer called\r\n");
-  serverp->Stop();
+    logfile("KillAgentServer called\r\n");
+    serverp->Stop();
 }

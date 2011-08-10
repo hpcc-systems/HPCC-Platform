@@ -31,27 +31,27 @@ class jlib_decl AsyncBlockReader
 {
 public:
 
-  AsyncBlockReader();
-  ~AsyncBlockReader();
+    AsyncBlockReader();
+    ~AsyncBlockReader();
 
-  void init(int file, offset_t start,size32_t blocksize,void *buf1,void *buf2);
-  void *readnext(size32_t &ret);
-  void getinfo(offset_t &of,offset_t &p,offset_t &sz);
+    void init(int file, offset_t start,size32_t blocksize,void *buf1,void *buf2);
+    void *readnext(size32_t &ret);
+    void getinfo(offset_t &of,offset_t &p,offset_t &sz);
 private:
-  void waitblk();
-  void enqueue(AsyncRequest *req);
-  void finish();
-  
-  
-  AsyncRequest *cur;
-  AsyncRequest *next;
-  size32_t blksize;
-  offset_t offset;
-  offset_t pos;
-  offset_t start;
-  offset_t insize;
-  int infile;
-  int eof;
+    void waitblk();
+    void enqueue(AsyncRequest *req);
+    void finish();
+
+
+    AsyncRequest *cur;
+    AsyncRequest *next;
+    size32_t blksize;
+    offset_t offset;
+    offset_t pos;
+    offset_t start;
+    offset_t insize;
+    int infile;
+    int eof;
 };
 
 #endif  

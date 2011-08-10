@@ -36,33 +36,33 @@ class Allocator32;
 class ChunkAllocator32
 {
 public:
-  ChunkAllocator32(void);
-  ~ChunkAllocator32(void);
+    ChunkAllocator32(void);
+    ~ChunkAllocator32(void);
 
-  static char * allocatePage(void);
+    static char * allocatePage(void);
 
 public:
-  static char * lowerBound;
-  static char * upperBound;
-  static char * curAlloc;
+    static char * lowerBound;
+    static char * upperBound;
+    static char * curAlloc;
 };
 
 class Allocator32
 {
 public:
-  Allocator32(size32_t _size, ChunkAllocator32 * _allocator);
+    Allocator32(size32_t _size, ChunkAllocator32 * _allocator);
 
-  void            deallocate(void * ptr);
-  char *          allocate();
-  size32_t          getSize(void)   { return size; }
+    void            deallocate(void * ptr);
+    char *          allocate();
+    size32_t          getSize(void)   { return size; }
 
 protected:
-  bool            more(void);
+    bool            more(void);
 
 private:
-  char *          next;
-  size32_t          size;
-  ChunkAllocator32 * allocator;
+    char *          next;
+    size32_t          size;
+    ChunkAllocator32 * allocator;
 };
 
 #endif

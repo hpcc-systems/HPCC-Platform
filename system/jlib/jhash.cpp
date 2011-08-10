@@ -398,44 +398,44 @@ IMapping *HashTable::newMapping(const void *)
 
 void IntersectHash(HashTable & h1, HashTable & h2)
 {
-  HashIterator iter(h1);
-  iter.first();
-  while (iter.isValid())
-  {
-    IMapping & cur = iter.query();
-    IMapping * matched = h2.find(cur.getKey());
-    iter.next();
-    if (!matched)
-      h1.removeExact(&cur);
-  }
+    HashIterator iter(h1);
+    iter.first();
+    while (iter.isValid())
+    {
+        IMapping & cur = iter.query();
+        IMapping * matched = h2.find(cur.getKey());
+        iter.next();
+        if (!matched)
+            h1.removeExact(&cur);
+    }
 }
 
 void UnionHash(HashTable & h1, HashTable & h2)
 {
-  HashIterator iter(h2);
-  iter.first();
-  while (iter.isValid())
-  {
-    IMapping & cur = iter.query();
-    IMapping * matched = h1.find(cur.getKey());
-    if (!matched)
-      h1.add(cur);
-    iter.next();
-  }
+    HashIterator iter(h2);
+    iter.first();
+    while (iter.isValid())
+    {
+        IMapping & cur = iter.query();
+        IMapping * matched = h1.find(cur.getKey());
+        if (!matched)
+            h1.add(cur);
+        iter.next();
+    }
 }
 
 void SubtractHash(HashTable & main, HashTable & sub)
 {
-  HashIterator iter(sub);
-  iter.first();
-  while (iter.isValid())
-  {
-    IMapping & cur = iter.query();
-    IMapping * matched = main.find(cur.getKey());
-    iter.next();
-    if (matched)
-      main.removeExact(&cur);
-  }
+    HashIterator iter(sub);
+    iter.first();
+    while (iter.isValid())
+    {
+        IMapping & cur = iter.query();
+        IMapping * matched = main.find(cur.getKey());
+        iter.next();
+        if (matched)
+            main.removeExact(&cur);
+    }
 }
 
 //===========================================================================

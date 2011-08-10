@@ -911,19 +911,19 @@ int String::compareTo(const char* value)  const
 
 String * String::concat(const String & value) const
 {
-  StringBuffer temp(toCharArray());
-  temp.append(value);
-  return new String(temp.str());
+    StringBuffer temp(toCharArray());
+    temp.append(value);
+    return new String(temp.str());
 }
 
 bool String::endsWith(const String & value) const
 {
-  unsigned lenValue = value.length();
-  unsigned len = (size32_t)strlen(text);
+    unsigned lenValue = value.length();
+    unsigned len = (size32_t)strlen(text);
 
-  if (len >= lenValue)
-    return (memcmp(text+(len-lenValue),value.toCharArray(),lenValue) == 0);
-  return false;
+    if (len >= lenValue)
+        return (memcmp(text+(len-lenValue),value.toCharArray(),lenValue) == 0);
+    return false;
 }
 
 bool String::endsWith(const char* value) const
@@ -940,17 +940,17 @@ bool String::equals(String & value) const
 
 bool String::equalsIgnoreCase(const String & value) const
 {
-  return stricmp(text, value.toCharArray())==0;
+    return stricmp(text, value.toCharArray())==0;
 }
 
 void String::getBytes(int srcBegin, int srcEnd, void * dest, int dstBegin) const
 {
-  memcpy((char *)dest+dstBegin, text+srcBegin, srcEnd-srcBegin);
+    memcpy((char *)dest+dstBegin, text+srcBegin, srcEnd-srcBegin);
 }
 
 void String::getChars(int srcBegin, int srcEnd, void * dest, int dstBegin) const
 {
-  memcpy((char *)dest+dstBegin, text+srcBegin, srcEnd-srcBegin);
+    memcpy((char *)dest+dstBegin, text+srcBegin, srcEnd-srcBegin);
 }
 
 int String::hashCode() const
@@ -960,73 +960,73 @@ int String::hashCode() const
 
 int String::indexOf(int ch) const
 {
-  char * match = strchr(text, ch);
-  return match ? (int)(match - text) : -1;
+    char * match = strchr(text, ch);
+    return match ? (int)(match - text) : -1;
 }
 
 int String::indexOf(int ch, int from) const
 {
-  char * match = strchr(text + from, ch);
-  return match ? (int)(match - text) : -1;
+    char * match = strchr(text + from, ch);
+    return match ? (int)(match - text) : -1;
 }
 
 int String::indexOf(const String & search) const
 {
-  const char * str = search.toCharArray();
-  const char * match = strstr(text, str);
-  return match ? (int)(match - text) : -1;
+    const char * str = search.toCharArray();
+    const char * match = strstr(text, str);
+    return match ? (int)(match - text) : -1;
 }
 
 int String::indexOf(const String & search, int from) const
 {
-  const char * str = search.toCharArray();
-  const char * match = strstr(text + from, str);
-  return match ? (int)(match - text) : -1;
+    const char * str = search.toCharArray();
+    const char * match = strstr(text + from, str);
+    return match ? (int)(match - text) : -1;
 }
 
 int String::lastIndexOf(int ch) const
 {
-  char * match = strrchr(text, ch);
-  return match ? (int)(match - text) : -1;
+    char * match = strrchr(text, ch);
+    return match ? (int)(match - text) : -1;
 }
 
 int String::lastIndexOf(int ch, int from) const
 {
-  for (;(from > 0);--from)
-    if (text[from] == ch)
-      return from;
-  return -1;
+    for (;(from > 0);--from)
+        if (text[from] == ch)
+            return from;
+    return -1;
 }
 
 int String::lastIndexOf(const String & search) const
 {
-  assertex(!"TBD");
-  return -1;
+    assertex(!"TBD");
+    return -1;
 }
 
 int String::lastIndexOf(const String & search, int from) const
 {
-  assertex(!"TBD");
-  return -1;
+    assertex(!"TBD");
+    return -1;
 }
 
 size32_t String::length() const
 {
-  return (size32_t)strlen(text);
+    return (size32_t)strlen(text);
 }
 
 bool String::startsWith(String & value) const
 {
-  unsigned lenValue = value.length();
-  const char * search = value.toCharArray();
-  return (memcmp(text, search, lenValue) == 0);
+    unsigned lenValue = value.length();
+    const char * search = value.toCharArray();
+    return (memcmp(text, search, lenValue) == 0);
 }
 
 bool String::startsWith(String & value, int offset) const
 {
-  unsigned lenValue = value.length();
-  const char * search = value.toCharArray();
-  return (memcmp(text + offset, search, lenValue) == 0);
+    unsigned lenValue = value.length();
+    const char * search = value.toCharArray();
+    return (memcmp(text + offset, search, lenValue) == 0);
 }
 
 bool String::startsWith(const char* value) const
@@ -1036,17 +1036,17 @@ bool String::startsWith(const char* value) const
 
 String * String::substring(int beginIndex) const
 {
-  return new String(text+beginIndex);
+    return new String(text+beginIndex);
 }
 
 String * String::substring(int beginIndex, int endIndex) const
 {
-  return new String(text, beginIndex, endIndex - beginIndex);
+    return new String(text, beginIndex, endIndex - beginIndex);
 }
 
 const char *String::toCharArray() const
 {
-  return text;
+    return text;
 }
 
 String * String::toLowerCase() const
@@ -1065,8 +1065,8 @@ String * String::toLowerCase() const
 
 String * String::toString()
 {
-  Link();
-  return this;
+    Link();
+    return this;
 }
 
 String * String::toUpperCase() const
@@ -1096,41 +1096,41 @@ String * String::trim() const
 #if 0
 String & String::valueOf(char value)
 {
-  return * new String(&value, 0, 1);
+    return * new String(&value, 0, 1);
 }
 
 String & String::valueOf(const char * value)
 {
-  return * new String(value);
+    return * new String(value);
 }
 
 String & String::valueOf(const char * value, int offset, int count)
 {
-  return * new String(value, offset, count);
+    return * new String(value, offset, count);
 }
 
 String & String::valueOf(double value)
 {
-  StringBuffer temp;
-  return temp.append(value).toString();
+    StringBuffer temp;
+    return temp.append(value).toString();
 }
 
 String & String::valueOf(float value)
 {
-  StringBuffer temp;
-  return temp.append(value).toString();
+    StringBuffer temp;
+    return temp.append(value).toString();
 }
 
 String & String::valueOf(int value)
 {
-  StringBuffer temp;
-  return temp.append(value).toString();
+    StringBuffer temp;
+    return temp.append(value).toString();
 }
 
 String & String::valueOf(long value)
 {
-  StringBuffer temp;
-  return temp.append(value).toString();
+    StringBuffer temp;
+    return temp.append(value).toString();
 }
 #endif 
 
@@ -1139,7 +1139,7 @@ String & String::valueOf(long value)
 
 StringAttr::StringAttr(const char * _text)
 {
-  text = _text ? strdup(_text) : NULL;
+    text = _text ? strdup(_text) : NULL;
 }
 
 StringAttr::StringAttr(const char * _text, unsigned _len)
@@ -1162,33 +1162,33 @@ void StringAttr::set(const char * _text)
 
 void StringAttr::set(const char * _text, unsigned _len)
 {
-  if (text)
-    free(text);
-  text = (char *)malloc(_len+1);
-  memcpy(text, _text, _len);
-  text[_len] = 0;
+    if (text)
+        free(text);
+    text = (char *)malloc(_len+1);
+    memcpy(text, _text, _len);
+    text[_len] = 0;
 }
 
 void StringAttr::setown(const char * _text)
 {
-  if (text)
-    free(text);
-  text = (char *)_text;
+    if (text)
+        free(text);
+    text = (char *)_text;
 }
 
 void StringAttr::toUpperCase()
 {
-  if (text)
-  {
-    char * cur = text;
-    char next;
-    while ((next = *cur) != 0)
+    if (text)
     {
-      if (islower(next))
-        *cur = toupper(next);
-      cur++;
+        char * cur = text;
+        char next;
+        while ((next = *cur) != 0)
+        {
+            if (islower(next))
+                *cur = toupper(next);
+            cur++;
+        }
     }
-  }
 }
 
 
@@ -1200,12 +1200,12 @@ StringAttrItem::StringAttrItem(const char *_text, unsigned _len)
 
 inline char hex(char c, char lower)
 {
-  if (c < 10)
-    return '0' + c;
-  else if (lower)
-    return 'a' + c - 10;
-  else
-    return 'A' + c - 10;
+    if (c < 10)
+        return '0' + c;
+    else if (lower)
+        return 'a' + c - 10;
+    else
+        return 'A' + c - 10;
 }
 
 StringBuffer &  StringBuffer::appendhex(unsigned char c, char lower)
@@ -1217,24 +1217,24 @@ StringBuffer &  StringBuffer::appendhex(unsigned char c, char lower)
 
 void appendURL(StringBuffer *dest, const char *src, size32_t len, char lower)
 {
-  if (len == (size32_t)-1)
-    len = (size32_t)strlen(src);
-  while (len)
-  {
-      // isalnum seems to give weird results for chars > 127....
-    unsigned char c = (unsigned char) *src;
-    if (c == ' ')
-      dest->append('+');
-    else if (c & 0x80 || !isalnum(*src))
+    if (len == (size32_t)-1)
+        len = (size32_t)strlen(src);
+    while (len)
     {
-      dest->append('%');
-      dest->appendhex(c, lower);
+        // isalnum seems to give weird results for chars > 127....
+        unsigned char c = (unsigned char) *src;
+        if (c == ' ')
+            dest->append('+');
+        else if (c & 0x80 || !isalnum(*src))
+        {
+            dest->append('%');
+            dest->appendhex(c, lower);
+        }
+        else
+            dest->append(c);
+        src++;
+        len--;
     }
-    else
-      dest->append(c);
-    src++;
-    len--;
-  }
 }
 
 
@@ -1253,53 +1253,53 @@ static StringBuffer & appendStringExpandControl(StringBuffer &out, unsigned len,
         bool allowBreak = true;
         switch (c)
         {
-            case '\n':
+        case '\n':
+            {
+                out.append("\\n");
+                if (src-startLine > minBreakPos)
+                    insertBreak = true;
+                break;
+            }
+        case ',':
+            {
+                out.append(c);
+                if (src-startLine > commaBreakPos)
+                    insertBreak = true;
+                break;
+            }
+        case '\r': out.append("\\r"); break;
+        case '\t': out.append("\\t"); break;
+        case '"':
+            if (isCpp)
+                out.append("\\");
+            out.append(c); 
+            break;
+        case '\'':
+            if (!isCpp)
+                out.append("\\");
+            out.append(c); 
+            break;
+        case '\\': out.append("\\\\"); break;
+        case '?':
+            if (isCpp)
+            {
+                //stop trigraphs being generated.... quote the second ?
+                out.append(c);
+                if ((len!=1) && (*src == '?'))
                 {
-                    out.append("\\n");
-                    if (src-startLine > minBreakPos)
-                        insertBreak = true;
-                    break;
+                    out.append('\\');
+                    allowBreak = false;
                 }
-            case ',':
-                {
-                    out.append(c);
-                    if (src-startLine > commaBreakPos)
-                        insertBreak = true;
-                    break;
-                }
-            case '\r': out.append("\\r"); break;
-            case '\t': out.append("\\t"); break;
-            case '"':
-                if (isCpp)
-                    out.append("\\");
-                out.append(c); 
-                break;
-            case '\'':
-                if (!isCpp)
-                    out.append("\\");
-                out.append(c); 
-                break;
-            case '\\': out.append("\\\\"); break;
-            case '?':
-                if (isCpp)
-                {
-                    //stop trigraphs being generated.... quote the second ?
-                    out.append(c);
-                    if ((len!=1) && (*src == '?'))
-                    {
-                        out.append('\\');
-                        allowBreak = false;
-                    }
-                }
-                else
-                    out.append(c);
-                break;
-            default:
-                if ((c >= ' ') && (c <= 126))
-                    out.append(c);
-                else
-                    out.appendf("\\%03o", c); 
-                break;
+            }
+            else
+                out.append(c);
+            break;
+        default:
+            if ((c >= ' ') && (c <= 126))
+                out.append(c);
+            else
+                out.appendf("\\%03o", c); 
+            break;
         }
         if (addBreak && (insertBreak || (allowBreak && src-startLine >= maxBreakPos)))
         {
@@ -1344,13 +1344,13 @@ StringBuffer & appendStringAsQuotedECL(StringBuffer &out, unsigned len, const ch
 void extractItem(StringBuffer & res, const char * src, const char * sep, int whichItem, bool caps)
 {  
     bool isSeparator[256];
-    
+
     memset(isSeparator,0,sizeof(isSeparator));
     unsigned char * finger = (unsigned char *)sep;
     while (*finger !=0)
         isSeparator[*finger++] = true;
     isSeparator[0]=true;
-    
+
     finger = (unsigned char *)src;
     unsigned char next;
     loop
@@ -1360,7 +1360,7 @@ void extractItem(StringBuffer & res, const char * src, const char * sep, int whi
             if (next == 0) return;
             finger++;
         }
-        
+
         if (whichItem == 0)
         { 
             while (!isSeparator[(next = *finger)])
@@ -1375,7 +1375,7 @@ void extractItem(StringBuffer & res, const char * src, const char * sep, int whi
 
         while (!isSeparator[*finger]) 
             finger++;
-            
+
         whichItem--;
     }
 }
@@ -1389,11 +1389,11 @@ int utf8CharLen(const unsigned char *ch)
         return 1;
     if (*ch < 192)
         return 0;
-    
+
     unsigned char len = 1;
     for (unsigned char lead = *ch << 1; (lead & 0x80); lead <<=1)
         len++;
-    
+
     for (unsigned pos = 1; pos < len; pos++)
         if ((ch[pos] < 128) || (ch[pos] >= 192))
             return 0;  //its not a valid utf-8 character after all
@@ -1625,13 +1625,13 @@ const char *decodeXML(const char *x, StringBuffer &ret, unsigned len, const char
             {
                 switch (*(x+1))
                 {
-                    case 'a':
-                    case 'A':
+                case 'a':
+                case 'A':
                     {
                         switch (*(x+2))
                         {
-                            case 'm':
-                            case 'M':
+                        case 'm':
+                        case 'M':
                             {
                                 char c1 = *(x+3);
                                 if (('p' == c1 || 'P' == c1) && ';' == *(x+4))
@@ -1642,8 +1642,8 @@ const char *decodeXML(const char *x, StringBuffer &ret, unsigned len, const char
                                 }
                                 break;
                             }
-                            case 'p':
-                            case 'P':
+                        case 'p':
+                        case 'P':
                             {
                                 char c1 = *(x+3);
                                 char c2 = *(x+4);
@@ -1658,8 +1658,8 @@ const char *decodeXML(const char *x, StringBuffer &ret, unsigned len, const char
                         }
                         break;
                     }
-                    case 'l':
-                    case 'L':
+                case 'l':
+                case 'L':
                     {
                         char c1 = *(x+2);
                         if (('t' == c1 || 'T' == c1) && ';' == *(x+3))
@@ -1670,8 +1670,8 @@ const char *decodeXML(const char *x, StringBuffer &ret, unsigned len, const char
                         }
                         break;
                     }
-                    case 'g':
-                    case 'G':
+                case 'g':
+                case 'G':
                     {
                         char c1 = *(x+2);
                         if (('t' == c1 || 'T' == c1) && ';' == *(x+3))
@@ -1682,8 +1682,8 @@ const char *decodeXML(const char *x, StringBuffer &ret, unsigned len, const char
                         }
                         break;
                     }
-                    case 'q':
-                    case 'Q':
+                case 'q':
+                case 'Q':
                     {
                         char c1 = *(x+2);
                         char c2 = *(x+3);
@@ -1696,8 +1696,8 @@ const char *decodeXML(const char *x, StringBuffer &ret, unsigned len, const char
                         }
                         break;
                     }
-                    case 'n':
-                    case 'N':
+                case 'n':
+                case 'N':
                     {
                         char c1 = *(x+2);
                         char c2 = *(x+3);
@@ -1710,7 +1710,7 @@ const char *decodeXML(const char *x, StringBuffer &ret, unsigned len, const char
                         }
                         break;
                     }
-                    default:
+                default:
                     {
                         x++;
                         if (*x == '#')

@@ -104,7 +104,7 @@ public:
 class HQLCPP_API HqlCppSection : public CInterface
 {
 public:
-  HqlCppSection() : stmts(NULL) {}
+    HqlCppSection() : stmts(NULL) {}
 
 public:
     _ATOM                       section;

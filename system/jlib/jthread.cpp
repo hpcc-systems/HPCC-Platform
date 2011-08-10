@@ -996,7 +996,7 @@ public:
         return true;
     }
 
-  IPooledThreadIterator *running()
+    IPooledThreadIterator *running()
     {
         CriticalBlock block(crit);
         CPooledThreadIterator *ret = new CPooledThreadIterator;
