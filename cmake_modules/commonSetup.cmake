@@ -52,7 +52,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   set (USE_OPENSSL 1)      # option(USE_OPENSSL "Configure use of OpenSSL" ON)
   option(USE_ZLIB "Configure use of zlib" ON)
   option(USE_NATIVE_LIBRARIES "Search standard OS locations for thirdparty libraries" ON)
-  option(LEGACYTHOR "Turn on building of Legacy Thor" OFF)
 
   option(PORTALURL "Set url to hpccsystems portal download page")
 
@@ -60,6 +59,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     set( PORTALURL "http://hpccsystems.com/download" )
   endif()
 
+  set(CMAKE_MODULE_PATH "${HPCC_SOURCE_DIR}/cmake_modules")
 
   ##########################################################
 
@@ -122,7 +122,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   ##################################################################
 
-  # Build tag generation from svn info
+  # Build tag generation
 
   set(projname ${HPCC_PROJECT})
   set(majorver ${HPCC_MAJOR})
@@ -302,15 +302,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   else()
     add_definitions (-D_NO_MYSQL)
   endif(USE_MYSQL)
-
-  if(USE_SVN)
-    find_package(SVN)
-    if (SVN_FOUND)
-      add_definitions (-D_USE_SVN)
-    else()
-      message(FATAL_ERROR "SVN requested but package not found")
-    endif()
-  endif(USE_SVN)
 
   ###########################################################################
 endif ("${COMMONSETUP_DONE}" STREQUAL "")
