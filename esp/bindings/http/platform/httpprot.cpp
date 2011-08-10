@@ -423,31 +423,8 @@ CHttpThread::~CHttpThread()
 {
 }
 
-static atomic_t gActiveRequests;
-
-class ActiveRequests
-{
-public:
-    
-    ActiveRequests() { inc(); }
-    virtual ~ActiveRequests()  { dec(); }
-
-    void inc() 
-    {   
-        atomic_inc(&gActiveRequests);
-        DBGLOG("*** Active requests: %u ***", (int)atomic_read(&gActiveRequests)); 
-    }
-    
-    void dec() 
-    { 
-        atomic_dec(&gActiveRequests);
-        DBGLOG("*** Active requests: %u ***", (int)atomic_read(&gActiveRequests)); 
-    }
-};
-
 bool CHttpThread::onRequest()
 {
-    EspTimeSection timing("CHttpThread::onRequest()");
     ActiveRequests recording;
 
     Owned<CEspHttpServer> httpserver;
@@ -491,8 +468,7 @@ bool CHttpThread::onRequest()
     time_t t = time(NULL);  
     initThreadLocal(sizeof(t), &t);
 
-    if (httpserver->processRequest()==-1)
-        timing.clear();
+    httpserver->processRequest();
     clearThreadLocal();
     
     return false;

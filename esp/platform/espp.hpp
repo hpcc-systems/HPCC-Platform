@@ -57,6 +57,7 @@ private:
     LogLevel m_logLevel;
     bool m_logReq;
     bool m_logResp;
+    unsigned m_slowProcessingTime;
     StringAttr m_frameTitle;
     Mutex abortMutex;
     bool m_SEHMappingEnabled;
@@ -76,6 +77,7 @@ public:
         m_logLevel = config->m_options.logLevel;
         m_logReq = config->m_options.logReq;
         m_logResp = config->m_options.logResp;
+        m_slowProcessingTime = config->m_options.slowProcessingTime;
         m_frameTitle.set(config->m_options.frameTitle);
         m_SEHMappingEnabled = false;
     }
@@ -148,6 +150,7 @@ public:
     bool getLogResponses() { return m_logResp; }
     void setFrameTitle(const char* title)  { m_frameTitle.set(title); }
     const char* getFrameTitle()  { return m_frameTitle.get(); }
+    unsigned getSlowProcessingTime() { return m_slowProcessingTime; }
 
     void log(LogLevel level, const char* fmt, ...)
     {

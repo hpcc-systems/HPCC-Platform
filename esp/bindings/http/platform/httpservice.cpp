@@ -27,6 +27,7 @@
 //Jlib
 #include "jliball.hpp"
 
+#include "espcontext.hpp"
 #include "esphttp.hpp"
 
 //ESP Bindings
@@ -35,16 +36,15 @@
 
 #include "htmlpage.hpp"
 
-
 /***************************************************************************
  *              CEspHttpServer Implementation
  ***************************************************************************/
 CEspHttpServer::CEspHttpServer(ISocket& sock, bool viewConfig, int maxRequestEntityLength):m_socket(sock), m_MaxRequestEntityLength(maxRequestEntityLength)
 {
+    IEspContext* ctx = createEspContext();
     m_request.setown(new CHttpRequest(sock));
     m_request->setMaxRequestEntityLength(maxRequestEntityLength);
     m_response.setown(new CHttpResponse(sock));
-    IEspContext* ctx = createEspContext();
     m_request->setOwnContext(ctx);
     m_response->setOwnContext(LINK(ctx));
     m_viewConfig=viewConfig;
@@ -52,10 +52,10 @@ CEspHttpServer::CEspHttpServer(ISocket& sock, bool viewConfig, int maxRequestEnt
 
 CEspHttpServer::CEspHttpServer(ISocket& sock, CEspApplicationPort* apport, bool viewConfig, int maxRequestEntityLength):m_socket(sock), m_MaxRequestEntityLength(maxRequestEntityLength)
 {
+    IEspContext* ctx = createEspContext();
     m_request.setown(new CHttpRequest(sock));
     m_request->setMaxRequestEntityLength(maxRequestEntityLength);
     m_response.setown(new CHttpResponse(sock));
-    IEspContext* ctx = createEspContext();
     m_request->setOwnContext(ctx);
     m_response->setOwnContext(LINK(ctx));
     m_apport = apport;
@@ -68,6 +68,66 @@ CEspHttpServer::~CEspHttpServer()
 {
     try
     {
+        IEspContext* ctx = m_request->queryContext();
+        if (ctx)
+        {
+            //Request is logged only when there is an exception or the request time is very long.
+            //If the flag of 'EspLogRequests' is set or the log level > LogNormal, the Request should
+            //has been logged and it should not be logged here.
+            ctx->setProcessingTime();
+            if ((ctx->queryHasException() || (ctx->queryProcessingTime() > getSlowProcessingTime())) &&
+                !getEspLogRequests() && (getEspLogLevel() <= LogNormal))
+            {
+                StringBuffer logStr;
+                logStr.appendf("%s %s", m_request->queryMethod(), m_request->queryPath());
+
+                const char* paramStr = m_request->queryParamStr();
+                if (paramStr && *paramStr)
+                    logStr.appendf("?%s", paramStr);
+
+                if (m_request->isSoapMessage())
+                {
+                    StringBuffer requestStr;
+                    m_request->getContent(requestStr);
+
+                    if (requestStr.length() > 0)
+                    {
+                        bool trimSpace = true;
+                        StringBuffer requestBuf;
+                        const char* s = requestStr.str();
+                        while (s && *s)
+                        {
+                            if ((s[0] != '\r') && (s[0] != '\n'))
+                            {
+                                if (s[0] != ' ')
+                                {
+                                    requestBuf.append(s[0]);
+                                    trimSpace = false;
+                                }
+                                else if (!trimSpace)
+                                {
+                                    requestBuf.append(s[0]);
+                                }
+                            }
+                            else
+                            {
+                                trimSpace = true;
+                            }
+
+                            s++;
+                        }
+
+                        if (requestBuf.length() > 0)
+                        {
+                            logStr.newline();
+                            logStr.append(requestBuf.str());
+                        }
+                    }
+                }
+                DBGLOG("Request[%s]", logStr.str());
+            }
+        }
+
         m_request.clear();
         m_response.clear();
     }
@@ -402,6 +462,7 @@ int CEspHttpServer::processRequest()
                 else
                     unsupported();
             }
+            ctx->addTraceSummaryTimeStamp("handleHttp");
         }
     }
     catch(IEspHttpException* e)

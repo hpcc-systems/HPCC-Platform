@@ -172,7 +172,7 @@ bool CWsDfuEx::onDFUSearch(IEspContext &context, IEspDFUSearchRequest & req, IEs
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -282,7 +282,7 @@ bool CWsDfuEx::onDFUQuery(IEspContext &context, IEspDFUQueryRequest & req, IEspD
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
     return true;
@@ -318,7 +318,7 @@ bool CWsDfuEx::onDFUInfo(IEspContext &context, IEspDFUInfoRequest &req, IEspDFUI
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
     return true;
@@ -553,7 +553,7 @@ bool CWsDfuEx::onDFUSpace(IEspContext &context, IEspDFUSpaceRequest & req, IEspD
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -1139,7 +1139,7 @@ bool CWsDfuEx::onAddtoSuperfile(IEspContext &context, IEspAddtoSuperfileRequest 
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -1402,40 +1402,34 @@ bool CWsDfuEx::onDFUArrayAction(IEspContext &context, IEspDFUArrayActionRequest 
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
 
 bool CWsDfuEx::onDFUAction(IUserDescriptor* udesc, const char* LogicalFileName, const char* ClusterName,const char* ActionType,bool nodelete, StringBuffer& returnStr)
 {
-    try
+    //No 'try/catch' is needed for this method since it will be called internally.
+    if (strcmp(Action_Delete ,ActionType) == 0)
     {
-        if (strcmp(Action_Delete ,ActionType) == 0)
-        {
-            LogicFileWrapper Logicfile;
-            if (!Logicfile.doDeleteFile(LogicalFileName,ClusterName,nodelete, returnStr, udesc))
-                return false;
-        }
-        else if (strcmp(Action_AddtoSuperfile ,ActionType) == 0)
-        {
-            Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(LogicalFileName, udesc, true);  
-            if (df)
-            {
-                if (returnStr.length() > 0)
-                    returnStr.appendf(",%s", LogicalFileName);
-                else
-                    returnStr.appendf("%s", LogicalFileName);
-                return false;
-            }
-        }
-        else
-            DBGLOG("Unknown Action type:%s\n",ActionType);
+        LogicFileWrapper Logicfile;
+        if (!Logicfile.doDeleteFile(LogicalFileName,ClusterName,nodelete, returnStr, udesc))
+            return false;
     }
-    catch(IException* e)
-    {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+    else if (strcmp(Action_AddtoSuperfile ,ActionType) == 0)
+    {
+        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(LogicalFileName, udesc, true);
+        if (df)
+        {
+            if (returnStr.length() > 0)
+                returnStr.appendf(",%s", LogicalFileName);
+            else
+                returnStr.appendf("%s", LogicalFileName);
+            return false;
+        }
     }
+    else
+        DBGLOG("Unknown Action type:%s\n",ActionType);
     
     return true;
 }
@@ -1484,7 +1478,7 @@ bool CWsDfuEx::onDFUDefFile(IEspContext &context,IEspDFUDefFileRequest &req, IEs
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -2131,7 +2125,7 @@ bool CWsDfuEx::onDFUFileView(IEspContext &context, IEspDFUFileViewRequest &req, 
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -3034,7 +3028,7 @@ bool CWsDfuEx::onSuperfileList(IEspContext &context, IEspSuperfileListRequest &r
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -3093,7 +3087,7 @@ bool CWsDfuEx::onSuperfileAction(IEspContext &context, IEspSuperfileActionReques
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -3153,7 +3147,7 @@ bool CWsDfuEx::onSuperfileAddRaw(IEspContext &context, IEspSuperfileAddRawReques
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -3182,7 +3176,7 @@ bool CWsDfuEx::onSavexml(IEspContext &context, IEspSavexmlRequest &req, IEspSave
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -3207,7 +3201,7 @@ bool CWsDfuEx::onAdd(IEspContext &context, IEspAddRequest &req, IEspAddResponse 
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -3251,7 +3245,7 @@ bool CWsDfuEx::onAddRemote(IEspContext &context, IEspAddRemoteRequest &req, IEsp
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -3727,7 +3721,7 @@ bool CWsDfuEx::onDFUGetDataColumns(IEspContext &context, IEspDFUGetDataColumnsRe
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -3901,7 +3895,7 @@ bool CWsDfuEx::onDFUSearchData(IEspContext &context, IEspDFUSearchDataRequest &r
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -4338,7 +4332,7 @@ bool CWsDfuEx::onDFUBrowseData(IEspContext &context, IEspDFUBrowseDataRequest &r
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }

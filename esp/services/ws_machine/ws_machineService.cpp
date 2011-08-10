@@ -441,7 +441,7 @@ bool Cws_machineEx::onGetMachineInfo(IEspContext &context, IEspGetMachineInfoReq
     }
     catch(IException* e)
     {
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 #ifdef DETECT_WS_MC_MEM_LEAKS
     DBGLOG("Allocated=%d", setAllocHook(false));
@@ -481,7 +481,7 @@ bool Cws_machineEx::onGetMachineInfoEx(IEspContext &context, IEspGetMachineInfoR
     }
     catch(IException* e)
     {
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 
@@ -2803,7 +2803,7 @@ bool Cws_machineEx::onGetTargetClusterInfo(IEspContext &context, IEspGetTargetCl
     }
     catch(IException* e)
     {
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 #ifdef DETECT_WS_MC_MEM_LEAKS
     DBGLOG("Allocated=%d", setAllocHook(false));

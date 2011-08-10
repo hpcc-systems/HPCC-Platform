@@ -157,6 +157,13 @@ interface IEspContext : extends IInterface
 
     virtual void setServiceName(const char *name)=0;
     virtual const char * queryServiceName(const char *name)=0;
+    virtual void setCreationTime()=0;
+    virtual const unsigned queryCreationTime()=0;
+    virtual void setProcessingTime()=0;
+    virtual const unsigned queryProcessingTime()=0;
+    virtual void setException(int exceptionCode)=0;
+    virtual const bool queryException(int& exceptionCode, unsigned& exceptionTime)=0;
+    virtual const bool queryHasException()=0;
 
     virtual IProperties *   queryRequestParameters()=0;
     virtual void            setRequestParameters(IProperties * Parameters)=0;
@@ -184,6 +191,11 @@ interface IEspContext : extends IInterface
     
     virtual StringArray& queryCustomHeaders() = 0;
     virtual void addCustomerHeader(const char* name, const char* val) = 0;
+
+    virtual void addTraceSummaryValue(const char *name, const char *value)=0;
+    virtual void addTraceSummaryValue(const char *name, int value)=0;
+    virtual void addTraceSummaryTimeStamp(const char *name)=0;
+    virtual void flushTraceSummary()=0;
 };
 
 
@@ -200,6 +212,7 @@ interface IEspContainer : extends IInterface
     virtual LogLevel getLogLevel() = 0;
     virtual bool getLogRequests() = 0;
     virtual bool getLogResponses() = 0;
+    virtual unsigned getSlowProcessingTime() = 0;
     virtual void log(LogLevel level, const char*,...) = 0;
     virtual void setFrameTitle(const char* title) = 0;
     virtual const char* getFrameTitle() = 0;
