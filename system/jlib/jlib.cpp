@@ -217,45 +217,45 @@ void f(IInterface * i1, IInterface * i2)
 class MappingStringToCInterface : public MappingStringTo<CInterfacePtr,CInterfacePtr>
 {
 public:
-  MappingStringToCInterface(const char * k, CInterfacePtr a) :
+    MappingStringToCInterface(const char * k, CInterfacePtr a) :
       MappingStringTo<CInterfacePtr,CInterfacePtr>(k,a) {}
-  ~MappingStringToCInterface() { ::Release(val); }
+      ~MappingStringToCInterface() { ::Release(val); }
 };
 
 typedef MapStringTo<CInterfacePtr,CInterfacePtr,MappingStringToCInterface> MapStringToCInterface;
 
 void test()
 {
-  MapStringToCInterface   map;
+    MapStringToCInterface   map;
 
-  CInterface * temp = new CInterface;
-  map.setValue("gavin", temp);
-  
-  temp->Link();
-  map.setValue("richard", temp);
+    CInterface * temp = new CInterface;
+    map.setValue("gavin", temp);
 
-  map.remove("gavin");
-  map.remove("richard");
+    temp->Link();
+    map.setValue("richard", temp);
+
+    map.remove("gavin");
+    map.remove("richard");
 }
 
 //==========================================================================
 
 void test2(void)
 {
-  MapUnsignedToInt    map1;
-  MapStrToUnsigned    map2;
-  map1.setValue(1, 2);
-  map1.setValue(2, 3);
+    MapUnsignedToInt    map1;
+    MapStrToUnsigned    map2;
+    map1.setValue(1, 2);
+    map1.setValue(2, 3);
 
-  map2.setValue("gavin",30);
-  map2.setValue("liz",29);
+    map2.setValue("gavin",30);
+    map2.setValue("liz",29);
 
-  assertex(*map1.getValue(1) == 2);
-  assertex(*map1.getValue(2) == 3);
+    assertex(*map1.getValue(1) == 2);
+    assertex(*map1.getValue(2) == 3);
 
-  assertex(*map2.getValue("gavin") == 30);
-  assertex(*map2.getValue("liz") == 29);
-  test();
+    assertex(*map2.getValue("gavin") == 30);
+    assertex(*map2.getValue("liz") == 29);
+    test();
 };
 
 
@@ -272,34 +272,34 @@ int main(void)
 #ifdef _DEBUG
 #ifdef _WIN32
 
-  _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE);
-  _CrtSetReportFile(_CRT_WARN, _CRTDBG_FILE_STDOUT);
-  _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_FILE);
-  _CrtSetReportFile(_CRT_ERROR, _CRTDBG_FILE_STDOUT);
-  _CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_FILE);
-  _CrtSetReportFile(_CRT_ASSERT, _CRTDBG_FILE_STDOUT);
+    _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE);
+    _CrtSetReportFile(_CRT_WARN, _CRTDBG_FILE_STDOUT);
+    _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_FILE);
+    _CrtSetReportFile(_CRT_ERROR, _CRTDBG_FILE_STDOUT);
+    _CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_FILE);
+    _CrtSetReportFile(_CRT_ASSERT, _CRTDBG_FILE_STDOUT);
 
-  _CrtMemState oldMemState, newMemState, diffMemState;
-  _CrtMemCheckpoint(&oldMemState);
+    _CrtMemState oldMemState, newMemState, diffMemState;
+    _CrtMemCheckpoint(&oldMemState);
 
 #endif
 #endif
 
-  test();
-  test2();
+    test();
+    test2();
 
 #ifdef _DEBUG
 #ifdef _WIN32
 #ifndef USING_MPATROL //using mpatrol memory leak tool
-  _CrtMemCheckpoint(&newMemState);
-  if(_CrtMemDifference(&diffMemState, &oldMemState, &newMemState))
-  {
-    _CrtMemDumpAllObjectsSince(&diffMemState);
-  }
+    _CrtMemCheckpoint(&newMemState);
+    if(_CrtMemDifference(&diffMemState, &oldMemState, &newMemState))
+    {
+        _CrtMemDumpAllObjectsSince(&diffMemState);
+    }
 #endif //USING_MPATROL
 #endif
 #endif
 
-  return 0;
+    return 0;
 }
 #endif

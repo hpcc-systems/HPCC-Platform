@@ -146,7 +146,7 @@ public:
 class jlib_decl CStringBufferOutputStream : public CInterface, public IByteOutputStream
 {
 private:
-  StringBuffer & out;
+    StringBuffer & out;
 public:
     IMPLEMENT_IINTERFACE;
 

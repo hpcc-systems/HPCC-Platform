@@ -204,25 +204,25 @@ enum {
 
 struct mapCmdToErr_t { RFS_RemoteFileCommandType cmd; int err; } mapCmdToErr[] =
 {
-  { RFCopenIO,      RFSERR_OpenFailed },
-  { RFCcloseIO,     RFSERR_CloseFailed },
-  { RFCread,        RFSERR_ReadFailed },
-  { RFCwrite,       RFSERR_WriteFailed },
-  { RFCsize,        RFSERR_SizeFailed },
-  { RFCexists,      RFSERR_ExistsFailed },
-  { RFCremove,      RFSERR_RemoveFailed },
-  { RFCrename,      RFSERR_RenameFailed },
-  { RFCgetver,      RFSERR_GetVerFailed },
-  { RFCisfile,      RFSERR_IsFileFailed },
-  { RFCisdirectory, RFSERR_IsDirectoryFailed },
-  { RFCisreadonly,  RFSERR_IsReadOnlyFailed },
-  { RFCsetreadonly, RFSERR_SetReadOnlyFailed },
-  { RFCgettime,     RFSERR_GetTimeFailed },
-  { RFCsettime,     RFSERR_SetTimeFailed },
-  { RFCcreatedir,   RFSERR_CreateDirFailed },
-  { RFCgetdir,      RFSERR_GetDirFailed },
-  { RFCgetcrc,      RFSERR_GetCrcFailed },
-  { RFCmax,         RFSERR_InvalidCommand }
+    { RFCopenIO,      RFSERR_OpenFailed },
+    { RFCcloseIO,     RFSERR_CloseFailed },
+    { RFCread,        RFSERR_ReadFailed },
+    { RFCwrite,       RFSERR_WriteFailed },
+    { RFCsize,        RFSERR_SizeFailed },
+    { RFCexists,      RFSERR_ExistsFailed },
+    { RFCremove,      RFSERR_RemoveFailed },
+    { RFCrename,      RFSERR_RenameFailed },
+    { RFCgetver,      RFSERR_GetVerFailed },
+    { RFCisfile,      RFSERR_IsFileFailed },
+    { RFCisdirectory, RFSERR_IsDirectoryFailed },
+    { RFCisreadonly,  RFSERR_IsReadOnlyFailed },
+    { RFCsetreadonly, RFSERR_SetReadOnlyFailed },
+    { RFCgettime,     RFSERR_GetTimeFailed },
+    { RFCsettime,     RFSERR_SetTimeFailed },
+    { RFCcreatedir,   RFSERR_CreateDirFailed },
+    { RFCgetdir,      RFSERR_GetDirFailed },
+    { RFCgetcrc,      RFSERR_GetCrcFailed },
+    { RFCmax,         RFSERR_InvalidCommand }
 };
 
 struct mapErrs_t { int val; const char *str; } mapErrs[] =
@@ -335,14 +335,14 @@ char *_ultoa(unsigned long n, char *str, int b)
 void getLogTime(char *res)
 {
 #ifdef _WIN32
-  SYSTEMTIME st;
-  GetLocalTime(&st);
-  sprintf(res,"%02u/%02u/%04u %02u:%02u:%02u:%03u ", st.wDay,st.wMonth,st.wYear,st.wHour,st.wMinute,st.wSecond,st.wMilliseconds);
+    SYSTEMTIME st;
+    GetLocalTime(&st);
+    sprintf(res,"%02u/%02u/%04u %02u:%02u:%02u:%03u ", st.wDay,st.wMonth,st.wYear,st.wHour,st.wMinute,st.wSecond,st.wMilliseconds);
 #else
-  time_t st;
-  time(&st);
-  struct tm *_tm = localtime(&st);
-  sprintf(res,"%02u/%02u/%04u %02u:%02u:%02u ", _tm->tm_mday,_tm->tm_mon+1,_tm->tm_year+1900,_tm->tm_hour,_tm->tm_min,_tm->tm_sec);
+    time_t st;
+    time(&st);
+    struct tm *_tm = localtime(&st);
+    sprintf(res,"%02u/%02u/%04u %02u:%02u:%02u ", _tm->tm_mday,_tm->tm_mon+1,_tm->tm_year+1900,_tm->tm_hour,_tm->tm_min,_tm->tm_sec);
 #endif
 }
 

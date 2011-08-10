@@ -380,43 +380,43 @@ void Cws_machineEx::getRoxieClusterConfig(char const * clusterType, char const *
 
 void Cws_machineEx::processValue(const char *oid, const char *value, const bool bShow, CFieldInfoMap& myfieldInfoMap, CFieldMap&  myfieldMap)
 {
-  double val = atof(value);
-  CField* pField = new CField;
-  pField->Value = val;
+    double val = atof(value);
+    CField* pField = new CField;
+    pField->Value = val;
 
-  //const char *oid0 = oid;
-  //if (!strncmp(oid, "ibyti", 5))
-  //   oid += 5;
-   
-  pField->Hide = !bShow;
+    //const char *oid0 = oid;
+    //if (!strncmp(oid, "ibyti", 5))
+    //   oid += 5;
 
-  myfieldMap.insert(pair<const char*, CField*>( oid, pField) );
+    pField->Hide = !bShow;
 
-  synchronized block(myfieldInfoMap.m_mutex);
-  CFieldInfoMap::iterator i = myfieldInfoMap.find(oid);
+    myfieldMap.insert(pair<const char*, CField*>( oid, pField) );
 
-  if (i == myfieldInfoMap.end())
-  {
-     CFieldInfo* pFieldInfo = new CFieldInfo;
-     pFieldInfo->Count = 1;
-     pFieldInfo->Mean = val;
-     pFieldInfo->SumSquaredDeviations = 0;
-      pFieldInfo->Hide = !bShow;
+    synchronized block(myfieldInfoMap.m_mutex);
+    CFieldInfoMap::iterator i = myfieldInfoMap.find(oid);
 
-     myfieldInfoMap.insert( pair<const char*, CFieldInfo*>(oid, pFieldInfo) );
-  }
-  else
-  {
+    if (i == myfieldInfoMap.end())
+    {
+        CFieldInfo* pFieldInfo = new CFieldInfo;
+        pFieldInfo->Count = 1;
+        pFieldInfo->Mean = val;
+        pFieldInfo->SumSquaredDeviations = 0;
+        pFieldInfo->Hide = !bShow;
+
+        myfieldInfoMap.insert( pair<const char*, CFieldInfo*>(oid, pFieldInfo) );
+    }
+    else
+    {
         CFieldInfo* pFieldInfo = (*i).second;
-     pFieldInfo->Count++;
-     double deviation = (val - pFieldInfo->Mean) / pFieldInfo->Count;
-     pFieldInfo->Mean =  pFieldInfo->Mean + deviation;
-      pFieldInfo->Hide = !bShow;
+        pFieldInfo->Count++;
+        double deviation = (val - pFieldInfo->Mean) / pFieldInfo->Count;
+        pFieldInfo->Mean =  pFieldInfo->Mean + deviation;
+        pFieldInfo->Hide = !bShow;
 
-     pFieldInfo->SumSquaredDeviations += (pFieldInfo->Count-1) * (deviation * deviation);
-     double temp = val - pFieldInfo->Mean;
-     pFieldInfo->SumSquaredDeviations += temp * temp;
-  }
+        pFieldInfo->SumSquaredDeviations += (pFieldInfo->Count-1) * (deviation * deviation);
+        double temp = val - pFieldInfo->Mean;
+        pFieldInfo->SumSquaredDeviations += temp * temp;
+    }
 }
 
 void Cws_machineEx::doPostProcessing(CFieldInfoMap& myfieldInfoMap, CFieldMap&  myfieldMap)

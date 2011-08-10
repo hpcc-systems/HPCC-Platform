@@ -26,44 +26,44 @@
 class jlib_decl CArrayIteratorBase : public CInterface
 {
 protected:
-  IInterface *owner;
-  const Array &values;
-  aindex_t current;
-  aindex_t start;
+    IInterface *owner;
+    const Array &values;
+    aindex_t current;
+    aindex_t start;
 public:
-  CArrayIteratorBase(const Array &, aindex_t start=0 , IInterface *owner=NULL);
-  ~CArrayIteratorBase();
+    CArrayIteratorBase(const Array &, aindex_t start=0 , IInterface *owner=NULL);
+    ~CArrayIteratorBase();
 
-  virtual bool first();
-  virtual bool next();
-  virtual bool isValid();
-  virtual IInterface &_query();
+    virtual bool first();
+    virtual bool next();
+    virtual bool isValid();
+    virtual IInterface &_query();
 };
 
 class jlib_decl CArrayIterator : public CArrayIteratorBase , implements IIterator
 {
 public:
-  IMPLEMENT_IINTERFACE;
-  CArrayIterator(const Array &a, aindex_t start = 0, IInterface *owner=NULL) : CArrayIteratorBase(a, start, owner) {}
+    IMPLEMENT_IINTERFACE;
+    CArrayIterator(const Array &a, aindex_t start = 0, IInterface *owner=NULL) : CArrayIteratorBase(a, start, owner) {}
 
-  virtual bool first() { return CArrayIteratorBase::first(); }
-  virtual bool next() { return CArrayIteratorBase::next(); }
-  virtual bool isValid() { return CArrayIteratorBase::isValid(); }
-  virtual IInterface & query() { return CArrayIteratorBase::_query(); };
-  virtual IInterface & get() { IInterface &ret = CArrayIteratorBase::_query(); ret.Link(); return ret; };
+    virtual bool first() { return CArrayIteratorBase::first(); }
+    virtual bool next() { return CArrayIteratorBase::next(); }
+    virtual bool isValid() { return CArrayIteratorBase::isValid(); }
+    virtual IInterface & query() { return CArrayIteratorBase::_query(); };
+    virtual IInterface & get() { IInterface &ret = CArrayIteratorBase::_query(); ret.Link(); return ret; };
 };
 
 template<class X, class Y> class CArrayIteratorOf : public CArrayIteratorBase, implements Y
 {
 public:
-  IMPLEMENT_IINTERFACE;
-  CArrayIteratorOf<X,Y>(const Array &a, aindex_t start = 0, IInterface *owner=NULL) : CArrayIteratorBase(a, start, owner) {}
+    IMPLEMENT_IINTERFACE;
+    CArrayIteratorOf<X,Y>(const Array &a, aindex_t start = 0, IInterface *owner=NULL) : CArrayIteratorBase(a, start, owner) {}
 
-  virtual bool first() { return CArrayIteratorBase::first(); }
-  virtual bool next() { return CArrayIteratorBase::next(); }
-  virtual bool isValid() { return CArrayIteratorBase::isValid(); }
-  virtual X & query() { return (X &) CArrayIteratorBase::_query(); }
-  virtual X & get() { X &ret = (X &) CArrayIteratorBase::_query(); ret.Link(); return ret; };
+    virtual bool first() { return CArrayIteratorBase::first(); }
+    virtual bool next() { return CArrayIteratorBase::next(); }
+    virtual bool isValid() { return CArrayIteratorBase::isValid(); }
+    virtual X & query() { return (X &) CArrayIteratorBase::_query(); }
+    virtual X & get() { X &ret = (X &) CArrayIteratorBase::_query(); ret.Link(); return ret; };
 };
 
 class jlib_decl COwnedArrayIterator : public CArrayIterator
@@ -78,7 +78,7 @@ class jlib_decl CNullIterator : public CInterface, public IIterator
 public:
     IMPLEMENT_IINTERFACE
 
-    virtual bool first() { return false; }
+        virtual bool first() { return false; }
     virtual bool next()  { return false; }
     virtual bool isValid() { return false; }
     virtual IInterface & query() { IInterface * i = 0; return *i; }

@@ -192,14 +192,14 @@ size32_t fastlz_decompress(const void* input, size32_t length, void* output, siz
 
 int fastlz_compress_level(int level, const void* input, size32_t length, void* output)
 {
-  MemoryAttr ma;
-  HTAB_T *ht = (HTAB_T *)ma.allocate(sizeof(HTAB_T)); // HTAB_T too big for stack really
-  if(level == 1)
-    return fastlz1_compress(input, length, output, *ht);
-  if(level == 2)
-    return fastlz2_compress(input, length, output, *ht);
+    MemoryAttr ma;
+    HTAB_T *ht = (HTAB_T *)ma.allocate(sizeof(HTAB_T)); // HTAB_T too big for stack really
+    if(level == 1)
+        return fastlz1_compress(input, length, output, *ht);
+    if(level == 2)
+        return fastlz2_compress(input, length, output, *ht);
 
-  return 0;
+    return 0;
 }
 
 #else /* !defined(FASTLZ_COMPRESSOR) && !defined(FASTLZ_DECOMPRESSOR) */

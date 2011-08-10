@@ -356,11 +356,11 @@ void CDeploymentEngine::stop()
 //---------------------------------------------------------------------------
 void CDeploymentEngine::stopInstance(IPropertyTree& node, const char* fileName/*="stop"*/)
 {
-  EnvMachineOS os = m_envDepEngine.lookupMachineOS(node);
+    EnvMachineOS os = m_envDepEngine.lookupMachineOS(node);
     StringAttr hostDir(getHostDir(node).str());
     m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL, 
         "Stopping %s process on %s", m_name.get(), hostDir.get());
-    
+
     Owned<IDeployTask> task;
     if (m_useSSHIfDefined && os == MachineOsLinux && !m_curSSHUser.isEmpty() && !m_curSSHKeyFile.isEmpty())
     {

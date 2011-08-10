@@ -229,193 +229,193 @@ bool RegExpr::init(const char *exp,bool nocase)
 // Compiles the regular expression ready for Find
 // if nocase = 1 the matching is case insensitive (where possible)
 {
-  kill();
-  char *scan;
-  char *longest;
-  memsize_t len;
-  REGFLAGS flags;
-  assertex(exp!=NULL);
-  delete re;
-  re = new RECOMP;
-  re->clarion = false;
-  re->parse = exp;
-  re->npar = 1;
-  re->program = (char *)malloc(MAXEXPR);
-  re->code = re->program;
-  re->nocase = nocase;
-  re->start = '\0';  /* Worst-case defaults. */
-  re->anch = 0;
-  re->must = NULL;
-  re->mlen = 0;
-  if (re->reg(0, flags) == NULL)
-    return false;
+    kill();
+    char *scan;
+    char *longest;
+    memsize_t len;
+    REGFLAGS flags;
+    assertex(exp!=NULL);
+    delete re;
+    re = new RECOMP;
+    re->clarion = false;
+    re->parse = exp;
+    re->npar = 1;
+    re->program = (char *)malloc(MAXEXPR);
+    re->code = re->program;
+    re->nocase = nocase;
+    re->start = '\0';  /* Worst-case defaults. */
+    re->anch = 0;
+    re->must = NULL;
+    re->mlen = 0;
+    if (re->reg(0, flags) == NULL)
+        return false;
 
-  /* Dig out information for optimizations. */
-  scan = re->program;      /* First BRANCH. */
-  if (OP(re->next(scan)) == END) {    /* Only one top-level choice. */
-    scan = OPERAND(scan);
+    /* Dig out information for optimizations. */
+    scan = re->program;      /* First BRANCH. */
+    if (OP(re->next(scan)) == END) {    /* Only one top-level choice. */
+        scan = OPERAND(scan);
 
-    /* Starting-point info. */
-    if (OP(scan) == EXACTLY)
-      re->start = *OPERAND(scan);
-    else if (OP(scan) == BOL)
-      re->anch++;
+        /* Starting-point info. */
+        if (OP(scan) == EXACTLY)
+            re->start = *OPERAND(scan);
+        else if (OP(scan) == BOL)
+            re->anch++;
 
-    /*
-     * If there's something expensive in the r.e., find the
-     * longest literal string that must appear and make it the
-     * regmust.  Resolve ties in favor of later strings, since
-     * the regstart check works with the beginning of the r.e.
-     * and avoiding duplication strengthens checking.  Not a
-     * strong reason, but sufficient in the absence of others.
-     */
-    if (flags&SPSTART) {
-      longest = NULL;
-      len = 0;
-      for (; scan != NULL; scan = re->next(scan))
-        if (OP(scan) == EXACTLY && strlen(OPERAND(scan)) >= (size32_t) len) {
-          longest = OPERAND(scan);
-          len = strlen(OPERAND(scan));
+        /*
+        * If there's something expensive in the r.e., find the
+        * longest literal string that must appear and make it the
+        * regmust.  Resolve ties in favor of later strings, since
+        * the regstart check works with the beginning of the r.e.
+        * and avoiding duplication strengthens checking.  Not a
+        * strong reason, but sufficient in the absence of others.
+        */
+        if (flags&SPSTART) {
+            longest = NULL;
+            len = 0;
+            for (; scan != NULL; scan = re->next(scan))
+                if (OP(scan) == EXACTLY && strlen(OPERAND(scan)) >= (size32_t) len) {
+                    longest = OPERAND(scan);
+                    len = strlen(OPERAND(scan));
+                }
+                re->must = longest;
+                re->mlen = (size32_t)len;
         }
-      re->must = longest;
-      re->mlen = (size32_t)len;
     }
-  }
-  int reloc;
-  if (re->must)
-    reloc = re->must-re->program;
-  re->program = (char *)realloc(re->program,(re->code-re->program)+1);
-  if (re->must)
-    re->must = (char *)(re->program + reloc);
-  return true;
+    int reloc;
+    if (re->must)
+        reloc = re->must-re->program;
+    re->program = (char *)realloc(re->program,(re->code-re->program)+1);
+    if (re->must)
+        re->must = (char *)(re->program + reloc);
+    return true;
 }
 
 
 const char * RegExpr::find(const char *string,size32_t from,size32_t len,size32_t maxlen)
 // finds the first occurrence of the RE in string
 {
-  /* Be paranoid... */
-  if (re == NULL || re->program== NULL) {
-    assertex(!"NULL parameter");
-    return NULL;
-  }
-  if (!string) { // find again
-    if (re->findstart == NULL) {
-      assertex(!"NULL parameter");
-      return NULL;
+    /* Be paranoid... */
+    if (re == NULL || re->program== NULL) {
+        assertex(!"NULL parameter");
+        return NULL;
     }
-    string = (char *)re->s_end[0];
-    if ((string==NULL)||(string == re->findend))
-      return NULL;
-  }
-  else {
-    re->findstart = string;
-    string+=from;
-    re->replacemax = maxlen;
-    if (maxlen) {
-      re->clarion = true;
-      re->findend = re->findstart+maxlen;
+    if (!string) { // find again
+        if (re->findstart == NULL) {
+            assertex(!"NULL parameter");
+            return NULL;
+        }
+        string = (char *)re->s_end[0];
+        if ((string==NULL)||(string == re->findend))
+            return NULL;
     }
     else {
-      const char *s=string;
-      for (size32_t l=0;*s&&(l<len);l++) s++;
-      re->findend = s;
+        re->findstart = string;
+        string+=from;
+        re->replacemax = maxlen;
+        if (maxlen) {
+            re->clarion = true;
+            re->findend = re->findstart+maxlen;
+        }
+        else {
+            const char *s=string;
+            for (size32_t l=0;*s&&(l<len);l++) s++;
+            re->findend = s;
+        }
     }
-  }
 
-  free((void *)re->s_save);
-  re->s_save = NULL;    // clear saved (replaced string)
+    free((void *)re->s_save);
+    re->s_save = NULL;    // clear saved (replaced string)
 
 
-  /* If there is a "must appear" string, look for it. */
-  if (re->must != NULL) {
-    const char *s = string;
-    while ((s = re->rstrchr(s, re->must[0])) != NULL) {
-      if (re->strnequ(s, re->must, re->mlen))
-        break;  /* Found it. */
-      s++;
+    /* If there is a "must appear" string, look for it. */
+    if (re->must != NULL) {
+        const char *s = string;
+        while ((s = re->rstrchr(s, re->must[0])) != NULL) {
+            if (re->strnequ(s, re->must, re->mlen))
+                break;  /* Found it. */
+            s++;
+        }
+        if (s == NULL)  /* Not present. */
+            return 0;
     }
-    if (s == NULL)  /* Not present. */
-      return 0;
-  }
 
-  /* Mark beginning of line for ^ . */
-  re->bol = string;
+    /* Mark beginning of line for ^ . */
+    re->bol = string;
 
-  /* Simplest case:  anchored match need be tried only once. */
-  char *ret = NULL;
-  if (re->anch)
-    ret = re->rtry(string);
-  else {
-    /* Messy cases:  unanchored match. */
-    const char *s = string;
-    if (re->start != '\0')
-      /* We know what char it must start with. */
-      while ((s = re->rstrchr(s, re->start)) != NULL) {
-        if ((ret=re->rtry(s))!=NULL)
-          break;
-        s++;
-      }
-    else
-      /* We don't -- general case. */
-      do {
-        if ((ret=re->rtry(s))!=NULL)
-          break;
-      } while (!re->eob(s++));
-  }
-  if (ret) {
-    const char *ss = re->s_start[0];
-    size32_t tl = re->s_end[0]-ss;
-    char *ds=(char *)malloc(tl+1);
-    memcpy(ds,ss,tl);
-    ds[tl] = 0;
-    for (int i = 0;i<NSUBEXP;i++) {
-      const char *ss2 = re->s_start[i];
-      if (ss2) {
-        re->s_savelen[i]  = re->s_end[i]-ss2;
-        re->s_savestr[i] = ds+(ss2-ss);
-      }
-      else {
-        re->s_savelen[i] = 0;
-        re->s_savestr[i] = NULL;
-      }
+    /* Simplest case:  anchored match need be tried only once. */
+    char *ret = NULL;
+    if (re->anch)
+        ret = re->rtry(string);
+    else {
+        /* Messy cases:  unanchored match. */
+        const char *s = string;
+        if (re->start != '\0')
+            /* We know what char it must start with. */
+            while ((s = re->rstrchr(s, re->start)) != NULL) {
+                if ((ret=re->rtry(s))!=NULL)
+                    break;
+                s++;
+            }
+        else
+            /* We don't -- general case. */
+            do {
+                if ((ret=re->rtry(s))!=NULL)
+                    break;
+            } while (!re->eob(s++));
     }
-    re->s_save = ds;
-  }
-  else {
-    _clear(re->s_start);
-  }
-  return ret;
+    if (ret) {
+        const char *ss = re->s_start[0];
+        size32_t tl = re->s_end[0]-ss;
+        char *ds=(char *)malloc(tl+1);
+        memcpy(ds,ss,tl);
+        ds[tl] = 0;
+        for (int i = 0;i<NSUBEXP;i++) {
+            const char *ss2 = re->s_start[i];
+            if (ss2) {
+                re->s_savelen[i]  = re->s_end[i]-ss2;
+                re->s_savestr[i] = ds+(ss2-ss);
+            }
+            else {
+                re->s_savelen[i] = 0;
+                re->s_savestr[i] = NULL;
+            }
+        }
+        re->s_save = ds;
+    }
+    else {
+        _clear(re->s_start);
+    }
+    return ret;
 }
 
 
 size32_t RegExpr::findlen(unsigned n)
 // size of string last matched using find
 {
-  if (re == NULL || re->program== NULL) {
-    assertex(!"NULL parameter");
+    if (re == NULL || re->program== NULL) {
+        assertex(!"NULL parameter");
+        return 0;
+    }
+    assertex(n<NSUBEXP);
+    if ((n>=NSUBEXP)) return 0;
+    if (re->s_save)
+        return re->s_savelen[n];
     return 0;
-  }
-  assertex(n<NSUBEXP);
-  if ((n>=NSUBEXP)) return 0;
-  if (re->s_save)
-    return re->s_savelen[n];
-  return 0;
 }
 
 const char *RegExpr::findstr(StringBuffer &s,unsigned n)
 // returns string last matched (n = 0) or substring n (n>0)
 {
-  size32_t l = findlen(n);
-  if (l && re->s_save) {
-    s.append(l,re->s_savestr[n]);
-  }
-  return s.str();
+    size32_t l = findlen(n);
+    if (l && re->s_save) {
+        s.append(l,re->s_savestr[n]);
+    }
+    return s.str();
 }
 
 const char *RegExpr::findnext()
 {
-  return find(NULL);
+    return find(NULL);
 }
 
 void RegExpr::replace(const char *rs,unsigned maxlen,unsigned n)
@@ -424,89 +424,89 @@ void RegExpr::replace(const char *rs,unsigned maxlen,unsigned n)
 // Multiple replaces may be called on a single Find/FindNext
 
 {
-  if (re == NULL || re->program== NULL) {
-    assertex(!"NULL parameter");
-    return;
-  }
-  assertex(n<NSUBEXP);
-  if ((n>=NSUBEXP)) return;
-  const char *s=re->s_start[n];
-  if (!s) return;
-  if (maxlen==0) maxlen = re->replacemax;
-  if (maxlen==0) return;
-  const char *e=re->s_end[n];
-  if (!e) return;
-  size32_t lo=e-s;
-  size32_t lt=re->rstrlen(e);
-  size32_t lr = (size32_t)strlen(rs);
-  if (lr>lo) {
-    size32_t d = lr-lo;                   // delta
-    size32_t l = ((e-re->findstart)+lt);  // total length
-    size32_t r = maxlen;
-    if (l>r) {
-      assertex(!"replace - maxlen too small for passed string!");
-      return;
+    if (re == NULL || re->program== NULL) {
+        assertex(!"NULL parameter");
+        return;
     }
-    r-=l;                               // r = max gap left
-    if (!re->clarion) r--;              // for null
-    if (r<d) {
-      if (lt<d-r) {
-        lr+=lt;
-        if (lr<=(d-r)) return;          // can't really happen
-        lr-=(d-r);                      // new string too big
-        lt=0;                           // lose tail
-      }
-      else
-        lt-=(d-r);                      // losing part of tail
+    assertex(n<NSUBEXP);
+    if ((n>=NSUBEXP)) return;
+    const char *s=re->s_start[n];
+    if (!s) return;
+    if (maxlen==0) maxlen = re->replacemax;
+    if (maxlen==0) return;
+    const char *e=re->s_end[n];
+    if (!e) return;
+    size32_t lo=e-s;
+    size32_t lt=re->rstrlen(e);
+    size32_t lr = (size32_t)strlen(rs);
+    if (lr>lo) {
+        size32_t d = lr-lo;                   // delta
+        size32_t l = ((e-re->findstart)+lt);  // total length
+        size32_t r = maxlen;
+        if (l>r) {
+            assertex(!"replace - maxlen too small for passed string!");
+            return;
+        }
+        r-=l;                               // r = max gap left
+        if (!re->clarion) r--;              // for null
+        if (r<d) {
+            if (lt<d-r) {
+                lr+=lt;
+                if (lr<=(d-r)) return;          // can't really happen
+                lr-=(d-r);                      // new string too big
+                lt=0;                           // lose tail
+            }
+            else
+                lt-=(d-r);                      // losing part of tail
+        }
+        if (lt) memmove((void *)(e+d),e,lt);
+        if (!re->clarion) *((char *)(s+(lr+lt))) = 0; // terminate
     }
-    if (lt) memmove((void *)(e+d),e,lt);
-    if (!re->clarion) *((char *)(s+(lr+lt))) = 0; // terminate
-  }
-  else if (lr<lo) {
-    size32_t d2 = lo-lr;                   // delta
-    // must be enough room so fairly simple
-    if (re->clarion) {
-      memmove((void *)(e-d2),e,lt);
-      memset((void *)(e+(lt-d2)),' ',d2);
+    else if (lr<lo) {
+        size32_t d2 = lo-lr;                   // delta
+        // must be enough room so fairly simple
+        if (re->clarion) {
+            memmove((void *)(e-d2),e,lt);
+            memset((void *)(e+(lt-d2)),' ',d2);
+        }
+        else
+            memmove((void *)(e-lo+lr),e,lt+1);
     }
-    else
-      memmove((void *)(e-lo+lr),e,lt+1);
-  }
-  memcpy((void *)s,rs,lr);
-  re->adjustptrs(e,lo,lr);
+    memcpy((void *)s,rs,lr);
+    re->adjustptrs(e,lo,lr);
 }
 
 static void dosubstitute(RegExpr *re,StringBuffer &out,char *s)
 {
-  for (char* b= strchr(s,'#');b;b=strchr(b+1,'#')) {
-    char c = b[1];
-    if (c=='#') {
-      *(++b)=0;
-      out.append(s);
-      s = b+1;
+    for (char* b= strchr(s,'#');b;b=strchr(b+1,'#')) {
+        char c = b[1];
+        if (c=='#') {
+            *(++b)=0;
+            out.append(s);
+            s = b+1;
+        }
+        else if (!isdigit(c))
+            continue;
+        else {
+            (*b++)=0;
+            out.append(s);
+            re->findstr(out,c-'0');
+        }
+        s = b+1;  // reset start
     }
-    else if (!isdigit(c))
-      continue;
-    else {
-      (*b++)=0;
-      out.append(s);
-      re->findstr(out,c-'0');
-    }
-    s = b+1;  // reset start
-  }
-  out.append(s);
+    out.append(s);
 }
 
 const char * RegExpr::substitute(StringBuffer &out,const char *mask,...)
 {
-  char * str = (char *)malloc(MAXSUBST);
-  va_list ap;
-  va_start(ap,mask);
-  vsprintf(str,mask,ap);
-  va_end(ap);
-  dosubstitute(this,out,str);
-  free(str);
-  return (char*)out.str();
+    char * str = (char *)malloc(MAXSUBST);
+    va_list ap;
+    va_start(ap,mask);
+    vsprintf(str,mask,ap);
+    va_end(ap);
+    dosubstitute(this,out,str);
+    free(str);
+    return (char*)out.str();
 }
 
 
@@ -515,259 +515,259 @@ void RegExpr::kill()
 // releases extra storage used by RegularExpressionClass
 {
 
-  delete re;
-  re = NULL;
+    delete re;
+    re = NULL;
 }
 
 
 char *RECOMP::reg (bool paren, REGFLAGS &flags)
 {
-  char *ret;
-  char *br;
-  char *ender;
-  int parno;
+    char *ret;
+    char *br;
+    char *ender;
+    int parno;
 
-  flags = HASWIDTH;  /* Tentatively. */
+    flags = HASWIDTH;  /* Tentatively. */
 
 
-  /* Make an OPEN node, if parenthesized. */
-  if (paren) {
-    if (npar >= NSUBEXP)
-      FAIL("too many {}");
-    parno = npar;
-    npar++;
-    ret = rnode((char)(OPEN+parno));
-  } else
-    ret = NULL;
+    /* Make an OPEN node, if parenthesized. */
+    if (paren) {
+        if (npar >= NSUBEXP)
+            FAIL("too many {}");
+        parno = npar;
+        npar++;
+        ret = rnode((char)(OPEN+parno));
+    } else
+        ret = NULL;
 
-  /* Pick up the branches, linking them together. */
-  REGFLAGS bflags;
-  br = branch(bflags);
-  if (br == NULL)
-    return(NULL);
-  if (ret != NULL)
-    tail(ret, br);  /* OPEN -> first. */
-  else
-    ret = br;
-  if (!(bflags&HASWIDTH))
-    flags &= ~HASWIDTH;
-  flags |= bflags&SPSTART;
-  while (*parse == '|') {
-    parse++;
+    /* Pick up the branches, linking them together. */
+    REGFLAGS bflags;
     br = branch(bflags);
     if (br == NULL)
-      return(NULL);
-    tail(ret, br);  /* BRANCH -> BRANCH. */
+        return(NULL);
+    if (ret != NULL)
+        tail(ret, br);  /* OPEN -> first. */
+    else
+        ret = br;
     if (!(bflags&HASWIDTH))
-      flags &= ~HASWIDTH;
+        flags &= ~HASWIDTH;
     flags |= bflags&SPSTART;
-  }
+    while (*parse == '|') {
+        parse++;
+        br = branch(bflags);
+        if (br == NULL)
+            return(NULL);
+        tail(ret, br);  /* BRANCH -> BRANCH. */
+        if (!(bflags&HASWIDTH))
+            flags &= ~HASWIDTH;
+        flags |= bflags&SPSTART;
+    }
 
-  /* Make a closing node, and hook it on the end. */
-  ender = rnode((char)((paren) ? CLOSE+parno : END));
-  tail(ret, ender);
+    /* Make a closing node, and hook it on the end. */
+    ender = rnode((char)((paren) ? CLOSE+parno : END));
+    tail(ret, ender);
 
-  /* Hook the tails of the branches to the closing node. */
-  for (br = ret; br != NULL; br = next(br))
-    optail(br, ender);
+    /* Hook the tails of the branches to the closing node. */
+    for (br = ret; br != NULL; br = next(br))
+        optail(br, ender);
 
-  /* Check for proper termination. */
-  if (paren && *parse++ != SUBPARENR) {
-    FAIL("unmatched {}");
-  } else if (!paren && *parse != '\0') {
-    if (*parse == SUBPARENR) {
-      FAIL("unmatched {}");
-    } else
-      FAIL("junk on end");  /* "Can't happen". */
-    /* NOTREACHED */
-  }
+    /* Check for proper termination. */
+    if (paren && *parse++ != SUBPARENR) {
+        FAIL("unmatched {}");
+    } else if (!paren && *parse != '\0') {
+        if (*parse == SUBPARENR) {
+            FAIL("unmatched {}");
+        } else
+            FAIL("junk on end");  /* "Can't happen". */
+        /* NOTREACHED */
+    }
 
-  return(ret);
+    return(ret);
 }
 
 
 char *RECOMP::branch (REGFLAGS &flags)
 /*
- - branch - one alternative of an | operator
- *
- * Implements the concatenation operator.
- */
+- branch - one alternative of an | operator
+*
+* Implements the concatenation operator.
+*/
 {
-  char *ret;
-  char *chain;
-  char *latest;
+    char *ret;
+    char *chain;
+    char *latest;
 
-  flags = WORST;    /* Tentatively. */
+    flags = WORST;    /* Tentatively. */
 
-  ret = rnode(BRANCH);
-  chain = NULL;
-  REGFLAGS pflags;
-  while (*parse != '\0' && *parse != '|' && *parse != SUBPARENR) {
-    latest = piece(pflags);
-    if (latest == NULL)
-      return(NULL);
-    flags |= pflags&HASWIDTH;
-    if (chain == NULL)  /* First piece. */
-      flags |= pflags&SPSTART;
-    else
-      tail(chain, latest);
-    chain = latest;
-  }
-  if (chain == NULL)  /* Loop ran zero times. */
-    (void) rnode(NOTHING);
+    ret = rnode(BRANCH);
+    chain = NULL;
+    REGFLAGS pflags;
+    while (*parse != '\0' && *parse != '|' && *parse != SUBPARENR) {
+        latest = piece(pflags);
+        if (latest == NULL)
+            return(NULL);
+        flags |= pflags&HASWIDTH;
+        if (chain == NULL)  /* First piece. */
+            flags |= pflags&SPSTART;
+        else
+            tail(chain, latest);
+        chain = latest;
+    }
+    if (chain == NULL)  /* Loop ran zero times. */
+        (void) rnode(NOTHING);
 
-  return(ret);
+    return(ret);
 }
 
 char *RECOMP::piece (REGFLAGS &flags)
 /*
- - piece - something followed by possible [*+?]
- *
- * Note that the branching code sequences used for ? and the general cases
- * of * and + are somewhat optimized:  they use the same NOTHING node as
- * both the endmarker for their branch list and the body of the last branch.
- * It might seem that this node could be dispensed with entirely, but the
- * endmarker role is not redundant.
- */
+- piece - something followed by possible [*+?]
+*
+* Note that the branching code sequences used for ? and the general cases
+* of * and + are somewhat optimized:  they use the same NOTHING node as
+* both the endmarker for their branch list and the body of the last branch.
+* It might seem that this node could be dispensed with entirely, but the
+* endmarker role is not redundant.
+*/
 {
-  char *ret;
-  char op;
-  char *next;
+    char *ret;
+    char op;
+    char *next;
 
-  REGFLAGS aflags;
-  ret = atom(aflags);
-  if (ret == NULL)
-    return(NULL);
+    REGFLAGS aflags;
+    ret = atom(aflags);
+    if (ret == NULL)
+        return(NULL);
 
-  op = *parse;
-  if (!ISMULT(op)) {
-    flags = aflags;
+    op = *parse;
+    if (!ISMULT(op)) {
+        flags = aflags;
+        return(ret);
+    }
+
+    if (!(aflags&HASWIDTH) && op != '?')
+        FAIL("*+ operand could be empty");
+    flags = (op != '+') ? (WORST|SPSTART) : (WORST|HASWIDTH);
+
+    if (op == '*' && (aflags&SIMPLE))
+        insert(STAR, ret);
+    else if (op == '*') {
+        /* Emit x* as (x&|), where & means "self". */
+        insert(BRANCH, ret);      /* Either x */
+        optail(ret, rnode(BACK));    /* and loop */
+        optail(ret, ret);      /* back */
+        tail(ret, rnode(BRANCH));    /* or */
+        tail(ret, rnode(NOTHING));    /* null. */
+    } else if (op == '+' && (aflags&SIMPLE))
+        insert(PLUS, ret);
+    else if (op == '+') {
+        /* Emit x+ as x(&|), where & means "self". */
+        next = rnode(BRANCH);      /* Either */
+        tail(ret, next);
+        tail(rnode(BACK), ret);    /* loop back */
+        tail(next, rnode(BRANCH));    /* or */
+        tail(ret, rnode(NOTHING));    /* null. */
+    } else if (op == '?') {
+        /* Emit x? as (x|) */
+        insert(BRANCH, ret);      /* Either x */
+        tail(ret, rnode(BRANCH));    /* or */
+        next = rnode(NOTHING);    /* null. */
+        tail(ret, next);
+        optail(ret, next);
+    }
+    parse++;
+    if (ISMULT(*parse))
+        FAIL("nested *?+");
+
     return(ret);
-  }
-
-  if (!(aflags&HASWIDTH) && op != '?')
-    FAIL("*+ operand could be empty");
-  flags = (op != '+') ? (WORST|SPSTART) : (WORST|HASWIDTH);
-
-  if (op == '*' && (aflags&SIMPLE))
-    insert(STAR, ret);
-  else if (op == '*') {
-    /* Emit x* as (x&|), where & means "self". */
-    insert(BRANCH, ret);      /* Either x */
-    optail(ret, rnode(BACK));    /* and loop */
-    optail(ret, ret);      /* back */
-    tail(ret, rnode(BRANCH));    /* or */
-    tail(ret, rnode(NOTHING));    /* null. */
-  } else if (op == '+' && (aflags&SIMPLE))
-    insert(PLUS, ret);
-  else if (op == '+') {
-    /* Emit x+ as x(&|), where & means "self". */
-    next = rnode(BRANCH);      /* Either */
-    tail(ret, next);
-    tail(rnode(BACK), ret);    /* loop back */
-    tail(next, rnode(BRANCH));    /* or */
-    tail(ret, rnode(NOTHING));    /* null. */
-  } else if (op == '?') {
-    /* Emit x? as (x|) */
-    insert(BRANCH, ret);      /* Either x */
-    tail(ret, rnode(BRANCH));    /* or */
-    next = rnode(NOTHING);    /* null. */
-    tail(ret, next);
-    optail(ret, next);
-  }
-  parse++;
-  if (ISMULT(*parse))
-    FAIL("nested *?+");
-
-  return(ret);
 }
 
 char *RECOMP::atom (REGFLAGS &flags)
 /*
- - atom - the lowest level
- *
- * Optimization:  gobbles an entire sequence of ordinary characters so that
- * it can turn them into a single node, which is smaller to store and
- * faster to run.  Backslashed characters are exceptions, each becoming a
- * separate node; the code is simpler that way and it's not worth fixing.
- */
+- atom - the lowest level
+*
+* Optimization:  gobbles an entire sequence of ordinary characters so that
+* it can turn them into a single node, which is smaller to store and
+* faster to run.  Backslashed characters are exceptions, each becoming a
+* separate node; the code is simpler that way and it's not worth fixing.
+*/
 {
-  char *ret;
+    char *ret;
 
-  flags = WORST;    /* Tentatively. */
+    flags = WORST;    /* Tentatively. */
 
-  switch (*parse++) {
+    switch (*parse++) {
   case '^':
-    ret = rnode(BOL);
-    break;
+      ret = rnode(BOL);
+      break;
   case '$':
-    ret = rnode(EOL);
-    break;
+      ret = rnode(EOL);
+      break;
   case '.':
-    ret = rnode(ANY);
-    flags |= HASWIDTH|SIMPLE;
-    break;
+      ret = rnode(ANY);
+      flags |= HASWIDTH|SIMPLE;
+      break;
   case '[': {
       int clss;
       int clssend;
 
       if ((*parse == '^') || (*parse == '~')) {  /* Complement of range. */
-        ret = rnode(ANYBUT);
-        parse++;
-      } else
-        ret = rnode(ANYOF);
-      if (*parse == ']' || *parse == '-')
-        REGC(*parse++);
-      while (*parse != '\0' && *parse != ']') {
-        if (*parse == '-') {
+          ret = rnode(ANYBUT);
           parse++;
-          if (*parse == ']' || *parse == '\0')
-            REGC('-');
-          else {
-            clss = UCHARAT(parse-2)+1;
-            clssend = UCHARAT(parse);
-            if (clss > clssend+1)
-              FAIL("invalid [] range");
-            for (; clss <= clssend; clss++)
-              REGC((char) clss);
-            parse++;
-          }
-        } else
+      } else
+          ret = rnode(ANYOF);
+      if (*parse == ']' || *parse == '-')
           REGC(*parse++);
+      while (*parse != '\0' && *parse != ']') {
+          if (*parse == '-') {
+              parse++;
+              if (*parse == ']' || *parse == '\0')
+                  REGC('-');
+              else {
+                  clss = UCHARAT(parse-2)+1;
+                  clssend = UCHARAT(parse);
+                  if (clss > clssend+1)
+                      FAIL("invalid [] range");
+                  for (; clss <= clssend; clss++)
+                      REGC((char) clss);
+                  parse++;
+              }
+          } else
+              REGC(*parse++);
       }
       REGC('\0');
       if (*parse != ']')
-        FAIL("unmatched []");
+          FAIL("unmatched []");
       parse++;
       flags |= HASWIDTH|SIMPLE;
-    }
-    break;
+            }
+            break;
   case SUBPARENL: {
       REGFLAGS sflags;
       ret = reg(1, sflags);
       if (ret == NULL)
-        return(NULL);
+          return(NULL);
       flags |= sflags&(HASWIDTH|SPSTART);
-    }
-    break;
+                  }
+                  break;
   case '\0':
   case '|':
   case SUBPARENR:
-    FAIL("internal urp");  /* Supposed to be caught earlier. */
-    break;
+      FAIL("internal urp");  /* Supposed to be caught earlier. */
+      break;
   case '?':
   case '+':
   case '*':
-    FAIL("?+* follows nothing");
-    break;
+      FAIL("?+* follows nothing");
+      break;
   case '\\':
-    if (*parse == '\0')
-      FAIL("trailing \\");
-    ret = rnode(EXACTLY);
-    REGC(*parse++);
-    REGC('\0');
-    flags |= HASWIDTH|SIMPLE;
-    break;
+      if (*parse == '\0')
+          FAIL("trailing \\");
+      ret = rnode(EXACTLY);
+      REGC(*parse++);
+      REGC('\0');
+      flags |= HASWIDTH|SIMPLE;
+      break;
   default: {
       memsize_t len;
       char ender;
@@ -775,156 +775,156 @@ char *RECOMP::atom (REGFLAGS &flags)
       parse--;
       len = strcspn(parse, META);
       if (len <= 0)
-        FAIL("internal disaster");
+          FAIL("internal disaster");
       ender = *(parse+len);
       if (len > 1 && ISMULT(ender))
-        len--;    /* Back off clear of ?+* operand. */
+          len--;    /* Back off clear of ?+* operand. */
       flags |= HASWIDTH;
       if (len == 1)
-        flags |= SIMPLE;
+          flags |= SIMPLE;
       ret = rnode(EXACTLY);
       while (len > 0) {
-        REGC(*parse++);
-        len--;
+          REGC(*parse++);
+          len--;
       }
       REGC('\0');
+           }
+           break;
     }
-    break;
-  }
 
-  return(ret);
+    return(ret);
 }
 
 char *RECOMP::rnode (char op)
 /*
- - rnode - emit a node
- */
+- rnode - emit a node
+*/
 {
-  char *ret = code;
-  REGC(op);
-  REGC(0);
-  REGC(0);
-  return(ret);
+    char *ret = code;
+    REGC(op);
+    REGC(0);
+    REGC(0);
+    return(ret);
 }
 
 
 
 void RECOMP::insert (char op, char *opnd)
 /*
- - insert - insert an operator in front of already-emitted operand
- *
- * Means relocating the operand.
- */
+- insert - insert an operator in front of already-emitted operand
+*
+* Means relocating the operand.
+*/
 {
-  char *src=code;
-  code+=3;
-  char *dst=code;
-  while (src > opnd)
-    *--dst = *--src;
-  char *place = (char *)opnd;    /* Op node, where operand used to be. */
-  *place++ = op;
-  *place++ = '\0';
-  *place++ = '\0';
+    char *src=code;
+    code+=3;
+    char *dst=code;
+    while (src > opnd)
+        *--dst = *--src;
+    char *place = (char *)opnd;    /* Op node, where operand used to be. */
+    *place++ = op;
+    *place++ = '\0';
+    *place++ = '\0';
 }
 
 void RECOMP::tail (char *p, char *val)
 /*
- - tail - set the next-pointer at the end of a node chain
- */
+- tail - set the next-pointer at the end of a node chain
+*/
 {
-  char *scan;
-  char *temp;
-  int offset;
+    char *scan;
+    char *temp;
+    int offset;
 
-  /* Find last node. */
-  scan = p;
-  for (;;) {
-    temp = next(scan);
-    if (temp == NULL)
-      break;
-    scan = temp;
-  }
+    /* Find last node. */
+    scan = p;
+    for (;;) {
+        temp = next(scan);
+        if (temp == NULL)
+            break;
+        scan = temp;
+    }
 
-  if (OP(scan) == BACK)
-    offset = scan - val;
-  else
-    offset = val - scan;
-  *(scan+1) = (char) ((offset>>8)&0377);
-  *(scan+2) = (char) (offset&0377);
+    if (OP(scan) == BACK)
+        offset = scan - val;
+    else
+        offset = val - scan;
+    *(scan+1) = (char) ((offset>>8)&0377);
+    *(scan+2) = (char) (offset&0377);
 }
 
 void RECOMP::optail (char *p, char *val)
 /*
- - optail - tail on operand of first argument; nop if operandless
- */
+- optail - tail on operand of first argument; nop if operandless
+*/
 {
-  /* "Operandless" and "op != BRANCH" are synonymous in practice. */
-  if (p == NULL || OP(p) != BRANCH)
-    return;
-  tail(OPERAND(p), val);
+    /* "Operandless" and "op != BRANCH" are synonymous in practice. */
+    if (p == NULL || OP(p) != BRANCH)
+        return;
+    tail(OPERAND(p), val);
 }
 
 char *RECOMP::next (char *p)
 /*
- - next - dig the "next" pointer out of a node
- */
+- next - dig the "next" pointer out of a node
+*/
 {
-  int offset = NEXT(p);
-  if (offset == 0)
-    return(NULL);
+    int offset = NEXT(p);
+    if (offset == 0)
+        return(NULL);
 
-  if (OP(p) == BACK)
-    return(p-offset);
-  else
-    return(p+offset);
+    if (OP(p) == BACK)
+        return(p-offset);
+    else
+        return(p+offset);
 }
 
 /*
- - rtry - try match at specific point
- */
+- rtry - try match at specific point
+*/
 char * RECOMP::rtry (const char *string)
 {
-  input = string;
-  startp = s_start;
-  endp = s_end;
-  _clear(s_start);
-  _clear(s_end);
-  if (match(program)) {
-    s_start[0] = string;
-    s_end[0] = input;
-    return (char *)string;
-  }
-  return NULL;
+    input = string;
+    startp = s_start;
+    endp = s_end;
+    _clear(s_start);
+    _clear(s_end);
+    if (match(program)) {
+        s_start[0] = string;
+        s_end[0] = input;
+        return (char *)string;
+    }
+    return NULL;
 }
 
 
 bool RECOMP::match (char *prog)
 {
-  char *scan;  /* Current node. */
-  char *n;    /* Next node. */
+    char *scan;  /* Current node. */
+    char *n;    /* Next node. */
 
-  scan = prog;
-  while (scan != NULL) {
-    n = next(scan);
+    scan = prog;
+    while (scan != NULL) {
+        n = next(scan);
 
-    switch (OP(scan)) {
+        switch (OP(scan)) {
     case BOL:
-      if (input != bol)
-        return false;
-      break;
+        if (input != bol)
+            return false;
+        break;
     case EOL:
-      if (clarion) {
-        if (!claeol(input))
-          return false;
-      }
-      else if (!eob(input))
-        return false;
-      break;
+        if (clarion) {
+            if (!claeol(input))
+                return false;
+        }
+        else if (!eob(input))
+            return false;
+        break;
     case ANY:
-      if (eob(input))
-        return false;
-      input++;
-      break;
+        if (eob(input))
+            return false;
+        input++;
+        break;
     case EXACTLY: {
         memsize_t len;
         char *opnd;
@@ -932,27 +932,27 @@ bool RECOMP::match (char *prog)
         opnd = OPERAND(scan);
         /* Inline the first character, for speed. */
         if (!equch(*opnd,*input))
-          return false;
+            return false;
         len = strlen(opnd);
         if (len > 1 && !strnequ(input, opnd, (size32_t)len))
-          return false;
+            return false;
         input += len;
-      }
-      break;
+                  }
+                  break;
     case ANYOF:
-       if (eob(input) || strchr(OPERAND(scan), *input) == NULL)
-        return false;
-      input++;
-      break;
+        if (eob(input) || strchr(OPERAND(scan), *input) == NULL)
+            return false;
+        input++;
+        break;
     case ANYBUT:
-       if (eob(input) || strchr(OPERAND(scan), *input) != NULL)
-        return false;
-      input++;
-      break;
+        if (eob(input) || strchr(OPERAND(scan), *input) != NULL)
+            return false;
+        input++;
+        break;
     case NOTHING:
-      break;
+        break;
     case BACK:
-      break;
+        break;
     case OPEN+1:
     case OPEN+2:
     case OPEN+3:
@@ -969,18 +969,18 @@ bool RECOMP::match (char *prog)
         save = input;
 
         if (match(n)) {
-          /*
-           * Don't set start if some later
-           * invocation of the same parentheses
-           * already has.
-           */
-          if (startp[no] == NULL)
-            startp[no] = save;
-          return true;
+            /*
+            * Don't set start if some later
+            * invocation of the same parentheses
+            * already has.
+            */
+            if (startp[no] == NULL)
+                startp[no] = save;
+            return true;
         } else
-          return false;
-      }
-      break;
+            return false;
+                 }
+                 break;
     case CLOSE+1:
     case CLOSE+2:
     case CLOSE+3:
@@ -997,36 +997,36 @@ bool RECOMP::match (char *prog)
         save = input;
 
         if (match(n)) {
-          /*
-           * Don't set end if some later
-           * invocation of the same parentheses
-           * already has.
-           */
-          if (endp[no] == NULL)
-            endp[no] = save;
-          return true;
+            /*
+            * Don't set end if some later
+            * invocation of the same parentheses
+            * already has.
+            */
+            if (endp[no] == NULL)
+                endp[no] = save;
+            return true;
         } else
-          return false;
-      }
-      break;
+            return false;
+                  }
+                  break;
     case BRANCH: {
         const char *save;
 
         if (OP(n) != BRANCH)    /* No choice. */
-          n = OPERAND(scan);  /* Avoid recursion. */
+            n = OPERAND(scan);  /* Avoid recursion. */
         else {
-          do {
-            save = input;
-            if (match(OPERAND(scan)))
-              return true;
-            input = save;
-            scan = next(scan);
-          } while (scan != NULL && OP(scan) == BRANCH);
-          return false;
-          /* NOTREACHED */
+            do {
+                save = input;
+                if (match(OPERAND(scan)))
+                    return true;
+                input = save;
+                scan = next(scan);
+            } while (scan != NULL && OP(scan) == BRANCH);
+            return false;
+            /* NOTREACHED */
         }
-      }
-      break;
+                 }
+                 break;
     case STAR:
     case PLUS: {
         char nextch;
@@ -1035,265 +1035,265 @@ bool RECOMP::match (char *prog)
         int min;
 
         /*
-         * Lookahead to avoid useless match attempts
-         * when we know what character comes n.
-         */
+        * Lookahead to avoid useless match attempts
+        * when we know what character comes n.
+        */
         nextch = '\0';
         if (OP(n) == EXACTLY)
-          nextch = *OPERAND(n);
+            nextch = *OPERAND(n);
         min = (OP(scan) == STAR) ? 0 : 1;
         save = input;
         no = repeat(OPERAND(scan));
         while (no >= min) {
-          /* If it could work, try it. */
-          if (nextch == '\0' || equch(*input,nextch))
-            if (match(n))
-              return true;
-          /* Couldn't or didn't -- back up. */
-          no--;
-          input = save + no;
+            /* If it could work, try it. */
+            if (nextch == '\0' || equch(*input,nextch))
+                if (match(n))
+                    return true;
+            /* Couldn't or didn't -- back up. */
+            no--;
+            input = save + no;
         }
         return false;
-      }
-      break;
+               }
+               break;
     case END:
-      return true;  /* Success! */
-      break;
+        return true;  /* Success! */
+        break;
     default:
-      assertex(!"memory corruption");
-      return false;
-      break;
+        assertex(!"memory corruption");
+        return false;
+        break;
+        }
+
+        scan = n;
     }
 
-    scan = n;
-  }
-
-  /*
-   * We get here only if there's trouble -- normally "case END" is
-   * the terminating point.
-   */
-  assertex(!"corrupted pointers");
-  return false;
+    /*
+    * We get here only if there's trouble -- normally "case END" is
+    * the terminating point.
+    */
+    assertex(!"corrupted pointers");
+    return false;
 }
 
 int RECOMP::repeat (char *p)
 /*
- - regrepeat - repeatedly match something simple, report how many
- */
+- regrepeat - repeatedly match something simple, report how many
+*/
 {
-  int count = 0;
-  const char *scan = input;
-  char *opnd = OPERAND(p);
-  switch (OP(p)) {
+    int count = 0;
+    const char *scan = input;
+    char *opnd = OPERAND(p);
+    switch (OP(p)) {
   case ANY:
-    count = rstrlen(scan);
-    scan += count;
-    break;
+      count = rstrlen(scan);
+      scan += count;
+      break;
   case EXACTLY:
-    while (equch(*opnd,*scan)) {
-      count++;
-      scan++;
-    }
-    break;
+      while (equch(*opnd,*scan)) {
+          count++;
+          scan++;
+      }
+      break;
   case ANYOF:
-    while (!eob(scan) && strchr(opnd, *scan) != NULL) { // NB not rstrchr!
-      count++;
-      scan++;
-    }
-    break;
+      while (!eob(scan) && strchr(opnd, *scan) != NULL) { // NB not rstrchr!
+          count++;
+          scan++;
+      }
+      break;
   case ANYBUT:
-    while (!eob(scan) && strchr(opnd, *scan) == NULL) { // NB nnot rstrchr
-      count++;
-      scan++;
-    }
-    break;
+      while (!eob(scan) && strchr(opnd, *scan) == NULL) { // NB nnot rstrchr
+          count++;
+          scan++;
+      }
+      break;
   default:    /* Oh dear.  Called inappropriately. */
-    assertex(!"internal foulup");
-    count = 0;  /* Best compromise. */
-    break;
-  }
-  input = scan;
+      assertex(!"internal foulup");
+      count = 0;  /* Best compromise. */
+      break;
+    }
+    input = scan;
 
-  return(count);
+    return(count);
 }
 
 void RECOMP::adjustptrs(const char *e,size32_t lo,size32_t lr)
 {
-  if (lo==lr) return;
-  size32_t o=e-findstart;
-  for (int i=0;i<NSUBEXP;i++) {
-    const char *s= s_start[i];
-    if (s) {
-      size32_t so = s-findstart;
-      if (so>=o) {
-        s_start[i]=s+lr-lo;
-      }
-      so = s_end[i]-findstart;
-      if (so>=o)
-        s_end[i]+=lr-lo;
+    if (lo==lr) return;
+    size32_t o=e-findstart;
+    for (int i=0;i<NSUBEXP;i++) {
+        const char *s= s_start[i];
+        if (s) {
+            size32_t so = s-findstart;
+            if (so>=o) {
+                s_start[i]=s+lr-lo;
+            }
+            so = s_end[i]-findstart;
+            if (so>=o)
+                s_end[i]+=lr-lo;
+        }
     }
-  }
-  findend+=(lr-lo);
+    findend+=(lr-lo);
 }
 
 
 const char *RECOMP::rstrchr(const char *s,int c)
 {
-  if (nocase) {
-    c = toupper(c);
-    while (s!=findend) {
-      if (toupper(*s)==c) return s;
-      s++;
+    if (nocase) {
+        c = toupper(c);
+        while (s!=findend) {
+            if (toupper(*s)==c) return s;
+            s++;
+        }
     }
-  }
-  else {
-    while (s!=findend) {
-      if (*s==c) return s;
-      s++;
+    else {
+        while (s!=findend) {
+            if (*s==c) return s;
+            s++;
+        }
     }
-  }
-  return NULL;
+    return NULL;
 }
 
 bool RECOMP::strnequ(const char *s1,const char *s2,size32_t n)
 { // s1 is in regsearch
-  if (findend-s1 < (signed)n) return false;
-  if (nocase) {
-    while (n--) {
-      if (toupper(*s1)!=toupper(*s2)) return false;
-      s1++;
-      s2++;
+    if (findend-s1 < (signed)n) return false;
+    if (nocase) {
+        while (n--) {
+            if (toupper(*s1)!=toupper(*s2)) return false;
+            s1++;
+            s2++;
+        }
     }
-  }
-  else {
-    while (n--) {
-      if (*s1!=*s2) return false;
-      s1++;
-      s2++;
+    else {
+        while (n--) {
+            if (*s1!=*s2) return false;
+            s1++;
+            s2++;
+        }
     }
-  }
-  return true;
+    return true;
 }
 
 bool RECOMP::claeol(const char *s)
 {
-  do {
-    if (eob(s)) return true;
-  }
-  while ((*(s++))==' ');
-  return false;
+    do {
+        if (eob(s)) return true;
+    }
+    while ((*(s++))==' ');
+    return false;
 }
 
 unsigned char xlat[26]={0,'1','2','3',0,'1','2',0,0,'2','2','4','5','5',0,'1','2','6','2','3',0,'1',0,'2',0,'2'};
 
 static char *SoundexCode(const char *s,int l,char *res)
 {
-  char *r=res;
-  r[1] = '0';
-  r[2] = '0';
-  r[3] = '0';
-  r[4] = 0;
-  loop {
-    if (!l||!*s) {
-      *r = '!';
-      return res;
+    char *r=res;
+    r[1] = '0';
+    r[2] = '0';
+    r[3] = '0';
+    r[4] = 0;
+    loop {
+        if (!l||!*s) {
+            *r = '!';
+            return res;
+        }
+        if (isalpha(*s)) break;
+        s++;
+        l--;
     }
-    if (isalpha(*s)) break;
-    s++;
-    l--;
-  }
-  char c=toupper(*s);
-  *r = c;
-  r++; s++;
-  char dl = ((c>='A')&&(c<='Z'))?xlat[c-'A']:0;
-  while (l&&*s) {
-    c = toupper(*s);
-    s++;
-    l--;
-    if ((c>='A')&&(c<='Z')) {
-      char d = xlat[c-'A'];
-      if (d) {
-            if(d!=dl) {
-                *r = d;
-                r++;
-                if (!*r) break;
+    char c=toupper(*s);
+    *r = c;
+    r++; s++;
+    char dl = ((c>='A')&&(c<='Z'))?xlat[c-'A']:0;
+    while (l&&*s) {
+        c = toupper(*s);
+        s++;
+        l--;
+        if ((c>='A')&&(c<='Z')) {
+            char d = xlat[c-'A'];
+            if (d) {
+                if(d!=dl) {
+                    *r = d;
+                    r++;
+                    if (!*r) break;
+                }
             }
-      }
-      else if (c != 'H' && c != 'W')
-          dl = d;
+            else if (c != 'H' && c != 'W')
+                dl = d;
+        }
     }
-  }
-  return res;
+    return res;
 }
 
 static bool WildMatchN ( const char *src, int srclen, int srcidx,
-                    const char *pat, int patlen, int patidx,int nocase)
+                        const char *pat, int patlen, int patidx,int nocase)
 {
-  char next_char;
-  for (;;) {
-    if (patidx == patlen)
-       return (srcidx == srclen);
-    next_char = pat[patidx++];
-    if (next_char == '?') {
-      if (srcidx == srclen)
-        return false;
-      srcidx++;
-    }
-    else if (next_char != '*') {
-      if (nocase) {
-        if ((srcidx == srclen) ||
-           (toupper(src[srcidx])!=toupper(next_char)))
-          return false;
-      }
-      else
-        if ((srcidx == srclen) || (src[srcidx]!=next_char))
-          return false;
-      srcidx++;
-    }
-    else {
-      loop {
+    char next_char;
+    for (;;) {
         if (patidx == patlen)
-          return true;
-        if (pat[patidx] != '*')
-            break;
-        patidx++;
-      }
-      loop {
-        //No need to guard patLen since guaranteed to contain an ASTERISK
-        const char tail_char = pat[patlen-1];
-        if (tail_char == '*')
-            break;
-        if (srcidx == srclen)
-            return false;
-        if (tail_char != '?') {
-          if (nocase) {
-            if ((toupper(tail_char)!=toupper(src[srclen-1])))
-              return false;
-          }
-          else {
-            if ((tail_char!=src[srclen-1]))
-              return false;
-          }
+            return (srcidx == srclen);
+        next_char = pat[patidx++];
+        if (next_char == '?') {
+            if (srcidx == srclen)
+                return false;
+            srcidx++;
         }
-        patlen--;
-        srclen--;
-        if (patidx == patlen)
-            return true;
-      }
-      while (srcidx < srclen) {
-        if (WildMatchN(src,srclen,srcidx,
-                     pat, patlen, patidx,nocase))
-           return true;
-        srcidx++;
-      }
-      return false;
+        else if (next_char != '*') {
+            if (nocase) {
+                if ((srcidx == srclen) ||
+                    (toupper(src[srcidx])!=toupper(next_char)))
+                    return false;
+            }
+            else
+                if ((srcidx == srclen) || (src[srcidx]!=next_char))
+                    return false;
+            srcidx++;
+        }
+        else {
+            loop {
+                if (patidx == patlen)
+                    return true;
+                if (pat[patidx] != '*')
+                    break;
+                patidx++;
+            }
+            loop {
+                //No need to guard patLen since guaranteed to contain an ASTERISK
+                const char tail_char = pat[patlen-1];
+                if (tail_char == '*')
+                    break;
+                if (srcidx == srclen)
+                    return false;
+                if (tail_char != '?') {
+                    if (nocase) {
+                        if ((toupper(tail_char)!=toupper(src[srclen-1])))
+                            return false;
+                    }
+                    else {
+                        if ((tail_char!=src[srclen-1]))
+                            return false;
+                    }
+                }
+                patlen--;
+                srclen--;
+                if (patidx == patlen)
+                    return true;
+            }
+            while (srcidx < srclen) {
+                if (WildMatchN(src,srclen,srcidx,
+                    pat, patlen, patidx,nocase))
+                    return true;
+                srcidx++;
+            }
+            return false;
+        }
     }
-  }
 }
 
 bool jlib_decl WildMatch(const char *src, int srclen, const char *pat, int patlen,bool nocase)
 {
-  return WildMatchN(src,srclen,0,pat,patlen,0,nocase);
+    return WildMatchN(src,srclen,0,pat,patlen,0,nocase);
 }
 
 bool jlib_decl WildMatch(const char *src, const char *pat, bool nocase)
@@ -1331,7 +1331,7 @@ static bool WildMatchNreplace ( const char *src, int srclen, int srcidx,
             else
                 if ((srcidx == srclen) || (src[srcidx]!=next_char))
                     goto Fail;
-                srcidx++;
+            srcidx++;
         }
         else {
             loop {
@@ -1566,58 +1566,58 @@ void addActionList(StringMatcher & matcher, const char * text, unsigned action, 
 static class _MatchRE : public RegExpr
 {
 public:
-  bool init(const char *rexpr,int nocase) {
-    if (!cachere||(cachenocase!=nocase)||!strequ(cachere,rexpr)) {
-      free(cachere);
-      cachere = strdup(rexpr);
-      cachenocase = (unsigned char)nocase;
-      return RegExpr::init(cachere,cachenocase);
+    bool init(const char *rexpr,int nocase) {
+        if (!cachere||(cachenocase!=nocase)||!strequ(cachere,rexpr)) {
+            free(cachere);
+            cachere = strdup(rexpr);
+            cachenocase = (unsigned char)nocase;
+            return RegExpr::init(cachere,cachenocase);
+        }
+        return true;
     }
-    return true;
-  }
-  _MatchRE() { cachere=NULL; }
-  ~_MatchRE() { free(cachere); }
+    _MatchRE() { cachere=NULL; }
+    ~_MatchRE() { free(cachere); }
 private:
-  char *cachere;
-  unsigned char cachenocase;
+    char *cachere;
+    unsigned char cachenocase;
 } MatchRE;
 
 
 extern "Pascal"
 long Cla$MATCH(/* STRING s, STRING p, */ unsigned char flags)
 {
-  StringBuffer s;
-  s.PopString();
-  s.clip();
-  StringBuffer p;
-  p.PopString();
-  p.clip();
-  int nocase = flags&MATCHnocase?1:0;
-  switch(flags&MATCHmask) {
+    StringBuffer s;
+    s.PopString();
+    s.clip();
+    StringBuffer p;
+    p.PopString();
+    p.clip();
+    int nocase = flags&MATCHnocase?1:0;
+    switch(flags&MATCHmask) {
   case MATCHsimple: {
       if (s.strlen()!=p.strlen()) return false;
       if (nocase)
-        return striequ((char *)s,(char *)p);
+          return striequ((char *)s,(char *)p);
       return strequ((char *)s,(char *)p);
-    }
-    break;
+                    }
+                    break;
   case MATCHwild:
-    return WildMatch(s,s.strlen(),p,p.strlen(),nocase);
+      return WildMatch(s,s.strlen(),p,p.strlen(),nocase);
   case MATCHregular: {
       if (!MatchRE.init(p,nocase))
-        return false;
+          return false;
       const char *fs=MatchRE.find(s,0,RE_ALL,0);
       return (fs!=NULL);
-    }
-    break;
+                     }
+                     break;
   case MATCHsoundex: {
       char s1[5];
       char s2[5];
       return memcmp(SoundexCode(s,s.strlen(),s1),SoundexCode(p,p.strlen(),s2),4)==0;
+                     }
+                     break;
     }
-    break;
-  }
-  return false;
+    return false;
 }
 
 #endif
@@ -1629,28 +1629,28 @@ long Cla$MATCH(/* STRING s, STRING p, */ unsigned char flags)
 
 void tr (RegExpr &RE,const char *s,const char *p,const char *r=NULL,size32_t n=0,bool nocase=false)
 {
-  PrintLog("Test '%s','%s','%s',%d,%s\r\n",s,p,r?r:"-",n,nocase?"NOCASE":"");
-  char l[256];
-  strcpy(l,s);
-  StringBuffer ds;
-  RE.init(p,nocase);
-  const char * f = RE.find(l,0,RE_ALL);
-  if (!f)
-    PrintLog("Not Found\r\n");
-  else {
-    PrintLog("Found '%s'\r\n",RE.findstr(ds));
-    for (int i = 1;i<=9;i++) {
-      size32_t s = RE.findlen(i);
-      if (s) {
-        ds.clear();
-        PrintLog("Found Sub %d,%d,'%s'\r\n",i,s,RE.findstr(ds,i));
-      }
+    PrintLog("Test '%s','%s','%s',%d,%s\r\n",s,p,r?r:"-",n,nocase?"NOCASE":"");
+    char l[256];
+    strcpy(l,s);
+    StringBuffer ds;
+    RE.init(p,nocase);
+    const char * f = RE.find(l,0,RE_ALL);
+    if (!f)
+        PrintLog("Not Found\r\n");
+    else {
+        PrintLog("Found '%s'\r\n",RE.findstr(ds));
+        for (int i = 1;i<=9;i++) {
+            size32_t s = RE.findlen(i);
+            if (s) {
+                ds.clear();
+                PrintLog("Found Sub %d,%d,'%s'\r\n",i,s,RE.findstr(ds,i));
+            }
+        }
     }
-  }
-  if (r) {
-    RE.replace(r,sizeof(l));
-    PrintLog("Replace to '%s'\r\n",l);
-  }
+    if (r) {
+        RE.replace(r,sizeof(l));
+        PrintLog("Replace to '%s'\r\n",l);
+    }
 }
 
 #define QBF "the quick brown fox jumped over the lazy dogs"
@@ -1658,87 +1658,87 @@ void tr (RegExpr &RE,const char *s,const char *p,const char *r=NULL,size32_t n=0
 
 void RE$Test()
 {
-  RegExpr RE;
-  tr(RE,QBF,"the",RS);
-  tr(RE,QBF,"quick",RS);
-  tr(RE,QBF,"dogs",RS);
-  tr(RE,QBF,"lazz",RS);
-  tr(RE,QBF,"laz.",RS);
-  tr(RE,QBF,"^laz.",RS);
-  tr(RE,QBF,"laz.$",RS);
-  tr(RE,QBF,"^the.",RS);
-  tr(RE,QBF,"dogs^",RS);
-  tr(RE,QBF,"^t.*dogs^",RS);
-  tr(RE,QBF,"dog.",RS);
-  tr(RE,QBF,".the",RS);
-  tr(RE,QBF,".he",RS);
-  tr(RE,QBF,".*",RS);
-  tr(RE,QBF,"q.*",RS);
-  tr(RE,QBF,"q.*z",RS);
-  tr(RE,QBF,"qu.*k",RS);
-  tr(RE,QBF,"d{[oa]g}s",RS);
-  tr(RE,QBF,"laz[a-z]",RS);
-  tr(RE,QBF,"{laz[a-z]} {dogs}",RS);
-  tr(RE,QBF,"the",RS,50);
-  tr(RE,QBF,"quick",RS,50);
-  tr(RE,QBF,"dogs",RS,50);
-  tr(RE,QBF,"lazz",RS,50);
-  tr(RE,QBF,"laz.",RS,50);
-  tr(RE,QBF,"^laz.",RS,50);
-  tr(RE,QBF,"laz.$",RS,50);
-  tr(RE,QBF,"^the.",RS,50);
-  tr(RE,QBF,"dogs^",RS,50);
-  tr(RE,QBF,"^t.*dogs^",RS,50);
-  tr(RE,QBF,"dog.",RS,50);
-  tr(RE,QBF,".the",RS,50);
-  tr(RE,QBF,".he",RS,50);
-  tr(RE,QBF,".*",RS,50);
-  tr(RE,QBF,"q.*",RS,50);
-  tr(RE,QBF,"q.*z",RS,50);
-  tr(RE,QBF,"qu.*k",RS,50);
-  tr(RE,QBF,"d{[oa]g}s",RS,50);
-  tr(RE,QBF,"laz[a-z]",RS,50);
-  tr(RE,QBF,"{laz[a-z]} {dogs}",RS,50);
-  tr(RE,"INRANGE   (a,b)","[ ,]INRANGE *({.+},{.+})");
-  tr(RE," inrange   (a,b)","[ ,]INRANGE *({.+},{.+})",NULL,0,true);
-  tr(RE,",INRANGE(aa,bb)","[ ,]INRANGE *({.+},{.+})");
-  tr(RE,",INRANGE(,bb)","[ ,]INRANGE *({.+},{.+})");
-  tr(RE,"10/14/1998","^{.*}/{.*}/{.*}$");
-  tr(RE,"freddy","^{|{.+}\\@}{.+}$");
-  tr(RE,"myname@freddy","^{|{.+}\\@}{.+}$");
-  tr(RE,"freddy","^{{.+}\\@|}{.+}$");
-  tr(RE,"myname@freddy","^{{.+}\\@|}{.+}$");
-  tr(RE,"freddy","^{[^@]+}@?{[^@]+}$");
-  tr(RE,"myname@freddy","^{.+}@{.+}$|{.+}$");
-  tr(RE,"freddy","^{|{.+}@}{[^@]+}$");
-  char str[256];
-  strcpy(str,"myname@freddy");
-  RE.init("^{|{.+}@}{[^@]+}$");
-  RE.find(str);
-  StringBuffer t;
-  PrintLog("Substitute to '%s'\r\n",RE.substitute(t,"#'#3###2'#"));
-  t.clear();
-  RE.replace(RE.findstr(t,2),sizeof(str),3);
-  t.clear();
-  RE.replace(RE.findstr(t,3),sizeof(str),2);
-  PrintLog("Replace to '%s'\r\n",str);
+    RegExpr RE;
+    tr(RE,QBF,"the",RS);
+    tr(RE,QBF,"quick",RS);
+    tr(RE,QBF,"dogs",RS);
+    tr(RE,QBF,"lazz",RS);
+    tr(RE,QBF,"laz.",RS);
+    tr(RE,QBF,"^laz.",RS);
+    tr(RE,QBF,"laz.$",RS);
+    tr(RE,QBF,"^the.",RS);
+    tr(RE,QBF,"dogs^",RS);
+    tr(RE,QBF,"^t.*dogs^",RS);
+    tr(RE,QBF,"dog.",RS);
+    tr(RE,QBF,".the",RS);
+    tr(RE,QBF,".he",RS);
+    tr(RE,QBF,".*",RS);
+    tr(RE,QBF,"q.*",RS);
+    tr(RE,QBF,"q.*z",RS);
+    tr(RE,QBF,"qu.*k",RS);
+    tr(RE,QBF,"d{[oa]g}s",RS);
+    tr(RE,QBF,"laz[a-z]",RS);
+    tr(RE,QBF,"{laz[a-z]} {dogs}",RS);
+    tr(RE,QBF,"the",RS,50);
+    tr(RE,QBF,"quick",RS,50);
+    tr(RE,QBF,"dogs",RS,50);
+    tr(RE,QBF,"lazz",RS,50);
+    tr(RE,QBF,"laz.",RS,50);
+    tr(RE,QBF,"^laz.",RS,50);
+    tr(RE,QBF,"laz.$",RS,50);
+    tr(RE,QBF,"^the.",RS,50);
+    tr(RE,QBF,"dogs^",RS,50);
+    tr(RE,QBF,"^t.*dogs^",RS,50);
+    tr(RE,QBF,"dog.",RS,50);
+    tr(RE,QBF,".the",RS,50);
+    tr(RE,QBF,".he",RS,50);
+    tr(RE,QBF,".*",RS,50);
+    tr(RE,QBF,"q.*",RS,50);
+    tr(RE,QBF,"q.*z",RS,50);
+    tr(RE,QBF,"qu.*k",RS,50);
+    tr(RE,QBF,"d{[oa]g}s",RS,50);
+    tr(RE,QBF,"laz[a-z]",RS,50);
+    tr(RE,QBF,"{laz[a-z]} {dogs}",RS,50);
+    tr(RE,"INRANGE   (a,b)","[ ,]INRANGE *({.+},{.+})");
+    tr(RE," inrange   (a,b)","[ ,]INRANGE *({.+},{.+})",NULL,0,true);
+    tr(RE,",INRANGE(aa,bb)","[ ,]INRANGE *({.+},{.+})");
+    tr(RE,",INRANGE(,bb)","[ ,]INRANGE *({.+},{.+})");
+    tr(RE,"10/14/1998","^{.*}/{.*}/{.*}$");
+    tr(RE,"freddy","^{|{.+}\\@}{.+}$");
+    tr(RE,"myname@freddy","^{|{.+}\\@}{.+}$");
+    tr(RE,"freddy","^{{.+}\\@|}{.+}$");
+    tr(RE,"myname@freddy","^{{.+}\\@|}{.+}$");
+    tr(RE,"freddy","^{[^@]+}@?{[^@]+}$");
+    tr(RE,"myname@freddy","^{.+}@{.+}$|{.+}$");
+    tr(RE,"freddy","^{|{.+}@}{[^@]+}$");
+    char str[256];
+    strcpy(str,"myname@freddy");
+    RE.init("^{|{.+}@}{[^@]+}$");
+    RE.find(str);
+    StringBuffer t;
+    PrintLog("Substitute to '%s'\r\n",RE.substitute(t,"#'#3###2'#"));
+    t.clear();
+    RE.replace(RE.findstr(t,2),sizeof(str),3);
+    t.clear();
+    RE.replace(RE.findstr(t,3),sizeof(str),2);
+    PrintLog("Replace to '%s'\r\n",str);
 }
 
 void FixDate(char *buff,size32_t max)
 {
-  RegExpr RE("[0-9]+/[0-9]+/{[0-9]+}");
-  const char *s = RE.find(buff);
-  while (s) {
-    StringBuffer ys;
-    int y=atoi(RE.findstr(ys,1));
-    if (y<1000) {
-       ys.clear();
-       ys.append(y+1900);
-       RE.replace(ys.str(),max,1);
+    RegExpr RE("[0-9]+/[0-9]+/{[0-9]+}");
+    const char *s = RE.find(buff);
+    while (s) {
+        StringBuffer ys;
+        int y=atoi(RE.findstr(ys,1));
+        if (y<1000) {
+            ys.clear();
+            ys.append(y+1900);
+            RE.replace(ys.str(),max,1);
+        }
+        s = RE.findnext();
     }
-    s = RE.findnext();
-   }
-  }
+}
 
 
 #endif

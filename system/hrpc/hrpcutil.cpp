@@ -43,73 +43,73 @@ void SplitIpPort(StringAttr & ip, unsigned & port, const char * address)
 
 IHRPCtransport *MakeTcpTransportFromUrl(const char *target, unsigned defaultPort)
 {
-  StringAttr ip;
-  SplitIpPort(ip, defaultPort, target);
-  return MakeTcpTransport(ip, defaultPort);
+    StringAttr ip;
+    SplitIpPort(ip, defaultPort, target);
+    return MakeTcpTransport(ip, defaultPort);
 }
 
 void TcpWhoAmI(StringAttr & out)
 {
-  out.set(GetCachedHostName());
+    out.set(GetCachedHostName());
 }
 
 
 void ListenUntilDead(HRPCserver & server, const char * errorMessage)
 {
-  ListenUntilDead(server, NULL, errorMessage);
+    ListenUntilDead(server, NULL, errorMessage);
 }
 
 void ListenUntilDead(HRPCserver & server, IHRPCtransport * transport, const char * errorMessage)
 {
-  bool alive = true;
-  while (alive)
-  {
-    try
+    bool alive = true;
+    while (alive)
     {
-      server.Listen(transport);
-      alive=false;
+        try
+        {
+            server.Listen(transport);
+            alive=false;
+        }
+        catch(IHRPC_Exception *e) 
+        { 
+            switch (e->errorCode()) 
+            {
+            case HRPCERR_lost_connection:
+            case HRPCERR_transport_not_open:
+                PrintExceptionLog(e,"Listening connection lost - listen again");
+                //MORE: The owner went down...
+                e->Release();
+                break;
+            default:
+                if (errorMessage)
+                    PrintExceptionLog(e,errorMessage);
+                e->Release();
+                alive = false;
+                break;
+            }
+        }
     }
-    catch(IHRPC_Exception *e) 
-    { 
-      switch (e->errorCode()) 
-      {
-      case HRPCERR_lost_connection:
-      case HRPCERR_transport_not_open:
-        PrintExceptionLog(e,"Listening connection lost - listen again");
-        //MORE: The owner went down...
-        e->Release();
-        break;
-      default:
-        if (errorMessage)
-          PrintExceptionLog(e,errorMessage);
-        e->Release();
-        alive = false;
-        break;
-      }
-    }
-  }
 }
 
 IHRPCtransport * TryMakeServerTransport(unsigned port, const char * errorMessage)
 {
-  IHRPCtransport *transport = NULL;
-  try
-  {
-    transport = MakeTcpTransport(NULL,port);
-  }
-  catch(IHRPC_Exception *e) 
-  { 
-        switch (e->errorCode()) 
+    IHRPCtransport *transport = NULL;
+    try
     {
-        case HRPCERR_transport_port_in_use:
-    default:
-      if (errorMessage)
-        pexception(errorMessage, e);
-      e->Release();
-      break;
+        transport = MakeTcpTransport(NULL,port);
     }
-  }
-  return transport;
+    catch(IHRPC_Exception *e) 
+    { 
+        switch (e->errorCode()) 
+        {
+        case HRPCERR_transport_port_in_use:
+        default:
+            if (errorMessage)
+                pexception(errorMessage, e);
+            e->Release();
+            break;
+        }
+    }
+    return transport;
 }
 
 #define MAXCONNECTIONS 16

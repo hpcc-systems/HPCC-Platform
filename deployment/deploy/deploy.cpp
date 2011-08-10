@@ -931,109 +931,109 @@ public:
     //---------------------------------------------------------------------------
     //  CConfigGenMgr
     //---------------------------------------------------------------------------
-  CConfigGenMgr(IConstEnvironment& environment, IDeploymentCallback& callback, 
-    IPropertyTree* pSelectedComponents, const char* inputDir, const char* outputDir, const char* compName, const char* compType, const char* ipAddr)
-    : CEnvironmentDeploymentEngine(environment, callback, pSelectedComponents),
-    m_inDir(inputDir), 
-    m_outDir(outputDir),
-    m_compName(compName),
-    m_compType(compType),
-    m_hostIpAddr(ipAddr)
-  {
-    Owned<IPropertyTree> pSelComps;
-    if (!pSelectedComponents)
+    CConfigGenMgr(IConstEnvironment& environment, IDeploymentCallback& callback, 
+        IPropertyTree* pSelectedComponents, const char* inputDir, const char* outputDir, const char* compName, const char* compType, const char* ipAddr)
+        : CEnvironmentDeploymentEngine(environment, callback, pSelectedComponents),
+        m_inDir(inputDir), 
+        m_outDir(outputDir),
+        m_compName(compName),
+        m_compType(compType),
+        m_hostIpAddr(ipAddr)
     {
-      Owned<IPropertyTree> pEnvTree = &m_environment.getPTree();
-      pSelComps.setown(getInstances(pEnvTree, compName, compType, ipAddr));
-      pSelectedComponents = pSelComps;
-    }
-
-    initXML(pSelectedComponents);
-
-    {
-      Owned<IPropertyTreeIterator> it = pSelectedComponents->getElements("*");
-      ForEach(*it)
-      {
-        IPropertyTree* pComponent = &it->query();
-        IDeploymentEngine* pEngine = addProcess(pComponent->queryName(), pComponent->queryProp("@name"));
-
-        Owned<IPropertyTreeIterator> iter = pComponent->getElements("*");
-        if (iter->first())
+        Owned<IPropertyTree> pSelComps;
+        if (!pSelectedComponents)
         {
-          pEngine->resetInstances();
-          ForEach(*iter)
-          {
-            IPropertyTree* pChild = &iter->query();
-            const char* tagName  = pChild->queryName();
-            const char* instName = pChild->queryProp("@name");
-            pEngine->addInstance(tagName, instName);
+            Owned<IPropertyTree> pEnvTree = &m_environment.getPTree();
+            pSelComps.setown(getInstances(pEnvTree, compName, compType, ipAddr));
+            pSelectedComponents = pSelComps;
+        }
 
-            //determine if this is linux deployment
-            if (!m_bLinuxDeployment)
+        initXML(pSelectedComponents);
+
+        {
+            Owned<IPropertyTreeIterator> it = pSelectedComponents->getElements("*");
+            ForEach(*it)
             {
-              const char* computer = pChild->queryProp("@computer");
-              Owned<IConstMachineInfo> pMachine = environment.getMachine(computer);
-              if (!pMachine)
-                throw MakeStringException(0, "Invalid Environment file. Instance '%s' of '%s' references a computer '%s' that has not been defined!", pChild->queryProp("@name"), pComponent->queryProp("@name"), computer);
-              else if (pMachine->getOS() == MachineOsLinux)
-                m_bLinuxDeployment = true;
+                IPropertyTree* pComponent = &it->query();
+                IDeploymentEngine* pEngine = addProcess(pComponent->queryName(), pComponent->queryProp("@name"));
+
+                Owned<IPropertyTreeIterator> iter = pComponent->getElements("*");
+                if (iter->first())
+                {
+                    pEngine->resetInstances();
+                    ForEach(*iter)
+                    {
+                        IPropertyTree* pChild = &iter->query();
+                        const char* tagName  = pChild->queryName();
+                        const char* instName = pChild->queryProp("@name");
+                        pEngine->addInstance(tagName, instName);
+
+                        //determine if this is linux deployment
+                        if (!m_bLinuxDeployment)
+                        {
+                            const char* computer = pChild->queryProp("@computer");
+                            Owned<IConstMachineInfo> pMachine = environment.getMachine(computer);
+                            if (!pMachine)
+                                throw MakeStringException(0, "Invalid Environment file. Instance '%s' of '%s' references a computer '%s' that has not been defined!", pChild->queryProp("@name"), pComponent->queryProp("@name"), computer);
+                            else if (pMachine->getOS() == MachineOsLinux)
+                                m_bLinuxDeployment = true;
+                        }
+                    }
+                }
+                else if (!m_bLinuxDeployment)//another previously added engine already does not have linux instance
+                {
+                    //some components like thor and hole clusters don't show their instances in the 
+                    //deployment wizard so detect if they have any linux instance.
+                    const IArrayOf<IPropertyTree>& instances = pEngine->getInstances();
+                    if (instances.ordinality() > 0)
+                    {
+                        Owned<IConstMachineInfo> machine;// = m_environment.getMachine(instances.item(0).queryProp("@computer"));
+                        if (machine && machine->getOS() == MachineOsLinux)
+                            m_bLinuxDeployment = true;
+                    }
+                }
             }
-          }
         }
-        else if (!m_bLinuxDeployment)//another previously added engine already does not have linux instance
-        {
-          //some components like thor and hole clusters don't show their instances in the 
-          //deployment wizard so detect if they have any linux instance.
-          const IArrayOf<IPropertyTree>& instances = pEngine->getInstances();
-          if (instances.ordinality() > 0)
-          {
-            Owned<IConstMachineInfo> machine;// = m_environment.getMachine(instances.item(0).queryProp("@computer"));
-            if (machine && machine->getOS() == MachineOsLinux)
-              m_bLinuxDeployment = true;
-          }
-        }
-      }
     }
-  }
 
-  //---------------------------------------------------------------------------
-  //  addProcess
-  //---------------------------------------------------------------------------
-  IDeploymentEngine* addProcess(const char* processType, const char* processName)
-  {
-    assertex(processType);
-    assertex(processName);
-    StringBuffer xpath;
-    xpath.appendf("Software/%s[@name='%s']", processType, processName);
+    //---------------------------------------------------------------------------
+    //  addProcess
+    //---------------------------------------------------------------------------
+    IDeploymentEngine* addProcess(const char* processType, const char* processName)
+    {
+        assertex(processType);
+        assertex(processName);
+        StringBuffer xpath;
+        xpath.appendf("Software/%s[@name='%s']", processType, processName);
 
-    Owned<IPropertyTree> tree = &m_environment.getPTree();
-    IPropertyTree* pComponent = tree->queryPropTree(xpath.str());
-    if (!pComponent)
-      throw MakeStringException(0, "%s with name %s was not found!", processType, processName);
+        Owned<IPropertyTree> tree = &m_environment.getPTree();
+        IPropertyTree* pComponent = tree->queryPropTree(xpath.str());
+        if (!pComponent)
+            throw MakeStringException(0, "%s with name %s was not found!", processType, processName);
 
-    IDeploymentEngine* deployEngine;
+        IDeploymentEngine* deployEngine;
 
-    if (strcmp(processType, "RoxieCluster")==0)
-      deployEngine = new CConfigGenEngine(*this, *m_pCallback, *pComponent, m_inDir, m_outDir, "*");
-    else if (strcmp(processType, "ThorCluster")==0)
-      deployEngine = new CThorConfigGenEngine(*this, *m_pCallback, *pComponent, m_inDir, m_outDir);
-    else if (strcmp(processType, "EspProcess")==0)
-      deployEngine = new CEspConfigGenEngine(*this, *m_pCallback, *pComponent, m_inDir, m_outDir);
-    else
-      deployEngine = new CConfigGenEngine(*this, *m_pCallback, *pComponent, m_inDir, m_outDir, "Instance", true);
+        if (strcmp(processType, "RoxieCluster")==0)
+            deployEngine = new CConfigGenEngine(*this, *m_pCallback, *pComponent, m_inDir, m_outDir, "*");
+        else if (strcmp(processType, "ThorCluster")==0)
+            deployEngine = new CThorConfigGenEngine(*this, *m_pCallback, *pComponent, m_inDir, m_outDir);
+        else if (strcmp(processType, "EspProcess")==0)
+            deployEngine = new CEspConfigGenEngine(*this, *m_pCallback, *pComponent, m_inDir, m_outDir);
+        else
+            deployEngine = new CConfigGenEngine(*this, *m_pCallback, *pComponent, m_inDir, m_outDir, "Instance", true);
 
-    assertex(deployEngine);
-    deployEngine->setXsl(m_processor, m_transform);
-    m_processes.append(*deployEngine); // array releases members when destroyed
-    return deployEngine;
-  }
+        assertex(deployEngine);
+        deployEngine->setXsl(m_processor, m_transform);
+        m_processes.append(*deployEngine); // array releases members when destroyed
+        return deployEngine;
+    }
 
 private:
-  StringBuffer m_inDir;
-  StringBuffer m_outDir;
-  StringBuffer m_compName;
-  StringBuffer m_compType;
-  StringBuffer m_hostIpAddr;
+    StringBuffer m_inDir;
+    StringBuffer m_outDir;
+    StringBuffer m_compName;
+    StringBuffer m_compType;
+    StringBuffer m_hostIpAddr;
 };
 
 

@@ -372,21 +372,27 @@ unsigned getFileCRC(const char * name)
 
 
 unsigned crc_file(const char * name)
-{ char buffer[1024];
-  unsigned crc=0;
-  FILE * f=fopen(name,"rb");
-  if (f)
-  { while(1)
-    { unsigned int si=(size32_t)fread(buffer,1,sizeof(buffer),f);
-      if (si)
-      { crc=crc32(buffer,si,crc);
-      } else
-      { fclose(f);
-        return crc;
-      }
+{
+    char buffer[1024];
+    unsigned crc=0;
+    FILE * f=fopen(name,"rb");
+    if (f)
+    {
+        while(1)
+        {
+            unsigned int si=(size32_t)fread(buffer,1,sizeof(buffer),f);
+            if (si)
+            {
+                crc=crc32(buffer,si,crc);
+            }
+            else
+            {
+                fclose(f);
+                return crc;
+            }
+        }
     }
-  }
-  return 0;
+    return 0;
 }
 
 

@@ -62,147 +62,147 @@ void usage()
 
 int main(int argc, char** argv)
 {
-  InitModuleObjects();
+    InitModuleObjects();
 
-  const char* out_envname = NULL;
-  const char* in_ipfilename;
-  StringBuffer ipAddrs;
-  int roxieNodes=0, thorNodes=0, slavesPerNode=1;
-  MapStringTo<StringBuffer> dirMap;
+    const char* out_envname = NULL;
+    const char* in_ipfilename;
+    StringBuffer ipAddrs;
+    int roxieNodes=0, thorNodes=0, slavesPerNode=1;
+    MapStringTo<StringBuffer> dirMap;
 
-  int i = 1;
-  bool writeToFiles = false;
-  int port = 80;
+    int i = 1;
+    bool writeToFiles = false;
+    int port = 80;
 
-  while(i<argc)
-  {
-    if(stricmp(argv[i], "-help") == 0 || stricmp(argv[i], "-?") == 0)
+    while(i<argc)
     {
-      usage();
-      releaseAtoms();
-      return 0;
-    }
-    else if (stricmp(argv[i], "-env") == 0)
-    {
-      i++;
-      out_envname = argv[i++];
-    }
-    else if (stricmp(argv[i], "-roxienodes") == 0)
-    {
-      i++;
-      roxieNodes = atoi(argv[i++]);
-    }
-    else if (stricmp(argv[i], "-thornodes") == 0)
-    {
-      i++;
-      thorNodes = atoi(argv[i++]);
-    }
-    else if (stricmp(argv[i], "-slavespernode") == 0)
-    {
-      i++;
-      slavesPerNode = atoi(argv[i++]);
-    }
-    else if (stricmp(argv[i], "-ip") == 0)
-    {
-      i++;
-      ipAddrs.append(argv[i++]);
-    }
-    else if(stricmp(argv[i], "-ipfile") == 0)
-    {
-      i++;
-      in_ipfilename = argv[i++];
-      ipAddrs.loadFile(in_ipfilename);
-    }
-    else if(stricmp(argv[i], "-o") == 0)
-    {
-      i++;
-      StringArray sbarr;
-      DelimToStringArray(argv[i++], sbarr, "=");
-      if (sbarr.length() != 2)
-       continue;
+        if(stricmp(argv[i], "-help") == 0 || stricmp(argv[i], "-?") == 0)
+        {
+            usage();
+            releaseAtoms();
+            return 0;
+        }
+        else if (stricmp(argv[i], "-env") == 0)
+        {
+            i++;
+            out_envname = argv[i++];
+        }
+        else if (stricmp(argv[i], "-roxienodes") == 0)
+        {
+            i++;
+            roxieNodes = atoi(argv[i++]);
+        }
+        else if (stricmp(argv[i], "-thornodes") == 0)
+        {
+            i++;
+            thorNodes = atoi(argv[i++]);
+        }
+        else if (stricmp(argv[i], "-slavespernode") == 0)
+        {
+            i++;
+            slavesPerNode = atoi(argv[i++]);
+        }
+        else if (stricmp(argv[i], "-ip") == 0)
+        {
+            i++;
+            ipAddrs.append(argv[i++]);
+        }
+        else if(stricmp(argv[i], "-ipfile") == 0)
+        {
+            i++;
+            in_ipfilename = argv[i++];
+            ipAddrs.loadFile(in_ipfilename);
+        }
+        else if(stricmp(argv[i], "-o") == 0)
+        {
+            i++;
+            StringArray sbarr;
+            DelimToStringArray(argv[i++], sbarr, "=");
+            if (sbarr.length() != 2)
+                continue;
 
-      if (strstr(sbarr.item(1), "[NAME]") && (strstr(sbarr.item(1), "[INST]") || strstr(sbarr.item(1), "[COMPONENT]")))
-        dirMap.setValue(sbarr.item(0), sbarr.item(1));
-      else
-      {
-        fprintf(stderr, "Error: Directory Override must contain [NAME] and either [INST] or [COMPONENT]\n");
+            if (strstr(sbarr.item(1), "[NAME]") && (strstr(sbarr.item(1), "[INST]") || strstr(sbarr.item(1), "[COMPONENT]")))
+                dirMap.setValue(sbarr.item(0), sbarr.item(1));
+            else
+            {
+                fprintf(stderr, "Error: Directory Override must contain [NAME] and either [INST] or [COMPONENT]\n");
+                releaseAtoms();
+                return 1;
+            }
+        }
+        else
+        {
+            fprintf(stderr, "Error: unknown command line parameter: %s\n", argv[i]);
+            usage();
+            releaseAtoms();
+            return 1;
+        }
+    }
+
+    if (!out_envname)
+    {
+        fprintf(stderr, "Error: Output environment xml file is required. Please specify.\n");
+        usage();
         releaseAtoms();
         return 1;
-      }
     }
-    else
+
+    if (ipAddrs.length() == 0)
     {
-      fprintf(stderr, "Error: unknown command line parameter: %s\n", argv[i]);
-      usage();
-      releaseAtoms();
-      return 1;
+        fprintf(stderr, "Error: Ip addresses are required. Please specify.\n");
+        usage();
+        releaseAtoms();
+        return 1;
     }
-  }
 
-  if (!out_envname)
-  {
-    fprintf(stderr, "Error: Output environment xml file is required. Please specify.\n");
-    usage();
-    releaseAtoms();
-    return 1;
-  }
-
-  if (ipAddrs.length() == 0)
-  {
-    fprintf(stderr, "Error: Ip addresses are required. Please specify.\n");
-    usage();
-    releaseAtoms();
-    return 1;
-  }
-
-  try
-  {
-    validateIPS(ipAddrs.str());
-    StringBuffer optionsXml, envXml;
-    const char* pServiceName = "WsDeploy_wsdeploy_esp";
-    Owned<IPropertyTree> pCfg = createPTreeFromXMLFile(ENVGEN_PATH_TO_ESP_CONFIG);
-
-    optionsXml.appendf("<XmlArgs roxieNodes=\"%d\" thorNodes=\"%d\" slavesPerNode=\"%d\" ipList=\"%s\"/>", roxieNodes,
-                      thorNodes, slavesPerNode, ipAddrs.str());
-
-    buildEnvFromWizard(optionsXml, pServiceName, pCfg, envXml, &dirMap);
-    if(envXml.length())
+    try
     {
-      StringBuffer env;
-      StringBuffer thisip;
-      queryHostIP().getIpText(thisip);
-      env.appendf("<"XML_HEADER">\n<!-- Generated with envgen on ip %s -->\n", thisip.str());
-      env.append(envXml);
-      
-      Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-      Owned<IConstEnvironment>  constEnv = factory->loadLocalEnvironment(env);
-      validateEnv(constEnv);
+        validateIPS(ipAddrs.str());
+        StringBuffer optionsXml, envXml;
+        const char* pServiceName = "WsDeploy_wsdeploy_esp";
+        Owned<IPropertyTree> pCfg = createPTreeFromXMLFile(ENVGEN_PATH_TO_ESP_CONFIG);
 
-      Owned<IFile> pFile;
-      pFile.setown(createIFile(out_envname));
-      
-      Owned<IFileIO> pFileIO;
-      pFileIO.setown(pFile->open(IFOcreaterw));
-      pFileIO->write(0, env.length(), env.str());
+        optionsXml.appendf("<XmlArgs roxieNodes=\"%d\" thorNodes=\"%d\" slavesPerNode=\"%d\" ipList=\"%s\"/>", roxieNodes,
+            thorNodes, slavesPerNode, ipAddrs.str());
+
+        buildEnvFromWizard(optionsXml, pServiceName, pCfg, envXml, &dirMap);
+        if(envXml.length())
+        {
+            StringBuffer env;
+            StringBuffer thisip;
+            queryHostIP().getIpText(thisip);
+            env.appendf("<"XML_HEADER">\n<!-- Generated with envgen on ip %s -->\n", thisip.str());
+            env.append(envXml);
+
+            Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+            Owned<IConstEnvironment>  constEnv = factory->loadLocalEnvironment(env);
+            validateEnv(constEnv);
+
+            Owned<IFile> pFile;
+            pFile.setown(createIFile(out_envname));
+
+            Owned<IFileIO> pFileIO;
+            pFileIO.setown(pFile->open(IFOcreaterw));
+            pFileIO->write(0, env.length(), env.str());
+        }
     }
-  }
-  catch(IException *excpt)
-  {
-    StringBuffer errMsg;
-    fprintf(stderr, "Exception: %d:\n%s\n", excpt->errorCode(), excpt->errorMessage(errMsg).str());
-    releaseAtoms();
-    excpt->Release();
-    return 1;
-  }
-  catch(...)
-  {
-    fprintf(stderr, "Unknown exception\n");
-    releaseAtoms();
-    return 1;
-  }
+    catch(IException *excpt)
+    {
+        StringBuffer errMsg;
+        fprintf(stderr, "Exception: %d:\n%s\n", excpt->errorCode(), excpt->errorMessage(errMsg).str());
+        releaseAtoms();
+        excpt->Release();
+        return 1;
+    }
+    catch(...)
+    {
+        fprintf(stderr, "Unknown exception\n");
+        releaseAtoms();
+        return 1;
+    }
 
-  releaseAtoms();
+    releaseAtoms();
 
-  return 0;
+    return 0;
 }
 

@@ -34,13 +34,13 @@ public:
 
 protected:
     virtual int  determineInstallFiles(IPropertyTree& node, CInstallFiles& installFiles) const;
-  virtual void deployInstance(IPropertyTree& node, bool useTempDir);
-  virtual void beforeDeploy();
-  void createFakePlugins(StringBuffer& destFilePath) const;
+    virtual void deployInstance(IPropertyTree& node, bool useTempDir);
+    virtual void beforeDeploy();
+    void createFakePlugins(StringBuffer& destFilePath) const;
 
 private:
-  StringBuffer m_inDir;
-  StringBuffer m_outDir;
+    StringBuffer m_inDir;
+    StringBuffer m_outDir;
 };
 //---------------------------------------------------------------------------
 #endif // CONFIGGENENGINE_HPP_INCL
