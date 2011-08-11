@@ -30,6 +30,22 @@
 
 typedef IXslProcessor * (*getXslProcessor_func)();
 
+static atomic_t gActiveRequests;
+
+long ActiveRequests::getCount()
+{
+    return atomic_read(&gActiveRequests);
+}
+
+void ActiveRequests::inc()
+{
+    atomic_inc(&gActiveRequests);
+}
+
+void ActiveRequests::dec()
+{
+    atomic_dec(&gActiveRequests);
+}
 
 CEspApplicationPort::CEspApplicationPort(bool viewcfg) : bindingCount(0), defBinding(-1), viewConfig(viewcfg), rootAuth(false), navWidth(165), navResize(false), navScroll(false)
 {

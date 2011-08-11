@@ -895,7 +895,7 @@ if (buf.length() > 0)
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
     return true;
@@ -951,7 +951,7 @@ bool CWsSMCEx::onMoveJobDown(IEspContext &context, IEspSMCJobRequest &req, IEspS
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -978,7 +978,7 @@ bool CWsSMCEx::onMoveJobUp(IEspContext &context, IEspSMCJobRequest &req, IEspSMC
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -1023,7 +1023,7 @@ bool CWsSMCEx::onMoveJobBack(IEspContext &context, IEspSMCJobRequest &req, IEspS
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -1068,7 +1068,7 @@ bool CWsSMCEx::onMoveJobFront(IEspContext &context, IEspSMCJobRequest &req, IEsp
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -1096,7 +1096,7 @@ bool CWsSMCEx::onRemoveJob(IEspContext &context, IEspSMCJobRequest &req, IEspSMC
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -1113,7 +1113,7 @@ bool CWsSMCEx::onStopQueue(IEspContext &context, IEspSMCQueueRequest &req, IEspS
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -1130,7 +1130,7 @@ bool CWsSMCEx::onResumeQueue(IEspContext &context, IEspSMCQueueRequest &req, IEs
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -1147,7 +1147,7 @@ bool CWsSMCEx::onPauseQueue(IEspContext &context, IEspSMCQueueRequest &req, IEsp
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -1169,7 +1169,7 @@ bool CWsSMCEx::onClearQueue(IEspContext &context, IEspSMCQueueRequest &req, IEsp
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -1198,7 +1198,7 @@ bool CWsSMCEx::onSetJobPriority(IEspContext &context, IEspSMCPriorityRequest &re
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -1246,7 +1246,7 @@ bool CWsSMCEx::onGetThorQueueAvailability(IEspContext &context, IEspGetThorQueue
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -1323,7 +1323,7 @@ bool CWsSMCEx::onSetBanner(IEspContext &context, IEspSetBannerRequest &req, IEsp
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -1482,7 +1482,7 @@ bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesReques
     }
     catch(IException* e)
     {
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
     return true;
@@ -1523,7 +1523,7 @@ int CWsSMCSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* request, 
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return onGetForm(context, request, response, service, method);
 }

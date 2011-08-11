@@ -452,7 +452,7 @@ void CFileSpraySoapBindingEx::downloadFile(IEspContext &context, CHttpRequest* r
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return;
 }

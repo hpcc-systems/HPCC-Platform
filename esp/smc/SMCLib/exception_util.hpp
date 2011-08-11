@@ -114,47 +114,28 @@
 #define ECLWATCH_PSEXEC_NOT_INSTALLED           ECLWATCH_ERROR_START+94
 #define ECLWATCH_NO_WUID_SPECIFIED          ECLWATCH_ERROR_START+95
 
-inline void FORWARDEXCEPTION(IException *e, unsigned codeNew)
+inline void FORWARDEXCEPTION(IEspContext &context, IException *e, unsigned codeNew)
 {
     if (!e)
         return;
 
-    StringBuffer eMsg;
+    time_t tNow;
+    struct tm timeStruct;
+    char timeString[32];
+    StringBuffer eMsg, eMsgDisplay;
+
     int err = e->errorCode();
     e->errorMessage(eMsg);
     e->Release();
 
+    context.setException(err);
+
     //set time stamp in the result for this machine
-    time_t tNow;
     time(&tNow);
-
-    char timeStamp[256];
-#ifdef _WIN32
-    struct tm * ltNow = gmtime(&tNow);
-    strftime(timeStamp, 32, "%m/%d/%y %H:%M:%S GMT", ltNow);
-#else
-    struct tm ltNow;
-    gmtime_r(&tNow, &ltNow);
-    strftime(timeStamp, 32, "%m/%d/%y %H:%M:%S GMT", &ltNow);
-#endif
-
-#if 0
-    if (err < ERRORID_UNKNOWN)
-    {
-        StringBuffer eMsg_Log, eMsg_Display;
-        eMsg_Log.appendf("%s: %s", timeStamp, eMsg.str());
-        eMsg_Display.appendf("%s: %s", timeStamp, ERRORMSG_INTERNAL);
-
-        ERRLOG(eMsg_Log.str()); //log original exception
-        throw MakeStringException(codeNew, eMsg_Display.str()); //Update message and display "" to indicate where the exception comes from
-    }
-    else
-#endif
-    {
-        StringBuffer eMsg_Display;
-        eMsg_Display.appendf("%s: %s", timeStamp, eMsg.str());
-        throw MakeStringException(err, "%s", eMsg_Display.str());
-    }
+    gmtime_r(&tNow, &timeStruct);
+    strftime(timeString, 32, "%Y-%m-%d %H:%M:%S GMT", &timeStruct);
+    eMsgDisplay.appendf("%s: %s", timeString, eMsg.str());
+    throw MakeStringException(err, eMsgDisplay.str());
         
     return;
 }

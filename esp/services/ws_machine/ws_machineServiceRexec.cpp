@@ -791,7 +791,7 @@ bool Cws_machineEx::onStartStop( IEspContext &context, IEspStartStopRequest &req
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -881,7 +881,7 @@ bool Cws_machineEx::onStartStopBegin( IEspContext &context, IEspStartStopBeginRe
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -944,7 +944,7 @@ bool Cws_machineEx::onStartStopDone( IEspContext &context, IEspStartStopDoneRequ
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }

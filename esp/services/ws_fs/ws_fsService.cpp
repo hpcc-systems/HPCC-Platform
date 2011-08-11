@@ -581,7 +581,7 @@ bool CFileSprayEx::onDFUWUSearch(IEspContext &context, IEspDFUWUSearchRequest & 
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -1054,7 +1054,7 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
     return true;
@@ -1243,7 +1243,7 @@ bool CFileSprayEx::onGetDFUWorkunit(IEspContext &context, IEspGetDFUWorkunit &re
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
     return true;
@@ -1292,7 +1292,7 @@ bool CFileSprayEx::onGetDFUProgress(IEspContext &context, IEspProgressRequest &r
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
     return true;
@@ -1320,7 +1320,7 @@ bool CFileSprayEx::onCreateDFUWorkunit(IEspContext &context, IEspCreateDFUWorkun
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
     return true;
@@ -1347,7 +1347,7 @@ bool CFileSprayEx::onUpdateDFUWorkunit(IEspContext &context, IEspUpdateDFUWorkun
 
             prog->setState((enum DFUstate)reqWU.getState());
         }
-        
+
         const char* clusterOrig = req.getClusterOrig();
         const char* cluster = reqWU.getClusterName();
         if(cluster && (!clusterOrig || stricmp(clusterOrig, cluster)))
@@ -1371,7 +1371,7 @@ bool CFileSprayEx::onUpdateDFUWorkunit(IEspContext &context, IEspUpdateDFUWorkun
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
     return true;
@@ -1416,7 +1416,7 @@ bool CFileSprayEx::onDFUWorkunitsAction(IEspContext &context, IEspDFUWorkunitsAc
                 res->setID(wuids.item(i));
                 res->setAction("Delete");
                 res->setResult("Success");
-                
+
                 try
                 {
                     if (markWUFailed(factory, wuids.item(i)))
@@ -1462,14 +1462,14 @@ bool CFileSprayEx::onDFUWorkunitsAction(IEspContext &context, IEspDFUWorkunitsAc
             Owned<ISashaCommand> cmd = createSashaCommand();
             cmd->setAction(SCA_RESTORE);
             cmd->setDFU(true);  
-            
+
             StringArray & wuids = req.getWuids();
             for(unsigned ii = 0; ii < wuids.ordinality(); ++ii)
             {
                 StringBuffer msg;
                 const char *wuid = wuids.item(ii);
                 cmd->addId(wuid);
-                
+
                 if (!cmd->send(node,1*60*1000)) 
                 {
                     throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,"Cannot connect to archive server at %s.",sashaAddress.str());
@@ -1491,7 +1491,7 @@ bool CFileSprayEx::onDFUWorkunitsAction(IEspContext &context, IEspDFUWorkunitsAc
                 res->setID(wuid);
                 res->setAction("Restore");
                 res->setResult(msg.str());
-                
+
                 results.append(*LINK(res.getClear()));
             }
         }
@@ -1505,7 +1505,7 @@ bool CFileSprayEx::onDFUWorkunitsAction(IEspContext &context, IEspDFUWorkunitsAc
                 res->setID(wuids.item(i));
                 res->setAction("Protect");
                 res->setResult("Success");
-                
+
                 try
                 {
                     Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
@@ -1541,7 +1541,7 @@ bool CFileSprayEx::onDFUWorkunitsAction(IEspContext &context, IEspDFUWorkunitsAc
                 res->setID(wuids.item(i));
                 res->setAction("Unprotect");
                 res->setResult("Success");
-                
+
                 try
                 {
                     Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
@@ -1622,7 +1622,7 @@ bool CFileSprayEx::onDFUWorkunitsAction(IEspContext &context, IEspDFUWorkunitsAc
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
     return true;
@@ -1646,7 +1646,7 @@ bool CFileSprayEx::onDeleteDFUWorkunits(IEspContext &context, IEspDeleteDFUWorku
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
     return true;
@@ -1658,7 +1658,7 @@ bool CFileSprayEx::onDeleteDFUWorkunit(IEspContext &context, IEspDeleteDFUWorkun
     {
         if (!context.validateFeatureAccess(DFU_WU_URL, SecAccess_Write, false))
             throw MakeStringException(ECLWATCH_DFU_WU_ACCESS_DENIED, "Failed to delete DFU workunit. Permission denied.");
-        
+
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
         if (markWUFailed(factory, req.getWuid()))
             resp.setResult(factory->deleteWorkUnit(req.getWuid()));
@@ -1669,7 +1669,7 @@ bool CFileSprayEx::onDeleteDFUWorkunit(IEspContext &context, IEspDeleteDFUWorkun
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
     return true;
@@ -1692,7 +1692,7 @@ bool CFileSprayEx::onSubmitDFUWorkunit(IEspContext &context, IEspSubmitDFUWorkun
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
     return true;
@@ -1715,7 +1715,7 @@ bool CFileSprayEx::onAbortDFUWorkunit(IEspContext &context, IEspAbortDFUWorkunit
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
     return true;
@@ -1751,7 +1751,7 @@ bool CFileSprayEx::onGetDFUExceptions(IEspContext &context, IEspGetDFUExceptions
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
     return true;
@@ -1843,27 +1843,27 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
         if(recordsize > 0)
             source->setRecordSize(recordsize);
         else if (recordsize == RECFMVB_RECSIZE_ESCAPE) {
-            source->setFormat(DFUff_recfmvb);       
-            destination->setFormat(DFUff_variable);     
+            source->setFormat(DFUff_recfmvb);
+            destination->setFormat(DFUff_variable);
         }
         else if (recordsize == RECFMV_RECSIZE_ESCAPE) {
-            source->setFormat(DFUff_recfmv);        
-            destination->setFormat(DFUff_variable);     
+            source->setFormat(DFUff_recfmv);
+            destination->setFormat(DFUff_variable);
         }
         else if (recordsize == PREFIX_VARIABLE_RECSIZE_ESCAPE) {
-            source->setFormat(DFUff_variable);      
-            destination->setFormat(DFUff_variable);     
+            source->setFormat(DFUff_variable);
+            destination->setFormat(DFUff_variable);
         }
         else if (recordsize == PREFIX_VARIABLE_BIGENDIAN_RECSIZE_ESCAPE) {
-            source->setFormat(DFUff_variablebigendian);     
-            destination->setFormat(DFUff_variable);     
+            source->setFormat(DFUff_variablebigendian);
+            destination->setFormat(DFUff_variable);
         }
         destination->setLogicalName(destname);
         destination->setDirectory(destFolder.str());
 
         StringBuffer fileMask;
         constructFileMask(destTitle.str(), fileMask);
-        destination->setFileMask(fileMask.str()); 
+        destination->setFileMask(fileMask.str());
         destination->setGroupName(gName.str());
         const char * encryptkey = req.getEncrypt();
         if(req.getCompress()||(encryptkey&&*encryptkey))
@@ -1914,7 +1914,7 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
     return true;
@@ -1999,7 +1999,7 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
         }
         source->setMaxRecordSize(req.getSourceMaxRecordSize());
         source->setFormat((DFUfileformat)req.getSourceFormat());
-        
+
         // if rowTag specified, it means it's xml format, otherwise it's csv
         const char* rowtag = req.getSourceRowTag();
         if(rowtag != NULL && *rowtag != '\0')
@@ -2070,7 +2070,7 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
     return true;
@@ -2119,7 +2119,7 @@ bool CFileSprayEx::onReplicate(IEspContext &context, IEspReplicate &req, IEspRep
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
     return true;
@@ -2179,12 +2179,12 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
         {
             dstxml.append('\0');
             destination->setFromXML((const char*)dstxml.toByteArray());
-        }   
+        }
         destination->setTitle(srcTitle.str());
 
         options->setKeepHeader(true);
         options->setOverwrite(req.getOverwrite());             // needed if target already exists
-        
+
         const char* splitprefix = req.getSplitprefix();
         if(splitprefix && *splitprefix)
             options->setSplitPrefix(splitprefix);
@@ -2215,7 +2215,7 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
             options->setPush();             // I think needed for a despray
             destination->setWrap(true);
         }
-        if (req.getMultiCopy()) 
+        if (req.getMultiCopy())
             destination->setMultiCopy(true);
 
         const char * encryptkey = req.getEncrypt();
@@ -2229,19 +2229,19 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
         resp.setWuid(wu->queryId());
 
         wu->submit();                            // enqueue job(does implicit commit)
-         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
+        resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
     return true;
 }
 
 bool CFileSprayEx::doCopyForRoxie(IEspContext &context,     const char * srcName, const char * srcDali, const char * srcUser, const char * srcPassword,
-    const char * dstName, const char * destCluster, bool compressed, bool overwrite, bool supercopy,
-    DFUclusterPartDiskMapping val, StringBuffer baseDir, StringBuffer fileMask, IEspCopyResponse &resp)
+                                  const char * dstName, const char * destCluster, bool compressed, bool overwrite, bool supercopy,
+                                  DFUclusterPartDiskMapping val, StringBuffer baseDir, StringBuffer fileMask, IEspCopyResponse &resp)
 {
     StringBuffer user, passwd;
     Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
@@ -2318,7 +2318,7 @@ bool CFileSprayEx::doCopyForRoxie(IEspContext &context,     const char * srcName
 
         options->setSuppressNonKeyRepeats(true);                            // **** only repeat last part when src kind = key
     }
-    
+
     resp.setResult(wu->queryId());
     wu->submit();                            // enqueue job(does implicit commit)
     resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
@@ -2338,7 +2338,7 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Source logical file not specified.");
         if(!dstname || !*dstname)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination logical file not specified.");
-        
+
         StringBuffer destFolder, destTitle, defaultFolder, defaultReplicateFolder;
         StringBuffer srcCluster, destCluster, destClusterName;
         bool bRoxie = false;
@@ -2437,9 +2437,9 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
         IDFUfileSpec *source = wu->queryUpdateSource();
         IDFUfileSpec *destination = wu->queryUpdateDestination();
         IDFUoptions *options = wu->queryUpdateOptions();
-        
-        if (supercopy)  
-            wu->setCommand(DFUcmd_supercopy);   
+
+        if (supercopy)
+            wu->setCommand(DFUcmd_supercopy);
         else
             wu->setCommand(DFUcmd_copy);
 
@@ -2470,13 +2470,13 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
                 destination->setReplicateOffset(offset);
             }
         }
-            
+
         if (srcDiffKeyName&&*srcDiffKeyName)
             source->setDiffKey(srcDiffKeyName);
         if (destDiffKeyName&&*destDiffKeyName)
             destination->setDiffKey(destDiffKeyName);
 
-        if (!bRoxie) 
+        if (!bRoxie)
         {
             destination->setDirectory(destFolder.str());
             ClusterPartDiskMapSpec mspec;
@@ -2493,7 +2493,7 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
         if(req.getCompress()||(encryptkey&&*encryptkey))
             destination->setCompressed(true);
 
-        if (!bRoxie) 
+        if (!bRoxie)
         {
             options->setReplicate(req.getReplicate());
             destination->setWrap(req.getWrap());
@@ -2530,8 +2530,8 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
     }
     catch(IException* e)
-    {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -2573,7 +2573,7 @@ bool CFileSprayEx::onRename(IEspContext &context, IEspRename &req, IEspRenameRes
             Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(srcname, udesc);
             if(df)
             {
-                StringBuffer cluster0; 
+                StringBuffer cluster0;
                 df->getClusterName(0,cluster0);                     // TBD - Handling for multiple clusters?
                 if (cluster0.length()!=0)
                 {
@@ -2603,8 +2603,8 @@ bool CFileSprayEx::onRename(IEspContext &context, IEspRename &req, IEspRenameRes
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
     }
     catch(IException* e)
-    {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -2643,8 +2643,8 @@ bool CFileSprayEx::onDFUWUFile(IEspContext &context, IEspDFUWUFileRequest &req, 
         }
     }
     catch(IException* e)
-    {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
     return true;
@@ -2664,7 +2664,7 @@ int CFileSprayEx::doFileCheck(const char* mask, const char* netaddr, const char*
         iRet = 2;
 
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-       factory->validateCache();
+        factory->validateCache();
         Owned<IConstEnvironment> env = factory->openEnvironmentByFile();
         Owned<IPropertyTree> pEnvRoot = &env->getPTree();
         IPropertyTree* pEnvSoftware = pEnvRoot->queryPropTree("Software");
@@ -2683,7 +2683,7 @@ int CFileSprayEx::doFileCheck(const char* mask, const char* netaddr, const char*
                 xpath.appendf("Hardware/Computer[@name='%s']/@netAddress", pszComputer);
                 const char* pszNetAddr = pEnvRoot->queryProp(xpath.str());
                 if (strcmp(pszNetAddr, "."))
-                {       
+                {
                     sNetAddr.append(pszNetAddr);
                 }
                 else
@@ -2781,7 +2781,7 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
         Owned<IDirectoryIterator> di = f->directoryFiles(NULL, false, true);
         if(di.get() != NULL)
         {
-            ForEach(*di) 
+            ForEach(*di)
             {
                 StringBuffer fname;
                 di->getName(fname);
@@ -2805,7 +2805,7 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
                 files.append(*onefile.getLink());
             }
         }
-        
+
         sPath.replace('\\', '/');//XSLT cannot handle backslashes
         resp.setPath(sPath);
         resp.setFiles(files);
@@ -2822,8 +2822,8 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
         resp.setDirectoryOnly(directoryOnly);
     }
     catch(IException* e)
-    {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
     return true;
@@ -2868,7 +2868,7 @@ bool CFileSprayEx::onDfuMonitor(IEspContext &context, IEspDfuMonitorRequest &req
             else
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Neither logical name nor network ip/file specified for monitor.");
         }
-        if (eventname) 
+        if (eventname)
             monitor->setEventName(eventname);
         monitor->setShotLimit(req.getShotLimit());
         monitor->setSub(req.getSub());
@@ -2880,8 +2880,8 @@ bool CFileSprayEx::onDfuMonitor(IEspContext &context, IEspDfuMonitorRequest &req
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
     }
     catch(IException* e)
-    {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
     return true;
@@ -2915,15 +2915,15 @@ bool CFileSprayEx::onOpenSave(IEspContext &context, IEspOpenSaveRequest &req, IE
             resp.setViewable(false);
     }
     catch(IException* e)
-    {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
     return true;
 }
 
 bool CFileSprayEx::getDropZoneFiles(IEspContext &context, const char* netaddr, const char* osStr, const char* path,
-                                                IEspDropZoneFilesRequest &req, IEspDropZoneFilesResponse &resp)
+                                    IEspDropZoneFilesRequest &req, IEspDropZoneFilesResponse &resp)
 {
     bool directoryOnly = req.getDirectoryOnly();
 
@@ -2950,7 +2950,7 @@ bool CFileSprayEx::getDropZoneFiles(IEspContext &context, const char* netaddr, c
     Owned<IDirectoryIterator> di = f->directoryFiles(NULL, false, true);
     if(di.get() != NULL)
     {
-        ForEach(*di) 
+        ForEach(*di)
         {
             StringBuffer fname;
             di->getName(fname);
@@ -2974,7 +2974,7 @@ bool CFileSprayEx::getDropZoneFiles(IEspContext &context, const char* netaddr, c
             files.append(*onefile.getLink());
         }
     }
-    
+
     resp.setFiles(files);
 
     return true;
@@ -3023,7 +3023,7 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
                 StringBuffer sNetAddr;
                 const char* pszNetAddr = pEnvRoot->queryProp(xpath.str());
                 if (strcmp(pszNetAddr, "."))
-                {       
+                {
                     sNetAddr.append(pszNetAddr);
                 }
                 else
@@ -3054,17 +3054,17 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
                 StringBuffer dir;
                 pDropZone.getProp("@directory", dir);
 
-            Owned<IEspDropZone> aDropZone= createDropZone("","");
+                Owned<IEspDropZone> aDropZone= createDropZone("","");
 
                 if (machine)
                 {
                     if (machine->getOS() == MachineOsLinux || machine->getOS() == MachineOsSolaris)
-                    {         
+                    {
                         dir.replace('\\', '/');//replace all '\\' by '/'
                         aDropZone->setLinux("true");
                     }
                     else
-                    {       
+                    {
                         dir.replace('/', '\\');
                         dir.replace('$', ':');
                     }
@@ -3100,7 +3100,7 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
         }
 
         directoryStr.replace(pathSep=='\\'?'/':'\\', pathSep);
-        
+
         if (subfolder && *subfolder)
         {
             if (*(directoryStr.str() + directoryStr.length() -1) != pathSep)
@@ -3116,14 +3116,14 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
 
         if (pathSep=='\\')
             directoryStr.replaceString("\\", "\\\\");
-        
+
         resp.setNetAddress(netAddressStr.str());
         resp.setPath(directoryStr.str());
         resp.setOS(atoi(osStr.str()));
     }
     catch(IException* e)
-    {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
     return true;
@@ -3190,7 +3190,7 @@ bool CFileSprayEx::onDeleteDropZoneFiles(IEspContext &context, IEspDeleteDropZon
             res->setID(files.item(i));
             res->setAction("Delete");
             res->setResult("Success");
-            
+
             try
             {
                 StringBuffer fileToDelete = sPath;
@@ -3225,7 +3225,7 @@ bool CFileSprayEx::onDeleteDropZoneFiles(IEspContext &context, IEspDeleteDropZon
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
     return true;

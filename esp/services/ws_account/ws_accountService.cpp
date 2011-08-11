@@ -78,7 +78,7 @@ bool Cws_accountEx::onVerifyUser(IEspContext &context, IEspVerifyUserRequest &re
     }
     catch(IException* e)
     {
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
     }
 
     return true;
