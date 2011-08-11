@@ -16,7 +16,7 @@
 ###<REPLACE>###
 
 which_service(){
-    SERV=`which service`
+    SERV=`type --path service`
     if [ "${SERV}" == "" ]; then
         if [ -e "/sbin/service" ]; then
             SERV=/sbin/service
@@ -27,7 +27,7 @@ which_service(){
 }
 
 which_pidof(){
-    PIDOF=`which pidof`
+    PIDOF=`type --path pidof`
     if [ "${PIDOF}" == "" ]; then
         if [ -e /bin/pidof ]; then
 	    PIDOF=/bin/pidof
@@ -50,7 +50,6 @@ cfg.parser () {
     if [ ! -e $1 ] || [ $# -lt 1 ]; then
     [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg 1 && return 1 || return 1
     fi
-    OLD_IFS=$IFS
     IFS=$'\n' && ini=( $(cat $1 | sed -e 's/[ \t]*=[ \t]*/=/') )              # convert to line-array
     ini=( ${ini[*]//[;#]*/} )                   # remove comments
     ini=( ${ini[*]/#[/\}$'\n'cfg.section.} ) # set section prefix
@@ -63,7 +62,6 @@ cfg.parser () {
     ini[${#ini[*]} + 1]='}'                  # add the last brace
     #echo "${ini[*]}"               # echoing the result
     eval "$(echo "${ini[*]}")"               # eval the result
-    IFS=$OLD_IFS
     [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg 0
 }
 
@@ -78,7 +76,6 @@ dir.parser() {
         if [ $# -lt 1 ]; then
             [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg 1 && return 1 || return 1
         fi
-	OLD_IFS=$IFS
         IFS=$'\n' && cmp=( $@ )
         cmp=( ${cmp[*]/#/dir_} )
         cmp=( ${cmp[*]/=/= dirItem=} )
@@ -88,7 +85,6 @@ dir.parser() {
         for i in ${!dir_*}; do
             dirArray=( ${dirArray[@]} $i )
         done
-	IFS=$OLD_IFS
     [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg 0
 }
 
@@ -130,7 +126,6 @@ comp.parser() {
         if [ $# -lt 1 ]; then
             [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg 1 && return 1 || return 1
         fi
-	OLD_IFS=$IFS
         IFS=$'\n' && cmp=( $@ )
         cmp=( ${cmp[*]/#/comp_} )
         cmp=( ${cmp[*]/=/= compType=} )
@@ -142,7 +137,6 @@ comp.parser() {
         for i in ${!comp_*}; do
             compArray=( ${compArray[@]} $i )
         done
-	IFS=$OLD_IFS
     [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg 0
 }
 
