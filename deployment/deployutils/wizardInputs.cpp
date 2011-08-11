@@ -463,7 +463,7 @@ void CWizardInputs::generateSoftwareTree(IPropertyTree* pNewEnvTree)
   if(m_buildSetTree)
   {
     bool ovrLog = true, ovrRun = true;
-    if (m_overrideDirs->count() > 0)
+    if (m_overrideDirs && m_overrideDirs->count() > 0)
     {
       HashIterator iter(*m_overrideDirs);
 
