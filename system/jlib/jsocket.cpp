@@ -62,6 +62,7 @@
 #include "jqueue.tpp"
 #include "jtime.hpp"
 #include "jprop.hpp"
+#include "jregexp.hpp"
 #include "jdebug.hpp"
 #include "build-config.h"
 
@@ -2474,13 +2475,11 @@ ISocket* ISocket::attach(int s, bool tcpip)
     return sock;
 }
 
-bool lookupInterfaceIp(IpAddress &ip,const char *ifname,bool test)
+bool isInterfaceIp(const IpAddress &ip, const char *ifname)
 {
 #ifdef _WIN32
     return false;
 #else
-    if (!test)
-        ip.ipset(NULL);
     int fd = socket(AF_INET, SOCK_DGRAM, 0);  // IPV6 TBD
     if (fd<0)
         return false;
@@ -2493,25 +2492,66 @@ bool lookupInterfaceIp(IpAddress &ip,const char *ifname,bool test)
         return false;
     struct ifreq *ifr = ifc.ifc_req;
     unsigned n = ifc.ifc_len/sizeof(struct ifreq);
-    for(unsigned i=0; i<n; i++) {
+    bool match = false;
+    for(unsigned i=0; i<n; i++)
+    {
         struct ifreq *item = &ifr[i];
         if (ifname&&*ifname)
-            if (strcmp(item->ifr_name,ifname)!=0)
+            if (!WildMatch(item->ifr_name,ifname))
                 continue;
         IpAddress iptest((inet_ntoa(((struct sockaddr_in *)&item->ifr_addr)->sin_addr)));
-        if (test) {
-            if (ip.ipequals(iptest)) {
-                test = false;
-                break;
-            }
+        if (ip.ipequals(iptest))
+        {
+            match = true;
+            break;
         }
-        else if (ip.isNull())
-            ip.ipset(iptest);
-        else if (!PreferredSubnet.isNull()&&!PreferredSubnet.test(ip)&&PreferredSubnet.test(iptest))
-            ip.ipset(iptest);
     }
     close(fd);
-    return !test;
+    return match;
+#endif
+}
+
+bool getInterfaceIp(IpAddress &ip,const char *ifname)
+{
+#ifdef _WIN32
+    return false;
+#else
+    ip.ipset(NULL);
+    int fd = socket(AF_INET, SOCK_DGRAM, 0);  // IPV6 TBD
+    if (fd<0)
+        return false;
+    MemoryAttr ma;
+    char *buf = (char *)ma.allocate(1024);
+    struct ifconf ifc;
+    ifc.ifc_len = 1024;
+    ifc.ifc_buf = buf;
+    if(ioctl(fd, SIOCGIFCONF, &ifc) < 0) // query interfaces
+        return false;
+    struct ifreq *ifr = ifc.ifc_req;
+    unsigned n = ifc.ifc_len/sizeof(struct ifreq);
+    for (int loopback = 0; loopback <= 1; loopback++)
+    {
+        for (int i=0; i<n; i++)
+        {
+            bool useLoopback = (loopback==1);
+            struct ifreq *item = &ifr[i];
+            if (ifname&&*ifname)
+                if (!WildMatch(item->ifr_name,ifname))
+                    continue;
+            IpAddress iptest((inet_ntoa(((struct sockaddr_in *)&item->ifr_addr)->sin_addr)));
+            if (iptest.isLoopBack() == useLoopback)
+            {
+                if (ip.isNull())
+                    ip.ipset(iptest);
+                else if (!PreferredSubnet.isNull()&&!PreferredSubnet.test(ip)&&PreferredSubnet.test(iptest))
+                    ip.ipset(iptest);
+            }
+        }
+        if (!ip.isNull())
+            break;
+    }
+    close(fd);
+    return !ip.isNull();
 #endif
 }
 
@@ -2533,11 +2573,14 @@ const char * GetCachedHostName()
         if (EnvConfPath.length() == 0)
             EnvConfPath.append(CONFIG_DIR).append(PATHSEPSTR).append("environment.conf");
         Owned<IProperties> conf = createProperties(EnvConfPath.str(), true);
-        if (conf->getProp("interface", ifs)&&ifs.length()) {
-            if (lookupInterfaceIp(ip,ifs.str(),false)) {
+        if (conf->getProp("interface", ifs) && ifs.length())
+        {
+            if (getInterfaceIp(ip, ifs.str()))
+            {
                 StringBuffer ips;
                 ip.getIpText(ips);
-                if (ips.length()) {
+                if (ips.length())
+                {
                     cachehostname.set(ips.str());
                     cachehostip.ipset(ip);
                     return cachehostname.get();
@@ -2629,7 +2672,7 @@ bool IpAddress::isLocal() const
     if (isLoopBack() || isHost())
         return true;
     IpAddress ip(*this);
-    return lookupInterfaceIp(ip,NULL,true); 
+    return isInterfaceIp(ip, NULL);
 }
 
 

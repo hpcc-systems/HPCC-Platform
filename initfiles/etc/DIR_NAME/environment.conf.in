@@ -13,3 +13,4 @@ home=${HOME_DIR}
 environment=${ENV_XML_FILE}
 sourcedir=${CONFIG_SOURCE_PATH}
 blockname=${DIR_NAME}
+interface=*
