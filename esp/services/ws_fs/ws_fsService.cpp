@@ -1335,37 +1335,39 @@ bool CFileSprayEx::onUpdateDFUWorkunit(IEspContext &context, IEspUpdateDFUWorkun
 
         IConstDFUWorkunit & reqWU = req.getWu();
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
-        Owned<IDFUWorkUnit> wu = factory->updateWorkUnit(reqWU.getID());
-        if(!wu)
-            throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT, "Dfu workunit %s not found.", reqWU.getID());
-
-        IDFUprogress *prog = wu->queryUpdateProgress();
-        if (prog && req.getStateOrig() != reqWU.getState())
         {
-            if (prog->getState() != req.getStateOrig())
-                throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT,"Cannot update DFU workunit %s because its state has been changed internally. Please refresh the page and try again.",reqWU.getID());
+            Owned<IDFUWorkUnit> wu = factory->updateWorkUnit(reqWU.getID());
+            if(!wu)
+                throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT, "Dfu workunit %s not found.", reqWU.getID());
 
-            prog->setState((enum DFUstate)reqWU.getState());
+            IDFUprogress *prog = wu->queryUpdateProgress();
+            if (prog && req.getStateOrig() != reqWU.getState())
+            {
+                if (prog->getState() != req.getStateOrig())
+                    throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT,"Cannot update DFU workunit %s because its state has been changed internally. Please refresh the page and try again.",reqWU.getID());
+
+                prog->setState((enum DFUstate)reqWU.getState());
+            }
+
+            const char* clusterOrig = req.getClusterOrig();
+            const char* cluster = reqWU.getClusterName();
+            if(cluster && (!clusterOrig || stricmp(clusterOrig, cluster)))
+            {
+                wu->setClusterName(reqWU.getClusterName());
+            }
+
+            const char* jobNameOrig = req.getJobNameOrig();
+            const char* jobName = reqWU.getJobName();
+            if(jobName && (!jobNameOrig || stricmp(jobNameOrig, jobName)))
+            {
+                wu->setJobName(jobName);
+            }
+
+            if (reqWU.getIsProtected() != req.getIsProtectedOrig())
+                wu->protect(reqWU.getIsProtected());
+
+            wu->commit();
         }
-        
-        const char* clusterOrig = req.getClusterOrig();
-        const char* cluster = reqWU.getClusterName();
-        if(cluster && (!clusterOrig || stricmp(clusterOrig, cluster)))
-        {
-            wu->setClusterName(reqWU.getClusterName());
-        }
-
-        const char* jobNameOrig = req.getJobNameOrig();
-        const char* jobName = reqWU.getJobName();
-        if(jobName && (!jobNameOrig || stricmp(jobNameOrig, jobName)))
-        {
-            wu->setJobName(jobName);
-        }
-
-        if (reqWU.getIsProtected() != req.getIsProtectedOrig())
-            wu->protect(reqWU.getIsProtected());
-
-        wu->commit();
 
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(reqWU.getID()).str());
     }
@@ -1416,7 +1418,7 @@ bool CFileSprayEx::onDFUWorkunitsAction(IEspContext &context, IEspDFUWorkunitsAc
                 res->setID(wuids.item(i));
                 res->setAction("Delete");
                 res->setResult("Success");
-                
+
                 try
                 {
                     if (markWUFailed(factory, wuids.item(i)))
@@ -1462,14 +1464,14 @@ bool CFileSprayEx::onDFUWorkunitsAction(IEspContext &context, IEspDFUWorkunitsAc
             Owned<ISashaCommand> cmd = createSashaCommand();
             cmd->setAction(SCA_RESTORE);
             cmd->setDFU(true);  
-            
+
             StringArray & wuids = req.getWuids();
             for(unsigned ii = 0; ii < wuids.ordinality(); ++ii)
             {
                 StringBuffer msg;
                 const char *wuid = wuids.item(ii);
                 cmd->addId(wuid);
-                
+
                 if (!cmd->send(node,1*60*1000)) 
                 {
                     throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,"Cannot connect to archive server at %s.",sashaAddress.str());
@@ -1491,7 +1493,7 @@ bool CFileSprayEx::onDFUWorkunitsAction(IEspContext &context, IEspDFUWorkunitsAc
                 res->setID(wuid);
                 res->setAction("Restore");
                 res->setResult(msg.str());
-                
+
                 results.append(*LINK(res.getClear()));
             }
         }
@@ -1505,7 +1507,7 @@ bool CFileSprayEx::onDFUWorkunitsAction(IEspContext &context, IEspDFUWorkunitsAc
                 res->setID(wuids.item(i));
                 res->setAction("Protect");
                 res->setResult("Success");
-                
+
                 try
                 {
                     Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
@@ -1541,7 +1543,7 @@ bool CFileSprayEx::onDFUWorkunitsAction(IEspContext &context, IEspDFUWorkunitsAc
                 res->setID(wuids.item(i));
                 res->setAction("Unprotect");
                 res->setResult("Success");
-                
+
                 try
                 {
                     Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
@@ -1658,7 +1660,7 @@ bool CFileSprayEx::onDeleteDFUWorkunit(IEspContext &context, IEspDeleteDFUWorkun
     {
         if (!context.validateFeatureAccess(DFU_WU_URL, SecAccess_Write, false))
             throw MakeStringException(ECLWATCH_DFU_WU_ACCESS_DENIED, "Failed to delete DFU workunit. Permission denied.");
-        
+
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
         if (markWUFailed(factory, req.getWuid()))
             resp.setResult(factory->deleteWorkUnit(req.getWuid()));
@@ -1683,11 +1685,13 @@ bool CFileSprayEx::onSubmitDFUWorkunit(IEspContext &context, IEspSubmitDFUWorkun
             throw MakeStringException(ECLWATCH_DFU_WU_ACCESS_DENIED, "Failed to submit DFU workunit. Permission denied.");
 
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
-        Owned<IDFUWorkUnit> wu = factory->updateWorkUnit(req.getWuid());
-        if(!wu)
-            throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT, "Dfu workunit %s not found.", req.getWuid());
+        {
+            Owned<IDFUWorkUnit> wu = factory->updateWorkUnit(req.getWuid());
+            if(!wu)
+                throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT, "Dfu workunit %s not found.", req.getWuid());
 
-        wu->submit();
+            wu->submit();
+        }
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(req.getWuid()).str());
     }
     catch(IException* e)
@@ -1706,11 +1710,13 @@ bool CFileSprayEx::onAbortDFUWorkunit(IEspContext &context, IEspAbortDFUWorkunit
             throw MakeStringException(ECLWATCH_DFU_WU_ACCESS_DENIED, "Failed to abort DFU workunit. Permission denied.");
 
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
-        Owned<IDFUWorkUnit> wu = factory->updateWorkUnit(req.getWuid());
-        if(!wu)
-            throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "Dfu workunit %s not found.", req.getWuid());
+        {
+            Owned<IDFUWorkUnit> wu = factory->updateWorkUnit(req.getWuid());
+            if(!wu)
+                throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "Dfu workunit %s not found.", req.getWuid());
 
-        wu->requestAbort();
+            wu->requestAbort();
+        }
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(req.getWuid()).str());
     }
     catch(IException* e)
@@ -1810,107 +1816,109 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
         else
             ParseLogicalPath(destname, destCluster, destFolder, destTitle, defaultFolder, defaultReplicateFolder);
 
+        StringBuffer wuid;
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
-        Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
-
-        wu->setClusterName(gName.str());
-
-        wu->setJobName(destTitle.str());
-        wu->setQueue(m_QueueLabel.str());
-        StringBuffer user, passwd;
-        wu->setUser(context.getUserID(user).str());
-        wu->setPassword(context.getPassword(passwd).str());
-        wu->setCommand(DFUcmd_import);
-
-        IDFUfileSpec *source = wu->queryUpdateSource();
-        if(srcxml.length() == 0)
         {
-            RemoteMultiFilename rmfn;
-            SocketEndpoint ep(srcip);
-            rmfn.setEp(ep);
-            StringBuffer fnamebuf(srcfile);
-            fnamebuf.trim();
-            rmfn.append(fnamebuf.str());    // handles comma separated files
-            source->setMultiFilename(rmfn);
+            Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
+
+            wu->setClusterName(gName.str());
+            wu->setJobName(destTitle.str());
+            wu->setQueue(m_QueueLabel.str());
+            StringBuffer user, passwd;
+            wu->setUser(context.getUserID(user).str());
+            wu->setPassword(context.getPassword(passwd).str());
+            wu->setCommand(DFUcmd_import);
+
+            IDFUfileSpec *source = wu->queryUpdateSource();
+            if(srcxml.length() == 0)
+            {
+                RemoteMultiFilename rmfn;
+                SocketEndpoint ep(srcip);
+                rmfn.setEp(ep);
+                StringBuffer fnamebuf(srcfile);
+                fnamebuf.trim();
+                rmfn.append(fnamebuf.str());    // handles comma separated files
+                source->setMultiFilename(rmfn);
+            }
+            else
+            {
+                srcxml.append('\0');
+                source->setFromXML((const char*)srcxml.toByteArray());
+            }
+
+            IDFUfileSpec *destination = wu->queryUpdateDestination();
+            if(recordsize > 0)
+                source->setRecordSize(recordsize);
+            else if (recordsize == RECFMVB_RECSIZE_ESCAPE) {
+                source->setFormat(DFUff_recfmvb);
+                destination->setFormat(DFUff_variable);
+            }
+            else if (recordsize == RECFMV_RECSIZE_ESCAPE) {
+                source->setFormat(DFUff_recfmv);
+                destination->setFormat(DFUff_variable);
+            }
+            else if (recordsize == PREFIX_VARIABLE_RECSIZE_ESCAPE) {
+                source->setFormat(DFUff_variable);
+                destination->setFormat(DFUff_variable);
+            }
+            else if (recordsize == PREFIX_VARIABLE_BIGENDIAN_RECSIZE_ESCAPE) {
+                source->setFormat(DFUff_variablebigendian);
+                destination->setFormat(DFUff_variable);
+            }
+            destination->setLogicalName(destname);
+            destination->setDirectory(destFolder.str());
+
+            StringBuffer fileMask;
+            constructFileMask(destTitle.str(), fileMask);
+            destination->setFileMask(fileMask.str());
+            destination->setGroupName(gName.str());
+            const char * encryptkey = req.getEncrypt();
+            if(req.getCompress()||(encryptkey&&*encryptkey))
+                destination->setCompressed(true);
+
+            ClusterPartDiskMapSpec mspec;
+            destination->getClusterPartDiskMapSpec(gName.str(), mspec);
+            mspec.setDefaultBaseDir(defaultFolder.str());
+            mspec.setDefaultReplicateDir(defaultReplicateFolder.str());
+            destination->setClusterPartDiskMapSpec(gName.str(), mspec);
+
+            int repo = req.getReplicateOffset();
+            bool isNull = req.getReplicateOffset_isNull();
+            if (!isNull && (repo!=1))
+                destination->setReplicateOffset(repo);
+            if (req.getWrap())
+                destination->setWrap(true);
+
+            IDFUoptions *options = wu->queryUpdateOptions();
+            const char * decryptkey = req.getDecrypt();
+            if ((encryptkey&&*encryptkey)||(decryptkey&&*decryptkey))
+                options->setEncDec(encryptkey,decryptkey);
+            options->setReplicate(req.getReplicate());
+            options->setOverwrite(req.getOverwrite());             // needed if target already exists
+            const char* prefix = req.getPrefix();
+            if(prefix && *prefix)
+                options->setLengthPrefix(prefix);
+            if(req.getNosplit())
+                options->setNoSplit(true);
+            if(req.getNorecover())
+                options->setNoRecover(true);
+            if(req.getMaxConnections() > 0)
+                options->setmaxConnections(req.getMaxConnections());
+            if(req.getThrottle() > 0)
+                options->setThrottle(req.getThrottle());
+            if(req.getTransferBufferSize() > 0)
+                options->setTransferBufferSize(req.getTransferBufferSize());
+            if (req.getPull())
+                options->setPull(true);
+            if (req.getPush())
+                options->setPush(true);
+
+            wuid.append(wu->queryId());
+
+            wu->submit();                            // enqueue job(does implicit commit)
         }
-        else
-        {
-            srcxml.append('\0');
-            source->setFromXML((const char*)srcxml.toByteArray());
-        }
 
-        IDFUfileSpec *destination = wu->queryUpdateDestination();
-        if(recordsize > 0)
-            source->setRecordSize(recordsize);
-        else if (recordsize == RECFMVB_RECSIZE_ESCAPE) {
-            source->setFormat(DFUff_recfmvb);       
-            destination->setFormat(DFUff_variable);     
-        }
-        else if (recordsize == RECFMV_RECSIZE_ESCAPE) {
-            source->setFormat(DFUff_recfmv);        
-            destination->setFormat(DFUff_variable);     
-        }
-        else if (recordsize == PREFIX_VARIABLE_RECSIZE_ESCAPE) {
-            source->setFormat(DFUff_variable);      
-            destination->setFormat(DFUff_variable);     
-        }
-        else if (recordsize == PREFIX_VARIABLE_BIGENDIAN_RECSIZE_ESCAPE) {
-            source->setFormat(DFUff_variablebigendian);     
-            destination->setFormat(DFUff_variable);     
-        }
-        destination->setLogicalName(destname);
-        destination->setDirectory(destFolder.str());
-
-        StringBuffer fileMask;
-        constructFileMask(destTitle.str(), fileMask);
-        destination->setFileMask(fileMask.str()); 
-        destination->setGroupName(gName.str());
-        const char * encryptkey = req.getEncrypt();
-        if(req.getCompress()||(encryptkey&&*encryptkey))
-            destination->setCompressed(true);
-
-        ClusterPartDiskMapSpec mspec;
-        destination->getClusterPartDiskMapSpec(gName.str(), mspec);
-        mspec.setDefaultBaseDir(defaultFolder.str());
-        mspec.setDefaultReplicateDir(defaultReplicateFolder.str());
-        destination->setClusterPartDiskMapSpec(gName.str(), mspec);
-
-        int repo = req.getReplicateOffset();
-        bool isNull = req.getReplicateOffset_isNull();
-        if (!isNull && (repo!=1))
-            destination->setReplicateOffset(repo);
-        if (req.getWrap())
-            destination->setWrap(true);
-
-        IDFUoptions *options = wu->queryUpdateOptions();
-        const char * decryptkey = req.getDecrypt();
-        if ((encryptkey&&*encryptkey)||(decryptkey&&*decryptkey))
-            options->setEncDec(encryptkey,decryptkey);
-        options->setReplicate(req.getReplicate());
-        options->setOverwrite(req.getOverwrite());             // needed if target already exists
-        const char* prefix = req.getPrefix();
-        if(prefix && *prefix)
-            options->setLengthPrefix(prefix);
-        if(req.getNosplit())
-            options->setNoSplit(true);
-        if(req.getNorecover())
-            options->setNoRecover(true);
-        if(req.getMaxConnections() > 0)
-            options->setmaxConnections(req.getMaxConnections());
-        if(req.getThrottle() > 0)
-            options->setThrottle(req.getThrottle());
-        if(req.getTransferBufferSize() > 0)
-            options->setTransferBufferSize(req.getTransferBufferSize());
-        if (req.getPull())
-            options->setPull(true);
-        if (req.getPush())
-            options->setPush(true);
-
-        resp.setWuid(wu->queryId());
-
-        wu->submit();                            // enqueue job(does implicit commit)
-
-        resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
+        resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wuid).str());
     }
     catch(IException* e)
     {   
@@ -1967,106 +1975,109 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
         else
             ParseLogicalPath(destname, destCluster, destFolder, destTitle, defaultFolder, defaultReplicateFolder);
 
+        StringBuffer wuid;
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
-        Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
-
-        wu->setClusterName(gName.str());
-        wu->setJobName(destTitle.str());
-        wu->setQueue(m_QueueLabel.str());
-        StringBuffer user, passwd;
-        wu->setUser(context.getUserID(user).str());
-        wu->setPassword(context.getPassword(passwd).str());
-        wu->setCommand(DFUcmd_import);
-
-        IDFUfileSpec *source = wu->queryUpdateSource();
-        IDFUfileSpec *destination = wu->queryUpdateDestination();
-        IDFUoptions *options = wu->queryUpdateOptions();
-
-        if(srcxml.length() == 0)
         {
-            RemoteMultiFilename rmfn;
-            SocketEndpoint ep(srcip);
-            rmfn.setEp(ep);
-            StringBuffer fnamebuf(srcfile);
-            fnamebuf.trim();
-            rmfn.append(fnamebuf.str());    // handles comma separated files
-            source->setMultiFilename(rmfn);
-        }
-        else
-        {
-            srcxml.append('\0');
-            source->setFromXML((const char*)srcxml.toByteArray());
-        }
-        source->setMaxRecordSize(req.getSourceMaxRecordSize());
-        source->setFormat((DFUfileformat)req.getSourceFormat());
-        
-        // if rowTag specified, it means it's xml format, otherwise it's csv
-        const char* rowtag = req.getSourceRowTag();
-        if(rowtag != NULL && *rowtag != '\0')
-        {
-            source->setRowTag(rowtag);
-            options->setKeepHeader(true);
-        }
-        else
-        {
-            const char* cs = req.getSourceCsvSeparate();
-            if(cs == NULL || *cs == '\0')
-                cs = "\\,";
-            const char* ct = req.getSourceCsvTerminate();
-            if(ct == NULL || *ct == '\0')
-                ct = "\\n,\\r\\n";
-            const char* cq = req.getSourceCsvQuote();
-            if(cq== NULL)
-                cq = "'";
-            source->setCsvOptions(cs, ct, cq);
-        }
+            Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
 
-        destination->setLogicalName(destname);
-        destination->setDirectory(destFolder.str());
-        StringBuffer fileMask;
-        constructFileMask(destTitle.str(), fileMask);
-        destination->setFileMask(fileMask.str());
-        destination->setGroupName(gName.str());
-        ClusterPartDiskMapSpec mspec;
-        destination->getClusterPartDiskMapSpec(gName.str(), mspec);
-        mspec.setDefaultBaseDir(defaultFolder.str());
-        mspec.setDefaultReplicateDir(defaultReplicateFolder.str());
-        destination->setClusterPartDiskMapSpec(gName.str(), mspec);
-        const char * encryptkey = req.getEncrypt();
-        if(req.getCompress()||(encryptkey&&*encryptkey))
-            destination->setCompressed(true);
-        const char * decryptkey = req.getDecrypt();
-        if ((encryptkey&&*encryptkey)||(decryptkey&&*decryptkey))
-            options->setEncDec(encryptkey,decryptkey);
-        int repo = req.getReplicateOffset();
-        bool isNull = req.getReplicateOffset_isNull();
-        if (!isNull && (repo!=1))
-            destination->setReplicateOffset(repo);
+            wu->setClusterName(gName.str());
+            wu->setJobName(destTitle.str());
+            wu->setQueue(m_QueueLabel.str());
+            StringBuffer user, passwd;
+            wu->setUser(context.getUserID(user).str());
+            wu->setPassword(context.getPassword(passwd).str());
+            wu->setCommand(DFUcmd_import);
 
-        options->setReplicate(req.getReplicate());
-        options->setOverwrite(req.getOverwrite());             // needed if target already exists
-        const char* prefix = req.getPrefix();
-        if(prefix && *prefix)
-            options->setLengthPrefix(prefix);
-        if(req.getNosplit())
-            options->setNoSplit(true);
-        if(req.getNorecover())
-            options->setNoRecover(true);
-        if(req.getMaxConnections() > 0)
-            options->setmaxConnections(req.getMaxConnections());
-        if(req.getThrottle() > 0)
-            options->setThrottle(req.getThrottle());
-        if(req.getTransferBufferSize() > 0)
-            options->setTransferBufferSize(req.getTransferBufferSize());
-        if (req.getPull())
-            options->setPull(true);
-        if (req.getPush())
-            options->setPush(true);
+            IDFUfileSpec *source = wu->queryUpdateSource();
+            IDFUfileSpec *destination = wu->queryUpdateDestination();
+            IDFUoptions *options = wu->queryUpdateOptions();
 
-        resp.setWuid(wu->queryId());
+            if(srcxml.length() == 0)
+            {
+                RemoteMultiFilename rmfn;
+                SocketEndpoint ep(srcip);
+                rmfn.setEp(ep);
+                StringBuffer fnamebuf(srcfile);
+                fnamebuf.trim();
+                rmfn.append(fnamebuf.str());    // handles comma separated files
+                source->setMultiFilename(rmfn);
+            }
+            else
+            {
+                srcxml.append('\0');
+                source->setFromXML((const char*)srcxml.toByteArray());
+            }
+            source->setMaxRecordSize(req.getSourceMaxRecordSize());
+            source->setFormat((DFUfileformat)req.getSourceFormat());
 
-        wu->submit();                            // enqueue job(does implicit commit)
-        resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
+            // if rowTag specified, it means it's xml format, otherwise it's csv
+            const char* rowtag = req.getSourceRowTag();
+            if(rowtag != NULL && *rowtag != '\0')
+            {
+                source->setRowTag(rowtag);
+                options->setKeepHeader(true);
+            }
+            else
+            {
+                const char* cs = req.getSourceCsvSeparate();
+                if(cs == NULL || *cs == '\0')
+                    cs = "\\,";
+                const char* ct = req.getSourceCsvTerminate();
+                if(ct == NULL || *ct == '\0')
+                    ct = "\\n,\\r\\n";
+                const char* cq = req.getSourceCsvQuote();
+                if(cq== NULL)
+                    cq = "'";
+                source->setCsvOptions(cs, ct, cq);
+            }
+
+            destination->setLogicalName(destname);
+            destination->setDirectory(destFolder.str());
+            StringBuffer fileMask;
+            constructFileMask(destTitle.str(), fileMask);
+            destination->setFileMask(fileMask.str());
+            destination->setGroupName(gName.str());
+            ClusterPartDiskMapSpec mspec;
+            destination->getClusterPartDiskMapSpec(gName.str(), mspec);
+            mspec.setDefaultBaseDir(defaultFolder.str());
+            mspec.setDefaultReplicateDir(defaultReplicateFolder.str());
+            destination->setClusterPartDiskMapSpec(gName.str(), mspec);
+            const char * encryptkey = req.getEncrypt();
+            if(req.getCompress()||(encryptkey&&*encryptkey))
+                destination->setCompressed(true);
+            const char * decryptkey = req.getDecrypt();
+            if ((encryptkey&&*encryptkey)||(decryptkey&&*decryptkey))
+                options->setEncDec(encryptkey,decryptkey);
+            int repo = req.getReplicateOffset();
+            bool isNull = req.getReplicateOffset_isNull();
+            if (!isNull && (repo!=1))
+                destination->setReplicateOffset(repo);
+
+            options->setReplicate(req.getReplicate());
+            options->setOverwrite(req.getOverwrite());             // needed if target already exists
+            const char* prefix = req.getPrefix();
+            if(prefix && *prefix)
+                options->setLengthPrefix(prefix);
+            if(req.getNosplit())
+                options->setNoSplit(true);
+            if(req.getNorecover())
+                options->setNoRecover(true);
+            if(req.getMaxConnections() > 0)
+                options->setmaxConnections(req.getMaxConnections());
+            if(req.getThrottle() > 0)
+                options->setThrottle(req.getThrottle());
+            if(req.getTransferBufferSize() > 0)
+                options->setTransferBufferSize(req.getTransferBufferSize());
+            if (req.getPull())
+                options->setPull(true);
+            if (req.getPush())
+                options->setPush(true);
+
+            wuid.append(wu->queryId());
+
+            wu->submit();                            // enqueue job(does implicit commit)
+        }
+        resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wuid).str());
     }
     catch(IException* e)
     {   
@@ -2087,35 +2098,38 @@ bool CFileSprayEx::onReplicate(IEspContext &context, IEspReplicate &req, IEspRep
         if(!srcname || !*srcname)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Source logical file not specified.");
 
+        StringBuffer wuid;
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
-        Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
-
-        StringBuffer jobname = "Replicate: ";
-        jobname.append(srcname);
-        wu->setJobName(jobname.str());
-        wu->setQueue(m_QueueLabel.str());
-        StringBuffer user, passwd;
-        wu->setUser(context.getUserID(user).str());
-        wu->setPassword(context.getPassword(passwd).str());
-        wu->setCommand(DFUcmd_replicate);
-
-        IDFUfileSpec *source = wu->queryUpdateSource();
-        if (source)
         {
-            source->setLogicalName(srcname);
-            int repo = req.getReplicateOffset();
-            if (repo!=1)
-                source->setReplicateOffset(repo);
+            Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
+
+            StringBuffer jobname = "Replicate: ";
+            jobname.append(srcname);
+            wu->setJobName(jobname.str());
+            wu->setQueue(m_QueueLabel.str());
+            StringBuffer user, passwd;
+            wu->setUser(context.getUserID(user).str());
+            wu->setPassword(context.getPassword(passwd).str());
+            wu->setCommand(DFUcmd_replicate);
+
+            IDFUfileSpec *source = wu->queryUpdateSource();
+            if (source)
+            {
+                source->setLogicalName(srcname);
+                int repo = req.getReplicateOffset();
+                if (repo!=1)
+                    source->setReplicateOffset(repo);
+            }
+            const char* cluster = req.getCluster();
+            if(cluster && *cluster)
+            {
+                IDFUoptions *opt = wu->queryUpdateOptions();
+                opt->setReplicateMode(DFURMmissing,cluster,req.getRepeatLast(),req.getOnlyRepeated());
+            }
+            wuid.append(wu->queryId());
+            wu->submit();
         }
-        const char* cluster = req.getCluster();
-        if(cluster && *cluster)
-        {
-            IDFUoptions *opt = wu->queryUpdateOptions();
-            opt->setReplicateMode(DFURMmissing,cluster,req.getRepeatLast(),req.getOnlyRepeated());
-        }
-        wu->submit();
-        resp.setWuid(wu->queryId());
-        resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
+        resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wuid).str());
     }
     catch(IException* e)
     {   
@@ -2149,87 +2163,88 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination file not specified.");
         }
 
-        StringBuffer srcTitle;
+        StringBuffer srcTitle, wuid;
         ParseLogicalPath(srcname, srcTitle);
 
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
-        Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
-
-        wu->setJobName(srcTitle.str());
-        wu->setQueue(m_QueueLabel.str());
-        StringBuffer user, passwd;
-        wu->setUser(context.getUserID(user).str());
-        wu->setPassword(context.getPassword(passwd).str());
-        wu->setCommand(DFUcmd_export);
-
-        IDFUfileSpec *source = wu->queryUpdateSource();
-        IDFUfileSpec *destination = wu->queryUpdateDestination();
-        IDFUoptions *options = wu->queryUpdateOptions();
-
-        source->setLogicalName(srcname);
-
-        if(dstxml.length() == 0)
         {
-            RemoteFilename rfn;
-            SocketEndpoint ep(destip);
-            rfn.setPath(ep, destfile);
-            destination->setSingleFilename(rfn);
+            Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
+
+            wu->setJobName(srcTitle.str());
+            wu->setQueue(m_QueueLabel.str());
+            StringBuffer user, passwd;
+            wu->setUser(context.getUserID(user).str());
+            wu->setPassword(context.getPassword(passwd).str());
+            wu->setCommand(DFUcmd_export);
+
+            IDFUfileSpec *source = wu->queryUpdateSource();
+            IDFUfileSpec *destination = wu->queryUpdateDestination();
+            IDFUoptions *options = wu->queryUpdateOptions();
+
+            source->setLogicalName(srcname);
+
+            if(dstxml.length() == 0)
+            {
+                RemoteFilename rfn;
+                SocketEndpoint ep(destip);
+                rfn.setPath(ep, destfile);
+                destination->setSingleFilename(rfn);
+            }
+            else
+            {
+                dstxml.append('\0');
+                destination->setFromXML((const char*)dstxml.toByteArray());
+            }
+            destination->setTitle(srcTitle.str());
+
+            options->setKeepHeader(true);
+            options->setOverwrite(req.getOverwrite());             // needed if target already exists
+
+            const char* splitprefix = req.getSplitprefix();
+            if(splitprefix && *splitprefix)
+                options->setSplitPrefix(splitprefix);
+
+            double version = context.getClientVersion();
+            if (version > 1.01)
+            {
+                if(req.getMaxConnections() > 0)
+                    options->setmaxConnections(req.getMaxConnections());
+                else if(req.getSingleConnection())
+                    options->setmaxConnections(1);
+            }
+            else
+            {
+                if(req.getMaxConnections() > 0)
+                    options->setmaxConnections(req.getMaxConnections());
+            }
+
+            if(req.getThrottle() > 0)
+                options->setThrottle(req.getThrottle());
+            if(req.getTransferBufferSize() > 0)
+                options->setTransferBufferSize(req.getTransferBufferSize());
+
+            if(req.getNorecover())
+                options->setNoRecover(true);
+
+            if (req.getWrap()) {
+                options->setPush();             // I think needed for a despray
+                destination->setWrap(true);
+            }
+            if (req.getMultiCopy())
+                destination->setMultiCopy(true);
+
+            const char * encryptkey = req.getEncrypt();
+            if(req.getCompress()||(encryptkey&&*encryptkey))
+                destination->setCompressed(true);
+
+            const char * decryptkey = req.getDecrypt();
+            if ((encryptkey&&*encryptkey)||(decryptkey&&*decryptkey))
+                options->setEncDec(encryptkey,decryptkey);
+
+            wuid.append(wu->queryId());
+            wu->submit();                            // enqueue job(does implicit commit)
         }
-        else
-        {
-            dstxml.append('\0');
-            destination->setFromXML((const char*)dstxml.toByteArray());
-        }   
-        destination->setTitle(srcTitle.str());
-
-        options->setKeepHeader(true);
-        options->setOverwrite(req.getOverwrite());             // needed if target already exists
-        
-        const char* splitprefix = req.getSplitprefix();
-        if(splitprefix && *splitprefix)
-            options->setSplitPrefix(splitprefix);
-
-        double version = context.getClientVersion();
-        if (version > 1.01)
-        {
-            if(req.getMaxConnections() > 0)
-                options->setmaxConnections(req.getMaxConnections());
-            else if(req.getSingleConnection())
-                options->setmaxConnections(1);
-        }
-        else
-        {
-            if(req.getMaxConnections() > 0)
-                options->setmaxConnections(req.getMaxConnections());
-        }
-
-        if(req.getThrottle() > 0)
-            options->setThrottle(req.getThrottle());
-        if(req.getTransferBufferSize() > 0)
-            options->setTransferBufferSize(req.getTransferBufferSize());
-
-        if(req.getNorecover())
-            options->setNoRecover(true);
-
-        if (req.getWrap()) {
-            options->setPush();             // I think needed for a despray
-            destination->setWrap(true);
-        }
-        if (req.getMultiCopy()) 
-            destination->setMultiCopy(true);
-
-        const char * encryptkey = req.getEncrypt();
-        if(req.getCompress()||(encryptkey&&*encryptkey))
-            destination->setCompressed(true);
-
-        const char * decryptkey = req.getDecrypt();
-        if ((encryptkey&&*encryptkey)||(decryptkey&&*decryptkey))
-            options->setEncDec(encryptkey,decryptkey);
-
-        resp.setWuid(wu->queryId());
-
-        wu->submit();                            // enqueue job(does implicit commit)
-         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
+        resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wuid).str());
     }
     catch(IException* e)
     {   
@@ -2240,88 +2255,90 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
 }
 
 bool CFileSprayEx::doCopyForRoxie(IEspContext &context,     const char * srcName, const char * srcDali, const char * srcUser, const char * srcPassword,
-    const char * dstName, const char * destCluster, bool compressed, bool overwrite, bool supercopy,
-    DFUclusterPartDiskMapping val, StringBuffer baseDir, StringBuffer fileMask, IEspCopyResponse &resp)
+                                  const char * dstName, const char * destCluster, bool compressed, bool overwrite, bool supercopy,
+                                  DFUclusterPartDiskMapping val, StringBuffer baseDir, StringBuffer fileMask, IEspCopyResponse &resp)
 {
-    StringBuffer user, passwd;
+    StringBuffer user, passwd, wuid;
     Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
-    Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
-    if (supercopy)
     {
-        wu->setJobName(dstName);
-        wu->setQueue(m_QueueLabel.str());
-        wu->setUser(context.getUserID(user).str());
-        wu->setPassword(context.getPassword(passwd).str());
-        wu->setClusterName(destCluster);
-
-        IDFUfileSpec *source = wu->queryUpdateSource();
-        wu->setCommand(DFUcmd_supercopy);                                   // **** super copy
-        source->setLogicalName(srcName);
-        if (srcDali)                                    // remote copy
+        Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
+        if (supercopy)
         {
-            SocketEndpoint ep(srcDali);
-            source->setForeignDali(ep);
-            source->setForeignUser(srcUser, srcPassword);
+            wu->setJobName(dstName);
+            wu->setQueue(m_QueueLabel.str());
+            wu->setUser(context.getUserID(user).str());
+            wu->setPassword(context.getPassword(passwd).str());
+            wu->setClusterName(destCluster);
+
+            IDFUfileSpec *source = wu->queryUpdateSource();
+            wu->setCommand(DFUcmd_supercopy);                                   // **** super copy
+            source->setLogicalName(srcName);
+            if (srcDali)                                    // remote copy
+            {
+                SocketEndpoint ep(srcDali);
+                source->setForeignDali(ep);
+                source->setForeignUser(srcUser, srcPassword);
+            }
+
+            IDFUfileSpec *destination = wu->queryUpdateDestination();
+            destination->setLogicalName(dstName);
+            destination->setFileMask(fileMask);
+
+            destination->setClusterPartDiskMapping(val, baseDir, destCluster);  // roxie
+
+            destination->setRoxiePrefix(destCluster);                       // added to start of each file and sub file name
+
+            if(compressed)
+                destination->setCompressed(true);
+
+            destination->setWrap(true);                                         // roxie always wraps
+
+            IDFUoptions *options = wu->queryUpdateOptions();
+            options->setOverwrite(overwrite);
+            options->setReplicate(val==DFUcpdm_c_replicated_by_d);              // roxie
+
+        }
+        else
+        {
+            wu->setJobName(dstName);
+            wu->setQueue(m_QueueLabel.str());
+            wu->setUser(context.getUserID(user).str());
+            wu->setPassword(context.getPassword(passwd).str());
+            wu->setClusterName(destCluster);
+            wu->setCommand(DFUcmd_copy);
+
+            IDFUfileSpec *source = wu->queryUpdateSource();
+            source->setLogicalName(srcName);
+            if (srcDali)                                    // remote copy
+            {
+                SocketEndpoint ep(srcDali);
+                source->setForeignDali(ep);
+                source->setForeignUser(srcUser, srcPassword);
+            }
+
+            IDFUfileSpec *destination = wu->queryUpdateDestination();
+            destination->setLogicalName(dstName);
+            destination->setFileMask(fileMask);
+            destination->setRoxiePrefix(destCluster);                       // added to start of each file name
+
+            destination->setClusterPartDiskMapping(val, baseDir, destCluster, true);  // **** repeat last part
+
+            if(compressed)
+                destination->setCompressed(true);
+
+            destination->setWrap(true);                                         // roxie always wraps
+
+            IDFUoptions *options = wu->queryUpdateOptions();
+            options->setOverwrite(overwrite);
+            options->setReplicate(val==DFUcpdm_c_replicated_by_d);              // roxie
+
+            options->setSuppressNonKeyRepeats(true);                            // **** only repeat last part when src kind = key
         }
 
-        IDFUfileSpec *destination = wu->queryUpdateDestination();
-        destination->setLogicalName(dstName);
-        destination->setFileMask(fileMask);
-
-        destination->setClusterPartDiskMapping(val, baseDir, destCluster);  // roxie
-
-        destination->setRoxiePrefix(destCluster);                       // added to start of each file and sub file name
-
-        if(compressed)
-            destination->setCompressed(true);
-
-        destination->setWrap(true);                                         // roxie always wraps
-
-        IDFUoptions *options = wu->queryUpdateOptions();
-        options->setOverwrite(overwrite);
-        options->setReplicate(val==DFUcpdm_c_replicated_by_d);              // roxie
-
+        wuid.append(wu->queryId());
+        wu->submit();                            // enqueue job(does implicit commit)
     }
-    else
-    {
-        wu->setJobName(dstName);
-        wu->setQueue(m_QueueLabel.str());
-        wu->setUser(context.getUserID(user).str());
-        wu->setPassword(context.getPassword(passwd).str());
-        wu->setClusterName(destCluster);
-        wu->setCommand(DFUcmd_copy);
-
-        IDFUfileSpec *source = wu->queryUpdateSource();
-        source->setLogicalName(srcName);
-        if (srcDali)                                    // remote copy
-        {
-            SocketEndpoint ep(srcDali);
-            source->setForeignDali(ep);
-            source->setForeignUser(srcUser, srcPassword);
-        }
-
-        IDFUfileSpec *destination = wu->queryUpdateDestination();
-        destination->setLogicalName(dstName);
-        destination->setFileMask(fileMask);
-        destination->setRoxiePrefix(destCluster);                       // added to start of each file name
-
-        destination->setClusterPartDiskMapping(val, baseDir, destCluster, true);  // **** repeat last part
-
-        if(compressed)
-            destination->setCompressed(true);
-
-        destination->setWrap(true);                                         // roxie always wraps
-
-        IDFUoptions *options = wu->queryUpdateOptions();
-        options->setOverwrite(overwrite);
-        options->setReplicate(val==DFUcpdm_c_replicated_by_d);              // roxie
-
-        options->setSuppressNonKeyRepeats(true);                            // **** only repeat last part when src kind = key
-    }
-    
-    resp.setResult(wu->queryId());
-    wu->submit();                            // enqueue job(does implicit commit)
-    resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
+    resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wuid).str());
     return true;
 }
 
@@ -2338,7 +2355,7 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Source logical file not specified.");
         if(!dstname || !*dstname)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination logical file not specified.");
-        
+
         StringBuffer destFolder, destTitle, defaultFolder, defaultReplicateFolder;
         StringBuffer srcCluster, destCluster, destClusterName;
         bool bRoxie = false;
@@ -2421,116 +2438,119 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
                 dstname, destCluster, req.getCompress(), req.getOverwrite(), supercopy, val, baseDir, fileMask, resp);
         }
 
+        StringBuffer wuid;
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
-        Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
-        wu->setJobName(dstname);
-        wu->setQueue(m_QueueLabel.str());
-        StringBuffer user, passwd;
-        wu->setUser(context.getUserID(user).str());
-        wu->setPassword(context.getPassword(passwd).str());
-        if(destCluster.length() > 0)
         {
-            wu->setClusterName(destCluster.str());
-        }
-        const char* srcDiffKeyName = req.getSourceDiffKeyName();
-        const char* destDiffKeyName = req.getDestDiffKeyName();
-        IDFUfileSpec *source = wu->queryUpdateSource();
-        IDFUfileSpec *destination = wu->queryUpdateDestination();
-        IDFUoptions *options = wu->queryUpdateOptions();
-        
-        if (supercopy)  
-            wu->setCommand(DFUcmd_supercopy);   
-        else
-            wu->setCommand(DFUcmd_copy);
-
-        source->setLogicalName(srcname);
-        if(srcDali && *srcDali)
-        {
-            SocketEndpoint ep(srcDali);
-            source->setForeignDali(ep);
-
-            const char* srcusername = req.getSrcusername();
-            if(srcusername && *srcusername)
+            Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
+            wu->setJobName(dstname);
+            wu->setQueue(m_QueueLabel.str());
+            StringBuffer user, passwd;
+            wu->setUser(context.getUserID(user).str());
+            wu->setPassword(context.getPassword(passwd).str());
+            if(destCluster.length() > 0)
             {
-                const char* srcpasswd = req.getSrcpassword();
-                source->setForeignUser(srcusername, srcpasswd);
+                wu->setClusterName(destCluster.str());
             }
-        }
+            const char* srcDiffKeyName = req.getSourceDiffKeyName();
+            const char* destDiffKeyName = req.getDestDiffKeyName();
+            IDFUfileSpec *source = wu->queryUpdateSource();
+            IDFUfileSpec *destination = wu->queryUpdateDestination();
+            IDFUoptions *options = wu->queryUpdateOptions();
 
-        if (bRoxie)
-        {
-            destination->setClusterPartDiskMapping(val, baseDir.str(), destCluster.str());
-            if (val != DFUcpdm_c_replicated_by_d)
+            if (supercopy)
+                wu->setCommand(DFUcmd_supercopy);
+            else
+                wu->setCommand(DFUcmd_copy);
+
+            source->setLogicalName(srcname);
+            if(srcDali && *srcDali)
             {
-                options->setReplicate(false);
+                SocketEndpoint ep(srcDali);
+                source->setForeignDali(ep);
+
+                const char* srcusername = req.getSrcusername();
+                if(srcusername && *srcusername)
+                {
+                    const char* srcpasswd = req.getSrcpassword();
+                    source->setForeignUser(srcusername, srcpasswd);
+                }
+            }
+
+            if (bRoxie)
+            {
+                destination->setClusterPartDiskMapping(val, baseDir.str(), destCluster.str());
+                if (val != DFUcpdm_c_replicated_by_d)
+                {
+                    options->setReplicate(false);
+                }
+                else
+                {
+                    options->setReplicate(true);
+                    destination->setReplicateOffset(offset);
+                }
+            }
+
+            if (srcDiffKeyName&&*srcDiffKeyName)
+                source->setDiffKey(srcDiffKeyName);
+            if (destDiffKeyName&&*destDiffKeyName)
+                destination->setDiffKey(destDiffKeyName);
+
+            if (!bRoxie)
+            {
+                destination->setDirectory(destFolder.str());
+                ClusterPartDiskMapSpec mspec;
+                destination->getClusterPartDiskMapSpec(destCluster.str(), mspec);
+                mspec.setDefaultBaseDir(defaultFolder.str());
+                mspec.setDefaultReplicateDir(defaultReplicateFolder.str());
+                destination->setClusterPartDiskMapSpec(destCluster.str(), mspec);
+            }
+
+            destination->setFileMask(fileMask.str());
+            destination->setGroupName(destCluster.str());
+            destination->setLogicalName(dstname);
+            const char * encryptkey = req.getEncrypt();
+            if(req.getCompress()||(encryptkey&&*encryptkey))
+                destination->setCompressed(true);
+
+            if (!bRoxie)
+            {
+                options->setReplicate(req.getReplicate());
+                destination->setWrap(req.getWrap());
             }
             else
             {
-                options->setReplicate(true);
-                destination->setReplicateOffset(offset);
+                destination->setWrap(true);
             }
+
+            const char * decryptkey = req.getDecrypt();
+            if ((encryptkey&&*encryptkey)||(decryptkey&&*decryptkey))
+                options->setEncDec(encryptkey,decryptkey);
+
+            options->setOverwrite(req.getOverwrite());
+            if(req.getNorecover())
+                options->setNoRecover(true);
+            if(!req.getNosplit_isNull())
+                options->setNoSplit(req.getNosplit());
+            if(req.getMaxConnections() > 0)
+                options->setmaxConnections(req.getMaxConnections());
+            if(req.getThrottle() > 0)
+                options->setThrottle(req.getThrottle());
+            if(req.getTransferBufferSize() > 0)
+                options->setTransferBufferSize(req.getTransferBufferSize());
+            if (req.getPull())
+                options->setPull(true);
+            if (req.getPush())
+                options->setPush(true);
+            if (req.getIfnewer())
+                options->setIfNewer(true);
+
+            wuid.append(wu->queryId());
+            wu->submit();                            // enqueue job(does implicit commit)
         }
-            
-        if (srcDiffKeyName&&*srcDiffKeyName)
-            source->setDiffKey(srcDiffKeyName);
-        if (destDiffKeyName&&*destDiffKeyName)
-            destination->setDiffKey(destDiffKeyName);
-
-        if (!bRoxie) 
-        {
-            destination->setDirectory(destFolder.str());
-            ClusterPartDiskMapSpec mspec;
-            destination->getClusterPartDiskMapSpec(destCluster.str(), mspec);
-            mspec.setDefaultBaseDir(defaultFolder.str());
-            mspec.setDefaultReplicateDir(defaultReplicateFolder.str());
-            destination->setClusterPartDiskMapSpec(destCluster.str(), mspec);
-        }
-
-        destination->setFileMask(fileMask.str());
-        destination->setGroupName(destCluster.str());
-        destination->setLogicalName(dstname);
-        const char * encryptkey = req.getEncrypt();
-        if(req.getCompress()||(encryptkey&&*encryptkey))
-            destination->setCompressed(true);
-
-        if (!bRoxie) 
-        {
-            options->setReplicate(req.getReplicate());
-            destination->setWrap(req.getWrap());
-        }
-        else
-        {
-            destination->setWrap(true);
-        }
-
-        const char * decryptkey = req.getDecrypt();
-        if ((encryptkey&&*encryptkey)||(decryptkey&&*decryptkey))
-            options->setEncDec(encryptkey,decryptkey);
-
-        options->setOverwrite(req.getOverwrite());
-        if(req.getNorecover())
-            options->setNoRecover(true);
-        if(!req.getNosplit_isNull())
-            options->setNoSplit(req.getNosplit());
-        if(req.getMaxConnections() > 0)
-            options->setmaxConnections(req.getMaxConnections());
-        if(req.getThrottle() > 0)
-            options->setThrottle(req.getThrottle());
-        if(req.getTransferBufferSize() > 0)
-            options->setTransferBufferSize(req.getTransferBufferSize());
-        if (req.getPull())
-            options->setPull(true);
-        if (req.getPush())
-            options->setPush(true);
-        if (req.getIfnewer())
-            options->setIfNewer(true);
-
-        resp.setResult(wu->queryId());
-        wu->submit();                            // enqueue job(does implicit commit)
-        resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
+        resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wuid).str());
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -2550,60 +2570,62 @@ bool CFileSprayEx::onRename(IEspContext &context, IEspRename &req, IEspRenameRes
         if(!dstname || !*dstname)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination logical file not specified.");
 
+        StringBuffer wuid;
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
-        Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
+        {
+            Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
 
-        StringBuffer destTitle;
-        ParseLogicalPath(req.getDstname(), destTitle);
+            StringBuffer destTitle;
+            ParseLogicalPath(req.getDstname(), destTitle);
 
-        wu->setJobName(destTitle.str());
-        wu->setQueue(m_QueueLabel.str());
-        StringBuffer user, passwd;
-        wu->setUser(context.getUserID(user).str());
-        wu->setPassword(context.getPassword(passwd).str());
-        wu->setCommand(DFUcmd_rename);
+            wu->setJobName(destTitle.str());
+            wu->setQueue(m_QueueLabel.str());
+            StringBuffer user, passwd;
+            wu->setUser(context.getUserID(user).str());
+            wu->setPassword(context.getPassword(passwd).str());
+            wu->setCommand(DFUcmd_rename);
 
 #if 0 // TBD - Handling for multiple clusters? the cluster should be specified by user if needed
-        Owned<IUserDescriptor> udesc;
-        if(user.length() > 0)
-        {
-            const char* passwd = context.queryPassword();
-            udesc.setown(createUserDescriptor());
-            udesc->set(user.str(), passwd);
-            Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(srcname, udesc);
-            if(df)
+            Owned<IUserDescriptor> udesc;
+            if(user.length() > 0)
             {
-                StringBuffer cluster0; 
-                df->getClusterName(0,cluster0);                     // TBD - Handling for multiple clusters?
-                if (cluster0.length()!=0)
+                const char* passwd = context.queryPassword();
+                udesc.setown(createUserDescriptor());
+                udesc->set(user.str(), passwd);
+                Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(srcname, udesc);
+                if(df)
                 {
-                    wu->setClusterName(cluster0.str());
-                }
-                else
-                {
-                    const char *cluster = df->queryProperties().queryProp("@group");
-                    if (cluster && *cluster)
+                    StringBuffer cluster0;
+                    df->getClusterName(0,cluster0);                     // TBD - Handling for multiple clusters?
+                    if (cluster0.length()!=0)
                     {
-                        wu->setClusterName(cluster);
+                        wu->setClusterName(cluster0.str());
+                    }
+                    else
+                    {
+                        const char *cluster = df->queryProperties().queryProp("@group");
+                        if (cluster && *cluster)
+                        {
+                            wu->setClusterName(cluster);
+                        }
                     }
                 }
             }
-        }
 #endif
 
-        IDFUfileSpec *source = wu->queryUpdateSource();
-        source->setLogicalName(srcname);
+            IDFUfileSpec *source = wu->queryUpdateSource();
+            source->setLogicalName(srcname);
 
-        IDFUfileSpec *destination = wu->queryUpdateDestination();
-        destination->setLogicalName(dstname);
+            IDFUfileSpec *destination = wu->queryUpdateDestination();
+            destination->setLogicalName(dstname);
 
-        resp.setWuid(wu->queryId());
-
-        wu->submit();                            // enqueue job(does implicit commit)
-        resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
+            wuid.append(wu->queryId());
+            wu->submit();                            // enqueue job(does implicit commit)
+        }
+        resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wuid).str());
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -2643,7 +2665,7 @@ bool CFileSprayEx::onDFUWUFile(IEspContext &context, IEspDFUWUFileRequest &req, 
         }
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
     }
 
@@ -2664,7 +2686,7 @@ int CFileSprayEx::doFileCheck(const char* mask, const char* netaddr, const char*
         iRet = 2;
 
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-       factory->validateCache();
+        factory->validateCache();
         Owned<IConstEnvironment> env = factory->openEnvironmentByFile();
         Owned<IPropertyTree> pEnvRoot = &env->getPTree();
         IPropertyTree* pEnvSoftware = pEnvRoot->queryPropTree("Software");
@@ -2683,7 +2705,7 @@ int CFileSprayEx::doFileCheck(const char* mask, const char* netaddr, const char*
                 xpath.appendf("Hardware/Computer[@name='%s']/@netAddress", pszComputer);
                 const char* pszNetAddr = pEnvRoot->queryProp(xpath.str());
                 if (strcmp(pszNetAddr, "."))
-                {       
+                {
                     sNetAddr.append(pszNetAddr);
                 }
                 else
@@ -2781,7 +2803,7 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
         Owned<IDirectoryIterator> di = f->directoryFiles(NULL, false, true);
         if(di.get() != NULL)
         {
-            ForEach(*di) 
+            ForEach(*di)
             {
                 StringBuffer fname;
                 di->getName(fname);
@@ -2805,7 +2827,7 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
                 files.append(*onefile.getLink());
             }
         }
-        
+
         sPath.replace('\\', '/');//XSLT cannot handle backslashes
         resp.setPath(sPath);
         resp.setFiles(files);
@@ -2822,7 +2844,7 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
         resp.setDirectoryOnly(directoryOnly);
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
     }
 
@@ -2836,51 +2858,52 @@ bool CFileSprayEx::onDfuMonitor(IEspContext &context, IEspDfuMonitorRequest &req
         if (!context.validateFeatureAccess(FILE_SPRAY_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Failed to do DfuMonitor. Permission denied.");
 
+        StringBuffer wuid;
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
-        Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
+        {
+            Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
 
-        wu->setQueue(m_MonitorQueueLabel.str());
-        StringBuffer user, passwd;
-        wu->setUser(context.getUserID(user).str());
-        wu->setPassword(context.getPassword(passwd).str());
-        wu->setCommand(DFUcmd_monitor);
+            wu->setQueue(m_MonitorQueueLabel.str());
+            StringBuffer user, passwd;
+            wu->setUser(context.getUserID(user).str());
+            wu->setPassword(context.getPassword(passwd).str());
+            wu->setCommand(DFUcmd_monitor);
 
-        IDFUmonitor *monitor = wu->queryUpdateMonitor();
-        IDFUfileSpec *source = wu->queryUpdateSource();
-        const char *eventname  = req.getEventName();
-        const char *lname = req.getLogicalName();
-        if (lname&&*lname)
-            source->setLogicalName(lname);
-        else {
-            const char *ip = req.getIp();
-            const char *filename = req.getFilename();
-            if (filename&&*filename) {
-                RemoteFilename rfn;
-                if (ip&&*ip) {
-                    SocketEndpoint ep;
-                    ep.set(ip);
-                    rfn.setPath(ep,filename);
+            IDFUmonitor *monitor = wu->queryUpdateMonitor();
+            IDFUfileSpec *source = wu->queryUpdateSource();
+            const char *eventname  = req.getEventName();
+            const char *lname = req.getLogicalName();
+            if (lname&&*lname)
+                source->setLogicalName(lname);
+            else {
+                const char *ip = req.getIp();
+                const char *filename = req.getFilename();
+                if (filename&&*filename) {
+                    RemoteFilename rfn;
+                    if (ip&&*ip) {
+                        SocketEndpoint ep;
+                        ep.set(ip);
+                        rfn.setPath(ep,filename);
+                    }
+                    else
+                        rfn.setRemotePath(filename);
+                    source->setSingleFilename(rfn);
                 }
                 else
-                    rfn.setRemotePath(filename);
-                source->setSingleFilename(rfn);
+                    throw MakeStringException(ECLWATCH_INVALID_INPUT, "Neither logical name nor network ip/file specified for monitor.");
             }
-            else
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Neither logical name nor network ip/file specified for monitor.");
+            if (eventname)
+                monitor->setEventName(eventname);
+            monitor->setShotLimit(req.getShotLimit());
+            monitor->setSub(req.getSub());
+
+            wuid.append(wu->queryId());
+            wu->submit();                            // enqueue job(does implicit commit)
         }
-        if (eventname) 
-            monitor->setEventName(eventname);
-        monitor->setShotLimit(req.getShotLimit());
-        monitor->setSub(req.getSub());
-
-        resp.setWuid(wu->queryId());
-
-        wu->submit();                            // enqueue job(does implicit commit)
-
-        resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
+        resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wuid).str());
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
     }
 
@@ -2915,7 +2938,7 @@ bool CFileSprayEx::onOpenSave(IEspContext &context, IEspOpenSaveRequest &req, IE
             resp.setViewable(false);
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
     }
 
@@ -2923,7 +2946,7 @@ bool CFileSprayEx::onOpenSave(IEspContext &context, IEspOpenSaveRequest &req, IE
 }
 
 bool CFileSprayEx::getDropZoneFiles(IEspContext &context, const char* netaddr, const char* osStr, const char* path,
-                                                IEspDropZoneFilesRequest &req, IEspDropZoneFilesResponse &resp)
+                                    IEspDropZoneFilesRequest &req, IEspDropZoneFilesResponse &resp)
 {
     bool directoryOnly = req.getDirectoryOnly();
 
@@ -2950,7 +2973,7 @@ bool CFileSprayEx::getDropZoneFiles(IEspContext &context, const char* netaddr, c
     Owned<IDirectoryIterator> di = f->directoryFiles(NULL, false, true);
     if(di.get() != NULL)
     {
-        ForEach(*di) 
+        ForEach(*di)
         {
             StringBuffer fname;
             di->getName(fname);
@@ -2974,7 +2997,7 @@ bool CFileSprayEx::getDropZoneFiles(IEspContext &context, const char* netaddr, c
             files.append(*onefile.getLink());
         }
     }
-    
+
     resp.setFiles(files);
 
     return true;
@@ -3023,7 +3046,7 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
                 StringBuffer sNetAddr;
                 const char* pszNetAddr = pEnvRoot->queryProp(xpath.str());
                 if (strcmp(pszNetAddr, "."))
-                {       
+                {
                     sNetAddr.append(pszNetAddr);
                 }
                 else
@@ -3054,17 +3077,17 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
                 StringBuffer dir;
                 pDropZone.getProp("@directory", dir);
 
-            Owned<IEspDropZone> aDropZone= createDropZone("","");
+                Owned<IEspDropZone> aDropZone= createDropZone("","");
 
                 if (machine)
                 {
                     if (machine->getOS() == MachineOsLinux || machine->getOS() == MachineOsSolaris)
-                    {         
+                    {
                         dir.replace('\\', '/');//replace all '\\' by '/'
                         aDropZone->setLinux("true");
                     }
                     else
-                    {       
+                    {
                         dir.replace('/', '\\');
                         dir.replace('$', ':');
                     }
@@ -3100,7 +3123,7 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
         }
 
         directoryStr.replace(pathSep=='\\'?'/':'\\', pathSep);
-        
+
         if (subfolder && *subfolder)
         {
             if (*(directoryStr.str() + directoryStr.length() -1) != pathSep)
@@ -3116,13 +3139,13 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
 
         if (pathSep=='\\')
             directoryStr.replaceString("\\", "\\\\");
-        
+
         resp.setNetAddress(netAddressStr.str());
         resp.setPath(directoryStr.str());
         resp.setOS(atoi(osStr.str()));
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
     }
 
@@ -3190,7 +3213,7 @@ bool CFileSprayEx::onDeleteDropZoneFiles(IEspContext &context, IEspDeleteDropZon
             res->setID(files.item(i));
             res->setAction("Delete");
             res->setResult("Success");
-            
+
             try
             {
                 StringBuffer fileToDelete = sPath;
