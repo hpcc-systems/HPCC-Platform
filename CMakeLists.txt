@@ -44,7 +44,7 @@
 #       cmake c:\hpcc -G "Visual Studio 9 2008"
 #      The sln file hpccsystems-platform.sln will be created in the current directory, and will support debug and release targets
 #   5. To build the project, load the solution into the visual studio IDE and build in the usual way.
-#   6. Executables will be created in (for example) c:\hpcc\bin\<release_mode>
+#   6. Executables will be created in .\hpcc\bin\<release_mode>
 #
 #########################################################
 
@@ -62,7 +62,7 @@ set(CMAKE_MODULE_PATH "${HPCC_SOURCE_DIR}/cmake_modules/")
 ###
 set ( HPCC_PROJECT "community" )
 set ( HPCC_MAJOR 3 )
-set ( HPCC_MINOR 0 )
+set ( HPCC_MINOR 1 )
 set ( HPCC_POINT 0 )
 set ( HPCC_MATURITY "trunk" )
 set ( HPCC_SEQUENCE 1 )
@@ -316,6 +316,7 @@ set(CPACK_SOURCE_IGNORE_FILES
         "\\\\.cvsignore$"
         "^${PROJECT_SOURCE_DIR}.*/CVS/"
         "^${PROJECT_SOURCE_DIR}.*/.svn/"
+        "^${PROJECT_SOURCE_DIR}.*/.git/"
         "^${PROJECT_SOURCE_DIR}/ln/"
         "^${PROJECT_SOURCE_DIR}/externals/"
         "^${PROJECT_SOURCE_DIR}.*/*.mk$"
@@ -389,11 +390,11 @@ if (NOT "${CMAKE_VERSION}" VERSION_LESS "2.8.1")
         endif ()
 
     endif ( CMAKE_SYSTEM MATCHES Linux )
-    if ( EXISTS ${CMAKE_MODULE_PATH}/dependencies/${packageRevision}.cmake )
-        include( ${CMAKE_MODULE_PATH}/dependencies/${packageRevision}.cmake )
+    if ( EXISTS ${HPCC_SOURCE_DIR}/cmake_modules/dependencies/${packageRevision}.cmake )
+        include( ${HPCC_SOURCE_DIR}/cmake_modules/dependencies/${packageRevision}.cmake )
     else()
         message("-- WARNING: DEPENDENCY FILE FOR ${packageRevision} NOT FOUND, Using deps template.")
-        include( ${CMAKE_MODULE_PATH}/dependencies/template.cmake )
+        include( ${HPCC_SOURCE_DIR}/cmake_modules/dependencies/template.cmake )
     endif()
 else()
     message("WARNING: CMAKE 2.8.1 or later required to create RPMs from this project")
