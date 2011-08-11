@@ -50,7 +50,6 @@ envfile=$configs/$environment
 getIPS
 getDali
 
-IPS=${IPS//$DIP[^0-9]/ }
 
 
 TEMP=`/usr/bin/getopt -o a:c:h --long help,action -n 'hpcc-run' -- "$@"`
@@ -74,25 +73,25 @@ for arg; do
     arg=$arg; 
     case "$arg" in
         start) 
-	    cmd="start" 
-	    cnt=$(( $cnt + 1 ))
-	    ;;
+            cmd="start"
+            cnt=$(( $cnt + 1 ))
+            ;;
         stop) 
-	    cmd="stop" 
-	    cnt=$(( $cnt + 1 ))
-	    ;;
+            cmd="stop"
+            cnt=$(( $cnt + 1 ))
+            ;;
         restart) 
-	    cmd="restart" 
-	    cnt=$(( $cnt + 1 ))
-	    ;;
+            cmd="restart"
+            cnt=$(( $cnt + 1 ))
+            ;;
         status) 
-	    cmd="status" 
-	    cnt=$(( $cnt + 1 ))
-	    ;;
+            cmd="status"
+            cnt=$(( $cnt + 1 ))
+            ;;
         setup) 
-	    cmd="setup" 
-	    cnt=$(( $cnt + 1 ))
-	    ;;
+            cmd="setup"
+            cnt=$(( $cnt + 1 ))
+            ;;
         *) print_usage;;
     esac
 done
@@ -133,6 +132,9 @@ if [ "${cmd}" == "restart" ]; then
         fi
 
         for IP in $IPS; do
+        if [ "$IP" == "$DIP" ]; then
+            continue
+        fi
             if ping -c 1 -w 5 -n $IP > /dev/null 2>&1; then
                 echo "$IP: Host is alive."
                 CAN_SSH="`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@$IP exit > /dev/null 2>&1; echo $?`"
@@ -181,6 +183,9 @@ else
     fi
 
     for IP in $IPS; do
+        if [ "$IP" == "$DIP" ]; then
+            continue
+        fi
         if ping -c 1 -w 5 -n $IP > /dev/null 2>&1; then
             echo "$IP: Host is alive."
             CAN_SSH="`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@$IP exit > /dev/null 2>&1; echo $?`"
