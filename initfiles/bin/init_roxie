@@ -46,7 +46,7 @@ killed() {
 
 trap "killed" SIGINT SIGTERM SIGKILL
 # start it the first time - roxie controls the creation of the rerun_roxie.txt file
-nohup roxie topology=RoxieTopology.xml logfile=$logfilename restarts=$restarts stdlog=0 sentinel=roxie_sentinel.txt 2>>$logfilename.stderr 1>>$logfilename.stdout & 
+nohup roxie topology=RoxieTopology.xml logfile=$logfilename restarts=$restarts stdlog=0 2>>$logfilename.stderr 1>>$logfilename.stdout &
 echo $! > $PID_NAME 
 wait
 
@@ -55,7 +55,7 @@ while [ -e $roxiedir/roxie_sentinel.txt ]; do
     export restarts=$(($restarts+1))
     echo Restarting $restarts >> $logfilename.stderr
     echo Restarting $restarts >> $logfilename.stdout
-    nohup roxie topology=RoxieTopology.xml logfile=$logfilename restarts=$restarts stdlog=0 sentinel=roxie_sentinel.txt 2>>$logfilename.stderr 1>>$logfilename.stdout &
+    nohup roxie topology=RoxieTopology.xml logfile=$logfilename restarts=$restarts stdlog=0 2>>$logfilename.stderr 1>>$logfilename.stdout &
     echo $! > $PID_NAME
     wait
 done

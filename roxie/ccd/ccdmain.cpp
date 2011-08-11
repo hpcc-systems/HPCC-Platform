@@ -479,15 +479,10 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             globals->loadProp(argv[i], true);
 
         // sentinelFile should be removed as early as possible to avoid infinite restarts, if there is a problem restarting
-        // sentinelFilename will exist in directory where executable exists
-        Owned<IFile> sentinelFile;
-        if (globals->hasProp("sentinel"))
-        {
-            StringBuffer sentinelFilename;
-            sentinelFilename.append(codeDirectory).append(globals->queryProp("sentinel"));
-            sentinelFile.setown(createIFile(sentinelFilename.str()));
-            sentinelFile->remove();
-        }
+        // sentinelFile.queryFileName() will exist in directory where executable exists
+        Owned<IFile> sentinelFile = createSentinelTarget("roxie");
+        // We remove any existing sentinel until we have validated that we can successfully start (i.e. all options are valid...)
+        sentinelFile->remove();
 
         StringBuffer topologyFile;
         if (globals->hasProp("topology"))
@@ -1099,9 +1094,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             // put in its own "scope" to force the flush
             if (sentinelFile)
             {
-                DBGLOG("Creating sentinel file %s", sentinelFile->queryFilename());
-                Owned<IFileIO> fileIO = sentinelFile->open(IFOcreate);
-                fileIO->write(0, 5, "rerun");
+                writeSentinelFile(sentinelFile);
             }
             DBGLOG("Waiting for queries");
             if (pingInterval)
