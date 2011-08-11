@@ -54,7 +54,7 @@ while [ 1 ]; do
         echo failed to start thormaster$LCR, pausing for 30 seconds
         sleep 30
     fi
-    if [! -e $sentinelfile ]; then
+    if [ ! -e $sentinelfile ]; then
         echo $sentinelfile 'has been removed or thormaster did not fully start - script stopping'
         exit 0
     fi
