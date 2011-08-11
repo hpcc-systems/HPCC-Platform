@@ -600,8 +600,8 @@ extern jlib_decl bool setPreferredSubnet(const char *ip,const char *mask); // al
 
 extern jlib_decl StringBuffer lookupHostName(const IpAddress &ip,StringBuffer &ret);
 
-extern jlib_decl bool lookupInterfaceIp(IpAddress &ip,const char *ifname,bool test); // if test true returns true if ip matches interface 
-                                                                                     // if test false returns first ip for interface
+extern jlib_decl bool isInterfaceIp(const IpAddress &ip, const char *ifname);
+extern jlib_decl bool getInterfaceIp(IpAddress &ip, const char *ifname);
 
 #endif
 
