@@ -881,7 +881,7 @@ Error3:
         out(s,strlen(s));
     }
 
-    void outf(const char *fmt, ...)
+    void outf(const char *fmt, ...) __attribute__((format(printf, 2, 3)))
     {
         static char buf[0x4000];
         va_list args;

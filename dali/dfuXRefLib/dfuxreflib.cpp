@@ -106,7 +106,7 @@ typedef MapStringTo<COrphanEntryPtr> COrphanEntryMap;
 
 Owned <IFileIOStream> outfileio;
 
-void outf(const char *fmt, ...)
+void outf(const char *fmt, ...) __attribute__((format(printf, 1, 2)))
 {
     va_list args;
     va_start(args, fmt);
@@ -485,7 +485,7 @@ public:
         return grp;
     }
 
-    void log(const char * format, ...)
+    void log(const char * format, ...) __attribute__((format(printf, 2, 3)))
     {
         CriticalBlock block(logsect);
         va_list args;
@@ -500,7 +500,7 @@ public:
             PROGLOG("%s",line.str());
         }
     }
-    void error(const char *lname,const char * format, ...)
+    void error(const char *lname,const char * format, ...) __attribute__((format(printf, 3, 4)))
     {
         CriticalBlock block(logsect);
         va_list args;
@@ -524,7 +524,7 @@ public:
         }
     }
 
-    void warn(const char *lname,const char * format, ...)
+    void warn(const char *lname,const char * format, ...) __attribute__((format(printf, 3, 4)))
     {
         CriticalBlock block(logsect);
         va_list args;

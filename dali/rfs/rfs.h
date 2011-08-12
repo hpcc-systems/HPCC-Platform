@@ -103,7 +103,7 @@ public:
     void stop();                                // can be called async to stop server (e.g. from poll)
 
     void setLogFilename(const char *filename);  // set to NULL for no logfile (default is <exename>_<datetime>.log in cur dir)
-    virtual void log(const char *format, ...);
+    virtual void log(const char *format, ...) __attribute__((format(printf, 2, 3)));
     void throwError(int err, const char *errstr, bool fatal=false);     // does not return, if fatal will stop process
     const char *logFilename();
 

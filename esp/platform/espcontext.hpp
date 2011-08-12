@@ -52,8 +52,8 @@ ESPHTTP_API bool getEspLogRequests();
 ESPHTTP_API bool getEspLogResponses();
 ESPHTTP_API unsigned getSlowProcessingTime();
 
-ESPHTTP_API void ESPLOG(IEspContext* ctx, LogLevel level, const char* fmt, ...);
-ESPHTTP_API void ESPLOG(LogLevel level, const char* fmt, ...);
+ESPHTTP_API void ESPLOG(IEspContext* ctx, LogLevel level, const char* fmt, ...) __attribute__((format(printf, 3, 4)));
+ESPHTTP_API void ESPLOG(LogLevel level, const char* fmt, ...) __attribute__((format(printf, 2, 3)));
 ESPHTTP_API void setEspContainer(IEspContainer* container);
 
 ESPHTTP_API IEspContainer* getESPContainer();

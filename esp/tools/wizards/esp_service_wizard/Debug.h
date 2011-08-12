@@ -19,7 +19,7 @@
 // Note: file names are still ANSI strings (filenames rarely need UNICODE)
 BOOL AssertFailedLine(LPCSTR lpszFileName, int nLine);
 
-void Trace(LPCTSTR lpszFormat, ...);
+void Trace(LPCTSTR lpszFormat, ...) __attribute__((format(printf, 1, 2)));
 
 // by default, debug break is asm int 3, or a call to DebugBreak, or nothing
 #if defined(_M_IX86)

@@ -64,8 +64,8 @@ public:
     StrBuffer &  append(const char * value);
     StrBuffer &  append(unsigned len, const char * value);
 
-    StrBuffer &  appendf(const char *format, ...);
-    StrBuffer &  setf(const char* format, ...);
+    StrBuffer &  appendf(const char *format, ...) __attribute__((format(printf, 2, 3)));
+    StrBuffer &  setf(const char* format, ...) __attribute__((format(printf, 2, 3)));
     StrBuffer &  set(const char* val) { return clear().append(val); }
     StrBuffer &  clear() { curLen = 0; return *this; }
     StrBuffer & va_append(const char *format, va_list args);
@@ -106,7 +106,7 @@ private:
 class VStrBuffer : public StrBuffer
 {
 public:
-    VStrBuffer(const char* format, ...);
+    VStrBuffer(const char* format, ...) __attribute__((format(printf, 2, 3)));
 };
 
 StrBuffer& encodeXML(const char *x, StrBuffer &ret);

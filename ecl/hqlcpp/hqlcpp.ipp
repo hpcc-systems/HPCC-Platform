@@ -1042,7 +1042,7 @@ public:
 
 // Helper functions
 
-    void ThrowStringException(int code,const char *format, ...);            // override the global function to try and add more context information
+    void ThrowStringException(int code,const char *format, ...) __attribute__((format(printf, 3, 4)));            // override the global function to try and add more context information
     void buildServicePrototypes(IHqlScope * scope);
 
     void buildAddress(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
@@ -1092,9 +1092,9 @@ public:
     bool registerGlobalUsage(IHqlExpression * filename);
     IHqlExpression * queryActiveNamedActivity();
     IHqlExpression * queryActiveActivityLocation() const;
-    void reportWarning(unsigned id, const char * msg, ...);
-    void reportWarning(IHqlExpression * location, unsigned id, const char * msg, ...);
-    void reportError(IHqlExpression * location, int code,const char *format, ...);
+    void reportWarning(unsigned id, const char * msg, ...) __attribute__((format(printf, 3, 4)));
+    void reportWarning(IHqlExpression * location, unsigned id, const char * msg, ...) __attribute__((format(printf, 4, 5)));
+    void reportError(IHqlExpression * location, int code,const char *format, ...) __attribute__((format(printf, 4, 5)));
     void reportErrorDirect(IHqlExpression * location, int code,const char *msg, bool alwaysAbort);
     void addWorkunitException(WUExceptionSeverity severity, unsigned code, const char * msg, IHqlExpression * location);
     void useFunction(IHqlExpression * funcdef);

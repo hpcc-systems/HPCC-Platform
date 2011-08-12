@@ -1295,7 +1295,7 @@ public:
             flushCurrent();
         return ret;
     }
-    size32_t printf(int seq, const char *format, ...)
+    size32_t printf(int seq, const char *format, ...) __attribute__((format(printf, 3, 4)))
     { 
         CriticalBlock c(crit);
         va_list args;

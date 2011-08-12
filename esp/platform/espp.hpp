@@ -152,7 +152,7 @@ public:
     const char* getFrameTitle()  { return m_frameTitle.get(); }
     unsigned getSlowProcessingTime() { return m_slowProcessingTime; }
 
-    void log(LogLevel level, const char* fmt, ...)
+    void log(LogLevel level, const char* fmt, ...) __attribute__((format(printf, 3, 4)))
     {
         if (getLogLevel()>=level)
         {
