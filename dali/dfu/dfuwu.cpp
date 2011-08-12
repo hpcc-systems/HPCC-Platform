@@ -2542,29 +2542,6 @@ public:
         return &monitor;
     }
 
-    void submit()           
-    {
-        StringBuffer qname;
-        if (getQueue(qname).length()==0) {
-            throw MakeStringException(-1, "DFU no queue name specified");
-        }
-        Owned<IJobQueue> queue = createJobQueue(qname.str());
-        if (!queue.get()) {
-            throw MakeStringException(-1, "Cound not create queue");
-        }
-        IJobQueueItem *item = createJobQueueItem(queryId());
-        item->setEndpoint(queryMyNode()->endpoint());
-        StringBuffer user;
-        if (getUser(user).length()!=0) 
-            item->setOwner(user.str());
-        progress.setState(DFUstate_queued);
-        progress.clearProgress();
-        removeTree(root,"Exceptions");
-        commit();
-        queue->enqueue(item);
-    }
-
-
     void cleanupAndDelete()
     {
         if (isProtected())
@@ -2621,6 +2598,10 @@ public:
         return new CExceptionIterator(tree);
     }
 
+    void clearExceptions()
+    {
+        removeTree(root,"Exceptions");
+    }
 
     StringBuffer& getApplicationValue(const char *app, const char *propname, StringBuffer &str) const
     {
@@ -3141,7 +3122,7 @@ IDfuFileCopier *createRemoteFileCopier(const char *qname,const char *clustername
             StringBuffer eps;
             PROGLOG("%s: Copy %s from %s to %s",wuid,srclfn,srcdali.getUrlStr(eps).str(),lfn);
             wuids.append(wuid);
-            wu->submit();
+            submitDFUWorkUnit(wu.getClear());
             return true;
         }
 
@@ -3177,4 +3158,42 @@ IDfuFileCopier *createRemoteFileCopier(const char *qname,const char *clustername
         }
     };
     return new cCopier(qname,clustername,jobname,replicate);
+}
+
+
+extern dfuwu_decl void submitDFUWorkUnit(IDFUWorkUnit *workunit)
+{
+    Owned<IDFUWorkUnit> wu(workunit);
+    StringBuffer qname;
+    if (wu->getQueue(qname).length()==0) {
+        throw MakeStringException(-1, "DFU no queue name specified");
+    }
+    Owned<IJobQueue> queue = createJobQueue(qname.str());
+    if (!queue.get()) {
+        throw MakeStringException(-1, "Cound not create queue");
+    }
+    StringBuffer user;
+    wu->getUser(user);
+    IDFUprogress *progress = wu->queryUpdateProgress();
+    progress->setState(DFUstate_queued);
+    progress->clearProgress();
+    wu->clearExceptions();
+    wu->commit();
+
+    StringAttr wuid(wu->queryId());
+    wu.clear();
+    IJobQueueItem *item = createJobQueueItem(wuid.get());
+    item->setEndpoint(queryMyNode()->endpoint());
+    if (user.length()!=0)
+        item->setOwner(user.str());
+    queue->enqueue(item);
+}
+
+extern dfuwu_decl void submitDFUWorkUnit(const char *wuid)
+{
+    Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
+    Owned<IDFUWorkUnit> wu = factory->updateWorkUnit(wuid);
+    if(!wu)
+        throw MakeStringException(-1, "DFU workunit %s could not be opened for update", wuid);
+    submitDFUWorkUnit(wu.getClear());
 }
