@@ -20,7 +20,7 @@
 #include "jhtree.hpp"
 #include "ctfile.hpp"
 
-void fatal(const char *format, ...)
+void fatal(const char *format, ...) __attribute__((format(printf, 1, 2)))
 {
     va_list      args;
 

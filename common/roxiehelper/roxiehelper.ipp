@@ -80,7 +80,7 @@ interface IRoxieContextLogger : extends IContextLogger
     virtual StringBuffer &getLogPrefix(StringBuffer &ret) const = 0;
     virtual bool isIntercepted() const = 0;
     virtual void CTXLOGa(TracingCategory category, const char *prefix, const char *text) const = 0;
-    virtual void CTXLOGae(IException *E, const char *file, unsigned line, const char *prefix, const char *format, ...) const = 0;
+    virtual void CTXLOGae(IException *E, const char *file, unsigned line, const char *prefix, const char *format, ...) const __attribute__((format(printf, 2, 3))) = 0;
     virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const = 0;
     virtual void CTXLOGl(LogItem *) const = 0;
     virtual bool isBlind() const = 0;
@@ -107,7 +107,7 @@ interface IRHLimitedCompareHelper: public IInterface
 
 interface IOrderedOutputSerializer : extends IInterface 
 {
-  virtual size32_t printf(int seq, const char *format, ...) = 0;
+  virtual size32_t printf(int seq, const char *format, ...) __attribute__((format(printf, 3, 4)))= 0;
   virtual size32_t fwrite(int seq, const void * data, size32_t size, size32_t count) = 0;
   virtual void close(int seq, bool nl) = 0;
 };

@@ -597,7 +597,7 @@ __LINE__            {
                             return SKIPPED; 
                         StringBuffer msg("Unknown # command: ");
                         msg.append(CUR_TOKEN_TEXT);
-                        lexer->reportError(returnToken, ERR_TMPLT_UNKNOWNCOMMAND,msg.str());
+                        lexer->reportError(returnToken, ERR_TMPLT_UNKNOWNCOMMAND, "%s", msg.str());
                         return lexer->yyLex(returnToken, lookup, activeState); 
                     }
         
@@ -1606,7 +1606,7 @@ FUNCTIONMACRO|MACRO {
                         {
                             lexer->yyColumn = oldColumn + ep + start;
                             returnToken.setPosition(lexer->yyLineNo, lexer->yyColumn, lexer->yyPosition, lexer->querySourcePath());
-                            lexer->reportError(returnToken, ERR_ESCAPE_UNKNOWN,msg.str());
+                            lexer->reportError(returnToken, ERR_ESCAPE_UNKNOWN, "%s", msg.str());
                             returnToken.setPosition(lexer->yyLineNo, oldColumn, lexer->yyPosition, lexer->querySourcePath());
                         }
                         Owned<IValue> unicodeValue = createUnicodeValue(CUR_TOKEN_TEXT + start, CUR_TOKEN_LENGTH - (start+1), "", true, true);
@@ -1652,7 +1652,7 @@ FUNCTIONMACRO|MACRO {
                                     returnToken.setPosition(lexer->yyLineNo, lexer->yyColumn, lexer->yyPosition, lexer->querySourcePath());
                                     StringBuffer msg("Can not terminate a string with escape char '\\': ");
                                     msg.append(CUR_TOKEN_TEXT);
-                                    lexer->reportError(returnToken, RRR_ESCAPE_ENDWITHSLASH, msg.str());
+                                    lexer->reportError(returnToken, RRR_ESCAPE_ENDWITHSLASH, "%s", msg.str());
                                     if (lexer->isAborting())
                                         return EOF;
                                     returnToken.setPosition(lexer->yyLineNo, oldColumn, lexer->yyPosition, lexer->querySourcePath());
@@ -1714,7 +1714,7 @@ FUNCTIONMACRO|MACRO {
                                         returnToken.setPosition(lexer->yyLineNo, lexer->yyColumn, lexer->yyPosition, lexer->querySourcePath());
                                         StringBuffer msg;
                                         msg.append("3-digit numeric escape sequence contained non-octal digit: ").append(next);
-                                        lexer->reportError(returnToken, ERR_ESCAPE_UNKNOWN,msg.str());
+                                        lexer->reportError(returnToken, ERR_ESCAPE_UNKNOWN, "%s", msg.str());
                                         if (lexer->isAborting())
                                             return EOF;
                                         returnToken.setPosition(lexer->yyLineNo, oldColumn, lexer->yyPosition, lexer->querySourcePath());
@@ -1736,7 +1736,7 @@ FUNCTIONMACRO|MACRO {
                                     StringBuffer msg;
                                     msg.append("Unrecognized escape sequence: ");
                                     msg.append("\\").append(finger[1]);
-                                    lexer->reportError(returnToken, ERR_ESCAPE_UNKNOWN,msg.str());
+                                    lexer->reportError(returnToken, ERR_ESCAPE_UNKNOWN, "%s", msg.str());
                                     if (lexer->isAborting())
                                         return EOF;
 
@@ -1821,7 +1821,7 @@ FUNCTIONMACRO|MACRO {
                         else
                             msg.append(CUR_TOKEN_TEXT);
                         msg.append("\"");
-                        lexer->reportError(returnToken, ERR_STRING_UNENDED,msg.str());
+                        lexer->reportError(returnToken, ERR_STRING_UNENDED, "%s", msg.str());
                         // recovery 
                         returnToken.setExpr(createConstant(""));
                         return STRING_CONST;                        
@@ -1874,7 +1874,7 @@ FUNCTIONMACRO|MACRO {
                         StringBuffer msg;
                         msg.append("hex data can only contains 0-9a-fA-F: ");
                         msg.append(CUR_TOKEN_TEXT);
-                        lexer->reportError(returnToken, ERR_HEXDATA_ILL,msg.str());
+                        lexer->reportError(returnToken, ERR_HEXDATA_ILL, "%s", msg.str());
 
                         // recovering
                         char data[2], str[3] = "00";

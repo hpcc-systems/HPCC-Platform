@@ -152,7 +152,7 @@ interface IDeploymentCallback : extends IInterface
 {
     virtual void printStatus(IDeployTask* task) = 0;
     virtual void printStatus(StatusType type, const char* processType, const char* comp, 
-        const char* instance, const char* msg=NULL, ...) = 0;
+        const char* instance, const char* msg=NULL, ...) __attribute__((format(printf, 6, 7))) = 0;
     virtual bool onDisconnect(const char* target) = 0;
     virtual bool getAbortStatus() const = 0;
     virtual void setAbortStatus(bool bAbort) = 0;

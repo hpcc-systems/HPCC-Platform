@@ -4818,8 +4818,8 @@ protected:
     void createTempTableAssign(HqlExprArray & assigns, IHqlExpression * self, IHqlExpression * curRow, IHqlExpression * expr, unsigned & col, IHqlExpression * selector, HqlMapTransformer & mapper, bool included);
     IHqlExpression * createTempTableTransform(IHqlExpression * self, IHqlExpression * curRow, IHqlExpression * expr, unsigned & col, IHqlExpression * selector, HqlMapTransformer & mapper, bool included);
 
-    void reportWarning(IHqlExpression * location, int code,const char *format, ...);
-    void reportError(IHqlExpression * location, int code,const char *format, ...);
+    void reportWarning(IHqlExpression * location, int code,const char *format, ...) __attribute__((format(printf, 4, 5)));
+    void reportError(IHqlExpression * location, int code,const char *format, ...) __attribute__((format(printf, 4, 5)));
 
 protected:
     IErrorReceiver * errors;

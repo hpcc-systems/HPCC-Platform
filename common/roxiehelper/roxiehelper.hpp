@@ -143,7 +143,7 @@ public:
     void append(char data) {append(1, &data);}
     void append(const char *data);
     void append(unsigned len, const char *data);
-    void appendf(const char *format, ...);
+    void appendf(const char *format, ...) __attribute__((format(printf, 2, 3)));
     void encodeXML(const char *x, unsigned flags=0, unsigned len=(unsigned)-1, bool utf8=false);
     virtual void flushXML(StringBuffer &current, bool isClosing);
     void flush(bool closing) ;

@@ -482,7 +482,7 @@
 #define HQLERR_IncompatibleTypesForField        4101
 #define HQLWRN_CouldNotConstantFoldIf           4514
 
-#define HQLERR_VirtualFieldInTempTable_Text     "Virtual fields are not supported in constant tables - please provide a value"
+#define HQLERR_VirtualFieldInTempTable_Text     "Virtual field %s not supported in constant table - please provide a value"
 #define HQLERR_IncompatiableInitailiser_Text    "Inline DATASET field '%s' cannot be initialized with a list of values"
 #define HQLERR_NoDefaultProvided_Text           "No value or default provided for field %s in inline table"
 #define HQLERR_TooManyInitializers_Text         "Too many initializers (value %s) for inline dataset definition"

@@ -1034,7 +1034,7 @@ IHqlExpression * HqlGram::processModuleDefinition(const attribute & errpos)
     catch (IException * e)
     {
         StringBuffer s;
-        reportError(e->errorCode(), errpos, e->errorMessage(s).str());
+        reportError(e->errorCode(), errpos, "%s", e->errorMessage(s).str());
         e->Release();
         newScope.setown(createNullScope());
     }
@@ -1093,7 +1093,7 @@ void HqlGram::processStartTransform(const attribute & errpos)
             msg.append("<none> is given");
         else
             getFriendlyTypeStr(current_type, msg).append(" is given");
-        reportError(ERR_TRANS_RECORDTYPE, errpos,msg.str());
+        reportError(ERR_TRANS_RECORDTYPE, errpos, "%s", msg.str());
         reportError(ERR_PARSER_CANNOTRECOVER,errpos,"Can not recover from previous error(s) - aborting compilation");
 
         abortParsing();
@@ -1239,7 +1239,7 @@ void HqlGram::addAssignment(attribute & target, attribute &source)
                 {
                     StringBuffer msg("Can not assign non-record type ");
                     getFriendlyTypeStr(type, msg).append(" to self");
-                    reportError(ERR_TRANS_ILLASSIGN2SELF, target, msg.str());
+                    reportError(ERR_TRANS_ILLASSIGN2SELF, target, "%s", msg.str());
                 }
         }
     }
@@ -1285,7 +1285,7 @@ void HqlGram::addAssignment(const attribute & errpos, IHqlExpression * targetExp
                 {
                     StringBuffer msg("Can not assign non-record type ");
                     getFriendlyTypeStr(type, msg).append(" to self");
-                    reportError(ERR_TRANS_ILLASSIGN2SELF, errpos, msg.str());
+                    reportError(ERR_TRANS_ILLASSIGN2SELF, errpos, "%s", msg.str());
                 }
         }
     }
@@ -1461,7 +1461,7 @@ void HqlGram::doAddAssignment(IHqlExpression * transform, IHqlExpression * _fiel
         getFriendlyTypeStr(rhsType,msg).append(" to ");
         getFriendlyTypeStr(fldType,msg).append(" (field ");
         getFldName(field,msg).append(")");
-        reportError(ERR_TYPE_INCOMPATIBLE,errpos, msg.str()); 
+        reportError(ERR_TYPE_INCOMPATIBLE,errpos, "%s", msg.str()); 
     }
 
     appendTransformAssign(transform, field, rhs, errpos);
@@ -3201,7 +3201,7 @@ unsigned HqlGram::checkCompatible(ITypeInfo * t1, ITypeInfo * t2, const attribut
         StringBuffer msg("Type mismatch - expected ");
         getFriendlyTypeStr(t1,msg).append(" value, given ");
         getFriendlyTypeStr(t2,msg);
-        reportError(ERR_EXPECTED, ea, msg.str());
+        reportError(ERR_EXPECTED, ea, "%s", msg.str());
     }
 
     return 0;
@@ -4248,7 +4248,7 @@ IHqlExpression * HqlGram::convertPatternToExpression(attribute & text)
     {
         StringBuffer s;
         e->errorMessage(s);
-        reportError(ERR_BAD_PATTERN, text, s.str());
+        reportError(ERR_BAD_PATTERN, text, "%s", s.str());
         e->Release();
     }
     return NULL;
@@ -4460,7 +4460,7 @@ void HqlGram::ensureType(attribute &a, ITypeInfo * type)
             StringBuffer msg("Incompatible types: expected ");
             getFriendlyTypeStr(type, msg).append(", given ");
             getFriendlyTypeStr(expr->queryType(),msg);
-            reportError(ERR_TYPE_INCOMPATIBLE, a, msg.str());
+            reportError(ERR_TYPE_INCOMPATIBLE, a, "%s", msg.str());
         }
         expr = a.getExpr();
         a.setExpr(ensureExprType(expr, type));
@@ -4828,7 +4828,7 @@ void HqlGram::checkCaseForDuplicates(HqlExprArray & exprs, attribute &err)
             StringBuffer s;
             s.append("Duplicate case entry: ");
             toECL(e1, s, false);
-            reportWarning(WRN_DUPLICATECASE, err.pos, s.str());
+            reportWarning(WRN_DUPLICATECASE, err.pos, "%s", s.str());
         }
         else
             e1->setTransformExtraUnlinked(e1);
@@ -4886,7 +4886,7 @@ void HqlGram::checkReal(attribute &a1)
         {
             StringBuffer msg("Type mismatch - Real value expected (");
             getFriendlyTypeStr(t1,msg).append(" was given)");
-            reportError(ERR_TYPEMISMATCH_REAL, a1, msg.str());
+            reportError(ERR_TYPEMISMATCH_REAL, a1, "%s", msg.str());
         }
 
         OwnedHqlExpr value = a1.getExpr();
@@ -4941,7 +4941,7 @@ bool HqlGram::checkString(attribute &a1)
             {
                 StringBuffer msg("Type mismatch - String value expected (");
                 getFriendlyTypeStr(t1, msg).append(" was given)");
-                reportError(ERR_TYPEMISMATCH_STRING, a1, msg.str());
+                reportError(ERR_TYPEMISMATCH_STRING, a1, "%s", msg.str());
                 return false;
             }
         }
@@ -4967,7 +4967,7 @@ bool HqlGram::checkStringOrUnicode(attribute & exprAttr)
 
     StringBuffer msg("Type mismatch - String or unicode value expected (");
     getFriendlyTypeStr(type, msg).append(" was given)");
-    reportError(ERR_TYPEMISMATCH_STRING, exprAttr, msg.str());
+    reportError(ERR_TYPEMISMATCH_STRING, exprAttr, "%s", msg.str());
     return false;
 }
 
@@ -4978,7 +4978,7 @@ void HqlGram::checkIntegerOrString(attribute & a1)
     {
         StringBuffer msg("Type mismatch - Integer or string value expected (");
         getFriendlyTypeStr(t1, msg).append(" was given)");
-        reportError(ERR_TYPEMISMATCH_INTSTRING, a1, msg.str());
+        reportError(ERR_TYPEMISMATCH_INTSTRING, a1, "%s", msg.str());
     }
 }
 
@@ -4993,7 +4993,7 @@ void HqlGram::checkNumeric(attribute &a1)
             msg.append("(");
             getFriendlyTypeStr(t1, msg).append(" was given)");
         }
-        reportError(ERR_TYPEMISMATCH_INTREAL, a1, msg.str());
+        reportError(ERR_TYPEMISMATCH_INTREAL, a1, "%s", msg.str());
         a1.release().setExpr(getSizetConstant(0));
     }
 }
@@ -5010,7 +5010,7 @@ ITypeInfo *HqlGram::checkNumericGetType(attribute &a1)
     {
         StringBuffer msg("Type mismatch - Integer or real value expected (");
         getFriendlyTypeStr(t1, msg).append(" was given)");
-        reportError(ERR_TYPEMISMATCH_INTREAL, a1, msg.str());
+        reportError(ERR_TYPEMISMATCH_INTREAL, a1, "%s", msg.str());
         t1->Release();
         t1 = makeIntType(DEFAULT_INT_SIZE, true);
     }
@@ -5349,7 +5349,7 @@ IHqlExpression * HqlGram::processSortList(const attribute & errpos, node_operato
             {
                 StringBuffer msg;
                 msg.append(attr).append(" is not valid here");
-                reportError(ERR_ILL_HERE, errpos, msg.str());
+                reportError(ERR_ILL_HERE, errpos, "%s", msg.str());
             }
             else
                 attributes->setown(createComma(LINK(&e), attributes->getClear()));
@@ -6011,7 +6011,7 @@ IHqlExpression * HqlGram::checkParameter(const attribute * errpos, IHqlExpressio
                             getFriendlyTypeStr(formal,tp1).str(),
                             getFriendlyTypeStr(actual,tp2).str());
                 }
-                reportError(ERR_PARAM_TYPEMISMATCH, *errpos, s.str());
+                reportError(ERR_PARAM_TYPEMISMATCH, *errpos, "%s", s.str());
             }
             return NULL;
         }
@@ -6148,9 +6148,7 @@ bool HqlGram::processParameter(FunctionCallInfo & call, _ATOM name, IHqlExpressi
         if (isOmitted(actual))
             return true;
 
-        StringBuffer s;
-        s.appendf("Too many parameters passed to function %s (expected %d)", funcName->str(), call.numFormals);
-        reportError(ERR_PARAM_TOOMANY, errpos, s.str());
+        reportError(ERR_PARAM_TOOMANY, errpos, "Too many parameters passed to function %s (expected %d)", funcName->str(), call.numFormals);
         return false;
     }
 
@@ -6497,9 +6495,7 @@ IHqlExpression * HqlGram::checkOutputRecord(IHqlExpression *record, const attrib
                 {
 
                     _ATOM name = field->queryName();
-                    StringBuffer text;
-                    text.appendf(REC_FLD_ERR_STR, name ? name->str() : "?");
-                    reportError(ERR_REC_FIELDNODEFVALUE, errpos, text.str());
+                    reportError(ERR_REC_FIELDNODEFVALUE, errpos, REC_FLD_ERR_STR, name ? name->str() : "?");
                     allConstant = false;                                        // no point reporting this as well.
 
                     HqlExprArray args;
@@ -6632,7 +6628,7 @@ void HqlGram::checkIndexFieldType(IHqlExpression * expr, bool isPayload, bool in
                 break;
             case type_packedint:
                 if (!isPayload)
-                    reportError(ERR_INDEX_BADTYPE, errpos, "PACKED integers are not supported inside indexes", name->str());
+                    reportError(ERR_INDEX_BADTYPE, errpos, "PACKED integers (%s) are not supported inside indexes", name->str());
                 break;
             case type_set:
                 if (!variableOk)
@@ -7075,7 +7071,7 @@ void HqlGram::checkGrouping(const attribute& errpos, HqlExprArray & parms, IHqlE
                         if (name)
                             msg.append("'").append(name).append("' ");
                         msg.append("in TABLE does not appear to be properly defined by grouping conditions");
-                        reportWarning(ERR_GROUP_BADSELECT,errpos.pos, msg.str());
+                        reportWarning(ERR_GROUP_BADSELECT,errpos.pos, "%s", msg.str());
                     }
                 }
                 else if (field->isDatarow())
@@ -9346,7 +9342,7 @@ void HqlGram::canNotAssignTypeError(ITypeInfo* expected, ITypeInfo* given, const
     StringBuffer msg("Incompatible types: can not assign ");
     getFriendlyTypeStr(given, msg).append(" to ");
     getFriendlyTypeStr(expected, msg);
-    reportError(ERR_TYPE_INCOMPATIBLE, errpos, msg.str());
+    reportError(ERR_TYPE_INCOMPATIBLE, errpos, "%s", msg.str());
 }
 
 void HqlGram::canNotAssignTypeWarn(ITypeInfo* expected, ITypeInfo* given, const attribute& errpos)
@@ -9354,7 +9350,7 @@ void HqlGram::canNotAssignTypeWarn(ITypeInfo* expected, ITypeInfo* given, const 
     StringBuffer msg("Incompatible types: should cast ");
     getFriendlyTypeStr(given, msg).append(" to a ");
     getFriendlyTypeStr(expected, msg);
-    reportWarning(ERR_TYPE_INCOMPATIBLE, errpos.pos, msg.str());
+    reportWarning(ERR_TYPE_INCOMPATIBLE, errpos.pos, "%s", msg.str());
 }
 
 _ATOM HqlGram::getNameFromExpr(attribute& attr)
@@ -10355,7 +10351,7 @@ void HqlGram::checkWorkflowMultiples(IHqlExpression * previousWorkflow, IHqlExpr
                 {
                     StringBuffer buff;
                     buff.append("Multiple ").append(newName).append(" controls are not allowed on an expression");
-                    reportError(ERR_MULTIPLE_WORKFLOW, errpos, buff.str());
+                    reportError(ERR_MULTIPLE_WORKFLOW, errpos, "%s", buff.str());
                 }
             }
             break;
@@ -10364,7 +10360,7 @@ void HqlGram::checkWorkflowMultiples(IHqlExpression * previousWorkflow, IHqlExpr
             {
                 StringBuffer buff;
                 buff.append("Multiple ").append(getOpString(newOp)).append(" controls are not allowed on an expression");
-                reportError(ERR_MULTIPLE_WORKFLOW, errpos, buff.str());
+                reportError(ERR_MULTIPLE_WORKFLOW, errpos, "%s", buff.str());
             }
         }
     }

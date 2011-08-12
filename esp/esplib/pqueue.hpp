@@ -131,7 +131,7 @@ interface ITask: extends IInterface
 
 interface IErrorListener: extends IInterface
 {
-    virtual void reportError(const char* err,...)=0;
+    virtual void reportError(const char* err,...) __attribute__((format(printf, 2, 3))) =0;
 };
 
 class TaskQueue

@@ -52,7 +52,7 @@ public:
     unsigned numfiles;
     IArrayOf<IFileIOStream> *outStreams;
 
-    void log(const char * format, ...)
+    void log(const char * format, ...) __attribute__((format(printf, 2, 3)))
     {
         va_list args;
         va_start(args, format);
@@ -62,7 +62,7 @@ public:
         PROGLOG(LOGPFX "%s",line.str());
     }
 
-    void error(const char * format, ...)
+    void error(const char * format, ...) __attribute__((format(printf, 2, 3)))
     {
         va_list args;
         va_start(args, format);
@@ -72,7 +72,7 @@ public:
         ERRLOG(LOGPFX "%s",line.str());
     }
 
-    void warn(const char * format, ...)
+    void warn(const char * format, ...) __attribute__((format(printf, 2, 3)))
     {
         va_list args;
         va_start(args, format);

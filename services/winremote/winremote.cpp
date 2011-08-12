@@ -652,7 +652,7 @@ public:
 
 protected:
 
-    void print(const char* format,...)
+    void print(const char* format,...) __attribute__((format(printf, 2, 3)))
     {
         if(!output)
             return;

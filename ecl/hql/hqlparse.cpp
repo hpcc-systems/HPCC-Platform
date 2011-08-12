@@ -238,7 +238,7 @@ bool HqlLex::assertNext(YYSTYPE & returnToken, int expected, unsigned code, cons
 {
     if (yyLex(returnToken, false,0) != expected)
     {
-        reportError(returnToken, code, msg); 
+        reportError(returnToken, code, "%s", msg);
         returnToken.release();
         return false;
     }
@@ -379,7 +379,7 @@ void HqlLex::setMacroParam(const YYSTYPE & errpos, IHqlExpression* funcdef, Stri
             {
                 StringBuffer msg("Omitted parameter ");
                 msg.append(parmno).append(" has no default value");
-                reportError(errpos, ERR_PARAM_NODEFVALUE, msg.str());
+                reportError(errpos, ERR_PARAM_NODEFVALUE, "%s", msg.str());
             }
             else
             {
@@ -387,7 +387,7 @@ void HqlLex::setMacroParam(const YYSTYPE & errpos, IHqlExpression* funcdef, Stri
                 {
                     StringBuffer msg("Default value for parameter ");
                     msg.append(parmno).append(" should be a constant");
-                    reportError(errpos, ERR_PARAM_NODEFVALUE, msg.str());
+                    reportError(errpos, ERR_PARAM_NODEFVALUE, "%s", msg.str());
                 }
             }
         }
@@ -504,7 +504,7 @@ void HqlLex::pushMacro(IHqlExpression *expr)
         if (expr->queryName())
             msg.append(' ').append(expr->queryName());
         msg.appendf(": expected %d, given %d", formalParmCt, parmno);
-        reportError(nextToken, ERR_PARAM_TOOMANY, msg.str());
+        reportError(nextToken, ERR_PARAM_TOOMANY, "%s", msg.str());
     }
     else if (parmno < formalParmCt)
     {
@@ -523,7 +523,7 @@ void HqlLex::pushMacro(IHqlExpression *expr)
                         if (expr->queryName())
                             msg.append(" to macro ").append(expr->queryName());
                         msg.append(" should be a constant value");
-                        reportError(nextToken, ERR_PARAM_NODEFVALUE,msg.str());
+                        reportError(nextToken, ERR_PARAM_NODEFVALUE, "%s", msg.str());
                     }
                     macroParms->setProp(formal->queryName()->str(), curParam.str());
                     //PrintLog("Set macro parm: %s", curParam.str());
@@ -536,7 +536,7 @@ void HqlLex::pushMacro(IHqlExpression *expr)
                     if (expr->queryName())
                         msg.append(" to macro ").append(expr->queryName());
                     msg.append(" has no default value");
-                    reportError(nextToken, ERR_PARAM_NODEFVALUE,msg.str());
+                    reportError(nextToken, ERR_PARAM_NODEFVALUE, "%s", msg.str());
                 }
             }
         }
@@ -548,7 +548,7 @@ void HqlLex::pushMacro(IHqlExpression *expr)
     {
         StringBuffer msg;
         msg.append("recursive macro call: ").append(getMacroName());
-        reportError(nextToken, ERR_MACRO_RECURSIVE, msg.str());
+        reportError(nextToken, ERR_MACRO_RECURSIVE, "%s", msg.str());
         
         // error recovery
         if (expr->isAction()) 
@@ -662,7 +662,7 @@ bool HqlLex::getParameter(StringBuffer &curParam, const char* for_what, int* sta
             {
                 StringBuffer msg("EOF encountered while gathering parameters for ");
                 msg.append(for_what);
-                reportError(nextToken, ERR_TMPLT_EOFINPARAM, msg.str());
+                reportError(nextToken, ERR_TMPLT_EOFINPARAM, "%s", msg.str());
             }
             return false;
         default:
@@ -704,7 +704,7 @@ void HqlLex::doIf(YYSTYPE & returnToken)
             {
                 StringBuffer msg;
                 msg.appendf("Unexpected EOF in %s: #END expected",forwhat.str());
-                reportError(returnToken, ERR_TMPLT_HASHENDEXPECTED, msg.str());
+                reportError(returnToken, ERR_TMPLT_HASHENDEXPECTED, "%s", msg.str());
                 clearNestedHash();      // prevent unnecessary more error messages
                 break;
             }
@@ -738,7 +738,7 @@ int HqlLex::doElse(YYSTYPE & returnToken, bool lookup, const short * activeState
             if (tok == EOF)
             {
                 forwhat.insert(0,"Unexpected EOF in ").append(": #END expected");
-                reportError(returnToken, ERR_TMPLT_HASHENDEXPECTED,forwhat.str());
+                reportError(returnToken, ERR_TMPLT_HASHENDEXPECTED, "%s", forwhat.str());
                 clearNestedHash();      // prevent unnecessary more error messages
                 return tok;
             }
@@ -776,7 +776,7 @@ void HqlLex::doDeclare(YYSTYPE & returnToken)
         {
             StringBuffer msg;
             msg.append("Unexpected EOF in ").append(forwhat.str()).append(": ')' expected");
-            reportError(returnToken, ERR_TMPLT_HASHENDEXPECTED, msg.str());
+            reportError(returnToken, ERR_TMPLT_HASHENDEXPECTED, "%s", msg.str());
             clearNestedHash();      // prevent unnecessary more error messages
             return;
         }
@@ -800,7 +800,7 @@ void HqlLex::doDeclare(YYSTYPE & returnToken)
         {
             StringBuffer msg;
             msg.append("Unexpected EOF in ").append(forwhat.str()).append(": ) expected");
-            reportError(returnToken, ERR_TMPLT_HASHENDEXPECTED, msg.str());
+            reportError(returnToken, ERR_TMPLT_HASHENDEXPECTED, "%s", msg.str());
             clearNestedHash();      // prevent unnecessary more error messages
         }
         else
@@ -1601,7 +1601,7 @@ bool HqlLex::getDefinedParameter(StringBuffer &curParam, YYSTYPE & returnToken, 
             {
                 StringBuffer msg("EOF encountered while gathering parameters for ");
                 msg.append(for_what);
-                reportError(returnToken, ERR_TMPLT_EOFINPARAM, msg.str());
+                reportError(returnToken, ERR_TMPLT_EOFINPARAM, "%s", msg.str());
             }
             return false;
         case UNKNOWN_ID:
@@ -1736,7 +1736,7 @@ IValue *HqlLex::parseConstExpression(const YYSTYPE & errpos, StringBuffer &curPa
         catch (IException* except)
         {
             StringBuffer s;
-            reportError(errpos, except->errorCode(), except->errorMessage(s).str());
+            reportError(errpos, except->errorCode(), "%s", except->errorMessage(s).str());
             except->Release();
         }           
     }
@@ -1993,7 +1993,7 @@ void HqlLex::setXmlSymbol(const YYSTYPE & errpos, const char *name, const char *
     {
         StringBuffer msg("Symbol has not been declared: ");
         msg.append(name);
-        reportError(errpos, ERR_TMPLT_SYMBOLNOTDECLARED,msg.str());
+        reportError(errpos, ERR_TMPLT_SYMBOLNOTDECLARED, "%s", msg.str());
     }
 }
 
@@ -2004,7 +2004,7 @@ void HqlLex::declareXmlSymbol(const YYSTYPE & errpos, const char *name)
     {
         StringBuffer msg("Symbol has already been declared: ");
         msg.append(name);
-        reportError(errpos, ERR_TMPLT_SYMBOLREDECLARE,msg.str());
+        reportError(errpos, ERR_TMPLT_SYMBOLREDECLARE, "%s", msg.str());
     }
 }
 
@@ -2048,7 +2048,7 @@ void HqlLex::loadXML(const YYSTYPE & errpos, const char *name, const char * chil
     {
         StringBuffer msg;
         msg.appendf("Load XML(\'%s\') failed",name);
-        reportError(errpos, ERR_TMPLT_LOADXMLFAILED,msg.str());
+        reportError(errpos, ERR_TMPLT_LOADXMLFAILED, "%s", msg.str());
 
         // recovery: create a default XML scope
         xmlScope = ::loadXML("<xml></xml>");
@@ -2129,7 +2129,7 @@ int HqlLex::yyLex(YYSTYPE & returnToken, bool lookup, const short * activeState)
             {
                 StringBuffer msg("Unexpected EOF: ");
                 msg.append(hashendDepths.ordinality()).append(" more #END needed");
-                reportError(returnToken, ERR_TMPLT_HASHENDEXPECTED,msg.str());
+                reportError(returnToken, ERR_TMPLT_HASHENDEXPECTED, "%s", msg.str());
                 hashendDepths.kill(); // prevent unnecessary more error messages
             }
         }
