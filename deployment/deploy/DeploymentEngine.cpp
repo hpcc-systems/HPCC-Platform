@@ -2145,7 +2145,7 @@ bool CInstallFileMap::resolveConflicts(IPropertyTree& processNode, const char* m
                     e->errorMessage(msg);
 
                     m_pDepEngine->getCallback().printStatus(STATUS_WARN, processNode.queryName(), 
-                                                                         processNode.queryProp("@name"), instanceName, msg.str());
+                                                                         processNode.queryProp("@name"), instanceName, "%s", msg.str());
                 }
             }
 
@@ -2163,7 +2163,7 @@ bool CInstallFileMap::resolveConflicts(IPropertyTree& processNode, const char* m
                     e->errorMessage(msg);
                     
                     m_pDepEngine->getCallback().printStatus(STATUS_WARN, processNode.queryName(), 
-                        processNode.queryProp("@name"), instanceName, msg.str());
+                        processNode.queryProp("@name"), instanceName, "%s", msg.str());
                 }
             }
 
@@ -2210,7 +2210,7 @@ bool CInstallFileMap::resolveConflicts(IPropertyTree& processNode, const char* m
 
                     m_pDepEngine->getCallback().printStatus(STATUS_WARN, processNode.queryName(), 
                                                                          processNode.queryProp("@name"), instanceName, 
-                                                                         msg.str());
+                                                                         "%s", msg.str());
                 }
                 break;
             }

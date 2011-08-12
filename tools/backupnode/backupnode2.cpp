@@ -273,7 +273,7 @@ public:
                     }
                 }
                 else 
-                    parent.error("cannot create file descriptor",name.str());
+                    parent.error("cannot create file descriptor %s",name.str());
             }
         public:
 

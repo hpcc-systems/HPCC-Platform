@@ -1259,16 +1259,14 @@ void LogMsgPrepender::report_va(const LogMsgCategory & cat, const LogMsgJobInfo 
 
 void LogMsgPrepender::report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const IException * exception, const char * prefix)
 {
-    StringBuffer buff;
-    buff.append(file).append("(").append(line).append(") : %s");
     StringBuffer txt;
     if (prefix) 
         txt.append(prefix).append(" : ");
     exception->errorMessage(txt);
-    if(reporter)
-        reporter->report(cat, job, exception->errorCode(), buff.str(), txt.str());
+    if (reporter)
+        reporter->report(cat, job, exception->errorCode(), "%s(%d) : %s", file, line, txt.str());
     else
-        queryLogMsgManager()->report(cat, job, exception->errorCode(), buff.str(), txt.str());
+        queryLogMsgManager()->report(cat, job, exception->errorCode(), "%s(%d) : %s", file, line, txt.str());
     crit.leave();
 }
 

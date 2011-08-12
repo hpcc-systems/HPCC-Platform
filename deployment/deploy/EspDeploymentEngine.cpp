@@ -120,7 +120,7 @@ int CEspDeploymentEngine::determineInstallFiles(IPropertyTree& node, CInstallFil
       CDeploymentEngine::determineInstallFiles(*pService, installFiles);
    }
     int rc = CDeploymentEngine::determineInstallFiles(node, installFiles);
-    m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL, "");
+    m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL, "determineInstallFiles complete");
    return rc;
 }
 
