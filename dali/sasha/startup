@@ -19,7 +19,8 @@
 
 DESTDIR=`dirname $0`
 cd $DESTDIR
-rm -f saserver_sentinel*.txt
+export SENTINEL="saserver.sentinel"
+rm -f ${SENTINEL}
 export PATH=$PATH:/sbin
 pid=`pidof saserver`
 if [ -n "$pid" ]; then

@@ -19,7 +19,8 @@ export PATH=/mnt/usrbin:$PATH
 
 DESTDIR=`dirname $0`
 cd $DESTDIR
-rm -f eclccserver_sentinel.txt
+export SENTINEL="eclccserver.sentinel"
+rm -f ${SENTINEL}
 
 killall $PWD/eclccserver
 sleep 3

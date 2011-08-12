@@ -17,6 +17,8 @@ rem     You should have received a copy of the GNU Affero General Public License
 rem     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 rem ############################################################################## */
 
+set SENTINEL="roxie.sentinel"
+
 cd /d %1
 if errorlevel 1 goto end
 call roxievars.bat
@@ -31,10 +33,10 @@ if '%logfilename%' == '' (
 )
 
 :begin
-start roxie topology=%roxiedir%\RoxieTopology.xml logfile=%logfilename% restarts=%restarts% sentinel=roxie_sentinel.txt
+start roxie topology=%roxiedir%\RoxieTopology.xml logfile=%logfilename% restarts=%restarts%
 pwait roxie
 if errorlevel 1 goto end
-if not exist %roxiedir%\roxie_sentinel.txt goto end
+if not exist %roxiedir%\%SENTINEL% goto end
 set /a restarts=%restarts%+1
 goto begin
 :end

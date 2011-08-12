@@ -33,13 +33,13 @@ ulimit -n 8192
 export PATH=$PATH
 export LANG=en_US
 export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH
-echo rerun > saserver_sentinel_$$.txt
+export SENTINEL="saserver.sentinel"
 nohup $BINDIR/saserver 1> /dev/null 2>&1 &
 echo $! > component.pid
 wait
-while [ -e saserver_sentinel_$$.txt ]; do
+while [ -e ${SENTINEL} ]; do
         sleep 5
-        if [ -e saserver_sentinel_$$.txt ]; then
+        if [ -e ${SENTINEL} ]; then
         nohup $BINDIR/saserver 1> /dev/null 2>&1 &
         echo $! > component.pid
         wait

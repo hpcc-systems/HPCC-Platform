@@ -17,7 +17,8 @@ rem     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 rem ############################################################################## */
 
 cd /d %1
-del sentinel.rerun_saserver
+set SENTINEL="saserver.sentinel"
+del %SENTINEL%
 saserver stop .
 sleep 5
 pskill -c4 saserver

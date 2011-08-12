@@ -17,10 +17,12 @@ rem     You should have received a copy of the GNU Affero General Public License
 rem     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 rem ############################################################################## */
 
+set SENTINEL="roxie.sentinel"
+
 cd /d %1
 call roxievars.bat
 if errorlevel 1 goto end
-del %roxiedir%\roxie_sentinel.txt 
+del %roxiedir%\%SENTINEL%
 pskill -c30 roxie
 :end
 exit 0

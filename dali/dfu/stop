@@ -17,7 +17,8 @@
 
 DESTDIR=`dirname $0`
 cd $DESTDIR
-rm -f dfuserver_sentinel.txt
+export SENTINEL="dfuserver.sentinel"
+rm -f ${SENTINEL}
 
 export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH
 export PATH=/mnt/usrbin:$PATH

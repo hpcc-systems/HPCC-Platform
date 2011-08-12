@@ -19,4 +19,5 @@ export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH
 export PATH=$PATH
 export LANG=en_US
 ulimit -c unlimited
+export SENTINEL="eclscheduler.sentinel"
 ./eclscheduler

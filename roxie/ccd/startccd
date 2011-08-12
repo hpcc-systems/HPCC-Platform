@@ -37,22 +37,22 @@ export PATH=.:$roxiedir:$PATH
 export LD_LIBRARY_PATH=.:$roxiedir:$LD_LIBRARY_PATH
 export LIBC_FATAL_STDERR_=1
 export restarts=0
-
+export SENTINEL="roxie.sentinel"
 ulimit -c unlimited
 ulimit -n $NUM_ROXIE_HANDLES
 
-# start it the first time - roxie controls the creation of the rerun_roxie.txt file
-nohup $roxiedir/roxie topology=RoxieTopology.xml logfile=$logfilename restarts=$restarts stdlog=0 sentinel=roxie_sentinel.txt 2>>$logfilename.stderr 1>>$logfilename.stdout &
+# start it the first time - roxie controls the creation of the roxie.sentinel file
+nohup $roxiedir/roxie topology=RoxieTopology.xml logfile=$logfilename restarts=$restarts stdlog=0 2>>$logfilename.stderr 1>>$logfilename.stdout &
 echo $! > component.pid 
 wait
 
 
 # Automatically restart roxie when it dies
-while [ -e $roxiedir/rerun_roxie.txt ]; do
+while [ -e $roxiedir/${SENTINEL} ]; do
     export restarts=$(($restarts+1))
     echo Restarting $restarts >> $logfilename.stderr
     echo Restarting $restarts >> $logfilename.stdout
-    nohup $roxiedir/roxie topology=RoxieTopology.xml logfile=$logfilename restarts=$restarts stdlog=0 sentinel=roxie_sentinel.txt 2>>$logfilename.stderr 1>>$logfilename.stdout &
+    nohup $roxiedir/roxie topology=RoxieTopology.xml logfile=$logfilename restarts=$restarts stdlog=0 2>>$logfilename.stderr 1>>$logfilename.stdout &
     echo $! > component.pid
     wait
 done                

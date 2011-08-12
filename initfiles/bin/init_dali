@@ -8,27 +8,26 @@ PID_NAME="$PID/`basename $PWD`.pid"
 INIT_PID_NAME="$PID/init_`basename $PWD`.pid"
 echo $$ > $INIT_PID_NAME
 
-
+export SENTINEL="daserver.sentinel"
 
 ulimit -n 8192
 
 killed(){
     dalistop .
-    rm -rf daserver_sentinel.txt
+    rm -rf ${SENTINEL}
     exit 255
 }
 
 
 trap "killed" SIGINT SIGTERM SIGKILL
-echo "rerun" > daserver_sentinel.txt
 daserver 1>/dev/null 2>/dev/null &
 echo $! > $PID_NAME
 wait
 
 
-while [ -e daserver_sentinel.txt ]; do
+while [ -e ${SENTINEL} ]; do
     sleep 5
-        if [ -e daserver_sentinel.txt ]; then
+        if [ -e ${SENTINEL} ]; then
             trap "killed" SIGINT SIGTERM SIGKILL
         daserver 1>/dev/null 2>/dev/null &
                 echo $! > $PID_NAME

@@ -14,6 +14,8 @@ if [ $# -lt 1 ]; then
     exit 1
 fi
 
+export SENTINEL="thor.sentinel"
+
 # deploydir = where binaries and scripts live
 if [ -z "$deploydir" ]; then
 export deploydir=$(pwd -P)
@@ -25,7 +27,7 @@ export instancedir=$(pwd -P)
 
 if [ "$#" -lt "2" ] || [ "$2" != "keep_sentinel" ]; then
     echo removing sentinel file
-    rm -f $instancedir/thor_sentinel_$THORMASTERPORT.txt
+    rm -f $instancedir/${SENTINEL}
     sleep 1
 fi
 

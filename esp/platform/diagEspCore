@@ -20,7 +20,7 @@ cd $DESTDIR
 
 build=`grep build esp.xml | sed "s/.* build=\"\([^\"]*\).*/\1/"`
 
-# core=`find . -newer esp_sentinel.txt -name "core*" | head -n 1`
+# core=`find . -newer esp.sentinel -name "core*" | head -n 1`
 core=`ls -lt core* | awk '{print $9}' | head -n 1`
 if [ "$core" == "" ]; then exit 0; fi
 

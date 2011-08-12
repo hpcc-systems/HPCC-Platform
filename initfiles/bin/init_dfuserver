@@ -8,13 +8,15 @@ PID_NAME="$PID/`basename $PWD`.pid"
 INIT_PID_NAME="$PID/init_`basename $PWD`.pid"
 echo $$ > $INIT_PID_NAME
 
+export SENTINEL="dfuserver.sentinel"
+
 ulimit -c unlimited
 ulimit -n 8192
 ulimit -s 512
 
 killed() {
-    if [ -e dfuserver_sentinel.txt ]; then
-        rm -f dfuserver_sentinel.txt
+    if [ -e ${SENTINEL} ]; then
+        rm -f ${SENTINEL}
         dfuserver stop=1
         sleep 5
         killall -9 dfuserver
@@ -25,15 +27,13 @@ killed() {
 trap "killed" SIGINT SIGTERM SIGKILL
 export LANG=en_US
 
-rm -f dfuserver_sentinel.txt
 dfuserver 1>/dev/null 2>/dev/null &
 echo $! > $PID_NAME
 wait
 
-while [ -e dfuserver_sentinel.txt ]; do
+while [ -e ${SENTINEL} ]; do
     sleep 5
-    if [ -e dfuserver_sentinel.txt ]; then
-        rm -f dfuserver_sentinel.txt
+    if [ -e ${SENTINEL} ]; then
         dfuserver 1>/dev/null 2>/dev/null &
         echo $! > $PID_NAME
         wait
