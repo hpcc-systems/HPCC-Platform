@@ -19,6 +19,17 @@
     
 #############################################
 
+if [ -e /etc/debian_version ]; then
+    echo -n "DEB"
+    exit 2;
+elif [ -e /etc/redhat-release ]; then
+    echo -n "RPM"
+    exit 1;
+elif [ -e /etc/SuSE-release ]; then
+    echo -n "RPM"
+    exit 1;
+fi
+
 cat /etc/*release > temp.txt
 
 ############### RPM DISTROS ##################
