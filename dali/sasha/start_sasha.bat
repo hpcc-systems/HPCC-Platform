@@ -16,10 +16,10 @@ rem     You should have received a copy of the GNU Affero General Public License
 rem     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 rem ############################################################################## */
 
-echo rerun > sentinel.rerun_saserver
+set SENTINEL="saserver.sentinel"
 :10
 saserver
-if exist sentinel.rerun_saserver (
+if exist %SENTINEL% (
   sleep 10
   goto 10
 )

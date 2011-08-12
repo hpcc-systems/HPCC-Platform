@@ -19,8 +19,8 @@ set PATH=/mnt/usrbin:$PATH
   
 DESTDIR=`dirname $0` 
 cd $DESTDIR 
- 
-rm -f esp_sentinel.txt 
+export SENTINEL="esp.sentinel"
+rm -f ${SENTINEL}
  
 killall $PWD/esp 
 sleep 15 

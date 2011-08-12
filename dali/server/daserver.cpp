@@ -162,6 +162,10 @@ int main(int argc, char* argv[])
                 return 0;
             }
         }
+	
+        Owned<IFile> sentinelFile = createSentinelTarget();
+        removeSentinelFile(sentinelFile);
+	
         OwnedIFile confIFile = createIFile(DALICONF);
         StringBuffer logName;
         StringBuffer auditDir;
@@ -449,6 +453,7 @@ int main(int argc, char* argv[])
 
         }
         if (ok) {
+            writeSentinelFile(sentinelFile);
             covenMain();
             removeAbortHandler(actionOnAbort);
         }

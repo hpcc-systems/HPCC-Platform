@@ -11,6 +11,8 @@ source  ${INSTALL_DIR}/etc/init.d/hpcc_common
 INIT_PID_NAME="$PID/init_`basename $PWD`.pid"
 echo $$ > $INIT_PID_NAME
 
+export SENTINEL="saserver.sentinel"
+
 ulimit -c unlimited
 ulimit -n 8192
 
@@ -18,7 +20,7 @@ which_pidof
 
 killed() {
 
-    rm -f saserver_sentinel*.txt
+    rm -f ${SENTINEL}
     pid=`${PIDOF} saserver`
     if [ -n "$pid" ]; then
         sasha server=. action=stop
@@ -40,14 +42,13 @@ killed() {
 
 trap "killed" SIGINT SIGTERM SIGKILL
 export LANG=en_US
-echo rerun > saserver_sentinel_$$.txt
 saserver 1>/dev/null 2>/dev/null &
 echo $! > $PID_NAME
 wait
 
-while [ -e saserver_sentinel_$$.txt ]; do
+while [ -e ${SENTINEL} ]; do
     sleep 5
-    if [ -e saserver_sentinel_$$.txt ]; then
+    if [ -e ${SENTINEL} ]; then
         saserver 1>/dev/null 2>/dev/null &
         echo $! > $PID_NAME
         wait

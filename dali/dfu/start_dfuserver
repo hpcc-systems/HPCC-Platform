@@ -23,16 +23,16 @@ ulimit -s 512
 export PATH=$PATH 
 export LANG=en_US 
 export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH 
-rm -f dfuserver_sentinel.txt 
- nohup $PWD/dfuserver 1> /dev/null 2>&1 & 
- echo $! > component.pid
- wait 
- while [ -e dfuserver_sentinel.txt ]; do 
-         sleep 5 
-         if [ -e dfuserver_sentinel.txt ]; then 
-                 nohup $PWD/dfuserver 1> /dev/null 2>&1 & 
-         echo $! > component.pid
-                 wait 
-         fi 
+export SENTINEL="dfuserver.sentinel"
+rm -f ${SENTINEL}
+nohup $PWD/dfuserver 1> /dev/null 2>&1 &
+echo $! > component.pid
+wait
+while [ -e ${SENTINEL} ]; do
+    sleep 5
+    if [ -e ${SENTINEL} ]; then
+        nohup $PWD/dfuserver 1> /dev/null 2>&1 &
+        echo $! > component.pid
+        wait
+    fi
 done 
-

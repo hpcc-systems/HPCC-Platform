@@ -8,13 +8,15 @@ PID_NAME="$PID/`basename $PWD`.pid"
 INIT_PID_NAME="$PID/init_`basename $PWD`.pid"
 echo $$ > $INIT_PID_NAME
 
+export SENTINEL="esp.sentinel"
+
 ulimit -c unlimited
 ulimit -n 8192
 export LANG=en_US
 SNMPID=$$
 
 killed() {
-    rm -f esp_sentinel.txt
+    rm -f ${SENTINEL}
 
     killall esp 1>/dev/null 2>/dev/null
     sleep 15
@@ -29,9 +31,9 @@ trap "killed" SIGINT SIGTERM SIGKILL
 esp snmpid=$SNMPID 1>/dev/null 2>/dev/null &
 echo $! > $PID_NAME
 wait
-while [ -e esp_sentinel.txt ]; do
+while [ -e ${SENTINEL} ]; do
     sleep 5
-        if [ -e esp_sentinel.txt ]; then
+        if [ -e ${SENTINEL} ]; then
         esp snmpid=$SNMPID 1>/dev/null 2>/dev/null &
         echo $! > $PID_NAME
         wait

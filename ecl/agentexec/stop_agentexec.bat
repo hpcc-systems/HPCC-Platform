@@ -17,6 +17,7 @@ rem     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 rem ############################################################################## */
 
 cd /d %1
-del eclagent_sentinel.txt
+set SENTINEL="eclagent.sentinel"
+del %SENTINEL%
 pskill -c4 agentexec
 exit 0

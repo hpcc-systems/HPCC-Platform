@@ -19,7 +19,8 @@
 
 DESTDIR=`dirname $0`
 cd $DESTDIR
-rm -f saserver_sentinel*.txt
+export SENTINEL="saserver.sentinel"
+rm -f ${SENTINEL}
 
 export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH
 export PATH=/mnt/usrbin:$PATH

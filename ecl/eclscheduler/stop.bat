@@ -17,6 +17,7 @@ rem     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 rem ############################################################################## */
 
 cd /d %1
-del eclscheduler_sentinel.txt
+set SENTINEL="eclscheduler.sentinel"
+del %SENTINEL%
 pskill -c4 eclscheduler
 exit 0
