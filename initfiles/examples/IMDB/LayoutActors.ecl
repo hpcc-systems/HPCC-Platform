@@ -1,5 +1,5 @@
 /* ******************************************************************************
-## Copyright © 2011 HPCC Systems.  All rights reserved.
+## Copyright (c) 2011 HPCC Systems.  All rights reserved.
 ******************************************************************************* */
 
 // This specifies the record layout of the IMDB actors file

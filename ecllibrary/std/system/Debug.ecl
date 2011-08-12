@@ -1,5 +1,5 @@
 /*##############################################################################
-## Copyright © 2011 HPCC Systems.  All rights reserved.
+## Copyright (c) 2011 HPCC Systems.  All rights reserved.
 ############################################################################## */
 
 /* Some internal functions implemented in the run time support library which can be useful */

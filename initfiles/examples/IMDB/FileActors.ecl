@@ -1,5 +1,5 @@
 /* ******************************************************************************
-## Copyright © 2011 HPCC Systems.  All rights reserved.
+## Copyright (c) 2011 HPCC Systems.  All rights reserved.
 ******************************************************************************* */
     
 // Process and transform the raw sprayed files for actor and actresses into formats 
