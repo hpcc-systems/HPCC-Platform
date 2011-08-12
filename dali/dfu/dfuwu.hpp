@@ -312,6 +312,7 @@ interface IDFUprogress: extends IConstDFUprogress
     virtual void setPercentDone(unsigned pc)=0;
     virtual void setSubInProgress(const char *str) = 0;     // set sub-DFUWUs in progress
     virtual void setSubDone(const char *str) = 0;           // set sub-DFUWUs done
+    virtual void clearProgress() = 0;
 };
 
 interface IDFUprogressSubscriber: extends IInterface
@@ -398,7 +399,6 @@ interface IDFUWorkUnit : extends IConstDFUWorkUnit
     virtual void addOptions(IPropertyTree *tree) = 0;       // used by DFU command line (for moment)
     virtual IDFUprogress *queryUpdateProgress() = 0;
     virtual IDFUmonitor *queryUpdateMonitor() = 0;
-    virtual void submit() = 0;                              // should Release after submitted
     virtual void closeUpdate() = 0;                     // called before WU obtained by openUpdate is released
     virtual void queryRecoveryStore(IRemoteConnection *& conn,IPropertyTree *&tree,StringBuffer &runningpath) = 0; // not nice - needed by daft 
     virtual void removeRecoveryStore() = 0;
@@ -409,6 +409,7 @@ interface IDFUWorkUnit : extends IConstDFUWorkUnit
     virtual void setApplicationValueInt(const char * application, const char * propname, int value, bool overwrite) = 0;
     virtual void setDebugValue(const char *propname, const char *value, bool overwrite) = 0;
     virtual bool removeQueue() = 0;
+    virtual void clearExceptions() = 0;
 };
 
 
@@ -446,6 +447,8 @@ interface IDFUWorkUnitFactory : extends IInterface
 
 
 extern dfuwu_decl IDFUWorkUnitFactory * getDFUWorkUnitFactory();
+extern dfuwu_decl void submitDFUWorkUnit(IDFUWorkUnit *wu);
+extern dfuwu_decl void submitDFUWorkUnit(const char *wuid);
 
 extern dfuwu_decl DFUcmd decodeDFUcommand(const char * str);
 extern dfuwu_decl StringBuffer &encodeDFUcommand(DFUcmd cmd,StringBuffer &str);

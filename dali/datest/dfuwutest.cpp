@@ -120,7 +120,7 @@ void copyTest()
         destination->setLogicalName(dstname.str());
         options->setReplicate(true);
         options->setOverwrite(true);
-        wu->submit();
+        submitDFUWorkUnit(wu.getClear());
     }
 }
 
@@ -159,7 +159,7 @@ void importTest()
     destination->setLogicalName(dstname.str());
     options->setReplicate(true);
     options->setOverwrite(true);
-    wu->submit();
+    submitDFUWorkUnit(wu.getClear());
 }
 
 void SprayTest(unsigned num)
@@ -207,7 +207,7 @@ void SprayTest(unsigned num)
                 options->setOverwrite(true);
             }
             PROGLOG("submitting %s",wu->queryId()); 
-            wu->submit();
+            submitDFUWorkUnit(wu.getClear());
         }
     }
 }
@@ -410,7 +410,7 @@ void testWUcreate(int kind,StringBuffer &wuidout)
         break;
     }
     wuidout.append(wu->queryId());  
-    wu->submit();
+    submitDFUWorkUnit(wu.getClear());
 }
 
 IFileDescriptor *createRoxieFileDescriptor(const char *cluster, const char *lfn, bool servers)
@@ -744,8 +744,7 @@ void testRepeatedFiles1(StringBuffer &wuid)
     destination->setLogicalName("thor_dev::nigel::testspray1");
     options->setReplicate(true);
     options->setOverwrite(true);
-    wu->submit();
-
+    submitDFUWorkUnit(wu.getClear());
 }
 
 void testRepeatedFiles2(StringBuffer &wuid)
@@ -781,8 +780,7 @@ void testRepeatedFiles2(StringBuffer &wuid)
     destination->setLogicalName("thor_dev::nigel::testcopy1");
     options->setReplicate(true);
     options->setOverwrite(true);
-    wu->submit();
-
+    submitDFUWorkUnit(wu.getClear());
 }
 
 static IGroup *getAuxGroup()
@@ -837,8 +835,7 @@ void testRepeatedFiles3(StringBuffer &wuid)
     destination->setLogicalName("thor_dev::nigel::testspray2");
     options->setReplicate(true);
     options->setOverwrite(true);
-    wu->submit();
-
+    submitDFUWorkUnit(wu.getClear());
 }
 
 void testRepeatedFiles4(StringBuffer &wuid)
@@ -868,8 +865,7 @@ void testRepeatedFiles4(StringBuffer &wuid)
     destination->setWrap(true);
     options->setReplicate(true);
     options->setOverwrite(true);
-    wu->submit();
-
+    submitDFUWorkUnit(wu.getClear());
 }
 
 void testRepeatedFiles5(StringBuffer &wuid)
@@ -902,8 +898,7 @@ void testRepeatedFiles5(StringBuffer &wuid)
     options->setReplicate(true);
     options->setOverwrite(true);
     options->setSuppressNonKeyRepeats(true);                            // **** only repeat last part when src kind = key
-    wu->submit();
-
+    submitDFUWorkUnit(wu.getClear());
 }
 
 void testSuperCopy1(StringBuffer &wuid)
@@ -934,8 +929,7 @@ void testSuperCopy1(StringBuffer &wuid)
     options->setReplicate(true);
     options->setOverwrite(true);
     options->setSuppressNonKeyRepeats(true);
-    wu->submit();
-
+    submitDFUWorkUnit(wu.getClear());
 }
 
 
