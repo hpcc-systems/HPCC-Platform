@@ -255,7 +255,7 @@ bool CWsRoxieQueryEx::onRoxieQuerySearch(IEspContext &context, IEspRoxieQuerySea
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -522,7 +522,7 @@ bool CWsRoxieQueryEx::onRoxieQueryList(IEspContext &context, IEspRoxieQueryListR
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -632,7 +632,7 @@ bool CWsRoxieQueryEx::onQueryDetails(IEspContext &context, IEspRoxieQueryDetails
     }
     catch(IException* e)
     {   
-        FORWARDEXCEPTION(e, ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }

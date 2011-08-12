@@ -91,8 +91,9 @@ struct esp_option
     bool logReq;
     bool logResp;
     StringAttr frameTitle;
+    unsigned slowProcessingTime; //default 30 seconds
 
-    esp_option() : logReq(false), logResp(false), logLevel(1) 
+    esp_option() : logReq(false), logResp(false), logLevel(1), slowProcessingTime(30000)
     { }
 };
 

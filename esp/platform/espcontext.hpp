@@ -50,6 +50,7 @@ ESPHTTP_API LogLevel getEspLogLevel(IEspContext* );
 ESPHTTP_API LogLevel getEspLogLevel();
 ESPHTTP_API bool getEspLogRequests();
 ESPHTTP_API bool getEspLogResponses();
+ESPHTTP_API unsigned getSlowProcessingTime();
 
 ESPHTTP_API void ESPLOG(IEspContext* ctx, LogLevel level, const char* fmt, ...);
 ESPHTTP_API void ESPLOG(LogLevel level, const char* fmt, ...);

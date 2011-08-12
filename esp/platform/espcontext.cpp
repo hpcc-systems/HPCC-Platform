@@ -28,6 +28,7 @@
 #include "espcontext.hpp"
 #include "http/platform/httptransport.ipp"
 #include "sechandler.hpp"
+#include "espprotocol.hpp"
 
 class CEspContext : public CInterface, implements IEspContext
 {
@@ -66,12 +67,28 @@ private:
     SecHandler m_SecurityHandler;
     BoolHash  m_optGroups;
 
+    StringArray m_traceValues;
+    unsigned    m_active;
+    unsigned    m_creationTime;
+    unsigned    m_processingTime;
+    unsigned    m_exceptionTime;
+    bool        m_hasException;
+    int         m_exceptionCode;
+
 public:
     IMPLEMENT_IINTERFACE;
 
-    CEspContext() : m_servPort(0), m_bindingValue(0), m_serviceValue(0), 
-        m_toBeAuthenticated(false), options(0), m_clientVer(-1) { }
+    CEspContext() : m_servPort(0), m_bindingValue(0), m_serviceValue(0), m_toBeAuthenticated(false), options(0), m_clientVer(-1)
+    {
+        m_hasException =  false;
+        m_creationTime = msTick();
+        m_active=ActiveRequests::getCount();
+    }
 
+    ~CEspContext()
+    {
+        flushTraceSummary();
+    }
     virtual void addOptions(unsigned opts){options|=opts;}
     virtual void removeOptions(unsigned opts){opts&=~opts;}
     virtual unsigned queryOptions(){return options;}
@@ -165,6 +182,42 @@ public:
     virtual const char * queryServiceName(const char *name)
     {
         return m_servName.str();
+    }
+
+    virtual void setCreationTime()
+    {
+        m_creationTime = msTick();
+    }
+    virtual const unsigned queryCreationTime()
+    {
+        return m_creationTime;
+    }
+    virtual void setProcessingTime()
+    {
+        m_processingTime = msTick() - m_creationTime;
+    }
+    virtual const unsigned queryProcessingTime()
+    {
+        return m_processingTime;
+    }
+    virtual void setException(int exceptionCode)
+    {
+        m_hasException = true;
+        m_exceptionCode = exceptionCode;
+        m_exceptionTime = msTick() - m_creationTime;
+    }
+    virtual const bool queryException(int& exceptionCode, unsigned& exceptionTime)
+    {
+        if (m_hasException)
+        {
+            exceptionCode = m_exceptionCode;
+            exceptionTime = m_exceptionTime;
+        }
+        return m_hasException;
+    }
+    virtual const bool queryHasException()
+    {
+        return m_hasException;
     }
 
     virtual void setResources(ISecResourceList* rlist)
@@ -338,6 +391,69 @@ public:
         m_custom_headers.append(StringBuffer(name).appendf(": %s", val?val:"").str());
     }
 
+    virtual void addTraceSummaryValue(const char *name, const char *value)
+    {
+        StringBuffer str;
+        if (name && *name)
+            str.append(name).append('=');
+        if (value && *value)
+            str.append(value);
+        m_traceValues.append(str.str());
+    }
+
+    virtual void addTraceSummaryValue(const char *name, int value)
+    {
+        StringBuffer str;
+        if (name && *name)
+            str.append(name).append('=');
+        str.append(value);
+        m_traceValues.append(str.str());
+    }
+
+    virtual void addTraceSummaryTimeStamp(const char *name)
+    {
+        if (name && *name)
+        {
+            unsigned timeval=msTick()-m_creationTime;
+            StringBuffer value;
+            value.append(name).append('=').appendulong(timeval).append("ms");
+            m_traceValues.append(value.str());
+        }
+    }
+    virtual void flushTraceSummary()
+    {
+        StringBuffer logstr;
+        logstr.appendf("activeReqs=").append(m_active).append(';');
+        logstr.append("user=").append(queryUserId());
+        if (m_peer.length())
+            logstr.append('@').append(m_peer.get());
+        logstr.append(';');
+
+        if (m_hasException)
+        {
+            logstr.appendf("exception@%dms=%d;", m_exceptionTime, m_exceptionCode);
+        }
+
+        StringBuffer value;
+        value.append("total=").appendulong(m_processingTime).append("ms");
+        if (m_hasException || (getEspLogLevel() > LogNormal))
+        {
+            m_traceValues.append(value.str());
+
+            if (m_traceValues.length())
+            {
+                ForEachItemIn(idx, m_traceValues)
+                    logstr.append(m_traceValues.item(idx)).append(";");
+                m_traceValues.kill();
+            }
+        }
+        else
+        {
+            logstr.appendf("%s;", value.str());
+        }
+
+        DBGLOG("TxSummary[%s]", logstr.str());
+    }
 };
 
 //---------------------------------------------------------
@@ -576,6 +692,13 @@ bool getEspLogResponses()
 {
     if (getContainer())
         return getContainer()->getLogResponses();
+    return false;
+}
+
+unsigned getSlowProcessingTime()
+{
+    if (getContainer())
+        return getContainer()->getSlowProcessingTime();
     return false;
 }
 

@@ -137,6 +137,7 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
     m_options.logReq = m_cfg->getPropBool("@logRequests", false);
     m_options.logResp = m_cfg->getPropBool("@logResponses", false);
     m_options.frameTitle.set(m_cfg->queryProp("@name"));
+    m_options.slowProcessingTime = m_cfg->getPropInt("@slowProcessingTime", 30) * 1000; //in msec
 
 #ifdef USE_ENV_CONF_FILE
     // load environment parameters
