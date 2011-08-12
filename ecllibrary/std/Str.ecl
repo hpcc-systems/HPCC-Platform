@@ -1,6 +1,5 @@
 /*##############################################################################
-
-## Copyright © 2011 HPCC Systems.  All rights reserved.
+## Copyright (c) 2011 HPCC Systems.  All rights reserved.
 ############################################################################## */
 
 EXPORT Str := MODULE

@@ -1,5 +1,5 @@
 /* ******************************************************************************
-## Copyright © 2011 HPCC Systems.  All rights reserved.
+## Copyright (c) 2011 HPCC Systems.  All rights reserved.
 ******************************************************************************* */
 
 // Produce 2 index files for faster access to the KevinBaconNumberSets defined earlier.

@@ -1,5 +1,5 @@
 /* ******************************************************************************
-## Copyright © 2011 HPCC Systems.  All rights reserved.
+## Copyright (c) 2011 HPCC Systems.  All rights reserved.
 ******************************************************************************* */
 
 // Produce a series of sets for Actors and Movies that are : distance-0
