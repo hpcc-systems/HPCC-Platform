@@ -5120,7 +5120,7 @@ void HqlCppTranslator::buildSetResultInfo(BuildCtx & ctx, IHqlExpression * origi
                     xmlbuilder.addField(fieldName, *schemaType);
                     xmlbuilder.getXml(xml);
                 }
-                addSchemaResource(sequence, resultName.str(), xml.str());
+                addSchemaResource(sequence, resultName.str(), xml.length()+1, xml.str());
             }
         }
     }
@@ -10382,21 +10382,16 @@ void HqlCppTranslator::addSchemaResource(int seq, const char * name, IHqlExpress
 {
     StringBuffer xml;
     getRecordXmlSchema(xml, record, true);
-    addSchemaResource(seq, name, xml.str());
+    addSchemaResource(seq, name, xml.length()+1, xml.str());
 }
 
 
-void HqlCppTranslator::addSchemaResource(int seq, const char * name, const char * schemaXml)
+void HqlCppTranslator::addSchemaResource(int seq, const char * name, unsigned len, const char * schemaXml)
 {
-    Owned<IPropertyTree> resultTree = createPTree("Result");
-    resultTree->setPropInt("@sequence", seq);
-    resultTree->setProp("@name", name);
-    resultTree->addPropTree("xs:schema", createPTreeFromXMLString(schemaXml));
-    IPropertyTree * web = code->ensureWebServiceInfo();
-    IPropertyTree * schema = web->queryPropTree("SCHEMA");
-    if (!schema)
-        schema = web->addPropTree("SCHEMA", createPTree("SCHEMA"));
-    schema->addPropTree("Result", resultTree.getClear());
+    Owned<IPropertyTree> entryEx = createPTree("Resource");
+    entryEx->setProp("@name", name);
+    entryEx->setPropInt("@seq", seq);
+    code->addCompressResource("RESULT_XSD", len, schemaXml, entryEx);
 }
 
 

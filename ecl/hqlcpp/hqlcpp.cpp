@@ -1147,7 +1147,7 @@ void HqlCppInstance::addPluginsAsResource()
         return;
     StringBuffer pluginXML;
     toXML(plugins, pluginXML);
-    addResource("PLUGINS", 1, pluginXML.length(), pluginXML.str());
+    addResource("PLUGINS", pluginXML.length(), pluginXML.str(), NULL, 1);
 }
 
 
@@ -1241,12 +1241,12 @@ unsigned HqlCppInstance::addStringResource(unsigned len, const char * body)
     return resources.addString(len, body);
 }
 
-void HqlCppInstance::addResource(const char * type, unsigned id, unsigned len, const void * body)
+void HqlCppInstance::addResource(const char * type, unsigned len, const void * body, IPropertyTree *entryEx, unsigned id)
 {
-    resources.addNamed(type, id, len, body);
+    resources.addNamed(type, len, body, entryEx, id);
 }
 
-void HqlCppInstance::addCompressResource(const char * type, unsigned id, unsigned len, const void * data)
+void HqlCppInstance::addCompressResource(const char * type, unsigned len, const void * body, IPropertyTree *entryEx, unsigned id)
 {
 #ifdef ADD_RESOURCE_AS_CPP_COMMENT
     BuildCtx ctx(*this, includeAtom);
@@ -1255,9 +1255,7 @@ void HqlCppInstance::addCompressResource(const char * type, unsigned id, unsigne
     ctx.addQuoted(s);
 #endif
 
-    MemoryBuffer compressed;
-    compressResource(compressed, len, data);
-    addResource(type, id, compressed.length(), compressed.toByteArray());
+    resources.addCompress(type, len, body, entryEx, id);
 }
 
 void HqlCppInstance::flushHints()
@@ -1269,35 +1267,9 @@ void HqlCppInstance::flushHints()
     }
 }
 
-IPropertyTree * HqlCppInstance::ensureWebServiceInfo()
-{
-    if (!webServiceInfo)
-        webServiceInfo.setown(createPTree("WebServicesInfo"));
-    return webServiceInfo;
-}
-
-
-void HqlCppInstance::addWebServicesResource()
-{
-    if (webServiceInfo)
-    {
-        StringBuffer webXML;
-        toXML(webServiceInfo, webXML);
-        addCompressResource("SOAPINFO", 1000, webXML.length(), webXML.str());
-    }
-}
-
-
-void HqlCppInstance::addWebServices(IPropertyTree * info)
-{
-    if (info)
-        mergePTree(ensureWebServiceInfo(), info);
-}
-
 void HqlCppInstance::flushResources(const char *filename, ICodegenContextCallback * ctxCallback)
 {
     addPluginsAsResource();
-    addWebServicesResource();
     if (resources.count())
     {
         bool flushText = workunit->getDebugValueBool("flushResourceAsText", false);

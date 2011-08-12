@@ -74,7 +74,8 @@ public:
     virtual bool generateExe(ICppCompiler * compiler);
     virtual bool generatePackage(const char * packageName);
     virtual void setMaxCompileThreads(unsigned value) { defaultMaxCompileThreads = value; }
-    virtual void setWebServiceInfo(IPropertyTree * webServiceInfo) { if (webServiceInfo) code->addWebServices(webServiceInfo); }
+    virtual void addManifest(const char *filename) { code->addManifest(filename); }
+    virtual void addManifestFromArchive(IPropertyTree *archive) { code->addManifestFromArchive(archive); }
 
     virtual double getECLcomplexity(IHqlExpression * exprs);
     virtual void generateCppPrototypes(IHqlScope * scope);
@@ -313,7 +314,7 @@ void HqlDllGenerator::addWorkUnitAsResource()
 {
     SCMStringBuffer wuXML;
     exportWorkUnitToXML(wu, wuXML);
-    code->addCompressResource("WORKUNIT", 1000, wuXML.length(), wuXML.str());
+    code->addCompressResource("WORKUNIT", wuXML.length(), wuXML.str(), NULL, 1000);
 }
 
 

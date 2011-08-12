@@ -23,11 +23,13 @@
 #include "jmisc.hpp"
 #include "jexcept.hpp"
 #include "hqlcerrors.hpp"
+#include "thorplugin.hpp"
 #ifndef _WIN32
 #include "bfd.h"
 #endif
 
-#define RESOURCE_BASE 101
+#define BIGSTRING_BASE 101
+#define MANIFEST_BASE 1000
 
 class ResourceItem : public CInterface
 {
@@ -44,8 +46,10 @@ public:
 
 ResourceManager::ResourceManager()
 {
-    nextid = 0;
+    nextmfid = 1;
+    nextbsid = 0;
     totalbytes = 0;
+    finalized=false;
 }
 
 unsigned ResourceManager::count()
@@ -55,14 +59,126 @@ unsigned ResourceManager::count()
 
 unsigned ResourceManager::addString(unsigned len, const char *data)
 {
-    unsigned id = RESOURCE_BASE + nextid++;
+    unsigned id = BIGSTRING_BASE + nextbsid++;
     resources.append(*new ResourceItem("BIGSTRING", id, len, data));
     return id;
 }
 
-void ResourceManager::addNamed(const char * type, unsigned id, unsigned len, const void * data)
+void ResourceManager::addNamed(const char * type, unsigned len, const void * data, IPropertyTree *entryEx, unsigned id, bool addToManifest, bool compressed)
 {
+    if (id==(unsigned)-1)
+        id = MANIFEST_BASE + nextmfid++;
+    if (addToManifest && !finalized)
+    {
+        Owned<IPropertyTree> entry=createPTree("Resource");
+        entry->setProp("@type", type);
+        entry->setPropInt("@id", id);
+        if (compressed)
+            entry->setPropBool("compressed", true);
+        if (entryEx)
+            mergePTree(entry, entryEx);
+        ensureManifestInfo()->addPropTree("Resource", entry.getClear());
+    }
     resources.append(*new ResourceItem(type, id, len, data));
+}
+
+bool ResourceManager::addCompress(const char * type, unsigned len, const void * data, IPropertyTree *entryEx, unsigned id, bool addToManifest)
+{
+    bool isCompressed=false;
+    if (len>=32) //lzw assert if too small
+    {
+        isCompressed = true;
+        MemoryBuffer compressed;
+        compressResource(compressed, len, data);
+        addNamed(type, compressed.length(), compressed.toByteArray(), entryEx, id, addToManifest, isCompressed);
+    }
+    else
+        addNamed(type, len, data, entryEx, id, addToManifest, isCompressed);
+    return isCompressed;
+}
+
+static void loadResource(const char *filepath, MemoryBuffer &content)
+{
+    Owned <IFile> f = createIFile(filepath);
+    Owned <IFileIO> fio = f->open(IFOread);
+    read(fio, 0, (size32_t) f->size(), content);
+}
+
+void ResourceManager::addManifest(const char *filename)
+{
+    Owned<IPropertyTree> manifestSrc = createPTreeFromXMLFile(filename);
+
+    StringBuffer dir; 
+    splitDirTail(filename, dir);
+
+    Owned<IPropertyTreeIterator> itres = manifestSrc->getElements("Resource[@filename]");
+    ForEach(*itres)
+    {
+        unsigned id = MANIFEST_BASE + nextmfid++;
+        IPropertyTree &resource = itres->query();
+        resource.setPropInt("@id", id);
+        if (!resource.hasProp("@type"))
+            resource.setProp("@type", "UNKOWN");
+
+        StringBuffer fullpath;
+        const char *respath = resource.queryProp("@filename");
+        if (!isAbsolutePath(respath))
+            fullpath.append(dir);
+        fullpath.append(respath);
+
+        MemoryBuffer content;
+        loadResource(fullpath.str(), content);
+        if (addCompress(resource.queryProp("@type"), content.length(), content.toByteArray(), NULL, id, false))
+            resource.setPropBool("@compressed", true);
+    }
+    mergePTree(ensureManifestInfo(), manifestSrc);
+}
+
+void ResourceManager::addManifestFromArchive(IPropertyTree *archive)
+{
+    if (archive)
+    {
+        Owned<IPropertyTreeIterator> manifests = archive->getElements("AdditionalFiles/Manifest");
+        ForEach(*manifests)
+        {
+            const char *xml = manifests->query().queryProp(NULL);
+            Owned<IPropertyTree> manifestSrc = createPTreeFromXMLString(xml);
+
+            Owned<IPropertyTreeIterator> itres = manifestSrc->getElements("Resource[@filename]");
+            ForEach(*itres)
+            {
+                unsigned id = MANIFEST_BASE + nextmfid++;
+                IPropertyTree &resource = itres->query();
+                resource.setPropInt("@id", id);
+                if (!resource.hasProp("@type"))
+                    resource.setProp("@type", "UNKOWN");
+                const char *filename = resource.queryProp("@filename");
+                VStringBuffer xpath("AdditionalFiles/Resource[@originalFilename=\"%s\"]", filename);
+                MemoryBuffer content;
+                archive->getPropBin(xpath.str(), content);
+                if (content.length())
+                {
+                    if (addCompress(resource.queryProp("@type"), content.length(), content.toByteArray(), NULL, id, false))
+                        resource.setPropBool("@compressed", true);
+                }
+            }
+            mergePTree(ensureManifestInfo(), manifestSrc);
+        }
+    }
+}
+
+void ResourceManager::finalize()
+{
+    if (!finalized)
+    {
+        if (manifest)
+        {
+            StringBuffer content;
+            toXML(manifest, content);
+            addCompress("MANIFEST", content.length()+1, content.str(), NULL, MANIFEST_BASE, false);
+        }
+        finalized=true;
+    }
 }
 
 void ResourceManager::putbytes(int h, const void *b, unsigned len)
@@ -74,6 +190,8 @@ void ResourceManager::putbytes(int h, const void *b, unsigned len)
 
 void ResourceManager::flushAsText(const char *filename)
 {
+    finalize();
+
     StringBuffer name;
     int len = strlen(filename);
     name.append(filename,0,len-4).append(".txt");
@@ -96,6 +214,8 @@ void ResourceManager::flushAsText(const char *filename)
 
 void ResourceManager::flush(const char *filename, bool flushText, bool target64bit)
 {
+    finalize();
+
     // Use "resources" for strings that are a bit large to generate in the c++ (some compilers had limits at 64k) 
     // or that we want to access without having to run the dll/so
     // In linux there is no .res concept but we can achieve the same effect by generating an object file with a specially-named section 
