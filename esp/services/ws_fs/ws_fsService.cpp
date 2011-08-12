@@ -65,9 +65,9 @@ int Schedule::run()
                         wu->getTimeScheduled(dt);
                         if (now.compare(dt) > 0)
                         {
-                            Owned<IDFUWorkUnit> lwu = wu->openUpdate(false);
-                            if (lwu)
-                                lwu->submit();
+                            StringAttr wuid(wu->queryId());
+                            wu.clear();
+                            submitDFUWorkUnit(wuid.get());
                         }
                     }
                     catch(IException *e)
@@ -1682,12 +1682,8 @@ bool CFileSprayEx::onSubmitDFUWorkunit(IEspContext &context, IEspSubmitDFUWorkun
         if (!context.validateFeatureAccess(DFU_WU_URL, SecAccess_Write, false))
             throw MakeStringException(ECLWATCH_DFU_WU_ACCESS_DENIED, "Failed to submit DFU workunit. Permission denied.");
 
-        Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
-        Owned<IDFUWorkUnit> wu = factory->updateWorkUnit(req.getWuid());
-        if(!wu)
-            throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT, "Dfu workunit %s not found.", req.getWuid());
+        submitDFUWorkUnit(req.getWuid());
 
-        wu->submit();
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(req.getWuid()).str());
     }
     catch(IException* e)
@@ -1906,11 +1902,8 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
         if (req.getPush())
             options->setPush(true);
 
-        resp.setWuid(wu->queryId());
-
-        wu->submit();                            // enqueue job(does implicit commit)
-
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
+        submitDFUWorkUnit(wu.getClear());
     }
     catch(IException* e)
     {   
@@ -2063,10 +2056,8 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
         if (req.getPush())
             options->setPush(true);
 
-        resp.setWuid(wu->queryId());
-
-        wu->submit();                            // enqueue job(does implicit commit)
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
+        submitDFUWorkUnit(wu.getClear());
     }
     catch(IException* e)
     {   
@@ -2113,9 +2104,8 @@ bool CFileSprayEx::onReplicate(IEspContext &context, IEspReplicate &req, IEspRep
             IDFUoptions *opt = wu->queryUpdateOptions();
             opt->setReplicateMode(DFURMmissing,cluster,req.getRepeatLast(),req.getOnlyRepeated());
         }
-        wu->submit();
-        resp.setWuid(wu->queryId());
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
+        submitDFUWorkUnit(wu.getClear());
     }
     catch(IException* e)
     {   
@@ -2226,10 +2216,8 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
         if ((encryptkey&&*encryptkey)||(decryptkey&&*decryptkey))
             options->setEncDec(encryptkey,decryptkey);
 
-        resp.setWuid(wu->queryId());
-
-        wu->submit();                            // enqueue job(does implicit commit)
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
+        submitDFUWorkUnit(wu.getClear());
     }
     catch(IException* e)
     {   
@@ -2319,9 +2307,8 @@ bool CFileSprayEx::doCopyForRoxie(IEspContext &context,     const char * srcName
         options->setSuppressNonKeyRepeats(true);                            // **** only repeat last part when src kind = key
     }
 
-    resp.setResult(wu->queryId());
-    wu->submit();                            // enqueue job(does implicit commit)
     resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
+    submitDFUWorkUnit(wu.getClear());
     return true;
 }
 
@@ -2525,9 +2512,8 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
         if (req.getIfnewer())
             options->setIfNewer(true);
 
-        resp.setResult(wu->queryId());
-        wu->submit();                            // enqueue job(does implicit commit)
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
+        submitDFUWorkUnit(wu.getClear());
     }
     catch(IException* e)
     {
@@ -2597,10 +2583,8 @@ bool CFileSprayEx::onRename(IEspContext &context, IEspRename &req, IEspRenameRes
         IDFUfileSpec *destination = wu->queryUpdateDestination();
         destination->setLogicalName(dstname);
 
-        resp.setWuid(wu->queryId());
-
-        wu->submit();                            // enqueue job(does implicit commit)
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
+        submitDFUWorkUnit(wu.getClear());
     }
     catch(IException* e)
     {
@@ -2873,11 +2857,8 @@ bool CFileSprayEx::onDfuMonitor(IEspContext &context, IEspDfuMonitorRequest &req
         monitor->setShotLimit(req.getShotLimit());
         monitor->setSub(req.getSub());
 
-        resp.setWuid(wu->queryId());
-
-        wu->submit();                            // enqueue job(does implicit commit)
-
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
+        submitDFUWorkUnit(wu.getClear());
     }
     catch(IException* e)
     {
