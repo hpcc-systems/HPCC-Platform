@@ -327,7 +327,7 @@
 #define HQLERR_UnsupportedHashWorkunit_Text     "Unsupported option #WORKUNIT ('%s')"
 #define HQLERR_UnknownVirtualAttr_Text          "INTERNAL: Unsupported virtual attribute '%s'"
 #define HQLERR_IllegalPattern_Text              "Illegal pattern '%s..%s'"
-#define HQLERR_VirtualFieldInTempTable_Text     "Virtual fields are not supported in constant tables - please provide a value"
+#define HQLERR_VirtualFieldInTempTable_Text     "Virtual field %s not supported in constant table - please provide a value"
 #define HQLERR_VarSizeSortUseThor_Text          "THOR must be used for sorting or joining datasets with variable width rows"
 #define HQLERR_SubstringOutOfRange_Text         "Substring index %d is outside the field range"
 #define HQLERR_RankOnStored_Text                "RANK/RANKED not supported on list %s"

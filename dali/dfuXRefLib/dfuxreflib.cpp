@@ -106,7 +106,8 @@ typedef MapStringTo<COrphanEntryPtr> COrphanEntryMap;
 
 Owned <IFileIOStream> outfileio;
 
-void outf(const char *fmt, ...) __attribute__((format(printf, 1, 2)))
+void outf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+void outf(const char *fmt, ...) 
 {
     va_list args;
     va_start(args, fmt);
@@ -1220,7 +1221,7 @@ void CLogicalNameEntry::resolve(CFileEntry *entry)
     }
     if (entry->replicate()) {
         if (replicateresolved[part]) {
-            manager.error(lname.get(),"Part %d: Multiple replicated part entry %d",part+1);
+            manager.error(lname.get(),"Part %d: Multiple replicated part entry",part+1);
         }
         else {
             replicatenum++;

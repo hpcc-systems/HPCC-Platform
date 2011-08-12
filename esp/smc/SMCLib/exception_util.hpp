@@ -122,7 +122,7 @@ inline void FORWARDEXCEPTION(IEspContext &context, IException *e, unsigned codeN
     time_t tNow;
     struct tm timeStruct;
     char timeString[32];
-    StringBuffer eMsg, eMsgDisplay;
+    StringBuffer eMsg;
 
     int err = e->errorCode();
     e->errorMessage(eMsg);
@@ -134,8 +134,7 @@ inline void FORWARDEXCEPTION(IEspContext &context, IException *e, unsigned codeN
     time(&tNow);
     gmtime_r(&tNow, &timeStruct);
     strftime(timeString, 32, "%Y-%m-%d %H:%M:%S GMT", &timeStruct);
-    eMsgDisplay.appendf("%s: %s", timeString, eMsg.str());
-    throw MakeStringException(err, eMsgDisplay.str());
+    throw MakeStringException(err, "%s: %s", timeString, eMsg.str());
         
     return;
 }

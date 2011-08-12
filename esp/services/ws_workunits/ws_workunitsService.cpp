@@ -941,7 +941,8 @@ int WUSchedule::run()
     return 0;
 }
 
-void AccessSuccess(IEspContext& context, char const * msg,...) __attribute__((format(printf, 2, 3)))
+void AccessSuccess(IEspContext& context, char const * msg,...) __attribute__((format(printf, 2, 3)));
+void AccessSuccess(IEspContext& context, char const * msg,...)
 {
     StringBuffer buf;
     buf.appendf("User %s: ",context.queryUserId());
@@ -952,7 +953,8 @@ void AccessSuccess(IEspContext& context, char const * msg,...) __attribute__((fo
     AUDIT(AUDIT_TYPE_ACCESS_SUCCESS,buf.str());
 }
 
-void AccessFailure(IEspContext& context, char const * msg,...) __attribute__((format(printf, 2, 3)))
+void AccessFailure(IEspContext& context, char const * msg,...) __attribute__((format(printf, 2, 3)));
+void AccessFailure(IEspContext& context, char const * msg,...) 
 {
     StringBuffer buf;
     buf.appendf("User %s: ",context.queryUserId());
