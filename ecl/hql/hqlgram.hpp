@@ -37,8 +37,8 @@
 #define VIRTUAL_FLAG 2
 #define SHARED_FLAG 4
 
-const char REC_FLD_ERR_STR[] = "Need to supply a value for field '%s'";
-const char ERR_WRONGSCOPING_ERR_STR[] = "Value for field '%s' cannot be computed in this scope";
+#define REC_FLD_ERR_STR "Need to supply a value for field '%s'"
+#define ERR_WRONGSCOPING_ERR_STR "Value for field '%s' cannot be computed in this scope"
 
 struct DefineIdSt
 {

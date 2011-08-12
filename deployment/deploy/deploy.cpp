@@ -309,12 +309,11 @@ public:
         if (!valid)
         {
             const char* errors = m_sValidationErrors.str();
-            const char* caption = "Preliminary validation failed!";
             if (!errors || !*errors)
                 errors = "Continue?";
 
-            m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL, caption);
-            while ( !m_pCallback->processException(NULL, NULL, NULL, NULL, errors, caption, NULL) )
+            m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL, "Preliminary validation failed!");
+            while ( !m_pCallback->processException(NULL, NULL, NULL, NULL, errors, "Preliminary validation failed!", NULL) )
                 ;
             valid = true; //ignore validation errors                
         }
@@ -540,7 +539,7 @@ public:
 
         if (sArray.ordinality() != 4)
         {
-            pCallback->printStatus(STATUS_ERROR, NULL, NULL, NULL, in);
+            pCallback->printStatus(STATUS_ERROR, NULL, NULL, NULL, "%s", in);
             return;
         }
         
@@ -579,7 +578,7 @@ public:
                 compType, 
                 compName, 
                 NULL, 
-                msg);
+                "%s", msg);
         }
         catch (IException* e)
         {
@@ -587,7 +586,7 @@ public:
             e->errorMessage(buf);
             e->Release();
 
-            pCallback->printStatus(STATUS_ERROR, NULL, NULL, NULL, buf.str());
+            pCallback->printStatus(STATUS_ERROR, NULL, NULL, NULL, "%s", buf.str());
         }
         catch(...)
         {

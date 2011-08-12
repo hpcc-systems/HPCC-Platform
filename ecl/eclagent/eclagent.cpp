@@ -1016,11 +1016,11 @@ void EclAgent::getExternalResultRaw(unsigned & tlen, void * & tgt, const char * 
         StringBuffer text; 
         e->errorMessage(text); 
         e->Release();
-        failv(0, "value %s:%d in workunit %s contains an invalid raw value [%s]", nullText(stepname), sequence, text.str());
+        failv(0, "value %s:%d in workunit %s contains an invalid raw value [%s]", nullText(stepname), sequence, wuid, text.str());
     }
     catch (...)
     {
-        failv(0, "value %s:%d in workunit %s contains an invalid raw value", nullText(stepname), sequence);
+        failv(0, "value %s:%d in workunit %s contains an invalid raw value", nullText(stepname), sequence, wuid);
     }
 }
 

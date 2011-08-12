@@ -5544,9 +5544,10 @@ IHqlExpression * WorkflowTransformer::createTransformed(IHqlExpression * expr)
         if (translator.insideLibrary())
         {
             SCMStringBuffer libraryName;
-            StringBuffer colonText;
+            StringBuffer colonText(" (");
             getOutputLibraryName(libraryName, wu);
             getExprECL(expr, colonText);
+            colonText.append(")");
             throwError2(HQLERR_LibraryCannotContainWorkflow, libraryName.str(), colonText.str());
         }
         transformed.setown(extractWorkflow(expr, transformed));
@@ -11785,7 +11786,7 @@ bool HqlCppTranslator::transformGraphForGeneration(IHqlExpression * query, Workf
     {
         SCMStringBuffer libraryName;
         getOutputLibraryName(libraryName, wu());
-        throwError1(HQLERR_LibraryCannotContainWorkflow, libraryName.str());
+        throwError2(HQLERR_LibraryCannotContainWorkflow, libraryName.str(), "");
     }
 
     {

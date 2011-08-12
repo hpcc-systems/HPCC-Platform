@@ -188,12 +188,12 @@ IHqlExpression * checkCreateConcreteModule(IErrorReceiver * errors, IHqlExpressi
         }
     }
 
-    const char * msgText = "Cannot use an abstract MODULE in this context";
     if (fieldText.length())
-        msgText = "Cannot use an abstract MODULE in this context (%s undefined)";
+        reportError(errors, ERR_ABSTRACT_MODULE, errpos, "Cannot use an abstract MODULE in this context (%s undefined)", fieldText.str());
     else if (expr->hasProperty(interfaceAtom))
-        msgText = "Cannot use an abstract MODULE in this context (INTERFACE must be instantiated)";
-    reportError(errors, ERR_ABSTRACT_MODULE, errpos, msgText, fieldText.str());
+        reportError(errors, ERR_ABSTRACT_MODULE, errpos, "Cannot use an abstract MODULE in this context (INTERFACE must be instantiated)");
+    else
+        reportError(errors, ERR_ABSTRACT_MODULE, errpos, "Cannot use an abstract MODULE in this context");
     return LINK(expr);
 }
 
