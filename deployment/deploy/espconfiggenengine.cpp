@@ -121,7 +121,7 @@ int CEspConfigGenEngine::determineInstallFiles(IPropertyTree& node, CInstallFile
       CConfigGenEngine::determineInstallFiles(*pService, installFiles);
    }
     int rc = CConfigGenEngine::determineInstallFiles(node, installFiles);
-    m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL, "");
+    m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL, "determineInstallFiles complete");
    return rc;
 }
 

@@ -11014,7 +11014,7 @@ bool HqlCppTranslator::ensurePushed(BuildCtx & ctx, const CHqlBoundExpr & pure)
                 args.append(*pure.expr.getLink());
                 break;
             case type_enumerated:
-                throwError1(HQLERR_CastXNotImplemented, "map=>decimal");
+                throwError2(HQLERR_CastXNotImplemented, "map", "decimal");
                 break;
             case type_boolean:
                 funcName = DecPushLongAtom;
@@ -11025,7 +11025,7 @@ bool HqlCppTranslator::ensurePushed(BuildCtx & ctx, const CHqlBoundExpr & pure)
                 args.append(*pure.expr.getLink());
                 break;
             default:
-                throwError1(HQLERR_CastXNotImplemented, "unknown=>varstring");
+                throwError2(HQLERR_CastXNotImplemented, "unknown", "varstring");
                 break;
         }
         if (funcName)
