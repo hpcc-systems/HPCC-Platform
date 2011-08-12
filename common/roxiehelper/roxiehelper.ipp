@@ -80,7 +80,7 @@ interface IRoxieContextLogger : extends IContextLogger
     virtual StringBuffer &getLogPrefix(StringBuffer &ret) const = 0;
     virtual bool isIntercepted() const = 0;
     virtual void CTXLOGa(TracingCategory category, const char *prefix, const char *text) const = 0;
-    virtual void CTXLOGae(IException *E, const char *file, unsigned line, const char *prefix, const char *format, ...) const __attribute__((format(printf, 2, 3))) = 0;
+    virtual void CTXLOGae(IException *E, const char *file, unsigned line, const char *prefix, const char *format, ...) const __attribute__((format(printf, 6, 7))) = 0;
     virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const = 0;
     virtual void CTXLOGl(LogItem *) const = 0;
     virtual bool isBlind() const = 0;

@@ -341,8 +341,8 @@ public:
 #ifdef _DEBUG
         assertex(sizing&&!raiseexceptions);
         if (sz>maxtotal) {
-            PROGLOG("CThorRowArray isFull(totalsize=%u,ptrbuf.length()=%u,ptrbuf.capacity()=%u,overhead=%u,maxtotal=%u",
-                     totalsize,ptrbuf.length(),ptrbuf.capacity(),overhead,maxtotal);
+            PROGLOG("CThorRowArray isFull(totalsize=%"I64F"u,ptrbuf.length()=%u,ptrbuf.capacity()=%u,overhead=%u,maxtotal=%"I64F"u",
+                     (unsigned __int64) totalsize,ptrbuf.length(),ptrbuf.capacity(),overhead,(unsigned __int64) maxtotal);
             return true;
         }
         return false;
