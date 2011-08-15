@@ -1622,9 +1622,9 @@ function displayAddFarmDlg(self, farmName) {
   var handleSubmit = function() {
     this.hide();
     top.document.startWait();
-    var selRows = left3.roxieComputersTable.getSelectedRows();
+    var selRows = selectComputersDTDiv.selectComputersTable.getUserSelectedRows();
     var compName = tmpdt.getRecord(tmpdt.getSelectedRows()[0]).getData('Name');
-    var xmlStr = roxieSelectionToXML(left3.roxieComputersTable, "RoxieFarm", tmpdt.roxieClusterPanel.currentFarmName, selRows, compName);
+    var xmlStr = roxieSelectionToXML(selectComputersDTDiv.selectComputersTable, "RoxieFarm", tmpdt.selectComputersPanel.currentFarmName, selRows, compName);
 
     clearSelectComputersTable();
     YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/HandleRoxieOperation', {
@@ -1645,11 +1645,11 @@ function displayAddFarmDlg(self, farmName) {
 
   initSelectComputersPanel(tmpdt, handleSubmit);
 
-  tmpdt.roxieClusterPanel.currentFarmName = farmName;
-  document.getElementById('roxieClusterPanel').style.display = 'block';
-  tmpdt.roxieClusterPanel.render(document.body);
-  tmpdt.roxieClusterPanel.center();
-  tmpdt.roxieClusterPanel.show();
+  tmpdt.selectComputersPanel.currentFarmName = farmName;
+  document.getElementById('selectComputersPanel').style.display = 'block';
+  tmpdt.selectComputersPanel.render(document.body);
+  tmpdt.selectComputersPanel.center();
+  tmpdt.selectComputersPanel.show();
 }
 
 function displayReplaceServerDlg() {
@@ -1661,8 +1661,8 @@ function displayReplaceServerDlg() {
 }
 
 function setSingleSelectionModeForInstances() {
-  if (left3.roxieComputersTable)
-    left3.roxieComputersTable.set("selectionMode", "single");
+  if (selectComputersDTDiv.selectComputersTable)
+    selectComputersDTDiv.selectComputersTable.set("selectionMode", "single");
   else
     setTimeout("setSingleSelectionModeForInstances()", 250);
 }
@@ -1837,7 +1837,6 @@ function initOpenEnvPanel(fnSubmit) {
                               height: (tmpdt.openEnvPanel.body.offsetHeight - 20),
           units: [
                                       { position: 'center', header: 'Available environments', width: 300, resize: true, body: 'openEnvTableDiv', gutter: '2px', /*collapse: true, collapseSize: 20,*/scroll: true}//,
-          //{ position: 'center', header: 'Filter', body: 'center3', gutter: '2px', resize: true, scroll: true }
                                   ]
         });
         tmpdt.openEnvPanel.layout.render();
@@ -2024,9 +2023,9 @@ function displayAddInstanceDlg() {
   var handleSubmit = function() {
     this.hide();
     top.document.startWait();
-    var selRows = left3.roxieComputersTable.getSelectedRows();
+    var selRows = selectComputersDTDiv.selectComputersTable.getUserSelectedRows();
     var compName = tmpdt.getRecord(tmpdt.getSelectedRows()[0]).getData('Name');
-    var xmlStr = instanceSelectionToXML(left3.roxieComputersTable, selRows, tmpdt);
+    var xmlStr = instanceSelectionToXML(selectComputersDTDiv.selectComputersTable, selRows, tmpdt);
     clearSelectComputersTable();
     YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/HandleInstance', {
       success: function(o) {
@@ -2062,10 +2061,10 @@ function displayAddInstanceDlg() {
 
   initSelectComputersPanel(tmpdt, handleSubmit);
 
-  document.getElementById('roxieClusterPanel').style.display = 'block';
-  tmpdt.roxieClusterPanel.render(document.body);
-  tmpdt.roxieClusterPanel.center();
-  tmpdt.roxieClusterPanel.show();
+  document.getElementById('selectComputersPanel').style.display = 'block';
+  tmpdt.selectComputersPanel.render(document.body);
+  tmpdt.selectComputersPanel.center();
+  tmpdt.selectComputersPanel.show();
 }
 
 function expandRecordWithId(dataTable, id) {
@@ -2388,7 +2387,7 @@ function promptNewRange(domains, computerTypes, type) {
 function promptSlaveConfig(self) {
   var tmpdt = self;
   var handleSubmit = function() {
-    var selRows = left3.roxieComputersTable.getSelectedRows();
+    var selRows = selectComputersDTDiv.selectComputersTable.getUserSelectedRows();
     if (selRows.length === 0) {
       alert("please make a selection or press cancel");
       return;
@@ -2397,20 +2396,20 @@ function promptSlaveConfig(self) {
     this.hide();
     top.document.startWait();
     var compName = tmpdt.getRecord(tmpdt.getSelectedRows()[0]).getData('Name');
-    var xmlStr = instanceSelectionToXML(left3.roxieComputersTable, selRows, tmpdt);
+    var xmlStr = instanceSelectionToXML(selectComputersDTDiv.selectComputersTable, selRows, tmpdt);
     displaySlaveConfigDlg(tmpdt, selRows.length);
   }
   initSelectComputersPanel(tmpdt, handleSubmit);
-  document.getElementById('roxieClusterPanel').style.display = 'block';
-  tmpdt.roxieClusterPanel.render(document.body);
-  tmpdt.roxieClusterPanel.center();
-  tmpdt.roxieClusterPanel.show();
+  document.getElementById('selectComputersPanel').style.display = 'block';
+  tmpdt.selectComputersPanel.render(document.body);
+  tmpdt.selectComputersPanel.center();
+  tmpdt.selectComputersPanel.show();
 }
 
 function slaveConfigToXml(table, type, val1, val2) {
   var compName = top.document.navDT.getRecord(top.document.navDT.getSelectedRows()[0]).getData('Name');
   var xmlStr = "<RoxieData type=\"" + type + "\" val1=\"" + val1 + "\" val2= \"" + val2 + "\" roxieName=\"" + compName + "\" >";
-  var selectedRows = table.getSelectedRows();
+  var selectedRows = table.getUserSelectedRows();
   if (typeof (selectedRows) !== 'undefined') {
     for (var i = 0; i < selectedRows.length; i++) {
       xmlStr += "<Computer name=\"" + table.getRecord(selectedRows[i]).getData('name') + "\"/>";
@@ -2471,7 +2470,7 @@ function displaySlaveConfigDlg(paramdt, width) {
 
 
         this.hide();
-        var xmlStr = slaveConfigToXml(left3.roxieComputersTable, conf, val1, val2);
+        var xmlStr = slaveConfigToXml(selectComputersDTDiv.selectComputersTable, conf, val1, val2);
         YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/HandleRoxieOperation', {
           success: function(o) {
             clearSelectComputersTable();
@@ -2531,60 +2530,107 @@ function displaySlaveConfigDlg(paramdt, width) {
 function populateSelectComputersPanel(paramdt)
 {
   top.document.startWait();
-      YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/GetComputersForRoxie', {
-        success: function(o) {
-          if (!left3.roxieComputersDataSource) {
-            var roxieComputersColumnDefs = [{ key: "name", label: "Computer", width: 120 },
+  YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/GetComputersForRoxie', {
+    success: function(o) {
+      if (!selectComputersDTDiv.selectComputersDataSource) {
+        var roxieComputersColumnDefs = [{ key: "check", label: "<input type='checkbox' id='SelectAllComputers'> Select <br/> All", formatter: "checkbox" },
+                                    { key: "name", label: "Computer", width: 120 },
                                     { key: "netAddress", label: "Net Address", width: 100 },
                                     { key: "usage", label: "Usage", width: 180}];
-            var xmlStr = '<?xml version="1.0" encoding="UTF-8"?><Machine name="" netAddress="" usage=""/>';
-            var roxieComputersDataSource = new YAHOO.util.DataSource(xmlStr);
-            roxieComputersDataSource.responseType = YAHOO.util.DataSource.TYPE_XML;
-            roxieComputersDataSource.responseSchema = { resultNode: "Machine", fields: ["name", "netAddress", "usage"] };
-            var roxieComputersDataTable = new YAHOO.widget.DataTable("left3", roxieComputersColumnDefs,
-                                                              roxieComputersDataSource,
-                                                              { width: "400", initialLoad: false, resize: true });
+        var xmlStr = '<?xml version="1.0" encoding="UTF-8"?><Machine name="" netAddress="" usage=""/>';
+        var selectComputersDataSource = new YAHOO.util.DataSource(xmlStr);
+        selectComputersDataSource.responseType = YAHOO.util.DataSource.TYPE_XML;
+        selectComputersDataSource.responseSchema = { resultNode: "Machine", fields: ["name", "netAddress", "usage"] };
+        var selectComputersDataTable = new YAHOO.widget.DataTable("selectComputersDTDiv", roxieComputersColumnDefs,
+                                                              selectComputersDataSource,
+                                                              { width: "490", initialLoad: false, resize: true });
 
-            roxieComputersDataTable.subscribe("rowClickEvent", roxieComputersDataTable.onEventSelectRow);
-            roxieComputersDataTable.subscribe("cellClickEvent", function() { roxieComputersDataTable.clearTextSelection() });
-            roxieComputersDataTable.subscribe("cellDblclickEvent", function(oArgs) {
-            var btns = paramdt.roxieClusterPanel.cfg.getProperty("buttons");
-              for (var bIdx = 0; bIdx < btns.length; bIdx++) {
-                if (btns[bIdx].text === 'Ok') {
-                  YAHOO.util.UserAction.click(btns[bIdx].htmlButton);
-                  return false;
-                }
-              }
-            });
-            left3.roxieComputersTable = roxieComputersDataTable;
-            left3.roxieComputersDataSource = roxieComputersDataSource;
+        selectComputersDataTable.subscribe("checkboxClickEvent", function(oArgs) {
+          var elem = oArgs.target;
+          var oRecord = this.getRecord(elem);
+          oRecord.setData("check", elem.checked);
+          if (elem.checked !== true)
+            top.document.getElementById('SelectAllComputers').checked = false;
+        });
+
+        selectComputersDataTable.getUserSelectedRows = function() {
+          var selectedRows = new Array();
+          var recSet = this.getRecordSet();
+          var recSetLen = recSet.getLength();
+          for (var i = 0; i < recSetLen; i++) {
+            var r = recSet.getRecord(i);
+            if (r.getData('check') === true)
+              selectedRows[selectedRows.length] = r.getId();
           }
 
-          left3.roxieComputersDataSource.handleResponse("", o, { success: left3.roxieComputersTable.onDataReturnInitializeTable,
-            scope: left3.roxieComputersTable
-          }, this, 999);
+          return selectedRows;
+        }
 
-          top.document.stopWait();
-        },
-        failure: function(o) {
-          top.document.stopWait();
-          alert(o.statusText);
-        },
-        scope: this
-      },
-          getFileName(true) + 'Cmd=Farms');
+        selectComputersDataTable.on('theadCellClickEvent', function(oArgs) {
+          var target = oArgs.target,
+              column = this.getColumn(target),
+              actualTarget = YAHOO.util.Event.getTarget(oArgs.event),
+              check = actualTarget.checked;
+
+          if (column.key == 'check') {
+            var recordSet = this.getRecordSet();
+            var len = recordSet.getLength();
+            for (var i = 0; i < len; i++) {
+              var rec = recordSet.getRecord(i);
+              rec.setData('check', check);
+            }
+            this.render();
+          }
+          this.unselectAllRows();
+        });
+
+        selectComputersDataTable.subscribe("rowClickEvent", selectComputersDataTable.onEventSelectRow);
+        selectComputersDataTable.subscribe("cellClickEvent", function() { selectComputersDataTable.clearTextSelection() });
+        selectComputersDataTable.subscribe("cellDblclickEvent", function(oArgs) {
+          var oRecord = this.getRecord(oArgs.target);
+          oRecord.setData("check", true);
+          var btns = paramdt.selectComputersPanel.cfg.getProperty("buttons");
+          for (var bIdx = 0; bIdx < btns.length; bIdx++) {
+            if (btns[bIdx].text === 'Ok') {
+              YAHOO.util.UserAction.click(btns[bIdx].htmlButton);
+              return false;
+            }
+          }
+        });
+
+        var oContextMenu = new YAHOO.widget.ContextMenu("selectcomputersmenu", { trigger: "selectComputersDTDiv", lazyload: true, container: "selectComputersDTDiv" });
+        oContextMenu.subscribe("beforeShow", onSelectComputersContextMenuBeforeShow);
+        oContextMenu.dt = selectComputersDataTable;
+
+        selectComputersDTDiv.selectComputersTable = selectComputersDataTable;
+        selectComputersDTDiv.selectComputersDataSource = selectComputersDataSource;
+      }
+
+      selectComputersDTDiv.selectComputersDataSource.handleResponse("", o, { success: selectComputersDTDiv.selectComputersTable.onDataReturnInitializeTable,
+        scope: selectComputersDTDiv.selectComputersTable
+      }, this, 999);
+
+      top.document.getElementById('SelectAllComputers').checked = false;
+      top.document.stopWait();
+    },
+    failure: function(o) {
+      top.document.stopWait();
+      alert(o.statusText);
+    },
+    scope: this
+  },
+  getFileName(true) + 'Cmd=Farms');
 }
 
 function initSelectComputersPanel(paramdt, fnSave, enableNumNodes) {
-  if (!paramdt.roxieClusterPanel) {
-    paramdt.roxieClusterPanel = new YAHOO.widget.Dialog("roxieClusterPanel",
-                            { width: "450px",
+  if (!paramdt.selectComputersPanel) {
+    paramdt.selectComputersPanel = new YAHOO.widget.Dialog("selectComputersPanel",
+                            { width: "520px",
                               height: "500px",
                               resizable: true,
                               fixedcenter: true,
                               close: true,
                               draggable: true,
-                              //zindex:9999,
                               modal: true,
                               visible: false,
                               underlay: 'none',
@@ -2592,23 +2638,22 @@ function initSelectComputersPanel(paramdt, fnSave, enableNumNodes) {
                             }
                         );
 
-                            paramdt.roxieClusterPanel.renderEvent.subscribe(function() {
+                            paramdt.selectComputersPanel.renderEvent.subscribe(function() {
 
-                              if (!paramdt.roxieClusterPanel.layout) {
-                                paramdt.roxieClusterPanel.layout = new YAHOO.widget.Layout('roxieClusterLayout', {
-                                  height: (paramdt.roxieClusterPanel.body.offsetHeight - 40),
+                            if (!paramdt.selectComputersPanel.layout) {
+                              paramdt.selectComputersPanel.layout = new YAHOO.widget.Layout('selectComputersLayout', {
+                              height: (paramdt.selectComputersPanel.body.offsetHeight - 40),
                                   units: [
-                                      { position: 'center', header: 'Computers', width: 400, resize: true, body: 'left3', gutter: '2px', /*collapse: true, collapseSize: 20,*/scroll: true}//,
-                                  //{ position: 'center', header: 'Filter', body: 'center3', gutter: '2px', resize: true, scroll: true }
+                                      { position: 'center', header: 'Computers', width: 490, resize: true, body: 'selectComputersDTDiv', gutter: '2px', scroll: true }
                                   ]
                                 });
-                                paramdt.roxieClusterPanel.layout.render();
+                                paramdt.selectComputersPanel.layout.render();
                               }
 
                               populateSelectComputersPanel(paramdt);
                             });
 
-    paramdt.roxieClusterPanel.setHeader("Select computers");
+                            paramdt.selectComputersPanel.setHeader("Select computers");
   }
 
   var fnCancel = function() {
@@ -2656,10 +2701,10 @@ function initSelectComputersPanel(paramdt, fnSave, enableNumNodes) {
   getFileName(true) + 'Params=' + params);
   }
 
-  var myButtons = [{ text: "Add Computers", handler: fnAddComputers },
+  var myButtons = [{ text: "Add Hardware", handler: fnAddComputers },
                    { text: "Ok", handler: fnSave, isDefault: true },
                    { text: "Cancel", handler: fnCancel}];
-  paramdt.roxieClusterPanel.cfg.queueProperty("buttons", myButtons);
+  paramdt.selectComputersPanel.cfg.queueProperty("buttons", myButtons);
   if (enableNumNodes) {
     if (!document.getElementById('slavesPerNodeDiv')) {
       var newdiv = document.createElement("div");
@@ -2673,7 +2718,7 @@ function initSelectComputersPanel(paramdt, fnSave, enableNumNodes) {
       aTextBox.style.width = "50";
       newdiv.appendChild(newtext);
       newdiv.appendChild(aTextBox);
-      var nodes = document.getElementById("roxieClusterPanel").childNodes;
+      var nodes = document.getElementById("selectComputersPanel").childNodes;
       for (var i = 0; i < nodes.length; i++) {
         if (nodes[i].className == "bd") {
           nodes[i].appendChild(newdiv);
@@ -2773,7 +2818,7 @@ function initReplaceRoxieNodesPanel() {
   getFileName(true) + 'Params=' + params);
   }
 
-  var myButtons = [{ text: "Add Computers", handler: fnAddComputers },
+  var myButtons = [{ text: "Add Hardware", handler: fnAddComputers },
                    { text: "Close", handler: fnClose, isDefault: true }];
   top.document.navDT.roxieNodesReplacePanel.cfg.queueProperty("buttons", myButtons);
 }
@@ -2896,8 +2941,10 @@ function enableRoxieConfigOptions(type) {
 }
 
 function clearSelectComputersTable() {
-  if (left3.roxieComputersDataSource)
-    left3.roxieComputersTable.unselectAllRows();
+  if (selectComputersDTDiv.selectComputersDataSource) {
+    selectComputersDTDiv.selectComputersTable.unselectAllRows();
+    top.document.getElementById('SelectAllComputers').checked = false;
+  }
 }
 
 function thorInstSelToXML(self, selectedRows, paramdt, type, validateComputers, skip, slavesPerNode) {
@@ -2921,7 +2968,7 @@ function thorInstSelToXML(self, selectedRows, paramdt, type, validateComputers, 
 function promptThorTopology(self, type) {
   var tmpdt = self;
   var handleSubmit = function() {
-    var selRows = left3.roxieComputersTable.getSelectedRows();
+    var selRows = selectComputersDTDiv.selectComputersTable.getUserSelectedRows();
     if (selRows.length === 0) {
       alert("please make a selection or press cancel");
       return;
@@ -2935,7 +2982,7 @@ function promptThorTopology(self, type) {
     this.hide();
     top.document.startWait();
     var compName = tmpdt.getRecord(tmpdt.getSelectedRows()[0]).getData('Name');
-    var xmlStr = thorInstSelToXML(left3.roxieComputersTable, selRows, tmpdt, type, true, false, document.getElementById("slavesPerNode").value);
+    var xmlStr = thorInstSelToXML(selectComputersDTDiv.selectComputersTable, selRows, tmpdt, type, true, false, document.getElementById("slavesPerNode").value);
 
     YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/HandleThorTopology', {
       success: function(o) {
@@ -2954,7 +3001,7 @@ function promptThorTopology(self, type) {
 
             var fnYes = function() {
               this.hide();
-              xmlStr = thorInstSelToXML(left3.roxieComputersTable, selRows, tmpdt, type, false, false, document.getElementById("slavesPerNode").value);
+              xmlStr = thorInstSelToXML(selectComputersDTDiv.selectComputersTable, selRows, tmpdt, type, false, false, document.getElementById("slavesPerNode").value);
               YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/HandleThorTopology', {
                 success: function(o) {
                   clearSelectComputersTable();
@@ -2982,7 +3029,7 @@ function promptThorTopology(self, type) {
 
             var fnNo = function() {
               this.hide();
-              xmlStr = thorInstSelToXML(left3.roxieComputersTable, selRows, tmpdt, type, false, true, document.getElementById("slavesPerNode").value);
+              xmlStr = thorInstSelToXML(selectComputersDTDiv.selectComputersTable, selRows, tmpdt, type, false, true, document.getElementById("slavesPerNode").value);
               YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/HandleThorTopology', {
                 success: function(o) {
                   clearSelectComputersTable();
@@ -3030,10 +3077,10 @@ function promptThorTopology(self, type) {
       getFileName(true) + 'Operation=Add&Type=' + type + '&XmlArgs=' + xmlStr);
   }
   initSelectComputersPanel(tmpdt, handleSubmit, type==="Slave" ? true : false);
-  document.getElementById('roxieClusterPanel').style.display = 'block';
-  tmpdt.roxieClusterPanel.render(document.body);
-  tmpdt.roxieClusterPanel.center();
-  tmpdt.roxieClusterPanel.show();
+  document.getElementById('selectComputersPanel').style.display = 'block';
+  tmpdt.selectComputersPanel.render(document.body);
+  tmpdt.selectComputersPanel.center();
+  tmpdt.selectComputersPanel.show();
 }
 
 function promptYesNoCancel(msg, fnYes, fnNo, fnCancel) {
@@ -4600,4 +4647,58 @@ function getSummaryPage()
   document.forms['treeForm'].sumparams.value = '1';
   updateWizCtrls();
   return;
+}
+
+function onSelectComputersContextMenuBeforeShow(p_sType, p_aArgs) {
+  if (!this.configContextMenuItems) {
+    this.configContextMenuItems = {
+      "Select": [{ text: "Select/Unselect", onclick: { fn: onMenuItemSelectUnselect} }]
+    };
+  }
+
+  if (this.getRoot() === this) {
+    this.clearContent();
+    this.addItems(this.configContextMenuItems['Select']);
+
+    if (top.document.forms['treeForm'].isLocked.value === 'false') {
+      var groups = this.getItemGroups();
+      for (iGroup = 0; iGroup < groups.length; iGroup++) {
+        if (typeof (groups[iGroup]) !== 'undefined')
+          for (i = 0; i < groups[iGroup].length; i++)
+          groups[iGroup][i].cfg.setProperty("disabled", true);
+      }
+    }
+
+    this.render();
+  }
+}
+
+function onMenuItemSelectUnselect() {
+  if (top.document.forms['treeForm'].isLocked.value === 'false')
+    return;
+
+  var oTarget = this.parent.contextEventTarget;
+  var Dom = YAHOO.util.Dom;
+  var oSelectedTR = oTarget.nodeName.toUpperCase() === "TR" ?
+                            oTarget : Dom.getAncestorByTagName(oTarget, "TR");
+  var dt = this.parent.dt;
+  var recSet = dt.getRecordSet();
+  var record = recSet.getRecord(oSelectedTR.id);
+  var selRows = dt.getSelectedRows();
+
+  if (selRows.length > 0) {
+    var flag = dt.getRecord(selRows[0]).getData('check');
+    for (var idx = 0; idx < selRows.length; idx++) {
+      var rec = dt.getRecord(selRows[idx]);
+
+      rec.setData('check', !flag);
+    }
+  }
+  else  {
+   var flag = record.getData('check');
+   record.setData('check', !flag);
+  }
+
+  top.document.getElementById('SelectAllComputers').checked = false;
+  dt.render();
 }
