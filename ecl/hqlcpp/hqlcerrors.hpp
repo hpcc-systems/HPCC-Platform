@@ -19,6 +19,10 @@
 #define HQLCERRORS_HPP
 
 #include "jexcept.hpp"
+//Note: Some of the errors below have been moved into hqlerrors.hpp.  If so the number is preserved here
+//(and will error if it differs) but the error message text is only included in hqlerrors.hpp.
+#include "hqlerrors.hpp"
+
 
 /* Code Generation errors - defined in hqlcerrors.hpp */
 #define ERR_CODEGEN_FIRST       4000
@@ -327,7 +331,6 @@
 #define HQLERR_UnsupportedHashWorkunit_Text     "Unsupported option #WORKUNIT ('%s')"
 #define HQLERR_UnknownVirtualAttr_Text          "INTERNAL: Unsupported virtual attribute '%s'"
 #define HQLERR_IllegalPattern_Text              "Illegal pattern '%s..%s'"
-#define HQLERR_VirtualFieldInTempTable_Text     "Virtual field %s not supported in constant table - please provide a value"
 #define HQLERR_VarSizeSortUseThor_Text          "THOR must be used for sorting or joining datasets with variable width rows"
 #define HQLERR_SubstringOutOfRange_Text         "Substring index %d is outside the field range"
 #define HQLERR_RankOnStored_Text                "RANK/RANKED not supported on list %s"
@@ -384,11 +387,8 @@
 #define HQLERR_ExtendTypeMismatch_Text          "OUTPUTs to NAMED(%s) have incompatible types"
 #define HQLERR_OverwriteMismatch_Text           "OVERWRITE is required on all outputs to NAMED(%s)"
 #define HQLERR_ExtendOverwriteMismatch_Text     "OVERWRITE/EXTEND should be consistent on all outputs to NAMED(%s)"
-#define HQLERR_IncompatiableInitailiser_Text    "Inline DATASET field '%s' cannot be initialized with a list of values"
-#define HQLERR_NoDefaultProvided_Text           "No value or default provided for field %s in inline table"
 #define HQLERR_EmbeddedCppNotAllowed_Text       "Insufficient access rights to use embedded C++"
 #define HQLERR_ContentsInSoapCall_Text          "Tag contents syntax <> is not supported by SOAPCALL"
-#define HQLERR_TooManyInitializers_Text         "Too many initializers (value %s) for inline dataset definition"
 #define HQLERR_FullKeyedNeedsFile_Text          "RIGHT side of a full keyed join must be a disk file"
 #define HQLERR_ExpectedConstant_Text            "Expression is not constant: %s"
 #define HQLERR_AccessRowBlobInsideChildQuery_Text "Unimplemented: Cannot access row blob inside a child query, contact tech support"
@@ -410,7 +410,6 @@
 #define HQLERR_KeyAccessNoKeyField_Text         "Key condition (%s) does not have any comparisons against key fields"
 #define HQLERR_MaxLengthNotSetOnRecord_Text     "No explicit maxlength provided for record %s"
 #define HQLERR_MinusOnString_Text               "unary - cannot be performed on a string"
-#define HQLERR_IncompatibleTypesForField_Text   "Initializer for field %s in inline dataset has the wrong type"
 #define HQLERR_NotSupportedInsideNoThor_Text    "%s is not supported inside NOTHOR()"
 #define HQLERR_RegexNoTransformSupport_Text     "Regular expression parsing doesn't support productions - need to use tomita"
 #define HQLERR_AccessMatchAttrInChildQuery_Text "Unimplemented: Cannot yet access $<n> inside a child query"
@@ -497,7 +496,6 @@
 #define HQLWRN_RecursiveDependendencies_Text    "Recursive filename dependency"
 #define HQLWRN_MaxSizeExceedsSafeLimit_Text     "Maximum row size of %u exceeds the recommended maximum (%u)"
 #define HQLWRN_TomitaMatchPattern_Text          "MATCHED(%s) will not work on a pattern"
-#define HQLWRN_CouldNotConstantFoldIf_Text      "Could not constant fold the condition on a IFBLOCK for a inline table"
 #define HQLWRN_KeyedFollowsGap_Text             "keyed filter on %s follows unkeyed component %s in the key%s"
 #define HQLWRN_LocalHasNoEffect_Text            "LOCAL(dataset) only has an effect in roxie and in thor child queries"
 #define HQLWRN_CsvMaxLengthMismatch_Text        "CSV read: Max length of record (%d) exceeds the max length (%d) specified on the csv attribute"
@@ -572,24 +570,9 @@
 #define HQLERR_DependencyWithinGraph_Text       "INTERNAL: Dependency within a graph incorrectly generated for hThor (%u)"
 #define HQLERR_UnknownCompoundAssign_Text       "INTERNAL: Unrecognised compound assign %s"
 
-#define ECODETEXT(x)                (x), (x##_Text)
-
-#define WARNING(x)                  reportWarning(x, x##_Text)
-#define WARNING1(x, a)              reportWarning(x, x##_Text, a)
-#define WARNING2(x, a, b)           reportWarning(x, x##_Text, a, b)
-#define WARNING3(x, a, b, c)        reportWarning(x, x##_Text, a, b, c)
-
 #define WARNINGAT(e, x)                 reportWarning(e, x, x##_Text)
 #define WARNINGAT1(e, x, a)             reportWarning(e, x, x##_Text, a)
 #define WARNINGAT2(e, x, a, b)          reportWarning(e, x, x##_Text, a, b)
 #define WARNINGAT3(e, x, a, b, c)       reportWarning(e, x, x##_Text, a, b, c)
-
-#define ERRORAT(e, x)               reportError(e, x, x##_Text)
-#define ERRORAT1(e, x, a)           reportError(e, x, x##_Text, a)
-#define ERRORAT2(e, x, a, b)        reportError(e, x, x##_Text, a, b)
-#define ERRORAT3(e, x, a, b, c)     reportError(e, x, x##_Text, a, b, c)
-
-#define throwUnexpectedOp(op)       throw MakeStringException(ECODETEXT(HQLERR_UnexpectedOperator), getOpString(op), __FILE__, __LINE__)
-#define throwUnexpectedType(type)   throw MakeStringException(ECODETEXT(HQLERR_UnexpectedType), type->queryTypeName(), __FILE__, __LINE__)
 
 #endif
