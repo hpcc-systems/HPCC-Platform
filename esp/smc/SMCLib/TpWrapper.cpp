@@ -949,7 +949,7 @@ void CTpWrapper::queryTargetClusterProcess(double version, const char* processNa
 
     //this is defined in the Topology attribute for the Cluster.
     StringBuffer prefix;
-    getPrefixName(processName,prefix);
+    getPrefixName(clusterType, processName,prefix);
     clusterInfo->setPrefix(prefix.str());
 
     if(pClusterTree->hasProp("@dataBuild"))
@@ -1261,7 +1261,7 @@ void CTpWrapper::getClusterProcessList(const char* ClusterType, IArrayOf<IEspTpC
 
                     //this is defined in the Topology attribute for the Cluster.
                     StringBuffer prefix;
-                    getPrefixName(name,prefix);
+                    getPrefixName(ClusterType, name,prefix);
                     clusterInfo->setPrefix(prefix.str());
 
                     if(cluster.hasProp("@dataBuild"))
@@ -1517,13 +1517,20 @@ void CTpWrapper::resolveGroupInfo(const char* groupName,StringBuffer& Cluster, S
     }
 }
 
-StringBuffer& CTpWrapper::getPrefixName(const char* clusterName,StringBuffer& prefixName)
+StringBuffer& CTpWrapper::getPrefixName(const char* clusterType, const char* processName,StringBuffer& prefixName)
 {
     try
     {
-        Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName);
+        Owned <IStringIterator> clusterNames = getTargetClusters(clusterType, processName);
+        if (!clusterNames->first())
+            throw MakeStringException(ECLWATCH_CLUSTER_NOT_IN_ENV_INFO, "Cluster not found for cluster type: %s and process name: %s", clusterType, processName);
+
+        SCMStringBuffer clusterName;
+        clusterNames->str(clusterName);
+        Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName.str());
         if (!clusterInfo)
-            throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
+            throw MakeStringException(ECLWATCH_CLUSTER_NOT_IN_ENV_INFO, "Unknown cluster %s", clusterName.str());
+
         StringBufferAdaptor adaptor(prefixName);
         clusterInfo->getScope(adaptor);
     }
