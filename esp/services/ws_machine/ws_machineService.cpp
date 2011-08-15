@@ -63,10 +63,6 @@
 #define eqThorSpareProcess      "ThorSpareProcess"
 #endif
 
-//#ifndef eqTHORMACHINES
-//#define eqTHORMACHINES            "THORMACHINES"
-//#endif
-
 #ifndef eqHOLEMACHINES
 #define eqHOLEMACHINES          "HOLEMACHINES"
 #endif
@@ -267,18 +263,6 @@ void Cws_machineEx::init(IPropertyTree *cfg, const char *process, const char *se
     {
         m_machineInfoFile.append("preflight");
     }
-#ifdef USE_ENV_CONF_FILE
-    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
-    const char* envConf = envFactory->getEnvironmentConf();
-    if (envConf)
-    {
-        readAString(envConf, "configs=", "\r", m_environmentConfData.m_configsPath, true);
-        readAString(envConf, "path=", "\r", m_environmentConfData.m_executionPath, true);
-        readAString(envConf, "runtime=", "\r", m_environmentConfData.m_runtimePath, true);
-        readAString(envConf, "lock=", "\r", m_environmentConfData.m_lockPath, true);
-        readAString(envConf, "pid=", "\r", m_environmentConfData.m_pidPath, true);
-    }
-#else
     Owned<IConstEnvironment> constEnv = getConstEnvironment();
     Owned<IPropertyTree> pRoot = &constEnv->getPTree();
     IPropertyTree* pEnvSettings = pRoot->getPropTree("EnvSettings");
@@ -290,14 +274,12 @@ void Cws_machineEx::init(IPropertyTree *cfg, const char *process, const char *se
         pEnvSettings->getProp("lock", m_environmentConfData.m_lockPath.clear());
         pEnvSettings->getProp("pid", m_environmentConfData.m_pidPath.clear());
     }
-#endif
     IThreadFactory* pThreadFactory = new CWsMachineThreadFactory();
     m_threadPool.setown(createThreadPool("WsMachine Thread Pool", pThreadFactory,
         NULL, THREAD_POOL_SIZE, 10000, THREAD_POOL_STACK_SIZE)); //10 sec timeout for available thread; use stack size of 2MB
     pThreadFactory->Release();
 
     //populate the process type to SNMP component index map
-    //
     if (s_processTypeToSnmpIdMap.empty())
     {
         //add mappings in random order to keep the map balanced
@@ -318,10 +300,6 @@ void Cws_machineEx::init(IPropertyTree *cfg, const char *process, const char *se
         s_processTypeToProcessMap.insert(pair<string, const char*>("EclServerProcess",   "eclserver"));
         s_processTypeToProcessMap.insert(pair<string, const char*>("FTSlaveProcess",         "ftslave"));
         s_processTypeToProcessMap.insert(pair<string, const char*>("SashaServerProcess", "saserver"));
-        //s_processTypeToProcessMap.insert(pair<string, string>("LDAPServerProcess", "saserver"));
-        //s_processTypeToProcessMap.insert(pair<string, string>("MySQLProcess", "saserver"));
-        //s_processTypeToProcessMap.insert(pair<string, string>("EclAgentProcess", "saserver"));
-
         s_processTypeToProcessMap.insert(pair<string, const char*>("ThorMasterProcess",  "thormaster"));
         s_processTypeToProcessMap.insert(pair<string, const char*>("RoxieServerProcess", "roxie"));
     }
@@ -408,8 +386,6 @@ bool Cws_machineEx::onGetMachineInfo(IEspContext &context, IEspGetMachineInfoReq
         IArrayOf<IEspMachineInfoEx> machineArray;
         StringArray columnArray;
 
-        //const char* userName = req.getUserName();
-        //const char* password = req.getPassword();
         const char* userName = m_sTestStr1.str();
         const char* password = m_sTestStr2.str();
         if (userName && *userName)
@@ -511,14 +487,6 @@ void Cws_machineEx::RunMachineQuery(IEspContext &context, StringArray &addresses
           try
           {
               //xpath is the Path to parent node (normally a cluster)
-#if 0
-            const int SDS_LOCK_TIMEOUT = 20000;
-              Owned<IRemoteConnection> conn = querySDS().connect(decodedPath, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-            if (!conn)
-               throw MakeStringException(-1, "Specified path '%s' is invalid!", decodedPath.str());
-
-              bMonitorDaliFileServer = conn->queryRoot()->getPropBool("@monitorDaliFileServer", false);
-#else
             Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
             Owned<IConstEnvironment> constEnv = envFactory->openEnvironmentByFile();
             Owned<IPropertyTree> root0 = &constEnv->getPTree();
@@ -534,7 +502,6 @@ void Cws_machineEx::RunMachineQuery(IEspContext &context, StringArray &addresses
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Specified path '%s' is invalid!", decodedPath.str());
 
             bMonitorDaliFileServer = root->getPropBool("@monitorDaliFileServer", false);
-#endif
           }
           catch(IException* e)
          {
@@ -571,8 +538,6 @@ void Cws_machineEx::RunMachineQuery(IEspContext &context, StringArray &addresses
     UnsignedArray threadHandles;
     set<string>   columnSet;
     IpAddress     ipAddr;
-
-    // TBD IPv6 (cannot use long for map)
 
     for (index=0; index<ordinality; index++)
     {
@@ -654,7 +619,6 @@ void Cws_machineEx::RunMachineQuery(IEspContext &context, StringArray &addresses
             bFilterProcesses = false;
 
       //OS is constant for a m/c so can be ignored if IP is already recorded
-      //
         if (*address.str())
         {
             bool bAgentExec = stricmp(sProcessType.str(), "EclAgentProcess")==0;
@@ -689,7 +653,6 @@ void Cws_machineEx::RunMachineQuery(IEspContext &context, StringArray &addresses
       }
     }
    //block for worker theads to finish, if necessary and then collect results
-   //
     PooledThreadHandle* pThreadHandle = threadHandles.getArray();
     unsigned i=threadHandles.ordinality();
     while (i--)
@@ -700,7 +663,6 @@ void Cws_machineEx::RunMachineQuery(IEspContext &context, StringArray &addresses
 }
 
 // the following method is invoked on worker threads of
-//
 void Cws_machineEx::getUpTime(CMachineInfoThreadParam* pParam, StringBuffer& out)
 {
     if (pParam->m_sAddress.length() < 1)
@@ -880,9 +842,6 @@ int Cws_machineEx::readMachineInfo(const char *response, CMachineInfo& machineIn
     readAString(response, "CPU-Idle:", "\r", machineInfo.m_sCPUIdle, true);
     readAString(response, "ComputerUpTime:", "\r", computerUptime, true);
 
-    //if (machineInfo.m_sCPUIdle.charAt(machineInfo.m_sCPUIdle.length() - 1) == '%')
-    //  machineInfo.m_sCPUIdle.remove(machineInfo.m_sCPUIdle.length() - 1, 1);
-
     const char* spaceLine = "---SpaceUsedAndFree---";
     char* pStr = (char*) strstr(response, spaceLine);
     if (pStr)
@@ -951,7 +910,6 @@ int Cws_machineEx::runCommand(IEspContext& context, const char* sAddress, const 
         }
 
 #ifdef _WIN32
-///#define CHECK_LINUX_COMMAND
 #ifndef CHECK_LINUX_COMMAND
 #define popen  _popen
 #define pclose _pclose
@@ -1098,35 +1056,29 @@ int Cws_machineEx::invokeProgram(const char *command_line, StringBuffer& respons
    char   buffer[128];
    FILE   *fp;
 
-   /* Run the command so that it writes its output to a pipe. Open this
-    * pipe with read text attribute so that we can read it
-    * like a text file.
-    */
-    if (getEspLogLevel()>8)
+   // Run the command so that it writes its output to a pipe. Open this
+   // pipe with read text attribute so that we can read it
+   // like a text file.
+    if (getEspLogLevel()>LogNormal)
     {
         DBGLOG("command_line=<%s>", command_line);
     }
-#ifdef CHECK_LINUX_COMMAND
-    return -1;
-#else
    if( (fp = popen( command_line, "r" )) == NULL )
       return -1;
 
-    /* Read pipe until end of file. End of file indicates that
-    * the stream closed its standard out (probably meaning it
-    * terminated).
-    */
+    // Read pipe until end of file. End of file indicates that
+    //the stream closed its standard out (probably meaning it
+    //terminated).
    while ( !feof(fp) )
       if ( fgets( buffer, 128, fp) )
          response.append( buffer );
 
-    if (getEspLogLevel()>8)
+    if (getEspLogLevel()>LogNormal)
     {
         DBGLOG("response=<%s>", response.str());
     }
-    /* Close pipe and print return value of CHKDSK. */
+    // Close pipe and print return value of CHKDSK.
    return pclose( fp );
-#endif
 }
 
 int Cws_machineEx::remoteGetMachineInfo(IEspContext& context, const char *address, const char *configAddress, const char *preflightCommand, const char* user, const char* password, StringBuffer& sResponse, CMachineInfo& machineInfo)
@@ -1153,10 +1105,8 @@ int Cws_machineEx::remoteGetMachineInfo(IEspContext& context, const char *addres
 }
 
 // the following method is invoked on worker threads of
-//
 void Cws_machineEx::doGetMachineInfo(IEspContext& context, CMachineInfoThreadParam* pParam)
 {
-    //DBGLOG("Getting MachineInfo for %s", pParam->m_sAddress.str());
    IEspMachineInfoEx* info = pParam->m_pMachineInfo;
    IEspMachineInfoEx* info1 = pParam->m_pMachineInfo1;
    StringBuffer& sSecurityString = pParam->m_sSecurityString;
@@ -1200,7 +1150,6 @@ void Cws_machineEx::doGetMachineInfo(IEspContext& context, CMachineInfoThreadPar
         }
         else
         {
-            ///preFlightStr.appendf("/%s/%s/%s", m_environmentConfData.m_runtimePath.str(), pParam->m_sCompName.str(), m_machineInfoFile.str());
             preFlightCommand.appendf("/%s/sbin/%s %s", m_environmentConfData.m_executionPath.str(), m_machineInfoFile.str(), m_environmentConfData.m_pidPath.str());
             if (preFlightCommand.charAt(preFlightCommand.length() - 1) == '/')
                 preFlightCommand.remove(preFlightCommand.length()-1, 1);
@@ -1255,10 +1204,6 @@ void Cws_machineEx::doGetMachineInfo(IEspContext& context, CMachineInfoThreadPar
                     info1->setRunning(runArray);
             }
 
-            //info->setUpTime(machine->getUpTime(temp).str());
-
-            ///StringBuffer out;
-            ///getUpTime(pParam, out);
             if (machineInfo.m_sComputerUptime.length() > 0)
             {
                 info->setUpTime(machineInfo.m_sComputerUptime.str());
@@ -1296,16 +1241,11 @@ void Cws_machineEx::doGetSecurityString(const char* address, StringBuffer& secur
 {
    //another client (like configenv) may have updated the constant environment and we got notified
    //(thanks to our subscription) so reload it
-   //
    m_envFactory->validateCache();
 
    securityString.clear();
-#if 0
-    Owned<IConstMachineInfo> machine = m_constEnv->getMachineByAddress(address);
-#else
     Owned<IConstEnvironment> constEnv = getConstEnvironment();
     Owned<IConstMachineInfo> machine = constEnv->getMachineByAddress(address);
-#endif
     if (machine)
    {
        Owned<IConstDomainInfo> domain = machine->getDomain();
@@ -1322,34 +1262,20 @@ IPropertyTree* Cws_machineEx::getComponent(const char* compType, const char* com
     StringBuffer xpath;
     xpath.append("Software/").append(compType).append("[@name='").append(compName).append("']");
 
-   //another client (like configenv) may have updated the constant environment and we got notified
-   //(thanks to our subscription) so reload it
-   //
    m_envFactory->validateCache();
 
-#if 0
-    Owned<IPropertyTree> pEnvRoot = &m_constEnv->getPTree();
-#else
     Owned<IConstEnvironment> constEnv = getConstEnvironment();
     Owned<IPropertyTree> pEnvRoot = &constEnv->getPTree();
-#endif
     return pEnvRoot->getPropTree( xpath.str() );
 }
 
 void Cws_machineEx::getAccountAndPlatformInfo(const char* address, StringBuffer& userId,
                                               StringBuffer& password, bool& bLinux)
 {
-   //another client (like configenv) may have updated the constant environment and we got notified
-   //(thanks to our subscription) so reload it
-   //
    m_envFactory->validateCache();
 
-#if 0
-    Owned<IConstMachineInfo> machine = m_constEnv->getMachineByAddress(address);
-#else
     Owned<IConstEnvironment> constEnv = getConstEnvironment();
     Owned<IConstMachineInfo> machine = constEnv->getMachineByAddress(address);
-#endif
     if (!machine && !stricmp(address, "."))
     {
         machine.setown(constEnv->getMachineByAddress("127.0.0.1"));
@@ -1401,7 +1327,6 @@ void Cws_machineEx::determineRequredProcesses(CMachineInfoThreadParam* pParam,
 
    //first collect all "common" processes that are required on any box irrespective of
    //its type
-   //
    StringBuffer xPath("ProcessFilter[@name='any']/Process");
    Owned<IPropertyTreeIterator> iProcesses = pOsSpecificFilters->getElements(xPath.str());
    ForEach (*iProcesses)
@@ -1411,7 +1336,6 @@ void Cws_machineEx::determineRequredProcesses(CMachineInfoThreadParam* pParam,
 
       //if this process name is valid and either we are monitoring dali file server or
       //(we are not monitoring that and) it is not that process then add it to list of required processes
-      //
         if (m_useDefaultHPCCInit)
         {
             if (*sProcessName.str() && (bMonitorDaliFileServer || 0 != strcmp(sProcessName.str(), "dafilesrv")))
@@ -1425,14 +1349,12 @@ void Cws_machineEx::determineRequredProcesses(CMachineInfoThreadParam* pParam,
    }
 
    //insert all additional processes that may have been specified with the request
-   //
    int len = additionalProcesses.length();
    for (int i=0; i<len; i++)
       requiredProcesses.insert(additionalProcesses.item(i));
 
    //now collect all "box-specific" processes that are required to be running
    //for eg. thorslave[.exe] on a thor slave box
-   //
    if (pszProcessType && *pszProcessType)
    {
       xPath.clear().appendf("ProcessFilter[@name='%s']", pszProcessType);
@@ -1450,29 +1372,14 @@ void Cws_machineEx::determineRequredProcesses(CMachineInfoThreadParam* pParam,
             {
                 IPropertyTree* pProcess = &iProcesses->query();
                 bool bRemove = pProcess->getPropBool("@remove", false);
-
-#if 0
-                if (m_enableSNMP)
-                {
-                    sProcessName.clear().append(pProcess->queryProp("@name"));
-                    if (!bRemove && pParam->m_bMultipleInstances && pParam->m_sPath.length())
-                        sProcessName.insert(0, pParam->m_sPath);
-                    else
-                        sProcessName.toLowerCase().replaceString(".exe", "");
-                }
+                const char* sName = pProcess->queryProp("@name");
+                sProcessName.clear();
+                if (!strcmp(sName, "."))
+                    sProcessName = pParam->m_sCompName;
                 else
-#endif
-                {
-                    const char* sName = pProcess->queryProp("@name");
-                    sProcessName.clear();
-                    if (!strcmp(sName, "."))
-                        ///sProcessName.appendf("%s/%s", m_environmentConfData.m_runtimePath.str(), pParam->m_sCompName.str());
-                        sProcessName = pParam->m_sCompName;
-                    else
-                        sProcessName.append(sName);
-                    if (bRemove)
-                        sProcessName.toLowerCase().replaceString(".exe", "");
-                }
+                    sProcessName.append(sName);
+                if (bRemove)
+                    sProcessName.toLowerCase().replaceString(".exe", "");
 
                 if (*sProcessName.str())
                 {
@@ -1481,13 +1388,11 @@ void Cws_machineEx::determineRequredProcesses(CMachineInfoThreadParam* pParam,
                     else
                     {
                         //support multithor: if this is a linux system and processtype is either a thor master or slave
-                        //
                         if (!strncmp(pszProcessType, "Thor", 4) && pParam->m_operatingSystem != OS_Windows)
                         {
                             //lookup port from environment
                             Owned<IPropertyTree> pComponent = getComponent("ThorCluster", strCompName.str());
                             const bool bMaster = !strcmp(pszProcessType, "ThorMasterProcess");
-                            //const char* szPort = pComponent->queryProp( bMaster ? "@masterport" : "@slaveport");
                             StringBuffer szPort;
                             if (pComponent)
                                 szPort.append(pComponent->queryProp( bMaster ? "@masterport" : "@slaveport"));
@@ -1780,7 +1685,6 @@ void Cws_machineEx::enumerateRunningProcesses(CMachineInfoThreadParam* pParam,
                     }
                     //params typically is like "/c$/esp_dir/esp [parameters...]"
                     //so just pick the full path
-                    //
                     const char* pch = strchr(pszPath, ' ');
                     if (pch)
                     {
@@ -1802,13 +1706,9 @@ void Cws_machineEx::enumerateRunningProcesses(CMachineInfoThreadParam* pParam,
                 }
                 else
                 {
-#ifdef NO_RPM
-                    pszProcessName = pParam->m_bMultipleInstances ? pszPath : pszName;
-#else
                     const char* pszName0 = pParam->m_bMultipleInstances ? pszPath : pszName;
                     const char* pch = strrchr(pszName0, '/');
                     pszProcessName = pch ? pch+1 : pszName0;
-#endif
                 }
                 pRequiredProcesses->erase(pszProcessName);
             }
@@ -1823,7 +1723,6 @@ void Cws_machineEx::enumerateRunningProcesses(CMachineInfoThreadParam* pParam,
         //skip processes starting with '[' character on linux unless we are not
         //applying filters and have to return a complete list of processes.
         //On windows, skip [system process] regardless.
-        //
         if ((bLinuxInstance && (!bFilterProcesses || *pszName != '[')) ||
              (!bLinuxInstance && *pszName != '['))
       {
@@ -1893,11 +1792,9 @@ void Cws_machineEx::doGetStorageInfo(CMachineInfoThreadParam* pParam, IArrayOf<I
             Owned<IEspStorageInfo> info = static_cast<IEspStorageInfo*>(new CStorageInfo(""));
             pParam->addColumn( title );
             info->setDescription(title);
-            ///info->setType(storage->getType(temp).str());
             info->setTotal(total);
             info->setAvailable(available);
             info->setPercentAvail(percentAvail);
-            ///info->setFailures(storage->getFailures());
 
             output.append(*info.getLink());
         }
@@ -1920,7 +1817,6 @@ void Cws_machineEx::doGetProcessorInfo(CMachineInfoThreadParam* pParam, IArrayOf
     }
 
     Owned<IEspProcessorInfo> info = static_cast<IEspProcessorInfo*>(new CProcessorInfo(""));
-    //info->setType(processor->getType(temp).str());
     info->setLoad(cpuLoad);
 
     output.append(*info.getLink());
@@ -1949,7 +1845,6 @@ void Cws_machineEx::doGetSWRunInfo(IEspContext& context, CMachineInfoThreadParam
                                                 requiredProcesses);
             //now enumerate the processes running on this box and remove them from required processes
             //ignoring any non-required process
-            //
             if (runningProcesses.length() > 0)
             {
                 enumerateRunningProcesses( pParam, runningProcesses, bLinuxInstance, true, NULL, pidMap, &requiredProcesses);
@@ -1969,7 +1864,6 @@ void Cws_machineEx::doGetSWRunInfo(IEspContext& context, CMachineInfoThreadParam
 
                     info->setName(procName);
                     info->setInstances(0);
-                    DBGLOG("process down: name:<%s>", procName);
 
                     output.append(*info);
                 }
@@ -2005,12 +1899,9 @@ void Cws_machineEx::doGetSWRunInfo(IEspContext& context, CMachineInfoThreadParam
             for (; it1 != requiredProcesses.end(); it1++) //add in sorted order simply by traversing the map
             {
                 const char* procName = (*it1).c_str();
-                if (procName && *procName)
+                if (procName && *procName && !stricmp(procName, "dafilesrv"))
                 {
-                    if (!stricmp(procName, "dafilesrv"))
-                        bDafilesrvDown = true;
-
-                    DBGLOG("Need process: name:<%s>", procName);
+                    bDafilesrvDown = true;
                 }
             }
 
@@ -2019,10 +1910,9 @@ void Cws_machineEx::doGetSWRunInfo(IEspContext& context, CMachineInfoThreadParam
                 Linked<IEspSWRunInfo> info( (*it).second );
 
                 const char* procName = info->getName();
-                if (procName && *procName)
+                if (procName && *procName && !stricmp(procName, "dafilesrv"))
                 {
-                    if (!stricmp(procName, "dafilesrv"))
-                        bDafilesrvDown = false;
+                    bDafilesrvDown = false;
                 }
 
                 output.append( *info.getLink() );
@@ -2063,7 +1953,6 @@ void Cws_machineEx::doGetSWRunInfo(IEspContext& context, CMachineInfoThreadParam
     if (!bDafilesrvDown && machineInfo.m_sID.length() > 0)
     {
         //conditions: unknown, normal, warning, minor, major, critical, fatal
-        //
         pComponentInfo->setCondition( 1 );
         pComponentInfo->setState(5);
 
@@ -2092,7 +1981,6 @@ void Cws_machineEx::doGetSWRunInfo(IEspContext& context, CMachineInfoThreadParam
         pComponentInfo->setCondition(2); //Warnning
         pComponentInfo->setState(0);
 
-        //if (m_enableSNMP && bFilterProcesses)
         if (bFilterProcesses && (machineInfo.m_sID.length() < 1))
         {
             IEspSWRunInfo* info = static_cast<IEspSWRunInfo*>(new CSWRunInfo(""));
@@ -2115,7 +2003,6 @@ void Cws_machineEx::doGetSWRunInfo(IEspContext& context, CMachineInfoThreadParam
 
 //this method parses address info of the form "192.168.1.4-6:ThorSlaveProcess:thor1:2:path1"
 //into respective components
-//
 void Cws_machineEx::parseProperties(const char* info, StringBuffer& processType, StringBuffer& sCompName,
                                                 OpSysType& os, StringBuffer& path)
 {
@@ -2206,7 +2093,6 @@ const char* Cws_machineEx::lookupProcessname(const StringBuffer& sProcessType)
 //---------------------------------------------------------------------------
 //  GetDisplayProcessName
 //---------------------------------------------------------------------------
-/*static*/
 const char* Cws_machineEx::GetDisplayProcessName(const char* processName, char* buf)
 {
    //produces "LDAPServerProcess" as "LDAP Server" and "EspService" as "Esp Service", etc.
@@ -2314,7 +2200,6 @@ void Cws_machineEx::getMachineList(IConstEnvironment* constEnv, IPropertyTree* e
 {
     StringBuffer directoryStr = directory;
     Owned<IPropertyTreeIterator> machines= envRoot->getElements(machineType);
-    //const char* nodenametag = getNodeNameTag(MachineType);
     if (machines->first()) 
     {
         do 
@@ -2368,7 +2253,6 @@ void Cws_machineEx::getMachineList(IConstEnvironment* constEnv, IPropertyTree* e
                 else
                     name.append(name0);
                 
-                //machine.setType(type);
                 Owned<IConstMachineInfo> pMachineInfo =  constEnv->getMachine(name0);
                 if (pMachineInfo.get())
                 {
@@ -2389,11 +2273,7 @@ void Cws_machineEx::getMachineList(IConstEnvironment* constEnv, IPropertyTree* e
                         ipaddr.getIpText(ipStr);
                         if (ipStr.length() > 0)
                         {
-#ifdef MACHINE_IP
-                            netAddress.append(MACHINE_IP);
-#else
                             netAddress.append(ipStr.str());
-#endif
                             configNetAddress.append(".");
                         }
                     }
@@ -2666,7 +2546,6 @@ void Cws_machineEx::getTargetClusterProcesses(StringArray& targetClusters, Strin
                         dirStr.clear().append(eclCCServerProcess.queryProp("@directory"));
                     }
 
-                    //TODO
                     getMachineList(constEnv, pEnvironmentSoftware, process, eqEclCCServer, "", dirStr.str(), processAddresses);
                 }
             }
@@ -2697,7 +2576,6 @@ void Cws_machineEx::getTargetClusterProcesses(StringArray& targetClusters, Strin
                         dirStr.clear().append(eclAgentProcess.queryProp("@directory"));
                     }
 
-                    //TODO
                     getMachineList(constEnv, pEnvironmentSoftware, process, eqEclAgent, "", dirStr.str(), processAddresses);
                 }
             }
@@ -2728,7 +2606,6 @@ void Cws_machineEx::getTargetClusterProcesses(StringArray& targetClusters, Strin
                         dirStr.clear().append(eclSchedulerProcess.queryProp("@directory"));
                     }
 
-                    //TODO
                     getMachineList(constEnv, pEnvironmentSoftware, process, eqEclScheduler, "", dirStr.str(), processAddresses);
                 }
             }
@@ -2743,14 +2620,6 @@ void Cws_machineEx::getTargetClusterProcesses(StringArray& targetClusters, Strin
 bool Cws_machineEx::onGetTargetClusterInfo(IEspContext &context, IEspGetTargetClusterInfoRequest & req,
                                              IEspGetTargetClusterInfoResponse & resp)
 {
-#ifdef DETECT_WS_MC_MEM_LEAKS
-    static bool firstTime = true;
-    if (firstTime)
-    {
-        firstTime = false;
-        unsigned t = setAllocHook(true);
-    }
-#endif //DETECT_WS_MC_MEM_LEAKS
     try
     {
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
@@ -2805,9 +2674,6 @@ bool Cws_machineEx::onGetTargetClusterInfo(IEspContext &context, IEspGetTargetCl
     {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
-#ifdef DETECT_WS_MC_MEM_LEAKS
-    DBGLOG("Allocated=%d", setAllocHook(false));
-#endif //DETECT_WS_MC_MEM_LEAKS
 
     return true;
 }
