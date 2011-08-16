@@ -35,7 +35,7 @@ killed() {
 
     . ./roxievars
 
-    rm -f $roxiedir/${SENTINEL}
+    rm -f ${SENTINEL}
 
     echo stopping roxie
     killall roxie
@@ -53,7 +53,7 @@ echo $! > $PID_NAME
 wait
 
 # Automatically restart roxie when it dies
-while [ -e $roxiedir/${SENTINEL} ]; do
+while [ -e ${SENTINEL} ]; do
     export restarts=$(($restarts+1))
     echo Restarting $restarts >> $logfilename.stderr
     echo Restarting $restarts >> $logfilename.stdout

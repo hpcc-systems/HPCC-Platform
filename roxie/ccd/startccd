@@ -37,7 +37,7 @@ export PATH=.:$roxiedir:$PATH
 export LD_LIBRARY_PATH=.:$roxiedir:$LD_LIBRARY_PATH
 export LIBC_FATAL_STDERR_=1
 export restarts=0
-export SENTINEL="roxie.sentinel"
+export SENTINEL="${roxiedir}/roxie.sentinel"
 ulimit -c unlimited
 ulimit -n $NUM_ROXIE_HANDLES
 
@@ -48,7 +48,7 @@ wait
 
 
 # Automatically restart roxie when it dies
-while [ -e $roxiedir/${SENTINEL} ]; do
+while [ -e ${SENTINEL} ]; do
     export restarts=$(($restarts+1))
     echo Restarting $restarts >> $logfilename.stderr
     echo Restarting $restarts >> $logfilename.stdout
