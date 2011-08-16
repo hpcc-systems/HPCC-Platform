@@ -1,4 +1,4 @@
-## Copyright © 2011 HPCC Systems.  All rights reserved.
+## Default configuration file for configmgr
 
 [components]
 configmgr=esp;${CONFIG_DIR}/configmgr

@@ -1,7 +1,6 @@
 #!/bin/sh
 
 #############################################
- 
 #    Copyright (C) 2011 HPCC Systems.
 #
 #    All rights reserved. This program is free software: you can redistribute it and/or modify
@@ -16,7 +15,6 @@
 #
 #    You should have received a copy of the GNU Affero General Public License
 #    along with All rights reserved. This program is free software: you can redistribute program.  If not, see <http://www.gnu.org/licenses/>.
-    
 #############################################
 
 if [ -e /etc/debian_version ]; then
