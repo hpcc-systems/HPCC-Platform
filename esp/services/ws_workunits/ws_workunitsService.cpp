@@ -7099,20 +7099,10 @@ void CWsWorkunitsEx::getWorkunitArchiveQuery(IEspContext &context, const char* w
 
 void CWsWorkunitsEx::getWorkunitDll(IEspContext &context, const char* wuid,MemoryBuffer& buf)
 {
-    /*
     CQuery query(wuid, context);
     SCMStringBuffer dllname;
     query->getQueryDllName(dllname);
     queryDllServer().getDll(dllname.str(), buf);
-*/
-    RemoteFilename rfn;
-    rfn.setRemotePath("/mnt/disk1/var/lib/HPCCSystems/myeclccserver/libW20110616-112955.so");
-    SocketEndpoint ep("10.239.219.6");
-    rfn.setIp(ep);
-
-    Owned<IFile> file = createIFile(rfn);
-    OwnedIFileIO io = file->open(IFOread);
-    read(io, 0, (size32_t)-1, buf);
 }
 
 void CWsWorkunitsEx::getWorkunitResults(IEspContext &context, const char* wuid, unsigned index,__int64 start, unsigned& count,__int64& total,IStringVal& resname,bool raw,MemoryBuffer& buf)
