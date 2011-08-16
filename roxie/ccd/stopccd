@@ -21,8 +21,8 @@ fi
 
 . ./roxievars
 
-export SENTINEL="roxie.sentinel"
-rm -f $roxiedir/${SENTINEL}
+export SENTINEL="${roxiedir}/roxie.sentinel"
+rm -f ${SENTINEL}
 
 echo stopping roxie
 killall roxie
