@@ -55,7 +55,7 @@ runCmd(){
         ssh -i $home/$user/.ssh/id_rsa $user@$IP $@;
 }
 
-set_envrionmentvars
+set_environmentvars
 envfile=$configs/$environment
 
 getIPS
