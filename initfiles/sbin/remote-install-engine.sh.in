@@ -1,26 +1,37 @@
 #!/bin/bash
-##
-## Copyright (c) 2011 HPCC Systems.  All rights reserved.
-##
-## version v0.1
-## author Philip Schwartz <philip.schwartz@lexisnexis.com>
-##
-## Usage: remote-install-engine.sh
-##
-## This script is used as a remote engine for a cluster installation.
-##
-## Flow:
-##
-## 1. SSH Keys Generated.
-## 2. Script copied to node.
-## 3. Install package copied to node.
-## 4. SSH Keys copied to node.
-## 5. Run CheckInstall to determine if  package is installed.
-## 6. Install/Upgrade if needed.
-## 7. Run CheckKeys to determine if sshkeys are installed.
-## 8. Install keys if different then installed or no keys installed.
-## 9. Return.
-##
+################################################################################
+#    Copyright (C) 2011 HPCC Systems.
+#
+#    All rights reserved. This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License as
+#    published by the Free Software Foundation, either version 3 of the
+#    License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+#
+# Usage: remote-install-engine.sh
+#
+# This script is used as a remote engine for a cluster installation.
+#
+# Flow:
+#
+# 1. SSH Keys Generated.
+# 2. Script copied to node.
+# 3. Install package copied to node.
+# 4. SSH Keys copied to node.
+# 5. Run CheckInstall to determine if  package is installed.
+# 6. Install/Upgrade if needed.
+# 7. Run CheckKeys to determine if sshkeys are installed.
+# 8. Install keys if different then installed or no keys installed.
+# 9. Return.
+#
 
 ###<REPLACE>###
 
