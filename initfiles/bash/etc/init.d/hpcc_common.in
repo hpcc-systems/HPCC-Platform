@@ -243,7 +243,7 @@ strstr() {
   return 0
 }
 
-set_envrionmentvars() {
+set_environmentvars() {
     HPCC_CONFIG=${HPCC_CONFIG:-${CONFIG_DIR}/${ENV_CONF_FILE}}
     
     ## Retrieve the Section to use from environment variable and if not set

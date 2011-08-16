@@ -49,7 +49,7 @@ if [ $# -ne 2 ]; then
 	echo "usage: hpcc-push.sh [user@]host1:]file1 [[user@]host2:]file2"
 fi
 
-set_envrionmentvars
+set_environmentvars
 envfile=$configs/$environment
 
 getIPS

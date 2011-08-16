@@ -25,5 +25,6 @@ GENERATE_BASH(processor ${bash-vars} "hpcc-push.sh.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "hpcc-run.sh.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "install-cluster.sh.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "remote-install-engine.sh.in" outFiles)
+GENERATE_BASH(processor ${bash-vars} "complete-uninstall.sh.in" outFiles)
 ADD_CUSTOM_TARGET(ProcessFiles-initfiles-sbin ALL DEPENDS ${outFiles})
 

@@ -54,7 +54,7 @@ VERBOSE=${VERBOSE:-0}
 configgen_path=${INSTALL_DIR}/sbin
 basepath=`pwd`
 daemon_path="${INSTALL_DIR}/bin"
-set_envrionmentvars 
+set_environmentvars
 envfile=$configs/$environment
 bin_path=${INSTALL_DIR}/bin
 
