@@ -829,6 +829,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
         withinRepository = checkWithinRepository(attributePath, sourcePathname);
 
         //Disable this for the moment when running the regression suite.
+        //It also doesn't work in batch mode for files in nested directories since filename is reduced to basename
         if (!optBatchMode && !withinRepository)
         {
             StringBuffer expandedSourceName;
@@ -899,7 +900,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
             {
                 StringBuffer msg;
                 msg.append("Could not resolve attribute ").append(attributePath.str());
-                errs->reportError(3, msg.str(), sourcePathname ? sourcePathname : attributePath.str(), 1, 0, 0);
+                errs->reportError(3, msg.str(), sourcePathname ? sourcePathname : attributePath.str(), 0, 0, 0);
             }
         }
         else
