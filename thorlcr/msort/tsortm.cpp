@@ -929,7 +929,7 @@ public:
                         if (logging) {
                             MemoryBuffer buf;
                             const void *b =totmid.item(mi);
-                            ActPrintLog(activity, "%d: %d %d %d",i,mi,amid.ordinality()/2);
+                            ActPrintLog(activity, "%d: %d %d",i,mi,amid.ordinality()/2);
                             traceKey(rowif->queryRowSerializer(),"mid",b);
                         }
 #endif

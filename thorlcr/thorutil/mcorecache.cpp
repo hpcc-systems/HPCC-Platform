@@ -314,7 +314,7 @@ public:
     {
         curthread = threads[idx%nthreads];
 #ifdef _FULL_TRACE
-        PROGLOG("***setInputThread thread %d",curthread);
+        PROGLOG("***setInputThread thread %p",curthread);
 #endif
     }
     

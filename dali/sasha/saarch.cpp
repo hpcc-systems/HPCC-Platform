@@ -757,7 +757,7 @@ class CWorkUnitArchiver: public CBranchArchiver
                     e.setPropBool("@archiveError", false);
 #ifdef _DEBUG
                 if (iserr)
-                    PROGLOG("ARCHIVE: Err(%s) date %d",wuid.sget(),dts.str()); 
+                    PROGLOG("ARCHIVE: Err(%s) date %s",wuid.sget(),dts.str()); 
 #endif
             }
             getWorkUnitCreateTime(wuid,time);
