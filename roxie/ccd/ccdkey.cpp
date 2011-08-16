@@ -644,7 +644,7 @@ public:
 
     Linked<IFileIOArray> f;
     offset_t thisFileStartPos;
-    offset_t thisFileEndPos;
+    offset_t completedStreamsSize;
     Owned<IFileIO> thisPart;
     Owned<ISerialStream> curStream;
     unsigned thisPartIdx;
@@ -652,7 +652,8 @@ public:
     BufferedDirectReader(offset_t _startPos, IFileIOArray *_f, unsigned _partNo, unsigned _numParts) : f(_f)
     {
         thisFileStartPos = 0;
-        thisFileEndPos = 0;
+        completedStreamsSize = 0;
+
         thisPartIdx = 0;
         unsigned maxParts = f ? f->length() : 0;
 
@@ -662,28 +663,28 @@ public:
         while (!_partNo && !thisPart && ++thisPartIdx < maxParts) // MORE
         {
             thisPart.setown(f->getFilePart(thisPartIdx, thisFileStartPos));
-            if (thisPart && _startPos > thisPart->size())
+            if (thisPart && _startPos >= thisPart->size())
             {
                 _startPos -= thisPart->size();
+                completedStreamsSize += thisPart->size();
                 thisPart.clear();
             }
         }
 
         if (thisPart)
         {       
-            thisFileEndPos = thisFileStartPos + thisPart->size();
             curStream.setown(createFileSerialStream(thisPart, _startPos));
         }
         else
         {
             // No files for this particular reader to do
-            thisFileEndPos = 0;
             thisPartIdx = maxParts;
         }
     }
 
     void nextFile()
     {
+        completedStreamsSize += thisPart->size();
         unsigned maxParts = f->length();
         thisPart.clear();
         curStream.clear();
@@ -693,7 +694,6 @@ public:
         }
         if (thisPart)
         {
-            thisFileEndPos += thisPart->size();
             curStream.setown(createFileSerialStream(thisPart));
         }
     }
@@ -748,10 +748,11 @@ public:
     }
     virtual offset_t tell()
     {
+        // Note that tell() means the position with this stream, not the file position within the overall logical file.
         if (curStream)
-            return thisFileStartPos + curStream->tell();
+            return completedStreamsSize + curStream->tell();
         else
-            return thisFileStartPos;
+            return completedStreamsSize;
     }
     virtual void reset(offset_t _offset,offset_t _flen)
     {
