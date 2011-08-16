@@ -1223,37 +1223,72 @@ void CConfigEnvHelper::RenameThorInstances(IPropertyTree* pThor)
 //----------------------------------------------------------------------------
 void CConfigEnvHelper::UpdateThorAttributes(IPropertyTree* pParentNode)
 {
-    // Update computer attribute
-    //IPropertyTree* pParentNode = GetParentNode();
+    const char* masterIp = NULL;
+    bool localThor = true, multiSlaves = false;
+    int nSlaves = 0;
+
     IPropertyTree* pNode = pParentNode->queryPropTree(XML_TAG_THORMASTERPROCESS);
     if (pNode)
     {
         const char* szName = pNode->queryProp(XML_ATTR_COMPUTER);
         setAttribute(pParentNode, XML_ATTR_COMPUTER, szName);
+        IPropertyTree* pComputer = lookupComputerByName(szName);
+        if (pComputer)
+          masterIp = pComputer->queryProp(XML_ATTR_NETADDRESS);
+    }
+    else
+    {
+      localThor = false;
     }
 
-    // Update slave count attribute
-    int nSlaves = 0;
-    bool multiSlaves = false;
-
     Owned<IPropertyTreeIterator> iter = pParentNode->getElements(XML_TAG_THORSLAVEPROCESS);
-    StringArray sComputers;
+
     for (iter->first(); iter->isValid(); iter->next())
     {
         nSlaves++;
 
-        if (!multiSlaves)
+        if (!localThor && multiSlaves)
+          continue;
+
+        const char* computer = iter->query().queryProp(XML_ATTR_COMPUTER);
+        if (computer && *computer)
         {
-            const char* computer = iter->query().queryProp(XML_ATTR_COMPUTER);
-            if (sComputers.find(computer) == NotFound)
-                sComputers.append(computer);
-            else
+          if (localThor)
+          {
+            IPropertyTree* pNode = lookupComputerByName(computer);
+
+            if (pNode && masterIp && *masterIp)
+            {
+              const char* ip = pNode->queryProp(XML_ATTR_NETADDRESS);
+
+              if (ip && *ip && strcmp(ip, masterIp))
+                localThor = false;
+            }
+          }
+
+          if (!multiSlaves)
+          {
+            StringBuffer xpath(XML_TAG_THORSLAVEPROCESS);
+            xpath.appendf("["XML_ATTR_COMPUTER"='%s']", computer);
+
+            Owned<IPropertyTreeIterator> iterNodes = pParentNode->getElements(xpath.str());
+            int count = 0;
+
+            ForEach(*iterNodes)
+            {
+              count++;
+              if (count > 1)
+              {
                 multiSlaves = true;
+                break;
+              }
+            }
+          }
         }
     }
 
     setAttribute(pParentNode, XML_ATTR_MULTISLAVES, multiSlaves ? "true" : "false");
-    setAttribute(pParentNode, "@localThor", nSlaves > 1 ? "false" : "true");
+    setAttribute(pParentNode, "@localThor", localThor ? "true" : "false");
 
     StringBuffer sb;
     sb.appendf("%d", nSlaves);
