@@ -19,16 +19,11 @@
 #define HQLCERRORS_HPP
 
 #include "jexcept.hpp"
-//Note: Some of the errors below have been moved into hqlerrors.hpp.  If so the number is preserved here
-//(and will error if it differs) but the error message text is only included in hqlerrors.hpp.
 #include "hqlerrors.hpp"
-
 
 /* Code Generation errors - defined in hqlcerrors.hpp */
 #define ERR_CODEGEN_FIRST       4000
 #define ERR_CODEGEN_LAST        4999
-
-#define HQLERR_ASSERT_WRONGSCOPING              2131 /* Incorrect assertion scoping */
 
 #define HQLERR_NullSetCannotGenerate            4000
 #define HQLERR_NoMultiDimIndex                  4001
@@ -49,7 +44,6 @@
 #define HQLERR_UnsupportedHashWorkunit          4016
 #define HQLERR_UnknownVirtualAttr               4017
 #define HQLERR_IllegalPattern                   4018
-#define HQLERR_VirtualFieldInTempTable          4019
 #define HQLERR_VarSizeSortUseThor               4020
 #define HQLERR_SubstringOutOfRange              4021
 #define HQLERR_RankOnStored                     4022
@@ -105,12 +99,9 @@
 #define HQLERR_DuplicateNameOutput              4073
 #define HQLERR_ExtendTypeMismatch               4074
 #define HQLERR_OverwriteMismatch                4075
-#define HQLERR_ExtendOverwriteMismatch          4075
-#define HQLERR_IncompatiableInitailiser         4076
-#define HQLERR_NoDefaultProvided                4077
+#define HQLERR_ExtendOverwriteMismatch          4076
 #define HQLERR_EmbeddedCppNotAllowed            4078
 #define HQLERR_ContentsInSoapCall               4079
-#define HQLERR_TooManyInitializers              4080
 #define HQLERR_FullKeyedNeedsFile               4081
 #define HQLERR_ExpectedConstant                 4082
 #define HQLERR_AccessRowBlobInsideChildQuery    4083
@@ -131,7 +122,6 @@
 #define HQLERR_KeyAccessNeedCast                4098
 #define HQLERR_KeyAccessNoKeyField              4099
 #define HQLERR_MaxLengthNotSetOnRecord          4100
-#define HQLERR_IncompatibleTypesForField        4101
 #define HQLERR_NotSupportedInsideNoThor         4102
 #define HQLERR_RegexNoTransformSupport          4103
 #define HQLERR_AccessMatchAttrInChildQuery      4104
@@ -228,7 +218,6 @@
 #define HQLWRN_RecursiveDependendencies         4510
 #define HQLWRN_MaxSizeExceedsSafeLimit          4512
 #define HQLWRN_TomitaMatchPattern               4513
-#define HQLWRN_CouldNotConstantFoldIf           4514
 #define HQLWRN_KeyedFollowsGap                  4515
 #define HQLWRN_LocalHasNoEffect                 4516
 #define HQLWRN_CsvMaxLengthMismatch             4517
@@ -301,8 +290,6 @@
 #define HQLERR_LibraryMustBeFunctional          4828
 #define HQLERR_InconsistentNaryInput            4829
 #define HQLERR_LinkedDatasetNoContext           4830
-#define HQLERR_UnexpectedOperator               4831
-#define HQLERR_UnexpectedType                   4832
 #define HQLERR_InternalError                    4833
 #define HQLERR_CannotGenerateSerializedCompare  4834
 #define HQLERR_ReadSpillBeforeWrite             4835
@@ -563,8 +550,6 @@
 #define HQLERR_NoParentExtract_Text             "INTERNAL: No active parent extract - activity has incorrect localisation?"
 #define HQLERR_InconsistentNaryInput_Text       "INTERNAL: Inputs to nary operation have inconsistent record structures"
 #define HQLERR_LinkedDatasetNoContext_Text      "INTERNAL: Linked child rows required without legal context available"
-#define HQLERR_UnexpectedOperator_Text          "INTERNAL: Unexpected '%s' at %s(%d)"
-#define HQLERR_UnexpectedType_Text              "INTERNAL: Unexpected type '%s' at %s(%d)"
 #define HQLERR_CannotGenerateSerializedCompare_Text "INTERNAL: Cannot generated serialized compare function"
 #define HQLERR_ReadSpillBeforeWrite_Text        "INTERNAL: Attempt to read spill file %s before it is written"
 #define HQLERR_DependencyWithinGraph_Text       "INTERNAL: Dependency within a graph incorrectly generated for hThor (%u)"

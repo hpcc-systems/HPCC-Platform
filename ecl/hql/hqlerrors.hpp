@@ -448,9 +448,14 @@
 #define HQLERR_EquivalenceNotYetSupported       3116
 #define HQLERR_CouldNotConnectEclServer         3117
 #define HQLERR_VersionMismatch                  3118
-
-#define HQLERR_UnexpectedOperator               4831
-#define HQLERR_UnexpectedType                   4832
+#define HQLERR_VirtualFieldInTempTable          3119
+#define HQLERR_IncompatiableInitailiser         3120
+#define HQLERR_NoDefaultProvided                3121
+#define HQLERR_TooManyInitializers              3122
+#define HQLERR_IncompatibleTypesForField        3123
+#define HQLWRN_CouldNotConstantFoldIf           3124
+#define HQLERR_UnexpectedOperator               3125
+#define HQLERR_UnexpectedType                   3126
 
 #define HQLERR_DedupFieldNotFound_Text          "Field removed from dedup could not be found"
 #define HQLERR_CycleWithModuleDefinition_Text   "Module definition contain an illegal cycle/recursive definition %s"
@@ -473,15 +478,6 @@
 #define HQLERR_EquivalenceNotYetSupported_Text  "Equivalence class symbols not yet supported"
 #define HQLERR_CouldNotConnectEclServer_Text    "Could not connect to any ECL server"
 #define HQLERR_VersionMismatch_Text             "Mismatch in major version number (%s v %s)"
-
-//Cloned from hqlcerrors
-#define HQLERR_VirtualFieldInTempTable          4019
-#define HQLERR_IncompatiableInitailiser         4076
-#define HQLERR_NoDefaultProvided                4077
-#define HQLERR_TooManyInitializers              4080
-#define HQLERR_IncompatibleTypesForField        4101
-#define HQLWRN_CouldNotConstantFoldIf           4514
-
 #define HQLERR_VirtualFieldInTempTable_Text     "Virtual field %s not supported in constant table - please provide a value"
 #define HQLERR_IncompatiableInitailiser_Text    "Inline DATASET field '%s' cannot be initialized with a list of values"
 #define HQLERR_NoDefaultProvided_Text           "No value or default provided for field %s in inline table"
