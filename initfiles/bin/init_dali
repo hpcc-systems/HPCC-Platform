@@ -27,10 +27,9 @@ wait
 
 while [ -e ${SENTINEL} ]; do
     sleep 5
-        if [ -e ${SENTINEL} ]; then
-            trap "killed" SIGINT SIGTERM SIGKILL
+    if [ -e ${SENTINEL} ]; then
         daserver 1>/dev/null 2>/dev/null &
-                echo $! > $PID_NAME
-                wait
-        fi
+        echo $! > $PID_NAME
+        wait
+    fi
 done
