@@ -1,4 +1,4 @@
-## Copyright © 2011 HPCC Systems.  All rights reserved.
+## Default environment configuration file
 
 [DEFAULT]
 configs=${CONFIG_DIR}

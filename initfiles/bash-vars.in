@@ -1,5 +1,3 @@
-## Copyright © 2011 HPCC Systems.  All rights reserved.
-
 INSTALL_DIR=${INSTALL_DIR}
 CONFIG_DIR=${CONFIG_DIR}
 ENV_XML_FILE=${ENV_XML_FILE}
