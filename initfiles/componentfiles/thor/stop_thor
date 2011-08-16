@@ -7,6 +7,8 @@ PATH_PRE=`type -path hpcc_setenv`
 INSTALL_DIR=`dirname ${PATH_PRE}`/..
 source  ${INSTALL_DIR}/etc/init.d/hpcc_common
 
+export sentinelfile="thor.sentinel"
+
 which_pidof
 
 if [ $# -lt 1 ]; then
@@ -25,7 +27,7 @@ export instancedir=$(pwd -P)
 
 if [ "$#" -lt "2" ] || [ "$2" != "keep_sentinel" ]; then
     echo removing sentinel file
-    rm -f $instancedir/thor_sentinel_$THORMASTERPORT.txt
+    rm -f $instancedir/${sentinelfile}
     sleep 1
 fi
 

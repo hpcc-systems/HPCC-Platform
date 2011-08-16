@@ -24,6 +24,7 @@
 #include "jlog.ipp"
 #include "jptree.hpp"
 #include "jmisc.hpp"
+#include "jfile.hpp"
 
 #include "mpbase.hpp"
 #include "mpcomm.hpp"
@@ -80,7 +81,7 @@ static void AddServers()
     servers.append(*createSashaXrefServer());
     servers.append(*createSashaDaFSMonitorServer());
     servers.append(*createSashaQMonitorServer());
-    servers.append(*createSashaFileExpiryServer()); 
+    servers.append(*createSashaFileExpiryServer());
     // add new servers here
 }
 
@@ -135,7 +136,7 @@ void stopSashaServer(const char *eps,unsigned short port)
         ep.set(eps,port);
     else
         ep.setLocalHost(port);
-    
+
     Owned<INode> node = createINode(ep);
     IInterCommunicator & comm=queryWorldCommunicator();
     Owned<ISashaCommand> cmd = createSashaCommand();
@@ -145,7 +146,7 @@ void stopSashaServer(const char *eps,unsigned short port)
         return;
     }
     PROGLOG("Sasha Server being stopped");
-    cmd->send(node,1000*60);    
+    cmd->send(node,1000*60);
     while (queryWorldCommunicator().verifyConnection(node,500)) {
         PROGLOG("Waiting for Sasha Server to stop....");
         Sleep(2000);
@@ -178,28 +179,28 @@ public:
                 PROGLOG("Request to stop received");
             }
         }
-        else if (cmd->getAction()==SCA_GETVERSION) 
+        else if (cmd->getAction()==SCA_GETVERSION)
             cmd->addId(SASHAVERSION); // should be a result probably but keep bwd compatible
         else if (cmd->getAction()==SCA_COALESCE_SUSPEND)
             suspendCoalescingServer();
         else if (cmd->getAction()==SCA_COALESCE_RESUME)
             resumeCoalescingServer();
-        else if (cmd->getAction()==SCA_XREF) 
+        else if (cmd->getAction()==SCA_XREF)
             processXRefRequest(cmd);
-        else if (!processArchiverCommand(cmd)) 
+        else if (!processArchiverCommand(cmd))
             WARNLOG("Command %d not handled",cmd->getAction());
         if (cmd->getAction()==SCA_WORKUNIT_SERVICES_GET)
             cmd->WUSreply();
         else
             cmd->reply();
     }
-    bool stop() 
-    { 
-        return true; 
+    bool stop()
+    {
+        return true;
     }
-    bool canReuse() 
-    { 
-        return false; 
+    bool canReuse()
+    {
+        return false;
     }
 };
 
@@ -296,6 +297,10 @@ int main(int argc, const char* argv[])
     NoQuickEditSection x;
 #endif
 
+    Owned<IFile> sentinelFile = createSentinelTarget();
+    // We remove any existing sentinel until we have validated that we can successfully start (i.e. all options are valid...)
+    removeSentinelFile(sentinelFile);
+
     OwnedIFile ifile = createIFile("sashaconf.xml");
     serverConfig.setown(ifile->exists()?createPTreeFromXMLFile("sashaconf.xml"):createPTree());
     StringBuffer daliServer;
@@ -342,12 +347,12 @@ int main(int argc, const char* argv[])
         unsigned short port = (stop||coalescer)?0:DEFAULT_SASHA_PORT;
         Owned<IGroup> serverGroup = createIGroup(daliServer.str(),DALI_SERVER_PORT);
         initClientProcess(serverGroup, DCR_SashaServer, port, NULL, NULL, MP_WAIT_FOREVER);
-        setPasswordsFromSDS(); 
+        setPasswordsFromSDS();
         if (!stop&!coalescer) {
             startLogMsgParentReceiver();    // for auditing
             connectLogMsgManagerToDali();
         }
-            
+
         if (stop) {
             stopSashaServer((argc>2)?argv[2]:"",DEFAULT_SASHA_PORT);
         }
@@ -382,7 +387,7 @@ int main(int argc, const char* argv[])
                 {
                     CThreaded threaded;
                 public:
-                    CStopThread() : threaded("CStopThread") { threaded.init(this); } 
+                    CStopThread() : threaded("CStopThread") { threaded.init(this); }
                     ~CStopThread() { threaded.join(); }
                     virtual void main()
                     {
@@ -396,6 +401,7 @@ int main(int argc, const char* argv[])
                     }
                 } *stopThread = new CStopThread;
                 addThreadExceptionHandler(&exceptionStopHandler);
+                writeSentinelFile(sentinelFile);
                 SashaMain();
                 removeThreadExceptionHandler(&exceptionStopHandler);
 
@@ -409,7 +415,7 @@ int main(int argc, const char* argv[])
             SashaServerStatus = NULL;
         }
     }
-    catch(IException *e){ 
+    catch(IException *e){
         EXCLOG(e, "Sasha Server Exception: ");
         stopPerformanceMonitor();
         e->Release();
@@ -438,4 +444,4 @@ int main(int argc, const char* argv[])
 }
 
 
-    
+

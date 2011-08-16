@@ -121,6 +121,9 @@ void CEclAgentExecutionServer::stop()
 
 int CEclAgentExecutionServer::run()
 {
+    Owned<IFile> sentinelFile = createSentinelTarget();
+    removeSentinelFile(sentinelFile);
+
     try
     {
         Owned<IGroup> serverGroup = createIGroup(daliServers, DALI_SERVER_PORT);
@@ -140,7 +143,6 @@ int CEclAgentExecutionServer::run()
         ERRLOG("Terminating unexpectedly");
     }
 
-    Owned<IFile> sentinelFile = createSentinelTarget(codeDirectory, "eclagent");
     writeSentinelFile(sentinelFile);
 
     try 
@@ -171,7 +173,7 @@ int CEclAgentExecutionServer::run()
             else
             {
                 ERRLOG("Unexpected dequeue of bogus job queue item, exiting agentexec");
-                remove(sentinelFile->queryFilename());//no reason to restart
+                removeSentinelFile(sentinelFile);//no reason to restart
                 assert(!started);
                 break;
             }

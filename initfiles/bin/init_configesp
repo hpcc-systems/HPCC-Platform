@@ -8,13 +8,15 @@ PID_NAME="$PID/`basename $PWD`.pid"
 INIT_PID_NAME="$PID/init_`basename $PWD`.pid"
 echo $$ > $INIT_PID_NAME
 
+export SENTINEL="esp.sentinel"
+
 ulimit -c unlimited
 ulimit -n 8192
 export LANG=en_US
 SNMPID=$$
 
 killed() {
-    rm -rf configesp_sentinel.txt
+    rm -rf ${SENTINEL}
     killall -9 configesp 2>/dev/null
     sleep 1
     exit 255
@@ -26,9 +28,9 @@ nohup configesp 1>/dev/null 2>/dev/null &
 echo $! > $PID_NAME
 wait
 
-while [ -e configesp_sentinel.txt ]; do
+while [ -e ${SENTINEL} ]; do
         sleep 5
-        if [ -e configesp_sentinel.txt ]; then
+        if [ -e ${SENTINEL} ]; then
                 nohup configesp 1>/dev/null 2>/dev/null &
         echo $! > $PID_NAME
         wait

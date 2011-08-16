@@ -12,6 +12,8 @@ if [ -n "$1" ]; then
     cd $1
 fi
 
+export SENTINEL="roxie.sentinel"
+
 . ./roxievars
 
 if [ -n "$2" ]; then
@@ -33,7 +35,7 @@ killed() {
 
     . ./roxievars
 
-    rm -f roxie_sentinel.txt
+    rm -f $roxiedir/${SENTINEL}
 
     echo stopping roxie
     killall roxie
@@ -46,16 +48,16 @@ killed() {
 
 trap "killed" SIGINT SIGTERM SIGKILL
 # start it the first time - roxie controls the creation of the rerun_roxie.txt file
-nohup roxie topology=RoxieTopology.xml logfile=$logfilename restarts=$restarts stdlog=0 sentinel=roxie_sentinel.txt 2>>$logfilename.stderr 1>>$logfilename.stdout & 
+nohup roxie topology=RoxieTopology.xml logfile=$logfilename restarts=$restarts stdlog=0 2>>$logfilename.stderr 1>>$logfilename.stdout &
 echo $! > $PID_NAME 
 wait
 
 # Automatically restart roxie when it dies
-while [ -e $roxiedir/roxie_sentinel.txt ]; do
+while [ -e $roxiedir/${SENTINEL} ]; do
     export restarts=$(($restarts+1))
     echo Restarting $restarts >> $logfilename.stderr
     echo Restarting $restarts >> $logfilename.stdout
-    nohup roxie topology=RoxieTopology.xml logfile=$logfilename restarts=$restarts stdlog=0 sentinel=roxie_sentinel.txt 2>>$logfilename.stderr 1>>$logfilename.stdout &
+    nohup roxie topology=RoxieTopology.xml logfile=$logfilename restarts=$restarts stdlog=0 2>>$logfilename.stderr 1>>$logfilename.stdout &
     echo $! > $PID_NAME
     wait
 done
