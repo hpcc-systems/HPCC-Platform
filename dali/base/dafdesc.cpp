@@ -2794,7 +2794,7 @@ IFileDescriptor *createFileDescriptorFromRoxieXML(IPropertyTree *tree,const char
             if (loc) {
                 const char *path = loc->queryProp("@path");
                 if (!path)
-                    throw MakeStringException(-1,"createFileDescriptorFromRoxie: %s missing part %d loc path",p,id); 
+                    throw MakeStringException(-1,"createFileDescriptorFromRoxie: %s missing part %d loc path",id,c+1); 
                 StringBuffer fullpath(path);
                 addPathSepChar(fullpath).append(tree->queryProp("@directory"));
                 expandMask(addPathSepChar(fullpath),mask,p-1,np);
