@@ -20,4 +20,4 @@ rem ############################################################################
 setlocal enableextensions
 md %regresstgt% 2>nul
 call %~dp0\regress1 -m %*
-if EXIST %~dp0\rcompare.bat. call %~dp0\rcompare %*
+if EXIST %~dp0\rcompare.bat. call %~dp0\rcompare %~n1
