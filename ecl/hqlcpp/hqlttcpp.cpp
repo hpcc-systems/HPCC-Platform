@@ -9015,7 +9015,7 @@ void HqlScopeTagger::reportError(const char * msg, bool warning)
     int startLine= location ? location->getStartLine() : 0;
     int startColumn = location ? location->getStartColumn() : 0;
     ISourcePath * sourcePath = location ? location->querySourcePath() : NULL;
-    Owned<IECLError> err = createECLError(!warning, HQLERR_ASSERT_WRONGSCOPING, msg, sourcePath->str(), startLine, startColumn, 0);
+    Owned<IECLError> err = createECLError(!warning, ERR_ASSERT_WRONGSCOPING, msg, sourcePath->str(), startLine, startColumn, 0);
     collector.report(NULL, errors, err);        // will throw immediately if it is an error.
 }
 
