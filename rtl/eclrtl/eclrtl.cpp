@@ -1111,24 +1111,18 @@ bool rtlVStrToBool(const char * t)
 
 void holeIntFormat(size32_t maxlen, char * target, __int64 value, unsigned width, unsigned flags)
 {
-    if ((int)width < 0)
-        return;
-
-    char fullFormat[100];
-    strcpy(fullFormat, "%");
+    StringBuffer result;
     if (flags & 1)
-        strcat(fullFormat, "0");
-    strcat(fullFormat, "*");
-    strcat(fullFormat, I64F"d");
-
-    char temp[500];
-    unsigned written = sprintf(temp, fullFormat, width, value);
-    if (written > width)
-        memset(target, '*', width);
+        result.appendf("%0*"I64F"d", width, value);
+    else
+        result.appendf("%*"I64F"d", width, value);
+    size32_t written = result.length();
+    if (written > maxlen)
+        memset(target, '*', maxlen);
     else
     {
-        memset(target, ' ', width-written);
-        memcpy(target, temp, written);
+        memset(target+written, ' ', maxlen-written);
+        memcpy(target, result.str(), written);
     }
 }
 
@@ -1161,7 +1155,7 @@ void holeRealFormat(size32_t maxlen, char * target, double value, unsigned width
 
 void rtlIntFormat(unsigned & len, char * & target, __int64 value, unsigned width, unsigned flags)
 {
-    if ((int) width < 0)
+    if ((int) width <= 0)
     {
         len = 0;
         target = NULL;
