@@ -181,21 +181,15 @@ struct ArchivedWUsCacheElement: public CInterface, implements IInterface
 
     CDateTime m_timeCached;
     IArrayOf<IEspECLWorkunit> m_results;
-    //std::string m_data;
 };
 
 struct ArchivedWUsCache: public CInterface, implements IInterface
 {
     IMPLEMENT_IINTERFACE;
     
-    ArchivedWUsCache(size32_t _cacheSize=0): cacheSize(_cacheSize)
-    {
-    }
-
+    ArchivedWUsCache(size32_t _cacheSize=0): cacheSize(_cacheSize) {}
 
     ArchivedWUsCacheElement* lookup(IEspContext &context, const char* filter, const char* sashaUpdatedWhen, unsigned timeOutMin);
-     //void getQueryFileListFromTree(IPropertyTreeIterator* queries, const char* fileType, const char* cluster, 
-    //  IArrayOf<IEspRoxieDFULogicalFile>& queryFileList);
 
      void add(const char* filter, const char* sashaUpdatedWhen, bool hasNextPage, IArrayOf<IEspECLWorkunit>& wus);
 
@@ -361,11 +355,6 @@ private:
 
     void addSubFiles(IPropertyTreeIterator* f, IEspECLSourceFile* eclSuperFile, StringArray& fileNames);
     void openSaveFile(IEspContext &context, int opt, const char* filename, const char* origMimeType, MemoryBuffer& buf, IEspWULogFileResponse &resp);
-#if 0 //not use for now
-    void getSubFiles(IUserDescriptor* userdesc, const char *fileName, IEspECLSourceFile* eclSourceFile0);
-    bool checkFileInECLSourceFile(const char* file, IConstECLSourceFile& eclfile);
-    bool checkFileInECLSourceFiles(const char* file, IArrayOf<IEspECLSourceFile>& eclfiles);
-#endif
 
 private:
     StringBuffer m_GraphUpdateGvcXSLT;

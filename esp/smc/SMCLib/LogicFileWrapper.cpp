@@ -84,7 +84,6 @@ bool LogicFileWrapper::doDeleteFile(const char* LogicalFileName,const char *clus
             DBGLOG("%s", errorStr.str());
         }
         else {
-            PrintLog("Deleted Logical File: %s\n",LogicalFileName);
             returnStr.appendf("<Message><Value>Deleted File %s</Value></Message>",LogicalFileName);
         }
 

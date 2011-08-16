@@ -20,9 +20,7 @@
 
 #include "ws_dfuService.hpp"
 
-
 unsigned CLogicalView::idgen_ = 0;
-
 
 CLogicalView *LVManager::createLogicalView(StringBuffer &token, const char * logicalFile, const char * cluster, unsigned rowsPerPage)
 {
@@ -105,21 +103,6 @@ CLogicalView *LVManager::queryLogicalView(const StringBuffer &strToken)
     return lv;
 }
 
-/*
-interface IResultSetMetaData : extends IInterface
-{
-    virtual int getColumnCount() const = 0;
-    virtual DisplayType getColumnDisplayType(int column) const = 0;
-    virtual IStringVal & getColumnLabel(IStringVal & s, int column) const = 0;
-    virtual IStringVal & getColumnEclType(IStringVal & s, int column) const = 0;
-    virtual IStringVal & getColumnXmlType(IStringVal & s, int column) const = 0;
-    virtual bool isSigned(int column) const = 0;
-    virtual bool isEBCDIC(int column) const = 0;
-    virtual bool isBigEndian(int column) const = 0;
-    virtual unsigned getColumnRawType(int column) const = 0;
-    virtual unsigned getColumnRawSize(int column) const = 0;
-};
-*/
 const char * CLogicalView::getXsd()
 {
     if (xsd_.length() == 0)
@@ -129,11 +112,7 @@ const char * CLogicalView::getXsd()
 
         IPropertyTree * schema = createPTree("xsd:schema", ipt_caseInsensitive);
         schema->setProp("@id", "DFUDataSet");
-//      schema->setProp("@targetNamespace", "http://tempuri.org/colTotals.xsd");
-//      schema->setProp("@elementFormDefault", "qualified");
-//      schema->setProp("@attributeFormDefault", "qualified");
         schema->setProp("@xmlns", "");
-//      schema->setProp("@xmlns:mstns", "http://tempuri.org/colTotals.xsd");
         schema->setProp("@xmlns:xsd", "http://www.w3.org/2001/XMLSchema");
         schema->setProp("@xmlns:msdata", "urn:schemas-microsoft-com:xml-msdata");
 
@@ -173,7 +152,7 @@ const char * CLogicalView::getXsd()
         schema->addPropTree("xsd:element", element);
         dataset->addPropTree("xsd:schema", schema);
 
-        toXML(schema, xsd_);//, false, false);
+        toXML(schema, xsd_);
     }
     return xsd_.str();
 }

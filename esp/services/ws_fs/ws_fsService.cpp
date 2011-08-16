@@ -287,8 +287,6 @@ static void DeepAssign(IConstDFUWorkUnit *src, IEspDFUWorkunit &dest)
     IConstDFUfileSpec * file = src->querySource();
     if (file != NULL)
     {
-        //if (file->getTitle(tmp.clear()).length()!=0)
-        //  dest.setSourceTitle(tmp.str());
         StringBuffer lfn;
         file->getLogicalName(lfn);
         if (lfn.length() != 0)
@@ -930,13 +928,10 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
         unsigned numWUs = factory->numWorkUnitsFiltered(filters, filterbuf.bufferBase());
         Owned<IConstDFUWorkUnitIterator> itr = factory->getWorkUnitsSorted(sortorder, filters, filterbuf.bufferBase(), (int) displayFrom, (int) pagesize+1, req.getOwner(), &cachehint);
 
-        //unsigned actualCount = 0;
         itr->first();
         while(itr->isValid())
         {
             Owned<IConstDFUWorkUnit> wu = itr->get();
-            //actualCount++;
-
             Owned<IEspDFUWorkunit> resultWU = createDFUWorkunit("", "");
             resultWU->setID(wu->queryId());
             StringBuffer jobname, user, cluster;
@@ -2677,18 +2672,10 @@ int CFileSprayEx::doFileCheck(const char* mask, const char* netaddr, const char*
                     ipaddr.getIpText(ipStr);
                     if (ipStr.length() > 0)
                     {
-#ifdef MACHINE_IP
-                        sNetAddr.append(MACHINE_IP);
-#else
                         sNetAddr.append(ipStr.str());
-#endif
                     }
                 }
-#ifdef MACHINE_IP
-                if ((sNetAddr.length() > 0) && !stricmp(sNetAddr.str(), MACHINE_IP))
-#else
                 if ((sNetAddr.length() > 0) && !stricmp(sNetAddr.str(), netaddr))
-#endif
                 {
                     StringBuffer dir;
                     IPropertyTree* pDropZone = pSoftware->addPropTree("DropZone", &it->get());
@@ -2748,11 +2735,7 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
 
         RemoteFilename rfn;
         SocketEndpoint ep;
-#ifdef MACHINE_IP
-        ep.set(MACHINE_IP);
-#else
         ep.set(netaddr);
-#endif
         rfn.setPath(ep, sPath.str());
         Owned<IFile> f = createIFile(rfn);
         if(!f->isDirectory())
@@ -2916,11 +2899,7 @@ bool CFileSprayEx::getDropZoneFiles(IEspContext &context, const char* netaddr, c
 
     RemoteFilename rfn;
     SocketEndpoint ep;
-#ifdef MACHINE_IP
-    ep.set(MACHINE_IP);
-#else
     ep.set(netaddr);
-#endif
 
     rfn.setPath(ep, path);
     Owned<IFile> f = createIFile(rfn);
@@ -3014,11 +2993,7 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
                     ipaddr.getIpText(ipStr);
                     if (ipStr.length() > 0)
                     {
-#ifdef MACHINE_IP
-                        sNetAddr.append(MACHINE_IP);
-#else
                         sNetAddr.append(ipStr.str());
-#endif
                     }
                 }
 
@@ -3147,11 +3122,7 @@ bool CFileSprayEx::onDeleteDropZoneFiles(IEspContext &context, IEspDeleteDropZon
 
         RemoteFilename rfn;
         SocketEndpoint ep;
-#ifdef MACHINE_IP
-        ep.set(MACHINE_IP);
-#else
         ep.set(netAddress);
-#endif
 
         rfn.setPath(ep, sPath.str());
         Owned<IFile> f = createIFile(rfn);

@@ -184,14 +184,11 @@ public:
         responsebuf.clear();
         responsebuf<<"<script language=\"javascript\">\r\n";
 
-        //bool displayDT = false;
         unsigned count = 0;
         unsigned jobpending=0;
         ForEachItemIn(i,items) 
         {
             IEspThorQueue& tq = items.item(i);
-        
-            //displayDT = !displayDT;
 
             count++;
             if (count > maxDisplay)
@@ -200,8 +197,7 @@ public:
             StringBuffer countStr, dtStr;
             countStr.appendulong(count);
 
-            //if (displayDT)
-                dtStr = tq.getDT();
+            dtStr = tq.getDT();
 
             responsebuf<<"parent.displayQueue(\'" << count << "\',\'" << dtStr.str() << "\',\'" << tq.getRunningWUs() << "\',"
                          "\'" << tq.getQueuedWUs() << "\',\'" << tq.getWaitingThors() <<"\',"
@@ -414,8 +410,6 @@ public:
 
         if (checkNewThorQueueItem(tq, showAll, items))
             items.append(*tq.getClear());
-    
-        DBGLOG("Queue log: [%s]", line);
     }
 
     bool checkSameStrings(const char* s1, const char* s2)
@@ -476,11 +470,7 @@ public:
 void getClusterConfig(char const * clusterType, char const * clusterName, char const * processName, StringBuffer& netAddress)
 {
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-#if 0
-    Owned<IConstEnvironment> environment = factory->openEnvironment();
-#else
     Owned<IConstEnvironment> environment = factory->openEnvironmentByFile();
-#endif
     Owned<IPropertyTree> pRoot = &environment->getPTree();
 
     StringBuffer xpath;
@@ -506,10 +496,6 @@ void getClusterConfig(char const * clusterType, char const * clusterName, char c
         SCMStringBuffer scmNetAddress;
         pMachine->getNetAddress(scmNetAddress);
         netAddress = scmNetAddress.str();
-#ifdef MACHINE_IP
-        if (!strcmp(netAddress.str(), "."))
-            netAddress = MACHINE_IP;
-#endif
         netAddress.appendf(":%s", port);
     }
     
@@ -535,46 +521,6 @@ void getClusterName(IEspContext& context, char const *wuid, StringBuffer& cluste
 
 void getFirstThorClusterName(StringBuffer& clusterName)
 {
-    /*try
-    {
-        Owned<IRemoteConnection> conn = querySDS().connect("/Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-        if (conn)
-        {
-            IPropertyTree* root = conn->queryRoot();
-            IPropertyTree* pSoftware = root->queryPropTree("Software");
-            if (!pSoftware)
-                return;
-
-            const char* ClusterType = "";
-            Owned<IPropertyTreeIterator> clusters= pSoftware->getElements(eqThorCluster);
-            if (clusters->first()) 
-            {
-                do 
-                {
-                    IPropertyTree &cluster = clusters->query();                 
-                    const char* name = cluster.queryProp("@name");
-
-                    if (name && *name)
-                    {
-                        clusterName.append(name);
-                        break;
-                    }
-                } while (clusters->next());
-            }
-        }
-    }
-    catch(IException* e)
-    {   
-        StringBuffer msg;
-        e->errorMessage(msg);
-        WARNLOG(msg.str());
-        e->Release();
-    }
-    catch(...)
-    {
-        WARNLOG("Unknown Exception caught within CTpWrapper::getClusterList");
-    }*/
-
     bool bFound = false;
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
     Owned<IConstEnvironment> constEnv = factory->openEnvironmentByFile();
@@ -1100,18 +1046,6 @@ int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* req
                         addLogicalClusterByName(clusterName, clusters, x);
                     } while (clusterIterator->next());
                 }
-
-
-             /* There is only one sasha server per dali
-            IArrayOf<IEspTpSashaServer> sashaservers;
-            dummy.getServiceList("SashaServerProcess",  (IArrayOf<struct IInterface> &)sashaservers);   
-            ForEachItemIn(i1, sashaservers)
-             {
-                 IEspTpSashaServer& sashaserver = sashaservers.item(i1);
-                IArrayOf<IConstTpMachine> &sashaservermachine = sashaserver.getTpMachines();
-                 x.appendf("<SashaServer Address=\"%s\">", sashaservermachine.item(0).getNetaddress());
-                x.append(sashaserver.getName()).append("</SashaServer>");
-            }*/
             }
             
               x.append("</WUQuery>");
@@ -1204,14 +1138,10 @@ struct SashaServers
 
             StringBuffer ips;
             sashaserver->endpoint().getIpText(ips);
-            DBGLOG("Query sasha %s",ips.str());
 
             if (cmd->send(sashaserver,timeout)) 
             {
                 unsigned num = cmd->numResults();
-
-                DBGLOG("Got %d results from sasha",num);
-                
                 for (unsigned i=0;i<num;i++) 
                 {
                     StringBuffer res;
@@ -1373,8 +1303,6 @@ void addUnfinishedECLWUs(IArrayOf<IEspECLJob>& eclJobList, const char* wuid, con
             continue;
         if (!eclsubgraph || !*eclsubgraph || stricmp(eclsubgraph, subGraph))
             continue;
-        //if (!ecldate || !*ecldate || (stricmp(ecldate, dt) < 0) || (stricmp(ecldate, dt1) > 0))
-        //  continue;
         if (!ecldate || !*ecldate)
             continue;
         int test = stricmp(ecldate, dt);
@@ -1424,14 +1352,6 @@ bool getPreviousUnfinishedECLWU(CDateTime fromTime, CDateTime toTime, const char
 
         StringAttrArray jobs1;
         queryAuditLogs(fromTime1, toTime1, filter0.str(), jobs1);
-#if 0
-        char* str1 = "2010-10-04 07:39:04 ,Progress,Thor,StartSubgraph,thor,W20100929-073902,5,1,thor,thor.thor";
-        char* str2 = "2010-10-04 15:53:43 ,Progress,Thor,Startup,thor,thor,thor.thor,//10.173.51.20/c$/thor_logs/09_29_2010_15_52_39/THORMASTER.log";
-        char* str3 = "2010-10-04 17:52:31 ,Progress,Thor,Start,thor,W20100929-075230,graph1,r3gression,thor,thor.thor";
-        jobs1.append(*new StringAttrItem(str2, strlen(str2)));
-        jobs1.append(*new StringAttrItem(str1, strlen(str1)));
-        jobs1.append(*new StringAttrItem(str3, strlen(str3)));
-#endif
         ForEachItemInRev(idx1, jobs1)
         {
             const char* curjob = jobs1.item(idx1).text;
@@ -1467,21 +1387,7 @@ void findUnfinishedECLWUs(IArrayOf<IEspECLJob>& eclJobList, CDateTime fromTime, 
     StringBuffer filter1("Progress,Thor");
     queryAuditLogs(fromTime, toTime, filter1.str(), jobs1);
 
-#if 0
-    StringBuffer responsebuf1;
-    ForEachItemIn(idx01, jobs1)
-    {
-        const char* curjob = jobs1.item(idx01).text;
-        if(!curjob || !*curjob)
-            continue;
-
-        responsebuf1.appendf("%s\n", curjob);
-    }
-    DBGLOG("Progress:\n%s", responsebuf1.str());
-#endif
-
     //Find out which WUs stopped by abnormal thor termination
-
     bool bAbnormalWU = false;
     int len = jobs1.length();
     StringBuffer dtStr, actionStr, wuidStr, graphStr, subGraphStr, clusterStr;
@@ -1657,7 +1563,7 @@ struct WUJobList2
             eclJobList.append(*job.getClear());
         }
 
-////////////////////////////////////////////////////////21492
+        //21492
         //Find out which WUs stopped by abnormal thor termination
         StringArray unfinishedWUIDs, unfinishedGraphs, unfinishedSubGraphs, unfinishedClusters, unfinishedWUStarttime, unfinishedWUEndtime;
         findUnfinishedECLWUs(eclJobList, fromTime, toTime, tostr.str(), cluster, unfinishedWUIDs, unfinishedGraphs, unfinishedSubGraphs, unfinishedClusters, unfinishedWUStarttime, unfinishedWUEndtime);
@@ -1668,7 +1574,6 @@ struct WUJobList2
                 //Add to graph list
                 const char* wuid = unfinishedWUIDs.item(idx3);
                 const char* graph = unfinishedGraphs.item(idx3);
-                //const char* subgraph = unfinishedSubGraphs.item(idx3);
                 const char* cluster0 = unfinishedClusters.item(idx3);
                 const char* startTime = unfinishedWUStarttime.item(idx3);
                 const char* endTime = unfinishedWUEndtime.item(idx3);
@@ -1704,7 +1609,7 @@ struct WUJobList2
                 }
             }
         }
-////////////////////////////////////////////////////////21492
+        //21492
 
         if(response)
         {
@@ -1996,13 +1901,7 @@ int CWsWorkunitsSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* respo
 
         StringBuffer path;
         request->getPath(path);
-/*
-         if(!path.length() || strcmp(path.str(),"/")==0)
-         {
-              response->redirect(*request,"/WsWorkunits/WUQuery?form");
-              return 0;
-         }
-*/
+
          StringBuffer userid,password,realm;
          request->getBasicAuthorization(userid,password,realm);
          if(MatchPrefix(path.str(), "/WsWorkunits/JobList"))
@@ -2083,7 +1982,6 @@ int CWsWorkunitsSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* respo
             if(betimestr.length())
                 xls.appendf("&BusinessEndTime=%s", betimestr.str());
 
-            //WUJobList jobs(*request->queryContext(), cluster.str(), startDate.str(), endDate.str(), response);
             WUJobList2 jobs(*request->queryContext(), cluster.str(), startDate.str(), endDate.str(), response, showall, bbtime, betime, xls.str());
 
             return 0;
@@ -2364,7 +2262,6 @@ bool CWsWorkunitsEx::doAction(IEspContext& context, StringArray& wuids, int acti
                     case ActionProtect:
                         strAction = "Protect";
                         {
-                            //Owned<IWorkUnit> lw = factory->updateWorkUnit(wuid);
                             Owned<IConstWorkUnit> lw = factory->openWorkUnit(wuid, false);
                             if (lw && lw.get())
                             {
@@ -2374,19 +2271,6 @@ bool CWsWorkunitsEx::doAction(IEspContext& context, StringArray& wuids, int acti
                             }
                         }
                         break;
-                    /*case ActionUnprotect:
-                        strAction = "Unprotect";
-                        {
-                            //Owned<IWorkUnit> lw = factory->updateWorkUnit(wuid);
-                            Owned<IConstWorkUnit> lw = factory->openWorkUnit(wuid, false);
-                            bool bProtect = true;
-                            if (!params || params->getPropBool("Unprotect",true))
-                                bProtect = false;
-                            lw->protect(bProtect);
-                            lw.clear();
-                            AccessSuccess(context,"Updated %s",wuid);
-                        }
-                        break;*/
                     case ActionChangeState:
                         strAction = "ChangeState";
                         {
@@ -2500,7 +2384,6 @@ bool CWsWorkunitsEx::onWUProcessGraph(IEspContext &context,IEspWUProcessGraphReq
         CWUWrapper wu(wuid.str(), context);
         Owned <IConstWUGraph> graph = wu->getGraph(graphname.str());
         Owned <IPropertyTree> xgmml = graph->getXGMMLTree(true); // merge in graph progress information
-        //adjustRowvalues(xgmml, popupId);
 
         toXML(xgmml.get(), x);
         resp.setTheGraph(x.str());
@@ -2746,7 +2629,6 @@ bool CWsWorkunitsEx::onWUResultBin(IEspContext &context,IEspWUResultBinRequest &
             buff.setBuffer(xls.length(), (void*)xls.str());
             resp.setResult(buff);
             resp.setResult_mimetype("application/vnd.ms-excel");
-    //        Content-disposition: attachment; filename=fname.ext
         }
 #ifdef _USE_ZLIB
         else if((stricmp(req.getFormat(),"zip")==0) || (stricmp(req.getFormat(),"gzip")==0))
@@ -2760,8 +2642,6 @@ bool CWsWorkunitsEx::onWUResultBin(IEspContext &context,IEspWUResultBinRequest &
             temp<<"<Result>";
             temp.append(x.length(),x.toByteArray());
             temp<<"</Result>";
-
-            //DBGLOG("XML size:(%d)", temp.length());
 
             StringBuffer ifname;
             unsigned threadID = (unsigned)(memsize_t)GetCurrentThreadId();
@@ -3226,8 +3106,6 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
 {
     try
     {
-        DBGLOG("CWsWorkunitsEx::onWUFile WUID=%s",req.getWuid());
-
         ensureWorkunitAccess(context, req.getWuid(), SecAccess_Read);
 
         int opt = req.getOption();
@@ -3247,9 +3125,6 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             else if (strcmp(File_DLL,req.getType()) == 0)
             {
                 getWorkunitDll(context, req.getWuid(),buf);
-
-                //resp.setThefile(buf);
-                //resp.setThefile_mimetype(HTTP_TYPE_OCTET_STREAM);
                 openSaveFile(context, opt, req.getName(), HTTP_TYPE_OCTET_STREAM, buf, resp);
             }
             else if (strcmp(File_Res,req.getType()) == 0)
@@ -3601,8 +3476,6 @@ bool CWsWorkunitsEx::onWUQuery(IEspContext &context, IEspWUQueryRequest & req, I
 {
     try
     {
-        DBGLOG("Started CWsWorkunitsEx::onWUQuery\n");
-
         if (req.getECL() && *req.getECL() || req.getApplicationName() && *req.getApplicationName() || req.getApplicationKey() && *req.getApplicationKey()
             || req.getApplicationData() && *req.getApplicationData())
         {
@@ -3616,7 +3489,6 @@ bool CWsWorkunitsEx::onWUQuery(IEspContext &context, IEspWUQueryRequest & req, I
             else
             {
                 StringBuffer sashaAddress;
-                //sashaAddress = (char *) req.getSashaNetAddress();
                 IArrayOf<IConstTpSashaServer> sashaservers;
                 CTpWrapper dummy;
                 dummy.getTpSashaServers(sashaservers);  
@@ -3624,18 +3496,12 @@ bool CWsWorkunitsEx::onWUQuery(IEspContext &context, IEspWUQueryRequest & req, I
                 {
                     IConstTpSashaServer& sashaserver = sashaservers.item(i);
                     IArrayOf<IConstTpMachine> &sashaservermachine = sashaserver.getTpMachines();
-                    //sashaAddress = (char *) sashaservermachine.item(0).getNetaddress();
                     sashaAddress.append(sashaservermachine.item(0).getNetaddress());
                 }
 
                 if (sashaAddress.length() > 0)
                     doWUQueryForArchivedWUs(context, req, resp, sashaAddress.str());
             }
-
-            ///if (sashaAddress.length() < 1)
-            /// doWUQueryWithSort(context, req, resp);
-            ///else
-            /// doWUQueryForArchivedWUs(context, req, resp, sashaAddress.str());
         }
 
         double version = context.getClientVersion();
@@ -3724,12 +3590,6 @@ bool CWsWorkunitsEx::onWUQuery(IEspContext &context, IEspWUQueryRequest & req, I
                 addToQueryString(basicQuery, "Descending", "1");
         }
         resp.setBasicQuery(basicQuery.str());
-
-    /*if (resp.getCurrent() && *resp.getCurrent())
-        addToQueryString(queryString, "Current", resp.getCurrent().str());
-    if (resp.getCount() && *resp.getCount())
-        addToQueryString(queryString, "Count", resp.getCount().str());
-    resp.setQueryForPaging(basicQuery.str());*/
     }
     catch(IException* e)
     {   
@@ -3752,8 +3612,6 @@ void CWsWorkunitsEx::addToQueryString(StringBuffer &queryString, const char *nam
 
 void CWsWorkunitsEx::doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQueryResponse & resp)
 {
-    DBGLOG("Started CWsWorkunitsEx::doWUQueryWithSort\n");
-
     SecAccessFlags accessOwn;
     SecAccessFlags accessOthers;
     if (!context.authorizeFeature(OWN_WU_URL, accessOwn))
@@ -3837,10 +3695,8 @@ void CWsWorkunitsEx::doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest 
                 IEspECLWorkunit* wuEspECL=createQueryWorkunit(wu->getWuid(parent).str(), context);
                 if (wuEspECL && (wu->getState() == WUStateScheduled) && wu->aborting())
                 {
-                    //wuEspECL->setAborting(true);
                     wuEspECL->setStateID(WUStateAborting);
                     wuEspECL->setState("aborting");
-                    //wuEspECL->setStateEx(WUStateAborting);
                 }
 
                 if(wuEspECL)
@@ -4023,7 +3879,6 @@ void CWsWorkunitsEx::doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest 
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
         unsigned numWUs = factory->numWorkUnitsFiltered(filters, filterbuf.bufferBase());
         Owned<IConstWorkUnitIterator> it = factory->getWorkUnitsSorted(sortorder, filters, filterbuf.bufferBase(), begin, pagesize+1, "", NULL);
-        //WUList wl(context,req.getOwner(),req.getState(),req.getCluster(),req.getStartDate(),req.getEndDate(),req.getECL(),req.getJobname(),req.getApplicationName(),req.getApplicationKey(),req.getApplicationData());
 
         ForEach(*it) 
         {
@@ -4048,10 +3903,8 @@ void CWsWorkunitsEx::doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest 
 
                 if (wuEspECL && (wu.getState() == WUStateScheduled) && wu.aborting())
                 {
-                    //wuEspECL->setAborting(true);
                     wuEspECL->setStateID(WUStateAborting);
                     wuEspECL->setState("aborting");
-                    //wuEspECL->setStateEx(WUStateAborting);
                 }
 
                 if(wuEspECL)
@@ -4452,8 +4305,6 @@ void CWsWorkunitsEx::processWorkunit(IConstWorkUnit *workunit, const char* wuid,
 
 void CWsWorkunitsEx::doWUQueryForArchivedWUs(IEspContext &context, IEspWUQueryRequest & req, IEspWUQueryResponse & resp, const char *sashaAddress)
 {
-    DBGLOG("Started CWsWorkunitsEx::doWUQueryForArchivedWUs\n");
-
     SecAccessFlags accessOwn;
     SecAccessFlags accessOthers;
     if (!context.authorizeFeature(OWN_WU_URL, accessOwn))
@@ -4733,7 +4584,6 @@ void CWsWorkunitsEx::doWUQueryForArchivedWUs(IEspContext &context, IEspWUQueryRe
 
 void CWsWorkunitsEx::doWUQueryByXPath(IEspContext &context, IEspWUQueryRequest & req, IEspWUQueryResponse & resp)
 {
-    DBGLOG("Started CWsWorkunitsEx::doWUQueryByXPath\n");
     IArrayOf<IEspECLWorkunit> results;
 
     if(req.getWuid() && *req.getWuid())
@@ -4863,9 +4713,6 @@ bool CWsWorkunitsEx::onWUShowScheduled(IEspContext &context, IEspWUShowScheduled
 {
     try
     {
-
-        DBGLOG("Started CWsWorkunitsEx::onWUShowScheduled\n");
-
         StringBuffer Query;
         Query.append("PageFrom=Scheduler");
 
@@ -5030,13 +4877,6 @@ void CWsWorkunitsEx::getResult(IEspContext &context, IConstWUResult &r,IArrayOf<
             r.getResultXml(x);
 
             Owned<IPropertyTree> props = createPTreeFromXMLString(x.str(), ipt_caseInsensitive);
-            
-            //StringBuffer buf;
-            //toXML(props, buf);
-            //if (buf.length() > 0)
-            //{
-            //  DBGLOG("getResult returns:%s", buf.str());
-            //}
             IPropertyTree *val = props->queryPropTree("Row/*");
             if(val)
             {
@@ -6001,184 +5841,6 @@ void CWsWorkunitsEx::addSubFiles(IPropertyTreeIterator* f, IEspECLSourceFile* ec
     return;
 }
 
-
-#if 0 //not use for now
-int CWsWorkunitsEx::addSubFiles(IArrayOf<IEspECLSourceFile>& allFiles, int k, IEspECLSourceFile* eclSuperFile)
-{
-    IArrayOf<IEspECLSourceFile> files;
-
-    int i = 0;
-    int subs = eclSuperFile->getSubs();
-
-    while (i < subs)
-    {
-        k++;
-
-        IEspECLSourceFile& file0 = allFiles.item(k);
-
-        const char* name0 = file0.getName();
-        int isSuperFile = file0.getIsSuperFile();
-        int numOfSubFiles = file0.getSubs();
-
-        Owned<IEspECLSourceFile> file= createECLSourceFile("","");
-        if(file0.getFileCluster() && *file0.getFileCluster())
-        {
-            file->setFileCluster(file0.getFileCluster());
-        }
-
-        if (name0 && *name0)
-        {
-            file->setName(name0);
-        }
-        
-        if (isSuperFile > 0)
-        {
-            file->setIsSuperFile(true);
-            file->setSubs(numOfSubFiles);
-        }
-
-        if(!file0.getCount_isNull())
-        {
-            file->setCount(file0.getCount());
-        }
-
-        if (isSuperFile && numOfSubFiles)
-             k = addSubFiles(allFiles, k, file);
-
-        files.append(*file.getLink());
-
-        i++;
-    }
-
-    eclSuperFile->setECLSourceFiles(files);
-
-    return k;
-}
-
-void CWsWorkunitsEx::getSubFiles(IUserDescriptor* userdesc, const char *fileName, IEspECLSourceFile* eclSourceFile0)
-{
-    StringArray subfiles;
-    Owned<IDistributedSuperFile> superfile = queryDistributedFileDirectory().lookupSuperFile(fileName, userdesc);
-    if (!superfile)
-    {
-        DBGLOG("onWUDetails(): Could not find super file %s", fileName);
-        return;
-    }
-
-    Owned<IDistributedFileIterator> iter=superfile->getSubFileIterator();
-    ForEach(*iter) 
-    {
-        StringBuffer name;
-        iter->getName(name);
-        subfiles.append(name.str());
-    }
-
-    if (subfiles.length() < 1)
-        return;
-
-    StringArray superfiles, nonsuperfiles;
-
-    for(int i = 0; i < subfiles.length(); i++)
-    {
-        const char* subfile = subfiles.item(i);
-        if (!subfile || !*subfile)
-            continue;
-
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(subfile, userdesc);
-        if(!df)
-        {
-            DBGLOG("onWUDetails(): Could not find file %s", subfile);
-            nonsuperfiles.append(subfile);
-            continue;
-        }
-
-        if(df->querySuperFile())
-        {
-            superfiles.append(subfile);
-        }
-        else
-        {
-            nonsuperfiles.append(subfile);
-        }
-    }
-
-    IArrayOf<IEspECLSourceFile> files;
-
-    ForEachItemIn(k, superfiles)
-    {
-        const char* file0 = superfiles.item(k);
-
-        Owned<IEspECLSourceFile> file= createECLSourceFile("","");
-        file->setName(file0);
-
-        getSubFiles(userdesc, file0, file);
-
-        if (stricmp("production_watch_thor::monitoring::nco::nco_u22056::qa::sth_address", file0)==0)
-            DBGLOG("Super-file:<%s> -- subfile:<%s>", fileName, file0);
-        
-        files.append(*file.getLink());
-    }
-
-    ForEachItemIn(k1, nonsuperfiles)
-    {
-        const char* file0 = nonsuperfiles.item(k1);
-
-        Owned<IEspECLSourceFile> file= createECLSourceFile("","");
-        file->setName(file0);
-
-        DBGLOG("Super-file:<%s> -- subfile:<%s>", fileName, file0);
-        if (stricmp("production_watch_thor::monitoring::nco::nco_u22050::qa::sth_address", file0)==0)
-            DBGLOG("Super-file:<%s> -- subfile:<%s>", fileName, file0);
-
-        files.append(*file.getLink());
-    }
-
-    eclSourceFile0->setECLSourceFiles(files);
-    return;
-}
-
-//check if the file exists in the list
-bool CWsWorkunitsEx::checkFileInECLSourceFile(const char* file, IConstECLSourceFile& eclfile)
-{
-    const char* name0 = eclfile.getName();
-    if (name0 && (stricmp(name0, file)==0))
-        return true;
-        
-    bool bFound = false;
-
-    IArrayOf<IConstECLSourceFile>& files =  eclfile.getECLSourceFiles();
-    ForEachItemIn(k, files)
-    {
-        IConstECLSourceFile& file0 = files.item(k);
-        if (checkFileInECLSourceFile(file, file0))
-        {
-            bFound = true;
-            break;
-        }
-    }
-
-    return bFound;
-}
-
-//check if the file exists in the list
-bool CWsWorkunitsEx::checkFileInECLSourceFiles(const char* file, IArrayOf<IEspECLSourceFile>& eclfiles)
-{
-    bool bFound = false;
-
-    ForEachItemIn(k, eclfiles)
-    {
-        IEspECLSourceFile& file0 = eclfiles.item(k);
-        if (checkFileInECLSourceFile(file, file0))
-        {
-            bFound = true;
-            break;
-        }
-    }
-
-    return bFound;
-}
-#endif
-
 bool CWsWorkunitsEx::getInfoFromSasha(IEspContext &context, const char *sashaServer, const char* wuid,IEspECLWorkunit *info)
 {
     Owned<ISashaCommand> cmd = createSashaCommand();
@@ -6206,7 +5868,6 @@ bool CWsWorkunitsEx::getInfoFromSasha(IEspContext &context, const char *sashaSer
     if(res.length() < 1)
         return false;
     
-    //DBGLOG("Result: %s", res.str());
     Owned<IPropertyTree> wu = createPTreeFromXMLString(res.str());
     if (!wu)
         return false;
@@ -6216,7 +5877,6 @@ bool CWsWorkunitsEx::getInfoFromSasha(IEspContext &context, const char *sashaSer
     const char * submitID = wu->queryProp("@submitID");
     const char * cluster = wu->queryProp("@clusterName");
     const char * jobName = wu->queryProp("@jobName");
-    //const char * priorityClass = wu->queryProp("@priorityClass");
     const char * protectedWU = wu->queryProp("@protected");
     const char * description = wu->queryProp("Debug/description");
 
@@ -6240,7 +5900,6 @@ bool CWsWorkunitsEx::getInfoFromSasha(IEspContext &context, const char *sashaSer
         info->setJobname(jobName);
     if (description && *description)
         info->setDescription(description);
-    //info->setPriorityClass(priorityClass);
     if (protectedWU && stricmp(protectedWU, "0"))
         info->setProtected(true);
     else
@@ -6255,31 +5914,6 @@ bool CWsWorkunitsEx::getInfoFromSasha(IEspContext &context, const char *sashaSer
       {
             q->setText(queryText);
       }
-
-        /*StringBuffer xpath;
-        xpath.clear().append("Associated/File");
-        Owned<IPropertyTreeIterator> filetrees= queryTree->getElements(xpath.str());
-        if (filetrees->first()) 
-        {
-            do 
-            {
-                IPropertyTree &filetree = filetrees->query();
-                const char* filename = filetree.queryProp("@filename");
-                const char* filetype = filetree.queryProp("@type");
-                if (!stricmp(filetype, "cpp"))
-                {
-                    q->setCpp(filename);
-                }
-                else if (!stricmp(filetype, "dll"))
-                {
-                    q->setDll(filename);
-                }
-                else if (!stricmp(filetype, "log"))
-                {
-                    q->setThorLog(filename);
-                }
-            } while (filetrees->next());
-        } */
     }
 
     return true;
@@ -6292,9 +5926,6 @@ void CWsWorkunitsEx::getArchivedWUInfo(IEspContext &context, IEspWUInfoRequest &
     {
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "Workunit ID not specified.");
     }
-
-    //Access should be checked inside getInfoFromSasha().
-   //ensureWorkunitAccess(context, wuid, SecAccess_Read); 
 
     bool bWUFound = false;
     StringBuffer sashaAddress;
@@ -6329,7 +5960,6 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
     try
     {
         const char *type = req.getType();
-
         if (type && *type && !stricmp(type, "archived workunits"))
         {
             getArchivedWUInfo(context, req, resp);
@@ -6453,16 +6083,6 @@ bool CWsWorkunitsEx::onWUGVCGraphInfo(IEspContext &context,IEspWUGVCGraphInfoReq
         if(!req.getBatchWU_isNull())
             resp.setBatchWU(req.getBatchWU());
 
-        //Owned <IConstWUGraph> graph = wu->getGraph(req.getName());
-        //Owned <IPropertyTree> pXgmmlGraph = graph->getXGMMLTree(true); // merge in graph progress information
-        //StringBuffer xml;
-        //toXML(pXgmmlGraph, xml);
-
-        //if (xml.length() > 0)
-        //{
-            //StringBuffer str;
-            //encodeUtf8XML(xml.str(), str, 0);
-
         StringBuffer xml1;
         xml1.append("<Control>");
         xml1.append("<Endpoint>");
@@ -6479,9 +6099,6 @@ bool CWsWorkunitsEx::onWUGVCGraphInfo(IEspContext &context,IEspWUGVCGraphInfoReq
         {
             xml1.appendf("<Graph id=\"%s\">", req.getName());
         }
-        //xml1.append("<xgmml>");
-        //xml1.append(str);
-        //xml1.append("</xgmml>");
 
         xml1.append("</Graph>");
         xml1.append("</Query>");
@@ -6587,9 +6204,7 @@ void CWsWorkunitsEx::getGJSGraph(IEspContext &context, const char *wuid, const c
         xml1.append("</Control>");
 
         xsltTransform(xml1.str(), m_GraphUpdateGvcXSLT, params, script);
-
     }
-
 
     return;
 }
@@ -6598,7 +6213,6 @@ bool CWsWorkunitsEx::onWUGraphTiming(IEspContext &context, IEspWUGraphTimingRequ
 {
     try
     {
-        DBGLOG("CWsWorkunitsEx::onWUGraphTiming WUID=%s",req.getWuid());
         CWUWrapper wu(req.getWuid(), context);
         ensureWorkunitAccess(context, *wu, SecAccess_Read);
 
@@ -7099,12 +6713,6 @@ void CWsWorkunitsEx::getWorkunitArchiveQuery(IEspContext &context, const char* w
 
 void CWsWorkunitsEx::getWorkunitDll(IEspContext &context, const char* wuid,MemoryBuffer& buf)
 {
-    /*
-    CQuery query(wuid, context);
-    SCMStringBuffer dllname;
-    query->getQueryDllName(dllname);
-    queryDllServer().getDll(dllname.str(), buf);
-*/
     RemoteFilename rfn;
     rfn.setRemotePath("/mnt/disk1/var/lib/HPCCSystems/myeclccserver/libW20110616-112955.so");
     SocketEndpoint ep("10.239.219.6");
@@ -7119,8 +6727,6 @@ void CWsWorkunitsEx::getWorkunitResults(IEspContext &context, const char* wuid, 
 {
     CWUWrapper wu(wuid, context);
 
-    //Owned<IConstWUResult> wuResult = wu->getResultBySequence(index);
-    //wuResult->getResultName(resname);
     Owned<IConstWUResult> wuResult;
     if (resname.length() > 0)
     {
@@ -7332,9 +6938,6 @@ void CWsWorkunitsEx::getWorkunitThorSlaveLog(IEspContext &context, const char *w
    if (!slaveip || !*slaveip)
       throw MakeStringException(ECLWATCH_INVALID_INPUT,"ThorSlave IP not specified.");
 
-    //StringBuffer logname;
-   //getWorkunitThorLog(wuid, logname);
-
     SCMStringBuffer logname;
    CWUWrapper(wuid, context)->getDebugValue(File_ThorLog, logname);
 
@@ -7363,38 +6966,6 @@ void CWsWorkunitsEx::getWorkunitThorSlaveLog(IEspContext &context, const char *w
     OwnedIFileIOStream ios = createBufferedIOStream(rIO);
     StringBuffer line;
     bool eof = false;
-#if 0
-    bool include = false;
-    StringBuffer startwuid;
-    StringBuffer endwuid;
-    startwuid.appendf("Started wuid=%s", wuid);
-    endwuid.appendf("Finished wuid=%s", wuid);
-    const char *sw = startwuid.str();
-    const char *ew = endwuid.str();
-    while (!eof)
-    {
-        line.clear();
-        loop
-        {
-            char c;
-            size32_t numRead = ios->read(1, &c);
-            if (!numRead)
-            {
-                eof = true;
-                break;
-            }
-            line.append(c);
-            if (c=='\n')
-                break;
-        }
-        if (strstr(line.str(), sw))
-            include = true;
-        if (include)
-            buf.append(line);
-        if (strstr(line.str(), ew))
-            include = false;
-    }
-#else
     while (!eof)
     {
         line.clear();
@@ -7415,7 +6986,6 @@ void CWsWorkunitsEx::getWorkunitThorSlaveLog(IEspContext &context, const char *w
         if (buf.length() > 640000)
             break;
     }
-#endif
 }
 
 bool CWsWorkunitsEx::onWUUpdate(IEspContext &context, IEspWUUpdateRequest &req, IEspWUUpdateResponse &resp)
@@ -7702,8 +7272,6 @@ bool CWsWorkunitsEx::onWUAction(IEspContext &context, IEspWUActionRequest &req, 
                     redirect<<"&Sortby="<<req.getSortby();
                 if(req.getDescending())
                     redirect<<"&Descending="<<req.getDescending();
-                //if(*req.getFilters())
-                //  redirect<<"&"<<req.getFilters();
                 if (req.getState() && *req.getState())
                     redirect<<"&State="<<req.getState();
                 if (req.getCluster() && *req.getCluster())
@@ -7874,7 +7442,6 @@ bool CWsWorkunitsEx::onWUSchedule(IEspContext &context, IEspWUScheduleRequest &r
 {
     try
     {
-        DBGLOG("Schedule workunit: %s", req.getWuid());
         const char* cluster = req.getCluster();
         if (!cluster)
              throw MakeStringException(ECLWATCH_INVALID_INPUT,"No Cluster defined.");
@@ -7901,7 +7468,6 @@ bool CWsWorkunitsEx::onWUSchedule(IEspContext &context, IEspWUScheduleRequest &r
             }
 
             roxieQuery.queue = req.getQueue();
-            //roxieQuery.jobName;
             roxieQuery.roxieTimeOut = roxieQueryRoxieTimeOut; //Hardcoded for now
             roxieQuery.wuTimeOut = roxieQueryWUTimeOut;
 
@@ -7950,8 +7516,6 @@ bool CWsWorkunitsEx::onWUSubmit(IEspContext &context, IEspWUSubmitRequest &req, 
             throw MakeStringException(ECLWATCH_INVALID_INPUT,"No workunit ID defined.");
 
         ensureWorkunitAccess(context, wuid, SecAccess_Write);
-
-        DBGLOG("Submit workunit: %s", wuid);
 
         const char* cluster = req.getCluster();
         if (!cluster)
@@ -8414,7 +7978,6 @@ bool getClusterJobXLS(double version, IStringVal &ret, const char* cluster, cons
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid business hours");
     }
 
-    //WUJobList2 jobs(*request->queryContext(), cluster, startDate, endDate, response, showall, bbtime, betime);
     CDateTime fromTime;
     CDateTime toTime;
     StringBuffer fromstr;
@@ -8436,9 +7999,6 @@ bool getClusterJobXLS(double version, IStringVal &ret, const char* cluster, cons
 
     StringBuffer text;
     text.append("<XmlSchema name=\"MySchema\">");
-    ///const IResultSetMetaData & meta = cursor->queryResultSet()->getMetaData();
-    ///StringBufferAdaptor adaptor(text);
-    ///meta.getXmlSchema(adaptor, false);
     text.append(
     "<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" elementFormDefault=\"qualified\" attributeFormDefault=\"unqualified\">\n"
         "<xs:element name=\"Dataset\">"
@@ -8486,16 +8046,10 @@ bool getClusterJobXLS(double version, IStringVal &ret, const char* cluster, cons
         if(!curjob || !*curjob)
             continue;
 
-//DBGLOG(curjob);
-
         Owned<IEspECLJob> job = createEclJobFromString0(version, curjob);
 
         text.append(" <Row>");
 
-      //  cursor->getXmlRow(adaptor);
-        //responsebuf<<"parent.displayJob(\'"<<job->getWuid()<<"\',\'"<<job->getGraph()<<"\',"
-        //               "\'"<<job->getStartedDate()<<"\',\'"<<job->getFinishedDate()<<"\',"
-        //               "\'"<<job->getCluster()<<"\',\'"<<job->getState()<<"\', ''," << showall << "," << bbtime << "," << betime << ")\r\n";
         CDateTime tTime;
         StringBuffer started, finished; 
         unsigned year, month, day, hour, minute, second, nano;
@@ -8523,7 +8077,7 @@ bool getClusterJobXLS(double version, IStringVal &ret, const char* cluster, cons
         jobList.append(*job.getClear());
     }
 
-////////////////////////////////////////////////////////21492
+    //21492
     //Find out which WUs stopped by abnormal thor termination
     StringArray unfinishedWUIDs, unfinishedGraphs, unfinishedSubGraphs, unfinishedClusters, unfinishedWUStarttime, unfinishedWUEndtime;
     findUnfinishedECLWUs(jobList, fromTime, toTime, tostr.str(), cluster, unfinishedWUIDs, unfinishedGraphs, unfinishedSubGraphs, unfinishedClusters, unfinishedWUStarttime, unfinishedWUEndtime);
@@ -8562,7 +8116,6 @@ bool getClusterJobXLS(double version, IStringVal &ret, const char* cluster, cons
             text.append("<runs></runs>");
             text.appendf("<started>%s</started>", started.str());
             text.appendf("<finished>%s</finished>", finished.str());
-            //text.appendf("<duration>%d</duration>", duration);
             text.appendf("<duration></duration>");
             if(cluster && *cluster)
                 text.appendf("<cluster>%s</cluster>", cluster);
@@ -8571,10 +8124,9 @@ bool getClusterJobXLS(double version, IStringVal &ret, const char* cluster, cons
             text.newline();
         }
     }
-////////////////////////////////////////////////////////21492
+    //21492
 
    text.append("</Dataset>").newline();
-    DBGLOG("EXL text:\n%s", text.str());
     ret.set(text.str());
 
     return true;
@@ -8646,40 +8198,6 @@ void AddToClusterJobXLS(JobUsageArray& jobsummary, unsigned year0, unsigned mont
     return;
 }
 
-#if 0
-void AddToClusterJobXLS(JobUsageArray& jobsummary, unsigned year0, unsigned month0, unsigned day0, unsigned hour0, unsigned minute0, unsigned second0,
-                                unsigned year1, unsigned month1, unsigned day1, unsigned hour1, unsigned minute1, unsigned second1, 
-                                int first, float bbtime, float betime)
-{
-    float x1 = hour0 + minute0/60 + second0/3600;
-    int   y1 = ZCMJD(year0, month0, day0)-first;
-    float x2 = hour1 + minute1/60 + second1/3600;
-    int   y2 = ZCMJD(year1, month1, day1)-first;
-
-    for(int y=y1; y<=y2; y++)
-    {
-        float xx1= (y==y1 ? x1 : 0.0);
-        float xx2= (y==y2 ? x2 : 24.0);
-
-        CJobUsage& jobUsage = jobsummary.item(y);
-        jobUsage.m_usage += 100*(xx2-xx1)/24;
-
-        float bhours = ((betime < xx2)?betime:xx2) - ((bbtime > xx1)?bbtime:xx1);
-        if(bhours < 0.0)
-            bhours = 0.0;
-        float nbhours = (xx2 - xx1 - bhours);
-
-        if(bbtime + (24.0 - betime) > 0.001)
-            jobUsage.m_nbusage +=  100*nbhours/(bbtime + (24.0 - betime));
-
-        if(betime - bbtime > 0.001)
-            jobUsage.m_busage += 100*bhours/(betime - bbtime);
-    }
-
-    return;
-}
-#endif
-
 bool getClusterJobSummaryXLS(double version, IStringVal &ret, const char* cluster, const char* startDate, const char* endDate,
                                         bool showall, const char* bbtime0, const char* betime0)
 {
@@ -8737,7 +8255,6 @@ bool getClusterJobSummaryXLS(double version, IStringVal &ret, const char* cluste
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid business hours");
     }
 
-    //WUJobList2 jobs(*request->queryContext(), cluster, startDate, endDate, response, showall, bbtime, betime);
     CDateTime fromTime;
     CDateTime toTime;
     StringBuffer fromstr;
@@ -8799,14 +8316,8 @@ bool getClusterJobSummaryXLS(double version, IStringVal &ret, const char* cluste
         if(!curjob || !*curjob)
             continue;
 
-//DBGLOG(curjob);
-
         Owned<IEspECLJob> job = createEclJobFromString0(version, curjob);
 
-      //  cursor->getXmlRow(adaptor);
-        //responsebuf<<"parent.displayJob(\'"<<job->getWuid()<<"\',\'"<<job->getGraph()<<"\',"
-        //               "\'"<<job->getStartedDate()<<"\',\'"<<job->getFinishedDate()<<"\',"
-        //               "\'"<<job->getCluster()<<"\',\'"<<job->getState()<<"\', ''," << showall << "," << bbtime << "," << betime << ")\r\n";
         CDateTime tTime;
         unsigned year0, month0, day0, hour0, minute0, second0, nano0;
         tTime.setString(job->getStartedDate(),NULL,true);
@@ -8824,7 +8335,7 @@ bool getClusterJobSummaryXLS(double version, IStringVal &ret, const char* cluste
         jobList.append(*job.getClear());
     }
 
-////////////////////////////////////////////////////////21492
+    //21492
     //Find out which WUs stopped by abnormal thor termination
     StringArray unfinishedWUIDs, unfinishedGraphs, unfinishedSubGraphs, unfinishedClusters, unfinishedWUStarttime, unfinishedWUEndtime;
     findUnfinishedECLWUs(jobList, fromTime, toTime, tostr.str(), cluster, unfinishedWUIDs, unfinishedGraphs, unfinishedSubGraphs, unfinishedClusters, unfinishedWUStarttime, unfinishedWUEndtime);
@@ -8852,13 +8363,10 @@ bool getClusterJobSummaryXLS(double version, IStringVal &ret, const char* cluste
             AddToClusterJobXLS(jobUsages, year0, month0, day0, hour0, minute0, second0, year1, month1, day1, hour1, minute1, second1, first, bbtime, betime);
         }
     }
-////////////////////////////////////////////////////////21492
+    //21492
 
     StringBuffer text;
     text.append("<XmlSchema name=\"MySchema\">");
-    ///const IResultSetMetaData & meta = cursor->queryResultSet()->getMetaData();
-    ///StringBufferAdaptor adaptor(text);
-    ///meta.getXmlSchema(adaptor, false);
     text.append(
     "<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" elementFormDefault=\"qualified\" attributeFormDefault=\"unqualified\">\n"
         "<xs:element name=\"Dataset\">"
@@ -8896,8 +8404,6 @@ bool getClusterJobSummaryXLS(double version, IStringVal &ret, const char* cluste
     for (int i0 = 0; i0 < lastUsage; i0++)
     {
         CJobUsage& jobUsage = jobUsages.item(i0);
-        //if (jobUsage.m_usage < 0.1)
-        //  continue;
 
         text.append(" <Row>");
         text.appendf("<Date>%s</Date>", jobUsage.m_date.str());
@@ -8908,7 +8414,6 @@ bool getClusterJobSummaryXLS(double version, IStringVal &ret, const char* cluste
     }
 
     text.append("</Dataset>").newline();
-    DBGLOG("EXL text:\n%s", text.str());
     ret.set(text.str());
 
     return true;
@@ -9043,7 +8548,6 @@ bool CWsWorkunitsEx::getClusterJobQueueXLS(double version, IStringVal &ret, cons
     }
 
    text.append("</Dataset>").newline();
-    //DBGLOG("EXL text:\n%s", text.str());
     ret.set(text.str());
 
     return true;
@@ -9053,8 +8557,6 @@ bool CWsWorkunitsEx::onWUClusterJobQueueXLS(IEspContext &context, IEspWUClusterJ
 {
     try
     {
-        DBGLOG("Started CWsWorkunitsEx::onWUClusterJobQueueXLS\n");
-
         SecAccessFlags accessOwn;
         SecAccessFlags accessOthers;
         if (!context.authorizeFeature(OWN_WU_URL, accessOwn))
@@ -9087,10 +8589,6 @@ bool CWsWorkunitsEx::onWUClusterJobQueueXLS(IEspContext &context, IEspWUClusterJ
              MemoryBuffer & buffer;
         } adaptor(text);
 
-//  StringBuffer responsebuf;
-//  responsebuf<<"parent.displayQEnd(\'Loading\')</script>\r\n";
-//  resp->sendChunk(responsebuf.str());
-
         double version = context.getClientVersion();
         getClusterJobQueueXLS(version, adaptor, req.getCluster(), req.getStartDate(), req.getEndDate(), req.getShowType());
 
@@ -9102,7 +8600,6 @@ bool CWsWorkunitsEx::onWUClusterJobQueueXLS(IEspContext &context, IEspWUClusterJ
         temp<<"<WUResultExcel><Result>";
         temp.append(text.length(),text.toByteArray());
         temp<<"</Result></WUResultExcel>";
-        //DBGLOG("XML:%s\n", temp.str());
 
         StringBuffer xls;
         xsltTransform(temp.str(), StringBuffer(getCFD()).append("./smc_xslt/result.xslt").str(), params, xls);
@@ -9123,8 +8620,6 @@ bool CWsWorkunitsEx::onWUClusterJobQueueLOG(IEspContext &context,IEspWUClusterJo
 {
     try
     {
-        DBGLOG("Started CWsWorkunitsEx::onWUClusterJobQueueLOG\n");
-
         SecAccessFlags accessOwn;
         SecAccessFlags accessOthers;
         if (!context.authorizeFeature(OWN_WU_URL, accessOwn))
@@ -9223,8 +8718,6 @@ bool CWsWorkunitsEx::onWUClusterJobXLS(IEspContext &context, IEspWUClusterJobXLS
 {
     try
     {
-        DBGLOG("Started CWsWorkunitsEx::onWUClusterJobXLS\n");
-
         SecAccessFlags accessOwn;
         SecAccessFlags accessOthers;
         if (!context.authorizeFeature(OWN_WU_URL, accessOwn))
@@ -9268,7 +8761,6 @@ bool CWsWorkunitsEx::onWUClusterJobXLS(IEspContext &context, IEspWUClusterJobXLS
         temp<<"<WUResultExcel><Result>";
         temp.append(text.length(),text.toByteArray());
         temp<<"</Result></WUResultExcel>";
-        //DBGLOG("XML:%s\n", temp.str());
 
         StringBuffer xls;
         xsltTransform(temp.str(), StringBuffer(getCFD()).append("./smc_xslt/result.xslt").str(), params, xls);
@@ -9289,8 +8781,6 @@ bool CWsWorkunitsEx::onWUClusterJobSummaryXLS(IEspContext &context, IEspWUCluste
 {
     try
     {
-        DBGLOG("Started CWsWorkunitsEx::onWUClusterJobSummaryXLS\n");
-
         SecAccessFlags accessOwn;
         SecAccessFlags accessOthers;
         if (!context.authorizeFeature(OWN_WU_URL, accessOwn))
@@ -9324,7 +8814,6 @@ bool CWsWorkunitsEx::onWUClusterJobSummaryXLS(IEspContext &context, IEspWUCluste
         } adaptor(text);
 
         double version = context.getClientVersion();
-        ///getClusterJobXLS(version, adaptor, req.getCluster(), req.getStartDate(), req.getEndDate(), req.getShowAll(), req.getBusinessStartTime(), req.getBusinessEndTime());
         getClusterJobSummaryXLS(version, adaptor, req.getCluster(), req.getStartDate(), req.getEndDate(), req.getShowAll(), req.getBusinessStartTime(), req.getBusinessEndTime());
 
         Owned<IProperties> params(createProperties());
@@ -9335,7 +8824,6 @@ bool CWsWorkunitsEx::onWUClusterJobSummaryXLS(IEspContext &context, IEspWUCluste
         temp<<"<WUResultExcel><Result>";
         temp.append(text.length(),text.toByteArray());
         temp<<"</Result></WUResultExcel>";
-        //DBGLOG("XML:%s\n", temp.str());
 
         StringBuffer xls;
         xsltTransform(temp.str(), StringBuffer(getCFD()).append("./smc_xslt/result.xslt").str(), params, xls);
@@ -9361,8 +8849,6 @@ bool CWsWorkunitsEx::onWUGetDependancyTrees(IEspContext& context, IEspWUGetDepen
 {
     try
     {
-        DBGLOG("Enter onWUGetDependancyTrees");
-
         unsigned int timeMilliSec = 500;
         SCMStringBuffer wuid;
         {
@@ -9434,8 +8920,6 @@ bool CWsWorkunitsEx::onWUGetDependancyTrees(IEspContext& context, IEspWUGetDepen
         }
 
         factory->deleteWorkUnit(wuid.str());
-
-        DBGLOG("Leave onWUGetDependancyTrees");
     }
     catch(IException* e)
     {   

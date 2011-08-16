@@ -159,7 +159,6 @@ public:
                         set<string>* pMachineNames=NULL);
     void getDropZoneList(const char* MachineType, const char* MachinePath, const char* Directory, IArrayOf<IEspTpMachine> &MachineList);
     void setMachineInfo(const char* name,const char* type,IEspTpMachine& machine);
-    void resolveGroupInfo(const char* groupName,StringBuffer& Cluster, StringBuffer& ClusterPrefix);
     void getMachineInfo(IEspTpMachine& machineInfo,IPropertyTree& machine,const char* ParentPath,const char* MachineType,const char* nodenametag);
     StringBuffer& getPrefixName(const char* clusterName,StringBuffer& prefixName);
 

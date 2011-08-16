@@ -176,12 +176,7 @@ void CWsRoxieQueryEx::addToQueryStringFromInt(StringBuffer &queryString, const c
 void CWsRoxieQueryEx::getClusterConfig(char const * clusterType, char const * clusterName, char const * processName, StringBuffer& netAddress, int& port)
 {
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-#if 0
-    Owned<IConstEnvironment> environment = factory->openEnvironment();
-#else
     Owned<IConstEnvironment> environment = factory->openEnvironmentByFile();
-#endif
-
     Owned<IPropertyTree> pRoot = &environment->getPTree();
 
     StringBuffer xpath;
@@ -211,10 +206,6 @@ void CWsRoxieQueryEx::getClusterConfig(char const * clusterType, char const * cl
         SCMStringBuffer scmNetAddress;
         pMachine->getNetAddress(scmNetAddress);
         netAddress = scmNetAddress.str();
-#ifdef MACHINE_IP
-        if (!strcmp(netAddress.str(), "."))
-            netAddress = MACHINE_IP;
-#endif
     }
     
     return;
@@ -229,7 +220,6 @@ bool CWsRoxieQueryEx::onRoxieQuerySearch(IEspContext &context, IEspRoxieQuerySea
 
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsRoxieQueryEx::onRoxieQuerySearch User=%s",username.str());
 
         CTpWrapper dummy;
         IArrayOf<IEspTpCluster> clusters;
@@ -435,7 +425,6 @@ bool CWsRoxieQueryEx::onRoxieQueryList(IEspContext &context, IEspRoxieQueryListR
 
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsRoxieQueryEx::onRoxieQueryList User=%s",username.str());
 
         const char* sortBy = req.getSortby();
         bool descending = req.getDescending();
@@ -536,7 +525,6 @@ bool CWsRoxieQueryEx::onQueryDetails(IEspContext &context, IEspRoxieQueryDetails
 
         StringBuffer username, password;
         getUserInformation(context, username, password);
-        DBGLOG("CWsRoxieQueryEx::onQueryDetails User=%s",username.str());
 
         const char* queryID = req.getQueryID();
         const char* cluster = req.getCluster();

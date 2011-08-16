@@ -26,28 +26,9 @@
 #endif
 
 #include "ws_dfu_esp.ipp"
-
 #include "ws_dfuView.hpp"
-
 #include "fileview.hpp"
 #include "fvrelate.hpp"
-
-/*
-class CSpaceItem64 : public CInterface
-{
-public:
-    char Name[256];
-    char LargestFile[256];
-    char SmallestFile[256];
-    __int64 NumOfFilesInt;
-    __int64 NumOfFilesIntUnknown;
-    __int64 TotalSizeInt;
-    __int64 LargestSizeInt;
-    __int64 SmallestSizeInt;
-
-    IMPLEMENT_IINTERFACE;
-};*/
-
 
 class CWsDfuSoapBindingEx : public CWsDfuSoapBinding
 {
@@ -94,7 +75,6 @@ public:
 private:
     void getLogicalFileAndDirectory(IUserDescriptor* udesc, const char *dirname, IArrayOf<IEspDFULogicalFile>& LogicalFiles, int& numFiles, int& numDirs);
     bool doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc, IEspDFUQueryRequest & req, IEspDFUQueryResponse & resp);
-    //bool doLogicalFileSearch(IUserDescriptor* udesc, IEspDFUQueryRequest & req, IEspDFUQueryResponse & resp);
     void doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, const char *name,const char *cluster,
         const char *description,IEspDFUFileDetail& FileDetails);
     bool createSpaceItemsByDate(IArrayOf<IEspSpaceItem>& SpaceItems, StringBuffer interval, unsigned& yearFrom, 
@@ -118,7 +98,6 @@ private:
     bool onDFUAction(IUserDescriptor* udesc, const char* LogicalFileName,const char* ClusterName,const char* ActionType, bool nodelete, StringBuffer& returnStr);
     bool checkFileContent(IEspContext &context, IUserDescriptor* udesc, const char * logicalName, const char * cluster);
     void getRoxieClusterConfig(char const * clusterType, char const * clusterName, char const * processName, StringBuffer& netAddress, int& port);
-    //bool getRoxieQueriesForFile(const char* logicalName, const char* cluster, StringArray& roxieQueries);
     bool checkRoxieQueryFilesOnDelete(IEspDFUArrayActionRequest &req, StringArray& roxieQueries);
     bool DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &req, IEspDFUArrayActionResponse &resp);
 
@@ -146,7 +125,6 @@ private:
     StringBuffer user_;
     StringBuffer password_;
 };
-
 
 //helper functions
 inline const char * splitName(const char * name)

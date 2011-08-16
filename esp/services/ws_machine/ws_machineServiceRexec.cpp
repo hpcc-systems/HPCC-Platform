@@ -264,31 +264,30 @@ public:
       char   buffer[128];
       FILE   *fp;
 
-      /* Run the command so that it writes its output to a pipe. Open this
-       * pipe with read text attribute so that we can read it 
-       * like a text file. 
-       */
-        if (getEspLogLevel()>8)
+      // Run the command so that it writes its output to a pipe. Open this
+      // pipe with read text attribute so that we can read it 
+      // like a text file. 
+       
+        if (getEspLogLevel()>LogNormal)
         {
             DBGLOG("command_line=<%s>", command_line);
         }
-#ifdef CHECK_LINUX_COMMAND
-        return -1;
-#else
       if( (fp = popen( command_line, "r" )) == NULL )
          return -1;
 
-        /* Read pipe until end of file. End of file indicates that 
-       * the stream closed its standard out (probably meaning it 
-       * terminated).
-       */
+        // Read pipe until end of file. End of file indicates that 
+       // the stream closed its standard out (probably meaning it 
+       // terminated).
       while ( !feof(fp) )
          if ( fgets( buffer, 128, fp) )
             response.append( buffer );
 
-      /* Close pipe and print return value of CHKDSK. */
+      if (getEspLogLevel()>LogNormal)
+      {
+          DBGLOG("response=<%s>", response.str());
+      }
+      // Close pipe and print return value of CHKDSK. 
       return pclose( fp );
-#endif
    }
 };
 

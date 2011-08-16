@@ -195,11 +195,7 @@ int CFileSpraySoapBindingEx::onGetInstantQuery(IEspContext &context, CHttpReques
 IPropertyTree* CFileSpraySoapBindingEx::createPTreeForXslt(const char* method, const char* dfuwuid)
 {
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-#if 0
-    Owned<IConstEnvironment> m_constEnv = factory->openEnvironment();
-#else
     Owned<IConstEnvironment> m_constEnv = factory->openEnvironmentByFile();
-#endif
     Owned<IPropertyTree> pEnvRoot = &m_constEnv->getPTree();
     IPropertyTree* pEnvSoftware = pEnvRoot->queryPropTree("Software");
 
@@ -252,11 +248,7 @@ IPropertyTree* CFileSpraySoapBindingEx::createPTreeForXslt(const char* method, c
                 ipaddr.getIpText(ipStr);
                 if (ipStr.length() > 0)
                 {
-#ifdef MACHINE_IP
-                    sNetAddr.append(MACHINE_IP);
-#else
                     sNetAddr.append(ipStr.str());
-#endif
                 }
             }
             pDropZone->addProp("@netAddress", sNetAddr.str());
@@ -279,7 +271,6 @@ IPropertyTree* CFileSpraySoapBindingEx::createPTreeForXslt(const char* method, c
 
             if (machine)
             {
-                //int os = machine->getOS();
                 StringBuffer dir;
                 pDropZone->getProp("@directory", dir);
                 if (machine->getOS() == MachineOsLinux || machine->getOS() == MachineOsSolaris)
@@ -325,7 +316,6 @@ IPropertyTree* CFileSpraySoapBindingEx::createPTreeForXslt(const char* method, c
 
                 ins++;
                 StringBuffer gname("hthor__");
-                //StringBuffer gname;
                 gname.append(name);
                 if (ins>1)
                     gname.append('_').append(ins);
@@ -388,24 +378,6 @@ void CFileSpraySoapBindingEx::downloadFile(IEspContext &context, CHttpRequest* r
         request->getParameter("Path", pathStr);
         request->getParameter("Name", nameStr);
         
-#if 0
-        StringArray files;
-        IProperties* params = request->queryParameters();
-        Owned<IPropertyIterator> iter = params->getIterator();
-        if (iter && iter->first())
-        {
-            while (iter->isValid())
-            {
-                const char *keyname=iter->getPropKey();
-                if (!keyname || strncmp(keyname, "Names", 5))
-                    continue;
-
-                files.append(params->queryProp(iter->getPropKey()));
-                iter->next();
-            }
-        }
-#endif
-
         if (netAddressStr.length() < 1)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Network address not specified.");
 
@@ -426,11 +398,7 @@ void CFileSpraySoapBindingEx::downloadFile(IEspContext &context, CHttpRequest* r
             pathStr.append( pathSep );
 
         StringBuffer logname;
-#ifdef MACHINE_IP
-        logname.appendf("//%s/%s/%s", MACHINE_IP, pathStr.str(), nameStr.str());
-#else
         logname.appendf("%c%s%c%s%s", pathSep, netAddressStr.str(), pathSep, pathStr.str(), nameStr.str());
-#endif
         logname.clear().appendf("%s%s", pathStr.str(), nameStr.str());
 
         StringBuffer headerStr("attachment;");

@@ -26,7 +26,6 @@
 #include "windows.h"
 #endif
 
-///#define FILE_DESPRAY_URL "FileDesprayAccess"
 #define FILE_IO_URL     "FileIO"
 
 void CWsFileIOEx::init(IPropertyTree *cfg, const char *process, const char *service)
@@ -38,14 +37,7 @@ bool CWsFileIOEx::CheckServerAccess(const char* server, const char* relPath, Str
     if (!server || (server[0] == 0) || !relPath || (relPath[0] == 0))
         return false;
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-
-    Owned<IConstEnvironment> env;
-#if 0
-    env.setown(factory->openEnvironment());
-#else
-    env.setown(factory->openEnvironmentByFile());
-#endif
-
+    Owned<IConstEnvironment> env = factory->openEnvironmentByFile();
     Owned<IPropertyTree> pEnvRoot = &env->getPTree();
     IPropertyTree* pEnvSoftware = pEnvRoot->queryPropTree("Software");
     IPropertyTree* pRoot = createPTreeFromXMLString("<Environment/>");
@@ -78,12 +70,7 @@ bool CWsFileIOEx::CheckServerAccess(const char* server, const char* relPath, Str
                         ipaddr.getIpText(ipStr);
                         if (ipStr.length() > 0)
                         {
-//#define MACHINE_IP "10.239.219.9"
-#ifdef MACHINE_IP
-                            sNetAddr.append(MACHINE_IP);
-#else
                             sNetAddr.append(ipStr.str());
-#endif
                         }
                     }
                     bool dropzoneFound = false;
@@ -103,9 +90,6 @@ bool CWsFileIOEx::CheckServerAccess(const char* server, const char* relPath, Str
 
                     char ch = '\\';
                     Owned<IConstMachineInfo> machine = env->getMachineByAddress(addr);
-                    //Owned<IConstEnvironment> env = factory->openEnvironment();
-                    //Owned<IConstMachineInfo> machine = getMachineByAddress(pEnvRoot, env, addr);
-
                     if (machine && (machine->getOS() == MachineOsLinux || machine->getOS() == MachineOsSolaris))
                     {
                         ch = '/';
@@ -370,5 +354,4 @@ bool CWsFileIOEx::onWriteFileData(IEspContext &context, IEspWriteFileDataRequest
 
     return true;
 }
-
 

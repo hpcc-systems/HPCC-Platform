@@ -65,274 +65,14 @@ static const char* OID = "1.3.6.1.4.1.12723.6.16.1.4.1.2";
 // It requires no memory to hold all of the data, only one pass through the data, formula, 
 // and it gives the correct results for a much wider range of data. 
 //
-#ifdef OLD
-struct CField
-{
-   float Value;
-   bool  Warn;
-   bool  Undefined;
-
-   CField()
-      : Value(0), Warn(0), Undefined(0)
-   {      
-   }
-    void serialize(StringBuffer& xml) const
-    {
-        xml.append("<Field>");
-        xml.appendf("<Value>%f</Value>", Value);
-        if (Warn)
-            xml.append("<Warn>1</Warn>");
-        if (Undefined)
-            xml.append("<Undefined>1</Undefined>");
-        xml.append("</Field>");
-    }
-};
-
-struct CFieldMap : public map<string, CField*>
-{
-    virtual ~CFieldMap()
-    {
-        const_iterator iEnd=end();
-        for (const_iterator i=begin(); i!=iEnd; i++)
-            delete (*i).second;
-    }
-    void serialize(StringBuffer& xml)
-    {
-        xml.append("<Fields>");
-        const_iterator iEnd=end();
-        for (const_iterator i=begin(); i!=iEnd; i++)
-            (*i).second->serialize(xml);
-        xml.append("</Fields>");
-    }
-};
-
-struct CFieldInfo
-{
-   unsigned Count; //N
-   float   SumSquaredDeviations; //SSD
-   float Mean;
-   float StandardDeviation;
-   bool  Hide;
-
-   CFieldInfo() 
-      : Count(0),
-        SumSquaredDeviations(0),
-          Mean(0),
-          StandardDeviation(0),
-          Hide(true)
-   {
-   }
-    void serialize(StringBuffer& xml, const char* fieldName) const
-    {
-        xml.append("<FieldInfo>");
-            xml.appendf("<Name>%s</Name>", fieldName);
-            xml.append("<Caption>");
-            const char* pch = fieldName;
-         if (!strncmp(pch, "lo", 2))
-         {
-            xml.append("Low");
-            pch += 2;
-         }
-         else if (!strncmp(pch, "hi", 2))
-         {
-            xml.append("High");
-            pch += 2;
-         }
-         else if (!strncmp(pch, "tot", 3))
-         {
-            xml.append("Total");
-            pch += 3;
-         }
-         else xml.append( (char)toupper( *pch++) );
-
-            while (*pch)
-            {
-                if (isupper(*pch))
-                    xml.append(' ');
-                xml.append(*pch++);     
-            }
-            xml.append("</Caption>");
-            xml.appendf("<Mean>%f</Mean>", Mean);
-            xml.appendf("<StandardDeviation>%f</StandardDeviation>", StandardDeviation);
-            if (Hide)
-                xml.appendf("<Hide>1</Hide>");
-        xml.append("</FieldInfo>");
-    }
-};
-
-struct CFieldInfoMap : public map<string, CFieldInfo*>
-{
-   Mutex    m_mutex;
-
-    virtual ~CFieldInfoMap()
-    {
-        const_iterator iEnd=end();
-        for (const_iterator i=begin(); i!=iEnd; i++)
-            delete (*i).second;
-    }
-
-    void serialize(StringBuffer& xml) const
-    {
-        const_iterator iEnd=end();
-        for (const_iterator i=begin(); i!=iEnd; i++)
-        {
-            const char* fieldName = (*i).first.c_str();
-            (*i).second->serialize(xml, fieldName);
-        }
-    }
-};
-
-//---------------------------------------------------------------------------------------------
-
-class CSnmpWalkerCallback : public CInterface,
-                            implements ISnmpWalkerCallback
-{
-private:
-public:
-   IMPLEMENT_IINTERFACE;
-
-   CSnmpWalkerCallback(CFieldInfoMap& fieldInfoMap, CFieldMap& fieldMap)
-      : m_fieldInfoMap(fieldInfoMap), m_fieldMap(fieldMap)
-      {}
-   virtual ~CSnmpWalkerCallback(){}
-
-    virtual void processValue(const char *oid, const char *value)
-   {
-      double val = atof(value);
-      CField* pField = new CField;
-      pField->Value = val;
-
-      if (!strncmp(oid, "ibyti", 5))
-         oid += 5;
-       
-      m_fieldMap.insert(pair<const char*, CField*>( oid, pField) );
-
-      synchronized block(m_fieldInfoMap.m_mutex);
-        CFieldInfoMap::iterator i = m_fieldInfoMap.find(oid);
-
-      if (i == m_fieldInfoMap.end())
-      {
-         CFieldInfo* pFieldInfo = new CFieldInfo;
-         pFieldInfo->Count = 1;
-         pFieldInfo->Mean = val;
-         pFieldInfo->SumSquaredDeviations = 0;
-
-         m_fieldInfoMap.insert( pair<const char*, CFieldInfo*>(oid, pFieldInfo) );
-      }
-      else
-      {
-            CFieldInfo* pFieldInfo = (*i).second;
-         pFieldInfo->Count++;
-         double deviation = (val - pFieldInfo->Mean) / pFieldInfo->Count;
-         pFieldInfo->Mean =  pFieldInfo->Mean + deviation;
-
-         pFieldInfo->SumSquaredDeviations += (pFieldInfo->Count-1) * (deviation * deviation);
-         double temp = val - pFieldInfo->Mean;
-         pFieldInfo->SumSquaredDeviations += temp * temp;
-      }
-   }
-private:
-   CSnmpWalkerCallback(const CSnmpWalkerCallback&);
-
-   CFieldInfoMap& m_fieldInfoMap;
-   CFieldMap&     m_fieldMap;
-};
-
-//---------------------------------------------------------------------------------------------
-
-class CMetricsThreadParam : public CWsMachineThreadParam
-{
-public:
-   IMPLEMENT_IINTERFACE;
-
-   CFieldInfoMap&       m_fieldInfoMap;
-   CFieldMap            m_fieldMap;
-   PooledThreadHandle   m_threadHandle;
-   bool                 m_bPostProcessing; //use mean & std deviation to set warnings, etc.
-
-   CMetricsThreadParam( const char* pszAddress, const char* pszSecString,
-                        CFieldInfoMap& fieldInfoMap, 
-                        Cws_machineEx* pService)
-      : CWsMachineThreadParam(pszAddress, pszSecString, pService),
-        m_fieldInfoMap(fieldInfoMap),
-        m_bPostProcessing(false)
-   {
-   }
-    virtual ~CMetricsThreadParam()
-    {
-    }
-   virtual void doWork()
-   {
-      if (m_bPostProcessing == false)
-         m_pService->doGetMetrics(this);
-      else
-         doPostProcessing();
-   }
-
-   void doPostProcessing()
-   {
-       //DBGLOG("Post processing for %s", m_sAddress.str());
-
-      //for each field in the field info map (some of these fields may not be defined
-      //in our field map)
-      //
-        CFieldInfoMap::iterator i;
-        CFieldInfoMap::iterator iEnd = m_fieldInfoMap.end();
-       for (i=m_fieldInfoMap.begin(); i!=iEnd; i++)
-       {
-            const char *fieldName = (*i).first.c_str();
-            const CFieldInfo* pFieldInfo = (*i).second;
-
-            CFieldMap::iterator iField = m_fieldMap.find(fieldName);
-         if (iField == m_fieldMap.end())
-         {
-            CField* pField = new CField;
-            pField->Undefined = true;
-            m_fieldMap.insert(pair<const char*, CField*>( fieldName, pField ));
-         }
-         else
-         {
-                CField* pField = (*iField).second;
-            //set warnings based on mean and standard deviation
-            double z = fabs((pField->Value - pFieldInfo->Mean) / pFieldInfo->StandardDeviation);
-            if (z > 2)
-               pField->Warn = true;
-         }
-       }
-   }
-};
-
-void Cws_machineEx::doGetMetrics(CMetricsThreadParam* pParam)
-{
-    //DBGLOG("Getting Metrics for %s", pParam->m_sAddress.str());
-   StringBuffer sSecurityString = pParam->m_sSecurityString;
-
-   if (!*sSecurityString.str())
-      doGetSecurityString(pParam->m_sAddress.str(), sSecurityString);
-
-#ifdef _DEBUG
-   if (!*sSecurityString.str())
-      sSecurityString.append("M0n1T0r");
-#endif
-
-    //serialized for now
-}
-
-#else
 
 //-------------------------------------------------METRICS------------------------------------------------------
 void Cws_machineEx::getRoxieClusterConfig(char const * clusterType, char const * clusterName, char const * processName, StringBuffer& netAddress, int& port)
 {
-#if 0
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-    Owned<IConstEnvironment> environment = factory->openEnvironment();
-    Owned<IPropertyTree> pRoot = &environment->getPTree();
-#else
     Owned<IConstEnvironment> constEnv = getConstEnvironment();
     Owned<IPropertyTree> pRoot = &constEnv->getPTree();
     if (!pRoot)
         throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO,"Failed to get environment information.");
-#endif
 
     StringBuffer xpath;
     xpath.appendf("Software/%s[@name='%s']", clusterType, clusterName);
@@ -356,15 +96,6 @@ void Cws_machineEx::getRoxieClusterConfig(char const * clusterType, char const *
         port = atoi(portStr);
     }
 
-#if 0
-    Owned<IConstMachineInfo> pMachine = environment->getMachine(computer);
-    if (pMachine)
-    {
-        SCMStringBuffer scmNetAddress;
-        pMachine->getNetAddress(scmNetAddress);
-        netAddress = scmNetAddress.str();
-    }
-#else
     xpath.clear().appendf("Hardware/Computer[@name=\"%s\"]", computer);
     IPropertyTree* pMachine = pRoot->queryPropTree( xpath.str() );
     if (pMachine)
@@ -373,7 +104,6 @@ void Cws_machineEx::getRoxieClusterConfig(char const * clusterType, char const *
         if (addr && *addr)
             netAddress.append(addr);
     }
-#endif
     
     return;
 }
@@ -384,10 +114,6 @@ void Cws_machineEx::processValue(const char *oid, const char *value, const bool 
   CField* pField = new CField;
   pField->Value = val;
 
-  //const char *oid0 = oid;
-  //if (!strncmp(oid, "ibyti", 5))
-  //   oid += 5;
-   
   pField->Hide = !bShow;
 
   myfieldMap.insert(pair<const char*, CField*>( oid, pField) );
@@ -421,11 +147,8 @@ void Cws_machineEx::processValue(const char *oid, const char *value, const bool 
 
 void Cws_machineEx::doPostProcessing(CFieldInfoMap& myfieldInfoMap, CFieldMap&  myfieldMap)
 {
-    //DBGLOG("Post processing for %s", m_sAddress.str());
-
     //for each field in the field info map (some of these fields may not be defined
     //in our field map)
-    //
     CFieldInfoMap::iterator i;
     CFieldInfoMap::iterator iEnd = myfieldInfoMap.end();
     for (i=myfieldInfoMap.begin(); i!=iEnd; i++)
@@ -450,7 +173,6 @@ void Cws_machineEx::doPostProcessing(CFieldInfoMap& myfieldInfoMap, CFieldMap&  
         }
     }
 }
-#endif
 
 bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req, 
                                          IEspMetricsResponse &resp)
@@ -461,7 +183,6 @@ bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req,
             throw MakeStringException(ECLWATCH_METRICS_ACCESS_DENIED, "Failed to Get Metrics. Permission denied.");
 
         //insert entries in an array - one per IP address, sorted by IP address
-        //
         const char* clusterName = req.getCluster();
         if (!clusterName || !*clusterName)
             throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Cluster name not defined.");
@@ -506,113 +227,8 @@ bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req,
         }
 
         CFieldInfoMap fieldInfoMap; //shared across all threads processing this request
-#ifdef OLD
-        CIArrayOf<CMetricsThreadParam> threadParamArray;
 
         //process this array (sorted by IP address)
-        //
-        // TBD IPV6 (cannot use long for netaddress)
-        StringBuffer ipBuf;
-        unsigned* lptr = buffer;
-        for (index=0; index<addressCount; index++)
-        {
-            IpAddress ip;
-            ip.setNetAddress(sizeof(unsigned),lptr++);
-            ip.getIpText(ipBuf.clear());
-            
-            CMetricsThreadParam* pThreadReq = 
-                    new CMetricsThreadParam(ipBuf.str(), req.getSecurityString(), 
-                fieldInfoMap, this);
-            threadParamArray.append(*::LINK(pThreadReq));
-            pThreadReq->m_threadHandle = m_threadPool->start( pThreadReq );
-        }
-
-        if (buffer)
-            ::free(buffer);
-
-        //block for worker theads to finish, if necessary and then collect results
-        //
-        CMetricsThreadParam** pThreadParam = (CMetricsThreadParam**) threadParamArray.getArray();
-        unsigned count=threadParamArray.ordinality();
-        unsigned i;
-        for (i = 0; i < count; i++, pThreadParam++) 
-            m_threadPool->join((*pThreadParam)->m_threadHandle);
-
-        //collect field information for all fields
-        CFieldInfoMap::iterator iInfo;
-        CFieldInfoMap::iterator iInfoEnd = fieldInfoMap.end();
-        for (iInfo=fieldInfoMap.begin(); iInfo!=iInfoEnd; iInfo++)
-        {
-            CFieldInfo* pFieldInfo = (*iInfo).second;
-            pFieldInfo->StandardDeviation = ( pFieldInfo->Count > 1 ? sqrt(pFieldInfo->SumSquaredDeviations / (pFieldInfo->Count-1)) : 0);
-        }
-
-        //respect user's wishes to only show some columns
-        //
-        StringArray& showColumns = req.getShowColumns();
-        unsigned int columnsToShow = showColumns.ordinality();
-        if (columnsToShow == 0)
-        {
-            static const char* defaultColumns[] = {
-                "heapBlocksAllocated", "hiQueryActive", "hiQueryAverage", "hiQueryCount", "hiMax", "hiMin", 
-                "lastQueryDate", "lastQueryTime", "loMax", "loMin", "loQueryActive", "loQueryAverage", 
-                "loQueryCount", "retriesNeeded", "slavesActive"
-            };
-
-            columnsToShow = sizeof(defaultColumns)/sizeof(defaultColumns[0]);
-            for (unsigned int i=0; i<columnsToShow; i++)
-            {
-                iInfo = fieldInfoMap.find(defaultColumns[i]);
-                if (iInfo != iInfoEnd)
-                    (*iInfo).second->Hide = 0;          
-            }
-        }
-        else
-            for (index=0; index<columnsToShow; index++)
-            {
-                const char *columnName = showColumns.item(index);
-                iInfo = fieldInfoMap.find(columnName);
-                if (iInfo != iInfoEnd)
-                    (*iInfo).second->Hide = 0;
-            }
-
-        //create a separate thread to do post processing i.e. serialize field map
-        //to field array while filling in any absent fields and set warnings for fields 
-        //with very high deviation
-        //
-        pThreadParam = (CMetricsThreadParam**) threadParamArray.getArray();
-        for (i = 0; i < count; i++, pThreadParam++) 
-        {
-            (*pThreadParam)->m_bPostProcessing = true;
-            (*pThreadParam)->m_threadHandle = m_threadPool->start( ::LINK(*pThreadParam) );
-        }
-
-        StringBuffer xml;
-        fieldInfoMap.serialize(xml);
-        resp.setFieldInformation(xml);
-
-        xml.clear();
-        pThreadParam = (CMetricsThreadParam**) threadParamArray.getArray();
-        for (i = 0; i < count; i++, pThreadParam++) 
-        {
-            xml.append("<MetricsInfo><Address>");
-            xml.append( (*pThreadParam)->m_sAddress );
-            xml.append("</Address>");
-
-            //block for worker theads to finish, if necessary, and then collect results
-            //
-            m_threadPool->join((*pThreadParam)->m_threadHandle);
-            (*pThreadParam)->m_fieldMap.serialize(xml);
-
-            xml.append("</MetricsInfo>");
-        }
-
-        resp.setMetrics(xml);
-
-#else
-        //process this array (sorted by IP address)
-        //
-        // TBD IPV6 (cannot use long for netaddress)
         StringArray ipList;
         StringBuffer ipBuf;
         unsigned* lptr = buffer;
@@ -668,10 +284,6 @@ bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req,
                 if (!name || !*name || !value || !*value)
                     continue;
 
-                //const char* name0 = name;
-                //if (!strncmp(name0, "ibyti", 5))
-                //  name0 += 5; 
-
                 bool bShow = false;
                 if (columnsToShow == 0)
                 {
@@ -721,7 +333,6 @@ bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req,
         }
 
         //respect user's wishes to only show some columns
-        //
         if (columnsToShow == 0)
         {
             static const char* defaultColumns[] = {
@@ -750,7 +361,6 @@ bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req,
         //create a separate thread to do post processing i.e. serialize field map
         //to field array while filling in any absent fields and set warnings for fields 
         //with very high deviation
-        //
         int i = 0;
         CMetricsParam** pMetricsParam = (CMetricsParam**) fieldMapArray.getArray();
         for (i = 0; i < count; i++, pMetricsParam++) 
@@ -776,7 +386,6 @@ bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req,
 
         resp.setMetrics(xml);
 
-#endif
         double version = context.getClientVersion();
         if (version > 1.05)
         {
@@ -794,9 +403,6 @@ bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req,
     }
     return true;
 }
-
-
-// TBD IPv6
 
 static int compareNumericIp(const void* ip1, const void* ip2)
 {
@@ -820,8 +426,6 @@ void Cws_machineEx::addIpAddressesToBuffer( void** buffer, unsigned& count, cons
     //insert first address in the array
     bool bAdded;
     
-    
-    // TBD IPv6
     if (!fromIp.isIp4())
         IPV6_NOT_IMPLEMENTED();
     unsigned ip;
@@ -832,7 +436,6 @@ void Cws_machineEx::addIpAddressesToBuffer( void** buffer, unsigned& count, cons
     
     //now insert all subsequent addresses, if any, in the address range as contiguous
     //memory assuming the ranges in the buffer don't overlap
-    //
     if (bAdded)
     {
         count++;
@@ -842,7 +445,6 @@ void Cws_machineEx::addIpAddressesToBuffer( void** buffer, unsigned& count, cons
             //at this point, one element has been inserted at position 'pos' in the buffer
             //so we need to make room for subsequent elements in the range by pushing the 
             //existing elements behind the position 'pos' by (numIPs-1) places
-            //
             pos++; //points to position after first inserted element
             unsigned index = pos - (unsigned*)*buffer;//index of next item
             unsigned itemsToMove = count - index;

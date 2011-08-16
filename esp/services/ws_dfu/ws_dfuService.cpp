@@ -55,8 +55,6 @@
 #include "hqlerror.hpp"
 #include "eclrtl.hpp"
 
-///#define TESTDATASET 1
-
 #define     Action_Delete           "Delete"
 #define     Action_AddtoSuperfile   "Add To Superfile"
 static const char* FEATURE_URL="DfuAccess";
@@ -80,7 +78,6 @@ short days[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
 void CWsDfuEx::init(IPropertyTree *cfg, const char *process, const char *service)
 {
-
     StringBuffer xpath;
     
     DBGLOG("Initializing %s service [process = %s]", service, process);
@@ -128,7 +125,6 @@ bool CWsDfuEx::onDFUSearch(IEspContext &context, IEspDFUSearchRequest & req, IEs
 
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsDfuEx::onDFUSearch User=%s",username.str());
 
         Owned<IUserDescriptor> userdesc;
         if(username.length() > 0)
@@ -249,7 +245,6 @@ void parseTwoStringArrays(const char *input, StringArray& strarray1, StringArray
             tmp.set(inputText, columnNameLen);
             strarray1.append(tmp.get());
             tmp.set(colon, columnValueLen);
-            //tmp.toUpperCase(); 
             strarray2.append(tmp.get());
                 
             inputText = colon + columnValueLen;
@@ -268,8 +263,6 @@ bool CWsDfuEx::onDFUQuery(IEspContext &context, IEspDFUQueryRequest & req, IEspD
 
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsDfuEx::onDFUQuery User=%s",username.str());
-
         Owned<IUserDescriptor> userdesc;
         if(username.length() > 0)
         {
@@ -297,8 +290,6 @@ bool CWsDfuEx::onDFUInfo(IEspContext &context, IEspDFUInfoRequest &req, IEspDFUI
 
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsDfuEx::onDFUInfo User=%s",username.str());
-
         Owned<IUserDescriptor> userdesc;
         if(username.length() > 0)
         {
@@ -333,7 +324,6 @@ bool CWsDfuEx::onDFUSpace(IEspContext &context, IEspDFUSpaceRequest & req, IEspD
 
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsDfuEx::onDFUSpace User=%s",username.str());
 
         Owned<IUserDescriptor> userdesc;
         if(username.length() > 0)
@@ -413,8 +403,6 @@ bool CWsDfuEx::onDFUSpace(IEspContext &context, IEspDFUSpaceRequest & req, IEspD
                 {
                     IPropertyTree &attr=fi->query();
                     StringBuffer modf(attr.queryProp("@modified"));
-                    //char* t=strchr(modf.str(),'T');
-                    //if(t) *t=' ';
 
                     if (bFirst)
                     {
@@ -1216,15 +1204,8 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
                 superFileNames.append(logicalFileName);
             }
 
-            DBGLOG("CWsDfuEx::DFUDeleteFiles User=%s Action=Delete File=%s",username.str(), logicalFileName.str());
             try
             {
-                //onDFUAction(userdesc.get(), curfile, cluster, req.getType(), req.getNoDelete(), returnStr);
-                ///LogicFileWrapper Logicfile;
-                ///if (!Logicfile.doDeleteFile(logicalFileName.str(), cluster, req.getNoDelete(), returnStr, userdesc))
-                /// return false;
-
-
                 CDfsLogicalFileName lfn;
                 StringBuffer cname(cluster);
                 lfn.set(logicalFileName.str());
@@ -1245,7 +1226,6 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
                     }
                     else 
                     {
-                        PrintLog("Deleted Logical File: %s\n",logicalFileName.str());
                         returnStr.appendf("<Message><Value>Deleted File %s</Value></Message>",logicalFileName.str());
                     }
                 }
@@ -1304,26 +1284,6 @@ bool CWsDfuEx::onDFUArrayAction(IEspContext &context, IEspDFUArrayActionRequest 
 
         if (strcmp(req.getType(), Action_Delete) == 0)
         {
-            /*StringArray roxieQueries;
-            checkRoxieQueryFilesOnDelete(req, roxieQueries);
-            if (roxieQueries.length() > 0)
-            {
-                returnStr.append("<Message><Value>Cannot delete the files because of the following roxie queries: ");
-                for(int i = 0; i < roxieQueries.length();i++)
-                {
-                    const char* query = roxieQueries.item(i);
-                    if(!query || !*query)
-                        continue;
-
-                    if (i==0)
-                        returnStr.append(query);
-                    else
-                        returnStr.appendf(",%s", query);
-                }
-                returnStr.append("</Value></Message>");
-                resp.setDFUArrayActionResult(returnStr.str());
-                return true;
-            }*/
             return  DFUDeleteFiles(context, req, resp);
         }
 
@@ -1359,7 +1319,6 @@ bool CWsDfuEx::onDFUArrayAction(IEspContext &context, IEspDFUArrayActionRequest 
             strncpy(curfile, file, len);
             curfile[len] = 0;
             
-            DBGLOG("CWsDfuEx::onDFUArrayAction User=%s Action=%s File=%s",username.str(),req.getType(), file);
             try
             {
                 onDFUAction(userdesc.get(), curfile, cluster, req.getType(), req.getNoDelete(), returnStr);
@@ -1429,7 +1388,7 @@ bool CWsDfuEx::onDFUAction(IUserDescriptor* udesc, const char* LogicalFileName, 
         }
     }
     else
-        DBGLOG("Unknown Action type:%s\n",ActionType);
+        WARNLOG("Unknown Action type:%s\n",ActionType);
     
     return true;
 }
@@ -1438,14 +1397,11 @@ bool CWsDfuEx::onDFUDefFile(IEspContext &context,IEspDFUDefFileRequest &req, IEs
 {
     try
     {
-        DBGLOG("CWsDfuEx::onDFUDefFile\n");
-
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_DFU_ACCESS_DENIED, "Failed to access DFUDefFile. Permission denied.");
 
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsDfuEx::onDFUDefFile User=%s",username.str());
 
         StringBuffer rawStr,returnStr;
 
@@ -1499,7 +1455,6 @@ void CWsDfuEx::xsltTransformer(const char* xsltPath,StringBuffer& source,StringB
 
 void CWsDfuEx::getDefFile(IUserDescriptor* udesc, const char* FileName,StringBuffer& returnStr)
 {
-    DBGLOG("CWsDfuEx::getDefFile\n");
     Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(FileName, udesc);
     if(!df)
         throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",FileName);
@@ -1603,21 +1558,7 @@ bool FindInStringArray(StringArray& clusters, const char *cluster)
     }
     else
     {
-#if 0 //Comment out since clusters are not set for some old files  
-        if (!clusters.ordinality())
-            return true;
-
-        ForEachItemIn(i, clusters)
-        {
-            const char* cluster0 = clusters.item(i);
-            if(cluster0 && !*cluster0)
-            {
-                return true;
-            }
-        }
-#else
         return true;
-#endif
     }
 
     return bFound;
@@ -1626,8 +1567,6 @@ bool FindInStringArray(StringArray& clusters, const char *cluster)
 void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, const char *name, const char *cluster, 
     const char *description,IEspDFUFileDetail& FileDetails)
 {
-    DBGLOG("CWsDfuEx::doGetFileDetails\n");
-
     Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(name, udesc);
     if(!df)
         throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",name);
@@ -1724,7 +1663,6 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
         {
             ForEach(*iter) 
             {
-                //printf("%s,%s\n",iter->query().queryLogicalName(),lname);
                 Owned<IEspDFULogicalFile> File = createDFULogicalFile("","");
                 File->setName(iter->queryName());
                 LogicalFiles.append(*File.getClear());
@@ -1951,8 +1889,6 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
 
 void CWsDfuEx::getLogicalFileAndDirectory(IUserDescriptor* udesc, const char *dirname, IArrayOf<IEspDFULogicalFile>& LogicalFiles, int& numFiles, int& numDirs)
 {
-    DBGLOG("CWsDfuEx::getLogicalFileAndDirectory\n");
-
     StringArray roxieClusterNames;
     IArrayOf<IEspTpCluster> roxieclusters;
     CTpWrapper dummy;
@@ -1988,15 +1924,11 @@ void CWsDfuEx::getLogicalFileAndDirectory(IUserDescriptor* udesc, const char *di
                     pref.append(logicalName);
 
                 const char* owner=attr.queryProp("@owner");
-#if 0
-                char* clusterName=(char*)attr.queryProp("@group");   
-#else //Handling for multiple clusters
                 StringArray clusters;
                 if (getFileGroups(&attr,clusters)==0) 
                 {
                     clusters.append("");
                 }
-#endif
                 ForEachItemIn(i, clusters)
                 {
                     const char* clusterName = clusters.item(i);
@@ -2100,7 +2032,6 @@ bool CWsDfuEx::onDFUFileView(IEspContext &context, IEspDFUFileViewRequest &req, 
         Owned<IUserDescriptor> userdesc;
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsDfuEx::onDFUFileView User=%s",username.str());
 
         if(username.length() > 0)
         {
@@ -2414,8 +2345,6 @@ bool CWsDfuEx::checkDescription(const char *description, const char *description
 
 bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc, IEspDFUQueryRequest & req, IEspDFUQueryResponse & resp)
 {
-    DBGLOG("CWsDfuEx::doLogicalFileSearch\n");
-
     double version = context.getClientVersion();
 
     IArrayOf<IEspDFULogicalFile> LogicalFiles;
@@ -2497,7 +2426,6 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
         {
             pagesize = 100;
         }
-//DBGLOG("pagesize=%d\n", pagesize);
 
         __int64 displayStartReq = 1;
         if (req.getPageStartFrom() > 0)
@@ -2598,27 +2526,6 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
                 if (!owner || stricmp(owner, req.getOwner()))
                     continue;
             }
-#if 0
-            char* clusterName = (char*)attr.queryProp("@group");      // ** TBD - Handling for multiple clusters?
-            if (clusterName)
-            {//special process for roxie cluster names
-                unsigned len = strlen(clusterName);
-                if (len > 8)
-                {
-                    char *pName = clusterName + len - 8; 
-                    if (!stricmp(pName, "__slaves"))
-                    {
-                        pName[0] = 0;//we did not specify slaves when copy/spray the file
-                    }
-                }
-            }
-
-        if (req.getClusterName() && *req.getClusterName()!=0)
-            {
-                if (!clusterName || stricmp(clusterName, req.getClusterName()))
-                    continue;
-            }
-#else
             StringArray clusters;
             StringArray clusters1;
             if (getFileGroups(&attr,clusters1)==0) 
@@ -2662,7 +2569,7 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
                     }
                 }
             }
-#endif
+
             const char* desc = attr.queryProp("@description");
             if(req.getDescription() && *req.getDescription())
             {
@@ -2804,7 +2711,7 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
                 {
                     File->setIsZipfile(true);
                 }
-                //File->setBrowseData(bKeyFile); //Bug: 39750 - All files should be viewable through ViewKeyFile function
+
                 if (numSubFiles > 1) //Bug 41379 - ViewKeyFile Cannot handle superfile with multiple subfiles
                     File->setBrowseData(false); 
                 else
@@ -2990,7 +2897,6 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
             resp.setBasicQuery(basicQuery.str());
         if (ParametersForPaging.length() > 0)
             resp.setParametersForPaging(ParametersForPaging.str());
-//DBGLOG("basicQuery=%s\n", basicQuery);
     }
 
     resp.setDFULogicalFiles(LogicalFiles);
@@ -3693,7 +3599,6 @@ bool CWsDfuEx::onDFUGetDataColumns(IEspContext &context, IEspDFUGetDataColumnsRe
                     if (dataNonKeyedColumns[19].length() > 0)
                         resp.setDFUDataNonKeyedColumns20(dataNonKeyedColumns[19]);
                 }
-                //resp.setColumnCount(columnCount);
                 resp.setRowCount(total);
             }
             
@@ -3929,8 +3834,6 @@ bool CWsDfuEx::onDFUBrowseData(IEspContext &context, IEspDFUBrowseDataRequest &r
         bool bSchemaOnly=req.getSchemaOnly() ? req.getSchemaOnly() : false;
         bool bDisableUppercaseTranslation = req.getDisableUppercaseTranslation() ? req.getDisableUppercaseTranslation() : false; 
 
-#define HPCCBROWSER 1
-#ifdef HPCCBROWSER
         const char* filterBy = req.getFilterBy();
         const char* showColumns = req.getShowColumns();
 
@@ -3943,7 +3846,6 @@ bool CWsDfuEx::onDFUBrowseData(IEspContext &context, IEspDFUBrowseDataRequest &r
         int iRet = GetIndexData(context, bSchemaOnly, logicalNameStr.str(), parentName, filterBy, start, count, read, total, msg, columnLabels, columnLabelsType, DataList, bDisableUppercaseTranslation);
         if (iRet > 0)
             resp.setMsgToDisplay("This search has timed out due to the restrictive filter. There may be more records.");
-        //GetIndexData(context, bSchemaOnly, logicalNameStr.str(), "roxie::thor_data400::key::bankruptcyv2::20090721::search::tmsid", filterBy, start, count, read, total, msg, columnLabels, columnLabelsType, DataList);
         resp.setResult(DataList.item(0).getData());
 
         unsigned int max_name_length = 3; //max length for name length
@@ -4036,238 +3938,7 @@ bool CWsDfuEx::onDFUBrowseData(IEspContext &context, IEspDFUBrowseDataRequest &r
             if (req.getCountForGoback())
                 resp.setCountForGoback(req.getCountForGoback());
         }
-#else
-        StringBuffer username;
-        context.getUserID(username);
-        double version = context.getClientVersion();
-        const char* passwd = context.queryPassword();
 
-        StringBuffer eclqueue, cluster;
-        Owned<IUserDescriptor> userdesc;
-        try
-        {
-            userdesc.setown(createUserDescriptor());
-            userdesc->set(username.str(), passwd);
-            Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalNameStr.str(), userdesc);
-            if(df)
-            {
-                const char* wuid = df->queryProperties().queryProp("@workunit");
-                if (wuid && *wuid)
-                {
-                    CWUWrapper wu(wuid, context);
-                    if (wu)
-                    {   
-                        SCMStringBuffer eclqueue0, cluster0;
-                        eclqueue.append(wu->getQueue(eclqueue0).str());
-                        cluster.append(wu->getClusterName(cluster0).str());
-                    }
-                }
-            }
-        }
-        catch(...)
-        {
-            ;
-        }
-
-        Owned<IResultSetFactory> resultSetFactory;
-        if (context.querySecManager())
-            resultSetFactory.setown(getSecResultSetFactory(*context.querySecManager(), *context.queryUser()));
-        else
-            resultSetFactory.setown(getResultSetFactory(username, passwd));
-
-        Owned<INewResultSet> result;
-        if (eclqueue && *eclqueue && cluster && *cluster)
-        {
-            result.setown(resultSetFactory->createNewFileResultSet(logicalNameStr.str(), eclqueue, cluster));
-        }
-        else if (m_clusterName.length() > 0 && m_eclServerQueue.length() > 0)
-        {
-            result.setown(resultSetFactory->createNewFileResultSet(logicalNameStr.str(), m_eclServerQueue.str(), m_clusterName.str()));
-        }
-        else
-        {
-            result.setown(resultSetFactory->createNewFileResultSet(logicalNameStr.str(), NULL, NULL));
-        }
-        const IResultSetMetaData &meta = result->getMetaData();
-        unsigned columnCount = meta.getColumnCount();
-
-        StringArray filterByNames, filterByValues;
-        IArrayOf<IEspDFUDataColumn> dataColumns;
-        if (version > 1.04 && columnCount > 0)
-        {
-            int lenShowCols = 0, showCols[1024];
-            const char* showColumns = req.getShowColumns();
-            char *pShowColumns =  (char*) showColumns;
-            while (pShowColumns && *pShowColumns)
-            {
-                StringBuffer buf;
-                while (pShowColumns && isdigit(pShowColumns[0]))
-                {
-                    buf.append(pShowColumns[0]);
-                    pShowColumns++;
-                }
-                if (buf.length() > 0)
-                {
-                    showCols[lenShowCols] = atoi(buf.str());
-                    lenShowCols++;
-                }
-
-                if (!pShowColumns || !*pShowColumns)
-                    break;
-                pShowColumns++;
-            }
-
-            for(int col = 0; col < columnCount; col++)
-            {
-                Owned<IEspDFUDataColumn> item = createDFUDataColumn("","");
-
-                SCMStringBuffer scmbuf;
-                meta.getColumnLabel(scmbuf, col);
-                item->setColumnLabel(scmbuf.str()); 
-                if (!showColumns || !*showColumns)
-                {
-                    item->setColumnSize(1); //Show this column
-                    dataColumns.append(*item.getLink());
-                    continue;
-                }
-                else
-                {
-                    item->setColumnSize(0); //not show this column
-                }
-
-                for(int col1 = 0; col1 < lenShowCols; col1++)
-                {
-                    if (col == showCols[col1])
-                    {
-                        item->setColumnSize(1); //Show this column
-                        break;
-                    }
-                }
-                dataColumns.append(*item.getLink());
-            }
-
-            const char* filterBy = req.getFilterBy();
-            if (filterBy && *filterBy)
-            {
-                parseTwoStringArrays(filterBy, filterByNames, filterByValues);
-            }
-
-            if (req.getStartForGoback())
-                resp.setStartForGoback(req.getStartForGoback());
-            if (req.getCountForGoback())
-                resp.setCountForGoback(req.getCountForGoback());
-        }
-
-        StringBuffer filterByStr, filterByStr0;
-        unsigned int max_name_length = 3; //max length for name length
-        unsigned int max_value_length = 4; //max length for value length:
-        filterByStr0.appendf("%d%d", max_name_length, max_value_length);  
-        if (columnCount > 0 && filterByNames.length() > 0)
-        {
-            Owned<IFilteredResultSet> filter = result->createFiltered();
-            
-            for (int ii = 0; ii < filterByNames.length(); ii++)
-            {
-                const char* columnName = filterByNames.item(ii);
-                const char* columnValue = filterByValues.item(ii);
-                if (columnName && *columnName && columnValue && *columnValue)
-                {
-                    int col = 0;
-                    for(col = 0; col < columnCount; col++)
-                    {
-                        SCMStringBuffer scmbuf;
-                        meta.getColumnLabel(scmbuf, col);
-                        if (stricmp(scmbuf.str(), columnName) == 0)
-                        {
-                            filter->addFilter(col, columnValue);
-                            filterByStr.appendf("%s[%s]", columnName, columnValue);
-                            filterByStr0.appendf("%03d%04d%s%s", strlen(columnName), strlen(columnValue), columnName, columnValue);
-                    
-                            break;
-                        }
-                    }
-                    if (col == columnCount)
-                    {
-                        throw MakeStringException(0,"The filter %s not defined", columnName);
-                    }
-                }
-            }
-
-            result.setown(filter->create());
-        }
-
-        StringBuffer text;
-        const char* schemaName = "myschema";
-        Owned<IResultSetCursor> cursor = result->createCursor();
-
-        text.append("<XmlSchema name=\"").append(schemaName).append("\">");
-        const IResultSetMetaData & meta1 = cursor->queryResultSet()->getMetaData();
-        StringBufferAdaptor adaptor(text);
-        meta1.getXmlSchema(adaptor, false);
-        text.append("</XmlSchema>").newline();
-
-        text.append("<Dataset");
-        //if (name)
-        //  text.append(" name=\"").append(name).append("\" ");
-        text.append(" xmlSchema=\"").append(schemaName).append("\" ");
-        text.append(">").newline();
-
-        //__int64 total=0;
-        __int64 total=result->getNumRows();
-        __int64 read=0;
-        try
-        {
-            for(bool ok=cursor->absolute(start);ok;ok=cursor->next())
-            {
-                //total++;
-                //if(read < count)
-                {
-                    text.append(" ");
-                    StringBufferAdaptor adaptor2(text);
-                    cursor->getXmlRow(adaptor2);
-                    text.newline();
-
-                    read++;
-                }
-                if(read>=count)
-                    break;
-            }
-        }   
-        catch(IException* e)
-        {
-            if ((version < 1.08) || (e->errorCode() != FVERR_FilterTooRestrictive))
-                throw e;
-
-            e->Release();
-            resp.setMsgToDisplay("This search is timed out due to the restrictive filter. There may be more records.");
-        }
-
-        if (count > read)
-            count = read;
-
-        text.append("</Dataset>").newline();
-        ///DBGLOG("Dataset:%s", text.str());
-
-        MemoryBuffer buf;
-        struct MemoryBuffer2IStringVal : public CInterface, implements IStringVal
-        {
-             MemoryBuffer2IStringVal(MemoryBuffer & _buffer) : buffer(_buffer) {}
-             IMPLEMENT_IINTERFACE;
-
-             virtual const char * str() const { UNIMPLEMENTED;  }
-             virtual void set(const char *val) { buffer.append(strlen(val),val); }
-             virtual void clear() { } // clearing when appending does nothing
-             virtual void setLen(const char *val, unsigned length) { buffer.append(length, val); }
-             virtual unsigned length() const { return buffer.length(); };
-             MemoryBuffer & buffer;
-        } adaptor0(buf);
-
-        adaptor0.set(text.str());
-        buf.append(0);
-        resp.setResult(buf.toByteArray());
-#endif
-
-        //resp.setFilterBy(filterByStr.str()); 
         if (filterByStr.length() > 0)
         {
             const char* oldStr = "&";
@@ -4277,7 +3948,6 @@ bool CWsDfuEx::onDFUBrowseData(IEspContext &context, IEspDFUBrowseDataRequest &r
         }
         if (version > 1.04)
         {
-            //resp.setFilterForGoBack(filterByStr0.str());
             if (filterByStr0.length() > 0)
             {
                 const char* oldStr = "&";
@@ -4293,11 +3963,8 @@ bool CWsDfuEx::onDFUBrowseData(IEspContext &context, IEspDFUBrowseDataRequest &r
         {
             resp.setSchemaOnly(bSchemaOnly);
         }
-        //resp.setName(name.str());
         resp.setLogicalName(logicalNameStr.str());
         resp.setStart(start);
-        //if (requested > read)
-        //  requested = read;
         resp.setPageSize(requested);
         if (count > read)
         {
@@ -4340,16 +4007,10 @@ bool CWsDfuEx::onDFUBrowseData(IEspContext &context, IEspDFUBrowseDataRequest &r
 
 void CWsDfuEx::getRoxieClusterConfig(char const * clusterType, char const * clusterName, char const * processName, StringBuffer& netAddress, int& port)
 {
-#if 0
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-    Owned<IConstEnvironment> environment = factory->openEnvironment();
-    Owned<IPropertyTree> pRoot = &environment->getPTree();
-#else
     CTpWrapper dummy;
     Owned<IPropertyTree> pRoot = dummy.getEnvironment("");
     if (!pRoot)
         throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO,"Failed to get environment information.");
-#endif
 
     StringBuffer xpath;
     xpath.appendf("Software/%s[@name='%s']", clusterType, clusterName);
@@ -4373,15 +4034,6 @@ void CWsDfuEx::getRoxieClusterConfig(char const * clusterType, char const * clus
         port = atoi(portStr);
     }
 
-#if 0
-    Owned<IConstMachineInfo> pMachine = environment->getMachine(computer);
-    if (pMachine)
-    {
-        SCMStringBuffer scmNetAddress;
-        pMachine->getNetAddress(scmNetAddress);
-        netAddress = scmNetAddress.str();
-    }
-#else
     xpath.clear().appendf("Hardware/Computer[@name=\"%s\"]", computer);
     IPropertyTree* pMachine = pRoot->queryPropTree( xpath.str() );
     if (pMachine)
@@ -4390,7 +4042,6 @@ void CWsDfuEx::getRoxieClusterConfig(char const * clusterType, char const * clus
         if (addr && *addr)
             netAddress.append(addr);
     }
-#endif
     
     return;
 }
@@ -4399,13 +4050,10 @@ void CWsDfuEx::getRoxieClusterConfig(char const * clusterType, char const * clus
 
 static const char* SCHEMANAME = "myschema";
 
-//void CWsDfuEx::setRootFilter(INewResultSet* result, const char* filterBy, IFilteredResultSet* filter)
 void CWsDfuEx::setRootFilter(INewResultSet* result, const char* filterBy, IResultSetFilter* filter, bool disableUppercaseTranslation)
 {
     if (!filterBy || !*filterBy || !result)
         return;
-
-    //Owned<IFilteredResultSet> filter = result->createFiltered();
 
     filter->clearFilters();
 
@@ -4450,9 +4098,6 @@ void CWsDfuEx::setRootFilter(INewResultSet* result, const char* filterBy, IResul
 
             if (!stricmp(scmbuf.str(), columnName))
             {
-                //filter->addFilter(col, columnValue);
-                //filterByStr.appendf("%s[%s]", columnName, columnValue);
-                //filterByStr0.appendf("%03d%04d%s%s", strlen(columnName), strlen(columnValue), columnName, columnValue);
                 if (hasSetTranslation)
                     filter->addNaturalFilter(col, strlen(columnValue), columnValue);
                 else
@@ -4463,7 +4108,6 @@ void CWsDfuEx::setRootFilter(INewResultSet* result, const char* filterBy, IResul
         }
     }
 
-    //result.setown(filter->create());
     return;
 }
 
@@ -4482,11 +4126,6 @@ void CWsDfuEx::getMappingColumns(IRelatedBrowseFile * file, bool isPrimary, Unsi
         cols.append(col);
     }
 
-#ifdef TESTDATASET
-    cols.kill();
-    cols.append(2);
-    cols.append(3);
-#endif
     return;
 }
 
@@ -4531,9 +4170,6 @@ void CWsDfuEx::mergeSchema(IRelatedBrowseFile * file, StringBuffer& schemaText, 
     if (schemaText2.length() < 1)
         return;
 
-//DBGLOG("First schema returns:%s", schemaText.str());
-//DBGLOG("Second schema returns:%s", schemaText2.str());
-
     Owned<IPropertyTree> schema = createPTreeFromXMLString(schemaText.str());
     Owned<IPropertyTree> schema2 = createPTreeFromXMLString(schemaText2.str());
     if (!schema || !schema2)
@@ -4571,11 +4207,6 @@ void CWsDfuEx::mergeSchema(IRelatedBrowseFile * file, StringBuffer& schemaText, 
     IPropertyTree*  rows = schema->queryBranch("xs:element[@name=\"Dataset\"]/xs:complexType/xs:sequence/xs:element[@name=\"Row\"]/xs:complexType/xs:sequence");
     if (!rows)
         return;
-
-//  StringBuffer schemaText4;
-//  toXML(schema, schemaText4);
-
-//DBGLOG("First schema returns:%s", schemaText4.str());
 
     //Find out labels used for column mapping
     columnsDisplay.kill();
@@ -4631,8 +4262,6 @@ void CWsDfuEx::mergeSchema(IRelatedBrowseFile * file, StringBuffer& schemaText, 
             }
         }
 
-#define RENAMESAMECOLUMN
-#ifdef RENAMESAMECOLUMN
         if (columnsDisplay.length() > 0)
         {
             for (unsigned i = 0; i < columnsDisplay.length(); i++)
@@ -4645,7 +4274,6 @@ void CWsDfuEx::mergeSchema(IRelatedBrowseFile * file, StringBuffer& schemaText, 
                 break;
             }
         }
-#endif
 
         if (!bAdd)
         {
@@ -4659,7 +4287,6 @@ void CWsDfuEx::mergeSchema(IRelatedBrowseFile * file, StringBuffer& schemaText, 
                 columnsDisplayType.append("Object");
             else
                 columnsDisplayType.append("Unknown");
-#ifdef RENAMESAMECOLUMN
             if (bRename)
             {
                 StringBuffer newName(name);
@@ -4670,12 +4297,9 @@ void CWsDfuEx::mergeSchema(IRelatedBrowseFile * file, StringBuffer& schemaText, 
             }
             else
             {
-#endif
-            columnsDisplay.append(name); //Display this column
-            rows->addPropTree(e.queryName(), LINK(&e));
-#ifdef RENAMESAMECOLUMN
+                columnsDisplay.append(name); //Display this column
+                rows->addPropTree(e.queryName(), LINK(&e));
             }
-#endif
         }
 
         col0++;
@@ -4685,7 +4309,6 @@ void CWsDfuEx::mergeSchema(IRelatedBrowseFile * file, StringBuffer& schemaText, 
     schemaText.clear();
     toXML(schema, schemaText);
 
-//DBGLOG("Merged schema returns:%s", schemaText.str());
     return;
 }
 
@@ -4703,10 +4326,8 @@ void CWsDfuEx::mergeDataRow(StringBuffer& newRow, int depth, IPropertyTreeIterat
             const char* label = e->queryName();
             if (label && *label)
             {
-#ifdef RENAMESAMECOLUMN
                 if (depth < 1)
                     columnsUsed.append(label);
-#endif
 
                 bool bHide = false;
                 if (columnsHide.length() > 0)
@@ -4722,7 +4343,6 @@ void CWsDfuEx::mergeDataRow(StringBuffer& newRow, int depth, IPropertyTreeIterat
                     }
                 }
 
-#ifdef RENAMESAMECOLUMN
                 if (!bHide && depth > 0 && columnsUsed.length() > 0)
                 {
                     for (unsigned i = 0 ; i < columnsUsed.length(); i++)
@@ -4737,7 +4357,7 @@ void CWsDfuEx::mergeDataRow(StringBuffer& newRow, int depth, IPropertyTreeIterat
                         break;
                     }
                 }
-#endif
+
                 if (!bHide)
                 {
                     StringBuffer dataRow;
@@ -4799,30 +4419,6 @@ void CWsDfuEx::browseRelatedFileSchema(IRelatedBrowseFile * file, const char* pa
             StringBufferAdaptor adaptor(schemaText);
             meta.getXmlSchema(adaptor, false);
 
-#ifdef TESTDATASET
-schemaText.clear();
-schemaText.append("<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" elementFormDefault=\"qualified\"");
-schemaText.append(" attributeFormDefault=\"unqualified\">");
-schemaText.append("<xs:element name=\"Dataset\"><xs:complexType><xs:sequence minOccurs=\"0\" maxOccurs=\"unbounded\">");
-schemaText.append("<xs:element name=\"Row\"><xs:complexType><xs:sequence>");
-schemaText.append("<xs:element name=\"state\" type=\"string2\"/>");
-schemaText.append("<xs:element name=\"rtype\" type=\"string2\"/>");
-schemaText.append("<xs:element name=\"id\" type=\"string20\"/>");
-schemaText.append("<xs:element name=\"seq\" type=\"xs:nonNegativeInteger\"/>");
-schemaText.append("<xs:element name=\"num\" type=\"xs:nonNegativeInteger\"/>");
-schemaText.append("<xs:element name=\"date\" type=\"string8\"/>");
-schemaText.append("<xs:element name=\"imglength\" type=\"xs:nonNegativeInteger\"/>");
-schemaText.append("<xs:element name=\"__filepos\" type=\"xs:nonNegativeInteger\"/>");
-schemaText.append("</xs:sequence></xs:complexType></xs:element>");
-schemaText.append("</xs:sequence></xs:complexType></xs:element>");
-schemaText.append("<xs:simpleType name=\"string2\"><xs:restriction base=\"xs:string\"><xs:maxLength value=\"2\"/>");
-schemaText.append("</xs:restriction></xs:simpleType>");
-schemaText.append("<xs:simpleType name=\"string20\"><xs:restriction base=\"xs:string\"><xs:maxLength value=\"20\"/>");
-schemaText.append("</xs:restriction></xs:simpleType>");
-schemaText.append("<xs:simpleType name=\"string8\"><xs:restriction base=\"xs:string\"><xs:maxLength value=\"8\"/>");
-schemaText.append("</xs:restriction></xs:simpleType>");
-schemaText.append("</xs:schema>");
-#endif
             readColumnsForDisplay(schemaText, columnsDisplay, columnsDisplayType);
         }
         else
@@ -4831,22 +4427,6 @@ schemaText.append("</xs:schema>");
             const IResultSetMetaData & meta = cursor->queryResultSet()->getMetaData();
             StringBufferAdaptor adaptor(schemaText0);
             meta.getXmlSchema(adaptor, false);
-#ifdef TESTDATASET
-schemaText0.clear();
-schemaText0.append("<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" elementFormDefault=\"qualified\"");
-schemaText0.append(" attributeFormDefault=\"unqualified\">");
-schemaText0.append("<xs:element name=\"Dataset\"><xs:complexType><xs:sequence minOccurs=\"0\" maxOccurs=\"unbounded\">");
-schemaText0.append("<xs:element name=\"Row\"><xs:complexType><xs:sequence>");
-schemaText0.append("<xs:element name=\"date_first_reported\" type=\"string12\"/>");
-schemaText0.append("<xs:element name=\"msa\" type=\"string8\"/>");
-schemaText0.append("<xs:element name=\"sid\" type=\"string20\"/>");
-schemaText0.append("<xs:element name=\"seq\" type=\"xs:nonNegativeInteger\"/>"); //not add
-schemaText0.append("</xs:sequence></xs:complexType></xs:element>");
-schemaText0.append("</xs:sequence></xs:complexType></xs:element>");
-schemaText0.append("<xs:simpleType name=\"string12\"><xs:restriction base=\"xs:string\"><xs:maxLength value=\"12\"/>");
-schemaText0.append("</xs:restriction></xs:simpleType>");
-schemaText0.append("</xs:schema>");
-#endif
             mergeSchema(file, schemaText, schemaText0, columnsDisplay, columnsDisplayType, columnsHide);
         }
 
@@ -4896,56 +4476,6 @@ int CWsDfuEx::browseRelatedFileDataSet(double version, IRelatedBrowseFile * file
                 StringBuffer text;
                 StringBufferAdaptor adaptor2(text);
                 cursor->getXmlRow(adaptor2);
-//DBGLOG("Data row returns:%s", text.str());
-
-#ifdef TESTDATASET
-text.clear();
-if (depth < 1)
-{
-    if (rows < 1)
-    {
-        text.append("<Row><state>AA</state><rtype>ab</rtype><id>abc</id><seq>12</seq></Row>");
-    }
-    else if (rows < 2)
-    {
-        text.append("<Row><state>BB</state><rtype>ba</rtype><id>abc</id><seq>13</seq></Row>");
-    }
-    else if (rows < 3)
-    {
-        text.append("<Row><state>CC</state><rtype>ca</rtype><id>bcd</id><seq>13</seq></Row>");
-    }
-    else
-    {
-        break;
-    }
-}
-else
-{
-    if (read < 1)
-    {
-        if (rows > 0)
-            break;
-        text.append("<Row><date_first_reported>20090511</date_first_reported><msa>6200</msa><sid>abc</sid><seq>12</seq></Row>");
-    }
-    else if (read < 2)
-    {
-        if (rows > 0)
-            break;
-        text.append("<Row><date_first_reported>20090512</date_first_reported><msa>6201</msa><sid>abc</sid><seq>13</seq></Row>");
-    }
-    else if (read < 3)
-    {
-        if (rows > 1)
-            break;
-        else if (rows > 0)
-            text.append("<Row><date_first_reported>20090514</date_first_reported><msa>6203</msa><sid>bcd</sid><seq>13</seq></Row>");
-        else
-            text.append("<Row><date_first_reported>20090513</date_first_reported><msa>6202</msa><sid>bcd</sid><seq>13</seq></Row>");
-    }
-}
-
-rows++;
-#endif
 
                 StringArray dataSetOutput0;
                 if (parentName && *parentName)
@@ -4983,7 +4513,6 @@ rows++;
                         if (text1.length() > 0)
                         {
                             mergeDataRow(text0, text, text1, columnsHide);
-    //DBGLOG("New row returns:%s", text0.str());
                         }
                         dataSetOutput.append(text0);
                     }
@@ -5084,7 +4613,6 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
         resultSetFactory.setown(getResultSetFactory(username, passwd));
 
     Owned<IViewFileWeb> web;
-    //Owned<INewResultSet> result;
     if (cluster && *cluster)
     {
         web.setown(createViewFileWeb(*resultSetFactory, cluster));
@@ -5143,10 +4671,8 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
     // Apply the filter to the root node
     if (filterBy && *filterBy)
     {
-        //Owned<IFilteredResultSet> filter = result->createFiltered();
         IResultSetFilter* filter = browser->queryRootFilter();
         setRootFilter(result, filterBy, filter, disableUppercaseTranslation);
-        ///result.setown(filter->create());
     }
 
     StringBuffer text, schemaText;
