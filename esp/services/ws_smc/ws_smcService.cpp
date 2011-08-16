@@ -318,23 +318,7 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                 resp.setBannerScroll(m_BannerScroll.str());
             }
         }
-#if 0
-Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
-Owned<IConstEnvironment> constEnv = envFactory->openEnvironmentByFile();
-Owned<IPropertyTree> root = &constEnv->getPTree();
-if (root)
-{
-StringBuffer buf;
-toXML(root, buf);
-if (buf.length() > 0)
-{
-    Owned<IFile> f = createIFile("new_env.xml");
-    Owned<IFileIO> fio = f->open(IFOcreaterw);
-    if (fio.get())
-        fio->write(0, buf.length(), buf.str());
-}
-}
-#endif
+
         Owned<IRemoteConnection> conn = querySDS().connect("/Status/Servers",myProcessSession(),RTM_LOCK_READ,30000);
 
         StringBuffer runningQueueNames[256];
@@ -421,13 +405,6 @@ if (buf.length() > 0)
                         {
                             if (wu->getStateID() == WUStateRunning)
                             {
-                                //StringBuffer buf;
-                                //toXML(pNode, buf);
-                                //if (buf.length() > 0)
-                                //{
-                                //  DBGLOG("CActiveWorkunitWrapper:%s", buf.str());
-                                //}
-
                                 int sg_duration = node.getPropInt("@sg_duration", -1);
                                 const char* graph = node.queryProp("@graph");
                                 int subgraph = node.getPropInt("@subgraph", -1);
@@ -588,7 +565,6 @@ if (buf.length() > 0)
                     color_type = 2;
                 }
                 returnCluster->setQueueStatus2(color_type);
-                DBGLOG("QueueStatus2=<%d>", color_type);
             }
 
             returnCluster->setDoCommand(doCommand);
@@ -661,8 +637,7 @@ if (buf.length() > 0)
                     returnCluster->setQueueStatus("running");
                 }
 
-                //returnCluster->setDoCommand(doCommand);
-                RoxieClusters.append(*returnCluster); //Temperary add here
+                RoxieClusters.append(*returnCluster);
             }
             resp.setRoxieClusters(RoxieClusters);
         }
@@ -710,105 +685,84 @@ if (buf.length() > 0)
             }
         }
 
-        int j = runningQueues;
-        while ( j > 0)
-        {
-            j--;
-            DBGLOG("runningQueueName=<%s>: runningJobs=<%d>", runningQueueNames[j].str(), runningJobsInQueue[j]);
-        }
-#if 0
-        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
-        envFactory->validateCache();
-
-        Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
-        Owned<IPropertyTree> pEnvRoot = &constEnv->getPTree();
-#else
         Owned<IPropertyTree> pEnvRoot = dummy.getEnvironment("");
         if (!pEnvRoot)
             throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO,"Failed to get environment information.");
-#endif
 
         StringBuffer dirxpath;
         dirxpath.append("Software/DfuServerProcess");
         Owned<IPropertyTreeIterator> services = pEnvRoot->getElements(dirxpath);
 
-        //Owned<IRemoteConnection> conn1 = querySDS().connect("/Environment/Software", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-        //if (conn1)
-        {   
-            //IPropertyTree* pEnvSoftware = conn1->queryRoot();
-            //Owned<IPropertyTreeIterator> services= pEnvSoftware->getElements("DfuServerProcess");
-            if (services->first()) 
+        if (services->first())
+        {
+            do
             {
-                do 
+                IPropertyTree &serviceTree = services->query();
+                const char *queuename = serviceTree.queryProp("@queue");
+                if (queuename && *queuename)
                 {
-                    IPropertyTree &serviceTree = services->query();
-                    const char *queuename = serviceTree.queryProp("@queue");
-                    if (queuename && *queuename)
+                    StringArray queues;
+                    loop
                     {
-                        StringArray queues;
-                        loop
+                        StringAttr subq;
+                        const char *comma = strchr(queuename,',');
+                        if (comma)
+                            subq.set(queuename,comma-queuename);
+                        else
+                            subq.set(queuename);
+                        bool added;
+                        const char *s = strdup(subq.get());
+                        queues.bAdd(s, stringcmp, added);
+                        if (!added)
+                            free((void *)s);
+                        if (!comma)
+                            break;
+                        queuename = comma+1;
+                        if (!*queuename)
+                            break;
+                    }
+                    ForEachItemIn(q, queues)
+                    {
+                        const char *queuename = queues.item(q);
+                        StringAttrArray wulist;
+                        unsigned running = queuedJobs(queuename, wulist);
+                        ForEachItemIn(i, wulist)
                         {
-                            StringAttr subq;
-                            const char *comma = strchr(queuename,',');
-                            if (comma) 
-                                subq.set(queuename,comma-queuename);
-                            else
-                                subq.set(queuename);
-                            bool added;
-                            const char *s = strdup(subq.get());
-                            queues.bAdd(s, stringcmp, added);
-                            if (!added)
-                                free((void *)s);
-                            if (!comma)
-                                break;
-                            queuename = comma+1;
-                            if (!*queuename)
-                                break;
-                        }
-                        ForEachItemIn(q, queues)
-                        {
-                            const char *queuename = queues.item(q);
-                            StringAttrArray wulist;
-                            unsigned running = queuedJobs(queuename, wulist);
-                            ForEachItemIn(i, wulist)
+                            const char *wuid = wulist.item(i).text.get();
+                            try
                             {
-                                const char *wuid = wulist.item(i).text.get();
-                                try
+                                StringBuffer jname, uname, state;
+                                Owned<IConstDFUWorkUnit> wu = getDFUWorkUnitFactory()->openWorkUnit(wuid, false);
+                                if (wu)
                                 {
-                                    StringBuffer jname, uname, state;
-                                    Owned<IConstDFUWorkUnit> wu = getDFUWorkUnitFactory()->openWorkUnit(wuid, false);
-                                    if (wu)
-                                    {
-                                        wu->getUser(uname);
-                                        wu->getJobName(jname);
-                                        if (i<running)
-                                            state.append("running");
-                                        else
-                                            state.append("queued");
+                                    wu->getUser(uname);
+                                    wu->getJobName(jname);
+                                    if (i<running)
+                                        state.append("running");
+                                    else
+                                        state.append("queued");
 
-                                        Owned<IEspActiveWorkunit> wu1(new CActiveWorkunitWrapper(wuid, uname.str(), jname.str(), state.str(), "normal"));
-                                        wu1->setServer("DFUserver");
-                                        wu1->setInstance(queuename);
-                                        wu1->setQueueName(queuename);
-                                    
-                                        aws.append(*wu1.getLink());
-                                    }
-                                }
-                                catch (IException *e)
-                                {
-                                    StringBuffer msg;
-                                    Owned<IEspActiveWorkunit> wu1(new CActiveWorkunitWrapper(wuid, "", "", e->errorMessage(msg).str(), "normal"));
+                                    Owned<IEspActiveWorkunit> wu1(new CActiveWorkunitWrapper(wuid, uname.str(), jname.str(), state.str(), "normal"));
                                     wu1->setServer("DFUserver");
                                     wu1->setInstance(queuename);
                                     wu1->setQueueName(queuename);
-                                    
+
                                     aws.append(*wu1.getLink());
                                 }
                             }
+                            catch (IException *e)
+                            {
+                                StringBuffer msg;
+                                Owned<IEspActiveWorkunit> wu1(new CActiveWorkunitWrapper(wuid, "", "", e->errorMessage(msg).str(), "normal"));
+                                wu1->setServer("DFUserver");
+                                wu1->setInstance(queuename);
+                                wu1->setQueueName(queuename);
+                                aws.append(*wu1.getLink());
+                            }
                         }
                     }
-                } while (services->next());
-            }
+                }
+            } while (services->next());
         }
         resp.setThorClusters(ThorClusters);
         resp.setRunning(aws);
@@ -854,45 +808,6 @@ if (buf.length() > 0)
             }
         }
 
-#if 0 // handled by queuedJobs list already 
-        conn.setown(querySDS().connect("DFU/WorkUnits",myProcessSession(),0, INFINITE));
-        if (conn) 
-        {
-            Owned<IPropertyTreeIterator> it(conn->getElements("*[Recovery/Running]"));
-            ForEach(*it) 
-            {
-                IPropertyTree &e=it->query();
-                IPropertyTree *recovery  = e.queryPropTree("Recovery");
-                if (recovery) 
-                {
-                    if (recovery->getPropBool("Running",false)) 
-                    {
-                        unsigned done;
-                        unsigned total;
-                        countProgress(recovery,done,total);
-
-                        Owned<IEspDFUJob> job = new CDFUJob("","");
-
-                        job->setTimeStarted(e.queryProp("Progress/@timestarted"));
-                        job->setDone(done);
-                        job->setTotal(total);
-
-                        StringBuffer cmd;
-                        cmd.append(e.queryName());
-                        const char *user = e.queryProp("@submitID");
-                        if (user)
-                            cmd.append(" (").append(user).append(')');
-
-                        job->setCommand(cmd.str());
-
-                        jobs.append(*job.getLink());
-
-                    }
-                }
-            }
-        }
-#endif
-
         resp.setDFUJobs(jobs);
     }
     catch(IException* e)
@@ -907,7 +822,6 @@ if (buf.length() > 0)
 void CWsSMCEx::addCapabilities(IPropertyTree* pFeatureNode, const char* access, 
                                          IArrayOf<IEspCapability>& capabilities)
 {
-    //get [Read|Write|Full]/Capability nodes under the feature node based on access value
     StringBuffer xpath(access);
     xpath.append("/Capability");
 
@@ -997,8 +911,6 @@ bool CWsSMCEx::onMoveJobBack(IEspContext &context, IEspSMCJobRequest &req, IEspS
         unsigned index=queue->findRank(req.getWuid());
         if(index<queue->ordinality())
         {
-        //  if(!queue->moveToTail(req.getWuid()))
-        //      throw MakeStringException(0,"Failed to move %s",req.getWuid());
             int priority0 = queue->getItem(index)->getPriority();
             unsigned biggestIndoxInSamePriority = index;
             unsigned nextIndex = biggestIndoxInSamePriority + 1;
@@ -1042,8 +954,6 @@ bool CWsSMCEx::onMoveJobFront(IEspContext &context, IEspSMCJobRequest &req, IEsp
         unsigned index=queue->findRank(req.getWuid());
         if(index>0 && index<queue->ordinality())
         {
-            //if(!queue->moveToHead(req.getWuid()))
-            //  throw MakeStringException(0,"Failed to move %s",req.getWuid());
             int priority0 = queue->getItem(index)->getPriority();
             unsigned smallestIndoxInSamePriority = index;
             int nextIndex = smallestIndoxInSamePriority - 1;
@@ -1371,7 +1281,7 @@ bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesReques
         const char* ossInstall = pEnvRoot->queryProp("EnvSettings/path");
         if (!ossInstall || !*ossInstall)
         {
-            DBGLOG("Failed to get EnvSettings/Path in environment settings.");
+            WARNLOG("Failed to get EnvSettings/Path in environment settings.");
             return true;
         }
 
@@ -1380,14 +1290,14 @@ bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesReques
         Owned<IFile> f = createIFile(path.str());
         if(!f->exists() || !f->isDirectory())
         {
-            DBGLOG("Invalid resource folder");
+            WARNLOG("Invalid resource folder");
             return true;
         }
 
         Owned<IDirectoryIterator> di = f->directoryFiles(NULL, false, true);
         if(di.get() == NULL)
         {
-            DBGLOG("Resource folder is empty.");
+            WARNLOG("Resource folder is empty.");
             return true;
         }
 
@@ -1405,14 +1315,14 @@ bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesReques
             Owned<IFile> f0 = createIFile(path0.str());
             if(!f0->exists())
             {
-                DBGLOG("Description file not found for %s", folder.str());
+                WARNLOG("Description file not found for %s", folder.str());
                 continue;
             }
 
             OwnedIFileIO rIO = f0->openShared(IFOread,IFSHfull);
             if(!rIO)
             {
-                DBGLOG("Failed to open the description file for %s", folder.str());
+                WARNLOG("Failed to open the description file for %s", folder.str());
                 continue;
             }
 
@@ -1423,21 +1333,21 @@ bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesReques
             size32_t nRead = rIO->read(0, (size32_t) fileSize, (char*)tmpBuf.str());
             if (nRead != fileSize)
             {
-                DBGLOG("Failed to read the description file for %s", folder.str());
+                WARNLOG("Failed to read the description file for %s", folder.str());
                 continue;
             }
 
             Owned<IPropertyTree> desc = createPTreeFromXMLString(tmpBuf.str());
             if (!desc)
             {
-                DBGLOG("Invalid description file for %s", folder.str());
+                WARNLOG("Invalid description file for %s", folder.str());
                 continue;
             }
 
             Owned<IPropertyTreeIterator> fileIterator = desc->getElements("file");
             if (!fileIterator->first())
             {
-                DBGLOG("Invalid description file for %s", folder.str());
+                WARNLOG("Invalid description file for %s", folder.str());
                 continue;
             }
 

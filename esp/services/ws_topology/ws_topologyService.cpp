@@ -101,13 +101,10 @@ bool CWsTopologyEx::onTpSwapNode(IEspContext &context,IEspTpSwapNodeRequest  &re
 {
     try
     {
-        DBGLOG("CWsTopologyEx::onTpSwapNode\n");
-
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Full, false))
             throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to Swap Node. Permission denied.");
 
         //another client (like configenv) may have updated the constant environment so reload it
-        //
         m_envFactory->validateCache();
 
         resp.setTpSwapNodeResult(false);
@@ -137,8 +134,6 @@ bool CWsTopologyEx::onTpSetMachineStatus(IEspContext &context,IEspTpSetMachineSt
 {
     try
     {
-        DBGLOG("CWsTopologyEx::onTpSetMachineStatus\n");
-
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Write, false))
             throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to Set Machine Status. Permission denied.");
 
@@ -162,8 +157,6 @@ bool CWsTopologyEx::onTpLogFile(IEspContext &context,IEspTpLogFileRequest  &req,
 {
     try
     {
-        DBGLOG("CWsTopologyEx::onTpLogFile\n");
-
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to get Log File. Permission denied.");
 
@@ -198,12 +191,6 @@ bool CWsTopologyEx::onTpLogFile(IEspContext &context,IEspTpLogFileRequest  &req,
                 toHour[1] = readLogReq.endDate.charAt(12);
                 lastHours = atoi(toHour)-atoi(fromHour);
             }
-#if 0
-            else if (readLogReq.filterType == 4)
-            {
-                readLogReq.pageNumber --;
-            }
-#endif
             else if (readLogReq.filterType == 6) //from date/time to date/time
             {
                 if (readLogReq.startDate.length() < 19 && readLogReq.endDate.length() < 19)
@@ -380,12 +367,6 @@ bool CWsTopologyEx::onTpLogFile(IEspContext &context,IEspTpLogFileRequest  &req,
                     }
                 }
             }
-#if 0
-            if (readLogReq.filterType == 4)
-            {
-                readLogReq.pageNumber++;
-            }
-#endif
             if (readLogReq.fileSize > 0)
                 resp.setFileSize(readLogReq.fileSize);
             if (readLogReq.pageNumber > 0)
@@ -424,7 +405,6 @@ bool CWsTopologyEx::onSystemLog(IEspContext &context,IEspSystemLogRequest  &req,
 {
     try
     {
-        DBGLOG("CWsTopologyEx::onSystemLog\n");
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to get Log File. Permission denied.");
 
@@ -471,7 +451,6 @@ bool CWsTopologyEx::onSystemLog(IEspContext &context,IEspSystemLogRequest  &req,
         }
 
         headerStr.appendf("attachment;filename=%s", fileName.str());
-        //StringBuffer headerStr0 = headerStr;
         if (nZip > 2)
             headerStr.append(".gz");
         else if (nZip > 1)
@@ -576,8 +555,6 @@ bool CWsTopologyEx::onTpXMLFile(IEspContext &context,IEspTpXMLFileRequest  &req,
 {
     try
     {
-        DBGLOG("CWsTopologyEx::onTpXMLFile\n");
-
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to get Configuration File. Permission denied.");
 
@@ -599,14 +576,12 @@ bool CWsTopologyEx::onTpXMLFile(IEspContext &context,IEspTpXMLFileRequest  &req,
 
 void CWsTopologyEx::getThorXml(const char *cluster,StringBuffer& returnStr)
 {
-    DBGLOG("CWsTopologyEx::getThorXml\n");
     CCluster conn(cluster);
     toXML(conn->queryRoot(), returnStr);
 }
 
 void CWsTopologyEx::getThorLog(const char *cluster,MemoryBuffer& returnbuff)
 {
-    DBGLOG("CWsTopologyEx::getThorLog\n");
     StringBuffer logname;
     logname.append(CCluster(cluster)->queryRoot()->queryProp("LogFile"));
 
@@ -674,8 +649,6 @@ void CWsTopologyEx::readLogFile(StringBuffer logname, ReadLog& readLogReq, Strin
 
     if (readLogReq.filterType == 0 || readLogReq.filterType == 4) //by page number: 0 to n-1
     {
-        //if (readLogReq.pageNumber > readLogReq.TotalPages - 1)
-        //  readLogReq.pageNumber = readLogReq.TotalPages - 1;
         offset_t readFrom = LOGFILESIZELIMIT * readLogReq.pageNumber;
         if (readFrom > readLogReq.fileSize) 
             readFrom = 0;
@@ -1176,13 +1149,10 @@ bool CWsTopologyEx::onTpClusterQuery(IEspContext &context, IEspTpClusterQueryReq
 {
     try
     {
-        DBGLOG("CWsTopologyEx::onTpClusterQuery\n");
-
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to do Cluster Query. Permission denied.");
 
         //another client (like configenv) may have updated the constant environment so reload it
-        //
         m_envFactory->validateCache();
 
         IArrayOf<IEspTpCluster> clusters;
@@ -1216,8 +1186,6 @@ bool CWsTopologyEx::onTpTargetClusterQuery(IEspContext &context, IEspTpTargetClu
 {
     try
     {
-        DBGLOG("CWsTopologyEx::onTpTargetClusterQuery\n");
-
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to do Cluster Query. Permission denied.");
 
@@ -1267,8 +1235,6 @@ bool CWsTopologyEx::onTpLogicalClusterQuery(IEspContext &context, IEspTpLogicalC
 {
     try
     {
-        DBGLOG("CWsTopologyEx::onTpLogicalClusterQuery\n");
-
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to do Cluster Query. Permission denied.");
 
@@ -1311,8 +1277,6 @@ bool CWsTopologyEx::onTpGroupQuery(IEspContext &context, IEspTpGroupQueryRequest
 {
     try
     {
-        DBGLOG("CWsTopologyEx::onTpGroupQuery\n");
-
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to do Group Query. Permission denied.");
 
@@ -1332,8 +1296,6 @@ bool CWsTopologyEx::onTpClusterInfo(IEspContext &context, IEspTpClusterInfoReque
 {
     try
     {
-        DBGLOG("CWsTopologyEx::onTpClusterInfo\n");
-
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to get Cluster Information. Permission denied.");
 
@@ -1396,7 +1358,6 @@ bool CWsTopologyEx::onTpServiceQuery(IEspContext &context, IEspTpServiceQueryReq
         if (!type || !*type || (strcmp(eqAllServices,type) == 0))
         {
             //another client (like configenv) may have updated the constant environment so reload it
-            //
             m_envFactory->validateCache();
 
             IEspTpServices& ServiceList = resp.updateServiceList();
@@ -1450,10 +1411,7 @@ bool CWsTopologyEx::onTpMachineQuery(IEspContext &context, IEspTpMachineQueryReq
 { 
     try
     {
-        DBGLOG("CWsTopologyEx::onTpMachineQuery\n");
-
         //another client (like configenv) may have updated the constant environment so reload it
-        //
         m_envFactory->validateCache();
 
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
@@ -1607,20 +1565,14 @@ bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context,
                         
         
         //the paths are all windows or samba network shares so construct windows network path
-        //
         StringBuffer netAddressStr;
         SCMStringBuffer scmNetAddress;
         StringAttr      sDirectory;
         if (bCluster && !(netAddress && *netAddress))
         {
             //another client (like configenv) may have updated the constant environment so reload it
-            //
             m_envFactory->validateCache();
-#if 0
-            Owned<IConstEnvironment> constEnv = m_envFactory->openEnvironment();
-#else
             Owned<IConstEnvironment> constEnv = m_envFactory->openEnvironmentByFile();
-#endif
             Owned<IPropertyTree> pRoot = &constEnv->getPTree();
 
             StringBuffer xpath;
@@ -1667,9 +1619,6 @@ bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context,
                 }
             }
         }
-#ifdef MACHINE_IP
-        netAddressStr.clear().append(MACHINE_IP);
-#endif
 
         if (netAddressStr.length() > 0)
             netAddress = netAddressStr.str();
