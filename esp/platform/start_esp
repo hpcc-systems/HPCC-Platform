@@ -20,17 +20,18 @@ ulimit -n 8192
 export LD_LIBRARY_PATH=.:./dot:$LD_LIBRARY_PATH 
 export LANG=en_US 
 SNMPID=$$ 
+export SENTINEL="esp.sentinel"
 nohup $PWD/esp snmpid=$SNMPID 1>/dev/null 2>/dev/null & 
 echo $! > component.pid
 wait 
-while [ -e esp_sentinel.txt ]; do 
-        sleep 5 
-        if [ -e esp_sentinel.txt ]; then 
-                ./stop 
-                nohup $PWD/esp snmpid=$SNMPID 1>/dev/null 2>/dev/null & 
+while [ -e ${SENTINEL} ]; do
+    sleep 5
+    if [ -e ${SENTINEL} ]; then
+        ./stop
+        nohup $PWD/esp snmpid=$SNMPID 1>/dev/null 2>/dev/null &
         echo $! > component.pid
-                wait 
-        fi 
-done 
+        wait
+    fi
+done
  
 exit 0 

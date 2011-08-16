@@ -296,6 +296,9 @@ int main(int argc, const char* argv[])
     NoQuickEditSection x;
 #endif
 
+    Owned<IFile> sentinelFile = createSentinelTarget();
+    removeSentinelFile(sentinelFile);
+
     OwnedIFile ifile = createIFile("sashaconf.xml");
     serverConfig.setown(ifile->exists()?createPTreeFromXMLFile("sashaconf.xml"):createPTree());
     StringBuffer daliServer;
@@ -396,6 +399,7 @@ int main(int argc, const char* argv[])
                     }
                 } *stopThread = new CStopThread;
                 addThreadExceptionHandler(&exceptionStopHandler);
+                writeSentinelFile(sentinelFile);
                 SashaMain();
                 removeThreadExceptionHandler(&exceptionStopHandler);
 

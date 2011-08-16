@@ -18,4 +18,5 @@
 
 
 ulimit -c unlimited
+export SENTINEL="eclagent.sentinel"
 nohup eclagent $* &

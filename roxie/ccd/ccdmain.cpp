@@ -478,16 +478,8 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         for (int i = 1; i < argc; i++)
             globals->loadProp(argv[i], true);
 
-        // sentinelFile should be removed as early as possible to avoid infinite restarts, if there is a problem restarting
-        // sentinelFilename will exist in directory where executable exists
-        Owned<IFile> sentinelFile;
-        if (globals->hasProp("sentinel"))
-        {
-            StringBuffer sentinelFilename;
-            sentinelFilename.append(codeDirectory).append(globals->queryProp("sentinel"));
-            sentinelFile.setown(createIFile(sentinelFilename.str()));
-            sentinelFile->remove();
-        }
+        Owned<IFile> sentinelFile = createIFile(sentinelFilename.str()));
+        removeSentinelFile(sentinelFile);
 
         StringBuffer topologyFile;
         if (globals->hasProp("topology"))
@@ -1095,14 +1087,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 time(&startupTime);
                 roxieServer->start();
             }
-            // if we got here, the initial load is ok, so create the "sentinel file" for re-runs from the script
-            // put in its own "scope" to force the flush
-            if (sentinelFile)
-            {
-                DBGLOG("Creating sentinel file %s", sentinelFile->queryFilename());
-                Owned<IFileIO> fileIO = sentinelFile->open(IFOcreate);
-                fileIO->write(0, 5, "rerun");
-            }
+            writeSentinelFile(sentinelFile);
             DBGLOG("Waiting for queries");
             if (pingInterval)
                 startPingTimer();

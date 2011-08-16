@@ -25,10 +25,12 @@ PID_NAME="$PID/`basename $PWD`.pid"
 INIT_PID_NAME="$PID/init_`basename $PWD`.pid"
 echo $$ > $INIT_PID_NAME
 
+export SENTINEL="eclagent.sentinel"
+
 rm -f ${PID_DIR}/hthortemp/*
 
 killed (){
-    rm -f agentexec_sentinel*.txt
+    rm -f ${SENTINEL}
 
     killall agentexec
     killall eclagent
@@ -47,9 +49,9 @@ agentexec 1>/dev/null 2>/dev/null &
 echo $! > $PID_NAME
 wait
 
-if [ -e agentexec_sentinel.txt ]; then
+if [ -e ${SENTINEL} ]; then
     sleep 1
-    if [ -e agentexec_sentinel.txt ]; then
+    if [ -e ${SENTINEL} ]; then
         agentexec 1>/dev/null 2>/dev/null &
         echo $! > $PID_NAME
         wait

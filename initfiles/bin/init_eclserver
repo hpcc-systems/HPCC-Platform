@@ -8,14 +8,16 @@ PID_NAME="$PID/`basename $PWD`.pid"
 INIT_PID_NAME="$PID/init_`basename $PWD`.pid"
 echo $$ > $INIT_PID_NAME
 
+export SENTINEL="eclserver.sentinel"
+
 killed() {
     PATH_PRE=`type -path hpcc_setenv`
     source ${PATH_PRE}
     PID_NAME="$PID/`basename $PWD`.pid"
 
-    if [ -e eclserver_sentinel.txt ]; then
+    if [ -e ${SENTINEL} ]; then
 
-            rm -f eclserver_sentinel.txt
+            rm -f ${SENTINEL}
             if [ -e ${PID_NAME} ]; then
                     pidwait_fn `cat ${PID_NAME}` 3
             fi
@@ -28,9 +30,9 @@ trap "killed" SIGINT SIGTERM SIGKILL
 eclserver 1>/dev/null 2>/dev/null &
 echo $! > $PID_NAME
 wait
-if [ -e eclserver_sentinel.txt ]; then
+if [ -e ${SENTINEL} ]; then
         sleep 5
-        if [ -e eclserver_sentinel.txt ]; then
+        if [ -e ${SENTINEL} ]; then
         eclserver 1>/dev/null 2>/dev/null & 
         echo $! > $PID_NAME
         wait

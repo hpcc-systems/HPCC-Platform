@@ -17,9 +17,10 @@ rem     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 rem ############################################################################## */
 
 title "ESP Monitor [%cd%]"
+set SENTINEL="esp.sentinel"
 :start
 start /wait "ESP [%cd%]" esp
-if exist esp_sentinel.txt (
+if exist %SENTINEL% (
     goto start
 )
 
