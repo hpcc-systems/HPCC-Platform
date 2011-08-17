@@ -250,13 +250,13 @@ static bool isOptionTooLate(const char * name)
 }
 
 static HqlTransformerInfo newThorStoredReplacerInfo("NewThorStoredReplacer");
-NewThorStoredReplacer::NewThorStoredReplacer(HqlCppTranslator & _translator, IWorkUnit * _wu, ICodegenContextCallback * _ctxCallback) 
-: QuickHqlTransformer(newThorStoredReplacerInfo, NULL), translator(_translator) 
-{ 
-    wu = _wu; 
-    ctxCallback = _ctxCallback; 
-    foldStored = false; 
-    seenMeta = false; 
+NewThorStoredReplacer::NewThorStoredReplacer(HqlCppTranslator & _translator, IWorkUnit * _wu, ICodegenContextCallback * _ctxCallback)
+: QuickHqlTransformer(newThorStoredReplacerInfo, NULL), translator(_translator)
+{
+    wu = _wu;
+    ctxCallback = _ctxCallback;
+    foldStored = false;
+    seenMeta = false;
 }
 
 
@@ -941,7 +941,7 @@ YesNoOption HqlThorBoundaryTransformer::calcNormalizeThor(IHqlExpression * expr)
         option = combine(option, childOption, true);
     }
 
-    if (type) 
+    if (type)
     {
         switch (type->getTypeCode())
         {
@@ -962,7 +962,7 @@ YesNoOption HqlThorBoundaryTransformer::calcNormalizeThor(IHqlExpression * expr)
 void HqlThorBoundaryTransformer::transformRoot(const HqlExprArray & in, HqlExprArray & out)
 {
     //NewHqlTransformer::transformArray(in, out);
-    //following theoretically might improve things, but generally just causes code to become worse, 
+    //following theoretically might improve things, but generally just causes code to become worse,
     //because all the global set results are done in activities, and there isn't cse between them
     transformCompound(out, no_actionlist, in, maxRootMaybes);
 }
@@ -975,7 +975,7 @@ void HqlCppTranslator::markThorBoundaries(WorkflowArray & array)
     {
         HqlExprArray & exprs = array.item(idx).queryExprs();
         HqlExprArray bounded;
-        
+
         thorTransformer.transformRoot(exprs, bounded);
         replaceArray(exprs, bounded);
     }
@@ -1157,15 +1157,15 @@ IHqlExpression * ThorScalarTransformer::createTransformed(IHqlExpression * expr)
   setresult(<complicated>, 'x')
   getresult('x')
 
-  Problems: 
-  
-  o it tries to keep get/set results within the conditional branches that need them, 
+  Problems:
+
+  o it tries to keep get/set results within the conditional branches that need them,
     but that means if it occurs in more than one then it will only get added once.
 
-  o It (and all transformers) should possibly always generate a setresult,getresult locally, 
+  o It (and all transformers) should possibly always generate a setresult,getresult locally,
     and then have another pass that moves all the setresults to the optimal place. E.g. to the highest shared location.
     [Alternatively can a global, but conditional, root graph be generated for it?]
- 
+
   Also converts
   setresult(thor(x)) to thor(setresult(x))
   thor(scalar) to setresult(scalar,'x'),getresult('x')
@@ -1204,8 +1204,8 @@ static void normalizeResultFormat(WorkflowArray & workflow, const HqlCppOptions 
 
 static HqlTransformerInfo sequenceNumberAllocatorInfo("SequenceNumberAllocator");
 SequenceNumberAllocator::SequenceNumberAllocator() : NewHqlTransformer(sequenceNumberAllocatorInfo)
-{ 
-    sequence = 0; 
+{
+    sequence = 0;
 }
 
 void SequenceNumberAllocator::nextSequence(HqlExprArray & args, IHqlExpression * name, _ATOM overwriteAction, IHqlExpression * value, bool needAttr, bool * duplicate)
@@ -1517,7 +1517,7 @@ IHqlExpression * normalizeAggregateExpr(IHqlExpression * selector, IHqlExpressio
             return normalizeAggregateExpr(selector, n12, fields, assigns, extraSelectNeeded, false);
         }
         throwUnexpected();
-    
+
     case no_variance:
     case no_covariance:
     case no_correlation:
@@ -1684,7 +1684,7 @@ static IHqlExpression * simplifySortlistComplexity(IHqlExpression * sortlist)
                     appendComponent(cpts, invert, &concats.item(idxc));
             }
         }
-        else 
+        else
         {
 #if 0
             if (cur->getOperator() == no_select && cur->isDatarow() && !cur->hasProperty(newAtom))
@@ -1707,7 +1707,7 @@ static IHqlExpression * simplifySortlistComplexity(IHqlExpression * sortlist)
 }
 
 static IHqlExpression * normalizeIndexBuild(IHqlExpression * expr, bool sortIndexPayload, bool alwaysLocal)
-{ 
+{
     LinkedHqlExpr dataset = expr->queryChild(0);
     IHqlExpression * normalizedDs = dataset->queryNormalizedSelector();
     IHqlExpression * buildRecord = dataset->queryRecord();
@@ -1858,7 +1858,7 @@ static IHqlExpression * normalizeIndexBuild(IHqlExpression * expr, bool sortInde
         dedupArgs.append(*createLocalAttribute());
         dedupArgs.append(*LINK(seq));
         OwnedHqlExpr dedup = createDataset(no_dedup, dedupArgs);
-        
+
         HqlExprArray  buildArgs;
         buildArgs.append(*cloneInheritedAnnotations(expr, dedup));
         unwindChildren(buildArgs, expr, 1);
@@ -1871,7 +1871,7 @@ static IHqlExpression * normalizeIndexBuild(IHqlExpression * expr, bool sortInde
 
 
 static HqlTransformerInfo thorHqlTransformerInfo("ThorHqlTransformer");
-ThorHqlTransformer::ThorHqlTransformer(HqlCppTranslator & _translator, ClusterType _targetClusterType, IConstWorkUnit * wu) 
+ThorHqlTransformer::ThorHqlTransformer(HqlCppTranslator & _translator, ClusterType _targetClusterType, IConstWorkUnit * wu)
 : NewHqlTransformer(thorHqlTransformerInfo), translator(_translator), options(_translator.queryOptions())
 {
     targetClusterType = _targetClusterType;
@@ -2002,7 +2002,7 @@ IHqlExpression * ThorHqlTransformer::normalizeDedup(IHqlExpression * expr)
         //the equalities (ignoring any grouping conditions) match the group sort order
         return NULL;
     }
-    
+
     // DEDUP, ALL, local: - pre sort the data, group, dedup and ungroup
     // DEDUP, ALL, global - if just had a sort by any of the criteria then do it local
     // DEDUP, not all, not grouped, group by criteria, dedup, degroup
@@ -2095,7 +2095,7 @@ IHqlExpression * ThorHqlTransformer::normalizeDedup(IHqlExpression * expr)
             }
         }
     }
-    else 
+    else
     {
         //Convert dedup(ds, exprs) to group(dedup(group(ds, exprs), exprs))
         //To ensure that the activity isn't executed serially.
@@ -2113,7 +2113,7 @@ IHqlExpression * ThorHqlTransformer::normalizeRollup(IHqlExpression * expr)
 {
     if (isGroupedActivity(expr))
         return NULL;
-    
+
     IHqlExpression * dataset = expr->queryChild(0);
     IHqlExpression * cond = expr->queryChild(1);
     if (isThorCluster(targetClusterType) && !expr->queryProperty(localAtom) && isIndependentOfScope(expr))
@@ -2184,7 +2184,7 @@ IHqlExpression * ThorHqlTransformer::normalizeRollup(IHqlExpression * expr)
 
 IHqlExpression * ThorHqlTransformer::skipOverGroups(IHqlExpression * dataset, bool isLocal)
 {
-    //if grouping a group, remove the initial group.  
+    //if grouping a group, remove the initial group.
     //Not completely sure about this - it may potentially cause extra splitters.
     IHqlExpression * newDataset = dataset;
     while (newDataset->getOperator() == no_group)
@@ -2206,7 +2206,7 @@ IHqlExpression * ThorHqlTransformer::skipOverGroups(IHqlExpression * dataset, bo
 
 IHqlExpression * ThorHqlTransformer::skipGroupsWithinGroup(IHqlExpression * expr, bool isLocal)
 {
-    //if grouping a group, remove the initial group.  
+    //if grouping a group, remove the initial group.
     //Not completely sure about this - it may potentially cause extra splitters.
     IHqlExpression * dataset = expr->queryChild(0);
     if (dataset->getOperator() == no_group)
@@ -2253,12 +2253,12 @@ IHqlExpression * ThorHqlTransformer::normalizeGroup(IHqlExpression * expr)
 
     if (!hasAll)
     {
-        //if grouping a group, remove the initial group.  
+        //if grouping a group, remove the initial group.
         //Not completely sure about this - it may potentially cause extra splitters.
         return skipGroupsWithinGroup(expr, isLocal);
     }
 
-    //First check to see if the dataset is already sorted by the group criteria, or more.  
+    //First check to see if the dataset is already sorted by the group criteria, or more.
     //The the data could be globally sorted, but not distributed, and this is likely to be more efficient than redistributing...
     OwnedHqlExpr sorted = ensureSortedForGroup(dataset, sortlist, hasLocal, !translator.targetThor());
     if (sorted == dataset)
@@ -2547,7 +2547,7 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
             return appendOwnedOperand(expr, createAttribute(_ordered_Atom));
         return NULL;
     }
-    
+
 
     HqlExprArray leftSorts, rightSorts, slidingMatches;
     bool isLimitedSubstringJoin;
@@ -2579,8 +2579,8 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     //Try and convert local joins to a lightweight join that doesn't require any sorting of the inputs.
     //Improves resourcing for thor, and prevents lookup conversion for hthor/roxie
     //Worthwhile even for lookup joins
-    if (translator.targetThor() && 
-        options.spotLocalMerge && !isLimitedSubstringJoin && 
+    if (translator.targetThor() &&
+        options.spotLocalMerge && !isLimitedSubstringJoin &&
         ((op == no_join) || (op == no_selfjoin)) && isLocal && !expr->hasProperty(_lightweight_Atom))
     {
         if (isAlreadySorted(leftDs, leftSorts, true, true) &&
@@ -2953,7 +2953,7 @@ IHqlExpression * ThorHqlTransformer::normalizePrefetchAggregate(IHqlExpression *
     if (!prefetch)
         return NULL;
 
-    //Create a prefetch project for all parameters to count/sum/grouping expressions 
+    //Create a prefetch project for all parameters to count/sum/grouping expressions
     //and then aggregate those values.
     IHqlExpression * ds = expr->queryChild(0);
     HqlExprArray tempArgs, fields, values;
@@ -3027,7 +3027,7 @@ IHqlExpression * ThorHqlTransformer::getMergeTransform(IHqlExpression * dataset,
                 IHqlExpression * lhs = cur->queryChild(0);
                 IHqlExpression * lhsField = lhs->queryChild(1);
                 IHqlExpression * rhs = cur->queryChild(1);
-                OwnedHqlExpr selected = createSelectExpr(LINK(dataset), LINK(lhsField)); 
+                OwnedHqlExpr selected = createSelectExpr(LINK(dataset), LINK(lhsField));
                 OwnedHqlExpr newRhs;
                 node_operator rhsOp = rhs->getOperator();
                 switch (rhsOp)
@@ -3152,7 +3152,7 @@ IHqlExpression * ThorHqlTransformer::normalizeTableToAggregate(IHqlExpression * 
         IHqlExpression * cur = assign->queryChild(0);
         IHqlExpression * src = assign->queryChild(1);
         IHqlExpression * mapped = normalizeAggregateExpr(cur, src, aggregateFields, aggregateAssigns, extraSelectNeeded, canOptimizeCasts);
-        
+
         if (mapped == src)
         {
             mapped->Release();
@@ -3272,7 +3272,7 @@ IHqlExpression * ThorHqlTransformer::normalizeTableGrouping(IHqlExpression * exp
                     ds.setown(cloneInheritedAnnotations(expr, ds));
                 }
                 OwnedHqlExpr sorted = ensureSortedForGroup(ds, newsort, expr->hasProperty(localAtom), !translator.targetThor());
-                
+
                 //For thor a global grouped aggregate would transfer elements between nodes so it is still likely to
                 //be more efficient to do a hash aggregate.  Even better would be to check the distribution
                 if ((sorted != ds) ||
@@ -3301,9 +3301,9 @@ void HqlCppTranslator::convertLogicalToActivities(WorkflowArray & workflow)
         {
             HqlExprArray & exprs = workflow.item(idx).queryExprs();
             HqlExprArray transformed;
-            
+
             transformer.transformRoot(exprs, transformed);
-            
+
             replaceArray(exprs, transformed);
         }
         DEBUG_TIMER("EclServer: tree transform: convert logical", msTick()-time);
@@ -3315,7 +3315,7 @@ void HqlCppTranslator::convertLogicalToActivities(WorkflowArray & workflow)
 
 //------------------------------------------------------------------------
 
-CompoundSourceInfo::CompoundSourceInfo(IHqlExpression * _original) : NewTransformInfo(_original) 
+CompoundSourceInfo::CompoundSourceInfo(IHqlExpression * _original) : NewTransformInfo(_original)
 {
     sourceOp = no_none;
     mode = no_none;
@@ -3441,7 +3441,7 @@ bool CompoundSourceInfo::isAggregate()
 //doesn't have to cope with being scope dependent.
 //Calling the transformer again later on child queries should extend the compound activities if appropriate.
 static HqlTransformerInfo compoundSourceTransformerInfo("CompoundSourceTransformer");
-CompoundSourceTransformer::CompoundSourceTransformer(HqlCppTranslator & _translator, unsigned _flags) 
+CompoundSourceTransformer::CompoundSourceTransformer(HqlCppTranslator & _translator, unsigned _flags)
 : NewHqlTransformer(compoundSourceTransformerInfo), translator(_translator)
 {
     targetClusterType = translator.getTargetClusterType();
@@ -3792,7 +3792,7 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
                         if (flags & CSFnewindex)
                         {
                             newOp = no_compound_indexaggregate;
-                            //Force counts on indexes to become a new compound activity 
+                            //Force counts on indexes to become a new compound activity
                             //otherwise if(count(x) > n, f(x), g()) will always cause x to be read and spilt.
                             //The commented out test would do a better job, but not all keyed filters have an explicit keyed() so it is insufficient
                             //
@@ -3967,7 +3967,7 @@ bool CompoundSourceTransformer::createCompoundSource(IHqlExpression * expr)
     case no_compound_indexcount:
     case no_compound_indexgroupaggregate:
     case no_compound_indexread:
-        //MORE: Should stop at sufficiently shared children - e.g., 
+        //MORE: Should stop at sufficiently shared children - e.g.,
         //* if the children are aggregates, when we get that far.
         //* if child actions don't change the filter significantly (e.g, just projects, or no seg monitors)
         {
@@ -4088,8 +4088,8 @@ IHqlExpression * getMergedFetch(IHqlExpression * expr)
 
 static HqlTransformerInfo compoundActivityTransformerInfo("CompoundActivityTransformer");
 CompoundActivityTransformer::CompoundActivityTransformer(ClusterType _targetClusterType) : NewHqlTransformer(compoundActivityTransformerInfo)
-{ 
-    targetClusterType = _targetClusterType; 
+{
+    targetClusterType = _targetClusterType;
 }
 
 IHqlExpression * CompoundActivityTransformer::createTransformed(IHqlExpression * expr)
@@ -4136,10 +4136,10 @@ IHqlExpression * CompoundActivityTransformer::createTransformed(IHqlExpression *
 //------------------------------------------------------------------------
 
 static HqlTransformerInfo optimizeActivityTransformerInfo("OptimizeActivityTransformer");
-OptimizeActivityTransformer::OptimizeActivityTransformer(bool _optimizeCountCompare, bool _optimizeNonEmpty) 
+OptimizeActivityTransformer::OptimizeActivityTransformer(bool _optimizeCountCompare, bool _optimizeNonEmpty)
 : NewHqlTransformer(optimizeActivityTransformerInfo)
-{ 
-    optimizeCountCompare = _optimizeCountCompare; optimizeNonEmpty = _optimizeNonEmpty; 
+{
+    optimizeCountCompare = _optimizeCountCompare; optimizeNonEmpty = _optimizeNonEmpty;
 }
 
 void OptimizeActivityTransformer::analyseExpr(IHqlExpression * expr)
@@ -4503,7 +4503,7 @@ IHqlExpression * GlobalAttributeInfo::queryFilename(IHqlExpression * value, ICon
                 StringBuffer s;
                 cachedFilename->queryValue()->getStringValue(s.append(prefix));
                 cachedFilename.setown(createConstant(s.str()));
-            } 
+            }
             else
             {
                 ITypeInfo * type = makeStringType(UNKNOWN_LENGTH, NULL, NULL);
@@ -4556,7 +4556,7 @@ void GlobalAttributeInfo::extractGlobal(IHqlExpression * expr, bool isRoxie)
     else if (expr->hasProperty(manyAtom) && !isRoxie)
         few = false;
     setOp = no_setresult;
-    sequence.setown(getLocalSequenceNumber()); 
+    sequence.setown(getLocalSequenceNumber());
     persistOp = no_global;
 }
 
@@ -4592,7 +4592,7 @@ void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, IHqlExpressio
     case no_independent:
         setOp = no_setresult;
         storedName.clear();
-        sequence.setown(getLocalSequenceNumber()); 
+        sequence.setown(getLocalSequenceNumber());
         extraSetAttr.setown(createAttribute(_workflow_Atom));
         setCluster(queryRealChild(expr, 0));
         op = no_global;
@@ -4600,7 +4600,7 @@ void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, IHqlExpressio
     case no_once:
         setOp = no_setresult;
         storedName.clear();
-        sequence.setown(getOnceSequenceNumber()); 
+        sequence.setown(getOnceSequenceNumber());
         extraSetAttr.setown(createAttribute(_workflow_Atom));
         break;
     case no_success:
@@ -4610,7 +4610,7 @@ void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, IHqlExpressio
         {
             storedName.clear();
             setOp = no_setresult;
-            sequence.setown(getLocalSequenceNumber()); 
+            sequence.setown(getLocalSequenceNumber());
         }
         break;
     default:
@@ -4777,7 +4777,7 @@ void GlobalAttributeInfo::createSmallOutput(IHqlExpression * value, OwnedHqlExpr
     if (value->getOperator() == no_temptable)
     {
         IHqlExpression * values = value->queryChild(0);
-        if ((values->getOperator() == no_null) || 
+        if ((values->getOperator() == no_null) ||
             ((values->getOperator() == no_list) && (values->numChildren() == 0)))
         {
             OwnedHqlExpr newNull = createDataset(no_null, LINK(value->queryRecord()));
@@ -4898,9 +4898,9 @@ static bool isTrivialStored(IHqlExpression * set)
     return false;
 }
 
-inline bool isWorkflowAction(IHqlExpression * expr) 
-{ 
-    return expr && (expr->getOperator() == no_workflow_action); 
+inline bool isWorkflowAction(IHqlExpression * expr)
+{
+    return expr && (expr->getOperator() == no_workflow_action);
 }
 
 void cloneDependencies(UnsignedArray & tgt, const UnsignedArray & src)
@@ -4983,7 +4983,7 @@ void intersectDependencies(UnsignedArray & target, UnsignedArray const & d1, Uns
 //------------------------------------------------------------------------
 
 static HqlTransformerInfo workflowTransformerInfo("WorkflowTransformer");
-WorkflowTransformer::WorkflowTransformer(IWorkUnit * _wu, HqlCppTranslator & _translator) 
+WorkflowTransformer::WorkflowTransformer(IWorkUnit * _wu, HqlCppTranslator & _translator)
 : NewHqlTransformer(workflowTransformerInfo), wu(_wu), translator(_translator), wfidCount(0)
 {
     trivialStoredWfid = 0;
@@ -5188,7 +5188,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
                 }
             }
 
-            //If the body was essentially the same, call transform on the previous value - so 
+            //If the body was essentially the same, call transform on the previous value - so
             return transform(&alreadyProcessedUntransformed.item(match));
         }
     }
@@ -5608,8 +5608,8 @@ IHqlExpression * WorkflowTransformer::createTransformed(IHqlExpression * expr)
  o Need to be careful that dependencies done so far are set up correctly before each call to transform()
 */
 
-UnsignedArray const & WorkflowTransformer::queryDependencies(unsigned wfid) 
-{ 
+UnsignedArray const & WorkflowTransformer::queryDependencies(unsigned wfid)
+{
     if (wfid == trivialStoredWfid)
         return emptyDependencies;
     ForEachItemIn(i, *workflowOut)
@@ -5622,8 +5622,8 @@ UnsignedArray const & WorkflowTransformer::queryDependencies(unsigned wfid)
 }
 
 
-void WorkflowTransformer::gatherIndirectDependencies(UnsignedArray & result, IHqlExpression * expr) 
-{ 
+void WorkflowTransformer::gatherIndirectDependencies(UnsignedArray & result, IHqlExpression * expr)
+{
     if (isWorkflowAction(expr))
     {
         unsigned wfid = (unsigned)getIntValue(expr->queryChild(0));
@@ -5653,9 +5653,9 @@ bool WorkflowTransformer::hasNonTrivialDependencies(IHqlExpression * expr)
     return false;
 }
 
-UnsignedArray const & WorkflowTransformer::queryDirectDependencies(IHqlExpression * expr) 
-{ 
-    return queryBodyExtra(expr)->queryDependencies(); 
+UnsignedArray const & WorkflowTransformer::queryDirectDependencies(IHqlExpression * expr)
+{
+    return queryBodyExtra(expr)->queryDependencies();
 }
 
 
@@ -5832,7 +5832,7 @@ IHqlExpression * WorkflowTransformer::createIfWorkflow(IHqlExpression * expr)
 
     OwnedHqlExpr newCond = LINK(cond);
     gatherIndirectDependencies(cumulativeDependencies, cond);
-    
+
     //more: inherit dependencies?
     UnsignedArray trueDepends, falseDepends;
     unsigned mark = markDependencies();
@@ -5843,7 +5843,7 @@ IHqlExpression * WorkflowTransformer::createIfWorkflow(IHqlExpression * expr)
 
     //Need to turn a conditional action into a conditional workflow item if
     //i) it has a workflow action as a child.
-    //ii) the true/false branches are dependent on something that hasn't already been evaluated 
+    //ii) the true/false branches are dependent on something that hasn't already been evaluated
     //    (and isn't shared between both branches)
     bool needToCreateWorkflow = false;
     if (hasDependencies(newTrueExpr) || (newFalseExpr && hasDependencies(newFalseExpr)))
@@ -6165,9 +6165,9 @@ public:
     StatementInfo(IHqlExpression * _expr);
 
     void calcDependencies();
-    bool canSwapOrder(StatementInfo & other)        
-    { 
-        return queryDependencies().canSwapOrder(other.queryDependencies()); 
+    bool canSwapOrder(StatementInfo & other)
+    {
+        return queryDependencies().canSwapOrder(other.queryDependencies());
     }
     inline bool isConditional()     { return expr->getOperator() == no_if; }
     inline bool isThorQuery()       { return category == SIKthor; }
@@ -6180,7 +6180,7 @@ public:
         }
         return dependencies;
     }
-    
+
 public:
     HqlExprAttr expr;
 
@@ -6228,12 +6228,12 @@ void groupThorGraphs(HqlExprArray & in)
         else
             lastWasThor = false;
     }
-    
+
     //If no thor queries are split by other queries, then may as well keep in the same order...
     if (!couldImprove)
         return;
-    
-    //Need to work out the best order to generate the statements in.  We want 
+
+    //Need to work out the best order to generate the statements in.  We want
     //to move non thor queries to the front, so we do a insertion sort on them
     CopyCIArrayOf<StatementInfo> sorted;
     ForEachItemIn(idx1, stmts)
@@ -6288,7 +6288,7 @@ void groupThorGraphs(HqlExprArray & in)
             }
         }
     }
-    
+
     in.kill();
     ForEachItemIn(idxSorted, sorted)
     {
@@ -6297,7 +6297,7 @@ void groupThorGraphs(HqlExprArray & in)
     }
 }
 
-    
+
 //------------------------------------------------------------------------
 
 //We will generate better code if conditional statements precede unconditional statements because globals can
@@ -6322,7 +6322,7 @@ bool moveUnconditionalEarlier(HqlExprArray & in)
         else if (numConditionals)
             couldImprove = true;
     }
-    
+
     //If no unconditionals follow a conditional, and no conditionals to be combined, then keep in the same order...
     if (!couldImprove && numConditionals <= 1)
         return false;
@@ -6354,7 +6354,7 @@ bool moveUnconditionalEarlier(HqlExprArray & in)
             {
                 StatementInfo & curBlock = stmts.item(idx1+iBlock);
                 unsigned bestPosition = NotFound;           // best position to add block.
-                unsigned prev = idx1;       
+                unsigned prev = idx1;
                 while (prev-- > firstConditional)
                 {
                     StatementInfo & compare = sorted.item(prev);
@@ -6418,7 +6418,7 @@ void mergeThorGraphs(HqlExprArray & exprs, bool resourceConditionalActions, bool
     {
         IHqlExpression * original = &exprs.item(idx);
         LinkedHqlExpr cur = original;
-        
+
         const node_operator op = cur->getOperator();
         switch (op)
         {
@@ -6563,11 +6563,11 @@ inline bool isTypeToHoist(ITypeInfo * type)
 }
 
 static HqlTransformerInfo scalarGlobalTransformerInfo("ScalarGlobalTransformer");
-ScalarGlobalTransformer::ScalarGlobalTransformer(HqlCppTranslator & _translator) 
-: HoistingHqlTransformer(scalarGlobalTransformerInfo, HTFtraverseallnodes), translator(_translator) 
-{ 
-    okToHoist = true; 
-    neverHoist = false; 
+ScalarGlobalTransformer::ScalarGlobalTransformer(HqlCppTranslator & _translator)
+: HoistingHqlTransformer(scalarGlobalTransformerInfo, HTFtraverseallnodes), translator(_translator)
+{
+    okToHoist = true;
+    neverHoist = false;
 }
 
 void ScalarGlobalTransformer::analyseExpr(IHqlExpression * expr)
@@ -6714,7 +6714,7 @@ bool ScalarGlobalTransformer::isComplex(IHqlExpression * expr, bool checkGlobal)
         if (extra->numUses > 1)
             return true;
         break;
-        //f[1..length(trim(x))] = x is very common, and if the length(trim)) was serialized separately then 
+        //f[1..length(trim(x))] = x is very common, and if the length(trim)) was serialized separately then
         //the generated code would be worse.
     case no_trim:
     case no_charlen:
@@ -6769,7 +6769,7 @@ IHqlExpression * ScalarGlobalTransformer::createTransformed(IHqlExpression * exp
 //------------------------------------------------------------------------
 
 static HqlTransformerInfo explicitGlobalTransformerInfo("ExplicitGlobalTransformer");
-ExplicitGlobalTransformer::ExplicitGlobalTransformer(IWorkUnit * _wu, HqlCppTranslator & _translator) 
+ExplicitGlobalTransformer::ExplicitGlobalTransformer(IWorkUnit * _wu, HqlCppTranslator & _translator)
 : HoistingHqlTransformer(explicitGlobalTransformerInfo, HTFnoteconditionalactions|HTFtraverseallnodes), translator(_translator)
 {
     wu = _wu;
@@ -6904,7 +6904,7 @@ IHqlDataset * queryRootDataset(IHqlExpression * dataset)
 //roxie only executes outputs to temporaries if they are required, or if not all references are from within the graph
 //therefore, there is no need to special case if actions.  Thor on the other hand will cause it to be executed unnecessarily.
 static HqlTransformerInfo newScopeMigrateTransformerInfo("NewScopeMigrateTransformer");
-NewScopeMigrateTransformer::NewScopeMigrateTransformer(IWorkUnit * _wu, HqlCppTranslator & _translator) 
+NewScopeMigrateTransformer::NewScopeMigrateTransformer(IWorkUnit * _wu, HqlCppTranslator & _translator)
 : HoistingHqlTransformer(newScopeMigrateTransformerInfo, 0), translator(_translator)
 {
     wu = _wu;
@@ -7149,7 +7149,7 @@ void migrateExprToNaturalLevel(WorkflowArray & array, IWorkUnit * wu, HqlCppTran
         {
             NewScopeMigrateTransformer transformer(wu, translator);
             HqlExprArray results;
-            
+
             transformer.analyseArray(exprs, 0);
             transformer.transformRoot(exprs, results);
             replaceArray(exprs, results);
@@ -7225,7 +7225,7 @@ bool AutoScopeMigrateInfo::doAutoHoist(IHqlExpression * transformed, bool minimi
 }
 
 static HqlTransformerInfo autoScopeMigrateTransformerInfo("AutoScopeMigrateTransformer");
-AutoScopeMigrateTransformer::AutoScopeMigrateTransformer(IWorkUnit * _wu, HqlCppTranslator & _translator) 
+AutoScopeMigrateTransformer::AutoScopeMigrateTransformer(IWorkUnit * _wu, HqlCppTranslator & _translator)
 : NewHqlTransformer(autoScopeMigrateTransformerInfo), translator(_translator)
 {
     wu = _wu;
@@ -7407,8 +7407,8 @@ void AutoScopeMigrateTransformer::transformRoot(const HqlExprArray & in, HqlExpr
 
 static HqlTransformerInfo trivialGraphRemoverInfo("TrivialGraphRemover");
 TrivialGraphRemover::TrivialGraphRemover() : NewHqlTransformer(trivialGraphRemoverInfo)
-{ 
-    hasCandidate = false; 
+{
+    hasCandidate = false;
 }
 
 void TrivialGraphRemover::analyseExpr(IHqlExpression * expr)
@@ -7534,11 +7534,11 @@ static bool isFilteredIndex(IHqlExpression * expr)
 }
 
 static HqlTransformerInfo thorCountTransformerInfo("ThorCountTransformer");
-ThorCountTransformer::ThorCountTransformer(HqlCppTranslator & _translator, bool _countDiskFuncOk) 
-: NewHqlTransformer(thorCountTransformerInfo), translator(_translator) 
-{ 
+ThorCountTransformer::ThorCountTransformer(HqlCppTranslator & _translator, bool _countDiskFuncOk)
+: NewHqlTransformer(thorCountTransformerInfo), translator(_translator)
+{
     transformCountIndex = translator.allowCountIndex();
-    countDiskFuncOk = _countDiskFuncOk && translator.allowCountFile(); 
+    countDiskFuncOk = _countDiskFuncOk && translator.allowCountFile();
 }
 
 IHqlExpression * ThorCountTransformer::createTransformed(IHqlExpression * expr)
@@ -7859,8 +7859,8 @@ IHqlExpression * FilteredIndexOptimizer::createTransformed(IHqlExpression * expr
 
 static HqlTransformerInfo localUploadTransformerInfo("LocalUploadTransformer");
 LocalUploadTransformer::LocalUploadTransformer(IWorkUnit * _wu) : NewHqlTransformer(localUploadTransformerInfo)
-{ 
-    wu = _wu; 
+{
+    wu = _wu;
 }
 
 
@@ -7910,7 +7910,7 @@ IHqlExpression * LocalUploadTransformer::createTransformed(IHqlExpression * expr
   an explicit normalize activity.  It follows the following rules:
 
   1) An filter/project/table on a.b logically has access to fields in a and a.b.
-  2) An operation with a transform (or record defining the output) other than a PROJECT/TABLE, implicitly loses access to fields in a for all 
+  2) An operation with a transform (or record defining the output) other than a PROJECT/TABLE, implicitly loses access to fields in a for all
      subsequent operations.
   3) When a dataset is used in an output or outer outer context (e.g., call parameter) then only the fields in the child dataset are passed.
 
@@ -7954,8 +7954,8 @@ inline void getDatasetRange(IHqlExpression * expr, unsigned & first, unsigned & 
 
 static HqlTransformerInfo nestedSelectorNormalizerInfo("NestedSelectorNormalizer");
 NestedSelectorNormalizer::NestedSelectorNormalizer() : NewHqlTransformer(nestedSelectorNormalizerInfo)
-{ 
-    spottedCandidate = false; 
+{
+    spottedCandidate = false;
 }
 
 void NestedSelectorNormalizer::analyseExpr(IHqlExpression * expr)
@@ -8134,14 +8134,14 @@ IHqlExpression * NestedSelectorNormalizer::createTransformed(IHqlExpression * ex
 /*
 
   Code to spot ambiguous LEFT dataset references....
-  
+
   */
 
 static HqlTransformerInfo leftRightSelectorNormalizerInfo("LeftRightSelectorNormalizer");
 LeftRightSelectorNormalizer::LeftRightSelectorNormalizer(bool _allowAmbiguity) : NewHqlTransformer(leftRightSelectorNormalizerInfo)
-{ 
-    allowAmbiguity = _allowAmbiguity; 
-    isAmbiguous = false; 
+{
+    allowAmbiguity = _allowAmbiguity;
+    isAmbiguous = false;
 }
 
 void LeftRightSelectorNormalizer::checkAmbiguity(const HqlExprCopyArray & inScope, IHqlExpression * selector)
@@ -8251,9 +8251,9 @@ IHqlExpression * LeftRightSelectorNormalizer::createTransformedSelector(IHqlExpr
 
 static HqlTransformerInfo forceLocalTransformerInfo("ForceLocalTransformer");
 ForceLocalTransformer::ForceLocalTransformer(ClusterType _targetClusterType) : NewHqlTransformer(forceLocalTransformerInfo)
-{ 
-    targetClusterType = _targetClusterType; 
-    insideForceLocal = false; 
+{
+    targetClusterType = _targetClusterType;
+    insideForceLocal = false;
     allNodesDepth = 0;
 }
 
@@ -8280,7 +8280,7 @@ IHqlExpression * ForceLocalTransformer::createTransformed(IHqlExpression * expr)
             if (targetClusterType != HThorCluster)
             {
                 unsigned oldDepth = allNodesDepth;
-                if (op == no_allnodes) 
+                if (op == no_allnodes)
                     allNodesDepth++;
                 else
                     allNodesDepth--;
@@ -8357,9 +8357,9 @@ c) ensure input and out from a pipe is serialized (so that sizeof(inputrow) retu
 */
 
 static HqlTransformerInfo hqlLinkedChildRowTransformerInfo("HqlLinkedChildRowTransformer");
-HqlLinkedChildRowTransformer::HqlLinkedChildRowTransformer(bool _implicitLinkedChildRows) : QuickHqlTransformer(hqlLinkedChildRowTransformerInfo, NULL) 
-{ 
-    implicitLinkedChildRows = _implicitLinkedChildRows; 
+HqlLinkedChildRowTransformer::HqlLinkedChildRowTransformer(bool _implicitLinkedChildRows) : QuickHqlTransformer(hqlLinkedChildRowTransformerInfo, NULL)
+{
+    implicitLinkedChildRows = _implicitLinkedChildRows;
 }
 
 
@@ -8500,14 +8500,14 @@ Datasets
     is inserted to indicate it is in scope.
 
 Note:
-    new attributes aren't created for subfield e.g, myDataset.level1.level2.  
-    
+    new attributes aren't created for subfield e.g, myDataset.level1.level2.
+
     This means that if (myDataset.level1) is expanded to some expression then a newAtom will be need to be created on the new select
 
   */
 
 static HqlTransformerInfo hqlScopeTaggerInfo("HqlScopeTagger");
-HqlScopeTagger::HqlScopeTagger(IErrorReceiver * _errors) 
+HqlScopeTagger::HqlScopeTagger(IErrorReceiver * _errors)
 : ScopedDependentTransformer(hqlScopeTaggerInfo), errors(_errors)
 {
 }
@@ -8526,7 +8526,7 @@ void HqlScopeTagger::endTableScope(HqlExprArray & attrs, IHqlExpression * ds, IH
         attrs.append(*createAttribute(relatedTableAtom));
     else
     {
-        //if is actually the base table of the query that would be related, not the 
+        //if is actually the base table of the query that would be related, not the
         IHqlDataset * d = ds->queryDataset();
         if (d)
         {
@@ -8573,7 +8573,7 @@ bool HqlScopeTagger::isValidNormalizeSelector(IHqlExpression * expr)
                     return true;
 
                 //Not really sure what the following should do.  Avoid a.b.c[1].d.e
-                if (ds->isDatarow() && (ds->getOperator() != no_select))        
+                if (ds->isDatarow() && (ds->getOperator() != no_select))
                     return false;
                 break;
             }
@@ -8591,24 +8591,42 @@ bool HqlScopeTagger::isValidNormalizeSelector(IHqlExpression * expr)
 }
 
 
+static const char * getECL(IHqlExpression * expr, StringBuffer & s)
+{
+    toUserECL(s, expr, false);
+    if (s.length() > 2)
+        s.setLength(s.length()-2);
+    return s.str();
+}
+
 void HqlScopeTagger::reportSelectorError(IHqlExpression * selector, IHqlExpression * expr)
 {
     ScopeInfo * scope = innerScope;
     if (innerScope && innerScope->isEmpty() && scopeStack.ordinality() > 1)
         scope = &scopeStack.item(scopeStack.ordinality()-2);
 
-    IHqlExpression * normalized = selector->queryNormalizedSelector();
+    StringBuffer exprText, datasetName, scopeName;
+    StringBuffer msg;
     if (scope && scope->dataset)
     {
         IHqlExpression * topScope = scope->dataset;
-        reportError("Table %s is not related to %s", expr, selector, topScope);
+        msg.appendf("%s - Table %s is not related to %s",
+            getECL(expr, exprText),
+            getExprIdentifier(datasetName, selector).str(), getExprIdentifier(scopeName, topScope).str());
     }
     else if (scope && scope->left)
     {
-        reportError("no active row for Table %s inside transform (use LEFT?)", expr, selector);
+        msg.appendf("%s - no active row for Table %s inside transform (use LEFT?)",
+            getECL(expr, exprText),
+            getExprIdentifier(datasetName, selector).str());
     }
     else
-        reportError("no specified row for Table %s", expr, selector);
+    {
+        msg.appendf("%s - no specified row for Table %s", getECL(expr, exprText),
+            getExprIdentifier(datasetName, selector).str());
+    }
+
+    reportError(msg);
 }
 
 
@@ -8624,7 +8642,9 @@ IHqlExpression * HqlScopeTagger::transformSelect(IHqlExpression * expr)
             {
             case no_left:
             case no_right:
-                reportError("%s not in scope, possibly passed into a global/workflow definition", expr, ds, NULL, false);
+                StringBuffer exprText, datasetName;
+                VStringBuffer msg("%s - %s not in scope, possibly passed into a global/workflow definition", getECL(expr, exprText), getExprIdentifier(datasetName, ds).str());
+                reportError(msg);
                 break;
             }
         }
@@ -8637,7 +8657,11 @@ IHqlExpression * HqlScopeTagger::transformSelect(IHqlExpression * expr)
         if (expr->isDataset())
         {
             if (!isValidNormalizeSelector(cursor))
-                reportError("dataset may not be supported without using NORMALIZE", expr, cursor, NULL, true);
+            {
+                StringBuffer exprText;
+                VStringBuffer msg("dataset %s may not be supported without using NORMALIZE", getECL(expr, exprText));
+                reportError(msg, true);
+            }
         }
         else
         {
@@ -8656,11 +8680,11 @@ IHqlExpression * HqlScopeTagger::transformSelect(IHqlExpression * expr)
     {
         if (!expr->isDataset() && !expr->isDatarow())
         {
-            //If the left is a dataset, and the right isn't a dataset or a datarow then this doesn't make sense - it is an illegal 
+            //If the left is a dataset, and the right isn't a dataset or a datarow then this doesn't make sense - it is an illegal
             return createSelectExpr(newDs.getClear(), LINK(field));
         }
     }
-    //MORE: What about child datasets - should really be tagged as 
+    //MORE: What about child datasets - should really be tagged as
     //if (!isNewDataset && field->isDataset() && !containsSelf(ds) && !isDatasetActive(ds)) isNew = true;
 
     HqlExprArray attrs;
@@ -8711,7 +8735,11 @@ IHqlExpression * HqlScopeTagger::transformNewDataset(IHqlExpression * expr, bool
         {
             IHqlExpression * ds = expr->queryChild(0);
             if (!isAlwaysActiveRow(ds))
-                reportError("Need to use active(dataset) to refer to the current row of an active dataset", expr, ds, NULL, false);
+            {
+                StringBuffer exprText;
+                VStringBuffer msg("%s - Need to use active(dataset) to refer to the current row of an active dataset", getECL(expr, exprText));
+                reportError(msg, false);
+            }
         }
         return transformed.getClear();
     }
@@ -8719,7 +8747,11 @@ IHqlExpression * HqlScopeTagger::transformNewDataset(IHqlExpression * expr, bool
     if (isDatasetActive(expr))
     {
         if (!isActiveOk)
-            reportError("Need to use active(dataset) to refer to the current row of an active dataset", expr, expr, NULL, false);
+        {
+            StringBuffer exprText;
+            VStringBuffer msg("%s - Need to use active(dataset) to refer to the current row of an active dataset", getECL(expr, exprText));
+            reportError(msg);
+        }
 
         return ensureActiveRow(transformed->queryNormalizedSelector());
     }
@@ -8749,7 +8781,7 @@ IHqlExpression * HqlScopeTagger::transformNewDataset(IHqlExpression * expr, bool
 
 IHqlExpression * HqlScopeTagger::transformAmbiguous(IHqlExpression * expr, bool isActiveOk)
 {
-    ITypeInfo * type = expr->queryType();   
+    ITypeInfo * type = expr->queryType();
     type_t tc = type_void;
     if (type)
         tc = type->getTypeCode();
@@ -8823,7 +8855,9 @@ IHqlExpression * HqlScopeTagger::transformWithin(IHqlExpression * dataset, IHqlE
 
     if (dataset->getOperator() != no_select)
     {
-        reportError("dataset filtered by WITHIN is too complex", dataset, dataset, NULL, false);
+        StringBuffer exprText;
+        VStringBuffer msg("%s - dataset filtered by WITHIN is too complex", getECL(dataset, exprText));
+        reportError(msg);
         return transform(dataset);
     }
 
@@ -8844,12 +8878,20 @@ IHqlExpression * HqlScopeTagger::transformRelated(IHqlExpression * expr)
     IHqlExpression * scope = expr->queryChild(1);
 
     if (!isDatasetActive(scope))
-        reportError("dataset \"%s\" used in WITHIN is not in scope", scope, scope, NULL, false);
+    {
+        StringBuffer exprText;
+        VStringBuffer msg("dataset \"%s\" used in WITHIN is not in scope", getECL(scope, exprText));
+        reportError(msg);
+    }
 
     //Check the ds is a table
     IHqlDataset * scopeDs = scope->queryDataset();
     if (scopeDs != scopeDs->queryTable())
-        reportError("dataset used as parameter to WITHIN is too complex", expr, scope, NULL, false);
+    {
+        StringBuffer exprText;
+        VStringBuffer msg("dataset \"%s\" used as parameter to WITHIN is too complex", getECL(expr, exprText));
+        reportError(msg);
+    }
 
     return transformWithin(ds, scope->queryNormalizedSelector());
 }
@@ -8928,7 +8970,11 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
         {
             IHqlExpression * ds = expr->queryChild(0);
             if (ds->isDataset() && !isDatasetActive(ds))
-                reportError("dataset mistakenly interpreted as a datarow, possibly due to missing dataset() in parameter type", expr, ds, NULL, false);
+            {
+                StringBuffer exprText;
+                VStringBuffer msg("dataset %s mistakenly interpreted as a datarow, possibly due to missing dataset() in parameter type", getECL(ds, exprText));
+                reportError(msg);
+            }
             return transformAmbiguousChildren(expr);
         }
     case no_temptable:
@@ -8953,9 +8999,9 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
             OwnedHqlExpr newRhs = transformAmbiguous(rhs, false);
             if (lhs->isDatarow() && newRhs->isDataset())
             {
-                StringBuffer s;
-                s.appendf("dataset expression assigned to field '%s' with type row", lhs->queryChild(1)->queryName()->str());
-                reportError(s.str(), rhs, rhs, NULL, false);
+                StringBuffer exprText;
+                VStringBuffer msg("dataset expression (%s) assigned to field '%s' with type row", getECL(rhs, exprText), lhs->queryChild(1)->queryName()->str());
+                reportError(msg.str());
             }
             if (rhs == newRhs)
                 return LINK(expr);
@@ -8987,27 +9033,6 @@ void HqlScopeTagger::reportWarnings()
 }
 
 
-static void getECL(IHqlExpression * expr, StringBuffer & s)
-{
-    toUserECL(s, expr, false);
-    if (s.length() > 2)
-        s.setLength(s.length()-2);
-}
-
-void HqlScopeTagger::reportError(const char * msg, IHqlExpression * expr, IHqlExpression * dataset, IHqlExpression * scope, bool warning)
-{
-    StringBuffer s, datasetName, scopeName;
-
-    getECL(expr, s);
-    s.append(" - ");
-    if (scope)
-        s.appendf(msg, getExprIdentifier(datasetName, dataset).str(), getExprIdentifier(scopeName, scope).str());
-    else
-        s.appendf(msg, getExprIdentifier(datasetName, dataset).str());
-
-    reportError(s.str(), warning);
-}
-
 void HqlScopeTagger::reportError(const char * msg, bool warning)
 {
     IHqlExpression * location = collector.queryActiveSymbol();
@@ -9030,7 +9055,7 @@ void HqlScopeTagger::reportError(const char * msg, bool warning)
   a) ut.CleanCompany(ds.x) and ut.cleanCompany(left.x).
      If a component one of them is commoned up with another occurrence, then you can get different named symbols within the expanded function.  When we
      then test to see if something is sorted it can incorrectly mismatch (see busheader.xhql dnb_combined_append)
-  
+
 
   */
 static void unwindAnnotations(HqlExprCopyArray & unwound, IHqlExpression * expr)
@@ -9076,9 +9101,9 @@ void AnnotationTransformInfo::noteAnnotation(IHqlExpression * annotation)
 }
 
 static HqlTransformerInfo annotationNormalizerInfo("AnnotationNormalizerTransformer");
-AnnotationNormalizerTransformer::AnnotationNormalizerTransformer() 
+AnnotationNormalizerTransformer::AnnotationNormalizerTransformer()
 : NewHqlTransformer(annotationNormalizerInfo)
-{ 
+{
 }
 
 ANewTransformInfo * AnnotationNormalizerTransformer::createTransformInfo(IHqlExpression * expr)
@@ -9143,7 +9168,7 @@ IHqlExpression * AnnotationNormalizerTransformer::createTransformed(IHqlExpressi
 }
 
 AnnotationTransformInfo * AnnotationNormalizerTransformer::queryCommonExtra(IHqlExpression * expr)
-{ 
+{
     return static_cast<AnnotationTransformInfo *>(queryTransformExtra(queryLocationIndependent(expr)));
 }
 
@@ -9172,13 +9197,13 @@ void normalizeAnnotations(HqlCppTranslator & translator, WorkflowArray & workflo
 //---------------------------------------------------------------------------
 
 static HqlTransformerInfo containsCompoundTransformerInfo("ContainsCompoundTransformer");
-ContainsCompoundTransformer::ContainsCompoundTransformer() 
+ContainsCompoundTransformer::ContainsCompoundTransformer()
 : QuickHqlTransformer(containsCompoundTransformerInfo, NULL)
-{ 
-    containsCompound = false; 
+{
+    containsCompound = false;
 }
 
-//NB: This cannot be short circuited, because it is also gathering information about whether or 
+//NB: This cannot be short circuited, because it is also gathering information about whether or
 void ContainsCompoundTransformer::doAnalyseBody(IHqlExpression * expr)
 {
     if (containsCompound)
@@ -9248,9 +9273,9 @@ bool containsCompound(IHqlExpression * expr)
 }
 
 static HqlTransformerInfo nestedCompoundTransformerInfo("NestedCompoundTransformer");
-NestedCompoundTransformer::NestedCompoundTransformer(HqlCppTranslator & _translator) 
-: HoistingHqlTransformer(nestedCompoundTransformerInfo, HTFnoteconditionalactions), translator(_translator), translatorOptions(_translator.queryOptions())  
-{ 
+NestedCompoundTransformer::NestedCompoundTransformer(HqlCppTranslator & _translator)
+: HoistingHqlTransformer(nestedCompoundTransformerInfo, HTFnoteconditionalactions), translator(_translator), translatorOptions(_translator.queryOptions())
+{
 }
 
 
@@ -9422,7 +9447,7 @@ void spotPotentialDuplicateCode(HqlExprArray & exprs)
 {
     DuplicateCodeSpotter spotter;
     spotter.analyseArray(exprs);
-}   
+}
 
 //---------------------------------------------------------------------------
 
@@ -9503,10 +9528,10 @@ static _ATOM queryPatUseName(IHqlExpression * expr)
 }
 
 
-void HqlTreeNormalizerInfo::noteSymbol(IHqlExpression * _symbol) 
-{ 
-    if (!symbol || isUniqueAttributeName(symbol->queryName())) 
-        symbol = _symbol; 
+void HqlTreeNormalizerInfo::noteSymbol(IHqlExpression * _symbol)
+{
+    if (!symbol || isUniqueAttributeName(symbol->queryName()))
+        symbol = _symbol;
 }
 
 static HqlTransformerInfo hqlTreeNormalizerInfo("HqlTreeNormalizer");
@@ -9515,7 +9540,7 @@ HqlTreeNormalizer::HqlTreeNormalizer(HqlCppTranslator & _translator) : NewHqlTra
     seenForceLocal = false;
     seenLocalUpload = false;
     const HqlCppOptions & translatorOptions = translator.queryOptions();
-    options.removeAsserts = !translatorOptions.checkAsserts; 
+    options.removeAsserts = !translatorOptions.checkAsserts;
     options.commonUniqueNameAttributes = translatorOptions.commonUniqueNameAttributes;
     options.simplifySelectorSequence = !translatorOptions.preserveUniqueSelector && !translatorOptions.detectAmbiguousSelector && !translatorOptions.allowAmbiguousSelector;
     options.sortIndexPayload = translatorOptions.sortIndexPayload;
@@ -9537,7 +9562,7 @@ ANewTransformInfo * HqlTreeNormalizer::createTransformInfo(IHqlExpression * expr
 }
 
 HqlTreeNormalizerInfo * HqlTreeNormalizer::queryCommonExtra(IHqlExpression * expr)
-{ 
+{
     return static_cast<HqlTreeNormalizerInfo *>(queryTransformExtra(queryLocationIndependent(expr)));
 }
 
@@ -9696,7 +9721,7 @@ ITypeInfo * HqlTreeNormalizer::transformType(ITypeInfo * type)
                 {
                     OwnedHqlExpr transformedRecord = transform(record);
                     if (transformedRecord->queryBody() != transformedRecord)
-                        return makeOriginalModifier(LINK(transformedType), LINK(transformedRecord)); 
+                        return makeOriginalModifier(LINK(transformedType), LINK(transformedRecord));
                 }
             }
             return transformedType.getClear();
@@ -9873,7 +9898,7 @@ IHqlExpression * HqlTreeNormalizer::transformEvaluate(IHqlExpression * expr)
 {
     //Evaluate causes chaos - so translate it to a different form.
     //following cases supported so far:
-    //EVALUATE(LEFT/RIGHT, g())  -> g(LEFT) 
+    //EVALUATE(LEFT/RIGHT, g())  -> g(LEFT)
     //EVAlUATE(x, field)         -> x.field;
     //EVALUATE(t[n], e)          -> table(t,{f1 := e})[n].f1;
 
@@ -9894,7 +9919,7 @@ IHqlExpression * HqlTreeNormalizer::transformEvaluate(IHqlExpression * expr)
         {
         case no_left:
         case no_right:
-            //EVALUATE(LEFT/RIGHT, g())  -> g(LEFT) 
+            //EVALUATE(LEFT/RIGHT, g())  -> g(LEFT)
             //May change too many datasets?
             transformed.setown(replaceSelector(attr, activeTable, ds));
             break;
@@ -9949,7 +9974,7 @@ IHqlExpression * HqlTreeNormalizer::transformMap(IHqlExpression * expr)
 class AbortingErrorReceiver : extends CInterface, implements IErrorReceiver
 {
 public:
-    AbortingErrorReceiver(IErrorReceiver * _errors) 
+    AbortingErrorReceiver(IErrorReceiver * _errors)
     {
         errors = _errors ? _errors : &defaultReporter;
     }
@@ -10027,7 +10052,7 @@ IHqlExpression * HqlTreeNormalizer::transformTempTable(IHqlExpression * expr)
 IHqlExpression * HqlTreeNormalizer::transformNewKeyIndex(IHqlExpression * expr)
 {
     IHqlExpression * ds = expr->queryChild(0);
-    //If dataset is already null, then do standard 
+    //If dataset is already null, then do standard
     if (ds->getOperator() == no_null)
         return completeTransform(expr);
 
@@ -10109,7 +10134,7 @@ IHqlExpression * HqlTreeNormalizer::transformMerge(IHqlExpression * expr)
         }
         children.append(*createExprAttribute(sortedAtom, sorts));
     }
-                            
+
     HqlExprArray args;
     reorderAttributesToEnd(args, children);
     return expr->clone(args);
@@ -10240,7 +10265,7 @@ IHqlExpression * HqlTreeNormalizer::optimizeAssignSkip(HqlExprArray & children, 
         //could try and handle map/case/choose, but less common, and more complicated.
     case no_if:
         {
-            //For the moment only hoist SKIPS within a single level of IF() conditions.  
+            //For the moment only hoist SKIPS within a single level of IF() conditions.
             //Multi level rarely occur, and don't significantly improve the code
             if (depth != 0)
                 return LINK(expr);
@@ -10850,7 +10875,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
             OwnedHqlExpr transformed = validateKeyedJoin(expr);
             //Explicitly add a left outer flag to a denormalize if no other join type is specified.
             //Do here rather than in parser so crc for persists isn't changed.
-            if (!transformed->hasProperty(innerAtom) && 
+            if (!transformed->hasProperty(innerAtom) &&
                 !transformed->hasProperty(leftonlyAtom) && !transformed->hasProperty(leftouterAtom) &&
                 !transformed->hasProperty(rightonlyAtom) && !transformed->hasProperty(rightouterAtom) &&
                 !transformed->hasProperty(fullonlyAtom) && !transformed->hasProperty(fullouterAtom))
@@ -11414,7 +11439,7 @@ void normalizeHqlTree(HqlCppTranslator & translator, HqlExprArray & exprs)
         seenLocalUpload = normalizer.querySeenLocalUpload();
         DEBUG_TIMERX(translator.queryTimeReporter(), "EclServer: tree transform: normalize.initial", msTick()-time);
     }
-    
+
     if (translator.queryOptions().constantFoldPostNormalize)
     {
         unsigned time = msTick();
@@ -11909,7 +11934,7 @@ bool HqlCppTranslator::transformGraphForGeneration(IHqlExpression * query, Workf
 Different transformers:
 merge: required if a child get removed or merged with a parent of a non-table dataset.
        adding is not a problem (unless tables are inserted) because all refs to ds.x will remain valid.
-       but if tables can be deleted/modified then then it will cause problems, since ds.x needs to be translated to ds'.x within the scope 
+       but if tables can be deleted/modified then then it will cause problems, since ds.x needs to be translated to ds'.x within the scope
        It is also ok if only scalars are transformed.
 
 Transformer         base   merge    dependants  [should be]
@@ -11934,8 +11959,8 @@ HqlTreeNormalizer   Scoped  *                       I don't think it does any, b
 /*
 NOTES:
 
-  Consider adding a hqlmeta.hpp that defines all the characteristics of an IHqlExpression node - e.g., 
-  is it constant, number of child files, text, what filenames does it generate? what does it read, 
+  Consider adding a hqlmeta.hpp that defines all the characteristics of an IHqlExpression node - e.g.,
+  is it constant, number of child files, text, what filenames does it generate? what does it read,
   what results does it read/write.
 
   Dependancy code:

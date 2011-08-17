@@ -907,7 +907,6 @@ protected:
     IHqlExpression * transformWithin(IHqlExpression * dataset, IHqlExpression * scope);
 
     bool isValidNormalizeSelector(IHqlExpression * expr);
-    void reportError(const char * msg, IHqlExpression * expr, IHqlExpression * dataset, IHqlExpression * scope = NULL, bool warning = false);
     void reportError(const char * msg, bool warning = false);
     void reportSelectorError(IHqlExpression * selector, IHqlExpression * expr);
 
