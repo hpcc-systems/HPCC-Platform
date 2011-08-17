@@ -15,18 +15,20 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH 
-export PATH=.:$PATH 
-export LANG=en_US 
-ulimit -c unlimited 
+export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH
+export PATH=.:$PATH
+export LANG=en_US
+ulimit -c unlimited
+export SENTINEL="eclccserver.sentinel"
+rm -f $SENTINEL
 nohup $PWD/eclccserver 1>/dev/null 2>/dev/null &
 echo $! > component.pid
-wait 
-if [ -e eclccserver_sentinel.txt ]; then 
-        sleep 5 
-        if [ -e eclccserver_sentinel.txt ]; then 
-                 ./startup 
-         fi 
-fi 
- 
-
+wait
+if [ -e ${SENTINEL} ]; then
+    sleep 5
+    if [ -e ${SENTINEL} ]; then
+        nohup $PWD/eclccserver 1>/dev/null 2>/dev/null &
+        echo $! > component.pid
+        wait
+    fi
+fi

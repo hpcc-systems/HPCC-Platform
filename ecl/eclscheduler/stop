@@ -19,7 +19,8 @@ export PATH=/mnt/usrbin:$PATH
 
 DESTDIR=`dirname $0`
 cd $DESTDIR
-rm -f eclscheduler_sentinel.txt
+export SENTINEL="eclscheduler.sentinel"
+rm -f ${SENTINEL}
 
 killall $PWD/eclscheduler
 sleep 3

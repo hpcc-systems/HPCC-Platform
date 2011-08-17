@@ -17,9 +17,10 @@ rem     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 rem ############################################################################## */
 
 :10
-del dfuserver_sentinel.txt
+set SENTINEL="dfuserver.sentinel"
+del %SENTINEL%
 dfuserver
-if exist dfuserver_sentinel.txt (
+if exist %SENTINEL% (
   sleep 10
   goto 10
 )

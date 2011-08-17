@@ -17,6 +17,7 @@ rem     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 rem ############################################################################## */
 
 cd /d %1
-del esp_sentinel.txt
+set SENTINEL="esp.sentinel"
+del %SENTINEL%
 pskill -c4 esp
 exit 0

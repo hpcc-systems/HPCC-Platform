@@ -338,7 +338,8 @@ int main(int argc,char **argv)
         logname.append("/c$/");
 #endif
 
-
+    Owned<IFile> sentinelFile = createSentinelTarget();
+    removeSentinelFile(sentinelFile);
 
     SocketEndpoint listenep;
     unsigned sendbufsize = 0;
@@ -547,6 +548,7 @@ int main(int argc,char **argv)
     PROGLOG("Authentication:%s required",requireauthenticate?"":" not");
     startPerformanceMonitor(10*60*1000, PerfMonStandard);
     server.setown(createRemoteFileServer());
+    writeSentinelFile(sentinelFile);
     try {
         server->run(listenep);
     }

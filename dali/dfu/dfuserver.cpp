@@ -139,8 +139,8 @@ int main(int argc, const char *argv[])
     Owned<IFile> sentinelFile;
     bool stop = globals->getPropInt("@STOP",0)!=0;
     if (!stop) {
-        sentinelFile.setown(createSentinelTarget(argv[0], "dfuserver"));
-        sentinelFile->remove();
+        sentinelFile.setown(createSentinelTarget());
+        removeSentinelFile(sentinelFile);
 
         StringBuffer logname;
         StringBuffer logdir;
