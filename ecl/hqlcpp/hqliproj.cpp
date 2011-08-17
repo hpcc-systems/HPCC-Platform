@@ -2129,14 +2129,17 @@ void ImplicitProjectTransformer::logChange(const char * message, IHqlExpression 
     if (expr->queryRecord())
         fieldText.append("/").append(queryBodyComplexExtra(expr->queryRecord())->outputFields.ordinality());
     fieldText.append(")");
+    //MORE: If number removed << number remaining just display fields removed.
     fields.getText(fieldText);
-    DBGLOG(message, name.str(), fieldText.str());
+
+    const char * const format = "ImplicitProject: %s %s now %s";
+    DBGLOG(format, message, name.str(), fieldText.str());
     if (options.notifyOptimizedProjects)
     {
         if (options.notifyOptimizedProjects >= 2 || exprName)
         {
             StringBuffer messageText;
-            messageText.appendf(message, name.str(), fieldText.str());
+            messageText.appendf(format, message, name.str(), fieldText.str());
             translator.addWorkunitException(ExceptionSeverityInformation, 0, messageText.str(), NULL);
         }
     }
@@ -2209,7 +2212,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
                 args.replace(*newTransform, transformPos);
                 transformed.setown(expr->clone(args));
                 transformed.setown(updateSelectors(transformed, expr));
-                logChange("ImplicitProject: Transform %s modified to %s", expr, complexExtra->outputFields);
+                logChange("Transform", expr, complexExtra->outputFields);
             }
             else
             {
@@ -2259,7 +2262,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
 
                 transformed.setown(expr->clone(args));
                 transformed.setown(updateSelectors(transformed, expr));
-                logChange("ImplicitProject: Minimize %s to %s", expr, complexExtra->outputFields);
+                logChange("Minimize", expr, complexExtra->outputFields);
             }
             else
             {
@@ -2288,7 +2291,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
                 args.append(*LINK(complexExtra->newOutputRecord));
                 unwindChildren(args, expr, 2);
                 transformed.setown(expr->clone(args));
-                logChange("ImplicitProject: Minimize %s to %s", expr, complexExtra->outputFields);
+                logChange("Minimize", expr, complexExtra->outputFields);
             }
             else
             {
@@ -2306,7 +2309,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
                 HqlExprArray args;
                 args.append(*complexExtra->createOutputProject(transformed->queryChild(0)));
                 transformed.setown(transformed->clone(args));
-                logChange("ImplicitProject: Project output from compound %s to %s", expr, complexExtra->outputFields);
+                logChange("Project output from compound", expr, complexExtra->outputFields);
                 break;
             }
         }
@@ -2318,7 +2321,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
             {
                 transformed.setown(complexExtra->createOutputProject(transformed));
                 transformed.setown(createWrapper(queryCompoundOp(expr), transformed.getClear()));
-                logChange("ImplicitProject: Project output from %s to %s", expr, complexExtra->outputFields);
+                logChange("Project output from", expr, complexExtra->outputFields);
             }
             break;
         }
@@ -2328,7 +2331,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
             //insert a project after the record.
             if (complexExtra->outputChanged())
             {
-                logChange("ImplicitProject: Change format of dataset %s", expr, complexExtra->outputFields);
+                logChange("Change format of dataset", expr, complexExtra->outputFields);
                 HqlExprArray args;
                 args.append(*LINK(complexExtra->newOutputRecord));
                 unwindChildren(args, transformed, 1);
@@ -2361,7 +2364,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
                 args.append(*next.getClear());
             }
             transformed.setown(expr->clone(args));
-            logChange("ImplicitProject: Passthrough modified %s", expr, complexExtra->outputFields);
+            logChange("Passthrough modified", expr, complexExtra->outputFields);
         }
         else
             transformed.setown(Parent::createTransformed(expr));
@@ -2382,7 +2385,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
                 OwnedHqlExpr inputProject = complexExtra->createOutputProject(transformed->queryChild(0));
                 OwnedHqlExpr replacement = replaceChildDataset(transformed, inputProject, 0);
                 transformed.setown(updateSelectors(replacement, expr));
-                logChange("ImplicitProject: Insert project before %s to fields %s", expr, complexExtra->outputFields);
+                logChange("Insert project before", expr, complexExtra->outputFields);
             }
             else
                 transformed.setown(updateSelectors(transformed, expr));
