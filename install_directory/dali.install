@@ -20,6 +20,3 @@
 ### name=dali.xsl method=xslt destName=daliconf.xml
 Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/configxml/dali.xsl DESTINATION ${OSSDIR}/componentfiles/configxml
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
-### name=secure_configenv
-Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/dali/server/secure_configenv DESTINATION ${OSSDIR}/bin
-    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
