@@ -411,7 +411,6 @@ Install ( FILES ${HPCC_SOURCE_DIR}/${LICENSE_FILE} DESTINATION ${OSSDIR} PERMISS
 include( install_directory/overall.install )
 include( install_directory/bash_startup.install )
 include( install_directory/WsReferenceTracker.install )
-include( install_directory/dafilesrv.install )
 include( install_directory/dali.install )
 include( install_directory/dfuplus.install )
 include( install_directory/dfuserver.install )
