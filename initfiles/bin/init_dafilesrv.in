@@ -34,6 +34,7 @@ INIT_PID_NAME="$PID/init_`basename $PWD`.pid"
 echo $$ > $INIT_PID_NAME
 
 export SENTINEL="dafilesrv.sentinel"
+rm -f ${SENTINEL}
 
 killed(){
     rm -f ${SENTINEL}
@@ -41,7 +42,6 @@ killed(){
     sleep 2
     exit 255
 }
-
 
 trap "killed" SIGINT SIGTERM SIGKILL
 dafilesrv -L $log &

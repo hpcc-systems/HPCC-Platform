@@ -16,8 +16,6 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-
-
 ################################################# 
 ##    Defaulting needed for new init system    ## 
 ################################################# 
@@ -34,14 +32,15 @@ export PATH=$PATH
 export LANG=en_US
 export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH
 export SENTINEL="saserver.sentinel"
+rm -f ${SENTINEL}
 nohup $BINDIR/saserver 1> /dev/null 2>&1 &
 echo $! > component.pid
 wait
 while [ -e ${SENTINEL} ]; do
-        sleep 5
-        if [ -e ${SENTINEL} ]; then
+    sleep 5
+    if [ -e ${SENTINEL} ]; then
         nohup $BINDIR/saserver 1> /dev/null 2>&1 &
         echo $! > component.pid
         wait
-        fi
+    fi
 done

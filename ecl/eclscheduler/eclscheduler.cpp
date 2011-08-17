@@ -208,9 +208,6 @@ int main(int argc, const char *argv[])
     try
     {
         initClientProcess(serverGroup, DCR_EclServer);
-        // if we got here, eclscheduler is successfully started and all options are good, so create the "sentinel file" for re-runs from the script
-        // put in its own "scope" to force the flush
-        writeSentinelFile(sentinelFile);
         Owned <IStringIterator> targetClusters = getTargetClusters("EclSchedulerProcess", globals->queryProp("@name"));
         if (!targetClusters->first())
             throw MakeStringException(0, "No clusters found to schedule for");
@@ -223,6 +220,8 @@ int main(int argc, const char *argv[])
             scheduler->start();
             schedulers.append(*scheduler.getClear());
         }
+        // if we got here, eclscheduler is successfully started and all options are good, so create the "sentinel file" for re-runs from the script
+        writeSentinelFile(sentinelFile);
         LocalIAbortHandler abortHandler(waiter);
         waiter.wait();
         ForEachItemIn(schedIdx, schedulers)

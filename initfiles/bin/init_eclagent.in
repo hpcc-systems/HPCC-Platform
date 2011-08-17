@@ -25,7 +25,8 @@ PID_NAME="$PID/`basename $PWD`.pid"
 INIT_PID_NAME="$PID/init_`basename $PWD`.pid"
 echo $$ > $INIT_PID_NAME
 
-export SENTINEL="eclagent.sentinel"
+export SENTINEL="agentexec.sentinel"
+rm -f ${SENTINEL}
 
 rm -f ${PID_DIR}/hthortemp/*
 

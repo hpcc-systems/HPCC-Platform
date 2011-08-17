@@ -533,7 +533,6 @@ int main(int argc,char **argv)
             return ret;
 #endif
     }
-    writeSentinelFile(sentinelFile);
     logname.append("DAFILESRV");
     ILogMsgHandler * fileMsgHandler = getRollingFileLogMsgHandler(logname.str(), ".log", MSGFIELD_STANDARD, false, true, NULL);
     queryLogMsgManager()->addMonitorOwn(fileMsgHandler, getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail));
@@ -549,6 +548,7 @@ int main(int argc,char **argv)
     PROGLOG("Authentication:%s required",requireauthenticate?"":" not");
     startPerformanceMonitor(10*60*1000, PerfMonStandard);
     server.setown(createRemoteFileServer());
+    writeSentinelFile(sentinelFile);
     try {
         server->run(listenep);
     }

@@ -265,6 +265,7 @@ int init_main(int argc, char* argv[])
     CEspAbortHandler abortHandler;
 
     Owned<IFile> sentinelFile = createSentinelTarget();
+    removeSentinelFile(sentinelFile);
 
     Owned<CEspConfig> config;
     Owned<CEspServer> server;
