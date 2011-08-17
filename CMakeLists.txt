@@ -99,7 +99,7 @@ option(RUNTIME_USER "Set the runtime username")
 option(RUNTIME_GROUP "Set the runtime group")
 option(ENV_XML_FILE "Set the environment xml file name.")
 option(ENV_CONF_FILE "Set the environment conf file name.")
-option(LICENSE_FILE "Set the liscense file to use.")
+option(LICENSE_FILE "Set the license file to use.")
 
 if( NOT LICENSE_FILE )
     set(LICENSE_FILE "LICENSE.txt")
@@ -218,7 +218,16 @@ set(CPACK_SOURCE_IGNORE_FILES
 ## Run file configuration to set build tag along with install lines for generated
 ## config files.
 ###
-set( BUILD_TAG "${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}-${stagever}")
+if (USE_GIT_DESCRIBE)
+    execute_process(COMMAND "${GIT_COMMAND}" describe --always --abbrev=4 --tags --dirty
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        OUTPUT_VARIABLE BUILD_TAG
+        ERROR_QUIET
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+    MESSAGE ( "${BUILD_TAG}" )
+else ()
+    set( BUILD_TAG "${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}-${stagever}")
+endif ()
 configure_file(${HPCC_SOURCE_DIR}/build-config.h.cmake "build-config.h" )
 
 #set( CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON )
