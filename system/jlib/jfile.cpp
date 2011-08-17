@@ -6314,19 +6314,55 @@ IFileIOCache* createFileIOCache(unsigned max)
 }
 
 
-extern jlib_decl IFile * createSentinelTarget(const char * argv0, const char * component)
+extern jlib_decl IFile * createSentinelTarget()
 {
-    StringBuffer sentinelName;
-    splitFilename(argv0, &sentinelName, &sentinelName, NULL, NULL);
-    sentinelName.append(component).append("_sentinel.txt");
-    return createIFile(sentinelName.str());
+    const char * sentinelFilename = getenv("SENTINEL");
+    if (sentinelFilename)
+        return createIFile(sentinelFilename);
+    else
+        return NULL;
+}
+
+extern jlib_decl void removeSentinelFile(IFile * sentinelFile)
+{
+    if (sentinelFile)
+    {
+        if(sentinelFile->exists() && !sentinelFile->isDirectory())
+        {
+            DBGLOG("Removing sentinel file %s", sentinelFile->queryFilename());
+            try
+            {
+                sentinelFile->remove();
+            }
+            catch(IException *E)
+            {
+                StringBuffer s;
+                EXCLOG(E, s.appendf("Failed to remove sentinel file %s", sentinelFile->queryFilename()).str());
+                E->Release();
+                throw MakeOsException(errno, "removeSentinelFile - file cannot be removed.");
+            }
+        }
+    }
 }
 
 extern jlib_decl void writeSentinelFile(IFile * sentinelFile)
 {
-    DBGLOG("Creating sentinel file %s for rerun from script", sentinelFile->queryFilename());
-    Owned<IFileIO> sentinel = sentinelFile->open(IFOcreate);
-    sentinel->write(0, 5, "rerun");
+    if ( sentinelFile )
+    {
+        DBGLOG("Creating sentinel file %s for rerun from script", sentinelFile->queryFilename());
+        try
+        {
+            Owned<IFileIO> sentinel = sentinelFile->open(IFOcreate);
+            sentinel->write(0, 5, "rerun");
+        }
+        catch(IException *E)
+        {
+            StringBuffer s;
+            EXCLOG(E, s.appendf("Failed to create sentinel file %s for rerun from script", sentinelFile->queryFilename()).str());
+            E->Release();
+            throw MakeOsException(errno, "writeSentinelFile - file not created.");
+        }
+    }
 }
 
 jlib_decl StringBuffer & appendCurrentDirectory(StringBuffer & target, bool blankIfFails)

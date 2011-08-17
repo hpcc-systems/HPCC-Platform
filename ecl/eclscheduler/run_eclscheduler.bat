@@ -15,10 +15,10 @@ rem
 rem     You should have received a copy of the GNU Affero General Public License
 rem     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 rem ############################################################################## */
-
+set SENTINEL="eclscheduler.sentinel"
 :start
 start /wait eclscheduler
-if exist eclscheduler_sentinel.txt (
+if exist %SENTINEL% (
     sleep 5
     goto start
 )

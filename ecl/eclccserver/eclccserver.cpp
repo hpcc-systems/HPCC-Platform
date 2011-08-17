@@ -531,9 +531,9 @@ int main(int argc, const char *argv[])
     initSignals();
     NoQuickEditSection x;
 
-    Owned<IFile> sentinelFile = createSentinelTarget(argv[0], "eclccserver");
+    Owned<IFile> sentinelFile = createSentinelTarget();
     // We remove any existing sentinel until we have validated that we can successfully start (i.e. all options are valid...)
-    sentinelFile->remove();
+    removeSentinelFile(sentinelFile);
 
     try
     {

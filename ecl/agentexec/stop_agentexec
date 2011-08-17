@@ -19,7 +19,8 @@ export PATH=/mnt/usrbin:$PATH
 
 DESTDIR=`dirname $0`
 cd $DESTDIR
-rm -f eclagent_sentinel.txt
+export SENTINEL="eclagent.sentinel"
+rm -f ${SENTINEL}
 
 killall $PWD/agentexec
 
