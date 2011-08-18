@@ -17,40 +17,11 @@
 
 project(start-stop-daemon)
 
+set( SRC start-stop-daemon.c )
+set( HEADER macros.h )
 
-find_package( StartStopDaemon )
+include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 
-option(FORCE-START-STOP-DAEMON "Force building of start-stop-daemon" OFF)
-
-
-if ( STARTSTOPDAEMON_FOUND AND NOT FORCE-START-STOP-DAEMON)
-set ( START-STOP-DAEMON OFF )
- message( "-- start-stop-daemon found on system.")
- message( "-- start-stop-daemon will not be built.")
-else()
- set ( START-STOP-DAEMON ON )
- if( FORCE-START-STOP-DAEMON )
-  message( "-- start-stop-daemon force build has been set to ON.")
- else()
-  message( "-- start-stop-daemon not found on system.")
- endif()
- message( "-- start-stop-daemon will be Built.")
-endif()
-
-
-
-
-if( START-STOP-DAEMON )
-        project(start-stop-daemon)
-
-        set( SRC start-stop-daemon.c )
-        set( HEADER macros.h )
-
-        include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
-
-        add_executable( start-stop-daemon ${SRC} ${HEADER})
-    install ( TARGETS start-stop-daemon DESTINATION ${OSSDIR}/bin )
-endif()
-
-
+add_executable( start-stop-daemon ${SRC} ${HEADER})
+install ( TARGETS start-stop-daemon DESTINATION ${OSSDIR}/bin )
 
