@@ -36,6 +36,11 @@
 
 #define DEFAULT_NLP_DETAIL              1
 #define DEFAULT_PATTERN_MAX_LENGTH      4096
+#ifdef __64BIT__
+#define __DEFINED_64BIT__ true
+#else
+#define __DEFINED_64BIT__ false
+#endif
 
 //---------------------------------------------------------------------------
 
@@ -688,7 +693,17 @@ ABoundActivity * HqlCppTranslator::doBuildActivityParse(BuildCtx & ctx, IHqlExpr
         nlpParse = createTomitaContext(expr, code->workunit, options, reporter);
     else
     {
-        byte algorithm = (options.regexVersion == 1) ? NLPAregexStack : NLPAregexHeap;
+        //In 64bit the engines have enough stack space to use the stack-based regex implementation
+        byte algorithm = __DEFINED_64BIT__ ? NLPAregexStack : NLPAregexHeap;
+        switch (options.regexVersion)
+        {
+        case 1:
+            algorithm = NLPAregexStack;
+            break;
+        case 2:
+            algorithm = NLPAregexHeap;
+            break;
+        }
         IHqlExpression * algorithmHint = queryHintChild(expr, algorithmAtom, 0);
         if (matchesConstantString(algorithmHint, "stack", true))
             algorithm = NLPAregexStack;
