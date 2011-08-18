@@ -1488,7 +1488,9 @@ __int64 EclAgent::countDiskFile(__int64 id, IHThorCountFileArg & arg)
         throw makeHThorException(TAKcountdisk, (unsigned)id, 0, e);
     }
 
-    Owned<ILocalOrDistributedFile> ldFile = resolveLFN(arg.getFileName(), "CountDisk", 0 != (arg.getFlags() & TDRoptional));
+    StringBuffer mangled;
+    mangleHelperFileName(mangled, arg.getFileName(), *this, arg.getFlags());
+    Owned<ILocalOrDistributedFile> ldFile = resolveLFN(mangled, "CountDisk", 0 != (arg.getFlags() & TDRoptional));
     if (ldFile) 
     {
         IRecordSize * rs = arg.queryRecordSize();
