@@ -55,7 +55,7 @@ inline void traceWait(const char *name,Semaphore &sem,unsigned interval=60*1000)
 
 
 
-#ifdef __64bit__
+#ifdef __64BIT__
 #define TRANSFERBLOCKSIZE 0x100000 // 1mb
 #else
 #define TRANSFERBLOCKSIZE 0x100000 // 64k
