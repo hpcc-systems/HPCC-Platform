@@ -425,24 +425,24 @@ void CFileSpraySoapBindingEx::downloadFile(IEspContext &context, CHttpRequest* r
         if (*(pathStr.str() + pathStr.length() -1) != pathSep)
             pathStr.append( pathSep );
 
-        StringBuffer logname;
-#ifdef MACHINE_IP
-        logname.appendf("//%s/%s/%s", MACHINE_IP, pathStr.str(), nameStr.str());
-#else
-        logname.appendf("%c%s%c%s%s", pathSep, netAddressStr.str(), pathSep, pathStr.str(), nameStr.str());
-#endif
-        logname.clear().appendf("%s%s", pathStr.str(), nameStr.str());
+        StringBuffer fullName;
+        fullName.appendf("%s%s", pathStr.str(), nameStr.str());
 
         StringBuffer headerStr("attachment;");
         headerStr.appendf("filename=%s", nameStr.str());
 
-        Owned<IFile> rFile = createIFile(logname.str());
+        RemoteFilename rfn;
+        rfn.setRemotePath(fullName.str());
+        SocketEndpoint ep(netAddressStr.str());
+        rfn.setIp(ep);
+
+        Owned<IFile> rFile = createIFile(rfn);
         if (!rFile)
-            throw MakeStringException(ECLWATCH_CANNOT_OPEN_FILE,"Cannot open file %s.", logname.str());
+            throw MakeStringException(ECLWATCH_CANNOT_OPEN_FILE,"Cannot open file %s.",fullName.str());
 
         OwnedIFileIO rIO = rFile->openShared(IFOread,IFSHfull);
         if (!rIO)
-            throw MakeStringException(ECLWATCH_CANNOT_READ_FILE,"Cannot read file %s.",logname.str());
+            throw MakeStringException(ECLWATCH_CANNOT_READ_FILE,"Cannot read file %s.",fullName.str());
 
         IFileIOStream* ioS = createIOStream(rIO);
         context.addCustomerHeader("Content-disposition", headerStr.str());
