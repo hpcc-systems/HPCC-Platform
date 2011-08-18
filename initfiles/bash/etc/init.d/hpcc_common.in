@@ -271,6 +271,7 @@ set_environmentvars() {
     fi
 }
 
+
 set_componentvars() {
     compName=$1
     comp.getByName ${compName}
