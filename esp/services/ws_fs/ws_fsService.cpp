@@ -3043,11 +3043,13 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
                     {
                         dir.replace('\\', '/');//replace all '\\' by '/'
                         aDropZone->setLinux("true");
+                        osStr = "1";
                     }
                     else
                     {
                         dir.replace('/', '\\');
                         dir.replace('$', ':');
+                        osStr = "0";
                     }
                 }
 
@@ -3059,10 +3061,6 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
                 {
                     netAddressStr = sNetAddr;
                     directoryStr = dir;
-                    if (machine->getOS() == MachineOsLinux || machine->getOS() == MachineOsSolaris)
-                    {
-                        osStr = "1";
-                    }
                 }
 
                 dropZoneList.append(*aDropZone.getClear());
