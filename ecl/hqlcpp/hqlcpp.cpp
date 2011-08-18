@@ -1605,7 +1605,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.dfaRepeatMax, "dfaRepeatMax", 10),
         DebugOption(options.dfaRepeatMaxScore, "dfaRepeatMaxScore", 100),
         DebugOption(options.debugNlp, "debugNlp", DEFAULT_NLP_DETAIL),
-        DebugOption(options.regexVersion, "regexVersion",2),
+        DebugOption(options.regexVersion, "regexVersion",0),
         DebugOption(options.parseDfaComplexity, "parseDfaComplexity", (unsigned)-1),
         DebugOption(options.expandRepeatAnyAsDfa,"expandRepeatAnyAsDfa", true),
         DebugOption(options.resourceMaxMemory, "resourceMaxMemory", 0),
