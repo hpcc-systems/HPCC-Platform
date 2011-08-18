@@ -198,6 +198,8 @@ if [ ! -e ${path}/bin/start-stop-daemon ]; then
     else
         daemon_path=$(echo $result | tr '/' '\n' | grep -v start-stop-daemon | tr '\n' '/')
     fi
+else
+    daemon_path=${path}/bin
 fi
 
 #declaring all flags here
