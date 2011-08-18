@@ -53,7 +53,6 @@ VERBOSE=${VERBOSE:-0}
 
 configgen_path=${INSTALL_DIR}/sbin
 basepath=`pwd`
-daemon_path="${INSTALL_DIR}/bin"
 set_environmentvars
 envfile=$configs/$environment
 bin_path=${INSTALL_DIR}/bin
@@ -101,23 +100,6 @@ done
 ##################################################################################
 #                        Beginning of the Option Parsing                         #
 ##################################################################################
-
-# Checking if start-stop-deamon exists
-if [ ! -e ${path}/bin/start-stop-daemon ]; then
-    result=$(which start-stop-daemon)
-    if [ "$?" -ne 0 ]; then
-        echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-        echo "You don't have start-stop-deamon isntalled"
-        echo "YOU CAN'T RUN THIS SYSTEM - SORRY"
-        echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-        exit 0
-    else
-        daemon_path=$(echo $result | tr '/' '\n' | grep -v start-stop-daemon | tr '\n' '/')
-    fi
-else
-    daemon_path=${path}/bin
-fi  
-
 
 if [ -z "${component}" ] ; then
     log_msg_failure "dafilesrv is not configured to run on this node"

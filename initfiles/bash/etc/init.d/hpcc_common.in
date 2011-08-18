@@ -26,6 +26,7 @@
 ####
 
 ###<REPLACE>###
+START-STOP-DAEMON=${bin_path}/start-stop-daemon
 
 which_service(){
     SERV=`type --path service`
@@ -446,7 +447,7 @@ startCmd() {
     fi
     
     EXEC_COMMAND="${bin_path}/init_${compType} "
-    startcmd="${daemon_path}/start-stop-daemon -S -p ${pid}/${compName}_init.pid -c ${user}:${group} -d ${compPath} -m -x ${EXEC_COMMAND} -b  >>${logFile} 2>&1" 
+    startcmd="${START-STOP-DAEMON} -S -p ${pid}/${compName}_init.pid -c ${user}:${group} -d ${compPath} -m -x ${EXEC_COMMAND} -b  >>${logFile} 2>&1"
 
     issueTime=`date`
     logCommand="COMMAND:: $startcmd  ::Issued at $issueTime "
@@ -541,7 +542,7 @@ stop_component() {
        return ${RCSTOP}
     fi
     
-    stopcmd="${daemon_path}/start-stop-daemon -K -p ${PIDPATH} >> tmp.txt 2>&1"
+    stopcmd="${START-STOP-DAEMON} -K -p ${PIDPATH} >> tmp.txt 2>&1"
 
     if [ ${DEBUG} != "NO_DEBUG" ]; then
         echo "$stopcmd"

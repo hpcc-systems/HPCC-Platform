@@ -117,7 +117,6 @@ fi
 chown -cR $user:$group ${home}/${user} 1>/dev/null 2>/dev/null
 
 basepath=`pwd`
-daemon_path=${bin_path}
 
 COMPS=`${configgen_path}/configgen -env ${envfile} -list`
 
@@ -184,22 +183,6 @@ if [ ${DEBUG} != "NO_DEBUG" ]; then
         echo $i
     done
     
-fi
-
-# Checking if start-stop-deamon exists
-if [ ! -e ${path}/bin/start-stop-daemon ]; then
-    result=$(which start-stop-daemon)
-    if [ "$?" -ne 0 ]; then
-        echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-        echo "You don't have start-stop-deamon installed"
-        echo "YOU CAN'T RUN THIS SYSTEM - SORRY"
-        echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-        exit 0
-    else
-        daemon_path=$(echo $result | tr '/' '\n' | grep -v start-stop-daemon | tr '\n' '/')
-    fi
-else
-    daemon_path=${path}/bin
 fi
 
 #declaring all flags here
