@@ -48,6 +48,7 @@ public:
     virtual void setMaxCompileThreads(unsigned max) = 0;
     virtual void addManifest(const char *filename) = 0;
     virtual void addManifestFromArchive(IPropertyTree *archive) = 0;
+    virtual void addWebServiceInfo(IPropertyTree *wsinfo) = 0;
     virtual void setSaveGeneratedFiles(bool value) = 0;
 };
 

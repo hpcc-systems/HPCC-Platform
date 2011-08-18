@@ -89,21 +89,25 @@ void ResourceManifest::addToArchive(IPropertyTree *archive)
     {
         StringBuffer absResPath;
         const char *filename = resources->query().queryProp("@filename");
-        if (!isAbsolutePath(filename))
+        VStringBuffer xpath("Resource[@originalFilename='%s']", filename);
+        if (!additionalFiles->hasProp(xpath.str()))
         {
-            StringBuffer relResPath(dir);
-            relResPath.append(filename);
-            makeAbsolutePath(relResPath.str(), absResPath);
+            if (!isAbsolutePath(filename))
+            {
+                StringBuffer relResPath(dir);
+                relResPath.append(filename);
+                makeAbsolutePath(relResPath.str(), absResPath);
+            }
+            else
+                absResPath.append(filename);
+
+            IPropertyTree *resTree = additionalFiles->addPropTree("Resource", createPTree("Resource"));
+            resTree->setProp("@originalFilename", filename);
+
+            MemoryBuffer content;
+            loadResource(absResPath.str(), content);
+            resTree->setPropBin(NULL, content.length(), content.toByteArray());
         }
-        else
-            absResPath.append(filename);
-
-        IPropertyTree *resTree = additionalFiles->addPropTree("Resource", createPTree("Resource"));
-        resTree->setProp("@originalFilename", filename);
-
-        MemoryBuffer content;
-        loadResource(absResPath.str(), content);
-        resTree->setPropBin(NULL, content.length(), content.toByteArray());
     }
 }
 

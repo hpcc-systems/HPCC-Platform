@@ -10388,10 +10388,10 @@ void HqlCppTranslator::addSchemaResource(int seq, const char * name, IHqlExpress
 
 void HqlCppTranslator::addSchemaResource(int seq, const char * name, unsigned len, const char * schemaXml)
 {
-    Owned<IPropertyTree> entryEx = createPTree("Resource");
-    entryEx->setProp("@name", name);
-    entryEx->setPropInt("@seq", seq);
-    code->addCompressResource("RESULT_XSD", len, schemaXml, entryEx);
+    Owned<IPropertyTree> manifestEntry = createPTree("Resource");
+    manifestEntry->setProp("@name", name);
+    manifestEntry->setPropInt("@seq", seq);
+    code->addCompressResource("RESULT_XSD", len, schemaXml, manifestEntry);
 }
 
 

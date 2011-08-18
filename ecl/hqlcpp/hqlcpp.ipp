@@ -123,10 +123,11 @@ public:
     virtual HqlStmts * querySection(_ATOM section);
     virtual void flushHints();
     virtual void flushResources(const char *filename, ICodegenContextCallback * ctxCallback);
-    virtual void addResource(const char * type, unsigned len, const void * data, IPropertyTree *entryEx=NULL, unsigned id=(unsigned)-1);
-    virtual void addCompressResource(const char * type, unsigned len, const void * data, IPropertyTree *entryEx=NULL, unsigned id=(unsigned)-1);
+    virtual void addResource(const char * type, unsigned len, const void * data, IPropertyTree *manifestEntry=NULL, unsigned id=(unsigned)-1);
+    virtual void addCompressResource(const char * type, unsigned len, const void * data, IPropertyTree *manifestEntry=NULL, unsigned id=(unsigned)-1);
     virtual void addManifest(const char *filename){resources.addManifest(filename);}
     virtual void addManifestFromArchive(IPropertyTree *archive){resources.addManifestFromArchive(archive);}
+    virtual void addWebServiceInfo(IPropertyTree *wsinfo){resources.addWebServiceInfo(wsinfo);}
     
     bool useFunction(IHqlExpression * funcdef);
     void useInclude(const char * include);

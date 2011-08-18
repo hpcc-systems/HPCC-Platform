@@ -1241,12 +1241,12 @@ unsigned HqlCppInstance::addStringResource(unsigned len, const char * body)
     return resources.addString(len, body);
 }
 
-void HqlCppInstance::addResource(const char * type, unsigned len, const void * body, IPropertyTree *entryEx, unsigned id)
+void HqlCppInstance::addResource(const char * type, unsigned len, const void * body, IPropertyTree *manifestEntry, unsigned id)
 {
-    resources.addNamed(type, len, body, entryEx, id);
+    resources.addNamed(type, len, body, manifestEntry, id);
 }
 
-void HqlCppInstance::addCompressResource(const char * type, unsigned len, const void * body, IPropertyTree *entryEx, unsigned id)
+void HqlCppInstance::addCompressResource(const char * type, unsigned len, const void * body, IPropertyTree *manifestEntry, unsigned id)
 {
 #ifdef ADD_RESOURCE_AS_CPP_COMMENT
     BuildCtx ctx(*this, includeAtom);
@@ -1255,7 +1255,7 @@ void HqlCppInstance::addCompressResource(const char * type, unsigned len, const 
     ctx.addQuoted(s);
 #endif
 
-    resources.addCompress(type, len, body, entryEx, id);
+    resources.addCompress(type, len, body, manifestEntry, id);
 }
 
 void HqlCppInstance::flushHints()

@@ -34,7 +34,9 @@ public:
     bool addCompress(const char * type, unsigned len, const void *data, IPropertyTree *entry=NULL, unsigned id=(unsigned)-1, bool addToManifest=true);
     void addManifest(const char *filename);
     void addManifestFromArchive(IPropertyTree *archive);
+    void addWebServiceInfo(IPropertyTree *wsinfo);
     IPropertyTree *ensureManifestInfo(){if (!manifest) manifest.setown(createPTree("Manifest")); return manifest;}
+    bool getDuplicateResourceId(const char *srctype, const char *filename, int &id);
     void finalize();
 
     unsigned count();
