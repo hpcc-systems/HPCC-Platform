@@ -31,11 +31,7 @@ fi
 ######################################
 /etc/init.d/hpcc-init stop
 if [ -f "${PID_DIR}/mydafilesrv.pid" ]; then
-    # Stopping Dafilesrv
-    ${INSTALL_DIR}/bin/start-stop-daemon -K -p ${PID_DIR}/mydafilesrv_init.pid >> /dev/null 2>&1
-    rm -rf ${LOCK_DIR}/mydafilesrv/mydafilesrv.lock >> /dev/null 2>&1
-    rm -rf ${PID_DIR}/mydafilesrv_init.pid >> /dev/null 2>&1
-        #/etc/init.d/dafilesrv stop
+    /etc/init.d/dafilesrv stop
 fi
 # Removing edits from /etc files
 ${INSTALL_DIR}/sbin/rm_conf_settings.sh
