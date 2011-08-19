@@ -41,7 +41,7 @@ cleanup ()
     echo "Exiting configMgr"
     #stop configesp
     PIDPATH=${pid}/${compName}_init.pid
-    stopcmd="${START-STOP-DAEMON} -K -p $PIDPATH"
+    stopcmd="${START_STOP_DAEMON} -K -p $PIDPATH"
     eval $stopcmd 
     sleep 2
     killall -9 configesp >/dev/null 2>&1
@@ -203,7 +203,7 @@ cd ${runtime}/${compName}
 
 #start configesp
 EXEC_COMMAND="${exec_script_path}/init_configesp >> $logFile 2>&1"
-startcmd="${START-STOP-DAEMON} -S -p ${initPidFile} -c ${user}:${group} -d ${runtime}/${compName} -m -x ${EXEC_COMMAND} -b"
+startcmd="${START_STOP_DAEMON} -S -p ${initPidFile} -c ${user}:${group} -d ${runtime}/${compName} -m -x ${EXEC_COMMAND} -b"
 eval ${startcmd}
 started=$?
 
