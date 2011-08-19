@@ -947,11 +947,7 @@ void CTpWrapper::queryTargetClusterProcess(double version, const char* processNa
             clusterInfo->setLogDirectory( logDir );
     }
 
-    //this is defined in the Topology attribute for the Cluster.
-    StringBuffer prefix;
-    getPrefixName(processName,prefix);
-    clusterInfo->setPrefix(prefix.str());
-
+    clusterInfo->setPrefix("");
     if(pClusterTree->hasProp("@dataBuild"))
         clusterInfo->setDataModel(pClusterTree->queryProp("@dataBuild"));
 
@@ -1258,12 +1254,7 @@ void CTpWrapper::getClusterProcessList(const char* ClusterType, IArrayOf<IEspTpC
                     }
 
                     clusterInfo->setPath(tmpPath.str());
-
-                    //this is defined in the Topology attribute for the Cluster.
-                    StringBuffer prefix;
-                    getPrefixName(name,prefix);
-                    clusterInfo->setPrefix(prefix.str());
-
+                    clusterInfo->setPrefix("");
                     if(cluster.hasProp("@dataBuild"))
                         clusterInfo->setDataModel(cluster.queryProp("@dataBuild"));
 
@@ -1515,30 +1506,6 @@ void CTpWrapper::resolveGroupInfo(const char* groupName,StringBuffer& Cluster, S
     catch(...){
         WARNLOG("Unknown Exception caught within CTpWrapper::resolveGroupInfo");
     }
-}
-
-StringBuffer& CTpWrapper::getPrefixName(const char* clusterName,StringBuffer& prefixName)
-{
-    try
-    {
-        Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName);
-        if (!clusterInfo)
-            throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
-        StringBufferAdaptor adaptor(prefixName);
-        clusterInfo->getScope(adaptor);
-    }
-    catch(IException* e) 
-    {
-        StringBuffer msg;
-        e->errorMessage(msg);
-        WARNLOG("%s", msg.str());
-        e->Release();
-    }
-    catch(...)
-    {
-        WARNLOG("Unknown Exception caught within CTpWrapper::getPrefixName");
-    }
-    return prefixName;
 }
 
 bool CTpWrapper::ContainsProcessDefinition(IPropertyTree& clusterNode,const char* clusterName)
