@@ -32,7 +32,7 @@ fi
 trap "rm -f run_thor.lck" exit
 echo $$ > run_thor.lck
 
-export sentinelfile="thor.sentinel"
+export SENTINEL="thor.sentinel"
 while [ 1 ]; do
     export logpthtail="`date +%m_%d_%Y_%H_%M_%S`"  
     export logpth="$logdir/$logpthtail"
@@ -54,8 +54,8 @@ while [ 1 ]; do
             exit 0
         fi
         echo master exited with errorcode = $errcode
-        if [ ! -e $sentinelfile ]; then
-            echo $sentinelfile 'has been removed (1) - script stopping'
+        if [ ! -e $SENTINEL ]; then
+            echo $SENTINEL 'has been removed (1) - script stopping'
             exit 0
         fi
 
@@ -65,8 +65,8 @@ while [ 1 ]; do
         echo failed to start thormaster$LCR, pausing for 30 seconds
         sleep 30
     fi
-    if [ ! -e $sentinelfile ]; then
-        echo $sentinelfile 'has been removed or thormaster did not fully start - script stopping'
+    if [ ! -e $SENTINEL ]; then
+        echo $SENTINEL 'has been removed or thormaster did not fully start - script stopping'
         exit 0
     fi
 done
