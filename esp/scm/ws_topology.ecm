@@ -42,7 +42,7 @@ ESPStruct TpCluster
     string Directory;
     string LogDirectory;
     string Desc;
-    string Prefix;
+    [max_ver("1.16")] string Prefix;
     string Path;
     string DataModel;
     int    OS;
@@ -522,7 +522,7 @@ ESPresponse [exceptions_inline] TpGetComponentFileResponse
     [http_content("application/octet-stream")] binary FileContents;
 };
 
-ESPservice [noforms, version("1.16"), default_client_version("1.16"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
+ESPservice [noforms, version("1.17"), default_client_version("1.17"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
 {
     ESPuses ESPStruct TpBinding;
     ESPuses ESPstruct TpCluster;
