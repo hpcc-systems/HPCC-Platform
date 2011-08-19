@@ -101,12 +101,12 @@ killproc () {
     status=0
     if [ ! "$is_term_sig" = yes ]; then
         if [ -n "$sig" ]; then
-            ${START-STOP-DAEMON} --stop --signal "$sig" --quiet $name_param || status="$?"
+            ${START_STOP_DAEMON} --stop --signal "$sig" --quiet $name_param || status="$?"
         else
-            ${START-STOP-DAEMON} --stop --quiet $name_param || status="$?"
+            ${START_STOP_DAEMON} --stop --quiet $name_param || status="$?"
         fi
     else
-        ${START-STOP-DAEMON} --stop --quiet --oknodo $name_param || status="$?"
+        ${START_STOP_DAEMON} --stop --quiet --oknodo $name_param || status="$?"
     fi
     if [ "$status" = 1 ]; then
         if [ -n "$sig" ]; then
