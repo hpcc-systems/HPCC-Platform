@@ -47,16 +47,6 @@ IPropertyTree* CTpWrapper::getEnvironment(const char* xpath)
         }
         else
         {
-            StringBuffer buf;
-            toXML(root, buf);
-            if (buf.length() > 0)
-            {
-                Owned<IFile> f = createIFile("new_config.xml");
-                Owned<IFileIO> fio = f->open(IFOcreaterw);
-                if (fio.get())
-                    fio->write(0, buf.length(), buf.str());
-            }
-
             IPropertyTree* pSubTree = root->queryPropTree( xpath );
             if (pSubTree)
                 return LINK(pSubTree);
