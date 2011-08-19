@@ -1,7 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-
-## Copyright © 2011 HPCC Systems.  All rights reserved.
+################################################################################
+#    Copyright (C) 2011 HPCC Systems.
+#
+#    All rights reserved. This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License as
+#    published by the Free Software Foundation, either version 3 of the
+#    License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
 -->
 
 <!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd">
@@ -9,12 +23,7 @@
     <title>initfiles</title>
 
     <para>
-        The initfiles directory contains the sources for the initfiles library.
+        The initfiles directory contains shell scripts and other configuration files that are deployed
+        directly into the package.
     </para>
-    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="bin/sourcedoc.xml"/>
-    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="componentfiles/sourcedoc.xml"/>
-    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="etc/sourcedoc.xml"/>
-    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="examples/sourcedoc.xml"/>
-    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="lib/sourcedoc.xml"/>
-    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="sbin/sourcedoc.xml"/>
 </section>
