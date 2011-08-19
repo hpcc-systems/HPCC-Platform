@@ -1,0 +1,174 @@
+======================
+Guide for Contributors
+======================
+
+Our preferred method for accepting contributions is via GitHub pull requests. We
+might in the future (when we are more expert on Git) ba able to accept patch
+files via other means, but at present GitHub is all we are set up to deal with.
+
+Detailed intructions for setting up a GitHub account can be found at
+http://help.github.com/ . A quick summary is below:
+
+1. If you don't already have one, create a GitHub account, then sign in
+
+2. Fork the HPCC-Platform repository from https://github.com/hpcc-systems/HPCC-Platform
+
+3. Clone the github repo to the machine you will be working on, using a command like
+
+    git clone git@github.com/<your-github-name>/HPCC-Platform.git
+
+
+Issues
+======
+
+Current open issues can be found at https://github.com/hpcc-systems/HPCC-Platform/issues.
+If you want to work on one that is currently unassigned, add a comment to the issue to
+indicate that you intend to do so (to help avoid duplicated effort). If the issue is
+already assigned but you think you could help, drop a note to the assignee.
+
+If you think you have found a new issue or have a suggestion for an enhancement, you can
+open a new issue on this page.
+
+Topic branches and pull requests
+================================
+
+If you want to submit code for a fix or a new feature to the project, the changes should
+be pushed to a topic branch in your GitHub fork, so that a pull request referring to
+your changes can be generated. Accepting contributions via pull requests allows all
+contributions to the project to be properly recorded and credited.
+
+It is considered 'best practice' in git for each topic branch (and thus each pull request)
+to contain a single fix or new feature. This allows fixes and features to be merged to
+the appropriate version without having to cherry-pick which parts of a patch might be
+wanted where. You can have as many branches active as you like if you want to be working
+on multiple fixes. In general a topic branch should be addressing a single issue in the
+issue tracker.
+
+Because a pull-request refers to a branch of your fork repository, not a commit, it is
+best to avoid using the 'master' branch for development work, as it makes it very hard to
+keep to the 'one change per branch' rules. You can merge your topic branches to your own
+master branch if you want, though generally we recommend keeping the master branch in
+sync with the upstream master as you will want to use it as the base to checkout new
+topic branches from.
+
+To create a topic branch, use git checkout with the -b argument:
+
+    git checkout -b fix-broken-thing
+    Switched to a new branch 'fix-broken-thing'
+
+Branch names should be kept reasonable short but long enough to describe what they are
+for. Some branch names are used for special purposes in the HPCC-Platform repository and
+you should avoid using them for topic branches - examples are 'master', 'candidate-*',
+'release-*', and 'stable'. While it may be tempting to name your branch 'issueXXX' if it
+is intending to fix issue XXX, it's probably best not to as it makes it harder to keep
+mental track of which branch is which once you are dealing with multiple issues.
+
+Once the branch is created, you can code and test your changes, and commit them any time
+you get to a reasonable point to do so (or if you want to switch to working on a
+different branch). You can push changes to your github repository periodically in order
+to have a backup or if you want to discuss the work in progress with other developers.
+This can be done using git push:
+
+    git push origin fix-broken-thing
+
+The branch will now show up on yout GitHub page, and in the HPCC-Platform network graph.
+When you are ready to submit a pull request, switch to the branch in question (from the
+Switch Branches list on the source tab in GitHub) and click "Pull Request".
+
+You can add a comment about the pull request - there's no need to replicate the
+information that is in the commits concerning what was changed and why, but it's good to
+put a link to the issue you are fixing (if you put #175 in the comment then GitHub will
+automatically create a link to issue number 175). You can also use the @mention syntax
+to ensure that other contributors or maintainers that you think should see this request
+are notified.
+
+Note that additional changes can be made to the branch after you have generated a pull
+request - for example in order to address issues raised by a reviewer. There is no need
+to close a request and open a new one in such circumstances.
+
+Pull upstream changes into your fork regularly
+==============================================
+
+If a branch is in development for a while, you should regularly merge in the upstream
+master, rather than waiting until you are ready to issue the pull-request before
+discovering that other changes clash with yours, or render your change moot. If a branch
+has diverged too far from the master that it cannot be easily or safely merged, it is
+likely to be rejected by the maintainers.
+
+To pull in upstream changes::
+
+    git remote add upstream git://github.com/hpcc-systems/HPCC-Platform.git
+    git fetch upstream
+    git merge upstream/master
+
+For more information, see http://help.github.com/fork-a-repo/
+
+Commit guidelines
+=================
+
+In order for your pull-request to be accepted into the upstream repository, it will need
+to fulfil the following requirements:
+
+1.  All commits must be signed. By signing the commits you are signalling that you have
+    the appropriate rights to the change you are submitting, and the right to assign
+    those rights to HPCC Systems under the terms of the contributory agreement. We have
+    to be strict about this requirement to kepe the lawyers happy.
+2.  All new code in the commit should follow the coding standards used by our project,
+    for layout conventions, variable naming conventions, programming paradigms etc.
+3.  The code should fix a single issue. If you spot other issues in nearby code, you
+    should create a separate branch and pull request to fix them (or create an issue and
+    let someone else fix them).
+4.  The code should pass code review by one of the maintainers (or someone they nominate
+    to review it for them.
+5.  The code should compile, without warnings, on all supported targets.
+6.  If appropriate, new tests must accompany new functionality.
+7.  The commit messages should conform to the commit message guidelines described below
+8.  The commits in the branch should progress logically and forwards. If you started
+    coding something one way, then changed your mind and coded it a different way, use
+    git rebase -i to squash commits together so that the reviewer doesn't have to
+    waste time trying to understand the blind alleys
+9.  Don't mix code changes with reformatting. This is really a special case of point 3
+    above but one that seems to cause particular problems. Correct formatting and
+    whitespace issues on the code that you are submitting, but don't go fixing all the
+    other formatting in a file just because you changed a line in it - doing so makes it
+    harder to review your change or to follow the project history.
+10. Submit whitespace/formatting cleanup changes in their own issues, and in small chunks
+    (e.g. one file, or a few related files in one directory, at a time).
+11. Don't half-fix an issue (unless it's a whitespace cleanup!).
+12. Don't introduce new whitespace issues. You can set up yout git to automatically check
+    that there are no new leading tab or trailing whitespace issues in your commits.
+
+Don't worry if your pull-request is rejected at first - the reasons for the rejection
+should always have been explained by the maintainers and it should usually be possible
+to address them without starting from scratch. We are fairly strict about most of the
+above rules (and extremely strict about some of them) so it's not unusual for a new
+contributor to have a few pull-requests rejected the first time they are submitted.
+
+Commit messages
+===============
+
+We follow the same guidelines that many other git projects have adopted for git comments.
+
+1.  The first line of the commit should summarize the change in no more than 50(ish)
+    characters. Start with a capital, do not end with a full stop. If the commit refers
+    to an open issue then start the comment with gh-NNN.
+
+2.  The second line of the commit message should be blank
+
+3.  The remainder of the commit message should be wrapped at 75 chars, and should contain
+    the following information (where appropriate):
+
+      - what the behaviour was before this change.
+      - what the behaviour is now.
+      - what is the reason for the change.
+
+    Additional information that will be helpful to the reviewer, or to anyone looking at
+    the git history, should also be provided. However do NOT include in the comment
+    information that is better provided by looking at the diff - any such information is
+    at best redundant and at worst contradictory.
+
+    Use an active voice, and describe the effect of applying the change. For example, you
+    should say "Add O(n) travelling salesman support" rather than "Adds fast TSP", "Added
+    code to make system faster", or "I changed line 32".
+
+4.  The commit message must be signed. Use commit -s to make this easier.
