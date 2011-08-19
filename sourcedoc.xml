@@ -1,4 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+################################################################################
+#    Copyright (C) 2011 HPCC Systems.
+#
+#    All rights reserved. This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License as
+#    published by the Free Software Foundation, either version 3 of the
+#    License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+-->
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd">
 <book lang="en_US">
     <bookinfo>
@@ -36,7 +54,21 @@
         </legalnotice>
 
         <releaseinfo>
-            © 2011 LexisNexis Risk Solutions. All rights reserved
+               Copyright (C) 2011 HPCC Systems.
+
+               All rights reserved. This program is free software: you can redistribute it and/or modify
+               it under the terms of the GNU Affero General Public License as
+               published by the Free Software Foundation, either version 3 of the
+               License, or (at your option) any later version.
+
+               This program is distributed in the hope that it will be useful,
+               but WITHOUT ANY WARRANTY; without even the implied warranty of
+               MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+               GNU Affero General Public License for more details.
+
+               You should have received a copy of the GNU Affero General Public License
+               along with this program.  If not, see http://www.gnu.org/licenses
+
         </releaseinfo>
 
         <date>2011-01-11</date>
