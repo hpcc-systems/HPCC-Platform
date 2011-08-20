@@ -30,13 +30,19 @@
 #ifdef _WIN32
 #include "psapi.h"
 #include <eh.h>
-#elif defined (__linux__) || defined(__FreeBSD__)
+#elif defined (__linux__) || defined(__FreeBSD__)  || defined(__APPLE__)
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <stddef.h>
 #include <errno.h>
 #ifdef __linux__
 #include <execinfo.h> // comment out if not present
+#endif
+#ifdef __APPLE__
+#ifndef _XOPEN_SOURCE
+#define _XOPEN_SOURCE
+#endif
+#include <ucontext.h>
 #endif
 #endif
 
@@ -952,8 +958,13 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
 #if __WORDSIZE == 64
 #define I64X "%016" I64F "X"
     ucontext_t *uc = (ucontext_t *)extra;
+#ifdef __APPLE__
+    __int64 ip = uc->uc_mcontext->__ss.__rip;
+    __int64 sp = uc->uc_mcontext->__ss.__rsp;
+#else
     __int64 ip = uc->uc_mcontext.gregs[REG_RIP];
     __int64 sp = uc->uc_mcontext.gregs[REG_RSP];
+#endif
     
     excsignal = signum;
     s.appendf("SIG: %s(%d), accessing "I64X", IP="I64X, strsignal(signum),signum, (__int64)info->si_addr, ip);
@@ -964,12 +975,19 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
     PROGLOG("Accessing: "I64X"", (unsigned __int64) info->si_addr);
     PROGLOG("Registers:" );
     PROGLOG("EAX:"I64X"  EBX:"I64X"  ECX:"I64X"  EDX:"I64X"  ESI:"I64X"  EDI:"I64X"",
+#ifdef __APPLE__
+        (unsigned __int64) uc->uc_mcontext->__ss.__rax, (unsigned __int64)uc->uc_mcontext->__ss.__rbx, 
+        (unsigned __int64) uc->uc_mcontext->__ss.__rcx, (unsigned __int64)uc->uc_mcontext->__ss.__rdx, 
+        (unsigned __int64) uc->uc_mcontext->__ss.__rsi, (unsigned __int64)uc->uc_mcontext->__ss.__rdi);
+    PROGLOG( "CS:EIP:%04X:"I64X"", ((unsigned) uc->uc_mcontext->__ss.__cs)&0xffff, ip );
+    PROGLOG( "   ESP:"I64X"  EBP:"I64X"", sp, (unsigned __int64) uc->uc_mcontext->__ss.__rbp );  
+#else
         (unsigned __int64) uc->uc_mcontext.gregs[REG_RAX], (unsigned __int64)uc->uc_mcontext.gregs[REG_RBX], 
         (unsigned __int64) uc->uc_mcontext.gregs[REG_RCX], (unsigned __int64) uc->uc_mcontext.gregs[REG_RDX], 
         (unsigned __int64) uc->uc_mcontext.gregs[REG_RSI], (unsigned __int64) uc->uc_mcontext.gregs[REG_RDI] );
-    
     PROGLOG( "CS:EIP:%04X:"I64X"", ((unsigned) uc->uc_mcontext.gregs[REG_CSGSFS])&0xffff, ip );
     PROGLOG( "   ESP:"I64X"  EBP:"I64X"", sp, (unsigned __int64) uc->uc_mcontext.gregs[REG_RBP] );  
+#endif    
     
     for (unsigned i=0;i<8;i++) {
         StringBuffer s;

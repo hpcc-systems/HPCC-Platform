@@ -68,6 +68,13 @@ else ()
     HPCC_ADD_LIBRARY( thorsort_lcr SHARED ${SRCS} )
     install ( TARGETS thorsort_lcr DESTINATION ${OSSDIR}/lib )
     target_link_libraries ( thorsort_lcr
-             jlib
-        )
+         jlib
+         eclrtl
+         commonext
+         thorhelper
+         mp
+         dalibase
+         graph_lcr
+    )
 endif (WIN32)
+

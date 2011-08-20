@@ -108,7 +108,7 @@ public:
     const char *getLogInfo(int &thandle,unsigned &tid) { 
 #ifdef _WIN32
         thandle = (int)(memsize_t)hThread;
-#elif defined __FreeBSD__
+#elif defined __FreeBSD__ || defined __APPLE__
         thandle = (int)(memsize_t)threadid;
 #else
         thandle = threadid; 

@@ -50,7 +50,7 @@
 
 typedef unsigned size32_t;
 
-#if (defined (__linux__) || defined (__FreeBSD__))
+#if (defined (__linux__) || defined (__FreeBSD__)  || defined (__APPLE__))
 typedef __SIZE_TYPE__ memsize_t;
 #else
 typedef size_t memsize_t;
@@ -223,7 +223,7 @@ typedef unsigned long MaxCard;
 #define __cdecl
 
 
-#if defined(__linux__) || defined (__FreeBSD__)
+#if defined(__linux__) || defined (__FreeBSD__)  || defined (__APPLE__)
 // **** START OF LINUX SPECIFIC SECTION ****
 #include <aio.h>
 #define __BYTE_ORDER __LITTLE_ENDIAN
@@ -372,8 +372,10 @@ typedef int socklen_t;
 #endif
 
 #ifndef __FreeBSD__
+#ifndef __APPLE__
 #include <malloc.h>
 #include <alloca.h>
+#endif
 #endif
 #include <dlfcn.h>
 #include <pthread.h>
@@ -382,10 +384,10 @@ typedef int socklen_t;
 #include <sys/errno.h>
 #include <sys/utsname.h>
 
-#if defined (__FreeBSD__)
+#if defined (__FreeBSD__) || defined (__APPLE__)
 #define MAP_ANONYMOUS MAP_ANON
 #endif
-#if defined(__FreeBSD__) || defined(__linux__) || defined(__CYGWIN__)
+#if defined(__FreeBSD__) || defined(__linux__) || defined(__CYGWIN__) || defined (__APPLE__)
 #include <sys/ioctl.h>
 #else
 #include <sys/filio.h>
