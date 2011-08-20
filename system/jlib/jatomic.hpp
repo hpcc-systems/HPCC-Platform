@@ -138,12 +138,7 @@ int jlib_decl poor_atomic_xchg(int i, atomic_t * v);
 void jlib_decl poor_atomic_add(atomic_t * v, int i);
 int jlib_decl poor_atomic_add_exchange(atomic_t * v, int i);
 bool jlib_decl poor_atomic_cas(atomic_t * v, int newvalue, int expectedvalue);
-
-#if defined (__APPLE__)
-jlib_decl void * poor_atomic_xchg_ptr(void *p, void **v);
-#else
-void * jlib_decl poor_atomic_xchg_ptr(void *p, void **v);
-#endif
+void jlib_decl *poor_atomic_xchg_ptr(void *p, void **v);
 bool   jlib_decl poor_atomic_cas_ptr(void ** v, void *newvalue, void *expectedvalue);
 
 #define ATOMIC_INIT(i)                  (i)
