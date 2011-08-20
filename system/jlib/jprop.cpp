@@ -30,6 +30,9 @@
 #elif defined(__linux__) || defined(__FreeBSD__)
  extern char **environ;
 #endif
+#if defined(__APPLE__)
+#include <crt_externs.h>
+#endif
 
 const char *conv2char_ptr(const char *p) { return p; }
 const char *convchar_ptr2(const char *p) { return p; }
@@ -144,7 +147,11 @@ public:
 #ifdef _WIN32
         char **e = _environ;
 #else
+#if defined (__APPLE__)
+        char **e = *_NSGetEnviron();
+#else
         char **e = environ;
+#endif
 #endif
         while (*e)
         {

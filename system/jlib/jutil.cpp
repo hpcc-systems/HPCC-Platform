@@ -80,7 +80,7 @@ bool safe_ecvt(size_t len, char * buffer, double value, int numDigits, int * dec
 {
 #ifdef _WIN32
     return _ecvt_s(buffer, len, value, numDigits, decimal, sign) == 0;
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) || defined (__APPLE__)
     UNIMPLEMENTED;
 #else
     SpinBlock block(*cvtLock);
@@ -96,7 +96,7 @@ bool safe_fcvt(size_t len, char * buffer, double value, int numPlaces, int * dec
 {
 #ifdef _WIN32
     return _fcvt_s(buffer, len, value, numPlaces, decimal, sign) == 0;
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) || defined (__APPLE__)
     UNIMPLEMENTED;
 #else
     SpinBlock block(*cvtLock);
@@ -1919,7 +1919,7 @@ public:
 
 
 IAuthenticatedUser *createAuthenticatedUser() { return new CLinuxAuthenticatedUser; }
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) || defined (__APPLE__)
 
 IAuthenticatedUser *createAuthenticatedUser() { UNIMPLEMENTED; }
 

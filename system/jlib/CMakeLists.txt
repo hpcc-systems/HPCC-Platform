@@ -186,6 +186,7 @@ endif ( ${HAVE_LIBCRYPT} )
 
 if (WIN32)
  target_link_libraries ( jlib ws2_32 mpr.lib Winmm.lib)
+elseif (("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin" ))
 else ()
  target_link_libraries ( jlib rt)
 endif ()

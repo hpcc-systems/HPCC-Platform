@@ -831,7 +831,7 @@ static void closeAndDeleteEmpty(const char * filename, FILE *handle)
     if (handle) {
         fpos_t pos;
         bool del = (fgetpos(handle, &pos)==0)&&
-#if defined( _WIN32) || defined(__FreeBSD__)
+#if defined( _WIN32) || defined(__FreeBSD__) || defined(__APPLE__)
             (pos==0);
 #else
             (pos.__pos==0);
