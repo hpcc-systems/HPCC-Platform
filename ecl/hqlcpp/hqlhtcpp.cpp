@@ -7608,6 +7608,11 @@ void HqlCppTranslator::doBuildExprCountFile(BuildCtx & ctx, IHqlExpression * _ex
     if (dataset->hasProperty(optAtom)) flags.append("|TDRoptional");
     if (!filename->isConstant()) flags.append("|TDXvarfilename");
     if (hasDynamicFilename(dataset)) flags.append("|TDXdynamicfilename");
+    if (dataset->hasProperty(_spill_Atom)) flags.append("|TDXtemporary");
+    if (dataset->hasProperty(jobTempAtom)) flags.append("|TDXjobtemp");
+    if (dataset->hasProperty(groupedAtom)) flags.append("|TDXgrouped");
+    if (dataset->hasProperty(__compressed__Atom)) flags.append("|TDXcompress");
+    if (dataset->hasProperty(_workflowPersist_Atom)) flags.append("|TDXupdateaccessed");
 
     if (flags.length())
         doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
