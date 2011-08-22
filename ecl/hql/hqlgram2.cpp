@@ -6976,54 +6976,96 @@ void HqlGram::inheritRecordMaxLength(IHqlExpression * dataset, OwnedHqlExpr & re
 }
 
 
+static HqlTransformerInfo groupExpressionCheckerInfo("GroupExpressionChecker");
+class GroupExpressionChecker : public QuickHqlTransformer
+{
+public:
+    GroupExpressionChecker(const HqlExprArray & _groups)
+        : QuickHqlTransformer(groupExpressionCheckerInfo, NULL)
+    {
+        ok = true;
+        ForEachItemIn(i, _groups)
+            groups.append(*_groups.item(i).queryBody());
+    }
+
+    virtual void doAnalyseBody(IHqlExpression * expr)
+    {
+        if (!ok)
+            return;
+
+        if (expr->isAggregate() || expr->isConstant())
+            return;
+
+        if (groups.contains(*expr))
+            return;
+
+        // No dice - check kids
+        switch (expr->getOperator())
+        {
+        case no_select:
+            ok = false;
+            return;
+        }
+
+        QuickHqlTransformer::doAnalyseBody(expr);
+    }
+
+    bool isOk() const { return ok; }
+
+protected:
+    HqlExprCopyArray groups;
+    bool ok;
+};
+
+
+
 bool checkGroupExpression(HqlExprArray &groups, IHqlExpression *field)
 {
-    if (field->isAggregate() || field->isConstant()) 
-        return true;
-
-    if (groups.find(*field) != NotFound)
-        return true;
-    
-    // No dice - check kids
-    switch (field->getOperator())
-    {
-    case no_select:
-        return false;
-    }
-    
-    ForEachChild(idx, field)
-    {
-        if (!checkGroupExpression(groups, field->queryChild(idx)))
-            return false;
-    }
-    return true;
+    GroupExpressionChecker checker(groups);
+    checker.analyse(field);
+    return checker.isOk();
 }
+
+
+static HqlTransformerInfo quickSelectNormalizerInfo("QuickSelectNormalizer");
+class HQL_API QuickSelectNormalizer : public QuickHqlTransformer
+{
+public:
+    QuickSelectNormalizer() : QuickHqlTransformer(quickSelectNormalizerInfo, NULL)
+    {
+    }
+
+    virtual IHqlExpression * createTransformed(IHqlExpression * expr)
+    {
+        switch (expr->getOperator())
+        {
+        case no_constant:
+        case no_colon:
+        case no_cluster:
+            return LINK(expr);
+        case no_globalscope:
+            if (!expr->hasProperty(optAtom))
+                return LINK(expr);
+            break;
+        case NO_AGGREGATE:
+            //These aren't strictly correct, but will only go wrong if the same
+            //obscure expression is written out twice differently.
+            //you really should be projecting or using the same attribute
+            return LINK(expr);
+
+        case no_select:
+            return LINK(expr->queryNormalizedSelector());
+        }
+        return QuickHqlTransformer::createTransformed(expr);
+    }
+};
+
+
 
 static IHqlExpression * normalizeSelects(IHqlExpression * expr)
 {
-    switch (expr->getOperator())
-    {
-    case no_constant:
-    case no_colon:
-    case no_cluster:
-        return LINK(expr);
-    case no_globalscope:
-        if (!expr->hasProperty(optAtom))
-            return LINK(expr);
-        break;
-    case NO_AGGREGATE:
-        //These aren't strictly correct, but will only go wrong if the same
-        //obscure expression is written out twice differently.
-        //you really should be projecting or using the same attribute
-        return LINK(expr);
-
-    case no_select:
-        return LINK(expr->queryNormalizedSelector());
-    }
-    HqlExprArray args;
-    ForEachChild(i, expr)
-        args.append(*normalizeSelects(expr->queryChild(i)));
-    return cloneOrLink(expr, args);
+    QuickSelectNormalizer transformer;
+    return transformer.transform(expr);
 }
 
 
