@@ -219,4 +219,6 @@ extern HTHOR_API IHThorException * makeHThorException(ThorActivityKind kind, uns
 extern HTHOR_API IEngineRowAllocator * createHThorRowAllocator(roxiemem::IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId);
 extern HTHOR_API IRtlRowCallback * queryHThorRtlRowCallback();
 
+StringBuffer & mangleHelperFileName(StringBuffer & out, const char * in, IAgentContext &agent, unsigned int flags);
+
 #endif // HTHOR_INCL
