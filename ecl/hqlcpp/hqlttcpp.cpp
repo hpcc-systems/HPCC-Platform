@@ -1421,7 +1421,9 @@ static IHqlExpression * createArith(node_operator op, ITypeInfo * type, IHqlExpr
 
 
 
-IHqlExpression * normalizeAggregateExpr(IHqlExpression * selector, IHqlExpression * expr, HqlExprArray & fields, HqlExprArray & assigns, bool & extraSelectNeeded, bool canOptimizeCasts)
+//MORE: This might be better as a class, it would reduce the number of parameters
+IHqlExpression * doNormalizeAggregateExpr(IHqlExpression * selector, IHqlExpression * expr, HqlExprArray & fields, HqlExprArray & assigns, bool & extraSelectNeeded, bool canOptimizeCasts);
+IHqlExpression * evalNormalizeAggregateExpr(IHqlExpression * selector, IHqlExpression * expr, HqlExprArray & fields, HqlExprArray & assigns, bool & extraSelectNeeded, bool canOptimizeCasts)
 {
     switch (expr->getOperator())
     {
@@ -1438,7 +1440,7 @@ IHqlExpression * normalizeAggregateExpr(IHqlExpression * selector, IHqlExpressio
 
             //average should be done as a real operation I think, possibly decimal, if argument is decimal
             OwnedHqlExpr avg = createArith(no_div, exprType, sum, count);
-            return normalizeAggregateExpr(selector, avg, fields, assigns, extraSelectNeeded, false);
+            return doNormalizeAggregateExpr(selector, avg, fields, assigns, extraSelectNeeded, false);
         }
     case no_vargroup:
         //Map this to (sum(x^2)-sum(x)^2/count())/count()
@@ -1457,7 +1459,7 @@ IHqlExpression * normalizeAggregateExpr(IHqlExpression * selector, IHqlExpressio
             OwnedHqlExpr n2 = createArith(no_div, exprType, n1, count);
             OwnedHqlExpr n3 = createArith(no_sub, exprType, sumxx, n2);
             OwnedHqlExpr n4 = createArith(no_div, exprType, n3, count);
-            return normalizeAggregateExpr(selector, n4, fields, assigns, extraSelectNeeded, false);
+            return doNormalizeAggregateExpr(selector, n4, fields, assigns, extraSelectNeeded, false);
         }
     case no_covargroup:
         //Map this to (sum(x.y)-sum(x).sum(y)/count())/count()
@@ -1478,7 +1480,7 @@ IHqlExpression * normalizeAggregateExpr(IHqlExpression * selector, IHqlExpressio
             OwnedHqlExpr n2 = createArith(no_div, exprType, n1, count);
             OwnedHqlExpr n3 = createArith(no_sub, exprType, sumxy, n2);
             OwnedHqlExpr n4 = createArith(no_div, exprType, n3, count);
-            return normalizeAggregateExpr(selector, n4, fields, assigns, extraSelectNeeded, false);
+            return doNormalizeAggregateExpr(selector, n4, fields, assigns, extraSelectNeeded, false);
         }
     case no_corrgroup:
         //Map this to (covar(x,y)/(var(x).var(y)))
@@ -1514,7 +1516,7 @@ IHqlExpression * normalizeAggregateExpr(IHqlExpression * selector, IHqlExpressio
             OwnedHqlExpr n10 = createArith(no_mul, exprType, n6, n9);
             OwnedHqlExpr n11 = createValue(no_sqrt, LINK(exprType), LINK(n10));
             OwnedHqlExpr n12 = createArith(no_div, exprType, n3, n11);
-            return normalizeAggregateExpr(selector, n12, fields, assigns, extraSelectNeeded, false);
+            return doNormalizeAggregateExpr(selector, n12, fields, assigns, extraSelectNeeded, false);
         }
         throwUnexpected();
 
@@ -1576,7 +1578,7 @@ IHqlExpression * normalizeAggregateExpr(IHqlExpression * selector, IHqlExpressio
             IHqlExpression * child = expr->queryChild(0);
             if (expr->queryType()->getTypeCode() == child->queryType()->getTypeCode())
             {
-                IHqlExpression * ret = normalizeAggregateExpr(selector, child, fields, assigns, extraSelectNeeded, false);
+                IHqlExpression * ret = doNormalizeAggregateExpr(selector, child, fields, assigns, extraSelectNeeded, false);
                 //This should be ret==child
                 if (ret == selector)
                     return ret;
@@ -1596,7 +1598,7 @@ IHqlExpression * normalizeAggregateExpr(IHqlExpression * selector, IHqlExpressio
             for (idx = 0; idx < max; idx++)
             {
                 IHqlExpression * child = expr->queryChild(idx);
-                IHqlExpression * changed = normalizeAggregateExpr(NULL, child, fields, assigns, extraSelectNeeded, false);
+                IHqlExpression * changed = doNormalizeAggregateExpr(NULL, child, fields, assigns, extraSelectNeeded, false);
                 args.append(*changed);
                 if (child != changed)
                     diff = true;
@@ -1606,6 +1608,23 @@ IHqlExpression * normalizeAggregateExpr(IHqlExpression * selector, IHqlExpressio
             return LINK(expr);
         }
     }
+}
+
+IHqlExpression * doNormalizeAggregateExpr(IHqlExpression * selector, IHqlExpression * expr, HqlExprArray & fields, HqlExprArray & assigns, bool & extraSelectNeeded, bool canOptimizeCasts)
+{
+    IHqlExpression * match = static_cast<IHqlExpression *>(expr->queryTransformExtra());
+    if (match)
+        return LINK(match);
+    IHqlExpression * ret = evalNormalizeAggregateExpr(selector, expr, fields, assigns, extraSelectNeeded, canOptimizeCasts);
+    expr->setTransformExtra(ret);
+    return ret;
+}
+
+
+IHqlExpression * normalizeAggregateExpr(IHqlExpression * selector, IHqlExpression * expr, HqlExprArray & fields, HqlExprArray & assigns, bool & extraSelectNeeded, bool canOptimizeCasts)
+{
+    TransformMutexBlock block;
+    return doNormalizeAggregateExpr(selector, expr, fields, assigns, extraSelectNeeded, canOptimizeCasts);
 }
 
 
