@@ -97,8 +97,14 @@
     <chapter>
         <title>Getting the sources</title>
         <para>
-            The sources will be available from the portal as a tarball.
-            We will also set up a GIT repository
+            The HPCC Platform sources are hosted on GitHub at
+            https://github.com/hpcc-systems/HPCC-Platform. You can download a
+            snapshot of any branch using the download button there, or you can set
+            up a git clone of the repository. If you are planning to contribute
+            changes to the system, see the file CONTRIBUTORS at
+            https://github.com/hpcc-systems/HPCC-Platform/blob/master/CONTRIBUTORS
+            for information about how to set up a GitHub fork of the project
+            through which pull-requests can be made.
         </para>
     </chapter>
 
@@ -109,24 +115,24 @@
         <sect1>
             <title>Requirements</title>
             <para>
-        The HPCC platform requires a number of third party tools and libraries in order to build.
+                The HPCC platform requires a number of third party tools and libraries in order to build.
 
-        On Ubuntu 11, the following commands will install the required libraries
-        <programlisting>
-          sudo apt-get install cmake
-          sudo apt-get install bison
-          sudo apt-get install flex
-          sudo apt-get install libicu-dev
-          sudo apt-get install libboost-regex-dev
-          sudo apt-get install binutils-dev
-          sudo apt-get install libxerces-c2-dev
-          sudo apt-get install libxalan110-dev
-          sudo apt-get install zlib1g-dev
-          sudo apt-get libssl-dev
-        </programlisting>
+                On Ubuntu 11, the following commands will install the required libraries
+                <programlisting>
+                  sudo apt-get install cmake
+                  sudo apt-get install bison
+                  sudo apt-get install flex
+                  sudo apt-get install libicu-dev
+                  sudo apt-get install libboost-regex-dev
+                  sudo apt-get install binutils-dev
+                  sudo apt-get install libxerces-c2-dev
+                  sudo apt-get install libxalan110-dev
+                  sudo apt-get install zlib1g-dev
+                  sudo apt-get libssl-dev
+                </programlisting>
 
-      </para>
-    </sect1>
+            </para>
+        </sect1>
    
         <sect1>
             <title>Building the system</title>
@@ -136,6 +142,8 @@
                 FreeBSD, and other platforms. You should install cmake version 
                 2.8.3 or later before building the sources.
                 
+                On some distros you will need to build cmake from sources if the version
+                of cmake in the standard repositories for that distro is not modern enough.
                 It is good practice in cmake to separate the build directory where
                 objects and executables are made from the source directory, and the 
                 HPCC cmake scripts will enforce this.
@@ -179,8 +187,9 @@
                 
                 This will first do a make to ensure everything is up to date, then will 
                 create the appropriate package for your operating system, Currently supported
-                package formats are rpm (for RedHat and Centos) and  .deb (for Debian and 
-                Ubuntu).
+                package formats are rpm (for RedHat/Centos and SuSE) and  .deb (for Debian and
+                Ubuntu). If the operating system is not one of the above, or is not recognized,
+                make package will create a tarball.
             </para>
         </sect1>
         <sect1>
@@ -264,12 +273,10 @@
             <sect2>
                 <title>Indentation</title>
                 <para>
-                    We currently use leading tab characters tabs with a tab width of 4 for indenting
-                    C++ source and header files. While this worked well when everyone was using the same 
-                    Visual Studio editor, it's becoming less satisfactory and we intend to convert
-                    to leading spaces at some point. We will most likely keep the 4 character indentation.
+                    We use 4 spaces to indent each level. TAB characters should not be used. There is
+                    some discussion about possibly changing to a 2-space indentation convention at some
+                    point in the future.
                 </para>
-
                 <para>
                     The { that starts a new scope and the corresponding } to close it are placed on a 
                     new line by themselves, and are not indented.
@@ -285,7 +292,7 @@
             <sect2>
                 <title>Namespaces</title>
                 <para>
-                    We do not use namespaces. We probably should, following the Google style guide's 
+                    We do not use namespaces. We probably should, following the Google style guide&apos;s
                     guidelines - see http://google-styleguide.googlecode.com/svn/trunk/cppguide.xml#Namespaces
                 </para>
             </sect2>
@@ -321,7 +328,14 @@
                 Consistent use of design patterns helps make the code easy to understand.
             </para>
         </sect1>
-        <sect1><title>Interfaces</title><para/></sect1>
+        <sect1>
+            <title>Interfaces</title>
+            <para>
+                While C++ does not have explicit support for interfaces (in the java sense), an
+                abstract class with no data members and all functions pure virtual can be used
+                in the same way.
+            </para>
+        </sect1>
         <sect1><title>Reference counted objects</title><para/></sect1>
         <sect1><title>STL</title><para/></sect1>
     </chapter>
