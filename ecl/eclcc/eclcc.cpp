@@ -31,7 +31,7 @@
 #include "hqlwuerr.hpp"
 #include "hqlfold.hpp"
 #include "hqlplugins.hpp"
-#include "hqlesp.hpp"
+#include "hqlmanifest.hpp"
 #include "hqlrepository.hpp"
 #include "hqlerror.hpp"
 
@@ -221,11 +221,11 @@ public:
     Linked<IPropertyTree> archive;
     Linked<IErrorReceiver> errs;
     Linked<IWorkUnit> wu;
-    Linked<IPropertyTree> webServiceInfo;
     StringAttr eclVersion;
     const char * outputFilename;
     FILE * errout;
     bool importAllModules;
+    Owned<IPropertyTree> srcArchive;
     bool fromArchive;
 };
 
@@ -262,7 +262,7 @@ protected:
     void applyDebugOptions(IWorkUnit * wu);
     bool checkWithinRepository(StringBuffer & attributePath, const char * sourcePathname);
     ICppCompiler * createCompiler(const char * coreName);
-    void instantECL(IWorkUnit *wu, IHqlExpression * query, IPropertyTree * webServiceInfo, const char * queryFullName, IErrorReceiver *errs, const char * outputFile);
+    void instantECL(EclCompileInstance & instance, IWorkUnit *wu, IHqlExpression * query, const char * queryFullName, IErrorReceiver *errs, const char * outputFile);
     void getComplexity(IWorkUnit *wu, IHqlExpression * query, IErrorReceiver *errs);
     void processSingleQuery(EclCompileInstance & instance, IEclRepository * dataServer, const char * sourceName,
                                const char * queryText,
@@ -291,6 +291,7 @@ protected:
     StringBuffer cclogFilename;
     StringAttr optLogfile;
     StringAttr optIniFilename;
+    StringAttr optManifestFilename;
     StringAttr optOutputDirectory;
     StringAttr optOutputFilename;
     FILE * batchLog;
@@ -530,7 +531,7 @@ void EclCC::reportCompileErrors(IErrorReceiver *errs, const char * processName)
 
 //=========================================================================================
 
-void EclCC::instantECL(IWorkUnit *wu, IHqlExpression * query, IPropertyTree * webServiceInfo, const char * queryFullName, IErrorReceiver *errs, const char * outputFile)
+void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, IHqlExpression * query, const char * queryFullName, IErrorReceiver *errs, const char * outputFile)
 {
     OwnedHqlExpr qquery = LINK(query);
     StringBuffer processName(outputFile);
@@ -549,7 +550,10 @@ void EclCC::instantECL(IWorkUnit *wu, IHqlExpression * query, IPropertyTree * we
                 if (!optShared)
                     wu->setDebugValueInt("standAloneExe", 1, true);
                 EclGenerateTarget target = optWorkUnit ? EclGenerateNone : (optNoCompile ? EclGenerateCpp : optShared ? EclGenerateDll : EclGenerateExe);
-                generator->setWebServiceInfo(webServiceInfo);
+                if (optManifestFilename)
+                    generator->addManifest(optManifestFilename);
+                if (instance.srcArchive)
+                    generator->addManifestFromArchive(instance.srcArchive);
                 generator->setSaveGeneratedFiles(optSaveCpp);
 
                 bool generateOk = generator->processQuery(qquery, target);
@@ -924,8 +928,6 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
         if (instance.wu->getDebugValueBool("addTimingToWorkunit", true))
             instance.wu->setTimerInfo("EclServer: parse query", NULL, msTick()-startTime, 1, 0);
 
-        instance.webServiceInfo.setown(retrieveWebServicesInfo(queryText, ctx));
-
         if (qquery && !syntaxChecking)
             qquery.setown(convertAttributeToQuery(instance, qquery, ctx));
     }
@@ -967,7 +969,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
         targetFilename.append(".eclout");
 
     if (errs->errCount() == prevErrs)
-        instantECL(instance.wu, qquery, instance.webServiceInfo, scope->queryFullName(), errs, targetFilename);
+        instantECL(instance, instance.wu, qquery, scope->queryFullName(), errs, targetFilename);
     else 
     {
         if (stdIoHandle(targetFilename) == -1)
@@ -989,19 +991,19 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
 
 void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML)
 {
-    Owned<IPropertyTree> xml = createPTreeFromXMLString(archiveXML, ipt_caseInsensitive);
-    Owned<IEclRepository> dataServer = createXmlDataServer(xml, libraryRepository);
-    Owned<IPropertyTreeIterator> iter = xml->getElements("Option");
+    instance.srcArchive.setown(createPTreeFromXMLString(archiveXML, ipt_caseInsensitive));
+    Owned<IEclRepository> dataServer = createXmlDataServer(instance.srcArchive, libraryRepository);
+    Owned<IPropertyTreeIterator> iter = instance.srcArchive->getElements("Option");
     ForEach(*iter) 
     {
         IPropertyTree &item = iter->query();
         instance.wu->setDebugValue(item.queryProp("@name"), item.queryProp("@value"), true);
     }
 
-    const char * queryText = xml->queryProp("Query");
-    const char * queryAttributePath = xml->queryProp("Query/@attributePath");
-    const char * sourceFilename = xml->queryProp("Query/@originalFilename");
-    instance.eclVersion.set(xml->queryProp("@eclVersion"));
+    const char * queryText = instance.srcArchive->queryProp("Query");
+    const char * queryAttributePath = instance.srcArchive->queryProp("Query/@attributePath");
+    const char * sourceFilename = instance.srcArchive->queryProp("Query/@originalFilename");
+    instance.eclVersion.set(instance.srcArchive->queryProp("@eclVersion"));
     if (instance.eclVersion)
     {
         unsigned major, minor, subminor;
@@ -1032,9 +1034,9 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
     else
     {
         //This is really only useful for regression testing
-        const char * queryText = xml->queryProp("SyntaxCheck");
-        const char * syntaxCheckModule = xml->queryProp("SyntaxCheck/@module");
-        const char * syntaxCheckAttribute = xml->queryProp("SyntaxCheck/@attribute");
+        const char * queryText = instance.srcArchive->queryProp("SyntaxCheck");
+        const char * syntaxCheckModule = instance.srcArchive->queryProp("SyntaxCheck/@module");
+        const char * syntaxCheckAttribute = instance.srcArchive->queryProp("SyntaxCheck/@attribute");
         if (queryText && syntaxCheckModule && syntaxCheckAttribute)
             processSingleQuery(instance, dataServer, syntaxCheckModule, queryText, NULL, syntaxCheckModule, syntaxCheckAttribute);
         else
@@ -1088,6 +1090,9 @@ void EclCC::processFile(EclCompileInstance & instance)
             instance.archive->setProp("Query", p );
             instance.archive->setProp("Query/@originalFilename", fname.str());
         }
+
+        if (optManifestFilename)
+            addManifestResourcesToArchive(instance.archive, optManifestFilename);
 
         //Work around windows problem writing 64K to stdout if not redirected/piped
         StringBuffer archiveName;
@@ -1264,6 +1269,11 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
                 return false;
             }
         }
+        else if (iter.matchOption(optManifestFilename, "-manifest"))
+        {
+            if (!isManifestFileValid(optManifestFilename))
+                return false;
+        }
         else if (iter.matchOption(tempArg, "-split"))
         {
             batchPart = atoi(tempArg)-1;
@@ -1362,6 +1372,7 @@ void EclCC::usage()
            "    -Ppath        Specify the path of the output files\n"
            "    -Wc,xx        Supply option for the c++ compiler\n"
            "    -save-temps   Do not delete intermediate files (implied if -g)\n"
+           "    -manifest     Specify path to manifest file listing resources to add\n"
            "\nECL options:\n"
            "    -E            Output preprocessed ECL in xml archive form\n"
            "    -S            Generate c++ output, but don't compile\n"

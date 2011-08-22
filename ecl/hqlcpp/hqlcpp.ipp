@@ -123,10 +123,11 @@ public:
     virtual HqlStmts * querySection(_ATOM section);
     virtual void flushHints();
     virtual void flushResources(const char *filename, ICodegenContextCallback * ctxCallback);
-    virtual void addResource(const char * type, unsigned id, unsigned len, const void * data);
-    virtual void addCompressResource(const char * type, unsigned id, unsigned len, const void * data);
-    virtual void addWebServices(IPropertyTree * info);
-    virtual IPropertyTree * ensureWebServiceInfo();
+    virtual void addResource(const char * type, unsigned len, const void * data, IPropertyTree *manifestEntry=NULL, unsigned id=(unsigned)-1);
+    virtual void addCompressResource(const char * type, unsigned len, const void * data, IPropertyTree *manifestEntry=NULL, unsigned id=(unsigned)-1);
+    virtual void addManifest(const char *filename){resources.addManifest(filename);}
+    virtual void addManifestFromArchive(IPropertyTree *archive){resources.addManifestFromArchive(archive);}
+    virtual void addWebServiceInfo(IPropertyTree *wsinfo){resources.addWebServiceInfo(wsinfo);}
     
     bool useFunction(IHqlExpression * funcdef);
     void useInclude(const char * include);
@@ -139,7 +140,6 @@ public:
         
 private:
     void addPluginsAsResource();
-    void addWebServicesResource();
     void appendHintText(const char * xml);
 
 public:
@@ -153,7 +153,6 @@ public:
     StringAttr          wupathname;
     Owned<IPropertyTree> plugins;
     Owned<IFileIOStream> hintFile;
-    Owned<IPropertyTree> webServiceInfo;
 };
 
 //---------------------------------------------------------------------------
@@ -1934,7 +1933,7 @@ protected:
     void addSchemaField(IHqlExpression *field, MemoryBuffer &schema, IHqlExpression *selector);
     void addSchemaFields(IHqlExpression * record, MemoryBuffer &schema, IHqlExpression *selector);
     void addSchemaResource(int seq, const char * name, IHqlExpression * record);
-    void addSchemaResource(int seq, const char * name, const char * schemaXml);
+    void addSchemaResource(int seq, const char * name, unsigned len, const char * schemaXml);
     void doAddSchemaFields(IHqlExpression * record, MemoryBuffer &schema, IHqlExpression *selector);
     IWUResult * createDatasetResultSchema(IHqlExpression * sequenceExpr, IHqlExpression * name, IHqlExpression * record, bool createTransformer, bool isFile);
 
