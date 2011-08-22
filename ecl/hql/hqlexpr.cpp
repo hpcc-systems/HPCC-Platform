@@ -6933,7 +6933,17 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(_ATOM searchName, unsigned lookupF
     if (!(lookupFlags & LSFignoreBase))
     {
         if (resolvedSym)
+        {
+            if (ctx.archive && resolvedSym->getOperator() == no_remotescope)
+            {
+                //Ensure the archive contains entries for each module - even if nothing is accessed from it
+                //It would be preferrable to only check once, but adds very little time anyway.
+                IHqlScope * scope = resolvedSym->queryScope();
+                queryEnsureArchiveModule(ctx.archive, scope->queryFullName(), scope);
+            }
+
             return resolvedSym.getClear();
+        }
     }
 
     OwnedHqlExpr ret = CHqlScope::lookupSymbol(searchName, LSFsharedOK|lookupFlags, ctx);
