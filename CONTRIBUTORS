@@ -71,7 +71,7 @@ This can be done using git push:
 
     git push origin fix-broken-thing
 
-The branch will now show up on yout GitHub page, and in the HPCC-Platform network graph.
+The branch will now show up on your GitHub page, and in the HPCC-Platform network graph.
 When you are ready to submit a pull request, switch to the branch in question (from the
 Switch Branches list on the source tab in GitHub) and click "Pull Request".
 
@@ -112,7 +112,7 @@ to fulfil the following requirements:
 1.  All commits must be signed. By signing the commits you are signalling that you have
     the appropriate rights to the change you are submitting, and the right to assign
     those rights to HPCC Systems under the terms of the contributory agreement. We have
-    to be strict about this requirement to kepe the lawyers happy.
+    to be strict about this requirement to keep the lawyers happy.
 2.  All new code in the commit should follow the coding standards used by our project,
     for layout conventions, variable naming conventions, programming paradigms etc.
 3.  The code should fix a single issue. If you spot other issues in nearby code, you
@@ -135,7 +135,7 @@ to fulfil the following requirements:
 10. Submit whitespace/formatting cleanup changes in their own issues, and in small chunks
     (e.g. one file, or a few related files in one directory, at a time).
 11. Don't half-fix an issue (unless it's a whitespace cleanup!).
-12. Don't introduce new whitespace issues. You can set up yout git to automatically check
+12. Don't introduce new whitespace issues. You can set up your git to automatically check
     that there are no new leading tab or trailing whitespace issues in your commits.
 
 Don't worry if your pull-request is rejected at first - the reasons for the rejection
