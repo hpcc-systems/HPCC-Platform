@@ -23,11 +23,13 @@
 #include "jmisc.hpp"
 #include "jexcept.hpp"
 #include "hqlcerrors.hpp"
+#include "thorplugin.hpp"
 #ifndef _WIN32
 #include "bfd.h"
 #endif
 
-#define RESOURCE_BASE 101
+#define BIGSTRING_BASE 101
+#define MANIFEST_BASE 1000
 
 class ResourceItem : public CInterface
 {
@@ -44,8 +46,10 @@ public:
 
 ResourceManager::ResourceManager()
 {
-    nextid = 0;
+    nextmfid = MANIFEST_BASE + 1;
+    nextbsid = BIGSTRING_BASE;
     totalbytes = 0;
+    finalized=false;
 }
 
 unsigned ResourceManager::count()
@@ -55,14 +59,235 @@ unsigned ResourceManager::count()
 
 unsigned ResourceManager::addString(unsigned len, const char *data)
 {
-    unsigned id = RESOURCE_BASE + nextid++;
+    unsigned id = nextbsid++;
     resources.append(*new ResourceItem("BIGSTRING", id, len, data));
     return id;
 }
 
-void ResourceManager::addNamed(const char * type, unsigned id, unsigned len, const void * data)
+void ResourceManager::addNamed(const char * type, unsigned len, const void * data, IPropertyTree *manifestEntry, unsigned id, bool addToManifest, bool compressed)
 {
+    if (id==(unsigned)-1)
+        id = nextmfid++;
+    if (addToManifest)
+    {
+        if (finalized)
+            throwError1(HQLERR_ResourceAddAfterFinalManifest, type);
+        Owned<IPropertyTree> entry=createPTree("Resource");
+        entry->setProp("@type", type);
+        entry->setPropInt("@id", id);
+        if (compressed)
+            entry->setPropBool("@compressed", true);
+        if (manifestEntry)
+            mergePTree(entry, manifestEntry);
+        ensureManifestInfo()->addPropTree("Resource", entry.getClear());
+    }
     resources.append(*new ResourceItem(type, id, len, data));
+}
+
+bool ResourceManager::addCompress(const char * type, unsigned len, const void * data, IPropertyTree *manifestEntry, unsigned id, bool addToManifest)
+{
+    bool isCompressed=false;
+    if (len>=32) //lzw assert if too small
+    {
+        isCompressed = true;
+        MemoryBuffer compressed;
+        compressResource(compressed, len, data);
+        addNamed(type, compressed.length(), compressed.toByteArray(), manifestEntry, id, addToManifest, isCompressed);
+    }
+    else
+        addNamed(type, len, data, manifestEntry, id, addToManifest, isCompressed);
+    return isCompressed;
+}
+
+static void loadResource(const char *filepath, MemoryBuffer &content)
+{
+    Owned <IFile> f = createIFile(filepath);
+    Owned <IFileIO> fio = f->open(IFOread);
+    read(fio, 0, (size32_t) f->size(), content);
+}
+
+bool ResourceManager::getDuplicateResourceId(const char *srctype, const char *filename, int &id)
+{
+    VStringBuffer xpath("Resource[@filename='%s']", filename);
+    Owned<IPropertyTreeIterator> iter = manifest->getElements(xpath.str());
+    ForEach (*iter)
+    {
+        IPropertyTree &item = iter->query();
+        if (item.hasProp("@id"))
+        {
+            const char *type = item.queryProp("@type");
+            if (type && strieq(type, srctype))
+            {
+                id=item.getPropInt("@id");
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+void ResourceManager::addManifest(const char *filename)
+{
+    if (finalized)
+        throwError1(HQLERR_ResourceAddAfterFinalManifest, "MANIFEST");
+    Owned<IPropertyTree> manifestSrc = createPTreeFromXMLFile(filename);
+
+    StringBuffer dir; 
+    splitDirTail(filename, dir);
+
+    ensureManifestInfo();
+    Owned<IAttributeIterator> aiter = manifestSrc->getAttributes();
+    ForEach (*aiter)
+        manifest->setProp(aiter->queryName(), aiter->queryValue());
+    Owned<IPropertyTreeIterator> iter = manifestSrc->getElements("*");
+    ForEach(*iter)
+    {
+        IPropertyTree &item = iter->query();
+        if (streq(item.queryName(), "Resource") && item.hasProp("@filename"))
+        {
+            if (!item.hasProp("@type"))
+                item.setProp("@type", "UNKNOWN");
+            const char *filename = item.queryProp("@filename");
+            int id;
+            if (getDuplicateResourceId(item.queryProp("@type"), filename, id))
+            {
+                item.setPropInt("@id", id);
+                manifest->addPropTree("Resource", LINK(&item));
+            }
+            else
+            {
+                StringBuffer fullpath;
+                if (!isAbsolutePath(filename))
+                    fullpath.append(dir);
+                fullpath.append(filename);
+
+                MemoryBuffer content;
+                loadResource(fullpath.str(), content);
+                addCompress(item.queryProp("@type"), content.length(), content.toByteArray(), &item);
+            }
+        }
+        else
+            manifest->addPropTree(item.queryName(), LINK(&item));
+    }
+}
+
+void ResourceManager::addManifestFromArchive(IPropertyTree *archive)
+{
+    if (!archive)
+        return;
+    if (finalized)
+        throwError1(HQLERR_ResourceAddAfterFinalManifest, "MANIFEST");
+    ensureManifestInfo();
+    Owned<IPropertyTreeIterator> manifests = archive->getElements("AdditionalFiles/Manifest");
+    ForEach(*manifests)
+    {
+        const char *xml = manifests->query().queryProp(NULL);
+        Owned<IPropertyTree> manifestSrc = createPTreeFromXMLString(xml);
+        Owned<IAttributeIterator> aiter = manifestSrc->getAttributes();
+        ForEach (*aiter)
+            manifest->setProp(aiter->queryName(), aiter->queryValue());
+        Owned<IPropertyTreeIterator> iter = manifestSrc->getElements("*");
+        ForEach(*iter)
+        {
+            IPropertyTree &item = iter->query();
+            if (streq(item.queryName(), "Resource")&& item.hasProp("@filename"))
+            {
+                if (!item.hasProp("@type"))
+                    item.setProp("@type", "UNKNOWN");
+                const char *filename = item.queryProp("@filename");
+                int id;
+                if (getDuplicateResourceId(item.queryProp("@type"), filename, id))
+                {
+                    item.setPropInt("@id", (int)id);
+                    manifest->addPropTree("Resource", LINK(&item));
+                }
+                else
+                {
+                    VStringBuffer xpath("AdditionalFiles/Resource[@originalFilename=\"%s\"]", filename);
+                    MemoryBuffer content;
+                    archive->getPropBin(xpath.str(), content);
+                    addCompress(item.queryProp("@type"), content.length(), content.toByteArray(), &item);
+                }
+            }
+            else
+                manifest->addPropTree(item.queryName(), LINK(&item));
+        }
+    }
+}
+
+void ResourceManager::addWebServiceInfo(IPropertyTree *wsinfo)
+{
+    //convert legacy web service info to the new resource format
+    if (wsinfo)
+    {
+        if (wsinfo->hasProp("SOAP"))
+            ensureManifestInfo()->addProp("WS-PARAMS", wsinfo->queryProp("SOAP"));
+        if (wsinfo->hasProp("HELP"))
+        {
+            const char *content = wsinfo->queryProp("HELP");
+            addCompress("HELP", strlen(content)+1, content);
+        }
+        if (wsinfo->hasProp("INFO"))
+        {
+            const char *content = wsinfo->queryProp("INFO");
+            addCompress("INFO", strlen(content)+1, content);
+        }
+        if (wsinfo->hasProp("OTX"))
+        {
+            const char *content = wsinfo->queryProp("OTX");
+            addCompress("HYPER-LINK", strlen(content)+1, content);
+        }
+        if (wsinfo->hasProp("HTML"))
+        {
+            const char *content = wsinfo->queryProp("HTML");
+            Owned<IPropertyTree> manifestEntry = createPTree("Resource");
+            manifestEntry->setProp("@name", "Custom Form");
+            addCompress("XSLT", strlen(content)+1, content, manifestEntry);
+            IPropertyTree *view = ensurePTree(ensureManifestInfo(), "Views/XSLT/FORM");
+            view->setProp("@resource", "Custom Form");
+        }
+        if (wsinfo->hasProp("HTMLD"))
+        {
+            const char *content = wsinfo->queryProp("HTMLD");
+            Owned<IPropertyTree> manifestEntry = createPTree("Resource");
+            manifestEntry->setProp("@name", "Custom HTML");
+            addCompress("HTML", strlen(content)+1, content, manifestEntry);
+            IPropertyTree *view = ensurePTree(ensureManifestInfo(), "Views/HTML/FORM");
+            view->setProp("@resource", "Custom HTML");
+        }
+        if (wsinfo->hasProp("RESULT"))
+        {
+            const char *content = wsinfo->queryProp("RESULT");
+            Owned<IPropertyTree> manifestEntry = createPTree("Resource");
+            manifestEntry->setProp("@name", "Results");
+            addCompress("XSLT", strlen(content)+1, content, manifestEntry);
+            IPropertyTree *view = ensurePTree(ensureManifestInfo(), "Views/XSLT/RESULTS");
+            view->setProp("@resource", "Results");
+        }
+        if (wsinfo->hasProp("ERROR"))
+        {
+            const char *content = wsinfo->queryProp("ERROR");
+            Owned<IPropertyTree> manifestEntry = createPTree("Resource");
+            manifestEntry->setProp("@name", "Error");
+            addCompress("XSLT", strlen(content)+1, content, manifestEntry);
+            IPropertyTree *view = ensurePTree(ensureManifestInfo(), "Views/XSLT/ERROR");
+            view->setProp("@resource", "Error");
+        }
+    }
+}
+
+void ResourceManager::finalize()
+{
+    if (!finalized)
+    {
+        if (manifest)
+        {
+            StringBuffer content;
+            toXML(manifest, content);
+            addCompress("MANIFEST", content.length()+1, content.str(), NULL, MANIFEST_BASE, false);
+        }
+        finalized=true;
+    }
 }
 
 void ResourceManager::putbytes(int h, const void *b, unsigned len)
@@ -74,6 +299,8 @@ void ResourceManager::putbytes(int h, const void *b, unsigned len)
 
 void ResourceManager::flushAsText(const char *filename)
 {
+    finalize();
+
     StringBuffer name;
     int len = strlen(filename);
     name.append(filename,0,len-4).append(".txt");
@@ -96,6 +323,8 @@ void ResourceManager::flushAsText(const char *filename)
 
 void ResourceManager::flush(const char *filename, bool flushText, bool target64bit)
 {
+    finalize();
+
     // Use "resources" for strings that are a bit large to generate in the c++ (some compilers had limits at 64k) 
     // or that we want to access without having to run the dll/so
     // In linux there is no .res concept but we can achieve the same effect by generating an object file with a specially-named section 

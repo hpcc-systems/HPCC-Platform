@@ -21,13 +21,24 @@
 
 class ResourceManager
 {
-    unsigned nextid;
+    unsigned nextmfid;
+    unsigned nextbsid;
     unsigned totalbytes;
     CIArray resources;
+    Owned<IPropertyTree> manifest;
+    bool finalized;
 public:
     ResourceManager();
     unsigned addString(unsigned len, const char *data);
-    void addNamed(const char * type, unsigned id, unsigned len, const void *data);
+    void addNamed(const char * type, unsigned len, const void *data, IPropertyTree *entry=NULL, unsigned id=(unsigned)-1, bool addToManifest=true, bool compressed=false);
+    bool addCompress(const char * type, unsigned len, const void *data, IPropertyTree *entry=NULL, unsigned id=(unsigned)-1, bool addToManifest=true);
+    void addManifest(const char *filename);
+    void addManifestFromArchive(IPropertyTree *archive);
+    void addWebServiceInfo(IPropertyTree *wsinfo);
+    IPropertyTree *ensureManifestInfo(){if (!manifest) manifest.setown(createPTree("Manifest")); return manifest;}
+    bool getDuplicateResourceId(const char *srctype, const char *filename, int &id);
+    void finalize();
+
     unsigned count();
     void flush(const char *filename, bool flushText, bool target64bit);
     void flushAsText(const char *filename);

@@ -36,6 +36,7 @@ set (   SRCS
         hqlexpr.cpp 
         hqlfold.cpp 
         hqlgram2.cpp 
+        hqlmanifest.cpp 
         hqlmeta.cpp 
         hqlopt.cpp 
         hqlparse.cpp 

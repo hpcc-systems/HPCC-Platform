@@ -203,6 +203,7 @@
 #define HQLERR_OpArgDependsDataset              4180
 #define HQLERR_CouldNotDetermineMinSize         4181
 #define HQLERR_OutsideGroupAggregate            4182
+#define HQLERR_ResourceAddAfterFinalManifest    4183
 
 //Warnings....
 #define HQLWRN_PersistDataNotLikely             4500
@@ -477,6 +478,7 @@
 #define HQLERR_OpArgDependsDataset_Text         "%s: %s cannot be dependent on the dataset"
 #define HQLERR_CouldNotDetermineMinSize_Text    "Cannot determine the minimum size of the expression"
 #define HQLERR_OutsideGroupAggregate_Text       "%s used outside of a TABLE aggregation"
+#define HQLERR_ResourceAddAfterFinalManifest_Text "%s resource added after manifest was finalized"
 
 //Warnings.
 #define HQLWRN_CannotRecreateDistribution_Text  "Cannot recreate the distribution for a persistent dataset"

@@ -427,5 +427,3 @@ IPropertyTree * retrieveWebServicesInfo(const char * queryText, HqlLookupContext
     result->setPropInt("@crc", extractor.getVersion());
     return result.getClear();
 }
-
-
