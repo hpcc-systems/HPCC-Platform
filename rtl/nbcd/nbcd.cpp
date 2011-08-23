@@ -149,8 +149,8 @@ TempDecimal & TempDecimal::divide(const TempDecimal & other)
     clip(lo1, hi1);
     other.clip(lo2, hi2);
 
-    unsigned nd1 = hi1+1-lo1;
-    unsigned nd2 = hi2+1-lo2;
+    int nd1 = hi1+1-lo1;
+    int nd2 = hi2+1-lo2;
     int hi = (hi1-hi2)+zeroDigit;
     int iters = hi+1;
     if (hi < 0)
@@ -196,7 +196,7 @@ TempDecimal & TempDecimal::divide(const TempDecimal & other)
         if (q)
         {
             unsigned carry = 0;
-            for (unsigned i = 0; i < nd2; i++)
+            for (int i = 0; i < nd2; i++)
             {
                 int next = 90 + curNumerator[i] - divisor[i] * q - carry;
                 div_t values = div(next, 10);
@@ -209,7 +209,7 @@ TempDecimal & TempDecimal::divide(const TempDecimal & other)
                 q--;
                 assertex(carry==1);
                 carry = 0;
-                for (unsigned i = 0; i < nd2; i++)
+                for (int i = 0; i < nd2; i++)
                 {
                     byte next = curNumerator[i] + divisor[i] + carry;
                     carry = 0;
