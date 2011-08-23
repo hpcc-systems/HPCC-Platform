@@ -4017,9 +4017,15 @@ IHqlExpression * appendOwnedOperandsF(IHqlExpression * expr, ...)
 }
 
 
+IHqlExpression * inheritAttribute(IHqlExpression * expr, IHqlExpression * donor, _ATOM name)
+{
+    return appendOwnedOperand(expr, LINK(donor->queryProperty(name)));
+}
 
 IHqlExpression * appendOwnedOperand(IHqlExpression * expr, IHqlExpression * ownedOperand)
 {
+    if (!ownedOperand)
+        return LINK(expr);
     HqlExprArray args;
     unwindChildren(args, expr);
     args.append(*ownedOperand);

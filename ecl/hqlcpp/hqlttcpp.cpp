@@ -1831,14 +1831,8 @@ static IHqlExpression * normalizeIndexBuild(IHqlExpression * expr, bool sortInde
         if (sorted == dataset)
             return NULL;
 
-        IHqlExpression * skew = expr->queryProperty(skewAtom);
-        if (skew)
-        {
-            HqlExprArray args;
-            unwindChildren(args, sorted);
-            args.append(*LINK(skew));
-            sorted.setown(sorted->clone(args));
-        }
+        sorted.setown(inheritAttribute(sorted, expr, skewAtom));
+        sorted.setown(inheritAttribute(sorted, expr, thresholdAtom));
 
         HqlExprArray args;
         args.append(*LINK(sorted));
@@ -2264,6 +2258,8 @@ IHqlExpression * ThorHqlTransformer::normalizeGroup(IHqlExpression * expr)
     if (sorted == dataset)
         return removeProperty(expr, allAtom);
     sorted.setown(cloneInheritedAnnotations(expr, sorted));
+    sorted.setown(inheritAttribute(sorted, expr, skewAtom));
+    sorted.setown(inheritAttribute(sorted, expr, thresholdAtom));
 
     if (!isLocal)
     {
@@ -2993,12 +2989,14 @@ IHqlExpression * ThorHqlTransformer::normalizePrefetchAggregate(IHqlExpression *
 static IHqlExpression * convertAggregateGroupingToGroupedAggregate(IHqlExpression * expr, IHqlExpression* groupBy)
 {
     IHqlExpression * dataset = expr->queryChild(0);
-    IHqlExpression * localAttr = expr->queryProperty(localAtom);
-    IHqlExpression * sortedAttr = expr->queryProperty(sortedAtom);
-    IHqlExpression * unsortedAttr = expr->queryProperty(unsortedAtom);
 
-    IHqlExpression * attr = createComma(createAttribute(allAtom), LINK(localAttr), LINK(sortedAttr), LINK(unsortedAttr));
-    OwnedHqlExpr result = createDatasetF(no_group, LINK(dataset), LINK(groupBy), attr, NULL);
+    HqlExprArray groupArgs;
+    groupArgs.append(*LINK(dataset));
+    groupArgs.append(*LINK(groupBy));
+    groupArgs.append(*createAttribute(allAtom));
+    unwindChildren(groupArgs, expr, 4);
+    OwnedHqlExpr result = createDataset(no_group, groupArgs);
+
     result.setown(cloneInheritedAnnotations(expr, result));
 
     HqlExprArray args;
@@ -3207,13 +3205,15 @@ IHqlExpression * ThorHqlTransformer::normalizeTableToAggregate(IHqlExpression * 
     OwnedHqlExpr aggregateSelf = getSelf(aggregateRecord);
     replaceAssignSelector(aggregateAssigns, aggregateSelf);
     IHqlExpression * aggregateTransform = createValue(no_newtransform, makeTransformType(aggregateRecord->getType()), aggregateAssigns);
-    IHqlExpression * keyedAttr = expr->queryProperty(keyedAtom);
-    IHqlExpression * prefetchAttr = expr->queryProperty(prefetchAtom);
-    LinkedHqlExpr localAttr = expr->queryProperty(localAtom);
-    if (newGroupBy && !isGrouped(dataset) && isPartitionedForGroup(dataset, newGroupBy, true))
-        localAttr.setown(createLocalAttribute());
 
-    OwnedHqlExpr ret = createDataset(no_newaggregate, LINK(dataset), createComma(aggregateRecord, aggregateTransform, newGroupBy, createComma(LINK(keyedAttr), LINK(prefetchAttr), LINK(localAttr))));
+    HqlExprArray aggregateAttrs;
+    unwindAttributes(aggregateAttrs, expr);
+    removeProperty(aggregateAttrs, aggregateAtom);
+    removeProperty(aggregateAttrs, fewAtom);
+    if (!expr->hasProperty(localAtom) && newGroupBy && !isGrouped(dataset) && isPartitionedForGroup(dataset, newGroupBy, true))
+        aggregateAttrs.append(*createLocalAttribute());
+
+    OwnedHqlExpr ret = createDataset(no_newaggregate, LINK(dataset), createComma(aggregateRecord, aggregateTransform, newGroupBy, createComma(aggregateAttrs)));
     if (extraSelectNeeded)
         ret.setown(cloneInheritedAnnotations(expr, ret));
     else

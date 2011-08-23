@@ -13361,6 +13361,22 @@ void unwindRealChildren(HqlExprArray & children, const IHqlExpression * expr, un
 }
 
 
+void unwindAttributes(HqlExprArray & children, const IHqlExpression * expr)
+{
+    unsigned max = expr->numChildren();
+    for (unsigned idx=0; idx < max; idx++)
+    {
+        IHqlExpression * child = expr->queryChild(idx);
+        if (child->isAttribute())
+        {
+            //Subsequent calls to ensure are quick no-ops
+            children.ensure(max - idx);
+            children.append(*LINK(child));
+        }
+    }
+}
+
+
 void unwindList(HqlExprArray &dst, IHqlExpression * expr, node_operator op)
 {
     while (expr->getOperator() == op)

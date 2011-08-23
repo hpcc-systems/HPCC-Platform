@@ -5300,6 +5300,8 @@ IHqlExpression * HqlGram::processSortList(const attribute & errpos, node_operato
                     if (attr == manyAtom) ok = true;
                     if (attr == sortedAtom) ok = true;
                     if (attr == unsortedAtom) ok = true;
+                    if (attr == skewAtom) ok = true;
+                    if (attr == thresholdAtom) ok = true;
                     break;
                 case no_usertable:
                     if (attr == keyedAtom) ok = true;
@@ -5313,6 +5315,8 @@ IHqlExpression * HqlGram::processSortList(const attribute & errpos, node_operato
                     if (attr == manyAtom) ok = true;
                     if (attr == sortedAtom) ok = true;
                     if (attr == unsortedAtom) ok = true;
+                    if (attr == skewAtom) ok = true;
+                    if (attr == thresholdAtom) ok = true;
                     break;
                 case no_topn:
                     if (attr == bestAtom) ok = true;
