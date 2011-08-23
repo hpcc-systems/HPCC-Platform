@@ -9,3 +9,4 @@
 *.psd           -text
 *.doc           -text
 *.mk            -text
+rtl/ecltpl/*    eol=lf
