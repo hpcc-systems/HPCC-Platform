@@ -149,14 +149,16 @@ bool CppWriterTemplate::loadTemplate(const char * filename, const char *dir)
     if(tpl.length())
         tpl.append(PATHSEPCHAR);
     tpl.append(filename);
-    int input_file = _open(tpl.toCharArray(), _O_TEXT | _O_RDONLY, _S_IREAD );
-    if (input_file == -1)
+
+    Owned<IFile> file = createIFile(tpl);
+    Owned<IFileIO> io = file->openShared(IFOread, IFSHread);
+    if (!io)
         return false;
-    len = (size32_t)_lseeki64(input_file,0,SEEK_END);
-    _lseeki64(input_file,0,SEEK_SET);
-    text = (char *)malloc(len);
-    len=read(input_file,text,len);              // may come in lower since text;
-    close(input_file);
+    offset_t size = (size32_t)io->size();
+    if (size != (size32_t)size)
+        return false;
+    text = (char *)malloc((size_t)size);
+    len=io->read(0, (size32_t)size, text);
     
     unsigned index=0;
     unsigned startLine = 0;
