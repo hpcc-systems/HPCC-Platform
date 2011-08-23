@@ -45,22 +45,10 @@
 #define MINCOMPRESSEDROWSIZE 16
 #define MAXCOMPRESSEDROWSIZE 0x4000
 
-
-static inline size32_t checked_write( int handle, const void *buffer, unsigned int count )
+static unsigned ioRetryCount=0;
+void setIORetryCount(unsigned _ioRetryCount) // non atomic, expected to be called just once at process start up.
 {
-    int ret=_write(handle,buffer,count);
-    if ((size32_t)ret!=count) { 
-        throw MakeErrnoException((ret==-1)?errno:DISK_FULL_EXCEPTION_CODE, "checked_write");
-    }
-    return (size32_t)ret;
-}
-
-static inline size32_t checked_read( int handle, void *buffer, unsigned int count )
-{
-    int ret=_read(handle,buffer,count);
-    if (ret==-1) 
-        throw MakeErrnoException("checked_read");
-    return (size32_t)ret;
+    ioRetryCount = _ioRetryCount;
 }
 
 static inline offset_t checked_lseeki64( int handle, offset_t offset, int origin )
@@ -71,7 +59,135 @@ static inline offset_t checked_lseeki64( int handle, offset_t offset, int origin
     return ret;
 }
 
+extern jlib_decl size32_t checked_read(int file, void *buffer, size32_t len)
+{
+    if (0==len) return 0;
+    unsigned attempts = 0;
+    size32_t ret = 0;
+    unsigned __int64 startCycles = get_cycles_now();
+    loop
+    {
+        size_t readNow = _read(file, buffer, len);
+        if (readNow == (size32_t)-1)
+        {
+            switch (errno)
+            {
+            case EINTR:
+                readNow = 0;
+                break;
+            default:
+                if (attempts < ioRetryCount)
+                {
+                    attempts++;
+                    StringBuffer callStr("read");
+                    callStr.append("[errno=").append(errno);
+                    unsigned __int64 elapsedMs = cycle_to_nanosec(get_cycles_now() - startCycles)/1000000;
+                    callStr.append(", took=").append(elapsedMs);
+                    callStr.append(", attempt=").append(attempts).append("](handle=");
+                    callStr.append(file).append(", len=").append(len).append(")");
+                    PROGLOG("%s", callStr.str());
+                    readNow = 0;
+                    break;
+                }
+                throw MakeErrnoException(errno, "checked_read");
+            }
+        }
+        else if (!readNow)
+            break;
+        ret += readNow;
+        if (readNow == len)
+            break;
+        buffer = ((char *) buffer) + readNow;
+        len -= readNow;
+    }
+    return ret;
+}
 
+#ifdef WIN32
+static bool atomicsupported = true;
+static CriticalSection atomicsection;
+#endif
+
+extern jlib_decl size32_t checked_pread(int file, void *buffer, size32_t len, offset_t pos)
+{
+    if (0==len) return 0;
+#ifdef WIN32
+    if (atomicsupported)
+    {
+        HANDLE hFile = (HANDLE)_get_osfhandle(file);
+        DWORD rread;
+        OVERLAPPED overlapped;
+        memset(&overlapped, 0, sizeof(overlapped));
+        overlapped.Offset = (DWORD) pos;
+        overlapped.OffsetHigh = (DWORD)(pos>>32);
+        if (ReadFile(hFile, buffer, len, &rread, &overlapped))
+            return rread;
+        int err = (int)GetLastError();
+        if (err == ERROR_HANDLE_EOF)
+            return 0;
+        if (err == ERROR_INVALID_PARAMETER) // Win98 etc
+            atomicsupported = false;
+        else
+            throw MakeOsException(GetLastError(), "checked_pread");
+    }
+    {
+        CriticalBlock blk(atomicsection);
+        checked_lseeki64(file, pos, FILE_BEGIN);
+        return checked_read(file, buffer, len);
+    }
+#else
+    size32_t ret = 0;
+    unsigned attempts = 0;
+    unsigned __int64 startCycles = get_cycles_now();
+    loop
+    {
+        size_t readNow = ::pread(file, buffer, len, pos);
+        if (readNow == (size32_t)-1)
+        {
+            switch (errno)
+            {
+            case EINTR:
+                readNow = 0;
+                break;
+            default:
+                if (attempts < ioRetryCount)
+                {
+                    attempts++;
+                    StringBuffer callStr("pread");
+                    callStr.append("[errno=").append(errno);
+                    unsigned __int64 elapsedMs = cycle_to_nanosec(get_cycles_now() - startCycles)/1000000;
+                    callStr.append(", took=").append(elapsedMs);
+                    callStr.append(", attempt=").append(attempts).append("](handle=");
+                    callStr.append(file).append(", pos=").append(pos).append(", len=").append(len).append(")");
+                    PROGLOG("%s", callStr.str());
+                    readNow = 0;
+                    break;
+                }
+                throw MakeErrnoException(errno,"checked_pread");
+            }
+        }
+        else if (!readNow)
+            break;
+        ret += readNow;
+        if (readNow == len)
+            break;
+        pos += readNow;
+        buffer = ((char *) buffer) + readNow;
+        len -= readNow;
+    }
+    return ret;
+#endif
+}
+
+static inline size32_t checked_write( int handle, const void *buffer, size32_t count )
+{
+    int ret=_write(handle,buffer,count);
+    if ((size32_t)ret != count)
+    {
+        throw MakeErrnoException((ret==-1)?errno:DISK_FULL_EXCEPTION_CODE, "checked_write");
+    }
+    return (size32_t)ret;
+}
 
 class CReadSeq : public CInterface, public IReadSeq
 {
@@ -125,7 +241,7 @@ class CReadSeq : public CInterface, public IReadSeq
         if (endpos-nextbufpos<(offset_t)rd)
             rd = (size32_t)(endpos-nextbufpos);
         if (rd) 
-            rd = atomicRead(fh, buffer+left, rd,nextbufpos);
+            rd = checked_pread(fh, buffer+left, rd, nextbufpos);
         nextbufpos += rd;
         bytesInBuffer = left+rd;
         ptr = buffer;
@@ -922,99 +1038,6 @@ unsigned copySeq(IReadSeq *from,IWriteSeq *to,size32_t bufsize)
     }
     return ret;
 }
-
-
-// atomic read write
-#ifdef _WIN32
-
-
-static bool atomicsupported=false;
-static CriticalSection atomicsection;
-
-size32_t atomicRead(int fildes, void *buf, size32_t nbyte, offset_t offset)
-{
-    if (atomicsupported) {
-        HANDLE hFile = (HANDLE)_get_osfhandle(fildes);
-        DWORD rread;
-        OVERLAPPED overlapped;
-        memset(&overlapped,0,sizeof(overlapped));
-        overlapped.Offset = (DWORD)offset;
-        overlapped.OffsetHigh = (DWORD)(offset>>32);
-        if (ReadFile(hFile,buf,nbyte,&rread,&overlapped)) {
-            return rread;
-        }
-        int err=(int)GetLastError();
-        if (err==ERROR_HANDLE_EOF)
-            return 0;
-        if (err==ERROR_INVALID_PARAMETER) { // Win98 etc
-            atomicsupported = false;
-        }
-        else {
-            IException *e = MakeErrnoException(5, "AtomicRead: ReadFile failed, handle = %d, GetLastError()==%x\n", fildes, err);
-            PrintExceptionLog(e, NULL);
-            throw e;
-        }
-    }
-    {
-        CriticalBlock blk(atomicsection);
-        checked_lseeki64(fildes,offset,FILE_BEGIN);
-        return checked_read(fildes,buf,nbyte);
-    }
-}
-
-size32_t atomicWrite(int fildes, const void *buf, size32_t nbyte, offset_t offset)
-{
-    if (atomicsupported) {
-        HANDLE hFile = (HANDLE)_get_osfhandle(fildes);
-        DWORD rwrit;
-        OVERLAPPED overlapped;
-        memset(&overlapped,0,sizeof(overlapped));
-        overlapped.Offset = (DWORD)offset;
-        overlapped.OffsetHigh = (DWORD)(offset>>32);
-        if (WriteFile(hFile,buf,nbyte,&rwrit,&overlapped)) {
-            return rwrit;
-        }
-        int err=(int)GetLastError();
-        if (err==ERROR_INVALID_PARAMETER) { // Win98 etc
-            atomicsupported = false;
-        }
-        else {
-            PrintLog("AtomicWrite: WriteFile failed, handle = %d, GetLastError()==%x\n", fildes, err);
-            errno = 5; // general i/o error
-            return -1;
-        }
-    }
-    {
-        CriticalBlock blk(atomicsection);
-        checked_lseeki64(fildes,offset,FILE_BEGIN);
-        return checked_write(fildes,buf,nbyte);
-    }
-}
-
-#else
-
-
-size32_t atomicRead(int fildes, void *buf, size32_t nbyte, offset_t offset)
-{
-    if (0==nbyte) return 0;
-    int ret = pread(fildes,buf,nbyte,offset);
-    if (ret==-1) 
-        throw MakeErrnoException("atomicRead");
-    return (size32_t)ret;
-}
-
-size32_t atomicWrite(int fildes, const void *buf, size32_t nbyte, offset_t offset)
-{
-    int ret = pwrite(fildes,buf,nbyte,offset);
-    if ((size32_t)ret!=nbyte) 
-        throw MakeErrnoException((ret==-1)?errno:DISK_FULL_EXCEPTION_CODE, "atomicWrite");
-    return (size32_t)ret;
-}
-
-#endif
-
-
-
 
 /////////////////
 
