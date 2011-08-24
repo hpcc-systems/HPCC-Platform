@@ -101,6 +101,11 @@ installPkg(){
         pkgCmd $OSPKG "upgrade"
         $PKGCMD $PKG 1>/dev/null 2>&1;
     fi
+    checkInstall
+    if [ "${_INSTALLED}" == "0" ]; then
+        echo "Failed to install ${PKG} (missing dependencies?)"
+        exit 1
+    fi
 }
 
 generateMD5(){
