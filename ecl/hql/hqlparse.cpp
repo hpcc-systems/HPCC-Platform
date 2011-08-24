@@ -1067,15 +1067,17 @@ void HqlLex::doTrace(YYSTYPE & returnToken)
             ;
     }
     curParam.append(')');
-    IValue *value = parseConstExpression(returnToken, curParam, queryTopXmlScope(),startLine-1,startCol);
+    Owned<IValue> value = parseConstExpression(returnToken, curParam, queryTopXmlScope(),startLine-1,startCol);
     if (value)
     {
         StringBuffer buf;
         value->getStringValue(buf);
         FILE *trace = fopen("hql.log", "at");
-        fwrite(buf.str(),buf.length(),1,trace);
-        fclose(trace);
-        value->Release();
+        if (trace)
+        {
+            fwrite(buf.str(),buf.length(),1,trace);
+            fclose(trace);
+        }
     }
 }
 
@@ -1083,7 +1085,7 @@ void HqlLex::doFor(YYSTYPE & returnToken, bool doAll)
 {
     //MTIME_SECTION(timer, "HqlLex::doFor")
 
-    int startLine = -1, startCol;
+    int startLine = -1, startCol = 0;
     StringBuffer forwhat;
     forwhat.appendf("#FOR(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
 
@@ -1153,7 +1155,7 @@ void HqlLex::doFor(YYSTYPE & returnToken, bool doAll)
 
 void HqlLex::doLoop(YYSTYPE & returnToken)
 {
-    int startLine = -1, startCol;
+    int startLine = -1, startCol = 0;
     StringBuffer forwhat;
     forwhat.appendf("#LOOP(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
     
