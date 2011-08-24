@@ -49,7 +49,7 @@ sort %regresstgt%\_batch_.tmp > %regresstgt%\_batch_.log
 del %regresstgt%\_batch_.tmp
 
 :compare
-if EXIST %~dp0\rcompare.bat. call %~dp0\rcompare %*
+if EXIST %~dp0\rcompare.bat. call %~dp0\rcompare
 goto done;
 
 :novars
