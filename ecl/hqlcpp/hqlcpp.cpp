@@ -4758,9 +4758,9 @@ void HqlCppTranslator::doBuildFilterToTarget(BuildCtx & ctx, const CHqlBoundTarg
         BuildCtx subctx(ctx);
         if (outer != 0)
             subctx.addFilter(test);
-        buildExprAssign(subctx, isOk, queryBoolExpr(false ^ invert));
+        buildExprAssign(subctx, isOk, queryBoolExpr(invert));       // if(!invert,false,true) => invert
         doBuildFilterNextAndRange(subctx, curIndex, MAX_NESTED_CASES, conds);
-        buildExprAssign(subctx, isOk, queryBoolExpr(true ^ invert));
+        buildExprAssign(subctx, isOk, queryBoolExpr(!invert));      // if(!invert,true,false) => !invert
     }
 }
 
@@ -8149,6 +8149,8 @@ void HqlCppTranslator::doBuildAssignCompareElement(BuildCtx & ctx, EvaluateCompa
     }
 
     OwnedHqlExpr safeReleaseOp = op;
+    assertex(op);
+
     BuildCtx subctx(ctx);
     if (info.isEqualityCompare() && (info.actionIfDiffer == return_stmt))
     {
