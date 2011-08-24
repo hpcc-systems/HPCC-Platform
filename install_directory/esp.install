@@ -1585,6 +1585,9 @@ Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/fs_desprayCopyF
 ### name=smc_xslt/fs_sprayForm.xslt
 Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/fs_sprayForm.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/fs_renameForm.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/fs_renameForm.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
 ### name=smc_xslt/graph.xslt
 Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/graph.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )

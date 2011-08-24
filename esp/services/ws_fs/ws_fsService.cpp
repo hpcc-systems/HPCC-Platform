@@ -2583,6 +2583,9 @@ bool CFileSprayEx::onRename(IEspContext &context, IEspRename &req, IEspRenameRes
         IDFUfileSpec *destination = wu->queryUpdateDestination();
         destination->setLogicalName(dstname);
 
+        IDFUoptions *options = wu->queryUpdateOptions();
+        options->setOverwrite(req.getOverwrite());
+
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
         submitDFUWorkUnit(wu.getClear());
     }

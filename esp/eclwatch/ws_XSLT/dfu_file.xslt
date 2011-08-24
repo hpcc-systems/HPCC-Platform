@@ -108,6 +108,11 @@
                                 document.location.href="/FileSpray/CopyInput?sourceLogicalName=" + filename;
                                 return true;
                             }
+                            else if (button == "Rename")
+                            {
+                                document.location.href="/FileSpray/RenameInput?sourceLogicalName=" + filename;
+                                return true;
+                            }
                             else if (button == "Despray")
                             {
                                 document.location.href="/FileSpray/DesprayInput?sourceLogicalName=" + filename;
@@ -328,10 +333,11 @@
                 <input type="submit" class="sbutton" id="deleteBtn" value="Delete" onclick="return confirm('Are you sure you want to delete '+'{Name}'+'?')"/>
             </form-->
             <br/><br/>
-            <input type="submit" class="sbutton" id="deleteBtn" value="Delete" onclick="submitaction('Delete','{Name}@{Cluster}')"/>
-            <input type="submit" class="sbutton" id="copyBtn" value="Copy" onclick="submitaction('Copy','{Name}')"/>
+            <input type="button" class="sbutton" id="deleteBtn" value="Delete" onclick="submitaction('Delete','{Name}@{Cluster}')"/>
+            <input type="button" class="sbutton" id="copyBtn" value="Copy" onclick="submitaction('Copy','{Name}')"/>
+            <input type="button" class="sbutton" id="renameBtn" value="Rename" onclick="submitaction('Rename','{Name}')"/>
             <xsl:if test="FromRoxieCluster=0">
-                <input type="submit" class="sbutton" id="desprayBtn" value="Despray" onclick="submitaction('Despray','{Name}')"/>
+                <input type="button" class="sbutton" id="desprayBtn" value="Despray" onclick="submitaction('Despray','{Name}')"/>
             </xsl:if>
         </body> 
         </xsl:otherwise>
