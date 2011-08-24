@@ -78,6 +78,16 @@ int CFileSpraySoapBindingEx::onGetInstantQuery(IEspContext &context, CHttpReques
         methodbuf.append("Copy");
         bProcess = true;
     }
+    else if (stricmp(method, "RenameInput") == 0)
+    {
+        if (!context.validateFeatureAccess(FILE_SPRAY_URL, SecAccess_Write, false))
+            permission = false;
+
+        request->getParameter("sourceLogicalName", sourceLogicalFile);
+        xsltFileName.append("fs_renameForm.xslt");
+        methodbuf.append("Rename");
+        bProcess = true;
+    }
     else if (stricmp(method, "DownloadFile") == 0)
     {
         if (!context.validateFeatureAccess(FILE_SPRAY_URL, SecAccess_Full, false))

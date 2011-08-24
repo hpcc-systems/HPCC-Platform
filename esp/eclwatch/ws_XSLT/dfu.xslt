@@ -101,6 +101,9 @@
             function copyDFUFile() {
               document.location.href='/FileSpray/CopyInput?sourceLogicalName='+filename;
             }
+            function renameDFUFile() {
+              document.location.href='/FileSpray/RenameInput?sourceLogicalName='+filename;
+            }
             function desprayDFUFile()
             {
               document.location.href='/FileSpray/DesprayInput?sourceLogicalName='+filename;
@@ -116,76 +119,35 @@
             oMenu = new YAHOO.widget.Menu("logicalfilecontextmenu", {position: "dynamic", xy: xypos} );
             oMenu.clearContent();
 
+            oMenu.addItems([
+            { text: "Details", onclick: { fn: detailsDFUFile } },
+            { text: "Copy", onclick: { fn: copyDFUFile } },
+            { text: "Rename", onclick: { fn: renameDFUFile } }
+            ]);
+
+            if (browsedata != 0) {
+            oMenu.addItems([
+            { text: "View Data File", onclick: { fn: searchDFUData } }
+            ]);
+            }
+
+            if (replicate != 0) {
+            oMenu.addItems([
+            { text: "Replicate", onclick: { fn: replicateDFUFile } }
+            ]);
+            }
+
             if (roxiecluster != 0) {
-            if (browsedata != 0) {
-            if (replicate != 0) {
             oMenu.addItems([
-            { text: "Details", onclick: { fn: detailsDFUFile } },
-            { text: "View Data File", onclick: { fn: searchDFUData } },
-            { text: "Replicate", onclick: { fn: replicateDFUFile } },
-            { text: "Copy", onclick: { fn: copyDFUFile } },
-            { text: "Despray", onclick: { fn: desprayDFUFile } },
-            { text: "ShowQuery", onclick: { fn: showRoxieQueries } }
-            ]);
-            } else {
-            oMenu.addItems([
-            { text: "Details", onclick: { fn: detailsDFUFile } },
-            { text: "View Data File", onclick: { fn: searchDFUData } },
-            { text: "Copy", onclick: { fn: copyDFUFile } },
             { text: "ShowQuery", onclick: { fn: showRoxieQueries } }
             ]);
             }
-            } else {
-            if (replicate != 0) {
+            else {
             oMenu.addItems([
-            { text: "Details", onclick: { fn: detailsDFUFile } },
-            { text: "Replicate", onclick: { fn: replicateDFUFile } },
-            { text: "Copy", onclick: { fn: copyDFUFile } },
-            { text: "ShowQuery", onclick: { fn: showRoxieQueries } }
-            ]);
-            } else {
-            oMenu.addItems([
-            { text: "Details", onclick: { fn: detailsDFUFile } },
-            { text: "Copy", onclick: { fn: copyDFUFile } },
-            { text: "ShowQuery", onclick: { fn: showRoxieQueries } }
+            { text: "Despray", onclick: { fn: desprayDFUFile } }
             ]);
             }
-            }
-            } else {
-            if (browsedata != 0) {
-            if (replicate != 0) {
-            oMenu.addItems([
-            { text: "Details", onclick: { fn: detailsDFUFile } },
-            { text: "View Data File", onclick: { fn: searchDFUData } },
-            { text: "Replicate", onclick: { fn: replicateDFUFile } },
-            { text: "Copy", onclick: { fn: copyDFUFile } },
-            { text: "Despray", onclick: { fn: desprayDFUFile } },
-            ]);
-            } else {
-            oMenu.addItems([
-            { text: "Details", onclick: { fn: detailsDFUFile } },
-            { text: "View Data File", onclick: { fn: searchDFUData } },
-            { text: "Copy", onclick: { fn: copyDFUFile } },
-            { text: "Despray", onclick: { fn: desprayDFUFile } },
-            ]);
-            }
-            } else {
-            if (replicate != 0) {
-            oMenu.addItems([
-            { text: "Details", onclick: { fn: detailsDFUFile } },
-            { text: "Replicate", onclick: { fn: replicateDFUFile } },
-            { text: "Copy", onclick: { fn: copyDFUFile } },
-            { text: "Despray", onclick: { fn: desprayDFUFile } },
-            ]);
-            } else {
-            oMenu.addItems([
-            { text: "Details", onclick: { fn: detailsDFUFile } },
-            { text: "Copy", onclick: { fn: copyDFUFile } },
-            { text: "Despray", onclick: { fn: desprayDFUFile } },
-            ]);
-            }
-            }
-            }
+
             //showPopup(menu,(window.event ? window.event.screenX : 0),  (window.event ? window.event.screenY : 0));
             oMenu.render("dfulogicalfilemenu");
             oMenu.show();
