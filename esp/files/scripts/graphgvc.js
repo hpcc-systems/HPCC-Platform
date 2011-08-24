@@ -1,18 +1,6 @@
 /*##############################################################################
-#    Copyright (C) 2011 HPCC Systems.
-#
-#    All rights reserved. This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU Affero General Public License as
-#    published by the Free Software Foundation, either version 3 of the
-#    License, or (at your option) any later version.
-#
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU Affero General Public License for more details.
-#
-#    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+## Copyright © 2011 HPCC Systems.  All rights reserved.
     
 ############################################################################## */
 
@@ -266,7 +254,7 @@ function update_details() {
     showElement('findNodeBlock');
     showElement('autoSpan');
 
-    if (isrunning != '1' && forceFinalCountRefresh == false)
+    if (isrunning != '1')
     {
         hideElement('autoSpan');
         isrunningsave = '0';
@@ -471,21 +459,15 @@ function selectVertex(TargetVertex) {
     var FoundVertex = String(TargetVertex);
     pluginLHS().centerOnItem(pluginLHS().getItem(FoundVertex), true);
 }
-
-var forceFinalCountRefresh = true;
-
         
 function reloadGraph()
 {
-    if (isrunning == '1' || forceFinalCountRefresh)
+    if (isrunning == '1')
     {
       if (document.getElementById('auto').checked)
       {
           reloading = true;
           sendWuInfoRequest();
-          if (isrunning != '1') {
-              forceFinalCountRefresh = false;
-          }
       }
     }
 }
@@ -594,11 +576,11 @@ function loadXGMMLGraph(xgmmlResponse) {
             pluginLHS().setMessage("Performing Layout...");
             pluginLHS().startLayout("dot");
 
-            pluginLHS().centerOnItem(0, true); // scale to fit.
+            //pluginLHS().centerOnItem(0, true); // scale to fit.
 
         }
     }
-    if (isrunning == '1' || (isrunning != '1' && forceFinalCountRefresh)) {
+    if (isrunning == '1') {
         if (graphloaded != '1') {
             document.getElementById('auto').checked = true;
         }
@@ -804,32 +786,32 @@ function getEspAddressAndPort(Url)
 }
 
 function parseUri (str) {
-    var o   = parseUri.options,
-        m   = o.parser[o.strictMode ? "strict" : "loose"].exec(str),
-        uri = {},
-        i   = 14;
+	var	o   = parseUri.options,
+		m   = o.parser[o.strictMode ? "strict" : "loose"].exec(str),
+		uri = {},
+		i   = 14;
 
-    while (i--) uri[o.key[i]] = m[i] || "";
+	while (i--) uri[o.key[i]] = m[i] || "";
 
-    uri[o.q.name] = {};
-    uri[o.key[12]].replace(o.q.parser, function ($0, $1, $2) {
-        if ($1) uri[o.q.name][$1] = $2;
-    });
+	uri[o.q.name] = {};
+	uri[o.key[12]].replace(o.q.parser, function ($0, $1, $2) {
+		if ($1) uri[o.q.name][$1] = $2;
+	});
 
-    return uri;
+	return uri;
 };
 
 parseUri.options = {
-    strictMode: false,
-    key: ["source","protocol","authority","userInfo","user","password","host","port","relative","path","directory","file","query","anchor"],
-    q:   {
-        name:   "queryKey",
-        parser: /(?:^|&)([^&=]*)=?([^&]*)/g
-    },
-    parser: {
-        strict: /^(?:([^:\/?#]+):)?(?:\/\/((?:(([^:@]*):?([^:@]*))?@)?([^:\/?#]*)(?::(\d*))?))?((((?:[^?#\/]*\/)*)([^?#]*))(?:\?([^#]*))?(?:#(.*))?)/,
-        loose:  /^(?:(?![^:@]+:[^:@\/]*@)([^:\/?#.]+):)?(?:\/\/)?((?:(([^:@]*):?([^:@]*))?@)?([^:\/?#]*)(?::(\d*))?)(((\/(?:[^?#](?![^?#\/]*\.[^?#\/.]+(?:[?#]|$)))*\/?)?([^?#\/]*))(?:\?([^#]*))?(?:#(.*))?)/
-    }
+	strictMode: false,
+	key: ["source","protocol","authority","userInfo","user","password","host","port","relative","path","directory","file","query","anchor"],
+	q:   {
+		name:   "queryKey",
+		parser: /(?:^|&)([^&=]*)=?([^&]*)/g
+	},
+	parser: {
+		strict: /^(?:([^:\/?#]+):)?(?:\/\/((?:(([^:@]*):?([^:@]*))?@)?([^:\/?#]*)(?::(\d*))?))?((((?:[^?#\/]*\/)*)([^?#]*))(?:\?([^#]*))?(?:#(.*))?)/,
+		loose:  /^(?:(?![^:@]+:[^:@\/]*@)([^:\/?#.]+):)?(?:\/\/)?((?:(([^:@]*):?([^:@]*))?@)?([^:\/?#]*)(?::(\d*))?)(((\/(?:[^?#](?![^?#\/]*\.[^?#\/.]+(?:[?#]|$)))*\/?)?([^?#\/]*))(?:\?([^#]*))?(?:#(.*))?)/
+	}
 };
 
 function getUrlParam( Url, Param)
@@ -1088,7 +1070,7 @@ function getRoxieConfigRequestEnvelope(QueryName, GraphName)
 }
 
 function getWsRoxieQueryRequestEnvelope(QueryName, GraphName, Cluster) {
-    var RoxieQuerySOAPEnvelope = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding" xmlns="http://webservices.seisint.com/WsRoxieQuery"><soap:Body><RoxieQueryShowGVCGraphRequest><ClusterName>%Cluster%</ClusterName><QueryName>%QueryName%</QueryName><GraphName>%GraphName%</GraphName></RoxieQueryShowGVCGraphRequest></soap:Body></soap:Envelope>';
+    var RoxieQuerySOAPEnvelope = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding" xmlns="http://webservices.seisint.com/WsRoxieQuery"><soap:Body><ShowGVCGraphRequest><Cluster>%Cluster%</Cluster><QueryId>%QueryName%</QueryId><GraphName>%GraphName%</GraphName></ShowGVCGraphRequest></soap:Body></soap:Envelope>';
     RoxieQuerySOAPEnvelope = RoxieQuerySOAPEnvelope.replace('%Cluster%', Cluster);
     RoxieQuerySOAPEnvelope = RoxieQuerySOAPEnvelope.replace('%QueryName%', QueryName);
     RoxieQuerySOAPEnvelope = RoxieQuerySOAPEnvelope.replace('%GraphName%', GraphName);
@@ -1114,23 +1096,23 @@ function getWuInfoRequestEnvelope(wuid)
 
 function showGraphStats()
 {
-    var link = document.getElementById('StatsLink');
-    link.innerHTML = 'Loading Stats...';
-    var baseUrl = '/ws_roxieconfig/ProcessGraph?FileName=' + queryName + '/' + graphName;
-    var url = baseUrl + '.htm&Stats=1';
-    var wnd = window.open("about:blank", "_graphStats_", 
-                            "toolbar=0,location=0,directories=0,status=0,menubar=0," + 
-                            "scrollbars=1, resizable=1, width=640, height=480");
-    link.innerHTML = 'Stats...';
-    if (wnd)
+	var link = document.getElementById('StatsLink');
+	link.innerHTML = 'Loading Stats...';
+	var baseUrl = '/ws_roxieconfig/ProcessGraph?FileName=' + queryName + '/' + graphName;
+	var url = baseUrl + '.htm&Stats=1';
+	var wnd = window.open("about:blank", "_graphStats_", 
+							"toolbar=0,location=0,directories=0,status=0,menubar=0," + 
+							"scrollbars=1, resizable=1, width=640, height=480");
+	link.innerHTML = 'Stats...';
+	if (wnd)
+	{
+		wnd.location = url;
+		wnd.focus();
+	}
+	else
     {
-        wnd.location = url;
-        wnd.focus();
-    }
-    else
-    {
-                alert(  "Popup window could not be opened!  " + 
-                            "Please disable any popup killer and try again.");
+		        alert(	"Popup window could not be opened!  " + 
+					        "Please disable any popup killer and try again.");
     }
 }
 

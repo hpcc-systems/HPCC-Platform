@@ -80,6 +80,9 @@ public:
     bool onRoxieQuerySearch(IEspContext &context, IEspRoxieQuerySearchRequest & req, IEspRoxieQuerySearchResponse & resp);
     bool onRoxieQueryList(IEspContext &context, IEspRoxieQueryListRequest &req, IEspRoxieQueryListResponse &resp);
     bool onQueryDetails(IEspContext &context, IEspRoxieQueryDetailsRequest & req, IEspRoxieQueryDetailsResponse & resp);
+    bool onGVCAjaxGraph(IEspContext &context, IEspGVCAjaxGraphRequest &req, IEspGVCAjaxGraphResponse &resp);
+    bool onShowGVCGraph(IEspContext &context, IEspShowGVCGraphRequest &req, IEspShowGVCGraphResponse &resp);
+    bool onRoxieQueryProcessGraph(IEspContext &context, IEspRoxieQueryProcessGraphRequest &req, IEspRoxieQueryProcessGraphResponse &resp);
 
 private:
     void addToQueryString(StringBuffer &queryString, const char *name, const char *value);
@@ -87,6 +90,8 @@ private:
     void getClusterConfig(char const * clusterType, char const * clusterName, char const * processName, StringBuffer& netAddress, int& port);
 
     bool getAllRoxieQueries(IEspContext &context, const char* cluster, const char* suspended, const char* sortBy, bool descending, __int64 displayEnd, IArrayOf<IEspRoxieQuery>& RoxieQueryList, __int64& totalFiles);
+    IPropertyTree* getXgmmlGraph(const char *queryName, SocketEndpoint &ep, const char* graphName);
+    void enumerateGraphs(const char *queryName, SocketEndpoint &ep, StringArray& graphNames);
 };
 
 #endif //_ESPWIZ_WsRoxieQuery_HPP__
