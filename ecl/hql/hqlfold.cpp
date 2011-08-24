@@ -4056,6 +4056,7 @@ public:
     }
     void inheritMapping(const HqlConstantPercolator * other)
     {
+        assertex(other);
         if (other->self)
         {
             assertex(!self || self == other->self);
@@ -4069,6 +4070,7 @@ public:
     }
     void intersectMapping(const HqlConstantPercolator * other)
     {
+        assertex(other);
         ForEachItemInRev(i, targets)
         {
             unsigned match = other->targets.find(targets.item(i));
