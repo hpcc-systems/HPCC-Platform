@@ -122,6 +122,10 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${path}/lib
 export PATH=${PATH}:${runtime}/bin:${path}/sbin
 
 # Creating runtime environment for ConfigMgr
+mkdir -p ${pid}
+chown -R ${user}:${group} ${pid}
+mkdir -p ${lock}
+chown -R ${user}:${group} ${lock}
 mkdir -p ${runtime}/$compName
 chown -R ${user}:${group} ${runtime}/$compName
 mkdir -p ${log}/$compName
