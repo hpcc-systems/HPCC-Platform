@@ -531,11 +531,14 @@ class PipeWriter : public CInterface
 {
 public:
     PipeWriter(IPipeWriteOwner * _owner, IPipeProcess * _pipe, bool _syncsAtStart, bool _syncs, bool _recreate) 
-        : owner(_owner), pipe(_pipe), syncsAtStart(_syncsAtStart), syncs(_syncs), recreate(_recreate) {}
+        : owner(_owner), pipe(_pipe), syncsAtStart(_syncsAtStart), syncs(_syncs), recreate(_recreate)
+    {
+        reccount = 0; started = false; finished = false; aborted = false;
+    }
     void ready() { reccount = 0; started = false; finished = false; aborted = false; }
     void run();
     void abort();
-    bool sync() { readyForWrite.signal(); readyForRead.wait(); return !finished; }
+    void sync();
     unsigned __int64 queryRecCount() const { return reccount; }
 
 private:
