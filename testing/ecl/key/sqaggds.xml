@@ -1,5 +1,5 @@
 <Dataset name='Result 1'>
- <Row><addr>99 Maltings Road</addr><_unnamed_2>3</_unnamed_2><_unnamed_3>23.0</_unnamed_3><_unnamed_4>20000101</_unnamed_4></Row>
+ <Row><addr>99 Maltings Road</addr><_unnamed_2>3</_unnamed_2><_unnamed_3>23.66666666666667</_unnamed_3><_unnamed_4>20000101</_unnamed_4></Row>
  <Row><addr>Buckingham Palace</addr><_unnamed_2>2</_unnamed_2><_unnamed_3>80.0</_unnamed_3><_unnamed_4>19260421</_unnamed_4></Row>
  <Row><addr>Bedrock</addr><_unnamed_2>2</_unnamed_2><_unnamed_3>2003.0</_unnamed_3><_unnamed_4>20202</_unnamed_4></Row>
  <Row><addr>Wimpole Hall</addr><_unnamed_2>1</_unnamed_2><_unnamed_3>67.0</_unnamed_3><_unnamed_4>19361008</_unnamed_4></Row>
@@ -70,7 +70,7 @@
  <Row><surname>Jones</surname><firstbook>Zen and the art of motorcyle maintenance: Robert Pirsig</firstbook></Row>
 </Dataset>
 <Dataset name='Result 9'>
- <Row><addr>99 Maltings Road</addr><_unnamed_2>3</_unnamed_2><_unnamed_3>23.0</_unnamed_3><_unnamed_4>20000101</_unnamed_4></Row>
+ <Row><addr>99 Maltings Road</addr><_unnamed_2>3</_unnamed_2><_unnamed_3>23.66666666666667</_unnamed_3><_unnamed_4>20000101</_unnamed_4></Row>
  <Row><addr>Buckingham Palace</addr><_unnamed_2>2</_unnamed_2><_unnamed_3>80.0</_unnamed_3><_unnamed_4>19260421</_unnamed_4></Row>
  <Row><addr>Bedrock</addr><_unnamed_2>2</_unnamed_2><_unnamed_3>2003.0</_unnamed_3><_unnamed_4>20202</_unnamed_4></Row>
  <Row><addr>Wimpole Hall</addr><_unnamed_2>1</_unnamed_2><_unnamed_3>67.0</_unnamed_3><_unnamed_4>19361008</_unnamed_4></Row>

@@ -1,6 +1,6 @@
 <Dataset name='Result 1'>
- <Row><month>Mar04</month><date>20040301</date><desc1>HAJ</desc1><description>HALLIDAY AAandZZ</description><fulldescription>&lt;text:p&gt;HALLIDAY AAandZZ&lt;/text:p&gt;</fulldescription><amount>-2000</amount></Row>
- <Row><month>Apr04</month><date>20040423</date><desc1>SED</desc1><description>BROWN ENVELOPES LTD</description><fulldescription>&lt;text:p&gt;SEISINT LTD&lt;/text:p&gt;</fulldescription><amount>2000</amount></Row>
+ <Row><month>Apr04</month><date>20040423</date><desc1>BRD</desc1><description>BROWN ENVELOPES LTD</description><fulldescription>&lt;text:p&gt;BROWN ENVELOPES LTD&lt;/text:p&gt;</fulldescription><amount>2000</amount></Row>
+ <Row><month>Mar04</month><date>20040301</date><desc1>HAZ</desc1><description>HALLIDAY AAandZZ</description><fulldescription>&lt;text:p&gt;HALLIDAY AAandZZ&lt;/text:p&gt;</fulldescription><amount>-2000</amount></Row>
  <Row><month>Apr04</month><date>20040413</date><desc1>CON</desc1><description>COUNTY INSURANCE KIDLINGTON</description><fulldescription>&lt;text:p&gt;COUNTY INSURANCE &lt;text:s text:c=&quot;2&quot;/&gt;KIDLINGTON&lt;/text:p&gt;</fulldescription><amount>-841.47</amount></Row>
  <Row><month>Mar04</month><date>20040330</date><desc1>ROY</desc1><description>ROYSIA SURGERY</description><fulldescription>&lt;text:p&gt;ROYSIA SURGERY&lt;/text:p&gt;</fulldescription><amount>784.19</amount></Row>
  <Row><month>Mar04</month><date>20040330</date><desc1>104</desc1><description>Unknown Cheque Payment</description><fulldescription>&lt;text:p&gt;100194&lt;/text:p&gt;</fulldescription><amount>-452</amount></Row>
