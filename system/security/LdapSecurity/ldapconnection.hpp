@@ -374,7 +374,7 @@ public:
                         DBGLOG("LDAP bind error for user %s with %d - %s. %s", logonname.str(), rc, ldap_err2string(rc), msg&&*msg?msg:"");
                         ldap_memfree(msg);
 #else
-                        DBGLOG("LDAP bind error for user %s with 0x%lx - %s", username, rc, ldap_err2string(rc));
+                        DBGLOG("LDAP bind error for user %s with 0x%"I64F"x - %s", username, (unsigned __int64) rc, ldap_err2string(rc));
 #endif
                         return rc;
                     }
