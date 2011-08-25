@@ -278,8 +278,9 @@
                     point in the future.
                 </para>
                 <para>
-                    The { that starts a new scope and the corresponding } to close it are placed on a 
-                    new line by themselves, and are not indented.
+                    The { that starts a new scope and the corresponding } to close it are placed on a
+                    new line by themselves, and are not indented. This is sometimes known as the Allman
+                    or ANSI style.
                 </para>
             </sect2>
             <sect2>
