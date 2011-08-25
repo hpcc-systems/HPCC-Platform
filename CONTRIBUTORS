@@ -53,7 +53,7 @@ topic branches from.
 
 To create a topic branch, use git checkout with the -b argument:
 
-    git checkout -b fix-broken-thing
+    git checkout -b fix-broken-thing master
     Switched to a new branch 'fix-broken-thing'
 
 Branch names should be kept reasonable short but long enough to describe what they are
@@ -86,16 +86,21 @@ Note that additional changes can be made to the branch after you have generated 
 request - for example in order to address issues raised by a reviewer. There is no need
 to close a request and open a new one in such circumstances.
 
+If your topic branch is implementing a new feature, it should be based from the master
+branch on the unstream repository. If it is fixing a bug that cannot wait for the next
+feature release, it should be based from the merge-base of the master and current stable
+branches.
+
 Pull upstream changes into your fork regularly
 ==============================================
 
-If a branch is in development for a while, you should regularly merge in the upstream
-master, rather than waiting until you are ready to issue the pull-request before
-discovering that other changes clash with yours, or render your change moot. If a branch
-has diverged too far from the master that it cannot be easily or safely merged, it is
-likely to be rejected by the maintainers.
+If a new feature in a branch is in development for a while, you should regularly merge
+in the upstream master, rather than waiting until you are ready to issue the pull-request
+before discovering that other changes clash with yours, or render your change moot. If a
+branch has diverged too far from the master that it cannot be easily or safely merged, it
+is likely to be rejected by the maintainers.
 
-To pull in upstream changes::
+To pull in upstream changes:
 
     git remote add upstream git://github.com/hpcc-systems/HPCC-Platform.git
     git fetch upstream

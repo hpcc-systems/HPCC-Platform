@@ -1,0 +1,55 @@
+Branch and version strategy
+===========================
+
+Versions
+========
+
+Version numbers take the form MAJOR.MINOR.POINT_SEQUENCE
+
+The MAJOR version will change only with a significant architectural change.
+The MINOR version number changes when new features are introduced.
+The POINT version number changes when bugs are fixed.
+The SEQUENCE number is changed when a new candidate package is created during
+closedown testing.
+
+Versions that have been closed down, tested, and passed as suitable for general
+release are given even MINOR and POINT numbers. Odd numbers are reserved for
+builds for testing purposes only.
+
+In addition to the version number there is a MATURITY string that may be found
+in the version string. The maturities in use are:
+
+<none>   - a stable build
+rc       - a release candidate.
+trunk    - a system built from the master branch (the 'bleeding edge')
+*_debug  - Any of the above suffixed by _debug if built with debug enabled
+
+Branches
+========
+
+The master branch contains the latest accepted code. Code in the master branch
+should normally be fully functional, but may not yet have gone through rigorous
+testing or be considered production-ready. If you want to build a system in order
+to experiment with extending the code, or to test new features that have not yet
+been included in a stable build, then you should build the master branch.
+
+The stable branch points to the current version of the system that has been
+through the full closedown testing cycle and is considered production-ready. If
+you want to build a local version of a stable build - perhaps to install on a
+distro for which a pre-packaged binary is not available, then you should build
+the stable branch. Note that stable is rebased when a new MAJOR or MINOR version
+number release is published.
+
+Branches with names starting candidate- contain code that is being prepared for
+release as a stable version. Fixes for bugs discovered during closedown testing
+will be merged into the current candidate- branch.
+
+Tags
+====
+
+Tags corresponding to the release versions will be applied to points on the
+candidate- branch where binary releases have been built and published.
+
+A tag with the name split-X.Y will refer to the point at which the branch for
+candidate-X.Y split off from master. This is normally the point where bug fixes
+intended for release in the X.Y series should be based.
