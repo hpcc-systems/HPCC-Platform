@@ -2466,6 +2466,17 @@ IHqlExpression * CCsvColumnInfo::getColumnExpr(HqlCppTranslator & translator, Bu
 
     type.setown(makeReferenceModifier(type.getClear()));
 
+    if (isUnicodeType(type))
+    {
+        //This is an ugly fix to change the size to the number of utf8-characters.
+        //Better would be to either perform the mapping (and validation) in the engines, or
+        //give it a string of encoding utf8 and extend the code generator to correctly handle those
+        //string/unicode conversions by using the codepage to codepage mapping function.
+        StringBuffer temp;
+        temp.appendf("rtlUtf8Length(%s,%s)", lenText.str(), dataText.str());
+        lenText.swapWith(temp);
+    }
+
     OwnedHqlExpr length = createQuoted(lenText.str(), LINK(sizetType));
     OwnedHqlExpr data = createQuoted(dataText.str(), type.getClear());
 
