@@ -304,6 +304,7 @@ private:
     bool searchDeployMap(const char* fileName, const char* optionalFileExt) const;
     void getBackupDirName(const char* from, StringBuffer& to);
     bool checkSSHFileExists(const char* dir) const;
+    void setSSHVars(IPropertyTree& instance);
 
 protected:
    Owned<IThreadPool>      m_threadPool;

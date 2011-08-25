@@ -155,14 +155,45 @@ int CDeploymentEngine::getInstallFileCount()
     //return getInstallFiles().getInstallFileList().size(); 
 
     // Only count these we can handle properly
-    int count = 0;
+    int count = 0, xslcount = 0, total = 0;
     for (CInstallFileList::const_iterator it=files.begin(); it!=files.end(); ++it)
     {
-        const StlLinked<CInstallFile>& f = *it;
-        if (isMethodTrackable(f->getMethod().c_str()))
-            count++;
+      const StlLinked<CInstallFile>& f = *it;
+      const char* method = f->getMethod().c_str();
+      if (strieq(method,"copy"))
+        count++;
+      else if (startsWith(method,"xsl"))
+        xslcount++;
     }
-    return count;
+
+    bool isCached = m_instances.length() > 1;
+    total = isCached ? count : 0;
+    const char* depToFolder = m_envDepEngine.getDeployToFolder();
+
+    ForEachItemIn(idx, m_instances)
+    {
+      IPropertyTree& instance = m_instances.item(idx);
+      StringAttr curSSHUser, curSSHKeyFile, curSSHKeyPassphrase;
+      m_envDepEngine.getSSHAccountInfo(instance.queryProp("@computer"),
+        curSSHUser, curSSHKeyFile, curSSHKeyPassphrase);
+      total += xslcount;
+
+      if (m_useSSHIfDefined && !curSSHKeyFile.isEmpty() &&
+        !curSSHUser.isEmpty() && !(depToFolder && *depToFolder))
+      {
+          total += 1;
+
+          if (!isCached)
+          {
+            isCached = true;
+            total += count;
+          }
+      }
+      else
+        total += count;
+    }
+
+  return total;
 }
 
 //---------------------------------------------------------------------------
@@ -172,12 +203,16 @@ int CDeploymentEngine::getInstallFileCount()
 offset_t CDeploymentEngine::getInstallFileSize()
 {
     const CInstallFileList& files = getInstallFiles().getInstallFileList();
-    offset_t totalSize = 0;
+    offset_t fileSize = 0, xslSize = 0, total = 0;
+
     for (CInstallFileList::const_iterator it=files.begin(); it!=files.end(); ++it)
     {
-        const StlLinked<CInstallFile>& f = *it;
-        if (isMethodTrackable(f->getMethod().c_str()))
-            totalSize += f->getSrcSize();
+      const StlLinked<CInstallFile>& f = *it;
+      const char* method = f->getMethod().c_str();
+      if (strieq(method,"copy"))
+        fileSize += f->getSrcSize();
+      else if (startsWith(method,"xsl"))
+        xslSize += f->getSrcSize();
         
         /* debug
         if (f->getSrcSize()==24331)
@@ -186,7 +221,32 @@ offset_t CDeploymentEngine::getInstallFileSize()
             ::MessageBox((HWND)m_pCallback->getWindowHandle(), s.str(), "UNCOPIED",MB_OK);
         }*/
     }
-    return totalSize;
+
+    bool isCached = m_instances.length() > 1;
+    total = isCached ? fileSize : 0;
+    const char* depToFolder = m_envDepEngine.getDeployToFolder();
+
+    ForEachItemIn(idx, m_instances)
+    {
+      total += fileSize + xslSize;
+
+      if (!isCached)
+      {
+        IPropertyTree& instance = m_instances.item(idx);
+        StringAttr curSSHUser, curSSHKeyFile, curSSHKeyPassphrase;
+        m_envDepEngine.getSSHAccountInfo(instance.queryProp("@computer"), curSSHUser,
+          curSSHKeyFile, curSSHKeyPassphrase);
+
+        if (!curSSHKeyFile.isEmpty() && !m_curSSHUser.isEmpty() &&
+          !(depToFolder && *depToFolder))
+        {
+          isCached = true;
+          total += fileSize;
+        }
+      }
+    }
+
+  return total;
 }
 
 //---------------------------------------------------------------------------
@@ -209,12 +269,7 @@ void CDeploymentEngine::start()
             checkAbort();
             IPropertyTree& instance = m_instances.item(idx);
             m_curInstance = instance.queryProp("@name");
-            m_curSSHUser.clear();
-            m_curSSHKeyFile.clear();
-            m_curSSHKeyPassphrase.clear();
-            m_envDepEngine.getSSHAccountInfo(instance.queryProp("@computer"), m_curSSHUser, m_curSSHKeyFile, m_curSSHKeyPassphrase);
-            if (m_useSSHIfDefined)
-                m_useSSHIfDefined = !m_curSSHKeyFile.isEmpty();
+            setSSHVars(instance);
 
             try
             {
@@ -254,7 +309,7 @@ void CDeploymentEngine::startInstance(IPropertyTree& node, const char* fileName/
         "Starting %s process on %s", m_name.get(), hostDir.get());
     
     Owned<IDeployTask> task;
-    if (m_useSSHIfDefined && os == MachineOsLinux && !m_curSSHUser.isEmpty() && !m_curSSHKeyFile.isEmpty())
+    if (m_useSSHIfDefined)
     {
         const char* computer = node.queryProp("@computer");
         if (!computer || !*computer)
@@ -317,13 +372,8 @@ void CDeploymentEngine::stop()
             
             IPropertyTree& instance = m_instances.item(idx);
             m_curInstance = instance.queryProp("@name");
-            m_curSSHUser.clear();
-            m_curSSHKeyFile.clear();
-            m_curSSHKeyPassphrase.clear();
+            setSSHVars(instance);
 
-            m_envDepEngine.getSSHAccountInfo(instance.queryProp("@computer"), m_curSSHUser, m_curSSHKeyFile, m_curSSHKeyPassphrase);
-            if (m_useSSHIfDefined)
-                m_useSSHIfDefined = !m_curSSHKeyFile.isEmpty();
             
             try
             {
@@ -362,7 +412,7 @@ void CDeploymentEngine::stopInstance(IPropertyTree& node, const char* fileName/*
         "Stopping %s process on %s", m_name.get(), hostDir.get());
     
     Owned<IDeployTask> task;
-    if (m_useSSHIfDefined && os == MachineOsLinux && !m_curSSHUser.isEmpty() && !m_curSSHKeyFile.isEmpty())
+    if (m_useSSHIfDefined)
     {
         const char* computer = node.queryProp("@computer");
         if (!computer || !*computer)
@@ -522,7 +572,20 @@ void CDeploymentEngine::beforeDeploy()
     getTempPath(tempPath, sizeof(tempPath), m_name);
 
     ensurePath(tempPath);
-    if (m_instances.ordinality() > 1)
+    bool cacheFiles = false;
+    const char* depToFolder = m_envDepEngine.getDeployToFolder();
+
+    if (!m_compare && m_instances.ordinality() == 1 && !(depToFolder && *depToFolder))
+    {
+      IPropertyTree& instanceNode = m_instances.item(0);
+      const char* curInstance = instanceNode.queryProp("@name");
+      StringAttr sbSSHUser, sbSSHKeyFile, sbKeyPassphrase;
+      m_envDepEngine.getSSHAccountInfo(instanceNode.queryProp("@computer"),
+        sbSSHUser, sbSSHKeyFile, sbKeyPassphrase);
+      cacheFiles = !sbSSHKeyFile.isEmpty();
+    }
+
+    if (m_instances.ordinality() > 1 || cacheFiles)
     {
         strcat(tempPath, "Cache");
         char* pszEnd = tempPath + strlen(tempPath);
@@ -564,9 +627,7 @@ void CDeploymentEngine::_deploy(bool useTempDir)
         
         IPropertyTree& instanceNode = m_instances.item(idx);
         m_curInstance = instanceNode.queryProp("@name");
-        m_envDepEngine.getSSHAccountInfo(instanceNode.queryProp("@computer"), m_curSSHUser, m_curSSHKeyFile, m_curSSHKeyPassphrase);
-        if (m_useSSHIfDefined)
-            m_useSSHIfDefined = !m_curSSHKeyFile.isEmpty();
+        setSSHVars(instanceNode);
         
         try
         {
@@ -672,11 +733,7 @@ void CDeploymentEngine::backupDirs()
         
         IPropertyTree& instance = m_instances.item(idx);
         m_curInstance = instance.queryProp("@name");
-        m_curSSHUser.clear();
-        m_curSSHKeyFile.clear();
-        m_curSSHKeyPassphrase.clear();
-        m_envDepEngine.getSSHAccountInfo(instance.queryProp("@computer"), m_curSSHUser, m_curSSHKeyFile, m_curSSHKeyPassphrase);
-        m_useSSHIfDefined = !m_curSSHKeyFile.isEmpty();
+        setSSHVars(instance);
         
         try
         {
@@ -1405,6 +1462,8 @@ void CDeploymentEngine::copyInstallFiles(const char* instanceName, int instanceI
         const CInstallFileList& fileList = m_installFiles.getInstallFileList();
         int nItems = fileList.size();
         int n;
+        bool recCopyDone = false;
+
         for (n=0; n<nItems; n++)
         {
             CInstallFile& installFile = *fileList[n];
@@ -1430,6 +1489,32 @@ void CDeploymentEngine::copyInstallFiles(const char* instanceName, int instanceI
 
                 if (params && !*params)
                     params = NULL;
+
+                if (m_useSSHIfDefined && !bCacheFiles && !m_compare &&
+                    !strcmp(method, "copy") && strcmp(instanceName, "Cache"))
+                {
+                  if (!recCopyDone)
+                  {
+                    StringBuffer sbsrc(source);
+
+                    if (strrchr(source, PATHSEPCHAR))
+                      sbsrc.setLength(strrchr(source, PATHSEPCHAR) - source + 1);
+
+                    sbsrc.append("*");
+                    StringBuffer sbdst(dest.c_str());
+
+                    if (strrchr(sbdst.str(), PATHSEPCHAR))
+                      sbdst.setLength(strrchr(sbdst.str(), PATHSEPCHAR) - sbdst.str() + 1);
+
+                    Owned<IDeployTask> task = createDeployTask(*m_pCallback, "Copy Directory", m_process.queryName(), m_name.get(),
+                      m_curInstance, sbsrc.str(), sbdst.str(), m_curSSHUser.sget(), m_curSSHKeyFile.sget(), m_curSSHKeyPassphrase.sget(), m_useSSHIfDefined, os);
+                    task->setFlags(m_deployFlags & DCFLAGS_ALL);
+                    m_threadPool->start(task);
+                    recCopyDone = true;
+                  }
+
+                  continue;
+                }
 
                 if (!processInstallFile(m_process, instanceName, method, source, dest.c_str(), os, bCacheable, params))
                     break;
@@ -2574,4 +2659,18 @@ bool CDeploymentEngine::checkSSHFileExists(const char* dir) const
   }
 
   return flag;
+}
+
+void CDeploymentEngine::setSSHVars(IPropertyTree& instance)
+{
+  EnvMachineOS os = m_envDepEngine.lookupMachineOS(instance);
+  m_curSSHUser.clear();
+  m_curSSHKeyFile.clear();
+  m_curSSHKeyPassphrase.clear();
+  m_envDepEngine.getSSHAccountInfo(instance.queryProp("@computer"), m_curSSHUser, m_curSSHKeyFile, m_curSSHKeyPassphrase);
+  m_useSSHIfDefined = !m_curSSHKeyFile.isEmpty() && !m_curSSHUser.isEmpty() && os == MachineOsLinux;
+  const char* depToFolder = m_envDepEngine.getDeployToFolder();
+
+  if (depToFolder && *depToFolder)
+    m_useSSHIfDefined = false;
 }

@@ -25,6 +25,44 @@
 #include "jmutex.hpp"
 #include "xslprocessor.hpp"
 
+offset_t getDirSize(const char* path, bool subdirs = true)
+{
+  offset_t size = 0;
+
+  if (!path || !*path)
+    return size;
+
+  Owned<IFile> pFile = createIFile(path);
+
+  if (pFile->exists())
+  {
+    if (pFile->isDirectory() == foundYes)
+    {
+      Owned<IDirectoryIterator> it = pFile->directoryFiles(NULL, false, true);
+
+      ForEach(*it)
+      {
+        if (it->isDir())
+        {
+          if (subdirs)
+          {
+            StringBuffer subdir;
+            it->getName(subdir);
+            StringBuffer dir(path);
+            dir.append(PATHSEPCHAR).append(subdir);
+            size += getDirSize(dir.str(), subdirs);
+          }
+        }
+        else
+          size += it->getFileSize();
+      }
+    }
+    else
+      size = pFile->size();
+  }
+
+  return size;
+}
 
 class CDeployTask : public CInterface, implements IDeployTask
 {
@@ -583,10 +621,20 @@ public:
            StringBuffer destpath,ip;
            StringBuffer passphr;
            getKeyPassphrase(passphr);
+           StringBuffer sb(source);
+           bool flag = (sb.charAt(sb.length() - 1) == '*');
+
+           if (flag)
+             sb.setLength(sb.length() - 1);
+
+           offset_t dirsize = getDirSize(sb.str());
+
+           if (flag && m_updateProgress)
+             copyProgress.onProgress(0, dirsize);
            
            stripNetAddr(target, destpath, ip);
-           cmdline.appendf("pscp -p -noagent -q -i %s -l %s %s \"%s\" %s:%s", m_sshKeyFile.sget(), m_sshUser.sget(), 
-            passphr.str() , source, ip.str(), destpath.str());
+           cmdline.appendf("pscp -p -noagent -q %s -i %s -l %s %s \"%s\" %s:%s", flag?"-r":"",
+             m_sshKeyFile.sget(), m_sshUser.sget(), passphr.str(), source, ip.str(), destpath.str());
            retcode = pipeSSHCmd(cmdline.str(), outbuf, errbuf);
 
            if (retcode)
@@ -602,7 +650,9 @@ public:
            }
            else
            {
-             if (m_updateProgress)
+             if (flag && m_updateProgress)
+               copyProgress.onProgress(dirsize, dirsize);
+             else if (m_updateProgress)
                copyProgress.onProgress(pSrcFile->size(), pSrcFile->size());
 
              Owned<IDeployTask> task = createDeployTask(*m_pCallback, "Chmod", m_processType, m_compName, m_instanceName, 
@@ -1112,7 +1162,8 @@ public:
                             stripNetAddr(path, destpath, ip);
                             StringBuffer passphr;
                             getKeyPassphrase(passphr);
-                            cmdline.appendf("plink -i %s -l %s %s %s %s %s", m_sshKeyFile.sget(), m_sshUser.sget(), passphr.str(), ip.str(), "mkdir", destpath.str());
+                            cmdline.appendf("plink -i %s -l %s %s %s %s %s", m_sshKeyFile.sget(),
+                              m_sshUser.sget(), passphr.str(), ip.str(), "mkdir -p", destpath.str());
                             retcode = pipeSSHCmd(cmdline.str(), outbuf, errbuf);
 
                             if (retcode && retcode != 1)
@@ -1522,43 +1573,16 @@ public:
        errmsg.append("Invalid SSH params");
        return false;
      }
+
      int retcode;
      Owned<IPipeProcess> pipe = createPipeProcess();
-     StringBuffer cmdline, workdir;
+     StringBuffer cmdline;
      StringBuffer passphr;
      getKeyPassphrase(passphr);
      cmdline.appendf("plink -i %s -l %s %s %s %s", m_sshKeyFile.sget(), m_sshUser.sget(), passphr.str(), ip, cmd);
-     workdir.append("");
-     if (pipe->run("Config",cmdline.str(),workdir,FALSE,true,true)) {
-       byte buf[4096*2];
-       loop {
-         size32_t read = pipe->read(sizeof(buf), buf);
-         output.append(read,(const char *)buf);
-         if (strstr(output.str(), "Passphrase for key "))
-         {
-           m_errorCode = -1;
-           errmsg.clear().append("Invalid or missing key passphrase");
-           pipe->abort();
-           return false;
-         }
-         break;
-       }
-       retcode = pipe->wait();
-       bool firsterr=true;
-       loop {
-         size32_t read = pipe->readError(sizeof(buf), buf);
-         errmsg.append(read,(const char *)buf);
-
-         if (strstr(errmsg.str(), "Wrong passphrase"))
-         {
-           retcode = 5;
-           errmsg.clear().append("Invalid or missing key passphrase. ");
-         }
-         break;
-       }
-     }
-
+     retcode = pipeSSHCmd(cmdline.str(), output, errmsg);
      m_processed = true;
+
      if (retcode && retcode != 1)
      {
        m_errorCode = retcode;
@@ -1577,34 +1601,69 @@ public:
    {
      int retcode = 1;
      Owned<IPipeProcess> pipe = createPipeProcess();
-     StringBuffer workdir;
-     workdir.append("");
-     if (pipe->run("ConfigEnv", cmdline, workdir, FALSE, true, true)) {
+     StringBuffer workdir("");
+
+     if (pipe->run("ConfigEnv", cmdline, workdir, FALSE, true, true))
+     {
        byte buf[4096*2];
-       loop {
-         size32_t read = pipe->read(sizeof(buf), buf);
-         outbuf.append(read,(const char *)buf);
-         if (strstr(outbuf.str(), "Passphrase for key "))
-         {
-           retcode = 5;
-           errbuf.clear().append("Invalid or missing key passphrase. ");
-           pipe->abort();
-           return retcode;
-         }
-         break;
+       size32_t read = pipe->read(sizeof(buf), buf);
+       outbuf.append(read,(const char *)buf);
+
+       if (strstr(outbuf.str(), "Passphrase for key "))
+       {
+         retcode = 5;
+         errbuf.clear().append("Invalid or missing key passphrase. ");
+         pipe->abort();
+         return retcode;
        }
+
        retcode = pipe->wait();
-       bool firsterr=true;
-       loop {
-         size32_t read = pipe->readError(sizeof(buf), buf);
-         errbuf.append(read,(const char *)buf);
-         if (strstr(errbuf.str(), "Wrong passphrase"))
-         {
-           retcode = -1;
-           errbuf.clear().append("Invalid or missing key passphrase");
-         }
-         break;
+       read = pipe->readError(sizeof(buf), buf);
+       errbuf.append(read,(const char *)buf);
+
+       if (strstr(errbuf.str(), "Wrong passphrase"))
+       {
+         retcode = -1;
+         errbuf.clear().append("Invalid or missing key passphrase");
        }
+       else if (strstr(errbuf.str(), "The server's host key is not cached in the registry."))
+       {
+         Owned<IPipeProcess> pipe1 = createPipeProcess();
+         StringBuffer cmd;
+         cmd.appendf("cmd /c \" echo y | %s \"", cmdline);
+
+         if (pipe1->run("ConfigEnv",cmd.str(),workdir,FALSE,true,true))
+         {
+           size32_t read = pipe1->read(sizeof(buf), buf);
+           outbuf.append(read,(const char *)buf);
+           retcode = pipe1->wait();
+           read = pipe->readError(sizeof(buf), buf);
+
+           if (read)
+           {
+             errbuf.append(" ").append(read,(const char *)buf);
+             retcode = 7;
+           }
+           else
+             errbuf.clear();
+           }
+         }
+         else if (errbuf.length())
+         {
+           const char* psz = strstr(errbuf.str(), "Authenticating with public key \"");
+
+           if (!psz || psz != errbuf.str())
+             retcode = 2;
+           else
+           {
+             const char* psz1 = psz + strlen("Authenticating with public key \"");
+             const char* psz2 = strstr(psz1, "\"\r\n");
+             psz1 = psz2 + strlen("\"\r\n");
+
+             if (strlen(psz1))
+               retcode = 2;
+           }
+         }
      }
 
      return retcode;
