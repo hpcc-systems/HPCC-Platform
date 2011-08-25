@@ -16,22 +16,15 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
+#option ('importAllModules', true);
 
 namesRecord :=
             RECORD
-big_endian integer2     age := 25;
-integer2        age2 := 25;
-integer8        age8 := 25;
-real8           salary := 0;
-ebcdic string20 surname;
+string20        surname;
 string10        forename;
-unsigned8       filepos{virtual(fileposition)}
+integer2        age := 25;
             END;
 
 namesTable := dataset('x',namesRecord,FLAT);
-namesTable2 := dataset('xx.zzz',namesRecord,FLAT);
-nt2 := group(namesTable, age2);
 
-unsigned curVersion := 10;
-BUILDINDEX(nt2, { surname, forename, filepos }, 'name.idx', set('x','y'));
-BUILDINDEX(nt2, { age, age2, age8, filepos }, 'age.idx', dataset(namesTable2), skew(,2), threshold(3.1415), backup,set('version',curVersion), set(U'user',U'ghalliday'),set('system','local'));
+output(table(namesTable, { count(group); }, surname, many, threshold(3.1415),skew(1.2345,9.876)));

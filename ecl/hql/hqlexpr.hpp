@@ -1356,6 +1356,7 @@ extern HQL_API void unwindChildren(HqlExprArray & children, const IHqlExpression
 extern HQL_API void unwindChildren(HqlExprArray & children, const IHqlExpression * expr, unsigned from, unsigned to);
 extern HQL_API void unwindChildren(HqlExprCopyArray & children, const IHqlExpression * expr, unsigned first=0);
 extern HQL_API void unwindRealChildren(HqlExprArray & children, const IHqlExpression * expr, unsigned first);
+extern HQL_API void unwindAttributes(HqlExprArray & children, const IHqlExpression * expr);
 extern HQL_API void unwindList(HqlExprArray &dst, IHqlExpression * expr, node_operator op);
 extern HQL_API void unwindCopyList(HqlExprCopyArray &dst, IHqlExpression * expr, node_operator op);
 extern HQL_API void unwindCommaCompound(HqlExprArray & target, IHqlExpression * expr);
