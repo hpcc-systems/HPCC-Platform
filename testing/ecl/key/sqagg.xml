@@ -1,5 +1,5 @@
 <Dataset name='Result 1'>
- <Row><addr>99 Maltings Road</addr><numpeople>3</numpeople><aveage>23.0</aveage><maxdob>20000101</maxdob></Row>
+ <Row><addr>99 Maltings Road</addr><numpeople>3</numpeople><aveage>23.66666666666667</aveage><maxdob>20000101</maxdob></Row>
  <Row><addr>Buckingham Palace</addr><numpeople>2</numpeople><aveage>80.0</aveage><maxdob>19260421</maxdob></Row>
  <Row><addr>Bedrock</addr><numpeople>2</numpeople><aveage>2003.0</aveage><maxdob>20202</maxdob></Row>
  <Row><addr>Wimpole Hall</addr><numpeople>1</numpeople><aveage>67.0</aveage><maxdob>19361008</maxdob></Row>
@@ -65,7 +65,7 @@
  <Row><Result_10>**** The following results should be identical - calculated using a subquery ****</Result_10></Row>
 </Dataset>
 <Dataset name='Result 11'>
- <Row><addr>99 Maltings Road</addr><numpeople>3</numpeople><aveage>23.0</aveage><maxdob>20000101</maxdob></Row>
+ <Row><addr>99 Maltings Road</addr><numpeople>3</numpeople><aveage>23.66666666666667</aveage><maxdob>20000101</maxdob></Row>
  <Row><addr>Buckingham Palace</addr><numpeople>2</numpeople><aveage>80.0</aveage><maxdob>19260421</maxdob></Row>
  <Row><addr>Bedrock</addr><numpeople>2</numpeople><aveage>2003.0</aveage><maxdob>20202</maxdob></Row>
  <Row><addr>Wimpole Hall</addr><numpeople>1</numpeople><aveage>67.0</aveage><maxdob>19361008</maxdob></Row>
