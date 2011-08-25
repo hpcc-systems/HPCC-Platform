@@ -2665,6 +2665,11 @@ buildFlag
                             $$.setPosition($1);
                         }
     | skewAttribute
+    | THRESHOLD '(' expression ')'
+                        {
+                            parser->normalizeExpression($3, type_numeric, true);
+                            $$.setExpr(createAttribute(thresholdAtom, $3.getExpr()));
+                        }
     | FEW               {
                             $$.setExpr(createAttribute(fewAtom));
                             $$.setPosition($1);
