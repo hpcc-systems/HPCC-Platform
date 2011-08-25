@@ -2192,10 +2192,10 @@ StringBuffer jlib_decl passwordInput(const char* prompt, StringBuffer& passwd)
     set_term.c_lflag &= ~(ECHO|ECHOE|ECHOK|ECHONL);
     tcsetattr(termfd, TCSAFLUSH, &set_term);
     char c = EOF;
-    int rd = _read(termfd,&c,1);
+    int rd = ::read(termfd,&c,1);
     while ((rd==1)&&(c!='\r')&&(c!='\n')&&(c!=EOF)) {
         passwd.append(c);
-        rd = _read(termfd,&c,1);
+        rd = ::read(termfd,&c,1);
     }
     int err = (rd<0)?errno:0;
     tcsetattr(termfd, TCSAFLUSH, &saved_term);
