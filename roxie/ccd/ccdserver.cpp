@@ -1537,6 +1537,7 @@ public:
     {
         input = NULL;
         helper = NULL;
+        eof = eog = FALSE;
     }
 
     inline unsigned __int64 queryTotalCycles() const
@@ -1655,7 +1656,7 @@ public:
         {
             const void * row;
             {
-                CriticalBlock c(crit);
+                CriticalBlock c(crit); // See comments in stop for why this is needed
                 row = input->nextInGroup();
             }
             if (row)
@@ -8532,10 +8533,12 @@ class CRoxieServerPipeReadActivity : public CRoxieServerActivity
     StringAttr pipeCommand;
     Owned<IOutputRowDeserializer> rowDeserializer;
     Owned<IReadRowStream> readTransformer;
+    bool groupSignalled;
 public:
     CRoxieServerPipeReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorPipeReadArg &)basehelper)
     {
+        groupSignalled = true;
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -8548,6 +8551,7 @@ public:
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
+        groupSignalled = true; // i.e. don't start with a NULL row
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
         if (!readTransformer)
             readTransformer.setown(createReadRowStream(rowAllocator, rowDeserializer, helper.queryXmlTransformer(), helper.queryCsvTransformer(), helper.queryXmlIteratorPath(), helper.getPipeFlags()));
@@ -8564,11 +8568,23 @@ public:
     virtual const void *nextInGroup()
     {
         ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
-        if (!waitForPipe())
-            return NULL;
+        while (!waitForPipe())
+        {
+            if (!pipe)
+                return NULL;
+            if (helper.getPipeFlags() & TPFgroupeachrow)
+            {
+                if (!groupSignalled)
+                {
+                    groupSignalled = true;
+                    return NULL;
+                }
+            }
+        }
         const void *ret = readTransformer->next();
-        if (ret)
-            processed++;
+        assertex(ret != NULL); // if ret can ever be NULL then we need to recode this logic
+        processed++;
+        groupSignalled = false;
         return ret;
     }
 
@@ -8593,17 +8609,12 @@ protected:
         readTransformer->setStream(pipeReader.get());
     }
 
-    void closePipe()
-    {
-        pipe->closeInput();
-    }
-
     void verifyPipe()
     {
         if (pipe)
         {
             unsigned err = pipe->wait();
-            if(err)
+            if(err && !(helper.getPipeFlags() & TPFnofail))
                 throw MakeStringException(ROXIE_PIPE_ERROR, "Pipe process %s returned error %d", pipeCommand.get(), err);
             pipe.clear();
         }
@@ -8626,6 +8637,7 @@ class CRoxieServerPipeThroughActivity : public CRoxieServerActivity, implements 
     bool firstRead;
     bool recreate;
     bool inputExhausted;
+    bool groupSignalled;
 
 public:
 
@@ -8633,6 +8645,7 @@ public:
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorPipeThroughArg &)basehelper), puller(false)
     {
         recreate = helper.recreateEachRow();
+        groupSignalled = true;
         firstRead = false;
         inputExhausted = false;
     }
@@ -8651,6 +8664,7 @@ public:
     {
         firstRead = true;
         inputExhausted = false;
+        groupSignalled = true; // i.e. don't start with a NULL row
         pipeVerified.reinit();
         pipeOpened.reinit();
         writeTransformer->ready();
@@ -8690,11 +8704,22 @@ public:
     {
         ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
         while (!waitForPipe())
-            if ((helper.getPipeFlags() & TPFgroupeachrow) || !pipe)
+        {
+            if (!pipe)
                 return NULL;
+            if (helper.getPipeFlags() & TPFgroupeachrow)
+            {
+                if (!groupSignalled)
+                {
+                    groupSignalled = true;
+                    return NULL;
+                }
+            }
+        }
         const void *ret = readTransformer->next();
-        if (ret)
-            processed++;
+        assertex(ret != NULL); // if ret can ever be NULL then we need to recode this logic
+        processed++;
+        groupSignalled = false;
         return ret;
     }
 
@@ -8784,7 +8809,7 @@ private:
         if (pipe)
         {
             unsigned err = pipe->wait();
-            if(err)
+            if(err && !(helper.getPipeFlags() & TPFnofail))
                 throw MakeStringException(ROXIE_PIPE_ERROR, "Pipe process %s returned error %d", pipeCommand.get(), err);
             pipe.clear();
             pipeVerified.signal();
@@ -8876,7 +8901,7 @@ private:
         writeTransformer->writeFooter(pipe);
         pipe->closeInput();
         unsigned err = pipe->wait();
-        if(err)
+        if(err && !(helper.getPipeFlags() & TPFnofail))
             throw MakeStringException(ROXIE_PIPE_ERROR, "Pipe process %s returned error %d", pipeCommand.get(), err);
         pipe.clear();
     }

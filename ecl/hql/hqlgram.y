@@ -9270,6 +9270,7 @@ pipeOption
                             $$.setExpr(createExprAttribute(outputAtom, $3.getExpr()), $1);
                         }
     | GROUP             {   $$.setExpr(createAttribute(groupAtom)); }
+    | OPT               {   $$.setExpr(createAttribute(optAtom)); }
     ;
     
 pipeFormatOption

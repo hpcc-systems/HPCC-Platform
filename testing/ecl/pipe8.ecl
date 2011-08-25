@@ -49,9 +49,9 @@ tempname2 := getTempFilename3() : INDEPENDENT;
 tempname3 := getTempFilename4() : INDEPENDENT;
 
 #IF (__OS__ = 'windows')
-catCmd := 'cmd /C cat';
+  STRING catCmd(STRING filename) := 'cmd /C cat > ' + filename;
 #ELSE
-catCmd := 'cat';
+  STRING catCmd(STRING filename) := 'bash -c "cat > ' + filename + '"';
 #END
 
 d1 := DATASET([{1,[{'Gavin'},{'John'}]},{2,[{'Steve'},{'Steve'},{'Steve'}]},{3,[]}], houseRecord);
@@ -62,9 +62,9 @@ d3 := DATASET([' <Dataset><Row>Line3</Row></Dataset>', '  <Dataset><Row>Middle</
 
 d4 := dataset([{ 'Hello there'}, {'what a nice day'}, {'1234'}], { string line}) : stored('nofold');
 
-p1 := PIPE(d1, catCmd, houseRecord);
-p2 := PIPE(d1, catCmd, houseRecord, xml(noroot), output(xml(noroot)));
-p3 := PIPE(d1, catCmd, { STRING line }, csv, output(xml(noroot)));
+p1 := PIPE(d1, 'cat', houseRecord);
+p2 := PIPE(d1, 'cat', houseRecord, xml(noroot), output(xml(noroot)));
+p3 := PIPE(d1, 'cat', { STRING line }, csv, output(xml(noroot)));
 
 OUTPUT(p1);
 OUTPUT(p2);
@@ -74,13 +74,13 @@ csvRec := { STRING lout; };
 
 SEQUENTIAL(
  PARALLEL(
-  OUTPUT(d1,,PIPE(catCmd + '     > '+tempname1)),
-  OUTPUT(d4,,PIPE(catCmd + '     > '+tempname2, csv)),
-  OUTPUT(d1,,PIPE(catCmd + '     > '+tempname3, xml(noroot)))
+  OUTPUT(d1,,PIPE(catCmd(tempname1))),
+  OUTPUT(d4,,PIPE(catCmd(tempname2), csv)),
+  OUTPUT(d1,,PIPE(catCmd(tempname3), xml(noroot)))
  ),
  PARALLEL(
   OUTPUT(PIPE('sort ' + tempname2, csvRec, csv)),
-  OUTPUT(PIPE(catCmd + ' ' + tempname3, houseRecord, xml('Dataset/Row')))
+  OUTPUT(PIPE('cat ' + tempname3, houseRecord, xml('Dataset/Row')))
  )
 );
 

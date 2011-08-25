@@ -1964,6 +1964,7 @@ enum
 
     TPFrecreateeachrow      = 0x0100,
     TPFgroupeachrow         = 0x0200,
+    TPFnofail               = 0x0400,
 };
 
 

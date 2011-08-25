@@ -10169,6 +10169,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
             StringBuffer flags;
             if (expr->hasProperty(repeatAtom))
                 flags.append("|TPFrecreateeachrow");
+            if (expr->hasProperty(optAtom))
+                flags.append("|TPFnofail");
             if (csvAttr)
                 flags.append("|TPFwritecsvtopipe");
             if (xmlAttr)
@@ -10973,6 +10975,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityPipeThrough(BuildCtx & ctx, IH
         flags.append("|TPFrecreateeachrow");
     if (expr->hasProperty(groupAtom))
         flags.append("|TPFgroupeachrow");
+    if (expr->hasProperty(optAtom))
+        flags.append("|TPFnofail");
 
     if (csvToPipe)
         flags.append("|TPFwritecsvtopipe");
