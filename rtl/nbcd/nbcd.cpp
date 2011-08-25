@@ -226,6 +226,7 @@ TempDecimal & TempDecimal::divide(const TempDecimal & other)
         if (iter < maxDigits)
             digits[iter] = q;
     }
+    //MORE: This should really calculate the next digit, and conditionally round the least significant digit.
 
     negative ^= other.negative;
     return *this;
@@ -253,7 +254,7 @@ void TempDecimal::extendRange(byte oLsb, byte oMsb)
 TempDecimal & TempDecimal::modulus(const TempDecimal & other)
 {
     TempDecimal left(*this);
-    left.divide(other).trunc(0).multiply(other);
+    left.divide(other).truncate(0).multiply(other);
     return subtract(left);
 }
 
@@ -418,6 +419,35 @@ TempDecimal & TempDecimal::roundup(int places)
 }
 
 
+void TempDecimal::getPrecision(unsigned & digits, unsigned & precision)
+{
+    //Ensures digits>=precision && precision >= 0
+    unsigned top = msb >= zeroDigit ? msb+1 : zeroDigit;
+    unsigned low = lsb >= zeroDigit ? zeroDigit : lsb;
+    digits = (top == low) ? 1 : top - low;
+    precision = zeroDigit-low;
+}
+
+void TempDecimal::getClipPrecision(unsigned & digits, unsigned & precision)
+{
+    int lo, hi;
+    clip(lo, hi);
+
+    if (lo > hi)
+    {
+        digits = 1;
+        precision = 0;
+    }
+    else
+    {
+        //Ensures digits>=precision && precision >= 0
+        unsigned top = hi >= zeroDigit ? hi+1 : zeroDigit;
+        unsigned low = lo >= zeroDigit ? zeroDigit : lo;
+        digits = (top == low) ? 1 : top - low;
+        precision = zeroDigit-low;
+    }
+}
+
 TempDecimal & TempDecimal::setPrecision(byte numDigits, byte precision)
 {
     unsigned char newhigh = zeroDigit + numDigits - precision - 1;
@@ -497,20 +527,27 @@ TempDecimal & TempDecimal::subtractDigits(const TempDecimal & other)
     return *this;
 }
 
-TempDecimal & TempDecimal::trunc(unsigned places)
+TempDecimal & TempDecimal::truncate(int places)
 {
-    if ((places < maxPrecision) && (zeroDigit - places > lsb))
+    //out of range - either 0 or overflow
+    if (places <= -maxIntegerDigits)
+    {
+        setZero();
+        return *this;
+    }
+
+    if (zeroDigit - places > lsb)
     {
         lsb = zeroDigit - places;
-        //very rare - e.g., trunc (0.0001)
         if (lsb > msb)
         {
-            msb = lsb;
             digits[lsb] = 0;
+            msb = lsb;
         }
     }
     return *this;
 }
+
 
 size32_t TempDecimal::getStringLength() const
 {

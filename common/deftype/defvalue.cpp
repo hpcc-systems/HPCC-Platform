@@ -2037,7 +2037,7 @@ DecimalValue::~DecimalValue()
 
 int DecimalValue::compare(IValue *_to)
 {
-    assertThrow(_to->queryType()==type);
+    assertThrow(_to->getTypeCode()==type_decimal);
     BcdCriticalBlock bcdBlock;
     pushDecimalValue();
     _to->pushDecimalValue();
@@ -2049,7 +2049,6 @@ IValue *DecimalValue::castTo(ITypeInfo *t)
     t = queryUnqualifiedType(t);
     if (t==type)
         return LINK(this);
-
 
     type_t tc = t->getTypeCode();
     if (tc == type_any)
@@ -2184,15 +2183,9 @@ IValue *createDecimalValue(void * val, ITypeInfo * type)
     return new DecimalValue(val, type);
 }
 
-IValue *createDecimalValue(void * val, int length, unsigned char prec, bool isSigned)
-{
-    ITypeInfo * type = makeDecimalType(length, prec, isSigned);
-    return new DecimalValue(val, type);
-}
-
 IValue *createDecimalValueFromStack(ITypeInfo * type)
 {
-    return ((CDecimalTypeInfo*)type)->createValueFromStack();
+    return static_cast<CDecimalTypeInfo*>(type)->createValueFromStack();
 }
 
 //===========================================================================
@@ -2417,7 +2410,7 @@ void appendValueToBuffer(MemoryBuffer & mem, IValue * value)
 IValue * addValues(IValue * left, IValue * right)
 {
     IValue * ret;
-    ITypeInfo * pnt = getPromotedNumericType(left->queryType(), right->queryType());
+    ITypeInfo * pnt = getPromotedAddSubType(left->queryType(), right->queryType());
     
     switch(pnt->getTypeCode())
     {
@@ -2464,7 +2457,7 @@ IValue * addValues(unsigned num, IValue * * values)
 IValue * subtractValues(IValue * left, IValue * right)
 {
     IValue * ret;
-    ITypeInfo * pnt = getPromotedNumericType(left->queryType(), right->queryType());
+    ITypeInfo * pnt = getPromotedAddSubType(left->queryType(), right->queryType());
     
     switch(pnt->getTypeCode())
     {
@@ -2500,7 +2493,7 @@ IValue * substractValues(unsigned num, IValue * * values)
 IValue * multiplyValues(IValue * left, IValue * right)
 {
     IValue * ret;
-    ITypeInfo * pnt = getPromotedNumericType(left->queryType(), right->queryType());
+    ITypeInfo * pnt = getPromotedMulDivType(left->queryType(), right->queryType());
     
     switch(pnt->getTypeCode())
     {
@@ -2535,7 +2528,7 @@ IValue * multiplyValues(unsigned num, IValue * * values)
 
 IValue * divideValues(IValue * left, IValue * right)
 {
-    ITypeInfo * pnt = getPromotedNumericType(left->queryType(), right->queryType());
+    ITypeInfo * pnt = getPromotedMulDivType(left->queryType(), right->queryType());
 
     switch(pnt->getTypeCode())
     {
@@ -2586,7 +2579,7 @@ IValue * divideValues(unsigned num, IValue * * values)
 IValue * modulusValues(IValue * left, IValue * right)
 {
     IValue * ret;
-    ITypeInfo * pnt = getPromotedNumericType(left->queryType(), right->queryType());
+    ITypeInfo * pnt = getPromotedMulDivType(left->queryType(), right->queryType());
     
     switch(pnt->getTypeCode())
     {
@@ -2773,8 +2766,15 @@ IValue * truncateValue(IValue * v)
     case type_packedint:
         return LINK(v);
     case type_real:
-    case type_decimal:
         return createTruncIntValue(v->getIntValue(), 8, true);
+    case type_decimal:
+        {
+            BcdCriticalBlock bcdBlock;
+            v->pushDecimalValue();
+            DecTruncate();
+            OwnedITypeInfo resultType = getTruncType(v->queryType());
+            return createDecimalValueFromStack(resultType);
+        }
     }
     assertThrow(false);
     return NULL;

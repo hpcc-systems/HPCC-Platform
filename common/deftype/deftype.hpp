@@ -53,10 +53,6 @@ interface IValue;
 #define type_littleendianint    type_swapint
 #endif
 
-//These values correspond to the maximums for fields in a dataset
-//Temporary values can be larger (see nbcd.h TempDecimal for details)
-#define MAX_DECIMAL_LENGTH      32
-
 // NOTE - do not change the values here - they are also used in Clarion and stored in a database!!
 // Add new types to the end
 
@@ -257,7 +253,7 @@ extern DEFTYPE_API ITypeInfo *makeEventType();
 extern DEFTYPE_API ITypeInfo *makeAnyType();
 extern DEFTYPE_API ITypeInfo *makeType(type_t type, int size);
 extern DEFTYPE_API IEnumeratedTypeBuilder *makeEnumeratedTypeBuilder(ITypeInfo *base, aindex_t numvalues);
-extern DEFTYPE_API ITypeInfo *makeDecimalType(int size, unsigned char prec, bool isSigned);
+extern DEFTYPE_API ITypeInfo *makeDecimalType(unsigned digits, unsigned prec, bool isSigned);
 extern DEFTYPE_API ITypeInfo *makeTableType(ITypeInfo *basetype, IInterface * distributeinfo, IInterface *gloalSortinfo, IInterface * localSortInfo);
 extern DEFTYPE_API ITypeInfo *makeGroupedTableType(ITypeInfo *basetype, IInterface *groupinfo, IInterface *sortinfo);
 extern DEFTYPE_API ITypeInfo *makeRowType(ITypeInfo *basetype);
@@ -298,6 +294,9 @@ extern DEFTYPE_API ITypeInfo * getNumericType(ITypeInfo * type);
 extern DEFTYPE_API ITypeInfo * getStringType(ITypeInfo * type);
 extern DEFTYPE_API ITypeInfo * getVarStringType(ITypeInfo * type);
 extern DEFTYPE_API ITypeInfo * getPromotedType(ITypeInfo * l_type, ITypeInfo * r_type);
+extern DEFTYPE_API ITypeInfo * getPromotedAddSubType(ITypeInfo * l_type, ITypeInfo * r_type);
+extern DEFTYPE_API ITypeInfo * getPromotedMulDivType(ITypeInfo * l_type, ITypeInfo * r_type);
+extern DEFTYPE_API ITypeInfo * getPromotedDivType(ITypeInfo * l_type, ITypeInfo * r_type);
 extern DEFTYPE_API ITypeInfo * getPromotedNumericType(ITypeInfo * l_type, ITypeInfo * r_type);
 extern DEFTYPE_API unsigned getClarionResultType(ITypeInfo *type);
 extern DEFTYPE_API ITypeInfo * getAsciiType(ITypeInfo * type);
@@ -317,7 +316,9 @@ extern DEFTYPE_API bool isLittleEndian(ITypeInfo * type);
 extern DEFTYPE_API bool isDatasetType(ITypeInfo * type);
 extern DEFTYPE_API bool isSingleValuedType(ITypeInfo * type);
 inline bool isFixedSize(ITypeInfo * type) { return type && (type->getSize() != UNKNOWN_LENGTH); }
+inline bool isUnknownSize(ITypeInfo * type) { return type && (type->getSize() == UNKNOWN_LENGTH); }
 inline bool isAnyType(ITypeInfo * type) { return type && (type->getTypeCode() == type_any); }
+inline bool isDecimalType(ITypeInfo * type) { return type && (type->getTypeCode() == type_decimal); }
 
 
 //If casting a value from type before to type after is the value preserved.
@@ -347,6 +348,7 @@ extern DEFTYPE_API ITypeInfo * queryModifier(ITypeInfo * t, typemod_t modifier);
 extern DEFTYPE_API ITypeInfo * replaceChildType(ITypeInfo * type, ITypeInfo * newChild);
 extern DEFTYPE_API ITypeInfo * getRoundType(ITypeInfo * type);
 extern DEFTYPE_API ITypeInfo * getRoundToType(ITypeInfo * type);
+extern DEFTYPE_API ITypeInfo * getTruncType(ITypeInfo * type);
 
 inline bool hasConstModifier(ITypeInfo * t)      { return hasModifier(t, typemod_const); }
 inline bool hasReferenceModifier(ITypeInfo * t)  { return hasModifier(t, typemod_ref); }

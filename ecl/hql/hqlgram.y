@@ -4957,16 +4957,12 @@ expr
                             }
                             else
                             {
-                                ITypeInfo *type = parser->checkPromoteNumericType($1, $3);
-                                $$.setExpr(createValue(no_add, type, $1.getExpr(), $3.getExpr()), $1);
+                                $$.setExpr(parser->createArithmeticOp(no_add, $1, $3), $1);
                             }
                         }
     | expr '-' expr       
                         {
-                            parser->normalizeExpression($1);
-                            parser->normalizeExpression($3);
-                            ITypeInfo *type = parser->checkPromoteNumericType($1, $3);
-                            $$.setExpr(createValue(no_sub, type, $1.getExpr(), $3.getExpr()));
+                            $$.setExpr(parser->createArithmeticOp(no_sub, $1, $3), $1);
                         }
     | expr ORDER expr   
                         {
@@ -4977,27 +4973,21 @@ expr
                         }
     | expr '*' expr       
                         {
-                            parser->normalizeExpression($1);
-                            parser->normalizeExpression($3);
-                            ITypeInfo *type = parser->checkPromoteNumericType($1, $3);
-                            $$.setExpr(createValue(no_mul, type, $1.getExpr(), $3.getExpr()));
+                            $$.setExpr(parser->createArithmeticOp(no_mul, $1, $3), $1);
                         }
     | expr '/' expr     
                         {
                             parser->normalizeExpression($1);
                             parser->normalizeExpression($3);
-                            if ($1.queryExprType()->getTypeCode() == type_int)
+                            if (!isDecimalType($1.queryExprType()) && !isDecimalType($3.queryExprType()))
                                 parser->ensureType($1, parser->defaultRealType);
-                            ITypeInfo *type = parser->checkPromoteNumericType($1, $3);
-                            $$.setExpr(createValue(no_div, type, $1.getExpr(), $3.getExpr()));
+                            $$.setExpr(parser->createArithmeticOp(no_div, $1, $3), $1);
                         }
     | expr '%' expr     {
-                            parser->normalizeExpression($1);
-                            parser->normalizeExpression($3);
-                            parser->applyDefaultPromotions($1);
-                            parser->applyDefaultPromotions($3);
                             parser->normalizeExpression($1, type_int, false);
                             parser->normalizeExpression($3, type_int, false);
+                            parser->applyDefaultPromotions($1);
+                            parser->applyDefaultPromotions($3);
                             ITypeInfo * type = parser->promoteToSameType($1, $3); // MORE _ should calculate at wider width then cast down to narrower?
                             $$.setExpr(createValue(no_modulus, type, $1.getExpr(), $3.getExpr()));
                         }
@@ -5032,6 +5022,7 @@ expr
     | expr '&' expr     {
                             parser->normalizeExpression($1);
                             parser->normalizeExpression($3);
+                            //MORE: We could could implement for decimal types.
                             if (!$1.queryExpr()->isBoolean() || !$3.queryExpr()->isBoolean())
                             {
                                 parser->normalizeExpression($1, type_int, false);
@@ -5427,8 +5418,9 @@ primexpr1
                         }
     | TRUNCATE '(' expression ')'
                         {
-                            parser->normalizeExpression($3, type_real, false);
-                            $$.setExpr(createValue(no_truncate, LINK(parser->defaultIntegralType), $3.getExpr()));
+                            parser->normalizeExpression($3, type_numeric, false);
+                            ITypeInfo * type = getTruncType($3.queryExprType());
+                            $$.setExpr(createValue(no_truncate, type, $3.getExpr()));
                         }
     | LENGTH '(' expression ')'
                         {

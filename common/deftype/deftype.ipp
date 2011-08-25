@@ -332,9 +332,10 @@ protected:
     bool  typeIsSigned;
 
 public:
+    enum { UNKNOWN_DIGITS = 0xff };
     IValue * createValueFromStack(void);
 
-    CDecimalTypeInfo(int _digits, unsigned char p, bool _isSigned) : CHashedTypeInfo(_isSigned ? _digits/2+1 : (_digits+1)/2) { digits = _digits; prec = p; typeIsSigned = _isSigned;};
+    CDecimalTypeInfo(unsigned _digits, unsigned _prec, bool _isSigned);
     virtual type_t getTypeCode() const { return type_decimal; };
     virtual bool isInteger() { return false; };
 
@@ -344,10 +345,10 @@ public:
     virtual IValue * castFrom(size32_t len, const char * text);
     virtual size32_t getAlignment()               { return 1; };
     virtual StringBuffer &getECLType(StringBuffer & out);
-    virtual unsigned getPrecision() { return prec; };
-    virtual unsigned getDigits()    { return digits; };
+    virtual unsigned getPrecision() { return (prec == UNKNOWN_DIGITS) ? UNKNOWN_LENGTH : prec; };
+    virtual unsigned getDigits()    { return (digits == UNKNOWN_DIGITS) ? UNKNOWN_LENGTH : digits; };
     virtual unsigned getStringLen(); 
-    virtual unsigned getBitSize()   { return typeIsSigned? (digits+1)*4 : digits*4; };
+    virtual unsigned getBitSize();
     virtual bool isSigned()         { return typeIsSigned; }
     virtual bool isScalar()                     { return true; }
     virtual const char *queryTypeName() { return "decimal"; }
@@ -355,7 +356,7 @@ public:
     virtual unsigned getHash() const;
     virtual bool equals(const CTypeInfo & other) const;
 
-    virtual void serialize(MemoryBuffer &tgt) { CTypeInfo::serialize(tgt); tgt.append(prec); tgt.append(digits); tgt.append(typeIsSigned); }
+    virtual void serialize(MemoryBuffer &tgt);
 };
 
 class CBitfieldTypeInfo : public CTypeInfo

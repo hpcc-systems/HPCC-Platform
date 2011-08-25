@@ -46,8 +46,8 @@ nbcd_decl void  _fastcall  DecDup( void );         // duplicate value on top of 
 nbcd_decl void  _fastcall  DecSetPrecision(unsigned char declen, unsigned char prec); // changes length and precision of top value on stack
 nbcd_decl void  _fastcall  DecSub( void );         // substract top from second value on stack and replace with result
 nbcd_decl void  _fastcall  DecSubR( void );        // substract second from top value on stack and replace with result
-nbcd_decl void  _fastcall  DecInfo (unsigned char & declen, unsigned char & prec, bool udec=false); // returns the decimal (or udecimal) length and precision of top value on stack
-nbcd_decl void  _fastcall  DecInt( void );         // turn value on top of the decimal stack into integral number
+nbcd_decl void  _fastcall  DecInfo(unsigned & digits, unsigned & prec); // returns the digits and precision of top value on stack
+nbcd_decl void  _fastcall  DecClipInfo(unsigned & digits, unsigned & prec);
 nbcd_decl void  _fastcall  DecLongPower(long pow);   // calculates top of stack to the power of long and replaces with result
 nbcd_decl void  _fastcall  DecModulus( void );   // modulus second by top value on stack and replace with result
 nbcd_decl void  _fastcall  DecMul( void );         // multiply values top and second on the stack and replace with result
@@ -77,6 +77,8 @@ nbcd_decl void  _fastcall  DecRoundUp( void );       // round value on top of de
 nbcd_decl void  _fastcall  DecRoundTo( unsigned places );       // round value on top of decimal stack
 nbcd_decl void  * _fastcall  DecSaveStack( void );   // Save decimal stack
 nbcd_decl void  _fastcall  DecSwap( void );          // swap top and second values on decimal stack 
+nbcd_decl void  _fastcall  DecTruncate( void );       // truncate value on top of decimal stack
+nbcd_decl void  _fastcall  DecTruncateAt(unsigned places);       // truncate value on top of decimal stack
 nbcd_decl void  _fastcall  DecUlongPower(unsigned long pow); // calculates top of stack to the power of unsigned long and replaces with result
 
 nbcd_decl void  _fastcall  DecLock();

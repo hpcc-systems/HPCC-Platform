@@ -5051,6 +5051,7 @@ void HqlCppTranslator::buildSetResultInfo(BuildCtx & ctx, IHqlExpression * origi
     OwnedHqlExpr nameText = createResultName(name, isPersist);
     if (retType == type_decimal)
     {
+        assertex(schemaType->getSize() != UNKNOWN_LENGTH);
         //An ugly exception because it takes an arbitrary length decimal.
         //This should be handled by having a decimal(unknown length) parameter to a function which passes size and precision
         CHqlBoundExpr boundName;

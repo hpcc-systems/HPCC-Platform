@@ -3064,7 +3064,7 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
         doBuildExprSysFunc(ctx, expr, tgt, sqrtAtom);
         return;
     case no_truncate:
-        doBuildExprSysFunc(ctx, expr, tgt, truncateAtom);
+        doBuildExprTrunc(ctx, expr, tgt);
         return;
     case no_offsetof:
         doBuildExprOffsetOf(ctx, expr, tgt);
@@ -4160,7 +4160,10 @@ void HqlCppTranslator::createTempFor(BuildCtx & ctx, ITypeInfo * _exprType, CHql
         case type_groupedtable:
             break;
         default:
-            UNIMPLEMENTED;
+            {
+                UNIMPLEMENTED;
+                break;
+            }
         }
     }
     else if (size > MAX_SIMPLE_VAR_SIZE)
@@ -4714,7 +4717,7 @@ void HqlCppTranslator::doBuildExprCompare(BuildCtx & ctx, IHqlExpression * expr,
                 HqlExprArray args;
                 buildCachedExpr(ctx, left, lhs);
                 buildCachedExpr(ctx, right, rhs);
-                if (!isPushed(lhs) && !isPushed(rhs) && isSameBasicType(leftType, rightType))
+                if (!isPushed(lhs) && !isPushed(rhs) && isSameBasicType(lhs.queryType(), rhs.queryType()))
                 {
                     args.append(*getSizetConstant(leftType->getSize()));
                     args.append(*getPointer(lhs.expr));
@@ -5270,6 +5273,28 @@ void HqlCppTranslator::doBuildExprRound(BuildCtx & ctx, IHqlExpression * expr, C
             }
             else
                 doBuildExprSysFunc(ctx, expr, tgt, roundupAtom);
+            break;
+        }
+    }
+}
+
+void HqlCppTranslator::doBuildExprTrunc(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt)
+{
+    IHqlExpression * arg = expr->queryChild(0);
+    switch (arg->queryType()->getTypeCode())
+    {
+    case type_decimal:
+        {
+            bindAndPush(ctx, arg);
+            HqlExprArray args;
+            callProcedure(ctx, DecTruncateAtom, args);
+            assertex(expr->queryType()->getTypeCode() == type_decimal);
+            tgt.expr.setown(createValue(no_decimalstack, expr->getType()));
+        }
+        break;
+    default:
+        {
+            doBuildExprSysFunc(ctx, expr, tgt, truncateAtom);
             break;
         }
     }
@@ -6520,19 +6545,28 @@ void HqlCppTranslator::doBuildExprCast(BuildCtx & ctx, ITypeInfo * to, CHqlBound
                 ensurePushed(ctx, pure);
 
                 bool needToSetPrecision = true;
+                unsigned toDigits = to->getDigits();
+                unsigned toPrecision = to->getPrecision();
                 switch (from->getTypeCode())
                 {
                 case type_int:
                 case type_swapint:
-                    if (to->getDigits() >= from->getDigits())
+                    if (toDigits >= from->getDigits())
                         needToSetPrecision = false;
                     break;
                 case type_decimal:
-                    if (((to->getDigits() - to->getPrecision()) >= (from->getDigits() - from->getPrecision())) &&
-                        (to->getPrecision() >= from->getPrecision()))
-                        needToSetPrecision = false;
-                    break;
+                    {
+                        unsigned fromDigits = from->getDigits();
+                        unsigned fromPrecision = from->getPrecision();
+                        if (((toDigits - toPrecision) >= (fromDigits - fromPrecision)) &&
+                            (toPrecision >= fromPrecision))
+                            needToSetPrecision = false;
+                        break;
+                    }
                 }
+
+                if ((toDigits == MAX_DECIMAL_DIGITS) && (toPrecision == MAX_DECIMAL_PRECISION))
+                    needToSetPrecision = false;
 
                 if (needToSetPrecision)
                 {

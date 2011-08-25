@@ -103,14 +103,14 @@ nbcd_decl void _fastcall  DecSubR()
     DecSub();
 }
 
-nbcd_decl void _fastcall  DecInfo (unsigned char & declen, unsigned char & prec, bool udec)
+nbcd_decl void _fastcall  DecInfo (unsigned & digits, unsigned & prec)
 {
-    UNIMPLEMENTED;
+    stack[curStack-1].getPrecision(digits, prec);
 }
 
-nbcd_decl void _fastcall  DecInt()
+nbcd_decl void _fastcall  DecClipInfo (unsigned & digits, unsigned & prec)
 {
-    stack[curStack-1].trunc(0);
+    stack[curStack-1].getClipPrecision(digits, prec);
 }
 
 nbcd_decl void _fastcall  DecLongPower(long pow)
@@ -259,6 +259,16 @@ nbcd_decl void _fastcall  DecSwap()
     memcpy(&stack[curStack-2], &temp, sizeof(TempDecimal));
 }
 
+
+nbcd_decl void _fastcall  DecTruncate()
+{
+    stack[curStack-1].truncate(0);
+}
+
+nbcd_decl void _fastcall  DecTruncateAt(unsigned places)
+{
+    stack[curStack-1].truncate(places);
+}
 
 nbcd_decl bool _fastcall  DecValid(bool isSigned, unsigned digits, const void * data)
 {

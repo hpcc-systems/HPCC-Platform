@@ -2230,12 +2230,13 @@ _ATOM HqlGram::createUnnamedFieldName()
 
 
 /* In parms: type, value: linked */
-void HqlGram::addField(const attribute &errpos, _ATOM name, ITypeInfo *type, IHqlExpression *value, IHqlExpression *attrs)
+void HqlGram::addField(const attribute &errpos, _ATOM name, ITypeInfo *_type, IHqlExpression *value, IHqlExpression *attrs)
 {
-    Linked<ITypeInfo> expectedType = type;
+    Owned<ITypeInfo> fieldType = _type;
+    Linked<ITypeInfo> expectedType = fieldType;
     if (expectedType->getTypeCode() == type_alien)
     {
-        IHqlAlienTypeInfo * alien = queryAlienType(type);
+        IHqlAlienTypeInfo * alien = queryAlienType(fieldType);
         expectedType.setown(alien->getLogicalType());
     }
 
@@ -2244,7 +2245,7 @@ void HqlGram::addField(const attribute &errpos, _ATOM name, ITypeInfo *type, IHq
         ITypeInfo * valueType = value->queryType();
         // MORE - is this implicit or explicit?
         if (!expectedType->assignableFrom(valueType->queryPromotedType()))
-            canNotAssignTypeWarn(type,valueType,errpos);
+            canNotAssignTypeWarn(fieldType,valueType,errpos);
         if (expectedType->getTypeCode() != type_row)
         {
             IHqlExpression * newValue = ensureExprType(value, expectedType);
@@ -2253,40 +2254,55 @@ void HqlGram::addField(const attribute &errpos, _ATOM name, ITypeInfo *type, IHq
         }
     }
 
-    if (queryPropertyInList(virtualAtom, attrs) && !type->isScalar())
+    switch (fieldType->getTypeCode())
+    {
+    case type_any:
+        if (!queryTemplateContext())
+        {
+            reportUnsupportedFieldType(fieldType, errpos);
+            fieldType.set(defaultIntegralType);
+        }
+        break;
+    case type_decimal:
+        if (fieldType->getSize() == UNKNOWN_LENGTH)
+        {
+            reportWarning(ERR_BAD_FIELD_TYPE, errpos.pos, "Fields of unknown length decimal not currently supported");
+            fieldType.setown(makeDecimalType(MAX_DECIMAL_DIGITS, MAX_DECIMAL_PRECISION, fieldType->isSigned()));
+        }
+        break;
+    }
+
+    if (queryPropertyInList(virtualAtom, attrs) && !fieldType->isScalar())
         reportError(ERR_BAD_FIELD_ATTR, errpos, "Virtual can only be specified on a scalar field");
 
     if (!name)
         name = createUnnamedFieldName();
 
     checkFieldnameValid(errpos, name);
-    if(isUnicodeType(type) && (*type->queryLocale()->str() == 0))
+    if(isUnicodeType(fieldType) && (*fieldType->queryLocale()->str() == 0))
     {
         StringBuffer locale;
         _ATOM localeAtom = createLowerCaseAtom(queryDefaultLocale()->queryValue()->getStringValue(locale));
-        ITypeInfo * newType;
-        switch (type->getTypeCode())
+        switch (fieldType->getTypeCode())
         {
         case type_varunicode:
-            newType = makeVarUnicodeType(type->getStringLen(), localeAtom);
+            fieldType.setown(makeVarUnicodeType(fieldType->getStringLen(), localeAtom));
             break;
         case type_unicode:
-            newType = makeUnicodeType(type->getStringLen(), localeAtom);
+            fieldType.setown(makeUnicodeType(fieldType->getStringLen(), localeAtom));
             break;
         case type_utf8:
-            newType = makeUtf8Type(type->getStringLen(), localeAtom);
+            fieldType.setown(makeUtf8Type(fieldType->getStringLen(), localeAtom));
             break;
         default:
-            throwUnexpectedType(type);
+            throwUnexpectedType(fieldType);
         }
-        type->Release();
-        type = newType;
     }
 
-    if ((type->getSize() != UNKNOWN_LENGTH) && (type->getSize() > MAX_SENSIBLE_FIELD_LENGTH))
+    if ((fieldType->getSize() != UNKNOWN_LENGTH) && (fieldType->getSize() > MAX_SENSIBLE_FIELD_LENGTH))
         reportError(ERR_BAD_FIELD_SIZE, errpos, "Field %s is too large", name->str());
 
-    IHqlExpression *newField = createField(name, type, value, attrs);
+    IHqlExpression *newField = createField(name, fieldType.getClear(), value, attrs);
     addToActiveRecord(newField);
 }
 
@@ -3582,12 +3598,11 @@ ITypeInfo *HqlGram::checkPromoteIfType(attribute &a1, attribute &a2)
 
 ITypeInfo *HqlGram::checkPromoteNumericType(attribute &a1, attribute &a2)
 {
+    checkNumeric(a1);
+    checkNumeric(a2);
+
     ITypeInfo *t1 = a1.queryExprType();
     ITypeInfo *t2 = a2.queryExprType();
-    if (!t1 || (!isNumericType(t1) && !isAnyType(t1)))
-        reportError(ERR_EXPECTED_NUMERIC, a1, "Expected numeric expression");
-    if (!t2 || (!isNumericType(t2) && !isAnyType(t2)))
-        reportError(ERR_EXPECTED_NUMERIC, a2, "Expected numeric expression");
 
     applyDefaultPromotions(a1);
     applyDefaultPromotions(a2);
@@ -4490,6 +4505,50 @@ ITypeInfo *HqlGram::promoteToSameCompareType(attribute &a1, attribute &a2)
     return type;
 }
 
+IHqlExpression * HqlGram::createArithmeticOp(node_operator op, attribute &a1, attribute &a2)
+{
+    normalizeExpression(a1, type_numeric, false);
+    normalizeExpression(a2, type_numeric, false);
+
+    switch (op)
+    {
+    case no_add:
+    case no_sub:
+    case no_mul:
+    case no_div:
+        applyDefaultPromotions(a1);
+        applyDefaultPromotions(a2);
+        break;
+    }
+
+    ITypeInfo *t1 = a1.queryExprType();
+    ITypeInfo *t2 = a2.queryExprType();
+    Owned<ITypeInfo> type;
+    switch (op)
+    {
+    case no_add:
+    case no_sub:
+        type.setown(getPromotedAddSubType(t1, t2));
+        break;
+    case no_mul:
+    case no_div:
+        type.setown(getPromotedMulDivType(t1, t2));
+        break;
+    }
+
+    if (!type)
+        type.setown(getPromotedType(t1, t2));
+
+    if (!isDecimalType(type))
+    {
+        ensureType(a1, type);
+        ensureType(a2, type);
+    }
+
+    return createValue(op, type.getClear(), a1.getExpr(), a2.getExpr());
+}
+
+
 void HqlGram::promoteToSameCompareType(attribute &a1, attribute &a2, node_operator op)
 {
     if ((a1.queryExpr()->getOperator() == no_constant) && (a2.queryExpr()->getOperator() != no_constant) && (op != no_between))
@@ -4985,7 +5044,7 @@ void HqlGram::checkIntegerOrString(attribute & a1)
 void HqlGram::checkNumeric(attribute &a1)
 {
     ITypeInfo *t1 = a1.queryExprType();
-    if (!t1 || !isNumericType(t1))
+    if (!t1 || (!isNumericType(t1) && !isAnyType(t1)))
     {
         StringBuffer msg("Type mismatch - numeric expression expected");
         if (t1)
@@ -4993,7 +5052,7 @@ void HqlGram::checkNumeric(attribute &a1)
             msg.append("(");
             getFriendlyTypeStr(t1, msg).append(" was given)");
         }
-        reportError(ERR_TYPEMISMATCH_INTREAL, a1, "%s", msg.str());
+        reportError(ERR_EXPECTED_NUMERIC, a1, "%s", msg.str());
         a1.release().setExpr(getSizetConstant(0));
     }
 }
@@ -6578,6 +6637,13 @@ IHqlExpression * HqlGram::checkIndexRecord(IHqlExpression * record, const attrib
     return LINK(record);
 }
 
+
+void HqlGram::reportUnsupportedFieldType(ITypeInfo * type, const attribute & errpos)
+{
+    StringBuffer s;
+    getFriendlyTypeStr(type, s);
+    reportError(ERR_INDEX_BADTYPE, errpos, "Fields of type %s are not currently supported", s.str());
+}
 
 void HqlGram::reportIndexFieldType(IHqlExpression * expr, bool isKeyed, const attribute & errpos)
 {
