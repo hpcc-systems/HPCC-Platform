@@ -617,20 +617,29 @@ ICodeContext *EclAgent::queryCodeContext()
 
 const char *EclAgent::queryTempfilePath()
 {
-    if (agentTempDir.isEmpty()) {
-#ifdef _WIN32
-        const char *ret = "C:\\hthortemp";
-#else
-        const char *ret = "/c$/hthortemp";
-#endif
+    if (agentTempDir.isEmpty()) 
+    {
         StringBuffer dir;
-        if (getConfigurationDirectory(agentTopology->queryPropTree("Directories"),"temp","eclagent",agentTopology->queryProp("@name"),dir))
-            ret = dir.str();
-        recursiveCreateDirectory(ret);
-        agentTempDir.set(ret);
+        if (!getConfigurationDirectory(agentTopology->queryPropTree("Directories"),"temp","eclagent",agentTopology->queryProp("@name"),dir))
+        {
+            dir.clear();
+#ifdef _WIN32
+            char path[_MAX_PATH+1];
+            char tmpPath[] = "\\HPCCSystems\\hthortemp";
+            DWORD len = GetEnvironmentVariable("TEMP",path,sizeof(path));
+            if (len==0 || (len + sizeof(tmpPath) > _MAX_PATH))
+                dir.append("c:");
+            else
+                dir.append(path);
+            dir.append(tmpPath);
+#else
+            dir.append("/tmp/HPCCSystems/hthortemp";
+#endif
+        }
+        recursiveCreateDirectory(dir.str());
+        agentTempDir.set(dir.str());
     }
-    return agentTempDir.sget();
-}
+    return agentTempDir.sget();}
 
 StringBuffer & EclAgent::getTempfileBase(StringBuffer & buff)
 {
