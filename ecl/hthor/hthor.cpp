@@ -1364,7 +1364,7 @@ void PipeWriter::run()
                 readyForWrite.wait();
         }
         finished = true;
-        if(syncs && !aborted)
+        if(syncs)
             readyForRead.signal();
         if(!recreate)
             owner->closePipe();
@@ -1376,6 +1376,13 @@ void PipeWriter::run()
             readyForRead.signal();
         throw;
     }
+}
+
+void PipeWriter::sync()
+{
+    readyForWrite.signal();
+    if (!finished && !aborted)
+        readyForRead.wait();
 }
 
 void PipeWriter::abort()
@@ -1391,6 +1398,7 @@ PipeReader::PipeReader(IPipeProcess * _pipe, bool _syncsAtStart, bool _syncs, Pi
     : pipe(_pipe), syncsAtStart(_syncsAtStart), syncs(_syncs), writer(_writer), xformer(_xformer), grouped(_grouped)
 {
     started = false;
+    finished = false;
 }
 
 bool PipeReader::moreInputAvailable()
@@ -1440,9 +1448,9 @@ void PipeReader::setStream()
 
 bool PipeReader::sync()
 {
-    bool ret = writer->sync();
+    writer->sync();
     setStream();
-    return ret;
+    return moreInputAvailable();
 }
 
 unsigned PipeReader::wait()
