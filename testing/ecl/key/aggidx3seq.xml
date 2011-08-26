@@ -1,7 +1,7 @@
 <Dataset name='Result 1'>
  <Row><surname>Flintstone</surname><_unnamed_sum_2>198</_unnamed_sum_2></Row>
  <Row><surname>Grabdale</surname><_unnamed_sum_2>68</_unnamed_sum_2></Row>
- <Row><surname>Halliday</surname><_unnamed_sum_2>71</_unnamed_sum_2></Row>
+ <Row><surname>Halliday</surname><_unnamed_sum_2>74</_unnamed_sum_2></Row>
  <Row><surname>Jones</surname><_unnamed_sum_2>99</_unnamed_sum_2></Row>
  <Row><surname>Windsor</surname><_unnamed_sum_2>161</_unnamed_sum_2></Row>
 </Dataset>
@@ -19,7 +19,7 @@
  <Row><cntbooks>1</cntbooks><sumage>99</sumage></Row>
  <Row><cntbooks>2</cntbooks><sumage>118</sumage></Row>
  <Row><cntbooks>3</cntbooks><sumage>34</sumage></Row>
- <Row><cntbooks>4</cntbooks><sumage>134</sumage></Row>
+ <Row><cntbooks>4</cntbooks><sumage>137</sumage></Row>
  <Row><cntbooks>5</cntbooks><sumage>113</sumage></Row>
 </Dataset>
 <Dataset name='Result 5'>
@@ -31,16 +31,16 @@
  <Row><secondbookname>Social etiquette    </secondbookname><sumage>83</sumage></Row>
  <Row><secondbookname>The Life of Pi      </secondbookname><sumage>34</sumage></Row>
  <Row><secondbookname>The cat in the hat  </secondbookname><sumage>49</sumage></Row>
- <Row><secondbookname>The story of Jonah  </secondbookname><sumage>2</sumage></Row>
+ <Row><secondbookname>The story of Jonah  </secondbookname><sumage>5</sumage></Row>
 </Dataset>
 <Dataset name='Result 6'>
- <Row><pos>0</pos><sumage>597</sumage></Row>
+ <Row><pos>0</pos><sumage>600</sumage></Row>
 </Dataset>
 <Dataset name='Result 7'>
  <Row><numbooks>0</numbooks><sumage>99</sumage></Row>
  <Row><numbooks>1</numbooks><sumage>99</sumage></Row>
  <Row><numbooks>2</numbooks><sumage>118</sumage></Row>
  <Row><numbooks>3</numbooks><sumage>34</sumage></Row>
- <Row><numbooks>4</numbooks><sumage>134</sumage></Row>
+ <Row><numbooks>4</numbooks><sumage>137</sumage></Row>
  <Row><numbooks>5</numbooks><sumage>113</sumage></Row>
 </Dataset>
