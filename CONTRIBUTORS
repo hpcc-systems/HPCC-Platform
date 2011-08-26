@@ -3,10 +3,10 @@ Guide for Contributors
 ======================
 
 Our preferred method for accepting contributions is via GitHub pull requests. We
-might in the future (when we are more expert on Git) ba able to accept patch
+might in the future (when we are more expert on Git) be able to accept patch
 files via other means, but at present GitHub is all we are set up to deal with.
 
-Detailed intructions for setting up a GitHub account can be found at
+Detailed instructions for setting up a GitHub account can be found at
 http://help.github.com/ . A quick summary is below:
 
 1. If you don't already have one, create a GitHub account, then sign in
@@ -87,7 +87,7 @@ request - for example in order to address issues raised by a reviewer. There is 
 to close a request and open a new one in such circumstances.
 
 If your topic branch is implementing a new feature, it should be based from the master
-branch on the unstream repository. If it is fixing a bug that cannot wait for the next
+branch on the upstream repository. If it is fixing a bug that cannot wait for the next
 feature release, it should be based from the merge-base of the master and current stable
 branches.
 
@@ -112,9 +112,9 @@ Commit guidelines
 =================
 
 In order for your pull-request to be accepted into the upstream repository, it will need
-to fulfil the following requirements:
+to fulfill the following requirements:
 
-1.  All commits must be signed. By signing the commits you are signalling that you have
+1.  All commits must be signed. By signing the commits you are signaling that you have
     the appropriate rights to the change you are submitting, and the right to assign
     those rights to HPCC Systems under the terms of the contributory agreement. We have
     to be strict about this requirement to keep the lawyers happy.
