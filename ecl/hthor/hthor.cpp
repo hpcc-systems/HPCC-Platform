@@ -8471,7 +8471,13 @@ void CHThorCsvReadActivity::checkOpenNext()
     if (!opened)
     {
         agent.reportProgress(NULL);
-        open();
+        if (!helper.canMatchAny())
+        {
+            eofseen = true;
+            opened = true;
+        }
+        else
+            open();
     }
 
     loop
