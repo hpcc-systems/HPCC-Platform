@@ -1017,6 +1017,7 @@
   </xsl:template>
   <xsl:template match="ECLResult">
     <xsl:variable name="rowclass" select="position() mod 2" />
+    <xsl:variable name="position" select="position()" />
       <tr id="ECL_Result_{position()}" class="{$rowclass}">
       <td>
         <xsl:choose>
@@ -1049,6 +1050,12 @@
               <xsl:value-of select="Value"/>
             </a>
           </td>
+          <xsl:variable name="resultname" select="Name"/>
+          <xsl:for-each select="/WUInfoResponse/ResultViews/View">
+            <td>
+              <a href="javascript:void(0);" onclick="download(document.getElementById('ECL_Result_{$position}'), '/WsWorkunits/WUResultView?Wuid={$wuid}&amp;ResultName={$resultname}&amp;ViewName={.}');return false;"><xsl:value-of select="."/></a>
+            </td>
+          </xsl:for-each>
           <td>
             <a href="javascript:void(0);" onclick="download(document.getElementById('ECL_Result_{position()}'), '/WsWorkunits/WUResultBin?Format=zip&amp;Wuid={$wuid}&amp;Sequence={Link}');return false;">.zip</a>
           </td>

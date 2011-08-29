@@ -34,21 +34,8 @@ WsWuInfo::WsWuInfo(const char *wuid_, const char *qset, const char *qname, const
 
 bool WsWuInfo::getWsResource(const char *name, StringBuffer &out)
 {
-/*
-    SCMStringBuffer res;
-    Owned<IConstWUWebServicesInfo> wsres = wu->getWebServicesInfo();
-    if (wsres)
-    {
-        wsres->getInfo(name, res);
-        out.append(res.s);
-    }
-
-    return (res.length()>0);
-*/
     if (strieq(name, "SOAP"))
     {
-
-
         out.appendf("<message name=\"%s\">", queryname.sget());
         IConstWUResultIterator &vars = wu->getVariables();
         Owned<IResultSetFactory> resultSetFactory(getResultSetFactory(username, password));
@@ -58,13 +45,7 @@ bool WsWuInfo::getWsResource(const char *name, StringBuffer &out)
             SCMStringBuffer varname;
             var.getResultName(varname);
             int seq = var.getResultSequence();
-    /*
-            ResultFormatRaw = 0,
-    ResultFormatXml = 1,
-    ResultFormatXmlSet = 2,
-    ResultFormatCsv = 3,
-    ResultFormatSize = 4
-    */
+
             WUResultFormat fmt = var.getResultFormat();
 
             SCMStringBuffer eclschema;

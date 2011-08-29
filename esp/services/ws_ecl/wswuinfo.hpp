@@ -20,6 +20,7 @@
 #define _WS_ECL_WUINFO_HPP__
 
 #include "workunit.hpp"
+#include "wuwebview.hpp"
 
 class WsWuInfo : public CInterface
 {

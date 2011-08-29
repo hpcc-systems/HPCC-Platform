@@ -26,14 +26,14 @@ void usage(const char *progname)
 
 int main(int argc, char **argv)
 {
-    bool doSoapInfo = false;
+    bool doManifestInfo = false;
     bool doWorkunit = false;
     for (int i = 1; i < argc; i++)
     {
         if (argv[i][0]=='-')
         {
-            if (strcmp(argv[i], "-s")==0)
-                doSoapInfo = true;
+            if (strcmp(argv[i], "-m")==0)
+                doManifestInfo = true;
             else if (strcmp(argv[i], "-w")==0)
                 doWorkunit = true;
             else
@@ -50,7 +50,7 @@ int main(int argc, char **argv)
         if (argv[i][0]!='-')
         {
             filesSeen++;
-            if (doWorkunit || !doSoapInfo)
+            if (doWorkunit || !doManifestInfo)
             {
                 StringBuffer xml;
                 if (getWorkunitXMLFromFile(argv[i], xml))
@@ -63,16 +63,16 @@ int main(int argc, char **argv)
                     errors++;
                 }
             }
-            if (doSoapInfo)
+            if (doManifestInfo)
             {
                 StringBuffer xml;
-                if (getSoapInfoXMLFromFile(argv[i], xml))
+                if (getManifestXMLFromFile(argv[i], xml))
                 {
                     printf("%s\n", xml.str());
                 }
                 else
                 {
-                    fprintf(stderr, "Could not load soapInfo from %s\n", argv[i]);
+                    fprintf(stderr, "Could not load manifest from %s\n", argv[i]);
                     errors++;
                 }
             }

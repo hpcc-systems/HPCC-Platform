@@ -122,8 +122,7 @@ public:
                     m_includes->append(pbuf.str());
                 }
                 StringBuffer path;
-                char firstc = buf.toByteArray()[0];
-                if(firstc != '/' && firstc != PATHSEPCHAR)
+                if(!isAbsolutePath((const char *)buf.toByteArray()))
                 {
                     char baseurl[1025];
                     GetCurrentDirectory(1024, baseurl);
@@ -154,6 +153,7 @@ private:
     XalanTransformer m_XalanTransformer;
     IO_Type m_sourcetype;
     StringAttr m_filename;
+    StringAttr m_rootpath;
     StringBuffer m_xsltext;
     XalanCompiledStylesheet* m_CompiledStylesheet;
     Owned<MemSourceResolver>  m_sourceResolver;
@@ -173,7 +173,7 @@ public:
             setIncludeHandler(handler);
     }
 
-    CXslSource(const char* buf, int len, IIncludeHandler* handler) : m_XalanTransformer()
+    CXslSource(const char* buf, int len, IIncludeHandler* handler, const char *rootpath = NULL) : m_XalanTransformer()
     {
         m_xsltext.append(len, buf);
         m_sourcetype = IO_TYPE_BUFFER;
@@ -181,6 +181,8 @@ public:
 
         if(handler)
             setIncludeHandler(handler);
+        if (rootpath)
+            m_rootpath.set(rootpath);
     }
 
     virtual ~CXslSource()
@@ -250,8 +252,13 @@ public:
                     
                     char baseurl[1031];
                     strcpy(baseurl, URLPREFIX);
-                    GetCurrentDirectory(1024, baseurl + strlen(URLPREFIX));
-                    strcpy(baseurl+strlen(baseurl), PATHSEPSTR);
+                    if (m_rootpath)
+                        strcpy(baseurl, m_rootpath.sget());
+                    else
+                    {
+                        GetCurrentDirectory(1024, baseurl + strlen(URLPREFIX));
+                        strcpy(baseurl+strlen(baseurl), PATHSEPSTR);
+                    }
 
                     xslinput.setSystemId(XalanDOMString(baseurl).c_str());
                     m_XalanTransformer.compileStylesheet((const XSLTInputSource&)xslinput, (const XalanCompiledStylesheet*&)m_CompiledStylesheet);
@@ -495,7 +502,7 @@ public:
     virtual int setXmlSource(const char *pszFileName);
     virtual int setXmlSource(const char *pszBuffer, unsigned int nSize);
     virtual int setXslSource(const char *pszFileName);
-    virtual int setXslSource(const char *pszBuffer, unsigned int nSize);
+    virtual int setXslSource(const char *pszBuffer, unsigned int nSize, const char *rootpath);
     virtual int setResultTarget(char *pszBuffer, unsigned int nSize);
     virtual int setResultTarget(const char *pszFileName);
     virtual int closeResultTarget();

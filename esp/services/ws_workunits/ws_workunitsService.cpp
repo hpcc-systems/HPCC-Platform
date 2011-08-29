@@ -47,6 +47,7 @@
 #include "zcrypt.hpp"
 #endif
 #include "exception_util.hpp"
+#include "wuwebview.hpp"
 
 #define     File_Cpp "cpp"
 #define     File_ThorLog "ThorLog"
@@ -2981,6 +2982,18 @@ bool CWsWorkunitsEx::onWUResult(IEspContext &context, IEspWUResultRequest &req, 
    return true;
 }
 
+bool CWsWorkunitsEx::onWUResultView(IEspContext &context, IEspWUResultViewRequest &req, IEspWUResultViewResponse &resp)
+{
+    ensureWorkunitAccess(context, req.getWuid(), SecAccess_Read);
+    Owned<IWuWebView> wv = createWuWebView(req.getWuid(), NULL, getCFD(), true);
+    StringBuffer html;
+    wv->renderSingleResult(req.getViewName(), req.getResultName(), html);
+    resp.setResult(html.str());
+    resp.setResult_mimetype("text/html");
+    return true;
+}
+
+
 bool CWsWorkunitsEx::getResultSchemas(IConstWUResult &r, IArrayOf<IEspECLSchemaItem>& schemas)
 {
     SCMStringBuffer schema;
@@ -5194,7 +5207,7 @@ void CWsWorkunitsEx::getHelpFiles(double version, IConstWUQuery* query, WUFileTy
     }
 }
 
-void CWsWorkunitsEx::getInfo(IEspContext &context,const char* wuid0,IEspECLWorkunit *info, bool bTruncateEclTo64k, bool IncludeExceptions, bool IncludeGraphs, bool IncludeSourceFiles, bool IncludeResults, bool IncludeVariables, bool IncludeTimers, bool IncludeDebugValues, bool IncludeApplicationValues, bool IncludeWorkflows, bool SuppressResultSchemas)
+void CWsWorkunitsEx::getInfo(IEspContext &context,const char* wuid0,IEspECLWorkunit *info, bool bTruncateEclTo64k, bool IncludeExceptions, bool IncludeGraphs, bool IncludeSourceFiles, bool IncludeResults, bool IncludeVariables, bool IncludeTimers, bool IncludeDebugValues, bool IncludeApplicationValues, bool IncludeWorkflows, bool SuppressResultSchemas, StringArray *resultViews)
 {
     StringBuffer wuidStr = wuid0;
     wuidStr.trim();
@@ -5941,6 +5954,24 @@ void CWsWorkunitsEx::getInfo(IEspContext &context,const char* wuid0,IEspECLWorku
         if (workflowsException)
             info->setWorkflowsDesc(msg);
     }
+    try
+    {
+        if (resultViews)
+        {
+            Owned<IWuWebView> wv = createWuWebView(*wu, NULL, NULL, false);
+            wv->getResultViewNames(*resultViews);
+        }
+    }
+    catch(IException* e)
+    {
+        applicationValuesException = true;
+
+        StringBuffer eMsg;
+        e->errorMessage(eMsg);
+        ERRLOG("%s", eMsg.str()); //log original exception
+        e->Release();
+    }
+
 }
 
 void CWsWorkunitsEx::addSubFiles(IPropertyTreeIterator* f, IEspECLSourceFile* eclSuperFile, StringArray& fileNames)
@@ -6338,7 +6369,7 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
         {
             try
             {
-                getInfo(context, req.getWuid(), &resp.updateWorkunit(), req.getTruncateEclTo64k(), req.getIncludeExceptions(), req.getIncludeGraphs(), req.getIncludeSourceFiles(), req.getIncludeResults(), req.getIncludeVariables(), req.getIncludeTimers(), req.getIncludeDebugValues(), req.getIncludeApplicationValues(), req.getIncludeWorkflows(), req.getSuppressResultSchemas());
+                getInfo(context, req.getWuid(), &resp.updateWorkunit(), req.getTruncateEclTo64k(), req.getIncludeExceptions(), req.getIncludeGraphs(), req.getIncludeSourceFiles(), req.getIncludeResults(), req.getIncludeVariables(), req.getIncludeTimers(), req.getIncludeDebugValues(), req.getIncludeApplicationValues(), req.getIncludeWorkflows(), req.getSuppressResultSchemas(), req.getIncludeResultsViewNames() ? &resp.getResultViews() : NULL);
 
                 int n = resp.getWorkunit().getStateID();
                 if (n == WUStateCompiling || n == WUStateCompiled || n == WUStateScheduled || n == WUStateSubmitted 

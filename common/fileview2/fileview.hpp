@@ -230,7 +230,7 @@ extern "C" FILEVIEW_API unsigned getResultXml(IStringVal & ret, INewResultSet * 
 
 extern "C" FILEVIEW_API unsigned getResultCursorBin(MemoryBuffer & ret, IResultSetCursor * cursor, unsigned start=0, unsigned count=0);
 extern "C" FILEVIEW_API unsigned getResultBin(MemoryBuffer & ret, INewResultSet * cursor, unsigned start=0, unsigned count=0);
-extern "C" FILEVIEW_API IStringVal& getFullWorkUnitResultsXML(const char *user, const char *pw, const IConstWorkUnit *wu, IStringVal &str, bool inclschema, WUExceptionSeverity minSeverity=ExceptionSeverityInformation);
+extern "C" FILEVIEW_API IStringVal& getFullWorkUnitResultsXML(const char *user, const char *pw, const IConstWorkUnit *wu, IStringVal &str, bool inclschema, WUExceptionSeverity minSeverity=ExceptionSeverityInformation, bool noroot=false);
 
 extern FILEVIEW_API void startRemoteDataSourceServer(const char * queue, const char * cluster);
 extern FILEVIEW_API void stopRemoteDataSourceServer();

@@ -51,6 +51,7 @@ include_directories (
          ./../../../system/security/securesocket 
          ./../../../system/include 
          ./../../../common/workunit 
+         ./../../../common/wuwebview
          ./../../../roxie/roxieclient 
          ./../../../common/fileview2 
          ./../../../dali/base 
@@ -76,6 +77,7 @@ target_link_libraries ( ws_ecl
          eclrtl 
          deftype 
          workunit 
+         wuwebview
          jhtree 
          hql 
          fileview2 
