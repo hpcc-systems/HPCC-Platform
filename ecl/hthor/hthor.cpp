@@ -24,6 +24,7 @@
 #include "jprop.hpp"
 #include "jdebug.hpp"
 #include "jlzw.hpp"
+#include "jisem.hpp"
 #include "roxiedebug.hpp"
 #include "eclhelper.hpp"
 #include "workunit.hpp"
@@ -966,7 +967,7 @@ void throwPipeProcessError(unsigned err, char const * preposition, char const * 
             char error[512];
             size32_t sz = pipe->readError(sizeof(error), error);
             if(sz && sz!=(size32_t)-1)
-            msg.append(", stderr: '").append(sz, error).append("'");
+                msg.append(", stderr: '").append(sz, error).append("'");
         }
         catch (IException *e)
         {
@@ -975,72 +976,6 @@ void throwPipeProcessError(unsigned err, char const * preposition, char const * 
         }
     }
     throw MakeStringException(2, "%s", msg.str());
-}
-
-CHThorPipeWriteActivity::CHThorPipeWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorPipeWriteArg &_arg, ThorActivityKind _kind) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
-{
-}
-
-void CHThorPipeWriteActivity::ready()
-{
-    CHThorActivityBase::ready();
-    pipe.setown(createPipeProcess(agent.queryAllowedPipePrograms()));
-    writer.setown(new PipeWriter(this, pipe, false, false, helper.recreateEachRow()));
-    inputMeta.set(input->queryOutputMeta());
-    rowSerializer.setown(inputMeta.createRowSerializer(agent.queryCodeContext(), activityId));
-    xformHelper.setown(createPipeWriteXformHelper(helper.getPipeFlags(), helper.queryXmlOutput(), helper.queryCsvOutput(), rowSerializer));
-    xformHelper->ready();
-    writer->ready();
-}
-
-void CHThorPipeWriteActivity::execute()
-{
-    writer->run();
-    if (helper.getSequence() >= 0)
-    {
-        WorkunitUpdate wu = agent.updateWorkUnit();
-        Owned<IWUResult> result = wu->updateResultBySequence(helper.getSequence());
-        if (result)
-        {
-            result->setResultTotalRowCount(writer->queryRecCount()); 
-            result->setResultStatus(ResultStatusCalculated);
-        }
-    }
-}
-
-void CHThorPipeWriteActivity::openPipe(const void * row, bool displayTitle)
-{
-    if(row)
-        pipeCommand.setown(helper.getNameFromRow(row));
-    else
-        pipeCommand.setown(helper.getPipeProgram());
-    if(!pipe->run(displayTitle ? "PipeWrite" : NULL, pipeCommand.get(), ".", true, false, true, 0x10000)) // 64K error buffer
-    {
-        StringBuffer msg;
-        msg.append("Could not pipe to process (").append(pipeCommand.get()).append(")");
-        agent.fail(2, msg.str());
-    }
-    xformHelper->writeHeader(pipe);
-}
-
-const void * CHThorPipeWriteActivity::nextInput(size32_t & inputSize)
-{
-    const void * ret = input->nextInGroup();
-    if(ret == NULL)
-        ret = input->nextInGroup();
-    if(ret == NULL)
-        return NULL;
-    inputSize = inputMeta.getRecordSize(ret);
-    return ret;
-}
-
-void CHThorPipeWriteActivity::closePipe()
-{
-    xformHelper->writeFooter(pipe);
-    pipe->closeInput();
-    unsigned err = pipe->wait();
-    if(err)
-        throwPipeProcessError(err, "to", pipeCommand.get(), pipe);
 }
 
 //=====================================================================================================
@@ -1327,315 +1262,440 @@ void CHThorIndexWriteActivity::buildLayoutMetadata(Owned<IPropertyTree> & metada
 
 //=====================================================================================================
 
-void PipeWriter::run()
+class CHThorPipeReadActivity : public CHThorSimpleActivityBase
 {
-    if(syncsAtStart)
-        readyForWrite.wait();
-    if(aborted)
+    IHThorPipeReadArg &helper;
+    Owned<IPipeProcess> pipe;
+    StringAttr pipeCommand;
+    Owned<IOutputRowDeserializer> rowDeserializer;
+    Owned<IReadRowStream> readTransformer;
+    bool groupSignalled;
+public:
+    CHThorPipeReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorPipeReadArg &_arg, ThorActivityKind _kind)
+        : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
     {
-        finished = true;
-        return;
+        groupSignalled = true;
     }
-    try
-    {
-        if(!recreate)
-        {
-            owner->openPipe(NULL,true);
-            started = true;
-            if(syncsAtStart)
-                readyForRead.signal();
-        }
-        while(!aborted)
-        {
-            size32_t inputSize;
-            OwnedConstHThorRow next(owner->nextInput(inputSize));
-            if(!next)
-                break;
-            if(recreate)
-                owner->openPipe(next,reccount==0);
-            if(syncs)
-                readyForRead.signal();
-            owner->writeTranslatedText(next);
-            reccount++;
 
-            if(recreate)
-                owner->closePipe();
-            if(syncs)
-                readyForWrite.wait();
-        }
-        finished = true;
-        if(syncs && !aborted)
-            readyForRead.signal();
-        if(!recreate)
-            owner->closePipe();
-    }
-    catch (IException *)
-    {
-        finished = true;
-        if(syncs || (syncsAtStart && !started))
-            readyForRead.signal();
-        throw;
-    }
-}
+    virtual bool needsAllocator() const { return true; }
 
-void PipeWriter::abort()
-{
-    aborted = true;
-    if(!finished && (syncs || (syncsAtStart && !started)))
-        readyForWrite.signal();
-}
+    virtual void ready()
+    {
+        groupSignalled = true; // i.e. don't start with a NULL row
+        CHThorSimpleActivityBase::ready();
+        rowDeserializer.setown(rowAllocator->createRowDeserializer(agent.queryCodeContext()));
+        readTransformer.setown(createReadRowStream(rowAllocator, rowDeserializer, helper.queryXmlTransformer(), helper.queryCsvTransformer(), helper.queryXmlIteratorPath(), helper.getPipeFlags()));
+        openPipe(helper.getPipeProgram());
+    }
+
+    virtual void done()
+    {
+        //Need to close the output (or read it in its entirety), otherwise we might wait forever for the
+        //program to finish
+        if (pipe)
+            pipe->closeOutput();
+        pipe.clear();
+        readTransformer->setStream(NULL);
+        CHThorSimpleActivityBase::done();
+    }
+
+    virtual const void *nextInGroup()
+    {
+        while (!waitForPipe())
+        {
+            if (!pipe)
+                return NULL;
+            if (helper.getPipeFlags() & TPFgroupeachrow)
+            {
+                if (!groupSignalled)
+                {
+                    groupSignalled = true;
+                    return NULL;
+                }
+            }
+        }
+        const void *ret = readTransformer->next();
+        assertex(ret != NULL); // if ret can ever be NULL then we need to recode this logic
+        processed++;
+        groupSignalled = false;
+        return ret;
+    }
+
+protected:
+    bool waitForPipe()
+    {
+        if (!pipe)
+            return false;  // done
+        if (!readTransformer->eos())
+            return true;
+        verifyPipe();
+        return false;
+    }
+
+    void openPipe(char const * cmd)
+    {
+        pipeCommand.setown(cmd);
+        pipe.setown(createPipeProcess(agent.queryAllowedPipePrograms()));
+        if(!pipe->run(NULL, cmd, ".", false, true, true, 0x10000))
+            throw MakeStringException(2, "Could not run pipe process %s", cmd);
+        Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
+        readTransformer->setStream(pipeReader.get());
+    }
+
+    void verifyPipe()
+    {
+        if (pipe)
+        {
+            unsigned err = pipe->wait();
+            if(err && !(helper.getPipeFlags() & TPFnofail))
+                throwPipeProcessError(err, "from", pipeCommand.get(), pipe);
+            pipe.clear();
+        }
+    }
+};
 
 //=====================================================================================================
 
-PipeReader::PipeReader(IPipeProcess * _pipe, bool _syncsAtStart, bool _syncs, PipeWriter * _writer, IReadRowStream * _xformer, bool _grouped)
-    : pipe(_pipe), syncsAtStart(_syncsAtStart), syncs(_syncs), writer(_writer), xformer(_xformer), grouped(_grouped)
-{
-    started = false;
-}
+// Through pipe code - taken from Roxie implementation
 
-bool PipeReader::moreInputAvailable()
+interface IPipeRecordPullerCallback : extends IExceptionHandler
 {
-    return !xformer->eos();
-}
+    virtual void processRow(const void *row) = 0;
+    virtual void processDone() = 0;
+    virtual const void *nextInput() = 0;
+};
 
-const void *PipeReader::read()
+class CPipeRecordPullerThread : public Thread
 {
-    if(!started)
+protected:
+    IPipeRecordPullerCallback *helper;
+    bool eog;
+
+public:
+    CPipeRecordPullerThread() : Thread("PipeRecordPullerThread")
     {
-        if(syncs)
-            finished = !sync();
-        else if(syncsAtStart)
-            finished = !sync();
-        else
-            setStream();
-        started = true;
+        helper = NULL;
+        eog = false;
     }
-    while(!finished && !moreInputAvailable())
+
+    void setInput(IPipeRecordPullerCallback *_helper)
     {
-        if(syncs)
-        {
-            finished = !sync();
-            if (grouped)
-                return NULL;
-        }
-        else
-            finished = true;
+        helper = _helper;
     }
-    if (finished)
-        return NULL;
-    return xformer->next();
-}
 
-void PipeReader::done()
-{
-    xformer->setStream(NULL);
-}
-
-
-void PipeReader::setStream()
-{
-    Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
-    xformer->setStream(pipeReader);
-}
-
-bool PipeReader::sync()
-{
-    bool ret = writer->sync();
-    setStream();
-    return ret;
-}
-
-unsigned PipeReader::wait()
-{
-    if(started && !finished)
+    virtual int run()
     {
         try
         {
-            moreInputAvailable();
+            loop
+            {
+                const void * row = helper->nextInput();
+                if (row)
+                {
+                    eog = false;
+                    helper->processRow(row);
+                }
+                else if (!eog)
+                {
+                    eog = true;
+                }
+                else
+                {
+                    break;
+                }
+            }
+            helper->processDone();
         }
-        catch(IException * e)
+        catch (IException *e)
         {
-            e->Release();
+            helper->fireException(e);
+        }
+        catch (...)
+        {
+            helper->fireException(MakeStringException(2, "Unexpected exception caught in PipeRecordPullerThread::run"));
+        }
+        return 0;
+    }
+};
+
+class CHThorPipeThroughActivity : public CHThorSimpleActivityBase, implements IPipeRecordPullerCallback
+{
+    IHThorPipeThroughArg &helper;
+    CPipeRecordPullerThread puller;
+    Owned<IPipeProcess> pipe;
+    StringAttr pipeCommand;
+    InterruptableSemaphore pipeVerified;
+    InterruptableSemaphore pipeOpened;
+    CachedOutputMetaData inputMeta;
+    Owned<IOutputRowSerializer> rowSerializer;
+    Owned<IOutputRowDeserializer> rowDeserializer;
+    Owned<IPipeWriteXformHelper> writeTransformer;
+    Owned<IReadRowStream> readTransformer;
+    bool firstRead;
+    bool recreate;
+    bool inputExhausted;
+    bool groupSignalled;
+
+public:
+    CHThorPipeThroughActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorPipeThroughArg &_arg, ThorActivityKind _kind)
+        : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+    {
+        recreate = helper.recreateEachRow();
+        groupSignalled = true;
+        firstRead = false;
+        inputExhausted = false;
+        puller.setInput(this);
+    }
+
+    virtual void ready()
+    {
+        CHThorSimpleActivityBase::ready();
+        // From the create() in roxie
+
+        inputMeta.set(input->queryOutputMeta());
+        rowSerializer.setown(inputMeta.createRowSerializer(agent.queryCodeContext(), activityId));
+        rowDeserializer.setown(rowAllocator->createRowDeserializer(agent.queryCodeContext()));
+        writeTransformer.setown(createPipeWriteXformHelper(helper.getPipeFlags(), helper.queryXmlOutput(), helper.queryCsvOutput(), rowSerializer));
+
+        // From the start() in roxie
+        firstRead = true;
+        inputExhausted = false;
+        groupSignalled = true; // i.e. don't start with a NULL row
+        pipeVerified.reinit();
+        pipeOpened.reinit();
+        writeTransformer->ready();
+
+        if (!readTransformer)
+            readTransformer.setown(createReadRowStream(rowAllocator, rowDeserializer, helper.queryXmlTransformer(), helper.queryCsvTransformer(), helper.queryXmlIteratorPath(), helper.getPipeFlags()));
+        if(!recreate)
+            openPipe(helper.getPipeProgram());
+        puller.start();
+    }
+
+    void done()
+    {
+        //Need to close the output (or read it in its entirety), otherwise we might wait forever for the
+        //program to finish
+        if (pipe)
+            pipe->closeOutput();
+        pipeVerified.interrupt(NULL);
+        pipeOpened.interrupt(NULL);
+        puller.join();
+        CHThorSimpleActivityBase::done();
+        pipe.clear();
+        readTransformer->setStream(NULL);
+    }
+
+    virtual bool needsAllocator() const { return true; }
+
+    virtual const void *nextInGroup()
+    {
+        while (!waitForPipe())
+        {
+            if (!pipe)
+                return NULL;
+            if (helper.getPipeFlags() & TPFgroupeachrow)
+            {
+                if (!groupSignalled)
+                {
+                    groupSignalled = true;
+                    return NULL;
+                }
+            }
+        }
+        const void *ret = readTransformer->next();
+        assertex(ret != NULL); // if ret can ever be NULL then we need to recode this logic
+        processed++;
+        groupSignalled = false;
+        return ret;
+    }
+
+    virtual bool isGrouped()
+    {
+        return outputMeta.isGrouped();
+    }
+
+    virtual void processRow(const void *row)
+    {
+        // called from puller thread
+        if(recreate)
+            openPipe(helper.getNameFromRow(row));
+        writeTransformer->writeTranslatedText(row, pipe);
+        ReleaseRoxieRow(row);
+        if(recreate)
+        {
+            closePipe();
+            pipeVerified.wait();
         }
     }
-    unsigned ret = pipe->wait();
-    //Only return the error code if we've previously finished, otherwise the 
-    if (finished)
-        return ret;
-    return 0;
-}
 
-unsigned PipeReader::tryWait(unsigned timeoutms)
-{
-    bool timedout;
-    unsigned err = pipe->wait(timeoutms, timedout);
-    if(timedout)
-        return 0;
-    else
-        return err;
-}
-
-
-//=====================================================================================================
-
-CHThorPipeReadActivity::CHThorPipeReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorPipeReadArg &_arg, ThorActivityKind _kind)
-    : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
-{
-}
-
-void CHThorPipeReadActivity::ready()
-{
-    CHThorSimpleActivityBase::ready();
-    rowDeserializer.setown(rowAllocator->createRowDeserializer(agent.queryCodeContext()));
-    pipe.setown(createPipeProcess(agent.queryAllowedPipePrograms()));
-
-    unsigned pipeFlags = helper.getPipeFlags();
-    Owned<IReadRowStream> readXformer = createReadRowStream(rowAllocator, rowDeserializer, helper.queryXmlTransformer(), helper.queryCsvTransformer(), helper.queryXmlIteratorPath(), pipeFlags);
-    reader.setown(new PipeReader(pipe, false, false, NULL, readXformer, (pipeFlags & TPFgroupeachrow) != 0));
-    
-    if(!pipe->run("PipeRead", helper.getPipeProgram(), ".", false, true, true, 0x10000)) // 64K error buffer
+    virtual void processDone()
     {
-        StringBuffer msg;
-        msg.append("Could not pipe from process (").append(helper.getPipeProgram()).append(")");
-        agent.fail(2, msg.str());
+        // called from puller thread
+        if(recreate)
+        {
+            inputExhausted = true;
+            pipeOpened.signal();
+        }
+        else
+        {
+            closePipe();
+            pipeVerified.wait();
+        }
     }
-    reader->ready();
-}
 
-void CHThorPipeReadActivity::done()
-{
-    //Need to close the output (or read it in its entirety), otherwise we might wait forever for the
-    //program to finish
-    pipe->closeOutput();
-    unsigned err = reader->wait();
-    if(err)
-        throwPipeProcessError(err, "from", helper.getPipeProgram(), pipe);
-    reader->done();
-    CHThorSimpleActivityBase::done();
-}
-
-
-const void * CHThorPipeReadActivity::nextInGroup()
-{
-    const void * row;
-    try
+    virtual const void *nextInput()
     {
-        row = reader->read();
+        return input->nextInGroup();
     }
-    catch(IException * e)
+
+    virtual bool fireException(IException *e)
     {
-        throw makeWrappedException(e);
+        inputExhausted = true;
+        pipeOpened.interrupt(LINK(e));
+        pipeVerified.interrupt(e);
+        return true;
     }
-    if(!row)
-        return NULL;
-    processed++;
-    return row;
-}
 
-//=====================================================================================================
-
-CHThorPipeThroughActivity::CHThorPipeThroughActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorPipeThroughArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
-{
-}
-
-void CHThorPipeThroughActivity::ready()
-{
-    CHThorSimpleActivityBase::ready();
-    bool recreate = helper.recreateEachRow();
-    unsigned pipeFlags = helper.getPipeFlags();
-    pipe.setown(createPipeProcess(agent.queryAllowedPipePrograms()));
-    writer.setown(new PipeWriter(this, pipe, true, recreate, recreate));
-    writerThread.setown(new WriterThread(writer, this));
-
-    inputMeta.set(input->queryOutputMeta());
-    rowSerializer.setown(inputMeta.createRowSerializer(agent.queryCodeContext(), activityId));
-    rowDeserializer.setown(rowAllocator->createRowDeserializer(agent.queryCodeContext()));  
-
-    Owned<IReadRowStream> readXformer = createReadRowStream(rowAllocator, rowDeserializer, helper.queryXmlTransformer(), helper.queryCsvTransformer(), helper.queryXmlIteratorPath(), pipeFlags);
-    reader.setown(new PipeReader(pipe, true, recreate, writer, readXformer, (pipeFlags & TPFgroupeachrow) != 0));
-    xformHelper.setown(createPipeWriteXformHelper(helper.getPipeFlags(), helper.queryXmlOutput(), helper.queryCsvOutput(), rowSerializer));
-    xformHelper->ready();
-    writer->ready();
-    reader->ready();
-    writerThread->start();
-}
-
-void CHThorPipeThroughActivity::done()
-{
-    checkThreadException();  // We don't want to report exceptions that result from us closing the reader before consuming all data. Checking for exceptions before closing helps avoid this
-    writer->abort();
-    pipe->closeOutput();
-    unsigned err = reader->wait();
-    if(err)
-        throwPipeProcessError(err, "from", helper.getPipeProgram(), pipe);
-    writerThread->join();
-    reader->done();
-    CHThorSimpleActivityBase::done();
-}
-
-
-const void * CHThorPipeThroughActivity::nextInGroup()
-{
-    checkThreadException();
-    const void * row = reader->read();
-    if(!row)
-        return NULL;
-    processed++;
-    return row;
-}
-
-void CHThorPipeThroughActivity::openPipe(const void * row, bool displayTitle)
-{
-    if(row)
-        pipeCommand.setown(helper.getNameFromRow(row));
-    else
-        pipeCommand.setown(helper.getPipeProgram());
-    if(!pipe->run(displayTitle ? "PipeThrough" : NULL, pipeCommand.get(), ".", true, true, true, 0x10000)) // 64K error buffer
+private:
+    bool waitForPipe()
     {
-        StringBuffer msg;
-        msg.append("Could not pipe through process (").append(pipeCommand.get()).append(")");
-        agent.fail(2, msg.str());
+        if (firstRead)
+        {
+            pipeOpened.wait();
+            firstRead = false;
+        }
+        if (!pipe)
+            return false;  // done
+        if (!readTransformer->eos())
+            return true;
+        verifyPipe();
+        if (recreate && !inputExhausted)
+            pipeOpened.wait();
+        return false;
     }
-    xformHelper->writeHeader(pipe);
-}
 
-const void * CHThorPipeThroughActivity::nextInput(size32_t & inputSize)
-{
-    const void * ret = input->nextInGroup();
-    if(ret == NULL)
-        ret = input->nextInGroup();
-    if(ret == NULL)
-        return NULL;
-    inputSize = inputMeta.getRecordSize(ret);
-    return ret;
-}
-
-void CHThorPipeThroughActivity::closePipe()
-{
-    xformHelper->writeFooter(pipe);
-    pipe->closeInput();
-    unsigned err = pipe->wait();
-    if(err)
-        throwPipeProcessError(err, "through", pipeCommand.get(), pipe);
-}
-
-bool CHThorPipeThroughActivity::isGrouped()
-{ 
-    return outputMeta.isGrouped();
-}
-
-int CHThorPipeThroughActivity::WriterThread::run()
-{
-    try
+    void openPipe(char const * cmd)
     {
-        writer->run();
+        pipeCommand.setown(cmd);
+        pipe.setown(createPipeProcess(agent.queryAllowedPipePrograms()));
+        if(!pipe->run(NULL, cmd, ".", true, true, true, 0x10000))
+            throw MakeStringException(2, "Could not run pipe process %s", cmd);
+        writeTransformer->writeHeader(pipe);
+        Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
+        readTransformer->setStream(pipeReader.get());
+        pipeOpened.signal();
     }
-    catch(IException * e)
+
+    void closePipe()
     {
-        owner->noteThreadException(e);
+        writeTransformer->writeFooter(pipe);
+        pipe->closeInput();
     }
-    return 0;
-}
+
+    void verifyPipe()
+    {
+        if (pipe)
+        {
+            unsigned err = pipe->wait();
+            if(err && !(helper.getPipeFlags() & TPFnofail))
+                throwPipeProcessError(err, "through", pipeCommand.get(), pipe);
+            pipe.clear();
+            pipeVerified.signal();
+        }
+    }
+};
+
+class CHThorPipeWriteActivity : public CHThorActivityBase
+{
+    IHThorPipeWriteArg &helper;
+    Owned<IPipeProcess> pipe;
+    StringAttr pipeCommand;
+    CachedOutputMetaData inputMeta;
+    Owned<IOutputRowSerializer> rowSerializer;
+    Owned<IPipeWriteXformHelper> writeTransformer;
+    bool firstRead;
+    bool recreate;
+    bool inputExhausted;
+public:
+    IMPLEMENT_SINKACTIVITY;
+
+    CHThorPipeWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorPipeWriteArg &_arg, ThorActivityKind _kind)
+        : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+    {
+        recreate = helper.recreateEachRow();
+        firstRead = false;
+        inputExhausted = false;
+    }
+
+    virtual bool needsAllocator() const { return true; }
+
+    virtual void ready()
+    {
+        CHThorActivityBase::ready();
+        inputMeta.set(input->queryOutputMeta());
+        rowSerializer.setown(inputMeta.createRowSerializer(agent.queryCodeContext(), activityId));
+        writeTransformer.setown(createPipeWriteXformHelper(helper.getPipeFlags(), helper.queryXmlOutput(), helper.queryCsvOutput(), rowSerializer));
+
+        firstRead = true;
+        inputExhausted = false;
+        writeTransformer->ready();
+        if(!recreate)
+            openPipe(helper.getPipeProgram());
+    }
+
+    virtual void execute()
+    {
+        loop
+        {
+            const void *row = input->nextInGroup();
+            if (!row)
+            {
+                row = input->nextInGroup();
+                if (!row)
+                    break;
+            }
+            processed++;
+            if(recreate)
+                openPipe(helper.getNameFromRow(row));
+            writeTransformer->writeTranslatedText(row, pipe);
+            ReleaseRoxieRow(row);
+            if(recreate)
+                closePipe();
+        }
+        closePipe();
+        if (helper.getSequence() >= 0)
+        {
+            WorkunitUpdate wu = agent.updateWorkUnit();
+            Owned<IWUResult> result = wu->updateResultBySequence(helper.getSequence());
+            if (result)
+            {
+                result->setResultTotalRowCount(processed);
+                result->setResultStatus(ResultStatusCalculated);
+            }
+        }
+    }
+
+private:
+    void openPipe(char const * cmd)
+    {
+        pipeCommand.setown(cmd);
+        pipe.setown(createPipeProcess(agent.queryAllowedPipePrograms()));
+        if(!pipe->run(NULL, cmd, ".", true, false, true, 0x10000))
+            throw MakeStringException(2, "Could not run pipe process %s", cmd);
+        writeTransformer->writeHeader(pipe);
+    }
+
+    void closePipe()
+    {
+        writeTransformer->writeFooter(pipe);
+        pipe->closeInput();
+        unsigned err = pipe->wait();
+        if(err && !(helper.getPipeFlags() & TPFnofail))
+            throwPipeProcessError(err, "to", pipeCommand.get(), pipe);
+        pipe.clear();
+    }
+};
 
 //=====================================================================================================
 

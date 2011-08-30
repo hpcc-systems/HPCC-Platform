@@ -2721,8 +2721,10 @@ void DiskReadBuilder::buildMembers(IHqlExpression * expr)
         }
         
         StringBuffer flags;
-        if (tableExpr->hasProperty(groupAtom))      // not supported in parser
+        if (tableExpr->hasProperty(groupAtom))      // not supported in parser?
             flags.append("|TPFgroupeachrow");
+        if (tableExpr->hasProperty(optAtom))        // not supported in parser?
+            flags.append("|TPFnofail");
 
         if (csvFromPipe)
             flags.append("|TPFreadcsvfrompipe");
