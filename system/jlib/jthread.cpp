@@ -1450,7 +1450,21 @@ static unsigned dowaitpid(HANDLE pid, int mode)
         int stat=-1;
         int ret = waitpid(pid, &stat, mode);
         if (ret>0) 
-            return WIFSIGNALED(stat)?254:WEXITSTATUS(stat);
+        {
+            if (WIFEXITED(stat))
+                return WEXITSTATUS(stat);
+            else if (WIFSIGNALED(stat))
+            {
+                ERRLOG("Program was terminated by signal %u", (unsigned) WTERMSIG(stat));
+                if (WTERMSIG(stat)==SIGPIPE)
+                    return 0;
+                return 254;
+            }
+            else
+            {
+                return 254;
+            }
+        }
         if (ret==0)
             break;
         int err = errno;
