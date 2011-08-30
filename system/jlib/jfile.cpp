@@ -4857,6 +4857,14 @@ StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out)
     return out.append(path);
 }
 
+StringBuffer &makeAbsolutePath(const char *relpath, const char *basedir, StringBuffer &out)
+{
+    StringBuffer combined;
+    if (basedir && !isAbsolutePath(relpath))
+        relpath = combined.append(basedir).append(relpath);
+    return makeAbsolutePath(relpath, out);
+}
+
 const char *splitRelativePath(const char *full,const char *basedir,StringBuffer &reldir)
 {
     if (basedir&&*basedir) {

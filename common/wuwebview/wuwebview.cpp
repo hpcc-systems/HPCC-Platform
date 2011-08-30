@@ -84,10 +84,15 @@ public:
             const void *data = NULL;
             if (loadedDll.getResource(len, data, "RESULT_XSD", (unsigned) id) && len>0)
             {
-                StringBuffer decompressed;
-                decompressResource(len, data, decompressed);
                 buffer.append("<XmlSchema name=\"").append(res.queryProp("@name")).append("\">");
-                buffer.append(decompressed.str());
+                if (res.getPropBool("@compressed"))
+                {
+                    StringBuffer decompressed;
+                    decompressResource(len, data, decompressed);
+                    buffer.append(decompressed.str());
+                }
+                else
+                    buffer.append(len, (const char *)data);
                 buffer.append("</XmlSchema>");
             }
         }
@@ -104,14 +109,10 @@ public:
     void appendManifestResultSchema(IPropertyTree &manifest, const char *resultname, ILoadedDllEntry &loadedDll)
     {
         assertex(!finalized);
-        VStringBuffer xpath("Resource[@name='%s']", resultname);
-        Owned<IPropertyTreeIterator> iter = manifest.getElements(xpath.str());
-        ForEach(*iter)
-        {
-            const char *type=iter->query().queryProp("@type");
-            if (type && strieq(type, "RESULT_XSD"))
-                appendSchemaResource(iter->query(), loadedDll);
-        }
+        VStringBuffer xpath("Resource[@name='%s'][@type='RESULT_XSD']", resultname);
+        IPropertyTree *res=manifest.queryPropTree(xpath.str());
+        if (res)
+            appendSchemaResource(*res, loadedDll);
     }
 
     virtual void beginNode(const char *tag, offset_t startOffset)
@@ -177,13 +178,6 @@ private:
     int datasetLevel;
 };
 
-inline bool isAbsoluteXalanPath(const char *path)
-{
-    if (!path||!*path)
-        return false;
-    return isPathSepChar(path[0])||((path[1]==':')&&(isPathSepChar(path[2])));
-}
-
 class WuWebView : public CInterface,
     implements IWuWebView,
     implements IIncludeHandler
@@ -216,7 +210,7 @@ public:
     virtual void applyResultsXSLT(const char *filename, StringBuffer &out);
     virtual StringBuffer &aggregateResources(const char *type, StringBuffer &content);
 
-    void renderExpandedResults(const char *viewName, StringBuffer &expanded, StringBuffer &out);
+    void renderExpandedResults(const char *viewName, const StringBuffer &expanded, StringBuffer &out);
 
     void appendResultSchemas(WuExpandedResultBuffer &buffer);
     void getResultXSLT(const char *viewName, StringBuffer &xslt, StringBuffer &abspath);
@@ -255,17 +249,8 @@ void WuWebView::calculateResourceIncludePaths()
         Owned<IPropertyTreeIterator> iter = ensureManifest()->getElements("Resource[@filename]");
         ForEach(*iter)
         {
-            const char *filename = iter->query().queryProp("@filename");
             StringBuffer abspath;
-            if (isAbsoluteXalanPath(filename))
-                abspath.append(filename);
-            else
-            {
-                StringBuffer relpath(dir.get());
-                relpath.append(filename);
-                makeAbsolutePath(relpath.str(), abspath);
-            }
-            iter->query().setProp("@res_include_path", abspath.str());
+            iter->query().setProp("@res_include_path", makeAbsolutePath(iter->query().queryProp("@filename"), dir.get(), abspath).str());
         }
         manifestIncludePathsSet=true;
     }
@@ -334,7 +319,16 @@ void WuWebView::getResource(IPropertyTree *res, StringBuffer &content)
         size32_t len = 0;
         const void *data = NULL;
         if (loadedDll->getResource(len, data, res->queryProp("@type"), (unsigned) id) && len>0)
-            decompressResource(len, data, content);
+        {
+            if (res->getPropBool("@compressed"))
+            {
+                StringBuffer decompressed;
+                decompressResource(len, data, content);
+                content.append(decompressed.str());
+            }
+            else
+                content.append(len, (const char *)data);
+        }
     }
 }
 
@@ -353,7 +347,7 @@ StringBuffer &WuWebView::aggregateResources(const char *type, StringBuffer &cont
     VStringBuffer xpath("Resource[@type='%s']", type);
     Owned<IPropertyTreeIterator> iter = ensureManifest()->getElements(xpath.str());
     ForEach(*iter)
-    getResource(&iter->query(), content);
+        getResource(&iter->query(), content);
     return content;
 }
 
@@ -365,7 +359,7 @@ void WuWebView::getResultXSLT(const char *viewName, StringBuffer &xslt, StringBu
         getResource(resource, xslt, abspath);
 }
 
-void WuWebView::renderExpandedResults(const char *viewName, StringBuffer &expanded, StringBuffer &out)
+void WuWebView::renderExpandedResults(const char *viewName, const StringBuffer &expanded, StringBuffer &out)
 {
     StringBuffer xslt;
     StringBuffer rootpath;

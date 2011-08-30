@@ -250,17 +250,13 @@ public:
                     std::istringstream theXSLStream(m_xsltext.str());
                     XSLTInputSource xslinput(&theXSLStream);
                     
-                    char baseurl[1031];
-                    strcpy(baseurl, URLPREFIX);
+                    StringBuffer baseurl(URLPREFIX);
                     if (m_rootpath)
-                        strcpy(baseurl, m_rootpath.sget());
+                        baseurl.append(m_rootpath.get());
                     else
-                    {
-                        GetCurrentDirectory(1024, baseurl + strlen(URLPREFIX));
-                        strcpy(baseurl+strlen(baseurl), PATHSEPSTR);
-                    }
+                        appendCurrentDirectory(baseurl, true).append(PATHSEPCHAR);
 
-                    xslinput.setSystemId(XalanDOMString(baseurl).c_str());
+                    xslinput.setSystemId(XalanDOMString(baseurl.str()).c_str());
                     m_XalanTransformer.compileStylesheet((const XSLTInputSource&)xslinput, (const XalanCompiledStylesheet*&)m_CompiledStylesheet);
                 }
             }
