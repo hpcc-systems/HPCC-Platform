@@ -136,6 +136,8 @@ extern jlib_decl IRecordSize *createDeltaRecordSize(IRecordSize * size, int delt
 extern jlib_decl unsigned copySeq(IReadSeq *from,IWriteSeq *to,size32_t bufsize);
 
 extern jlib_decl void setIORetryCount(unsigned _ioRetryCount); // default 0 == off, retries if read op. fails
+extern jlib_decl offset_t checked_lseeki64(int handle, offset_t offset, int origin);
+extern jlib_decl size32_t checked_write(int handle, const void *buffer, size32_t count);
 extern jlib_decl size32_t checked_read(int file, void *buffer, size32_t len);
 extern jlib_decl size32_t checked_pread(int file, void *buffer, size32_t len, offset_t pos);
 
