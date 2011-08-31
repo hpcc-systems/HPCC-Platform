@@ -203,12 +203,20 @@ public:
         return true;
     }
 
-    bool deployWorkunit(SCMStringBuffer &wuid,  SCMStringBuffer &roxieQueryName, IRoxieQueryProcessingInfo &processingInfo, const char *userId, WUQueryActivationOptions activateOption, bool allowNewRoxieOnDemandQuery, const char *querySetName, bool notifyRoxie, SCMStringBuffer &status, SCMStringBuffer &roxieDeployStatus)
+    bool deployWorkunit(SCMStringBuffer &wuid,  SCMStringBuffer &roxieQueryName, IRoxieQueryProcessingInfo &processingInfo, const char *userId, WUQueryActivationOptions activateOption, const char *querySetName, bool notifyRoxie, SCMStringBuffer &status, SCMStringBuffer &roxieDeployStatus)
     {
         if (!wuid.length())
             throw MakeStringException(ROXIEMANAGER_MISSING_ID, "Missing workunit id");
 
         Owned<IConstWorkUnit> workunit = getWorkUnit(wuid.str());
+        return publishWorkunit(workunit, roxieQueryName, processingInfo, userId, activateOption, querySetName, notifyRoxie, status, roxieDeployStatus);
+    }
+
+    bool publishWorkunit(IConstWorkUnit *workunit,  SCMStringBuffer &roxieQueryName, IRoxieQueryProcessingInfo &processingInfo, const char *userId, WUQueryActivationOptions activateOption, const char *querySetName, bool notifyRoxie, SCMStringBuffer &status, SCMStringBuffer &roxieDeployStatus)
+    {
+        if (!workunit)
+            throw MakeStringException(ROXIEMANAGER_MISSING_ID, "Missing workunit id");
+
         if (!roxieQueryName.length()) {
             SCMStringBuffer jobName;
             roxieQueryName.set(workunit->getJobName(jobName).str());

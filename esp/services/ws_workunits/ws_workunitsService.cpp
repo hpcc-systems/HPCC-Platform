@@ -698,9 +698,18 @@ void submitQueryWU(IConstWorkUnit *workunit, IEspContext& context, CRoxieQuery& 
     SocketEndpoint ep;
     ep.set(roxieQuery.ip);
 
-    const SocketEndpoint & ep1 = queryCoven().queryComm().queryGroup().queryNode(0).endpoint();
     StringBuffer daliIp;
-    ep1.getUrlStr(daliIp);
+    if (workunit->hasDebugValue("lookupDaliIp"))
+    {
+        SCMStringBuffer ip;
+        workunit->getDebugValue("lookupDaliIp", ip);
+        daliIp.append(ip.str());
+    }
+    else
+    {
+        const SocketEndpoint & ep1 = queryCoven().queryComm().queryGroup().queryNode(0).endpoint();
+        ep1.getUrlStr(daliIp);
+    }
 
     StringBuffer user;
     StringBuffer password;
@@ -723,14 +732,49 @@ void submitQueryWU(IConstWorkUnit *workunit, IEspContext& context, CRoxieQuery& 
 
         Owned<IRoxieQueryProcessingInfo> processingInfo = createRoxieQueryProcessingInfo();
         processingInfo->setResolveFileInfo(true);
+        processingInfo->setLoadDataOnly(false);
+        processingInfo->setResolveFileInfo(true);
+        processingInfo->setNoForms(false);
+        processingInfo->setDfsDaliIp(daliIp.str());
+        processingInfo->setResolveKeyDiffInfo(false);
+        processingInfo->setCopyKeyDiffLocationInfo(false);
+        processingInfo->setLayoutTranslationEnabled(false);
+
         SCMStringBuffer generatedQueryName;
         generatedQueryName.set(roxieQuery.jobName.str());
         if (!generatedQueryName.length())
             generatedQueryName.set(roxieQuery.wuid.str());
 
         manager->compileQuery(roxieQuery.wuid, generatedQueryName, *compileInfo.get(), *processingInfo.get(), roxieQuery.clusterName.str(), result); 
-    }
 
+        SCMStringBuffer wuCluster;
+        workunit->getClusterName(wuCluster);
+        Owned <IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(wuCluster.str());
+        SCMStringBuffer querySetName;
+        clusterInfo->getQuerySetName(querySetName);
+
+        SCMStringBuffer deployStatus;
+        SCMStringBuffer jobName;
+        workunit->getJobName(jobName);
+
+        manager->publishWorkunit(workunit, jobName, *processingInfo.get(), user.str(), DO_NOT_ACTIVATE, querySetName.str(), true, result, deployStatus);
+        SCMStringBuffer currentQueryName;
+        workunit->getDebugValue("queryid", currentQueryName);
+        if (currentQueryName.length() == 0)
+        {
+            Owned<IStringIterator> debugs(&workunit->getDebugValues());
+            ForEach(*debugs)
+            {
+                SCMStringBuffer name, val;
+                debugs->str(name);
+                workunit->getDebugValue(name.str(),val);
+                DBGLOG("%s  %s", name.str(), val.str());
+            }
+
+        }
+        manager->runQuery(workunit, currentQueryName.str(), false, allowNewRoxieOnDemandQuery, result);
+        manager->deleteQuery(currentQueryName.str(), querySetName.str(), true, deployStatus);
+    }
 }
 
 void compileScheduledQueryWU(IEspContext& context, CRoxieQuery& roxieQuery)
@@ -4408,24 +4452,35 @@ bool CWsWorkunitsEx::onWUDeployWorkunit(IEspContext &context, IEspWUDeployWorkun
         SCMStringBuffer status;
         SCMStringBuffer roxieDeployStatus;
 
-        const SocketEndpoint & ep1 = queryCoven().queryComm().queryGroup().queryNode(0).endpoint();
         StringBuffer daliIp;
+        const SocketEndpoint &ep1 = queryCoven().queryComm().queryGroup().queryNode(0).endpoint();
         ep1.getUrlStr(daliIp);
     
         SocketEndpoint ep;
+        StringBuffer netAddress;
+        getClusterConfig("RoxieCluster", wuCluster.str(), "RoxieServerProcess[1]", netAddress);
+        ep.getUrlStr(netAddress);
+
         Owned<IRoxieQueryManager> manager = createRoxieQueryManager(ep, querySetName.str(), daliIp, roxieQueryRoxieTimeOut, user.str(), password.str(), 1);
     
         Owned<IRoxieQueryProcessingInfo> processingInfo = createRoxieQueryProcessingInfo();
         processingInfo->setLoadDataOnly(false);
         processingInfo->setResolveFileInfo(true);
         processingInfo->setNoForms(false);
-        processingInfo->setDfsDaliIp(daliIp.str());
+        if (wu->hasDebugValue("lookupDaliIp"))
+        {
+            SCMStringBuffer ip;
+            wu->getDebugValue("lookupDaliIp", ip);
+            processingInfo->setDfsDaliIp(ip.str());
+        }
+        else
+            processingInfo->setDfsDaliIp(daliIp.str());
         processingInfo->setResolveKeyDiffInfo(false);
         processingInfo->setCopyKeyDiffLocationInfo(false);
         processingInfo->setLayoutTranslationEnabled(false);
 
 
-        manager->deployWorkunit(wuid, queryName, *processingInfo.get(), user.str(), MAKE_ACTIVATE, false, querySetName.str(), false, status, roxieDeployStatus);
+        manager->deployWorkunit(wuid, queryName, *processingInfo.get(), user.str(), MAKE_ACTIVATE, querySetName.str(), req.getNotifyCluster(), status, roxieDeployStatus);
     }
     else
         processWorkunit(wu, wuid.str(), queryName, wuCluster, querySetName, activateOption);
@@ -8059,6 +8114,8 @@ bool CWsWorkunitsEx::onWUWaitComplete(IEspContext &context, IEspWUWaitRequest &r
 {
     try
     {
+        SCMStringBuffer wuid;
+        wuid.set(req.getWuid());
         resp.setStateID(secWaitForWorkUnitToComplete(req.getWuid(), *context.querySecManager(), *context.queryUser(),req.getWait(), req.getReturnOnWait()));
     }
     catch(IException* e)
