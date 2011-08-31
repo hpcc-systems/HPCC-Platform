@@ -1336,45 +1336,40 @@ int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttp
     StringBuffer page;
     Owned<IXslProcessor> xslp = getXslProcessor();
 
-    // get schema
-    StringBuffer schema;
-    //schema.loadFile("files/Corp1.xsd");
+    Owned<IWuWebView> web = createWuWebView(*wsinfo.wu.get(), wsinfo.queryname.get(), getCFD(), true);
+
+    StringBuffer v;
+    StringBuffer formxml("<FormInfo>");
+    appendXMLTag(formxml, "WUID", wsinfo.wuid.sget());
+    appendXMLTag(formxml, "QuerySet", wsinfo.qsetname.sget());
+    appendXMLTag(formxml, "QueryName", wsinfo.queryname.sget());
+    appendXMLTag(formxml, "ClientVersion", v.appendf("%g",context.getClientVersion()).str());
+    appendXMLTag(formxml, "RequestElement", v.clear().append(wsinfo.queryname).append("Request").str());
+    appendXMLTag(formxml, "Help", web->aggregateResources("HELP", v.clear()).str());
+    appendXMLTag(formxml, "Info", web->aggregateResources("INFO", v.clear()).str());
 
     context.addOptions(ESPCTX_ALL_ANNOTATION);
-    getSchema(schema, context, request, wsinfo);
-    DBGLOG("Schema: %s", schema.str());
+    getSchema(formxml, context, request, wsinfo);
+
+    StringArray views;
+    web->getResultViewNames(views);
+    formxml.append("<CustomViews>");
+    ForEachItemIn(i, views)
+        appendXMLTag(formxml, "Result", views.item(i));
+    formxml.append("</CustomViews>");
+    formxml.append("</FormInfo>");
 
     Owned<IXslTransform> xform = xslp->createXslTransform();
 
     StringBuffer xslfile(getCFD());
     xform->setXslSource(xslfile.append("./xslt/wsecl3_form.xsl").str());
-    xform->setXmlSource(schema.str(), schema.length()+1);
-
-    // params
-    xform->setStringParameter("serviceName", wsinfo.qsetname.sget());
-    xform->setStringParameter("queryPath", wsinfo.qsetname.sget());
-    StringBuffer version;
-    version.appendf("%g",context.getClientVersion());
-    xform->setStringParameter("serviceVersion", version.str());
-    xform->setStringParameter("methodName", wsinfo.queryname.sget());
-    xform->setStringParameter("wuid", wsinfo.wuid.sget());
+    xform->setXmlSource(formxml.str(), formxml.length()+1);
 
     // pass params to form (excluding form and __querystring)
     StringBuffer params;
     if (!getUrlParams(context.queryRequestParameters(),params))
         params.appendf("%cver_=%g",(params.length()>0) ? '&' : '?', context.getClientVersion());
     xform->setStringParameter("queryParams", params.str());
-
-    StringBuffer tmp,escaped;
-    wsinfo.getWsResource("HELP", tmp);
-
-    escapeSingleQuote(tmp,escaped);
-    xform->setStringParameter("methodHelp", escaped.str());
-
-    wsinfo.getWsResource("INFO", tmp.clear());
-    escapeSingleQuote(tmp,escaped.clear());
-    xform->setStringParameter("methodDesc", escaped.str());
-
     xform->setParameter("formOptionsAccess", "1");
     xform->setParameter("includeSoapTest", "1");
 
@@ -1392,10 +1387,6 @@ int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttp
         }
     }
     xform->setParameter("noDefaultValue", formInitialized ? "1" : "0");
-    StringBuffer requestlabel(wsinfo.queryname.sget());
-    requestlabel.append("Request");
-    xform->setStringParameter("requestLabel", requestlabel.str());
-    xform->setStringParameter("requestElement", requestlabel.str());
 
     xform->transform(page);
     response->setContentType("text/html");
@@ -1796,7 +1787,7 @@ void CWsEclBinding::addParameterToWorkunit(IWorkUnit * workunit, IConstWUResult 
 }
 
 
-int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsWuInfo &wsinfo, const char *xml, StringBuffer &respxml)
+int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsWuInfo &wsinfo, const char *xml, StringBuffer &out, const char *viewname, const char *xsltname)
 {
     Owned <IWorkUnitFactory> factory = getSecWorkUnitFactory(*context.querySecManager(), *context.queryUser());
     Owned <IWorkUnit> workunit = factory->createWorkUnit(NULL, "wsecl", context.queryUserId());
@@ -1850,10 +1841,23 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsWuInfo &wsinfo, 
     int wutimeout = 300000;
     if (waitForWorkUnitToComplete(wuid.str(), wutimeout))
     {
-        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
-        StringBufferAdaptor result(respxml);
-        getFullWorkUnitResultsXML(context.queryUserId(), context.queryPassword(), cw.get(), result, false, ExceptionSeverityError);
-        cw.clear();
+        if (viewname)
+        {
+            Owned<IWuWebView> web = createWuWebView(wuid.str(), wsinfo.queryname.get(), getCFD(), true);
+            web->renderResults(viewname, out);
+        }
+        else if (xsltname)
+        {
+            Owned<IWuWebView> web = createWuWebView(wuid.str(), wsinfo.queryname.get(), getCFD(), true);
+            web->applyResultsXSLT(xsltname, out);
+        }
+        else
+        {
+            Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
+            StringBufferAdaptor result(out);
+            getFullWorkUnitResultsXML(context.queryUserId(), context.queryPassword(), cw.get(), result, false, ExceptionSeverityError);
+            cw.clear();
+        }
     }
     else
     {
@@ -2041,7 +2045,7 @@ int CWsEclBinding::onSubmitQueryOutputXML(IEspContext &context, CHttpRequest* re
     return 0;
 }
 
-int CWsEclBinding::onSubmitQueryOutputTables(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsWuInfo &wsinfo)
+int CWsEclBinding::onSubmitQueryOutputView(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsWuInfo &wsinfo)
 {
     StringBuffer soapmsg;
 
@@ -2052,10 +2056,14 @@ int CWsEclBinding::onSubmitQueryOutputTables(IEspContext &context, CHttpRequest*
 
     StringBuffer output;
     StringBuffer status;
+    StringBuffer html;
 
     SCMStringBuffer clustertype;
     wsinfo.wu->getDebugValue("targetclustertype", clustertype);
 
+    StringBuffer xsltfile(getCFD());
+    xsltfile.append("xslt/wsecl3_result.xslt");
+    const char *view = context.queryRequestParameters()->queryProp("view");
     if (strieq(clustertype.str(), "roxie"))
     {
         const char *addr = wsecl->roxies->queryProp(wsinfo.qsetname.sget());
@@ -2072,43 +2080,22 @@ int CWsEclBinding::onSubmitQueryOutputTables(IEspContext &context, CHttpRequest*
         Owned<IHttpClient> httpclient = httpctx->createHttpClient(NULL, url);
 
         httpclient->sendRequest("POST", "text/xml", soapmsg, output, status);
+        Owned<IWuWebView> web = createWuWebView(*wsinfo.wu, NULL, getCFD(), true);
+        if (!view)
+            web->applyResultsXSLT(xsltfile.str(), output.str(), html);
+        else
+            web->renderResults(view, output.str(), html);
     }
     else
     {
-        submitWsEclWorkunit(context, wsinfo, soapmsg.str(), output);
+        submitWsEclWorkunit(context, wsinfo, soapmsg.str(), html, view, xsltfile.str());
     }
-
-    StringBuffer sourcexml;
-    sourcexml.appendf("<?xml version=\"1.0\" encoding=\"UTF-8\"?><%sResponse><Results><Result>", wsinfo.queryname.sget());
-
-    getResultsXmlBody(output.str(), sourcexml);
-
-    Owned<IPropertyTreeIterator> schemas = wsinfo.getResultSchemas();
-    if(schemas.get())
-    {
-        ForEach(*schemas)
-        {
-            IPropertyTree *resultSchema = schemas->query().queryPropTree("xs:schema");
-            if (!resultSchema)
-                resultSchema = schemas->query().queryPropTree("Schema");
-            if (resultSchema)
-            {
-                sourcexml.append("<XmlSchema name=\"").append(schemas->query().queryProp("@name")).append("\">");
-                toXML(resultSchema, sourcexml);
-                sourcexml.append("</XmlSchema>");
-            }
-        }
-    }
-    sourcexml.appendf("</Result></Results></%sResponse>", wsinfo.queryname.sget());
-
-    StringBuffer html;
-    xsltTransform(sourcexml.str(), sourcexml.length(), "./xslt/wsecl3_result.xslt", NULL, html);
 
     response->setContent(html.str());
     response->setContentType("text/html; charset=utf-8");
     response->setStatus("200 OK");
     response->send();
-    
+
     return 0;
 }
 
@@ -2406,7 +2393,7 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
             splitLookupInfo(parms, thepath, wuid, qs, qid);
             WsWuInfo wsinfo(wuid.str(), qs.str(), qid.str(), context->queryUserId(), context->queryPassword());
 
-            return onSubmitQueryOutputTables(*context, request, response, wsinfo);
+            return onSubmitQueryOutputView(*context, request, response, wsinfo);
         }
         else if (!stricmp(methodName.str(), "example"))
         {

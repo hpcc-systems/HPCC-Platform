@@ -552,9 +552,9 @@ int CXslTransform::setXslSource(const char *pszFileName)
     return 0;
 }
 
-int CXslTransform::setXslSource(const char *pszBuffer, unsigned int nSize)
+int CXslTransform::setXslSource(const char *pszBuffer, unsigned int nSize, const char *rootpath)
 {
-    m_xslsource.setown(new CXslSource(pszBuffer, nSize, m_sourceResolver?m_sourceResolver->getIncludeHandler():NULL));
+    m_xslsource.setown(new CXslSource(pszBuffer, nSize, m_sourceResolver?m_sourceResolver->getIncludeHandler():NULL, rootpath));
 
     return 0;
 }

@@ -44,6 +44,8 @@
 #define WORKUNIT_ERROR_START    5000
 #define WORKUNIT_ERROR_END      5099
 
+#define WUWEB_ERROR_START       5500
+#define WUWEB_ERROR_END         5599
 
 #define REMOTE_ERROR_START      8000    // dafilesrv etc - see common/remote/remoteerr.hpp
 #define REMOTE_ERROR_END        8099

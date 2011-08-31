@@ -53,6 +53,7 @@ include_directories (
          ./../../../system/security/shared   
          ./../../../system/include 
          ./../../../common/workunit 
+         ./../../../common/wuwebview
          ./../../../ecl/schedulectrl 
          ./../../clients 
          ./../../../common/fileview2 
@@ -85,6 +86,7 @@ target_link_libraries ( ws_workunits
          eclrtl 
          deftype 
          workunit 
+         wuwebview
          SMCLib 
          schedulectrl 
          roxiecommlib 

@@ -37,11 +37,11 @@ interface ILoadedDllEntry : extends IInterface
 extern DLLSERVER_API ILoadedDllEntry * createDllEntry(const char *name, bool isGlobal, const IFileIO *dllFile);
 extern DLLSERVER_API ILoadedDllEntry * createExeDllEntry(const char *name);
 extern DLLSERVER_API bool getEmbeddedWorkUnitXML(ILoadedDllEntry *dll, StringBuffer &xml);
-extern DLLSERVER_API bool getEmbeddedSoapInfoXML(ILoadedDllEntry *dll, StringBuffer &xml);
+extern DLLSERVER_API bool getEmbeddedManifestXML(ILoadedDllEntry *dll, StringBuffer &xml);
 extern DLLSERVER_API bool checkEmbeddedWorkUnitXML(ILoadedDllEntry *dll);
 extern DLLSERVER_API bool getResourceXMLFromFile(const char *filename, const char *type, unsigned id, StringBuffer &xml);
 extern DLLSERVER_API bool getWorkunitXMLFromFile(const char *filename, StringBuffer &xml);
-extern DLLSERVER_API bool getSoapInfoXMLFromFile(const char *filename, StringBuffer &xml);
+extern DLLSERVER_API bool getManifestXMLFromFile(const char *filename, StringBuffer &xml);
 
 extern DLLSERVER_API bool decompressResource(size32_t len, const void *data, StringBuffer &result);
 extern DLLSERVER_API void compressResource(MemoryBuffer & compressed, size32_t len, const void *data);

@@ -256,6 +256,7 @@ public:
     bool onWUInfoDetails(IEspContext &context, IEspWUInfoRequest &req, IEspWUInfoResponse &resp);
     bool onWUFile(IEspContext &context,IEspWULogFileRequest &req, IEspWULogFileResponse &resp);
     bool onWUResult(IEspContext &context,IEspWUResultRequest &req, IEspWUResultResponse &resp);
+    bool onWUResultView(IEspContext &context, IEspWUResultViewRequest &req, IEspWUResultViewResponse &resp);
     bool onWUResultSummary(IEspContext &context, IEspWUResultSummaryRequest &req, IEspWUResultSummaryResponse &resp);
     bool onWUResultBin(IEspContext &context, IEspWUResultBinRequest &req, IEspWUResultBinResponse &resp);
    bool onWUGraphInfo(IEspContext &context,IEspWUGraphInfoRequest &req, IEspWUGraphInfoResponse &resp);
@@ -314,7 +315,7 @@ private:
     void getWorkunitThorLog(IEspContext &context, const char* type, const char *wuid,MemoryBuffer& log);
     void getWorkunitThorSlaveLog(IEspContext &context, const char *wuid,const char *slaveip,MemoryBuffer& buf);
     void getResult(IEspContext &context,IConstWUResult &r,IArrayOf<IEspECLResult>& results, const char* wuid = NULL, bool SuppressSchemas=false);
-    void getInfo(IEspContext &context,const char* wuid,IEspECLWorkunit *info, bool bTruncateEclTo64k, bool IncludeExceptions=true, bool IncludeGraphs=true, bool IncludeSourceFiles=true, bool IncludeResults=true, bool IncludeVariables=true, bool IncludeTimers=true, bool IncludeDebugValues=true, bool IncludeApplicationValues=true, bool IncludeWorkflows=true, bool SuppressSchemas=false);
+    void getInfo(IEspContext &context,const char* wuid,IEspECLWorkunit *info, bool bTruncateEclTo64k, bool IncludeExceptions=true, bool IncludeGraphs=true, bool IncludeSourceFiles=true, bool IncludeResults=true, bool IncludeVariables=true, bool IncludeTimers=true, bool IncludeDebugValues=true, bool IncludeApplicationValues=true, bool IncludeWorkflows=true, bool SuppressSchemas=false, StringArray *resultViews=NULL);
     bool getInfoFromSasha(IEspContext &context,const char *sashaServer,const char* wuid,IEspECLWorkunit *info);
     void getResultView(INewResultSet* result, __int64 start, unsigned& count,__int64& total,IStringVal& resname,bool raw,MemoryBuffer& buf);
     void getFileResults(IEspContext &context, const char* logicalName, const char* cluster,__int64 start, unsigned& count,__int64& total,IStringVal& resname,bool raw,MemoryBuffer& buf);

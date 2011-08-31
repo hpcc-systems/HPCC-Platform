@@ -15,23 +15,21 @@
     <!-- ===============================================================================
   parameters 
   ================================================================================ -->
-    <xsl:param name="serviceName" select="'Risk_Indicators'"/>
-    <xsl:param name="queryPath" select="'Risk_Indicators'"/>
-    <xsl:param name="methodName" select="'Risk_Indicators.InstantID'"/>
-    <xsl:param name="wuid"/>
-    <xsl:param name="methodHelp" select="'..Help..'"/>
-    <xsl:param name="methodDesc" select="'..Desc..'"/>
-    <xsl:param name="requestLabel" select="'Risk_IndicatorsInstantIDRequest'"/>
-    <xsl:param name="serviceVersion" select="'1.0'"/>
     <xsl:param name="queryParams" select="''"/>
     <xsl:param name="formOptionsAccess" select="1"/>
     <xsl:param name="noDefaultValue" select="0"/> 
     <xsl:param name="includeSoapTest" select="1"/>
-    <xsl:param name="schemaRoot" select="xsd:schema"/>
+    <xsl:param name="schemaRoot" select="/FormInfo/xsd:schema"/>
     <xsl:param name="esdl_links" select="0"/>
-
-    <xsl:param name="requestElement" select="'Risk_Indicators.InstantIDRequest'"/>
     
+    <xsl:variable name="queryPath" select="/FormInfo/QuerySet"/>
+    <xsl:variable name="methodName" select="/FormInfo/QueryName"/>
+    <xsl:variable name="wuid" select="/FormInfo/WUID"/>
+    <xsl:variable name="methodHelp" select="/FormInfo/Help"/>
+    <xsl:variable name="methodDesc" select="/FormInfo/Info"/>
+    <xsl:variable name="serviceVersion" select="/FormInfo/Version"/>
+    <xsl:variable name="requestLabel" select="/FormInfo/RequestElement"/>
+    <xsl:variable name="requestElement" select="/FormInfo/RequestElement"/>
     
     <!-- ===============================================================================
   global settings 
@@ -46,8 +44,11 @@
     <!-- ================================================================================
    The main template: produce the html (and call GenerateRequestForm for request input)
   ================================================================================ -->
-  
-    <!--xsl:variable name="schemaRoot" select="ViewFormResponse/xsd/xsd:schema"/ -->
+
+    <xsl:template match="FormInfo">
+        <xsl:apply-templates select="xsd:schema"/>
+    </xsl:template>
+    <!--xsl:variable name="" select="ViewFormResponse/xsd/xsd:schema"/ -->
     <xsl:template match="xsd:schema">
           <xsl:if test="$verbose">
               noDefaultValue: <xsl:value-of select="$noDefaultValue"/>
@@ -84,7 +85,7 @@
         
         <html>
             <head>
-                <title>WsECL Service form</title>
+                <title>WsECL Service formx</title>
                 <link rel="shortcut icon" href="/esp/files/img/affinity_favicon_1.ico" />
                 <link rel="stylesheet" type="text/css" href="/esp/files/yui/build/fonts/fonts-min.css" />
                 <link rel="stylesheet" type="text/css" href="/esp/files/css/espdefault.css" />
@@ -139,9 +140,8 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
     var form = document.forms['esp_form'];
     if (!form)  return false;
 
-    var actionpath="]]><xsl:value-of select="concat('/WsEcl/submit/wuid/', $wuid, '?qset=', $queryPath, '&amp;qname=', $methodName, '&amp;display')"/> <![CDATA[";
-
     var actval = document.getElementById('submit_type');
+    var actionpath = "/jserror";
     if (actval && actval.value)
     {
         if (actval.value=="esp_soap")
@@ -154,6 +154,10 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
             actionpath = "]]><xsl:value-of select="concat('/WsEcl/forms/roxiexml/', $queryPath, '/', $methodName)"/><![CDATA[";
         else if (actval.value=="run_xslt")
             actionpath = "]]><xsl:value-of select="concat('/WsEcl/xslt/query/', $queryPath, '/', $methodName)"/><![CDATA[";
+        else if (actval.value=="xml")
+            actionpath = "]]><xsl:value-of select="concat('/WsEcl/submit/wuid/', $wuid, '?qset=', $queryPath, '&amp;qname=', $methodName, '&amp;view=xml&amp;display')"/> <![CDATA[";
+        else
+            actionpath= "]]><xsl:value-of select="concat('/WsEcl/xslt/query/', $queryPath, '/', $methodName, '?view=')"/><![CDATA["+actval.value;
     }
     //alert("actionpath = " + actionpath);
     var dest = document.getElementById('esp_dest');
@@ -192,7 +196,7 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
                         <td height="23">
                             <font color="#efefef">
                                 <b>
-                                    <xsl:value-of select="$serviceName"/>
+                                    <xsl:value-of select="/FormInfo/QuerySet"/>
                                     <xsl:if test="number($serviceVersion)>0">
                                         <xsl:value-of select="concat(' [Version ', $serviceVersion, ']')"/>
                                     </xsl:if>
@@ -286,6 +290,9 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
                 <tr class='commands'>
                   <td align='left'>
                     <select id="submit_type" name="submit_type_">
+                        <xsl:for-each select="/FormInfo/CustomViews/Result">
+                            <option><xsl:attribute name="value"><xsl:value-of select="."/></xsl:attribute><xsl:value-of select="."/></option>
+                        </xsl:for-each>
                         <option value="run_xslt">OUTPUT TABLES</option>
                         <option value="xml">OUTPUT XML</option>
                         <option value="esp_soap">SOAP TEST</option>
