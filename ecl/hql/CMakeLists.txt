@@ -98,11 +98,19 @@ include_directories (
          ./../../ecl/hql 
     )
 
-add_custom_command ( OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/hqlgram.cpp ${CMAKE_CURRENT_BINARY_DIR}/hqlgram.h
-    #pipe result through grep to remove warnings that are hard to suppress, and pipe through cat to prevent error code from no matches aborting the compile
-    COMMAND ${bisoncmdprefix} ${bisoncmd} --report=state --defines=${CMAKE_CURRENT_BINARY_DIR}/hqlgram.h --output=${CMAKE_CURRENT_BINARY_DIR}/hqlgram.cpp ${CMAKE_CURRENT_SOURCE_DIR}/hqlgram.y 2>&1 | grep -v "unused value" | cat
-    DEPENDS hqlgram.y
-)
+if (WIN32)
+    add_custom_command ( OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/hqlgram.cpp ${CMAKE_CURRENT_BINARY_DIR}/hqlgram.h
+        #pipe result through findstr to remove warnings that are hard to suppress, and pipe through more to prevent error code from no matches aborting the compile
+        COMMAND ${bisoncmdprefix} ${bisoncmd} --report=state --defines=${CMAKE_CURRENT_BINARY_DIR}/hqlgram.h --output=${CMAKE_CURRENT_BINARY_DIR}/hqlgram.cpp ${CMAKE_CURRENT_SOURCE_DIR}/hqlgram.y 2>&1 | findstr /V "unused value" | more
+        DEPENDS hqlgram.y
+    )
+else()
+    add_custom_command ( OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/hqlgram.cpp ${CMAKE_CURRENT_BINARY_DIR}/hqlgram.h
+        #pipe result through grep to remove warnings that are hard to suppress, and pipe through cat to prevent error code from no matches aborting the compile
+        COMMAND ${bisoncmdprefix} ${bisoncmd} --report=state --defines=${CMAKE_CURRENT_BINARY_DIR}/hqlgram.h --output=${CMAKE_CURRENT_BINARY_DIR}/hqlgram.cpp ${CMAKE_CURRENT_SOURCE_DIR}/hqlgram.y 2>&1 | grep -v "unused value" | cat
+        DEPENDS hqlgram.y
+    )
+endif()
 
 add_custom_command ( OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/hqllex.cpp 
     COMMAND ${flexcmdprefix} ${flexcmd} --outfile=${CMAKE_CURRENT_BINARY_DIR}/hqllex.cpp --header-file=${CMAKE_CURRENT_BINARY_DIR}/hqllex.hpp ${CMAKE_CURRENT_SOURCE_DIR}/hqllex.l
