@@ -45,6 +45,18 @@ print_usage(){
     exit 1;
 }
 
+checkUser(){
+    USER=$1
+    id ${USER} 2>&1 > /dev/null
+    if [ $? -eq 0 ];
+    then
+        return 1
+    else
+        return 0
+    fi
+}
+
+
 pkgCmd(){
     if [ "$1" == "deb" ]; then
         if [ "$2" == "install" ]; then
@@ -72,7 +84,9 @@ pkgCmd(){
 
 checkInstall(){
     _FILE=`ls ${INSTALL_DIR}${CONFIG_DIR}/version 2>&1 1>/dev/null; echo $?`
-    if [ "${_FILE}" == 0 ];then
+    checkUser "hpcc"
+    _USER=$?
+    if [ "${_FILE}" == 0 ] && [ ${_USER} -eq 1 ]; then
         _INSTALLED=1
         checkUpgrade
     else
@@ -184,14 +198,18 @@ else
 fi
 
 installPkg
-checkKeys id_rsa
-if [ -e ${REMOTE_INSTALL}/${ENV_XML_FILE} ]; then
-	cp -r ${REMOTE_INSTALL}/${ENV_XML_FILE}  ${CONFIG_DIR}/${ENV_XML_FILE} 
-	chown hpcc:hpcc ${CONFIG_DIR}/${ENV_XML_FILE}
-fi
-if [ -e ${REMOTE_INSTALL}/${ENV_CONF_FILE} ]; then
-	cp -r ${REMOTE_INSTALL}/${ENV_CONF_FILE}  ${CONFIG_DIR}/${ENV_CONF_FILE}
+checkUser "hpcc"
+_USER=$?
+if [ ${_USER} -eq 1 ]; then
+    checkKeys id_rsa
+    if [ -e ${REMOTE_INSTALL}/${ENV_XML_FILE} ]; then
+        cp -r ${REMOTE_INSTALL}/${ENV_XML_FILE}  ${CONFIG_DIR}/${ENV_XML_FILE}
+        chown hpcc:hpcc ${CONFIG_DIR}/${ENV_XML_FILE}
+    fi
+    if [ -e ${REMOTE_INSTALL}/${ENV_CONF_FILE} ]; then
+        cp -r ${REMOTE_INSTALL}/${ENV_CONF_FILE}  ${CONFIG_DIR}/${ENV_CONF_FILE}
 	chown hpcc:hpcc ${CONFIG_DIR}/${ENV_CONF_FILE}
+    fi
 fi
 rm -rf ${REMOTE_INSTALL}
 rm -rf ~/remote_install.tgz
