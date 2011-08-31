@@ -1902,6 +1902,7 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
         if (req.getPush())
             options->setPush(true);
 
+        resp.setWuid(wu->queryId());
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
         submitDFUWorkUnit(wu.getClear());
     }
@@ -2056,6 +2057,7 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
         if (req.getPush())
             options->setPush(true);
 
+        resp.setWuid(wu->queryId());
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
         submitDFUWorkUnit(wu.getClear());
     }
@@ -2104,6 +2106,7 @@ bool CFileSprayEx::onReplicate(IEspContext &context, IEspReplicate &req, IEspRep
             IDFUoptions *opt = wu->queryUpdateOptions();
             opt->setReplicateMode(DFURMmissing,cluster,req.getRepeatLast(),req.getOnlyRepeated());
         }
+        resp.setWuid(wu->queryId());
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
         submitDFUWorkUnit(wu.getClear());
     }
@@ -2216,6 +2219,7 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
         if ((encryptkey&&*encryptkey)||(decryptkey&&*decryptkey))
             options->setEncDec(encryptkey,decryptkey);
 
+        resp.setWuid(wu->queryId());
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
         submitDFUWorkUnit(wu.getClear());
     }
@@ -2307,6 +2311,7 @@ bool CFileSprayEx::doCopyForRoxie(IEspContext &context,     const char * srcName
         options->setSuppressNonKeyRepeats(true);                            // **** only repeat last part when src kind = key
     }
 
+    resp.setResult(wu->queryId());
     resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
     submitDFUWorkUnit(wu.getClear());
     return true;
@@ -2512,6 +2517,7 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
         if (req.getIfnewer())
             options->setIfNewer(true);
 
+        resp.setResult(wu->queryId());
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
         submitDFUWorkUnit(wu.getClear());
     }
@@ -2586,6 +2592,7 @@ bool CFileSprayEx::onRename(IEspContext &context, IEspRename &req, IEspRenameRes
         IDFUoptions *options = wu->queryUpdateOptions();
         options->setOverwrite(req.getOverwrite());
 
+        resp.setWuid(wu->queryId());
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
         submitDFUWorkUnit(wu.getClear());
     }
@@ -2860,6 +2867,7 @@ bool CFileSprayEx::onDfuMonitor(IEspContext &context, IEspDfuMonitorRequest &req
         monitor->setShotLimit(req.getShotLimit());
         monitor->setSub(req.getSub());
 
+        resp.setWuid(wu->queryId());
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
         submitDFUWorkUnit(wu.getClear());
     }
