@@ -481,6 +481,8 @@
             function getSectionLoadUrl(Section)
             {
               var sectionUrl = '';
+              if (Section=="Results")
+                sectionUrl += '&IncludeResultsViewNames=1';
               for(i=0; i < sections.length;i++)
               {
                 sectionUrl += '&Include' + sections[i];

@@ -362,6 +362,13 @@ inline const char *encodeUtf8XML(const char *x, StringBuffer &ret, unsigned flag
     return encodeXML(x, ret, flags, len, true);
 }
 
+inline StringBuffer &appendXMLTag(StringBuffer &xml, const char *tag, const char *value, unsigned flags=0, unsigned len=(unsigned)-1, bool utf8=true)
+{
+    xml.append('<').append(tag).append('>');
+    encodeXML(value, xml, flags, len, utf8);
+    return xml.append("</").append(tag).append('>');
+}
+
 extern jlib_decl void decodeCppEscapeSequence(StringBuffer & out, const char * in, bool errorIfInvalid);
 extern jlib_decl bool strToBool(const char * text);
 extern jlib_decl bool strToBool(size_t len, const char * text);

@@ -389,11 +389,11 @@ extern DLLSERVER_API bool getEmbeddedWorkUnitXML(ILoadedDllEntry *dll, StringBuf
     return decompressResource(len, data, xml);
 }
 
-extern DLLSERVER_API bool getEmbeddedSoapInfoXML(ILoadedDllEntry *dll, StringBuffer &xml)
+extern DLLSERVER_API bool getEmbeddedManifestXML(ILoadedDllEntry *dll, StringBuffer &xml)
 {
     size32_t len = 0;
     const void * data = NULL;
-    if (!dll->getResource(len, data, "SOAPINFO", 1000))
+    if (!dll->getResource(len, data, "MANIFEST", 1000))
         return false;
     return decompressResource(len, data, xml);
 }
@@ -418,9 +418,9 @@ extern DLLSERVER_API bool getWorkunitXMLFromFile(const char *filename, StringBuf
     return getResourceXMLFromFile(filename, "WORKUNIT", 1000, xml);
 }
 
-extern DLLSERVER_API bool getSoapInfoXMLFromFile(const char *filename, StringBuffer &xml)
+extern DLLSERVER_API bool getManifestXMLFromFile(const char *filename, StringBuffer &xml)
 {
-    return getResourceXMLFromFile(filename, "SOAPINFO", 1000, xml);
+    return getResourceXMLFromFile(filename, "MANIFEST", 1000, xml);
 }
 
 

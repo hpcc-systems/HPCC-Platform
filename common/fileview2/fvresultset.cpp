@@ -3262,11 +3262,13 @@ extern "C" FILEVIEW_API unsigned getResultBin(MemoryBuffer & ret, INewResultSet 
 }
 
 
-extern "C" FILEVIEW_API IStringVal& getFullWorkUnitResultsXML(const char *username, const char *password, const IConstWorkUnit *cw, IStringVal &str, bool inclschema, WUExceptionSeverity minSeverity)
+extern "C" FILEVIEW_API IStringVal& getFullWorkUnitResultsXML(const char *username, const char *password, const IConstWorkUnit *cw, IStringVal &str, bool inclschema, WUExceptionSeverity minSeverity, bool noroot)
 {
     SCMStringBuffer wuid;
     cw->getWuid(wuid);
-    StringBuffer result("<Result>");
+    StringBuffer result;
+    if (!noroot)
+        result.append("<Result>");
 
     Owned<IConstWUExceptionIterator> exceptions = &cw->getExceptions();
     ForEach(*exceptions)
@@ -3311,7 +3313,8 @@ extern "C" FILEVIEW_API IStringVal& getFullWorkUnitResultsXML(const char *userna
             result.append("<Exception><Source>System</Source><Message>Query aborted by operator</Message></Exception>");
             break;
     }
-    result.append("</Result>");
+    if (!noroot)
+        result.append("</Result>");
     str.set(result.str());
     return str;
 }

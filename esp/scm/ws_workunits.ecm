@@ -521,13 +521,14 @@ ESPrequest WUInfoRequest
     [min_ver("1.16")] bool IncludeGraphs(true);
     [min_ver("1.16")] bool IncludeSourceFiles(true);
     [min_ver("1.16")] bool IncludeResults(true);
+    [min_ver("1.34")] bool IncludeResultsViewNames(false);
     [min_ver("1.16")] bool IncludeVariables(true);
     [min_ver("1.16")] bool IncludeTimers(true);
     [min_ver("1.16")] bool IncludeDebugValues(true);
     [min_ver("1.16")] bool IncludeApplicationValues(true);
     [min_ver("1.16")] bool IncludeWorkflows(true);
     [min_ver("1.16")] bool SuppressResultSchemas(false);
-   [min_ver("1.25")] string ThorSlaveIP;
+    [min_ver("1.25")] string ThorSlaveIP;
 };
 
 
@@ -537,6 +538,7 @@ ESPresponse [exceptions_inline] WUInfoResponse
     int  AutoRefresh(0);
    bool CanCompile;
    [min_ver("1.25")] string ThorSlaveIP;
+   [min_ver("1.34")] ESParray<string, View> ResultViews;
 }; 
 
 ESPrequest WUResultSummaryRequest
@@ -625,6 +627,21 @@ ESPresponse [exceptions_inline,http_encode(0)] WUResultResponse
     int64 Total;
 
     string Result;
+};
+
+ESPrequest WUResultViewRequest
+{
+    string Wuid;
+    string ViewName;
+    int    Sequence;
+    string ResultName;
+};
+
+ESPresponse [exceptions_inline] WUResultViewResponse
+{
+    string Wuid;
+    string ViewName;
+    [http_content("text/html")] string Result;
 };
 
 ESPrequest WUClusterJobQueueXLSRequest
@@ -1046,7 +1063,7 @@ ESPresponse [exceptions_inline] WUQuerySetActionAliasesResponse
 
 
 ESPservice [
-    version("1.33"), default_client_version("1.33"),
+    version("1.34"), default_client_version("1.34"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPuses ESPStruct ECLException;
@@ -1074,6 +1091,7 @@ ESPservice [
     ESPmethod [resp_xsl_default("/esp/xslt/graph_gvc.xslt")]     WUGVCGraphInfo(WUGVCGraphInfoRequest, WUGVCGraphInfoResponse);
     ESPmethod[description("Stub for Ajax GVC Graph."), help(""), resp_xsl_default("/esp/xslt/GvcGraph.xslt")] GVCAjaxGraph(GVCAjaxGraphRequest, GVCAjaxGraphResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/result.xslt")]        WUResult(WUResultRequest, WUResultResponse);
+    ESPmethod WUResultView(WUResultViewRequest, WUResultViewResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/wuid_jobs.xslt")]     WUJobList(WUJobListRequest, WUJobListResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/wuaction_results.xslt")] WUAction(WUActionRequest, WUActionResponse); 
     ESPmethod [resp_xsl_default("/esp/xslt/scheduledwus.xslt")] WUShowScheduled(WUShowScheduledRequest, WUShowScheduledResponse); 

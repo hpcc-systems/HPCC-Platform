@@ -167,9 +167,9 @@ public:
     void getSoapMessage(StringBuffer& soapmsg, IEspContext &context, CHttpRequest* request, WsWuInfo &wsinfo, unsigned flags);
     int onGetSoapBuilder(IEspContext &context, CHttpRequest* request, CHttpResponse* response,  WsWuInfo &wsinfo);
     int onSubmitQueryOutputXML(IEspContext &context, CHttpRequest* request, CHttpResponse* response,    WsWuInfo &wsinfo);
-    int onSubmitQueryOutputTables(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsWuInfo &wsinfo);
+    int onSubmitQueryOutputView(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsWuInfo &wsinfo);
 
-    int submitWsEclWorkunit(IEspContext & context, WsWuInfo &wsinfo, const char *xml, StringBuffer &respxml);
+    int submitWsEclWorkunit(IEspContext & context, WsWuInfo &wsinfo, const char *xml, StringBuffer &out, const char *viewname=NULL, const char *xsltname=NULL);
 
     void addParameterToWorkunit(IWorkUnit * workunit, IConstWUResult &vardef, IResultSetMetaData &metadef, const char *varname, IPropertyTree *valtree);
     
