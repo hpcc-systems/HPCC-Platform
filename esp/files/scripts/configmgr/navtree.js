@@ -3847,10 +3847,18 @@ function validateNumNodesDialog() {
   else
   {
     var numberIPs = parseInt(ipCount());
-    var roxieNode = parseInt(document.getElementById('node4RoxieServ').value)
-    var thorNode = parseInt(document.getElementById('node4Thor').value)
-       
-    if ( roxieNode <= numberIPs && thorNode <= numberIPs ) {
+    var roxieNodes = parseInt(document.getElementById('node4RoxieServ').value)
+    var thorNodes = parseInt(document.getElementById('node4Thor').value)
+
+    if (roxieNodes <= numberIPs && thorNodes <= numberIPs) {
+      if (thorNodes == numberIPs && numberIPs > 10) {
+        if (!confirm("As the number of Thor slave nodes requested is equal to the number \
+of ip addresses given, there will be an overlap of Thor master node and a Thor \
+slave node. This is not recommended in an environment with more than \
+10 nodes.\n\nDo you want to continue?"))
+          return;
+      }
+
       submitInformation();
     }
     else{

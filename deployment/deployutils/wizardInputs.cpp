@@ -551,7 +551,11 @@ void CWizardInputs::generateSoftwareTree(IPropertyTree* pNewEnvTree)
             if(!strcmp(buildSetName, "roxie"))
               numOfIpNeeded = m_roxieNodes;
             else if(!strcmp(buildSetName, "thor"))
-              numOfIpNeeded = m_thorNodes + 1;
+            {
+              numOfIpNeeded = m_thorNodes;
+              if (m_thorNodes < m_ipaddress.ordinality())
+                numOfIpNeeded += 1;
+            }
                     
             CInstDetails* pInstDetail = getServerIPMap(sbNewName.str(), buildSetName, pNewEnvTree, numOfIpNeeded);
                     
@@ -814,7 +818,7 @@ void CWizardInputs::addRoxieThorClusterToEnv(IPropertyTree* pNewEnvTree, CInstDe
 
       //Now add Slave 
       xml.clear().appendf("<ThorData type=\"Slave\" name=\"%s\" validateComputers=\"false\" slavesPerNode=\"%d\" skipExisting=\"false\" >", compName.str(), m_thorSlavesPerNode);
-      unsigned numOfNodes = ipAssignedToComp.ordinality() == 1 ? 0 : 1;
+      unsigned numOfNodes = ipAssignedToComp.ordinality() == 1 || m_thorNodes == m_ipaddress.ordinality()? 0 : 1;
 
       for( ; numOfNodes < ipAssignedToComp.ordinality() ; numOfNodes++)
       {
