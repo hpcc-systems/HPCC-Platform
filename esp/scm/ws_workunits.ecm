@@ -965,7 +965,8 @@ ESPrequest WUDeployWorkunitRequest
     string Wuid;
     string JobName;
     int Activate;
-
+    bool NotifyRoxie(false);
+    string DFSLookupDali;
 };
 
 ESPresponse [exceptions_inline] WUDeployWorkunitResponse

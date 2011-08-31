@@ -4408,11 +4408,18 @@ bool CWsWorkunitsEx::onWUDeployWorkunit(IEspContext &context, IEspWUDeployWorkun
         SCMStringBuffer status;
         SCMStringBuffer roxieDeployStatus;
 
-        const SocketEndpoint & ep1 = queryCoven().queryComm().queryGroup().queryNode(0).endpoint();
-        StringBuffer daliIp;
-        ep1.getUrlStr(daliIp);
+        StringBuffer daliIp(req.getDFSLookupDali());
+        if (daliIp.length() == 0)
+        {
+            const SocketEndpoint &ep1 = queryCoven().queryComm().queryGroup().queryNode(0).endpoint();
+            ep1.getUrlStr(daliIp);
+        }
     
         SocketEndpoint ep;
+        StringBuffer netAddress;
+        getClusterConfig("RoxieCluster", wuCluster.str(), "RoxieServerProcess[1]", netAddress);
+        ep.getUrlStr(netAddress);
+
         Owned<IRoxieQueryManager> manager = createRoxieQueryManager(ep, querySetName.str(), daliIp, roxieQueryRoxieTimeOut, user.str(), password.str(), 1);
     
         Owned<IRoxieQueryProcessingInfo> processingInfo = createRoxieQueryProcessingInfo();
@@ -4425,7 +4432,7 @@ bool CWsWorkunitsEx::onWUDeployWorkunit(IEspContext &context, IEspWUDeployWorkun
         processingInfo->setLayoutTranslationEnabled(false);
 
 
-        manager->deployWorkunit(wuid, queryName, *processingInfo.get(), user.str(), MAKE_ACTIVATE, false, querySetName.str(), false, status, roxieDeployStatus);
+        manager->deployWorkunit(wuid, queryName, *processingInfo.get(), user.str(), MAKE_ACTIVATE, false, querySetName.str(), req.getNotifyRoxie(), status, roxieDeployStatus);
     }
     else
         processWorkunit(wu, wuid.str(), queryName, wuCluster, querySetName, activateOption);

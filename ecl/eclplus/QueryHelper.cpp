@@ -53,10 +53,9 @@ bool QueryHelper::doit(FILE * fp)
     ureq->setWuid(wu->getWuid());
 
     // Make a workUnit
+    StringBuffer jobname;
     if(globals->hasProp("jobname"))
-    {
-        ureq->setJobname(globals->queryProp("jobname"));
-    }
+        jobname.append(globals->queryProp("jobname"));
 
     StringBuffer ecl;
     if (globals->getProp("ecl", ecl))
@@ -65,6 +64,8 @@ bool QueryHelper::doit(FILE * fp)
         {
             StringBuffer filename(ecl.str()+1);
             ecl.clear().loadFile(filename);
+            if (jobname.length() == 0)
+                splitFilename(filename, NULL, NULL, &jobname, NULL);
         }
         ureq->setQueryText(ecl.str());
     }
@@ -73,6 +74,9 @@ bool QueryHelper::doit(FILE * fp)
 
     if (globals->getPropInt("compileOnly", 0)!=0)
         ureq->setAction(WUActionCompile);
+
+    if (jobname.length())
+        ureq->setJobname(jobname);
 
     IArrayOf<IEspDebugValue> dvals;
     IArrayOf<IEspApplicationValue> avals;
@@ -226,6 +230,7 @@ bool QueryHelper::doSubmitWorkUnit(FILE * fp, const char * wuid, const char* clu
     }
     bool compileOnly = globals->getPropInt("compileOnly", 0)!=0;
     bool returnOnWaitState = globals->getPropInt("returnOnWait", 0)!=0;
+    const char *targetClusterType = NULL;
     if(timeout > 0 || infinite)
     {
         if (compileOnly)
@@ -240,64 +245,104 @@ bool QueryHelper::doSubmitWorkUnit(FILE * fp, const char * wuid, const char* clu
         }
         else
         {
-            WUState s;
-            
-            int initial_wait = 30;
-            int polling_period = 30;
-            int waited = 0;
-            int actual_wait = -1;
-            while(1)
+            Owned<IClientWUInfoRequest> infoReq = wuclient->createWUInfoRequest();
+            infoReq->setWuid(wuid);
+            Owned<IClientWUInfoResponse> infoResponse = wuclient->WUInfo(infoReq);
+
+            IConstECLWorkunit &eclWorkUnit = infoResponse->getWorkunit();
+
+            for(unsigned di=0; di<eclWorkUnit.getDebugValues().length();di++)
             {
-                if(actual_wait != 0)
+                IConstDebugValue& item = eclWorkUnit.getDebugValues().item(di);
+                if(item.getName() && *item.getName() && (stricmp(item.getName(), "targetClusterType") == 0) )
                 {
-                    // Initially, wait initial_wait
-                    actual_wait = infinite?initial_wait*1000: std::min(timeout, initial_wait*1000);
-                }
-
-                Owned<IClientWUWaitRequest> req = wuclient->createWUWaitCompleteRequest();
-                req->setWuid(wuid);
-                req->setWait(actual_wait);
-                Owned<IClientWUWaitResponse> resp = wuclient->WUWaitComplete(req);
-                const IMultiException* excep = &resp->getExceptions();
-                if(excep != NULL && excep->ordinality() > 0)
-                {
-                    StringBuffer msg;
-                    excep->errorMessage(msg);
-                    printf("%s\n", msg.str());
-                    return false;
-                }
-
-                s = (WUState)resp->getStateID();
-                if (s != WUStateUnknown)
+                    targetClusterType = item.getValue();
                     break;
-
-                if(actual_wait != 0)
-                {
-                    waited += actual_wait;
-                    actual_wait = 0;
-                    if (!infinite && (waited >= timeout))
-                        break;
                 }
-                else
-                {
-                    if (!infinite && (waited >= timeout))
-                        break;
-                    int time_to_wait = infinite?polling_period*1000: std::min(timeout - waited, polling_period*1000);
-                    sleep(time_to_wait/1000);
-                    waited += time_to_wait;
-                }
-
             }
 
-            if (s != WUStateUnknown)
+            if (targetClusterType && *targetClusterType && stricmp(targetClusterType, "roxie") == 0)
             {
-                globals->setProp("wuid", wuid);
-                if(format)
-                    LINK(format);
-                Owned<IEclPlusHelper> viewer = new ViewHelper(LINK(globals), format);
-                viewer->doit(fp);
+                Owned<IClientWUDeployWorkunitRequest> wuReq = wuclient->createWUDeployWorkunitRequest();
+                wuReq->setWuid(wuid);
+                wuReq->setNotifyRoxie(globals->getPropBool("-fnotifyRoxie", true));
+                wuReq->setActivate( globals->getPropBool("-factivateQuery", true) ? MAKE_ACTIVATE : DO_NOT_ACTIVATE);
+
+                if (globals->hasProp("-flookupDaliAddress"))
+                {
+                    StringBuffer lookupDaliAddress;
+                    globals->getProp("-flookupDaliAddress", lookupDaliAddress);
+                    wuReq->setDFSLookupDali(lookupDaliAddress);
+                }
+
+                Owned<IClientWUDeployWorkunitResponse> wuResponse = wuclient->WUDeployWorkunit(wuReq);
+                StringBuffer s;
+                s.append("Published Query '").append(eclWorkUnit.getJobname()).append("' to roxie");
+                fprintf(fp, "%s", s.str());
+                return true;
             }
-            return ((s == WUStateCompleted) || (returnOnWaitState && (s == WUStateWait)));
+            else
+            {
+
+                WUState s;
+
+                int initial_wait = 30;
+                int polling_period = 30;
+                int waited = 0;
+                int actual_wait = -1;
+                while(1)
+                {
+                    if(actual_wait != 0)
+                    {
+                        // Initially, wait initial_wait
+                        actual_wait = infinite?initial_wait*1000: std::min(timeout, initial_wait*1000);
+                    }
+
+                    Owned<IClientWUWaitRequest> req = wuclient->createWUWaitCompleteRequest();
+                    req->setWuid(wuid);
+                    req->setWait(actual_wait);
+                    Owned<IClientWUWaitResponse> resp = wuclient->WUWaitComplete(req);
+                    const IMultiException* excep = &resp->getExceptions();
+                    if(excep != NULL && excep->ordinality() > 0)
+                    {
+                        StringBuffer msg;
+                        excep->errorMessage(msg);
+                        printf("%s\n", msg.str());
+                        return false;
+                    }
+
+                    s = (WUState)resp->getStateID();
+                    if (s != WUStateUnknown)
+                        break;
+
+                    if(actual_wait != 0)
+                    {
+                        waited += actual_wait;
+                        actual_wait = 0;
+                        if (!infinite && (waited >= timeout))
+                            break;
+                    }
+                    else
+                    {
+                        if (!infinite && (waited >= timeout))
+                            break;
+                        int time_to_wait = infinite?polling_period*1000: std::min(timeout - waited, polling_period*1000);
+                        sleep(time_to_wait/1000);
+                        waited += time_to_wait;
+                    }
+
+                }
+
+                if (s != WUStateUnknown)
+                {
+                    globals->setProp("wuid", wuid);
+                    if(format)
+                        LINK(format);
+                    Owned<IEclPlusHelper> viewer = new ViewHelper(LINK(globals), format);
+                    viewer->doit(fp);
+                }
+                return ((s == WUStateCompleted) || (returnOnWaitState && (s == WUStateWait)));
+            }
         }
     }
     else
