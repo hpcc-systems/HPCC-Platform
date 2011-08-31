@@ -51,7 +51,7 @@ void setIORetryCount(unsigned _ioRetryCount) // non atomic, expected to be calle
     ioRetryCount = _ioRetryCount;
 }
 
-static inline offset_t checked_lseeki64( int handle, offset_t offset, int origin )
+extern jlib_decl offset_t checked_lseeki64( int handle, offset_t offset, int origin )
 {
     offset_t ret=_lseeki64(handle,offset,origin);
     if (ret==(offset_t)-1) 
@@ -179,7 +179,7 @@ extern jlib_decl size32_t checked_pread(int file, void *buffer, size32_t len, of
 #endif
 }
 
-static inline size32_t checked_write( int handle, const void *buffer, size32_t count )
+extern jlib_decl size32_t checked_write( int handle, const void *buffer, size32_t count )
 {
     int ret=_write(handle,buffer,count);
     if ((size32_t)ret != count)
