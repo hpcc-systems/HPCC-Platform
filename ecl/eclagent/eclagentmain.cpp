@@ -43,6 +43,7 @@ int main(int argc, const char *argv[])
 #ifdef _USE_CPPUNIT
     if (argc>=2 && stricmp(argv[1], "-selftest")==0)
     {
+        InitModuleObjects();
         queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time|MSGFIELD_prefix);
         CppUnit::TextUi::TestRunner runner;
         if (argc==2)
