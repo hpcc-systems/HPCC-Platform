@@ -27,7 +27,6 @@
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="backupnode/sourcedoc.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="combine/sourcedoc.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="copyexp/sourcedoc.xml"/>
-    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="datagen/sourcedoc.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="dumpkey/sourcedoc.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="esdl/sourcedoc.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="fcached/sourcedoc.xml"/>
