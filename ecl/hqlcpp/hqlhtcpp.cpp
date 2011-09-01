@@ -5967,7 +5967,7 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                 {
                     OwnedHqlExpr row = expr->cloneAllAnnotations(expr->queryChild(0));  // preserve any position information....
                     if ((getNumActivityArguments(expr) == 0) && canProcessInline(&ctx, row))
-                        result = doBuildActivityCreateRow(ctx, row);
+                        result = doBuildActivityCreateRow(ctx, row, false);
                     else
                         result = buildCachedActivity(ctx, row);
                     break;
@@ -5992,7 +5992,7 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                 break;
             case no_null:
                 if (expr->isDatarow())
-                    result = doBuildActivityCreateRow(ctx, expr);
+                    result = doBuildActivityCreateRow(ctx, expr, false);
                 else
                     result = doBuildActivityNull(ctx, expr, isRoot);
                 break;
@@ -6167,7 +6167,7 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                 result = doBuildActivityProject(ctx, expr);
                 break;
             case no_createrow:
-                result = doBuildActivityCreateRow(ctx, expr);
+                result = doBuildActivityCreateRow(ctx, expr, false);
                 break;
             case no_newusertable:
                 result = doBuildActivityProject(ctx, expr);
@@ -16095,7 +16095,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityTempTable(BuildCtx & ctx, IHql
 
 
 //NB: Also used to create row no_null as an activity.
-ABoundActivity * HqlCppTranslator::doBuildActivityCreateRow(BuildCtx & ctx, IHqlExpression * expr)
+ABoundActivity * HqlCppTranslator::doBuildActivityCreateRow(BuildCtx & ctx, IHqlExpression * expr, bool isDataset)
 {
     bool valuesAreConstant = false;
     StringBuffer valueText;
@@ -16115,6 +16115,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCreateRow(BuildCtx & ctx, IHql
             }
             valuesAreConstant = true;
         }
+        if (!isDataset && containsSkip(transform))
+            reportError(queryLocation(transform), ECODETEXT(HQLERR_SkipInsideCreateRow));
     }
     else if (op == no_null)
     {
@@ -16146,7 +16148,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCreateRow(BuildCtx & ctx, IHql
     BoundRow * selfCursor = bindSelf(funcctx, instance->dataset, "crSelf");
     IHqlExpression * self = selfCursor->querySelector();
 
-    associateSkipReturnMarker(funcctx, queryBoolExpr(false), selfCursor);
+    if (isDataset)
+        associateSkipReturnMarker(funcctx, queryBoolExpr(false), selfCursor);
+
     buildAssign(funcctx, self, expr);
     buildReturnRecordSize(funcctx, selfCursor);
 
@@ -16165,7 +16169,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityInlineTable(BuildCtx & ctx, IH
     {
         OwnedHqlExpr rowValue = createRow(no_createrow, LINK(values->queryChild(0)));
         OwnedHqlExpr row = expr->cloneAllAnnotations(rowValue);
-        return doBuildActivityCreateRow(ctx, row);
+        return doBuildActivityCreateRow(ctx, row, true);
     }
 
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKtemptable, expr,"TempTable");
