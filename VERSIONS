@@ -19,10 +19,11 @@ builds for testing purposes only.
 In addition to the version number there is a MATURITY string that may be found
 in the version string. The maturities in use are:
 
-<none>   - a stable build
-rc       - a release candidate.
-trunk    - a system built from the master branch (the 'bleeding edge')
-*_debug  - Any of the above suffixed by _debug if built with debug enabled
+<none>    - a stable build
+closedown - gathering bugfixes for a new POINT release
+rc        - a release candidate.
+trunk     - a system built from the master branch (the 'bleeding edge')
+*_debug   - Any of the above suffixed by _debug if built with debug enabled
 
 Branches
 ========
