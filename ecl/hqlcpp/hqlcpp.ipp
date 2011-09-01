@@ -1550,7 +1550,7 @@ public:
     ABoundActivity * doBuildActivityCombineGroup(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityCompoundSelectNew(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityConcat(BuildCtx & ctx, IHqlExpression * expr);
-    ABoundActivity * doBuildActivityCreateRow(BuildCtx & ctx, IHqlExpression * expr);
+    ABoundActivity * doBuildActivityCreateRow(BuildCtx & ctx, IHqlExpression * expr, bool isDataset);
     ABoundActivity * doBuildActivityXmlRead(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityDedup(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityDefineSideEffect(BuildCtx & ctx, IHqlExpression * expr);
