@@ -632,7 +632,7 @@ const char *EclAgent::queryTempfilePath()
                 dir.append("c:");
             dir.append("\\HPCCSystems\\hthortemp");
 #else
-            dir.append("/tmp/HPCCSystems/hthortemp";
+            dir.append("/tmp/HPCCSystems/hthortemp");
 #endif
         }
         recursiveCreateDirectory(dir.str());
