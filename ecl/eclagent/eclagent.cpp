@@ -3188,7 +3188,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
                 overrideReplicateDirectory = repdir.str();
             if (overrideBaseDirectory&&*overrideBaseDirectory)
                 setBaseDirectory(overrideBaseDirectory, false);
-            if (overrideReplicateDirectory&&*overrideBaseDirectory)
+            if (overrideReplicateDirectory&&*overrideReplicateDirectory)
                 setBaseDirectory(overrideReplicateDirectory, true);
 
             if (standAloneWorkUnit)
