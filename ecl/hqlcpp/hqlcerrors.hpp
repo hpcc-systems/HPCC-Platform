@@ -204,6 +204,7 @@
 #define HQLERR_CouldNotDetermineMinSize         4181
 #define HQLERR_OutsideGroupAggregate            4182
 #define HQLERR_ResourceAddAfterFinalManifest    4183
+#define HQLERR_SkipInsideCreateRow              4184
 
 //Warnings....
 #define HQLWRN_PersistDataNotLikely             4500
@@ -479,6 +480,7 @@
 #define HQLERR_CouldNotDetermineMinSize_Text    "Cannot determine the minimum size of the expression"
 #define HQLERR_OutsideGroupAggregate_Text       "%s used outside of a TABLE aggregation"
 #define HQLERR_ResourceAddAfterFinalManifest_Text "%s resource added after manifest was finalized"
+#define HQLERR_SkipInsideCreateRow_Text         "SKIP inside a ROW(<transform>) not supported.  It is only allowed in a DATASET transform."
 
 //Warnings.
 #define HQLWRN_CannotRecreateDistribution_Text  "Cannot recreate the distribution for a persistent dataset"
