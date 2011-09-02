@@ -77,6 +77,7 @@
             var sourceOS = 0;
             var pathSep;
             var prefix;
+            var dropzoneDirectory;
             function onChangeMachine(resetPath)
             {
               machineDropDown = document.forms[0].machine;
@@ -90,6 +91,7 @@
                
                sourceOS = linux == 'true' ? 1: 0;
          
+               dropzoneDirectory = directory;
                if ((dir0 != '') && (partmask0 != ''))
                {
                   if (sourceOS != 0)
@@ -104,7 +106,6 @@
                 if (!firsttime  || (val = 'undefined') || (document.forms[0].sourcePath.value.length <= 1) )
                 {
                   document.forms[0].sourcePath.value = directory;
-                  document.forms[0].sourcePathRoot.value = directory;
                   if (document.forms[0].sourcePathAndFile.value)
                     document.forms[0].sourcePath.value = document.forms[0].sourcePathAndFile.value;
                 }
@@ -204,9 +205,10 @@
 
             function beforeSubmit()
             {
-              if (document.getElementById("sourcePath").value == document.getElementById("sourcePathRoot").value)
+              if ((document.getElementById("sourcePath").value == '')
+                || (document.getElementById("sourcePath").value == dropzoneDirectory))
               {
-                alert("Please specify a file in the LocalPath.");
+                alert("Please specify a file in the Local Path field.");
                 return false;
               }
               return true;
@@ -265,12 +267,10 @@
               <input type="hidden" name="sourcePathAndFile" id="sourcePathAndFile" value=""/>
               <xsl:choose>
                 <xsl:when test="string-length($srcpath)">
-                  <input type="hidden" name="sourcePathRoot" id="sourcePathRoot" value="{$srcpath}/{$srcpartmask}"/>
                   <input type="text" name="sourcePath" id="sourcePath" value="{$srcpath}/{$srcpartmask}" size="70"
                     onchange="onChangeMachine(false)" onblur="onChangeMachine(false)"/>
                 </xsl:when>
                 <xsl:otherwise>
-                  <input type="hidden" name="sourcePathRoot" id="sourcePathRoot" value="/"/>
                   <input type="text" name="sourcePath" id="sourcePath" value="/" size="70"
                     onchange="onChangeMachine(false)" onblur="onChangeMachine(false)"/>
                 </xsl:otherwise>
