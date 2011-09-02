@@ -1627,8 +1627,8 @@ public:
     size32_t read(offset_t _pos, size32_t len, void * data)
     {
         checkPos("read",_pos);
-        size32_t ret;
 #ifdef _WIN32
+        // Can't use checked_read because don't have the c fileno for it
         DWORD numRead;
         if (ReadFile(file,data,len,&numRead,NULL) == 0) {
             DWORD err = GetLastError();
@@ -1636,12 +1636,9 @@ public:
                 return 0;
             throw MakeOsException(GetLastError(),"CSequentialFileIO::read"); 
         }
-
-        ret = (size32_t)numRead;
+        size32_t ret = (size32_t)numRead;
 #else
-        ret = ::read(file,data,len);
-        if (ret==(size32_t)-1)
-            throw MakeErrnoException(errno,"CSequentialFileIO::read");
+        size32_t ret = checked_read(file, data, len);
 #endif
         pos += ret;
         return ret;
@@ -1798,8 +1795,6 @@ void CFileIO::setSize(offset_t pos)
         throw MakeOsException(GetLastError(), "CFileIO::setSize");
 }
 
-void setIORetryCount(unsigned _ioRetryCount) { } // linux only
-
 #else
 
 //-- Unix implementation ----------------------------------------------------
@@ -1831,43 +1826,10 @@ offset_t CFileIO::size()
     return length;
 }
 
-static unsigned ioRetryCount=0;
-void setIORetryCount(unsigned _ioRetryCount) // non atomic, expected to be called just once at process start up.
-{
-    ioRetryCount = _ioRetryCount;
-}
-
 size32_t CFileIO::read(offset_t pos, size32_t len, void * data)
 {
     if (0==len) return 0;
-    size32_t ret;
-    if (!ioRetryCount)
-    {
-        ret = pread(file,data,len,pos);
-        if ((size32_t)-1 != ret)
-            return ret;
-    }
-    else
-    {
-        unsigned attempt=1;
-        do
-        {
-            unsigned __int64 startCycles = get_cycles_now();
-            ret = pread(file,data,len,pos);
-            if ((size32_t)-1 != ret)
-                return ret;
-            StringBuffer callStr("pread");
-            callStr.append("[errno=").append(errno);
-            unsigned __int64 elapsedMs = cycle_to_nanosec(get_cycles_now() - startCycles)/1000000;
-            callStr.append(", took=").append(elapsedMs);
-            callStr.append(", attempt=").append(attempt).append("](handle=");
-            callStr.append(file).append(", pos=").append(pos).append(", len=").append(len).append(")");
-            PROGLOG("%s", callStr.str());
-            attempt++;
-        }
-        while (attempt<=ioRetryCount);
-    }
-    throw MakeErrnoException(errno,"CFileIO::read");
+    return checked_pread(file, data, len, pos);
 }
 
 void CFileIO::setPos(offset_t newPos)

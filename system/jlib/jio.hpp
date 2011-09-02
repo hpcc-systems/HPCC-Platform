@@ -135,11 +135,9 @@ extern jlib_decl IRecordSize *createDeltaRecordSize(IRecordSize * size, int delt
 
 extern jlib_decl unsigned copySeq(IReadSeq *from,IWriteSeq *to,size32_t bufsize);
 
-//atomic read/write - used with _open 
-// avoids the need to seek separately
-
-extern jlib_decl size32_t atomicRead(int fildes, void *buf, size32_t nbyte, offset_t offset);
-extern jlib_decl size32_t atomicWrite(int fildes, const void *buf, size32_t nbyte, offset_t offset);
+extern jlib_decl void setIORetryCount(unsigned _ioRetryCount); // default 0 == off, retries if read op. fails
+extern jlib_decl size32_t checked_read(int file, void *buffer, size32_t len);
+extern jlib_decl size32_t checked_pread(int file, void *buffer, size32_t len, offset_t pos);
 
 class CachedRecordSize
 {
