@@ -455,6 +455,7 @@ public:
     void checkIndexRecordType(IHqlExpression * record, unsigned numPayloadFields, bool insideNestedRecord, const attribute & errpos);
     void checkIndexRecordTypes(IHqlExpression * index, const attribute & errpos);
     void reportIndexFieldType(IHqlExpression * expr, bool isPayload, const attribute & errpos);
+    void reportUnsupportedFieldType(ITypeInfo * type, const attribute & errpos);
     void checkCaseForDuplicates(HqlExprArray & exprs, attribute &err);
     void checkOnFailRecord(IHqlExpression * expr, attribute & errpos);
     void checkAggregateRecords(IHqlExpression * expr, IHqlExpression * record, attribute & errpos);
@@ -498,6 +499,7 @@ public:
     bool isSaved(IHqlExpression * failure);
     bool okToAddSideEffects(IHqlExpression * expr);
     void processUpdateAttr(attribute & attr);
+    IHqlExpression * createArithmeticOp(node_operator op, attribute &a1, attribute &a2);
     ITypeInfo *promoteToSameType(attribute &a1, attribute &a2);
     ITypeInfo *promoteToSameType(HqlExprArray & exprs, const attribute &ea, ITypeInfo * otherType, bool allowVariableLength);
     void promoteToSameCompareType(attribute &a1, attribute &a2, node_operator op);

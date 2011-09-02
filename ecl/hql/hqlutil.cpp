@@ -5154,6 +5154,7 @@ bool areTypesComparable(ITypeInfo * leftType, ITypeInfo * rightType)
     case type_utf8:
         return haveCommonLocale(leftType, rightType);
     case type_data:
+    case type_decimal:
         return true;
     case type_qstring:
     case type_varstring:

@@ -202,13 +202,13 @@ protected:
         DBGLOG("1234567.89012346 = %.8f (real)", c.getReal());
 
         c = "9.53456";
-        c.trunc(4);
+        c.truncate(4);
         checkDecimal(c, "9.5345");
-        c.trunc(8);
+        c.truncate(8);
         checkDecimal(c, "9.5345");
-        c.trunc(2);
+        c.truncate(2);
         checkDecimal(c, "9.53");
-        c.trunc();
+        c.truncate();
         checkDecimal(c, "9");
 
         a = "123.2345";

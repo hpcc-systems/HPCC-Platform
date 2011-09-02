@@ -558,17 +558,44 @@ bool CRealTypeInfo::assignableFrom(ITypeInfo *t2)
 
 //---------------------------------------------------------------------------
 
+inline unsigned cvtDigitsToLength(bool isSigned, unsigned digits)
+{
+    if (digits == UNKNOWN_LENGTH)
+        return UNKNOWN_LENGTH;
+    return isSigned ? digits/2+1 : (digits+1)/2;
+}
+
+CDecimalTypeInfo::CDecimalTypeInfo(unsigned _digits, unsigned _prec, bool _isSigned)
+: CHashedTypeInfo(cvtDigitsToLength(_isSigned, _digits))
+{
+    digits = (_digits == UNKNOWN_LENGTH) ? UNKNOWN_DIGITS : (byte)_digits;
+    prec = (_prec == UNKNOWN_LENGTH) ? UNKNOWN_DIGITS : (byte)_prec;
+    typeIsSigned = _isSigned;
+};
+
 IValue * CDecimalTypeInfo::createValueFromStack()
 {
-    void * val = malloc(length);
+    Linked<ITypeInfo> retType;
+    if ((length == UNKNOWN_LENGTH) || (length == MAX_DECIMAL_LEADING + MAX_DECIMAL_PRECISION))
+    {
+        unsigned tosDigits, tosPrecision;
+        DecClipInfo(tosDigits, tosPrecision);
+        unsigned tosLeading = tosDigits - tosPrecision;
+        if (tosLeading > MAX_DECIMAL_LEADING)
+            tosLeading = MAX_DECIMAL_LEADING;
+        if (tosPrecision > MAX_DECIMAL_PRECISION)
+            tosPrecision = MAX_DECIMAL_PRECISION;
+        Owned<ITypeInfo> newType = makeDecimalType(tosLeading+tosPrecision, tosPrecision, typeIsSigned);
+        return createDecimalValueFromStack(newType);
+    }
+
+    void * val = alloca(length);
     DecSetPrecision(getDigits(), prec);
     if (typeIsSigned)
         DecPopDecimal(val, length, prec);
     else
         DecPopUDecimal(val, length, prec);
-    IValue * ret = createDecimalValue(val, LINK(this));
-    free(val);
-    return ret;
+    return createDecimalValue(val, LINK(this));
 }
 
 IValue * CDecimalTypeInfo::castFrom(bool isSignedValue, __int64 value)
@@ -616,6 +643,8 @@ bool CDecimalTypeInfo::equals(const CTypeInfo & _other) const
 
 unsigned CDecimalTypeInfo::getStringLen(void)
 {
+    if (length == UNKNOWN_LENGTH)
+        return UNKNOWN_LENGTH;
     return (typeIsSigned ? 1 : 0) + getDigits() + (prec ? 1 : 0); // sign + digits + dot
 }
 
@@ -623,9 +652,13 @@ StringBuffer &CDecimalTypeInfo::getECLType(StringBuffer &out)
 {
     if (!typeIsSigned)
         out.append('u');
-    out.append("decimal").append((int)digits);
-    if (prec)
-        out.append("_").append((int)prec);
+    out.append("decimal");
+    if (digits != UNKNOWN_DIGITS)
+    {
+        out.append((int)digits);
+        if (prec)
+            out.append("_").append((int)prec);
+    }
     return out;
 }
 
@@ -639,6 +672,17 @@ bool CDecimalTypeInfo::assignableFrom(ITypeInfo *t2)
     return false;
 }
 
+unsigned CDecimalTypeInfo::getBitSize()
+{
+    if (digits == UNKNOWN_DIGITS)
+        return UNKNOWN_LENGTH;
+
+    if (typeIsSigned)
+        return (digits+1)*4;
+    else
+        return digits*4;
+};
+
 unsigned CDecimalTypeInfo::getCrc()
 {
     unsigned crc = CTypeInfo::getCrc();
@@ -648,6 +692,14 @@ unsigned CDecimalTypeInfo::getCrc()
     return crc;
 }
 
+
+void CDecimalTypeInfo::serialize(MemoryBuffer &tgt)
+{
+    CTypeInfo::serialize(tgt);
+    tgt.append(prec);
+    tgt.append(digits);
+    tgt.append(typeIsSigned);
+}
 
 //---------------------------------------------------------------------------
 bool CBoolTypeInfo::assignableFrom(ITypeInfo *t2)
@@ -1910,12 +1962,12 @@ static ITypeInfo * commonUpType(CHashedTypeInfo * candidate)
 }
 
 
-extern DEFTYPE_API ITypeInfo *makeDecimalType(int len, unsigned char prec, bool isSigned)
+extern DEFTYPE_API ITypeInfo *makeDecimalType(unsigned digits, unsigned prec, bool isSigned)
 {
-    if (len < 0 || prec > len)
-        return NULL;
-
-    return commonUpType(new CDecimalTypeInfo(len, prec, isSigned));
+    assertex((digits == UNKNOWN_LENGTH) || (digits - prec <= MAX_DECIMAL_LEADING));
+    assertex((prec == UNKNOWN_LENGTH) || ((prec <= digits) && (prec <= MAX_DECIMAL_PRECISION)));
+    assertex((prec != UNKNOWN_LENGTH) || (digits == UNKNOWN_LENGTH));
+    return commonUpType(new CDecimalTypeInfo(digits, prec, isSigned));
 }
 
 
@@ -2393,26 +2445,18 @@ static ITypeInfo * getPromotedData(ITypeInfo * left, ITypeInfo * right)
     if (lLen < rLen) lLen = rLen;
     return makeDataType(lLen);
 }
-        
+
+static ITypeInfo * makeUnknownLengthDecimal(bool isCompare)
+{
+    if (isCompare)
+        return makeDecimalType(UNKNOWN_LENGTH, UNKNOWN_LENGTH, true);
+    return makeDecimalType(MAX_DECIMAL_DIGITS, MAX_DECIMAL_PRECISION, true);
+}
+
+
 static ITypeInfo * getPromotedDecimalReal(ITypeInfo * type, bool isCompare)
 {
-//  if (!isCompare)
-//      return makeRealType(8);
-
-    unsigned digits = type->getDigits();
-    unsigned prec = type->getPrecision();
-    unsigned leading = digits - prec;
-
-    //A bit arbitrary...extend the precision up to 16 digits?
-    //If you want control you need to add explicit casts...
-    //we could use a decimal(unknown) type instead to represent something like this,
-    //but then there are problems with the type of output(ds, { decimal-field * real });
-    if (leading < MAX_DECIMAL_LENGTH/2)
-        prec = MAX_DECIMAL_LENGTH/2;
-    else
-        prec = MAX_DECIMAL_LENGTH - leading;
-
-    return makeDecimalType(MAX_DECIMAL_LENGTH, prec, true);
+    return makeUnknownLengthDecimal(isCompare);
 }
 
 static ITypeInfo * getPromotedDecimal(ITypeInfo * left, ITypeInfo * right, bool isCompare)
@@ -2422,15 +2466,21 @@ static ITypeInfo * getPromotedDecimal(ITypeInfo * left, ITypeInfo * right, bool 
     if (right->getTypeCode() == type_real)
         return getPromotedDecimalReal(left, isCompare);
 
+    unsigned lDigits = left->getDigits();
+    unsigned rDigits  = right->getDigits();
+    if (lDigits == UNKNOWN_LENGTH || rDigits == UNKNOWN_LENGTH)
+        return makeDecimalType(UNKNOWN_LENGTH, UNKNOWN_LENGTH, left->isSigned() || right->isSigned());
+
+    if (isCompare)
+        return makeUnknownLengthDecimal(isCompare);
+
     unsigned lPrec = left->getPrecision();
     unsigned rPrec = right->getPrecision();
-    unsigned lInt  = left->getDigits() - lPrec;
-    unsigned rInt  = right->getDigits() - rPrec;
+    unsigned lLead  = lDigits - lPrec;
+    unsigned rLead  = rDigits - rPrec;
+    if (lLead < rLead) lLead = rLead;
     if (lPrec < rPrec) lPrec = rPrec;
-    if (lInt < rInt) lInt = rInt;
-    if (lInt + lPrec > MAX_DECIMAL_LENGTH)
-        lInt = MAX_DECIMAL_LENGTH - lPrec;
-    return makeDecimalType(lInt + lPrec, lPrec, left->isSigned() || right->isSigned());
+    return makeDecimalType(lLead + lPrec, lPrec, left->isSigned() || right->isSigned());
 }
         
 static ITypeInfo * getPromotedReal(ITypeInfo * left, ITypeInfo * right)
@@ -2529,7 +2579,7 @@ static ITypeInfo * getPromotedType(ITypeInfo * lType, ITypeInfo * rType, bool is
 {
     ITypeInfo * l = lType->queryPromotedType();
     ITypeInfo * r = rType->queryPromotedType();
-    if (l == r) 
+    if (l == r)
         return LINK(l);
 
     type_t lcode = l->getTypeCode();
@@ -2584,6 +2634,22 @@ ITypeInfo * getPromotedNumericType(ITypeInfo * l_type, ITypeInfo * r_type)
     Owned<ITypeInfo> l = getNumericType(l_type->queryPromotedType());
     Owned<ITypeInfo> r = getNumericType(r_type->queryPromotedType());
     return getPromotedType(l,r,false);
+}
+
+ITypeInfo * getPromotedAddSubType(ITypeInfo * lType, ITypeInfo * rType)
+{
+    Owned<ITypeInfo> ret = getPromotedNumericType(lType, rType);
+    if (isDecimalType(ret) && !isUnknownSize(ret) && (ret->getDigits() - ret->getPrecision() < MAX_DECIMAL_LEADING))
+        return makeDecimalType(ret->getDigits()+1, ret->getPrecision(), ret->isSigned());
+    return ret.getClear();
+}
+
+ITypeInfo * getPromotedMulDivType(ITypeInfo * lType, ITypeInfo * rType)
+{
+    Owned<ITypeInfo> ret = getPromotedNumericType(lType, rType);
+    if (isDecimalType(ret) && !isUnknownSize(ret))
+        return makeUnknownLengthDecimal(false);
+    return ret.getClear();
 }
 
 ITypeInfo * getPromotedCompareType(ITypeInfo * left, ITypeInfo * right)
@@ -2812,8 +2878,15 @@ extern DEFTYPE_API ITypeInfo * getRoundType(ITypeInfo * type)
 {
     if (type->getTypeCode() == type_decimal)
     {
+        unsigned olddigits = type->getDigits();
+        if (olddigits == UNKNOWN_LENGTH)
+            return LINK(type);
+
         //rounding could increase the number of digits by 1.
-        return makeDecimalType((type->getDigits()-type->getPrecision())+1, 0, type->isSigned());
+        unsigned newdigits = (olddigits - type->getPrecision())+1;
+        if (newdigits > MAX_DECIMAL_LEADING)
+            newdigits = MAX_DECIMAL_LEADING;
+        return makeDecimalType(newdigits, 0, type->isSigned());
     }
     return makeIntType(8, true);
 }
@@ -2822,10 +2895,28 @@ extern DEFTYPE_API ITypeInfo * getRoundToType(ITypeInfo * type)
 {
     if (type->getTypeCode() == type_decimal)
     {
+        unsigned olddigits = type->getDigits();
+        unsigned oldPrecision = type->getPrecision();
+        if ((olddigits == UNKNOWN_LENGTH) || (olddigits-oldPrecision == MAX_DECIMAL_LEADING))
+            return LINK(type);
         //rounding could increase the number of digits by 1.
-        return makeDecimalType(type->getDigits()+1, type->getPrecision(), type->isSigned());
+        return makeDecimalType(olddigits+1, oldPrecision, type->isSigned());
     }
     return makeRealType(8);
+}
+
+extern DEFTYPE_API ITypeInfo * getTruncType(ITypeInfo * type)
+{
+    if (type->getTypeCode() == type_decimal)
+    {
+        unsigned olddigits = type->getDigits();
+        if (olddigits == UNKNOWN_LENGTH)
+            return LINK(type);
+
+        unsigned newdigits = (olddigits - type->getPrecision());
+        return makeDecimalType(newdigits, 0, type->isSigned());
+    }
+    return makeIntType(8, true);
 }
 
 //---------------------------------------------------------------------------
@@ -3428,7 +3519,10 @@ extern DEFTYPE_API ITypeInfo * deserializeType(MemoryBuffer &src)
             src.read(prec);
             src.read(digits);
             src.read(isSigned);
-            return makeDecimalType(digits, prec, isSigned); 
+
+            unsigned fulldigits = (digits == CDecimalTypeInfo::UNKNOWN_DIGITS) ? UNKNOWN_LENGTH : digits;
+            unsigned fullprec = (prec == CDecimalTypeInfo::UNKNOWN_DIGITS) ? UNKNOWN_LENGTH : prec;
+            return makeDecimalType(fulldigits, fullprec, isSigned);
         }
     case type_bitfield:
         {

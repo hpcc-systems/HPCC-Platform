@@ -15,6 +15,7 @@
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
+
 //Make sure both of these don't lose the extra digit.
 output((string)(round(9.9D)) + '\n');
 output((string)(round(5D, -1)) + '\n');

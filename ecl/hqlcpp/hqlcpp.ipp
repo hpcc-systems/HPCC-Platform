@@ -1488,6 +1488,7 @@ public:
     void doBuildExprSysFunc(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt, IAtom * funcName);
     void doBuildExprTransfer(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprTrim(BuildCtx & ctx, IHqlExpression * target, CHqlBoundExpr & tgt);
+    void doBuildExprTrunc(BuildCtx & ctx, IHqlExpression * target, CHqlBoundExpr & tgt);
     void doBuildExprToFromUnicode(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprKeyUnicode(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprWuid(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);

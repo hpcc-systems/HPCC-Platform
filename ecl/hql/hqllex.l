@@ -1208,84 +1208,49 @@ QSTRING{digit}*     {
                       return(SIMPLE_TYPE); 
                     }
 DECIMAL             {
-                        /* error pattern: DECIMAL with no size */
                         setupdatepos; 
                         if (!lookup)
                             return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
 
-                      lexer->reportError(returnToken, ERR_ILLSIZE_DECIMAL, "Invalid size for DECIMAL type: a size must be specified");
-
-                      // recovering
-                      returnToken.setType(makeDecimalType(5,0, true)); 
-                      return(SIMPLE_TYPE); 
-                    }
-DECIMAL{digit}+_{digit}+ {
-                        setupdatepos; 
-                        if (!lookup)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
-
-                      unsigned places = atoi(strchr(CUR_TOKEN_TEXT,'_')+1); 
-                      ITypeInfo *decType = makeDecimalType(atoi(CUR_TOKEN_TEXT+7), places, true);
-                      if (!decType)
-                      {
-                        lexer->reportError(returnToken, ERR_ILLSIZE_DECIMAL, "Invalid size for DECIMAL type");
-                        decType = makeDecimalType(5, 0, true);
-                      }
-                      returnToken.setType(decType); 
-                      return(SIMPLE_TYPE); 
-                    }
-DECIMAL{digit}+     { 
-                        setupdatepos; 
-                        if (!lookup)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
-
-                      ITypeInfo *decType = makeDecimalType(atoi(CUR_TOKEN_TEXT+7), 0, true);
-                      if (!decType)
-                      {
-                        lexer->reportError(returnToken, ERR_ILLSIZE_DECIMAL, "Invalid size for DECIMAL type");
-                        decType = makeDecimalType(5,0, true);
-                      }
-                      returnToken.setType(decType); 
+                      returnToken.setType(makeDecimalType(UNKNOWN_LENGTH,UNKNOWN_LENGTH, true));
                       return(SIMPLE_TYPE); 
                     }
 UDECIMAL             {
-                        /* error pattern: UDECIMAL with no size */
                         setupdatepos; 
                         if (!lookup)
                             return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
 
-                      lexer->reportError(returnToken, ERR_ILLSIZE_UDECIMAL, "Invalid size for UDECIMAL type: a size must be specified");
-
-                      // recovering
-                      returnToken.setType(makeDecimalType(5,0, true)); 
+                      returnToken.setType(makeDecimalType(UNKNOWN_LENGTH,UNKNOWN_LENGTH, true));
                       return(SIMPLE_TYPE); 
                     }
-UDECIMAL{digit}+_{digit}+ {
+(U|u)?DECIMAL{digit}+(_{digit}+)? {
                         setupdatepos; 
                         if (!lookup)
                             return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
 
-                      unsigned places = atoi(strchr(CUR_TOKEN_TEXT,'_')+1); 
-                      ITypeInfo *decType = makeDecimalType(atoi(CUR_TOKEN_TEXT+8), places, false); 
-                      if (!decType)
+                      bool isSigned = (CUR_TOKEN_TEXT[0] != 'U') && (CUR_TOKEN_TEXT[0] != 'u');
+                      const char * trailing = isSigned ? CUR_TOKEN_TEXT+7 : CUR_TOKEN_TEXT+8;
+                      const char * underscore = strchr(trailing,'_');
+                      unsigned digits = atoi(trailing);
+                      unsigned places = underscore ? atoi(underscore+1) : 0;
+                      if (places > digits)
                       {
-                            lexer->reportError(returnToken, ERR_ILLSIZE_UDECIMAL, "Invalid size for UDECIMAL type");
-                            decType = makeDecimalType(5,0, false);
+                          lexer->reportError(returnToken, ERR_ILLSIZE_DECIMAL, "Decimal type cannot have precision>digits");
+                          places = 0;
                       }
-                      returnToken.setType(decType); 
-                      return(SIMPLE_TYPE); 
-                    }   
-UDECIMAL{digit}+    { 
-                        setupdatepos; 
-                        if (!lookup)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
+                      unsigned leading = digits - places;
+                      if (leading > MAX_DECIMAL_LEADING)
+                      {
+                          lexer->reportError(returnToken, ERR_ILLSIZE_DECIMAL, "Decimal type contains too many leading digits (>%d)", MAX_DECIMAL_LEADING);
+                          leading = MAX_DECIMAL_LEADING;
+                      }
+                      if (places > MAX_DECIMAL_PRECISION)
+                      {
+                          lexer->reportError(returnToken, ERR_ILLSIZE_DECIMAL, "Decimal type contains too many trailing digits (>%d)", MAX_DECIMAL_PRECISION);
+                          places = MAX_DECIMAL_LEADING;
+                      }
 
-                      ITypeInfo *decType = makeDecimalType(atoi(CUR_TOKEN_TEXT+8), 0, false);
-                      if (!decType)
-                      {
-                            lexer->reportError(returnToken, ERR_ILLSIZE_UDECIMAL, "Invalid size for UDECIMAL type");
-                            decType = makeDecimalType(5,0,false);
-                      }
+                      ITypeInfo *decType = makeDecimalType(leading+places, places, isSigned);
                       returnToken.setType(decType); 
                       return(SIMPLE_TYPE); 
                     }
@@ -1556,10 +1521,14 @@ FUNCTIONMACRO|MACRO {
 {bindigit}+(b|B)    { setupdatepos; returnToken.setInt(str2int64(CUR_TOKEN_LENGTH-1,(const char *)CUR_TOKEN_TEXT, 2)); return(INTEGER_CONST);}
 {digit}+            { setupdatepos; returnToken.setInt(str2int64(CUR_TOKEN_LENGTH, (const char *)CUR_TOKEN_TEXT, 10)); return(INTEGER_CONST);}
 {digit}+(d|D)       { 
-                        setupdatepos; 
-                        if (CUR_TOKEN_LENGTH-1 > MAX_DECIMAL_LENGTH)
-                            lexer->reportError(returnToken, ERR_ILLSIZE_DECIMAL, "Decimal constant contains too many digits (>%d)", MAX_DECIMAL_LENGTH);
-                        Owned<ITypeInfo> type = makeDecimalType(CUR_TOKEN_LENGTH-1, 0, true);
+                        setupdatepos;
+                        unsigned digits = CUR_TOKEN_LENGTH-1;
+                        if (digits > MAX_DECIMAL_LEADING)
+                        {
+                            lexer->reportError(returnToken, ERR_ILLSIZE_DECIMAL, "Decimal constant contains too many digits (>%d)", MAX_DECIMAL_LEADING);
+                            digits = MAX_DECIMAL_LEADING;
+                        }
+                        Owned<ITypeInfo> type = makeDecimalType(digits, 0, true);
                         IValue * value = type->castFrom(CUR_TOKEN_LENGTH-1, CUR_TOKEN_TEXT);
                         returnToken.setExpr(createConstant(value));
                         return(REAL_CONST);
@@ -1569,10 +1538,17 @@ FUNCTIONMACRO|MACRO {
                         const char * dot = strchr(CUR_TOKEN_TEXT, '.');
                         unsigned before = (size32_t)(dot-CUR_TOKEN_TEXT);
                         unsigned after = CUR_TOKEN_LENGTH-2 - before;
-                        if (before > MAX_DECIMAL_LENGTH)
-                            lexer->reportError(returnToken, ERR_ILLSIZE_DECIMAL, "Decimal constant contains too many integral digits (>%d)", MAX_DECIMAL_LENGTH);
-                        else if (before + after > MAX_DECIMAL_LENGTH)
-                            lexer->reportWarning(returnToken, ERR_ILLSIZE_DECIMAL, "Decimal constant may lose significant digits (>%d)", MAX_DECIMAL_LENGTH);
+                        if (before > MAX_DECIMAL_LEADING)
+                        {
+                            lexer->reportError(returnToken, ERR_ILLSIZE_DECIMAL, "Decimal constant contains too many integral digits (>%d)", MAX_DECIMAL_LEADING);
+                            before = MAX_DECIMAL_LEADING;
+                            after = 0;
+                        }
+                        if (after > MAX_DECIMAL_PRECISION)
+                        {
+                            lexer->reportWarning(returnToken, ERR_ILLSIZE_DECIMAL, "Decimal constant may lose significant digits (>%d)", MAX_DECIMAL_PRECISION);
+                            after = MAX_DECIMAL_PRECISION;
+                        }
                         Owned<ITypeInfo> type = makeDecimalType(before+after, after, true);
                         IValue * value = type->castFrom(CUR_TOKEN_LENGTH-1, CUR_TOKEN_TEXT);
                         returnToken.setExpr(createConstant(value));

@@ -15,15 +15,28 @@
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
-//Make sure both of these don't lose the extra digit.
-output((string)(round(9.9D)) + '\n');
-output((string)(round(5D, -1)) + '\n');
 
 
-output((string)(round(nofold(1.1D), 0)) + '\n');
-output((string)(round(nofold(1.1D), 1)) + '\n');
-output((string)(round(nofold(1.1D), -1)) + '\n');
+
+decimal17_4 sum1 := 20;
+unsigned count1 := 3;
+output((decimal20_10)(sum1/count1));
 
 
-output((string)(round(1234567, -2)) + '\n');
-output((string)(round(nofold(1234567), -2)) + '\n');
+decimal17_4 sum2 := 20 : stored('sum2');
+unsigned count2 := 3 : stored('count2');
+output((decimal20_10)(sum2/count2));
+
+rec := { decimal17_4 sumx, unsigned countx };
+ds := dataset([{20,3},{10,2},{10.0001,2}], rec);
+output(nofold(ds), { sumx, countx, decimal20_10 average := sumx/countx, sumx between 10 and 10.00009, sumx between 10D and 10.00009D });
+
+
+decimal17_4 value1 := 1.6667;
+decimal17_4 value2 := 1.6667 : stored('value2');
+
+output(round(value1));
+output(roundup((real)value1));
+
+output(round((real)value2));
+output(roundup((real)value2));
