@@ -1426,8 +1426,8 @@ IHqlExpression * foldOrExpr(IHqlExpression * expr, bool fold_x_op_not_x)
                     {
                         IHqlExpression * bLeft = lBand->queryChild(1);
                         IHqlExpression * cRight = rBand->queryChild(1);
-                        IHqlExpression * newBor = createValue(no_bor, getPromotedECLType(bLeft->queryType(), cRight->queryType()), LINK(bLeft), LINK(cRight));
-                        IHqlExpression * newBand = createValue(no_band, getPromotedECLType(aLeft->queryType(), newBor->queryType()), LINK(aLeft), newBor);
+                        IHqlExpression * newBor = createValue(no_bor, getPromotedType(bLeft->queryType(), cRight->queryType()), LINK(bLeft), LINK(cRight));
+                        IHqlExpression * newBand = createValue(no_band, getPromotedType(aLeft->queryType(), newBor->queryType()), LINK(aLeft), newBor);
                         OwnedHqlExpr newNode = createBoolExpr(no_cast, newBand);
                         if (select)
                             newNode.setown(createBoolExpr(no_select, LINK(select), newNode.getClear());

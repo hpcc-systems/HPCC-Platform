@@ -200,6 +200,8 @@ _ATOM DecRoundUpAtom;
 _ATOM DecRoundToAtom;
 _ATOM DecSetPrecisionAtom;
 _ATOM DecSubAtom;
+_ATOM DecTruncateAtom;
+_ATOM DecTruncateAtAtom;
 _ATOM DecValidAtom;
 _ATOM delayedAtom;
 _ATOM deleteFileAtom;
@@ -901,6 +903,8 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(DecRoundTo);
     MAKEATOM(DecSetPrecision);
     MAKEATOM(DecSub);
+    MAKEATOM(DecTruncate);
+    MAKEATOM(DecTruncateAt);
     MAKEATOM(DecValid);
     MAKEATOM(delayed);
     MAKEATOM(deleteFile);

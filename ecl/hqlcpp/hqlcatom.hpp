@@ -200,6 +200,8 @@ extern _ATOM DecRoundUpAtom;
 extern _ATOM DecRoundToAtom;
 extern _ATOM DecSetPrecisionAtom;
 extern _ATOM DecSubAtom;
+extern _ATOM DecTruncateAtom;
+extern _ATOM DecTruncateAtAtom;
 extern _ATOM DecValidAtom;
 extern _ATOM delayedAtom;
 extern _ATOM deleteFileAtom;

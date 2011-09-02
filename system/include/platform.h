@@ -427,6 +427,10 @@ typedef int socklen_t;
 #define FLOAT_SIG_DIGITS    7
 #define DOUBLE_SIG_DIGITS   16
 
+#define MAX_DECIMAL_LEADING    32          // Maximum number of leading digits in a decimal field
+#define MAX_DECIMAL_PRECISION  32          // Maximum digits in a decimal field
+#define MAX_DECIMAL_DIGITS     (MAX_DECIMAL_LEADING+MAX_DECIMAL_PRECISION)
+
 #define strtok(a,b)   j_strtok_deprecated(a,b)  // will disappear at some point
 
 typedef unsigned __int64 __uint64;

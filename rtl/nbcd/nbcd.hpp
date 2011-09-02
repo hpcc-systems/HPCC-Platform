@@ -51,7 +51,7 @@ public:
     TempDecimal & roundup(int places=0);        // -ve means left of decimal point e.g., -3 = to nearest 1000.
     TempDecimal & setPrecision(byte numDigits, byte precision);
     TempDecimal & subtract(const TempDecimal & other);
-    TempDecimal & trunc(unsigned places=0);
+    TempDecimal & truncate(int places=0);
 
     size32_t getStringLength() const;
     void getCString(size32_t length, char * buffer) const;
@@ -65,6 +65,9 @@ public:
     void getUDecimal(byte length, byte precision, void * buffer) const;
     unsigned __int64 getUInt64() const;
     unsigned int getUInt() const;
+
+    void getClipPrecision(unsigned & digits, unsigned & precision);
+    void getPrecision(unsigned & digits, unsigned & precison);
 
     void set(const TempDecimal & value);
     void setCString(const char * buffer);
@@ -114,16 +117,16 @@ private:
 
 protected:
     enum { 
-        maxDigits=64, 
-        maxPrecision=32, 
-        maxIntegerDigits=(maxDigits-maxPrecision),
+        maxDigits=MAX_DECIMAL_DIGITS,
+        maxPrecision=MAX_DECIMAL_PRECISION,
+        maxIntegerDigits=MAX_DECIMAL_LEADING,
         lastDigit = maxDigits-1, 
         zeroDigit = (maxDigits-maxIntegerDigits), 
     };
     byte digits[maxDigits];                 // stored little endian.
     byte msb;
     byte lsb;
-    byte negative;
+    byte negative;                          // byte to allow ^ operation
 };
 
 

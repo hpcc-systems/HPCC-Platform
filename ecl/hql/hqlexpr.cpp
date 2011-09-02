@@ -2456,26 +2456,32 @@ IHqlExpression * ensureExprType(IHqlExpression * expr, ITypeInfo * type, node_op
     {
         if (exprType)
         {
-            //cast to STRING/DATA/VARSTRING/UNICODE/VARUNICODE means ensure that the expression has this base type.
-            if ((tc == type_data) || (tc == type_qstring))
+            //Optimize away casts to unknown length if the rest of the type matches.
+            if (exprType->getTypeCode() == tc)
             {
-                if (exprType->getTypeCode() == tc)
+                //cast to STRING/DATA/VARSTRING/UNICODE/VARUNICODE means ensure that the expression has this base type.
+                if ((tc == type_data) || (tc == type_qstring))
+                {
                     return LINK(expr);
-            }
-            else if (tc == type_unicode || tc == type_varunicode || tc == type_utf8)
-            {
-                if((exprType->getTypeCode() == tc) && (type->queryLocale() == exprType->queryLocale()))
-                    return LINK(expr);
-            }
-            else if (tc == type_string || tc == type_varstring)
-            {
-                if (exprType->getTypeCode() == tc)
+                }
+                else if (tc == type_unicode || tc == type_varunicode || tc == type_utf8)
+                {
+                    if (type->queryLocale() == exprType->queryLocale())
+                        return LINK(expr);
+                }
+                else if (tc == type_string || tc == type_varstring)
                 {
                     if ((type->queryCharset() == exprType->queryCharset()) &&
                         (type->queryCollation() == exprType->queryCollation()))
                         return LINK(expr);
                 }
+                else if (tc == type_decimal)
+                {
+                    if (type->isSigned() == exprType->isSigned())
+                        return LINK(expr);
+                }
             }
+
             /*
             The following might produce better code, but it generally makes things worse.....
             if ((exprType->getSize() != UNKNOWN_LENGTH) && (isStringType(exprType) || isUnicodeType(exprType)))
@@ -2490,7 +2496,6 @@ IHqlExpression * ensureExprType(IHqlExpression * expr, ITypeInfo * type, node_op
     node_operator op = expr->getOperator();
     if (op == no_null)
         return createNullExpr(type);
-
 
     IValue * value = expr->queryValue();
     if (value && type->assignableFrom(exprType))    // this last condition is unnecessary, but changes some persist crcs if removed
@@ -14531,11 +14536,14 @@ ITypeInfo * getSumAggType(ITypeInfo * argType)
     case type_decimal:
         {
             //A guess is to add 12 more digits 
-            unsigned newLen = argType->getDigits()+12;
-            if (newLen <= 32)
-                return makeDecimalType(newLen, argType->getPrecision(), argType->isSigned());
-        //could either do as decimal, or as real
-            return makeRealType(8);
+            unsigned oldDigits = argType->getDigits();
+            if (oldDigits == UNKNOWN_LENGTH)
+                return LINK(argType);
+            unsigned oldPrecision = argType->getPrecision();
+            unsigned newDigits = argType->getDigits()+12;
+            if (newDigits - oldPrecision > MAX_DECIMAL_LEADING)
+                newDigits = MAX_DECIMAL_LEADING + oldPrecision;
+            return makeDecimalType(newDigits, oldPrecision, argType->isSigned());
         }
     default:
         return LINK(argType);
