@@ -1605,8 +1605,18 @@ public:
         kbuf = NULL;
         kbufsz = 0;
         kbufcrc = 0;
+        memset(&oldcpu, 0, sizeof(oldcpu));
+        memset(&newcpu, 0, sizeof(newcpu));
+        memset(&cpu, 0, sizeof(cpu));
+        totalcpu = 0;
+        numcpu = 0;
+        memset(&oldnet, 0, sizeof(oldnet));
+        memset(&newnet, 0, sizeof(newnet));
+        ndisks = 0;
         if (printklog)
             kbufmax = 0x1000;
+        else
+            kbufmax = 0;
     }
 
     ~CExtendedStats()
