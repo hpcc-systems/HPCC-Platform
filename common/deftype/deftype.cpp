@@ -653,7 +653,7 @@ StringBuffer &CDecimalTypeInfo::getECLType(StringBuffer &out)
     if (!typeIsSigned)
         out.append('u');
     out.append("decimal");
-    if ((digits != UNKNOWN_DIGITS) && (prec != UNKNOWN_DIGITS))
+    if (digits != UNKNOWN_DIGITS)
     {
         out.append((int)digits);
         if (prec)
@@ -1966,6 +1966,7 @@ extern DEFTYPE_API ITypeInfo *makeDecimalType(unsigned digits, unsigned prec, bo
 {
     assertex((digits == UNKNOWN_LENGTH) || (digits - prec <= MAX_DECIMAL_LEADING));
     assertex((prec == UNKNOWN_LENGTH) || ((prec <= digits) && (prec <= MAX_DECIMAL_PRECISION)));
+    assertex((prec != UNKNOWN_LENGTH) || (digits == UNKNOWN_LENGTH));
     return commonUpType(new CDecimalTypeInfo(digits, prec, isSigned));
 }
 
