@@ -125,7 +125,7 @@ public:
 
     virtual void newAttribute(const char *name, const char *value)
     {
-        if (datasetLevel)
+        if (datasetLevel && !streq(name, "@xmlns"))
             buffer.append(' ').append(name+1).append("=\"").append(value).append('\"');
     }
     virtual void beginNodeContent(const char *tag)
