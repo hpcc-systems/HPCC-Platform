@@ -32,13 +32,18 @@ void jlib_decl RaiseAssertException(const char *assertion, const char *file, uns
 void jlib_decl RaiseAssertCore(const char *assertion, const char *file, unsigned line);
 
 #undef assert
+#undef assertex
 
-#if defined(_DEBUG)||defined(_TESTING)
-#define assertex(p) ((p) ? ((void) 0) : (( (void) RaiseAssertException(#p, __FILE__, __LINE__))))
-#define assert(p) ((p) ? ((void) 0) : (( (void) RaiseAssertCore(#p, __FILE__, __LINE__))))
+#ifdef _PREFAST_
+ #pragma warning (disable : 6244)   // generates too much noise at the moment
+ #define assertex(p) ((p) ? ((void) 0) : (( (void) RaiseAssertException(#p, __FILE__, __LINE__), __analysis_assume(p))))
+ #define assert(p) ((p) ? ((void) 0) : (( (void) RaiseAssertCore(#p, __FILE__, __LINE__), __analysis_assume(p))))
+#elif defined(_DEBUG)||defined(_TESTING)
+ #define assertex(p) ((p) ? ((void) 0) : (( (void) RaiseAssertException(#p, __FILE__, __LINE__))))
+ #define assert(p) ((p) ? ((void) 0) : (( (void) RaiseAssertCore(#p, __FILE__, __LINE__))))
 #else
-#define assertex(p)
-#define assert(p)
+ #define assertex(p)
+ #define assert(p)
 #endif
 
 #if defined(_DEBUG)||defined(_TESTING)

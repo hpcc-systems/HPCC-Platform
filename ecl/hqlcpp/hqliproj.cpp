@@ -748,7 +748,7 @@ bool ComplexImplicitProjectInfo::safeToReorderInput()
 
 void ComplexImplicitProjectInfo::setMatchingOutput(ComplexImplicitProjectInfo * other)
 {
-    assertex(other->newOutputRecord);
+    assertex(other->newOutputRecord != NULL);
     outputFields.set(other->outputFields);
     newOutputRecord.set(other->newOutputRecord);
 }
@@ -1663,7 +1663,7 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
             extra->outputs.item(i1).notifyRequiredFields(extra);
 
         if (extra->outputFields.includeAll())
-            assertex(extra->newOutputRecord);       //extra->newOutputRecord.set(expr->queryRecord());
+            assertex(extra->newOutputRecord != NULL);       //extra->newOutputRecord.set(expr->queryRecord());
 
         //Ensure at least one field is required - otherwise meta goes wrong.  It really needs to be added here, rather than later,
         //otherwise the field tracking for iterate/rollup etc. go wrong.  Could possibly improve later if we added code to project the

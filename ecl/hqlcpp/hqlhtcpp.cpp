@@ -983,7 +983,7 @@ void TransformBuilder::buildTransform(BuildCtx & ctx, IHqlExpression * expr, IHq
 
             flush(ctx);
 
-            assertex(mapper);
+            assertex(mapper != NULL);
             OwnedHqlExpr test = replaceSelector(expr->queryChild(0), querySelfReference(), parentSelector);
             OwnedHqlExpr foldedTest = mapper->transformRoot(test);
             foldedTest.setown(foldHqlExpression(foldedTest));           // can only contain references to self, so don't need to worry about other datasets in scope being messed up.
@@ -10864,7 +10864,7 @@ void HqlCppTranslator::doBuildStmtOutput(BuildCtx & ctx, IHqlExpression * expr)
 
     LinkedHqlExpr seq = querySequence(expr);
     LinkedHqlExpr name = queryResultName(expr);
-    assertex(seq);
+    assertex(seq != NULL);
     int sequence = (int)getIntValue(seq, (int)ResultSequenceInternal);
     if (!seq)
         seq.setown(getSizetConstant(sequence));
@@ -14076,7 +14076,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNormalizeLinkedChild(BuildCtx 
     CHqlBoundTarget boundActive;
     createTempFor(*declarectx, value->queryType(), childTarget, typemod_none, FormatLinkedDataset);
     boundChild.setFromTarget(childTarget);
-    assertex(boundChild.count);
+    assertex(boundChild.count != NULL);
 
     OwnedHqlExpr test;
     OwnedHqlExpr ret;

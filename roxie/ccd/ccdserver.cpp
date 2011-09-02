@@ -87,11 +87,6 @@ using roxiemem::OwnedRoxieRow;
 using roxiemem::OwnedConstRoxieRow;
 using roxiemem::IRowManager;
 
-#ifdef _PREFAST_
- #undef assertex
- #define assertex(p) ((p) ? ((void) 0) : (( (void) RaiseAssertException(#p, __FILE__, __LINE__), __analysis_assume(p))))
-#endif
-
 // There is a bug in VC6 implemetation of protected which prevents nested classes from accessing owner's data. It can be tricky to work around - hence...
 #if _MSC_VER==1200
 #define protected public
@@ -9000,7 +8995,7 @@ public:
     virtual const void *nextInGroup()
     {
         ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
-        assertex(rows);
+        assertex(rows != NULL);
         const void * next = rows->nextRow();
         if (next)
             processed++;

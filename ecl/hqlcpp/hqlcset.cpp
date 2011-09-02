@@ -515,7 +515,7 @@ BoundRow * InlineBlockDatasetCursor::buildSelect(BuildCtx & ctx, IHqlExpression 
 
 InlineLinkedDatasetCursor::InlineLinkedDatasetCursor(HqlCppTranslator & _translator, IHqlExpression * _ds, CHqlBoundExpr & _boundDs) : BaseDatasetCursor(_translator, _ds, &_boundDs)
 {
-    assertex(boundDs.count);
+    assertex(boundDs.count != NULL);
     assertex(isArrayRowset(boundDs.expr->queryType()));
 }
 
@@ -1469,13 +1469,13 @@ BoundRow * SingleRowTempDatasetBuilder::buildCreateRow(BuildCtx & ctx)
 
 void SingleRowTempDatasetBuilder::buildFinish(BuildCtx & ctx, const CHqlBoundTarget & target)
 {
-    assertex(cursor);
+    assertex(cursor != NULL);
 }
 
 
 void SingleRowTempDatasetBuilder::buildFinish(BuildCtx & ctx, CHqlBoundExpr & target)
 {
-    assertex(cursor);
+    assertex(cursor != NULL);
 }
 
 
@@ -1728,7 +1728,7 @@ void SetBuilder::buildFinish(BuildCtx & ctx, const CHqlBoundTarget & target)
 {
     if (target.isAll && (allVar != target.isAll))
     {
-        assertex(allVar);
+        assertex(allVar != NULL);
         ctx.addAssign(target.isAll, allVar);
     }
     datasetBuilder->buildFinish(ctx, target);

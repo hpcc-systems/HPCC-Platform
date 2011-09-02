@@ -1191,7 +1191,7 @@ void SourceBuilder::buildTransformBody(BuildCtx & transformCtx, IHqlExpression *
 
 void SourceBuilder::buildTargetCursor(Owned<BoundRow> & tempRow, Owned<BoundRow> & rowBuilder, BuildCtx & ctx, IHqlExpression * expr)
 {
-    assertex(lastTransformer);
+    assertex(lastTransformer != NULL);
     if (expr == lastTransformer)
     {
         rowBuilder.set(rootSelfRow);
