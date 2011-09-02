@@ -79,7 +79,7 @@ static const char * COMPILE_ONLY[] = { "/c", "-c" };
 
 static const char * CC_OPTION_CORE[] = { "", "-fvisibility=hidden -DUSE_VISIBILITY=1" };
 static const char * LINK_OPTION_CORE[] = { "/DLL /libpath:." , "" };
-static const char * CC_OPTION_DEBUG[] = { "/Zm500 /EHsc /GR /Zi /nologo /bigobj", "-fPIC -pipe -O0" };
+static const char * CC_OPTION_DEBUG[] = { "/Zm500 /EHsc /GR /Zi /nologo /bigobj", "-g -fPIC -pipe -O0" };
 
 static const char * DLL_LINK_OPTION_DEBUG[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO /DEBUG /DEBUGTYPE:CV", "-g -shared -L. -fPIC -pipe -O0" };
 static const char * EXE_LINK_OPTION_DEBUG[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO /DEBUG /DEBUGTYPE:CV", "-g -L. -Wl,-E -fPIC -pipe -O0" };
