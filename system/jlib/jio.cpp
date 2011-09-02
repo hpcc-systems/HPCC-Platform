@@ -67,8 +67,8 @@ extern jlib_decl size32_t checked_read(int file, void *buffer, size32_t len)
     unsigned __int64 startCycles = get_cycles_now();
     loop
     {
-        size_t readNow = _read(file, buffer, len);
-        if (readNow == (size32_t)-1)
+        ssize_t readNow = _read(file, buffer, len);
+        if (readNow == (ssize_t)-1)
         {
             switch (errno)
             {
@@ -141,8 +141,8 @@ extern jlib_decl size32_t checked_pread(int file, void *buffer, size32_t len, of
     unsigned __int64 startCycles = get_cycles_now();
     loop
     {
-        size_t readNow = ::pread(file, buffer, len, pos);
-        if (readNow == (size32_t)-1)
+        ssize_t readNow = ::pread(file, buffer, len, pos);
+        if (readNow == (ssize_t)-1)
         {
             switch (errno)
             {
