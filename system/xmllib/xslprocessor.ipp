@@ -133,7 +133,8 @@ public:
             }
             else
             {
-                MemBufInputSource* memsrc = new MemBufInputSource((const XMLByte*)buf.detach(), buf.length(), (const XMLCh*)NULL, false);
+                size32_t buflen = buf.length();
+                MemBufInputSource* memsrc = new MemBufInputSource((const XMLByte*)buf.detach(), buflen, (const XMLCh*)NULL, false);
                 memsrc->setCopyBufToStream(false);
                 inputsrc = memsrc;
             }
