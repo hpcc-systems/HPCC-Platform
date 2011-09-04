@@ -35,7 +35,6 @@ include_directories (
          ./../master 
          ./../../common/workunit 
          ./../graph 
-         ./../../system/icu/include 
          ./../../common/deftype 
          ./../../system/include 
          ./../../dali/base 

@@ -47,7 +47,6 @@ set (    SRCS
 include_directories ( 
          . 
          ${HPCC_SOURCE_DIR}/common/environment 
-         ${HPCC_SOURCE_DIR}/ft 
          ${HPCC_SOURCE_DIR}/common/workunit 
          ${HPCC_SOURCE_DIR}/common/dllserver 
          ${HPCC_SOURCE_DIR}/dali/base 

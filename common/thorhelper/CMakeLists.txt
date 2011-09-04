@@ -67,7 +67,6 @@ include_directories (
          ./../workunit 
          ./../../system/jlib 
          ./../deftype 
-         ./../../system/icu/include 
          ./../../rtl/include 
     )
 

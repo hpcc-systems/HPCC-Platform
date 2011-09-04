@@ -50,9 +50,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/jhtree
          ${HPCC_SOURCE_DIR}/system/hrpc
          ${HPCC_SOURCE_DIR}/system/mp
-         ${HPCC_SOURCE_DIR}/common/ns
          ${HPCC_SOURCE_DIR}/common/workunit
-         ${HPCC_SOURCE_DIR}/system/icu/include
          ${HPCC_SOURCE_DIR}/common/deftype
          ${HPCC_SOURCE_DIR}/system/include
          ${HPCC_SOURCE_DIR}/dali/base

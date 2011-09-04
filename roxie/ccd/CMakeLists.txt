@@ -58,13 +58,11 @@ include_directories (
          ./../../common/remote
          ./../../system/jhtree 
          ./../../system/mp 
-         ./../../common/ns 
          ./../../common/workunit 
          ./../../roxie/udplib 
          ./../../roxie/roxie 
          ./../../common/environment 
          ./../../ecl/hthor 
-         ./../../system/icu/include 
          ./../../rtl/nbcd 
          ./../../common/deftype 
          ./../../system/include 

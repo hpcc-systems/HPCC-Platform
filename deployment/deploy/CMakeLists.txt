@@ -50,8 +50,6 @@ include_directories (
          ./../../system/mp 
          ./../../common/environment
          ./../../dali/base 
-         ./../../system/xalan/xml-xerces/c/src 
-         ./../../system/xalan/xml-xalan/c/src 
          ./../../system/security/securesocket 
     )
 

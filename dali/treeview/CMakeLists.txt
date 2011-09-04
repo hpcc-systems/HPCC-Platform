@@ -39,7 +39,6 @@ if (WIN32)
 
     include_directories ( 
              ./../../system/mp 
-             ./../../common/ptree 
              ./../base 
              ./../../system/include 
              ./../../system/jlib 

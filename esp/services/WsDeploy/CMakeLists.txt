@@ -43,7 +43,6 @@ include_directories (
          ./../../../common/environment 
          ./../../services 
          ./../common 
-         ./../../../system/icu/include 
          ./../../../system/xmllib 
          ./../../../system/security/securesocket 
          ./../../../system/security/shared 

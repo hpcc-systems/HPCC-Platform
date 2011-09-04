@@ -102,8 +102,6 @@ include_directories (
          ${CMAKE_BINARY_DIR}/oss
          ./../../common/remote 
          ./../../common/workunit 
-         ./../../system/icu/include 
-         ./../../ecl/scheduler 
          ./../../common/deftype 
          ./../../system/include 
          ./../../ecl/hql 

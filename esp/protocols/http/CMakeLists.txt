@@ -54,7 +54,6 @@ include_directories (
          ./../../../system/security/shared
          ./../../../system/security/securesocket 
          ./../../bindings 
-         ./../../../system/security/commonsecurity 
          ./../../bindings/SOAP/xpp 
          ./../../../system/xmllib 
          ./../../../system/jlib 

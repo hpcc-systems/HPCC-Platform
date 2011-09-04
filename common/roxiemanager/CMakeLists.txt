@@ -51,7 +51,6 @@ include_directories (
          ./../../common/environment 
          ./../../roxie/roxie
          ./../../roxie/ccd
-         ./../../system/icu/include 
          ./../../common/fileview2 
          ./../../system/include 
          ./../../dali/base 

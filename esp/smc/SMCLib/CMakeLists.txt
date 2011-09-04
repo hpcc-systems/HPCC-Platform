@@ -44,14 +44,12 @@ include_directories (
          ./../../../dali/ft 
          ./../../bindings/SOAP/Platform 
          ./../../../system/xmllib 
-         ./../../../ecl/attrserver 
          ./../../../system/security/securesocket 
          ./../../../system/security/shared
          ./../../../system/include 
          ./../../../common/workunit 
          ./../../../common/remote 
          ./../../clients 
-         ./../../services/fdleservice 
          ./../../../dali/base 
          ./../../clients/LoggingClient 
          ./../../bindings 

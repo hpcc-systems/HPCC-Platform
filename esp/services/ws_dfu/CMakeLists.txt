@@ -48,10 +48,8 @@ include_directories (
          ./../../services 
          ./../../../dali/ft 
          ./../common 
-         ./../../../system/icu/include 
          ./../../../dali/dfuXRefLib 
          ./../../../system/xmllib 
-         ./../../../ecl/attrserver 
          ./../../../common/deftype 
          ./../../../ecl/hql 
          ./../../../system/security/securesocket 

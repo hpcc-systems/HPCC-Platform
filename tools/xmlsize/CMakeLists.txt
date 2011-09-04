@@ -36,7 +36,6 @@ include_directories (
          ./../../system/include 
          ./../../dali/base 
          ./../../system/jlib 
-         ./../../system/icu/include 
          ./../../common/workunit 
     )
 

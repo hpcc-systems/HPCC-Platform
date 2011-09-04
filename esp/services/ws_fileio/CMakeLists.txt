@@ -42,17 +42,14 @@ include_directories (
          ./../../services 
          ./../../../dali/ft 
          ./../common 
-         ./../../../system/icu/include 
          ./../../../system/xmllib 
          ./../../../esp/bindings/http/platform 
-         ./../../../ecl/attrserver 
          ./../../../system/security/securesocket 
          ./../../../system/security/shared 
          ./../../../system/include 
          ./../../../common/workunit 
          ./../../../common/remote 
          ./../../clients 
-         ./../../../roxie/roxieconfig 
          ./../../../esp/esplib 
          ./../../../dali/base 
          ./../../bindings/SOAP/scrubbed 
