@@ -54,7 +54,7 @@ CPartitioner::CPartitioner()
     thisSize = noSizeLimit;
     thisOffset = 0;
     thisHeaderSize = 0;
-    totalSize = totalSize;
+    totalSize = 0;
     partitioning = false;
 }
 
