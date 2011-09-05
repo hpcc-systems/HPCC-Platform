@@ -955,7 +955,7 @@ class CRoxieCsvReadActivity;
 class CRoxieXmlReadActivity;
 IInMemoryFileProcessor *createKeyedRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskReadActivity &owner, bool resent);
 IInMemoryFileProcessor *createUnkeyedRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskReadActivity &owner, bool variableDisk, IDirectReader *reader);
-IInMemoryFileProcessor *createCsvRecordProcessor(CRoxieCsvReadActivity &owner, IDirectReader *reader, bool _skipHeader);
+IInMemoryFileProcessor *createCsvRecordProcessor(CRoxieCsvReadActivity &owner, IDirectReader *reader, bool _skipHeader, const IResolvedFile *datafile);
 IInMemoryFileProcessor *createXmlRecordProcessor(CRoxieXmlReadActivity &owner, IDirectReader *reader);
 
 class CRoxieDiskReadActivity : public CRoxieDiskReadBaseActivity
@@ -1008,12 +1008,13 @@ public:
 
 protected:
     IHThorCsvReadArg *helper;
+    const IResolvedFile *datafile;
 
 public:
     IMPLEMENT_IINTERFACE;
-    CRoxieCsvReadActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CSlaveActivityFactory *_aFactory,
-        IInMemoryIndexManager *_manager)
-        : CRoxieDiskReadBaseActivity(_logctx, _packet, _hFactory, _aFactory, _manager, 0, 1, true)
+    CRoxieCsvReadActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory,
+                          const CSlaveActivityFactory *_aFactory, IInMemoryIndexManager *_manager, const IResolvedFile *_datafile)
+        : CRoxieDiskReadBaseActivity(_logctx, _packet, _hFactory, _aFactory, _manager, 0, 1, true), datafile(_datafile)
     {
         onCreate();
         helper = (IHThorCsvReadArg *) basehelper;
@@ -1028,7 +1029,11 @@ public:
     {
         {
             CriticalBlock p(pcrit);
-            processor.setown(createCsvRecordProcessor(*this, manager->createReader(readPos, parallelPartNo, numParallel), packet->queryHeader().channel==1 && !resent));
+            processor.setown(
+                    createCsvRecordProcessor(*this,
+                                             manager->createReader(readPos, parallelPartNo, numParallel),
+                                             packet->queryHeader().channel==1 && !resent,
+                                             varFileInfo ? varFileInfo.get() : datafile));
         }
         unsigned __int64 rowLimit = helper->getRowLimit();
         unsigned __int64 stopAfter = helper->getChooseNLimit();
@@ -1119,7 +1124,7 @@ public:
 
     virtual IRoxieSlaveActivity *createActivity(SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const
     {
-        return new CRoxieCsvReadActivity(logctx, packet, helperFactory, this, manager);
+        return new CRoxieCsvReadActivity(logctx, packet, helperFactory, this, manager, datafile);
     }
 
     virtual StringBuffer &toString(StringBuffer &s) const
@@ -1426,12 +1431,13 @@ protected:
 
     Owned<IDirectReader> reader;
     bool skipHeader;
+    const IResolvedFile *datafile;
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    CsvRecordProcessor(CRoxieCsvReadActivity &_owner, IDirectReader *_reader, bool _skipHeader) 
-        : RecordProcessor(NULL), owner(_owner), reader(_reader)
+    CsvRecordProcessor(CRoxieCsvReadActivity &_owner, IDirectReader *_reader, bool _skipHeader, const IResolvedFile *_datafile)
+      : RecordProcessor(NULL), owner(_owner), reader(_reader), datafile(_datafile)
     {
         helper = _owner.helper;
         skipHeader = _skipHeader;
@@ -1443,8 +1449,21 @@ public:
         unsigned totalSizeSent = 0;
         ICsvParameters * csvInfo = helper->queryCsvParameters();
         unsigned headerLines = skipHeader ? csvInfo->queryHeaderLen() : 0;
-        CSVSplitter csvSplitter;    
-        csvSplitter.init(helper->getMaxColumns(), csvInfo, NULL, NULL, NULL); // MORE - could save some info about separators from dfs
+        const char *quotes = NULL;
+        const char *separators = NULL;
+        const char *terminators = NULL;
+        CSVSplitter csvSplitter;
+        if (datafile)
+        {
+            const IPropertyTree *options = datafile->queryProperties();
+            if (options)
+            {
+                quotes = options->queryProp("@csvQuote");
+                separators = options->queryProp("@csvSeparate");
+                terminators = options->queryProp("@csvTerminate");
+            }
+        }
+        csvSplitter.init(helper->getMaxColumns(), csvInfo, quotes, separators, terminators);
         while (!aborted)
         {
             // MORE - there are rumours of a  csvSplitter that operates on a stream... if/when it exists, this should use it
@@ -1588,9 +1607,9 @@ protected:
     Owned<IDirectReader> reader;
 };
 
-IInMemoryFileProcessor *createCsvRecordProcessor(CRoxieCsvReadActivity &owner, IDirectReader *_reader, bool _skipHeader)
+IInMemoryFileProcessor *createCsvRecordProcessor(CRoxieCsvReadActivity &owner, IDirectReader *_reader, bool _skipHeader, const IResolvedFile *datafile)
 {
-    return new CsvRecordProcessor(owner, _reader, _skipHeader);
+    return new CsvRecordProcessor(owner, _reader, _skipHeader, datafile);
 }
 
 IInMemoryFileProcessor *createXmlRecordProcessor(CRoxieXmlReadActivity &owner, IDirectReader *_reader)
@@ -4372,19 +4391,19 @@ public:
         const char * quotes = NULL;
         const char * separators = NULL;
         const char * terminators = NULL;
-#if 0
-        // MORE - should roxieconfig have captured this info?
-        StringBuffer lfn;
-        expandLogicalFilename(lfn, fetch.getFileName(), agent.queryWorkUnit());
-        Owned<IDistributedFile> dfsFile = queryDistributedFileDirectory().lookup(lfn.str());
-        if (dfsFile)
+
+        const IResolvedFile *fileInfo = varFileInfo ? varFileInfo : factory->datafile;
+        if (fileInfo)
         {
-            IPropertyTree & options = dfsFile->queryProperties();
-            quotes = options.queryProp("@csvQuote");
-            separators = options.queryProp("@csvSeparate");
-            terminators = options.queryProp("@csvTerminate");
+            const IPropertyTree *options = fileInfo->queryProperties();
+            if (options)
+            {
+                quotes = options->queryProp("@csvQuote");
+                separators = options->queryProp("@csvSeparate");
+                terminators = options->queryProp("@csvTerminate");
+            }
         }
-#endif
+
         IHThorCsvFetchArg *h = (IHThorCsvFetchArg *) helper;
         ICsvParameters *csvInfo = h->queryCsvParameters();
         csvSplitter.init(_maxColumns, csvInfo, quotes, separators, terminators);

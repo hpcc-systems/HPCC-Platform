@@ -111,6 +111,7 @@ interface IResolvedFile : extends ISimpleSuperFileEnquiry
     virtual const char *queryFileName() const = 0;
     virtual void setCache(const IRoxiePackage *cache) = 0;
     virtual bool isAlive() const = 0;
+    virtual const IPropertyTree *queryProperties() const = 0;
 };
 
 interface IResolvedFileCreator : extends IResolvedFile
