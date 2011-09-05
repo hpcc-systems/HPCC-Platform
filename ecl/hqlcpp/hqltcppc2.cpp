@@ -718,8 +718,6 @@ bool CChildLinkedDatasetColumnInfo::modifyColumn(HqlCppTranslator & translator, 
     boundTarget.count.setown(convertAddressToValue(addressSize, sizetType));
     boundTarget.expr.setown(convertAddressToValue(addressData, queryType()));
 
-    IHqlExpression * record = column->queryRecord();
-    
     HqlExprArray args;
     args.append(*LINK(value));
     OwnedHqlExpr call = translator.bindFunctionCall(appendRowsToRowsetAtom, args, resultType);
@@ -745,7 +743,6 @@ void CChildLinkedDatasetColumnInfo::setColumn(HqlCppTranslator & translator, Bui
     boundTarget.count.setown(convertAddressToValue(addressSize, sizetType));
     boundTarget.expr.setown(convertAddressToValue(addressData, queryType()));
 
-    IHqlExpression * record = column->queryRecord();
     if (value->getOperator() == no_null)
         value.setown(createNullExpr(resultType));
     

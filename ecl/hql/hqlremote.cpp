@@ -384,7 +384,6 @@ void RemoteXmlEclRepository::checkCacheValid()
     {
         IPropertyTree & cur = it->query();
         Owned<IHqlRemoteScope> rScope = createModule(&cur);
-        unsigned flags = cur.getPropInt("@flags", 0);
         timestamp_t timestamp = (timestamp_t)cur.getPropInt64("@timestamp"); 
         if (timestamp > cachestamp)
             cachestamp = timestamp;

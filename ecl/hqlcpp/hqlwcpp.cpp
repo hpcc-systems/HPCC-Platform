@@ -88,6 +88,7 @@ bool isTypePassedByAddress(ITypeInfo * type)
 CppWriterTemplate::CppWriterTemplate()
 {
     text = NULL;
+    len = 0;
 }
 
 CppWriterTemplate::~CppWriterTemplate()

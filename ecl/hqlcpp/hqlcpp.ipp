@@ -598,9 +598,6 @@ public:
     virtual void ensureHelpersExist();
     virtual bool insideQueryDepth(unsigned depth)           { return false; }
     virtual bool isColocal()                                { return false; }
-
-protected:
-    ActivityInstance * activity;
 };
 
 
@@ -947,7 +944,12 @@ struct EvaluateCompareInfo
 {
 public:
     EvaluateCompareInfo(node_operator _op) { actionIfDiffer = null_stmt; op = _op; isBoolEquality = false; hasDefault = true; alwaysReturns = false; }
-    EvaluateCompareInfo(const EvaluateCompareInfo & info) { target.set(info.target); actionIfDiffer = info.actionIfDiffer; op = info.op; isBoolEquality = info.isBoolEquality; }
+    EvaluateCompareInfo(const EvaluateCompareInfo & info)
+    {
+        target.set(info.target); actionIfDiffer = info.actionIfDiffer; op = info.op; isBoolEquality = info.isBoolEquality;
+        alwaysReturns = false;
+        hasDefault = true;
+    }
 
     bool isEqualityCompare() const { return op == no_eq; }
     IHqlExpression * getEqualityReturnValue() { return isBoolEquality ? createConstant(false) : createIntConstant(1); }

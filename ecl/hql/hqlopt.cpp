@@ -3174,9 +3174,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                     if (childKeyed && !transformKeyed)
                         break;
 
-                    IHqlExpression * curRecord = transformed->queryChild(1);
                     IHqlExpression * grandchild = child->queryChild(0);
-
                     OwnedMapper mapper = getMapper(child);
 
                     HqlExprArray args;

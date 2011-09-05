@@ -1061,7 +1061,6 @@ void ParentExtract::gatherActiveRows(BuildCtx & ctx)
     //and remove else
     if (localisation == GraphCoLocal || localisation == GraphCoNonLocal)
     {
-        unsigned extractIndex = 0;
         OwnedHqlExpr colocal = createQuoted("colocal", makeVoidType());
         ForEachItemInRev(i, activeRows)
         {
