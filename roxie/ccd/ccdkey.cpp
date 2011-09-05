@@ -796,7 +796,7 @@ public:
     virtual unsigned __int64 getFilePosition(const void *_ptr)
     {
         // MORE - could do with being faster than this!
-        assertex(curStream);
+        assertex(curStream != NULL);
         size32_t dummy;
         return thisFileStartPos + curStream->tell() + ((const char *)_ptr - (const char *)curStream->peek(1, dummy));
     }
@@ -804,7 +804,7 @@ public:
     virtual unsigned __int64 getLocalFilePosition(const void *_ptr)
     {
         // MORE - could do with being faster than this!
-        assertex(curStream);
+        assertex(curStream != NULL);
         size32_t dummy;
         return makeLocalFposOffset(thisPartIdx-1, curStream->tell() + (const char *)_ptr - (const char *)curStream->peek(1, dummy));
     }
