@@ -884,7 +884,8 @@ public:
         createPending = true;
     }
     
-    CRoxieServerActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, IHThorArg &_helper) : factory(_factory), basehelper(_helper)
+    CRoxieServerActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, IHThorArg &_helper)
+      : factory(_factory), basehelper(_helper)
     {
         input = NULL;
         ctx = NULL;
@@ -4635,6 +4636,8 @@ public:
     CRoxieServerChildBaseActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_factory, _probeManager)
     {
+        eof = false;
+        first = true;
     }
 
     ~CRoxieServerChildBaseActivity()
@@ -4951,6 +4954,8 @@ public:
         : CRoxieServerChildBaseActivity(_factory, _probeManager), helper((IHThorChildThroughNormalizeArg &) basehelper)
     {
         lastInput = NULL;
+        numProcessedLastGroup = 0;
+        ok = false;
     }
 
     virtual void stop(bool aborting)
@@ -5055,6 +5060,8 @@ public:
     {
         bufferStream.setown(createMemoryBufferSerialStream(tempRowBuffer));
         rowSource.setStream(bufferStream);
+        eogPending = false;
+        eof = false;
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -5282,6 +5289,8 @@ public:
     CRoxieServerTempTableActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorTempTableArg &) basehelper)
     {
+        eof = false;
+        curRow = 0;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -5841,6 +5850,7 @@ public:
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorLocalResultReadArg &)basehelper), graphId(_graphId)
     {
         graph = NULL;
+        sequence = 0;
     }
 
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
@@ -5918,6 +5928,7 @@ public:
     CRoxieServerLocalResultStreamReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorLocalResultReadArg &)basehelper)
     {
+        sequence = 0;
     }
 
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
@@ -6016,6 +6027,7 @@ public:
     CRoxieServerLocalResultWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _graphId, unsigned _numOutputs)
         : CRoxieServerInternalSinkActivity(_factory, _probeManager, _numOutputs), helper((IHThorLocalResultWriteArg &)basehelper), graphId(_graphId)
     {
+        graph = NULL;
     }
 
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
@@ -6103,6 +6115,7 @@ public:
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorGraphLoopResultReadArg &)basehelper), graphId(_graphId)
     {
         graph = NULL;
+        sequence = 0;
     }
 
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
@@ -6245,6 +6258,7 @@ public:
     CRoxieServerGraphLoopResultWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _graphId, unsigned _numOutputs)
         : CRoxieServerInternalSinkActivity(_factory, _probeManager, _numOutputs), helper((IHThorGraphLoopResultWriteArg &)basehelper), graphId(_graphId)
     {
+        graph = NULL;
     }
 
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
@@ -6426,6 +6440,9 @@ public:
     {
         keepLeft = _keepLeft;
         kept = NULL;
+        numKept = 0;
+        first = true;
+        numToKeep = 0;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -6502,6 +6519,9 @@ public:
     {
         keepLeft = _keepLeft;
         primaryCompare = helper.queryComparePrimary();
+        eof = false;
+        first = true;
+        survivorIndex = 0;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -6788,6 +6808,7 @@ public:
     CRoxieServerHashDedupActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorHashDedupArg &)basehelper), table(helper, activityId)
     {
+        eof = false;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -6864,6 +6885,7 @@ public:
     CRoxieServerRollupActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorRollupArg &)basehelper)
     {
+        readFirstRow = false;
     }
 
     ~CRoxieServerRollupActivity()
@@ -6954,6 +6976,9 @@ public:
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorNormalizeArg &)basehelper)
     {
         buffer = NULL;
+        numThisRow = 0;
+        curRow = 0;
+        numProcessedLastGroup = 0;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -7073,6 +7098,10 @@ public:
     {
         buffer = NULL;
         cursor = NULL;
+        numThisRow = 0;
+        curRow = 0;
+        numProcessedLastGroup = 0;
+        curChildRow = NULL;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -7268,6 +7297,7 @@ class CQuickSortAlgorithm : implements ISortAlgorithm
 public:
     CQuickSortAlgorithm(ICompare *_compare) : compare(_compare) 
     {
+        curIndex = 0;
     }
 
     virtual void prepare(IRoxieInput *input)
@@ -7460,6 +7490,8 @@ public:
     {
         rowManager = _rowManager;
         activityId = _activityId;
+        curBlock = NULL;
+        blockNo = 0;
     }
 
     virtual void reset()
@@ -7654,6 +7686,9 @@ class CHeapSortAlgorithm : implements ISortAlgorithm
 public:
     CHeapSortAlgorithm(ICompare *_compare) : compare(_compare)
     {
+        inputAlreadySorted = true;
+        curIndex = 0;
+        eof = false;
     }
 
     virtual void reset()
@@ -9518,6 +9553,11 @@ public:
     CRoxieServerSampleActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorSampleArg &)basehelper)
     {
+        numSamples = 0;
+        numToSkip = 0;
+        whichSample = 0;
+        anyThisGroup = false;
+        eof = false;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -9603,6 +9643,8 @@ public:
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorChooseSetsArg &)basehelper)
     {
         setCounts = NULL;
+        numSets = 0;
+        done = false;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -9698,6 +9740,7 @@ public:
         limits = NULL;
         done = false;
         curIndex = 0;
+        numSets = 0;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -9908,6 +9951,7 @@ public:
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorEnthArg &)basehelper)
     {
         eof = false;
+        numerator = denominator = counter = 0;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -9988,6 +10032,9 @@ public:
     CRoxieServerAggregateActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorAggregateArg &)basehelper)
     {
+        eof = false;
+        isInputGrouped = false;
+        abortEarly = false;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -10078,6 +10125,8 @@ public:
     CRoxieServerHashAggregateActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorHashAggregateArg &)basehelper), aggregated(helper, helper)
     {
+        eof = false;
+        gathered = false;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -10161,6 +10210,7 @@ public:
     CRoxieServerDegroupActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorDegroupArg &)basehelper)
     {
+        eof = false;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -11062,6 +11112,10 @@ public:
             betweenjoin = false;
             collate = collateupper = helper.queryCompareLeftRight();
         }
+        rightIndex = 0;
+        state = JSfill;
+        matchedLeft = false;
+        joinLimit = 0;
         keepLimit = 0;   // wait until ctx available 
         atmostLimit = 0; // wait until ctx available 
         abortLimit = 0;  // wait until ctx available 
@@ -11078,6 +11132,7 @@ public:
         left = NULL;
         rightIndex = 0;
         state = JSfill;
+        matchedLeft = false;
 
         CRoxieServerTwoInputActivity::start(parentExtractSize, parentExtract, paused);
 
@@ -11639,6 +11694,8 @@ public:
     CRoxieServerJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
         : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
     {
+        input2 = 0;
+        input2idx = 0;
     }
 
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
@@ -11698,6 +11755,7 @@ public:
     CRoxieServerThreadedConcatActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _grouped, unsigned _numInputs)
         : CRoxieServerActivity(_factory, _probeManager)
     {
+        eofs = 0;
         numInputs = _numInputs;
         for (unsigned i = 0; i < numInputs; i++)
             pullers.append(*new RecordPullerThread(_grouped));
@@ -11853,8 +11911,11 @@ public:
     CRoxieServerOrderedConcatActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _grouped, unsigned _numInputs)
         : CRoxieServerActivity(_factory, _probeManager)
     {
+        eogSeen = false;
+        anyThisGroup = false;
         grouped = _grouped;
         numInputs = _numInputs;
+        inputIdx = 0;
         inputArray = new IRoxieInput*[numInputs];
         for (unsigned i = 0; i < numInputs; i++)
             inputArray[i] = NULL;
@@ -11995,6 +12056,8 @@ public:
     {
         foundInput = false;
         selectedInput = NULL;
+        savedParentExtractSize = 0;;
+        savedParentExtract = NULL;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -12248,6 +12311,8 @@ public:
     CRoxieServerMergeActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorMergeArg &)basehelper), numInputs(_numInputs)
     {
+        activeInputs = 0;
+        first = true;
         mergeheap = new unsigned[numInputs];
         inputArray = new IRoxieInput*[numInputs];
         pending = new const void *[numInputs];
@@ -12326,7 +12391,6 @@ public:
 
 class CRoxieServerMergeActivityFactory : public CRoxieServerMultiInputFactory
 {
-    bool ordered;
 public:
     CRoxieServerMergeActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
         : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
@@ -12357,6 +12421,9 @@ public:
     CRoxieServerRegroupActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
         : CRoxieServerMultiInputActivity(_factory, _probeManager, _numInputs), helper((IHThorRegroupArg &)basehelper)
     {
+        inputIndex = 0;
+        eof = false;
+        numProcessedLastGroup = 0;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -12462,6 +12529,7 @@ public:
     CRoxieServerCombineActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
         : CRoxieServerMultiInputActivity(_factory, _probeManager, _numInputs), helper((IHThorCombineArg &)basehelper)
     {
+        numProcessedLastGroup = 0;
     }
 
     ~CRoxieServerCombineActivity()
@@ -12528,7 +12596,6 @@ public:
 
 class CRoxieServerCombineActivityFactory : public CRoxieServerMultiInputFactory
 {
-    bool ordered;
 public:
     CRoxieServerCombineActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
         : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
@@ -12557,6 +12624,7 @@ public:
     CRoxieServerCombineGroupActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerTwoInputActivity(_factory, _probeManager), helper((IHThorCombineGroupArg &)basehelper)
     {
+        numProcessedLastGroup = 0;
     }
 
     ~CRoxieServerCombineGroupActivity()
@@ -12671,6 +12739,8 @@ public:
     CRoxieServerCombineGroupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
         : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
     {
+        input2 = 0;
+        input2idx = 0;
     }
 
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
@@ -12722,6 +12792,7 @@ public:
         : CRoxieServerActivity(_factory, _probeManager), 
         helper((IHThorRollupGroupArg &)basehelper)
     {
+        eof = false;
     }
 
     ~CRoxieServerRollupGroupActivity()
@@ -12812,6 +12883,8 @@ public:
     CRoxieServerFilterProjectActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerLateStartActivity(_factory, _probeManager), helper((IHThorFilterProjectArg &)basehelper)
     {
+        numProcessedLastGroup = 0;
+        recordCount = 0;
     }
 
     ~CRoxieServerFilterProjectActivity()
@@ -12898,6 +12971,8 @@ public:
         : CRoxieServerActivity(_factory, _probeManager), 
         count(_count)
     {
+        numProcessedLastGroup = 0;
+        recordCount = 0;
     }
 
     ~CRoxieServerProjectActivity()
@@ -13019,6 +13094,8 @@ public:
         puller(false),
         count(_count)
     {
+        numProcessedLastGroup = 0;
+        recordCount = 0;
         eof = false;
         allPulled = false;
         isThreaded = (helper.getFlags() & PPFparallel) != 0;
@@ -13209,8 +13286,16 @@ extern IRoxieServerActivityFactory *createRoxieServerPrefetchProjectActivityFact
 class CPointerArrayRoxieInput : public CPseudoRoxieInput
 {
 public:
-    void init(ConstPointerArray * _array)       { array = _array; curRow = 0; }
-
+    CPointerArrayRoxieInput()
+    {
+        array = NULL;
+        curRow = 0;
+    }
+    void init(ConstPointerArray * _array)
+    {
+        array = _array;
+        curRow = 0;
+    }
     virtual const void * nextInGroup()
     {
         if (array->isItem(curRow))
@@ -13222,7 +13307,6 @@ public:
         }
         return NULL;
     }
-
 protected:
     ConstPointerArray * array;
     unsigned curRow;
@@ -13246,6 +13330,8 @@ public:
         : CRoxieServerActivity(_factory, _probeManager), 
         helper((IHThorLoopArg &)basehelper), loopGraphId(_loopGraphId), counterMeta(_counterMeta)
     {
+        eof = false;
+        finishedLooping = false;
         activityKind = factory->getKind();
         flags = helper.getFlags();
         maxIterations = 0;
@@ -13296,6 +13382,8 @@ public:
     CRoxieServerSequentialLoopActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _loopGraphId, IOutputMetaData * _counterMeta)
         : CRoxieServerLoopActivity(_factory, _probeManager, _loopGraphId, _counterMeta)
     {
+        curInput = NULL;
+        loopCounter = 0;
     }
 
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
@@ -13501,6 +13589,11 @@ public:
         : RestartableThread("LoopExecutorThread")
     {
         activity = NULL;
+        eof = false;
+        flags = 0;
+        ctx = NULL;
+        savedParentExtract = NULL;
+        savedParentExtractSize = 0;
     }
 
     virtual IRoxieInput *queryInput(unsigned idx) const
@@ -13567,6 +13660,7 @@ public:
           readySpace(parallelLoopFlowLimit)
     {
         probeManager = _probeManager;
+        defaultNumParallel = 0;
     }
 
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
@@ -14000,6 +14094,7 @@ public:
     CRoxieServerSequentialGraphLoopActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _GraphGraphId, IOutputMetaData * _counterMeta)
         : CRoxieServerGraphLoopActivity(_factory, _probeManager, _GraphGraphId, _counterMeta)
     {
+        evaluated = false;
     }
 
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
@@ -14197,6 +14292,7 @@ public:
     {
         inputExtractMapper.setown(new CExtractMapperInput);
         resultInput = NULL;
+        createLoopCounter = 0;
     }
 
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
@@ -14364,6 +14460,7 @@ class CRoxieServerLibraryCallActivity : public CRoxieServerActivity
         OutputAdaptor() : CExtractMapperInput(NULL)
         {
             parent = NULL;
+            oid = 0;
             init();
         }
 
@@ -14790,7 +14887,7 @@ public:
 
 class CRoxieServerNWayInputActivityFactory : public CRoxieServerMultiInputFactory
 {
-    bool ordered;
+//    bool ordered;
 public:
     CRoxieServerNWayInputActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
         : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
@@ -14827,6 +14924,7 @@ public:
     {
         grouped = helper.isGrouped();
         graphId = _graphId;
+        selectionIsAll = false;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -15202,7 +15300,6 @@ protected:
 
 class CRoxieServerNWayMergeActivityFactory : public CRoxieServerMultiInputFactory
 {
-    bool ordered;
 public:
     CRoxieServerNWayMergeActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
         : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
@@ -15601,6 +15698,7 @@ public:
         : CRoxieServerActivity(_factory, _probeManager),
           helper((IHThorIterateArg &)basehelper)
     {
+        counter = 0;
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -15688,6 +15786,7 @@ public:
     CRoxieServerProcessActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorProcessArg &)basehelper)
     {
+        counter = 0;
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -15787,6 +15886,9 @@ public:
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorGroupArg &)basehelper)
     {
         next = NULL;
+        endPending = false;
+        eof = false;
+        first = true;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -15869,6 +15971,9 @@ public:
     CRoxieServerFirstNActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerLateStartActivity(_factory, _probeManager), helper((IHThorFirstNArg &)basehelper)
     {
+        doneThisGroup = 0;
+        limit = 0;
+        skip = 0;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -15964,6 +16069,7 @@ public:
     CRoxieServerSelectNActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorSelectNArg &)basehelper)
     {
+        done = false;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -16207,6 +16313,26 @@ public:
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorJoinArg &)basehelper)
     {
         collate = helper.queryCompareLeftRight();
+        eof = false;
+        first = true;
+        keepLimit = 0;
+        atmostLimit = 0;
+        unsigned joinFlags = helper.getJoinFlags();
+        leftOuterJoin = (joinFlags & JFleftouter) != 0;
+        rightOuterJoin = (joinFlags & JFrightouter) != 0;
+        cloneLeft = (joinFlags & JFtransformmatchesleft) != 0;
+        exclude = (joinFlags & JFexclude) != 0;
+        abortLimit = 0;
+        joinLimit = 0;
+        assertex((joinFlags & (JFfirst | JFfirstleft | JFfirstright)) == 0); // no longer supported
+        getLimitType(joinFlags, limitFail, limitOnFail);
+        if((joinFlags & JFslidingmatch) != 0)
+            throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "Internal Error: Sliding self join not supported");
+        failingOuterAtmost = false;
+        matchedLeft = false;
+        leftIndex = 0;
+        rightIndex = 0;
+        rightOuterIndex = 0;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -16219,11 +16345,6 @@ public:
         if(keepLimit == 0)
             keepLimit = (unsigned)-1;
         atmostLimit = helper.getJoinLimit();
-        unsigned joinFlags = helper.getJoinFlags();
-        leftOuterJoin = (joinFlags & JFleftouter) != 0;
-        rightOuterJoin = (joinFlags & JFrightouter) != 0;
-        cloneLeft = (joinFlags & JFtransformmatchesleft) != 0;
-        exclude = (joinFlags & JFexclude) != 0;
         if(atmostLimit == 0)
             atmostLimit = (unsigned)-1;
         else
@@ -16231,14 +16352,10 @@ public:
         abortLimit = helper.getMatchAbortLimit();
         if (abortLimit == 0) 
             abortLimit = (unsigned)-1;
-        assertex((joinFlags & (JFfirst | JFfirstleft | JFfirstright)) == 0); // no longer supported
-        getLimitType(joinFlags, limitFail, limitOnFail);
         if (rightOuterJoin)
             createDefaultLeft();
         if (leftOuterJoin || limitOnFail)
             createDefaultRight();
-        if((joinFlags & JFslidingmatch) != 0)
-            throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "Internal Error: Sliding self join not supported");
         if ((helper.getJoinFlags() & JFlimitedprefixjoin) && helper.getJoinLimit()) 
         {   //limited match join (s[1..n])
             dualcache.setown(new CRHDualCache());
@@ -16570,6 +16687,15 @@ public:
         dedupRHS = (joinFlags & (JFmanylookup | JFmatchrequired | JFtransformMaySkip)) == 0; // optimisation: can implicitly dedup RHS unless is many lookup, or match required, or transform may skip
         left = NULL;
         activityKind = factory->getKind();
+        eog = false;
+        matchedGroup = false;
+        gotMatch = false;
+        keepLimit = 0;
+        keepCount = 0;
+        atmostLimit = 0;
+        limitLimit = 0;
+        hasGroupLimit = false;
+        getLimitType(helper.getJoinFlags(), limitFail, limitOnFail);
     }
 
     void loadRight()
@@ -17037,6 +17163,10 @@ public:
         matchedLeft = false;
         matchedGroup = false;
         activityKind = factory->getKind();
+        rightIndex = 0;
+        rightOrdinality = 0;
+        leftIsGrouped = false;
+        countForLeft = 0;
     }
 
     virtual void reset()
@@ -17365,6 +17495,11 @@ public:
         : CRoxieServerLateStartActivity(_factory, _probeManager), helper((IHThorTopNArg &)basehelper), compare(*helper.queryCompare())
     {
         sorted = NULL;
+        sortedCount = 0;
+        curIndex = 0;
+        limit = 0;
+        eoi = false;
+        hasBest = false;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -17508,6 +17643,7 @@ public:
     CRoxieServerLimitActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorLimitArg &)basehelper)
     {
+        rowLimit = 0;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -17602,6 +17738,8 @@ public:
         : CRoxieServerLimitActivity(_factory, _probeManager)
     {
         transformExtra = NULL;
+        started = false;
+        index = 0;
         if (_onFail)
             transformExtra = static_cast<IHThorLimitTransformExtra *>(helper.selectInterface(TAIlimittransformextra_1));
     }
@@ -17918,6 +18056,7 @@ public:
     {
         unusedStopped = false;
         prestarted = false;
+        cond = 0;
         inputs = new IRoxieInput*[numInputs];
         for (unsigned i = 0; i < numInputs; i++)
             inputs[i] = NULL;
@@ -18045,6 +18184,7 @@ public:
         inputTrue = NULL;
         unusedStopped = false;
         prestarted = false;
+        cond = false;
     }
 
     virtual void prestart(unsigned parentExtractSize, const byte *parentExtract)
@@ -18517,6 +18657,8 @@ public:
         rowIter = NULL;
         in = NULL;
         curSearchText = NULL;
+        anyThisGroup = false;
+        curSearchTextLen = 0;
     }
 
     ~CRoxieServerParseActivity()
@@ -19203,6 +19345,8 @@ public:
     {
         compoundHelper = (IHThorDiskReadArg *)&helper;
         readHelper = (IHThorDiskReadArg *)&helper;
+        readAheadDone = false;
+        readIndex = 0;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -19361,6 +19505,7 @@ public:
     {
         compoundHelper = NULL;
         readHelper = (IHThorXmlReadArg *)&helper;
+        localOffset = 0;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -19457,6 +19602,7 @@ public:
         csvInfo = readHelper->queryCsvParameters();
         maxDiskSize = csvInfo->queryMaxSize();
         localOffset = 0;
+        headerLines = 0;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -19708,6 +19854,7 @@ public:
           countHelper((IHThorDiskCountArg &)basehelper)
     {
         limitHelper = static_cast<IHThorSourceCountLimit *>(basehelper.selectInterface(TAIsourcecountlimit_1));
+        choosenLimit = 0;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -20063,7 +20210,7 @@ protected:
     unsigned rawSize;
     CSkippableRemoteResultAdaptor remote;
     CIndexTransformCallback callback;
-    bool started;
+//    bool started;
     bool sorted;
     bool variableFileName;
     bool variableInfoPending;
@@ -20108,6 +20255,9 @@ public:
         isOpt = (indexHelper.getFlags() & TIRoptional) != 0;
         seekGEOffset = 0;
         prestarted = false;
+//        started = false;
+        rejected = accepted = 0;
+        rowLimit = choosenLimit = keyedLimit = 0;
     }
 
     virtual const IResolvedFile *queryVarFileInfo() const
@@ -20748,6 +20898,7 @@ public:
           isLocal(_isLocal),
           remoteId(_remoteId)
     {
+        rowLimit = keyedLimit = chooseNLimit = 0;
         indexHelper.setCallback(&callback);
         steppedExtra = static_cast<IHThorSteppedSourceExtra *>(indexHelper.selectInterface(TAIsteppedsourceextra_1));
         limitTransformExtra = static_cast<IHThorSourceLimitTransformExtra *>(indexHelper.selectInterface(TAIsourcelimittransformextra_1));
@@ -22564,6 +22715,7 @@ public:
         joinProcessed = 0;
         totalCycles = 0;
         allPulled = false;
+        eof = false;
     }
 
     virtual void onCreate(IRoxieInput *_owner, IRoxieServerErrorHandler *_errorHandler, IRoxieSlaveContext *_ctx, IHThorArg *_colocalArg)
@@ -23037,7 +23189,13 @@ public:
           preserveGroups(meta.isGrouped()),
           puller(false),
           isSimple(_isSimple),
-          isLocal(_isLocal)
+          isLocal(_isLocal),
+          abortLimit(0),
+          keepLimit(0),
+          atMost(0),
+          limitFail(false),
+          limitOnFail(false),
+          cloneLeft(false)
     {
         groupStart = NULL;
         activityKind = _factory->getKind();
@@ -23749,7 +23907,6 @@ class CRoxieServerKeyedJoinActivityFactory : public CRoxieServerMultiInputFactor
     Owned<IDefRecordMeta> activityMeta;
     RemoteActivityId headId;
     RemoteActivityId tailId;
-    unsigned maxTransformedSize;
     IOutputMetaData *indexReadMeta;
     Owned<IFilePartMap> map;
     Owned<IFileIOArray> files;
@@ -23859,6 +24016,7 @@ public:
     CRoxieServerSoapActivityBase(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorSoapActionArg &)basehelper)
     {
+        eof = false;
         if (clientCert.certificate.length() > 0 && clientCert.privateKey.length() > 0 && clientCert.passphrase.length() > 0)
             pClientCert = &clientCert;
         else
@@ -27867,7 +28025,6 @@ class CRoxieServerContext : public CSlaveContext, implements IRoxieServerContext
     bool isHttp;
     bool sendHeartBeats;
     bool trim;
-    bool traceMemoryUsage;
     XmlReaderOptions xmlStoredDatasetReadFlags;
     unsigned warnTimeLimit;
     unsigned lastSocketCheckTime;
@@ -28283,9 +28440,10 @@ public:
         return result;
     }
 
-    virtual void setResultBool(const char *name, unsigned sequence, bool value) 
+    virtual void setResultBool(const char *name, unsigned _sequence, bool value)
     {
-        if ((int) sequence < 0)
+        int sequence = (int) _sequence;  // API uses unsigned for historical reasons
+        if (sequence < 0)
         {
             CriticalBlock b(contextCrit);
             useContext(sequence).setPropBool(name, value);
@@ -28323,10 +28481,11 @@ public:
             }
         }
     }
-    virtual void setResultData(const char *name, unsigned sequence, int len, const void * data) 
+    virtual void setResultData(const char *name, unsigned _sequence, int len, const void * data)
     {
         static char hexchar[] = "0123456789ABCDEF";
-        if ((int) sequence < 0)
+        int sequence = (int) _sequence;  // API uses unsigned for historical reasons
+        if (sequence < 0)
         {
             StringBuffer s;
             const byte *field = (const byte *) data;
@@ -28428,9 +28587,10 @@ public:
             }
         }
     }
-    virtual void setResultRaw(const char *name, unsigned sequence, int len, const void * data) 
+    virtual void setResultRaw(const char *name, unsigned _sequence, int len, const void * data)
     {
-        if ((int) sequence < 0)
+        int sequence = (int) _sequence;  // API uses unsigned for historical reasons
+        if (sequence < 0)
         {
             CriticalBlock b(contextCrit);
             IPropertyTree &ctx = useContext(sequence);
@@ -28471,9 +28631,10 @@ public:
             }
         }
     }
-    virtual void setResultSet(const char *name, unsigned sequence, bool isAll, size32_t len, const void * data, ISetToXmlTransformer * transformer) 
+    virtual void setResultSet(const char *name, unsigned _sequence, bool isAll, size32_t len, const void * data, ISetToXmlTransformer * transformer)
     {
-        if ((int) sequence < 0)
+        int sequence = (int) _sequence;  // API uses unsigned for historical reasons
+        if (sequence < 0)
         {
             CriticalBlock b(contextCrit);
             IPropertyTree &ctx = useContext(sequence);
@@ -28539,9 +28700,10 @@ public:
         useContext(sequence).setPropTree(name, createPTreeFromXMLString(xml, ipt_caseInsensitive));
     }
 
-    virtual void setResultDecimal(const char *name, unsigned sequence, int len, int precision, bool isSigned, const void *val) 
+    virtual void setResultDecimal(const char *name, unsigned _sequence, int len, int precision, bool isSigned, const void *val)
     {
-        if ((int) sequence < 0)
+        int sequence = (int) _sequence;  // API uses unsigned for historical reasons
+        if (sequence < 0)
         {
             MemoryBuffer m;
             serializeFixedData(len, val, m);
@@ -28588,9 +28750,10 @@ public:
             }
         }
     }
-    virtual void setResultInt(const char *name, unsigned sequence, __int64 value)
+    virtual void setResultInt(const char *name, unsigned _sequence, __int64 value)
     {
-        if ((int) sequence < 0)
+        int sequence = (int) _sequence;  // API uses unsigned for historical reasons
+        if (sequence < 0)
         {
             CriticalBlock b(contextCrit);
             useContext(sequence).setPropInt64(name, value);
@@ -28630,9 +28793,10 @@ public:
         }
     }
 
-    virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 value)
+    virtual void setResultUInt(const char *name, unsigned _sequence, unsigned __int64 value)
     {
-        if ((int) sequence < 0)
+        int sequence = (int) _sequence;  // API uses unsigned for historical reasons
+        if (sequence < 0)
         {
             CriticalBlock b(contextCrit);
             useContext(sequence).setPropInt64(name, value);
@@ -28672,9 +28836,10 @@ public:
         }
     }
 
-    virtual void setResultReal(const char *name, unsigned sequence, double value)
+    virtual void setResultReal(const char *name, unsigned _sequence, double value)
     {
-        if ((int) sequence < 0)
+        int sequence = (int) _sequence;  // API uses unsigned for historical reasons
+        if (sequence < 0)
         {
             CriticalBlock b(contextCrit);
             useContext(sequence).setPropBin(name, sizeof(value), &value);
@@ -28714,9 +28879,10 @@ public:
             }
         }
     }
-    virtual void setResultString(const char *name, unsigned sequence, int len, const char * str)
+    virtual void setResultString(const char *name, unsigned _sequence, int len, const char * str)
     {
-        if ((int) sequence < 0)
+        int sequence = (int) _sequence;  // API uses unsigned for historical reasons
+        if (sequence < 0)
         {
             CriticalBlock b(contextCrit);
             useContext(sequence).setPropBin(name, len, str);
@@ -28759,9 +28925,10 @@ public:
             }
         }
     }
-    virtual void setResultUnicode(const char *name, unsigned sequence, int len, UChar const * str)
+    virtual void setResultUnicode(const char *name, unsigned _sequence, int len, UChar const * str)
     {
-        if ((int) sequence < 0)
+        int sequence = (int) _sequence;  // API uses unsigned for historical reasons
+        if (sequence < 0)
         {
             rtlDataAttr buff;
             unsigned bufflen = 0;
@@ -28822,9 +28989,10 @@ public:
     { 
         appendResultRawContext(name, sequence, len, data, numRows, extend, true);
     }
-    virtual void getResultDecimal(unsigned tlen, int precision, bool isSigned, void * tgt, const char * stepname, unsigned sequence)
+    virtual void getResultDecimal(unsigned tlen, int precision, bool isSigned, void * tgt, const char * stepname, unsigned _sequence)
     {
-        if ((int) sequence < 0)
+        int sequence = (int) _sequence;  // API uses unsigned for historical reasons
+        if (sequence < 0)
         {
             MemoryBuffer m;
             CriticalBlock b(contextCrit);
