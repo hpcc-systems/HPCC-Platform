@@ -7212,8 +7212,6 @@ void HqlGram::checkGrouping(const attribute & errpos, IHqlExpression * dataset, 
     if (!groups) return;
     assertex(record->getOperator()==no_record);
 
-    IHqlDataset *table = dataset->queryDataset()->queryTable();
-
     //match should be by structure!!
     HqlExprArray parms1;
     HqlExprArray parms;
@@ -7299,7 +7297,6 @@ void HqlGram::checkProjectedFields(IHqlExpression * e, attribute & errpos)
                     if (hadVariableAggregate)
                         reportError(ERR_AGG_FIELD_AFTER_VAR, errpos, "Field %s: Fields cannot follow a variable length aggregate in the record", name ? name->str() : "");
 
-                    IHqlExpression * cond = NULL;
                     if (value->isGroupAggregateFunction())
                         hadVariableAggregate = true;
                 }
@@ -7643,7 +7640,6 @@ void HqlGram::ensureDataset(attribute & attr)
 }
 void HqlGram::expandPayload(HqlExprArray & fields, IHqlExpression * payload, IHqlSimpleScope * scope, ITypeInfo * & lastFieldType, const attribute & errpos)
 {
-    unsigned oldFields = fields.ordinality();
     ForEachChild(i2, payload)
     {
         IHqlExpression * cur = payload->queryChild(i2);
@@ -8496,7 +8492,6 @@ void HqlGram::checkDerivedCompatible(_ATOM name, IHqlExpression * scope, IHqlExp
 
 bool HqlGram::okToAddSideEffects(IHqlExpression * expr)
 {
-    bool ok = true;
     switch (expr->getOperator())
     {
     case no_transform:
@@ -8616,7 +8611,6 @@ void HqlGram::doDefineSymbol(DefineIdSt * defineid, IHqlExpression * _expr, IHql
         }
         else
         {
-            int startpos = idattr.pos.position;
             defineSymbolInScope(activeScope.privateScope, defineid, expr.getClear(), failure, idattr, assignPos, semiColonPos, isParametered, activeScope.activeParameters, activeScope.createDefaults());
         }
     }
@@ -9371,7 +9365,6 @@ static IHqlExpression * createSingleValueTransform(IHqlExpression * record, IHql
 IHqlExpression * HqlGram::createIffDataset(IHqlExpression * record, IHqlExpression * value)
 {
     IHqlExpression * field = record->queryChild(0);
-    IHqlExpression * datasetToProject = NULL;
     if (value->getOperator() == no_select)
     {
         IHqlExpression * lhs = value->queryChild(0);

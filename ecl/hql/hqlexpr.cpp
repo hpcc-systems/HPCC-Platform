@@ -12855,7 +12855,6 @@ static bool removeVirtualAttributes(HqlExprArray & fields, IHqlExpression * cur,
         {
             ITypeInfo * type = cur->queryType();
             Linked<ITypeInfo> targetType = type;
-            IHqlExpression * attrs = NULL;
             switch (type->getTypeCode())
             {
             case type_groupedtable:
@@ -13267,7 +13266,7 @@ static void getSimplifiedAssigns(HqlExprArray & assigns, IHqlExpression * tgt, I
                 IHqlExpression * srcRecord = src->queryRecord();
                 OwnedHqlExpr seq = createSelectorSequence();
                 OwnedHqlExpr srcSelector = createSelector(no_left, srcSelect, seq);
-                OwnedHqlExpr transform = getSimplifiedTransform(tgt->queryRecord(), src->queryRecord(), srcSelector);
+                OwnedHqlExpr transform = getSimplifiedTransform(tgt->queryRecord(), srcRecord, srcSelector);
                 OwnedHqlExpr project = createDataset(no_hqlproject, LINK(srcSelect), createComma(LINK(transform), LINK(seq)));
                 assigns.append(*createAssign(LINK(tgtSelect), LINK(project)));
             }

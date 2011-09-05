@@ -37,6 +37,7 @@ FuncCallStack::FuncCallStack(int size) {
     sp = 0;
     tos = size;
     stackbuf = (char*) malloc(tos);
+    numToFree = 0;
 #ifdef __64BIT__
     numFpRegs = 0;
     for (unsigned i=0;i<MAXFPREGS;i++)

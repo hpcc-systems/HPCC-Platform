@@ -333,7 +333,6 @@ protected:
 
 IHqlExpression * createTableWithoutVirtuals(VirtualFieldsInfo & info, IHqlExpression * tableExpr)
 {
-    IHqlExpression * name = tableExpr->queryChild(0);
     IHqlExpression * record = tableExpr->queryChild(1);
     OwnedHqlExpr diskRecord = info.createPhysicalRecord();
     //Clone the annotations to improve the regenerated text in the graph
@@ -3882,9 +3881,6 @@ void MonitorExtractor::buildKeySegmentInExpr(BuildMonitorState & buildState, Key
 
     if (values->getOperator() != no_list)
     {
-        ITypeInfo * eclFieldType = lhs->queryType()->queryPromotedType();
-        ITypeInfo * elementType = values->queryType()->queryChildType();
-
         //iterate through the set
         BuildCtx subctx(ctx);
         CHqlBoundExpr boundCurElement;
@@ -4638,14 +4634,11 @@ void MonitorExtractor::buildKeySegment(BuildMonitorState & buildState, BuildCtx 
 void MonitorExtractor::buildArbitaryKeySegment(BuildMonitorState & buildState, BuildCtx & ctx, unsigned curSize, IHqlExpression * condition)
 {
     IHqlExpression * left = condition->queryChild(0);
-    IHqlExpression * right = condition->queryChild(1);
     node_operator op = condition->getOperator();
 
     StringBuffer createMonitorText;
     OwnedHqlExpr field = createField(unknownAtom, getExpandedFieldType(left->queryType(), NULL), NULL);
     OwnedHqlExpr pseudoSelector = createSelectExpr(getActiveTableSelector(), LINK(field));
-    bool done = false;
-    KeyedKind keyedKind = KeyedExtend;
 
     KeySelectorInfo selectorInfo(KeyedExtend, left, pseudoSelector, buildState.curOffset, curSize, false, true);
     BuildCtx subctx(ctx);
@@ -4711,7 +4704,6 @@ void MonitorExtractor::spotSegmentCSE(BuildCtx & ctx)
 void MonitorExtractor::buildSegments(BuildCtx & ctx, const char * listName, bool _ignoreUnkeyed)
 {
     translator.useInclude("rtlkey.hpp");
-    IHqlExpression *record = tableExpr->queryChild(1);
     ignoreUnkeyed = _ignoreUnkeyed;
 
     if (translator.queryOptions().spotCSE)
@@ -6618,7 +6610,6 @@ protected:
     }
 
 protected:
-    bool optimizeCount;
     bool transformAccessesCallback;
 };
 

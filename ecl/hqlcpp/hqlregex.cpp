@@ -237,7 +237,7 @@ protected:
 class SymbolArrayIterator
 {
 public:
-    SymbolArrayIterator(SymbolArray & _table) : table(_table) {}
+    SymbolArrayIterator(SymbolArray & _table) : table(_table) { cur = 0; }
     inline bool first() 
     { 
         cur = 0; return table.symbols.isItem(cur);
@@ -594,7 +594,6 @@ void HqlRegexExpr::calcDfaScore()
         }
         else if (!expr->hasProperty(minimalAtom))
         {
-            unsigned min = getRepeatMin();
             unsigned max = getRepeatMax();
             unsigned namedDfaScore = queryNamed()->getDfaScore();
             if (max <= options.dfaRepeatMax)
@@ -1414,7 +1413,6 @@ void HqlRegexExpr::generateRegex(GenerateRegexCtx & ctx)
                     created.setown(new RegexValidateUtf8AsUniPattern(stripSeparator, idx));
                 else
                     created.setown(new RegexValidateUtf8AsAscPattern(stripSeparator, idx));
-                break;
                 break;
             case NlpAscii:
                 if (validatorKind != ValidateIsUnicode)

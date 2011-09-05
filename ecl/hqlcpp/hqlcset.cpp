@@ -1370,6 +1370,7 @@ void DatasetBuilderBase::finishRow(BuildCtx & ctx, BoundRow * selfCursor)
 
 BlockedDatasetBuilder::BlockedDatasetBuilder(HqlCppTranslator & _translator, IHqlExpression * _record) : DatasetBuilderBase(_translator, _record, false)
 {
+    forceLength = false;
 }
 
 void BlockedDatasetBuilder::buildDeclare(BuildCtx & ctx)
@@ -1857,8 +1858,7 @@ void HqlCppTranslator::buildSetAssign(BuildCtx & ctx, IHqlCppSetBuilder * builde
     case no_list:
         {
             unsigned max = expr->numChildren();
-            if (((max >= 0) && (max < 3)) || 
-                isComplexSet(expr) || !isConstantSet(expr))
+            if ((max < 3) || isComplexSet(expr) || !isConstantSet(expr))
             {
                 for (unsigned i=0; i < max; i++)
                 {

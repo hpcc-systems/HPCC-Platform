@@ -1018,6 +1018,7 @@ static HqlTransformerInfo ThorScalarTransformerInfo("ThorScalarTransformer");
 ThorScalarTransformer::ThorScalarTransformer(const HqlCppOptions & _options) : HoistingHqlTransformer(ThorScalarTransformerInfo, HTFnoteconditionalactions), options(_options)
 {
     isConditionalDepth = 0;
+    seenCandidate = false;
 }
 
 
@@ -4511,7 +4512,7 @@ IHqlExpression * GlobalAttributeInfo::queryFilename(IHqlExpression * value, ICon
             {
                 if (persistOp == no_stored)
                     prefix.append("spill::stored");
-                else if (persistOp = no_checkpoint)
+                else if (persistOp == no_checkpoint)
                     prefix.append("spill::checkpoint");
             }
             if (persistOp == no_once)

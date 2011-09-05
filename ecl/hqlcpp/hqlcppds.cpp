@@ -431,7 +431,6 @@ IReferenceSelector * HqlCppTranslator::buildNewRow(BuildCtx & ctx, IHqlExpressio
         {
             IHqlExpression * seqAttr = expr->queryProperty(sequenceAtom);
             IHqlExpression * nameAttr = expr->queryProperty(namedAtom);
-            IHqlExpression * seq = queryPropertyChild(expr, sequenceAtom, 0);
             IHqlExpression * record = expr->queryRecord();
             OwnedHqlExpr serializedRecord = getSerializedForm(record);
 
@@ -475,7 +474,9 @@ IReferenceSelector * HqlCppTranslator::buildNewRow(BuildCtx & ctx, IHqlExpressio
         return buildNewRow(ctx, expr->queryChild(1));
     case no_select:
         {
+#ifdef _DEBUG
             IHqlExpression * field = expr->queryChild(1);
+#endif
             Owned<IReferenceSelector> selector;
             if (expr->hasProperty(newAtom))
                 selector.setown(buildNewRow(ctx, expr->queryChild(0)));
@@ -2473,8 +2474,6 @@ void HqlCppTranslator::buildDatasetAssignTempTable(BuildCtx & ctx, IHqlCppDatase
         return;
 
     IHqlExpression * record = expr->queryChild(1);
-    IHqlExpression * defaults = expr->queryChild(2);
-
     OwnedHqlExpr rowsExpr;
     if (values->queryType()->getTypeCode() == type_set)
     {
@@ -3429,7 +3428,6 @@ void HqlCppTranslator::doBuildRowAssignAggregateNext(BuildCtx & ctx, IReferenceS
 void HqlCppTranslator::doBuildRowAssignAggregate(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr)
 {
     IHqlExpression * dataset = expr->queryChild(0);
-    IHqlExpression * tgtRecord = expr->queryChild(1);
     IHqlExpression * transform = expr->queryChild(2);
     unsigned numAggregates = transform->numChildren();
 
@@ -4050,7 +4048,6 @@ IReferenceSelector * HqlCppTranslator::buildDatasetIndex(BuildCtx & ctx, IHqlExp
 #endif
 
     IHqlExpression * dataset = expr->queryChild(0);
-    IHqlExpression * index = expr->queryChild(1);
 
     //Special cases:
     //i) selecting row [1] from something that only has a single row
@@ -4481,7 +4478,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityForceLocal(BuildCtx & ctx, IHq
 void HqlCppTranslator::doBuildStmtApply(BuildCtx & ctx, IHqlExpression * expr)
 {
     IHqlExpression * dataset = expr->queryChild(0);
-    IHqlExpression * action = expr->queryChild(1);
     IHqlExpression * start = expr->queryProperty(beforeAtom);
     IHqlExpression * end = expr->queryProperty(afterAtom);
 

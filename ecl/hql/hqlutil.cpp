@@ -429,7 +429,6 @@ IHqlExpression * queryTableFilename(IHqlExpression * expr)
 IHqlExpression * createRawIndex(IHqlExpression * index)
 {
     IHqlExpression * indexRecord = index->queryRecord();
-    IHqlExpression * keyedDataset = index->queryChild(0);
 
     HqlExprArray fields;
     unwindChildren(fields, indexRecord);
@@ -866,7 +865,6 @@ IHqlExpression * findJoinSortOrders(IHqlExpression * condition, IHqlExpression *
     
     //Check for x[n..*] - a no_rangecommon, and ensure they are tagged as the last sorts.
     unsigned numCommonRange = 0;
-    unsigned numSorts = leftSorts.ordinality();
     ForEachItemInRev(i, leftSorts)
     {
         IHqlExpression & left = leftSorts.item(i);
@@ -1768,7 +1766,6 @@ IHqlExpression * queryChildActivity(IHqlExpression * expr, unsigned index)
         break;
     }
 
-    unsigned num = getNumActivityArguments(expr);
     return queryRealChild(expr, firstActivityIndex + index);
 }
 
@@ -2306,6 +2303,8 @@ RecordSelectIterator::RecordSelectIterator(IHqlExpression * record, IHqlExpressi
 {
     rootRecord.set(record);
     rootSelector.set(selector);
+    nestingDepth = 0;
+    ifblockDepth = 0;
 }
 
 bool RecordSelectIterator::doNext()
@@ -4717,7 +4716,6 @@ IHqlExpression * extractCppBodyAttrs(unsigned len, const char * buffer)
     for (unsigned i=0; i < len; i++)
     {
         char next = buffer[i];
-        unsigned skip = 0;
         switch (next)
         {
         case ' ': case '\t':
@@ -6898,7 +6896,6 @@ extern HQL_API bool allParametersHaveDefaults(IHqlExpression * function)
     IHqlExpression * defaults = queryFunctionDefaults(function);
     ForEachChild(idx, formals)
     {
-        IHqlExpression *formal = formals->queryChild(idx);
         IHqlExpression * defvalue = queryDefaultValue(defaults, idx);
         if (!defvalue)
             return false;
@@ -6945,7 +6942,7 @@ const unsigned maxSensibleInlineElementSize = 10000;
 class ConstantRowCreator
 {
 public:
-    ConstantRowCreator(MemoryBuffer & _out) : out(_out) {}
+    ConstantRowCreator(MemoryBuffer & _out) : out(_out) { expectedIndex = 0; }
 
     bool buildTransformRow(IHqlExpression * transform);
 
@@ -7095,7 +7092,7 @@ bool ConstantRowCreator::processElement(IHqlExpression * expr, IHqlExpression * 
                         if (expr->hasProperty(_linkCounted_Atom))
                         {
                             rtlWriteSize32t(out.reserve(sizeof(size32_t)), 0);
-                            memset(out.reserve(sizeof(byte * *)), 0, sizeof(sizeof(byte * *)));
+                            memset(out.reserve(sizeof(byte * *)), 0, sizeof(byte * *));
                         }
                         else
                             rtlWriteSize32t(out.reserve(sizeof(size32_t)), 0);

@@ -727,7 +727,6 @@ IHqlExpression * KeyedJoinInfo::optimizeTransfer(HqlExprArray & fields, HqlExprA
         break;
     }
 
-    unsigned max = filter->numChildren();
     HqlExprArray children;
     ForEachChild(i, filter)
     {

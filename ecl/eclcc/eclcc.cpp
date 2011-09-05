@@ -889,7 +889,6 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
         HqlExprArray functionCache;
         HqlLookupContext ctx(instance.archive, errs, &functionCache, repository);
 
-        unsigned time = msTick();
         Owned<IFileContents> contents = createFileContentsFromText(queryText, sourcePath);
 
         if (withinRepository)
