@@ -114,7 +114,7 @@ public:
         else
         {
             Owned<ILoadedDllEntry> dll = isExe ? createExeDllEntry(dllName) : queryRoxieDllServer().loadDll(dllName, DllLocationDirectory);
-            assertex(dll);
+            assertex(dll != NULL);
             return new CQueryDll(dllName, dll.getClear());
         }
     }
@@ -1144,13 +1144,13 @@ public:
 
     virtual IDeserializedResultStore &queryOnceResultStore() const
     {
-        assertex(onceResultStore);
+        assertex(onceResultStore!= NULL);
         return *onceResultStore;
     }
 
     virtual IPropertyTree &queryOnceContext() const
     {
-        assertex(onceContext);
+        assertex(onceContext != NULL);
         return *onceContext;
     }
 

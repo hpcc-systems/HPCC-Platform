@@ -4639,7 +4639,7 @@ public:
 
             Owned<IRoxieQueryPacket> indexPacket = createRoxiePacket(indexPacketData);
             Owned<ISlaveActivityFactory> indexActivityFactory = factory->queryQueryFactory().getSlaveActivityFactory(indexActivityId.activityId);
-            assertex(indexActivityFactory);
+            assertex(indexActivityFactory != NULL);
             rootIndexActivity.setown(indexActivityFactory->createActivity(logctx, indexPacket));
             rootIndex = rootIndexActivity->queryIndexReadActivity();
     

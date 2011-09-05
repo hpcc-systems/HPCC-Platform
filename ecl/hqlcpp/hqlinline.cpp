@@ -1384,7 +1384,7 @@ void ClassEvalContext::createMemberAlias(CtxCollection & ctxs, BuildCtx & ctx, I
         return;
 
     //Should never be called for a nested class - that should be done in the context.
-    assertex(ctxs.evalctx);
+    assertex(ctxs.evalctx != NULL);
     translator.expandAliases(*ctxs.evalctx, value);
 
     CHqlBoundTarget tempTarget;

@@ -186,7 +186,7 @@ IHqlExpression * SizeStruct::getSizeExpr(BoundRow * row)
         return createTranslated(bound->queryChild(1));
 #endif
 
-    assertex(self);
+    assertex(self != NULL);
     OwnedHqlExpr mapped = normalizeAdditions(varSize);
     OwnedHqlExpr total = row->bindToRow(mapped, self);
     if (!total)

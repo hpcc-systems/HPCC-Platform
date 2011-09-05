@@ -991,7 +991,7 @@ void CHqlBoundTarget::validate() const
             assertex(!length);
         }
         else if (isArrayRowset(queryType()))
-            assertex(count);
+            assertex(count != NULL);
         else
         {
             assertex(length || queryType()->getTypeCode() == type_varstring || queryType()->getTypeCode() == type_varunicode);
@@ -1895,7 +1895,7 @@ void HqlCppTranslator::checkPipeAllowed()
 IHqlExpression * HqlCppTranslator::bindFunctionCall(_ATOM name, HqlExprArray & args)
 {
     OwnedHqlExpr function = needFunction(name);
-    assertex(function);
+    assertex(function != NULL);
     return bindFunctionCall(function, args);
 }
 
@@ -5491,7 +5491,7 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
     if (expr->getOperator() == no_externalcall)
     {
         funcdef.set(expr->queryExternalDefinition());
-        assertex(funcdef);
+        assertex(funcdef != NULL);
         useFunction(funcdef);
     }
     else
@@ -5628,7 +5628,7 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
                     lenVar.setown(ctx.getTempDeclare(unsignedType, NULL));
                 else
                     lenVar.set(tgt->length);
-                assertex(tgt->isAll);
+                assertex(tgt->isAll != NULL);
                 isAll.set(tgt->isAll);
             }
             else

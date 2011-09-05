@@ -202,7 +202,7 @@ public:
                 _ATOM attrName = expr->queryChild(3)->queryName();
                 HqlDummyLookupContext dummyctx(NULL);
                 OwnedHqlExpr value = newModule->queryScope()->lookupSymbol(attrName, makeLookupFlags(true, expr->hasProperty(ignoreBaseAtom), false), dummyctx);
-                assertex(value);
+                assertex(value != NULL);
                 IHqlExpression * oldAttr = expr->queryChild(2);
                 if (oldAttr->isDataset() || oldAttr->isDatarow())
                     return value.getClear();
