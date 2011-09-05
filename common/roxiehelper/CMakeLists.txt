@@ -37,7 +37,6 @@ include_directories (            ./../../system/security/securesocket
          ./../workunit 
          ./../../system/jlib 
          ./../deftype 
-         ./../../system/icu/include 
          ./../../rtl/include
          ./../../system/mp 
          ./../../dali/base 

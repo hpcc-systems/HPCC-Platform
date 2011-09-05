@@ -39,7 +39,6 @@ include_directories (
          ./../../common/workunit 
          ./../../common/environment 
          ./../../roxie/ccd 
-         ./../../system/icu/include 
          ./../../common/fileview2 
          ./../../system/include 
          ./../../system/security/shared

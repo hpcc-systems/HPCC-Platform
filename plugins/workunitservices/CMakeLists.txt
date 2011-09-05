@@ -38,7 +38,6 @@ include_directories (
          ./../../dali/base 
          ./../../rtl/include 
          ./../../ecl/eclagent 
-         ./../../system/icu/include 
          ./../../common/thorhelper 
          ./../../common/deftype 
          ./../../rtl/eclrtl 

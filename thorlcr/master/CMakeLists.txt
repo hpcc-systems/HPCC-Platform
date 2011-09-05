@@ -41,7 +41,6 @@ include_directories (
          ./../shared 
          ./../graph 
          ./../../common/environment 
-         ./../../system/icu/include 
          ./../../common/deftype 
          ./../../system/include 
          ./../../dali/base 

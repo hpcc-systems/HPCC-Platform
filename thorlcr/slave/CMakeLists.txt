@@ -42,7 +42,6 @@ include_directories (
          .
          ./../../common/environment 
          ./../../common/commonext
-         ./../../system/icu/include 
          ./../../common/deftype 
          ./../../system/include 
          ./../../dali/base 

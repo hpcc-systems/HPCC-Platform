@@ -29,7 +29,6 @@ project( copyexp )
 set ( SRCS copyexp.cpp )
 
 include_directories ( 
-         ../../jlib.hpp 
          ./../../common/remote 
          ./../../system/mp 
          ./../../system/include 

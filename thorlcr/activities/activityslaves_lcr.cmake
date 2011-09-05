@@ -96,7 +96,6 @@ include_directories (
          ./../shared 
          ./../graph 
          ./../activities/msort 
-         ./../../system/icu/include 
          ./../../common/deftype 
          ./../../system/include 
          ./../../dali/base 
