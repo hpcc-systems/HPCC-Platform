@@ -433,7 +433,6 @@ void codepageBlankFill(char const * codepage, char * out, unsigned len)
     }
     else
     {
-        UConverter * conv = queryRTLUnicodeConverter(codepage)->query();
         unsigned blanklen;
         char * blank;
         rtlUnicodeToCodepageX(blanklen, blank, 1, &unicodeSpace, codepage);
@@ -4373,7 +4372,6 @@ void rtlUtf8ToUnicode(unsigned outlen, UChar * out, unsigned inlen, char const *
 ECLRTL_API void rtlUtf8SubStrFT(unsigned tlen, char * tgt, unsigned slen, char const * src, unsigned from, unsigned to)
 {
     normalizeFromTo(from, to);
-    unsigned len = to - from;
     clipFromTo(from, to, slen);
 
     unsigned copylen = to - from;
@@ -4416,7 +4414,6 @@ ECLRTL_API void rtlUtf8SubStrFX(unsigned & tlen, char * & tgt, unsigned slen, ch
 ECLRTL_API void rtlUtf8ToLower(size32_t l, char * t, char const * locale)
 {
     //Convert to lower case, but only go via unicode routines if we have to...
-    const byte * buffer = (const byte *)t;
     for (unsigned i=0; i< l; i++)
     {
         byte next = *t;
@@ -4582,7 +4579,7 @@ public:
                 matched = boost::regex_search(_str + _from, _str + _len, subs, *regEx);
             }
         }
-        catch (std::runtime_error e)
+        catch (const std::runtime_error & e)
         {
             throw MakeStringException(0, "Error in regex search: %s (regex: %s)", e.what(), regEx->str().c_str());
         }
@@ -4648,7 +4645,7 @@ public:
             else
                 regEx.assign(_regExp, boost::regbase::perl | boost::regbase::icase);                
         }
-        catch(boost::bad_expression e)
+        catch(const boost::bad_expression & e)
         {
             StringBuffer msg;
             msg.append("Bad regular expression: ").append(e.what()).append(": ").append(_regExp);
@@ -4668,7 +4665,7 @@ public:
 //          tgt = boost::regex_merge(src, cre->regEx, fmt, boost::format_perl); //Algorithm regex_merge has been renamed regex_replace, existing code will continue to compile, but new code should use regex_replace instead.
             tgt = boost::regex_replace(src, regEx, fmt, boost::format_perl);
         }
-        catch(std::runtime_error e)
+        catch(const std::runtime_error & e)
         {
             throw MakeStringException(0, "Error in regex replace: %s (regex: %s)", e.what(), regEx.str().c_str());
         }
@@ -5274,7 +5271,6 @@ ECLRTL_API void xmlDecodeUStrX(size32_t & outLen, UChar * & out, size32_t inLen,
 
 ECLRTL_API void xmlEncodeStrX(size32_t & outLen, char * & out, size32_t inLen, const char * in, unsigned flags)
 {
-    unsigned encodeFlags = 0;
     StringBuffer temp;
     encodeXML(in, temp, flags, inLen, false);
     outLen = temp.length();

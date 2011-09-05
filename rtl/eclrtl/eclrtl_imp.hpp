@@ -55,7 +55,7 @@ public:
 private:
     //Force errors....
     inline rtlDataAttr(const rtlDataAttr &) {}
-    inline rtlDataAttr & operator = (const rtlDataAttr & other) { return *this; }
+    inline rtlDataAttr & operator = (const rtlDataAttr & other) { ptr = NULL; return *this; }
 
 protected:
     void * ptr;

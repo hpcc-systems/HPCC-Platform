@@ -160,7 +160,7 @@ protected:
 private:
     //Force errors....
     inline rtlRowAttr(const rtlRowAttr &) {}
-    inline rtlRowAttr & operator = (const rtlRowAttr & other) { return *this; }
+    inline rtlRowAttr & operator = (const rtlRowAttr & other) { row = NULL; return *this; }
 
 protected:
     byte * row;
@@ -194,7 +194,7 @@ protected:
 private:
     //Force errors....
     inline rtlRowsAttr(const rtlRowsAttr &) {}
-    inline rtlRowsAttr & operator = (const rtlRowsAttr & other) { return *this; }
+    inline rtlRowsAttr & operator = (const rtlRowsAttr & other) { count = 0; rows = NULL; return *this; }
 
 public:
     unsigned count;

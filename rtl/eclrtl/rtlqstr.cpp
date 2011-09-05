@@ -109,7 +109,7 @@ static const char compressXlat[256] =
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-#define compressQChar(c) compressXlat[c]
+#define compressQChar(c) compressXlat[(byte)c]
 
 #else
 

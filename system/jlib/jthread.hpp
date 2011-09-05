@@ -135,8 +135,8 @@ class CThreaded : public Thread
 {
     IThreaded *owner;
 public:
-    CThreaded(const char *name) : Thread(name) { }
-    void init(IThreaded *_owner) { owner = _owner; start(); }
+    inline CThreaded(const char *name) : Thread(name) { owner = NULL; }
+    inline void init(IThreaded *_owner) { owner = _owner; start(); }
     virtual int run() { owner->main(); return 1; }
 };
 
