@@ -4488,8 +4488,6 @@ ITypeInfo *HqlGram::promoteToSameType(attribute &a1, attribute &a2)
     ITypeInfo *t1 = a1.queryExprType();
     ITypeInfo *t2 = a2.queryExprType();
     ITypeInfo * type = ::getPromotedECLType(t1, t2);
-    if (!type)
-        type = type;
     ensureType(a1, type);
     ensureType(a2, type);
     return type;
