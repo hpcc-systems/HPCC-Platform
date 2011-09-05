@@ -19436,9 +19436,15 @@ class CRoxieServerCsvReadActivity : public CRoxieServerDiskReadBaseActivity
     unsigned maxDiskSize;
     CSVSplitter csvSplitter;    
     unsigned __int64 localOffset;
+    const char *quotes;
+    const char *separators;
+    const char *terminators;
 public:
-    CRoxieServerCsvReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, bool _sorted, bool _maySkip, IInMemoryIndexManager *_manager)
-        : CRoxieServerDiskReadBaseActivity(_factory, _probeManager, _remoteId, _numParts, _isLocal, _sorted, _maySkip, _manager)
+    CRoxieServerCsvReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
+                                unsigned _numParts, bool _isLocal, bool _sorted, bool _maySkip, IInMemoryIndexManager *_manager,
+                                const char *_quotes, const char *_separators, const char *_terminators)
+        : CRoxieServerDiskReadBaseActivity(_factory, _probeManager, _remoteId, _numParts, _isLocal, _sorted, _maySkip, _manager),
+          quotes(_quotes), separators(_separators), terminators(_terminators)
     {
         compoundHelper = NULL;
         readHelper = (IHThorCsvReadArg *)&helper;
@@ -19460,7 +19466,19 @@ public:
             if (headerLines && isLocal && reader->queryFilePart() != 1)
                 headerLines = 0;  // MORE - you could argue that if SINGLE not specified, should skip from all parts. But it would be painful since we have already concatenated and no-one else does...
             if (!eof)
-                csvSplitter.init(readHelper->getMaxColumns(), csvInfo, NULL, NULL, NULL); // MORE - could save some info about separators from dfs
+            {
+                if (varFileInfo)
+                {
+                    const IPropertyTree *options = varFileInfo->queryProperties();
+                    if (options)
+                    {
+                        quotes = options->queryProp("@csvQuote");
+                        separators = options->queryProp("@csvSeparate");
+                        terminators = options->queryProp("@csvTerminate");
+                    }
+                }
+                csvSplitter.init(readHelper->getMaxColumns(), csvInfo, quotes, separators, terminators);
+            }
         }
     }
 
@@ -19975,6 +19993,9 @@ public:
     Owned<IFileIOArray> files;
     Owned<IInMemoryIndexManager> manager;
     Owned<const IResolvedFile> datafile;
+    const char *quotes;
+    const char *separators;
+    const char *terminators;
 
     CRoxieServerDiskReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, IPropertyTree &_graphNode)
         : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), remoteId(_remoteId)
@@ -19984,6 +20005,7 @@ public:
         sorted = (helper->getFlags() & TDRunsorted) == 0;
         variableFileName = (helper->getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0;
         maySkip = (helper->getFlags() & (TDRkeyedlimitskips|TDRkeyedlimitcreates|TDRlimitskips|TDRlimitcreates)) != 0;
+        quotes = separators = terminators = NULL;
         if (!variableFileName)
         {
             bool isOpt = (helper->getFlags() & TDRoptional) != 0;
@@ -19999,6 +20021,13 @@ public:
                     unsigned channel = isLocal ? queryFactory.queryChannel() : 0;
                     files.setown(datafile->getIFileIOArray(isOpt, channel));
                     manager.setown(datafile->getIndexManager(isOpt, channel, files, helper->queryDiskRecordSize(), _graphNode.getPropBool("att[@name=\"preload\"]/@value", false), _graphNode.getPropInt("att[@name=\"_preloadSize\"]/@value", 0)));
+                    const IPropertyTree *options = datafile->queryProperties();
+                    if (options)
+                    {
+                        quotes = options->queryProp("@csvQuote");
+                        separators = options->queryProp("@csvSeparate");
+                        terminators = options->queryProp("@csvTerminate");
+                    }
                 }
                 else
                     manager.setown(getEmptyIndexManager());
@@ -20012,7 +20041,8 @@ public:
         switch (kind)
         {
         case TAKcsvread:
-            return new CRoxieServerCsvReadActivity(this, _probeManager, remoteId, numParts, isLocal, sorted, maySkip, manager);
+            return new CRoxieServerCsvReadActivity(this, _probeManager, remoteId, numParts, isLocal, sorted, maySkip, manager,
+                                                   quotes, separators, terminators);
         case TAKxmlread:
             return new CRoxieServerXmlReadActivity(this, _probeManager, remoteId, numParts, isLocal, sorted, maySkip, manager);
         case TAKdiskread:
