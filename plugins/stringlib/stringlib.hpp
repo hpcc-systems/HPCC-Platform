@@ -57,6 +57,7 @@ STRINGLIB_API void STRINGLIB_CALL slStringToLowerCase(unsigned & tgtLen, char * 
 STRINGLIB_API void STRINGLIB_CALL slStringToUpperCase(unsigned & tgtLen, char * & tgt, unsigned srcLen, const char * src);
 STRINGLIB_API void STRINGLIB_CALL slStringToProperCase(unsigned & tgtLen, char * & tgt, unsigned srcLen, const char * src);
 STRINGLIB_API void STRINGLIB_CALL slStringToCapitalCase(unsigned & tgtLen, char * & tgt, unsigned srcLen, const char * src);
+STRINGLIB_API void STRINGLIB_CALL slStringToTitleCase(unsigned & tgtLen, char * & tgt, unsigned srcLen, const char * src);
 STRINGLIB_API void STRINGLIB_CALL slStringToLowerCase80(char * tgt, unsigned srcLen, const char * src);
 STRINGLIB_API void STRINGLIB_CALL slStringToUpperCase80(char * tgt, unsigned srcLen, const char * src);
 STRINGLIB_API int STRINGLIB_CALL slStringCompareIgnoreCase (unsigned src1Len, const char * src1, unsigned src2Len, const char * src2);

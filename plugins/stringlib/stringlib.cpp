@@ -31,9 +31,10 @@ static const char * compatibleVersions[] = {
     "STRINGLIB 1.1.09",
     "STRINGLIB 1.1.10",
     "STRINGLIB 1.1.11",
+    "STRINGLIB 1.1.12",
     NULL };
 
-#define STRINGLIB_VERSION "STRINGLIB 1.1.12"
+#define STRINGLIB_VERSION "STRINGLIB 1.1.13"
 
 const char * EclDefinition =  
 "export StringLib := SERVICE\n"
@@ -56,6 +57,7 @@ const char * EclDefinition =
 "  string StringToUpperCase(const string src) : c,pure,entrypoint='slStringToUpperCase';\n"
 "  string StringToProperCase(const string src) : c,pure,entrypoint='slStringToProperCase';\n"
 "  string StringToCapitalCase(const string src) : c,pure,entrypoint='slStringToCapitalCase';\n"
+"  string StringToTitleCase(const string src) : c,pure,entrypoint='slStringToTitleCase';\n"
 "  integer4 StringCompareIgnoreCase(const string src1, string src2) : c,pure,entrypoint='slStringCompareIgnoreCase';\n"
 "  string StringReverse(const string src) : c,pure,entrypoint='slStringReverse';\n"
 "  string StringFindReplace(const string src, const string stok, const string rtok) : c,pure,entrypoint='slStringFindReplace';\n"
@@ -912,6 +914,24 @@ STRINGLIB_API void STRINGLIB_CALL slStringToCapitalCase(unsigned & tgtLen, char 
     {
         byte c = src[i];
         result[i] = upperPending ? toupper(c) : c;
+        upperPending = !isalnum(c);
+    }
+
+    tgt = result;
+    tgtLen = srcLen;
+}
+
+// -----------------------------------------------------------------
+
+STRINGLIB_API void STRINGLIB_CALL slStringToTitleCase(unsigned & tgtLen, char * & tgt, unsigned srcLen, const char * src)
+{
+    char * const result = (char *)CTXMALLOC(parentCtx, srcLen);
+
+    bool upperPending = true;
+    for (unsigned int i=0;i<srcLen;i++)
+    {
+        byte c = src[i];
+        result[i] = upperPending ? toupper(c) : tolower(c);
         upperPending = !isalnum(c);
     }
 

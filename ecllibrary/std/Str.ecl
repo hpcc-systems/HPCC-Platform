@@ -146,12 +146,22 @@ EXPORT STRING ToUpperCase(STRING src) := lib_stringlib.StringLib.StringToUpperCa
 /**
  * Returns the argument string with the first letter of each word in upper case and all other
  * letters left as-is.
- * A contiguous sequence of alphabetic characters is treated as a word.
+ * A contiguous sequence of alphanumeric characters is treated as a word.
  * 
  * @param src           The string that is being converted.
  */
 
 EXPORT STRING ToCapitalCase(STRING src) := lib_stringlib.StringLib.StringToCapitalCase(src);
+
+/**
+ * Returns the argument string with the first letter of each word in upper case and all other
+ * letters lower case.
+ * A contiguous sequence of alphanumeric characters is treated as a word.
+ *
+ * @param src           The string that is being converted.
+ */
+
+EXPORT STRING ToTitleCase(STRING src) := lib_stringlib.StringLib.StringToTitleCase(src);
 
 /**
  * Returns the argument string with all characters in reverse order.
