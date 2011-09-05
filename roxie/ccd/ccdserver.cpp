@@ -20898,7 +20898,9 @@ public:
           isLocal(_isLocal),
           remoteId(_remoteId)
     {
-        rowLimit = keyedLimit = chooseNLimit = 0;
+        rowLimit = 0;
+        keyedLimit = 0;
+        chooseNLimit = 0;
         indexHelper.setCallback(&callback);
         steppedExtra = static_cast<IHThorSteppedSourceExtra *>(indexHelper.selectInterface(TAIsteppedsourceextra_1));
         limitTransformExtra = static_cast<IHThorSourceLimitTransformExtra *>(indexHelper.selectInterface(TAIsourcelimittransformextra_1));
