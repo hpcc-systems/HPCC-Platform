@@ -68,6 +68,7 @@ Install (
     ${CMAKE_CURRENT_SOURCE_DIR}/ecllibrary/teststd/str/TestSubstituteIncluded.ecl
     ${CMAKE_CURRENT_SOURCE_DIR}/ecllibrary/teststd/str/TestToLowerCase.ecl
     ${CMAKE_CURRENT_SOURCE_DIR}/ecllibrary/teststd/str/TestToCapitalCase.ecl
+    ${CMAKE_CURRENT_SOURCE_DIR}/ecllibrary/teststd/str/TestToTitleCase.ecl
     ${CMAKE_CURRENT_SOURCE_DIR}/ecllibrary/teststd/str/TestToUpperCase.ecl
     ${CMAKE_CURRENT_SOURCE_DIR}/ecllibrary/teststd/str/TestWildMatch.ecl
     ${CMAKE_CURRENT_SOURCE_DIR}/ecllibrary/teststd/str/TestWordCount.ecl
