@@ -6233,6 +6233,9 @@ public:
             if (!oldest)
                 break;
             oldest->cachedio.clear();
+            //If previously had max ios then we now have space.
+            if (n == max)
+                break;
         }
     }
 
