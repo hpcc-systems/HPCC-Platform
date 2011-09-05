@@ -1004,7 +1004,6 @@ void CContainerInfo::subLeadingFixed(SizeStruct & size, CMemberInfo * cur)
     if (container)
         container->subLeadingFixed(size, this);
 
-    unsigned max = children.ordinality();
     unsigned match = children.find(*cur);
     for (unsigned i=0; i < match; i++)
         size.addFixed((unsigned)-(int)children.item(i).getTotalFixedSize());

@@ -4765,7 +4765,6 @@ static IHqlExpression * stripDedupConditions(IHqlExpression * update, IHqlExpres
     for (unsigned i=max-1; i != 0; i--)
     {
         IHqlExpression * cur = &args.item(i);
-        IHqlExpression * curOriginal = original->queryChild(i);
         LinkedHqlExpr mapped;
         switch (cur->getOperator())
         {

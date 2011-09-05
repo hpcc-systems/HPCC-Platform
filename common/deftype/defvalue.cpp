@@ -302,7 +302,6 @@ IValue *VarStringValue::castTo(ITypeInfo *t)
     if (tc == type_any)
         return LINK(this);
 
-    int osize = val.length();
     return doCastTo(val.length(), (const char *)val.get(), t);
 }
 
@@ -1463,7 +1462,6 @@ IValue *CharValue::castTo(ITypeInfo *t)
     if (tc == type_any)
         return LINK(this);
 
-    int nsize = t->getSize();
     switch (tc)
     {
     case type_boolean:
@@ -1605,8 +1603,7 @@ const void * IntValue::queryValue() const
 void IntValue::toMem(void *target)
 {
     int size = type->getSize();
-    unsigned __int64 temp = val;
-    byte * data = getAddressValue();
+    const byte * data = getAddressValue();
     
     if (type->isSwappedEndian())
         _cpyrevn(target, data, size);
@@ -1709,7 +1706,6 @@ void IntValue::deserialize(MemoryBuffer &src)
 int PackedIntValue::compare(IValue *_to)
 {
     assertThrow(_to->queryType()==type);
-    PackedIntValue *to = (PackedIntValue *) _to;
     unsigned __int64 val = value->getIntValue();
     unsigned __int64 toVal = _to->getIntValue();
     if (val == toVal)
@@ -1899,7 +1895,6 @@ IValue *RealValue::castTo(ITypeInfo *t)
     if (tc == type_any)
         return LINK(this);
 
-    int nsize = t->getSize();
     switch (tc)
     {
     case type_real:
@@ -2260,7 +2255,6 @@ IValue *BoolValue::castTo(ITypeInfo *t)
     if (tc == type_any)
         return LINK(this);
 
-    int nsize = t->getSize();
     switch (tc)
     {
     case type_string:
@@ -2552,7 +2546,7 @@ IValue * divideValues(IValue * left, IValue * right)
     {
         double lv = left->getRealValue();
         double rv = right->getRealValue();
-        double res = rv ? left->getRealValue() / rv : 0;
+        double res = rv ? lv / rv : 0;
         return createRealValue(res, pnt);
     }
     case type_decimal:

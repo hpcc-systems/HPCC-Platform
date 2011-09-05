@@ -33,7 +33,7 @@ class TableProjectMapper;
 class HQL_API NewProjectMapper2 : public CInterface
 {
 public:
-    NewProjectMapper2() { ignoreMissingFields = false; }
+    NewProjectMapper2() { ignoreMissingFields = false; mapping = NULL; matchedAll = true; expandCallback = NULL; }
 
     //if newDataset is NULL, the mapping stored in the transform is returned unchanged (useful for seeing if filters can move over joins)
     IHqlExpression * expandFields(IHqlExpression * expr, IHqlExpression * oldDataset, IHqlExpression * newDataset, IHqlExpression * mapperParent, IExpandCallback * _expandCallback = NULL);

@@ -150,6 +150,8 @@ LogicalGraphCreator::LogicalGraphCreator(IWorkUnit * _wu)
     includeModuleInText = wu->getDebugValueBool("logicalGraphIncludeModule", true);
     displayJavadoc = wu->getDebugValueBool("logicalGraphDisplayJavadoc", true);
     displayJavadocParameters = wu->getDebugValueBool("logicalGraphDisplayJavadocParameters", false);
+    rootGraphId = 0;
+    subGraphId = 0;
 }
 
 LogicalGraphCreator::~LogicalGraphCreator()
@@ -483,7 +485,6 @@ bool LogicalGraphCreator::gatherGraphActivities(IHqlExpression * expr, HqlExprAr
         return false;
 
     //if no_select with new then create a child graph
-    ITypeInfo * type = expr->queryType();
     node_operator op = expr->getOperator();
     switch (op)
     {

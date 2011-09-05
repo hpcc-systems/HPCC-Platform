@@ -1084,7 +1084,6 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
         }
         case no_rowvalue:
         {
-            unsigned kids = expr->numChildren();
             s.append("{");
             childrenToECL(expr, s, inType, false, 0);
             s.append("}");
@@ -2074,7 +2073,6 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
         case no_newaggregate:
         case no_newusertable:
         {
-            unsigned kids = expr->numChildren();
             s.append(getEclOpString(no));
             s.append('(');
             assertex(child0);
@@ -2615,7 +2613,6 @@ void HqltHql::defaultToECL(IHqlExpression *expr, StringBuffer &s, bool inType)
 void HqltHql::defaultChildrenToECL(IHqlExpression *expr, StringBuffer &s, bool inType)
 {
     // standard function-style operators
-    unsigned kids = expr->numChildren();
     IHqlExpression * child0 = expr->queryChild(0);
     if (child0)
     {
@@ -2702,7 +2699,7 @@ StringBuffer &HqltHql::getTypeString(ITypeInfo * i, StringBuffer &s)
             {
                 IHqlExpression * e = &(visited->item(idx));
                 IHqlExpression * extra = static_cast<IHqlExpression *>(e->queryTransformExtra());
-                if(e && e->queryChild(1) && extra)
+                if(e->queryChild(1) && extra)
                 {
                     if(expr->queryType() == e->queryChild(1)->queryType())
                     {

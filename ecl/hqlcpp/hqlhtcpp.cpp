@@ -2748,10 +2748,10 @@ void DatasetSelector::modifyOp(BuildCtx & ctx, IHqlExpression * expr, node_opera
         break;
 #ifdef _THE_FOLLOWING_ARENT_YET_IMPLEMENTED_BUT_WOULD_BE_USEFUL
     case no_assign_concat:
-        result.setown(createValue(no_concat, path->getType(), LINK(sourceValue), LINK(expr));
+        result.setown(createValue(no_concat, path->getType(), LINK(sourceValue), LINK(expr)));
         break;
     case no_assign_add:
-        result.setown(createValue(no_add, path->getType(), LINK(sourceValue), LINK(expr));
+        result.setown(createValue(no_add, path->getType(), LINK(sourceValue), LINK(expr)));
         break;
 #endif
     default:

@@ -81,7 +81,6 @@ public:
 class CTemplateContext : public CInterface, implements ITemplateContext
 {
     IXmlScope* m_xmlScope;
-    IEclRepository* m_dataServer;
     int m_startLine,m_startCol;
     HqlLookupContext & m_lookupContext;
 

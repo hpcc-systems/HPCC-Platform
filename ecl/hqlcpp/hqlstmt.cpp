@@ -942,7 +942,6 @@ HqlStmts::HqlStmts(HqlStmt * _owner)    : owner(_owner)
 void HqlStmts::appendStmt(HqlStmt & stmt)
 {
     unsigned newPrio = stmt.queryPriority();
-    unsigned left = 0;
     unsigned right = ordinality();
 
     if (right == 0)
@@ -963,6 +962,7 @@ void HqlStmts::appendStmt(HqlStmt & stmt)
     }
     else
     {
+        unsigned left = 0;
         while (right - left >= 2)
         {
             unsigned mid = (left + right - 1) / 2;
@@ -1762,7 +1762,6 @@ void PeepHoleOptimizer::optimize(HqlStmts & stmts)
                 while (j < max)
                 {
                     IHqlStmt & next = stmts.item(j);
-                    bool merged = false;
                     if (!nextMatch.extractIsSpecial(next, memsetOnly, peepholeOptions))
                         break;
                     if (!prevMatch.queryCombine(nextMatch, memsetOnly, combineStringLimit))
@@ -1806,6 +1805,7 @@ AssociationIterator::AssociationIterator(BuildCtx & ctx)
 {
     rootStmts = ctx.curStmts;
     curStmts = NULL;
+    curIdx = 0;
 }
 
 

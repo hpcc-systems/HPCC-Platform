@@ -1522,7 +1522,7 @@ static IHqlExpression * evaluateAttrAligned(IHqlExpression * expr)
     }
     if (optimizeFieldOrder(result, reorder))
         same = false;
-    OwnedHqlExpr newRecord = expr->clone(result);
+    OwnedHqlExpr newRecord = same ? LINK(expr) : expr->clone(result);
     if (expr == newRecord)
         return meta.addAttribute(expr, queryAlignedAttr());
     meta.addAttribute(newRecord, queryAlignedAttr());

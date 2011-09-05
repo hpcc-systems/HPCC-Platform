@@ -321,7 +321,6 @@ protected:
     HqlCppTranslator &  translator;
     HqlExprArray activities;
     ClusterType targetClusterType;
-    unsigned activityDepth;
     ImplicitProjectOptions options;
     bool allowActivity;
 };

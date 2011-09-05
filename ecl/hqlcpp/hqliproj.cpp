@@ -1824,7 +1824,6 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
             else if (op == no_merge)
             {
                 //Ensure all the fields used by the sort order are preserved in the input streams
-                IHqlExpression * selector = expr->queryChild(0)->queryNormalizedSelector();
                 IHqlExpression * order = expr->queryProperty(sortedAtom);
                 assertex(order);
                 ForEachChild(i, order)
@@ -2080,7 +2079,6 @@ void ImplicitProjectTransformer::createFilteredAssigns(HqlExprArray & assigns, I
             {
                 IHqlExpression * lhs = cur->queryChild(0);
                 IHqlExpression * field = lhs->queryChild(1);
-                IHqlExpression * oldSelf = lhs->queryChild(0);
                 if (fields.contains(*field))
                 {
                     IHqlExpression * newLhs = createSelectExpr(LINK(newSelf), LINK(field));

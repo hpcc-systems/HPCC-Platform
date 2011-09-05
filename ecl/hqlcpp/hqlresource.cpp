@@ -73,7 +73,7 @@ void getResources(IHqlExpression * expr, CResources & resources, const CResource
         resources.setLightweight();
         return;
     }
-    ITypeInfo * type = expr->queryType();
+
     bool isLocal = isLocalActivity(expr);
     bool isGrouped = isGroupedActivity(expr);
     switch (expr->getOperator())
@@ -3588,7 +3588,6 @@ bool EclResourcer::queryMergeGraphLink(ResourceGraphLink & link)
         //1) if context the source graph is being merged into is unconditional, then it is ok [ could have conditional and unconditional paths to same graph]
         //2) if context is conditional, then we don't really want to do it unless the conditions on all sinks are identical, and the only links occur between these two graphs.
         //   (situation occurs with spill fed into two branches of a join).
-        ResourcerInfo * thisSinkInfo = queryResourceInfo(link.sinkNode);
         bool isConditionalInSinkGraph = false;
         bool accessedFromManyGraphs = false;
         ForEachItemIn(i, sinks)

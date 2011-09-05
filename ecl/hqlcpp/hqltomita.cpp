@@ -824,7 +824,6 @@ void TomRule::setProductionIds(HqlExprArray & productionMappings, unsigned & id)
                 {
                     //Check there is only a single input symbol which has an associated record
                     TomRule * defaultRule = NULL;
-                    unsigned defaultIndex = NotFound;
                     for (unsigned i=0;;i++)
                     {
                         TomStep * curStep = cur.queryStep(i);
@@ -837,7 +836,6 @@ void TomRule::setProductionIds(HqlExprArray & productionMappings, unsigned & id)
                             if (defaultRule)
                                 throwError(HQLERR_ExpectedTransformManyInputs);
                             defaultRule = curRule;
-                            defaultIndex = i;
                         }
                     }
                     if (!defaultRule || !recordTypesMatch(defaultRule->queryRecord(), record))
