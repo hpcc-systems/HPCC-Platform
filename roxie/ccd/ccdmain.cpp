@@ -365,8 +365,10 @@ void FatalError(const char *format, ...)
 
 class MAbortHandler : implements IExceptionHandler
 {
-    unsigned x;
+    unsigned dummy; // to avoid complaints about an empty class...
 public:
+    MAbortHandler() : dummy(0) {};
+
     virtual bool fireException(IException *e)
     {
         ForEachItemIn(idx, socketListeners)
@@ -383,7 +385,7 @@ int myhook(int alloctype, void *, size_t nSize, int p1, long allocSeq, const uns
     // Handy place to put breakpoints when tracking down obscure memory leaks...
     if (nSize==68 && !file)
     {
-        int a = 1;
+        DBGLOG("memory hook matched");
     }
     return true;
 }
@@ -957,7 +959,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             const char *iptext = slave.queryProp("@netAddress");
             if (iptext)
             {
-                unsigned nodeIndex = addRoxieNode(iptext);
+                addRoxieNode(iptext);
                 IpAddress slaveIp(iptext);
                 bool isMe = ipMatch(slaveIp) && slave.getPropInt("@multihost", 0) == myHostNumber;
                 bool suspended = slave.getPropBool("@suspended", false);

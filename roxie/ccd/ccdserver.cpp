@@ -696,6 +696,7 @@ public:
         : CRoxieServerActivityFactoryBase(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
     {
         input = (unsigned) -1;
+        inputidx = 0;
     }
 
     inline void setInput(unsigned idx, unsigned source, unsigned sourceidx)
@@ -879,6 +880,8 @@ public:
         state=STATEreset;
         rowAllocator = NULL;
         debugging = _probeManager != NULL; // Don't want to collect timing stats from debug sessions
+        colocalParent = NULL;
+        createPending = true;
     }
     
     CRoxieServerActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, IHThorArg &_helper) : factory(_factory), basehelper(_helper)
@@ -893,6 +896,8 @@ public:
         state=STATEreset;
         rowAllocator = NULL;
         debugging = _probeManager != NULL; // Don't want to collect timing stats from debug sessions
+        colocalParent = NULL;
+        createPending = true;
     }
 
     CRoxieServerActivity(IHThorArg & _helper) : factory(NULL), basehelper(_helper)
@@ -906,6 +911,8 @@ public:
         state=STATEreset;
         rowAllocator = NULL;
         debugging = false;
+        colocalParent = NULL;
+        createPending = true;
     }
 
     inline ~CRoxieServerActivity()
@@ -3189,14 +3196,12 @@ class CRemoteResultAdaptor :public CInterface, implements IRoxieInput, implement
         }
         else if (deferredStart)
         {
-            bool anyDelayed = false;
             CriticalBlock b(pendingCrit);
             ForEachItemIn(idx, pending)
             {
                 IRoxieServerQueryPacket &p = pending.item(idx);
                 if (p.isDelayed())
                 {
-                    anyDelayed = true;
                     if (activity.queryLogCtx().queryTraceLevel() > 10)
                         activity.queryLogCtx().CTXLOG("About to send deferred start from next");
                     p.setDelayed(false);
@@ -3256,6 +3261,7 @@ class CRemoteResultAdaptor :public CInterface, implements IRoxieInput, implement
             overflowSequence = 0;
             needsFlush = false;
             bufferLeft = 0;
+            nextBuf = NULL;
         }
 
         void init(unsigned minSize)
@@ -3885,13 +3891,11 @@ public:
         if (deferredStart)
         {
             CriticalBlock b(pendingCrit);
-            bool anyDelayed = false;
             ForEachItemIn(idx, pending)
             {
                 IRoxieServerQueryPacket &p = pending.item(idx);
                 if (p.isDelayed())
                 {
-                    anyDelayed = true;
                     p.setDelayed(false);
                     if (activity.queryLogCtx().queryTraceLevel() > 10)
                         activity.queryLogCtx().CTXLOG("About to send deferred start from nextSteppedGE, setting requireExact to %d", !stepExtra.returnMismatches());
@@ -3999,7 +4003,6 @@ public:
                     }
                     else if (item.hasResult())
                     {
-                        IMessageResult *result = item.queryResult();
                         merger.noteResult(&item, item.getSequence());
                         pending.remove(idx);
                         added = true;
@@ -4085,8 +4088,8 @@ public:
                                 RecordLengthType *rowlen = (RecordLengthType *) len.get();
                                 OwnedConstRoxieRow row = callbackData->getNext(*rowlen);
                                 const char *rowdata = (const char *) row.get();
-                                bool isOpt = * (bool *) rowdata;
-                                bool isLocal = * (bool *) (rowdata+1);
+                                // bool isOpt = * (bool *) rowdata;
+                                // bool isLocal = * (bool *) (rowdata+1);
                                 ROQ->sendAbortCallback(header, rowdata+2, activity.queryLogCtx());
                             }
                             else
@@ -4408,6 +4411,7 @@ public:
     {
         skipping = _skipping;
         index = 0;
+        pulled = false;
     }
 
     void setException(IException *E)
@@ -7774,6 +7778,7 @@ public:
             if (sortAlgorithm == unknownSort)
             {
                 delete sorter;
+                sorter = NULL;
                 IHThorAlgorithm *sortMethod = static_cast<IHThorAlgorithm *>(helper.selectInterface(TAIalgorithm_1));
                 const char *useAlgorithm = sortMethod->queryAlgorithm();
                 if (useAlgorithm)
@@ -20566,7 +20571,7 @@ public:
                     }
                     else
                         nextSeek = (byte *) seeks->querySeek(i)+seekGEOffset;
-                    unsigned diff = memcmp(nextSeek, lastSeek, seekLen);
+                    int diff = memcmp(nextSeek, lastSeek, seekLen);
                     assertex(diff >= 0);
                     if (diff)
                     {
@@ -21375,12 +21380,12 @@ public:
                 unsigned flags = indexHelper.getFlags();
                 if (E->errorCode() == KeyedLimitSkipErrorCode)
                 {
-                    if (indexHelper.getFlags() & TIRkeyedlimitcreates)
+                    if (flags & TIRkeyedlimitcreates)
                         totalCount++;
                 }
                 else
                 {
-                    if (indexHelper.getFlags() & TIRlimitcreates)
+                    if (flags & TIRlimitcreates)
                         totalCount++;
                 }
                 if (totalCount > choosenLimit)
@@ -26469,6 +26474,7 @@ public:
                             unsigned _loopCounter, IRoxieSlaveContext *ctx, IHThorArg * _colocalParent, unsigned parentExtractSize, const byte * parentExtract, const IRoxieContextLogger &_logctx)
         : CActivityGraph(_graphName, _id, x, _probeManager, _logctx)
     {
+        graphOutputActivityIndex = 0;
         loopCounter = _loopCounter;
         colocalParent = _colocalParent;
         graphSlaveContext.set(ctx);
@@ -26627,6 +26633,8 @@ public:
     {
         graphName.set(_graphName);
         id = _id;
+        ctx = NULL;
+        colocalParent = NULL;
     }
 
     virtual const char *queryName() const { return graphName.get(); }
@@ -26695,7 +26703,6 @@ protected:
         workflow.setown(createWorkflowItemArray(count));
         for(iter->first(); iter->isValid(); iter->next())
         {
-            unsigned onceItem = 0;
             IConstWorkflowItem *item = iter->query();
             bool isOnce = (item->queryMode() == WFModeOnce);
             workflow->addClone(item);
@@ -26752,15 +26759,18 @@ class CSlaveDebugContext : public CBaseDebugContext
     const IRoxieContextLogger &logctx; // hides base class definition with more derived class pointer
 
 public:
-    CSlaveDebugContext(IRoxieSlaveContext *_ctx, const IRoxieContextLogger &_logctx, RoxiePacketHeader &_header) : CBaseDebugContext(_logctx), header(_header), logctx(_logctx)
+    CSlaveDebugContext(IRoxieSlaveContext *_ctx, const IRoxieContextLogger &_logctx, RoxiePacketHeader &_header)
+        : CBaseDebugContext(_logctx), header(_header), logctx(_logctx)
     {
         channel = header.channel;
         debugSequence = 0;
+        parentActivity = 0;
     }
 
     void init(const IRoxieQueryPacket *_packet)
     {
         unsigned traceLength = _packet->getTraceLength();
+        assertex(traceLength);
         const byte *traceInfo = _packet->queryTraceInfo();
         assertex((*traceInfo & LOGGING_DEBUGGERACTIVE) != 0);
         unsigned debugLen = *(unsigned short *) (traceInfo + 1);
@@ -26792,7 +26802,6 @@ public:
         try
         {
             RoxiePacketHeader newHeader(header, ROXIE_DEBUGCALLBACK);
-            bool ok = false;
             loop // retry indefinately, as more than likely Roxie server is waiting for user input ...
             {
                 Owned<IMessagePacker> output = ROQ->createOutputStream(newHeader, true, logctx);
@@ -27330,7 +27339,7 @@ public:
             if (created)
                 endGraph(true);
             CTXLOG("Done cleaning up");
-            throw e;
+            throw;
         }           
         catch (...)
         {
