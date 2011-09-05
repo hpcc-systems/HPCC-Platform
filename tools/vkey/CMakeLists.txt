@@ -30,7 +30,6 @@ include_directories (
          ./../../system/include 
          ./../../rtl/include 
          ./../../rtl/eclrtl 
-         ./../../system/icu/include 
     )
 
 ADD_DEFINITIONS( -DMODULE_PRIORITY=1 -D_CONSOLE )

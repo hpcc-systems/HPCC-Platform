@@ -44,7 +44,6 @@ include_directories (
          ./../thorcrc 
          ./../../common/workunit 
          ./../shared 
-         ./../../system/icu/include 
          ./../../common/deftype 
          ./../../system/include 
          ./../../dali/base 

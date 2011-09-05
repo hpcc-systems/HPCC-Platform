@@ -34,7 +34,6 @@ include_directories (
          ./../../rtl/include 
          ./../../system/include 
          ./../../system/jlib 
-         ./../../system/icu/include 
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )

@@ -35,14 +35,12 @@ include_directories (
          ${CMAKE_BINARY_DIR}/oss
          ./../../ecl/hqlcpp 
          ./../../common/workunit 
-         ./../../system/icu/include 
          ./../../common/deftype 
          ./../../system/include 
          ./../../ecl/hql 
          ./../../rtl/include 
          ./../../system/jlib 
          ./../../common/commonext 
-         ./../eclrepository 
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )

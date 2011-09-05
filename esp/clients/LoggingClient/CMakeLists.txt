@@ -45,12 +45,9 @@ include_directories (
          ./../../bindings/SOAP/Platform 
          ./../../../system/xmllib 
          ./../../../system/include 
-         ./../dataaccesslib 
-         ./../RemoteNSClient 
          ./../../clients 
          ./../../clients/LoggingClient 
          ./../../bindings 
-         ./../../bindings/SOAP/LoggingService 
          ./../../bindings/SOAP/xpp 
     )
 

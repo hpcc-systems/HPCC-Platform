@@ -40,7 +40,6 @@ include_directories (
          ./../graph 
          ./../../common/environment 
          ./../../dali/ft 
-         ./../../system/icu/include 
          ./../../common/deftype 
          ./../../system/include 
          ./../../dali/base 

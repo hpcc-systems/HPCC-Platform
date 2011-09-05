@@ -38,7 +38,6 @@ set (    SRCS
     )
 
 include_directories ( 
-         ./../../../system/mysql 
          ./../../../dali/dfu 
          ./../../../system/mp 
          ./../../platform 
@@ -47,17 +46,14 @@ include_directories (
          ./../../services 
          ./../../../dali/ft 
          ./../common 
-         ./../../../system/icu/include 
          ./../../../system/xmllib 
          ./../../../esp/bindings/http/platform 
-         ./../../../ecl/attrserver 
          ./../../../system/security/securesocket 
          ./../../../system/security/shared 
          ./../../../system/include 
          ./../../../common/workunit 
          ./../../../common/remote 
          ./../../clients 
-         ./../../../roxie/roxieconfig 
          ./../../../esp/esplib 
          ./../../../dali/base 
          ./../../bindings/SOAP/scrubbed 
@@ -66,7 +62,6 @@ include_directories (
          ./../../../common/dllserver 
          ./../../bindings 
          ./../../smc/SMCLib 
-         ./../../../system/mysql/include 
          ./../../bindings/SOAP/xpp 
          ./../../../common/fileview2 
          ./../../../rtl/eclrtl 

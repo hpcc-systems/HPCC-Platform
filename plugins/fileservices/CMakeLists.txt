@@ -39,11 +39,9 @@ include_directories (
          ./../../common/remote 
          ./../../system/jhtree 
          ./../../system/mp 
-         ./../../common/ns 
          ./../../common/workunit 
          ./../../esp/clients 
          ./../../dali/ft 
-         ./../../system/icu/include 
          ./../../system/security/shared 
          ./../../esp/bindings/SOAP/xpp 
          ./../../common/deftype 

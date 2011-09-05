@@ -39,12 +39,10 @@ include_directories (
          ./../../common/workunit 
          ./../shared 
          ./../graph 
-         ./../../system/icu/include 
          ./../../common/deftype 
          ./../../system/include 
          ./../../dali/base 
          ./../../rtl/include 
-         /GZ 
          ./../../common/dllserver 
          ./../slave 
          ./../../system/jlib 

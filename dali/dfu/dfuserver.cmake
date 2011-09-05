@@ -43,7 +43,6 @@ include_directories (
          ./../base 
          ./../../system/include 
          ./../../system/jlib 
-         ./../../system/icu/include 
          ./../ft 
          ./../../common/environment 
          ./../../common/workunit 

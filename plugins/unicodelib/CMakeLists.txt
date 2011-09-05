@@ -33,7 +33,6 @@ set (    SRCS
 include_directories ( 
          ./../../system/include 
          ./../../system/jlib 
-         ./../../system/icu/include 
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DUNICODELIB_EXPORTS )

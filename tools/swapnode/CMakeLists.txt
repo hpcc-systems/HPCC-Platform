@@ -32,7 +32,6 @@ set (    SRCS
 include_directories ( 
          ./../../common/remote 
          ./../../system/mp 
-         ./../../common/ptree 
          ./../../system/include 
          ./../../dali/base 
          ./../../system/jlib 
