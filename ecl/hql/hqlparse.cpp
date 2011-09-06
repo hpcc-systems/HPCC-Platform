@@ -178,11 +178,10 @@ void HqlLex::init(IFileContents * _text)
     forLoop = NULL;
 
     size32_t len = _text->length();
-    yyBuffer = new char[len+3]; // Include room for \n , \0 and another \0 that we write beyond the end null while parsing
+    yyBuffer = new char[len+2]; // Include room for \0 and another \0 that we write beyond the end null while parsing
     memcpy(yyBuffer, text->getText(), len); 
-    yyBuffer[len] = '\n';
+    yyBuffer[len] = '\0';
     yyBuffer[len+1] = '\0';
-    yyBuffer[len+2] = '\0';
 
     yyLineNo = 1;
     yyPosition = 0;
@@ -191,7 +190,7 @@ void HqlLex::init(IFileContents * _text)
     lastToken = 0;
 
     eclyylex_init(&scanner);
-    eclyy_scan_buffer(yyBuffer, len+3, scanner);
+    eclyy_scan_buffer(yyBuffer, len+2, scanner);
 }
 
 ///////////////////////////////////////////////////
@@ -2121,6 +2120,7 @@ int HqlLex::yyLex(YYSTYPE & returnToken, bool lookup, const short * activeState)
             continue;
         if (ret == EOF)
         {
+            setTokenPosition(returnToken);
             if (inComment)
                 reportError(returnToken, ERR_COMMENT_UNENDED,"Comment is not terminated");
             else if (inCpp)
