@@ -6242,15 +6242,16 @@ public:
     const CCachedFileIO *removeFile(const CCachedFileIO *io) 
     {
         CriticalBlock block(sect);
-        ForEachItemIn(oi,cache) {
-            if (io = cache.item(oi)) {
-                cache.replace(NULL,oi,true);    
+        ForEachItemIn(idx, cache)
+        {
+            if (io == cache.item(idx))
+            {
+                cache.replace(NULL, idx, true);
                 break;
             }
         }
         return io;
     }
-
 };
 
 
