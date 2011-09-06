@@ -156,6 +156,7 @@ public:
         ipset(other);
         port = other.port;
     }
+	bool operator == (const SocketEndpoint &other) const { return equals(other); }
 
     unsigned hash(unsigned prev) const;
     
