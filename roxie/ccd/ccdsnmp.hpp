@@ -38,6 +38,9 @@ public:
 public:
     RoxieQueryStats()
     {
+        count = 0;
+        failedCount = 0;
+        atomic_set(&active, 0);
         totalTime = 0;
         maxTime = 0;
         minTime = 0; 
