@@ -352,7 +352,7 @@ extern void setStartRuid(unsigned restarts);
 class CIndexTransformCallback : public CInterface, implements IThorIndexCallback 
 {
 public:
-    CIndexTransformCallback() { keyManager = NULL; cleanupRequired = false; };
+    CIndexTransformCallback() { keyManager = NULL; cleanupRequired = false; filepos = 0; };
     IMPLEMENT_IINTERFACE
 
 //IThorIndexCallback

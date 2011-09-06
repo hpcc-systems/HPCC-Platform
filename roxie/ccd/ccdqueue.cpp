@@ -641,8 +641,8 @@ public:
     void enqueue(IRoxieQueryPacket *x)
     {
         {
-            RoxiePacketHeader &header = x->queryHeader();
 #ifdef _DEBUG
+            RoxiePacketHeader &header = x->queryHeader();
             if (traceLevel > 10)
             {
                 StringBuffer xx;
@@ -804,8 +804,12 @@ class CRoxieWorker : public CInterface, implements IPooledThread
 
 public:
     IMPLEMENT_IINTERFACE;
-    CRoxieWorker() 
+    CRoxieWorker()
     {
+        queue = NULL;
+        stopped = false;
+        busy = false;
+        abortJob = false;
     }
     void init(void *_r) 
     {
@@ -885,7 +889,6 @@ public:
     {
         try 
         {
-            unsigned activityId = 0;
             if (activity && (logctx.queryTraceLevel() > 1))
             {
                 StringBuffer act;
@@ -893,7 +896,6 @@ public:
                 logctx.CTXLOG("throwRemoteException, activity %s, isUser=%d", act.str(), (int) isUser);
                 if (!isUser)
                     EXCLOG(E, "throwRemoteException");
-                activityId = activity->queryId();
             }
             
             RoxiePacketHeader &header = packet->queryHeader();
@@ -2537,8 +2539,8 @@ public:
                                 RecordLengthType *rowlen = (RecordLengthType *) len.get();
                                 OwnedConstRoxieRow row = callbackData->getNext(*rowlen);
                                 const char *rowdata = (const char *) row.get();
-                                bool isOpt = * (bool *) rowdata;
-                                bool isLocal = * (bool *) (rowdata+1);
+                                // bool isOpt = * (bool *) rowdata;
+                                // bool isLocal = * (bool *) (rowdata+1);
                                 ROQ->sendAbortCallback(header, rowdata+2, *logctx);
                             }
                             else

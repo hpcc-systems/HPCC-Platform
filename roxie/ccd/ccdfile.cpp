@@ -1423,7 +1423,6 @@ public:
 
             RoxieFileType type = item->getFileType();
 
-            bool okToDelete = true;  // assume ok to delete - all DLLS are always good to delete
             if (cleanUpOneTimeQueries)  // only want to delete dlls
             {
                 if (type != ROXIE_WU_DLL)
@@ -1472,7 +1471,6 @@ public:
 
 ILazyFileIO *createDynamicFile(const char *id, IPartDescriptor *pdesc, RoxieFileType fileType, int numParts)
 {
-    unsigned short daliServixPort = getDaliServixPort();
     IPropertyTree &partProps = pdesc->queryProperties();
     offset_t dfsSize = partProps.getPropInt64("@size");
     unsigned crc;
@@ -1842,7 +1840,6 @@ public:
             IDistributedSuperFile *superFile = dFile->querySuperFile();
             if (superFile)
             {
-                unsigned numSubFiles = superFile->numSubFiles(true);
                 Owned<IDistributedFileIterator> subs = superFile->getSubFileIterator(true);
                 ForEach(*subs)
                 {
@@ -1931,7 +1928,6 @@ public:
             unsigned numParts = fdesc->numParts();
             if (numParts > 1 && fileType==ROXIE_KEY && isLocal)
                 numParts--; // don't want to send TLK
-            offset_t base = 0;
             UnsignedArray partNos;
             for (unsigned i = 1; i <= numParts; i++)
             {
@@ -1970,7 +1966,6 @@ public:
         if (fdesc)
         {
             unsigned numParts = fdesc->numParts();
-            offset_t base = 0;
             for (unsigned i = 1; i <= numParts; i++)
             {
                 if (!channel || getBondedChannel(i)==channel)

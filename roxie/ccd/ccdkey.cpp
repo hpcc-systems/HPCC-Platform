@@ -1731,6 +1731,7 @@ public:
         midx = 1;
         lidx = 0;
         lastoffset = (unsigned) -1;
+        eof = false;
     }
 
     ~InMemoryIndexCursor()
@@ -1902,7 +1903,6 @@ bool InMemoryIndexManager::selectKey(InMemoryIndexCursor *cursor)
 {
     noteQuery(cursor->postFilter, 0);
     unsigned best = 0;
-    unsigned bestPos = 0;
 
     CriticalBlock b(activeCrit);
     InMemoryIndex *bestIndex = NULL;
@@ -1921,7 +1921,6 @@ bool InMemoryIndexManager::selectKey(InMemoryIndexCursor *cursor)
             if (score > best)
             {
                 bestIndex = &thisIndex;
-                bestPos = idx;
                 best = score;
             }
             if (score==cursor->maxScore)
