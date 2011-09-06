@@ -24,12 +24,7 @@
 #include "sacoalescer.hpp"
 #include "sacmd.hpp"
 
-//#define _SINGLETHREAD
-#ifdef _SINGLETHREAD
-#define NUMTHREADS 1
-#else
-#define NUMTHREADS 10
-#endif
+#define DEFAULT_MAXDIRTHREADS 500
 
 #define SDS_CONNECT_TIMEOUT  (1000*60*60*2)     // better than infinite
 #define SDS_LOCK_TIMEOUT 300000
@@ -678,7 +673,6 @@ public:
     bool verbose;
 
 
-
     CNewXRefManager()
         : mem(0x100000*1000,0x10000,true)
     {
@@ -880,9 +874,7 @@ public:
         Owned<IDirectoryIterator> iter;
         Owned<IException> e;
         {
-#ifndef _SINGLETHREAD
-            CriticalUnblock unblock(crit);
-#endif
+            CriticalUnblock unblock(crit); // not strictly necessary if numThreads==1, but no harm
             try {
                 iter.setown(file->directoryFiles(NULL,false,true));
             }
@@ -934,7 +926,7 @@ public:
 
     }
 
-    bool scanDirectories(bool &abort)
+    bool scanDirectories(bool &abort, unsigned numThreads)
     {
         class casyncfor: public CAsyncFor
         {
@@ -979,7 +971,9 @@ public:
 //              PROGLOG("Done %i - %d used",i,parent.mem.maxallocated());
             }
         } afor(*this,rootdir,crit,abort);
-        afor.For(numnodes,NUMTHREADS,true,NUMTHREADS>1);
+        if (numThreads > numnodes)
+            numThreads = numnodes;
+        afor.For(numnodes,numThreads,true,numThreads>1);
         if (afor.ok)
             log("Directory scan complete");
         else
@@ -993,7 +987,6 @@ public:
             return;
         class cfilescan1 : public CSDSFileScanner
         {
-
             Owned<IRemoteConnection> conn;
             CNewXRefManager &parent;
             bool &abort;
@@ -2098,7 +2091,8 @@ public:
             manager.updateStatus(true);
             if (stopped)
                 break;
-            if (manager.scanDirectories(stopped)) {
+            unsigned numThreads = serverConfig->getPropInt("DfuXRef/@numThreads", DEFAULT_MAXDIRTHREADS);
+            if (manager.scanDirectories(stopped,numThreads)) {
                 manager.updateStatus(true);
                 manager.scanLogicalFiles(stopped);
                 manager.updateStatus(true);
