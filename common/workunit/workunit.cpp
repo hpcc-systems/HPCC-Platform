@@ -229,6 +229,7 @@ public:
         rootPath.append("/GraphProgress/").append(wuid).append('/').append(graphName).append('/');
         connected = connectedWrite = false;
         formatVersion = 0;
+        progress = NULL;
     }
     void connect()
     {
@@ -1802,7 +1803,6 @@ mapEnums sortFields[] =
 class asyncRemoveDllWorkItem: public CInterface, implements IWorkQueueItem // class only used in asyncRemoveDll
 {
     StringAttr name;
-    unsigned version;
     bool removeDlls;
     bool removeDirectory;
 public:
@@ -3328,7 +3328,6 @@ void CLocalWorkUnit::remoteCheckAccess(IUserDescriptor *user, bool writeaccess) 
                 perm = 0;
         }
     }
-    IDFS_Exception *e = NULL;
     if (!HASREADPERMISSION(perm)) {
         SCMStringBuffer wuid;
         getWuid(wuid);

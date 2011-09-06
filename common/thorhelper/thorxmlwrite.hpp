@@ -145,7 +145,6 @@ public:
     void newline();
 protected:
     StringBuffer out;
-    bool csv;
 };
 
 class thorhelper_decl CommonFieldProcessor : public CInterface, implements IFieldProcessor

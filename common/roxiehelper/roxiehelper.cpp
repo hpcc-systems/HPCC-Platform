@@ -378,8 +378,6 @@ bool CRHLimitedCompareHelper::getGroup(OwnedRowArray &group, const void *left)
     }
     while (high-low>(int)atmost) 
     {
-        CRHRollingCacheElem *rl = cache->mid(low);
-        CRHRollingCacheElem *rh = cache->mid(high-1);
         int vl = iabs(cache->mid(low)->cmp);
         int vh = iabs(cache->mid(high-1)->cmp);
         int v;
@@ -852,7 +850,7 @@ void FlushingStringBuffer::append(unsigned len, const char *data)
     catch (IException *E)
     {
         logctx.logOperatorException(E, __FILE__, __LINE__, NULL);
-        throw E;
+        throw;
     }
 }
 

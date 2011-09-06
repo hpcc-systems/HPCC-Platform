@@ -1632,6 +1632,8 @@ class CXMLParse : public CInterface, implements IXMLParse
         {
             lastMatchKeptLevel = 0;
             lastMatchKeptNode = lastMatchKeptNodeParent = NULL;
+            maker = NULL;
+            utf8Translator = NULL;
         }
         ~CXMLMaker()
         {

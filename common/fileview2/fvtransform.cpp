@@ -140,7 +140,7 @@ void ViewFieldTransformer::transform(MemoryAttr & utfTarget, const MemoryAttr & 
     transform(lenTarget, target, lenSource, source);
 
     unsigned sizeTarget = rtlUtf8Size(lenTarget, target);
-    utfTarget.setOwn(lenTarget, target);
+    utfTarget.setOwn(sizeTarget, target);
 }
 
 
@@ -553,7 +553,13 @@ class MappingParser
 {
     enum { TokEof=256, TokId, TokInt, TokString };
 public:
-    MappingParser(const IResultSetMetaData & _fieldMeta, bool _datasetSelectorAllowed) : fieldMeta(_fieldMeta), datasetSelectorAllowed(_datasetSelectorAllowed) {}
+    MappingParser(const IResultSetMetaData & _fieldMeta, bool _datasetSelectorAllowed) : fieldMeta(_fieldMeta), datasetSelectorAllowed(_datasetSelectorAllowed)
+    {
+        tokenType = TokEof;
+        lenInput = 0;
+        input = NULL;
+        offset = 0;
+    }
 
     void parseColumnMappingList(FieldTransformInfoArray & results, unsigned len, const char * text);
 

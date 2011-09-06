@@ -28,7 +28,7 @@
 class CSMTPValidator
 {
 public:
-    CSMTPValidator() : scanlist(false) {}
+    CSMTPValidator() : scanlist(false), value(NULL), finger(NULL), label(NULL) {}
 
     void validateValue(char const * _value, char const * _label)
     {
@@ -360,7 +360,6 @@ private:
     char const * finger;
     char const * label;
     bool scanlist;
-    bool scanmore;
 };
 
 // escapes text for mail transfer, returns true if quoted-printable encoding was required
@@ -487,7 +486,7 @@ class CMailInfo
     static char const * senderHeader;
 public:
     CMailInfo(char const * _to, char const * _subject, char const * _mailServer, unsigned _port, char const * _sender, StringArray *_warnings) 
-        : subject(_subject), mailServer(_mailServer), port(_port), sender(_sender), lastAction("process initialization")
+        : subject(_subject), mailServer(_mailServer), port(_port), sender(_sender), lastAction("process initialization"), inlen(0)
     {
         warnings = _warnings;
         CSMTPValidator validator;

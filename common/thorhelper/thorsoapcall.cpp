@@ -104,7 +104,7 @@ public:
             return MakeStringExceptionDirect(e->errorCode(), text.str());
     }
 
-    Url()
+    Url() : port(0)
     {
     }
 
@@ -469,7 +469,7 @@ MODULE_EXIT()
 class ColumnProvider : public CInterface, public IColumnProvider
 {
 public:
-    ColumnProvider(unsigned _callLatencyMs) : callLatencyMs(_callLatencyMs) {}
+    ColumnProvider(unsigned _callLatencyMs) : callLatencyMs(_callLatencyMs), base(NULL) {}
     IMPLEMENT_IINTERFACE;
     virtual bool        getBool(const char * path) { return base->getBool(path); }
     virtual void        getData(size32_t len, void * text, const char * path) { base->getData(len, text, path); }
@@ -1751,7 +1751,7 @@ public:
                     {
                         StringBuffer s;
                         master->logctx.CTXLOG("%sCALL exiting: Roxie Abort : %s",master->wscType == STsoap ? "SOAP" : "HTTP",e->errorMessage(s).str());
-                        throw e;
+                        throw;
                     }
 
                     do 
@@ -1848,7 +1848,7 @@ public:
                 {
                     StringBuffer s;
                     master->logctx.CTXLOG("%sCALL exiting: Roxie Abort : %s",master->wscType == STsoap ? "SOAP" : "HTTP",e->errorMessage(s).str());
-                    throw e;
+                    throw;
                 }
 
                 // other IException ... retry up to maxRetries

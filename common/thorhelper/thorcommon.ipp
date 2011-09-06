@@ -46,9 +46,9 @@ public:
     
 private: 
     /* these overloaded operators are the devil of memory leak. Use set, setown instead. */
-    inline OwnedConstRow(const OwnedConstRow & other)   { }
-    void operator = (void * _row)                { }
-    void operator = (const OwnedConstRow & other) { }
+    inline OwnedConstRow(const OwnedConstRow & other)   { row = NULL; }
+    void operator = (void * _row)                { row = NULL; }
+    void operator = (const OwnedConstRow & other) { row = NULL; }
 
     /* this causes -ve memory leak */
     void setown(const OwnedConstRow &other) {  }

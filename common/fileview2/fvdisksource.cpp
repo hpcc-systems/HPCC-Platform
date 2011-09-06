@@ -588,6 +588,7 @@ IndirectDiskDataSource::IndirectDiskDataSource(const char * _logicalName, IHqlEx
     username.set(_username);
     password.set(_password);
     extraFieldsSize = sizeof(offset_t) + sizeof(unsigned short);
+    totalSize = 0;
 }
 
 IndirectDiskDataSource::~IndirectDiskDataSource()

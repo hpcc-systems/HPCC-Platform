@@ -224,7 +224,6 @@ protected:
 
 //---------------------------------------------------------------------------
 
-typedef CIArrayOf<ViewFieldTransformer> ViewFieldTransformerArray;
 void translateValue(MemoryAttr & result, const MemoryAttr & value, const ViewFieldTransformerArray & transforms);
 
 bool containsFail(const ViewFieldTransformerArray & transforms);

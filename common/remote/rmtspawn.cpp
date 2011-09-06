@@ -252,6 +252,9 @@ ISocket * spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoin
 
 CRemoteParentInfo::CRemoteParentInfo()
 {
+    replyTag = 0;
+    kind = SPAWNlast;
+    port = 0;
 }
 
 
@@ -311,7 +314,6 @@ bool CRemoteParentInfo::sendReply(unsigned version)
                         readBuffer(connect, buffer.clear());
                         buffer.read(connectVersion);
                         bool same = false;
-                        unsigned replyVersion = version;
                         IpAddress masterIP;
                         masterIP.ipdeserialize(buffer);
                         buffer.read(connectKind);
@@ -332,7 +334,6 @@ bool CRemoteParentInfo::sendReply(unsigned version)
                             if (connectKind != kind)
                             {
                                 LOG(MCdebugInfo(1000), unknownJob, "Connection for wrong slave kind (%u vs %u)- ignore", connectKind, kind);
-                                replyVersion = connectVersion;
                             }
                         }
 

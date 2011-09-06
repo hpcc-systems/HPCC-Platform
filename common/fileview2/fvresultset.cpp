@@ -2215,6 +2215,9 @@ void buildCursorIndex(unsigned & numElements, unsigned * & elements, CResultSetC
 
 CResultSetSortedCursor::CResultSetSortedCursor(const CResultSetMetaData & _meta, IExtendedNewResultSet * _resultSet, unsigned _column, bool _desc) : CResultSetCursor(_meta, _resultSet, false)
 {
+    numEntries = 0;
+    elements = NULL;
+    lastRow = 0;
     column = _column;
     desc = _desc;
     buildIndex();
@@ -2222,6 +2225,9 @@ CResultSetSortedCursor::CResultSetSortedCursor(const CResultSetMetaData & _meta,
 
 CResultSetSortedCursor::CResultSetSortedCursor(const CResultSetMetaData & _meta, IExtendedNewResultSet * _resultSet, unsigned _column, bool _desc, MemoryBuffer & buffer) : CResultSetCursor(_meta, _resultSet, false)
 { 
+    numEntries = 0;
+    elements = NULL;
+    lastRow = 0;
     column = _column;
     desc = _desc;
     buildIndex();
@@ -2670,7 +2676,6 @@ __int64 CFilteredResultSet::translateRow(__int64 row)
             nextPos = validPositions.tos()+1;
 
         MemoryBuffer tempBuffer;
-        unsigned numSkipped = 0;
         unsigned startTime = msTick();
         while (row >= validPositions.ordinality())
         {
@@ -2682,7 +2687,6 @@ __int64 CFilteredResultSet::translateRow(__int64 row)
             if (rowMatchesFilter((byte *)tempBuffer.toByteArray()))
             {
                 validPositions.append(nextPos);
-                numSkipped = 0;
             }
             else
             {
