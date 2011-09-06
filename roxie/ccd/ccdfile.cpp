@@ -1794,6 +1794,7 @@ protected:
     StringArray subNames;
     PointerIArrayOf<IFileDescriptor> subFiles; // note - on slaves, the file descriptors may have incomplete info. On originating server is always complete
     PointerIArrayOf<IDefRecordMeta> diskMeta;
+    Owned <IPropertyTree> properties;
 
     void addFile(const char *subName, IFileDescriptor *fdesc)
     {
@@ -1853,6 +1854,7 @@ public:
                 addFile(dFile->queryLogicalName(), dFile->getFileDescriptor());
             bool tsSet = dFile->getModificationTime(fileTimeStamp);
             assertex(tsSet); // per Nigel, is always set
+            properties.set(&dFile->queryProperties());
         }
     }
     virtual void beforeDispose()
@@ -1952,6 +1954,13 @@ public:
                     mb.append(false);
             }
         }
+        if (properties)
+        {
+            mb.append(true);
+            properties->serialize(mb);
+        }
+        else
+            mb.append(false);
     }
     virtual IFileIOArray *getIFileIOArray(bool isOpt, unsigned channel) const 
     {
@@ -2155,6 +2164,10 @@ public:
     {
         return lfn.get();
     }
+    virtual const IPropertyTree *queryProperties() const
+    {
+        return properties;
+    }
 };
 
 
@@ -2240,6 +2253,10 @@ public:
                             diskMeta.append(NULL);
                     }
                 }
+                bool propertiesPresent;
+                serverData.read(propertiesPresent);
+                if (propertiesPresent)
+                    properties.setown(createPTree(serverData));
             }
             else
                 throw MakeStringException(ROXIE_CALLBACK_ERROR, "Failed to get response from server for dynamic file callback");
