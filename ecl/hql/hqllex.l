@@ -263,7 +263,7 @@ xpathseq      ([^}\r\n])+
                             lexer->javaDocComment.clear().append(endpos-startpos-5, lexer->yyBuffer+startpos+3);
                     }
 <COMMENT>[^*\n]+    { updatepos1; }
-<COMMENT>\n         { updatepos1; lexer->yyColumn = 1; ++lexer->yyLineNo; }
+<COMMENT>\n         { updatepos1; lexer->updateNewline(); }
 <COMMENT>"*"        { updatepos1; }
 
 "*/"                { 
@@ -275,7 +275,7 @@ xpathseq      ([^}\r\n])+
 
 \r                  { updatepos1; }
 \n                  { 
-                        setupdatepos; lexer->yyColumn = 1; lexer->yyLineNo++; 
+                        setupdatepos; lexer->updateNewline();
                         
                         #if defined(TRACE_MACRO)
                             PrintLog("MACRO>> Newline occurs: now at %d:%d\n", lexer->yyLineNo, lexer->yyColumn);
@@ -285,7 +285,7 @@ xpathseq      ([^}\r\n])+
 {blank}+            { setupdatepos; }
 
 "//"                { setupdatepos; BEGIN(SLSL); }
-<SLSL>\n            { updatepos1; lexer->yyColumn = 1; lexer->yyLineNo++; BEGIN(0); } 
+<SLSL>\n            { updatepos1; lexer->updateNewline(); BEGIN(0); }
 <SLSL>[^\n]+        { updatepos1; }
 
 #ERROR              {
@@ -1484,7 +1484,7 @@ FUNCTIONMACRO|MACRO {
                         return CPPBODY;
                     }
 <CPP>[^\n]+         { updatepos1; }
-<CPP>\n             { updatepos1; lexer->yyColumn = 1; ++lexer->yyLineNo; }
+<CPP>\n             { updatepos1; lexer->updateNewline(); }
 
 "<)"                { setupdatepos; return(TYPE_RPAREN) ; }
 "(>"                { setupdatepos; return(TYPE_LPAREN) ; }
