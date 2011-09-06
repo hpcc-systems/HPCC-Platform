@@ -524,7 +524,6 @@ void CRoxieMetricsManager::resetMetrics()
         INamedMetric *m = (INamedMetric *) *metricMap.mapToValue(&cur);
         if (m->isCumulative())
         {
-            const char *name = (const char *) cur.getKey();
             m->resetValue();
         }
     }

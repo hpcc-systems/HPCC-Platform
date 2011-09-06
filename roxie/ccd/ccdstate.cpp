@@ -566,7 +566,7 @@ public:
             Owned<IDirectoryIterator> iter = packageFile->directoryFiles("*.pkg",false,false);
             // sort the list of files based on name
             CIArrayOf<CDirectoryEntry> sortedfiles;
-            unsigned numfiles = sortDirectory(sortedfiles, *iter, SD_bynameNC, false, false);
+            sortDirectory(sortedfiles, *iter, SD_bynameNC, false, false);
             ForEachItemIn(idx, sortedfiles)
             {
                 CDirectoryEntry *de = &sortedfiles.item(idx);
@@ -1692,8 +1692,6 @@ public:
             }
             else if (stricmp(queryName, "control:suspend")==0)
             {
-                unsigned timeout = control->getPropInt("@timeout", 10000);
-
                 StringBuffer id(control->queryProp("Query/@id"));
                 if (!id.length())
                     badFormat();
@@ -2067,24 +2065,6 @@ extern void createResourceManagers(const IQueryDll *standAloneDll, unsigned numC
             E->Release();
         }
     }
-#ifdef NOTNOW
-    // now load from dali PackageSets
-    Owned<IPropertyTree> newPackageSet = daliHelper->getQuerySet(roxieName);
-    Owned<IPropertyTreeIterator> packages = newPackageSet->getElements("*");
-    ForEach(*packages)
-    {
-        IPropertyTree &pkg = packages->query();
-        const char *id = pkg.queryProp("@id");
-        const IRoxiePackage *package = packages.queryPackage(id);
-        if (package)
-        {
-            int i =0;
-        }
-        else
-            int dafs = 0;
-
-    }
-#endif
 
     if (!grms.length())
     {

@@ -161,6 +161,10 @@ public:
 
     inline RoxiePacketHeader(const RemoteActivityId &_remoteId, ruid_t _uid, unsigned _channel, unsigned _overflowSequence)
     {
+        packetlength = sizeof(RoxiePacketHeader);
+#ifdef TIME_PACKETS
+        tick = 0;
+#endif
         init(_remoteId, _uid, _channel, _overflowSequence);
     }
 
@@ -177,6 +181,9 @@ public:
         if (_activityId >= ROXIE_ACTIVITY_SPECIAL_FIRST && _activityId <= ROXIE_ACTIVITY_SPECIAL_LAST)
             overflowSequence |= OUTOFBAND_SEQUENCE; // Need to make sure it is not treated as dup of actual reply in the udp layer
         retries = getSubChannelMask(channel) | (source.retries & ~ROXIE_RETRIES_MASK);
+#ifdef TIME_PACKETS
+        tick = source.tick;
+#endif
         packetlength = sizeof(RoxiePacketHeader);
     }
 

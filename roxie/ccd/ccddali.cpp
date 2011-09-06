@@ -313,7 +313,7 @@ public:
     static IRoxieDaliHelper *connectToDali()
     {
         CriticalBlock b(daliConnectionCrit);
-        IRoxieDaliHelper *helper = LINK(daliHelper);
+        LINK(daliHelper);
         if (daliHelper && daliHelper->isAlive())
             return daliHelper;
         else
