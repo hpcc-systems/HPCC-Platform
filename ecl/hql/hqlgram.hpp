@@ -1066,6 +1066,12 @@ class HqlLex
             yyColumn += delta;
         }
 
+        inline void updateNewline()
+        {
+            yyColumn = 1;
+            ++yyLineNo;
+        }
+
         void pushText(const char *);
 
     protected:
