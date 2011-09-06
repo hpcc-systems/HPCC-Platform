@@ -1097,7 +1097,8 @@ public:
             ILazyFileIO *f = files.getValue(localLocation);
             if (f)
             {
-                if ((size != -1) && (size != f->getSize()) || (modified && !modified->equals(*f->queryDateTime(), false)))
+                if ((size != -1 && size != f->getSize()) ||
+                    (modified && !modified->equals(*f->queryDateTime(), false)))
                 {
                     StringBuffer modifiedDt;
                     if (modified)

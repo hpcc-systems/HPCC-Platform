@@ -1552,7 +1552,10 @@ public:
 
     virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
     {
+#if 0
+        // xml read does not support continuation record stuff as too hard to serialize state of xml parser
         unsigned totalSizeSent = 0;
+#endif
         Linked<IXmlToRowTransformer> rowTransformer = helper->queryTransformer();
         Owned<IXMLParse> xmlParser = createXMLParse(*reader->querySimpleStream(), helper->queryIteratorPath(), *this, (0 != (TDRxmlnoroot & helper->getFlags()))?xr_noRoot:xr_none, (helper->getFlags() & TDRusexmlcontents) != 0);
         while (!aborted)

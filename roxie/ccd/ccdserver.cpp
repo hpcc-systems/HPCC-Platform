@@ -10985,8 +10985,8 @@ public:
             case TAKdiskwrite: return new CRoxieServerDiskWriteActivity(this, _probeManager);
             case TAKcsvwrite: return new CRoxieServerCsvWriteActivity(this, _probeManager);
             case TAKxmlwrite: return new CRoxieServerXmlWriteActivity(this, _probeManager);
-            default: throwUnexpected();
             };
+            throwUnexpected();
         case 1:
             return new CRoxieServerSpillWriteActivity(this, _probeManager);
         default:
@@ -13312,7 +13312,7 @@ class CRoxieServerLoopActivity : public CRoxieServerActivity
 protected:
     IHThorLoopArg &helper;
     ThorActivityKind activityKind;
-    unsigned maxIterations;
+    int maxIterations;
     bool finishedLooping;
     unsigned flags;
     bool eof;
@@ -13336,8 +13336,8 @@ public:
     {
         eof = false;
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
-        maxIterations = helper.numIterations();
-        if ((int)maxIterations < 0) maxIterations = 0;
+        maxIterations = (int) helper.numIterations();
+        if (maxIterations < 0) maxIterations = 0;
         finishedLooping = ((activityKind == TAKloopcount) && (maxIterations == 0));
         loopExtractBuilder.clear();
         helper.createParentExtract(loopExtractBuilder);         // could possibly delay this until execution actually happens
@@ -14027,7 +14027,7 @@ class CRoxieServerGraphLoopActivity : public CRoxieServerActivity
 {
 protected:
     IHThorGraphLoopArg &helper;
-    unsigned maxIterations;
+    int maxIterations;
     unsigned flags;
     rtlRowBuilder GraphExtractBuilder;
     unsigned loopGraphId;
@@ -14045,8 +14045,8 @@ public:
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
-        maxIterations = helper.numIterations();
-        if ((int)maxIterations < 0) maxIterations = 0;
+        maxIterations = (int) helper.numIterations();
+        if (maxIterations < 0) maxIterations = 0;
         if (maxIterations > maxGraphLoopIterations)
             throw MakeStringException(ROXIE_TOO_MANY_GRAPH_LOOP, "Attempt to execute graph %u times", maxIterations);
         if (maxIterations != 0)
@@ -14384,13 +14384,10 @@ public:
 //IRoxieServerLoopResultProcessor
     virtual void noteUseIteration(unsigned whichIteration)
     {
-        if ((int)whichIteration >= 0)
-        {
-            if (!outputs.isItem(whichIteration))
-                throw MakeStringException(ROXIE_GRAPH_PROCESSING_ERROR, "Error reading graph result %d from iteration %d", whichIteration, createLoopCounter); 
+        if (!outputs.isItem(whichIteration))
+            throw MakeStringException(ROXIE_GRAPH_PROCESSING_ERROR, "Error reading graph result %d from iteration %d", whichIteration, createLoopCounter);
 
-            outputs.item(whichIteration).noteUsed();
-        }
+        outputs.item(whichIteration).noteUsed();
     }
 
     virtual IRoxieInput * connectIterationOutput(unsigned whichIteration, IProbeManager *probeManager, IArrayOf<IRoxieInput> &probes, IRoxieServerActivity *targetAct, unsigned targetIdx)
@@ -15458,7 +15455,7 @@ public:
         case IHThorNWayMergeJoinArg::MJFmofn:
             return new CRoxieServerMofNMergeJoinActivity(this, _probeManager, numInputs());
         default:
-            UNIMPLEMENTED;
+            throwUnexpected();
         }
     }
 };
@@ -16450,7 +16447,7 @@ public:
                 if(failingLimit || failingOuterAtmost)
                 {
                     const void * lhs;
-                    while(lhs = input->nextInGroup())
+                    while((lhs = input->nextInGroup()) != NULL)
                     {
                         const void * ret = joinRecords(lhs, defaultRight, failingLimit);
                         ReleaseRoxieRow(lhs);
@@ -17376,6 +17373,7 @@ public:
                         return ret;
                     }
                 }
+                break;
             case TAKalldenormalize:
                 {
                     OwnedConstRoxieRow newLeft;
@@ -17558,7 +17556,7 @@ public:
         if(eoi)
             return;
         const void * next;
-        while (next = input->nextInGroup())
+        while ((next = input->nextInGroup()) != NULL)
         {
             if (sortedCount < limit)
             {
@@ -23472,6 +23470,7 @@ public:
                     added++;
                     break;
                 }
+                break;
             }
         }
         else if (!(joinFlags & JFexclude))
@@ -23522,8 +23521,8 @@ public:
                         remote.addResult(newLeft.getClear());
                         added++;
                     }
-                    break;
                 }
+                break;
             case TAKkeyeddenormalizegroup:
                 {
                     ConstPointerArray extractedRows;
@@ -23535,6 +23534,7 @@ public:
                     }
                     added += doTransform(left, extractedRows.item(0), extractedRows.ordinality(), NULL, (const void * *)extractedRows.getArray());
                 }
+                break;
             }
         }
         return added;
@@ -28467,10 +28467,9 @@ public:
         return result;
     }
 
-    virtual void setResultBool(const char *name, unsigned _sequence, bool value)
+    virtual void setResultBool(const char *name, unsigned sequence, bool value)
     {
-        int sequence = (int) _sequence;  // API uses unsigned for historical reasons
-        if (sequence < 0)
+        if (isSpecialResultSequence(sequence))
         {
             CriticalBlock b(contextCrit);
             useContext(sequence).setPropBool(name, value);
@@ -28508,11 +28507,10 @@ public:
             }
         }
     }
-    virtual void setResultData(const char *name, unsigned _sequence, int len, const void * data)
+    virtual void setResultData(const char *name, unsigned sequence, int len, const void * data)
     {
         static char hexchar[] = "0123456789ABCDEF";
-        int sequence = (int) _sequence;  // API uses unsigned for historical reasons
-        if (sequence < 0)
+        if (isSpecialResultSequence(sequence))
         {
             StringBuffer s;
             const byte *field = (const byte *) data;
@@ -28614,10 +28612,9 @@ public:
             }
         }
     }
-    virtual void setResultRaw(const char *name, unsigned _sequence, int len, const void * data)
+    virtual void setResultRaw(const char *name, unsigned sequence, int len, const void * data)
     {
-        int sequence = (int) _sequence;  // API uses unsigned for historical reasons
-        if (sequence < 0)
+        if (isSpecialResultSequence(sequence))
         {
             CriticalBlock b(contextCrit);
             IPropertyTree &ctx = useContext(sequence);
@@ -28658,10 +28655,9 @@ public:
             }
         }
     }
-    virtual void setResultSet(const char *name, unsigned _sequence, bool isAll, size32_t len, const void * data, ISetToXmlTransformer * transformer)
+    virtual void setResultSet(const char *name, unsigned sequence, bool isAll, size32_t len, const void * data, ISetToXmlTransformer * transformer)
     {
-        int sequence = (int) _sequence;  // API uses unsigned for historical reasons
-        if (sequence < 0)
+        if (isSpecialResultSequence(sequence))
         {
             CriticalBlock b(contextCrit);
             IPropertyTree &ctx = useContext(sequence);
@@ -28727,10 +28723,9 @@ public:
         useContext(sequence).setPropTree(name, createPTreeFromXMLString(xml, ipt_caseInsensitive));
     }
 
-    virtual void setResultDecimal(const char *name, unsigned _sequence, int len, int precision, bool isSigned, const void *val)
+    virtual void setResultDecimal(const char *name, unsigned sequence, int len, int precision, bool isSigned, const void *val)
     {
-        int sequence = (int) _sequence;  // API uses unsigned for historical reasons
-        if (sequence < 0)
+        if (isSpecialResultSequence(sequence))
         {
             MemoryBuffer m;
             serializeFixedData(len, val, m);
@@ -28777,10 +28772,9 @@ public:
             }
         }
     }
-    virtual void setResultInt(const char *name, unsigned _sequence, __int64 value)
+    virtual void setResultInt(const char *name, unsigned sequence, __int64 value)
     {
-        int sequence = (int) _sequence;  // API uses unsigned for historical reasons
-        if (sequence < 0)
+        if (isSpecialResultSequence(sequence))
         {
             CriticalBlock b(contextCrit);
             useContext(sequence).setPropInt64(name, value);
@@ -28820,10 +28814,9 @@ public:
         }
     }
 
-    virtual void setResultUInt(const char *name, unsigned _sequence, unsigned __int64 value)
+    virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 value)
     {
-        int sequence = (int) _sequence;  // API uses unsigned for historical reasons
-        if (sequence < 0)
+        if (isSpecialResultSequence(sequence))
         {
             CriticalBlock b(contextCrit);
             useContext(sequence).setPropInt64(name, value);
@@ -28863,10 +28856,9 @@ public:
         }
     }
 
-    virtual void setResultReal(const char *name, unsigned _sequence, double value)
+    virtual void setResultReal(const char *name, unsigned sequence, double value)
     {
-        int sequence = (int) _sequence;  // API uses unsigned for historical reasons
-        if (sequence < 0)
+        if (isSpecialResultSequence(sequence))
         {
             CriticalBlock b(contextCrit);
             useContext(sequence).setPropBin(name, sizeof(value), &value);
@@ -28906,10 +28898,9 @@ public:
             }
         }
     }
-    virtual void setResultString(const char *name, unsigned _sequence, int len, const char * str)
+    virtual void setResultString(const char *name, unsigned sequence, int len, const char * str)
     {
-        int sequence = (int) _sequence;  // API uses unsigned for historical reasons
-        if (sequence < 0)
+        if (isSpecialResultSequence(sequence))
         {
             CriticalBlock b(contextCrit);
             useContext(sequence).setPropBin(name, len, str);
@@ -28952,10 +28943,9 @@ public:
             }
         }
     }
-    virtual void setResultUnicode(const char *name, unsigned _sequence, int len, UChar const * str)
+    virtual void setResultUnicode(const char *name, unsigned sequence, int len, UChar const * str)
     {
-        int sequence = (int) _sequence;  // API uses unsigned for historical reasons
-        if (sequence < 0)
+        if (isSpecialResultSequence(sequence))
         {
             rtlDataAttr buff;
             unsigned bufflen = 0;
@@ -29016,10 +29006,9 @@ public:
     { 
         appendResultRawContext(name, sequence, len, data, numRows, extend, true);
     }
-    virtual void getResultDecimal(unsigned tlen, int precision, bool isSigned, void * tgt, const char * stepname, unsigned _sequence)
+    virtual void getResultDecimal(unsigned tlen, int precision, bool isSigned, void * tgt, const char * stepname, unsigned sequence)
     {
-        int sequence = (int) _sequence;  // API uses unsigned for historical reasons
-        if (sequence < 0)
+        if (isSpecialResultSequence(sequence))
         {
             MemoryBuffer m;
             CriticalBlock b(contextCrit);

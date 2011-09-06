@@ -1664,6 +1664,21 @@ public:
 
 //==========================================================================================
 
+extern WORKUNIT_API bool isSpecialResultSequence(unsigned sequence)
+{
+    switch (sequence)
+    {
+    case ResultSequenceInternal:
+    case ResultSequenceOnce:
+    case ResultSequencePersist:
+    case ResultSequenceStored:
+        return true;
+    default:
+        assertex(sequence <= INT_MAX);
+        return false;
+    }
+}
+
 struct mapEnums { int val; const char *str; };
 
 const char *getEnumText(int value, mapEnums *map) 
