@@ -1693,8 +1693,9 @@ public:
                 ret = &it.queryTree();
                 break;
             }
-            else if (idx=(unsigned)-1)
+            else if (idx==(unsigned)-1)  // -1 means return last
                 ret = &it.queryTree();
+            i++;
         }
         if (ret)
             return new CJobQueueItem(ret);
