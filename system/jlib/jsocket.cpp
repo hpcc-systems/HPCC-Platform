@@ -3296,6 +3296,7 @@ bool SocketListParser::next(StringAttr & ip, unsigned & port)
                 goto done;
             case '.':
                 ++count;
+                break;
             }
         }
 done:
@@ -4232,6 +4233,7 @@ bool catchReadBuffer(ISocket * socket, MemoryBuffer & buffer)
             break;
         default:
             EXCLOG(e,"catchReadBuffer");
+            break;
         }
         e->Release();
     }
@@ -4253,6 +4255,7 @@ bool catchReadBuffer(ISocket * socket, MemoryBuffer & buffer, unsigned timeoutms
             break;
         default:
             EXCLOG(e,"catchReadBuffer");
+            break;
         }
         e->Release();
     }
@@ -4512,6 +4515,7 @@ public:
                     break;
                 default:
                     state = Scancelled;
+                    break;
                 }
             }
             catch (IException *e) {

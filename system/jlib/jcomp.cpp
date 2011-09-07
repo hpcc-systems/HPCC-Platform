@@ -89,8 +89,6 @@ static const char * CC_OPTION_RELEASE[] = { "/Zm500 /EHsc /GR /Oi /Ob1 /GF /nolo
 static const char * DLL_LINK_OPTION_RELEASE[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO", "-shared -L. -fPIC -pipe -O0" };
 static const char * EXE_LINK_OPTION_RELEASE[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO", "-L. -Wl,-E -fPIC -pipe -O0" };
 
-static const char * CC_COMPILE_ONLY[] = { " /c", " <TBD> " };
-
 static const char * LINK_TARGET[] = { " /out:", " -o " };
 static const char * DEFAULT_CC_LOCATION[] = { ".", "." };
 
