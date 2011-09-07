@@ -78,8 +78,9 @@ IF (NOT BOOST_REGEX_FOUND)
   )
 
   IF (BOOST_REGEX_FOUND)
-    STRING(REPLACE "/${boost_regex_lib}" "" BOOST_REGEX_LIBRARY_DIR "${BOOST_REGEX_LIBRARIES}")
     IF (WIN32)
+      STRING(REPLACE "/${boost_regex_lib}" "" BOOST_REGEX_LIBRARY_DIR "${BOOST_REGEX_LIBRARIES}")
+      link_directories(${BOOST_REGEX_LIBRARY_DIR})
       set (BOOST_REGEX_LIBRARIES "")  # the actual library to use is controlled by boost header files
     ENDIF()
   ENDIF()

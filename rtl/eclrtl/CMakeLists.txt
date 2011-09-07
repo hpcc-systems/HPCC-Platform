@@ -58,10 +58,6 @@ else ()
     ADD_DEFINITIONS( -DBOOST_DYN_LINK )
 endif ()
 
-IF (BOOST_REGEX_FOUND)
-  link_directories(${BOOST_REGEX_LIBRARY_DIR})
-ENDIF()
-
 HPCC_ADD_LIBRARY( eclrtl SHARED ${SRCS} )
 install ( TARGETS eclrtl DESTINATION ${OSSDIR}/lib )
 target_link_libraries ( eclrtl 
