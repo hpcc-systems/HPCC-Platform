@@ -593,9 +593,6 @@ function loadXGMMLGraph(xgmmlResponse) {
             pluginLHS().loadXGMML(xgmmldecoded);
             pluginLHS().setMessage("Performing Layout...");
             pluginLHS().startLayout("dot");
-
-            pluginLHS().centerOnItem(0, true); // scale to fit.
-
         }
     }
     if (isrunning == '1' || (isrunning != '1' && forceFinalCountRefresh)) {
@@ -917,6 +914,8 @@ function getGraph(Url) {
     if (Url.toLowerCase().indexOf('ws_roxieconfig') > -1)
     {
       isRoxieGraph = true;
+      forceFinalCountRefresh = false;
+      hideElement('autoSpan');
       getRoxieConfigDetails(Url);
       requestEnvelope = getRoxieConfigRequestEnvelope(wuid, graphName);
       requestSourceUrl = espAddressAndPort + '/ws_roxieconfig/ShowGVCGraph';
@@ -926,6 +925,8 @@ function getGraph(Url) {
 
     if (Url.toLowerCase().indexOf('wsroxiequery') > -1) {
         isWsRoxieQueryGraph = true;
+        forceFinalCountRefresh = false;
+        hideElement('autoSpan');
         getWsRoxieQueryDetails(Url);
         requestEnvelope = getWsRoxieQueryRequestEnvelope(wuid, graphName, cluster);
         requestSourceUrl = espAddressAndPort + '/WsRoxieQuery/ShowGVCGraph';
@@ -1088,7 +1089,7 @@ function getRoxieConfigRequestEnvelope(QueryName, GraphName)
 }
 
 function getWsRoxieQueryRequestEnvelope(QueryName, GraphName, Cluster) {
-    var RoxieQuerySOAPEnvelope = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding" xmlns="http://webservices.seisint.com/WsRoxieQuery"><soap:Body><RoxieQueryShowGVCGraphRequest><ClusterName>%Cluster%</ClusterName><QueryName>%QueryName%</QueryName><GraphName>%GraphName%</GraphName></RoxieQueryShowGVCGraphRequest></soap:Body></soap:Envelope>';
+    var RoxieQuerySOAPEnvelope = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding" xmlns="http://webservices.seisint.com/WsRoxieQuery"><soap:Body><ShowGVCGraphRequest><Cluster>%Cluster%</Cluster><QueryId>%QueryName%</QueryId><GraphName>%GraphName%</GraphName></ShowGVCGraphRequest></soap:Body></soap:Envelope>';
     RoxieQuerySOAPEnvelope = RoxieQuerySOAPEnvelope.replace('%Cluster%', Cluster);
     RoxieQuerySOAPEnvelope = RoxieQuerySOAPEnvelope.replace('%QueryName%', QueryName);
     RoxieQuerySOAPEnvelope = RoxieQuerySOAPEnvelope.replace('%GraphName%', GraphName);

@@ -131,6 +131,51 @@ RoxieQueryDetailsResponse
     ESParray<ESPStruct RoxieQueryAlias> Aliases;
 };
 
+ESPrequest GVCAjaxGraphRequest
+{
+    string Cluster;
+    string Name;
+    string GraphName;
+};
+
+ESPresponse [exceptions_inline, http_encode(0)] GVCAjaxGraphResponse
+{
+    string Cluster;
+    string Name;
+    string GraphName;
+    string GraphType;
+};
+
+ESPrequest ShowGVCGraphRequest
+{
+    string Cluster;
+    string QueryId;
+    string GraphName;
+};
+
+ESPresponse [exceptions_inline, http_encode(0)] ShowGVCGraphResponse
+{
+    string Cluster;
+    string QueryId;
+    string GraphName;
+    ESParray<string> GraphNames;
+    string TheGraph;
+};
+
+ESPrequest RoxieQueryProcessGraphRequest
+{
+    string  Cluster;
+    string  QueryId;
+    string  GraphName;
+    bool    XmlGraph;
+    bool    Stats;
+};
+
+ESPresponse  [encode(0), exceptions_inline] RoxieQueryProcessGraphResponse
+{
+    string theGraph;
+};
+
 
 //  ===========================================================================
 ESPservice [
@@ -144,6 +189,9 @@ ESPservice [
     ESPmethod [resp_xsl_default("/esp/xslt/roxiequery_search.xslt")] RoxieQuerySearch(RoxieQuerySearchRequest, RoxieQuerySearchResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/roxiequery.xslt")] RoxieQueryList(RoxieQueryListRequest, RoxieQueryListResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/roxiequerydetails.xslt")] QueryDetails(RoxieQueryDetailsRequest, RoxieQueryDetailsResponse);
+    ESPmethod [description("Stub for Ajax GVC Graph."), help(""), resp_xsl_default("/esp/xslt/GvcGraph.xslt")] GVCAjaxGraph(GVCAjaxGraphRequest, GVCAjaxGraphResponse);
+    ESPmethod [description("Show GVC graph for a Roxie query"), help(""), resp_xsl_default("/esp/xslt/RoxieGVCGraph.xslt")] ShowGVCGraph(ShowGVCGraphRequest, ShowGVCGraphResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/graphStats.xslt")] RoxieQueryProcessGraph(RoxieQueryProcessGraphRequest, RoxieQueryProcessGraphResponse);
 };
 
 SCMexportdef(WsRoxieQuery);
