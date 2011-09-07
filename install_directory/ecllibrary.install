@@ -61,11 +61,13 @@ Install (
     ${CMAKE_CURRENT_SOURCE_DIR}/ecllibrary/teststd/str/TestFind.ecl
     ${CMAKE_CURRENT_SOURCE_DIR}/ecllibrary/teststd/str/TestFindCount.ecl
     ${CMAKE_CURRENT_SOURCE_DIR}/ecllibrary/teststd/str/TestFindReplace.ecl
+    ${CMAKE_CURRENT_SOURCE_DIR}/ecllibrary/teststd/str/TestFromHexPairs.ecl
     ${CMAKE_CURRENT_SOURCE_DIR}/ecllibrary/teststd/str/TestGetNthWord.ecl
     ${CMAKE_CURRENT_SOURCE_DIR}/ecllibrary/teststd/str/TestReverse.ecl
     ${CMAKE_CURRENT_SOURCE_DIR}/ecllibrary/teststd/str/TestSplitWords.ecl
     ${CMAKE_CURRENT_SOURCE_DIR}/ecllibrary/teststd/str/TestSubstituteExcluded.ecl
     ${CMAKE_CURRENT_SOURCE_DIR}/ecllibrary/teststd/str/TestSubstituteIncluded.ecl
+    ${CMAKE_CURRENT_SOURCE_DIR}/ecllibrary/teststd/str/TestToHexPairs.ecl
     ${CMAKE_CURRENT_SOURCE_DIR}/ecllibrary/teststd/str/TestToLowerCase.ecl
     ${CMAKE_CURRENT_SOURCE_DIR}/ecllibrary/teststd/str/TestToCapitalCase.ecl
     ${CMAKE_CURRENT_SOURCE_DIR}/ecllibrary/teststd/str/TestToUpperCase.ecl
