@@ -176,6 +176,7 @@ StringBuffer &RoxiePacketHeader::toString(StringBuffer &ret) const
         ret.appendf("%u", (activityId & ~(ROXIE_ACTIVITY_FETCH | ROXIE_PRIORITY_MASK)));
         if (activityId & ROXIE_ACTIVITY_FETCH)
             ret.appendf(" (fetch part)");
+        break;
     }
     ret.append(" pri=");
     switch(activityId & ROXIE_PRIORITY_MASK)

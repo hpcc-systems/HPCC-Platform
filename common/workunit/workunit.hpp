@@ -256,6 +256,8 @@ enum
     ResultSequenceOnce = -4,
 };
 
+extern WORKUNIT_API bool isSpecialResultSequence(unsigned sequence);
+
 enum WUResultFormat
 {
     ResultFormatRaw = 0,
