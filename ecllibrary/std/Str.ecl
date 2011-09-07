@@ -434,4 +434,26 @@ EXPORT unsigned4 WordCount(string text) :=
 EXPORT string GetNthWord(string text, unsigned4 n) :=
     lib_stringlib.StringLib.StringGetNthWord(text, n);
 
+/*
+ * Converts the data value to a sequence of hex pairs.
+ *
+ * @param value         The data value that should be expanded as a sequence of hex pairs.
+ * @return              A string containg a sequence of hex pairs.
+ */
+
+EXPORT string ToHexPairs(data value) := lib_stringlib.StringLib.Data2String(value);
+
+/*
+ * Converts a string containing sequences of hex pairs to a data value.
+ *
+ * Embedded spaces are ignored, out of range characters are treated as '0', a trailing nibble
+ * at the end of the string is ignored.
+ *
+ *
+ * @param hex_pairs     The string containing the hex pairs to process.
+ * @return              A data value with each byte created from a pair of hex digits.
+ */
+
+EXPORT data FromHexPairs(string hex_pairs) := lib_stringlib.StringLib.String2Data(hex_pairs);
+
 END;
