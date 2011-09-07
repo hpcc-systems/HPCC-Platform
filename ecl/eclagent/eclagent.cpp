@@ -51,10 +51,13 @@
 #include "roxiehelper.hpp"
 #include "jlzw.hpp"
 
+#include <new>
+
 #ifdef _USE_CPPUNIT
 #include <cppunit/extensions/TestFactoryRegistry.h>
 #include <cppunit/ui/text/TestRunner.h>
 #endif
+
 
 //#define LEAK_FILE         "c:\\leaks.txt"
 
