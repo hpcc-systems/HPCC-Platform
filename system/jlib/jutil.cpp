@@ -2111,7 +2111,7 @@ jlib_decl StringBuffer& encodeUrlUseridPassword(StringBuffer& out, const char* i
           case '&': out.append("%26"); break;
           case ' ': out.append("%20"); break;
         */
-        default: out.append(*p);
+        default: out.append(*p); break;
         }
     }
     return out;

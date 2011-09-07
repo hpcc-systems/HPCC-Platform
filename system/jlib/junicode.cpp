@@ -605,7 +605,7 @@ void addUtfActionList(StringMatcher & matcher, const char * text, unsigned actio
                     }
                     break;
                 default:
-                    ;//otherwise \ just quotes the character e.g. \,
+                    break; //otherwise \ just quotes the character e.g. \,
                 }
             }
             str.append(next);

@@ -5147,14 +5147,6 @@ IPropertyTree *createPTreeFromXMLString(unsigned len, const char *xml, byte flag
 //////////////////////////
 /////////////////////////
 
-    
-static int compareStrings(CInterface **ll, CInterface **rr)
-{
-    StringAttrItem *l = (StringAttrItem *) *ll;
-    StringAttrItem *r = (StringAttrItem *) *rr;
-    return stricmp(l->text, r->text);
-};
-
 static void _toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, byte flags)
 {
     const char *name = tree->queryName();

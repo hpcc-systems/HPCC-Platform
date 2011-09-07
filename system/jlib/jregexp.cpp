@@ -1536,7 +1536,7 @@ void addActionList(StringMatcher & matcher, const char * text, unsigned action, 
                     }
                     break;
                 default:
-                    ;//otherwise \ just quotes the character e.g. \,
+                    break; //otherwise \ just quotes the character e.g. \,
                 }
             }
             str.append(next);
