@@ -342,7 +342,6 @@ inline void outputEncodedXmlData(unsigned len, const void *_field, const char *f
 
 inline void outputEncoded64XmlData(unsigned len, const void *_field, const char *fieldname, StringBuffer &out)
 {
-    const unsigned char *field = (const unsigned char *) _field;
     if (fieldname)
         out.append('<').append(fieldname).append(" xsi:type=\"xsd:base64Binary\">");
     JBASE64_Encode(_field, len, out, false);

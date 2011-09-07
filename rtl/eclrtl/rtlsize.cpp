@@ -215,7 +215,7 @@ void IfBlockOffsetInfo::setValid(bool nowValid)
         }
         else
         {
-            unsigned offset = getOffset();
+            //unsigned offset = getOffset();
             //copy from offset to end of record to end of record.
             //create a default for this level (and possibly any child records).
             //child nodes need to notice that values have been created/destroyed

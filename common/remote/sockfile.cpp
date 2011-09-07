@@ -1288,9 +1288,12 @@ public:
         // an extended difference iterator starts with 2 (for bwd compatibility)
         ep = _ep;
         curisdir = false;
+        curvalid = false;
         cursize = 0;
         curidx = (unsigned)-1;
         mask = 0;
+        numflags = 0;
+        flags = NULL;
     }
 
     bool appendBuf(MemoryBuffer &_buf)
@@ -3341,7 +3344,6 @@ public:
         msg.read(name->text).read(mode).read(share);  
         try {
             Owned<IFile> file = createIFile(name->text);
-            unsigned smode = 0;
             switch ((compatIFSHmode)share) {
             case compatIFSHnone:
                 file->setCreateFlags(S_IRUSR|S_IWUSR); 

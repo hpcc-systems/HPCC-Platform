@@ -1159,7 +1159,6 @@ void RegexUtf8IPattern::toXMLattr(StringBuffer & out, RegexXmlState & state)
 
 inline bool RegexUtf8IPattern::doMatch(RegexState & state)
 {
-    const byte * start = state.cur;
     const byte * end = state.end;
 
     unsigned size = lower.length();

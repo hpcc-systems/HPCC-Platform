@@ -79,7 +79,7 @@ public:
     void deserialize(MemoryBuffer &mb);
     unsigned numCopies(unsigned part,unsigned clusterwidth,unsigned filewidth);
 
-    void operator=(const ClusterPartDiskMapSpec &other);
+    ClusterPartDiskMapSpec & operator=(const ClusterPartDiskMapSpec &other);
 
 };
 

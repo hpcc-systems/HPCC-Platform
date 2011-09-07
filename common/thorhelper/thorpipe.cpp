@@ -157,6 +157,7 @@ public:
         : CBufferedReadRowStream(_rowAllocator), csvTransformer(_csvTransformer)
     {
         ICsvParameters * csvInfo = csvTransformer->queryCsvParameters();
+        //MORE: This value is never used.  Should it be asserting(headerLines == 0)
         unsigned int headerLines = csvInfo->queryHeaderLen();
         size32_t max = csvInfo->queryMaxSize();
 

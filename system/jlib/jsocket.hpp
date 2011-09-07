@@ -104,9 +104,10 @@ public:
     size32_t getNetAddress(size32_t maxsz,void *dst) const;     // for internal use - returns 0 if address doesn't fit
     void setNetAddress(size32_t sz,const void *src);            // for internal use
 
-    inline void operator = ( const IpAddress &other )
+    inline IpAddress & operator = ( const IpAddress &other )
     {
         ipset(other);
+        return *this;
     }
 
 };
@@ -151,10 +152,11 @@ public:
     void getUrlStr(char * str, size32_t len) const;             // in form ip4:port or [ip6]:port
     StringBuffer &getUrlStr(StringBuffer &str) const;           // in form ip4:port or [ip6]:port
 
-    inline void operator = ( const SocketEndpoint &other )
+    inline SocketEndpoint & operator = ( const SocketEndpoint &other )
     {
         ipset(other);
         port = other.port;
+        return *this;
     }
 	bool operator == (const SocketEndpoint &other) const { return equals(other); }
 

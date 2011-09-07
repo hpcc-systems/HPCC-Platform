@@ -239,6 +239,7 @@ CSteppedConjunctionOptimizer::CSteppedConjunctionOptimizer(IEngineRowAllocator *
     inputHasPostfilter = false;
     inputIsDistributed = false;
     eof = false;
+    maxOptimizeInput = 0;
 }
 
 CSteppedConjunctionOptimizer::~CSteppedConjunctionOptimizer()

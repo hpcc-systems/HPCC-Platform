@@ -70,7 +70,18 @@ interface ISteppedJoinRowGenerator : public IInterface
 class THORHELPER_API CSteppingMeta : public CInterface, implements IInputSteppingMeta
 {
 public:
-    CSteppingMeta() { numFields = 0; fields = NULL; rangeCompare = NULL; distance = NULL; stepFlags = 0; priority = 0; distributed = false; }
+    CSteppingMeta()
+    {
+        numFields = 0;
+        fields = NULL;
+        rangeCompare = NULL;
+        distance = NULL;
+        stepFlags = 0;
+        priority = 0;
+        distributed = false;
+        postFiltered = false;
+        hadStepExtra = false;
+    }
 
     void intersect(IInputSteppingMeta * inputMeta);
     void init(ISteppingMeta * meta, bool _postFiltered)
@@ -301,7 +312,13 @@ protected:
 class THORHELPER_API CSteppedCandidateMerger : public CStreamMerger
 {
 public:
-    CSteppedCandidateMerger(unsigned _numEqualFields) : CStreamMerger(true) { numEqualFields = _numEqualFields; candidateRow = NULL; }
+    CSteppedCandidateMerger(unsigned _numEqualFields) : CStreamMerger(true)
+    {
+        numEqualFields = _numEqualFields;
+        candidateRow = NULL;
+        inputArray = NULL;
+        equalCompare = NULL;
+    }
     ~CSteppedCandidateMerger() { assertex(!candidateRow); }
 
     void init(IEngineRowAllocator * _allocator, ICompare * _equalCompare, ICompare * _mergeCompare, bool _dedup, IRangeCompare * _rangeCompare)
@@ -482,7 +499,7 @@ typedef CIArrayOf<CFilteredInputBuffer> CFilteredInputBufferArray;
 class THORHELPER_API CFilteredMerger : public CStreamMerger
 {
 public:
-    CFilteredMerger() : CStreamMerger(true) {}
+    CFilteredMerger() : CStreamMerger(true) { inputArray = NULL; rowAllocator = NULL; }
 
     void init(IEngineRowAllocator * _allocator, ICompare * _mergeCompare, bool _dedup, IRangeCompare * _rangeCompare)
     {

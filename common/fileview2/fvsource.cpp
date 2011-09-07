@@ -524,12 +524,14 @@ RowBlock::RowBlock(MemoryBuffer & _buffer, __int64 _start, __int64 _startOffset)
     buffer.swapWith(_buffer);
     start = _start;
     startOffset = _startOffset;
+    numRows = 0;
 }
 
 RowBlock::RowBlock(__int64 _start, __int64 _startOffset)
 {
     start = _start;
     startOffset = _startOffset;
+    numRows = 0;
 }
 
 void RowBlock::getNextStoredOffset(__int64 & row, offset_t & offset)

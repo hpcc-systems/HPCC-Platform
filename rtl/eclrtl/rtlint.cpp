@@ -47,7 +47,7 @@ int rtlReadInt3(const void * data)                      { return (*(int *)data >
 __int64 rtlReadInt5(const void * data)                  { return (*(__int64 *)data >> 24); }
 __int64 rtlReadInt6(const void * data)                  { return (*(__int64 *)data >> 16); }
 __int64 rtlReadInt7(const void * data)                  { return (*(__int64 *)data >> 8); }
-unsigned rtlReadUInt3(const void * data)                { return (*(unsigned *)data >> 8; }
+unsigned rtlReadUInt3(const void * data)                { return (*(unsigned *)data >> 8); }
 unsigned __int64 rtlReadUInt5(const void * data)        { return (*(unsigned __int64 *)data >> 24); }
 unsigned __int64 rtlReadUInt6(const void * data)        { return (*(unsigned __int64 *)data >> 16); }
 unsigned __int64 rtlReadUInt7(const void * data)        { return (*(unsigned __int64 *)data >> 8); }

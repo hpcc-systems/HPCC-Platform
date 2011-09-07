@@ -314,7 +314,7 @@ void ClusterPartDiskMapSpec::setDefaultReplicateDir(const char *dir)
 }
 
 
-void ClusterPartDiskMapSpec::operator=(const ClusterPartDiskMapSpec &other)
+ClusterPartDiskMapSpec & ClusterPartDiskMapSpec::operator=(const ClusterPartDiskMapSpec &other)
 {
     replicateOffset = other.replicateOffset;
     defaultCopies = other.defaultCopies;
@@ -325,6 +325,7 @@ void ClusterPartDiskMapSpec::operator=(const ClusterPartDiskMapSpec &other)
     repeatedPart = other.repeatedPart;
     setDefaultBaseDir(other.defaultBaseDir);
     setDefaultReplicateDir(other.defaultReplicateDir);
+    return *this;
 }
 
 
