@@ -129,6 +129,7 @@ private:
     IO_Type m_type;
     StringArray*  m_includepaths;
     Owned<CXslIncludeCompare> m_includecomp;
+    StringBuffer m_cacheId;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -153,12 +154,16 @@ public:
             m_includepaths = &buffer->getIncludes();
             m_buffer.set(buffer);
             m_type = buffer->getType();
+            m_cacheId.clear().append(buffer->getCacheId());
+
             if(m_type == IO_TYPE_FILE)
             {
-                Owned<IFile> f = createIFile(buffer->getFileName());
+                m_fname.clear().append(buffer->getFileName());
+                if (!m_cacheId.length())
+                   m_cacheId.append(m_fname);
+                Owned<IFile> f = createIFile(m_fname.str());
                 if(f)
                 {
-                    m_fname.clear().append(buffer->getFileName());
                     CDateTime modtime;
                     f->getTime(NULL, &modtime, NULL);
                     m_modtime = modtime.getSimple();
@@ -187,8 +192,8 @@ public:
 
         if(m_type != entry->m_type)
             return false;
-        if(m_type == IO_TYPE_FILE)
-            return (m_fname.length() > 0) && (entry->m_fname.length() > 0) && (strcmp(m_fname.str(), entry->m_fname.str()) == 0);
+        if (m_cacheId.length())
+            return (entry->m_cacheId.length()) && (streq(m_cacheId.str(), entry->m_cacheId.str()));
         else
             return (m_size == entry->m_size) && (m_crc == entry->m_crc);
     }
@@ -210,18 +215,18 @@ public:
         return true;
     }
 
+    unsigned long getCacheIdHash()
+    {
+        unsigned long keyhash = 5381;
+        for(int i = 0; i < m_cacheId.length(); i++)
+            keyhash = ((keyhash << 5) + keyhash) + m_cacheId.charAt(i);
+        return keyhash;
+    }
+
     unsigned long getKeyHash()
     {
-        if(m_type ==  IO_TYPE_FILE)
-        {
-            unsigned long keyhash = 5381;
-            for(int i = 0; i < m_fname.length(); i++)
-            {
-                int c = m_fname.charAt(i);
-                keyhash = ((keyhash << 5) + keyhash) + c;
-            }
-            return keyhash;
-        }
+        if (m_cacheId.length())
+            return getCacheIdHash();
         else
             return (m_size + m_crc)*127;
     }
@@ -231,11 +236,11 @@ public:
         return m_timestamp;
     }
 
-    void compile(bool recompile)
+    void compile()
     {
         if(m_buffer.get())
         {
-            m_buffer->compile(recompile);
+            m_buffer->compile();
             if(m_includepaths && m_includepaths->length() > 0)
             {
                 m_includecomp.setown(new CXslIncludeCompare(*m_includepaths));
@@ -273,7 +278,7 @@ public:
         }
     }
 
-    IXslBuffer* getCompiledXsl(IXslBuffer* xslbuffer, bool recompile)
+    IXslBuffer* getCompiledXsl(IXslBuffer* xslbuffer, bool replace)
     {
         if(!xslbuffer)
             return NULL;
@@ -301,18 +306,11 @@ public:
 
             if(oneentry->match(newentry.get()))
             {
-                if(!oneentry->equal(newentry, true))
+                if(replace || !oneentry->equal(newentry, true))
                 {
                     oneentry->Release();
                     m_cache[ind] = NULL;
                     break;
-                }
-
-                if(recompile)
-                {
-                    oneentry->setBuffer(xslbuffer);
-                    oneentry->compile(true);
-                    return xslbuffer;
                 }
                 else
                     return oneentry->getBuffer();
@@ -325,11 +323,9 @@ public:
         }
         while(ind != start);
 
-        newentry->compile(true);
+        newentry->compile();
         if(m_cache[ind] == NULL)
-        {
             m_cache[ind] = newentry.getLink();
-        }
         else
         {
             DBGLOG("XSLT cache is full, replacing oldest entry at index %d", oldest);

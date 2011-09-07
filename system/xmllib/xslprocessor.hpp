@@ -52,8 +52,8 @@ public:
  
     // setXslSource - specifies the source of the XSLT "script" to use
     //
-    virtual int setXslSource(const char *pszFileName) = 0;
-    virtual int setXslSource(const char *pszBuffer, unsigned int nSize, const char *rootpath=NULL) = 0;
+    virtual int setXslSource(const char *pszFileName, const char *cacheId=NULL) = 0;
+    virtual int setXslSource(const char *pszBuffer, unsigned int nSize, const char *rootpath=NULL, const char *cacheId=NULL) = 0;
  
     // setResultTarget - Specifies where the post transform data is to be placed
     // must be set before calling parameterless variety of transform

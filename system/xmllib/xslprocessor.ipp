@@ -79,6 +79,7 @@ class MemSourceResolver : public EntityResolver, public CInterface, implements I
 private:
     Owned<IIncludeHandler> m_includehandler;
     StringArray* m_includes;
+    CIArray includeContent;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -129,12 +130,16 @@ public:
                     path.append(URLPREFIX).append(baseurl).append(PATHSEPSTR);
                 }
                 path.append(buf.length(), buf.toByteArray());
-                inputsrc = new XSLTInputSource(path.str()); 
+                inputsrc = new XSLTInputSource(path.str());
             }
             else
             {
+                buf.append((char)0);
                 size32_t buflen = buf.length();
-                MemBufInputSource* memsrc = new MemBufInputSource((const XMLByte*)buf.detach(), buflen, (const XMLCh*)NULL, false);
+                SCMStringBuffer *content = new SCMStringBuffer();
+                content->s.setBuffer(buflen, (char *)buf.detach(), buflen-1);
+                includeContent.append(*content);
+                MemBufInputSource* memsrc = new MemBufInputSource((const XMLByte*)content->s.str(), content->s.length(), (const XMLCh*)NULL, false);
                 memsrc->setCopyBufToStream(false);
                 inputsrc = memsrc;
             }
@@ -160,25 +165,28 @@ private:
     Owned<MemSourceResolver>  m_sourceResolver;
     
     StringArray m_includes;
+    StringAttr m_cacheId;
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    CXslSource(const char* fname, IIncludeHandler* handler) : m_XalanTransformer()
+    CXslSource(const char* fname, IIncludeHandler* handler, const char *cacheId=NULL) : m_XalanTransformer()
     {
         m_filename.set(fname);
         m_sourcetype = IO_TYPE_FILE;
         m_CompiledStylesheet = NULL;
+        m_cacheId.set(cacheId);
 
         if(handler)
             setIncludeHandler(handler);
     }
 
-    CXslSource(const char* buf, int len, IIncludeHandler* handler, const char *rootpath = NULL) : m_XalanTransformer()
+    CXslSource(const char* buf, int len, IIncludeHandler* handler, const char *rootpath = NULL, const char *cacheId=NULL) : m_XalanTransformer()
     {
         m_xsltext.append(len, buf);
         m_sourcetype = IO_TYPE_BUFFER;
         m_CompiledStylesheet = NULL;
+        m_cacheId.set(cacheId);
 
         if(handler)
             setIncludeHandler(handler);
@@ -195,9 +203,9 @@ public:
         }
     }
 
-    XalanCompiledStylesheet* getStylesheet(bool recompile = false)
+    XalanCompiledStylesheet* getStylesheet()
     {
-        if(!recompile && m_CompiledStylesheet != NULL)
+        if(m_CompiledStylesheet)
             return m_CompiledStylesheet;
 
         int timeout = -1;
@@ -210,7 +218,7 @@ public:
             IXslCache* xslcache = getXslCache();
             if(xslcache)
             {
-                IXslBuffer* xslbuffer = xslcache->getCompiledXsl(this, recompile);
+                IXslBuffer* xslbuffer = xslcache->getCompiledXsl(this, false);
                 if(xslbuffer)
                 {
                     CXslSource* xslsource = dynamic_cast<CXslSource*>(xslbuffer);
@@ -219,23 +227,17 @@ public:
             }
         }
 
-        compile(recompile);
+        compile();
         return m_CompiledStylesheet;
     }
 
-    virtual void compile(bool recompile)
+    virtual void compile()
     {
-        if(recompile || m_CompiledStylesheet == NULL)
+        if(m_CompiledStylesheet == NULL)
         {   
             if((m_sourcetype == IO_TYPE_FILE && m_filename.length() == 0) || (m_sourcetype == IO_TYPE_BUFFER && m_xsltext.length() == 0))
                 throw MakeStringException(-1, "XslSource::getStylesheet() - xsl source not set");
             
-            if(m_CompiledStylesheet != NULL)
-            {
-                m_XalanTransformer.destroyStylesheet(m_CompiledStylesheet);
-                m_CompiledStylesheet = NULL;                
-            }
-
             m_includes.popAll();
             
             try
@@ -247,7 +249,6 @@ public:
                 }
                 else if(m_sourcetype == IO_TYPE_BUFFER)
                 {
-                    //std::istringstream theXSLStream(m_xsltext.str(), m_xsltext.length());
                     std::istringstream theXSLStream(m_xsltext.str());
                     XSLTInputSource xslinput(&theXSLStream);
                     
@@ -277,10 +278,8 @@ public:
                 DBGLOG("%s", estr.str());
                 throw MakeStringException(2, "%s", estr.str());
             }
-
         }
     }
-
 
     bool isCompiled() const 
     { 
@@ -325,9 +324,21 @@ public:
         return 0;
     }
 
+    void clearIncludeHandler()
+    {
+        m_XalanTransformer.setEntityResolver(NULL);
+        if(m_sourceResolver)
+            m_sourceResolver.clear();
+    }
+
     virtual StringArray& getIncludes()
     {
         return m_includes;
+    }
+
+    virtual const char *getCacheId()
+    {
+        return m_cacheId.get();
     }
 };
 
@@ -498,8 +509,8 @@ public:
 
     virtual int setXmlSource(const char *pszFileName);
     virtual int setXmlSource(const char *pszBuffer, unsigned int nSize);
-    virtual int setXslSource(const char *pszFileName);
-    virtual int setXslSource(const char *pszBuffer, unsigned int nSize, const char *rootpath);
+    virtual int setXslSource(const char *pszFileName, const char *cacheId=NULL);
+    virtual int setXslSource(const char *pszBuffer, unsigned int nSize, const char *rootpath, const char *cacheId=NULL);
     virtual int setResultTarget(char *pszBuffer, unsigned int nSize);
     virtual int setResultTarget(const char *pszFileName);
     virtual int closeResultTarget();

@@ -34,19 +34,20 @@ enum IO_Type
 interface IXslBuffer : public IInterface
 {
 public:
-    virtual void compile(bool recompile) = 0;
+    virtual void compile() = 0;
     virtual bool isCompiled() const = 0;
     virtual IO_Type getType() = 0;
     virtual const char* getFileName() = 0;
     virtual char* getBuf() = 0;
     virtual int getLen() = 0;
     virtual StringArray& getIncludes() = 0;
+    virtual const char *getCacheId()=0;
 };
 
 interface IXslCache : public IInterface
 {
 public:
-    virtual IXslBuffer* getCompiledXsl(IXslBuffer* xslbuffer, bool recompile) = 0;
+    virtual IXslBuffer* getCompiledXsl(IXslBuffer* xslbuffer, bool replace) = 0;
     virtual void setCacheTimeout(int timeout) = 0;
 };
 
