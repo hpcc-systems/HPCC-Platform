@@ -193,6 +193,9 @@
                 <xsl:attribute name="cutoff">
                    <xsl:value-of select="@xrefCutoff"/>
                 </xsl:attribute>
+                <xsl:attribute name="maxScanThreads">
+                   <xsl:value-of select="@xrefMaxScanThreads"/>
+                </xsl:attribute>
                 <xsl:attribute name="eclwatchProvider">
                    <xsl:call-template name="outputBool">
                       <xsl:with-param name="val" select="@xrefEclWatchProvider"/>

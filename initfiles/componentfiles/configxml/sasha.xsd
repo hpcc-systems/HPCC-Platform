@@ -408,6 +408,13 @@
                 </xs:appinfo>
             </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="xrefMaxScanThreads" type="xs:nonNegativeInteger" default="500">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>maximum thread count for scanning directories</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
         <xs:attribute name="xrefEclWatchProvider" type="xs:boolean" use="optional" default="true">
             <xs:annotation>
                 <xs:appinfo>
