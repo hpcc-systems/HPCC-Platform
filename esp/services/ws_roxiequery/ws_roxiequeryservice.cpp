@@ -47,6 +47,7 @@ const unsigned int  ROXIEQUERYASSOCIATEDNAME    = 9;
 const unsigned int  ROXIEQUERYHASALIASES            = 10;
 const unsigned int  ROXIEQUERYDEPLOYEDBY            = 11;
 const unsigned int  ROXIEQUERYUPDATEDBY         = 12;
+const unsigned int  ROXIEMANAGER_TIMEOUT        = 60000;
 
 static const char* FEATURE_URL="RoxieQueryAccess";
 static const char* ROXIE_CLUSTER="RoxieCluster";
@@ -290,7 +291,7 @@ bool CWsRoxieQueryEx::getAllRoxieQueries(IEspContext &context, const char* clust
     ep1.getUrlStr(currentDaliIp);
 
     LogLevel loglevel = getEspLogLevel(&context);
-    Owned<IRoxieQueryManager> queryManager = createRoxieQueryManager(ep, cluster, currentDaliIp, 60000, username.str(), password.str(), loglevel);
+    Owned<IRoxieQueryManager> queryManager = createRoxieQueryManager(ep, cluster, currentDaliIp, ROXIEMANAGER_TIMEOUT, username.str(), password.str(), loglevel);
     Owned<IPropertyTree> result = queryManager->retrieveQueryList("*", false, false, false, false, 0);
 
     Owned<IPropertyTreeIterator> queries = result->getElements("Query");
@@ -557,7 +558,7 @@ bool CWsRoxieQueryEx::onQueryDetails(IEspContext &context, IEspRoxieQueryDetails
         ep1.getUrlStr(currentDaliIp);
 
         LogLevel loglevel = getEspLogLevel(&context);
-        Owned<IRoxieQueryManager> queryManager = createRoxieQueryManager(ep, cluster, currentDaliIp, 60000, username.str(), password.str(), loglevel);
+        Owned<IRoxieQueryManager> queryManager = createRoxieQueryManager(ep, cluster, currentDaliIp, ROXIEMANAGER_TIMEOUT, username.str(), password.str(), loglevel);
         Owned<IPropertyTree> result = queryManager->retrieveQueryList(queryID, false, false, false, false, 0);
 
         if (result)
@@ -633,6 +634,183 @@ bool CWsRoxieQueryEx::onQueryDetails(IEspContext &context, IEspRoxieQueryDetails
     catch(IException* e)
     {   
         FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWsRoxieQueryEx::onGVCAjaxGraph(IEspContext &context, IEspGVCAjaxGraphRequest &req, IEspGVCAjaxGraphResponse &resp)
+{
+    resp.setCluster(req.getCluster());
+    resp.setName(req.getName());
+    resp.setGraphName(req.getGraphName());
+    resp.setGraphType("roxiequery");
+    return true;
+}
+bool CWsRoxieQueryEx::onShowGVCGraph(IEspContext &context, IEspShowGVCGraphRequest &req, IEspShowGVCGraphResponse &resp)
+    {
+        const char *queryName = req.getQueryId();
+        if (!queryName || !*queryName)
+            throw MakeStringException(0, "Missing Roxie query name!");
+
+        const char* cluster = req.getCluster();
+
+        int port;
+        StringBuffer netAddress;
+        SocketEndpoint ep;
+        getClusterConfig(ROXIE_CLUSTER, cluster, ROXIE_FARMERPROCESS1, netAddress, port);
+        ep.set(netAddress.str(), port);
+
+        ep.set("10.239.219.15", port); // jo remove
+
+        StringArray graphNames;
+        enumerateGraphs(queryName, ep, graphNames);
+
+        char graphName[256];
+        if (req.getGraphName() && *req.getGraphName())
+        {
+            strcpy(graphName, req.getGraphName());
+        }
+        else if (graphNames.length() > 0)
+        {
+            StringBuffer graphName0 = graphNames.item(0);
+            strcpy(graphName, graphName0.str());
+        }
+        else
+        {
+            throw MakeStringException(0, "Graph not found!");
+        }
+
+        Owned<IPropertyTree> pXgmmlGraph = getXgmmlGraph(queryName, ep, graphName);
+
+        StringBuffer xml;
+        toXML(pXgmmlGraph, xml);
+
+        if (xml.length() > 0)
+        {
+            StringBuffer str;
+            encodeUtf8XML(xml.str(), str, 0);
+
+            StringBuffer xml1;
+            xml1.append("<Control>");
+            xml1.append("<Endpoint>");
+            xml1.append("<Query id=\"Gordon.Extractor.0\">");
+            xml1.appendf("<Graph id=\"%s\">", graphName);
+            xml1.append("<xgmml>");
+            xml1.append(str);
+            xml1.append("</xgmml>");
+            xml1.append("</Graph>");
+            xml1.append("</Query>");
+            xml1.append("</Endpoint>");
+            xml1.append("</Control>");
+
+            resp.setTheGraph(xml1);
+        }
+
+        if (graphName && *graphName)
+            resp.setGraphName( graphName );
+        resp.setQueryId( queryName );
+        resp.setGraphNames( graphNames );
+        return true;
+    }
+
+void CWsRoxieQueryEx::enumerateGraphs(const char *queryName, SocketEndpoint &ep, StringArray& graphNames)
+{
+
+    try
+    {
+
+        Owned<IRoxieCommunicationClient> roxieClient = createRoxieCommunicationClient(ep, ROXIEMANAGER_TIMEOUT);
+        Owned<IPropertyTree> result = roxieClient->retrieveQueryStats(queryName, "listGraphNames", NULL, false);
+        IPropertyTree* rootTree = result->queryPropTree("Endpoint/Query");
+
+        if (rootTree)
+        {
+            Owned<IPropertyTreeIterator> graphit = rootTree->getElements("Graph");
+            ForEach(*graphit)
+            {
+                const char* graphName = graphit->query().queryProp("@id");
+                graphNames.append( graphName );
+            }
+        }
+    }
+    catch (IException *e)
+    {
+        StringBuffer errmsg;
+        ERRLOG("Exception when enumerating graphs for %s: %s", queryName, e->errorMessage(errmsg).str());
+        throw e;
+    }
+    catch(...)
+    {
+        ERRLOG("Unknown exception when enumerating graphs for %s", queryName);
+        throw MakeStringException(-1, "Unknown exception while enumerating graphs for %s", queryName);
+    }
+}
+
+IPropertyTree* CWsRoxieQueryEx::getXgmmlGraph(const char *queryName, SocketEndpoint &ep, const char* graphName)
+{
+
+    try
+    {
+        Owned<IRoxieCommunicationClient> roxieClient = createRoxieCommunicationClient(ep, ROXIEMANAGER_TIMEOUT);
+        Owned<IPropertyTree> result = roxieClient->retrieveQueryStats(queryName, "selectGraph", graphName, true);
+
+        StringBuffer xpath;
+        xpath   << "Endpoint/Query/Graph[@id='" 
+                << graphName
+                << "']/xgmml/graph";
+        IPropertyTree* pXgmmlGraph = result->queryPropTree(xpath.str());
+        if (!pXgmmlGraph)
+            throw MakeStringException(-1, "Graph not found!");
+        return LINK( pXgmmlGraph );
+    }
+    catch (IException *e)
+    {
+        StringBuffer errmsg;
+        ERRLOG("Exception when fetching graph %s for %s: %s", graphName, queryName, e->errorMessage(errmsg).str());
+        throw e;
+    }
+    catch(...)
+    {
+        ERRLOG("Unknown exception when fetching graph %s for %s", graphName, queryName);
+        throw MakeStringException(-1, "Unknown exception while generating graph %s for %s", graphName, queryName);
+    }
+}
+
+bool CWsRoxieQueryEx::onRoxieQueryProcessGraph(IEspContext &context, IEspRoxieQueryProcessGraphRequest &req, IEspRoxieQueryProcessGraphResponse &resp)
+{
+    const char* cluster = req.getCluster();
+    const char* graphName = req.getGraphName();
+    const char *queryName = req.getQueryId();
+    if (!queryName || !*queryName)
+        throw MakeStringException(0, "Missing Roxie query name!");
+
+    try
+    {
+        int port;
+        StringBuffer netAddress;
+        SocketEndpoint ep;
+        getClusterConfig(ROXIE_CLUSTER, cluster, ROXIE_FARMERPROCESS1, netAddress, port);
+        ep.set(netAddress.str(), port);
+        ep.set("10.239.219.15", port); // jo remove
+        Owned<IRoxieCommunicationClient> roxieClient = createRoxieCommunicationClient(ep, ROXIEMANAGER_TIMEOUT);
+
+        Owned<IPropertyTree> xgmml = getXgmmlGraph(queryName, ep, graphName);
+
+        StringBuffer x;
+
+        toXML(xgmml.get(), x);
+        resp.setTheGraph(x.str());
+    }
+    catch (IException *e)
+    {
+        StringBuffer errmsg;
+        ERRLOG("Exception when fetching graph stats %s for %s: %s", graphName, queryName, e->errorMessage(errmsg).str());
+        throw e;
+    }
+    catch(...)
+    {
+        ERRLOG("Unknown exception when fetching graph stats %s for %s", graphName, queryName);
+        throw MakeStringException(-1, "Unknown exception while generating graph %s for %s", graphName, queryName);
     }
     return true;
 }
