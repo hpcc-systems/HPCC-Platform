@@ -136,7 +136,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   set(version ${majorver}.${minorver}.${point})
 
   IF ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-    set( stagever "${stagever}_Debug" )
+    set( stagever "${stagever}-Debug" )
   ENDIF ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
 
   ###########################################################################
