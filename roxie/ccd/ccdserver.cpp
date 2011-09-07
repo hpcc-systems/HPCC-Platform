@@ -14382,12 +14382,15 @@ public:
     }
 
 //IRoxieServerLoopResultProcessor
-    virtual void noteUseIteration(unsigned whichIteration)
+    virtual void noteUseIteration(unsigned _whichIteration)
     {
-        if (!outputs.isItem(whichIteration))
-            throw MakeStringException(ROXIE_GRAPH_PROCESSING_ERROR, "Error reading graph result %d from iteration %d", whichIteration, createLoopCounter);
-
-        outputs.item(whichIteration).noteUsed();
+        int whichIteration = (int) _whichIteration; // May go negative - API is unsigned for historical reasons
+        if (whichIteration >= 0)
+        {
+            if (!outputs.isItem(whichIteration))
+                throw MakeStringException(ROXIE_GRAPH_PROCESSING_ERROR, "Error reading graph result %d from iteration %d", whichIteration, createLoopCounter);
+            outputs.item(whichIteration).noteUsed();
+        }
     }
 
     virtual IRoxieInput * connectIterationOutput(unsigned whichIteration, IProbeManager *probeManager, IArrayOf<IRoxieInput> &probes, IRoxieServerActivity *targetAct, unsigned targetIdx)
