@@ -1633,7 +1633,6 @@ int CHttpRequest::readContentToFile(StringBuffer netAddress, StringBuffer path)
 
     StringBuffer lengthStr;
     lengthStr.append(m_content_length64);
-    DBGLOG(">> m_content_length=<%s>", lengthStr.str());
 
     Owned<CMimeMultiPart> m_multipart = new CMimeMultiPart("1.0", m_content_type.get(), "", "", "");
     m_multipart->parseContentType(m_content_type.get());
@@ -1674,7 +1673,7 @@ int CHttpRequest::readContentToFile(StringBuffer netAddress, StringBuffer path)
     }
 
     //Create IFile to store the file
-    StringBuffer name0(fileName), name1(fileName), fileToSave;
+    StringBuffer name0(fileName), name1(fileName), fileToSave, fileToUse;
     char* str = (char*) name1.reverse().str();
     char* pStr = (char*) strchr(str, '\\');
     if (!pStr)
@@ -1685,7 +1684,8 @@ int CHttpRequest::readContentToFile(StringBuffer netAddress, StringBuffer path)
         name0.clear().append(str).reverse();
     }
 
-    fileToSave.appendf("%s/%s", path.str(), name0.str());
+    fileToSave.appendf("%s/%s.part", path.str(), name0.str());
+    fileToUse.appendf("%s/%s", path.str(), name0.str());
 
     RemoteFilename rfn;
     SocketEndpoint ep;
@@ -1728,16 +1728,18 @@ int CHttpRequest::readContentToFile(StringBuffer netAddress, StringBuffer path)
     if (lastChuck)
         m_multipart->checkEndOfFile(fileContent);
 
-    DBGLOG(">> The length of the first chuck=<%d>", fileContent.length());
-
     //Save the data into the file
     if (fileio->write(0, fileContent.length(), fileContent.toByteArray()) != fileContent.length())
     {
         DBGLOG(">> File %s cannot be uploaded.", name0.str());
         return 0;
     }
+
     if(lastChuck)
+    {
+        file->rename(fileToUse.str());
         return 0;
+    }
 
     //The file has more than two chucks. Now, look though the rest of the chucks.
     __int64 offset = fileContent.length();
@@ -1794,6 +1796,7 @@ int CHttpRequest::readContentToFile(StringBuffer netAddress, StringBuffer path)
         offset += readlen;
     }
 
+    file->rename(fileToUse.str());
     return 0;
 }
 
