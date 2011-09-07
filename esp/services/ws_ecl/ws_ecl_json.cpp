@@ -7,6 +7,7 @@
 //#include <locale.h>
 
 #include <vector>
+#include <clocale>
 
 #include "JSON_parser.h"
 

@@ -34,6 +34,8 @@
 #include <stdexcept>
 #endif
 
+#include <new>
+
 #define CONTENT_LENGTH "Content-Length: "
 
 unsigned soapTraceLevel = 1;

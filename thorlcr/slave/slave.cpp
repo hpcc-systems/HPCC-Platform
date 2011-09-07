@@ -36,6 +36,8 @@
 
 #include "slave.ipp"
 
+#include <new>
+
 #define FATAL_ACTJOIN_TIMEOUT (5*60*1000)
 
 activityslaves_decl CGraphElementBase *createSlaveContainer(IPropertyTree &xgmml, CGraphBase &owner, CGraphBase *resultsGraph);
