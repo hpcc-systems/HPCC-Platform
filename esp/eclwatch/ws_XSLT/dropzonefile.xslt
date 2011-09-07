@@ -114,6 +114,7 @@
               {
                 var inner = "<span id=\"loadingMsg\">";
                 inner += "<h3>Uploading, please wait ...</h3>";
+                inner += "<h3>If you navigate away from this page, your upload may be aborted.</h3>";
                 inner += "</span>";
                 inner += "<span id=\"loadingTimeOut\" style=\"visibility:hidden\">";
                 inner += "<h3>Browser timed out due to a long time delay.</h3>";
@@ -127,6 +128,12 @@
               {
                 obj.style.display = "inline";
                 obj.style.visibility = "visible";
+              }
+
+              var obj = document.getElementById('UploadBtn');
+              if (obj)
+              {
+                obj.disabled = true;
               }
 
               var obj1 = document.getElementById('loadingTimeOut');
@@ -271,7 +278,7 @@
                           <input type="file" id="FilesToUpload" name="FilesToUpload" size="65"/>
                         </td>
                         <td>
-                          <input type="submit" value="Upload Now" onclick="return uploadNow();"/>
+                          <input type="submit" id="UploadBtn" value="Upload Now" onclick="return uploadNow();"/>
                         </td>
                       </tr>
                     </table>
