@@ -1771,7 +1771,7 @@ bool CMasterGraph::fireException(IException *e)
             LOG(MCerror, thorJob, e);
             if (NULL != fatalHandler)
                 fatalHandler->inform(LINK(e));
-            else if (owner)
+            if (owner)
                 owner->fireException(e);
             else
                 job.fireException(e);
