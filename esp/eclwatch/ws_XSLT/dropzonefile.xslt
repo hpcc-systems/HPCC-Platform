@@ -145,7 +145,8 @@
               intervalId = setInterval("doBlink()",1000);
 
               document.forms['DropZoneForm'].action= url0;
-              return true;
+              document.forms['DropZoneForm'].submit();
+              return false;
             }   
 
             function checkSelected(o)
@@ -202,7 +203,7 @@
                 document.forms['DropZoneFileForm'].Path.value=directory;
                 document.forms['DropZoneFileForm'].OS.value=sourceOS;
 
-                url0 = "?upload_&NetAddress=" + selected.value + "&OS=" + sourceOS + "&Path=" + directory;
+                url0 = "/FileSpray/UploadFile?upload_&NetAddress=" + selected.value + "&OS=" + sourceOS + "&Path=" + directory;
               }
             }
 
@@ -218,7 +219,7 @@
               getSelectedDropZone();
               document.forms['DropZoneForm'].Directory.value = initialPath;
               document.forms['DropZoneFileForm'].Path.value = initialPath;
-              url0 = "?upload_&NetAddress=" + selected.value + "&OS=" + sourceOS + "&Path=" + initialPath;
+              url0 = "/FileSpray/UploadFile?upload_&NetAddress=" + selected.value + "&OS=" + sourceOS + "&Path=" + initialPath;
             }   
           ]]></xsl:text>
         </script>
@@ -235,7 +236,7 @@
             <table name="table0" id="table0">
               <tr>
                 <td>
-                  <form id="DropZoneForm" name="DropZoneForm" action="/FileSpray/UploadFile" enctype="multipart/form-data" method="post">
+                  <form id="DropZoneForm" name="DropZoneForm" enctype="multipart/form-data" method="post">
                     <table name="table1" id="table1">
                       <tr>
                         <td>Machine/dropzone:</td>
@@ -278,7 +279,7 @@
                           <input type="file" id="FilesToUpload" name="FilesToUpload" size="65"/>
                         </td>
                         <td>
-                          <input type="submit" id="UploadBtn" value="Upload Now" onclick="return uploadNow();"/>
+                          <input type="button" class="sbutton" id="UploadBtn" value="Upload Now" onclick="return uploadNow();"/>
                         </td>
                       </tr>
                     </table>
