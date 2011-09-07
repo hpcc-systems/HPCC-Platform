@@ -205,7 +205,6 @@ IHqlExpression * PositionTransformer::createTransformed(IHqlExpression * _expr)
             if (grouping && (grouping->getOperator() != no_attr))
                 fail();
             IHqlExpression * record = transformed->queryRecord();
-            unsigned max = record->numChildren();
             HqlExprArray fields;
             unwindChildren(fields, transformed->queryChild(1));
             ForEachChild(idx, record)

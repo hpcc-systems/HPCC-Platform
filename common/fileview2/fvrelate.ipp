@@ -31,7 +31,6 @@ typedef IArrayOf<ViewFile> ViewFileArray;
 typedef CIArrayOf<ViewRelation> ViewRelationArray;
 typedef CopyCIArrayOf<ViewFile> ViewFileCopyArray;
 typedef CopyCIArrayOf<ViewRelation> ViewRelationCopyArray;
-typedef ICopyArrayOf<IAtom> AtomArray;
 
 //---------------------------------------------------------------------------
 
@@ -330,7 +329,7 @@ interface IErDiagramBuilder
 class FILEVIEW_API ViewERdiagramVisitor : public IViewFileWebVisitor, public ISchemaBuilder
 {
 public:
-    ViewERdiagramVisitor(IErDiagramBuilder & _builder) : builder(_builder) {}
+    ViewERdiagramVisitor(IErDiagramBuilder & _builder) : builder(_builder) { activeFieldCount = 0; }
 
 // IViewFileWebVisitor
     virtual void visit(ViewFile * file);

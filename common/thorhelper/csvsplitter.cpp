@@ -34,6 +34,8 @@ CSVSplitter::CSVSplitter()
     data = NULL;
     numQuotes = 0;
     unquotedBuffer = NULL;
+    maxColumns = 0;
+    curUnquoted = NULL;
 }
 
 CSVSplitter::~CSVSplitter()
@@ -72,6 +74,7 @@ void CSVSplitter::reset()
     data = NULL;
     numQuotes = 0;
     unquotedBuffer = NULL;
+    maxCsvSize = 0;
 }
 
 void CSVSplitter::init(unsigned _maxColumns, ICsvParameters * csvInfo, const char * dfsQuotes, const char * dfsSeparators, const char * dfsTerminators)

@@ -485,7 +485,7 @@ private:
     class ListItemPtr : public CInterface, implements IRuntimeWorkflowItemIterator
     {
     public:
-        ListItemPtr(ListItem * _start) : start(_start) {}
+        ListItemPtr(ListItem * _start) : start(_start) { ptr = NULL; }
         IMPLEMENT_IINTERFACE;
         virtual bool         first() { ptr = start; return isValid(); }
         virtual bool         isValid() { return ptr != NULL; }
@@ -733,7 +733,7 @@ bool WorkflowMachine::executeItem(unsigned wfid, unsigned scheduledWfid)
         catch(WorkflowException * ce)
         {
             if(ce->queryType() == WorkflowException::ABORT)
-                throw ce;
+                throw;
             reportContingencyFailure("SUCCESS", ce);
             ce->Release();
         }
@@ -764,11 +764,11 @@ bool WorkflowMachine::doExecuteItemDependency(IRuntimeWorkflowItem & item, unsig
     catch(WorkflowException * e)
     {
         if(e->queryType() == WorkflowException::ABORT)
-            throw e;
+            throw;
         if(!attemptRetry(item, dep, scheduledWfid))
         {
             handleFailure(item, e, true);
-            throw e;
+            throw;
         }
         e->Release();
     }
@@ -784,11 +784,11 @@ void WorkflowMachine::doExecuteItem(IRuntimeWorkflowItem & item, unsigned schedu
     catch(WorkflowException * ein)
     {
         if(ein->queryType() == WorkflowException::ABORT)
-            throw ein;
+            throw;
         if(!attemptRetry(item, 0, scheduledWfid))
         {
             handleFailure(item, ein, true);
-            throw ein;
+            throw;
         }
         ein->Release();
     }
@@ -914,7 +914,7 @@ bool WorkflowMachine::attemptRetry(IRuntimeWorkflowItem & item, unsigned dep, un
         {
             okay = false;
             if(ce->queryType() == WorkflowException::ABORT)
-                throw ce;
+                throw;
             reportContingencyFailure("RECOVERY", ce);
             ce->Release();
         }
@@ -963,7 +963,7 @@ void WorkflowMachine::handleFailure(IRuntimeWorkflowItem & item, WorkflowExcepti
         catch(WorkflowException * ce)
         {
             if(ce->queryType() == WorkflowException::ABORT)
-                throw ce;
+                throw;
             reportContingencyFailure("FAILURE", ce);
             ce->Release();
         }

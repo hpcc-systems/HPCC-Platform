@@ -55,7 +55,6 @@ unsigned getNumMatchingFields(ISteppingMeta * inputStepping, ISteppingMeta * cal
     if (inputStepping && callerStepping)
     {
         //Determine where the stepping fields overlap, and work out the extent.
-        unsigned parentCount = callerStepping->getNumFields();
         unsigned inputCount = inputStepping->getNumFields();
         for (unsigned i=0; i < inputCount; i++)
         {
@@ -603,6 +602,15 @@ void CFilteredInputBuffer::reset()
 
 CFilteredSteppedMerger::CFilteredSteppedMerger()
 {
+    matches = NULL;
+    joinKind = 0;
+    numInputs = 0;
+    equalCompare = NULL;
+    extraCompare = NULL;
+    globalCompare = NULL;
+    minMatches = 0;
+    maxMatches = 0;
+    fullyMatchedLevel = 0;
 }
 
 CFilteredSteppedMerger::~CFilteredSteppedMerger()
@@ -854,6 +862,8 @@ CMergeJoinProcessor::CMergeJoinProcessor(IHThorNWayMergeJoinArg & _arg) : helper
     combineConjunctions = true;
     allInputsAreOuterInputs = false;
     maxSeekRecordSize = 0;
+    numInputs = 0;
+    eof = true;
 
     assertex(helper.numOrderFields() == mergeSteppingMeta->getNumFields());
     bool hasPostfilter = false;
@@ -1528,6 +1538,9 @@ CMofNMergeJoinProcessor::CMofNMergeJoinProcessor(IHThorNWayMergeJoinArg & _arg) 
     combineConjunctions = false;
     alive = NULL;
     candidateMask = NULL;
+    minMatches = 0;
+    maxMatches = 0;
+    numActive = 0;
 }
 
 
@@ -1734,6 +1747,11 @@ CNaryJoinLookaheadQueue::CNaryJoinLookaheadQueue(IEngineRowAllocator * _inputAll
     input.set(_input);
     activeRowPtr = _activeRowPtr;
     left = _left;
+    equalityRow = NULL;
+    curRow = 0;
+    maxRow = 0;
+    numSkipped = 0;
+    done = true;
 }
 
 bool CNaryJoinLookaheadQueue::beforeProcessCandidates(const void * _equalityRow, bool needToVerifyNext)
@@ -1971,6 +1989,8 @@ bool CNaryJoinLookaheadQueue::flushUnmatched()
 CProximityJoinProcessor::CProximityJoinProcessor(IHThorNWayMergeJoinArg & _helper) :
     CMergeJoinProcessor(_helper)
 {
+    maxRightBeforeLeft = 0;
+    maxLeftBeforeRight = 0;
 }
 
 void CProximityJoinProcessor::beforeProcessing(IEngineRowAllocator * _inputAllocator, IEngineRowAllocator * _outputAllocator)
@@ -2120,6 +2140,7 @@ unsigned CProximityJoinProcessor::getBestToSeekFrom(unsigned seekInput) const
 CJoinGenerator::CJoinGenerator(IEngineRowAllocator * _inputAllocator, IEngineRowAllocator * _outputAllocator, IHThorNWayMergeJoinArg & _helper, CSteppedInputLookaheadArray & _inputs) : 
     helper(_helper), inputAllocator(_inputAllocator), outputAllocator(_outputAllocator)
 {
+    state = JSdone;
     unsigned flags = helper.getJoinFlags();
     stepCompare = helper.querySteppingMeta()->queryCompare();
     globalCompare = NULL;

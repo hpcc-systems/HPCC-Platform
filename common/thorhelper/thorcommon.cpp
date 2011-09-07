@@ -367,6 +367,8 @@ CStreamMerger::CStreamMerger(bool _pullConsumes)
     dedup = false;
     activeInputs = 0;
     pullConsumes = _pullConsumes;
+    numInputs = 0;
+    first = true;
 }
 
 CStreamMerger::~CStreamMerger()
@@ -1414,9 +1416,9 @@ public:
     void putRow(const void *row)
     {
         if (row) {
-            byte b = 0;
             serializer->serialize(*this,(const byte *)row);
             if (grouped) {
+                byte b = 0;
                 if (bufpos<ROW_WRITER_BUFFERSIZE) 
                     buf[bufpos++] = b;
                 else 
@@ -1538,7 +1540,6 @@ IExtRowWriter *createRowWriter(IFileIOStream *strm,IOutputRowSerializer *seriali
 class CDiskMerger : public CInterface, implements IDiskMerger
 {
     IArrayOf<IFile> tempfiles;
-    unsigned numstrms;
     IRowStream **strms;
     Linked<IRecordSize> irecsize;
     StringAttr tempnamebase;

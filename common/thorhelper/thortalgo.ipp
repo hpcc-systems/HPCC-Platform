@@ -65,8 +65,8 @@ public:
 class THORHELPER_API TomitaMatchPath : public NlpMatchPath
 {
 public:
-    TomitaMatchPath(MemoryBuffer & in) : NlpMatchPath(in) {}
-    TomitaMatchPath(const UnsignedArray & _ids, const UnsignedArray & _indices) : NlpMatchPath(_ids, _indices) {}
+    TomitaMatchPath(MemoryBuffer & in) : NlpMatchPath(in) { choices = NULL; }
+    TomitaMatchPath(const UnsignedArray & _ids, const UnsignedArray & _indices) : NlpMatchPath(_ids, _indices) { choices = NULL; }
 
     IMatchedElement * getMatch(GrammarSymbol * top, PackedSymbolChoice & choice);
 

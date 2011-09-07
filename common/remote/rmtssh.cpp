@@ -177,6 +177,7 @@ public:
         strict = false;
         verbose = false;
         dryrun = false;
+        useplink = false;
         replicationoffset = 0;
     }
 

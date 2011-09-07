@@ -183,7 +183,6 @@ protected:
     CResultSetMetaData  meta;
     Linked<IFvDataSource> dataSource;
     BoolArray mappedFields;
-    __int64 numRows;
     CriticalSection cs;
 };
 
@@ -193,7 +192,7 @@ class CColumnFilter : public CInterface
 public:
     CColumnFilter(unsigned _whichColumn, ITypeInfo * _type, bool _isMappedIndexField)
         : whichColumn(_whichColumn)
-    { type.set(_type); optimized = false; isMappedIndexField = _isMappedIndexField; }
+    { type.set(_type); optimized = false; isMappedIndexField = _isMappedIndexField; subLen = 0; }
 
     void addValue(unsigned lenText, const char * value);
 

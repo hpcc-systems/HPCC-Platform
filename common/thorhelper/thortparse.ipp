@@ -136,8 +136,6 @@ protected:
     bool cachedIsNull;
 };
 
-typedef CIArrayOf<GrammarSymbol> GrammarSymbolArray;
-
 class PackedSymbol : public GrammarSymbol
 {
 public:

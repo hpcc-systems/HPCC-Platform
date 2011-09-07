@@ -141,15 +141,6 @@ NlpMatchPath::~NlpMatchPath()
 void NlpMatchPath::init()
 {
     maxDepth = ids.ordinality();
-    unsigned firstUnbounded = maxDepth;
-    for (unsigned depth=0; depth < maxDepth; depth++)
-    {
-        if (indices.item(depth) == UNKNOWN_INSTANCE)
-        {
-            firstUnbounded = depth;
-            break;
-        }
-    }
     searchIndices = new unsigned[maxDepth];
 }
 
@@ -259,6 +250,7 @@ void CMatchedResultInfo::serialize(MemoryBuffer & out) const
 
 CMatchedResults::CMatchedResults(CMatchedResultInfo * _def)
 {
+    in = NULL;
     def = _def;
     unsigned num = def->matchResults.ordinality();
     matched = new IMatchedElement *[num];
@@ -358,8 +350,8 @@ void CMatchedResults::getMatchText(size32_t & outlen, char * & out, unsigned idx
 void CMatchedResults::getMatchUnicode(size32_t & outlen, UChar * & out, unsigned idx)
 {
     const IMatchedElement * cur = matched[idx];
-    const byte * start = matched[idx]->queryStartPtr(); 
-    size32_t size = (size32_t)(matched[idx]->queryEndPtr() - start);
+    const byte * start = cur->queryStartPtr();
+    size32_t size = (size32_t)(cur->queryEndPtr() - start);
 
     switch (def->inputFormat)
     {
@@ -383,8 +375,8 @@ void CMatchedResults::getMatchUnicode(size32_t & outlen, UChar * & out, unsigned
 void CMatchedResults::getMatchUtf8(size32_t & outlen, char * & out, unsigned idx)
 {
     const IMatchedElement * cur = matched[idx];
-    const byte * start = matched[idx]->queryStartPtr(); 
-    size32_t size = (size32_t)(matched[idx]->queryEndPtr() - start);
+    const byte * start = cur->queryStartPtr();
+    size32_t size = (size32_t)(cur->queryEndPtr() - start);
 
     switch (def->inputFormat)
     {
@@ -633,6 +625,10 @@ NlpAlgorithm::NlpAlgorithm(CMatchedResultInfo * _matched)
     chooseMax = false;
     chooseBest = false;
     singleChoicePerLine = false;
+    inputFormat = NlpAscii;
+    keepLimit = UINT_MAX;
+    atMostLimit = UINT_MAX;
+    charWidth = sizeof(char);
 }
 
 NlpAlgorithm::~NlpAlgorithm()
