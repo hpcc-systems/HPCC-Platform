@@ -3186,7 +3186,7 @@ IHqlExpression * createTrimExpr(IHqlExpression * value, IHqlExpression * flags)
     {
         ICharsetInfo * charset = srcType->queryCharset();
         ICollationInfo * collation = srcType->queryCollation();
-        tgtType = makeStringType(UNKNOWN_LENGTH, LINK(charset),LINK(collation));
+        tgtType = makeStringType(UNKNOWN_LENGTH, getCharset(asciiAtom),getCollation(asciiAtom));
     }
 
     HqlExprArray args;

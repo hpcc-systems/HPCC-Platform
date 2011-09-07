@@ -4706,7 +4706,7 @@ void HqlCppTranslator::doBuildExprCompare(BuildCtx & ctx, IHqlExpression * expr,
                 args.append(*getElementPointer(lhs.expr));
                 args.append(*getElementPointer(rhs.expr));
                 
-                orderExpr.setown(bindTranslatedFunctionCall(strcmpAtom, args));
+                orderExpr.setown(bindTranslatedFunctionCall(compareVStrVStrAtom, args));
                 break;
             }
         case type_decimal:
@@ -8029,7 +8029,7 @@ void HqlCppTranslator::doBuildAssignCompareElement(BuildCtx & ctx, EvaluateCompa
                 args.append(*getElementPointer(lhs.expr));
                 args.append(*getElementPointer(rhs.expr));
                 
-                op = bindTranslatedFunctionCall(strcmpAtom, args);
+                op = bindTranslatedFunctionCall(compareVStrVStrAtom, args);
                 break;
             }
         case type_decimal:
@@ -8512,11 +8512,15 @@ void HqlCppTranslator::doBuildAssignHashElement(BuildCtx & ctx, HashCodeCreator 
     CHqlBoundExpr bound;
     OwnedHqlExpr length;
     OwnedHqlExpr ptr;
+    bool alreadyTrimmedRight = (elem->getOperator() == no_trim) && (elem->hasProperty(rightAtom) || !elem->hasProperty(leftAtom));
+    //If this hash is generated internally (e.g., for a dedup) and fixed length, then can simplify the hash calculation
+    bool canOptimizeHash = (creator.optimize() && isFixedSize(type));
+    bool optimizeTrim = alreadyTrimmedRight || canOptimizeHash;
     switch (type->getTypeCode())
     {
         case type_string:
             {
-                if (!creator.optimize())
+                if (!optimizeTrim)
                 {
                     OwnedHqlExpr trimmed = createValue(no_trim, getStretchedType(UNKNOWN_LENGTH, type), LINK(elem));
                     buildCachedExpr(ctx, trimmed, bound);
@@ -8531,7 +8535,7 @@ void HqlCppTranslator::doBuildAssignHashElement(BuildCtx & ctx, HashCodeCreator 
 
         case type_unicode:
             {
-                if (!creator.optimize())
+                if (!optimizeTrim)
                 {
                     OwnedHqlExpr trimmed = createValue(no_trim, getStretchedType(UNKNOWN_LENGTH, type), LINK(elem));
                     buildCachedExpr(ctx, trimmed, bound);
@@ -8552,7 +8556,7 @@ void HqlCppTranslator::doBuildAssignHashElement(BuildCtx & ctx, HashCodeCreator 
 
         case type_utf8:
             {
-                if (!creator.optimize())
+                if (!optimizeTrim)
                 {
                     OwnedHqlExpr trimmed = createValue(no_trim, getStretchedType(UNKNOWN_LENGTH, type), LINK(elem));
                     buildCachedExpr(ctx, trimmed, bound);
@@ -8573,11 +8577,35 @@ void HqlCppTranslator::doBuildAssignHashElement(BuildCtx & ctx, HashCodeCreator 
 
 
         case type_data:
+            {
+                buildCachedExpr(ctx, elem, bound);
+
+                length.setown(getBoundLength(bound));
+                ptr.setown(getElementPointer(bound.expr));
+                break;
+            }
         case type_qstring:
-            buildCachedExpr(ctx, elem, bound);
-            length.setown(getBoundSize(bound));
-            ptr.setown(getElementPointer(bound.expr));
-            break;
+            {
+                LinkedHqlExpr exprToHash = elem;
+                if (!canOptimizeHash)
+                {
+                    //Always convert to a string so the hash is compatible with a string.
+                    OwnedHqlExpr cast = ensureExprType(elem, unknownStringType);
+                    if (alreadyTrimmedRight)
+                    {
+                        exprToHash.set(cast);
+                    }
+                    else
+                    {
+                        OwnedHqlExpr trimmed = createValue(no_trim, LINK(unknownStringType), LINK(cast));
+                        exprToHash.setown(foldHqlExpression(trimmed));
+                    }
+                }
+                buildCachedExpr(ctx, exprToHash, bound);
+                length.setown(getBoundSize(bound));
+                ptr.setown(getElementPointer(bound.expr));
+                break;
+            }
 
         case type_varstring:
             buildCachedExpr(ctx, elem, bound);
@@ -9495,9 +9523,10 @@ void HqlCppTranslator::doBuildExprTrim(BuildCtx & ctx, IHqlExpression * expr, CH
     bool hasLeft = expr->hasProperty(leftAtom);
     bool hasRight = expr->hasProperty(rightAtom);
     
+    type_t btc = bound.expr->queryType()->getTypeCode();
     if(hasAll || hasLeft) 
     {
-        if (bound.expr->queryType()->getTypeCode() == type_varstring)
+        if (btc == type_varstring)
         {
             if(hasAll) {
                 func = trimVAllAtom;
@@ -9509,7 +9538,7 @@ void HqlCppTranslator::doBuildExprTrim(BuildCtx & ctx, IHqlExpression * expr, CH
                 func = trimVLeftAtom;
             }
         }
-        else if (bound.expr->queryType()->getTypeCode() == type_unicode)
+        else if (btc == type_unicode)
         {
             if(hasAll) {
                 func = trimUnicodeAllAtom;
@@ -9521,7 +9550,7 @@ void HqlCppTranslator::doBuildExprTrim(BuildCtx & ctx, IHqlExpression * expr, CH
                 func = trimUnicodeLeftAtom;
             }
         }
-        else if (bound.expr->queryType()->getTypeCode() == type_varunicode)
+        else if (btc == type_varunicode)
         {
             if(hasAll) {
                 func = trimVUnicodeAllAtom;
@@ -9533,7 +9562,7 @@ void HqlCppTranslator::doBuildExprTrim(BuildCtx & ctx, IHqlExpression * expr, CH
                 func = trimVUnicodeLeftAtom;
             }
         }
-        else if (bound.expr->queryType()->getTypeCode() == type_utf8)
+        else if (btc == type_utf8)
         {
             if(hasAll) {
                 func = trimUtf8AllAtom;
@@ -9563,23 +9592,23 @@ void HqlCppTranslator::doBuildExprTrim(BuildCtx & ctx, IHqlExpression * expr, CH
         buildExpr(ctx, call, tgt);
     }
     else {
-        if (bound.expr->queryType()->getTypeCode() == type_varstring)
+        if (btc == type_varstring)
         {
             args.append(*LINK(str));
             func = trimVStrLenAtom;
         }
-        else if (bound.expr->queryType()->getTypeCode() == type_unicode)
+        else if (btc == type_unicode)
         {
             args.append(*getBoundLength(bound));
             args.append(*LINK(str));
             func = trimUnicodeStrLenAtom;
         }
-        else if (bound.expr->queryType()->getTypeCode() == type_varunicode)
+        else if (btc == type_varunicode)
         {
             args.append(*LINK(str));
             func = trimVUnicodeStrLenAtom;
         }
-        else if (bound.expr->queryType()->getTypeCode() == type_utf8)
+        else if (btc == type_utf8)
         {
             args.append(*getBoundLength(bound));
             args.append(*LINK(str));

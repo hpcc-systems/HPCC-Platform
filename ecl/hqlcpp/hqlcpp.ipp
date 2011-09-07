@@ -332,6 +332,8 @@ public:
     void setDefault(IHqlExpression * expr);
 
 protected:
+    bool canBuildStaticList(ITypeInfo * type) { return isFixedSize(type); }
+
     void buildChop3Map(BuildCtx & ctx, const CHqlBoundTarget & target, CHqlBoundExpr & test, IHqlExpression * temp, unsigned start, unsigned end);
     void buildChop3Map(BuildCtx & ctx, const CHqlBoundTarget & target, CHqlBoundExpr & test);
     void buildChop2Map(BuildCtx & ctx, const CHqlBoundTarget & target, CHqlBoundExpr & test, unsigned start, unsigned end);
@@ -373,6 +375,7 @@ protected:
     bool constantValues;
     OwnedITypeInfo resultType;
     OwnedITypeInfo indexType;
+    OwnedITypeInfo promotedElementType;
 };
 
 //===========================================================================

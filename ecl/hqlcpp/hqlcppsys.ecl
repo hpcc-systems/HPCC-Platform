@@ -209,6 +209,7 @@ const char * cppSystemText[]  = {
     "   unsigned4 rtlMin(unsigned4 idx, unsigned4 len) : eclrtl,pure,entrypoint='rtlMin',include;",
 
     "   integer4 compareStrStr(const string l, const string r) : eclrtl,pure,library='eclrtl',entrypoint='rtlCompareStrStr';",
+    "   integer4 compareVStrVStr(const varstring l, const varstring r) : eclrtl,pure,library='eclrtl',entrypoint='rtlCompareVStrVStr';",
     "   integer4 compareStrBlank(const string l) : eclrtl,pure,library='eclrtl',entrypoint='rtlCompareStrBlank';",
     "   integer4 compareDataData(const data l, const data r) : eclrtl,pure,library='eclrtl',entrypoint='rtlCompareDataData';",
     "   integer4 compareEStrEStr(const string l, const string r) : eclrtl,pure,library='eclrtl',entrypoint='rtlCompareEStrEStr';",
@@ -544,7 +545,6 @@ const char * cppSystemText[]  = {
     "   integer4 memcmp(const data1 target, const data1 src, unsigned4 len) : sys,pure,entrypoint='memcmp';",
     "   data1 memcpy(data1 target, const data1 src, unsigned4 len): sys,entrypoint='memcpy';",
     "   data1 memset(data1 target, integer4 fill, unsigned4 len) :  sys,entrypoint='memset';",
-    "   integer4 strcmp(const varstring1 target, const varstring1 src) :    sys,pure,entrypoint='strcmp';",
     "   strcpy(const varstring1 target, const varstring1 src) : sys,entrypoint='strcpy';",
     "   unsigned4 strlen(const varstring1 src) :    sys,pure,entrypoint='strlen';",
 

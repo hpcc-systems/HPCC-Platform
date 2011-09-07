@@ -2436,6 +2436,11 @@ int rtlCompareStrStr(unsigned l1, const char * p1, unsigned l2, const char * p2)
     return diff;
 }
 
+int rtlCompareVStrVStr(const char * p1, const char * p2)
+{
+    return rtlCompareStrStr(strlen(p1), p1, strlen(p2), p2);
+}
+
 int rtlCompareStrBlank(unsigned l1, const char * p1)
 {
     while (l1--)
@@ -2455,16 +2460,10 @@ int rtlCompareDataData(unsigned l1, const void * p1, unsigned l2, const void * p
     int diff = memcmp(p1, p2, len);
     if (diff == 0)
     {
-        if (len != l1)
-        {
-            for (;(diff == 0) && (len != l1);len++)
-                diff = ((unsigned char *)p1)[len] - '\0';
-        }
-        else if (len != l2)
-        {
-            for (;(diff == 0) && (len != l2);len++)
-                diff = '\0' - ((unsigned char *)p2)[len];
-        }
+        if (l1 > l2)
+            diff = +1;
+        else if (l1 < l2)
+            diff = -1;
     }
     return diff;
 }
@@ -2507,12 +2506,12 @@ int rtlCompareUnicodeUnicodeStrength(unsigned l1, UChar const * p1, unsigned l2,
 
 int rtlCompareVUnicodeVUnicode(UChar const * p1, UChar const * p2, char const * locale)
 {
-    return ucol_strcoll(queryRTLLocale(locale)->queryCollator(), p1, rtlUnicodeStrlen(p1), p2, rtlUnicodeStrlen(p2));
+    return rtlCompareUnicodeUnicode(rtlUnicodeStrlen(p1), p1, rtlUnicodeStrlen(p2), p2, locale);
 }
 
 int rtlCompareVUnicodeVUnicodeStrength(UChar const * p1, UChar const * p2, char const * locale, unsigned strength)
 {
-    return ucol_strcoll(queryRTLLocale(locale)->queryCollator(strength), p1, rtlUnicodeStrlen(p1), p2, rtlUnicodeStrlen(p2));
+    return rtlCompareUnicodeUnicodeStrength(rtlUnicodeStrlen(p1), p1, rtlUnicodeStrlen(p2), p2, locale, strength);
 }
 
 void rtlKeyUnicodeX(unsigned & tlen, void * & tgt, unsigned slen, const UChar * src, const char * locale)
@@ -3466,17 +3465,18 @@ unsigned rtlHashString( unsigned length, const char *_k, unsigned initval)
 
 unsigned rtlHashUnicode(unsigned length, UChar const * k, unsigned initval)
 {
+    //Would make more sense to trim here.
     return rtlHashData(length*2, k, initval);
 }
 
 unsigned rtlHashVStr(const char * k, unsigned initval)
 {
-    return rtlHashData(strlen(k), k, initval);
+    return rtlHashData(rtlTrimVStrLen(k), k, initval);
 }
 
 unsigned rtlHashVUnicode(UChar const * k, unsigned initval)
 {
-    return rtlHashData(rtlUnicodeStrlen(k)*2, k, initval);
+    return rtlHashData(rtlTrimVUnicodeStrLen(k)*2, k, initval);
 }
 
 #define GETWORDNC(k,n) ((GETBYTE0(n)+GETBYTE1(n)+GETBYTE2(n)+GETBYTE3(n))&0xdfdfdfdf)

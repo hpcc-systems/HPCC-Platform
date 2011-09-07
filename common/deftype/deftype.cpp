@@ -2390,8 +2390,8 @@ static ITypeInfo * getPromotedData(ITypeInfo * left, ITypeInfo * right)
 {
     unsigned lLen = left->getStringLen();
     unsigned rLen = right->getStringLen();
-    if (lLen < rLen) lLen = rLen;
-    return makeDataType(lLen);
+    assertex(lLen != rLen);
+    return makeDataType(UNKNOWN_LENGTH);
 }
         
 static ITypeInfo * getPromotedDecimalReal(ITypeInfo * type, bool isCompare)
@@ -2588,7 +2588,7 @@ ITypeInfo * getPromotedNumericType(ITypeInfo * l_type, ITypeInfo * r_type)
 
 ITypeInfo * getPromotedCompareType(ITypeInfo * left, ITypeInfo * right)
 {
-    ITypeInfo * promoted = getPromotedType(left, right, true);
+    Owned<ITypeInfo> promoted = getPromotedType(left, right, true);
     if (left != right)
     {
         type_t ptc = promoted->getTypeCode();
@@ -2601,13 +2601,11 @@ ITypeInfo * getPromotedCompareType(ITypeInfo * left, ITypeInfo * right)
                     if ((left->queryCollation() == right->queryCollation()) && 
                         (left->queryCharset() == right->queryCharset()))
                     {
-                        promoted->Release();
-                        promoted = getStretchedType(UNKNOWN_LENGTH, left);
+                        promoted.setown(getStretchedType(UNKNOWN_LENGTH, left));
                     }
                 }
             }
             break;
-
         case type_unicode:
         case type_utf8:
             {
@@ -2615,7 +2613,7 @@ ITypeInfo * getPromotedCompareType(ITypeInfo * left, ITypeInfo * right)
             break;
         }
     }
-    return promoted;
+    return promoted.getClear();
 }
 
 static bool preservesValue(ITypeInfo * after, ITypeInfo * before, bool preserveInformation)

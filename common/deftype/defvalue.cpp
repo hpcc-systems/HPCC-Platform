@@ -281,15 +281,13 @@ unsigned VarStringValue::getHash(unsigned initval)
 int VarStringValue::compare(IValue *_to)
 {
     assertThrow(_to->getTypeCode()==type->getTypeCode());
-    // MORE - should maybe allow, with space padding?
     VarStringValue *to = (VarStringValue *) _to;
-    return strcmp(val.get(), to->val.get());
+    return rtlCompareVStrVStr(val.get(), to->val.get());
 }
 
 int VarStringValue::compare(const void *mem)
 {
-    return strcmp(val.get(), (const char *)mem);
-//  return stricmp(val.get(), (const char *)mem);
+    return rtlCompareVStrVStr(val.get(), (const char *)mem);
 }
 
 IValue *VarStringValue::castTo(ITypeInfo *t)
@@ -497,7 +495,20 @@ IValue *StringValue::castTo(ITypeInfo *t)
     if (tc == type_any)
         return LINK(this);
 
-    return doCastTo(type->getStringLen(), (const char *)val.get(), t);
+    const char * str = (const char *)val.get();
+    if (tc == type_data)
+        return t->castFrom(type->getSize(), str);        //NB: Must not go through translation in default case
+
+    ICharsetInfo * srcCharset = type->queryCharset();
+    Owned<ICharsetInfo> asciiCharset = getCharset(asciiAtom);
+    if (queryDefaultTranslation(asciiCharset, srcCharset))
+    {
+        Owned<ITypeInfo> asciiType = getAsciiType(type);
+        Owned<IValue> asciiValue = createStringValue(str, LINK(asciiType), type->getStringLen(), srcCharset);
+        return asciiValue->castTo(t);
+    }
+
+    return doCastTo(type->getStringLen(), str, t);
 }
 
 const void *StringValue::queryValue() const
@@ -2935,37 +2946,38 @@ IValue * substringValue(IValue * v, IValue * lower, IValue * higher)
 
 IValue * trimStringValue(IValue * v, char typecode)
 {
-    if(isUnicodeType(v->queryType()))
+    ITypeInfo * type = v->queryType();
+    type_t tc = type->getTypeCode();
+    if(isUnicodeType(type))
     {
         unsigned tlen = 0;
         rtlDataAttr resultstr;
-        bool isVarUnicode = (v->queryType()->getTypeCode() == type_varunicode);
-        if(isVarUnicode)
+        unsigned len = type->getStringLen();
+        if (tc == type_utf8)
         {
-            unsigned bufflen = v->queryType()->getStringLen()+1;
-            rtlDataAttr buff(bufflen*2);
-            v->getUCharStringValue(bufflen, buff.getdata());
-            UChar const * str = buff.getustr();
+            char const * str = (char const *)v->queryValue();
             switch(typecode) 
             {
             case 'A':
-                rtlTrimVUnicodeAll(tlen, resultstr.refustr(), str);
+                rtlTrimUtf8All(tlen, resultstr.refstr(), len, str);
                 break;
             case 'B':
-                rtlTrimVUnicodeBoth(tlen, resultstr.refustr(), str);
+                rtlTrimUtf8Both(tlen, resultstr.refstr(), len, str);
                 break;
             case 'L':
-                rtlTrimVUnicodeLeft(tlen, resultstr.refustr(), str);
+                rtlTrimUtf8Left(tlen, resultstr.refstr(), len, str);
                 break;
             default:
-                rtlTrimVUnicodeRight(tlen, resultstr.refustr(), str);
+                rtlTrimUtf8Right(tlen, resultstr.refstr(), len, str);
                 break;
             }
+
+            ITypeInfo * newtype = makeUtf8Type(tlen, type->queryLocale());
+            return createUtf8Value(tlen, resultstr.getstr(), newtype);
         }
         else
         {
             UChar const * str = (UChar const *)v->queryValue();
-            unsigned len = v->queryType()->getStringLen();
             switch(typecode) 
             {
             case 'A':
@@ -2981,75 +2993,40 @@ IValue * trimStringValue(IValue * v, char typecode)
                 rtlTrimUnicodeRight(tlen, resultstr.refustr(), len, str);
                 break;
             }
-        }
-#if 0
-        //It seems trim always returns a unicode result...
-        if(isVarUnicode)
-            return createVarUnicodeValue(tlen+1, resultstr.getustr(), v->queryType());
-        else
-#endif
-        {
+
             ITypeInfo * newtype = makeUnicodeType(tlen, v->queryType()->queryLocale());
             return createUnicodeValue(resultstr.getustr(), tlen, newtype);
         }
     }
     else
     {
-        Owned<ITypeInfo> st = getStringType(v->queryType());
-        Owned<IValue> sv = v->castTo(st);
-        bool isVarString = (st->getTypeCode() == type_varstring);
+        Owned<ITypeInfo> st = getStringType(type);
+        Owned<ITypeInfo> asciiType = getAsciiType(st);
+        Owned<IValue> sv = v->castTo(asciiType);
         StringBuffer s;
         sv->getStringValue(s);
-        char const * str = s.str();
         unsigned tlen = 0;
         rtlDataAttr resultstr;
-        if (isVarString) 
+        unsigned len = s.length();
+        char const * str = s.str();
+        switch(typecode)
         {
-            switch(typecode) 
-            {
-            case 'A':
-                rtlTrimVAll(tlen, resultstr.refstr(), str);
-                break;
-            case 'B':
-                rtlTrimVBoth(tlen, resultstr.refstr(), str);
-                break;
-            case 'L':
-                rtlTrimVLeft(tlen, resultstr.refstr(), str);
-                break;
-            default:
-                rtlTrimVRight(tlen, resultstr.refstr(), str);
-                break;
-            }
+        case 'A':
+            rtlTrimAll(tlen, resultstr.refstr(), len, str);
+            break;
+        case 'B':
+            rtlTrimBoth(tlen, resultstr.refstr(), len, str);
+            break;
+        case 'L':
+            rtlTrimLeft(tlen, resultstr.refstr(), len, str);
+            break;
+        default:
+            rtlTrimRight(tlen, resultstr.refstr(), len, str);
+            break;
         }
-        else 
-        {
-            unsigned len = s.length();
-            switch(typecode) 
-            {
-            case 'A':
-                rtlTrimAll(tlen, resultstr.refstr(), len, str);
-                break;
-            case 'B':
-                rtlTrimBoth(tlen, resultstr.refstr(), len, str);
-                break;
-            case 'L':
-                rtlTrimLeft(tlen, resultstr.refstr(), len, str);
-                break;
-            default:
-                rtlTrimRight(tlen, resultstr.refstr(), len, str);
-                break;
-            }
-        }
-#if 0
-        //It seems trim always returns a string result...
-        if (isVarString)
-            return createVarStringValue(tlen + 1, resultstr, st);
-        else
-#endif
-        {
-            ITypeInfo * newtype = makeStringType(tlen, LINK(st->queryCharset()), LINK(st->queryCollation()));
-            return createStringValue(resultstr.getstr(), newtype);
-        }
+
+        ITypeInfo * newtype = makeStringType(tlen, LINK(asciiType->queryCharset()), LINK(asciiType->queryCollation()));
+        return createStringValue(resultstr.getstr(), newtype);
     }
 }
 
@@ -3248,7 +3225,7 @@ IValue * logicalOrValues(unsigned num, IValue * * values)
 
 int orderValues(IValue * left, IValue * right)
 {
-    Owned<ITypeInfo> pt = getPromotedType(left->queryType(), right->queryType());
+    Owned<ITypeInfo> pt = getPromotedCompareType(left->queryType(), right->queryType());
     Owned<IValue> lv = left->castTo(pt);
     Owned<IValue> rv = right->castTo(pt);
     return lv->compare(rv);
