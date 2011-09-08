@@ -765,7 +765,7 @@ add_user(){
         then
             printf "Adding %s to group %s ..." "${USER}" "${GROUP}"
             CURRGROUPS=`id -nG ${USER} | tr ' ' ','`
-            usermod -G ${CURRGROUPS},${GROUP} ${USER}
+            usermod -G ${CURRGROUPS},${GROUP} -c "${USER} Runtime User" ${USER}
             if [ $? -eq 0 ];
             then
                 log_success_msg
@@ -775,7 +775,7 @@ add_user(){
             fi
         else
             printf "Adding %s to system ..." "${USER}"
-            useradd -s ${SHELL} -m -d ${HOMEPATH} -g ${GROUP} ${USER}
+            useradd -s ${SHELL} -m -d ${HOMEPATH} -g ${GROUP} -c "${USER} Runtime User" ${USER}
             passwd -d ${USER} 1>/dev/null 2>&1
             if [ $? -eq 0 ];
             then
@@ -799,7 +799,7 @@ add_user(){
         then
             printf "Adding %s to group %s ..." "${USER}" "${GROUP}"
             CURRGROUPS=`id -nG ${USER} | tr ' ' ','`
-            usermod -G ${CURRGROUPS},${GROUP} ${USER}
+            usermod -G ${CURRGROUPS},${GROUP} -c "${USER} Runtime User" ${USER}
             if [ $? -eq 0 ];
             then
                 log_success_msg
@@ -809,7 +809,7 @@ add_user(){
             fi
         else
             printf "Adding %s to system ..." "${USER}"
-            useradd -s ${SHELL} -m -d ${HOMEPATH} -g ${GROUP} ${USER}
+            useradd -s ${SHELL} -m -d ${HOMEPATH} -g ${GROUP} -c "${USER} Runtime User" ${USER}
             passwd -d ${USER} 1>/dev/null 2>&1
             if [ $? -eq 0 ];
             then
