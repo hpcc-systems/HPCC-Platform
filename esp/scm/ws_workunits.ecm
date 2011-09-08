@@ -473,6 +473,7 @@ ESPrequest WUSubmitRequest
     int    MaxRunTime;
     [min_ver("1.02")] int BlockTillFinishTimer(0);
     [min_ver("1.19")] bool SyntaxCheck(false);
+    bool NotifyCluster(false);
 };
 
 ESPresponse [exceptions_inline] WUSubmitResponse
@@ -965,7 +966,7 @@ ESPrequest WUDeployWorkunitRequest
     string Wuid;
     string JobName;
     int Activate;
-
+    bool NotifyCluster(false);
 };
 
 ESPresponse [exceptions_inline] WUDeployWorkunitResponse

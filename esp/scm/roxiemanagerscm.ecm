@@ -135,7 +135,8 @@ SCMinterface IRoxieQueryManager(IInterface)
     bool deployQuery(SCMStringBuffer &wuid, SCMStringBuffer &roxieQueryName, IRoxieQueryCompileInfo &compileInfo,
                      IRoxieQueryProcessingInfo &processingInfo, const char *userId, WUQueryActivationOptions activateOption, bool allowNewRoxieOnDemandQuery, const char *targetClusterName, const char *querySetName, bool notifyRoxie, SCMStringBuffer &status, SCMStringBuffer &roxieDeployStatus);
 
-    bool deployWorkunit(SCMStringBuffer &wuid,  SCMStringBuffer &roxieQueryName, IRoxieQueryProcessingInfo &processingInfo, const char *userId, WUQueryActivationOptions activateOption, bool allowNewRoxieOnDemandQuery, const char *querySetName, bool notifyRoxie, SCMStringBuffer &status, SCMStringBuffer &roxieDeployStatus);
+    bool deployWorkunit(SCMStringBuffer &wuid,  SCMStringBuffer &roxieQueryName, IRoxieQueryProcessingInfo &processingInfo, const char *userId, WUQueryActivationOptions activateOption, const char *querySetName, bool notifyRoxie, SCMStringBuffer &status, SCMStringBuffer &roxieDeployStatus);
+    bool publishWorkunit(IConstWorkUnit *workunit,  SCMStringBuffer &roxieQueryName, IRoxieQueryProcessingInfo &processingInfo, const char *userId, WUQueryActivationOptions activateOption, const char *querySetName, bool notifyRoxie, SCMStringBuffer &status, SCMStringBuffer &roxieDeployStatus);
     
     bool publishFromQuerySet(SCMStringBuffer &name, SCMStringBuffer &roxieQueryName, IRoxieQueryProcessingInfo &processingInfo, const char *userId, WUQueryActivationOptions activateOption, const char *sourceQuerySetName, const char *targetQuerySetName, const char *sourceDaliIP, const char *queryComment, bool notifyRoxie, SCMStringBuffer &status, SCMStringBuffer &roxieDeployStatus);
     
