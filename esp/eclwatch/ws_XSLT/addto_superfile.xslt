@@ -171,12 +171,12 @@
       <body class="yui-skin-sam" onload="nof5();onLoad()">
             <h4>Add to Superfile</h4>
                 <form id="form1" method="POST" action="/WsDfu/AddtoSuperfile">
-                    <input type="hidden" name="ExistingFile" value="0"/>
+                    <input type="hidden" id="ExistingFile" name="ExistingFile" value="0"/>
                     <table>
                         <tr>
                             <td>Superfile Name:</td>
                             <td>
-                                <input type="text" id="Superfile" name="Superfile" size="25" onkeyup="validateInput()"/>
+                                <input type="text" id="Superfile" name="Superfile" size="25" onkeyup="validateInput()" oninput="validateInput()" onmouseout="validateInput()"/>
                             </td>
                         </tr>
                         <tr>
@@ -232,7 +232,6 @@
                         <tr>
                             <td colspan="2">
                                 <input type="submit" id="OK" value="OK" class="sbutton" onclick="return preSubmit(this)"/>
-                                <input type="button" class="sbutton" id="Cancel" value="Cancel" onclick="return onCancel()"/>
                             </td>
                         </tr>
                     </table>
