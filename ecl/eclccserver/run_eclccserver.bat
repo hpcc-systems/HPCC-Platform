@@ -15,7 +15,7 @@ rem
 rem     You should have received a copy of the GNU Affero General Public License
 rem     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 rem ############################################################################## */
-set SENTINEL="eclccserver.sentinel"
+set SENTINEL=eclccserver.sentinel
 :start
 start /wait eclccserver
 if exist %SENTINEL% (
