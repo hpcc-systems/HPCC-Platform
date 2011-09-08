@@ -53,10 +53,9 @@ bool QueryHelper::doit(FILE * fp)
     ureq->setWuid(wu->getWuid());
 
     // Make a workUnit
+    StringBuffer jobname;
     if(globals->hasProp("jobname"))
-    {
-        ureq->setJobname(globals->queryProp("jobname"));
-    }
+        jobname.append(globals->queryProp("jobname"));
 
     StringBuffer ecl;
     if (globals->getProp("ecl", ecl))
@@ -65,6 +64,8 @@ bool QueryHelper::doit(FILE * fp)
         {
             StringBuffer filename(ecl.str()+1);
             ecl.clear().loadFile(filename);
+            if (jobname.length() == 0)
+                splitFilename(filename, NULL, NULL, &jobname, NULL);
         }
         ureq->setQueryText(ecl.str());
     }
@@ -73,6 +74,8 @@ bool QueryHelper::doit(FILE * fp)
 
     if (globals->getPropInt("compileOnly", 0)!=0)
         ureq->setAction(WUActionCompile);
+    if (jobname.length())
+        ureq->setJobname(jobname);
 
     IArrayOf<IEspDebugValue> dvals;
     IArrayOf<IEspApplicationValue> avals;
@@ -194,6 +197,7 @@ bool QueryHelper::doSubmitWorkUnit(FILE * fp, const char * wuid, const char* clu
     Owned<IClientWUSubmitRequest> req = wuclient->createWUSubmitRequest();
     req->setWuid(wuid);
     req->setCluster(cluster);
+    req->setNotifyCluster(true);
     if(globals->hasProp("snapshot"))
         req->setSnapshot(globals->queryProp("snapshot"));
 
@@ -241,7 +245,7 @@ bool QueryHelper::doSubmitWorkUnit(FILE * fp, const char * wuid, const char* clu
         else
         {
             WUState s;
-            
+
             int initial_wait = 30;
             int polling_period = 30;
             int waited = 0;
