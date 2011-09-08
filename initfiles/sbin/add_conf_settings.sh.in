@@ -27,10 +27,10 @@ PREFIX_PATH=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^path 
 
 source $PREFIX_PATH/sbin/alter_confs.sh
 
-alter_file /etc/sudoers "^Cmnd_Alias OSS_|^${USER_NAME} ALL =|^Defaults\:${USER_NAME} !requiretty" <<-%EOF
-Cmnd_Alias OSS_DAFILESRV = /etc/init.d/dafilesrv
-Cmnd_Alias OSS_HPCCINIT = /etc/init.d/hpcc-init
-${USER_NAME} ALL = NOPASSWD: OSS_DAFILESRV, OSS_HPCCINIT
+alter_file /etc/sudoers "^Cmnd_Alias HPCC_|^${USER_NAME} ALL =|^Defaults\:${USER_NAME} !requiretty" <<-%EOF
+Cmnd_Alias HPCC_DAFILESRV = /etc/init.d/dafilesrv
+Cmnd_Alias HPCC_HPCCINIT = /etc/init.d/hpcc-init
+${USER_NAME} ALL = NOPASSWD: HPCC_DAFILESRV, HPCC_HPCCINIT
 Defaults:${USER_NAME} !requiretty
 %EOF
 

@@ -27,7 +27,7 @@ PREFIX_PATH=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^path=
 
 source $PREFIX_PATH/sbin/alter_confs.sh
 
-alter_file /etc/sudoers "^Cmnd_Alias OSS_|^${USER_NAME} ALL =" < /dev/null
+alter_file /etc/sudoers "^Cmnd_Alias HPCC_|^${USER_NAME} ALL =" < /dev/null
 
 alter_file /etc/security/limits.conf "^${USER_NAME}" < /dev/null
 
