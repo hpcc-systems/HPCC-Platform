@@ -18,7 +18,7 @@
 
 BOOLEAN b   := TRUE;
 
-output('------ SIZEOF BOOLEAN           ');
+output('------ SIZEOF BOOLEAN');
 output(SIZEOF(b));
 
 INTEGER  i  := 0;
@@ -31,7 +31,7 @@ INTEGER6 i6 := 0;
 INTEGER7 i7 := 0;
 INTEGER8 i8 := 0;
 
-output('------ SIZEOF INTEGERn      ');
+output('------ SIZEOF INTEGERn');
 output(SIZEOF(i));
 output(SIZEOF(i1));
 output(SIZEOF(i2));
@@ -52,7 +52,7 @@ UNSIGNED INTEGER6  ui6  := 0;
 UNSIGNED INTEGER7  ui7  := 0;
 UNSIGNED INTEGER8  ui8  := 0;
 
-output('------ SIZEOF UNSIGNED INTEGERn ');
+output('------ SIZEOF UNSIGNED INTEGERn');
 output(SIZEOF(ui));
 output(SIZEOF(ui1));
 output(SIZEOF(ui2));
@@ -67,7 +67,7 @@ REAL  r  := 0.0;
 REAL4 r4     := 0.0;
 REAL8 r8     := 0.0;
 
-output('------ SIZEOF REALn         ');
+output('------ SIZEOF REALn');
 output(SIZEOF(r));
 output(SIZEOF(r4));
 output(SIZEOF(r8));
@@ -82,7 +82,7 @@ DECIMAL7_2 d7_2 := 0;
 DECIMAL8_2 d8_2 := 0;
 DECIMAL9_2 d9_2 := 0;
 
-output('------ SIZEOF DECIMAL 1..9      ');
+output('------ SIZEOF DECIMAL 1..9');
 
 output(SIZEOF(d1));
 output(SIZEOF(d2_2));
@@ -94,7 +94,7 @@ output(SIZEOF(d7_2));
 output(SIZEOF(d8_2));
 output(SIZEOF(d9_2));
 
-output('------ SIZEOF QSTRING Variable length, 1, & 120 ');
+output('------ SIZEOF QSTRING Variable length, 1, & 120');
 
 QSTRING1    qs1 := 'S';
 QSTRING120  qs120   := 'Seisint';
@@ -109,7 +109,7 @@ output(LENGTH('abc' + '123'));
 output(SIZEOF(''));
 output(LENGTH(''));
 
-output('------ SIZEOF DATASET          ');
+output('------ SIZEOF DATASET');
 
 SomeRecord  := RECORD
     STRING1 Value1;
