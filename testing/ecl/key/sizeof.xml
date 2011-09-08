@@ -1,11 +1,11 @@
 <Dataset name='Result 1'>
- <Row><Result_1>------ SIZEOF BOOLEAN           </Result_1></Row>
+ <Row><Result_1>------ SIZEOF BOOLEAN</Result_1></Row>
 </Dataset>
 <Dataset name='Result 2'>
  <Row><Result_2>1</Result_2></Row>
 </Dataset>
 <Dataset name='Result 3'>
- <Row><Result_3>------ SIZEOF INTEGERn      </Result_3></Row>
+ <Row><Result_3>------ SIZEOF INTEGERn</Result_3></Row>
 </Dataset>
 <Dataset name='Result 4'>
  <Row><Result_4>8</Result_4></Row>
@@ -35,7 +35,7 @@
  <Row><Result_12>8</Result_12></Row>
 </Dataset>
 <Dataset name='Result 13'>
- <Row><Result_13>------ SIZEOF UNSIGNED INTEGERn    </Result_13></Row>
+ <Row><Result_13>------ SIZEOF UNSIGNED INTEGERn</Result_13></Row>
 </Dataset>
 <Dataset name='Result 14'>
  <Row><Result_14>8</Result_14></Row>
@@ -65,7 +65,7 @@
  <Row><Result_22>8</Result_22></Row>
 </Dataset>
 <Dataset name='Result 23'>
- <Row><Result_23>------ SIZEOF REALn            </Result_23></Row>
+ <Row><Result_23>------ SIZEOF REALn</Result_23></Row>
 </Dataset>
 <Dataset name='Result 24'>
  <Row><Result_24>8</Result_24></Row>
@@ -77,7 +77,7 @@
  <Row><Result_26>8</Result_26></Row>
 </Dataset>
 <Dataset name='Result 27'>
- <Row><Result_27>------ SIZEOF DECIMAL 1..9     </Result_27></Row>
+ <Row><Result_27>------ SIZEOF DECIMAL 1..9</Result_27></Row>
 </Dataset>
 <Dataset name='Result 28'>
  <Row><Result_28>1</Result_28></Row>
@@ -107,7 +107,7 @@
  <Row><Result_36>5</Result_36></Row>
 </Dataset>
 <Dataset name='Result 37'>
- <Row><Result_37>------ SIZEOF QSTRING Variable length, 1, &amp; 120    </Result_37></Row>
+ <Row><Result_37>------ SIZEOF QSTRING Variable length, 1, &amp; 120</Result_37></Row>
 </Dataset>
 <Dataset name='Result 38'>
  <Row><Result_38>1</Result_38></Row>
@@ -131,7 +131,7 @@
  <Row><Result_44>0</Result_44></Row>
 </Dataset>
 <Dataset name='Result 45'>
- <Row><Result_45>------ SIZEOF DATASET          </Result_45></Row>
+ <Row><Result_45>------ SIZEOF DATASET</Result_45></Row>
 </Dataset>
 <Dataset name='Result 46'>
  <Row><Result_46>2</Result_46></Row>
