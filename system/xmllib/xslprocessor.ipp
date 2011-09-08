@@ -175,7 +175,7 @@ public:
         m_filename.set(fname);
         m_sourcetype = IO_TYPE_FILE;
         m_CompiledStylesheet = NULL;
-        m_cacheId.set(cacheId);
+        m_cacheId.set(cacheId ? cacheId : fname);
 
         if(handler)
             setIncludeHandler(handler);
