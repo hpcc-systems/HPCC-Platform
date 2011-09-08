@@ -43,15 +43,13 @@ struct CEnvironmentConfData
 
 struct CField
 {
-   double Value;
-   bool  Warn;
-   bool  Undefined;
-   bool  Hide;
+    double Value;
+    bool  Warn;
+    bool  Undefined;
+    bool  Hide;
 
-   CField()
-      : Value(0), Warn(0), Undefined(0)
-   {      
-   }
+    CField() : Value(0), Warn(0), Undefined(0) {}
+
     void serialize(StringBuffer& xml) const
     {
         xml.append("<Field>");
@@ -86,20 +84,14 @@ struct CFieldMap : public map<string, CField*>
 
 struct CFieldInfo
 {
-   unsigned Count; //N
-   double   SumSquaredDeviations; //SSD
-   double Mean;
-   double StandardDeviation;
-   bool  Hide;
+    unsigned Count; //N
+    double   SumSquaredDeviations; //SSD
+    double Mean;
+    double StandardDeviation;
+    bool  Hide;
 
-   CFieldInfo() 
-      : Count(0),
-        SumSquaredDeviations(0),
-          Mean(0),
-          StandardDeviation(0),
-          Hide(true)
-   {
-   }
+    CFieldInfo() : Count(0), SumSquaredDeviations(0), Mean(0), StandardDeviation(0), Hide(true) {}
+
     void serialize(StringBuffer& xml, const char* fieldName) const
     {
         const char* fieldName0 = fieldName;
@@ -107,44 +99,44 @@ struct CFieldInfo
             fieldName += 5;
 
         xml.append("<FieldInfo>");
-            xml.appendf("<Name>%s</Name>", fieldName0);
-            xml.append("<Caption>");
-            const char* pch = fieldName;
-         if (!strncmp(pch, "lo", 2))
-         {
+        xml.appendf("<Name>%s</Name>", fieldName0);
+        xml.append("<Caption>");
+        const char* pch = fieldName;
+        if (!strncmp(pch, "lo", 2))
+        {
             xml.append("Low");
             pch += 2;
-         }
-         else if (!strncmp(pch, "hi", 2))
-         {
+        }
+        else if (!strncmp(pch, "hi", 2))
+        {
             xml.append("High");
             pch += 2;
-         }
-         else if (!strncmp(pch, "tot", 3))
-         {
+        }
+        else if (!strncmp(pch, "tot", 3))
+        {
             xml.append("Total");
             pch += 3;
-         }
-         else xml.append( (char)toupper( *pch++) );
+        }
+        else xml.append( (char)toupper( *pch++) );
 
-            while (*pch)
-            {
-                if (isupper(*pch))
-                    xml.append(' ');
-                xml.append(*pch++);     
-            }
-            xml.append("</Caption>");
-            xml.appendf("<Mean>%f</Mean>", Mean);
-            xml.appendf("<StandardDeviation>%f</StandardDeviation>", StandardDeviation);
-            if (Hide)
-                xml.appendf("<Hide>1</Hide>");
+        while (*pch)
+        {
+            if (isupper(*pch))
+                xml.append(' ');
+            xml.append(*pch++);
+        }
+        xml.append("</Caption>");
+        xml.appendf("<Mean>%f</Mean>", Mean);
+        xml.appendf("<StandardDeviation>%f</StandardDeviation>", StandardDeviation);
+        if (Hide)
+            xml.appendf("<Hide>1</Hide>");
         xml.append("</FieldInfo>");
     }
 };
 
 struct CFieldInfoMap : public map<string, CFieldInfo*>
 {
-   Mutex    m_mutex;
+    Mutex    m_mutex;
 
     virtual ~CFieldInfoMap()
     {
@@ -167,33 +159,33 @@ struct CFieldInfoMap : public map<string, CFieldInfo*>
 class CMetricsParam : public CInterface
 {
 public:
-   IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE;
 
-   CMetricsParam( const char* pszAddress) : m_sAddress(pszAddress){}
-   virtual ~CMetricsParam() {}
+    CMetricsParam( const char* pszAddress) : m_sAddress(pszAddress){}
+    virtual ~CMetricsParam() {}
 
-   StringBuffer       m_sAddress;
-   CFieldMap          m_fieldMap; 
+    StringBuffer       m_sAddress;
+    CFieldMap          m_fieldMap;
 };
 
 static map<string, const char*>  s_processTypeToProcessMap;
 
 struct CMachineInfo
 {
-   StringBuffer m_sID;
-   StringBuffer m_sCPUIdle;
-   StringBuffer m_sProcessUptime;
-   StringBuffer m_sComputerUptime;
-   StringBuffer m_sSpace;
+    StringBuffer m_sID;
+    StringBuffer m_sCPUIdle;
+    StringBuffer m_sProcessUptime;
+    StringBuffer m_sComputerUptime;
+    StringBuffer m_sSpace;
 
     void setMachineInfo( const char* id, const char* space, const char* CPUIdle, const char* processUptime, const char* computerUptime)
     {
-      m_sID = id;
+        m_sID = id;
         m_sCPUIdle = CPUIdle;
         m_sProcessUptime = processUptime;
         m_sComputerUptime = computerUptime;
         m_sSpace = space;
-   }
+    }
 };
 
 //---------------------------------------------------------------------------------------------
@@ -201,24 +193,17 @@ struct CMachineInfo
 class Cws_machineEx : public Cws_machine
 {
 public:
-   IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE;
 
     enum OpSysType { OS_Windows, OS_Solaris, OS_Linux };
 
     virtual void init(IPropertyTree *cfg, const char *process, const char *service);
-   ~Cws_machineEx();
+    ~Cws_machineEx();
 
-    bool onGetMachineInfo(IEspContext &context, 
-        IEspGetMachineInfoRequest &req, IEspGetMachineInfoResponse &resp);
-
-    bool onGetTargetClusterInfo(IEspContext &context, 
-        IEspGetTargetClusterInfoRequest &req, IEspGetTargetClusterInfoResponse &resp);
-
-    bool onGetMachineInfoEx(IEspContext &context, 
-        IEspGetMachineInfoRequestEx &req, IEspGetMachineInfoResponseEx &resp);
-
-    bool onGetMetrics(IEspContext &context, IEspMetricsRequest &req, 
-                             IEspMetricsResponse &resp);
+    bool onGetMachineInfo(IEspContext &context, IEspGetMachineInfoRequest &req, IEspGetMachineInfoResponse &resp);
+    bool onGetTargetClusterInfo(IEspContext &context, IEspGetTargetClusterInfoRequest &req, IEspGetTargetClusterInfoResponse &resp);
+    bool onGetMachineInfoEx(IEspContext &context, IEspGetMachineInfoRequestEx &req, IEspGetMachineInfoResponseEx &resp);
+    bool onGetMetrics(IEspContext &context, IEspMetricsRequest &req, IEspMetricsResponse &resp);
     bool onStartStop( IEspContext &context, IEspStartStopRequest &req,  IEspStartStopResponse &resp);
     bool onStartStopBegin( IEspContext &context, IEspStartStopBeginRequest &req,  IEspStartStopBeginResponse &resp);
     bool onStartStopDone( IEspContext &context, IEspStartStopDoneRequest &req,  IEspStartStopResponse &resp);
@@ -227,22 +212,20 @@ public:
     void doGetMetrics(CMetricsThreadParam* pParam);
 
     bool doStartStop(IEspContext &context, StringArray& addresses, char* userName, char* password, bool bStop, IEspStartStopResponse &resp);
-   void getAccountAndPlatformInfo(const char* address, StringBuffer& userId, StringBuffer& password, bool& bLinux);
-    //IConstEnvironment* getConstEnvironment() const { return m_constEnv.getLink(); }
+    void getAccountAndPlatformInfo(const char* address, StringBuffer& userId, StringBuffer& password, bool& bLinux);
     IConstEnvironment* getConstEnvironment();
     IPropertyTree* getComponent(const char* compType, const char* compName);
 
     bool excludePartition(const char* partition) const;
-//data members
     static map<string, const char*> s_oid2CompTypeMap;
 
 private:
     void setAttPath(StringBuffer& Path,const char* PathToAppend,const char* AttName,const char* AttValue);
     int checkProcess(const char* type, const char* name, StringArray& typeArray, StringArray& nameArray);
     void getMachineList(IConstEnvironment* constEnv, IPropertyTree* envRoot, const char* machineName,
-                                              const char* machineType, const char* status, const char* directory,
-                                StringArray& processAddresses,
-                                set<string>* pMachineNames=NULL);
+        const char* machineType, const char* status, const char* directory,
+        StringArray& processAddresses,
+        set<string>* pMachineNames=NULL);
     const char* getProcessTypeFromMachineType(const char* machineType);
     void getTargetClusterProcesses(StringArray& targetClusters, StringArray& processTypes, StringArray& processNames, StringArray& processAddresses, IPropertyTree* pTargetClusterTree);
     void setTargetClusterInfo(IPropertyTree* pTargetClusterTree, IArrayOf<IEspMachineInfoEx>& machineArray, IArrayOf<IEspTargetClusterInfo>& targetClusterInfoList);
@@ -252,10 +235,10 @@ private:
     void addIpAddressesToBuffer( void** buffer, unsigned& count, const char* address);
 
     void RunMachineQuery(IEspContext& context, StringArray &addresses,IEspRequestInfoStruct&  reqInfo,
-                                    IArrayOf<IEspMachineInfoEx>& machineArray,StringArray& columnArray);
-    void determineRequredProcesses(CMachineInfoThreadParam* pParam, const char* pszProcessType, 
-                                             bool bMonitorDaliFileServer, const StringArray& additionalProcesses, 
-                                             set<string>& requiredProcesses);
+        IArrayOf<IEspMachineInfoEx>& machineArray,StringArray& columnArray);
+    void determineRequredProcesses(CMachineInfoThreadParam* pParam, const char* pszProcessType,
+        bool bMonitorDaliFileServer, const StringArray& additionalProcesses,
+        set<string>& requiredProcesses);
     void parseProperties(const char* info, StringBuffer& processType, StringBuffer& sCompName, OpSysType& os, StringBuffer& path);
     int lookupSnmpComponentIndex(const StringBuffer& sProcessType);
     const char* GetDisplayProcessName(const char* processName, char* buf);
@@ -281,13 +264,13 @@ private:
         IArrayOf<IEspProcessInfo>& runningProcesses, const char* pszProcessType, bool bFilterProcesses, bool bMonitorDaliFileServer, const StringArray& additionalProcesses);
     const char* lookupProcessname(const StringBuffer& sProcessType);
     void enumerateRunningProcesses(CMachineInfoThreadParam* pParam, IArrayOf<IEspProcessInfo>& runningProcesses, bool bLinuxInstance,
-            bool bFilterProcesses, map<string, StlLinked<IEspSWRunInfo> >* processMap, map<int, StlLinked<IEspSWRunInfo> >& pidMap,
-                                                             set<string>* pRequiredProcesses);
+        bool bFilterProcesses, map<string, StlLinked<IEspSWRunInfo> >* processMap, map<int, StlLinked<IEspSWRunInfo> >& pidMap,
+        set<string>* pRequiredProcesses);
     char* skipChar(const char* sBuf, char c);
     void readRunningProcess(const char* lineBuf, IArrayOf<IEspProcessInfo>& runningProcesses);
     void checkRunningProcessesByPID(IEspContext& context, CMachineInfoThreadParam* pParam, set<string>* pRequiredProcesses);
 
-//data members
+    //data members
     StringBuffer m_sTestStr1;
     StringBuffer m_sTestStr2;
 
@@ -296,8 +279,7 @@ private:
     bool m_useDefaultPIDFileName;
 
     Owned<IPropertyTree>     m_monitorCfg;
-   Owned<IPropertyTree>     m_processFilters;
-    ///Owned<IConstEnvironment> m_constEnv;
+    Owned<IPropertyTree>     m_processFilters;
     Owned<IThreadPool>       m_threadPool;
     Owned<IEnvironmentFactory> m_envFactory;
     bool                     m_bMonitorDaliFileServer;
@@ -312,48 +294,47 @@ private:
 class CWsMachineThreadParam : public CInterface
 {
 public:
-   IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE;
 
-   virtual ~CWsMachineThreadParam() {}
+    virtual ~CWsMachineThreadParam() {}
 
-   StringBuffer          m_sAddress;
+    StringBuffer          m_sAddress;
     StringBuffer          m_sSecurityString; 
     StringBuffer          m_sUserName; 
-   StringBuffer          m_sPassword; 
+    StringBuffer          m_sPassword;
     Linked<Cws_machineEx> m_pService;
 
-   virtual void doWork() = 0;
+    virtual void doWork() = 0;
 
 protected:
 
-   CWsMachineThreadParam( const char* pszAddress, 
-                          const char* pszSecurityString, Cws_machineEx* pService)
-      : m_sAddress(pszAddress), m_sSecurityString(pszSecurityString), m_pService(pService)
-   {
-   }
-   CWsMachineThreadParam( const char* pszAddress, 
-                          const char* pszUserName, const char* pszPassword, Cws_machineEx* pService)
-      : m_sAddress(pszAddress), m_sUserName(pszUserName), m_sPassword(pszPassword), m_pService(pService)
-   {
-   }
+    CWsMachineThreadParam( const char* pszAddress,
+        const char* pszSecurityString, Cws_machineEx* pService)
+        : m_sAddress(pszAddress), m_sSecurityString(pszSecurityString), m_pService(pService)
+    {
+    }
+    CWsMachineThreadParam( const char* pszAddress,
+        const char* pszUserName, const char* pszPassword, Cws_machineEx* pService)
+        : m_sAddress(pszAddress), m_sUserName(pszUserName), m_sPassword(pszPassword), m_pService(pService)
+    {
+    }
 };
 
 //---------------------------------------------------------------------------------------------
 
 //the following class implements a worker thread
-//
 class CWsMachineThread : public CInterface, 
-                         implements IPooledThread
+    implements IPooledThread
 {
 public:
-   IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE;
 
-   CWsMachineThread()
-   {
-   }
-   virtual ~CWsMachineThread()
-   {
-   }
+    CWsMachineThread()
+    {
+    }
+    virtual ~CWsMachineThread()
+    {
+    }
 
     void init(void *startInfo) 
     {
@@ -361,9 +342,9 @@ public:
     }
     void main()
     {
-      m_pParam->doWork();
+        m_pParam->doWork();
         m_pParam.clear();
-   }
+    }
 
     bool canReuse()
     {
@@ -373,9 +354,9 @@ public:
     {
         return true;
     }
-   
+
 private:
-   Owned<CWsMachineThreadParam> m_pParam;
+    Owned<CWsMachineThreadParam> m_pParam;
 };
 
 //---------------------------------------------------------------------------------------------

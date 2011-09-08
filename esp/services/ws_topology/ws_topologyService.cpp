@@ -80,7 +80,7 @@ void CWsTopologyEx::init(IPropertyTree *cfg, const char *process, const char *se
 }
 
 void CWsTopologyEx::loadThresholdValue(IPropertyTree* pServiceNode, const char* attrName, unsigned int& thresholdValue, 
-                                                    bool& bThresholdIsPercentage)
+                                       bool& bThresholdIsPercentage)
 {
     const char* threshold = pServiceNode->queryProp(attrName);
     if (threshold && *threshold)
@@ -120,7 +120,7 @@ bool CWsTopologyEx::onTpSwapNode(IEspContext &context,IEspTpSwapNodeRequest  &re
 
         path.clear().append("/WsTopology/TpMachineQuery?Type=THORMACHINES&Cluster=");
         path.append(req.getCluster()).append("&Path=").append(encodedXpath);
-       
+
         resp.setRedirectUrl(path.str());
     }
     catch(IException* e)
@@ -560,10 +560,10 @@ bool CWsTopologyEx::onTpXMLFile(IEspContext &context,IEspTpXMLFileRequest  &req,
 
         StringBuffer strBuff;
         getThorXml(req.getName(),strBuff);
-        
+
         MemoryBuffer membuff;
         membuff.setBuffer(strBuff.length(), (void*)strBuff.toCharArray());
-        
+
         resp.setThefile_mimetype("text/xml");
         resp.setThefile(membuff);
     }
@@ -629,7 +629,7 @@ int CWsTopologyEx::loadFile(const char* fname, int& len, unsigned char* &buf, bo
 }
 
 void CWsTopologyEx::readLogFile(StringBuffer logname, ReadLog& readLogReq, StringBuffer& startDate, StringBuffer& endDate,  
-                                         bool& hasDate, StringBuffer& returnbuff)
+                                bool& hasDate, StringBuffer& returnbuff)
 {
     Owned<IFile> rFile = createIFile(logname.str());
     if (!rFile)
@@ -855,7 +855,7 @@ void CWsTopologyEx::readLogFile(StringBuffer logname, OwnedIFileIO rIO, ReadLog&
                     StringBuffer dataRow;
                     char* pTr1 = pTr;
                     offset_t readPtr1 = readPtr;
-                    
+
                     bLT = false;
                     while (readPtr1 < totalBytes)
                     {
@@ -929,7 +929,7 @@ void CWsTopologyEx::readLogFile(StringBuffer logname, OwnedIFileIO rIO, ReadLog&
             if (locationFlag > 1)
                 break;
         }
-        
+
         if (locationFlag > 1)
             break;
 
@@ -948,7 +948,7 @@ void CWsTopologyEx::readLogFile(StringBuffer logname, OwnedIFileIO rIO, ReadLog&
 }
 
 bool CWsTopologyEx::readToABuffer(StringBuffer logname, OwnedIFileIO rIO, offset_t& fileSize, offset_t& readFrom, 
-                                             StringBuffer dataLeft, StringBuffer& dataBuffer)
+                                  StringBuffer dataLeft, StringBuffer& dataBuffer)
 {
     bool lastPage = true;
     offset_t readSize = fileSize;
@@ -1269,10 +1269,10 @@ bool CWsTopologyEx::onTpLogicalClusterQuery(IEspContext &context, IEspTpLogicalC
     {   
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
-    
+
     return true;
 }
-    
+
 bool CWsTopologyEx::onTpGroupQuery(IEspContext &context, IEspTpGroupQueryRequest &req, IEspTpGroupQueryResponse &resp)
 {
     try
@@ -1325,7 +1325,7 @@ bool CWsTopologyEx::onTpClusterInfo(IEspContext &context, IEspTpClusterInfoReque
         else // fallback to cluster name
         {
             IArrayOf<IEspTpQueue> Queues;
-            
+
             CCluster conn(req.getName());                   
             IPropertyTree* tree = conn->queryRoot();
             IEspTpQueue* pQueue = createTpQueue("","");
@@ -1416,7 +1416,7 @@ bool CWsTopologyEx::onTpMachineQuery(IEspContext &context, IEspTpMachineQueryReq
 
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to do Machine Query. Permission denied.");
-        
+
         double version = context.getClientVersion();
 
         IArrayOf<IEspTpMachine> MachineList;
@@ -1450,7 +1450,7 @@ bool CWsTopologyEx::onTpMachineQuery(IEspContext &context, IEspTpMachineQueryReq
 
         SecAccessFlags access;
         bool bEnablePreflightInfo = context.authorizeFeature(MACHINE_URL, access) &&
-                                    access >= SecAccess_Read;
+            access >= SecAccess_Read;
         resp.setEnablePreflightInfo( bEnablePreflightInfo );
 
         if (version > 1.07)
@@ -1474,8 +1474,8 @@ bool CWsTopologyEx::onTpMachineQuery(IEspContext &context, IEspTpMachineQueryReq
 }
 
 bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context, 
-                                                                 IEspTpGetComponentFileRequest &req, 
-                                                                 IEspTpGetComponentFileResponse &resp)
+                                         IEspTpGetComponentFileRequest &req,
+                                         IEspTpGetComponentFileResponse &resp)
 {
     try
     {
@@ -1562,8 +1562,7 @@ bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context,
 
         if (!fileName)
             throw MakeStringExceptionDirect(ECLWATCH_INVALID_COMPONENT_OR_FILE_TYPE, "Unsupported component or file type specified!");
-                        
-        
+
         //the paths are all windows or samba network shares so construct windows network path
         StringBuffer netAddressStr;
         SCMStringBuffer scmNetAddress;
@@ -1722,7 +1721,7 @@ bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context,
                     xmlBuf.append(buf.toByteArray(), 0, buf.length());
                     trans->setXmlSource(xmlBuf.str(), xmlBuf.length());
                     trans->setXslSource(xslBuf, xslBuf.length());
-                    
+
                     StringBuffer htmlBuf;
                     trans->transform(htmlBuf);
 

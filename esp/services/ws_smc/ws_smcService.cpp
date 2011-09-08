@@ -173,10 +173,10 @@ struct CActiveWorkunitWrapper: public CActiveWorkunit
         setJobname(wu->getJobName(jobname).str());
         switch(wu->getPriority())
         {
-            case PriorityClassHigh: setPriority("high"); break;
-            default:
-            case PriorityClassNormal: setPriority("normal"); break;
-            case PriorityClassLow: setPriority("low"); break;
+        case PriorityClassHigh: setPriority("high"); break;
+        default:
+        case PriorityClassNormal: setPriority("normal"); break;
+        case PriorityClassLow: setPriority("low"); break;
         }
 
         if (version > 1.08 && wu->isPausing())
@@ -423,7 +423,7 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                                 {
                                     wu->setMemoryBlocked(1);
                                 }
-                                
+
                                 if (serverID > -1)
                                 {
                                     runningJobsInQueue[serverID]++;
@@ -439,7 +439,7 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                         wu->setServer(node.queryProp("@name"));
                         wu->setInstance(instance.str());
                         wu->setQueueName(qname.str());
-                        
+
                         aws.append(*wu.getLink());
                     }
                 }
@@ -458,7 +458,7 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
         {
             IEspTpCluster& cluster = clusters.item(x);
             IEspThorCluster* returnCluster = new CThorCluster("","");
-                
+
             returnCluster->setClusterName(cluster.getName());
             returnCluster->setQueueName(cluster.getQueueName());
 
@@ -507,12 +507,12 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                 {
                     try
                     {
-                            Owned<IEspActiveWorkunit> wu(new CActiveWorkunitWrapper(context, iter->query().queryWUID(),++count));
-                            wu->setServer("ThorMaster");
-                            wu->setInstance(cluster.getName());
-                            wu->setQueueName(cluster.getQueueName());
+                        Owned<IEspActiveWorkunit> wu(new CActiveWorkunitWrapper(context, iter->query().queryWUID(),++count));
+                        wu->setServer("ThorMaster");
+                        wu->setInstance(cluster.getName());
+                        wu->setQueueName(cluster.getQueueName());
 
-                            aws.append(*wu.getLink());
+                        aws.append(*wu.getLink());
                     }
                     catch (IException *e)
                     {
@@ -521,7 +521,7 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                         wu->setServer("ThorMaster");
                         wu->setInstance(cluster.getName());
                         wu->setQueueName(cluster.getQueueName());
-                        
+
                         aws.append(*wu.getLink());
                     }
                 }
@@ -580,10 +580,10 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
             {
                 IEspTpCluster& cluster = clusters1.item(x1);
                 IEspRoxieCluster* returnCluster = new CRoxieCluster("","");
-                    
+
                 returnCluster->setClusterName(cluster.getName());
                 returnCluster->setQueueName(cluster.getQueueName());
-                
+
                 IArrayOf<IEspTpLogicalCluster> clusters1;
                 dummy.getTargetClusterList(clusters1, eqRoxieCluster, cluster.getName());
                 const char* queuename1 = cluster.getQueueName();
@@ -617,7 +617,7 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                         wu->setServer("RoxieServer");
                         wu->setInstance(cluster.getName());
                         wu->setQueueName(cluster.getQueueName());
-                        
+
                         aws.append(*wu.getLink());
                     }
                 }
@@ -659,7 +659,7 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
             Owned <IStringIterator> targetClusters = getTargetClusters(eqEclCCServer, serverName);
             if (!targetClusters->first())
                 continue;
-            
+
             ForEach (*targetClusters)
             {
                 SCMStringBuffer targetCluster;
@@ -820,7 +820,7 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
 
 
 void CWsSMCEx::addCapabilities(IPropertyTree* pFeatureNode, const char* access, 
-                                         IArrayOf<IEspCapability>& capabilities)
+                               IArrayOf<IEspCapability>& capabilities)
 {
     StringBuffer xpath(access);
     xpath.append("/Capability");
@@ -907,7 +907,7 @@ bool CWsSMCEx::onMoveJobBack(IEspContext &context, IEspSMCJobRequest &req, IEspS
 
         QueueWrapper queue(req.getClusterType(), req.getCluster());
         QueueLock lock(queue);
-        
+
         unsigned index=queue->findRank(req.getWuid());
         if(index<queue->ordinality())
         {
@@ -950,7 +950,7 @@ bool CWsSMCEx::onMoveJobFront(IEspContext &context, IEspSMCJobRequest &req, IEsp
 
         QueueWrapper queue(req.getClusterType(), req.getCluster());
         QueueLock lock(queue);
-        
+
         unsigned index=queue->findRank(req.getWuid());
         if(index>0 && index<queue->ordinality())
         {
@@ -995,7 +995,7 @@ bool CWsSMCEx::onRemoveJob(IEspContext &context, IEspSMCJobRequest &req, IEspSMC
 
         QueueWrapper queue(req.getClusterType(), req.getCluster());
         QueueLock lock(queue);
-        
+
         unsigned index=queue->findRank(req.getWuid());
         if(index<queue->ordinality())
         {
@@ -1131,7 +1131,7 @@ bool CWsSMCEx::onGetThorQueueAvailability(IEspContext &context, IEspGetThorQueue
         {
             IEspTpCluster& cluster = clusters.item(x);
             IEspThorCluster* returnCluster = new CThorCluster("","");
-                
+
             returnCluster->setClusterName(cluster.getName());
             returnCluster->setQueueName(cluster.getQueueName());
 
@@ -1242,7 +1242,7 @@ bool CWsSMCEx::onSetBanner(IEspContext &context, IEspSetBannerRequest &req, IEsp
 
 bool CWsSMCEx::onNotInCommunityEdition(IEspContext &context, IEspNotInCommunityEditionRequest &req, IEspNotInCommunityEditionResponse &resp)
 {
-   return true;
+    return true;
 }
 
 
@@ -1413,15 +1413,15 @@ int CWsSMCSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* request, 
 
             page.append(
                 "<html>"
-                    "<head>"
-                        "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />"
-                        "<link rel=\"stylesheet\" type=\"text/css\" href=\"/esp/files/default.css\"/>"
-                        "<link rel=\"stylesheet\" type=\"text/css\" href=\"/esp/files/yui/build/fonts/fonts-min.css\" />"
-                        "<title>Advanced feature in Enterprise Edition</title>"
-                    "</head>"
-                    "<body>"
-                        "<h3 style=\"text-align:centre;\">Advanced feature in the Enterprise Edition</h4>"
-                        "<p style=\"text-align:centre;\">This feature is only available with the Enterprise Edition. ");
+                "<head>"
+                "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />"
+                "<link rel=\"stylesheet\" type=\"text/css\" href=\"/esp/files/default.css\"/>"
+                "<link rel=\"stylesheet\" type=\"text/css\" href=\"/esp/files/yui/build/fonts/fonts-min.css\" />"
+                "<title>Advanced feature in Enterprise Edition</title>"
+                "</head>"
+                "<body>"
+                "<h3 style=\"text-align:centre;\">Advanced feature in the Enterprise Edition</h4>"
+                "<p style=\"text-align:centre;\">This feature is only available with the Enterprise Edition. ");
             if (link.length() > 0)
                 page.append(link.str());
             page.append("</p></body>"

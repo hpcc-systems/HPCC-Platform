@@ -57,79 +57,57 @@ public:
     }
 };
 
-
-
 class CWsTopologyEx : public CWsTopology
 {
 private:
 
-    CTpWrapper m_TpWrapper;
-    bool         m_displayRoxieCluster;
-    Owned<IEnvironmentFactory> m_envFactory;
-    StringBuffer                    m_preflightProcessFilter;
-    unsigned int                    m_cpuThreshold;
-    unsigned int                    m_memThreshold;
-    unsigned int                    m_diskThreshold;
-    bool                                m_bMemThresholdIsPercentage;
-    bool                                m_bDiskThresholdIsPercentage;
-    bool                                m_bEncapsulatedSystem;
-    bool                                m_enableSNMP;
+    CTpWrapper                  m_TpWrapper;
+    bool                        m_displayRoxieCluster;
+    Owned<IEnvironmentFactory>  m_envFactory;
+    StringBuffer                m_preflightProcessFilter;
+    unsigned int                m_cpuThreshold;
+    unsigned int                m_memThreshold;
+    unsigned int                m_diskThreshold;
+    bool                        m_bMemThresholdIsPercentage;
+    bool                        m_bDiskThresholdIsPercentage;
+    bool                        m_bEncapsulatedSystem;
+    bool                        m_enableSNMP;
 
     void getThorXml(const char *cluster,StringBuffer& strBuff);
     void getThorLog(const char *cluster,MemoryBuffer& returnbuff);
-    //void getThorLog(StringBuffer logname,StringBuffer& returnbuff);
     int loadFile(const char* fname, int& len, unsigned char* &buf, bool binary=true);
     void readLogFile(StringBuffer logname, ReadLog& readLogReq, StringBuffer& startDate, StringBuffer& endDate, 
         bool& hasDate, StringBuffer& returnbuff);
     void readLogFile(StringBuffer logname, OwnedIFileIO rIO, ReadLog& readLogReq, bool& hasDate, StringArray& returnbuff);
     bool readToABuffer(StringBuffer logname, OwnedIFileIO rIO, offset_t& fileSize, offset_t& readFrom, StringBuffer dataLeft, 
-                                             StringBuffer& dataBuffer);
+        StringBuffer& dataBuffer);
     long readLogLineID(char* pTr);
     bool readLogTime(char* pTr, int start, int length, CDateTime& dt);
     int checkLineTerminator(char* pTr);
     bool readLineTerminator(char* pTr, int& byteCount);
     void addALogLine(offset_t& readFrom, unsigned& locationFlag, long firstOrLastRowID, StringBuffer dataRow, ReadLog& readLogReq, StringArray& returnbuff);
-
     void loadThresholdValue(IPropertyTree* pServiceNode, const char* attrName, unsigned int& thresholdValue, 
-                                    bool& bThresholdIsPercentage);
+        bool& bThresholdIsPercentage);
 
-    //void getThorXml(const char* ClusterName req.getName(),returnStr);
 public:
     IMPLEMENT_IINTERFACE;
     virtual ~CWsTopologyEx(){};
     virtual void init(IPropertyTree *cfg, const char *process, const char *service);
-
     bool onTpClusterQuery(IEspContext &context, IEspTpClusterQueryRequest &req, IEspTpClusterQueryResponse &resp);
-
     bool onTpTargetClusterQuery(IEspContext &context, IEspTpTargetClusterQueryRequest &req, IEspTpTargetClusterQueryResponse &resp);
-
     bool onTpLogicalClusterQuery(IEspContext &context, IEspTpLogicalClusterQueryRequest &req, IEspTpLogicalClusterQueryResponse &resp);
-
     bool onTpGroupQuery(IEspContext &context, IEspTpGroupQueryRequest &req, IEspTpGroupQueryResponse &resp);
-
     bool onTpClusterInfo(IEspContext &context, IEspTpClusterInfoRequest &req, IEspTpClusterInfoResponse& resp);
-
     bool onTpMachineQuery(IEspContext &context, IEspTpMachineQueryRequest &req, IEspTpMachineQueryResponse &resp);
-
     bool onTpSetMachineStatus(IEspContext &context,IEspTpSetMachineStatusRequest  &req, IEspTpSetMachineStatusResponse &resp);
-
     bool onTpSwapNode(IEspContext &context,IEspTpSwapNodeRequest  &req, IEspTpSwapNodeResponse &resp);
-
     bool onTpXMLFile(IEspContext &context,IEspTpXMLFileRequest  &req, IEspTpXMLFileResponse &resp);
-
     bool onTpLogFile(IEspContext &context,IEspTpLogFileRequest  &req, IEspTpLogFileResponse &resp);
-
     bool onSystemLog(IEspContext &context,IEspSystemLogRequest  &req, IEspSystemLogResponse &resp);
-
     bool onTpLogFileDisplay(IEspContext &context,IEspTpLogFileRequest  &req, IEspTpLogFileResponse &resp);
-
     bool onTpServiceQuery(IEspContext &context, IEspTpServiceQueryRequest &req, IEspTpServiceQueryResponse &resp);
-
     bool onTpGetComponentFile(IEspContext &context, IEspTpGetComponentFileRequest &req, IEspTpGetComponentFileResponse &resp);
 };
-
-
-
 
 #endif //_ESPWIZ_ws_topology_HPP__
 
