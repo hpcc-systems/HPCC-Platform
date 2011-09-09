@@ -694,21 +694,6 @@ void adjustRowvalues(IPropertyTree* xgmml, const char* popupId)
     }
 }
 
-int waitCompileWU(const char *wuid, IEspContext &context, bool wait)
-{
-    try
-    {
-        secWaitForWorkUnitToCompile(wuid, *context.querySecManager(), *context.queryUser(), -1);
-        return CWUWrapper(wuid, context)->getState();
-    }
-    catch(IException* e)
-    {
-        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
-    }
-
-    return WUStateFailed;
-}
-
 void submitQueryWU(const char *wuid, IEspContext& context, CRoxieQuery& roxieQuery, bool allowNewRoxieOnDemandQuery)
 {
     Owned<IWorkUnitFactory> factory = getSecWorkUnitFactory(*context.querySecManager(), *context.queryUser());
@@ -749,8 +734,17 @@ void submitQueryWU(const char *wuid, IEspContext& context, CRoxieQuery& roxieQue
     {
         manager->runQuery(workunit, jobName.str(), false, allowNewRoxieOnDemandQuery, result);
     }
-    else if (roxieQuery.action != WUActionCompile)
+    else
     {
+        Owned<IRoxieQueryCompileInfo> compileInfo = createRoxieQueryCompileInfo(roxieQuery.ecl.str(),
+                                                                                roxieQuery.jobName.str(),
+                                                                                roxieQuery.clusterName.str(),
+                                                                                "WS_WORKUNITS");
+        compileInfo->setWuTimeOut(roxieQuery.wuTimeOut);
+        SCMStringBuffer generatedQueryName;
+        generatedQueryName.set(roxieQuery.jobName.str());
+        if (!generatedQueryName.length())
+            generatedQueryName.set(roxieQuery.wuid.str());
         Owned<IRoxieQueryProcessingInfo> processingInfo = createRoxieQueryProcessingInfo();
         processingInfo->setResolveFileInfo(true);
         processingInfo->setLoadDataOnly(false);
@@ -761,25 +755,29 @@ void submitQueryWU(const char *wuid, IEspContext& context, CRoxieQuery& roxieQue
         processingInfo->setCopyKeyDiffLocationInfo(false);
         processingInfo->setLayoutTranslationEnabled(false);
 
-        SCMStringBuffer wuCluster;
-        workunit->getClusterName(wuCluster);
-        Owned <IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(wuCluster.str());
-        SCMStringBuffer querySetName;
-        clusterInfo->getQuerySetName(querySetName);
+        bool compiled = manager->compileQuery(roxieQuery.wuid, generatedQueryName, *compileInfo.get(), *processingInfo.get(), roxieQuery.clusterName.str(), result);
+        if (compiled && roxieQuery.action != WUActionCompile)
+        {
+            workunit.setown(factory->openWorkUnit(wuid, false));
+            SCMStringBuffer wuCluster;
+            workunit->getClusterName(wuCluster);
+            Owned <IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(wuCluster.str());
+            SCMStringBuffer querySetName;
+            clusterInfo->getQuerySetName(querySetName);
 
-        SCMStringBuffer deployStatus;
+            SCMStringBuffer deployStatus;
 
-        manager->publishWorkunit(workunit, jobName, *processingInfo.get(), user.str(), DO_NOT_ACTIVATE, querySetName.str(), true, result, deployStatus);
-        SCMStringBuffer currentQueryName;
-        workunit->getDebugValue("queryid", currentQueryName);
-        manager->runQuery(workunit, currentQueryName.str(), false, allowNewRoxieOnDemandQuery, result);
-        if (!workunit->getDebugValueBool("@leaveWuInQuerySet", 0))
-            manager->deleteQuery(currentQueryName.str(), querySetName.str(), true, deployStatus);
-
-        Owned<IWorkUnit> wu0(factory->updateWorkUnit(wuid));
-        wu0->setState(WUStateCompleted);
-        wu0->commit();
-        wu0.clear();
+            manager->publishWorkunit(workunit, jobName, *processingInfo.get(), user.str(), DO_NOT_ACTIVATE, querySetName.str(), true, result, deployStatus);
+            SCMStringBuffer currentQueryName;
+            workunit->getDebugValue("queryid", currentQueryName);
+            manager->runQuery(workunit, currentQueryName.str(), false, allowNewRoxieOnDemandQuery, result);
+            if (!workunit->getDebugValueBool("@leaveWuInQuerySet", 0))
+                manager->deleteQuery(currentQueryName.str(), querySetName.str(), true, deployStatus);
+            Owned<IWorkUnit> wu0(factory->updateWorkUnit(wuid));
+            wu0->setState(WUStateCompleted);
+            wu0->commit();
+            wu0.clear();
+        }
     }
 }
 
