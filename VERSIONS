@@ -45,12 +45,12 @@ Branches with names starting candidate- contain code that is being prepared for
 release as a stable version. Fixes for bugs discovered during closedown testing
 will be merged into the current candidate- branch.
 
+A branch with the name split-X.Y will refer to the point at which the branch for
+candidate-X.Y split off from master. This is normally the point where bug fixes
+intended for release in the X.Y series should be based.
+
 Tags
 ====
 
 Tags corresponding to the release versions will be applied to points on the
 candidate- branch where binary releases have been built and published.
-
-A tag with the name split-X.Y will refer to the point at which the branch for
-candidate-X.Y split off from master. This is normally the point where bug fixes
-intended for release in the X.Y series should be based.
