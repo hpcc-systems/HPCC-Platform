@@ -212,6 +212,8 @@ class HashKeyOf : public MappingBase
 template <class KEY, class MAPPING>
 class MapOf : extends KeptHashTable
 {
+  private:
+    bool remove(MAPPING * mem);
   public:
     MapOf() : KeptHashTable(sizeof(KEY), false) {}
     MapOf(unsigned initsize) : KeptHashTable(initsize, sizeof(KEY), false) {}
@@ -220,7 +222,7 @@ class MapOf : extends KeptHashTable
 
     inline bool add(MAPPING &mem)               { return KeptHashTable::add(mem); }
     inline bool remove(const KEY & key)         { return KeptHashTable::remove(&key); }
-    inline bool remove(MAPPING * mem)           { return KeptHashTable::remove(mem); }
+    inline bool removeExact(MAPPING * mem)           { return KeptHashTable::removeExact(mem); }
     inline MAPPING * find(const KEY & key) const     { return (MAPPING *)KeptHashTable::find(&key); }
     inline MAPPING * findLink(const KEY & key) const { return (MAPPING *)KeptHashTable::findLink(&key); }
 };
@@ -228,6 +230,8 @@ class MapOf : extends KeptHashTable
 template <class MAPPING>
 class StringMapOf : extends KeptHashTable
 {
+  private:
+    bool remove(MAPPING * mem);
   public:
     StringMapOf(bool _ignorecase) : KeptHashTable(0, _ignorecase) {}
     StringMapOf(unsigned initsize, bool _ignorecase) : KeptHashTable(initsize, 0, _ignorecase) {}
@@ -235,7 +239,7 @@ class StringMapOf : extends KeptHashTable
 
     inline bool add(MAPPING &mem)               { return KeptHashTable::add(mem); }
     inline bool remove(const char *key)         { return KeptHashTable::remove(key); }
-    inline bool remove(MAPPING * mem)           { return KeptHashTable::remove(mem); }
+    inline bool removeExact(MAPPING * mem)           { return KeptHashTable::removeExact(mem); }
     inline MAPPING * find(const char *key) const     { return (MAPPING *)KeptHashTable::find(key); }
 
 };
