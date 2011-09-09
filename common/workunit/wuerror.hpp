@@ -47,5 +47,6 @@
 #define WUERR_ScheduleLockFailed                5021
 #define WUERR_PackageAlreadyExists              5022
 #define WUERR_MismatchClusterType               5023
+#define WUERR_InvalidDll                        5024
 
 #endif

@@ -8787,6 +8787,8 @@ void addQueryToQuerySet(IWorkUnit *workunit, const char *querySetName, const cha
     SCMStringBuffer dllName;
     Owned<IConstWUQuery> q = workunit->getQuery();
     q->getQueryDllName(dllName);
+    if (!dllName.length())
+        throw MakeStringException(WUERR_InvalidDll, "Cannot deploy query - no associated dll.");
 
     SCMStringBuffer wuid;
     workunit->getWuid(wuid);

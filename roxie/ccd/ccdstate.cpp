@@ -669,20 +669,28 @@ public:
             ForEach (*queryNames)
             {
                 const IPropertyTree &query = queryNames->query();
-                const char *id = query.queryProp("@id");
-                const char *dllName = query.queryProp("@dll");
-                if (!id || !dllName)
+                try
                 {
-                    StringBuffer qxml;
-                    toXML(&query, qxml);
-                    throw MakeStringException(ROXIE_QUERY_MODIFICATION, "Invalid query definition %s: dll and id must be specified", qxml.str());
+                    const char *id = query.queryProp("@id");
+                    const char *dllName = query.queryProp("@dll");
+                    if (!id || !*id || !dllName || !*dllName)
+                        throw MakeStringException(ROXIE_QUERY_MODIFICATION, "dll and id must be specified");
+                    Owned<const IQueryDll> queryDll = createQueryDll(dllName);
+                    const IRoxiePackage *package = packages.queryPackage(id);
+                    if (!package) package = packages.queryPackage("default");
+                    if (!package) package = packages.queryRootPackage();
+                    assertex(package);
+                    addQuery(id, loadQueryFromDll(id, queryDll.getClear(), *package, &query));
                 }
-                Owned<const IQueryDll> queryDll = createQueryDll(dllName);
-                const IRoxiePackage *package = packages.queryPackage(id);
-                if (!package) package = packages.queryPackage("default");
-                if (!package) package = packages.queryRootPackage();
-                assertex(package);
-                addQuery(id, loadQueryFromDll(id, queryDll.getClear(), *package, &query));
+                catch (IException *E)
+                {
+                    // we don't want a single bad query in the set to stop us loading all the others
+                    StringBuffer msg, qxml;
+                    toXML(&query, qxml);
+                    msg.appendf("Failed to load query: %s", qxml.str());
+                    EXCLOG(E, msg.str());
+                    E->Release();
+                }
             }
 
             Owned<IPropertyTreeIterator> a = querySet.getElements("Alias");
@@ -691,7 +699,17 @@ public:
                 IPropertyTree &item = a->query();
                 const char *alias = item.queryProp("@name"); 
                 const char *original = item.queryProp("@id");
-                addAlias(alias, original);
+                try
+                {
+                    addAlias(alias, original);
+                }
+                catch (IException *E)
+                {
+                    // we don't want a single bad alias in the set to stop us loading all the others
+                    VStringBuffer msg("Failed to set alias %s on %s", alias, original);
+                    EXCLOG(E, msg.str());
+                    E->Release();
+                }
             }
         }
     }
