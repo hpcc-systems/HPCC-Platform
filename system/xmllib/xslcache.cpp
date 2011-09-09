@@ -50,7 +50,7 @@ public:
 
     bool operator==(CXslIncludeSignature& incl)
     {
-        return (strieq(filePath.str(), incl.filePath.str())) && (fileSize == incl.fileSize) && (fileTime == incl.fileTime);
+        return (streq(filePath.str(), incl.filePath.str())) && (fileSize == incl.fileSize) && (fileTime == incl.fileTime);
     }
 
     const char* getPath()
@@ -164,7 +164,7 @@ public:
             return false;
         if(!matched && !match(entry))
             return false;
-        if (m_buffer->getType() == IO_TYPE_FILE && (fileModTime != entry->fileModTime || m_size != entry->m_size))
+        if (fileModTime != entry->fileModTime || m_size != entry->m_size)
             return false;
         if(m_includecomp.get() && m_includecomp->hasChanged())
             return false;
@@ -235,21 +235,25 @@ public:
 
     void freeOneCacheEntry()
     {
-        CXslEntry *oldest = NULL;
+        IMapping *oldest = NULL;
+        time_t oldTime = 0;
         HashIterator iter(xslMap);
         for (iter.first(); iter.isValid(); iter.next())
         {
             CXslEntry *entry = xslMap.mapToValue(&iter.query());
             if (entry->isExpired(m_cachetimeout))
             {
-                xslMap.remove(dynamic_cast<MappingStringToIInterface*>(&iter.query()));
+                xslMap.removeExact(&iter.query());
                 return;
             }
-            if (!oldest || entry->createTime < oldest->createTime)
-                oldest=entry;
+            if (!oldest || entry->createTime < oldTime)
+            {
+                oldest=&iter.query();
+                oldTime=entry->createTime;
+            }
         }
         if (oldest)
-            xslMap.remove(oldest->m_cacheId.sget());
+            xslMap.removeExact(oldest);
     }
 
     void setCacheTimeout(int timeout)

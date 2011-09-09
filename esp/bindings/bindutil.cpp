@@ -810,7 +810,7 @@ void xslTransformHelper(IXslProcessor *xslp, const char* xml, const char* xslFil
         if (!strnicmp(xslFile, "/esp/xslt/", 10))
             if (!checkFileExists(xslpath.append(getCFD()).append("smc_xslt/").append(xslFile+10).str()) && !checkFileExists(xslpath.append(getCFD()).append("xslt/").append(xslFile+10).str()))
                 return;
-        xform->setXslSource((xslpath.length()) ? xslpath.str() : xslFile);
+        xform->loadXslFromFile((xslpath.length()) ? xslpath.str() : xslFile);
         xform->setXmlSource(xml, strlen(xml)+1);
         if (params) xform->copyParameters(params);
         xform->transform(output.clear());

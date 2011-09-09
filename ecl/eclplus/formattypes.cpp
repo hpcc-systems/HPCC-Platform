@@ -217,7 +217,7 @@ void TextFormatType::printBody(FILE* fp, int len, char* txt)
     StringBuffer xmlbuf;
     xmlbuf.append("<Result>").append(len, txt).append("</Result>");
     transform->setXmlSource(xmlbuf.str(), xmlbuf.length());
-    transform->setXslSource(formatxsl, strlen(formatxsl));
+    transform->setXslNoCache(formatxsl, strlen(formatxsl));
     transform->setParameter("showHeader", displayNamesHeader()?"1":"0");
     transform->setParameter("showName", embedNames()?"1":"0");
     transform->setParameter("showRecordNumber", displayRecordNumber()?"1":"0");

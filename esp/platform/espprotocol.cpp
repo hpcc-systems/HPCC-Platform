@@ -137,7 +137,7 @@ const StringBuffer &CEspApplicationPort::getAppFrameHtml(time_t &modified, const
         xml.appendf("<EspApplicationFrame title=\"%s\" navWidth=\"%d\" navResize=\"%d\" navScroll=\"%d\" inner=\"%s\" params=\"%s\"/>", 
             getESPContainer()->getFrameTitle(), navWidth, navResize, navScroll, (inner&&*inner) ? encoded_inner.str() : "?main", params.str());
         Owned<IXslTransform> xform = xslp->createXslTransform();
-        xform->setXslSource(StringBuffer(getCFD()).append("./xslt/appframe.xsl").str());
+        xform->loadXslFromFile(StringBuffer(getCFD()).append("./xslt/appframe.xsl").str());
         xform->setXmlSource(xml.str(), xml.length()+1);
         xform->transform( (needRefresh || embedded_url) ? html.clear() : appFrameHtml.clear());
     }
@@ -171,7 +171,7 @@ const StringBuffer &CEspApplicationPort::getTitleBarHtml(IEspContext& ctx, bool 
         else
         {
             Owned<IXslTransform> xform = xslp->createXslTransform();
-            xform->setXslSource(StringBuffer(getCFD()).append("./xslt/espheader.xsl").str());
+            xform->loadXslFromFile(StringBuffer(getCFD()).append("./xslt/espheader.xsl").str());
             xform->setXmlSource(titleBarXml.str(), titleBarXml.length()+1);
             xform->transform(titleBarHtml.clear());
         }
@@ -211,7 +211,7 @@ const StringBuffer &CEspApplicationPort::getNavBarContent(IEspContext &context, 
                 xslsource.append(getCFD()).append("./xslt/nav.xsl");
                     
             }
-            xform->setXslSource(xslsource.str());
+            xform->loadXslFromFile(xslsource.str());
 
 
             xform->setXmlSource(xml.str(), xml.length()+1);

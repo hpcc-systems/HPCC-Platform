@@ -181,7 +181,7 @@ public:
             setIncludeHandler(handler);
     }
 
-    CXslSource(const char* buf, int len, IIncludeHandler* handler, const char *rootpath = NULL, const char *cacheId=NULL) : m_XalanTransformer()
+    CXslSource(const char* buf, int len, IIncludeHandler* handler, const char *cacheId, const char *rootpath = NULL) : m_XalanTransformer()
     {
         m_xsltext.append(len, buf);
         m_sourcetype = IO_TYPE_BUFFER;
@@ -509,8 +509,9 @@ public:
 
     virtual int setXmlSource(const char *pszFileName);
     virtual int setXmlSource(const char *pszBuffer, unsigned int nSize);
-    virtual int setXslSource(const char *pszFileName, const char *cacheId=NULL);
-    virtual int setXslSource(const char *pszBuffer, unsigned int nSize, const char *rootpath, const char *cacheId=NULL);
+    virtual int loadXslFromFile(const char *pszFileName, const char *altCacheId=NULL);
+    virtual int setXslSource(const char *pszBuffer, unsigned int nSize, const char *cacheId, const char *rootpath);
+    virtual int setXslNoCache(const char *pszBuffer, unsigned int nSize, const char *rootpath);
     virtual int setResultTarget(char *pszBuffer, unsigned int nSize);
     virtual int setResultTarget(const char *pszFileName);
     virtual int closeResultTarget();

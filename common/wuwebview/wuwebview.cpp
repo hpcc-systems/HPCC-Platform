@@ -372,7 +372,7 @@ void WuWebView::renderExpandedResults(const char *viewName, const StringBuffer &
     t->setIncludeHandler(this);
     StringBuffer cacheId(viewName);
     cacheId.append('@').append(dllname.str()); //using dllname, cloned workunits can share cache entry
-    t->setXslSource(xslt.str(), xslt.length(), rootpath.str(), cacheId.str());
+    t->setXslSource(xslt.str(), xslt.length(), cacheId.str(), rootpath.str());
     t->setXmlSource(expanded.str(), expanded.length());
     t->transform(out);
 }
@@ -413,7 +413,7 @@ void WuWebView::applyResultsXSLT(const char *filename, const char *xml, StringBu
     //mapped to resources and need to be distinguished in cache
     StringBuffer cacheId(filename);
     cacheId.append('@').append(dllname.str()); //cloned workunits have same dll and resources
-    t->setXslSource(filename, true, cacheId.str());
+    t->loadXslFromFile(filename, cacheId.str());
     t->setXmlSource(buffer.str(), buffer.length());
     t->transform(out);
 }

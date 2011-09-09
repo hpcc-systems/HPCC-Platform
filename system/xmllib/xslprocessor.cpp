@@ -545,16 +545,24 @@ int CXslTransform::setXmlSource(const char *pszBuffer, unsigned int nSize)
     return theResult;
 }
 
-int CXslTransform::setXslSource(const char *pszFileName, const char *cacheId)
+int CXslTransform::loadXslFromFile(const char *pszFileName, const char *cacheId)
 {
     m_xslsource.setown(new CXslSource(pszFileName, m_sourceResolver?m_sourceResolver->getIncludeHandler():NULL, cacheId));
 
     return 0;
 }
 
-int CXslTransform::setXslSource(const char *pszBuffer, unsigned int nSize, const char *rootpath, const char *cacheId)
+int CXslTransform::setXslSource(const char *pszBuffer, unsigned int nSize, const char *cacheId, const char *rootpath)
 {
-    m_xslsource.setown(new CXslSource(pszBuffer, nSize, m_sourceResolver?m_sourceResolver->getIncludeHandler():NULL, rootpath, cacheId));
+    assertex(cacheId && *cacheId);
+    m_xslsource.setown(new CXslSource(pszBuffer, nSize, m_sourceResolver?m_sourceResolver->getIncludeHandler():NULL, cacheId, rootpath));
+
+    return 0;
+}
+
+int CXslTransform::setXslNoCache(const char *pszBuffer, unsigned int nSize, const char *rootpath)
+{
+    m_xslsource.setown(new CXslSource(pszBuffer, nSize, m_sourceResolver?m_sourceResolver->getIncludeHandler():NULL, NULL, rootpath));
 
     return 0;
 }
