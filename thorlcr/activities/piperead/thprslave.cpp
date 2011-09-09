@@ -39,6 +39,7 @@ protected:
     StringAttr pipeCommand;
     bool eof, pipeFinished;
     unsigned retcode;
+    unsigned flags;
 
 protected:
 
@@ -98,7 +99,7 @@ protected:
             HANDLE pipeProcess = pipe->getProcessHandle();
             retcode = pipe->wait();
             unregisterSelfDestructChildProcess(pipeProcess);
-            if (retcode)
+            if (retcode!=0 && !(flags & TPFnofail))
             {
                 StringBuffer stdError;
                 if (pipe->hasError())
@@ -164,6 +165,7 @@ public:
     {
         pipeFinished = true;
         retcode = 0;
+        flags = 0;
         pipe.setown(createPipeProcess(globals->queryProp("@allowedPipePrograms")));
         pipeStream = new CPipeStream(this);
     }
@@ -231,13 +233,14 @@ public:
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         helper = static_cast <IHThorPipeReadArg *> (queryHelper());
+        flags = helper->getPipeFlags();
         needTransform = false;
 
         if (needTransform)
             inrowif.setown(createRowInterfaces(helper->queryDiskRecordSize(),queryActivityId(),queryCodeContext()));
         else
             inrowif.set(this);
-        readTransformer.setown(createReadRowStream(inrowif->queryRowAllocator(), inrowif->queryRowDeserializer(), helper->queryXmlTransformer(), helper->queryCsvTransformer(), helper->queryXmlIteratorPath(), helper->getPipeFlags()));
+        readTransformer.setown(createReadRowStream(inrowif->queryRowAllocator(), inrowif->queryRowDeserializer(), helper->queryXmlTransformer(), helper->queryCsvTransformer(), helper->queryXmlIteratorPath(), flags));
         appendOutputLinked(this);
     }
     virtual void start()
@@ -342,10 +345,11 @@ public:
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         helper = static_cast <IHThorPipeThroughArg *> (queryHelper());
+        flags = helper->getPipeFlags();
         recreate = helper->recreateEachRow();
-        grouped = 0 != (helper->getPipeFlags() & TPFgroupeachrow);
+        grouped = 0 != (flags & TPFgroupeachrow);
 
-        readTransformer.setown(createReadRowStream(queryRowAllocator(), queryRowDeserializer(), helper->queryXmlTransformer(), helper->queryCsvTransformer(), helper->queryXmlIteratorPath(), helper->getPipeFlags()));
+        readTransformer.setown(createReadRowStream(queryRowAllocator(), queryRowDeserializer(), helper->queryXmlTransformer(), helper->queryCsvTransformer(), helper->queryXmlIteratorPath(), flags));
         readTransformer->setStream(pipeStream); // NB the pipe process stream is provided to pipeStream after pipe->run()
 
         appendOutputLinked(this);
@@ -358,7 +362,7 @@ public:
 
         if (!writeTransformer)
         {
-            writeTransformer.setown(createPipeWriteXformHelper(helper->getPipeFlags(), helper->queryXmlOutput(), helper->queryCsvOutput(), ::queryRowInterfaces(inputs.item(0))->queryRowSerializer()));
+            writeTransformer.setown(createPipeWriteXformHelper(flags, helper->queryXmlOutput(), helper->queryCsvOutput(), ::queryRowInterfaces(inputs.item(0))->queryRowSerializer()));
             writeTransformer->ready();
         }
         if (!recreate)
@@ -444,7 +448,7 @@ public:
         dataLinkStop();
         if (wrexc)
             throw wrexc.getClear();
-        if (retcode!=0)
+        if (retcode!=0 && !(flags & TPFnofail))
             throw MakeActivityException(this, TE_PipeReturnedFailure, "Process returned %d", retcode);
     }
     virtual void kill()
