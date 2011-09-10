@@ -308,13 +308,13 @@ void SourceFileEclRepository::loadDirectoryTree(IHqlRemoteScope * parentScope, I
                 Owned<ISourcePath> path = createSourcePath(sourcePath);
                 bool isECL = false;
                 fullpath.clear().append(dirPath).append(tail);
-                if (stricmp(ext, ".eclmod")==0)
+                if (stricmp(ext, ".eclmod")==0 || stricmp(ext, ".hql")==0)
                 {
                     fileContents.setown(createFileContents(&file, path));
                     isECL = true;
                     module.clear().append(fname, 0, ext-fname);
                 }
-                else if (stricmp(ext, ".ecllib")==0)
+                else if (stricmp(ext, ".ecllib")==0 || stricmp(ext, ".hqllib")==0)
                 {
                     //Legacy.Same as .eclmod but always an implicit module.  Almost certainly a bad idea.
                     fileContents.setown(createFileContents(&file, path));
@@ -322,7 +322,7 @@ void SourceFileEclRepository::loadDirectoryTree(IHqlRemoteScope * parentScope, I
                     flags |= PLUGIN_IMPLICIT_MODULE;
                     module.clear().append(fname, 0, ext-fname);
                 }
-                else if (stricmp(ext, ".ecl")==0)
+                else if (stricmp(ext, ".ecl")==0 || stricmp(ext, ".eclattr")==0)
                 {
                     assertex(parentScope);
                     //Rather than defining a module this defines a single exported symbol
