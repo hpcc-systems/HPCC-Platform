@@ -81,6 +81,12 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_DEBUG -DDEBUG")
 
+  set (CMAKE_THREAD_PREFER_PTHREAD 1)
+  find_package(Threads)
+  IF (NOT THREADS_FOUND)
+    message(FATAL_ERROR "No threading support found")
+  ENDIF()
+
   if (WIN32)
     # On windows, the vcproj generator generates both windows and debug build capabilities, and the release mode is appended to the directory later
     # This output location matches what our existing windows release scripts expect - might make sense to move out of tree sometime though
@@ -98,19 +104,18 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       add_definitions(/ZI)
     endif ()
   else ()
+    if (NOT CMAKE_USE_PTHREADS_INIT)
+      message (FATAL_ERROR "pthreads support not detected")
+    endif ()
     set ( EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/bin" )
     set ( LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/libs" )
     if (${CMAKE_COMPILER_IS_GNUCXX})
-      SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frtti -fPIC -fmessage-length=0 -Wformat -Wformat-security -Wformat-nonliteral")
+      SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frtti -fPIC -fmessage-length=0 -Wformat -Wformat-security -Wformat-nonliteral -pthread")
       SET (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --export-dynamic")
       SET (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g -fno-default-inline -fno-inline-functions")
     endif ()
     # All of these are defined in platform.h too, but need to be defned before any system header is included
     ADD_DEFINITIONS (-D_LARGEFILE_SOURCE=1 -D_LARGEFILE64_SOURCE=1 -D_FILE_OFFSET_BITS=64 -D__USE_LARGEFILE64=1 -D__USE_FILE_OFFSET64=1)
-    if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
-      SET (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pthread")
-      SET (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pthread")
-    endif ()
   endif ()
 
   macro(HPCC_ADD_LIBRARY target)
