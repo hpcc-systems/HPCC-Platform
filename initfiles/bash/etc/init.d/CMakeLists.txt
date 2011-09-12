@@ -16,13 +16,20 @@
 ################################################################################
 
 SET(outFiles)
-GENERATE_BASH(processor ${bash-vars} "configmgr.in" outFiles)
-GENERATE_BASH(processor ${bash-vars} "get_ip_address.sh.in" outFiles)
+
 GENERATE_BASH(processor ${bash-vars} "dafilesrv.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "install-init.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "hpcc-init.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "hpcc_common.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "uninstall-init.in" outFiles)
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/regex.awk.in.cmake" "${CMAKE_CURRENT_BINARY_DIR}/regex.awk")
-ADD_CUSTOM_TARGET(ProcessFiles-initfiles-bash-etc-init.d ALL DEPENDS ${outFiles})
 
+ADD_CUSTOM_TARGET(ProcessFiles-initfiles-bash-etc-init.d ALL DEPENDS ${outFiles})
+FOREACH( oFILES
+    ${outFiles}
+    ${CMAKE_CURRENT_SOURCE_DIR}/pid.sh
+    ${CMAKE_CURRENT_SOURCE_DIR}/lock.sh
+    ${CMAKE_CURRENT_SOURCE_DIR}/init-functions
+    ${CMAKE_CURRENT_SOURCE_DIR}/export-path
+)
+    install ( PROGRAMS ${oFILES} DESTINATION ${OSSDIR}/etc/init.d COMPONENT Runtime )
+ENDFOREACH ( oFILES )

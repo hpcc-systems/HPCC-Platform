@@ -20,3 +20,20 @@ GENERATE_BASH(processor ${bash-vars} "init_dafilesrv.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "init_eclagent.in" outFiles)
 ADD_CUSTOM_TARGET(ProcessFiles-initfiles-bin ALL DEPENDS ${outFiles})
 
+FOREACH( iFILES
+    ${outFiles}
+    ${CMAKE_CURRENT_SOURCE_DIR}/init_configesp
+    ${CMAKE_CURRENT_SOURCE_DIR}/init_dali
+    ${CMAKE_CURRENT_SOURCE_DIR}/init_dfuserver
+    ${CMAKE_CURRENT_SOURCE_DIR}/init_eclserver
+    ${CMAKE_CURRENT_SOURCE_DIR}/init_eclccserver
+    ${CMAKE_CURRENT_SOURCE_DIR}/init_eclscheduler
+    ${CMAKE_CURRENT_SOURCE_DIR}/init_esp
+    ${CMAKE_CURRENT_SOURCE_DIR}/init_ftslave
+    ${CMAKE_CURRENT_SOURCE_DIR}/init_roxie
+    ${CMAKE_CURRENT_SOURCE_DIR}/init_roxie_cluster
+    ${CMAKE_CURRENT_SOURCE_DIR}/init_sasha
+    ${CMAKE_CURRENT_SOURCE_DIR}/init_thor
+)
+    install ( PROGRAMS ${iFILES} DESTINATION ${OSSDIR}/bin COMPONENT Runtime )
+ENDFOREACH ( iFILES )

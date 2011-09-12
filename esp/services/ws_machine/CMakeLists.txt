@@ -74,4 +74,16 @@ target_link_libraries ( ws_machine
          securesocket 
     )
 
+FOREACH ( iFILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/DhcpMethods.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/StartStop.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/StartStopBegin.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/StartStopDone.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/machines.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/metrics.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/rexec.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/preflightControls.xslt
+)
+    Install ( FILES ${iFILES} DESTINATION ${OSSDIR}/componentfiles/smc_xslt/ws_machine COMPONENT Runtime )
+ENDFOREACH ( iFILES )
 

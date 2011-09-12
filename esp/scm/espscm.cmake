@@ -63,6 +63,7 @@ foreach ( loop_var ${ESPSCM_SRCS} )
     set_source_files_properties(${ESPSCM_GENERATED_DIR}/${result}_esp.ipp PROPERTIES GENERATED TRUE)
     set_source_files_properties(${ESPSCM_GENERATED_DIR}/${result}.xml PROPERTIES GENERATED TRUE)
     set ( ESP_GENERATED_INCLUDES ${ESP_GENERATED_INCLUDES} ${ESPSCM_GENERATED_DIR}/${result}.esp ${ESPSCM_GENERATED_DIR}/${result}.hpp ${ESPSCM_GENERATED_DIR}/${result}.int ${ESPSCM_GENERATED_DIR}/${result}.ipp ${ESPSCM_GENERATED_DIR}/${result}_esp.ipp ${ESPSCM_GENERATED_DIR}/${result}.xml )
+    Install( FILES ${ESPSCM_GENERATED_DIR}/${result}.xml DESTINATION ${OSSDIR}/componentfiles/esdl_files COMPONENT Runtime )
 endforeach ( loop_var ${ESPSCM_SRCS} )
 
 include_directories ( ${ESPSCM_GENERATED_DIR} )
