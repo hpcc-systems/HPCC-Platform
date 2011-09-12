@@ -34,6 +34,7 @@ set (    SRCS
 
 include_directories ( 
          ./../../../system/include 
+         ./../../../system/xmllib
          ./../../../system/security/shared 
          ./../../../system/security/securesocket 
          ./../../bindings 

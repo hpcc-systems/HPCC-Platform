@@ -51,6 +51,7 @@ include_directories (
          ./../../../system/security/securesocket 
          ./../../../system/security/shared 
          ./../../../system/include 
+         ./../../../system/xmllib
          ./../../clients 
          ./../../../esp/esplib 
          ./../../../dali/base 

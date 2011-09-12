@@ -24,7 +24,7 @@
 
 //SCM Interfaces
 #include "esp.hpp"
-#include "../../../system/xmllib/xslprocessor.hpp"
+#include "xslprocessor.hpp"
 
 //STL
 #include <algorithm>

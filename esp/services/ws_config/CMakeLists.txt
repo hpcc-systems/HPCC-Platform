@@ -42,6 +42,7 @@ include_directories (
          ./../../../system/security/securesocket 
          ./../../../system/security/shared 
          ./../../../system/include 
+         ./../../../system/xmllib
          ./../../../system/mp 
          ./../../../common/environment
          ./../../clients 

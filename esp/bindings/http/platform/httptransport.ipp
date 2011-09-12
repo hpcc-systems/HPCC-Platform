@@ -30,7 +30,7 @@
 
 #include "bindutil.hpp"
 
-#include "../../../system/xmllib/xslprocessor.hpp"
+#include "xslprocessor.hpp"
 
 
 #define POST_METHOD "POST"

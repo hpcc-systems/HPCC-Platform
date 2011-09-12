@@ -42,6 +42,7 @@ include_directories (
          ./../../common/fileview2 
          ./../../system/include 
          ./../../system/security/shared
+         ./../../system/xmllib
          ./../../dali/base 
          ./../../rtl/include 
          ./../../common/dllserver 
