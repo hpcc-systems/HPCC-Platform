@@ -387,7 +387,7 @@ void CWsEclBinding::xsltTransform(const char* xml, unsigned int len, const char*
 
     StringBuffer xslpath(getCFD());
     xslpath.append(xslFileName);
-    trans->setXslSource(xslpath.str());
+    trans->loadXslFromFile(xslpath.str());
 
     if (params)
     {
@@ -858,7 +858,7 @@ int CWsEclBinding::getWsEclLinks(IEspContext &context, CHttpRequest* request, CH
 
     Owned<IXslProcessor> xslp = getXslProcessor();
     Owned<IXslTransform> xform = xslp->createXslTransform();
-    xform->setXslSource(StringBuffer(getCFD()).append("./xslt/wsecl3_links.xslt").str());
+    xform->loadXslFromFile(StringBuffer(getCFD()).append("./xslt/wsecl3_links.xslt").str());
     xform->setXmlSource(xml.str(), xml.length());
 
     StringBuffer page;
@@ -1362,7 +1362,7 @@ int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttp
     Owned<IXslTransform> xform = xslp->createXslTransform();
 
     StringBuffer xslfile(getCFD());
-    xform->setXslSource(xslfile.append("./xslt/wsecl3_form.xsl").str());
+    xform->loadXslFromFile(xslfile.append("./xslt/wsecl3_form.xsl").str());
     xform->setXmlSource(formxml.str(), formxml.length()+1);
 
     // pass params to form (excluding form and __querystring)
@@ -1594,7 +1594,7 @@ int CWsEclBinding::getXmlTestForm(IEspContext &context, CHttpRequest* request, C
 
     Owned<IXslProcessor> xslp = getXslProcessor();
     Owned<IXslTransform> xform = xslp->createXslTransform();
-    xform->setXslSource(StringBuffer(getCFD()).append("./xslt/wsecl3_xmltest.xsl").str());
+    xform->loadXslFromFile(StringBuffer(getCFD()).append("./xslt/wsecl3_xmltest.xsl").str());
 
     StringBuffer srcxml;
     srcxml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?><srcxml><soapbody><![CDATA[");
@@ -1658,7 +1658,7 @@ int CWsEclBinding::getJsonTestForm(IEspContext &context, CHttpRequest* request, 
 
     Owned<IXslProcessor> xslp = getXslProcessor();
     Owned<IXslTransform> xform = xslp->createXslTransform();
-    xform->setXslSource(StringBuffer(getCFD()).append("./xslt/wsecl3_jsontest.xsl").str());
+    xform->loadXslFromFile(StringBuffer(getCFD()).append("./xslt/wsecl3_jsontest.xsl").str());
 
     StringBuffer srcxml;
     srcxml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?><srcxml><jsonreq><![CDATA[");

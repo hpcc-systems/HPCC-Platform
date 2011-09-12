@@ -1003,7 +1003,7 @@ int EspHttpBinding::onGetSoapBuilder(IEspContext &context, CHttpRequest* request
 
     IXslProcessor* xslp = getXmlLibXslProcessor();
     Owned<IXslTransform> xform = xslp->createXslTransform();
-    xform->setXslSource(StringBuffer(getCFD()).append("./xslt/soap_page.xsl").str());
+    xform->loadXslFromFile(StringBuffer(getCFD()).append("./xslt/soap_page.xsl").str());
     xform->setXmlSource("<xml/>", 6);
 
     // params
@@ -1949,7 +1949,7 @@ int EspHttpBinding::onGetXForm(IEspContext &context, CHttpRequest* request, CHtt
         //DBGLOG("Schema: %s", schema.str());
 
         Owned<IXslTransform> xform = xslp->createXslTransform();
-        xform->setXslSource(StringBuffer(getCFD()).append("./xslt/gen_form.xsl").str());
+        xform->loadXslFromFile(StringBuffer(getCFD()).append("./xslt/gen_form.xsl").str());
         xform->setXmlSource(schema.str(), schema.length()+1);
 
         // params
@@ -2393,7 +2393,7 @@ void EspHttpBinding::sortResponse(IEspContext& context, CHttpRequest* request, M
         IXslProcessor* xslp = getXmlLibXslProcessor();
 
         Owned<IXslTransform> xform = xslp->createXslTransform();
-        xform->setXslSource(StringBuffer(getCFD()).append("./xslt/dict_sort.xsl").str());   
+        xform->loadXslFromFile(StringBuffer(getCFD()).append("./xslt/dict_sort.xsl").str());
 
         xform->setXmlSource(respXML,respXML.length());
         xform->transform(result);

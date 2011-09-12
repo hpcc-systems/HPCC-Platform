@@ -184,6 +184,7 @@ class WuWebView : public CInterface,
 {
 public:
     IMPLEMENT_IINTERFACE;
+
     WuWebView(IConstWorkUnit &wu, const char *queryname, const char *wdir, bool mapEspDir) :
         manifestIncludePathsSet(false), dir(wdir), mapEspDirectories(mapEspDir)
     {
@@ -221,6 +222,7 @@ public:
     virtual bool getInclude(const char *includename, MemoryBuffer &includebuf, bool &pathOnly);
 
 protected:
+    SCMStringBuffer dllname;
     Owned<IConstWorkUnit> wu;
     Owned<ILoadedDllEntry> loadedDll;
     Owned<IPropertyTree> manifest;
@@ -368,7 +370,9 @@ void WuWebView::renderExpandedResults(const char *viewName, const StringBuffer &
         throw MakeStringException(WUWEBERR_ViewResourceNotFound, "Result view %s not found", viewName);
     Owned<IXslTransform> t = getXslProcessor()->createXslTransform();
     t->setIncludeHandler(this);
-    t->setXslSource(xslt.str(), xslt.length(), rootpath.str());
+    StringBuffer cacheId(viewName);
+    cacheId.append('@').append(dllname.str()); //using dllname, cloned workunits can share cache entry
+    t->setXslSource(xslt.str(), xslt.length(), cacheId.str(), rootpath.str());
     t->setXmlSource(expanded.str(), expanded.length());
     t->transform(out);
 }
@@ -405,7 +409,11 @@ void WuWebView::applyResultsXSLT(const char *filename, const char *xml, StringBu
 
     Owned<IXslTransform> t = getXslProcessor()->createXslTransform();
     t->setIncludeHandler(this);
-    t->setXslSource(filename);
+    //override default behavior using filename as cache identifier, there's a chance includes are
+    //mapped to resources and need to be distinguished in cache
+    StringBuffer cacheId(filename);
+    cacheId.append('@').append(dllname.str()); //cloned workunits have same dll and resources
+    t->loadXslFromFile(filename, cacheId.str());
     t->setXmlSource(buffer.str(), buffer.length());
     t->transform(out);
 }
@@ -426,7 +434,6 @@ void WuWebView::load(IConstWorkUnit &cwu)
         name.s.replace(' ','_');
     }
     Owned<IConstWUQuery> q = wu->getQuery();
-    SCMStringBuffer dllname;
     q->getQueryDllName(dllname);
     loadedDll.setown(queryDllServer().loadDll(dllname.str(), DllLocationAnywhere));
 }

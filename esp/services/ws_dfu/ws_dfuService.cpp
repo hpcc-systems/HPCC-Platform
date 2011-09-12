@@ -1492,7 +1492,7 @@ void CWsDfuEx::xsltTransformer(const char* xsltPath,StringBuffer& source,StringB
 
     Owned<IXslTransform> xform = m_xsl->createXslTransform();
 
-    xform->setXslSource(xsltPath);
+    xform->loadXslFromFile(xsltPath);
     xform->setXmlSource(source.str(), source.length()+1);
     xform->transform(returnStr.clear());
 }

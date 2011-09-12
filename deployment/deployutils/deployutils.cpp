@@ -2905,15 +2905,14 @@ const char* expandXPath(StringBuffer& xpath, IPropertyTree* pNode, IPropertyTree
 
 bool xsltTransform(const StringBuffer& xml, const char* sheet, IProperties *params, StringBuffer& ret)
 {
-  StringBuffer xsl;
-  if (esp::readFile(sheet, xsl)<=0)
-    throw MakeStringException(-1, "Can not open stylesheet %s",sheet);
+  if (!checkFileExists(sheet))
+    throw MakeStringException(-1, "Could not find stylesheet %s",sheet);
 
   Owned<IXslProcessor> proc  = getXslProcessor();
   Owned<IXslTransform> trans = proc->createXslTransform();
 
   trans->setXmlSource(xml.str(), xml.length());
-  trans->setXslSource(xsl, xsl.length());
+  trans->loadXslFromFile(sheet);
 
   if (params)
   {

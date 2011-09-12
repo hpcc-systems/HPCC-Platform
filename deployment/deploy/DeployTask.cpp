@@ -356,7 +356,7 @@ public:
          if (m_instanceName.length())
            transform.setParameter("instance", StringBuffer("'").append(m_instanceName).append("'").str());
 
-         transform.setXslSource(xsl);
+         transform.loadXslFromFile(xsl);
          if (!m_dummy)
          {
            if(m_machineOS != MachineOsLinux)

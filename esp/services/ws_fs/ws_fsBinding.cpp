@@ -364,14 +364,14 @@ IPropertyTree* CFileSpraySoapBindingEx::createPTreeForXslt(const char* method, c
 void CFileSpraySoapBindingEx::xsltTransform(const char* xml, const char* sheet, IProperties *params, StringBuffer& ret)
 {
     StringBuffer xsl;
-    if (esp::readFile(sheet,xsl)<=0)
+    if (!checkFileExists(sheet))
         throw MakeStringException(ECLWATCH_FILE_NOT_EXIST, "Cannot open stylesheet %s",sheet);
 
     Owned<IXslProcessor> proc  = getXslProcessor();
     Owned<IXslTransform> trans = proc->createXslTransform();
 
     trans->setXmlSource(xml, strlen(xml));
-    trans->setXslSource(xsl, xsl.length());
+    trans->loadXslFromFile(sheet);
 
     if (params)
     {

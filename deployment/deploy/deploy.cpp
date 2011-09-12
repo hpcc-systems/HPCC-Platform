@@ -259,7 +259,7 @@ public:
         externalFunction.setown(m_transform->createExternalFunction("validationMessage", validationMessageFromXSLT));
         m_transform->setExternalFunction(SEISINT_NAMESPACE, externalFunction.get(), true);
         
-        m_transform->setXslSource("validateAll.xsl");
+        m_transform->loadXslFromFile("validateAll.xsl");
         m_transform->setUserData(this);
         
         try
