@@ -8561,6 +8561,27 @@ IRoxieServerActivityFactory *createRoxieServerSplitActivityFactory(unsigned _id,
 
 #define PIPE_BUFSIZE 0x8000
 
+static IException *createPipeFailureException(const char *cmd, unsigned retcode, IPipeProcess *pipe)
+{
+    StringBuffer msg;
+    if(pipe->hasError())
+    {
+        try
+        {
+            char error[512];
+            size32_t sz = pipe->readError(sizeof(error), error);
+            if(sz && sz!=(size32_t)-1)
+                msg.append(", stderr: '").append(sz, error).append("'");
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e, "Error reading pipe stderr");
+            e->Release();
+        }
+    }
+    return MakeStringException(ROXIE_PIPE_ERROR, "Pipe process %s returned error %u%s", cmd, retcode, msg.str());
+}
+
 class CRoxieServerPipeReadActivity : public CRoxieServerActivity
 {
     IHThorPipeReadArg &helper;
@@ -8650,7 +8671,9 @@ protected:
         {
             unsigned err = pipe->wait();
             if(err && !(helper.getPipeFlags() & TPFnofail))
-                throw MakeStringException(ROXIE_PIPE_ERROR, "Pipe process %s returned error %d", pipeCommand.get(), err);
+            {
+                throw createPipeFailureException(pipeCommand.get(), err, pipe);
+            }
             pipe.clear();
         }
     }
@@ -8845,7 +8868,9 @@ private:
         {
             unsigned err = pipe->wait();
             if(err && !(helper.getPipeFlags() & TPFnofail))
-                throw MakeStringException(ROXIE_PIPE_ERROR, "Pipe process %s returned error %d", pipeCommand.get(), err);
+            {
+                throw createPipeFailureException(pipeCommand.get(), err, pipe);
+            }
             pipe.clear();
             pipeVerified.signal();
         }
@@ -8937,7 +8962,9 @@ private:
         pipe->closeInput();
         unsigned err = pipe->wait();
         if(err && !(helper.getPipeFlags() & TPFnofail))
-            throw MakeStringException(ROXIE_PIPE_ERROR, "Pipe process %s returned error %d", pipeCommand.get(), err);
+        {
+            throw createPipeFailureException(pipeCommand.get(), err, pipe);
+        }
         pipe.clear();
     }
 
