@@ -56,6 +56,7 @@ include_directories (
          ./../../dali/base 
          ./../../rtl/include 
          ./../../common/dllserver 
+         ./../../system/xmllib
          ./../../esp/clients 
          ./../../esp/platform 
          ./../../esp/bindings 

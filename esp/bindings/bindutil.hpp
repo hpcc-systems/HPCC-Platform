@@ -22,7 +22,7 @@
 #include "jliball.hpp"
 #include "esp.hpp"
 
-#include "../../../system/xmllib/xslprocessor.hpp"
+#include "xslprocessor.hpp"
 
 #ifndef BINDUTIL_EXPORT
 #define BINDUTIL_EXPORT

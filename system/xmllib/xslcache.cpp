@@ -243,7 +243,7 @@ public:
             CXslEntry *entry = xslMap.mapToValue(&iter.query());
             if (entry->isExpired(m_cachetimeout))
             {
-                xslMap.removeExact(&iter.query());
+                xslMap.removeExact(& static_cast<MappingStringToIInterface &>(iter.query()));
                 return;
             }
             if (!oldest || entry->createTime < oldTime)
@@ -253,7 +253,7 @@ public:
             }
         }
         if (oldest)
-            xslMap.removeExact(oldest);
+            xslMap.removeExact(static_cast<MappingStringToIInterface *>(oldest));
     }
 
     void setCacheTimeout(int timeout)

@@ -35,7 +35,7 @@
 
 #include <xpp/XmlPullParser.h>
 
-#include "../../../system/xmllib/xslprocessor.hpp"
+#include "xslprocessor.hpp"
 
 
 #define SOAP_OK           0
