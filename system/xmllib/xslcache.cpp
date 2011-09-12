@@ -21,12 +21,9 @@
 class CXslIncludeSignature : public CInterface, implements IInterface
 {
 private:
-    IO_Type m_type;
-    StringBuffer m_path;
-
-    int m_size;
-    unsigned long m_modtime;
-    unsigned long m_crc;
+    StringBuffer filePath;
+    offset_t fileSize;
+    time_t fileTime;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -35,48 +32,30 @@ public:
     {
         if(!path || !*path)
             throw MakeStringException(-1, "CXslIncludeSignature : path can't be emtpy");
-
-        m_path.append(path);
-
-        m_type = IO_TYPE_FILE;
+        filePath.append(path);
         Owned<IFile> f = createIFile(path);
         if(f)
         {
             CDateTime modtime;
             f->getTime(NULL, &modtime, NULL);
-            m_modtime = modtime.getSimple();
-            m_size = f->size();
+            fileTime = modtime.getSimple();
+            fileSize = f->size();
         }
         else
         {
-            m_size = 0;
-            m_modtime = 0;
+            fileSize = 0;
+            fileTime = 0;
         }
-    }
-
-    CXslIncludeSignature(const char* path, MemoryBuffer& buf)
-    {
-        if(!path || !*path)
-            throw MakeStringException(-1, "CXslIncludeSignature : path can't be emtpy");
-
-        m_type = IO_TYPE_BUFFER;
-        m_size = buf.length();
-        m_crc = ~crc32(buf.toByteArray(), m_size, ~0);
     }
 
     bool operator==(CXslIncludeSignature& incl)
     {
-        if(m_type != incl.m_type)
-            return false;
-        if(m_type == IO_TYPE_FILE)
-            return (strcmp(m_path.str(), incl.m_path.str()) == 0) && (m_size == incl.m_size) && (m_modtime == incl.m_modtime);
-        else
-            return (m_size == incl.m_size) && (m_crc == incl.m_crc);
+        return (streq(filePath.str(), incl.filePath.str())) && (fileSize == incl.fileSize) && (fileTime == incl.fileTime);
     }
 
     const char* getPath()
     {
-        return m_path.str();
+        return filePath.str();
     }
 };
 
@@ -106,11 +85,9 @@ public:
     {
         ForEachItemIn(x, m_signatures)
         {
-            CXslIncludeSignature* inc1p = &m_signatures.item(x);
-            if(!inc1p)
-                return true;
-            CXslIncludeSignature inc2(inc1p->getPath());
-            if(!(*inc1p == inc2))
+            CXslIncludeSignature &compiled = m_signatures.item(x);
+            CXslIncludeSignature current(compiled.getPath());
+            if(!(compiled == current))
                 return true;
         }
         return false;
@@ -119,60 +96,39 @@ public:
 
 class CXslEntry : public CInterface, implements IInterface
 {
-private:
+public:
     Owned<IXslBuffer> m_buffer;
-    StringBuffer  m_fname;
-    int m_size;
-    unsigned long m_timestamp;
-    unsigned long m_crc; 
-    unsigned long m_modtime;
-    IO_Type m_type;
-    StringArray*  m_includepaths;
+    offset_t m_size;
+    time_t createTime;
+    time_t fileModTime;
     Owned<CXslIncludeCompare> m_includecomp;
-
+    StringAttr m_cacheId;
 public:
     IMPLEMENT_IINTERFACE;
 
     CXslEntry(IXslBuffer* buffer)
     {
+        assertex(buffer);
         m_size = 0;
-        m_modtime = 0;
-        m_crc = 0;
-        m_timestamp = 0;
-        setBuffer(buffer);
-    }
+        fileModTime = 0;
+        time(&createTime);
 
-    void setBuffer(IXslBuffer* buffer)
-    {
-        if(buffer)
+        m_buffer.set(buffer);
+        m_cacheId.set(buffer->getCacheId());
+
+        if(m_buffer->getType() == IO_TYPE_FILE)
         {
-            time_t t;
-            time(&t);
-            m_timestamp = t;
-        
-            m_includepaths = &buffer->getIncludes();
-            m_buffer.set(buffer);
-            m_type = buffer->getType();
-            if(m_type == IO_TYPE_FILE)
+            Owned<IFile> f = createIFile(buffer->getFileName());
+            if(f)
             {
-                Owned<IFile> f = createIFile(buffer->getFileName());
-                if(f)
-                {
-                    m_fname.clear().append(buffer->getFileName());
-                    CDateTime modtime;
-                    f->getTime(NULL, &modtime, NULL);
-                    m_modtime = modtime.getSimple();
-                    m_size = f->size();
-                }
-            }
-            else 
-            {
-                m_size = buffer->getLen();
-                m_crc = ~crc32(buffer->getBuf(), m_size, ~0);
+                CDateTime modtime;
+                f->getTime(NULL, &modtime, NULL);
+                fileModTime = modtime.getSimple();
+                m_size = f->size();
             }
         }
         else
-            throw MakeStringException(-1, "can't create CXslEntry with a NULL input");
+            m_size = buffer->getLen();
     }
 
     IXslBuffer* getBuffer()
@@ -180,66 +136,48 @@ public:
         return m_buffer.get();
     }
 
+    bool isExpired(int cacheTimeout)
+    {
+        if (cacheTimeout==-1)
+            return false;
+        time_t t;
+        time(&t);
+        if(t > createTime + cacheTimeout)
+            return true;
+        return false;
+    }
+
     bool match(CXslEntry* entry)
     {
         if(!entry)
             return false;
-
-        if(m_type != entry->m_type)
+        if(m_buffer->getType() != entry->m_buffer->getType())
             return false;
-        if(m_type == IO_TYPE_FILE)
-            return (m_fname.length() > 0) && (entry->m_fname.length() > 0) && (strcmp(m_fname.str(), entry->m_fname.str()) == 0);
-        else
-            return (m_size == entry->m_size) && (m_crc == entry->m_crc);
+        if (!m_cacheId.length())
+            return false;
+        return (entry->m_cacheId.length()) && (streq(m_cacheId.sget(), entry->m_cacheId.sget()));
     }
 
     bool equal(CXslEntry* entry, bool matched)
     {
         if(!entry)
             return false;
-
         if(!matched && !match(entry))
             return false;
-
-        if (m_type == IO_TYPE_FILE && !((m_modtime == entry->m_modtime) && (m_size == entry->m_size)))
+        if (fileModTime != entry->fileModTime || m_size != entry->m_size)
             return false;
-
         if(m_includecomp.get() && m_includecomp->hasChanged())
             return false;
-
         return true;
     }
 
-    unsigned long getKeyHash()
-    {
-        if(m_type ==  IO_TYPE_FILE)
-        {
-            unsigned long keyhash = 5381;
-            for(int i = 0; i < m_fname.length(); i++)
-            {
-                int c = m_fname.charAt(i);
-                keyhash = ((keyhash << 5) + keyhash) + c;
-            }
-            return keyhash;
-        }
-        else
-            return (m_size + m_crc)*127;
-    }
-
-    unsigned long getTimestamp()
-    {
-        return m_timestamp;
-    }
-
-    void compile(bool recompile)
+    void compile()
     {
         if(m_buffer.get())
         {
-            m_buffer->compile(recompile);
-            if(m_includepaths && m_includepaths->length() > 0)
-            {
-                m_includecomp.setown(new CXslIncludeCompare(*m_includepaths));
-            }
+            m_buffer->compile();
+            if(m_buffer->getIncludes().length())
+                m_includecomp.setown(new CXslIncludeCompare(m_buffer->getIncludes()));
         }
     }
 };
@@ -249,7 +187,7 @@ public:
 class CXslCache : public CInterface, implements IXslCache
 {
 private:
-    CXslEntry* m_cache[XSLTCACHESIZE];
+    MapStringToMyClass<CXslEntry> xslMap;
     Mutex m_mutex;
     int m_cachetimeout;
 
@@ -259,86 +197,63 @@ public:
     CXslCache()
     {
         m_cachetimeout = XSLT_DEFAULT_CACHETIMEOUT;
-
-        for(int i = 0; i < XSLTCACHESIZE; i++)
-            m_cache[i] = NULL;
     }
 
     virtual ~CXslCache()
     {
-        for(int i = 0; i < XSLTCACHESIZE; i++)
-        {
-            if(m_cache[i] != NULL)
-                m_cache[i]->Release();;
-        }
     }
 
-    IXslBuffer* getCompiledXsl(IXslBuffer* xslbuffer, bool recompile)
+    IXslBuffer* getCompiledXsl(IXslBuffer* xslbuffer, bool replace)
     {
         if(!xslbuffer)
             return NULL;
-        
+
         synchronized block(m_mutex);
-        Owned<CXslEntry> newentry = new CXslEntry(xslbuffer);
 
-        int start = (newentry->getKeyHash()) % XSLTCACHESIZE;
-        int ind = start;
-        int oldest = start;
-        do
+        Owned<CXslEntry> newEntry = new CXslEntry(xslbuffer);
+        const char *cacheId = newEntry->m_cacheId.get();
+        if (cacheId && *cacheId)
         {
-            CXslEntry* oneentry = m_cache[ind];
-            if(!oneentry)
-                break;
-
-            time_t t;
-            time(&t);
-            if(m_cachetimeout != -1 && (t >= oneentry->getTimestamp() + m_cachetimeout))
+            CXslEntry* cacheEntry = xslMap.getValue(cacheId);
+            if (cacheEntry)
             {
-                oneentry->Release();
-                m_cache[ind] = NULL;
-                break;
-            }
-
-            if(oneentry->match(newentry.get()))
-            {
-                if(!oneentry->equal(newentry, true))
-                {
-                    oneentry->Release();
-                    m_cache[ind] = NULL;
-                    break;
-                }
-
-                if(recompile)
-                {
-                    oneentry->setBuffer(xslbuffer);
-                    oneentry->compile(true);
-                    return xslbuffer;
-                }
+                if(!replace && !cacheEntry->isExpired(m_cachetimeout) && cacheEntry->equal(newEntry, false))
+                    return cacheEntry->getBuffer();
                 else
-                    return oneentry->getBuffer();
+                    xslMap.remove(cacheId);
             }
-
-            if(oneentry->getTimestamp() < m_cache[oldest]->getTimestamp())
-                oldest = ind;
-
-            ind = (ind + 1) % XSLTCACHESIZE;
         }
-        while(ind != start);
-
-        newentry->compile(true);
-        if(m_cache[ind] == NULL)
+        newEntry->compile();
+        if (cacheId && *cacheId)
         {
-            m_cache[ind] = newentry.getLink();
+            if (xslMap.count()>=XSLTCACHESIZE)
+                freeOneCacheEntry();
+            xslMap.setValue(cacheId, newEntry.get());
         }
-        else
-        {
-            DBGLOG("XSLT cache is full, replacing oldest entry at index %d", oldest);
-            if(m_cache[oldest] != NULL)
-                m_cache[oldest]->Release();
-            m_cache[oldest] = newentry.getLink();
-        }
-
         return xslbuffer;
+    }
+
+    void freeOneCacheEntry()
+    {
+        IMapping *oldest = NULL;
+        time_t oldTime = 0;
+        HashIterator iter(xslMap);
+        for (iter.first(); iter.isValid(); iter.next())
+        {
+            CXslEntry *entry = xslMap.mapToValue(&iter.query());
+            if (entry->isExpired(m_cachetimeout))
+            {
+                xslMap.removeExact(&iter.query());
+                return;
+            }
+            if (!oldest || entry->createTime < oldTime)
+            {
+                oldest=&iter.query();
+                oldTime=entry->createTime;
+            }
+        }
+        if (oldest)
+            xslMap.removeExact(oldest);
     }
 
     void setCacheTimeout(int timeout)

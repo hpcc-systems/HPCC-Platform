@@ -1712,16 +1712,14 @@ bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context,
                 const char* plainText = req.getPlainText();
                 if (plainText && (!stricmp(plainText, "yes")))
                 {
-                    StringBuffer xslBuf, xmlBuf;
-                    if (esp::readFile("xslt/xmlformatter.xsl", xslBuf)<=0)
-                        throw MakeStringException(ECLWATCH_FILE_NOT_EXIST, "Cannot open stylesheet xmlformatter.xsl");
+                    if (!checkFileExists("xslt/xmlformatter.xsl"))
+                        throw MakeStringException(ECLWATCH_FILE_NOT_EXIST, "Could not find stylesheet xmlformatter.xsl");
 
                     Owned<IXslProcessor> proc  = getXslProcessor();
                     Owned<IXslTransform> trans = proc->createXslTransform();
 
-                    xmlBuf.append(buf.toByteArray(), 0, buf.length());
-                    trans->setXmlSource(xmlBuf.str(), xmlBuf.length());
-                    trans->setXslSource(xslBuf, xslBuf.length());
+                    trans->setXmlSource(pchBuf, buf.length());
+                    trans->loadXslFromFile("xslt/xmlformatter.xsl");
                     
                     StringBuffer htmlBuf;
                     trans->transform(htmlBuf);

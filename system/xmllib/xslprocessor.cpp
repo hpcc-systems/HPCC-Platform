@@ -326,6 +326,9 @@ CXslTransform::~CXslTransform()
     if(m_sourceResolver != NULL)
         delete m_sourceResolver;
 
+    if (m_xslsource)
+        m_xslsource->clearIncludeHandler();
+
     if(m_ParsedSource)
     {
         m_XalanTransformer.destroyParsedSource(m_ParsedSource);
@@ -349,8 +352,7 @@ int CXslTransform::transform(StringBuffer &target)
 
 
     XalanCompiledStylesheet* pCompiledStylesheet = NULL;
-    const bool bReloadStylesheet = false;
-    pCompiledStylesheet = m_xslsource->getStylesheet(bReloadStylesheet);
+    pCompiledStylesheet = m_xslsource->getStylesheet();
 
     if (!pCompiledStylesheet)
     {
@@ -395,8 +397,7 @@ int CXslTransform::transform()
         throw MakeStringException(2, "[XSLT target file/buffer not set]");
 
     XalanCompiledStylesheet* pCompiledStylesheet = NULL;
-    const bool bReloadStylesheet = false;
-    pCompiledStylesheet = m_xslsource->getStylesheet(bReloadStylesheet);
+    pCompiledStylesheet = m_xslsource->getStylesheet();
 
     if (!pCompiledStylesheet)
     {
@@ -436,8 +437,7 @@ int CXslTransform::transform(ISocket* targetSocket)
         throw MakeStringException(2, "[XSL stylesheet not set]");
 
     XalanCompiledStylesheet* pCompiledStylesheet = NULL;
-    const bool bReloadStylesheet = false;
-    pCompiledStylesheet = m_xslsource->getStylesheet(bReloadStylesheet);
+    pCompiledStylesheet = m_xslsource->getStylesheet();
 
     if (!pCompiledStylesheet)
     {
@@ -545,16 +545,24 @@ int CXslTransform::setXmlSource(const char *pszBuffer, unsigned int nSize)
     return theResult;
 }
 
-int CXslTransform::setXslSource(const char *pszFileName)
+int CXslTransform::loadXslFromFile(const char *pszFileName, const char *cacheId)
 {
-    m_xslsource.setown(new CXslSource(pszFileName, m_sourceResolver?m_sourceResolver->getIncludeHandler():NULL));
+    m_xslsource.setown(new CXslSource(pszFileName, m_sourceResolver?m_sourceResolver->getIncludeHandler():NULL, cacheId));
 
     return 0;
 }
 
-int CXslTransform::setXslSource(const char *pszBuffer, unsigned int nSize, const char *rootpath)
+int CXslTransform::setXslSource(const char *pszBuffer, unsigned int nSize, const char *cacheId, const char *rootpath)
 {
-    m_xslsource.setown(new CXslSource(pszBuffer, nSize, m_sourceResolver?m_sourceResolver->getIncludeHandler():NULL, rootpath));
+    assertex(cacheId && *cacheId);
+    m_xslsource.setown(new CXslSource(pszBuffer, nSize, m_sourceResolver?m_sourceResolver->getIncludeHandler():NULL, cacheId, rootpath));
+
+    return 0;
+}
+
+int CXslTransform::setXslNoCache(const char *pszBuffer, unsigned int nSize, const char *rootpath)
+{
+    m_xslsource.setown(new CXslSource(pszBuffer, nSize, m_sourceResolver?m_sourceResolver->getIncludeHandler():NULL, NULL, rootpath));
 
     return 0;
 }

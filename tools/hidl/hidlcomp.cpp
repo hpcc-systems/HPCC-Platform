@@ -5453,7 +5453,7 @@ void EspServInfo::write_esp_binding_ipp()
             "\t\t\tif (!strnicmp(xslFile, \"/esp/xslt/\", 10))\n"
             "\t\t\t\tif (!checkFileExists(xslpath.append(getCFD()).append(\"smc_xslt/\").append(xslFile+10).str()) && !checkFileExists(xslpath.append(getCFD()).append(\"xslt/\").append(xslFile+10).str()))\n"
             "\t\t\t\t\treturn;\n"
-            "\t\t\txform->setXslSource((xslpath.length()) ? xslpath.str() : xslFile);\n"
+            "\t\t\txform->loadXslFromFile((xslpath.length()) ? xslpath.str() : xslFile);\n"
             "\t\t\txform->setXmlSource(xml, strlen(xml)+1);\n"
             "\t\t\tif (params) xform->copyParameters(params);\n"
             "\t\t\txform->transform(output.clear());\n"

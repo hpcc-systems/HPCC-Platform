@@ -2219,12 +2219,12 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
 void CWsWorkunitsEx::xsltTransform(const char* xml,const char* sheet,IProperties *params,StringBuffer& ret)
 {
     StringBuffer xsl;
-    if(readFile(sheet,xsl)<=0)
-        throw MakeStringException(ECLWATCH_FILE_NOT_EXIST, "Cannot load stylesheet %s.",sheet);
+    if(!checkFileExists(sheet))
+        throw MakeStringException(ECLWATCH_FILE_NOT_EXIST, "Could not find stylesheet %s.",sheet);
     Owned<IXslProcessor> proc = getXslProcessor();
     Owned<IXslTransform> trans = proc->createXslTransform();
     trans->setXmlSource(xml, strlen(xml));
-    trans->setXslSource(xsl, xsl.length());
+    trans->loadXslFromFile(sheet);
     if (params)
     {
         Owned<IPropertyIterator> it = params->getIterator();
