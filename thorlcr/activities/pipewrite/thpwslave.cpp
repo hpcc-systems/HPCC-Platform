@@ -92,7 +92,7 @@ public:
         HANDLE pipeProcess = pipe->getProcessHandle();
         unsigned retcode = pipe->wait();
         unregisterSelfDestructChildProcess(pipeProcess);
-        if (retcode)
+        if (retcode!=0 && !(helper->getPipeFlags() & TPFnofail))
         {
             StringBuffer stdError;
             if (pipe->hasError())
