@@ -354,7 +354,7 @@
                     <td width="1%" valign="top">
                         <xsl:if test="$showCheckbox">
                             <input type="checkbox" name="Addresses_i{count(preceding::TpMachine)}" 
-                                value="{Netaddress}|{ConfigNetaddress}:{Type}:{$compName}:{OS}:{translate(Directory, ':', '$')}" onclick="return clicked(this)">
+                                value="{Netaddress}|{ConfigNetaddress}:{Type}:{$compName}:{OS}:{translate(Directory, ':', '$')}" onclick="return clicked(this, event)">
                                 <xsl:if test="$checked">
                                     <xsl:attribute name="checked">true</xsl:attribute>
                                 </xsl:if>

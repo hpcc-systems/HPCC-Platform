@@ -262,7 +262,7 @@
             </xsl:otherwise>
         </xsl:choose>   
         <td>
-        <input type="checkbox" name="names_i{position()}" value="{.}" onclick="return clicked(this)"/>
+        <input type="checkbox" name="names_i{position()}" value="{.}" onclick="return clicked(this, event)"/>
         </td>
         <td align="left">
                 <xsl:value-of select="."/>

@@ -96,7 +96,7 @@ function checkSelectAllCheckBoxes(check)
 }
 
 
-function clicked(o) {
+function clicked(o, event) {
    if (singleSelect && o.checked)
    {
       o.checked = false;
@@ -107,8 +107,11 @@ function clicked(o) {
    var cell = o.parentNode;
    var row = cell.parentNode;
    var rowNum = row.rowIndex;
-   
-   if (!singleSelect && window.event && window.event.shiftKey && lastClicked != -1 && lastClicked != rowNum)
+
+   if (!event)
+        event = window.event;
+
+   if (!singleSelect && event && event.shiftKey && lastClicked != -1 && lastClicked != rowNum)
    {
       rc = lastChecked == o.checked;
       if (lastClicked < rowNum)

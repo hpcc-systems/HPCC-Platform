@@ -189,7 +189,7 @@
         </xsl:otherwise>
       </xsl:choose>
       <td>
-        <input type="checkbox" name="IDs_i{position()}" value="{Name}@{ClusterName}" onclick="return clicked(this)"/>
+        <input type="checkbox" name="IDs_i{position()}" value="{Name}@{ClusterName}" onclick="return clicked(this, event)"/>
         <xsl:variable name="popup">
           return QueryFilePopup('<xsl:value-of select="Name"/>', '<xsl:value-of select="ClusterName"/>', '<xsl:value-of select="Directory"/>', '<xsl:value-of select="Description"/>', '<xsl:value-of select="BrowseData"/>', '<xsl:value-of select="position()"/>')
         </xsl:variable>

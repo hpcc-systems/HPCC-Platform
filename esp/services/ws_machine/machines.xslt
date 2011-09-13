@@ -384,14 +384,14 @@
          </xsl:choose>   
          <td width="5">
            <!--xsl:if test="string(ComponentName)!='AgentExec'">
-               <input type="checkbox" name="Addresses_i{position()}" value="{Address}|{ConfigAddress}:{ProcessType}:{ComponentName}:{OS}:{translate(ComponentPath, ':', '$')}" onclick="return clicked(this)" checked="true"/>
+               <input type="checkbox" name="Addresses_i{position()}" value="{Address}|{ConfigAddress}:{ProcessType}:{ComponentName}:{OS}:{translate(ComponentPath, ':', '$')}" onclick="return clicked(this, event)" checked="true"/>
             </xsl:if-->
            <xsl:choose>
             <xsl:when test="string(ComponentName)='AgentExec'">
-               <input type="checkbox" name="Addresses_i{position()}" value="{Address}|{ConfigAddress}:EclAgentProcess:eclagent:{OS}:{translate(ComponentPath, ':', '$')}" onclick="return clicked(this)" checked="true"/>
+               <input type="checkbox" name="Addresses_i{position()}" value="{Address}|{ConfigAddress}:EclAgentProcess:eclagent:{OS}:{translate(ComponentPath, ':', '$')}" onclick="return clicked(this, event)" checked="true"/>
             </xsl:when>
             <xsl:otherwise>
-              <input type="checkbox" name="Addresses_i{position()}" value="{Address}|{ConfigAddress}:{ProcessType}:{ComponentName}:{OS}:{translate(ComponentPath, ':', '$')}" onclick="return clicked(this)" checked="true"/>
+              <input type="checkbox" name="Addresses_i{position()}" value="{Address}|{ConfigAddress}:{ProcessType}:{ComponentName}:{OS}:{translate(ComponentPath, ':', '$')}" onclick="return clicked(this, event)" checked="true"/>
             </xsl:otherwise>
            </xsl:choose>
          </td>

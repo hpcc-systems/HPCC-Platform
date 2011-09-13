@@ -350,7 +350,7 @@
             </xsl:attribute>
             <td>
                 <xsl:if test="isDirectory=0">
-                    <input type="checkbox" name="LogicalFiles_i{position()}" value="{Name}@{ClusterName}" onclick="return clicked(this)"/>
+                    <input type="checkbox" name="LogicalFiles_i{position()}" value="{Name}@{ClusterName}" onclick="return clicked(this, event)"/>
                     <xsl:variable name="popup">return DFUFilePopup('<xsl:value-of select="$info_query"/>', '<xsl:value-of select="Name"/>', '<xsl:value-of select="ClusterName"/>', '<xsl:value-of select="Replicate"/>', '<xsl:value-of select="FromRoxieCluster"/>', '<xsl:value-of select="BrowseData"/>', '<xsl:value-of select="position()"/>')</xsl:variable>
                     <xsl:attribute name="oncontextmenu"><xsl:value-of select="$popup"/></xsl:attribute>
           <img id="mn{position()}" class="menu1" src="/esp/files/img/menu1.png" onclick="{$popup}">&#160;</img>

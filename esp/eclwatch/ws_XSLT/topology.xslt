@@ -210,7 +210,7 @@
         <!--we encode name, type, os and path for component - the service uses the name (first token)
         to look up component's address-->
         <input type="checkbox" name="Addresses_i{count(preceding::TpCluster)}" 
-        value="{Name}:{Type}:{Name}:{OS}:{translate(Directory, ':', '$')}:{$type3}MACHINES:{Path}" onclick="return clicked(this)">
+        value="{Name}:{Type}:{Name}:{OS}:{translate(Directory, ':', '$')}:{$type3}MACHINES:{Path}" onclick="return clicked(this, event)">
         </input>
       </td>
       <td width="45" nowrap="true">

@@ -695,7 +695,7 @@
         <xsl:if test="FromRoxieCluster=1">
           <input type="hidden" id="{Name}@{ClusterName}"/>
         </xsl:if>
-        <input type="checkbox" name="LogicalFiles_i{position()}" value="{Name}@{ClusterName}" onclick="return clicked(this)"/>
+        <input type="checkbox" name="LogicalFiles_i{position()}" value="{Name}@{ClusterName}" onclick="return clicked(this, event)"/>
           <xsl:variable name="popup">return DFUFilePopup('<xsl:value-of select="$info_query"/>', '<xsl:value-of select="Name"/>', '<xsl:value-of select="ClusterName"/>', '<xsl:value-of select="Replicate"/>', '<xsl:value-of select="FromRoxieCluster"/>', '<xsl:value-of select="BrowseData"/>', '<xsl:value-of select="position()"/>')</xsl:variable>
           <xsl:variable name="oncontextmenu">
             <xsl:value-of select="$popup"/>
