@@ -152,7 +152,7 @@ int CHttpMessage::parseOneHeader(char* oneline)
         end++;
 
     char* value;
-    if(*end = ':')
+    if (*end == ':')
     {
         *end = '\0';
         value = end + 1;
