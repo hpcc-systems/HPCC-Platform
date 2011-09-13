@@ -1022,7 +1022,7 @@ protected:
         {
             if (queryCOutput(o).currentChunkNum < lsf)
             {
-                lsf = queryCOutput(o).currentChunkNum ; 
+                lsf = queryCOutput(o).currentChunkNum; 
                 lsfOutput = o;
             }
             if (++o == outputCount)
@@ -1078,8 +1078,11 @@ protected:
 #ifdef TRACE_WRITEAHEAD
             ActPrintLog(activity, "Input %d stopped. Caught up", output);
 #endif
+            queryCOutput(output).currentChunkNum = (unsigned)-1;
+            lowestOutput = getLowest();
         }
-        queryCOutput(output).currentChunkNum = (unsigned)-1;
+        else
+            queryCOutput(output).currentChunkNum = (unsigned)-1;
     }
     void stopAll()
     {
