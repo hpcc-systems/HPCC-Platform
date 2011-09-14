@@ -35,6 +35,8 @@ public:
     ~WorkunitUpdate() { if (get()) get()->commit(); }
 };
 
+extern void addWuException(IConstWorkUnit *workUnit, IException *E);
+
 interface IQuerySetWatcher : extends IInterface
 {
     virtual void unsubscribe() = 0;

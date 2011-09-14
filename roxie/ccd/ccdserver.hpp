@@ -28,7 +28,7 @@
 #include "thorstep.hpp"
 
 interface IRoxieResourceManager;
-interface IRoxieSocketListener : extends IInterface
+interface IRoxieListener : extends IInterface
 {
     virtual void start() = 0;
     virtual bool stop(unsigned timeout) = 0;
@@ -74,9 +74,10 @@ interface IRoxieServerQueryPacket : public IInterface, public ILRUChain
     virtual void setDebugResponse(unsigned sequence, IRoxieQueryPacket *) = 0;
 };
 
-IRoxieSocketListener *createRoxieSocketListener(unsigned port, unsigned poolSize, unsigned listenQueue, bool suspended);
-bool suspendRoxieSocketListener(unsigned port, bool suspended);
-extern IArrayOf<IRoxieSocketListener> socketListeners;
+IRoxieListener *createRoxieSocketListener(unsigned port, unsigned poolSize, unsigned listenQueue, bool suspended);
+IRoxieListener *createRoxieWorkUnitListener(unsigned poolSize, bool suspended);
+bool suspendRoxieListener(unsigned port, bool suspended);
+extern IArrayOf<IRoxieListener> socketListeners;
 
 
 interface IRoxieInput;
@@ -335,7 +336,6 @@ interface IRoxieServerChildGraph : public IInterface
 
 extern void doDebugRequest(IRoxieQueryPacket *packet, const IRoxieContextLogger &logctx);
 interface IQueryFactory;
-interface IRoxieServerQueryFactory;
 interface ILoadedDllEntry;
 
 extern IActivityGraph *createActivityGraph(const char *graphName, unsigned id, ActivityArray &x, IRoxieServerActivity *parent, IProbeManager *probeManager, const IRoxieContextLogger &logctx);
@@ -344,6 +344,7 @@ extern IProbeManager *createDebugManager(IDebuggableContext *debugContext, const
 extern IRoxieSlaveContext *createSlaveContext(const IQueryFactory *factory, const SlaveContextLogger &logctx, unsigned timeLimit, memsize_t memoryLimit, IRoxieQueryPacket *packet);
 extern IRoxieServerContext *createRoxieServerContext(IPropertyTree *context, const IQueryFactory *factory, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, unsigned priority, const IRoxieContextLogger &logctx, const SocketEndpoint &poolEndpoint, XmlReaderOptions xmlReadFlags);
 extern IRoxieServerContext *createOnceServerContext(const IQueryFactory *factory, const IRoxieContextLogger &_logctx);
+extern IRoxieServerContext *createWorkUnitServerContext(IConstWorkUnit *wu, const IQueryFactory *factory, const IRoxieContextLogger &logctx);
 extern WorkflowMachine *createRoxieWorkflowMachine(IPropertyTree *_workflowInfo, bool doOnce, const IRoxieContextLogger &_logctx);
 
 extern ruid_t getNextRuid();

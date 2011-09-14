@@ -291,7 +291,7 @@ public:
         Owned<IWorkUnitFactory> wuFactory = getWorkUnitFactory();
         Owned<IWorkUnit> w = wuFactory->updateWorkUnit(wuid);
         if (!w)
-            throw MakeStringException(ROXIE_DALI_ERROR, "Failed to open workunit %s", wuid);
+            return NULL;
         w->setAgentSession(myProcessSession());
         if (source)
         {
@@ -404,3 +404,12 @@ extern IDllServer &queryRoxieDllServer()
     return roxieDllServer;
 }
 
+extern void addWuException(IConstWorkUnit *workUnit, IException *E)
+{
+    StringBuffer message;
+    E->errorMessage(message);
+    unsigned code = E->errorCode();
+    OERRLOG("%d - %s", code, message.str());
+    WorkunitUpdate w(&workUnit->lock());
+    addExceptionToWorkunit(w, ExceptionSeverityError, "Roxie", code, message.str(), NULL, 0, 0);
+}

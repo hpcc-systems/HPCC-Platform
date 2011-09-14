@@ -105,7 +105,7 @@ public:
         if (goer == this)
             dllCache.remove(dllName);
     }
-    static const IQueryDll *getQueryDll(const char *dllName, bool isExe)
+    static const CQueryDll *getQueryDll(const char *dllName, bool isExe)
     {
         CriticalBlock b(dllCacheLock);
         CQueryDll *dll = LINK(dllCache.getValue(dllName));
@@ -117,6 +117,20 @@ public:
             assertex(dll != NULL);
             return new CQueryDll(dllName, dll.getClear());
         }
+    }
+    static const IQueryDll *getWorkUnitDll(const char *wuid)
+    {
+        Owned <IRoxieDaliHelper> daliHelper = connectToDali();
+        Owned<IConstWorkUnit> wu = daliHelper->attachWorkunit(wuid, NULL);
+        if (wu)
+        {
+            SCMStringBuffer dllName;
+            Owned<IConstWUQuery> q = wu->getQuery();
+            q->getQueryDllName(dllName);
+            return getQueryDll(dllName.str(), false);
+        }
+        else
+            return NULL;
     }
     virtual HelperFactory *getFactory(const char *helperName) const
     {
@@ -134,7 +148,6 @@ public:
 CriticalSection CQueryDll::dllCacheLock;
 CopyMapStringToMyClass<CQueryDll> CQueryDll::dllCache;
 
-
 extern const IQueryDll *createQueryDll(const char *dllName)
 {
     return CQueryDll::getQueryDll(dllName, false);
@@ -144,6 +157,12 @@ extern const IQueryDll *createExeQueryDll(const char *exeName)
 {
     return CQueryDll::getQueryDll(exeName, true);
 }
+
+extern const IQueryDll *createWuQueryDll(const char *wuid)
+{
+    return CQueryDll::getWorkUnitDll(wuid);
+}
+
 
 //----------------------------------------------------------------------------------------------
 // Class CQueryFactory is the main implementation of IQueryFactory, combining a IQueryDll and a
@@ -781,7 +800,7 @@ public:
             timeLimit = (unsigned) stateInfo->getPropInt("@timeLimit", timeLimit);
             warnTimeLimit = (unsigned) stateInfo->getPropInt("@warnTimeLimit", warnTimeLimit);
         }
-        
+
         Owned<IConstWUGraphIterator> graphs = &wu->getGraphs(GraphTypeActivities);
         SCMStringBuffer graphNameStr;
         ForEach(*graphs)
@@ -1042,6 +1061,10 @@ public:
     {
         throwUnexpected();   // only implemented in derived server class
     }
+    virtual IRoxieServerContext *createContext(IConstWorkUnit *wu, const IRoxieContextLogger &_logctx) const
+    {
+        throwUnexpected();   // only implemented in derived server class
+    }
     virtual void noteQuery(time_t startTime, bool failed, unsigned elapsed, unsigned memused, unsigned slavesReplyLen, unsigned bytesOut)
     {
         throwUnexpected();   // only implemented in derived server class
@@ -1199,6 +1222,19 @@ public:
         return createRoxieServerContext(context, this, client, isXml, isRaw, isBlocked, httpHelper, trim, priority, _logctx, _poolEndpoint, _xmlReadFlags);
     }
 
+    virtual IRoxieServerContext *createContext(IConstWorkUnit *wu, const IRoxieContextLogger &_logctx) const
+    {
+        if (isSuspended)
+        {
+            StringBuffer err;
+            if (errorMessage.length())
+                err.appendf(" because %s", errorMessage.str());
+            throw MakeStringException(ROXIE_QUERY_SUSPENDED, "Query %s is suspended%s", id.get(), err.str());
+        }
+        checkOnceDone(_logctx);
+        return createWorkUnitServerContext(wu, this, _logctx);
+    }
+
     virtual WorkflowMachine *createWorkflowMachine(bool isOnce, const IRoxieContextLogger &logctx) const
     {
         IPropertyTree *workflow = queryWorkflowTree();
@@ -1216,7 +1252,7 @@ public:
     }
 };
 
-IQueryFactory *createRoxieServerQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo)
+IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo)
 {
     CriticalBlock b(CQueryFactory::queryCreateLock);
     hash64_t hashValue = CQueryFactory::getQueryHash(id, dll, package, stateInfo);
@@ -1229,6 +1265,14 @@ IQueryFactory *createRoxieServerQueryFactory(const char *id, const IQueryDll *dl
     Owned<CRoxieServerQueryFactory> newFactory = new CRoxieServerQueryFactory(id, dll, package, hashValue);
     newFactory->load(stateInfo);
     return newFactory.getClear();
+}
+
+extern IQueryFactory *createServerQueryFactoryFromWu(const char *wuid)
+{
+    Owned<const IQueryDll> dll = createWuQueryDll(wuid);
+    if (!dll)
+        return NULL;
+    return createServerQueryFactory(wuid, dll.getClear(), queryRootPackage(), NULL); // MORE - if use a constant for id might cache better?
 }
 
 //==============================================================================================================================================
@@ -1406,7 +1450,7 @@ class CSlaveQueryFactory : public CQueryFactory
     }
 
 public:
-    CSlaveQueryFactory(const char *_id, const IQueryDll *_dll, const IRoxiePackage &_package, hash64_t _hashValue, unsigned _channelNo) 
+    CSlaveQueryFactory(const char *_id, const IQueryDll *_dll, const IRoxiePackage &_package, hash64_t _hashValue, unsigned _channelNo)
         : CQueryFactory(_id, _dll, _package, _hashValue, _channelNo)
     {
     }
@@ -1418,7 +1462,7 @@ public:
 
     virtual ActivityArray *loadGraph(IPropertyTree &graph, const char *graphName)
     {
-        //MORE: common up with loadGraph for the Roxie server..
+        // MORE: common up with loadGraph for the Roxie server..
         bool isLibraryGraph = graph.getPropBool("@library");
         ActivityArray *activities = new ActivityArray(isLibraryGraph, false, isLibraryGraph);
         if (isLibraryGraph)
@@ -1469,6 +1513,14 @@ IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, con
     Owned<CSlaveQueryFactory> newFactory = new CSlaveQueryFactory(id, dll, package, hashValue, channel);
     newFactory->load(stateInfo);
     return newFactory.getClear();
+}
+
+extern IQueryFactory *createSlaveQueryFactoryFromWu(const char *wuid, unsigned channelNo)
+{
+    Owned<const IQueryDll> dll = createWuQueryDll(wuid);
+    if (!dll)
+        return NULL;
+    return createSlaveQueryFactory(wuid, dll.getClear(), queryRootPackage(), channelNo, NULL);  // MORE - if use a constant for id might cache better?
 }
 
 IRecordLayoutTranslator * createRecordLayoutTranslator(const char *logicalName, IDefRecordMeta const * diskMeta, IDefRecordMeta const * activityMeta)

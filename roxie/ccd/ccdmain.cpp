@@ -889,7 +889,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             const char *iptext = roxieServer.queryProp("@netAddress");
             unsigned nodeIndex = addRoxieNode(iptext);
             unsigned port = roxieServer.getPropInt("@port", ROXIE_SERVER_PORT);
-            if (iptext && port)
+            if (iptext)
             {
                 SocketEndpoint ep(iptext, port);
                 unsigned roxieServerHost = roxieServer.getPropInt("@multihost", 0);
@@ -1031,7 +1031,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         setSEHtoExceptionHandler(&abortHandler);
         if (runOnce)
         {
-            Owned <IRoxieSocketListener> roxieServer = createRoxieSocketListener(0, 1, 0, false);
+            Owned <IRoxieListener> roxieServer = createRoxieSocketListener(0, 1, 0, false);
             try
             {
                 const char *format = globals->queryProp("format");
@@ -1048,7 +1048,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 }
                 StringBuffer query;
                 query.appendf("<roxie format='%s'/>", format);
-                roxieServer->runOnce(query.str());
+                roxieServer->runOnce(query.str()); // MORE - should use the wu listener instead I suspect
             }
             catch (IException *E)
             {
@@ -1067,7 +1067,11 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 bool suspended = serverInfo.getPropBool("@suspended", false);
                 unsigned numThreads = serverInfo.getPropInt("@numThreads", -1);
                 unsigned listenQueue = serverInfo.getPropInt("@listenQueue", DEFAULT_LISTEN_QUEUE_SIZE);
-                Owned <IRoxieSocketListener> roxieServer = createRoxieSocketListener(port, numThreads, listenQueue, suspended);
+                Owned <IRoxieListener> roxieServer;
+                if (port)
+                    roxieServer.setown(createRoxieSocketListener(port, numThreads, listenQueue, suspended));
+                else
+                    roxieServer.setown(createRoxieWorkUnitListener(numThreads, suspended));
                 Owned<IPropertyTreeIterator> accesses = serverInfo.getElements("Access");
                 ForEach(*accesses)
                 {
