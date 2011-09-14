@@ -497,7 +497,13 @@ ICppCompiler * EclCC::createCompiler(const char * coreName)
 void EclCC::reportCompileErrors(IErrorReceiver *errs, const char * processName)
 {
     StringBuffer failText;
-    failText.appendf("Compile/Link failed for %s (see '%s' for details)",processName,optLogfile.get() ? optLogfile.get() : "log file");
+    StringBuffer absCCLogName;
+    if (optLogfile.get())
+        createUNCFilename(optLogfile.get(), absCCLogName, false);
+    else
+        absCCLogName = "log file";
+
+    failText.appendf("Compile/Link failed for %s (see '%s' for details)",processName,absCCLogName.str());
     errs->reportError(ERR_INTERNALEXCEPTION, failText.toCharArray(), processName, 0, 0, 0);
     try
     {
