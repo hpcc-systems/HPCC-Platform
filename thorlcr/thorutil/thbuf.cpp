@@ -214,11 +214,12 @@ class CSmartRowBuffer: public CSimpleInterface, implements ISmartRowBuffer, impl
         {
             SpinUnblock unblock(lock);
             MemoryAttr ma;
-            byte *buf = (byte *)ma.allocate(blocksize*nb);
-            CThorStreamDeserializerSource ds(blocksize,buf);
+            size32_t readBlockSize = nb*blocksize;
+            byte *buf = (byte *)ma.allocate(readBlockSize);
+            CThorStreamDeserializerSource ds(readBlockSize,buf);
             assertex(fileio.get());
-            size32_t rd = fileio->read(blk*(offset_t)blocksize,blocksize*nb,buf);
-            assertex(rd==blocksize);
+            size32_t rd = fileio->read(blk*(offset_t)blocksize,readBlockSize,buf);
+            assertex(rd==readBlockSize);
             unsigned p = 0;
             loop {
                 byte b;
