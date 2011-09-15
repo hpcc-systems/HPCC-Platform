@@ -262,7 +262,7 @@ void CWsDeployExCE::init(IPropertyTree *cfg, const char *process, const char *se
 
   if (m_pCfg.get() == NULL)
     m_pCfg.setown(createPTreeFromIPT(cfg));
-  
+
   if (m_process.length() == 0)
     m_process.append(process);
 
@@ -284,7 +284,7 @@ void CWsDeployExCE::init(IPropertyTree *cfg, const char *process, const char *se
 
     m_backupDir.clear().append(m_sourceDir).append(PATHSEPSTR"backup");
   }
-  
+
   if (m_backupDir.length() == 0)
     m_backupDir.clear().append(STANDARD_CONFIG_BACKUPDIR);
 
@@ -297,6 +297,8 @@ void CWsDeployExCE::init(IPropertyTree *cfg, const char *process, const char *se
   if (pEnvFile && *pEnvFile)
   {
     CWsDeployFileInfo* fi = m_fileInfos.getValue(pEnvFile);
+    StringBuffer sb;
+
     if (!fi)
     {
       synchronized block(m_mutexSrv);
@@ -313,7 +315,7 @@ void CWsDeployExCE::init(IPropertyTree *cfg, const char *process, const char *se
       const char* psz = strrchr(pEnvFile, PATHSEPCHAR);
       if (!psz)
         psz = strrchr(pEnvFile, PATHSEPCHAR == '\\' ? '/' : '\\');
-      StringBuffer sb;
+
       if (!psz)
         sb.append(pEnvFile);
       else
@@ -321,7 +323,17 @@ void CWsDeployExCE::init(IPropertyTree *cfg, const char *process, const char *se
       m_fileInfos.setValue(sb.str(), fi);
     }
 
-    fi->initFileInfo(false);
+    try
+    {
+      fi->initFileInfo(false);
+    }
+    catch (IException* e)
+    {
+      m_fileInfos.remove(sb.str());
+      delete fi;
+      e->Release();
+    }
+
     m_envFile.append(pEnvFile);
   }
 }
@@ -553,6 +565,13 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
           StringBuffer sbName, sbUserIp;
           sbName.clear().append(req.getReqInfo().getUserId());
           context.getPeer(sbUserIp);
+
+          if (m_pFile->isReadOnly())
+          {
+            xml.appendf("Write access to the Environment cannot be provided as %s is Read Only.", m_envFile.str());
+            resp.setXmlArgs(xml.str());
+            return true;
+          }
           
           if (m_bCloud)
           {
@@ -590,7 +609,6 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
             th->Release();
             m_keepAliveHTable.remove(sb.str());
           }
-
 
           StringBuffer sbxml;
           if (m_pFileIO.get())
@@ -5775,7 +5793,7 @@ void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite)
       m_lastSaved.setNow();
 
     m_pFile.setown(createIFile(m_envFile));
-    m_pFileIO.setown(m_pFile->open(IFOreadwrite));
+    m_pFileIO.setown(m_pFile->open(IFOread));
   
     {
       Owned <IPropertyTree> pTree = createPTree(*m_pFileIO);
@@ -6103,7 +6121,8 @@ bool CWsDeployExCE::onGetValue(IEspContext &context, IEspGetValueRequest &req, I
             {
               e->Release();
               //add any files already in use
-              if (getFileInfo(name.str()))
+              CWsDeployFileInfo* fi = m_fileInfos.getValue(name.str());
+              if (fi)
                 sbMultiple.append(name).append(";");
             }
           }
@@ -6323,8 +6342,18 @@ CWsDeployFileInfo* CWsDeployExCE::getFileInfo(const char* fileName, bool addIfNo
         sb.append(psz + 1);
       if (!sb.length())
         sb.append(fileName);
+
+      try
+      {
+        fi->initFileInfo(createFile);
+      }
+      catch (IException* e)
+      {
+        delete fi;
+        throw e;
+      }
+
       m_fileInfos.setValue(sb.str(), fi);
-      fi->initFileInfo(createFile);
     }
     else
       throw MakeStringException(-1, "File information not found for %s", fileName);
@@ -6335,7 +6364,18 @@ CWsDeployFileInfo* CWsDeployExCE::getFileInfo(const char* fileName, bool addIfNo
     if (fi->getUserWithLock(sbuser, sbip))
       throw MakeStringException(-1, "Cannot overwrite file '%s' as it is currently locked by user '%s' on machine '%s'", fileName, sbuser.str(), sbip.str());
     else
-      fi->initFileInfo(createFile);
+    {
+      try
+      {
+        fi->initFileInfo(createFile);
+      }
+      catch (IException* e)
+      {
+        m_fileInfos.remove(fileName);
+        delete fi;
+        throw e;
+      }
+    }
   }
 
   return fi;
