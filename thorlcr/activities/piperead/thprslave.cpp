@@ -294,6 +294,10 @@ public:
         Thread::join();
         return exc.getClear();
     }
+    IException * checkError()
+    {
+        return exc.getClear();
+    }
 
 protected:
     CPipeThroughSlaveActivity &     activity;
@@ -383,6 +387,9 @@ public:
             if (recreate && firstRead)
             {
                 pipeOpened.wait();
+                Owned<IException> wrexc = pipeWriter->checkError();
+                if (wrexc)
+                    throw wrexc.getClear();
                 if (inputExhausted)
                 {
                     eof = true;
@@ -534,6 +541,8 @@ int PipeWriterThread::run()
             e->Release();
         else
             exc.setown(e);
+        if (activity.recreate)
+            activity.pipeOpened.signal();
     }
     return ret;
 }
