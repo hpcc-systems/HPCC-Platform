@@ -1644,6 +1644,8 @@ void HqlCppWriter::generateStmtDeclare(IHqlStmt * declare)
             else
                 indent().append("rtlRowsAttr ").append(targetName);
         }
+        else if (typeSize != UNKNOWN_LENGTH)
+            indent().append("rtlFixedSizeDataAttr<").append(typeSize).append("> ").append(targetName);
         else
             indent().append("rtlDataAttr ").append(targetName);
     }
