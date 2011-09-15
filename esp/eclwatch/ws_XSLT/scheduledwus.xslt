@@ -242,7 +242,7 @@
             </xsl:otherwise>
          </xsl:choose>   
          <td>
-            <input type="checkbox" name="Wuids_i{position()}" value="{Wuid}" onclick="return clicked(this)"/>
+            <input type="checkbox" name="Wuids_i{position()}" value="{Wuid}" onclick="return clicked(this, event)"/>
          </td>
          <td>
             <a href="javascript:go('/WsWorkunits/WUInfo?Wuid={Wuid}')">

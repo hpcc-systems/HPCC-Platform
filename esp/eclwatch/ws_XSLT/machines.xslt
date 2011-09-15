@@ -309,7 +309,7 @@
             </xsl:variable>
             <td>
                 <xsl:if test="$ShowPreflightInfo">
-                    <input type="checkbox" name="Addresses_i{position()}" value="{Netaddress}|{ConfigNetaddress}:{Type}:{$clusterName}:{OS}:{translate(Directory, ':', '$')}" onclick="return clicked(this)">
+                    <input type="checkbox" name="Addresses_i{position()}" value="{Netaddress}|{ConfigNetaddress}:{Type}:{$clusterName}:{OS}:{translate(Directory, ':', '$')}" onclick="return clicked(this, event)">
                         <xsl:if test="not($SwapNode)">
                             <xsl:attribute name="checked">true</xsl:attribute>
                         </xsl:if>
