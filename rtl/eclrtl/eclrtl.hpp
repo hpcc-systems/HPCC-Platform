@@ -245,6 +245,7 @@ ECLRTL_API unsigned rtlTrimUtf8StrLen(size32_t l, const char * t);
 ECLRTL_API unsigned rtlTrimVStrLen(const char * t);
 ECLRTL_API unsigned rtlTrimVUnicodeStrLen(UChar const * t);
 ECLRTL_API int rtlCompareStrStr(unsigned l1, const char * p1, unsigned l2, const char * p2);
+ECLRTL_API int rtlCompareVStrVStr(const char * p1, const char * p2);
 ECLRTL_API int rtlCompareStrBlank(unsigned l1, const char * p1);
 ECLRTL_API int rtlCompareDataData(unsigned l1, const void * p1, unsigned l2, const void * p2);
 ECLRTL_API int rtlCompareEStrEStr(unsigned l1, const char * p1, unsigned l2, const char * p2);

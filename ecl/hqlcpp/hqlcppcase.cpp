@@ -200,7 +200,7 @@ bool HqlCppCaseInfo::buildAssign(BuildCtx & ctx, const CHqlBoundTarget & target)
                 if (condType->getTypeCode() != type_real)
                 {
                     OwnedHqlExpr search = test.getTranslatedExpr();
-                    if (constantValues && (condType->getTypeCode() == type_int) && (pairs.ordinality() > INTEGER_SEARCH_THRESHOLD))
+                    if (constantValues && (condType->getTypeCode() == type_int) && (pairs.ordinality() > INTEGER_SEARCH_THRESHOLD) && canBuildStaticList(resultType))
                         buildIntegerSearchMap(subctx, target, search);
                     else
                         buildSwitchMap(subctx, &target, test.expr);
@@ -434,6 +434,11 @@ void HqlCppCaseInfo::buildLoopChopMap(BuildCtx & ctx, const CHqlBoundTarget & ta
     //Declare a table that contains all the strings...
     ITypeInfo * compareType = queryCompareType();
     type_t ctc = compareType->getTypeCode();
+    if ((ctc == type_data) && !hasLibraryChop())
+    {
+         buildGeneralAssign(ctx, target);
+         return;
+    }
 
     OwnedHqlExpr values = createCompareList();
     CHqlBoundExpr boundTable;
@@ -925,7 +930,7 @@ IHqlExpression * HqlCppCaseInfo::createResultsExpr(IHqlExpression * matchVar, bo
     // easy way to create a value list...
     ITypeInfo * storeType = getArrayElementType(retType);
     OwnedHqlExpr newlist = createValue(no_list, makeSetType(storeType), values);
-    if (areConstant)
+    if (areConstant && canBuildStaticList(resultType))
     {
         IHqlExpression * index = adjustValue(matchVar, 1+firstMatchEntry);
         return createValue(no_index, LINK(retType), LINK(newlist), index, createAttribute(noBoundCheckAtom));
@@ -961,8 +966,21 @@ bool HqlCppCaseInfo::hasLibraryChop()
     ITypeInfo * compareType = queryCompareType();
     type_t ctc = compareType->getTypeCode();
 
-    return ((ctc == type_string) || (ctc == type_data) || (ctc == type_varstring) || (ctc == type_qstring) || (ctc == type_unicode) || (ctc == type_varunicode) || (ctc == type_utf8));
+    switch (ctc)
+    {
+    case type_data:
+        return canBuildStaticList(promotedElementType);
+    case type_string:
+    case type_varstring:
+    case type_qstring:
+    case type_unicode:
+    case type_varunicode:
+    case type_utf8:
+        return true;
+    }
+    return false;
 }
+
 
 void HqlCppCaseInfo::processBranches()
 {
@@ -991,6 +1009,7 @@ void HqlCppCaseInfo::promoteTypes()
 
         promoted.setown(::getPromotedECLType(promoted, type));
     }
+    promotedElementType.set(promoted);
 
     if (isStringType(promoted))
         promoted.setown(getStretchedType(UNKNOWN_LENGTH, promoted));
@@ -1021,7 +1040,7 @@ bool HqlCppCaseInfo::canBuildArrayLookup(const CHqlBoundExpr & test)
 
 bool HqlCppCaseInfo::queryBuildArrayLookup(BuildCtx & ctx, const CHqlBoundTarget & target, const CHqlBoundExpr & test)
 {
-    if (canBuildArrayLookup(test))
+    if (canBuildArrayLookup(test) && canBuildStaticList(resultType))
     {
         //MORE: Also support this for high density tables that don't start at 0... - checking upper and lower bounds
         ITypeInfo * condType = test.queryType()->queryPromotedType();

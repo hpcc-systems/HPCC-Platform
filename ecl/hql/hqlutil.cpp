@@ -3182,11 +3182,7 @@ IHqlExpression * createTrimExpr(IHqlExpression * value, IHqlExpression * flags)
     else if (isUnicodeType(srcType))
         tgtType = makeUnicodeType(UNKNOWN_LENGTH, srcType->queryLocale());
     else
-    {
-        ICharsetInfo * charset = srcType->queryCharset();
-        ICollationInfo * collation = srcType->queryCollation();
-        tgtType = makeStringType(UNKNOWN_LENGTH, LINK(charset),LINK(collation));
-    }
+        tgtType = makeStringType(UNKNOWN_LENGTH, getCharset(asciiAtom), getCollation(asciiAtom));
 
     HqlExprArray args;
     args.append(*LINK(expr));
