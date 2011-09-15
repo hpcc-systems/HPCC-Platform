@@ -3326,10 +3326,11 @@ public:
     bool next()
     {
         loop {
+            struct dirent dirEntry;
             struct dirent *entry;
             loop {
                 gotst = false;
-                entry = readdir(handle);  // don't need _r here 
+                readdir_r(handle, &dirEntry, &entry);
                 // need better checking here?
                 if (!entry)
                     break;
