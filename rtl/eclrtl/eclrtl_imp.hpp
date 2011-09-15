@@ -61,6 +61,13 @@ protected:
     void * ptr;
 };
 
+template <size32_t SIZE>
+class rtlFixedSizeDataAttr : public rtlDataAttr
+{
+public:
+    inline rtlFixedSizeDataAttr() : rtlDataAttr(SIZE) {}
+};
+
 class ECLRTL_API rtlRowBuilder : public rtlDataAttr
 {
 public:
