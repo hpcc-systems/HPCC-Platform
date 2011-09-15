@@ -27,7 +27,7 @@
     allowRollup: true,
     onSuccess: function() {
       var invokeWiz = true;
-    
+
       YAHOO.util.Event.onContentReady("envctrls", function() {
         function fnce() {
           var oPushButton3 = new YAHOO.widget.Button("validatebutton", { onclick: { fn: validateEnvironment} });
@@ -41,10 +41,10 @@
 
         versionOperation(fnce, fnce);
       });
-      
+
       top.document.startWait = function(doc) { top.document.body.style.cursor = "wait"; if (doc) doc.body.style.cursor = "wait"; }
       top.document.stopWait = function(doc) { top.document.body.style.cursor = "auto"; if (doc) doc.body.style.cursor = "auto"; }
-        
+
       if (top.window.location.search.length > 0) {
         var filename = top.window.location.search.split(/=/g);
         document.forms['treeForm'].sourcefile.value = decodeURI(filename[1]);
@@ -52,7 +52,11 @@
       }
       document.getElementById('top1').style.display = 'none';
       getWaitDlg().show();
-      var params = "queryType=customType::params=environment,laststarted,lastsaved,defenvfile,username,wizops";
+      var params = "queryType=customType::params=environment,laststarted,defenvfile,username,wizops";
+
+      if (!invokeWiz)
+        params += ",lastsaved";
+
       YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/GetValue', {
         success: function(o) {
           getWaitDlg().hide();
@@ -89,6 +93,13 @@
               else
                 handleAdvance();
             }
+          }
+          else if (o.responseText.indexOf("<html") === 0) {
+            var temp = o.responseText.split(/td align=\"left\">/g);
+            var temp1 = temp[1].split(/<\/td>/g);
+            alert(temp1[0]);
+            var loc = window.location.href.split(/\?/g);
+            var newwin = top.open(loc[0], "_self");
           }
         },
         failure: function(o) {
@@ -4275,7 +4286,7 @@ function populateSummaryDetails(linkFlag, sumDataTable)
    },
       scope: this
    },
-   getFileName(true, !linkFlag)  + 'PrepareLinkFlag=' + true);
+   getFileName(true, true)  + 'PrepareLinkFlag=' + true);
 }
 
 
