@@ -209,12 +209,14 @@ protected:
 struct EclCompileInstance
 {
 public:
-    EclCompileInstance(IFile & _inputFile, IErrorReceiver & _errs, FILE * _errout, const char * _outputFilename) :
-      inputFile(&_inputFile), errs(&_errs), errout(_errout), outputFilename(_outputFilename)
+    EclCompileInstance(IFile * _inputFile, IErrorReceiver & _errs, FILE * _errout, const char * _outputFilename) :
+      inputFile(_inputFile), errs(&_errs), errout(_errout), outputFilename(_outputFilename)
     {
         importAllModules = queryLegacyEclSemantics();
         fromArchive = false;
     }
+
+    bool reportErrorSummary();
 
 public:
     Linked<IFile> inputFile;
@@ -262,15 +264,17 @@ protected:
     void applyDebugOptions(IWorkUnit * wu);
     bool checkWithinRepository(StringBuffer & attributePath, const char * sourcePathname);
     ICppCompiler * createCompiler(const char * coreName);
+    void generateOutput(EclCompileInstance & instance);
     void instantECL(EclCompileInstance & instance, IWorkUnit *wu, IHqlExpression * query, const char * queryFullName, IErrorReceiver *errs, const char * outputFile);
     void getComplexity(IWorkUnit *wu, IHqlExpression * query, IErrorReceiver *errs);
-    void processSingleQuery(EclCompileInstance & instance, IEclRepository * dataServer, const char * sourceName,
+    void processSingleQuery(EclCompileInstance & instance, IEclRepository * dataServer, const char * sourcePathname,
                                const char * queryText,
                                const char * queryAttributePath,
                                const char * syntaxCheckModule, const char * syntaxCheckAttribute
                                );
     void processXmlFile(EclCompileInstance & instance, const char *archiveXML);
     void processFile(EclCompileInstance & info);
+    void processReference(EclCompileInstance & instance, const char * queryAttributePath);
     void processBatchFiles();
     void reportCompileErrors(IErrorReceiver *errs, const char * processName);
     void setDebugOption(const char * name, bool value);
@@ -294,6 +298,7 @@ protected:
     StringAttr optManifestFilename;
     StringAttr optOutputDirectory;
     StringAttr optOutputFilename;
+    StringAttr optQueryRepositoryReference;
     FILE * batchLog;
 
     IFileArray inputFiles;
@@ -808,7 +813,7 @@ bool EclCC::checkWithinRepository(StringBuffer & attributePath, const char * sou
 }
 
 
-void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * dataServer, const char * sourcePathname, 
+void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * dataServer, const char * sourcePathname,
                                const char * queryText,
                                const char * queryAttributePath,
                                const char * syntaxCheckModule, const char * syntaxCheckAttribute
@@ -890,12 +895,11 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
     size32_t prevErrs = errs->errCount();
     unsigned startTime = msTick();
     OwnedHqlExpr qquery;
+    const char * defaultErrorPathname = sourcePathname ? sourcePathname : attributePath.str();
     try
     {
         HqlExprArray functionCache;
         HqlLookupContext ctx(instance.archive, errs, &functionCache, repository);
-
-        Owned<IFileContents> contents = createFileContentsFromText(queryText, sourcePath);
 
         if (withinRepository)
         {
@@ -909,11 +913,13 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
             {
                 StringBuffer msg;
                 msg.append("Could not resolve attribute ").append(attributePath.str());
-                errs->reportError(3, msg.str(), sourcePathname ? sourcePathname : attributePath.str(), 0, 0, 0);
+                errs->reportError(3, msg.str(), defaultErrorPathname, 0, 0, 0);
             }
         }
         else
         {
+            Owned<IFileContents> contents = createFileContentsFromText(queryText, sourcePath);
+
             if (instance.importAllModules)
             {
                 HqlScopeArray rootScopes;
@@ -940,13 +946,13 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
     {
         StringBuffer s;
         e->errorMessage(s);
-        errs->reportError(3, s.toCharArray(), sourcePath->str(), 1, 0, 0);
+        errs->reportError(3, s.toCharArray(), defaultErrorPathname, 1, 0, 0);
         e->Release();
     }
 
     if (!syntaxChecking && (errs->errCount() == prevErrs) && (!qquery || !containsAnyActions(qquery)))
     {
-        errs->reportError(3, "Query is empty", sourcePath->str(), 1, 0, 0);
+        errs->reportError(3, "Query is empty", defaultErrorPathname, 1, 0, 0);
         return;
     }
 
@@ -958,7 +964,6 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
 
     StringBuffer targetFilename;
     const char * outputFilename = instance.outputFilename;
-    const char * originalFilename = instance.inputFile->queryFilename();
     if (!outputFilename)
     {
         addNonEmptyPathSepChar(targetFilename.append(optOutputDirectory));
@@ -970,8 +975,12 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
         addNonEmptyPathSepChar(targetFilename.append(optOutputDirectory)).append(outputFilename);
 
     //Check if it overlaps with the source file and add .eclout if so
-    if (streq(targetFilename, originalFilename))
-        targetFilename.append(".eclout");
+    if (instance.inputFile)
+    {
+        const char * originalFilename = instance.inputFile->queryFilename();
+        if (streq(targetFilename, originalFilename))
+            targetFilename.append(".eclout");
+    }
 
     if (errs->errCount() == prevErrs)
         instantECL(instance, instance.wu, qquery, scope->queryFullName(), errs, targetFilename);
@@ -1007,6 +1016,10 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
 
     const char * queryText = instance.srcArchive->queryProp("Query");
     const char * queryAttributePath = instance.srcArchive->queryProp("Query/@attributePath");
+    //Takes precedence over an entry in the archive - so you can submit parts of an archive.
+    if (optQueryRepositoryReference)
+        queryAttributePath = optQueryRepositoryReference;
+
     const char * sourceFilename = instance.srcArchive->queryProp("Query/@originalFilename");
     instance.eclVersion.set(instance.srcArchive->queryProp("@eclVersion"));
     if (instance.eclVersion)
@@ -1055,7 +1068,6 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
 void EclCC::processFile(EclCompileInstance & instance)
 {
     const char * curFilename = instance.inputFile->queryFilename();
-    const char * outputFilename = instance.outputFilename;
     assertex(curFilename);
     StringBuffer fname;
     if (optBatchMode)
@@ -1084,8 +1096,10 @@ void EclCC::processFile(EclCompileInstance & instance)
     else
         processSingleQuery(instance, libraryRepository, fname.str(), queryTxt, NULL, NULL, NULL);
 
-    IErrorReceiver & errs = *instance.errs;
-    if (instance.archive && !errs.errCount())
+    if (instance.reportErrorSummary())
+        return;
+
+    if (instance.archive)
     {
         if (!instance.archive->hasProp("Query/@attributePath"))
         {
@@ -1095,7 +1109,16 @@ void EclCC::processFile(EclCompileInstance & instance)
             instance.archive->setProp("Query", p );
             instance.archive->setProp("Query/@originalFilename", fname.str());
         }
+    }
 
+    generateOutput(instance);
+}
+
+void EclCC::generateOutput(EclCompileInstance & instance)
+{
+    const char * outputFilename = instance.outputFilename;
+    if (instance.archive)
+    {
         if (optManifestFilename)
             addManifestResourcesToArchive(instance.archive, optManifestFilename);
 
@@ -1113,7 +1136,7 @@ void EclCC::processFile(EclCompileInstance & instance)
         saveXML(*buffered, instance.archive);
     }
 
-    if (optWorkUnit && instance.wu && (errs.errCount() == 0))
+    if (optWorkUnit && instance.wu)
     {
         StringBuffer xmlFilename;
         addNonEmptyPathSepChar(xmlFilename.append(optOutputDirectory));
@@ -1124,12 +1147,20 @@ void EclCC::processFile(EclCompileInstance & instance)
         xmlFilename.append(".xml");
         exportWorkUnitToXMLFile(instance.wu, xmlFilename, 0);
     }
+}
 
-    if (errs.errCount() || errs.warnCount())
-    {
-        fprintf(instance.errout, "%d error%s, %d warning%s\n", errs.errCount(), errs.errCount()<=1 ? "" : "s",
-                errs.warnCount(), errs.warnCount()<=1?"":"s");
-    }
+
+void EclCC::processReference(EclCompileInstance & instance, const char * queryAttributePath)
+{
+    const char * outputFilename = instance.outputFilename;
+
+    instance.wu.setown(createLocalWorkUnit());
+
+    processSingleQuery(instance, libraryRepository, NULL, NULL, queryAttributePath, NULL, NULL);
+
+    if (instance.reportErrorSummary())
+        return;
+    generateOutput(instance);
 }
 
 
@@ -1144,10 +1175,19 @@ bool EclCC::processFiles()
 
     bool ok = true;
     if (optBatchMode)
+    {
         processBatchFiles();
+    }
+    else if (inputFiles.ordinality() == 0)
+    {
+        assertex(optQueryRepositoryReference);
+        EclCompileInstance info(NULL, *errs, stderr, optOutputFilename);
+        processReference(info, optQueryRepositoryReference);
+        ok = (errs->errCount() == 0);
+    }
     else
     {
-        EclCompileInstance info(inputFiles.item(0), *errs, stderr, optOutputFilename);
+        EclCompileInstance info(&inputFiles.item(0), *errs, stderr, optOutputFilename);
         processFile(info);
         ok = (errs->errCount() == 0);
     }
@@ -1163,6 +1203,18 @@ void EclCC::setDebugOption(const char * name, bool value)
     temp.append(name).append("=").append(value ? "1" : "0");
     debugOptions.append(temp);
 }
+
+
+bool EclCompileInstance::reportErrorSummary()
+{
+    if (errs->errCount() || errs->warnCount())
+    {
+        fprintf(errout, "%d error%s, %d warning%s\n", errs->errCount(), errs->errCount()<=1 ? "" : "s",
+                errs->warnCount(), errs->warnCount()<=1?"":"s");
+    }
+    return errs->errCount() != 0;
+}
+
 
 //=========================================================================================
 
@@ -1242,6 +1294,9 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
         }
         else if (iter.matchOption(optLogDetail, "--logdetail"))
+        {
+        }
+        else if (iter.matchOption(optQueryRepositoryReference, "-main"))
         {
         }
         else if (iter.matchFlag(optDebugMemLeak, "-m"))
@@ -1345,6 +1400,8 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
 
     if (inputFiles.ordinality() == 0)
     {
+        if (!optBatchMode && optQueryRepositoryReference)
+            return true;
         ERRLOG("No input files supplied");
         return false;
     }
@@ -1382,6 +1439,7 @@ void EclCC::usage()
            "    -E            Output preprocessed ECL in xml archive form\n"
            "    -S            Generate c++ output, but don't compile\n"
            "    -foption[=value] Set an ecl option (#option)\n"
+           "    -main <ref>   Compile definition <ref> from the source collection\n"
            "    -q            Save ECL query text as part of workunit\n"
            "    -shared       Generate workunit shared object instead of a stand alone exe\n"
            "    -syntax       Perform a syntax check of the ECL\n"
@@ -1443,7 +1501,7 @@ void EclCC::processBatchedFile(IFile & file, bool multiThreaded)
             }
 
             Owned<IErrorReceiver> localErrs = createFileErrorReceiver(logFile);
-            EclCompileInstance info(file, *localErrs, logFile, outFilename);
+            EclCompileInstance info(&file, *localErrs, logFile, outFilename);
             processFile(info);
             //Following only produces output if the system has been compiled with TRANSFORM_STATS defined
             dbglogTransformStats(true);
