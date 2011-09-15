@@ -458,7 +458,7 @@
             </xsl:otherwise>
          </xsl:choose>   
          <td>
-            <input type="checkbox" name="Wuids_i{position()}" value="{Wuid}" onclick="clicked(this)"/>
+            <input type="checkbox" name="Wuids_i{position()}" value="{Wuid}" onclick="clicked(this, event)"/>
          </td>
          <td>
             <xsl:if test="Protected=1">

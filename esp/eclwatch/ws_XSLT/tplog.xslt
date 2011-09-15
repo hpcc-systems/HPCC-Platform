@@ -119,9 +119,11 @@
               }
             }
 
-            function onEditKeyUp()
+            function onEditKeyUp(e)
             {
-              if (window.event && window.event.keyCode == 13)
+              if (!e)
+                e = window.event;
+              if (e && e.keyCode == 13)
               {
                 onGetLog();
               }
@@ -493,7 +495,7 @@
                     <td><input type="radio" name="FilterRB" value="3" onclick="onRBChanged(3)"/>or last page (page <xsl:value-of select="$totalpages"/>)</td>
                   </tr>
                   <tr>
-                    <td><input type="radio" name="FilterRB" value="4" onclick="onRBChanged(4)"/>or go to page:<input id="PageNumber" size="5" type="text" value="{PageNumber+1}" style="text-align:right;" onKeyUp = "onEditKeyUp()"/> </td>
+                    <td><input type="radio" name="FilterRB" value="4" onclick="onRBChanged(4)"/>or go to page:<input id="PageNumber" size="5" type="text" value="{PageNumber+1}" style="text-align:right;" onKeyUp = "onEditKeyUp(event)"/> </td>
                   </tr>
                 </table>
               </td>
@@ -501,11 +503,11 @@
                 <table>
                   <tr>
                     <td><input type="radio" name="FilterRB" value="1" onclick="onRBChanged(1)"/></td>
-                    <td>or first:<input id="First" size="5" type="text" value="{FirstRows}" style="text-align:right;" onKeyUp = "onEditKeyUp()"/> rows</td>
+                    <td>or first:<input id="First" size="5" type="text" value="{FirstRows}" style="text-align:right;" onKeyUp = "onEditKeyUp(event)"/> rows</td>
                   </tr>
                   <tr>
                     <td><input type="radio" name="FilterRB" value="5" onclick="onRBChanged(5)"/></td>
-                    <td colspan="2">or last:<input id="Last" size="5" type="text" value="{LastRows}" style="text-align:right;" onKeyUp = "onEditKeyUp()"/> rows</td>
+                    <td colspan="2">or last:<input id="Last" size="5" type="text" value="{LastRows}" style="text-align:right;" onKeyUp = "onEditKeyUp(event)"/> rows</td>
                   </tr>
                 </table>
               </td>
@@ -515,23 +517,23 @@
                     <xsl:choose>
                       <xsl:when test="HasDate=1">
                         <td><input type="radio" name="FilterRB" value="6"  onclick="onRBChanged(6)"/>
-                        or date from:<input id="From" size="15" type="text" value="{StartDate}" onKeyUp = "onEditKeyUp()"/></td>
-                        <td colspan="4">to: <input id="To" size="15" type="text" value="{EndDate}" onKeyUp = "onEditKeyUp()"/> (mm/dd/yyyy hh:mm:ss)</td>
+                        or date from:<input id="From" size="15" type="text" value="{StartDate}" onKeyUp = "onEditKeyUp(event)"/></td>
+                        <td colspan="4">to: <input id="To" size="15" type="text" value="{EndDate}" onKeyUp = "onEditKeyUp(event)"/> (mm/dd/yyyy hh:mm:ss)</td>
                       </xsl:when>
                       <xsl:otherwise>
                         <td><input type="radio" name="FilterRB" value="6"  onclick="onRBChanged(6)" disabled="true"/>
-                        or date from:<input id="From" size="15" type="text" value="{StartDate}" onKeyUp = "onEditKeyUp()" disabled="true"/></td>
-                        <td colspan="4">to: <input id="To" size="15" type="text" value="{EndDate}" onKeyUp = "onEditKeyUp()" disabled="true"/> (mm/dd/yyyy hh:mm:ss)</td>
+                        or date from:<input id="From" size="15" type="text" value="{StartDate}" onKeyUp = "onEditKeyUp(event)" disabled="true"/></td>
+                        <td colspan="4">to: <input id="To" size="15" type="text" value="{EndDate}" onKeyUp = "onEditKeyUp(event)" disabled="true"/> (mm/dd/yyyy hh:mm:ss)</td>
                       </xsl:otherwise>
                     </xsl:choose>
                   </tr>
                   <tr>
                     <xsl:choose>
                       <xsl:when test="HasDate=1">
-                        <td><input type="radio" name="FilterRB" value="2" onclick="onRBChanged(2)"/> or last:<input id="Hour" size="5" type="text" value="{LastHours}"  onKeyUp = "onEditKeyUp()" style="text-align:right;"/> hours</td>
+                        <td><input type="radio" name="FilterRB" value="2" onclick="onRBChanged(2)"/> or last:<input id="Hour" size="5" type="text" value="{LastHours}"  onKeyUp = "onEditKeyUp(event)" style="text-align:right;"/> hours</td>
                       </xsl:when>
                       <xsl:otherwise>
-                        <td><input type="radio" name="FilterRB" value="2" onclick="onRBChanged(2)" disabled="true"/> or last:<input id="Hour" size="5" type="text" value="{LastHours}"  onKeyUp = "onEditKeyUp()" style="text-align:right;" disabled="true"/> hours</td>
+                        <td><input type="radio" name="FilterRB" value="2" onclick="onRBChanged(2)" disabled="true"/> or last:<input id="Hour" size="5" type="text" value="{LastHours}"  onKeyUp = "onEditKeyUp(event)" style="text-align:right;" disabled="true"/> hours</td>
                       </xsl:otherwise>
                     </xsl:choose>
                   </tr>
