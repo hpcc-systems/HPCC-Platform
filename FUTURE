@@ -1,0 +1,235 @@
+This file contains an outline of some of the different areas we might pursue in the future.  Once the plans become
+concrete they will be added as issues with associated milestones.
+
+Technology changes
+==================
+What technology changes do we need to ensure we adapt to?
+
+Many cores
+* Better use of lots of threads.
+* Parallel PARSE, PROJECT and other activities that are cpu intensive.
+* Dynamic adapting to number of available threads.
+* Ensure multithreading code is efficient.
+* Reduce critical sections and locking.
+* More read ahead threads.
+* Experiment with Sequential blocked read ahead.
+
+More memory
+* Dynamic resourcing in Thor.
+* Dynamic caching of spill files.
+
+SSDs
+* What do the greater seek rates allow us to do differently?
+
+Increased cost of power
+
+Improved network speed
+* The gap between network speed and disk speed is growing.  What assumptions does that change?
+
+Cloud support and Local v Remote files.
+
+Architectural
+=============
+What changes to the underlying architecture do we want to make.  Why?
+
+Full windows support.
+* Solve problems with SSH under windows.
+* Solve problems of how to get/build third party libraries.
+* Equivalent to the init system.
+* Support 64bit windows.
+
+Improvements to measurement and statistics
+* Do we know where all the time is going?
+  - In the code generator?
+  - In the run time engines.
+* What feedback would help ECL developers?
+
+Combine roxie and hthor
+* Extend roxie so it becomes a superset of hthor.
+* May require a flag to indicate the mode (e.g., spill handling) but code base should be one.
+* Allow roxie to listen on a dali queue.
+
+Common up the row reading interfaces between roxie and thor.
+* Makes it easier to pick up the system and work on it.
+* Make it easier to provide utility classes (e.g., readahead, activities).
+
+Support re-entrant global-graph execution
+* Allow a query to call a C++ function which might then call another executeGraph() call.
+* Opens up possibilities of more flexible code generation.
+* Requires changes to code gen and engines.
+* Requires parent extract supported by global graph execute.
+* Thor???
+
+Reduce the number of dlls in the system
+* The number of dlls and dependencies can almost certainly be simplified.
+
+Switch to OpenMPI or other framework
+* Does it provide the capabilities we need?
+* Would it be a suitable replacement for thor or roxie transport.
+
+Generate more than one dll for each work unit?
+* Allow more granular query compiling.
+* Reduce the data required by on-demand roxie slaves.
+* Allow remote filtering and projecting.
+
+Extensible system
+=================
+What changes can we make to make it easier for third parties to extend?
+What benefit might we get?
+
+File formats
+* Indexes
+    - Enable optimizations to our own formats.
+    - New implementations.
+    - Interfacing with external implementations.
+* Files
+    - Compressed
+    - Hadoop
+    - Embedded resources
+
+File locations/sources
+* Rationalise the current logical filename syntax, and extend it.
+
+Repositories
+- Allow more flexibility and extendibility in the sources of files used as input to eclcc.
+* Create a cleaner interface for accessing hierarchical ECL source.
+* Building directly from Github
+* Tar
+* Compressed archive
+
+C++ integration
+* Make it easier to link libraries/blocks of c++ into programs.
+* Improve support for C++ attributes (e.g., dependencies between attributes).
+* Streaming of datasets to and from C++.
+* Using third party libraries.
+
+Activities
+* Make it easier for 3rd parties to extend the activities in the system
+* Allow user c++ activities to be defined.
+
+New capabilities
+================
+What capabilities can we add to the system to make it solve more problems?
+
+Better support for UTF8
+* Current support isn't even documented.
+* PARSE and a few other places (indexes?) need some more work.
+
+Unicode support
+* Better support in indexes.
+* Expose work break semantics and support in PARSE.
+* UTF8 DFAs in PARSE.
+
+Thor debugger.
+
+Support recursion
+
+New activities
+* DATASET(count, transform(counter))
+
+More problem domains
+- What would be required to support some of the following domains better?
+* Biological/Genetic.
+* Matrix processing/computationally intensive.
+* Unicode free text processing.
+* Better support for SAS/R.
+* What hooks can we provide to make it easy for 3rd parties to implement?
+
+Enterprise
+==========
+What extensions can we make to the enterprise system?
+
+Repository
+* Fix existing repository implementation - particularly cache issues
+* Simplify and improve caching capabilities.
+* Fix the current directory scanning.
+* Allow more repositories types (see extensibility)
+
+Legacy support tools
+* Support tool to add imports, and clean up other changes that are required.
+
+Encryption at rest
+* Do we need it?
+* How do we safetly distrubute the keys with the current system.
+
+Redundancy
+* Should we support 3 or more way redundancy?
+
+Clean up query deployment
+* Finish the query sets
+
+Better testing
+* Regression suite could do with a thorough overhall.
+* Ideally some better coverage testing.
+* Some queries that can be run as a benchmark for the system speed.
+* File spray tests.
+
+Streamed input support in Thor.
+* Following on from the discussion with David and Dermot.
+
+SQL interface into the system.
+- Could this build on the mapping and joining fields for the roxie browser.
+
+Dali hot/warm failover redundancy
+
+Optimizations
+=============
+How can we improve the performance of the system
+
+Optimize the complexity of the graphs that are run
+* Code generator could track how sort orders are used and optimize the activities generated.
+
+Dynamic resourcing
+* Scope for Thor to select different implementations based on input data size.
+* Dynamic row caching / combine multiple subgraphs as one.
+
+New activity implementations
+* If the data is held on a lustre file system, is there scope for new sort activities?
+
+Reduce data transfer
+* Local and remote helpers would significantly reduce the amount of data transferred for roxie keyed joins (and other activities).
+
+Row representation
+* More intelligent row serialize/deserialize (e.g. on index read slaves)
+* Enable packing/alignment on rows.
+* Allow sizes to be separate from their strings/datasets.
+* Datasets and strings with smaller record counts.
+* Link counted child rows (not just datasets)
+* Maxcount(1) optimization
+* Link counted strings
+
+Speed up eclcc
+* For some queries (e.g., NCF) a large proportion of the development time must be spent compiling and deploying the queries.
+
+BCD library
+* Remove the critical section by using a thread variable for the stack
+* Improve code for the basic operations.
+* Consider switch to a non-stack implementation.
+
+Conditional actions in graphs
+* Most of the work has been done for this we should explicitly aim to support and enable it.
+* Need to finish WHEN support (e.g., implicit field projection from side-effects).
+
+Graph representation
+* Compress it
+* Don't include the graphs in the SDS, retrieve from the workunit instead.
+
+Improve implicit field projection
+- Currently doesn't optimize nested record structures.
+
+Improve the common sub expression processing in eclcc.
+
+Improve generation of conditional expressions.
+
+Implement costing for expressions and activities
+* Would improve whether it was worth reordering, substituting etc.
+
+Variable in <set>
+* Should sometimes use a hash table.
+* Special case of an associated array [#50371]  E.g., MAP(dataset, { keyed } [,{extra}]);
+
+Fix resourcing of inline datasets
+* Currently the CSE for datasets executed within a transform is poor.
+
+Optimize overly conditional code
+* Often occurs when converting procedural code to ECL.  Too many guard conditions are added to the ECL.
