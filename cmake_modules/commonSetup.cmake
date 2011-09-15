@@ -81,12 +81,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_DEBUG -DDEBUG")
 
-  set (CMAKE_THREAD_PREFER_PTHREAD 1)
-  find_package(Threads)
-  IF (NOT THREADS_FOUND)
-    message(FATAL_ERROR "No threading support found")
-  ENDIF()
-
   if (WIN32)
     # On windows, the vcproj generator generates both windows and debug build capabilities, and the release mode is appended to the directory later
     # This output location matches what our existing windows release scripts expect - might make sense to move out of tree sometime though
@@ -104,6 +98,12 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       add_definitions(/ZI)
     endif ()
   else ()
+    set (CMAKE_THREAD_PREFER_PTHREAD 1)
+    find_package(Threads)
+    IF (NOT THREADS_FOUND)
+      message(FATAL_ERROR "No threading support found")
+    ENDIF()
+
     if (NOT CMAKE_USE_PTHREADS_INIT)
       message (FATAL_ERROR "pthreads support not detected")
     endif ()
