@@ -123,7 +123,7 @@
                <xsl:attribute name="onmouseleave">this.bgColor = '#F0F0F0'</xsl:attribute>
             </xsl:otherwise>
          </xsl:choose>   
-        <td><input type="checkbox" name="XRefFiles_i{position()}" value="{Partmask}" onclick="clicked(this)"/></td>     
+        <td><input type="checkbox" name="XRefFiles_i{position()}" value="{Partmask}" onclick="clicked(this, event)"/></td>
 
         <td align="left"><xsl:value-of select="Partmask"/> </td>
         <td><xsl:value-of select="Modified"/></td>

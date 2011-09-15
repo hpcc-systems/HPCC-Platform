@@ -405,7 +405,7 @@
             </xsl:otherwise>
         </xsl:choose>   
         <td>
-        <input type="checkbox" name="subfiles_i{position()}" value="{.}" onclick="return clicked(this)"/>
+        <input type="checkbox" name="subfiles_i{position()}" value="{.}" onclick="return clicked(this, event)"/>
         </td>
         <xsl:variable name="inf_query"><xsl:value-of select="."/>
         </xsl:variable>

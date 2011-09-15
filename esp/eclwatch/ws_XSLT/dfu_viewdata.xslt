@@ -204,7 +204,7 @@
                         return null;
                     }
 
-                    function menuHandler(cmd, skipCheckBoxUpdate)
+                    function menuHandler(cmd, skipCheckBoxUpdate, event)
                     {
                         var index = cmd.substring(5); //skip past "_col_"
                         var table     = document.forms['data'].all['dataset_table'];
@@ -220,7 +220,7 @@
                                 var id = 'ShowColumns_i' + (index - 1); //no checkbox exists for column 1 
                                 var checkbox = document.forms['control'].all[id];                      
                                 checkbox.checked = show;
-                                clicked(checkbox);
+                                clicked(checkbox, event);
                             }
                         }
                     }
@@ -361,13 +361,13 @@
          <xsl:choose>
             <xsl:when test="ColumnSize=1">
                <input type="checkbox" id="ShowColumns_i{$index}" name="ShowColumns_i{$index}" 
-                   value="" onclick="menuHandler('_col_{$index+1}', true);" checked = "0">
+                   value="" onclick="menuHandler('_col_{$index+1}', true, event);" checked = "0">
                  <xsl:value-of select="ColumnLabel"/>
                  </input>
             </xsl:when>
             <xsl:otherwise>
                <input type="checkbox" id="ShowColumns_i{$index}" name="ShowColumns_i{$index}" 
-                   value="" onclick="menuHandler('_col_{$index+1}', true);">
+                   value="" onclick="menuHandler('_col_{$index+1}', true, event);">
                  <xsl:value-of select="ColumnLabel"/>
                  </input>
             </xsl:otherwise>

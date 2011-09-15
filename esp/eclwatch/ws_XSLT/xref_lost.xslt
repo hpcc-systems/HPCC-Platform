@@ -116,7 +116,7 @@
                </xsl:otherwise>
             </xsl:choose>   
         <td>
-           <input type="checkbox" name="XRefFiles_i{position()}" value="{Name}" onclick="clicked(this)"/>
+           <input type="checkbox" name="XRefFiles_i{position()}" value="{Name}" onclick="clicked(this, event)"/>
         </td>
         <td align="left"><xsl:value-of select="Name"/> </td>
         <td><xsl:value-of select="Modified"/></td>
