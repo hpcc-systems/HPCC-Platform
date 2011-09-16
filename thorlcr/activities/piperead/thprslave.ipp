@@ -32,5 +32,6 @@
 
 
 activityslaves_decl CActivityBase *createPipeReadSlave(CGraphElementBase *container);
+activityslaves_decl CActivityBase *createPipeThroughSlave(CGraphElementBase *container);
 
 #endif
