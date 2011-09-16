@@ -287,7 +287,8 @@ void ViewTransformerRegistry::addPlugins(const char * name)
     ThrowingErrorReceiver errors;
     dataServer.setown(createSourceFileEclRepository(&errors, name, NULL, NULL, 0));
     HqlScopeArray scopes;
-    HqlLookupContext ctx(NULL, &errors, NULL, dataServer);
+    HqlParseContext parseCtx(dataServer, NULL);
+    HqlLookupContext ctx(parseCtx, &errors);
     dataServer->getRootScopes(scopes, ctx);
     ForEachItemIn(i, scopes)
     {

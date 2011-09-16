@@ -350,25 +350,15 @@ typedef CIArrayOf<HqlExprArrayItem> HqlExprArrayArray;
 class HqlGramCtx : public CInterface
 {
 public:
-    HqlGramCtx() { lookupCtx = NULL; }
-    ~HqlGramCtx() { delete lookupCtx; }
+    HqlGramCtx(HqlLookupContext & _lookupCtx) : lookupCtx(_lookupCtx) {}
     bool hasAnyActiveParameters();
-    void cleanup()
-    {
-        defineScopes.kill();
-        defaultScopes.kill();
-        globalScope.clear();
-        imports.kill();
-        delete lookupCtx; 
-        lookupCtx = NULL;
-    }
 public:
     CIArrayOf<ActiveScopeInfo> defineScopes;
     IEclRepository *dataServer;
     HqlScopeArray defaultScopes;
     Owned<IHqlScope> globalScope;
     Linked<ISourcePath> sourcePath;
-    HqlLookupContext * lookupCtx;
+    HqlLookupContext lookupCtx;
     HqlExprArray imports;
 };
 

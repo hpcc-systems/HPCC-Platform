@@ -92,7 +92,7 @@ public:
        m_startLine(startLine), m_startCol(startCol) {}
     
     virtual IXmlScope* queryXmlScope()  { return m_xmlScope; }
-    virtual IEclRepository* queryDataServer()  { return m_lookupContext.eclRepository; }
+    virtual IEclRepository* queryDataServer()  { return m_lookupContext.queryRepository(); }
     
     // convenient functions
     virtual bool isInModule(const char* moduleName, const char* attrName) { return ::isInModule(m_lookupContext, moduleName,attrName); }
@@ -1314,7 +1314,7 @@ void HqlLex::doInModule(YYSTYPE & returnToken)
 
 static bool isInModule(HqlLookupContext & ctx, const char* moduleName, const char* attrName)
 {
-    if (!ctx.eclRepository)
+    if (!ctx.queryRepository())
         return false;
 
     try
@@ -1326,7 +1326,7 @@ static bool isInModule(HqlLookupContext & ctx, const char* moduleName, const cha
         const char* pAttr = attrName;
         while(*pAttr==' ') pAttr++;
 
-        OwnedHqlExpr match = ctx.eclRepository->lookupRootSymbol(createIdentifierAtom(pModule), LSFpublic, ctx);
+        OwnedHqlExpr match = ctx.queryRepository()->lookupRootSymbol(createIdentifierAtom(pModule), LSFpublic, ctx);
         IHqlScope * scope = match ? match->queryScope() : NULL;
         if (scope)
         {
@@ -1705,7 +1705,7 @@ IHqlExpression *HqlLex::parseECL(StringBuffer &curParam, IXmlScope *xmlScope, in
     Owned<IHqlScope> scope = new CHqlMultiParentScope(sharedAtom,yyParser->queryPrimaryScope(false),yyParser->queryPrimaryScope(true),yyParser->parseScope.get(),NULL); 
 //  scope->defineSymbol(yyParser->globalScope->queryName(), NULL, LINK(queryExpression(yyParser->globalScope)), false, false, ob_module);
 
-    HqlGramCtx parentContext;
+    HqlGramCtx parentContext(yyParser->lookupCtx);
     yyParser->saveContext(parentContext, false);
     Owned<IFileContents> contents = createFileContentsFromText(curParam, querySourcePath());
     HqlGram parser(parentContext, scope, contents, xmlScope); 

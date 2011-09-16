@@ -5516,7 +5516,7 @@ void LibraryInputMapper::mapLogicalToReal(HqlExprArray & mapped, IHqlExpression 
         HqlExprArray symbols;
         scope->getSymbols(symbols);
 
-        HqlLookupContext lookupCtx(NULL, NULL, NULL, NULL);
+        HqlDummyLookupContext lookupCtx(NULL);
         ForEachItemIn(i, symbols)
         {
             IHqlExpression & cur = symbols.item(i);
