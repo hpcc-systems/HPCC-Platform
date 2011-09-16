@@ -187,12 +187,16 @@ class CSmartRowBuffer: public CSimpleInterface, implements ISmartRowBuffer, impl
             mb.clear();
         }
         if (waiting) {
-            // consumer caught up
-            freeblk(blk,nb);
-            assertex(out->ordinality()==0);
-            assertex(diskin.ordinality()==0);
-            in = out;
-            out = csavein.rq;
+            // if eoi, stopped while serializing/writing, putRow may put final row to existing 'in'
+            if (!eoi)
+            {
+                // consumer caught up
+                freeblk(blk,nb);
+                assertex(out->ordinality()==0);
+                assertex(diskin.ordinality()==0);
+                in = out;
+                out = csavein.rq;
+            }
         }
         else {
             diskin.append(blk);
@@ -1670,6 +1674,5 @@ public:
     {
         // noop as only read
     }
-
 };
 
