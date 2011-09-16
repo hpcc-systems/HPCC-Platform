@@ -195,7 +195,6 @@ void ProcessSlaveActivity::done()
 #include "nullaction/thnullactionslave.ipp"
 #include "parse/thparseslave.ipp"
 #include "piperead/thprslave.ipp"
-#include "pipethrough/thptslave.ipp"
 #include "pipewrite/thpwslave.ipp"
 #include "project/thprojectslave.ipp"
 #include "pull/thpullslave.ipp"
