@@ -1007,6 +1007,7 @@ bool isGlobalActivity(CGraphElementBase &container)
         case TAKchildif:
         case TAKcase:
         case TAKparse:
+        case TAKpiperead:
         case TAKxmlparse:
         case TAKjoinlight:
         case TAKselfjoinlight:
