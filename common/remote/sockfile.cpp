@@ -1426,7 +1426,7 @@ public:
         bool ret = true;
         byte b=1;
         StringBuffer tmp;
-        if (first && iter->first() || iter->next()) {
+        if (first ? iter->first() : iter->next()) {
             loop {
                 mb.append(b);
                 bool isdir = iter->isDir();
