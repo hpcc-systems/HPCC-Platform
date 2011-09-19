@@ -49,7 +49,7 @@ public:
 
 
 extern HQL_API IXmlEclRepository * createReplayRepository(IPropertyTree * xml);
-extern "C" HQL_API IEclRepository * attachLocalServer(IEclUser * user, IXmlEclRepository & repository, const char* cluster, const char * snapshot, bool sandbox4snapshot);
+extern "C" HQL_API IEclRepository * attachLocalServer(IEclUser * user, IXmlEclRepository & repository, const char * snapshot, bool sandbox4snapshot);
 extern "C" HQL_API IEclRepository * attachLoggingServer(IEclUser * user, IXmlEclRepository & repository, IWorkUnit* workunit, const char * snapshot, bool sandbox4snapshot);
 extern "C" HQL_API IEclRepository * createXmlDataServer(IPropertyTree * _xml, IEclRepository * defaultDataServer);
 

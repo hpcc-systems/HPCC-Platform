@@ -898,35 +898,13 @@ public:
     virtual void deserialize(MemoryBuffer &) { UNIMPLEMENTED; }
 };
 
-class HQL_API CHqlObservedScope : public CHqlScope, implements IHqlRemoteScope
-{
-protected:
-    CriticalSection generalCS;
-    ICopyArrayOf<IHqlRemoteScopeObserver> observedItems;
-
-public:
-    CHqlObservedScope(node_operator _op, _ATOM _name, const char * _fullName) : CHqlScope(_op, _name, _fullName) {}
-    ~CHqlObservedScope();
-
-    IMPLEMENT_IINTERFACE_USING(CHqlScope)
-
-    virtual IHqlScope * queryScope()        { return this; }    // remove ambiguous call
-
-    virtual void invalidateParsed();
-
-    virtual void addObserver(IHqlRemoteScopeObserver & item) { observedItems.append(item); }
-    virtual void removeObserver(IHqlRemoteScopeObserver & item) { observedItems.zap(item); }
-
-protected:
-    void cleanupForwardReferences();
-};
-
-class HQL_API CHqlRemoteScope : public CHqlObservedScope
+class HQL_API CHqlRemoteScope : public CHqlScope, implements IHqlRemoteScope
 {
 protected:
     IEclRepository * ownerRepository;
     IProperties* props;
     Owned<IHqlScope> resolved;
+    CriticalSection generalCS;
     bool loadedAllSymbols;
 
 protected:
@@ -940,6 +918,9 @@ protected:
 public:
     CHqlRemoteScope(_ATOM _name, const char * _fullName, IEclRepository *_repository, IProperties* _props, IFileContents * _text, bool _lazy);
     ~CHqlRemoteScope();
+    IMPLEMENT_IINTERFACE_USING(CHqlScope)
+
+    virtual IHqlScope * queryScope()        { return this; }    // remove ambiguous call
 
 //interface IHqlExpression
     virtual IHqlExpression *clone(HqlExprArray &newkids);
@@ -1293,8 +1274,7 @@ class CHqlCachedBoundFunction : public CHqlExpression
 {
     friend class CHqlNamedSymbol;
 public:
-    CHqlCachedBoundFunction(IHqlExpression *func);
-    CHqlCachedBoundFunction(IHqlExpression *func, HqlExprArray &args);
+    CHqlCachedBoundFunction(IHqlExpression * func, bool _forceOutOfLineExpansion);
 
 public:
     LinkedHqlExpr bound;

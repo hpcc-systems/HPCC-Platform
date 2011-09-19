@@ -141,11 +141,13 @@ private:
     unsigned traceMask;
 };
 
+class HqlParseContext;
+
 extern HQL_API IEclRepository *createSourceFileEclRepository(IErrorReceiver *err, const char * pluginPath, const char * constSourceSearchPath, const char * dynamicSourceSearchPath, unsigned traceMask);
 extern HQL_API IErrorReceiver *createFileErrorReceiver(FILE *f);
 extern HQL_API IHqlScope * getResolveDottedScope(const char * modname, unsigned lookupFlags, HqlLookupContext & ctx);
 extern HQL_API IHqlExpression * getResolveAttributeFullPath(const char * attrname, unsigned lookupFlags, HqlLookupContext & ctx);
-extern HQL_API IHqlScope * createSyntaxCheckScope(IEclRepository & repository, const char * module, const char *attributes);
+extern HQL_API IHqlScope * createSyntaxCheckScope(HqlParseContext & parseCtx, const char * module, const char *attributes);
 extern HQL_API IEclRepository * createCompoundRepositoryF(IEclRepository * repository, ...);
 extern HQL_API void getImplicitScopes(HqlScopeArray & implicitScopes, IEclRepository * repository, IHqlScope * scope, HqlLookupContext & ctx);
 

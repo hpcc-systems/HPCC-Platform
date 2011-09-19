@@ -309,11 +309,9 @@ class RemoteXmlEclRepository : public XmlEclRepository
     timestamp_t cachestamp;
 
 public:
-    RemoteXmlEclRepository(IEclUser * _user, IXmlEclRepository &repository, const char* cluster, const char * _snapshot, bool _sandbox4snapshot);
+    RemoteXmlEclRepository(IEclUser * _user, IXmlEclRepository &repository, const char * _snapshot, bool _sandbox4snapshot);
     ~RemoteXmlEclRepository();
 
-    void shutdown();
-    void getActiveUsers(char *&ret);
     void logException(IException *e);
 
 //interface readDataServer
@@ -325,16 +323,13 @@ public:
     virtual IPropertyTree* getAttributes(const char *module, const char *attr, int version, unsigned char infoLevel); 
 
     virtual bool logging() { return true; }
-
-protected:
-    void setCurrentCluster(const char* cluster);
 };
 
 
 
 //==============================================================================================================
 
-RemoteXmlEclRepository::RemoteXmlEclRepository(IEclUser * _user, IXmlEclRepository &_repository, const char* _cluster, const char * _snapshot, bool _sandbox4snapshot) 
+RemoteXmlEclRepository::RemoteXmlEclRepository(IEclUser * _user, IXmlEclRepository &_repository, const char * _snapshot, bool _sandbox4snapshot)
 : repository(_repository), user(_user)
 {
     if (_snapshot && *_snapshot)
@@ -343,8 +338,6 @@ RemoteXmlEclRepository::RemoteXmlEclRepository(IEclUser * _user, IXmlEclReposito
         setPropInt("sandbox4snapshot", _sandbox4snapshot ? 1 : 0);
     }
     cachestamp = 0;
-
-    setCurrentCluster(_cluster);
 }
 
 RemoteXmlEclRepository::~RemoteXmlEclRepository()
@@ -475,21 +468,16 @@ IPropertyTree* RemoteXmlEclRepository::getAttributes(const char *module, const c
 }
 
 
-void RemoteXmlEclRepository::setCurrentCluster(const char* _cluster)
+extern "C" HQL_API IEclRepository * attachLocalServer(IEclUser * user, IXmlEclRepository & repository, const char * snapshot, bool sandbox4snapshot)
 {
-    setProp("cluster",_cluster);
-}
-
-extern "C" HQL_API IEclRepository * attachLocalServer(IEclUser * user, IXmlEclRepository & repository, const char* cluster, const char * snapshot, bool sandbox4snapshot)
-{
-    return new RemoteXmlEclRepository(user, repository, cluster, snapshot, sandbox4snapshot);
+    return new RemoteXmlEclRepository(user, repository, snapshot, sandbox4snapshot);
 }
 
 class LoggingDataServer: public RemoteXmlEclRepository
 {
 public:
-    LoggingDataServer(IEclUser * user, IXmlEclRepository & repository, const char* cluster, IWorkUnit* _workunit, const char * snapshot, bool _sandbox4snapshot):
-      RemoteXmlEclRepository(user, repository, cluster, snapshot, _sandbox4snapshot),
+    LoggingDataServer(IEclUser * user, IXmlEclRepository & repository, IWorkUnit* _workunit, const char * snapshot, bool _sandbox4snapshot):
+      RemoteXmlEclRepository(user, repository, snapshot, _sandbox4snapshot),
       workunit(_workunit)
     {
           setPropInt("preloadText",0);
@@ -570,9 +558,7 @@ public:
 
 extern "C" HQL_API IEclRepository * attachLoggingServer(IEclUser * user, IXmlEclRepository & repository, IWorkUnit* workunit, const char * snapshot, bool sandbox4snapshot)
 {
-    SCMStringBuffer cluster;
-    workunit->getClusterName(cluster);
-    return new LoggingDataServer(user, repository, cluster.str(), workunit, snapshot, sandbox4snapshot);
+    return new LoggingDataServer(user, repository, workunit, snapshot, sandbox4snapshot);
 }
 
 
@@ -646,7 +632,8 @@ bool ArchiveXmlEclRepository::loadModule(IHqlRemoteScope *rScope, IErrorReceiver
 
 void ArchiveXmlEclRepository::init()
 {
-    HqlLookupContext GHMOREctx(NULL, NULL,  NULL, defaultDataServer);
+    HqlParseContext parseCtx(defaultDataServer, NULL);
+    HqlLookupContext ctx(parseCtx, NULL);
     Owned<IPropertyTreeIterator> modit = repository->getElements("Module");
     ForEach(*modit)
     {
@@ -657,7 +644,7 @@ void ArchiveXmlEclRepository::init()
         if (defaultDataServer)
         {
             _ATOM name = createIdentifierAtom(modname);
-            OwnedHqlExpr match = defaultDataServer->lookupRootSymbol(name, LSFpublic, GHMOREctx);
+            OwnedHqlExpr match = defaultDataServer->lookupRootSymbol(name, LSFpublic, ctx);
             IHqlScope * defaultScope = match ? match->queryScope() : NULL;
             if (defaultScope && (defaultScope->getPropInt(flagsAtom, 0) & SOURCEFILE_PLUGIN))
             {

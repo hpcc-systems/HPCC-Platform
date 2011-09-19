@@ -76,7 +76,7 @@ IHqlExpression * getResolveAttributeFullPath(const char * attrname, unsigned loo
         }
         else
         {
-            resolved.setown(ctx.eclRepository->lookupRootSymbol(moduleName, lookupFlags, ctx));
+            resolved.setown(ctx.queryRepository()->lookupRootSymbol(moduleName, lookupFlags, ctx));
         }
 
         if (!resolved || !dot)
@@ -101,17 +101,18 @@ IHqlScope * getResolveDottedScope(const char * modname, unsigned lookupFlags, Hq
 }
 
 
-IHqlScope * createSyntaxCheckScope(IEclRepository & repository, const char * module, const char *attributes)
+IHqlScope * createSyntaxCheckScope(HqlParseContext & parseCtx, const char * module, const char *attributes)
 {
     //MORE: This doesn't currently work on child modules, and the list of attributes is overkill - a single item would be enough.
-    repository.checkCacheValid();
+    parseCtx.queryRepository()->checkCacheValid();
+
     //GHMORE: This whole function should really die.
-    HqlLookupContext GHMOREctx(NULL, NULL,  NULL, &repository);
-    Owned<IHqlScope> parent = getResolveDottedScope(module, LSFimport, GHMOREctx);
+    HqlLookupContext lookupCtx(parseCtx, NULL);
+    Owned<IHqlScope> parent = getResolveDottedScope(module, LSFimport, lookupCtx);
     if (!parent)
         return NULL;
 
-    return new CHqlSyntaxCheckScope(parent, &repository, attributes, true);
+    return new CHqlSyntaxCheckScope(parent, parseCtx.queryRepository(), attributes, true);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -507,4 +508,3 @@ extern void getImplicitScopes(HqlScopeArray& implicitScopes, IEclRepository * re
             implicitScopes.append(OLINK(scope));
     }
 }
-
