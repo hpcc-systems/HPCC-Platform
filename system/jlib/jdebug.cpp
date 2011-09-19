@@ -1153,7 +1153,7 @@ public:
         loop {
             struct dirent *ent;
             struct dirent entryMem;
-            readdir_r(dir, &entrymem, &ent);
+            readdir_r(dir, &entryMem, &ent);
             if (!ent)
                 break;
             if ((ent->d_name[0]>='0')&&(ent->d_name[0]<='9')) {
