@@ -112,7 +112,7 @@ unsigned HqlCppLibrary::getHash(const HqlExprArray & values, unsigned crc) const
         crc = hashnc((const byte *)name, strlen(name), crc);
 
         ITypeInfo * type = cur.queryType();
-        type_t tc = type->getTypeCode();
+        byte tc = type->getTypeCode();
         switch (tc)
         {
         case type_record:
