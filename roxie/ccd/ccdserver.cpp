@@ -10694,10 +10694,10 @@ protected:
             modifiedTime.getString(timestr);
             if(timestr.length())
                 attrs->setProp("@modified", timestr.str());
-                if(clusterHandler)
-                    clusterHandler->setDescriptorParts(desc, base.str(), attrs);
-                else
-                    desc->setPart(0, queryMyNode(), base.str(), attrs);
+            if(clusterHandler)
+                clusterHandler->setDescriptorParts(desc, base.str(), attrs);
+            else
+                desc->setPart(0, queryMyNode(), base.str(), attrs);
 
             // properties of the logical file
             IPropertyTree & properties = desc->queryProperties();
