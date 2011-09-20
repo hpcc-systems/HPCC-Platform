@@ -126,7 +126,6 @@ public:
     virtual bool isFullyBound() const { return fullyBound(); };
     virtual _ATOM queryName() const { return NULL; }
     virtual node_operator getOperator() const { return op; }
-    virtual bool isObject(object_type type);
     virtual IHqlDataset *queryDataset() { return NULL; };
     virtual IHqlScope *queryScope();
     virtual IHqlSimpleScope *querySimpleScope();
@@ -197,7 +196,6 @@ public:
     virtual StringBuffer& getTextBuf(StringBuffer& buf) { assertex(false); return buf; }
     virtual IFileContents * queryDefinitionText() const { return NULL; }
     virtual bool isExported() { assertex(false); return false; }
-    virtual unsigned getObType() { assertex(false); return 0; }
 
     virtual IHqlExpression * queryAnnotationParameter(unsigned i) const { return NULL; }
 
@@ -207,7 +205,7 @@ public:
     virtual bool                equals(const IHqlExpression & other) const;
     
     virtual void beforeDispose();               // called before item is freed so whole object still valid
-    virtual unsigned getObFlags();
+    virtual unsigned getSymbolFlags();
 
     void setLocationIndependent(IHqlExpression * value);
     inline IHqlExpression * queryLocationIndependent()
@@ -319,7 +317,6 @@ public:
 //  virtual ITypeInfo *getType();
 //  virtual void unwindList(HqlExprArray &dst, node_operator);
 //  virtual bool isAggregate();
-//  virtual unsigned getObFlags();
 //  virtual IHqlDataset *queryDeepestTable();
 
 //Using methods in CHqlExpression should realy be inline in IHqlExpression, all based on type
@@ -338,7 +335,6 @@ public:
 
 //Following are redirected to body
     virtual _ATOM queryName() const;
-    virtual bool isObject(object_type type);
     virtual bool isScope();
     virtual bool isType();
     virtual bool isConstant();
@@ -380,7 +376,7 @@ public:
     virtual StringBuffer& getTextBuf(StringBuffer& buf);
     virtual IFileContents * queryDefinitionText() const;
     virtual bool isExported();
-    virtual unsigned getObType();
+    virtual unsigned getSymbolFlags();
     virtual unsigned            getCachedEclCRC();
 
 //Actually implemented by this class
@@ -397,7 +393,7 @@ protected:
     Linked<IFileContents> text;
     _ATOM name;
     _ATOM module;
-    unsigned obFlags;
+    unsigned symbolFlags;
     int bodystart;
     int startLine;
     unsigned short startColumn;
@@ -411,19 +407,17 @@ public:
     static CHqlNamedSymbol *makeSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, bool _exported, bool _shared, unsigned _flags);
     static CHqlNamedSymbol *makeSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _flags, IFileContents *_text, int _bodystart);
     static IHqlExpression * makeSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression *expr,
-                             bool exported, bool shared, unsigned obFlags, 
+                             bool exported, bool shared, unsigned symbolFlags,
                              IFileContents *fc, int _bodystart, int lineno, int column);
 
     virtual _ATOM queryName() const { return name; }
-    virtual bool isObject(object_type ob);
 
-    virtual unsigned getObType();
-
-    virtual bool isExported() { return (obFlags&ob_exported)!=0; };
+    virtual bool isExported() { return (symbolFlags&ob_exported)!=0; };
     virtual annotate_kind getAnnotationKind() const { return annotate_symbol; }
     virtual IHqlExpression *queryFunctionDefinition() const;
     virtual StringBuffer &toString(StringBuffer &ret);
     virtual IHqlExpression * cloneAnnotation(IHqlExpression * body);
+    virtual unsigned getSymbolFlags();
 
     virtual bool                equals(const IHqlExpression & other) const;
 
@@ -438,10 +432,10 @@ public:
     virtual void setStartColumn(int _startColumn) { startColumn = _startColumn; }
 
 public:
-    void setFlags(int f) { obFlags|=f; } // To preserve flags like ob_locked, ob_sandbox, etc.
+    void setSymbolFlags(int f) { symbolFlags |= f; } // To preserve flags like ob_locked, ob_sandbox, etc.
 
-    inline bool isShared() { return (obFlags&ob_shared)!=0; };
-    inline bool isPublic() const { return (obFlags&(ob_shared|ob_exported))!=0; };
+    inline bool isShared() { return (symbolFlags&ob_shared)!=0; };
+    inline bool isPublic() const { return (symbolFlags&(ob_shared|ob_exported))!=0; };
 
     virtual IFileContents * getBodyContents();
 
@@ -570,8 +564,6 @@ public:
     virtual IHqlExpression *clone(HqlExprArray &newkids);
     virtual StringBuffer &printAliases(StringBuffer &s, unsigned, bool &) { return s; }
     virtual _ATOM queryName() const { return name; }
-
-    virtual unsigned getObType() { return ob_field; }
 };
 
 class CHqlRow: public CHqlExpression
@@ -789,8 +781,11 @@ public:
     virtual bool hasBaseClass(IHqlExpression * searchBase);
 
     virtual void ensureSymbolsDefined(HqlLookupContext & ctx) { }
-    virtual int getPropInt(_ATOM a, int def) { return def; }
-    virtual bool getProp(_ATOM a, StringBuffer &ret) { return false; }
+
+    virtual bool isImplicit() const { return false; }
+    virtual bool isPlugin() const { return false; }
+    virtual int getPropInt(_ATOM a, int def) const { return def; }
+    virtual bool getProp(_ATOM a, StringBuffer &ret) const { return false; }
 
     virtual IHqlScope * clone(HqlExprArray & children, HqlExprArray & symbols) { throwUnexpected(); }
 
@@ -831,8 +826,8 @@ public:
     virtual void sethash();
 
 //interface IHqlScope
-    virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool isPublic, bool isShared, unsigned obFlags, IFileContents *, int bodystart, int lineno, int column);
-    virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool exported, bool shared, unsigned obFlags);
+    virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool isPublic, bool isShared, unsigned symbolFlags, IFileContents *, int bodystart, int lineno, int column);
+    virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool exported, bool shared, unsigned symbolFlags);
     virtual void defineSymbol(IHqlExpression * expr);
     virtual void removeSymbol(_ATOM name);
 
@@ -843,8 +838,10 @@ public:
     virtual ISourcePath * querySourcePath() const { return text ? text->querySourcePath() : NULL; }
 
     virtual void ensureSymbolsDefined(HqlLookupContext & ctx) { }
-    virtual int getPropInt(_ATOM, int);
-    virtual bool getProp(_ATOM, StringBuffer &);
+    virtual bool isImplicit() const { return false; }
+    virtual bool isPlugin() const { return false; }
+    virtual int getPropInt(_ATOM, int) const;
+    virtual bool getProp(_ATOM, StringBuffer &) const;
 
     virtual void    getSymbols(HqlExprArray& exprs) const;
     virtual IHqlScope * clone(HqlExprArray & children, HqlExprArray & symbols) { throwUnexpected(); }
@@ -852,8 +849,6 @@ public:
     virtual IHqlScope * queryConcreteScope()    { return this; }
     virtual IHqlScope * queryResolvedScope(HqlLookupContext * context)  { return this; }
     virtual IFileContents * queryDefinitionText() const { return text; }
-
-    virtual unsigned getObType() { return ob_module; }
 
 //ITypeInfo
     virtual type_t getTypeCode() const          { return type_scope; }
@@ -896,14 +891,18 @@ public:
 
     virtual void serialize(MemoryBuffer &) { UNIMPLEMENTED; }
     virtual void deserialize(MemoryBuffer &) { UNIMPLEMENTED; }
+
+protected:
+    void throwRecursiveError(_ATOM name);
 };
 
 class HQL_API CHqlRemoteScope : public CHqlScope, implements IHqlRemoteScope
 {
 protected:
-    IEclRepository * ownerRepository;
+    IEclRepositoryCallback * ownerRepository;
     IProperties* props;
     Owned<IHqlScope> resolved;
+    Linked<IEclSource> eclSource;
     CriticalSection generalCS;
     bool loadedAllSymbols;
 
@@ -916,7 +915,7 @@ protected:
     virtual IHqlExpression * repositoryLoadSymbol(_ATOM attrName);
 
 public:
-    CHqlRemoteScope(_ATOM _name, const char * _fullName, IEclRepository *_repository, IProperties* _props, IFileContents * _text, bool _lazy);
+    CHqlRemoteScope(_ATOM _name, const char * _fullName, IEclRepositoryCallback *_repository, IProperties* _props, IFileContents * _text, bool _lazy, IEclSource * _eclSource);
     ~CHqlRemoteScope();
     IMPLEMENT_IINTERFACE_USING(CHqlScope)
 
@@ -928,28 +927,21 @@ public:
 
 //interface IHqlScope
     virtual IHqlExpression *lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx);
-    virtual IHqlRemoteScope * lookupRemoteModule(_ATOM name);
     virtual void ensureSymbolsDefined(HqlLookupContext & ctx);
-    virtual void setText(IFileContents * query);
     virtual void defineSymbol(IHqlExpression * expr);
     using CHqlScope::defineSymbol;
 
     virtual IFileContents * queryDefinitionText() const;
 
-    virtual void invalidateParsed();
-    virtual void noteTextModified();
-
     virtual void getSymbols(HqlExprArray& exprs) const;
 
-    virtual int getPropInt(_ATOM, int);
-    virtual bool getProp(_ATOM, StringBuffer &);
+    virtual bool isImplicit() const;
+    virtual bool isPlugin() const;
+    virtual int getPropInt(_ATOM, int) const;
+    virtual bool getProp(_ATOM, StringBuffer &) const;
     virtual void setProp(_ATOM, const char *);
     virtual void setProp(_ATOM, int);
-
-    virtual void addNestedScope(IHqlScope * childScope, unsigned flags);
-    virtual void removeNestedScope(_ATOM name);
-
-    virtual bool isEmpty() const;
+    virtual IEclSource * queryEclSource() const { return eclSource; }
 };
 
 class HQL_API CHqlLocalScope : public CHqlScope
@@ -1006,15 +998,19 @@ public:
 class HQL_API CHqlMergedScope : public CHqlScope
 {
 public:
-    CHqlMergedScope(_ATOM _name, const char * _fullName) : CHqlScope(no_remotescope, _name, _fullName) {}
+    CHqlMergedScope(_ATOM _name, const char * _fullName) : CHqlScope(no_mergedscope, _name, _fullName) { mergedAll = false; }
 
     void addScope(IHqlScope * scope);
 
     virtual IHqlExpression *lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx);
     virtual void ensureSymbolsDefined(HqlLookupContext & ctx);
+    virtual bool isImplicit() const;
+    virtual bool isPlugin() const;
 
 protected:
+    CriticalSection cs;
     HqlScopeArray mergedScopes;
+    bool mergedAll;
 };
 
 /*
@@ -1032,8 +1028,8 @@ private:
 public:
     CHqlSyntaxCheckScope(IHqlScope *parent, IEclRepository *_ds, const char *attribute, bool clearImportedModule);
 
-    virtual void defineSymbol(_ATOM name, _ATOM _moduleName, IHqlExpression *value, bool exported, bool shared, unsigned obFlags, IFileContents *, int bodystart, int lineno, int column);
-    virtual void defineSymbol(_ATOM name, _ATOM _moduleName, IHqlExpression *value, bool exported, bool shared, unsigned obFlags);
+    virtual void defineSymbol(_ATOM name, _ATOM _moduleName, IHqlExpression *value, bool exported, bool shared, unsigned symbolFlags, IFileContents *, int bodystart, int lineno, int column);
+    virtual void defineSymbol(_ATOM name, _ATOM _moduleName, IHqlExpression *value, bool exported, bool shared, unsigned symbolFlags);
     virtual IHqlExpression *lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx);
 };
 
@@ -1058,7 +1054,7 @@ public:
     // copy constructor
     CHqlContextScope(IHqlScope* scope);
 
-    virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value,bool exported, bool shared, unsigned obFlags)
+    virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value,bool exported, bool shared, unsigned symbolFlags)
     {  defined.setValue(name,value);  }
 
     virtual IHqlExpression *lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)

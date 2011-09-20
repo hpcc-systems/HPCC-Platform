@@ -45,6 +45,11 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
+#The transformations can use a lot of stack space processing very deep graphs
+if (WIN32)
+    set (CMAKE_EXE_LINKER_FLAGS "/STACK:10000000 ${CMAKE_EXE_LINKER_FLAGS}")
+endif()
+
 add_executable ( eclcc ${SRCS} )
 install ( TARGETS eclcc DESTINATION ${OSSDIR}/bin )
 target_link_libraries ( eclcc 

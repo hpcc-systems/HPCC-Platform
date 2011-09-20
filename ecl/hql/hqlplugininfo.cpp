@@ -18,17 +18,17 @@
 
 #include "jfile.hpp" 
 #include "hqlerror.hpp"
+#include "hqlcollect.hpp"
 #include "hqlrepository.hpp"
 #include "hqlplugins.hpp"
 #include "hqlplugininfo.hpp"
 
 namespace repositoryCommon {
 
-IEclRepository * loadPlugins(const char * pluginPath, const char * libraryPath, const char * dynamicPath)
+IEclRepository * loadPlugins(const char * pluginPath)
 {
     MultiErrorReceiver errs;
-    IEclRepository * plugins = createSourceFileEclRepository(&errs, pluginPath, libraryPath, dynamicPath, (unsigned) -1);//Preload implicits/dlls
-
+    IEclRepository * plugins = createNewSourceFileEclRepository(&errs, pluginPath, ESFallowplugins, (unsigned) -1);//Preload implicits/dlls
     if (errs.errCount())
     {
         StringBuffer s;
@@ -42,16 +42,13 @@ IPropertyTree * createPluginPropertyTree(IEclRepository * plugins, bool includeM
     HqlParseContext parseCtx(plugins, NULL);
     HqlLookupContext ctx(parseCtx, NULL);
     HqlScopeArray scopes;
-    plugins->getRootScopes(scopes, ctx);
+    getRootScopes(scopes, plugins, ctx);
 
     Owned<IPropertyTree> map = createPTree("Plugins", ipt_caseInsensitive);
     ForEachItemIn(idx, scopes)
     {
         IHqlScope * module = &scopes.item(idx);
         unsigned flags = module->getPropInt(flagsAtom, 0);
-        if (!(flags & SOURCEFILE_CONSTANT))
-            continue;
-
         IPropertyTree* prop = createPTree("Module", ipt_caseInsensitive);
         prop->setProp("@name", module->queryFullName());
         prop->setProp("@path", module->querySourcePath()->str());

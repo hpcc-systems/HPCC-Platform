@@ -29,7 +29,9 @@
 #include "eclrtl_imp.hpp"
 #include "hqlfold.hpp"
 #include "hqlvalid.hpp"
+#include "hqlcollect.hpp"
 #include "hqlrepository.hpp"
+#include "hqlerror.hpp"
 
 static ViewTransformerRegistry * theTransformerRegistry;
 static ITypeInfo * stringType;
@@ -285,11 +287,12 @@ void ViewTransformerRegistry::addPlugins(const char * name)
     loadedPlugins->loadFromList(name);
 
     ThrowingErrorReceiver errors;
-    dataServer.setown(createSourceFileEclRepository(&errors, name, NULL, NULL, 0));
+    dataServer.setown(createNewSourceFileEclRepository(&errors, name, ESFallowplugins, 0));
+
     HqlScopeArray scopes;
     HqlParseContext parseCtx(dataServer, NULL);
     HqlLookupContext ctx(parseCtx, &errors);
-    dataServer->getRootScopes(scopes, ctx);
+    getRootScopes(scopes, dataServer, ctx);
     ForEachItemIn(i, scopes)
     {
         IHqlScope * scope = &scopes.item(i);

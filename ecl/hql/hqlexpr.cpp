@@ -46,6 +46,7 @@
 #include "hqlvalid.hpp"
 #include "hqlmeta.hpp"
 #include "workunit.hpp"
+#include "hqlrepository.hpp"
 
 //This nearly works - but there are still some examples which have problems - primarily libraries, old parameter syntax, enums and other issues.
 
@@ -640,6 +641,7 @@ const char *getOpString(node_operator op)
     case no_workunit_dataset: return "<workunit_dataset>"; 
     case no_scope: return "MODULE";
     case no_remotescope: return "<scope>";
+    case no_mergedscope: return "<scope>";
     case no_privatescope: return "<private_scope>";
     case no_list: return "<list>";
     case no_selectnth: return "SELECT_NTH";
@@ -1080,7 +1082,7 @@ const char *getOpString(node_operator op)
     case no_debug_option_value: return "__DEBUG__";
 
     case no_unused1: case no_unused2: case no_unused3: case no_unused4: case no_unused5:
-    case no_unused12: case no_unused13: case no_unused14: case no_unused15: case no_unused16: case no_unused17: case no_unused18: case no_unused19:
+    case no_unused13: case no_unused14: case no_unused15: case no_unused16: case no_unused17: case no_unused18: case no_unused19:
     case no_unused20: case no_unused21: case no_unused22: case no_unused23: case no_unused24: case no_unused25: case no_unused26: case no_unused27: case no_unused28: case no_unused29:
     case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38: case no_unused39:
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
@@ -3399,6 +3401,7 @@ CHqlExpression::~CHqlExpression()
 
         switch(op)
         {
+        case no_mergedscope:
         case no_remotescope:
         case no_privatescope:
         case no_service:
@@ -3664,54 +3667,11 @@ IHqlExpression *CHqlExpression::queryProperty(_ATOM propname) const
     return NULL;
 }
 
-bool CHqlExpression::isObject(object_type ob)
+unsigned CHqlExpression::getSymbolFlags()
 {
-    switch (ob)
-    {
-    case ob_table: return QUERYINTERFACE(this, IHqlDataset) != NULL;
-    case ob_dataset: return isDataset();
-    case ob_datarow: return isDatarow();
-    case ob_field: return isField();
-    case ob_record: return isRecord();
-    case ob_module: 
-        if (isScope() && !isDataset())
-        {
-            switch (op)
-            {
-            case no_service:
-            case no_funcdef:
-                return false;
-            }
-            IHqlScope * scope = queryScope();
-            assertex(scope);
-            return (scope->queryName()==NULL);
-        }
-        return false;
-    case ob_assertion: return QUERYINTERFACE(this, IHqlDataset) == NULL && !isDataset() && !isField() && isBoolean() && !isScope();
-    case ob_value: return QUERYINTERFACE(this, IHqlDataset) == NULL && !isDataset() && !isField() && isBoolean() && !isScope() && !isRecord();
-    case ob_declaration: return isDataset() || !isScope() || getOperator()==no_service;
-    case ob_action: return isAction();
-    }
-    assertex(false);
-    return false;
+    throwUnexpected();
+    return 0;
 }
-
-unsigned CHqlExpression::getObFlags()
-{
-    unsigned ret = 0;
-    if (isObject(ob_table)) ret = ob_table;
-    if (isObject(ob_dataset)) ret |= ob_dataset;
-    if (isObject(ob_datarow)) ret |= ob_datarow;
-    if (isObject(ob_field)) ret |= ob_field;
-    if (isObject(ob_assertion)) ret |= ob_assertion;
-    if (isObject(ob_module)) ret |= ob_module;
-    if (isObject(ob_value)) ret |= ob_value;
-    if (isObject(ob_declaration)) ret |= ob_declaration;
-    if (isObject(ob_record)) ret |= ob_record;
-    if (isObject(ob_action)) ret |= ob_action;
-    return ret;
-}
-
 
 IHqlExpression *CHqlExpression::queryChild(unsigned idx) const
 {
@@ -4034,6 +3994,7 @@ IHqlExpression * CHqlExpression::commonUpExpression()
     case no_service:
         return this;
     case no_privatescope:
+    case no_mergedscope:
         return this;
     case no_remotescope:
         if (isAnnotation())
@@ -5468,14 +5429,9 @@ unsigned CHqlAnnotation::getInfoFlags2() const
     return body->getInfoFlags2();
 }
 
-unsigned CHqlAnnotation::getObType()
+unsigned CHqlAnnotation::getSymbolFlags()
 {
-    return body->getObType();
-}
-
-bool CHqlAnnotation::isObject(object_type ob)
-{
-    return body->isObject(ob);
+    return body->getSymbolFlags();
 }
 
 bool CHqlAnnotation::isConstant()
@@ -5698,11 +5654,11 @@ IAtom * CHqlAnnotation::queryName() const
 //==============================================================================================================
 
 
-CHqlNamedSymbol::CHqlNamedSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, bool _exported, bool _shared, unsigned _obFlags)
+CHqlNamedSymbol::CHqlNamedSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, bool _exported, bool _shared, unsigned _symbolFlags)
 : CHqlAnnotation(_expr)
 {
     name = _name;
-    obFlags = _obFlags | (_exported ? ob_exported : 0) | (_shared ? ob_shared : 0);
+    symbolFlags = _symbolFlags | (_exported ? ob_exported : 0) | (_shared ? ob_shared : 0);
     module = _module;
     funcdef = NULL;
     bodystart = 0;
@@ -5710,11 +5666,11 @@ CHqlNamedSymbol::CHqlNamedSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_ex
     startColumn = 0;
 }
 
-CHqlNamedSymbol::CHqlNamedSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _obFlags, IFileContents *_text, int _bodystart)
+CHqlNamedSymbol::CHqlNamedSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _symbolFlags, IFileContents *_text, int _bodystart)
   : CHqlAnnotation(_expr)
 {
     name = _name;
-    obFlags = _obFlags | (_exported ? ob_exported : 0) | (_shared ? ob_shared : 0);
+    symbolFlags = _symbolFlags | (_exported ? ob_exported : 0) | (_shared ? ob_shared : 0);
     module = _module;
     funcdef = _funcdef;
     text.set(_text);
@@ -5739,14 +5695,14 @@ CHqlNamedSymbol *CHqlNamedSymbol::makeSymbol(_ATOM _name, _ATOM _module, IHqlExp
 }
 
 IHqlExpression * CHqlNamedSymbol::makeSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression * value,
-                             bool exported, bool shared, unsigned obFlags,
+                             bool exported, bool shared, unsigned symbolFlags,
                              IFileContents *fc, int _bodystart, int lineno, int column)
 
 {
     CHqlNamedSymbol *symbol;
     IHqlExpression * funcdef = NULL;
 
-    symbol = new CHqlNamedSymbol(_name, moduleName, value, funcdef, exported, shared, obFlags, fc, _bodystart);
+    symbol = new CHqlNamedSymbol(_name, moduleName, value, funcdef, exported, shared, symbolFlags, fc, _bodystart);
     symbol->setStartLine(lineno);
     symbol->setStartColumn(column);
     return symbol->closeExpr();
@@ -5780,7 +5736,7 @@ bool CHqlNamedSymbol::equals(const IHqlExpression & other) const
     if (name != other.queryName())
         return false;
 
-    if ((obFlags != cast->obFlags) ||
+    if ((symbolFlags != cast->symbolFlags) ||
         (funcdef != cast->funcdef))
         return false;
 
@@ -5799,14 +5755,9 @@ bool CHqlNamedSymbol::equals(const IHqlExpression & other) const
 }
 
 
-unsigned CHqlNamedSymbol::getObType()
+unsigned CHqlNamedSymbol::getSymbolFlags()
 {
-    return obFlags;
-}
-
-bool CHqlNamedSymbol::isObject(object_type ob)
-{
-    return (obFlags & ob) != 0;
+    return symbolFlags;
 }
 
 StringBuffer &CHqlNamedSymbol::toString(StringBuffer &s)
@@ -5830,7 +5781,7 @@ IHqlExpression * CHqlNamedSymbol::cloneSymbol(IHqlExpression * newbody, IHqlExpr
     if (newbody==body && newfuncdef==funcdef)
         return LINK(this);
 
-    CHqlNamedSymbol * e = new CHqlNamedSymbol(name, module, LINK(newbody), LINK(newfuncdef), isExported(), isShared(), obFlags, text, bodystart);
+    CHqlNamedSymbol * e = new CHqlNamedSymbol(name, module, LINK(newbody), LINK(newfuncdef), isExported(), isShared(), symbolFlags, text, bodystart);
     e->setStartLine(getStartLine());
     e->setStartColumn(getStartColumn());
 
@@ -5859,7 +5810,7 @@ IHqlExpression * CHqlNamedSymbol::cloneSymbol(_ATOM optname, IHqlExpression * op
             return LINK(this);
     }
 
-    CHqlNamedSymbol * e = new CHqlNamedSymbol(optname, module, LINK(optnewbody), LINK(optnewfuncdef), isExported(), isShared(), obFlags, text, bodystart);
+    CHqlNamedSymbol * e = new CHqlNamedSymbol(optname, module, LINK(optnewbody), LINK(optnewfuncdef), isExported(), isShared(), symbolFlags, text, bodystart);
     e->setStartLine(getStartLine());
     e->setStartColumn(getStartColumn());
 
@@ -5874,7 +5825,7 @@ IHqlExpression * CHqlNamedSymbol::cloneSymbol(_ATOM optname, IHqlExpression * op
 
 IHqlExpression *CHqlNamedSymbol::createBoundSymbol(IHqlExpression * newBody, HqlExprArray & actuals)
 {
-    CHqlNamedSymbol * e = new CHqlNamedSymbol(name, module, newBody, LINK(this), false, false, obFlags, text, bodystart);
+    CHqlNamedSymbol * e = new CHqlNamedSymbol(name, module, newBody, LINK(this), false, false, symbolFlags, text, bodystart);
     e->setStartLine(getStartLine());
     e->setStartColumn(getStartColumn());
 
@@ -6051,6 +6002,12 @@ bool isPublicSymbol(IHqlExpression * expr)
     IHqlExpression * symbol = queryNamedSymbol(expr);
     CHqlNamedSymbol * named = QUERYINTERFACE(symbol, CHqlNamedSymbol);
     return (named && (named->isExported() || named->isShared()));
+}
+
+bool isImport(IHqlExpression * expr)
+{
+    IHqlExpression * symbol = queryNamedSymbol(expr);
+    return symbol && ((symbol->getSymbolFlags() & ob_import) != 0);
 }
 
 //==============================================================================================================
@@ -6543,6 +6500,7 @@ void CHqlScope::sethash()
     case no_param:
     case no_privatescope:
     case no_forwardscope:
+    case no_mergedscope:
         setInitialHash(0);
         return;
     default:
@@ -6630,12 +6588,12 @@ IHqlExpression * createFunctionDefinition(_ATOM name, HqlExprArray & args)
 
 
 void CHqlScope::defineSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression *value, 
-                             bool exported, bool shared, unsigned obFlags, 
+                             bool exported, bool shared, unsigned symbolFlags,
                              IFileContents *fc, int _bodystart, int lineno, int column)
 {
     if (!moduleName)
         moduleName = name;
-    CHqlNamedSymbol *symbol = CHqlNamedSymbol::makeSymbol(_name, moduleName, value, NULL, exported, shared, obFlags, fc, _bodystart);
+    CHqlNamedSymbol *symbol = CHqlNamedSymbol::makeSymbol(_name, moduleName, value, NULL, exported, shared, symbolFlags, fc, _bodystart);
 
     //Really shouldn't modify after creation - but these aren't hashed...
     symbol->setStartLine(lineno);
@@ -6644,11 +6602,11 @@ void CHqlScope::defineSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression *valu
     defineSymbol(symbol);
 }
 
-void CHqlScope::defineSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression *value, bool exported, bool shared, unsigned obFlags)
+void CHqlScope::defineSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression *value, bool exported, bool shared, unsigned symbolFlags)
 {
     if (!moduleName) moduleName = name;
     if (!_name) _name = internalAtom;
-    defineSymbol(CHqlNamedSymbol::makeSymbol(_name, moduleName, value, exported, shared, obFlags));
+    defineSymbol(CHqlNamedSymbol::makeSymbol(_name, moduleName, value, exported, shared, symbolFlags));
 }
 
 void CHqlScope::defineSymbol(IHqlExpression * expr)
@@ -6692,12 +6650,12 @@ IHqlExpression *CHqlScope::lookupSymbol(_ATOM searchName, unsigned lookupFlags, 
 }
 
 
-int CHqlScope::getPropInt(_ATOM a, int def)
+int CHqlScope::getPropInt(_ATOM a, int def) const
 {
     return def;
 }
 
-bool CHqlScope::getProp(_ATOM a, StringBuffer &ret)
+bool CHqlScope::getProp(_ATOM a, StringBuffer &ret) const
 { 
     return false;
 }
@@ -6733,6 +6691,18 @@ IHqlScope * CHqlScope::cloneAndClose(HqlExprArray & children, HqlExprArray & sym
     return closeExpr()->queryScope();
 }
 
+void CHqlScope::throwRecursiveError(_ATOM searchName)
+{
+    StringBuffer filename;
+    if (fullName)
+        filename.append(fullName).append('.');
+    filename.append(*searchName);
+
+    StringBuffer msg("Definition of ");
+    msg.append(*searchName).append(" contains a recursive dependency");
+    throw createECLError(ERR_RECURSIVE_DEPENDENCY, msg.toCharArray(), filename, 0, 0, 1);
+}
+
 inline bool namesMatch(const char * lName, const char * rName)
 {
     if (lName == rName)
@@ -6766,10 +6736,9 @@ static bool scopesEqual(const IHqlScope * l, const IHqlScope * r)
 
 //==============================================================================================================
 
-CHqlRemoteScope::CHqlRemoteScope(_ATOM _name, const char * _fullName, IEclRepository * _repository, IProperties* _props, IFileContents * _text, bool _lazy)
-: CHqlScope(no_scope, _name, _fullName)
+CHqlRemoteScope::CHqlRemoteScope(_ATOM _name, const char * _fullName, IEclRepositoryCallback * _repository, IProperties* _props, IFileContents * _text, bool _lazy, IEclSource * _eclSource)
+: CHqlScope(no_remotescope, _name, _fullName), eclSource(_eclSource)
 {
-    op = no_remotescope;
     text.set(_text);
     ownerRepository = _repository;
     loadedAllSymbols = !_lazy;
@@ -6784,17 +6753,16 @@ CHqlRemoteScope::~CHqlRemoteScope()
 }
 
 
-void CHqlRemoteScope::addNestedScope(IHqlScope * scope, unsigned flags)
+bool CHqlRemoteScope::isImplicit() const
 {
-    CHqlNamedSymbol* cur = CHqlNamedSymbol::makeSymbol(scope->queryName(), name, LINK(queryExpression(scope)), true, (flags&ob_shared)!=0, flags|ob_declaration);
-    defineSymbol(cur);
+    unsigned flags=getPropInt(flagsAtom, 0);
+    return (flags & PLUGIN_IMPLICIT_MODULE) != 0;
 }
 
-void CHqlRemoteScope::removeNestedScope(_ATOM name)
+bool CHqlRemoteScope::isPlugin() const
 {
-    //NB: Need to be more careful about grand children!
-    removeSymbol(name);
-    resolved->removeSymbol(name);
+    unsigned flags=getPropInt(flagsAtom, 0);
+    return (flags & PLUGIN_DLL_MODULE) != 0;
 }
 
 void CHqlRemoteScope::sethash()
@@ -6860,13 +6828,6 @@ void CHqlRemoteScope::preloadSymbols(HqlLookupContext & ctx, bool forceAll)
     }
 }
 
-void CHqlRemoteScope::setText(IFileContents * _text)
-{
-    assertex(!text || text == _text);
-    text.set(_text);
-}
-
-
 void CHqlRemoteScope::doParseScopeText(HqlLookupContext & ctx)
 {
     loadedAllSymbols = true;
@@ -6890,17 +6851,7 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(_ATOM searchName, unsigned lookupF
     if (resolvedSym && resolvedSym->getOperator() == no_processing)
     {
         if (lookupFlags & LSFrequired)
-        {
-            //MORE: 
-            StringBuffer filename;
-            if (fullName)
-                filename.append(fullName).append('.');
-            filename.append(*searchName);
-
-            StringBuffer msg("Definition of ");
-            msg.append(*searchName).append(" contains a recursive dependency");
-            throw createECLError(ERR_RECURSIVE_DEPENDENCY, msg.toCharArray(), filename, 0, 0, 1);
-        }
+            throwRecursiveError(searchName);
         return NULL;
     }
 
@@ -6908,14 +6859,7 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(_ATOM searchName, unsigned lookupF
     {
         if (resolvedSym)
         {
-            if (ctx.queryArchive() && resolvedSym->getOperator() == no_remotescope)
-            {
-                //Ensure the archive contains entries for each module - even if nothing is accessed from it
-                //It would be preferrable to only check once, but adds very little time anyway.
-                IHqlScope * scope = resolvedSym->queryScope();
-                queryEnsureArchiveModule(ctx.queryArchive(), scope->queryFullName(), scope);
-            }
-
+            ctx.noteExternalLookup(this, resolvedSym);
             return resolvedSym.getClear();
         }
     }
@@ -6930,6 +6874,7 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(_ATOM searchName, unsigned lookupF
         assertex(symbol->isNamedSymbol());
         if (symbol->getOperator() != no_nobody)
         {
+            //A nested remote scope...
             resolved->defineSymbol(LINK(symbol));
             return symbol.getClear();
         }
@@ -6956,11 +6901,11 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(_ATOM searchName, unsigned lookupF
     OwnedHqlExpr recursionGuard = CHqlNamedSymbol::makeSymbol(searchName, NULL, LINK(processingMarker), true, false, 0);
     resolved->defineSymbol(LINK(recursionGuard));
 
-    unsigned prevErrors = ctx.errs ? ctx.errs->errCount() : 0;
+    unsigned prevErrors = ctx.numErrors();
     parseAttribute(this, contents, ctx, searchName);
 
     OwnedHqlExpr newSymbol = resolved->lookupSymbol(searchName, LSFsharedOK|lookupFlags, ctx);
-    if (ctx.errs && (ctx.errs->errCount() != prevErrors))
+    if (ctx.numErrors() != prevErrors)
     {
         //If there was an error processing the attribute then return unknown.
         //The caller will also spot the difference in the error count, so we won't get attributes
@@ -6980,11 +6925,11 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(_ATOM searchName, unsigned lookupF
     }
 
     CHqlNamedSymbol * castNewSymbol = static_cast<CHqlNamedSymbol *>(newSymbol.get());
-    unsigned repositoryFlags=ret->getObType()&ob_registryflags;
-    castNewSymbol->setFlags(repositoryFlags); 
+    unsigned repositoryFlags=ret->getSymbolFlags()&ob_registryflags;
+    castNewSymbol->setSymbolFlags(repositoryFlags);
     ret.set(newSymbol.get());
 
-    if (ret->getObType()&ob_sandbox)
+    if (repositoryFlags&ob_sandbox)
     {
         if (ctx.errs)
             ctx.errs->reportWarning(WRN_DEFINITION_SANDBOXED,"Definition is sandboxed",filename,0,0,0);
@@ -6998,18 +6943,6 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(_ATOM searchName, unsigned lookupF
     return ret.getLink();
 }
 
-/* This lookup inside a module for a specify attribute name */
-IHqlRemoteScope * CHqlRemoteScope::lookupRemoteModule(_ATOM searchName)
-{
-    OwnedHqlExpr ret = symbols.getLinkedValue(searchName);
-    if (ret && (ret->getOperator() == no_remotescope))
-    {
-        IHqlRemoteScope * rScope = dynamic_cast<IHqlRemoteScope *>(ret->queryBody());
-        return LINK(rScope);
-    }
-    return NULL;
-}
-
 void CHqlRemoteScope::getSymbols(HqlExprArray& exprs) const
 {
     //ensureSymbolsDefined should have been called before this function.  If not the symbols won't be present...
@@ -7021,93 +6954,13 @@ void CHqlRemoteScope::getSymbols(HqlExprArray& exprs) const
         CHqlScope::getSymbols(exprs);
 }
 
-void CHqlRemoteScope::invalidateParsed()
-{
-    if (resolved)
-    {
-        CriticalBlock block(generalCS);
-        resolved.setown(createPrivateScope());
-
-        SymbolTableIterator iter(symbols);
-        AtomArray condemned;
-        for(iter.first();iter.isValid();iter.next())
-        {
-            CHqlNamedSymbol *cur = symbols.mapToValue(&iter.query());
-            //DBGLOG("Checking Symbol: %s::%s",queryFullName(), cur->queryName()->str());
-            if (cur)
-            {
-                _ATOM name = cur->queryName();
-                IHqlRemoteScope * rs = dynamic_cast<IHqlRemoteScope *>(cur->queryScope());
-                if (rs)
-                {
-                    rs->invalidateParsed();
-                    resolved->defineSymbol(LINK(cur));
-                }
-                else if (text)
-                    condemned.append(*name);
-            }
-        }
-        //Plugins should almost certainly be a different class
-        //need to reparse the text if the defined values are invalidated
-        if (text)
-        {
-            loadedAllSymbols = false;
-            ForEachItemIn(i,condemned) 
-            {
-        //          DBGLOG("Deleting Symbol: %s::%s",queryFullName(), condemned.item(i).str());
-                removeSymbol(&condemned.item(i));
-            }
-        }
-    }
-}
-
-void CHqlRemoteScope::noteTextModified()
-{
-    invalidateParsed();
-    AtomArray condemned;
-    SymbolTableIterator iter(symbols);
-    for(iter.first();iter.isValid();iter.next())
-    {
-        CHqlNamedSymbol *cur = symbols.mapToValue(&iter.query());
-        //DBGLOG("Checking Symbol: %s::%s",queryFullName(), cur->queryName()->str());
-        if (cur)
-        {
-            _ATOM name = cur->queryName();
-            IHqlRemoteScope * rs = dynamic_cast<IHqlRemoteScope *>(cur->queryScope());
-            if (!rs)
-                condemned.append(*name);
-        }
-    }
-    ForEachItemIn(i,condemned) 
-    {
-//          DBGLOG("Deleting Symbol: %s::%s",queryFullName(), condemned.item(i).str());
-        removeSymbol(&condemned.item(i));
-    }
-    loadedAllSymbols = false;
-}
-
-//MORE: If we removed elements from symbols instead of setting to null (and/or used a separate list for nested
-//scopes) then this could just check symbols.ordinality() (+child.ordinality())
-bool CHqlRemoteScope::isEmpty() const
-{
-    SymbolTable & localSymbols = const_cast<SymbolTable &>(symbols);
-    SymbolTableIterator iter(localSymbols);
-    for(iter.first();iter.isValid();iter.next())
-    {
-        CHqlNamedSymbol *cur = symbols.mapToValue(&iter.query());
-        if (cur)
-            return false;
-    }
-    return true;
-}
-
 
 IFileContents * CHqlRemoteScope::queryDefinitionText() const
 {
     return text;
 }
 
-int CHqlRemoteScope::getPropInt(_ATOM a, int def)
+int CHqlRemoteScope::getPropInt(_ATOM a, int def) const
 {
     if (props)
         return props->getPropInt(a->getAtomNamePtr(), def);
@@ -7115,7 +6968,7 @@ int CHqlRemoteScope::getPropInt(_ATOM a, int def)
         return def;
 }
 
-bool CHqlRemoteScope::getProp(_ATOM a, StringBuffer &ret)
+bool CHqlRemoteScope::getProp(_ATOM a, StringBuffer &ret) const
 { 
     return (props != NULL && props->getProp(a->getAtomNamePtr(), ret));
 }
@@ -7151,7 +7004,7 @@ IHqlExpression * CHqlRemoteScope::repositoryLoadSymbol(_ATOM attrName)
     if (loadedAllSymbols)
         return NULL;
 
-    OwnedHqlExpr symbol = ownerRepository->loadSymbol(name, attrName);
+    OwnedHqlExpr symbol = ownerRepository->loadSymbol(this, attrName);
     if(!symbol || !symbol->hasText())
         return NULL;
 
@@ -7187,16 +7040,16 @@ void exportSymbols(IPropertyTree* data, IHqlScope * scope, HqlLookupContext & ct
     ForEachItemIn(i, allSymbols)
     {
         IHqlExpression *cur = &allSymbols.item(i);
-        if (cur && cur->isObject(ob_declaration) && (cur->getOperator() != no_remotescope))
+        if (cur && !isImport(cur) && (cur->getOperator() != no_remotescope))
         {
             IPropertyTree * attr=createPTree("Attribute", ipt_caseInsensitive);
             attr->setProp("@name", *cur->queryName());
-            unsigned obFlags = cur->getObType();
+            unsigned symbolFlags = cur->getSymbolFlags();
             if (cur->isExported())
-                obFlags |= ob_exported;
+                symbolFlags |= ob_exported;
             if(access >= cs_read)
-                obFlags |= ob_showtext;
-            attr->setPropInt("@flags", obFlags);
+                symbolFlags |= ob_showtext;
+            attr->setPropInt("@flags", symbolFlags);
             attr->setPropInt("@version", (1<<18 | 1));
             attr->setPropInt("@latestVersion", (1<<18 | 1));
             attr->setPropInt("@access", access);
@@ -7258,89 +7111,192 @@ IHqlScope * CHqlLocalScope::clone(HqlExprArray & children, HqlExprArray & symbol
 
 //==============================================================================================================
 
+/*
+
+A merged scope is used to make two different scopes (e.g., from two difference sources) appear as one.
+There are several complications (mainly caused by the legacy import semantics):
+
+a definitions of plugins in earlier scopes take precedence
+b Legacy import needs to get a list of all implicit modules
+c You want to avoid parsing any attributes until actually required.
+d You need to examine the resolved attributes from the scopes to determine if they are implicit
+ *
+Unfortunately b,c,d are mutually incompatible.  Possibly solutions might be
+a) Don't support legacy any more.
+   Nice idea, but not for a couple of years.
+b) only gather implicit modules from the first repository.
+   Unfortunately this means archives containing plugins not registered with eclcc no longer compile, which causes
+   problems regression testing.w
+c) Ensure all system plugins are parsed (so that (d) works, and allows the parsing short-circuiting to work).
+   A bit ugly that you need to remember to do it, but has the advantage of ensuring plugins have no dependencies on
+   anything else.
+
+ */
+
 void CHqlMergedScope::addScope(IHqlScope * scope)
 {
     if (mergedScopes.ordinality())
-        assertex(mergedScopes.item(0).queryFullName() == scope->queryFullName());
+    {
+        const char * name0 = mergedScopes.item(0).queryFullName();
+        const char * name1 = scope->queryFullName();
+        assertex(name0 == name1 || (name0 && name1 && (stricmp(name0, name1) == 0)));
+    }
     mergedScopes.append(*LINK(scope));
+}
+
+inline bool canMergeDefinition(IHqlExpression * expr)
+{
+    IHqlScope * scope = expr->queryScope();
+    if (!scope || expr->hasText())
+        return false;
+    return true;
 }
 
 IHqlExpression * CHqlMergedScope::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
-    assertex(!(lookupFlags & LSFsharedOK));
+    CriticalBlock block(cs);
     IHqlExpression * resolved = CHqlScope::lookupSymbol(searchName, lookupFlags, ctx);
     if (resolved)
-        return resolved;
+    {
+        node_operator resolvedOp = resolved->getOperator();
+        if (resolvedOp == no_processing)
+        {
+            if (lookupFlags & LSFrequired)
+                throwRecursiveError(searchName);
+            return NULL;
+        }
+        if (resolvedOp != no_nobody)
+            return resolved;
+    }
+    else
+    {
+        if (mergedAll)
+            return NULL;
+    }
+
+    OwnedHqlExpr recursionGuard = CHqlNamedSymbol::makeSymbol(searchName, NULL, LINK(processingMarker), true, false, 0);
+    defineSymbol(LINK(recursionGuard));
 
     OwnedHqlExpr previousMatch;
     Owned<CHqlMergedScope> mergeScope;
+    unsigned prevErrors = ctx.numErrors();
+    unsigned symbolFlags = 0;
     ForEachItemIn(i, mergedScopes)
     {
         OwnedHqlExpr matched = mergedScopes.item(i).lookupSymbol(searchName, lookupFlags, ctx);
         if (matched)
         {
-            IHqlScope * scope = matched->queryScope();
-            if (!scope || matched->hasText())
+            if (!canMergeDefinition(matched))
             {
-                if (previousMatch && ctx.errs)
-                {
-                    //If std.x.y contains nested attributes, cannot 
-                    StringBuffer msg;
-                    const char * filename = previousMatch->queryScope()->queryFullName();
-                    msg.appendf("Symbol %s is ignored because of a previous scope with the same name", searchName->str());
-                    ctx.errs->reportWarning(1, msg.str(), filename);
-                }
-                else
-                {
-                    defineSymbol(LINK(matched));
-                    return matched.getClear();
-                }
+                if (!previousMatch)
+                    previousMatch.setown(matched.getClear());
+                break;
+            }
+
+            if (previousMatch)
+            {
+                IHqlScope * previousScope = previousMatch->queryScope();
+                mergeScope.setown(new CHqlMergedScope(searchName, previousScope->queryFullName()));
+                mergeScope->addScope(LINK(previousScope));
+            }
+
+            //Not so sure about this....
+            symbolFlags |= matched->getSymbolFlags();
+            if (mergeScope)
+            {
+                IHqlScope * scope = matched->queryScope();
+                mergeScope->addScope(LINK(scope));
             }
             else
-            {
-                if (previousMatch)
-                {
-                    IHqlScope * previousScope = previousMatch->queryScope();
-                    mergeScope.setown(new CHqlMergedScope(searchName, previousScope->queryFullName()));
-                    mergeScope->addScope(LINK(previousScope));
-                }
-                if (mergeScope)
-                    mergeScope->addScope(LINK(scope));
-                else
-                    previousMatch.setown(matched.getClear());
-            }
+                previousMatch.setown(matched.getClear());
+        }
+        else
+        {
+            //Prevent cascaded errors in attributes which shouldn't have been reachable (e.g., syntax checking)
+            if (prevErrors != ctx.numErrors())
+                break;
         }
     }
     if (mergeScope)
     {
-        OwnedHqlExpr newScope = mergeScope->closeExpr();
-        unsigned flags = 0;
-        CHqlNamedSymbol* symbol = CHqlNamedSymbol::makeSymbol(searchName, name, LINK(newScope), true, false, flags|ob_declaration);
+        OwnedHqlExpr newScope = mergeScope.getClear()->closeExpr();
+        CHqlNamedSymbol* symbol = CHqlNamedSymbol::makeSymbol(searchName, name, LINK(newScope), true, false, symbolFlags);
         defineSymbol(symbol);
+        return LINK(symbol);
     }
     if (previousMatch)
     {
-        defineSymbol(previousMatch);
-        return LINK(previousMatch);
+        defineSymbol(LINK(previousMatch));
+        return previousMatch.getClear();
     }
     return NULL;
 }
 
+
+//This function is only likely to be called when gathering implicit modules for the legacy option
 void CHqlMergedScope::ensureSymbolsDefined(HqlLookupContext & ctx)
 {
-    ForEachItemIn(i, mergedScopes)
+    CriticalBlock block(cs);
+    if (mergedAll)
+        return;
+
+    ForEachItemIn(iScope, mergedScopes)
     {
-        IHqlScope & cur = mergedScopes.item(i);
+        IHqlScope & cur = mergedScopes.item(iScope);
         cur.ensureSymbolsDefined(ctx);
-        HqlExprArray symbols;
-        cur.getSymbols(symbols);
-        symbols.sort(compareSymbolsByName);         // Make errors consistent
-        ForEachItemIn(iSym, symbols)
+
+        HqlExprArray scopeSymbols;
+        cur.getSymbols(scopeSymbols);
+
+        //Generate a list of symbols from all the merged scopes
+        //If the symbol has already been resolved then store that resolved definition
+        //If a definition can be merged with one from a previous one insert a named symbol with no body as a placeholder.
+        ForEachItemIn(iSym, scopeSymbols)
         {
-            OwnedHqlExpr temp = lookupSymbol(symbols.item(iSym).queryName(), LSFpublic, ctx);
+            IHqlExpression & cur = scopeSymbols.item(iSym);
+            CHqlNamedSymbol & curSymbol = static_cast<CHqlNamedSymbol &>(cur);
+            _ATOM curName = curSymbol.queryName();
+
+            OwnedHqlExpr prev = symbols.getLinkedValue(curName);
+            if (prev)
+            {
+                if (canMergeDefinition(prev))
+                {
+                    //no_nobody means it need to be resolve - either because multiple matches, or because
+                    //a child scope hasn't resolved it yet.
+                    if (prev->getOperator() != no_nobody)
+                    {
+                        CHqlNamedSymbol* newSymbol = CHqlNamedSymbol::makeSymbol(curName, name, NULL, true, false, 0);
+                        defineSymbol(newSymbol);
+                    }
+                }
+            }
+            else
+                defineSymbol(LINK(&curSymbol));
         }
     }
+
+    mergedAll = true;
 }
+
+bool CHqlMergedScope::isImplicit() const
+{
+    //If implicit only the first scope will count.
+    if (mergedScopes.ordinality())
+        return mergedScopes.item(0).isImplicit();
+    return false;
+}
+
+bool CHqlMergedScope::isPlugin() const
+{
+    //If a plugin only the first scope will count.
+    if (mergedScopes.ordinality())
+        return mergedScopes.item(0).isPlugin();
+    return false;
+}
+
+
+
 
 //==============================================================================================================
 
@@ -7776,20 +7732,20 @@ bool canBeVirtual(IHqlExpression * expr)
 class CHqlForwardScope : public CHqlVirtualScope, public IHasUnlinkedOwnerReference
 {
 public:
-    CHqlForwardScope(IHqlRemoteScope * _remoteScope, HqlGramCtx * _parentCtx, HqlParseContext & parseCtx);
+    CHqlForwardScope(IHqlScope * _parentScope, HqlGramCtx * _parentCtx, HqlParseContext & parseCtx);
     ~CHqlForwardScope()
     {
-        assertex(!remoteScope);
+        assertex(!parentScope);
     }
     IMPLEMENT_IINTERFACE_USING(CHqlVirtualScope)
 
     virtual void clearOwner()
     {
-        if (remoteScope)
+        if (parentScope)
         {
             resolvedAll = true;
             parentCtx.clear();
-            remoteScope = NULL;
+            parentScope = NULL;
         }
     }
 
@@ -7798,20 +7754,20 @@ public:
     virtual IHqlScope * queryResolvedScope(HqlLookupContext * context);
 
 protected:
-    IHqlScope * remoteScope;
+    IHqlScope * parentScope;
     Owned<HqlGramCtx> parentCtx;
     Owned<IHqlScope> resolved;
     bool resolvedAll;
 };
 
 //error if !fullBoundBase || isVirtual
-CHqlForwardScope::CHqlForwardScope(IHqlRemoteScope * _remoteScope, HqlGramCtx * _parentCtx, HqlParseContext & parseCtx)
-: CHqlVirtualScope(NULL, NULL), remoteScope(_remoteScope->queryScope()), parentCtx(_parentCtx)
+CHqlForwardScope::CHqlForwardScope(IHqlScope * _parentScope, HqlGramCtx * _parentCtx, HqlParseContext & parseCtx)
+: CHqlVirtualScope(NULL, NULL), parentScope(_parentScope), parentCtx(_parentCtx)
 {
     //Need to register this foward reference otherwise circular reference means it will never get deleted.
-    parseCtx.addForwardReference(remoteScope, this);
+    parseCtx.addForwardReference(parentScope, this);
     op = no_forwardscope; 
-    assertex(remoteScope);
+    assertex(parentScope);
     //Until we've resolved the contents we have no idea if it is fully bound!
     if (parentCtx->hasAnyActiveParameters())
         infoFlags |= HEFunbound;
@@ -7848,7 +7804,8 @@ IHqlExpression *CHqlForwardScope::lookupSymbol(_ATOM searchName, unsigned lookup
     if (!ret || (lookupFlags & LSFignoreBase))
         return ret.getClear();
 
-    if (!remoteScope)
+    //MORE: If we had multi-threaded parsing this might cause issues.
+    if (!parentScope)
         return NULL;
 
     CHqlNamedSymbol * oldSymbol = static_cast<CHqlNamedSymbol *>(ret.get());
@@ -7903,10 +7860,10 @@ IHqlScope * CHqlForwardScope::queryResolvedScope(HqlLookupContext * context)
 }
 
 
-void addForwardDefinition(IHqlScope * scope, _ATOM symbolName, _ATOM moduleName, IFileContents * contents, unsigned obFlags, bool isExported, unsigned startLine, unsigned startColumn)
+void addForwardDefinition(IHqlScope * scope, _ATOM symbolName, _ATOM moduleName, IFileContents * contents, unsigned symbolFlags, bool isExported, unsigned startLine, unsigned startColumn)
 {
     CHqlNamedSymbol* cur = CHqlNamedSymbol::makeSymbol(symbolName, moduleName, NULL, NULL, 
-                            isExported, !isExported, obFlags,
+                            isExported, !isExported, symbolFlags,
                             contents, 0);
 
     //Really shouldn't modify after creation - but these aren't hashed...
@@ -7953,23 +7910,23 @@ CHqlSyntaxCheckScope::CHqlSyntaxCheckScope(IHqlScope *_parent, IEclRepository * 
 
 }
 
-void CHqlSyntaxCheckScope::defineSymbol(_ATOM _name, _ATOM _moduleName, IHqlExpression *value, bool exported, bool shared, unsigned obFlags, IFileContents *_fc, int _bodystart, int lineno, int column)
+void CHqlSyntaxCheckScope::defineSymbol(_ATOM _name, _ATOM _moduleName, IHqlExpression *value, bool exported, bool shared, unsigned symbolFlags, IFileContents *_fc, int _bodystart, int lineno, int column)
 {
 #ifdef TRACE_PARTIAL
     DBGLOG("CHqlSyntaxCheckScope::defineSymbol(1) %s", _name->getAtomNamePtr());
 #endif
     redefine.setValue(_name, NULL);
     // MORE: define func/macro etc with parameter?
-    CHqlScope::defineSymbol(_name, _moduleName, value, exported, shared, obFlags, _fc, _bodystart, lineno, column);
+    CHqlScope::defineSymbol(_name, _moduleName, value, exported, shared, symbolFlags, _fc, _bodystart, lineno, column);
 }
 
-void CHqlSyntaxCheckScope::defineSymbol(_ATOM _name, _ATOM _moduleName, IHqlExpression *value, bool exported, bool shared, unsigned obFlags)
+void CHqlSyntaxCheckScope::defineSymbol(_ATOM _name, _ATOM _moduleName, IHqlExpression *value, bool exported, bool shared, unsigned symbolFlags)
 {
 #ifdef TRACE_PARTIAL
     DBGLOG("CHqlSyntaxCheckScope::defineSymbol(2) %s", _name->getAtomNamePtr());
 #endif
     redefine.setValue(_name, NULL);
-    CHqlScope::defineSymbol(_name, _moduleName, value, exported, shared, obFlags);
+    CHqlScope::defineSymbol(_name, _moduleName, value, exported, shared, symbolFlags);
 }
 
 IHqlExpression *CHqlSyntaxCheckScope::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
@@ -9095,15 +9052,15 @@ IHqlExpression *createSymbol(IAtom *name, ITypeInfo *type, IHqlExpression *expr)
         else
             ::Release(type);
     }
-    return CHqlNamedSymbol::makeSymbol(name, NULL, expr, false, false, expr->getObFlags());
+    return CHqlNamedSymbol::makeSymbol(name, NULL, expr, false, false, 0);
 }
 
 IHqlExpression * createSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression *expr,
-                             bool exported, bool shared, unsigned obFlags,
+                             bool exported, bool shared, unsigned symbolFlags,
                              IFileContents *fc, int _bodystart, int lineno, int column)
 {
     return CHqlNamedSymbol::makeSymbol(_name, moduleName, expr,
-                             exported, shared, obFlags, 
+                             exported, shared, symbolFlags,
                              fc, _bodystart, lineno, column);
 }
 
@@ -11428,9 +11385,9 @@ extern IHqlScope* createVirtualScope()
     return new CHqlVirtualScope(NULL, NULL);
 }
 
-extern IHqlScope* createForwardScope(IHqlRemoteScope * remoteScope, HqlGramCtx * parentCtx, HqlParseContext & parseCtx)
+extern IHqlScope* createForwardScope(IHqlScope * parentScope, HqlGramCtx * parentCtx, HqlParseContext & parseCtx)
 {
-    return new CHqlForwardScope(remoteScope, parentCtx, parseCtx);
+    return new CHqlForwardScope(parentScope, parentCtx, parseCtx);
 }
 
 extern IHqlScope* createConcreteScope()
@@ -11448,10 +11405,10 @@ extern IHqlScope* createLibraryScope()
     return new CHqlLocalScope(no_libraryscope, NULL, NULL);
 }
 
-extern IHqlRemoteScope *createRemoteScope(_ATOM name, const char * fullName, IEclRepository *ds, IProperties* props, IFileContents * text, bool lazy)
+extern IHqlRemoteScope *createRemoteScope(_ATOM name, const char * fullName, IEclRepositoryCallback *ds, IProperties* props, IFileContents * text, bool lazy, IEclSource * eclSource)
 {
     assertex(fullName || !name);
-    return new CHqlRemoteScope(name, fullName, ds, props, text, lazy);
+    return new CHqlRemoteScope(name, fullName, ds, props, text, lazy, eclSource);
 }
 
 IHqlExpression * populateScopeAndClose(IHqlScope * scope, const HqlExprArray & children, const HqlExprArray & symbols)
@@ -14593,11 +14550,6 @@ extern HQL_API IHqlExpression * createAbstractRecord(IHqlExpression * record)
 
 
 
-
-
-
-    
-
 static void safeLookupSymbol(HqlLookupContext & ctx, IHqlScope * modScope, _ATOM name)
 {
     try
@@ -14620,22 +14572,11 @@ static void safeLookupSymbol(HqlLookupContext & ctx, IHqlScope * modScope, _ATOM
 
         _ATOM moduleName = modScope->queryName();
         HqlLookupContext localContext(ctx);
-        StringBuffer xpath;
-        xpath.append("Attr[@module=\"").append(moduleName).append("\"][@name=\"").append(name).append("\"]");
-        IPropertyTree * attr = localContext.queryDependTree()->queryPropTree(xpath.str());
-        
-        if (!attr)
-        {
-            attr = localContext.queryDependTree()->addPropTree("Attr", createPTree());
-            attr->setProp("@module", moduleName->str());
-            attr->setProp("@name", name->str());
-        }
-        localContext.curAttrTree.set(attr);
+        localContext.createDependencyEntry(modScope, name);
 
         IFileContents * macroContents = static_cast<IFileContents *>(macroBodyExpr->queryUnknownExtra());
-        Owned<IHqlRemoteScope> scope = createRemoteScope(NULL, NULL, ctx.queryRepository(), NULL, NULL, false);
-        OwnedHqlExpr query = parseQuery(scope->queryScope(), macroContents, localContext, NULL, true);
-        scope->invalidateParsed();
+        Owned<IHqlScope> scope = createPrivateScope();
+        OwnedHqlExpr query = parseQuery(scope, macroContents, localContext, NULL, true);
     }
     catch (IException * e)
     {
@@ -14666,7 +14607,7 @@ static void gatherAttributeDependencies(HqlLookupContext & ctx, const char * ite
         else
             moduleName = createIdentifierAtom(item);
 
-        OwnedHqlExpr resolved = ctx.queryRepository()->lookupRootSymbol(moduleName, LSFpublic, ctx);
+        OwnedHqlExpr resolved = ctx.queryRepository()->queryRootScope()->lookupSymbol(moduleName, LSFpublic, ctx);
         if (resolved)
         {
             IHqlScope * scope = resolved->queryScope();
@@ -14688,7 +14629,7 @@ static void gatherAttributeDependencies(HqlLookupContext & ctx, const char * ite
 extern HQL_API IPropertyTree * gatherAttributeDependencies(IEclRepository * dataServer, const char * items)
 {
     HqlParseContext parseCtx(dataServer, NULL);
-    parseCtx.dependTree.setown(createPTree("Dependencies"));
+    parseCtx.nestedDependTree.setown(createPTree("Dependencies"));
 
     HqlLookupContext ctx(parseCtx, NULL);
     if (items && *items)
@@ -14709,7 +14650,7 @@ extern HQL_API IPropertyTree * gatherAttributeDependencies(IEclRepository * data
     else
     {
         HqlScopeArray scopes;   
-        dataServer->getRootScopes(scopes, ctx);
+        getRootScopes(scopes, dataServer, ctx);
         ForEachItemIn(i, scopes)
         {
             IHqlScope & cur = scopes.item(i);
@@ -14717,7 +14658,7 @@ extern HQL_API IPropertyTree * gatherAttributeDependencies(IEclRepository * data
         }
     }
 
-    return parseCtx.dependTree.getClear();
+    return parseCtx.nestedDependTree.getClear();
 }
 
 

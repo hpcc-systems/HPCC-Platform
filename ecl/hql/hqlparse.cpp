@@ -1326,7 +1326,7 @@ static bool isInModule(HqlLookupContext & ctx, const char* moduleName, const cha
         const char* pAttr = attrName;
         while(*pAttr==' ') pAttr++;
 
-        OwnedHqlExpr match = ctx.queryRepository()->lookupRootSymbol(createIdentifierAtom(pModule), LSFpublic, ctx);
+        OwnedHqlExpr match = ctx.queryRepository()->queryRootScope()->lookupSymbol(createIdentifierAtom(pModule), LSFpublic, ctx);
         IHqlScope * scope = match ? match->queryScope() : NULL;
         if (scope)
         {
