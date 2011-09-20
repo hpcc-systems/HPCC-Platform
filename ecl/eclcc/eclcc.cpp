@@ -666,7 +666,7 @@ static IHqlExpression * transformAttributeToQuery(EclCompileInstance & instance,
             macroBodyExpr = expr;
 
         IFileContents * macroContents = static_cast<IFileContents *>(macroBodyExpr->queryUnknownExtra());
-        Owned<IHqlRemoteScope> scope = createRemoteScope(NULL, NULL, ctx.eclRepository, NULL, NULL, false);
+        Owned<IHqlRemoteScope> scope = createRemoteScope(NULL, NULL, ctx.queryRepository(), NULL, NULL, false);
         return parseQuery(scope->queryScope(), macroContents, ctx, NULL, true);
     }
 
@@ -691,7 +691,7 @@ static IHqlExpression * transformAttributeToQuery(EclCompileInstance & instance,
             }
         }
 
-        return createBoundFunction(instance.errs, expr, actuals, ctx.functionCache, ctx.expandCallsWhenBound);
+        return createBoundFunction(instance.errs, expr, actuals, ctx.functionCache, ctx.queryExpandCallsWhenBound());
     }
 
     if (expr->isScope())
@@ -866,88 +866,91 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
     Owned<IHqlRemoteScope> rScope;
     Owned<IHqlScope> scope;
     Owned<ISourcePath> sourcePath = createSourcePath(sourcePathname);
-    if (!withinRepository && syntaxCheckModule)
-    {
-        if (!sourcePath)
-        {
-            StringBuffer temp;
-            temp.append(syntaxCheckModule).append('.').append(syntaxCheckAttribute);
-            sourcePath.setown(createSourcePath(temp));
-        }
-
-        scope.setown(createSyntaxCheckScope(*repository, syntaxCheckModule, syntaxCheckAttribute));
-        if (!scope)
-        {
-            StringBuffer msg;
-            msg.appendf("Module %s does not exist",syntaxCheckModule);
-            errs->reportError(0, msg.str(), sourcePath->str(), 1, 0, 0);
-            return;
-        }
-    }
-    else
-    {
-        rScope.setown(createRemoteScope(NULL, NULL, repository, NULL, NULL, false));
-        scope.set(rScope->queryScope());
-    }
-
-
     bool syntaxChecking = instance.wu->getDebugValueBool("syntaxCheck", false) || (syntaxCheckAttribute != NULL);
     size32_t prevErrs = errs->errCount();
     unsigned startTime = msTick();
     OwnedHqlExpr qquery;
     const char * defaultErrorPathname = sourcePathname ? sourcePathname : attributePath.str();
-    try
-    {
-        HqlExprArray functionCache;
-        HqlLookupContext ctx(instance.archive, errs, &functionCache, repository);
 
-        if (withinRepository)
+    {
+        //Minimize the scope of the parse context to reduce lifetime of cached items.
+        HqlParseContext parseCtx(repository, instance.archive);
+        if (!withinRepository && syntaxCheckModule)
         {
-            if (instance.archive)
+            if (!sourcePath)
             {
-                instance.archive->setProp("Query", "");
-                instance.archive->setProp("Query/@attributePath", attributePath);
+                StringBuffer temp;
+                temp.append(syntaxCheckModule).append('.').append(syntaxCheckAttribute);
+                sourcePath.setown(createSourcePath(temp));
             }
-            qquery.setown(getResolveAttributeFullPath(attributePath, LSFpublic, ctx));
-            if (!qquery && !syntaxChecking && (errs->errCount() == prevErrs))
+
+            scope.setown(createSyntaxCheckScope(parseCtx, syntaxCheckModule, syntaxCheckAttribute));
+            if (!scope)
             {
                 StringBuffer msg;
-                msg.append("Could not resolve attribute ").append(attributePath.str());
-                errs->reportError(3, msg.str(), defaultErrorPathname, 0, 0, 0);
+                msg.appendf("Module %s does not exist",syntaxCheckModule);
+                errs->reportError(0, msg.str(), sourcePath->str(), 1, 0, 0);
+                return;
             }
         }
         else
         {
-            Owned<IFileContents> contents = createFileContentsFromText(queryText, sourcePath);
-
-            if (instance.importAllModules)
-            {
-                HqlScopeArray rootScopes;
-                repository->getRootScopes(rootScopes, ctx);
-                ForEachItemIn(i, rootScopes)
-                {
-                    IHqlScope & cur = rootScopes.item(i);
-                    scope->defineSymbol(cur.queryName(), NULL, LINK(queryExpression(&cur)), false, true, ob_module);
-                }
-            }
-
-            qquery.setown(parseQuery(scope, contents, ctx, NULL, true));
+            rScope.setown(createRemoteScope(NULL, NULL, repository, NULL, NULL, false));
+            scope.set(rScope->queryScope());
         }
 
-        gatherWarnings(ctx.errs, qquery);
+        try
+        {
+            HqlLookupContext ctx(parseCtx, errs);
 
-        if (instance.wu->getDebugValueBool("addTimingToWorkunit", true))
-            instance.wu->setTimerInfo("EclServer: parse query", NULL, msTick()-startTime, 1, 0);
+            if (withinRepository)
+            {
+                if (instance.archive)
+                {
+                    instance.archive->setProp("Query", "");
+                    instance.archive->setProp("Query/@attributePath", attributePath);
+                }
+                qquery.setown(getResolveAttributeFullPath(attributePath, LSFpublic, ctx));
+                if (!qquery && !syntaxChecking && (errs->errCount() == prevErrs))
+                {
+                    StringBuffer msg;
+                    msg.append("Could not resolve attribute ").append(attributePath.str());
+                    errs->reportError(3, msg.str(), defaultErrorPathname, 0, 0, 0);
+                }
+            }
+            else
+            {
+                Owned<IFileContents> contents = createFileContentsFromText(queryText, sourcePath);
 
-        if (qquery && !syntaxChecking)
-            qquery.setown(convertAttributeToQuery(instance, qquery, ctx));
-    }
-    catch (IException *e)
-    {
-        StringBuffer s;
-        e->errorMessage(s);
-        errs->reportError(3, s.toCharArray(), defaultErrorPathname, 1, 0, 0);
-        e->Release();
+                if (instance.importAllModules)
+                {
+                    HqlScopeArray rootScopes;
+                    repository->getRootScopes(rootScopes, ctx);
+                    ForEachItemIn(i, rootScopes)
+                    {
+                        IHqlScope & cur = rootScopes.item(i);
+                        scope->defineSymbol(cur.queryName(), NULL, LINK(queryExpression(&cur)), false, true, ob_module);
+                    }
+                }
+
+                qquery.setown(parseQuery(scope, contents, ctx, NULL, true));
+            }
+
+            gatherWarnings(ctx.errs, qquery);
+
+            if (instance.wu->getDebugValueBool("addTimingToWorkunit", true))
+                instance.wu->setTimerInfo("EclServer: parse query", NULL, msTick()-startTime, 1, 0);
+
+            if (qquery && !syntaxChecking)
+                qquery.setown(convertAttributeToQuery(instance, qquery, ctx));
+        }
+        catch (IException *e)
+        {
+            StringBuffer s;
+            e->errorMessage(s);
+            errs->reportError(3, s.toCharArray(), defaultErrorPathname, 1, 0, 0);
+            e->Release();
+        }
     }
 
     if (!syntaxChecking && (errs->errCount() == prevErrs) && (!qquery || !containsAnyActions(qquery)))

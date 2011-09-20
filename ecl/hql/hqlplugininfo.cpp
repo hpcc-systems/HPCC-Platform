@@ -39,7 +39,8 @@ IEclRepository * loadPlugins(const char * pluginPath, const char * libraryPath, 
 
 IPropertyTree * createPluginPropertyTree(IEclRepository * plugins, bool includeModuleText)
 {
-    HqlLookupContext ctx(NULL, NULL, NULL, plugins);
+    HqlParseContext parseCtx(plugins, NULL);
+    HqlLookupContext ctx(parseCtx, NULL);
     HqlScopeArray scopes;
     plugins->getRootScopes(scopes, ctx);
 
@@ -100,7 +101,8 @@ IPropertyTree * getPlugin(IPropertyTree * p, IEclRepository * plugins, const cha
 
     if(load && !plugin->getPropInt("@loaded",0))
     {
-        HqlLookupContext GHMOREctx(NULL, NULL,  NULL, plugins);
+        HqlParseContext parseCtx(plugins, NULL);
+        HqlLookupContext GHMOREctx(parseCtx, NULL);
         Owned<IHqlScope> resolved = getResolveDottedScope(modname, LSFpublic, GHMOREctx);
         if (resolved)
             exportSymbols(plugin, resolved, GHMOREctx);

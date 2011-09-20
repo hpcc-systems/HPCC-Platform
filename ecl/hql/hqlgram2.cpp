@@ -276,7 +276,6 @@ HqlGram::HqlGram(IHqlScope * _containerScope, IFileContents * _text, HqlLookupCo
 {
     init(_containerScope, _containerScope);
     fieldMapUsed = _hasFieldMap;
-    lookupCtx.set(_ctx);
     if (!lookupCtx.functionCache)
         lookupCtx.functionCache = &localFunctionCache;
 
@@ -286,17 +285,17 @@ HqlGram::HqlGram(IHqlScope * _containerScope, IFileContents * _text, HqlLookupCo
     forceResult = false;
     lexObject = new HqlLex(this, _text, xmlScope, NULL);
 
-    if(lookupCtx.eclRepository && loadImplicit && legacyEclSemantics)
+    if(lookupCtx.queryRepository() && loadImplicit && legacyEclSemantics)
     {
         HqlScopeArray scopes;
-        getImplicitScopes(scopes, lookupCtx.eclRepository, _containerScope, lookupCtx);
+        getImplicitScopes(scopes, lookupCtx.queryRepository(), _containerScope, lookupCtx);
         ForEachItemIn(i, scopes)
             defaultScopes.append(OLINK(scopes.item(i)));
     }
 }
 
 HqlGram::HqlGram(HqlGramCtx & parent, IHqlScope * _containerScope, IFileContents * _text, IXmlScope *xmlScope)
-: lookupCtx(*parent.lookupCtx)
+: lookupCtx(parent.lookupCtx)
 {
     //This is used for parsing a constant expression inside the preprocessor
     //And reprocessing FORWARD module definitions.
@@ -342,7 +341,6 @@ void HqlGram::saveContext(HqlGramCtx & ctx, bool cloneScopes)
     ctx.globalScope.set(globalScope);
     appendArray(ctx.defaultScopes, defaultScopes);
     ctx.sourcePath.set(sourcePath);
-    ctx.lookupCtx = new HqlLookupContext(lookupCtx);
     parseScope->getSymbols(ctx.imports);
 };
 
@@ -2568,9 +2566,9 @@ void HqlGram::processForwardModuleDefinition(const attribute & errpos)
         return;
     }
 
-    HqlGramCtx * parentCtx = new HqlGramCtx;
+    HqlGramCtx * parentCtx = new HqlGramCtx(lookupCtx);
     saveContext(*parentCtx, true);
-    Owned<IHqlScope> newScope = createForwardScope(queryGlobalRemoteScope(), parentCtx);
+    Owned<IHqlScope> newScope = createForwardScope(queryGlobalRemoteScope(), parentCtx, lookupCtx.queryParseContext());
     IHqlExpression * newScopeExpr = queryExpression(newScope);
 
     ForEachChild(i, scopeExpr)
@@ -5780,8 +5778,9 @@ IHqlExpression *HqlGram::bindParameters(const attribute & errpos, IHqlExpression
     {
         try
         {
+            const bool expandCallsWhenBound = lookupCtx.queryExpandCallsWhenBound();
             if (function->getOperator() != no_funcdef)
-                return createBoundFunction(this, function, actuals, lookupCtx.functionCache, lookupCtx.expandCallsWhenBound);
+                return createBoundFunction(this, function, actuals, lookupCtx.functionCache, expandCallsWhenBound);
 
             IHqlExpression * body = function->queryChild(0);
             if (body->getOperator() == no_template_context)
@@ -5789,13 +5788,13 @@ IHqlExpression *HqlGram::bindParameters(const attribute & errpos, IHqlExpression
                 if (requireLateBind(function, actuals))
                 {
                     IHqlExpression * ret = NULL;
-                    if (!lookupCtx.expandCallsWhenBound)
+                    if (!expandCallsWhenBound)
                     {
                         HqlExprArray args;
                         args.append(*LINK(body));
                         unwindChildren(args, function, 1);
                         OwnedHqlExpr newFunction = createFunctionDefinition(function->queryName(), args);
-                        OwnedHqlExpr boundExpr = createBoundFunction(this, newFunction, actuals, lookupCtx.functionCache, lookupCtx.expandCallsWhenBound);
+                        OwnedHqlExpr boundExpr = createBoundFunction(this, newFunction, actuals, lookupCtx.functionCache, expandCallsWhenBound);
                         
                         // get rid of the wrapper
                         //assertex(boundExpr->getOperator()==no_template_context);
@@ -5803,7 +5802,7 @@ IHqlExpression *HqlGram::bindParameters(const attribute & errpos, IHqlExpression
                     }
                     else
                     {
-                        OwnedHqlExpr boundExpr = createBoundFunction(this, function, actuals, lookupCtx.functionCache, lookupCtx.expandCallsWhenBound);
+                        OwnedHqlExpr boundExpr = createBoundFunction(this, function, actuals, lookupCtx.functionCache, expandCallsWhenBound);
                         
                         // get rid of the wrapper
                         assertex(boundExpr->getOperator()==no_template_context);
@@ -5830,7 +5829,7 @@ IHqlExpression *HqlGram::bindParameters(const attribute & errpos, IHqlExpression
             }
             else
             {
-                bool expandCall = insideTemplateFunction() ? false : lookupCtx.expandCallsWhenBound;
+                bool expandCall = insideTemplateFunction() ? false : expandCallsWhenBound;
                 // do the actual binding
                 return createBoundFunction(this, function, actuals, lookupCtx.functionCache, expandCall);
             }
@@ -9339,7 +9338,7 @@ IHqlExpression * HqlGram::createEvaluateOutputModule(const attribute & errpos, I
 {
     if (!ifaceExpr->queryType()->assignableFrom(scopeExpr->queryType()))
         reportError(ERR_NOT_BASE_MODULE, errpos, "Module doesn't implement the interface supplied");
-    return ::createEvaluateOutputModule(lookupCtx, scopeExpr, ifaceExpr, lookupCtx.expandCallsWhenBound, outputOp);
+    return ::createEvaluateOutputModule(lookupCtx, scopeExpr, ifaceExpr, lookupCtx.queryExpandCallsWhenBound(), outputOp);
 }
 
 IHqlExpression * HqlGram::createStoredModule(const attribute & errpos, IHqlExpression * scopeExpr)
@@ -9543,7 +9542,7 @@ IHqlScope * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpressio
         return LINK(globalScope);
     if (name != _dot_Atom)
     {
-        if (!lookupCtx.eclRepository)
+        if (!lookupCtx.queryRepository())
         {
             //This never happens in practice since a null repository is generally passed.
             reportError(ERR_MODULE_UNKNOWN, "Import not supported with no repository specified",  
@@ -9553,7 +9552,7 @@ IHqlScope * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpressio
             return NULL;
         }
 
-        OwnedHqlExpr importMatch = lookupCtx.eclRepository->lookupRootSymbol(name, LSFimport, lookupCtx);
+        OwnedHqlExpr importMatch = lookupCtx.queryRepository()->lookupRootSymbol(name, LSFimport, lookupCtx);
         if (!importMatch)
             importMatch.setown(parseScope->lookupSymbol(name, LSFsharedOK, lookupCtx));
 
@@ -11021,9 +11020,9 @@ extern HQL_API IHqlExpression * parseQuery(IHqlScope *scope, IFileContents * con
     {
         if (scope && scope->queryName())
         {
-            if (ctx.archive)
+            if (ctx.queryArchive())
             {
-                IPropertyTree * module = queryEnsureArchiveModule(ctx.archive, scope->queryFullName(), scope);
+                IPropertyTree * module = queryEnsureArchiveModule(ctx.queryArchive(), scope->queryFullName(), scope);
 
                 StringBuffer sillyTempBuffer;
                 sillyTempBuffer.append(contents->length(), contents->getText());
@@ -11064,7 +11063,7 @@ extern HQL_API IHqlExpression * parseQuery(IHqlScope *scope, IFileContents * con
 extern HQL_API IHqlExpression * parseQuery(const char * text, IErrorReceiver * errs)
 {
     Owned<IHqlScope> scope = createScope();
-    HqlLookupContext ctx(NULL, errs, NULL, NULL);
+    HqlDummyLookupContext ctx(errs);
     Owned<IFileContents> contents = createFileContentsFromText(text, NULL);
     return parseQuery(scope, contents, ctx, NULL, true);
 }
@@ -11087,9 +11086,9 @@ bool parseForwardModuleMember(HqlGramCtx & _parent, IHqlScope *scope, IHqlExpres
 void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContext & ctx, _ATOM name)
 {
     const char * moduleName = scope->queryFullName();
-    if (ctx.archive != NULL)
+    if (ctx.queryArchive())
     {
-        IPropertyTree * module = queryEnsureArchiveModule(ctx.archive, moduleName, scope);
+        IPropertyTree * module = queryEnsureArchiveModule(ctx.queryArchive(), moduleName, scope);
         IPropertyTree * attr = queryArchiveAttribute(module, name->str());
         if (!attr)
             attr = createArchiveAttribute(module, name->str());
@@ -11103,9 +11102,9 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
     }
 
     HqlLookupContext attrCtx(ctx);
-    if (attrCtx.dependTree)
+    if (attrCtx.queryDependTree())
     {
-        IPropertyTree * attr = attrCtx.dependTree->addPropTree("Attr", createPTree());
+        IPropertyTree * attr = attrCtx.queryDependTree()->addPropTree("Attr", createPTree());
         attrCtx.curAttrTree.set(attr);
         attr->setProp("@module", scope->queryName()->str());
         attr->setProp("@name", name->str());

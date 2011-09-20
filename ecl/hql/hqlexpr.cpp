@@ -3764,11 +3764,12 @@ ITypeInfo *CHqlExpression::getType()
     return type;
 }
 
-IHqlExpression *CHqlExpression::addOperand(IHqlExpression *op)
+IHqlExpression *CHqlExpression::addOperand(IHqlExpression * child)
 {
-    assertex (!IsShared());
+    //Forward scopes are never commoned up, and are shared as a side-effect of keeping references to their owner
+    assertex (!IsShared() || (op == no_forwardscope));
     assertex (!isExprClosed());
-    doAppendOperand(*op);
+    doAppendOperand(*child);
     return this;
 }
 
@@ -5905,21 +5906,11 @@ ISourcePath * CHqlNamedSymbol::querySourcePath() const
     return CHqlAnnotation::querySourcePath();
 }
 
-CHqlCachedBoundFunction::CHqlCachedBoundFunction(IHqlExpression *func)
+CHqlCachedBoundFunction::CHqlCachedBoundFunction(IHqlExpression *func, bool _forceOutOfLineExpansion)
 : CHqlExpression(no_bound_func, NULL, LINK(func), NULL) 
 {
-}
-
-
-CHqlCachedBoundFunction::CHqlCachedBoundFunction(IHqlExpression *func, HqlExprArray &args)
-: CHqlExpression(no_bound_func, NULL, LINK(func), NULL) 
-{
-    ForEachItemIn(idx, args)
-    {
-        IHqlExpression &parm = (IHqlExpression &) args.item(idx);
-        parm.Link();
-        addOperand(& parm);
-    }
+    if (_forceOutOfLineExpansion)
+        addOperand(createConstant(true));
 }
 
 
@@ -6775,30 +6766,8 @@ static bool scopesEqual(const IHqlScope * l, const IHqlScope * r)
 
 //==============================================================================================================
 
-CHqlObservedScope::~CHqlObservedScope()
-{
-    cleanupForwardReferences();
-}
-
-
-void CHqlObservedScope::cleanupForwardReferences()
-{
-    CriticalBlock block(generalCS); // protect cachedItems
-    ForEachItemInRev(i, observedItems)
-        observedItems.item(i).cleanupForwardReferences();
-
-    assertex(observedItems.ordinality() == 0);
-}
-
-void CHqlObservedScope::invalidateParsed()
-{
-    cleanupForwardReferences();
-}
-
-//==============================================================================================================
-
 CHqlRemoteScope::CHqlRemoteScope(_ATOM _name, const char * _fullName, IEclRepository * _repository, IProperties* _props, IFileContents * _text, bool _lazy)
-: CHqlObservedScope(no_scope, _name, _fullName)
+: CHqlScope(no_scope, _name, _fullName)
 {
     op = no_remotescope;
     text.set(_text);
@@ -6939,12 +6908,12 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(_ATOM searchName, unsigned lookupF
     {
         if (resolvedSym)
         {
-            if (ctx.archive && resolvedSym->getOperator() == no_remotescope)
+            if (ctx.queryArchive() && resolvedSym->getOperator() == no_remotescope)
             {
                 //Ensure the archive contains entries for each module - even if nothing is accessed from it
                 //It would be preferrable to only check once, but adds very little time anyway.
                 IHqlScope * scope = resolvedSym->queryScope();
-                queryEnsureArchiveModule(ctx.archive, scope->queryFullName(), scope);
+                queryEnsureArchiveModule(ctx.queryArchive(), scope->queryFullName(), scope);
             }
 
             return resolvedSym.getClear();
@@ -7054,7 +7023,6 @@ void CHqlRemoteScope::getSymbols(HqlExprArray& exprs) const
 
 void CHqlRemoteScope::invalidateParsed()
 {
-    CHqlObservedScope::invalidateParsed();
     if (resolved)
     {
         CriticalBlock block(generalCS);
@@ -7805,22 +7773,21 @@ bool canBeVirtual(IHqlExpression * expr)
 
 //==============================================================================================================
 
-class CHqlForwardScope : public CHqlVirtualScope, public IHqlRemoteScopeObserver
+class CHqlForwardScope : public CHqlVirtualScope, public IHasUnlinkedOwnerReference
 {
 public:
-    CHqlForwardScope(IHqlRemoteScope * _remoteScope, HqlGramCtx * _parentCtx);
+    CHqlForwardScope(IHqlRemoteScope * _remoteScope, HqlGramCtx * _parentCtx, HqlParseContext & parseCtx);
     ~CHqlForwardScope()
     {
-        cleanupForwardReferences();
+        assertex(!remoteScope);
     }
     IMPLEMENT_IINTERFACE_USING(CHqlVirtualScope)
 
-    virtual void cleanupForwardReferences()
+    virtual void clearOwner()
     {
         if (remoteScope)
         {
             resolvedAll = true;
-            remoteScope->removeObserver(*this);
             parentCtx.clear();
             remoteScope = NULL;
         }
@@ -7831,22 +7798,20 @@ public:
     virtual IHqlScope * queryResolvedScope(HqlLookupContext * context);
 
 protected:
-    IHqlRemoteScope * remoteScope;
+    IHqlScope * remoteScope;
     Owned<HqlGramCtx> parentCtx;
     Owned<IHqlScope> resolved;
     bool resolvedAll;
 };
 
 //error if !fullBoundBase || isVirtual
-CHqlForwardScope::CHqlForwardScope(IHqlRemoteScope * _remoteScope, HqlGramCtx * _parentCtx) 
-: CHqlVirtualScope(NULL, NULL), remoteScope(_remoteScope), parentCtx(_parentCtx)
-{ 
+CHqlForwardScope::CHqlForwardScope(IHqlRemoteScope * _remoteScope, HqlGramCtx * _parentCtx, HqlParseContext & parseCtx)
+: CHqlVirtualScope(NULL, NULL), remoteScope(_remoteScope->queryScope()), parentCtx(_parentCtx)
+{
+    //Need to register this foward reference otherwise circular reference means it will never get deleted.
+    parseCtx.addForwardReference(remoteScope, this);
     op = no_forwardscope; 
     assertex(remoteScope);
-
-    //Need to register as an observer - otherwise circular reference means it will never get deleted.
-    remoteScope->addObserver(*this);
-
     //Until we've resolved the contents we have no idea if it is fully bound!
     if (parentCtx->hasAnyActiveParameters())
         infoFlags |= HEFunbound;
@@ -7915,7 +7880,7 @@ IHqlScope * CHqlForwardScope::queryResolvedScope(HqlLookupContext * context)
         //Generally we should have a lookup context passed in so the archive is updated correctly
         //But currently painful in one context, so allow it to be omitted.
         ThrowingErrorReceiver errors;
-        HqlLookupContext localCtx(NULL, &errors, NULL, NULL);
+        HqlDummyLookupContext localCtx(&errors);
         HqlLookupContext * activeContext = context ? context : &localCtx;
         HqlExprArray syms;
         getSymbols(syms);
@@ -8754,7 +8719,7 @@ IHqlExpression * CHqlAlienType::queryMemberFunc(_ATOM search)
 
 IHqlExpression *CHqlAlienType::lookupSymbol(_ATOM searchName)
 {
-    HqlLookupContext ctx(NULL, NULL, NULL, NULL);
+    HqlDummyLookupContext ctx(NULL);
     return scope->lookupSymbol(searchName, LSFpublic, ctx);
 }
 
@@ -9401,7 +9366,7 @@ protected:
                         newModule.setown(checkCreateConcreteModule(ctx.errors, newModule, newModule->queryProperty(_location_Atom)));
                     }
 
-                    HqlLookupContext dummyctx(NULL, ctx.errors, NULL, NULL);
+                    HqlDummyLookupContext dummyctx(ctx.errors);
                     return newModule->queryScope()->lookupSymbol(selectedName, makeLookupFlags(true, expr->hasProperty(ignoreBaseAtom), false), dummyctx);
                 }
                 break;
@@ -9753,7 +9718,7 @@ static IHqlExpression * cachedExpandFunctionCallBody(CallExpansionContext & ctx,
 {
     if (ctx.functionCache)
     {
-        CHqlCachedBoundFunction *cache2 = new CHqlCachedBoundFunction(call);
+        CHqlCachedBoundFunction *cache2 = new CHqlCachedBoundFunction(call, ctx.forceOutOfLineExpansion);
         Owned<CHqlCachedBoundFunction> cache = static_cast<CHqlCachedBoundFunction *>(cache2->closeExpr());
         if (cache->bound)
             return LINK(cache->bound);
@@ -11464,9 +11429,9 @@ extern IHqlScope* createVirtualScope()
     return new CHqlVirtualScope(NULL, NULL);
 }
 
-extern IHqlScope* createForwardScope(IHqlRemoteScope * remoteScope, HqlGramCtx * parentCtx)
+extern IHqlScope* createForwardScope(IHqlRemoteScope * remoteScope, HqlGramCtx * parentCtx, HqlParseContext & parseCtx)
 {
-    return new CHqlForwardScope(remoteScope, parentCtx);
+    return new CHqlForwardScope(remoteScope, parentCtx, parseCtx);
 }
 
 extern IHqlScope* createConcreteScope()
@@ -14658,18 +14623,18 @@ static void safeLookupSymbol(HqlLookupContext & ctx, IHqlScope * modScope, _ATOM
         HqlLookupContext localContext(ctx);
         StringBuffer xpath;
         xpath.append("Attr[@module=\"").append(moduleName).append("\"][@name=\"").append(name).append("\"]");
-        IPropertyTree * attr = localContext.dependTree->queryPropTree(xpath.str());
+        IPropertyTree * attr = localContext.queryDependTree()->queryPropTree(xpath.str());
         
         if (!attr)
         {
-            attr = localContext.dependTree->addPropTree("Attr", createPTree());
+            attr = localContext.queryDependTree()->addPropTree("Attr", createPTree());
             attr->setProp("@module", moduleName->str());
             attr->setProp("@name", name->str());
         }
         localContext.curAttrTree.set(attr);
 
         IFileContents * macroContents = static_cast<IFileContents *>(macroBodyExpr->queryUnknownExtra());
-        Owned<IHqlRemoteScope> scope = createRemoteScope(NULL, NULL, ctx.eclRepository, NULL, NULL, false);
+        Owned<IHqlRemoteScope> scope = createRemoteScope(NULL, NULL, ctx.queryRepository(), NULL, NULL, false);
         OwnedHqlExpr query = parseQuery(scope->queryScope(), macroContents, localContext, NULL, true);
         scope->invalidateParsed();
     }
@@ -14702,7 +14667,7 @@ static void gatherAttributeDependencies(HqlLookupContext & ctx, const char * ite
         else
             moduleName = createIdentifierAtom(item);
 
-        OwnedHqlExpr resolved = ctx.eclRepository->lookupRootSymbol(moduleName, LSFpublic, ctx);
+        OwnedHqlExpr resolved = ctx.queryRepository()->lookupRootSymbol(moduleName, LSFpublic, ctx);
         if (resolved)
         {
             IHqlScope * scope = resolved->queryScope();
@@ -14723,9 +14688,10 @@ static void gatherAttributeDependencies(HqlLookupContext & ctx, const char * ite
 
 extern HQL_API IPropertyTree * gatherAttributeDependencies(IEclRepository * dataServer, const char * items)
 {
-    HqlLookupContext ctx(NULL, NULL, NULL, dataServer);
-    ctx.dependTree.setown(createPTree("Dependencies"));
+    HqlParseContext parseCtx(dataServer, NULL);
+    parseCtx.dependTree.setown(createPTree("Dependencies"));
 
+    HqlLookupContext ctx(parseCtx, NULL);
     if (items && *items)
     {
         loop
@@ -14752,7 +14718,7 @@ extern HQL_API IPropertyTree * gatherAttributeDependencies(IEclRepository * data
         }
     }
 
-    return ctx.dependTree.getClear();
+    return parseCtx.dependTree.getClear();
 }
 
 
