@@ -840,46 +840,95 @@ public:
     virtual size32_t length() = 0;
 };
 
-class HqlLookupContext
+//This class ensures that the pointer to the owner is cleared before both links are released, which allows
+//you to safely have an unlinked owner pointer in a child while this class instance exists.
+template <class OWNER, class CHILD>
+class SafeOwnerReference : public CInterface
 {
 public:
-    explicit HqlLookupContext(const HqlLookupContext & other)
+    inline SafeOwnerReference(OWNER * _owner, CHILD * _child) : owner(_owner), child(_child) {}
+    inline ~SafeOwnerReference() { child->clearOwner(); }
+protected:
+    Linked<OWNER> owner;
+    Linked<CHILD> child;
+};
+
+interface IHasUnlinkedOwnerReference : public IInterface
+{
+    virtual void clearOwner() = 0;
+};
+
+typedef SafeOwnerReference<IHqlScope, IHasUnlinkedOwnerReference> ForwardScopeItem;
+
+class HqlParseContext
+{
+public:
+    HqlParseContext(IEclRepository * _eclRepository, IPropertyTree * _archive)
+    : archive(_archive), eclRepository(_eclRepository)
     {
-        set(other);
-    }
-    HqlLookupContext(IPropertyTree * _archive, IErrorReceiver * _errs, HqlExprArray * _functionCache, IEclRepository * _eclRepository) 
-    : archive(_archive), errs(_errs), eclRepository(_eclRepository)
-    { 
-        functionCache = _functionCache; 
-        expandCallsWhenBound = DEFAULT_EXPAND_CALL; 
+        expandCallsWhenBound = DEFAULT_EXPAND_CALL;
     }
 
-    void set(const HqlLookupContext & other)    
+    inline IEclRepository * queryRepository() const { return eclRepository; }
+    void addForwardReference(IHqlScope * owner, IHasUnlinkedOwnerReference * child)
     {
-        archive.set(other.archive);
-        errs.set(other.errs); 
-        functionCache = other.functionCache; 
-        dependTree.set(other.dependTree); 
-        curAttrTree.set(other.curAttrTree); 
-        expandCallsWhenBound = other.expandCallsWhenBound;
-        eclRepository.set(other.eclRepository);
+        forwardLinks.append(*new ForwardScopeItem(owner, child));
     }
 
 public:
     Linked<IPropertyTree> archive;
-    Linked<IErrorReceiver> errs;
     Linked<IEclRepository> eclRepository;
-    HqlExprArray * functionCache;
-//  HqlExprArray defaultFunctionCache;  could assign by default, but slight concern about the lifetime
     Owned<IPropertyTree> dependTree;
-    Owned<IPropertyTree> curAttrTree;
+    HqlExprArray defaultFunctionCache;
+    CIArrayOf<ForwardScopeItem> forwardLinks;
     bool expandCallsWhenBound;
+};
+
+class HqlDummyParseContext : public HqlParseContext
+{
+public:
+    HqlDummyParseContext() : HqlParseContext(NULL, NULL) {}
+};
+
+
+class HqlLookupContext
+{
+public:
+    explicit HqlLookupContext(const HqlLookupContext & other) : parseCtx(other.parseCtx)
+    {
+        errs.set(other.errs); 
+        functionCache = other.functionCache; 
+        curAttrTree.set(other.curAttrTree); 
+    }
+    HqlLookupContext(HqlParseContext & _parseCtx, IErrorReceiver * _errs)
+    : parseCtx(_parseCtx), errs(_errs)
+    {
+        functionCache = &parseCtx.defaultFunctionCache;
+    }
+
+    inline IPropertyTree * queryArchive() const { return parseCtx.archive; }
+    inline IPropertyTree * queryDependTree() const { return parseCtx.dependTree; }
+    inline IEclRepository * queryRepository() const { return parseCtx.eclRepository; }
+    inline bool queryExpandCallsWhenBound() const { return parseCtx.expandCallsWhenBound; }
+    inline HqlParseContext & queryParseContext() const { return parseCtx; }
+
+private:
+    HqlParseContext & parseCtx;
+
+public:
+    Linked<IErrorReceiver> errs;
+    HqlExprArray * functionCache;
+    Owned<IPropertyTree> curAttrTree;
 };
 
 class HqlDummyLookupContext : public HqlLookupContext
 {
 public:
-    HqlDummyLookupContext(IErrorReceiver * _errs) : HqlLookupContext(NULL, _errs, NULL, NULL) {}
+    //Potentially problematic - dummyCtx not created at the point the constructor is called.
+    HqlDummyLookupContext(IErrorReceiver * _errs) : HqlLookupContext(dummyCtx, _errs) {}
+
+private:
+    HqlDummyParseContext dummyCtx;
 };
 
 enum
@@ -924,15 +973,6 @@ interface IHqlScope : public IInterface
     virtual void removeSymbol(_ATOM name) = 0;      // use with great care
 };
 
-//Not pretty, but I haven't had any better ideas.
-//This interface allows child attributes to have temporary references to parent scopes, provided they are only present when parsing.
-//It is needed for forward module definitions becuase they need to preserve their context (so that the attributes can be evaluated late)
-//but will prevent the remote scope being destroyed unless something special is implemented....
-interface IHqlRemoteScopeObserver : public IInterface
-{
-    virtual void cleanupForwardReferences() =0;
-};
-
 interface IHqlRemoteScope : public IInterface
 {
     virtual IHqlScope * queryScope() = 0;
@@ -941,8 +981,6 @@ interface IHqlRemoteScope : public IInterface
     virtual void noteTextModified() = 0;
     virtual void addNestedScope(IHqlScope * childScope, unsigned flags) = 0;
     virtual void removeNestedScope(_ATOM name) = 0;
-    virtual void addObserver(IHqlRemoteScopeObserver & item) = 0;
-    virtual void removeObserver(IHqlRemoteScopeObserver & item) = 0;
     virtual bool isEmpty() const = 0;
     virtual void setText(IFileContents * query) = 0;
     virtual void setProp(_ATOM, const char *) = 0;
@@ -1266,7 +1304,7 @@ extern HQL_API IHqlScope *createService();
 extern HQL_API IHqlScope *createDatabase(IHqlExpression * name);
 extern HQL_API IHqlScope *createScope();
 extern HQL_API IHqlScope *createConcreteScope();
-extern HQL_API IHqlScope *createForwardScope(IHqlRemoteScope * remoteScope, HqlGramCtx * parentCtx);
+extern HQL_API IHqlScope *createForwardScope(IHqlRemoteScope * remoteScope, HqlGramCtx * parentCtx, HqlParseContext & parseCtx);
 extern HQL_API IHqlScope *createLibraryScope();
 extern HQL_API IHqlScope *createVirtualScope();
 extern HQL_API IHqlScope* createVirtualScope(_ATOM name, const char * fullName);
