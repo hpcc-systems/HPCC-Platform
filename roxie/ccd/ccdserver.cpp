@@ -30859,25 +30859,12 @@ protected:
  * workunit via a job queue. A temporary IQueryFactory object is created for the
  * workunit and then executed.
  *
- * Currently this will only work correctly on a 1-way roxie or for queries where
- * no slave activies are needed, since there is no mechanism for ensuring that
- * the query is deployed on the slaves before any such activity runs.
- *
- * Possible approaches to address that limitation would be:
- * 1. Use the cascade manager mechanism to send a control query to all slaves
- *    before running the query, to ensure that they create slave query factories
- *    for it. Use a similar query at the end to uninstall.
- * 2. Create a mechanism for 'lazy' load of slave factories for a workunit, and
- *    ensure that the wuid is passed with the slave requests.
- *
- * Approach 1 has the disadvantage of adding overhead that may not be needed as
- * only a small number of slaves (if any) may actually end up being called.
- *
- * Approach 2 overcomes that problem but has a new one that there is no way to
- * know when a query can be unloaded.
- *
- * A combination where the slave is warned to expect the query (and told to unload it)
- * via option 1 but doesn't actually do the load until first needed might work...
+ * Any slaves that need to load the query do so using a lazy load mechanism, checking
+ * whether the wuid named in the logging prefix info can be loaded any time a query
+ * is received for which no factory exists. Any query that a slave loads as a
+ * result is added to a cache to ensure that it stays around until the server's query
+ * terminates - a ROXIE_UNLOAD message is broadcast at that time to allow the slaves
+ * to release any cached IQueryFactory objects.
  *
  **/
 

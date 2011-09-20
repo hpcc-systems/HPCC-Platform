@@ -1211,26 +1211,14 @@ public:
 
     virtual IRoxieServerContext *createContext(IPropertyTree *context, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, const IRoxieContextLogger &_logctx, const SocketEndpoint &_poolEndpoint, XmlReaderOptions _xmlReadFlags) const
     {
-        if (isSuspended)
-        {
-            StringBuffer err;
-            if (errorMessage.length())
-                err.appendf(" because %s", errorMessage.str());
-            throw MakeStringException(ROXIE_QUERY_SUSPENDED, "Query %s is suspended%s", id.get(), err.str());
-        }
+        checkSuspended();
         checkOnceDone(_logctx);
         return createRoxieServerContext(context, this, client, isXml, isRaw, isBlocked, httpHelper, trim, priority, _logctx, _poolEndpoint, _xmlReadFlags);
     }
 
     virtual IRoxieServerContext *createContext(IConstWorkUnit *wu, const IRoxieContextLogger &_logctx) const
     {
-        if (isSuspended)
-        {
-            StringBuffer err;
-            if (errorMessage.length())
-                err.appendf(" because %s", errorMessage.str());
-            throw MakeStringException(ROXIE_QUERY_SUSPENDED, "Query %s is suspended%s", id.get(), err.str());
-        }
+        checkSuspended();
         checkOnceDone(_logctx);
         return createWorkUnitServerContext(wu, this, _logctx);
     }
@@ -1250,6 +1238,19 @@ public:
     {
         return queryStats->getStats(from, to);
     }
+
+protected:
+    void checkSuspended() const
+    {
+        if (isSuspended)
+        {
+            StringBuffer err;
+            if (errorMessage.length())
+                err.appendf(" because %s", errorMessage.str());
+            throw MakeStringException(ROXIE_QUERY_SUSPENDED, "Query %s is suspended%s", id.get(), err.str());
+        }
+    }
+
 };
 
 IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo)

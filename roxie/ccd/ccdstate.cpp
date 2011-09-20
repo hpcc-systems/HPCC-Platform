@@ -633,6 +633,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 MODULE_EXIT()
 {
     ::Release(emptyPackageMap); // You can't use static Owned to release anything that may own a IPropertyTree
+    ::Release(rootPackage);
 }
 
 //================================================================================================
@@ -2145,6 +2146,25 @@ extern void doControlMessage(IPropertyTree *control, StringBuffer &reply, const 
     controlSem.signal();
 }
 
+void createResourceManager(const IQueryDll *standAloneDll, unsigned numChannels, IPackageMap *packageMap)
+{
+    Owned<GlobalResourceManager> newGM;
+    if (!standAloneDll)
+    {
+        newGM.setown(new QuerySetResourceManager(numChannels, packageMap));
+    }
+    else
+    {
+        Owned<IPropertyTree> standAloneDllTree;
+        standAloneDllTree.setown(createPTree("Query"));
+        standAloneDllTree->setProp("@id", "roxie");
+        standAloneDllTree->setProp("@dll", standAloneDll->queryDll()->queryName());
+        newGM.setown(new StandaloneResourceManager(numChannels, packageMap, standAloneDllTree.getClear()));
+    }
+    newGM->load();
+    grms.append(*newGM.getClear());
+}
+
 extern void createResourceManagers(const IQueryDll *standAloneDll, unsigned numChannels)
 {
     // NOTE - not threadsafe - only done at startup
@@ -2161,7 +2181,6 @@ extern void createResourceManagers(const IQueryDll *standAloneDll, unsigned numC
     sortDirectory( sortedfiles, *iter, SD_bynameNC, false, true);
     ForEachItemIn(idx, sortedfiles)
     {
-        // MORE refactor
         CDirectoryEntry *de = &sortedfiles.item(idx);
         const char *packageId = de->name.get();  // should we strip off the ".pkg" ?
         DBGLOG("Loading package set %s", packageId); 
@@ -2169,21 +2188,7 @@ extern void createResourceManagers(const IQueryDll *standAloneDll, unsigned numC
         {
             Owned<CPackageMap> packageSet = new CPackageMap(packageId);
             packageSet->load(queryDirectory, packageId);
-            Owned<GlobalResourceManager> newGM;
-            if (!standAloneDll)
-            {
-                newGM.setown(new QuerySetResourceManager(numChannels, packageSet.getLink()));
-            }
-            else
-            {
-                Owned<IPropertyTree> standAloneDllTree;
-                standAloneDllTree.setown(createPTree("Query"));
-                standAloneDllTree->setProp("@id", "roxie");
-                standAloneDllTree->setProp("@dll", standAloneDll->queryDll()->queryName());
-                newGM.setown(new StandaloneResourceManager(numChannels, packageSet.getLink(), standAloneDllTree.getClear()));
-            }
-            newGM->load();
-            grms.append(*newGM.getClear());
+            createResourceManager(standAloneDll, numChannels, packageSet.getLink());
         }
         catch (IException *E)
         {
@@ -2193,26 +2198,11 @@ extern void createResourceManagers(const IQueryDll *standAloneDll, unsigned numC
             E->Release();
         }
     }
-
     if (!grms.length())
     {
         if (traceLevel)
             DBGLOG("Loading empty package");
-        Owned<GlobalResourceManager> newGM;
-        if (!standAloneDll)
-        {
-            newGM.setown(new QuerySetResourceManager(numChannels, LINK(&queryEmptyPackageMap())));
-        }
-        else
-        {
-            Owned<IPropertyTree> standAloneDllTree;
-            standAloneDllTree.setown(createPTree("Query"));
-            standAloneDllTree->setProp("@id", "roxie");
-            standAloneDllTree->setProp("@dll", standAloneDll->queryDll()->queryName());
-            newGM.setown(new StandaloneResourceManager(numChannels, LINK(&queryEmptyPackageMap()), standAloneDllTree.getClear()));
-        }
-        newGM->load();
-        grms.append(*newGM.getClear());
+        createResourceManager(standAloneDll, numChannels, LINK(&queryEmptyPackageMap()));
     }
     selectActivePackage();
     assertex(gm != NULL);
