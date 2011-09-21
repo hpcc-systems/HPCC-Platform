@@ -1975,11 +1975,11 @@ void CGraphBase::getLinkedResult(unsigned & count, byte * * & ret, unsigned id)
 }
 
 // IThorChildGraph impl.
-IEclGraphResults *CGraphBase::evaluate(unsigned parentExtractSz, const byte *parentExtract)
+IEclGraphResults *CGraphBase::evaluate(unsigned _parentExtractSz, const byte *parentExtract)
 {
     CriticalBlock block(evaluateCrit);
 
-    parentExtractSz = parentExtractSz;
+    parentExtractSz = _parentExtractSz;
     executeChild(parentExtractSz, parentExtract);
     //GH->JCS This needs to set up new results rather than returning a link, so helpers are thread safe
     return LINK(localResults);
