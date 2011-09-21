@@ -22,14 +22,10 @@
 #include "jsocket.hpp"
 #include "jfile.hpp"
 
-#ifdef DAFILESRV_LOCAL
-#define REMOTE_API
-#else
 #ifdef REMOTE_EXPORTS
 #define REMOTE_API __declspec(dllexport)
 #else
 #define REMOTE_API __declspec(dllimport)
-#endif
 #endif
 
 enum DAFS_OS

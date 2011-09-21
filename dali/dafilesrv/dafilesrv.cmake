@@ -25,8 +25,6 @@
 project( dafilesrv ) 
 
 set (    SRCS 
-         ../../common/remote/rmtfile.cpp 
-         ../../common/remote/sockfile.cpp 
          dafilesrv.cpp 
     )
 
@@ -37,8 +35,6 @@ include_directories (
          ./../../system/jlib 
     )
 
-set_source_files_properties (../../common/remote/rmtfile.cpp PROPERTIES COMPILE_FLAGS -DDAFILESRV_LOCAL)
-
 if (WIN32)
     set (CMAKE_EXE_LINKER_FLAGS "/STACK:65536 ${CMAKE_EXE_LINKER_FLAGS}")
 endif()
@@ -48,5 +44,6 @@ set_target_properties (dafilesrv PROPERTIES COMPILE_FLAGS -D_CONSOLE)
 install ( TARGETS dafilesrv DESTINATION ${OSSDIR}/bin )
 target_link_libraries ( dafilesrv
          jlib
+         remote
     )
 

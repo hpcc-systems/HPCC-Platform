@@ -25,7 +25,6 @@
 project( datest ) 
 
 set (    SRCS 
-         ../../common/remote/sockfile.cpp 
          datest.cpp 
     )
 
