@@ -11131,6 +11131,15 @@ IHqlExpression *HqlGram::doParse()
         //If we are expecting an attribute, then we either have a list of side-effects which are returned as a compound object
         //or we have a field defined in the parseScope which needs cloning into the container scope
         OwnedHqlExpr resolved = parseScope->lookupSymbol(expectedAttribute, LSFsharedOK, lookupCtx);
+
+        //Cover an ugly case where a module with the same name as the attribute being defined has been imported.
+        //This should really have a isImport flag like export/shared to avoid false positives.
+        if (resolved && parseResults.ordinality())
+        {
+            if (resolved->queryScope())
+                resolved.clear();
+        }
+
         if (resolved)
         {
             if (!parseResults.empty())
