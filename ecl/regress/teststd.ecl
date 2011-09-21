@@ -18,4 +18,6 @@
 
 import teststd;
 
-evaluate(teststd);
+runTests := evaluate(teststd);
+runTests;
+//export teststd := runTests;
