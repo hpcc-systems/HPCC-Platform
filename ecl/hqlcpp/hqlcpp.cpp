@@ -5453,6 +5453,43 @@ void HqlCppTranslator::normalizeBoundExpr(BuildCtx & ctx, CHqlBoundExpr & bound)
     bound.expr.setown(convertWrapperToPointer(bound.expr));
 }
 
+
+static IHqlExpression * mapInternalFunctionParameters(IHqlExpression * expr)
+{
+    switch (expr->getOperator())
+    {
+    case no_sortlist:
+        {
+            HqlExprArray args;
+            ForEachChild(i, expr)
+                args.append(*mapInternalFunctionParameters(expr->queryChild(i)));
+            return cloneOrLink(expr, args);
+        }
+    case no_param:
+        {
+            ITypeInfo * type = expr->queryType();
+            //String parameters need to be passed as c++ const string parameters
+            switch (type->getTypeCode())
+            {
+            case type_string:
+            case type_varstring:
+            case type_data:
+            case type_qstring:
+            case type_unicode:
+            case type_utf8:
+            case type_varunicode:
+                if (!expr->hasProperty(constAtom))
+                    return appendOwnedOperand(expr, createAttribute(constAtom));
+                break;
+            }
+            break;
+        }
+    }
+
+    return LINK(expr);
+}
+
+
 IHqlExpression * HqlCppTranslator::doBuildInternalFunction(IHqlExpression * funcdef)
 {
     unsigned match = internalFunctions.find(*funcdef);
@@ -5471,7 +5508,7 @@ IHqlExpression * HqlCppTranslator::doBuildInternalFunction(IHqlExpression * func
     HqlExprArray funcdefArgs;
     ITypeInfo * returnType = funcdef->queryType()->queryChildType();
     funcdefArgs.append(*createExternalReference(funcdef->queryName(), LINK(returnType), attrs));
-    funcdefArgs.append(*LINK(queryFunctionParameters(funcdef)));
+    funcdefArgs.append(*mapInternalFunctionParameters(queryFunctionParameters(funcdef)));
     unwindChildren(funcdefArgs, funcdef, 1);
     OwnedHqlExpr externalFuncdef = funcdef->clone(funcdefArgs);
 
