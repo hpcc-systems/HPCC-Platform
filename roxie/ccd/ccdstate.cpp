@@ -2146,7 +2146,7 @@ extern void doControlMessage(IPropertyTree *control, StringBuffer &reply, const 
     controlSem.signal();
 }
 
-void createResourceManager(const IQueryDll *standAloneDll, unsigned numChannels, IPackageMap *packageMap)
+void createResourceManager(const IQueryDll *standAloneDll, unsigned numChannels, const IPackageMap *packageMap)
 {
     Owned<GlobalResourceManager> newGM;
     if (!standAloneDll)
