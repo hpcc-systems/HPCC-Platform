@@ -610,6 +610,9 @@ void getFirstThorClusterName(StringBuffer& clusterName)
 
 bool isRoxieCluster(char const * targetClusterName)
 {
+#ifdef _TEST_ROXIE_QUEUE
+    return false;
+#else
     bool bReturn = false;
     IArrayOf<IEspTpLogicalCluster> roxieclusters;
     CTpWrapper wrapper;
@@ -625,6 +628,7 @@ bool isRoxieCluster(char const * targetClusterName)
         }
     }
     return bReturn;
+#endif
 }
 
 void formatDuration(StringBuffer &ret, unsigned ms)

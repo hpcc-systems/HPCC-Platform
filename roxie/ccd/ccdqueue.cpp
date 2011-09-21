@@ -163,6 +163,7 @@ StringBuffer &RoxiePacketHeader::toString(StringBuffer &ret) const
     ret.appendf("uid="RUIDF" activityId=", uid);
     switch(activityId & ~ROXIE_PRIORITY_MASK)
     {
+    case ROXIE_UNLOAD: ret.append("ROXIE_UNLOAD"); break;
     case ROXIE_PING: ret.append("ROXIE_PING"); break;
     case ROXIE_TRACEINFO: ret.append("ROXIE_TRACEINFO"); break;
     case ROXIE_DEBUGREQUEST: ret.append("ROXIE_DEBUGREQUEST"); break;
@@ -489,9 +490,17 @@ void SlaveContextLogger::set(IRoxieQueryPacket *packet)
                 traceInfo += debugLen + sizeof(unsigned short);
                 traceLength -= debugLen + sizeof(unsigned short);
             }
+            // Passing the wuid via the logging context is a bit of a hack...
+            int wuidLen = 0;
+            while (wuidLen < traceLength)
+            {
+                if (traceInfo[wuidLen]=='@')
+                    break;
+                wuidLen++;
+            }
+            wuid.set((const char *) traceInfo, wuidLen);
         }
         channel = header.channel;
-
         StringBuffer s(traceLength, (const char *) traceInfo);
         s.append("|");
         ip.getIpText(s);
@@ -586,6 +595,45 @@ void decIbytiDelay(unsigned channel, unsigned factor = 2)
     }
     if (traceLevel > 8 && prevVal != newVal)
         DBGLOG("Dec IBYTI delay value for channel %u from %u to %u (factor=%u)", channel, prevVal, newVal, factor);
+}
+
+//=================================================================================
+
+static SpinLock onDemandQueriesCrit;
+static MapXToMyClass<hash64_t, hash64_t, IQueryFactory> onDemandQueryCache;
+
+void sendUnloadMessage(hash64_t hash, const char *id, const IRoxieContextLogger &logctx)
+{
+    unsigned packetSize = sizeof(RoxiePacketHeader) + sizeof(char) + strlen(id) + 1;
+    void *packetData = malloc(packetSize);
+    RoxiePacketHeader *header = (RoxiePacketHeader *) packetData;
+    RemoteActivityId unloadId(ROXIE_UNLOAD, hash);
+    header->init(unloadId, 0, 0, 0);
+
+    char *finger = (char *) (header + 1);
+    *finger++ = (char) LOGGING_FLAGSPRESENT;
+    strcpy(finger, id);
+    finger += strlen(id)+1;
+    if (traceLevel > 1)
+        DBGLOG("UNLOAD sent for query %s", id);
+    Owned<IRoxieQueryPacket> packet = createRoxiePacket(packetData, packetSize);
+    ROQ->sendPacket(packet, logctx);
+}
+
+void doUnload(IRoxieQueryPacket *packet, const IRoxieContextLogger &logctx)
+{
+    const RoxiePacketHeader &header = packet->queryHeader();
+    unsigned channelNo = header.channel;
+    logctx.CTXLOG("Unload received for channel %d", channelNo);
+    hash64_t hashValue = header.queryHash;
+    SpinBlock b(onDemandQueriesCrit);
+    onDemandQueryCache.remove(hashValue+channelNo);
+}
+
+void cacheOnDemandQuery(hash64_t hashValue, unsigned channelNo, IQueryFactory *query)
+{
+    SpinBlock b(onDemandQueriesCrit);
+    onDemandQueryCache.setValue(hashValue+channelNo, query);
 }
 
 //=================================================================================
@@ -951,11 +999,14 @@ public:
         unsigned channel = header.channel;
         hash64_t queryHash = packet->queryHeader().queryHash;
         unsigned activityId = packet->queryHeader().activityId & ~ROXIE_PRIORITY_MASK;
-        Owned <ISlaveActivityFactory> factory;
         Owned<IQueryFactory> queryFactory = getQueryFactory(queryHash, channel);
-        if (queryFactory)
-            factory.setown(queryFactory->getSlaveActivityFactory(activityId));
-        if (!factory)
+        if (!queryFactory && logctx.queryWuid())
+        {
+            queryFactory.setown(createSlaveQueryFactoryFromWu(logctx.queryWuid(), channel));
+            if (queryFactory)
+                cacheOnDemandQuery(queryHash, channel, queryFactory);
+        }
+        if (!queryFactory)
         {
             StringBuffer hdr;
             IException *E = MakeStringException(MSGAUD_operator, ROXIE_UNKNOWN_QUERY, "Roxie slave received request for unregistered query: %s", packet->queryHeader().toString(hdr).str());
@@ -1042,10 +1093,12 @@ public:
                 }
                 return;
             }
-            setActivity(factory->createActivity(logctx, packet));
             if (!debugging)
                 ROQ->sendIbyti(header, logctx);
             atomic_inc(&activitiesStarted);
+            Owned <ISlaveActivityFactory> factory = queryFactory->getSlaveActivityFactory(activityId);
+            assertex(factory);
+            setActivity(factory->createActivity(logctx, packet));
             bool skip = false;
 #ifdef TEST_SLAVE_FAILURE
             if (testSlaveFailure) 
@@ -1173,6 +1226,10 @@ public:
                         {
                             StringBuffer s;
                             logctx.CTXLOG("Ignoring packet for suspended channel %d: %s", header.channel, header.toString(s).str());
+                        }
+                        else if ((header.activityId & ~ROXIE_PRIORITY_MASK) == ROXIE_UNLOAD)
+                        {
+                            doUnload(packet, logctx);
                         }
                         else if ((header.activityId & ~ROXIE_PRIORITY_MASK) == ROXIE_PING)
                         {
@@ -2586,6 +2643,7 @@ IPacketDiscarder *createPacketDiscarder()
     packetDiscarder->start();
     return packetDiscarder;
 }
+
 
 //================================================================================================================================
 

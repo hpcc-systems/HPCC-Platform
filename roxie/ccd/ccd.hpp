@@ -86,6 +86,7 @@ extern unsigned myNodeIndex;
 // Status information returned in the activityId field of the header:
 // note - any of these also also set sequence top bit to ensure not regarded as dup.
 #define ROXIE_ACTIVITY_SPECIAL_FIRST    0x3ffffff0u
+#define ROXIE_UNLOAD 0x3ffffff6u
 #define ROXIE_DEBUGREQUEST 0x3ffffff7u
 #define ROXIE_DEBUGCALLBACK 0x3ffffff8u
 #define ROXIE_PING 0x3ffffff9u
@@ -958,6 +959,7 @@ class SlaveContextLogger : public StringContextLogger
     bool traceActivityTimes;
     bool debuggerActive;
     IpAddress ip;
+    StringAttr wuid;
 public:
     SlaveContextLogger();
     SlaveContextLogger(IRoxieQueryPacket *packet);
@@ -973,6 +975,10 @@ public:
     inline void requestAbort()
     {
         stats.requestAbort();
+    }
+    inline const char *queryWuid()
+    {
+        return wuid.get();
     }
 };
 #endif

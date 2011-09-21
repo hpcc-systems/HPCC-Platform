@@ -43,6 +43,7 @@
 
 #include "dafdesc.hpp"
 #include "dautils.hpp"
+#include "wujobq.hpp"
 
 namespace ccdserver_hqlhelper
 {
@@ -27812,7 +27813,10 @@ public:
 
     virtual IWorkUnit *updateWorkUnit() const
     {
-        throwUnexpected();
+        if (workUnit)
+            return &workUnit->lock();
+        else
+            return NULL;
     }
 };
 
@@ -28175,14 +28179,7 @@ protected:
     void addWuException(IException *E)
     {
         if (workUnit)
-        {
-            StringBuffer message;
-            E->errorMessage(message);
-            unsigned code = E->errorCode();
-            OERRLOG("%d - %s", code, message.str());
-            WorkunitUpdate w(&workUnit->lock());
-            addExceptionToWorkunit(w, ExceptionSeverityError, "Roxie", code, message.str(), NULL, 0, 0);
-        }
+            ::addWuException(workUnit, E);
     }
 
     void init()
@@ -28231,6 +28228,16 @@ public:
         context.setown(createPTree(ipt_caseInsensitive));
     }
 
+    CRoxieServerContext(IConstWorkUnit *_workUnit, const IQueryFactory *_factory, const IRoxieContextLogger &_logctx)
+        : CSlaveContext(_factory, _logctx, 0, 0, NULL, false, false), serverQueryFactory(_factory)
+    {
+        init();
+        workUnit.set(_workUnit);
+        rowManager->setMemoryLimit(serverQueryFactory->getMemoryLimit());
+        workflow.setown(_factory->createWorkflowMachine(false, logctx));
+        context.setown(createPTree(ipt_caseInsensitive));
+    }
+
     CRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, bool _isXml, bool _isRaw, bool _isBlocked, HttpHelper &httpHelper, bool _trim, unsigned _priority, const IRoxieContextLogger &_logctx, const SocketEndpoint &poolEndpoint, XmlReaderOptions _xmlReadFlags)
         : CSlaveContext(_factory, _logctx, 0, 0, NULL, false, false), serverQueryFactory(_factory)
     {
@@ -28257,6 +28264,8 @@ public:
             IRoxieDaliHelper *daliHelper = checkDaliConnection();
             assertex(daliHelper );
             workUnit.setown(daliHelper->attachWorkunit(wuid, _factory->queryDll())); 
+            if (!workUnit)
+                throw MakeStringException(ROXIE_DALI_ERROR, "Failed to open workunit %s", wuid);
             WorkunitUpdate wu(&workUnit->lock());
             debugRequested = workUnit->getDebugValueBool("Debug", false);
             if (debugRequested)
@@ -28482,6 +28491,8 @@ public:
     // interface ICodeContext
     virtual FlushingStringBuffer *queryResult(unsigned sequence)
     {
+        if (!client && workUnit)
+            return NULL;    // when outputting to workunit only, don't output anything to stdout
         CriticalBlock procedure(resultsCrit);
         while (!resultMap.isItem(sequence))
             resultMap.append(NULL);
@@ -29858,6 +29869,11 @@ IRoxieServerContext *createOnceServerContext(const IQueryFactory *factory, const
 {
     return new CRoxieServerContext(factory, _logctx);
 }
+
+IRoxieServerContext *createWorkUnitServerContext(IConstWorkUnit *wu, const IQueryFactory *factory, const IRoxieContextLogger &_logctx)
+{
+    return new CRoxieServerContext(wu, factory, _logctx);
+}
 //======================================================================================================================
 
 static void controlException(StringBuffer &response, IException *E, const IRoxieContextLogger &logctx)
@@ -30495,35 +30511,17 @@ public:
 
 //================================================================================================================
 
-class RoxieSocketListener : public Thread, implements IRoxieSocketListener, implements IThreadFactory
+class RoxieListener : public Thread, implements IRoxieListener, implements IThreadFactory
 {
-    unsigned port;
-    unsigned poolSize;
-    unsigned listenQueue;
-    bool running;
-    bool suspended;
-    Semaphore started;
-    Owned<ISocket> socket;
-    Owned<IThreadPool> pool;
-    SocketEndpoint ep;
-
-    unsigned threadsActive;
-    unsigned maxThreadsActive;
-    CriticalSection activeCrit;
-    friend class ActiveQueryLimiter;
-
 public:
     IMPLEMENT_IINTERFACE;
-    RoxieSocketListener(unsigned _port, unsigned _poolSize, unsigned _listenQueue, bool _suspended) : Thread("RoxieSocketListener")
+    RoxieListener(unsigned _poolSize, bool _suspended) : Thread("RoxieListener")
     {
-        port = _port;
         running = false;
         suspended = _suspended;
         poolSize = _poolSize;
-        listenQueue = _listenQueue;
         threadsActive = 0;
         maxThreadsActive = 0;
-        ep.set(port, queryHostIP());
     }
 
     virtual void start()
@@ -30540,49 +30538,11 @@ public:
         if (running)
         {
             running = false;
-            socket->cancel_accept();
             join();
             Release();
         }
         return pool->joinAll(false, timeout);
     }
-
-    virtual void stopListening()
-    {
-        // Not threadsafe, but we only call this when generating a core file... what's the worst that can happen?
-        try
-        {
-            DBGLOG("Closing listening socket %d", port);
-            socket.clear();
-            DBGLOG("Closed listening socket %d", port);
-        }
-        catch(...)
-        {
-        }
-    }
-
-    virtual int run()
-    {
-        DBGLOG("RoxieSocketListener (%d threads) listening to socket on port %d", poolSize, port);
-        socket.setown(ISocket::create(port, listenQueue));
-        running = true;
-        started.signal();
-        while (running)
-        {
-            ISocket *client = socket->accept(true);
-            if (client)
-            {
-                client->set_linger(-1);
-                pool->start(client);
-            }
-        }
-        DBGLOG("RoxieSocketListener closed query socket");
-        return 0;
-    }
-
-    virtual void runOnce(const char *query);
-
-    virtual IPooledThread *createNew();
 
     void reportBadQuery(const char *name, const IRoxieContextLogger &logctx)
     {
@@ -30590,7 +30550,10 @@ public:
         logctx.logOperatorException(NULL, NULL, 0, "Unknown query %s", name);
     }
 
-    CIArrayOf<AccessTableEntry> accessTable;
+    void checkWuAccess(bool isBlind)
+    {
+        // Could do some LDAP access checking here (via Dali?)
+    }
 
     void checkAccess(IpAddress &peer, const char *queryName, const char *queryText, bool isBlind)
     {
@@ -30624,16 +30587,6 @@ public:
         }
     }
 
-    virtual const SocketEndpoint &queryEndpoint() const
-    {
-        return ep;
-    }
-
-    virtual unsigned queryPort() const
-    {
-        return port;
-    }
-
     virtual bool suspend(bool suspendIt)
     {
         CriticalBlock b(activeCrit);
@@ -30657,21 +30610,167 @@ public:
         }
         info.append("</ACCESSINFO>\n");
     }
+
+protected:
+    unsigned poolSize;
+    bool running;
+    bool suspended;
+    Semaphore started;
+    Owned<IThreadPool> pool;
+
+    unsigned threadsActive;
+    unsigned maxThreadsActive;
+    CriticalSection activeCrit;
+    friend class ActiveQueryLimiter;
+
+private:
+    CIArrayOf<AccessTableEntry> accessTable;
+};
+
+class RoxieWorkUnitListener : public RoxieListener
+{
+public:
+    RoxieWorkUnitListener(unsigned _poolSize, bool _suspended)
+      : RoxieListener(_poolSize, _suspended)
+    {
+        SCMStringBuffer names;
+        getRoxieQueueNames(names, topology->queryProp("@name"));
+        queueNames.set(names.str());
+    }
+
+    virtual const SocketEndpoint& queryEndpoint() const
+    {
+        throwUnexpected(); // MORE get rid of this function altogether?
+    }
+
+    virtual unsigned int queryPort() const
+    {
+        return 0;
+    }
+
+    virtual void runOnce(const char*)
+    {
+        UNIMPLEMENTED;
+    }
+
+    virtual void stopListening()
+    {
+        // Nothing to do
+    }
+
+    virtual int run()
+    {
+        if (traceLevel)
+            DBGLOG("roxie: Waiting on queue(s) '%s'", queueNames.get());
+        running = true;
+        Owned<IJobQueue> queue = createJobQueue(queueNames.get());
+        queue->connect();
+        started.signal();
+        while (running)
+        {
+            Owned<IJobQueueItem> item = queue->dequeue(5000);
+            if (item.get())
+            {
+                if (traceLevel)
+                    PROGLOG("roxie: Dequeued workunit request '%s'", item->queryWUID());
+                pool->start((void *) item->queryWUID());
+            }
+        }
+        return 0;
+    }
+
+    virtual IPooledThread* createNew();
+private:
+    StringAttr queueNames;
+};
+
+class RoxieSocketListener : public RoxieListener
+{
+    unsigned port;
+    unsigned listenQueue;
+    Owned<ISocket> socket;
+    SocketEndpoint ep;
+
+public:
+    RoxieSocketListener(unsigned _port, unsigned _poolSize, unsigned _listenQueue, bool _suspended)
+      : RoxieListener(_poolSize, _suspended)
+    {
+        port = _port;
+        listenQueue = _listenQueue;
+        ep.set(port, queryHostIP());
+    }
+
+    virtual bool stop(unsigned timeout)
+    {
+        if (socket)
+        {
+            socket->cancel_accept();
+            socket.clear();
+        }
+        return RoxieListener::stop(timeout);
+    }
+
+    virtual void stopListening()
+    {
+        // Not threadsafe, but we only call this when generating a core file... what's the worst that can happen?
+        try
+        {
+            DBGLOG("Closing listening socket %d", port);
+            socket.clear();
+            DBGLOG("Closed listening socket %d", port);
+        }
+        catch(...)
+        {
+        }
+    }
+
+    virtual void runOnce(const char *query);
+
+    virtual int run()
+    {
+        DBGLOG("RoxieSocketListener (%d threads) listening to socket on port %d", poolSize, port);
+        socket.setown(ISocket::create(port, listenQueue));
+        running = true;
+        started.signal();
+        while (running)
+        {
+            ISocket *client = socket->accept(true);
+            if (client)
+            {
+                client->set_linger(-1);
+                pool->start(client);
+            }
+        }
+        DBGLOG("RoxieSocketListener closed query socket");
+        return 0;
+    }
+
+    virtual IPooledThread *createNew();
+
+    virtual const SocketEndpoint &queryEndpoint() const
+    {
+        return ep;
+    }
+
+    virtual unsigned queryPort() const
+    {
+        return port;
+    }
 };
 
 class ActiveQueryLimiter
 {
-    RoxieSocketListener *parent;
+    RoxieListener *parent;
 public:
     bool accepted;
-    ActiveQueryLimiter(RoxieSocketListener *_parent) : parent(_parent)
+    ActiveQueryLimiter(RoxieListener *_parent) : parent(_parent)
     {
         CriticalBlock b(parent->activeCrit);
         if (parent->suspended)
         {
             accepted = false;
             if (traceLevel > 1)
-                DBGLOG("Rejecting query since Roxie server pool %d is suspended ", parent->port);
+                DBGLOG("Rejecting query since Roxie server pool %d is suspended ", parent->queryPort());
         }
         else
         {
@@ -30680,7 +30779,7 @@ public:
             {
                 parent->maxThreadsActive = parent->threadsActive;
                 if (traceLevel > 1)
-                    DBGLOG("Maximum queries active %d of %d for pool %d", parent->threadsActive, parent->poolSize, parent->port);
+                    DBGLOG("Maximum queries active %d of %d for pool %d", parent->threadsActive, parent->poolSize, parent->queryPort());
             }
             if (!accepted && traceLevel > 5)
                 DBGLOG("Too many active queries (%d >= %d)", parent->threadsActive, parent->poolSize);
@@ -30695,14 +30794,40 @@ public:
     }
 };
 
-class RoxieSocketWorker : public CInterface, implements IPooledThread
+class RoxieQueryWorker : public CInterface, implements IPooledThread
 {
-    RoxieSocketListener *pool;
-    Owned<SafeSocket> client;
-    Owned<CDebugCommandHandler> debugCmdHandler;
+public:
+    IMPLEMENT_IINTERFACE;
+
+    RoxieQueryWorker(RoxieListener *_pool)
+    {
+        pool = _pool;
+        qstart = msTick();
+        time(&startTime);
+    }
+
+    //  interface IPooledThread
+    virtual void init(void *)
+    {
+        qstart = msTick();
+        time(&startTime);
+    }
+
+    virtual bool canReuse()
+    {
+        return true;
+    }
+
+    virtual bool stop()
+    {
+        ERRLOG("RoxieQueryWorker stopped with queries active");
+        return true;
+    }
+
+protected:
+    RoxieListener *pool;
     unsigned qstart;
     time_t startTime;
-    SocketEndpoint ep;
 
     inline RoxieQueryStats &getStats(unsigned priority)
     {
@@ -30727,23 +30852,165 @@ class RoxieSocketWorker : public CInterface, implements IPooledThread
         RoxieQueryStats &stats = getStats(priority);
         stats.noteQuery(failed, elapsedTime);
     }
+};
+
+/**
+ * RoxieWorkUnitWorker is the threadpool member that runs a query submitted as a
+ * workunit via a job queue. A temporary IQueryFactory object is created for the
+ * workunit and then executed.
+ *
+ * Any slaves that need to load the query do so using a lazy load mechanism, checking
+ * whether the wuid named in the logging prefix info can be loaded any time a query
+ * is received for which no factory exists. Any query that a slave loads as a
+ * result is added to a cache to ensure that it stays around until the server's query
+ * terminates - a ROXIE_UNLOAD message is broadcast at that time to allow the slaves
+ * to release any cached IQueryFactory objects.
+ *
+ **/
+
+class RoxieWorkUnitWorker : public RoxieQueryWorker
+{
+public:
+    RoxieWorkUnitWorker(RoxieListener *_pool)
+        : RoxieQueryWorker(_pool)
+    {
+    }
+
+    virtual void init(void *_r)
+    {
+        wuid.set((const char *) _r);
+        RoxieQueryWorker::init(_r);
+    }
+
+    virtual void main()
+    {
+        Owned <IRoxieDaliHelper> daliHelper = connectToDali();
+        Owned<IConstWorkUnit> wu = daliHelper->attachWorkunit(wuid.get(), NULL);
+        if (!wu)
+            throw MakeStringException(ROXIE_DALI_ERROR, "Failed to open workunit %s", wuid.get());
+        Owned<IQueryFactory> queryFactory = createServerQueryFactoryFromWu(wuid.get());
+        Owned<StringContextLogger> logctx = new StringContextLogger(wuid.get());
+        doMain(wu, queryFactory, *logctx);
+        sendUnloadMessage(queryFactory->queryHash(), wuid.get(), *logctx);
+    }
+
+    void doMain(IConstWorkUnit *wu, IQueryFactory *queryFactory, StringContextLogger &logctx)
+    {
+        bool failed = true; // many paths to failure, only one to success...
+        unsigned memused = 0;
+        unsigned slavesReplyLen = 0;
+        unsigned priority = (unsigned) -2;
+        try
+        {
+            atomic_inc(&queryCount);
+
+            bool isBlind = wu->getDebugValueBool("blindLogging", false);
+            pool->checkWuAccess(isBlind);
+            isBlind = isBlind || blindLogging;
+            logctx.setBlind(isBlind);
+            ActiveQueryLimiter l(pool);
+            if (!l.accepted)
+            {
+                IException *e = MakeStringException(ROXIE_TOO_MANY_QUERIES, "Too many active queries");
+                if (trapTooManyActiveQueries)
+                    logctx.logOperatorException(e, __FILE__, __LINE__, NULL);
+                throw e;
+            }
+            priority = queryFactory->getPriority();
+            switch (priority)
+            {
+            case 0: loQueryStats.noteActive(); break;
+            case 1: hiQueryStats.noteActive(); break;
+            case 2: slaQueryStats.noteActive(); break;
+            }
+            Owned<IRoxieServerContext> ctx = queryFactory->createContext(wu, logctx);
+            try
+            {
+                ctx->process();
+                memused = ctx->getMemoryUsage();
+                slavesReplyLen = ctx->getSlavesReplyLen();
+                ctx->done(false);
+                failed = false;
+            }
+            catch(...)
+            {
+                memused = ctx->getMemoryUsage();
+                slavesReplyLen = ctx->getSlavesReplyLen();
+                ctx->done(true);
+                throw;
+            }
+        }
+        catch (WorkflowException *E)
+        {
+            reportException(wu, E, logctx);
+            E->Release();
+        }
+        catch (IException *E)
+        {
+            reportException(wu, E, logctx);
+            E->Release();
+        }
+#ifndef _DEBUG
+        catch(...)
+        {
+            IException *E = MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception");
+            reportException(wu, E, logctx);
+            E->Release();
+        }
+#endif
+        unsigned elapsed = msTick() - qstart;
+        noteQuery(failed, elapsed, priority);
+        queryFactory->noteQuery(startTime, failed, elapsed, memused, slavesReplyLen, 0);
+        if (logctx.queryTraceLevel() > 2)
+            logctx.dumpStats();
+        if (logctx.queryTraceLevel() && (logctx.queryTraceLevel() > 2 || logFullQueries || logctx.intercept))
+            logctx.CTXLOG("COMPLETE: %s complete in %d msecs memory %d Mb priority %d slavesreply %d", wuid.get(), elapsed, memused, priority, slavesReplyLen);
+        logctx.flush(true, false);
+    }
+
+private:
+    void reportException(IConstWorkUnit *wu, IException *E, const IRoxieContextLogger &logctx)
+    {
+        logctx.CTXLOG("FAILED: %s", wuid.get());
+        StringBuffer error;
+        E->errorMessage(error);
+        logctx.CTXLOG("EXCEPTION: %s", error.str());
+        addWuException(wu, E);
+    }
+
+    StringAttr wuid;
+};
+
+class RoxieSocketWorker : public RoxieQueryWorker
+{
+    Owned<SafeSocket> client;
+    Owned<CDebugCommandHandler> debugCmdHandler;
+    SocketEndpoint ep;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
-    RoxieSocketWorker(RoxieSocketListener *_pool, SocketEndpoint &_ep) : pool(_pool), ep(_ep)
+    RoxieSocketWorker(RoxieListener *_pool, SocketEndpoint &_ep)
+        : RoxieQueryWorker(_pool), ep(_ep)
     {
-        qstart = msTick();
-        time(&startTime);
     }
 
-    void init(void *_r)
+    //  interface IPooledThread
+    virtual void init(void *_r)
     {
         client.setown(new CSafeSocket((ISocket *) _r));
-        qstart = msTick();
-        time(&startTime);
+        RoxieQueryWorker::init(_r);
     }
 
+    virtual void main()
+    {
+        doMain("");
+    }
+
+    virtual void runOnce(const char *query)
+    {
+        doMain(query);
+    }
+
+private:
     static void sendHttpServerTooBusy(SafeSocket &client, const IRoxieContextLogger &logctx)
     {
         StringBuffer message;
@@ -30829,11 +31096,6 @@ public:
         }
         else
             throw MakeStringException(ROXIE_DATA_ERROR, "Malformed request");
-    }
-
-    void main()
-    {
-        doMain("");
     }
 
     void doMain(const char *runQuery)
@@ -31344,23 +31606,16 @@ readAnother:
 //#endif
         }
     }
-
-    bool canReuse()
-    {
-        return true;
-    }
-
-    bool stop()
-    {
-        ERRLOG("RoxieSocketWorker stopped with queries active");
-        return true; 
-    }
-
 };
 
 //=================================================================================
 
-IArrayOf<IRoxieSocketListener> socketListeners;
+IArrayOf<IRoxieListener> socketListeners;
+
+IPooledThread *RoxieWorkUnitListener::createNew()
+{
+    return new RoxieWorkUnitWorker(this);
+}
 
 IPooledThread *RoxieSocketListener::createNew()
 {
@@ -31370,25 +31625,32 @@ IPooledThread *RoxieSocketListener::createNew()
 void RoxieSocketListener::runOnce(const char *query)
 {
     Owned<RoxieSocketWorker> p = new RoxieSocketWorker(this, ep);
-    p->doMain(query);
+    p->runOnce(query);
 }
 
-IRoxieSocketListener *createRoxieSocketListener(unsigned port, unsigned poolSize, unsigned listenQueue, bool suspended)
+IRoxieListener *createRoxieSocketListener(unsigned port, unsigned poolSize, unsigned listenQueue, bool suspended)
 {
     if (traceLevel)
         DBGLOG("Creating Roxie socket listener, pool size %d, listen queue %d%s", poolSize, listenQueue, suspended?" SUSPENDED":"");
     return new RoxieSocketListener(port, poolSize, listenQueue, suspended);
 }
 
-bool suspendRoxieSocketListener(unsigned port, bool suspended)
+IRoxieListener *createRoxieWorkUnitListener(unsigned poolSize, bool suspended)
+{
+    if (traceLevel)
+        DBGLOG("Creating Roxie workunit listener, pool size %d%s", poolSize, suspended?" SUSPENDED":"");
+    return new RoxieWorkUnitListener(poolSize, suspended);
+}
+
+bool suspendRoxieListener(unsigned port, bool suspended)
 {
     ForEachItemIn(idx, socketListeners)
     {
-        IRoxieSocketListener &listener = socketListeners.item(idx);
+        IRoxieListener &listener = socketListeners.item(idx);
         if (listener.queryPort()==port)
             return listener.suspend(suspended);
     }
-    throw MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown port %u specified in suspendRoxieSocketListener", port);
+    throw MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown port %u specified in suspendRoxieListener", port);
 }
 
 //================================================================================================================================
@@ -31658,7 +31920,7 @@ protected:
         package.setown(createPackage(NULL));
         ctx.setown(createSlaveContext(NULL, logctx, 0, 50*1024*1024, NULL));
         queryDll.setown(createExeQueryDll("roxie"));
-        queryFactory.setown(createRoxieServerQueryFactory("test", queryDll.getLink(), *package, NULL));
+        queryFactory.setown(createServerQueryFactory("test", queryDll.getLink(), *package, NULL, 0));
         timer->reset();
     }
 

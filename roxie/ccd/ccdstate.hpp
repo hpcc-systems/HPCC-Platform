@@ -52,9 +52,11 @@ interface IPackageMap : public IInterface
 {
     virtual void addPackage(const char *name, IRoxiePackage *package) = 0;
     virtual const IRoxiePackage *queryPackage(const char *name) const = 0;
-    virtual const IRoxiePackage *queryRootPackage() const = 0;
     virtual IPropertyTree *getQuerySets() const = 0;
+    virtual const char *queryPackageId() const = 0;
 };
+extern const IRoxiePackage &queryRootPackage();
+extern const IPackageMap &queryEmptyPackageMap();
 
 interface IRoxiePackage : extends IInterface 
 {
@@ -116,8 +118,16 @@ interface IRoxieDebugSessionManager : extends IInterface
     virtual IDebuggerContext *lookupDebuggerContext(const char *id) = 0;
 };
 
+interface IRoxieResourceManagerSet : extends IInterface
+{
+    virtual void load(const IPropertyTree *querySets, const IPackageMap &packages) = 0;
+};
+
 class GlobalResourceManager;
 
+extern IRoxieResourceManager *createServerManager();
+extern IRoxieResourceManager *createSlaveManager();
+extern IRoxieResourceManagerSet *createSlaveManagerSet();
 extern const IRoxieResourceManager *getRoxieServerManager();
 extern IRoxieDebugSessionManager *getRoxieDebugSessionManager();
 extern void selectPackage(const char * packageId);
