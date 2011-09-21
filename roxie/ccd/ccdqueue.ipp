@@ -122,5 +122,6 @@ extern IPacketDiscarder *createPacketDiscarder();
 extern void startPingTimer();
 extern void stopPingTimer();
 extern void closeMulticastSockets();
+extern void sendUnloadMessage(hash64_t hash, const char *id, const IRoxieContextLogger &logctx);
 
 #endif

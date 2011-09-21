@@ -558,6 +558,7 @@ interface IConstWUClusterInfo : extends IInterface
     virtual unsigned getSize() const = 0;
     virtual IStringVal & getPlatform(IStringVal & str) const = 0;
     virtual IStringVal & getAgentQueue(IStringVal & str) const = 0;
+    virtual IStringVal & getRoxieQueue(IStringVal & str) const = 0;
     virtual IStringVal & getServerQueue(IStringVal & str) const = 0;
     virtual IStringVal & getQuerySetName(IStringVal & str) const = 0;
 };
@@ -1135,6 +1136,7 @@ extern WORKUNIT_API IStringVal &getEclCCServerQueueNames(IStringVal &ret, const 
 extern WORKUNIT_API IStringVal &getEclServerQueueNames(IStringVal &ret, const char *process);
 extern WORKUNIT_API IStringVal &getEclSchedulerQueueNames(IStringVal &ret, const char *process);
 extern WORKUNIT_API IStringVal &getAgentQueueNames(IStringVal &ret, const char *process);
+extern WORKUNIT_API IStringVal &getRoxieQueueNames(IStringVal &ret, const char *process);
 extern WORKUNIT_API IStringVal &getThorQueueNames(IStringVal &ret, const char *process);
 extern WORKUNIT_API IStringIterator *getTargetClusters(const char *processType, const char *processName);
 extern WORKUNIT_API IConstWUClusterInfo* getTargetClusterInfo(const char *clustname);

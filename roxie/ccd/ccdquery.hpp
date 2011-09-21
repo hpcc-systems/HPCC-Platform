@@ -110,6 +110,7 @@ interface IQueryFactory : extends IInterface
     virtual bool getDebugValueBool(const char * propname, bool defVal) const = 0;
 
     virtual IRoxieServerContext *createContext(IPropertyTree *xml, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, const IRoxieContextLogger &_logctx, const SocketEndpoint &poolEndpoint, XmlReaderOptions xmlReadFlags) const = 0;
+    virtual IRoxieServerContext *createContext(IConstWorkUnit *wu, const IRoxieContextLogger &_logctx) const = 0;
     virtual void noteQuery(time_t startTime, bool failed, unsigned elapsed, unsigned memused, unsigned slavesReplyLen, unsigned bytesOut) = 0;
     virtual IPropertyTree *getQueryStats(time_t from, time_t to) = 0;
     virtual void getGraphNames(StringArray &ret) const = 0;
@@ -346,9 +347,11 @@ extern const IQueryDll *createQueryDll(const char *dllName);
 extern const IQueryDll *createExeQueryDll(const char *exeName);
 
 extern IRecordLayoutTranslator *createRecordLayoutTranslator(const char *logicalName, IDefRecordMeta const * diskMeta, IDefRecordMeta const * activityMeta);
-extern IQueryFactory *createRoxieServerQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo);
+extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo);
 extern IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, unsigned _channelNo, const IPropertyTree *stateInfo);
 extern IQueryFactory *getQueryFactory(hash64_t hashvalue, unsigned channel);
+extern IQueryFactory *createServerQueryFactoryFromWu(const char *wuid);
+extern IQueryFactory *createSlaveQueryFactoryFromWu(const char *wuid, unsigned channelNo);
 
 inline unsigned findParentId(IPropertyTree &node)
 {

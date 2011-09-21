@@ -3797,6 +3797,7 @@ class CEnvironmentClusterInfo: public CInterface, implements IConstWUClusterInfo
     StringAttr name;
     StringAttr serverQueue;
     StringAttr agentQueue;
+    StringAttr roxieQueue;
     StringAttr thorQueue;
     StringAttr prefix;
     StringAttr platform;
@@ -3841,6 +3842,8 @@ public:
 
         if (agent)
             agentQueue.set(queue.clear().append(name).append(".agent"));
+        if (roxie)
+            roxieQueue.set(queue.clear().append(name).append(".roxie"));
         // MORE - does this need to be conditional?
         serverQueue.set(queue.clear().append(name).append(".eclserver"));
     }
@@ -3857,6 +3860,11 @@ public:
     IStringVal & getAgentQueue(IStringVal & str) const
     {
         str.set(agentQueue);
+        return str;
+    }
+    IStringVal & getRoxieQueue(IStringVal & str) const
+    {
+        str.set(roxieQueue);
         return str;
     }
     virtual IStringVal & getServerQueue(IStringVal & str) const
@@ -3931,6 +3939,11 @@ extern WORKUNIT_API IStringVal &getEclSchedulerQueueNames(IStringVal &ret, const
 extern WORKUNIT_API IStringVal &getAgentQueueNames(IStringVal &ret, const char *process)
 {
     return getProcessQueueNames(ret, process, "EclAgentProcess", ".agent");
+}
+
+extern WORKUNIT_API IStringVal &getRoxieQueueNames(IStringVal &ret, const char *process)
+{
+    return getProcessQueueNames(ret, process, "RoxieCluster", ".roxie");
 }
 
 extern WORKUNIT_API IStringVal &getThorQueueNames(IStringVal &ret, const char *process)
