@@ -8119,7 +8119,6 @@ void CHqlParameter::sethash()
 
 IHqlExpression *CHqlParameter::clone(HqlExprArray &newkids)
 {
-    throwUnexpected();
     return makeParameter(name, idx, LINK(type), newkids);
 }
 
