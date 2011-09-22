@@ -10529,21 +10529,21 @@ protected:
     void updateWorkUnitResult(unsigned __int64 reccount)
     {
         // MORE - a lot of this is common with hthor
-        WorkunitUpdate wu = ctx->updateWorkUnit();
-        if (wu)
+        if(lfn.length()) //this is required as long as temp files don't get a name which can be stored in the WU and automatically deleted by the WU
         {
-            unsigned flags = helper.getFlags();
-            WUFileKind fileKind;
-            if (TDXtemporary & flags)
-                fileKind = WUFileTemporary;
-            else if(TDXjobtemp & flags)
-                fileKind = WUFileJobOwned;
-            else if(TDWowned & flags)
-                fileKind = WUFileOwned;
-            else
-                fileKind = WUFileStandard;
-            if(lfn.length()) //this is required as long as temp files don't get a name which can be stored in the WU and automatically deleted by the WU
+            WorkunitUpdate wu = ctx->updateWorkUnit();
+            if (wu)
             {
+                unsigned flags = helper.getFlags();
+                WUFileKind fileKind;
+                if (TDXtemporary & flags)
+                    fileKind = WUFileTemporary;
+                else if(TDXjobtemp & flags)
+                    fileKind = WUFileJobOwned;
+                else if(TDWowned & flags)
+                    fileKind = WUFileOwned;
+                else
+                    fileKind = WUFileStandard;
                 StringArray clusters;
                 if (clusterHandler)
                     clusterHandler->getClusters(clusters);
