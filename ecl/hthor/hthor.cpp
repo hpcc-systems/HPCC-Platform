@@ -727,19 +727,9 @@ void CHThorDiskWriteActivity::publish()
 
 void CHThorDiskWriteActivity::updateWorkUnitResult(unsigned __int64 reccount)
 {
-    WorkunitUpdate wu = agent.updateWorkUnit();
-    unsigned flags = helper.getFlags();
-    WUFileKind fileKind;
-    if (TDXtemporary & flags)
-        fileKind = WUFileTemporary;
-    else if(TDXjobtemp & flags)
-        fileKind = WUFileJobOwned;
-    else if(TDWowned & flags)
-        fileKind = WUFileOwned;
-    else
-        fileKind = WUFileStandard;
     if(lfn.length()) //this is required as long as temp files don't get a name which can be stored in the WU and automatically deleted by the WU
     {
+        WorkunitUpdate wu = agent.updateWorkUnit();
         StringArray clusters;
         if (clusterHandler)
             clusterHandler->getClusters(clusters);
@@ -749,8 +739,20 @@ void CHThorDiskWriteActivity::updateWorkUnitResult(unsigned __int64 reccount)
             wu->getClusterName(tgtCluster);
             clusters.append(tgtCluster.str());
         }
+        unsigned flags = helper.getFlags();
         if (!agent.queryResolveFilesLocally())
+        {
+            WUFileKind fileKind;
+            if (TDXtemporary & flags)
+                fileKind = WUFileTemporary;
+            else if(TDXjobtemp & flags)
+                fileKind = WUFileJobOwned;
+            else if(TDWowned & flags)
+                fileKind = WUFileOwned;
+            else
+                fileKind = WUFileStandard;
             wu->addFile(lfn.str(), &clusters, helper.getTempUsageCount(), fileKind, NULL);
+        }
         else if (TDXtemporary & flags)          
             agent.noteTemporaryFilespec(filename);//note for later deletion
         if (!(flags & TDXtemporary) && helper.getSequence() >= 0)
