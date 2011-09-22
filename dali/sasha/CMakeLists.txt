@@ -32,7 +32,6 @@ CHECK_LIBRARY_EXISTS(crypt crypt "" HAVE_LIBCRYPT)
 endif ()
 
 set (    SRCS 
-         ${HPCC_SOURCE_DIR}/common/remote/sockfile.cpp 
          saarch.cpp 
          sacmd.cpp 
          sacoalescer.cpp 

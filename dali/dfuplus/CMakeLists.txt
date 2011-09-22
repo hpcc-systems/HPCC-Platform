@@ -31,8 +31,6 @@ set (    SRCS
          ../../esp/bindings/bindutil.cpp
          ${ESPSCM_GENERATED_DIR}/ws_dfu_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_fs_esp.cpp
-         ../../common/remote/rmtfile.cpp
-         ../../common/remote/sockfile.cpp
          dfuplus.cpp
          main.cpp
     )
@@ -55,7 +53,6 @@ include_directories (
          ${CMAKE_BINARY_DIR}/oss
     )
 
-set_source_files_properties (../../common/remote/rmtfile.cpp PROPERTIES COMPILE_FLAGS -DDAFILESRV_LOCAL)
 set_source_files_properties (dfuplus.cpp PROPERTIES COMPILE_FLAGS -DDAFILESRV_LOCAL)
 
 ADD_DEFINITIONS( -D_CONSOLE )
@@ -65,6 +62,7 @@ add_dependencies ( dfuplus espscm )
 install ( TARGETS dfuplus DESTINATION ${OSSDIR}/bin )
 target_link_libraries ( dfuplus
          jlib
+         remote
          xmllib
          esphttp
          ws_fs

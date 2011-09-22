@@ -27,7 +27,6 @@
 project( dafscontrol ) 
 
 set (    SRCS 
-         ../../common/remote/sockfile.cpp 
          dafscontrol.cpp 
     )
 
