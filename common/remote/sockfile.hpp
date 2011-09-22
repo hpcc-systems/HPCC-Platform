@@ -22,8 +22,11 @@
 #include "jsocket.hpp"
 #include "jfile.hpp"
 
-
-
+#ifdef REMOTE_EXPORTS
+#define REMOTE_API __declspec(dllexport)
+#else
+#define REMOTE_API __declspec(dllimport)
+#endif
 
 #define RFEnoerror      0
 
@@ -38,18 +41,18 @@ public:
 #define FILESRV_VERSION 17 // don't forget VERSTRING in sockfile.cpp
 
 
-extern IFile * createRemoteFile(SocketEndpoint &ep,const char * _filename); // takes ownershop of socket
-extern unsigned getRemoteVersion(ISocket * _socket, StringBuffer &ver);
-extern unsigned stopRemoteServer(ISocket * _socket);
-extern IRemoteFileServer * createRemoteFileServer();
-extern const char *remoteServerVersionString();
+extern REMOTE_API IFile * createRemoteFile(SocketEndpoint &ep,const char * _filename); // takes ownershop of socket
+extern REMOTE_API unsigned getRemoteVersion(ISocket * _socket, StringBuffer &ver);
+extern REMOTE_API unsigned stopRemoteServer(ISocket * _socket);
+extern REMOTE_API const char *remoteServerVersionString();
+extern REMOTE_API IRemoteFileServer * createRemoteFileServer();
+extern REMOTE_API int setDafsTrace(ISocket * socket,byte flags);
+extern REMOTE_API bool enableDafsAuthentication(bool on);
 extern int remoteExec(ISocket * socket, const char *cmdline, const char *workdir,bool sync,
                 size32_t insize, void *inbuf, MemoryBuffer *outbuf);
 extern void remoteExtractBlobElements(const SocketEndpoint &ep, const char * prefix, const char * filename, ExtractedBlobArray & extracted);
-extern int setDafsTrace(ISocket * socket,byte flags);
 extern int getDafsInfo(ISocket * socket,StringBuffer &retstr);
 extern void setDafsEndpointPort(SocketEndpoint &ep);
-extern bool enableDafsAuthentication(bool on);
 extern void setDafsLocalMountRedirect(const IpAddress &ip,const char *dir,const char *mountdir);
 
 // client only
