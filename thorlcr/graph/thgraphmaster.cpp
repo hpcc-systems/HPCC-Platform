@@ -976,19 +976,16 @@ public:
     virtual __int64 countDiskFile(const char * name, unsigned recordSize)
     {
         unsigned __int64 size = 0;
-        StringBuffer lfn;
-        expandLogicalName(lfn, name);
-
-        Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(lfn.str(), userDesc);
+        Owned<IDistributedFile> f = queryThorFileManager().lookup(job, name);
         if (f) 
         {
             size = f->getFileSize(true,false);
             if (size % recordSize)
-                throw MakeStringException(9001, "File %s has size %"I64F"d which is not a multiple of record size %d", lfn.str(), size, recordSize);
+                throw MakeStringException(9001, "File %s has size %"I64F"d which is not a multiple of record size %d", name, size, recordSize);
             return size / recordSize;
         }
-        DBGLOG("Error could not resolve file %s", lfn.str());
-        throw MakeStringException(9003, "Error could not resolve %s", lfn.str());
+        DBGLOG("Error could not resolve file %s", name);
+        throw MakeStringException(9003, "Error could not resolve %s", name);
     }
     virtual __int64 countIndex(__int64 activityId, IHThorCountIndexArg & arg) { UNIMPLEMENTED; }
     virtual __int64 countDiskFile(__int64 id, IHThorCountFileArg & arg)
@@ -999,9 +996,8 @@ public:
         arg.onCreate(this, NULL, NULL);
         arg.onStart(NULL, NULL);
 
-        StringBuffer lfn;
-        expandLogicalName(lfn, arg.getFileName());
-        Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(lfn.str(),queryUserDescriptor());
+        const char *name = arg.getFileName();
+        Owned<IDistributedFile> f = queryThorFileManager().lookup(job, name, 0 != ((TDXtemporary|TDXjobtemp) & arg.getFlags()));
         if (f) 
         {
             IOutputMetaData * rs = arg.queryRecordSize();
@@ -1010,7 +1006,7 @@ public:
             unsigned __int64 size = f->getFileSize(true,false);
             if (size % recordSize)
             {
-                throw MakeStringException(0, "Physical file %s has size %"I64F"d which is not a multiple of record size %d", lfn.str(), size, recordSize);
+                throw MakeStringException(0, "Physical file %s has size %"I64F"d which is not a multiple of record size %d", name, size, recordSize);
             }
             return size / recordSize;
         }
@@ -1018,8 +1014,8 @@ public:
             return 0;
         else
         {
-            PrintLog("Error could not resolve file %s", lfn.str());
-            throw MakeStringException(0, "Error could not resolve %s", lfn.str());
+            PrintLog("Error could not resolve file %s", name);
+            throw MakeStringException(0, "Error could not resolve %s", name);
         }
     }
     virtual void addWuException(const char * text, unsigned code, unsigned severity)
