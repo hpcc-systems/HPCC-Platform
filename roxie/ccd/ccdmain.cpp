@@ -1005,12 +1005,15 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             }
         }
         delete [] primaries;
-
-        unsigned snifferChannel = numChannels+2; // MORE - why +2 not +1 ??
-        ROQ = createOutputQueueManager(snifferChannel, isCCD ? numSlaveThreads : 1);
+        setDaliServixSocketCaching(true);  // enable daliservix caching
+        loadPlugins();
         try
         {
-            createResourceManagers(standAloneDll, numChannels);
+            if (standAloneDll)
+                loadStandaloneQuery(standAloneDll, numChannels);
+            else
+                createResourceManagers(numChannels);
+            controlSem.signal();
         }
         catch(IException *E)
         {
@@ -1019,8 +1022,8 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             throw; // MORE - this may not be appropriate.
         }
         Owned<IPacketDiscarder> packetDiscarder = createPacketDiscarder();
-
-        setDaliServixSocketCaching(true);  // enable daliservix caching
+        unsigned snifferChannel = numChannels+2; // MORE - why +2 not +1 ??
+        ROQ = createOutputQueueManager(snifferChannel, isCCD ? numSlaveThreads : 1);
         ROQ->setHeadRegionSize(headRegionSize);
         ROQ->start();
 #if defined(WIN32) && defined(_DEBUG) && defined(_DEBUG_HEAP_FULL)

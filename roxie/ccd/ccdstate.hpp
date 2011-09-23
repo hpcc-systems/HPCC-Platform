@@ -136,7 +136,9 @@ extern void loadPackageSet(const char *packageId);
 extern GlobalResourceManager *getGlobalResourceManager(const char *packageId);
 extern GlobalResourceManager *getActiveGlobalResourceManager();
 
-extern void createResourceManagers(const IQueryDll *standAloneDll, unsigned numChannels);
+extern void loadPlugins();
+extern void loadStandaloneQuery(const IQueryDll *standAloneDll, unsigned numChannels);
+extern void createResourceManagers(unsigned numChannels);
 extern void cleanupResourceManagers();
 
 extern void doControlMessage(IPropertyTree *xml, StringBuffer &reply, const IRoxieContextLogger &ctx);

@@ -30902,17 +30902,20 @@ public:
             atomic_inc(&queryCount);
 
             bool isBlind = wu->getDebugValueBool("blindLogging", false);
-            pool->checkWuAccess(isBlind);
+            if (pool)
+            {
+                pool->checkWuAccess(isBlind);
+                ActiveQueryLimiter l(pool);
+                if (!l.accepted)
+                {
+                    IException *e = MakeStringException(ROXIE_TOO_MANY_QUERIES, "Too many active queries");
+                    if (trapTooManyActiveQueries)
+                        logctx.logOperatorException(e, __FILE__, __LINE__, NULL);
+                    throw e;
+                }
+            }
             isBlind = isBlind || blindLogging;
             logctx.setBlind(isBlind);
-            ActiveQueryLimiter l(pool);
-            if (!l.accepted)
-            {
-                IException *e = MakeStringException(ROXIE_TOO_MANY_QUERIES, "Too many active queries");
-                if (trapTooManyActiveQueries)
-                    logctx.logOperatorException(e, __FILE__, __LINE__, NULL);
-                throw e;
-            }
             priority = queryFactory->getPriority();
             switch (priority)
             {

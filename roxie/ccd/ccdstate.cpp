@@ -1917,6 +1917,26 @@ private:
 
 };
 
+/**
+ * class QuerySetResourceManager - manages queries specified in QuerySets, for a given package set.
+ *
+ * If the QuerySet is modified, it will be reloaded.
+ * There is one QuerySetResourceManager for every PackageSet - only one will be active for query lookup
+ * at a given time (the one associated with the active PackageSet).
+ *
+ * To deploy new data, typically we will load a new PackageSet, make it active, then release the old one
+ * A packageSet is not modified while loaded, to avoid timing issues between slaves and server.
+ *
+ * We need to be able to spot a change (in dali) to the active package indicator (and switch the active QuerySetResourceManager)
+ * We need to be able to spot a change (in dali) that adds a new PackageSet
+ * We need to decide what to do about a change (in dali) to an existing PackageSet. Maybe we allow it (leave it up to the gui to
+ * encourage changing in the right sequence). In which case a change to the package info in dali means reload all global package
+ * managers (and then discard the old ones). Hash-based queries means everything should work ok.
+ * -> If the active ptr changes, just change what is active
+ *    If any change to any package set, reload all globalResourceManagers and discard prior
+ *    The query caching code should ensure that it is quick enough to do so
+ *
+ **/
 class QuerySetResourceManager : public GlobalResourceManager, implements ISDSSubscription
 {
     Owned<IRoxieDaliHelper> daliHelper;
@@ -2141,32 +2161,17 @@ extern void doControlMessage(IPropertyTree *control, StringBuffer &reply, const 
     controlSem.signal();
 }
 
-void createResourceManager(const IQueryDll *standAloneDll, unsigned numChannels, const IPackageMap *packageMap)
+void createResourceManager(unsigned numChannels, const IPackageMap *packageMap)
 {
-    Owned<GlobalResourceManager> newGM;
-    if (!standAloneDll)
-    {
-        newGM.setown(new QuerySetResourceManager(numChannels, packageMap));
-    }
-    else
-    {
-        Owned<IPropertyTree> standAloneDllTree;
-        standAloneDllTree.setown(createPTree("Query"));
-        standAloneDllTree->setProp("@id", "roxie");
-        standAloneDllTree->setProp("@dll", standAloneDll->queryDll()->queryName());
-        newGM.setown(new StandaloneResourceManager(numChannels, packageMap, standAloneDllTree.getClear()));
-    }
+    Owned<GlobalResourceManager> newGM = new QuerySetResourceManager(numChannels, packageMap);
     newGM->load();
     grms.append(*newGM.getClear());
 }
 
-extern void createResourceManagers(const IQueryDll *standAloneDll, unsigned numChannels)
+extern void createResourceManagers(unsigned numChannels)
 {
     // NOTE - not threadsafe - only done at startup
     assertex(!gm);
-    assertex(!plugins);
-    plugins = new SafePluginMap(&PluginCtx, traceLevel >= 1);
-    plugins->loadFromDirectory(pluginDirectory);
 
     // Iterate through all package directories
     Owned<IFile> dirf = createIFile(queryDirectory);
@@ -2183,7 +2188,7 @@ extern void createResourceManagers(const IQueryDll *standAloneDll, unsigned numC
         {
             Owned<CPackageMap> packageSet = new CPackageMap(packageId);
             packageSet->load(queryDirectory, packageId);
-            createResourceManager(standAloneDll, numChannels, packageSet.getLink());
+            createResourceManager(numChannels, packageSet.getLink());
         }
         catch (IException *E)
         {
@@ -2197,16 +2202,32 @@ extern void createResourceManagers(const IQueryDll *standAloneDll, unsigned numC
     {
         if (traceLevel)
             DBGLOG("Loading empty package");
-        createResourceManager(standAloneDll, numChannels, LINK(&queryEmptyPackageMap()));
+        createResourceManager(numChannels, LINK(&queryEmptyPackageMap()));
     }
     selectActivePackage();
     assertex(gm != NULL);
     if (traceLevel)
         DBGLOG("Loaded packages");
-
-    controlSem.signal();
 }
 
+extern void loadPlugins()
+{
+    plugins = new SafePluginMap(&PluginCtx, traceLevel >= 1);
+    plugins->loadFromDirectory(pluginDirectory);
+}
+
+extern void loadStandaloneQuery(const IQueryDll *standAloneDll, unsigned numChannels)
+{
+    // NOTE - not threadsafe - only done at startup
+    assertex(!gm);
+    Owned<IPropertyTree> standAloneDllTree;
+    standAloneDllTree.setown(createPTree("Query"));
+    standAloneDllTree->setProp("@id", "roxie");
+    standAloneDllTree->setProp("@dll", standAloneDll->queryDll()->queryName());
+    Owned<GlobalResourceManager> newGM = new StandaloneResourceManager(numChannels, LINK(&queryEmptyPackageMap()), standAloneDllTree.getClear());
+    newGM->load();
+    gm = newGM.getClear();
+}
 
 extern void cleanupResourceManagers()
 {
