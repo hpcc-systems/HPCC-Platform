@@ -127,7 +127,6 @@ class GlobalResourceManager;
 
 extern IRoxieResourceManager *createServerManager();
 extern IRoxieResourceManager *createSlaveManager();
-extern IRoxieResourceManagerSet *createSlaveManagerSet();
 extern const IRoxieResourceManager *getRoxieServerManager();
 extern IRoxieDebugSessionManager *getRoxieDebugSessionManager();
 extern void selectPackage(const char * packageId);

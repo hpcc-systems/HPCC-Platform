@@ -30703,10 +30703,7 @@ public:
     virtual bool stop(unsigned timeout)
     {
         if (socket)
-        {
             socket->cancel_accept();
-            socket.clear();
-        }
         return RoxieListener::stop(timeout);
     }
 
