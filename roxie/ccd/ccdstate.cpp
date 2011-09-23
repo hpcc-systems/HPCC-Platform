@@ -908,11 +908,6 @@ private:
     CRoxieSlaveResourceManager **managers;
 };
 
-IRoxieResourceManagerSet *createSlaveManagerSet()
-{
-    return new CRoxieSlaveResourceManagerSet(numChannels);
-}
-
 //===============================================================================================================
 
 class CRoxieDebugSessionManager : public CInterface, implements IRoxieDebugSessionManager
@@ -1978,7 +1973,7 @@ public:
         Owned<IRoxieResourceManager> newServerManager = createServerManager();
         newServerManager->load(newQuerySets, *packages);
         newSlaveManagers->load(newQuerySets, *packages);
-        reloadQueryManagers(newSlaveManagers, newServerManager.getClear());
+        reloadQueryManagers(newSlaveManagers.getClear(), newServerManager.getClear());
     }
 
 protected:
