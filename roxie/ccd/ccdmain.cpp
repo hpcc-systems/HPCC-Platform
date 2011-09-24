@@ -1007,11 +1007,11 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         loadPlugins();
         globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());
         globalPackageSetManager->load();
-        Owned<IPacketDiscarder> packetDiscarder = createPacketDiscarder();
         unsigned snifferChannel = numChannels+2; // MORE - why +2 not +1 ??
         ROQ = createOutputQueueManager(snifferChannel, isCCD ? numSlaveThreads : 1);
         ROQ->setHeadRegionSize(headRegionSize);
         ROQ->start();
+        Owned<IPacketDiscarder> packetDiscarder = createPacketDiscarder();
 #if defined(WIN32) && defined(_DEBUG) && defined(_DEBUG_HEAP_FULL)
         int tmpFlag = _CrtSetDbgFlag( _CRTDBG_REPORT_FLAG );
         tmpFlag |= _CRTDBG_CHECK_ALWAYS_DF;

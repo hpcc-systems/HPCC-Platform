@@ -39,6 +39,7 @@ extern void addWuException(IConstWorkUnit *workUnit, IException *E);
 
 interface IDaliPackageWatcher : extends IInterface
 {
+    virtual void unsubscribe() = 0;
     virtual const char *queryName() const = 0;
 };
 

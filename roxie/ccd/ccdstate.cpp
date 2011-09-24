@@ -1127,7 +1127,8 @@ public:
 
     ~CRoxieDaliQueryPackageManager()
     {
-        notifier.clear();
+        if (notifier)
+            notifier->unsubscribe();
     }
 
     virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
@@ -1200,7 +1201,7 @@ public:
 
     ~CRoxiePackageSetManager()
     {
-        notifiers.kill();
+        unsubscribe();
     }
 
     virtual void load()
@@ -2152,7 +2153,7 @@ private:
     void createQueryPackageManagers(unsigned numChannels)
     {
         // Called from reload inside critical block
-        notifiers.kill();
+        unsubscribe();
         notifiers.append(*daliHelper->getPackageSetSubscription(roxieName, this));
         Owned<IPropertyTree> packageTree = daliHelper->getPackageSet(roxieName);
         Owned<IPropertyTreeIterator> packageMaps = packageTree->getElements("PackageMap");
@@ -2207,6 +2208,14 @@ private:
         allQueryPackages.append(*qpm.getClear());
     }
 
+    void unsubscribe()
+    {
+        ForEachItemIn(idx, notifiers)
+        {
+            notifiers.item(idx).unsubscribe();
+        }
+        notifiers.kill();
+    }
 };
 
 extern IRoxieQueryPackageManagerSet *createRoxiePackageSetManager(const IQueryDll *standAloneDll)

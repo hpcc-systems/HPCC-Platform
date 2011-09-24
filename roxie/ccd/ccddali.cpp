@@ -58,6 +58,9 @@ public:
     }
     ~CDaliPackageWatcher()
     {
+    }
+    virtual void unsubscribe()
+    {
         querySDS().unsubscribe(change);
     }
     virtual const char *queryName() const
