@@ -185,8 +185,6 @@ MODULE_EXIT()
     ::Release(ccdChannels);
 }
 
-
-
 //=========================================================================================
 //////////////////////////////////////////////////////////////////////////////////////////////
 extern "C" void caughtSIGPIPE(int sig)
@@ -1007,20 +1005,8 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         delete [] primaries;
         setDaliServixSocketCaching(true);  // enable daliservix caching
         loadPlugins();
-        try
-        {
-            if (standAloneDll)
-                loadStandaloneQuery(standAloneDll, numChannels);
-            else
-                createQueryPackageManagers(numChannels);
-            controlSem.signal();
-        }
-        catch(IException *E)
-        {
-            EXCLOG(E, "No configuration could be loaded");
-            controlSem.interrupt();
-            throw; // MORE - this may not be appropriate.
-        }
+        globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());
+        globalPackageSetManager->load();
         Owned<IPacketDiscarder> packetDiscarder = createPacketDiscarder();
         unsigned snifferChannel = numChannels+2; // MORE - why +2 not +1 ??
         ROQ = createOutputQueueManager(snifferChannel, isCCD ? numSlaveThreads : 1);
@@ -1129,7 +1115,8 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
     roxieMetrics.clear();
     allRoxieServers.kill();
     stopPerformanceMonitor();
-    cleanupQueryPackageManagers();
+    ::Release(globalPackageSetManager);
+    globalPackageSetManager = NULL;
     cleanupPlugins();
     closeMulticastSockets();
     releaseSlaveDynamicFileCache();
