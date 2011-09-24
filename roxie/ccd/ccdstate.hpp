@@ -100,7 +100,7 @@ interface IFileIOArray : extends IInterface
     virtual StringBuffer &getId(StringBuffer &) const = 0;
 };
 
-interface IRoxieResourceManager : extends IInterface
+interface IRoxieQuerySetManager : extends IInterface
 {
     virtual IQueryFactory *lookupLibrary(const char * libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const = 0;
     virtual IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &ctx) const = 0;
@@ -118,28 +118,28 @@ interface IRoxieDebugSessionManager : extends IInterface
     virtual IDebuggerContext *lookupDebuggerContext(const char *id) = 0;
 };
 
-interface IRoxieResourceManagerSet : extends IInterface
+interface IRoxieQuerySetManagerSet : extends IInterface
 {
     virtual void load(const IPropertyTree *querySets, const IPackageMap &packages) = 0;
 };
 
-class GlobalResourceManager;
+class CRoxieQueryPackageManager;
 
-extern IRoxieResourceManager *createServerManager();
-extern IRoxieResourceManager *createSlaveManager();
-extern const IRoxieResourceManager *getRoxieServerManager();
+extern IRoxieQuerySetManager *createServerManager();
+extern IRoxieQuerySetManager *createSlaveManager();
+extern const IRoxieQuerySetManager *getRoxieServerManager();
 extern IRoxieDebugSessionManager *getRoxieDebugSessionManager();
 extern void selectPackage(const char * packageId);
-extern void deleteNonActiveGlobalResourceManager(const char * packageId);
 extern unsigned findAllLoadedPackageIds(StringArray &packageIds);
 extern void loadPackageSet(const char *packageId);
-extern GlobalResourceManager *getGlobalResourceManager(const char *packageId);
-extern GlobalResourceManager *getActiveGlobalResourceManager();
+extern CRoxieQueryPackageManager *getQueryPackageManager(const char *packageId);
+extern CRoxieQueryPackageManager *getActiveQueryPackageManager();
 
 extern void loadPlugins();
+extern void cleanupPlugins();
 extern void loadStandaloneQuery(const IQueryDll *standAloneDll, unsigned numChannels);
-extern void createResourceManagers(unsigned numChannels);
-extern void cleanupResourceManagers();
+extern void createQueryPackageManagers(unsigned numChannels);
+extern void cleanupQueryPackageManagers();
 
 extern void doControlMessage(IPropertyTree *xml, StringBuffer &reply, const IRoxieContextLogger &ctx);
 extern InterruptableSemaphore controlSem;

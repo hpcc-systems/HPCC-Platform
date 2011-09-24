@@ -27461,7 +27461,7 @@ public:
         }
         else
         {
-            Owned<const IRoxieResourceManager> QM = getRoxieServerManager();
+            Owned<const IRoxieQuerySetManager> QM = getRoxieServerManager();
             Owned<IQueryFactory> libraryQuery = QM->lookupLibrary(extra.libraryName, extra.interfaceHash, *this);
             return libraryQuery->lookupGraph("graph1", probeManager, *this, parentActivity);
         }
@@ -31342,7 +31342,7 @@ readAnother:
                     }
                     else
                     {
-                        Owned<const IRoxieResourceManager> serverManager = getRoxieServerManager();
+                        Owned<const IRoxieQuerySetManager> serverManager = getRoxieServerManager();
                         if (serverManager) queryFactory.setown(serverManager->getQuery(queryName, logctx));
                         if (isHTTP)
                             client->setHttpMode(queryName, isRequestArray);

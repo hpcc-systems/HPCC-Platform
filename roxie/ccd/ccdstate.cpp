@@ -636,14 +636,38 @@ MODULE_EXIT()
     ::Release(rootPackage);
 }
 
+// IRoxieQuerySetManager
+//  - CRoxieQuerySetManager -
+//    - CRoxieServerQuerySetManager
+//    - CRoxieSlaveQuerySetManager
+//
+// Manages a set of instantiated queries and allows us to look them up by queryname or alias
+//
+// IRoxieQuerySetManagerSet
+// - CRoxieSlaveQuerySetManagerSet
+//
+// Manages the IRoxieQuerySetManager for multiple channels
+//
+// CRoxieQueryPackageManager  => CQueryPackageManager
+// - CRoxieDaliQueryPackageManager => CDaliQueryPackageManager
+// - CStandaloneQueryPackageManager => CStandaloneQueryPackageManager
+//
+// Groups a server resource manager and a set of slave resource managers (one per channel) together.
+// There is one per PackageSet
+// Only one is 'active' at any time - that one will be used to resolve incoming queries
+//  - we could relax that restriction, and lookup in each in turn until we find a match?
+// Should add an IQueryPackageManager
+//
+// Should add a CQueryPackageManagerSet at outer level
+// There will be exactly one of these. It will reload the CQueryPackageManager's if dali Package info changes
+
 //================================================================================================
-// CRoxieResourceManager - shared base class for slave and server resource manager classes
-// Originally the resource manager's role was to cache resolved file information, now largely moved to the
-// Package manager and IResolvedFile classes. The main remaining role is to map query names to query factories
-// for the active query set and a given package.
+// CRoxieQuerySetManager - shared base class for slave and server query set manager classes
+// Manages a set of instantiated queries and allows us to look them up by queryname or alias,
+// as well as controlling their lifespan
 //================================================================================================
 
-class CRoxieResourceManager : public CInterface, implements IRoxieResourceManager 
+class CRoxieQuerySetManager : public CInterface, implements IRoxieQuerySetManager 
 {
 protected:
     MapStringToMyClass<IQueryFactory> queries;
@@ -676,7 +700,7 @@ protected:
 
 public:
     IMPLEMENT_IINTERFACE;
-    CRoxieResourceManager(unsigned _channelNo)
+    CRoxieQuerySetManager(unsigned _channelNo)
         : queries(true), aliases(true)
     {
         channelNo = _channelNo;
@@ -817,12 +841,12 @@ public:
 
 //===============================================================================================================
 
-class CRoxieServerResourceManager : public CRoxieResourceManager
+class CRoxieServerQuerySetManager : public CRoxieQuerySetManager
 {
 public:
     IMPLEMENT_IINTERFACE;
-    CRoxieServerResourceManager()
-        : CRoxieResourceManager(0)
+    CRoxieServerQuerySetManager()
+        : CRoxieQuerySetManager(0)
     {
     }
 
@@ -833,19 +857,19 @@ public:
 
 };
 
-extern IRoxieResourceManager *createServerManager()
+extern IRoxieQuerySetManager *createServerManager()
 {
-    return new CRoxieServerResourceManager();
+    return new CRoxieServerQuerySetManager();
 }
 
 //===============================================================================================================
 
-class CRoxieSlaveResourceManager : public CRoxieResourceManager
+class CRoxieSlaveQuerySetManager : public CRoxieQuerySetManager
 {
 public:
     IMPLEMENT_IINTERFACE;
-    CRoxieSlaveResourceManager(unsigned _channelNo)
-        : CRoxieResourceManager(_channelNo)
+    CRoxieSlaveQuerySetManager(unsigned _channelNo)
+        : CRoxieQuerySetManager(_channelNo)
     {
         channelNo = _channelNo;
     }
@@ -857,41 +881,41 @@ public:
 
 };
 
-extern IRoxieResourceManager *createSlaveResourceManager(unsigned _channel)
+extern IRoxieQuerySetManager *createSlaveResourceManager(unsigned _channel)
 {
-    return new CRoxieSlaveResourceManager(_channel);
+    return new CRoxieSlaveQuerySetManager(_channel);
 }
 
-class CRoxieSlaveResourceManagerSet : public CInterface, implements IRoxieResourceManagerSet
+class CRoxieSlaveQuerySetManagerSet : public CInterface, implements IRoxieQuerySetManagerSet
 {
 public:
     IMPLEMENT_IINTERFACE;
-    CRoxieSlaveResourceManagerSet(unsigned _numChannels)
+    CRoxieSlaveQuerySetManagerSet(unsigned _numChannels)
         : numChannels(_numChannels)
     {
         CriticalBlock b(ccdChannelsCrit);
-        managers = new CRoxieSlaveResourceManager *[numChannels];
-        memset(managers, 0, sizeof(CRoxieSlaveResourceManager *) * numChannels);
+        managers = new CRoxieSlaveQuerySetManager *[numChannels];
+        memset(managers, 0, sizeof(CRoxieSlaveQuerySetManager *) * numChannels);
         Owned<IPropertyTreeIterator> it = ccdChannels->getElements("RoxieSlaveProcess");
         ForEach(*it)
         {
             unsigned channelNo = it->query().getPropInt("@channel", 0);
             assertex(channelNo>0 && channelNo<=numChannels);
             if (managers[channelNo-1] == NULL)
-                managers[channelNo-1] = new CRoxieSlaveResourceManager(channelNo);
+                managers[channelNo-1] = new CRoxieSlaveQuerySetManager(channelNo);
             else
                 throw MakeStringException(ROXIE_INVALID_TOPOLOGY, "Invalid topology file - channel %d repeated for this slave", channelNo);
         }
     }
 
-    ~CRoxieSlaveResourceManagerSet()
+    ~CRoxieSlaveQuerySetManagerSet()
     {
         for (unsigned channel = 0; channel < numChannels; channel++)
             ::Release(managers[channel]);
         delete [] managers;
     }
 
-    inline CRoxieSlaveResourceManager *item(int idx)
+    inline CRoxieSlaveQuerySetManager *item(int idx)
     {
         return managers[idx];
     }
@@ -905,7 +929,7 @@ public:
 
 private:
     unsigned numChannels;
-    CRoxieSlaveResourceManager **managers;
+    CRoxieSlaveQuerySetManager **managers;
 };
 
 //===============================================================================================================
@@ -968,23 +992,23 @@ public:
 //===============================================================================================
 
 /*----------------------------------------------------------------------------------------------
-* A GlobalResourceManager object manages all the queries that are currently runnable via XML.
+* A CRoxieQueryPackageManager object manages all the queries that are currently runnable via XML.
 * There may be more than one in existence, but only one will be active and therefore used to
 * look up queries that are received - this corresponds to the currently active package.
 *-----------------------------------------------------------------------------------------------*/
 
-class GlobalResourceManager : public CInterface
+class CRoxieQueryPackageManager : public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
 
-    GlobalResourceManager(unsigned _numChannels, const IPackageMap *_packages)
+    CRoxieQueryPackageManager(unsigned _numChannels, const IPackageMap *_packages)
         : numChannels(_numChannels), packages(_packages)
     {
         debugSessionManager.setown(new CRoxieDebugSessionManager);
     }
 
-    ~GlobalResourceManager()
+    ~CRoxieQueryPackageManager()
     {
     }
 
@@ -1000,7 +1024,7 @@ public:
 
     virtual void load() = 0;
 
-    IRoxieResourceManager* getRoxieServerManager()
+    IRoxieQuerySetManager* getRoxieServerManager()
     {
         CriticalBlock b2(updateCrit);
         return serverManager.getLink();
@@ -1348,7 +1372,7 @@ public:
             else if (stricmp(queryName, "control:loadPackageFile")==0)
             {
                 const char *packageId = control->queryProp("@id");
-                Owned<GlobalResourceManager> existing = getGlobalResourceManager(packageId);
+                Owned<CRoxieQueryPackageManager> existing = getQueryPackageManager(packageId);
                 if (existing)
                     throw MakeStringException(ROXIE_PACKAGE_ERROR, "Package set %s is already loaded", packageId);
                 loadPackageSet(packageId);
@@ -1887,10 +1911,10 @@ public:
     }
 
 protected:
-    void reloadQueryManagers(CRoxieSlaveResourceManagerSet *newSlaveManagers, IRoxieResourceManager *newServerManager)
+    void reloadQueryManagers(CRoxieSlaveQuerySetManagerSet *newSlaveManagers, IRoxieQuerySetManager *newServerManager)
     {
-        Owned<CRoxieSlaveResourceManagerSet> oldSlaveManagers;
-        Owned<IRoxieResourceManager> oldServerManager;
+        Owned<CRoxieSlaveQuerySetManagerSet> oldSlaveManagers;
+        Owned<IRoxieQuerySetManager> oldServerManager;
         {
             // Atomically, replace the existing query managers with the new ones
             CriticalBlock b2(updateCrit);
@@ -1902,8 +1926,8 @@ protected:
     }
 
     mutable CriticalSection updateCrit;  // protects updates of slaveManagers and serverManager
-    Owned<CRoxieSlaveResourceManagerSet> slaveManagers;
-    Owned<IRoxieResourceManager> serverManager;
+    Owned<CRoxieSlaveQuerySetManagerSet> slaveManagers;
+    Owned<IRoxieQuerySetManager> serverManager;
 
     Owned<CRoxieDebugSessionManager> debugSessionManager;
     Owned<const IPackageMap> packages;
@@ -1918,16 +1942,16 @@ private:
 };
 
 /**
- * class QuerySetResourceManager - manages queries specified in QuerySets, for a given package set.
+ * class CRoxieDaliQueryPackageManager - manages queries specified in QuerySets, for a given package set.
  *
  * If the QuerySet is modified, it will be reloaded.
- * There is one QuerySetResourceManager for every PackageSet - only one will be active for query lookup
+ * There is one CRoxieDaliQueryPackageManager for every PackageSet - only one will be active for query lookup
  * at a given time (the one associated with the active PackageSet).
  *
  * To deploy new data, typically we will load a new PackageSet, make it active, then release the old one
  * A packageSet is not modified while loaded, to avoid timing issues between slaves and server.
  *
- * We need to be able to spot a change (in dali) to the active package indicator (and switch the active QuerySetResourceManager)
+ * We need to be able to spot a change (in dali) to the active package indicator (and switch the active CRoxieDaliQueryPackageManager)
  * We need to be able to spot a change (in dali) that adds a new PackageSet
  * We need to decide what to do about a change (in dali) to an existing PackageSet. Maybe we allow it (leave it up to the gui to
  * encourage changing in the right sequence). In which case a change to the package info in dali means reload all global package
@@ -1937,20 +1961,20 @@ private:
  *    The query caching code should ensure that it is quick enough to do so
  *
  **/
-class QuerySetResourceManager : public GlobalResourceManager, implements ISDSSubscription
+class CRoxieDaliQueryPackageManager : public CRoxieQueryPackageManager, implements ISDSSubscription
 {
     Owned<IRoxieDaliHelper> daliHelper;
     IArrayOf<IQuerySetWatcher> notifiers;
 
 public:
     IMPLEMENT_IINTERFACE;
-    QuerySetResourceManager(unsigned _numChannels, const IPackageMap *_packages)
-        : GlobalResourceManager(_numChannels, _packages)
+    CRoxieDaliQueryPackageManager(unsigned _numChannels, const IPackageMap *_packages)
+        : CRoxieQueryPackageManager(_numChannels, _packages)
     {
         daliHelper.setown(connectToDali());
     }
 
-    ~QuerySetResourceManager()
+    ~CRoxieDaliQueryPackageManager()
     {
     	ForEachItemIn(idx, notifiers)
 		{
@@ -1991,8 +2015,8 @@ public:
             if (newQuerySet)
                 newQuerySets->addPropTree("QuerySet", newQuerySet.getClear());
 		}
-        Owned<CRoxieSlaveResourceManagerSet> newSlaveManagers = new CRoxieSlaveResourceManagerSet(numChannels);
-        Owned<IRoxieResourceManager> newServerManager = createServerManager();
+        Owned<CRoxieSlaveQuerySetManagerSet> newSlaveManagers = new CRoxieSlaveQuerySetManagerSet(numChannels);
+        Owned<IRoxieQuerySetManager> newServerManager = createServerManager();
         newServerManager->load(newQuerySets, *packages);
         newSlaveManagers->load(newQuerySets, *packages);
         reloadQueryManagers(newSlaveManagers.getClear(), newServerManager.getClear());
@@ -2000,20 +2024,20 @@ public:
 
 };
 
-class StandaloneResourceManager : public GlobalResourceManager
+class CStandaloneQueryPackageManager : public CRoxieQueryPackageManager
 {
     Owned<IPropertyTree> standaloneDll;
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    StandaloneResourceManager(unsigned _numChannels, const IPackageMap *_packages, IPropertyTree *_standaloneDll)
-        : GlobalResourceManager(_numChannels, _packages), standaloneDll(_standaloneDll)
+    CStandaloneQueryPackageManager(unsigned _numChannels, const IPackageMap *_packages, IPropertyTree *_standaloneDll)
+        : CRoxieQueryPackageManager(_numChannels, _packages), standaloneDll(_standaloneDll)
     {
         assertex(standaloneDll);
     }
 
-    ~StandaloneResourceManager()
+    ~CStandaloneQueryPackageManager()
     {
     }
 
@@ -2024,38 +2048,38 @@ public:
         newQuerySet->setProp("@name", "_standalone");
         newQuerySet->addPropTree("Query", standaloneDll.getLink());
         newQuerySets->addPropTree("QuerySet", newQuerySet.getClear());
-        Owned<CRoxieSlaveResourceManagerSet> newSlaveManagers = new CRoxieSlaveResourceManagerSet(numChannels);
-        Owned<IRoxieResourceManager> newServerManager = createServerManager();
+        Owned<CRoxieSlaveQuerySetManagerSet> newSlaveManagers = new CRoxieSlaveQuerySetManagerSet(numChannels);
+        Owned<IRoxieQuerySetManager> newServerManager = createServerManager();
         newServerManager->load(newQuerySets, *packages);
         newSlaveManagers->load(newQuerySets, *packages);
         reloadQueryManagers(newSlaveManagers.getClear(), newServerManager.getClear());
     }
 };
 
-GlobalResourceManager* gm = NULL;     // The active one...
-CIArrayOf<GlobalResourceManager> grms; // other ones that we have loaded...
+CRoxieQueryPackageManager* activeQueryPackage = NULL;     // The active one...
+CIArrayOf<CRoxieQueryPackageManager> allQueryPackages; // other ones that we have loaded...
 
-CriticalSection gmCrit;
+CriticalSection packageCrit;
 
 extern void loadPackageSet(const char *packageId)
 {
-    CriticalBlock b(gmCrit);
+    CriticalBlock b(packageCrit);
     Owned<CPackageMap> packageSet = new CPackageMap(packageId ? packageId : "<none>");
     if (packageId)
         packageSet->load(queryDirectory, packageId);
-    Owned<GlobalResourceManager> newGM = new QuerySetResourceManager(numChannels, packageSet.getClear());
-    newGM->load();
-    grms.append(*newGM.getClear());
+    Owned<CRoxieQueryPackageManager> qpm = new CRoxieDaliQueryPackageManager(numChannels, packageSet.getClear());
+    qpm->load();
+    allQueryPackages.append(*qpm.getClear());
 }
 
-GlobalResourceManager *getGlobalResourceManager(const char *packageId)
+CRoxieQueryPackageManager *getQueryPackageManager(const char *packageId)
 {
-    CriticalBlock b(gmCrit);
-    ForEachItemIn(idx, grms)
+    CriticalBlock b(packageCrit);
+    ForEachItemIn(idx, allQueryPackages)
     {
-        GlobalResourceManager &grm = grms.item(idx);
-        if (stricmp(grm.queryPackageId(), packageId)==0)
-            return LINK(&grm);
+        CRoxieQueryPackageManager &qpm = allQueryPackages.item(idx);
+        if (stricmp(qpm.queryPackageId(), packageId)==0)
+            return LINK(&qpm);
     }
     return NULL;
 }
@@ -2087,48 +2111,37 @@ extern void selectActivePackage()
     else
         selectPackage(s.str());
     if (traceLevel)
-        DBGLOG("Active package id is %s", gm->queryPackageId());
+        DBGLOG("Active package id is %s", activeQueryPackage->queryPackageId());
 }
 
 extern void selectPackage(const char *packageId)
 {
-    CriticalBlock b(gmCrit);
-    Owned <GlobalResourceManager> newGM = getGlobalResourceManager(packageId);
+    CriticalBlock b(packageCrit);
+    Owned <CRoxieQueryPackageManager> newGM = getQueryPackageManager(packageId);
     if (!newGM)
         throw MakeStringException(ROXIE_UNKNOWN_PACKAGE, "Unknown package id %s", packageId);
-    ::Release(gm);
-    gm = newGM.getClear();
+    ::Release(activeQueryPackage);
+    activeQueryPackage = newGM.getClear();
     saveActivePackageInfo(packageId);
 }
 
-extern void deleteNonActiveGlobalResourceManager(const char *packageId)
+extern const IRoxieQuerySetManager *getRoxieServerManager()
 {
-    CriticalBlock b(gmCrit);
-    Owned <GlobalResourceManager> killGM = getGlobalResourceManager(packageId);
-    if (!killGM)
-        throw MakeStringException(ROXIE_UNKNOWN_PACKAGE, "Unknown package id %s", packageId);
-    if (killGM == gm)
-        throw MakeStringException(ROXIE_PACKAGE_ERROR, "Cannot delete the active package %s", packageId);
-    grms.zap(*killGM);
-}
-
-extern const IRoxieResourceManager *getRoxieServerManager()
-{
-    CriticalBlock b(gmCrit);
-    return gm->getRoxieServerManager();
+    CriticalBlock b(packageCrit);
+    return activeQueryPackage->getRoxieServerManager();
 }
 
 extern IRoxieDebugSessionManager *getRoxieDebugSessionManager()
 {
-    CriticalBlock b(gmCrit);
-    return gm->getRoxieDebugSessionManager();
+    CriticalBlock b(packageCrit);
+    return activeQueryPackage->getRoxieDebugSessionManager();
 }
 
-extern GlobalResourceManager *getActiveGlobalResourceManager()
+extern CRoxieQueryPackageManager *getActiveQueryPackageManager()
 {
-    CriticalBlock b(gmCrit);
-    ::Link(gm);
-    return gm;
+    CriticalBlock b(packageCrit);
+    ::Link(activeQueryPackage);
+    return activeQueryPackage;
 }
 
 InterruptableSemaphore controlSem;
@@ -2140,8 +2153,8 @@ extern void doControlMessage(IPropertyTree *control, StringBuffer &reply, const 
         throw MakeStringException(ROXIE_TIMEOUT, "Timed out waiting for current control query to complete");
     try
     {
-        Owned<GlobalResourceManager> ggm = getActiveGlobalResourceManager();
-        ggm->doControlMessage(control, reply, logctx);
+        Owned<CRoxieQueryPackageManager> qpm = getActiveQueryPackageManager();
+        qpm->doControlMessage(control, reply, logctx);
         reply.append(" <Status>ok</Status>\n");
     }
     catch(IException *E)
@@ -2158,17 +2171,17 @@ extern void doControlMessage(IPropertyTree *control, StringBuffer &reply, const 
     controlSem.signal();
 }
 
-void createResourceManager(unsigned numChannels, const IPackageMap *packageMap)
+void createQueryPackageManager(unsigned numChannels, const IPackageMap *packageMap)
 {
-    Owned<GlobalResourceManager> newGM = new QuerySetResourceManager(numChannels, packageMap);
-    newGM->load();
-    grms.append(*newGM.getClear());
+    Owned<CRoxieQueryPackageManager> qpm = new CRoxieDaliQueryPackageManager(numChannels, packageMap);
+    qpm->load();
+    allQueryPackages.append(*qpm.getClear());
 }
 
-extern void createResourceManagers(unsigned numChannels)
+extern void createQueryPackageManagers(unsigned numChannels)
 {
     // NOTE - not threadsafe - only done at startup
-    assertex(!gm);
+    assertex(!activeQueryPackage);
 
     // Iterate through all package directories
     Owned<IFile> dirf = createIFile(queryDirectory);
@@ -2185,7 +2198,7 @@ extern void createResourceManagers(unsigned numChannels)
         {
             Owned<CPackageMap> packageSet = new CPackageMap(packageId);
             packageSet->load(queryDirectory, packageId);
-            createResourceManager(numChannels, packageSet.getLink());
+            createQueryPackageManager(numChannels, packageSet.getLink());
         }
         catch (IException *E)
         {
@@ -2195,14 +2208,14 @@ extern void createResourceManagers(unsigned numChannels)
             E->Release();
         }
     }
-    if (!grms.length())
+    if (!allQueryPackages.length())
     {
         if (traceLevel)
             DBGLOG("Loading empty package");
-        createResourceManager(numChannels, LINK(&queryEmptyPackageMap()));
+        createQueryPackageManager(numChannels, LINK(&queryEmptyPackageMap()));
     }
     selectActivePackage();
-    assertex(gm != NULL);
+    assertex(activeQueryPackage != NULL);
     if (traceLevel)
         DBGLOG("Loaded packages");
 }
@@ -2213,26 +2226,30 @@ extern void loadPlugins()
     plugins->loadFromDirectory(pluginDirectory);
 }
 
+extern void cleanupPlugins()
+{
+    delete plugins;
+    plugins = NULL;
+}
+
 extern void loadStandaloneQuery(const IQueryDll *standAloneDll, unsigned numChannels)
 {
     // NOTE - not threadsafe - only done at startup
-    assertex(!gm);
+    assertex(!activeQueryPackage);
     Owned<IPropertyTree> standAloneDllTree;
     standAloneDllTree.setown(createPTree("Query"));
     standAloneDllTree->setProp("@id", "roxie");
     standAloneDllTree->setProp("@dll", standAloneDll->queryDll()->queryName());
-    Owned<GlobalResourceManager> newGM = new StandaloneResourceManager(numChannels, LINK(&queryEmptyPackageMap()), standAloneDllTree.getClear());
-    newGM->load();
-    gm = newGM.getClear();
+    Owned<CRoxieQueryPackageManager> qpm = new CStandaloneQueryPackageManager(numChannels, LINK(&queryEmptyPackageMap()), standAloneDllTree.getClear());
+    qpm->load();
+    activeQueryPackage = qpm.getClear();
 }
 
-extern void cleanupResourceManagers()
+extern void cleanupQueryPackageManagers()
 {
-    ::Release(gm);
-    gm = NULL;
-    grms.kill();
-    delete plugins;
-    plugins = NULL;
+    ::Release(activeQueryPackage);
+    activeQueryPackage = NULL;
+    allQueryPackages.kill();
 }
 
 /*=======================================================================================================

@@ -1012,7 +1012,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             if (standAloneDll)
                 loadStandaloneQuery(standAloneDll, numChannels);
             else
-                createResourceManagers(numChannels);
+                createQueryPackageManagers(numChannels);
             controlSem.signal();
         }
         catch(IException *E)
@@ -1129,7 +1129,8 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
     roxieMetrics.clear();
     allRoxieServers.kill();
     stopPerformanceMonitor();
-    cleanupResourceManagers();
+    cleanupQueryPackageManagers();
+    cleanupPlugins();
     closeMulticastSockets();
     releaseSlaveDynamicFileCache();
     releaseDiffFileInfoCache();
