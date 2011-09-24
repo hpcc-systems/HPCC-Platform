@@ -46,9 +46,11 @@ class CQuerySetWatcher : public CInterface, implements ISDSSubscription, impleme
 {
     SubscriptionId change;
     ISDSSubscription *notifier;
+    StringAttr id;
 public:
     IMPLEMENT_IINTERFACE;
-    CQuerySetWatcher(const char *xpath, ISDSSubscription *_notifier)
+    CQuerySetWatcher(const char *_id, const char *xpath, ISDSSubscription *_notifier)
+      : id(_id)
     {
         notifier = _notifier;
         change = querySDS().subscribe(xpath, *this, true);
@@ -57,6 +59,10 @@ public:
     virtual void unsubscribe()
     {
         querySDS().unsubscribe(change);
+    }
+    virtual const char *queryName() const
+    {
+        return id.get();
     }
     void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {
@@ -337,7 +343,7 @@ public:
         if (isConnected)
         {
             StringBuffer xpath;
-            return new CQuerySetWatcher(getQuerySetPath(xpath, id), notifier);
+            return new CQuerySetWatcher(id, getQuerySetPath(xpath, id), notifier);
         }
         else
             return NULL;

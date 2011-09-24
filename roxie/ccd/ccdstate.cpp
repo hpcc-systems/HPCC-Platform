@@ -969,7 +969,7 @@ public:
 
 /*----------------------------------------------------------------------------------------------
 * A GlobalResourceManager object manages all the queries that are currently runnable via XML.
-* There may be more than one in existance, but only one will be active and therefore used to
+* There may be more than one in existence, but only one will be active and therefore used to
 * look up queries that are received - this corresponds to the currently active package.
 *-----------------------------------------------------------------------------------------------*/
 
@@ -1940,7 +1940,7 @@ private:
 class QuerySetResourceManager : public GlobalResourceManager, implements ISDSSubscription
 {
     Owned<IRoxieDaliHelper> daliHelper;
-    Owned<IQuerySetWatcher> notifier;
+    IArrayOf<IQuerySetWatcher> notifiers;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -1952,8 +1952,10 @@ public:
 
     ~QuerySetResourceManager()
     {
-        if (notifier)
-            notifier->unsubscribe();
+    	ForEachItemIn(idx, notifiers)
+		{
+    		notifiers.item(idx).unsubscribe();
+		}
     }
 
     virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
@@ -1963,32 +1965,32 @@ public:
 
     virtual void load()
     {
-        reload();
-        subscribe();
-    }
-
-    virtual void reload()
-    {
-        Owned<IPropertyTree> newQuerySets = createPTree("QuerySets");
         Owned<IPropertyTree> loadSets = packages->getQuerySets();
         if (loadSets)
         {
             Owned<IPropertyTreeIterator> loadIterator = loadSets->getElements("QuerySet");
             ForEach(*loadIterator)
             {
-                const char *querySetName = loadIterator->query().queryProp("@id");
-                Owned<IPropertyTree> newQuerySet = daliHelper->getQuerySet(querySetName);
-                if (newQuerySet)
-                    newQuerySets->addPropTree("QuerySet", newQuerySet.getClear());
+                notifiers.append(*daliHelper->getQuerySetSubscription(loadIterator->query().queryProp("@id"), this));
             }
         }
         else
         {
-            const char *querySetName = topology->queryProp("@name");
+            notifiers.append(*daliHelper->getQuerySetSubscription(topology->queryProp("@name"), this));
+        }
+        reload();
+    }
+
+    virtual void reload()
+    {
+        Owned<IPropertyTree> newQuerySets = createPTree("QuerySets");
+    	ForEachItemIn(idx, notifiers)
+		{
+    		const char *querySetName = notifiers.item(idx).queryName();
             Owned<IPropertyTree> newQuerySet = daliHelper->getQuerySet(querySetName);
             if (newQuerySet)
                 newQuerySets->addPropTree("QuerySet", newQuerySet.getClear());
-        }
+		}
         Owned<CRoxieSlaveResourceManagerSet> newSlaveManagers = new CRoxieSlaveResourceManagerSet(numChannels);
         Owned<IRoxieResourceManager> newServerManager = createServerManager();
         newServerManager->load(newQuerySets, *packages);
@@ -1996,11 +1998,6 @@ public:
         reloadQueryManagers(newSlaveManagers.getClear(), newServerManager.getClear());
     }
 
-protected:
-    void subscribe()
-    {
-        notifier.setown(daliHelper->getQuerySetSubscription(roxieName, this));
-    }
 };
 
 class StandaloneResourceManager : public GlobalResourceManager

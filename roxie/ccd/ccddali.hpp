@@ -40,6 +40,7 @@ extern void addWuException(IConstWorkUnit *workUnit, IException *E);
 interface IQuerySetWatcher : extends IInterface
 {
     virtual void unsubscribe() = 0;
+    virtual const char *queryName() const = 0;
 };
 
 interface IRoxieDaliHelper : extends IInterface
