@@ -152,6 +152,8 @@ private:
             {
                 IPropertyTree *tree = createPTree("Roxie");
                 tree->addPropTree("QuerySets", createPTree("QuerySets"));
+                tree->addPropTree("PackageSets", createPTree("PackageSets"));
+                tree->addPropTree("PackageMaps", createPTree("PackageMaps"));
                 tree->addPropTree("Files", createPTree("Files"));
                 cache.setown(tree);
             }
