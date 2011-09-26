@@ -1036,6 +1036,7 @@ public:
 
     void resetStats(const char *queryId, const IRoxieContextLogger &logctx)
     {
+        CriticalBlock b(updateCrit);
         if (queryId)
         {
             Owned<IQueryFactory> query = serverManager->getQuery(queryId, logctx);
@@ -1197,15 +1198,13 @@ public:
 
     void load()
     {
-        Owned<IPropertyTree> newQuerySets = createPTree("QuerySets");
         Owned<IPropertyTree> newQuerySet = createPTree("QuerySet");
         newQuerySet->setProp("@name", "_standalone");
         newQuerySet->addPropTree("Query", standaloneDll.getLink());
-        newQuerySets->addPropTree("QuerySet", newQuerySet.getClear());
         Owned<CRoxieSlaveQuerySetManagerSet> newSlaveManagers = new CRoxieSlaveQuerySetManagerSet(numChannels);
         Owned<IRoxieQuerySetManager> newServerManager = createServerManager();
-        newServerManager->load(newQuerySets, *packages);
-        newSlaveManagers->load(newQuerySets, *packages);
+        newServerManager->load(newQuerySet, *packages);
+        newSlaveManagers->load(newQuerySet, *packages);
         reloadQueryManagers(newSlaveManagers.getClear(), newServerManager.getClear());
     }
 };
