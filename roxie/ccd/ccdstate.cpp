@@ -798,6 +798,16 @@ public:
         }
     }
 
+    virtual void getActivityMetrics(StringBuffer &reply) const
+    {
+        HashIterator elems(queries);
+        for (elems.first(); elems.isValid(); elems.next())
+        {
+            IMapping &cur = elems.query();
+            queries.mapToValue(&cur)->getActivityMetrics(reply);
+        }
+    }
+
     virtual IQueryFactory * lookupLibrary(const char * libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const
     {
 #ifdef _DEBUG
@@ -1049,7 +1059,7 @@ public:
         }
     }
 
-    void getStats(const char *queryId, const char *action, const char *graphName, StringBuffer &reply, const IRoxieContextLogger &logctx)
+    void getStats(const char *queryId, const char *action, const char *graphName, StringBuffer &reply, const IRoxieContextLogger &logctx) const
     {
         CriticalBlock b2(updateCrit);
         Owned<IQueryFactory> query = serverManager->getQuery(queryId, logctx);
@@ -1067,6 +1077,18 @@ public:
                     mergeStats(stats, cstats, 1);
                 }
             toXML(stats, reply);
+        }
+    }
+    void getActivityMetrics(StringBuffer &reply) const
+    {
+        CriticalBlock b2(updateCrit);
+        serverManager->getActivityMetrics(reply);
+        for (unsigned channel = 0; channel < numChannels; channel++)
+        {
+            if (slaveManagers->item(channel))
+            {
+                slaveManagers->item(channel)->getActivityMetrics(reply);
+            }
         }
     }
 protected:
@@ -1320,20 +1342,14 @@ private:
             {
                 debugSessionManager->getActiveQueries(reply);
             }
-#if 0
-            // MORE there is confusion between activitymetrics and querystats...
             else if (stricmp(queryName, "control:activitymetrics")==0)
             {
-                serverManager->getActivityMetrics(reply);
-                for (unsigned channel = 0; channel < numChannels; channel++)
+                ForEachItemIn(idx, allQueryPackages)
                 {
-                    if (slaveManagers->item(channel))
-                    {
-                        slaveManagers->item(channel)->getActivityMetrics(reply);
-                    }
+                    CRoxieQueryPackageManager &qpm = allQueryPackages.item(idx);
+                    qpm.getActivityMetrics(reply);
                 }
             }
-#endif
             else if (stricmp(queryName, "control:alive")==0)
             {
                 reply.appendf("<Alive restarts='%d'/>", restarts);

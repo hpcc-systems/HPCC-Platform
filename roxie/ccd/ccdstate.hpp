@@ -109,6 +109,7 @@ interface IRoxieQuerySetManager : extends IInterface
     virtual void getStats(const char *queryName, const char *graphName, StringBuffer &reply, const IRoxieContextLogger &logctx) const = 0;
     virtual void resetQueryTimings(const char *queryName, const IRoxieContextLogger &logctx) = 0;
     virtual void resetAllQueryTimings() = 0;
+    virtual void getActivityMetrics(StringBuffer &reply) const = 0;
 };
 
 interface IRoxieDebugSessionManager : extends IInterface
