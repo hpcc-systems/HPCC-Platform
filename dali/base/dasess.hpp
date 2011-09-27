@@ -39,7 +39,7 @@ typedef DALI_UID SecurityToken;  // currently use 0
 #define FIXED_HT_SIZE 4096 // elements
 #define FIXED_KEY_SIZE 24
 
-enum DaliClientRole // if changed must update map in StringDCRoleMap
+enum DaliClientRole // if changed must update queryRoleName()
 {
     DCR_Unknown,
     DCR_Private,
@@ -64,6 +64,7 @@ enum DaliClientRole // if changed must update map in StringDCRoleMap
     DCR_RoxySlave,
     DCR_Other,
     DCR_BackupGen,
+    DCR_AgentExec,
     DCR_Max
 };
 
