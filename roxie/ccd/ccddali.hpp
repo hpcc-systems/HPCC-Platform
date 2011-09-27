@@ -37,9 +37,10 @@ public:
 
 extern void addWuException(IConstWorkUnit *workUnit, IException *E);
 
-interface IQuerySetWatcher : extends IInterface
+interface IDaliPackageWatcher : extends IInterface
 {
     virtual void unsubscribe() = 0;
+    virtual const char *queryName() const = 0;
 };
 
 interface IRoxieDaliHelper : extends IInterface
@@ -49,8 +50,11 @@ interface IRoxieDaliHelper : extends IInterface
     virtual IFileDescriptor *resolveCachedLFN(const char *filename) = 0;
     virtual IConstWorkUnit *attachWorkunit(const char *wuid, ILoadedDllEntry *source) = 0;
     virtual IPropertyTree *getQuerySet(const char *id) = 0;
-    virtual IQuerySetWatcher *getQuerySetSubscription(const char *id, ISDSSubscription *notifier) = 0;
+    virtual IDaliPackageWatcher *getQuerySetSubscription(const char *id, ISDSSubscription *notifier) = 0;
     virtual IPropertyTree *getPackageSet(const char *id) = 0;
+    virtual IDaliPackageWatcher *getPackageSetSubscription(const char *id, ISDSSubscription *notifier) = 0;
+    virtual IPropertyTree *getPackageMap(const char *id) = 0;
+    virtual IDaliPackageWatcher *getPackageMapSubscription(const char *id, ISDSSubscription *notifier) = 0;
 };
 
 
