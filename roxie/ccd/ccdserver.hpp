@@ -27,7 +27,7 @@
 #include "roxiedebug.hpp"
 #include "thorstep.hpp"
 
-interface IRoxieResourceManager;
+interface IRoxieQuerySetManager;
 interface IRoxieListener : extends IInterface
 {
     virtual void start() = 0;

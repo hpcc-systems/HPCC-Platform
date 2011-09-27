@@ -185,8 +185,6 @@ MODULE_EXIT()
     ::Release(ccdChannels);
 }
 
-
-
 //=========================================================================================
 //////////////////////////////////////////////////////////////////////////////////////////////
 extern "C" void caughtSIGPIPE(int sig)
@@ -1005,24 +1003,15 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             }
         }
         delete [] primaries;
-
+        setDaliServixSocketCaching(true);  // enable daliservix caching
+        loadPlugins();
+        globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());
+        globalPackageSetManager->load();
         unsigned snifferChannel = numChannels+2; // MORE - why +2 not +1 ??
         ROQ = createOutputQueueManager(snifferChannel, isCCD ? numSlaveThreads : 1);
-        try
-        {
-            createResourceManagers(standAloneDll, numChannels);
-        }
-        catch(IException *E)
-        {
-            EXCLOG(E, "No configuration could be loaded");
-            controlSem.interrupt();
-            throw; // MORE - this may not be appropriate.
-        }
-        Owned<IPacketDiscarder> packetDiscarder = createPacketDiscarder();
-
-        setDaliServixSocketCaching(true);  // enable daliservix caching
         ROQ->setHeadRegionSize(headRegionSize);
         ROQ->start();
+        Owned<IPacketDiscarder> packetDiscarder = createPacketDiscarder();
 #if defined(WIN32) && defined(_DEBUG) && defined(_DEBUG_HEAP_FULL)
         int tmpFlag = _CrtSetDbgFlag( _CRTDBG_REPORT_FLAG );
         tmpFlag |= _CRTDBG_CHECK_ALWAYS_DF;
@@ -1126,7 +1115,9 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
     roxieMetrics.clear();
     allRoxieServers.kill();
     stopPerformanceMonitor();
-    cleanupResourceManagers();
+    ::Release(globalPackageSetManager);
+    globalPackageSetManager = NULL;
+    cleanupPlugins();
     closeMulticastSockets();
     releaseSlaveDynamicFileCache();
     releaseDiffFileInfoCache();

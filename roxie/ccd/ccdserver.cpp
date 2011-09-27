@@ -27461,8 +27461,7 @@ public:
         }
         else
         {
-            Owned<const IRoxieResourceManager> QM = getRoxieServerManager();
-            Owned<IQueryFactory> libraryQuery = QM->lookupLibrary(extra.libraryName, extra.interfaceHash, *this);
+            Owned<IQueryFactory> libraryQuery = globalPackageSetManager->lookupLibrary(extra.libraryName, extra.interfaceHash, *this);
             return libraryQuery->lookupGraph("graph1", probeManager, *this, parentActivity);
         }
     }
@@ -27867,7 +27866,7 @@ public:
     virtual void debugInitialize(const char *id, const char *_queryName, bool _breakAtStart)
     {
         CBaseServerDebugContext::debugInitialize(id, _queryName, _breakAtStart);
-        Owned<IRoxieDebugSessionManager> QM = getRoxieDebugSessionManager();
+        Owned<IRoxieDebugSessionManager> QM = globalPackageSetManager->getRoxieDebugSessionManager();
         QM->registerDebugId(id, this);
     }
 
@@ -27877,7 +27876,7 @@ public:
         assertex(running);
         currentState = DebugStateUnloaded;
         running = false;
-        Owned<IRoxieDebugSessionManager> QM = getRoxieDebugSessionManager();
+        Owned<IRoxieDebugSessionManager> QM = globalPackageSetManager->getRoxieDebugSessionManager();
         QM->deregisterDebugId(debugId);
         if (debuggerActive)
         {
@@ -30304,7 +30303,7 @@ public:
                 try
                 {
                     Owned<IPropertyTree> xml = createPTreeFromXMLString(queryText); // control queries are case sensitive
-                    doControlMessage(xml, myReply, logctx);
+                    globalPackageSetManager->doControlMessage(xml, myReply, logctx);
                 }
                 catch(IException *E)
                 {
@@ -30902,17 +30901,20 @@ public:
             atomic_inc(&queryCount);
 
             bool isBlind = wu->getDebugValueBool("blindLogging", false);
-            pool->checkWuAccess(isBlind);
+            if (pool)
+            {
+                pool->checkWuAccess(isBlind);
+                ActiveQueryLimiter l(pool);
+                if (!l.accepted)
+                {
+                    IException *e = MakeStringException(ROXIE_TOO_MANY_QUERIES, "Too many active queries");
+                    if (trapTooManyActiveQueries)
+                        logctx.logOperatorException(e, __FILE__, __LINE__, NULL);
+                    throw e;
+                }
+            }
             isBlind = isBlind || blindLogging;
             logctx.setBlind(isBlind);
-            ActiveQueryLimiter l(pool);
-            if (!l.accepted)
-            {
-                IException *e = MakeStringException(ROXIE_TOO_MANY_QUERIES, "Too many active queries");
-                if (trapTooManyActiveQueries)
-                    logctx.logOperatorException(e, __FILE__, __LINE__, NULL);
-                throw e;
-            }
             priority = queryFactory->getPriority();
             switch (priority)
             {
@@ -31307,7 +31309,7 @@ readAnother:
 #else
                             throw MakeStringException(ROXIE_DEBUG_ERROR, "Debug id not specified");
 #endif
-                        Owned<IRoxieDebugSessionManager> QM = getRoxieDebugSessionManager();
+                        Owned<IRoxieDebugSessionManager> QM = globalPackageSetManager->getRoxieDebugSessionManager();
                         debuggerContext.setown(QM->lookupDebuggerContext(uid));
                         if (!debuggerContext)
                             throw MakeStringException(ROXIE_DEBUG_ERROR, "No active query matching context %s found", uid);
@@ -31339,8 +31341,7 @@ readAnother:
                     }
                     else
                     {
-                        Owned<const IRoxieResourceManager> serverManager = getRoxieServerManager();
-                        if (serverManager) queryFactory.setown(serverManager->getQuery(queryName, logctx));
+                        queryFactory.setown(globalPackageSetManager->getQuery(queryName, logctx));
                         if (isHTTP)
                             client->setHttpMode(queryName, isRequestArray);
                         if (queryFactory)

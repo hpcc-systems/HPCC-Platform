@@ -42,23 +42,32 @@
 
 const char *roxieStateName = "RoxieLocalState.xml";
 
-class CQuerySetWatcher : public CInterface, implements ISDSSubscription, implements IQuerySetWatcher
+class CDaliPackageWatcher : public CInterface, implements ISDSSubscription, implements IDaliPackageWatcher
 {
     SubscriptionId change;
     ISDSSubscription *notifier;
+    StringAttr id;
 public:
     IMPLEMENT_IINTERFACE;
-    CQuerySetWatcher(const char *xpath, ISDSSubscription *_notifier)
+    CDaliPackageWatcher(const char *_id, const char *xpath, ISDSSubscription *_notifier)
+      : id(_id)
     {
         notifier = _notifier;
         change = querySDS().subscribe(xpath, *this, true);
 
     }
+    ~CDaliPackageWatcher()
+    {
+    }
     virtual void unsubscribe()
     {
         querySDS().unsubscribe(change);
     }
-    void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
+    virtual const char *queryName() const
+    {
+        return id.get();
+    }
+    virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {
         notifier->notify(id, xpath, flags, valueLen, valueData);
     }
@@ -143,6 +152,8 @@ private:
             {
                 IPropertyTree *tree = createPTree("Roxie");
                 tree->addPropTree("QuerySets", createPTree("QuerySets"));
+                tree->addPropTree("PackageSets", createPTree("PackageSets"));
+                tree->addPropTree("PackageMaps", createPTree("PackageMaps"));
                 tree->addPropTree("Files", createPTree("Files"));
                 cache.setown(tree);
             }
@@ -224,7 +235,25 @@ public:
         Owned<IPropertyTree> ret = loadDaliTree(getPackageSetPath(xpath, id));
         if (!ret)
         {
-            ret.setown(createPTree("QuerySet"));
+            ret.setown(createPTree("PackageSet"));
+            ret->setProp("@id", id);
+        }
+        return ret.getClear();
+    }
+
+    static const char *getPackageMapPath(StringBuffer &buf, const char *id)
+    {
+        buf.appendf("PackageMaps/PackageMap[@id='%s']", id);
+        return buf.str();
+    }
+
+    virtual IPropertyTree *getPackageMap(const char *id)
+    {
+        StringBuffer xpath;
+        Owned<IPropertyTree> ret = loadDaliTree(getPackageMapPath(xpath, id));
+        if (!ret)
+        {
+            ret.setown(createPTree("PackageMap"));
             ret->setProp("@id", id);
         }
         return ret.getClear();
@@ -332,12 +361,34 @@ public:
         cache.clear();
     }
 
-    virtual IQuerySetWatcher *getQuerySetSubscription(const char *id, ISDSSubscription *notifier)
+    virtual IDaliPackageWatcher *getQuerySetSubscription(const char *id, ISDSSubscription *notifier)
     {
         if (isConnected)
         {
             StringBuffer xpath;
-            return new CQuerySetWatcher(getQuerySetPath(xpath, id), notifier);
+            return new CDaliPackageWatcher(id, getQuerySetPath(xpath, id), notifier);
+        }
+        else
+            return NULL;
+    }
+
+    virtual IDaliPackageWatcher *getPackageSetSubscription(const char *id, ISDSSubscription *notifier)
+    {
+        if (isConnected)
+        {
+            StringBuffer xpath;
+            return new CDaliPackageWatcher(id, getPackageSetPath(xpath, id), notifier);
+        }
+        else
+            return NULL;
+    }
+
+    virtual IDaliPackageWatcher *getPackageMapSubscription(const char *id, ISDSSubscription *notifier)
+    {
+        if (isConnected)
+        {
+            StringBuffer xpath;
+            return new CDaliPackageWatcher(id, getPackageMapPath(xpath, id), notifier);
         }
         else
             return NULL;

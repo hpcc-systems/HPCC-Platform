@@ -50,10 +50,10 @@ extern IFilePartMap *createFilePartMap(const char *fileName, IFileDescriptor &fd
 interface IRoxiePackage;
 interface IPackageMap : public IInterface
 {
-    virtual void addPackage(const char *name, IRoxiePackage *package) = 0;
     virtual const IRoxiePackage *queryPackage(const char *name) const = 0;
-    virtual IPropertyTree *getQuerySets() const = 0;
+    virtual const char *queryQuerySetId() const = 0;
     virtual const char *queryPackageId() const = 0;
+    virtual bool isActive() const = 0;
 };
 extern const IRoxiePackage &queryRootPackage();
 extern const IPackageMap &queryEmptyPackageMap();
@@ -100,15 +100,16 @@ interface IFileIOArray : extends IInterface
     virtual StringBuffer &getId(StringBuffer &) const = 0;
 };
 
-interface IRoxieResourceManager : extends IInterface
+interface IRoxieQuerySetManager : extends IInterface
 {
+    virtual bool isActive() const = 0;
     virtual IQueryFactory *lookupLibrary(const char * libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const = 0;
     virtual IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &ctx) const = 0;
-    virtual void load(const IPropertyTree *querySets, const IPackageMap &packages) = 0;
+    virtual void load(const IPropertyTree *querySet, const IPackageMap &packages) = 0;
     virtual void getStats(const char *queryName, const char *graphName, StringBuffer &reply, const IRoxieContextLogger &logctx) const = 0;
     virtual void resetQueryTimings(const char *queryName, const IRoxieContextLogger &logctx) = 0;
+    virtual void resetAllQueryTimings() = 0;
     virtual void getActivityMetrics(StringBuffer &reply) const = 0;
-    virtual void resetActivityMetrics() = 0;
 };
 
 interface IRoxieDebugSessionManager : extends IInterface
@@ -118,29 +119,28 @@ interface IRoxieDebugSessionManager : extends IInterface
     virtual IDebuggerContext *lookupDebuggerContext(const char *id) = 0;
 };
 
-interface IRoxieResourceManagerSet : extends IInterface
+interface IRoxieQuerySetManagerSet : extends IInterface
 {
     virtual void load(const IPropertyTree *querySets, const IPackageMap &packages) = 0;
 };
 
-class GlobalResourceManager;
+interface IRoxieQueryPackageManagerSet : extends IInterface
+{
+    virtual void load() = 0;
+    virtual void doControlMessage(IPropertyTree *xml, StringBuffer &reply, const IRoxieContextLogger &ctx) = 0;
+    virtual IRoxieDebugSessionManager* getRoxieDebugSessionManager() const = 0;
+    virtual IQueryFactory *lookupLibrary(const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const = 0;
+    virtual IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &logctx) const = 0;
+};
 
-extern IRoxieResourceManager *createServerManager();
-extern IRoxieResourceManager *createSlaveManager();
-extern const IRoxieResourceManager *getRoxieServerManager();
-extern IRoxieDebugSessionManager *getRoxieDebugSessionManager();
-extern void selectPackage(const char * packageId);
-extern void deleteNonActiveGlobalResourceManager(const char * packageId);
-extern unsigned findAllLoadedPackageIds(StringArray &packageIds);
-extern void loadPackageSet(const char *packageId);
-extern GlobalResourceManager *getGlobalResourceManager(const char *packageId);
-extern GlobalResourceManager *getActiveGlobalResourceManager();
+extern IRoxieQuerySetManager *createServerManager();
+extern IRoxieQuerySetManager *createSlaveManager();
+extern IRoxieQueryPackageManagerSet *createRoxiePackageSetManager(const IQueryDll *standAloneDll);
+extern IRoxieQueryPackageManagerSet *globalPackageSetManager;
 
-extern void createResourceManagers(const IQueryDll *standAloneDll, unsigned numChannels);
-extern void cleanupResourceManagers();
+extern void loadPlugins();
+extern void cleanupPlugins();
 
-extern void doControlMessage(IPropertyTree *xml, StringBuffer &reply, const IRoxieContextLogger &ctx);
-extern InterruptableSemaphore controlSem;
 extern void mergeStats(IPropertyTree *s1, IPropertyTree *s2, unsigned level);
 
 extern const char *queryNodeFileName(const IPropertyTree &graphNode);

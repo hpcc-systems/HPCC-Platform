@@ -78,7 +78,7 @@ extern unsigned myNodeIndex;
 #ifdef ROXIE_SLA_LOGIC
 #define ROXIE_PRIORITY_MASK (ROXIE_SLA_PRIORITY | ROXIE_HIGH_PRIORITY | ROXIE_LOW_PRIORITY)
 #else
-#define (ROXIE_PRIORITY_MASK ROXIE_HIGH_PRIORITY | ROXIE_LOW_PRIORITY )
+#define ROXIE_PRIORITY_MASK (ROXIE_HIGH_PRIORITY | ROXIE_LOW_PRIORITY )
 #endif  
 
 #define ROXIE_ACTIVITY_FETCH 0x20000000    // or'ed into activityId for fetch part of full keyed join activities
