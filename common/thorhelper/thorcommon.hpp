@@ -265,6 +265,10 @@ public:
     {
         return ctx->getWuid();
     }
+    virtual const char *queryWuid()
+    {
+        return ctx->queryWuid();
+    }
     virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
     {
         ctx->getExternalResultRaw(tlen, tgt, wuid, stepname, sequence, xmlTransformer, csvTransformer);

@@ -43,6 +43,11 @@ char *CThorCodeContextBase::getWuid()
     return out.detach();
 }
 
+const char *CThorCodeContextBase::queryWuid()
+{
+    return job.queryWuid();
+}
+
 char *CThorCodeContextBase::getJobName()
 {
     throwUnexpected();

@@ -489,6 +489,7 @@ public:
     // Not yet thought about these....
 
     virtual char *getWuid() { throwUnexpected(); } // caller frees return string.
+    virtual const char *queryWuid() { throwUnexpected(); }
     virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }  // shouldn't really be here, but it broke thor.
     virtual char *getDaliServers() { throwUnexpected(); } // caller frees return string.
     virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract) { throwUnexpected(); }
