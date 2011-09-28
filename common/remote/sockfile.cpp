@@ -1479,7 +1479,7 @@ class CCritTable;
 class CEndpointCS : public CriticalSection, public CInterface
 {
     CCritTable &table;
-    const SocketEndpoint &ep;
+    const SocketEndpoint ep;
 public:
     CEndpointCS(CCritTable &_table, const SocketEndpoint &_ep) : table(_table), ep(_ep) { }
     const void *queryFindParam() const { return &ep; }
