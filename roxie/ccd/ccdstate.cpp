@@ -517,7 +517,8 @@ public:
     virtual const IResolvedFile *lookupFileName(const char *_fileName, bool opt, bool cache) const
     {
         StringBuffer fileName;
-        expandLogicalFilename(fileName, _fileName, NULL);   // MORE - if we have a wu, and we have not yet got rid of the concept of scope, we should use it here
+        //MORE - Need to determine remote or local in expandLogicalFilename
+        expandLogicalFilename(fileName, _fileName, NULL, false);   // MORE - if we have a wu, and we have not yet got rid of the concept of scope, we should use it here
 
         const IResolvedFile *result = lookupFile(fileName, cache);
         if (!result)
