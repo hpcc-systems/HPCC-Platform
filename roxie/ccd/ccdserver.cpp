@@ -10467,45 +10467,8 @@ public:
     }
 };
 
-//==================================================================================
-
-extern StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fname, IConstWorkUnit * wu)
-{
-    if (fname[0]=='~')
-        logicalName.append(fname+1);
-    else
-    {
-        SCMStringBuffer lfn;
-        if (wu)
-            wu->getScope(lfn);
-        if(lfn.length())
-            logicalName.append(lfn.s).append("::");
-        logicalName.append(fname);
-    }
-    return logicalName;
-}
-
-StringBuffer & mangleLocalTempFilename(StringBuffer & out, char const * in)
-{
-    char const * start = in;
-    while(true)
-    {
-        char const * end = strstr(start, "::");
-        if(end)
-        {
-            out.append(end-start, start).append("__scope__");
-            start = end + 2;
-        }
-        else
-        {
-            out.append(start);
-            break;
-        }
-    }
-    return out;
-}
-
 //=====================================================================================================
+
 class CRoxieServerDiskWriteActivity : public CRoxieServerInternalSinkActivity
 {
 protected:
@@ -10577,7 +10540,7 @@ protected:
         assertex(rawLogicalName);
         if((helper.getFlags() & TDXtemporary) == 0)
         {
-            expandLogicalFilename(lfn, rawLogicalName, NULL); // MORE - should probably pass wu if we have one?
+            expandLogicalFilename(lfn, rawLogicalName, NULL, false); // MORE - should probably pass wu if we have one?
             CDfsLogicalFileName logicalName;
             if (!logicalName.setValidate(lfn.str()))
                 throw MakeStringException(99, "Cannot write %s, invalid logical name", lfn.str());
@@ -27730,6 +27693,7 @@ public:
     virtual void printResults(IXmlWriter *output, const char *name, unsigned sequence) { throwUnexpected(); }
 
     virtual char *getWuid() { throwUnexpected(); }
+    virtual const char *queryWuid() { throwUnexpected(); }
     virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
     virtual char *getDaliServers() { throwUnexpected(); } 
 
@@ -29741,6 +29705,7 @@ public:
         return strdup("roxie"); 
     }
     virtual char *getWuid() { throwUnexpected(); }
+    virtual const char *queryWuid() { throwUnexpected(); }
 
     // persist-related code - usage of persist should have been caught and rejected at codegen time
     virtual char * getExpandLogicalName(const char * logicalName) { throwUnexpected(); }

@@ -98,64 +98,6 @@ inline bool checkIsCompressed(unsigned int flags, size32_t fixedSize, bool group
 
 //=====================================================================================================
 
-StringBuffer & mangleHelperFileName(StringBuffer & out, const char * in, IAgentContext &agent, unsigned int flags)
-{
-    out = in;
-    if (flags & (TDXtemporary | TDXjobtemp))
-    {
-        char * wuid = agent.queryCodeContext()->getWuid();
-        out.append("__").append(wuid);
-        free(wuid);
-    }
-    return out;
-}
-
-
-StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fname, IAgentContext &agent)
-{
-    if (fname[0]=='~')
-        logicalName.append(fname+1);
-    else if (agent.queryResolveFilesLocally())
-        logicalName.append(fname);
-    else
-    {
-        SCMStringBuffer lfn;
-        agent.queryWorkUnit()->getScope(lfn);
-        if(lfn.length())
-            logicalName.append(lfn.s).append("::");
-        logicalName.append(fname);
-    }
-    if (agent.queryResolveFilesLocally())
-    {
-        StringBuffer sb(logicalName.str());
-        sb.replaceString("::",PATHSEPSTR);
-        makeAbsolutePath(sb.str(), logicalName.clear());
-    }
-    return logicalName;
-}
-
-StringBuffer & mangleLocalTempFilename(StringBuffer & out, char const * in)
-{
-    char const * start = in;
-    while(true)
-    {
-        char const * end = strstr(start, "::");
-        if(end)
-        {
-            out.append(end-start, start).append("__scope__");
-            start = end + 2;
-        }
-        else
-        {
-            out.append(start);
-            break;
-        }
-    }
-    return out;
-}
-
-//=====================================================================================================
-
 CRowBuffer::CRowBuffer(IRecordSize * _recsize, bool _grouped) : recsize(_recsize), grouped(_grouped)
 {
     fixsize = recsize->getFixedSize();
@@ -455,7 +397,7 @@ void CHThorDiskWriteActivity::done()
 
 void CHThorDiskWriteActivity::resolve()
 {
-    mangleHelperFileName(mangledHelperFileName, helper.getFileName(), agent, helper.getFlags());
+    mangleHelperFileName(mangledHelperFileName, helper.getFileName(), agent.queryCodeContext()->queryWuid(), helper.getFlags());
     assertex(mangledHelperFileName.str());
     if((helper.getFlags() & TDXtemporary) == 0)
     {
@@ -710,7 +652,7 @@ void CHThorDiskWriteActivity::publish()
     properties.setPropInt("@formatCrc", helper.getFormatCrc());
 
     StringBuffer lfn;
-    expandLogicalFilename(lfn, mangledHelperFileName.str(), agent);
+    expandLogicalFilename(lfn, mangledHelperFileName.str(), agent.queryWorkUnit(), agent.queryResolveFilesLocally());
     CDfsLogicalFileName logicalName;
     if (agent.queryResolveFilesLocally())
         logicalName.allowOsPath(true);
@@ -986,7 +928,7 @@ CHThorIndexWriteActivity::CHThorIndexWriteActivity(IAgentContext &_agent, unsign
 {
     incomplete = false;
     StringBuffer lfn;
-    expandLogicalFilename(lfn, helper.getFileName(), agent);
+    expandLogicalFilename(lfn, helper.getFileName(), agent.queryWorkUnit(), agent.queryResolveFilesLocally());
     if (!agent.queryResolveFilesLocally())
     {
         Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(lfn, agent.queryCodeContext()->queryUserDescriptor(), true);
@@ -1202,7 +1144,7 @@ void CHThorIndexWriteActivity::execute()
     if (!agent.queryResolveFilesLocally())
     {
         dfile.setown(queryDistributedFileDirectory().createNew(desc));
-        expandLogicalFilename(lfn, helper.getFileName(), agent);
+        expandLogicalFilename(lfn, helper.getFileName(), agent.queryWorkUnit(), agent.queryResolveFilesLocally());
         dfile->attach(lfn.str(),NULL, agent.queryCodeContext()->queryUserDescriptor());
         agent.logFileAccess(dfile, "HThor", "CREATED");
     }
@@ -7517,7 +7459,7 @@ void CHThorDiskReadBaseActivity::done()
 
 void CHThorDiskReadBaseActivity::resolve()
 {
-    mangleHelperFileName(mangledHelperFileName, helper.getFileName(), agent, helper.getFlags());
+    mangleHelperFileName(mangledHelperFileName, helper.getFileName(), agent.queryCodeContext()->queryWuid(), helper.getFlags());
     if (helper.getFlags() & TDXtemporary)
     {
         StringBuffer mangledFilename;

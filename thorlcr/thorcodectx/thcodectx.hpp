@@ -84,6 +84,7 @@ public:
 // ICodeContext
     virtual const char *loadResource(unsigned id);
     virtual char *getWuid();
+    virtual const char *queryWuid();
     virtual char *getDaliServers();
 
     virtual char *getExpandLogicalName(const char * logicalName);
