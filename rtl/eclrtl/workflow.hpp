@@ -54,6 +54,15 @@ private:
   *
   * Calling the method perform will then execute the whole dependency graph recursively,
   * depth-first, and account for workunits' scheduling and machine epilogue/prologue.
+  *
+  * The main features are:
+  *  - Allow a graph of dependent workflow items
+  *  - Allow actions to be performed on success/failure
+  *  - Allow recovery actions before retrying, with limits on number of retries.
+  *  - Ensure that workflow items inside SEQUENTIAL actions are executed correctly.
+  *  - Allow workflow items to be triggered on events.
+  *  - Support once, stored, persist workflow items.
+  *
   */
 class ECLRTL_API WorkflowMachine : public CInterface
 {
