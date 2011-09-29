@@ -23,6 +23,7 @@
 #include "roxiehelper.ipp"
 #include "roxiemem.hpp"
 #include "mpbase.hpp"
+#include "workunit.hpp"
 
 #ifdef _WIN32
  #ifdef ROXIEHELPER_EXPORTS
@@ -208,5 +209,9 @@ private:
 };
 
 //==============================================================================================================
+
+ROXIEHELPER_API StringBuffer & mangleHelperFileName(StringBuffer & out, const char * in, const char * wuid, unsigned int flags);
+ROXIEHELPER_API StringBuffer & mangleLocalTempFilename(StringBuffer & out, char const * in);
+ROXIEHELPER_API StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fname, IConstWorkUnit * wu, bool resolveLocally);
 
 #endif // ROXIEHELPER_HPP
