@@ -2463,6 +2463,8 @@ void CThorStats::processInfo()
 void CTimingInfo::getXGMML(IPropertyTree *node)
 {
     processInfo();
+    addAttribute(node, "timeMaxMs", max);
+    addAttribute(node, "timeMinMs", min);
     if (hi == lo)
     {
         removeAttribute(node, "timeMaxEndpoint");
@@ -2473,8 +2475,6 @@ void CTimingInfo::getXGMML(IPropertyTree *node)
     else
     {
         StringBuffer epStr;
-        addAttribute(node, "timeMaxMs", max);
-        addAttribute(node, "timeMinMs", min);
         addAttribute(node, "timeMaxEndpoint", querySlaveGroup().queryNode(maxNode).endpoint().getUrlStr(epStr).str());
         addAttribute(node, "timeMinEndpoint", querySlaveGroup().queryNode(minNode).endpoint().getUrlStr(epStr.clear()).str());
         addAttribute(node, "timeMaxSkew", hi);
