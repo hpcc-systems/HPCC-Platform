@@ -55,6 +55,7 @@
 #define MERGE_TRANSFER_BUFFER_SIZE              (0x10000)               // 64K
 #define EXCESSIVE_PARALLEL_THRESHHOLD           (0x500000)              // 5MB
 #define LOOP_SMART_BUFFER_SIZE                  (0x100000*12)           // 12MB
+#define LOCALRESULT_BUFFER_SIZE                 (0x100000*10)           // 10MB
 
 
 
