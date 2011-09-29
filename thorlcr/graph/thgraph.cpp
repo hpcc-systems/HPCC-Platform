@@ -63,7 +63,7 @@ public:
     CThorGraphResult(IRowInterfaces *_rowIf, bool _local) : rowIf(_rowIf), local(_local)
     {
         init();
-        rowBuffer.setown(createOverflowableBuffer(rowIf, 1024));
+        rowBuffer.setown(createOverflowableBuffer(rowIf, LOCALRESULT_BUFFER_SIZE));
     }
 
 // IRowWriter
