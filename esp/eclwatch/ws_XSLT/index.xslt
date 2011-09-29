@@ -109,7 +109,7 @@
                     return false;
                 }
 
-                function activePopup(isRoxie, type, queue,wuid,highpriority, PosId)
+                function activePopup(type, isRoxie, queue,wuid,highpriority, PosId)
                 {
                     isThor = 0;
                     if (isRoxie < 1)
