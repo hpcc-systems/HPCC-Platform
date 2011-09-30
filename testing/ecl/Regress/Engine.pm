@@ -68,6 +68,7 @@ use Config::Simple qw();
 use File::Spec::Functions qw(curdir catfile splitpath);
 use File::Path qw(rmtree);
 use POSIX qw(localtime strftime);
+use XML::Simple;
 use Regress::Prepare qw();
 use Regress::EclPlus qw();
 use Regress::RoxieConfig qw();
@@ -98,6 +99,7 @@ sub new($$)
 {
     my ($class, $self) = @_;
     bless($self, $class);
+    $self->_check_ini_file();
     $self->_read_config();
     return $self;
 }
@@ -427,6 +429,103 @@ sub launch($$$)
 
 # PRIVATE
 
+sub _check_ini_file($)
+{
+    my ($self) = @_;
+    my $ini_file = 'regress.ini';
+    if (!$self->{generate_ini})
+    {
+        if (-f $ini_file)
+        {
+            return;
+        }
+        print(STDERR "Configuration $ini_file not found, please use -generate_ini=environment.xml to create one.\n");
+        exit(1);
+    }
+    elsif (! -r $self->{generate_ini})
+    {
+        print(STDERR "ERROR: file $self->{generate_ini} is not readable\n");
+        exit(2);
+    }
+
+    my $xml = XML::Simple->new();
+    my $data = $xml->XMLin($self->{generate_ini});
+
+    my $xml_env = $data->{EnvSettings};
+    my $xml_hw = $data->{Hardware};
+    my $xml_sw = $data->{Software};
+    my $xml_prog = $data->{Programs};
+
+    # Populate parameters from XML
+    my $os = $xml_hw->{ComputerType}->{opSys};
+    $os = 'windows' if $os eq 'W2K';
+    my $server = $xml_sw->{EspProcess}->{Instance}->{computer}.':'.
+                 $xml_sw->{EspService}->{EclWatch}->{Properties}->{defaultPort};
+    my $username = getlogin();
+    my $passwd = ''; # This will be asked during runtime
+    my $parallel = '0'; # This can be set via command line
+
+    # Variables not present in xsl or xml. How to get them?
+    my $purge = 'move';
+    my $fileloc = '';
+    my $roxieConfig;
+
+    # Format to INI
+    my $ini = new Config::Simple(syntax=>'ini');
+
+    # Test suites
+    my $clusters = '';
+    my $xml_cl = $xml_sw->{Topology}->{Cluster};
+    foreach my $name (keys %$xml_cl) {
+        # Name and type are always present
+        my $type = '';
+        if ($name eq 'thor' and defined $xml_sw->{$name.'Cluster'}->{lcr}) {
+            $type = 'thorlcr';
+        } else {
+            $type = $name;
+        }
+        my %config = (
+            'cluster' => $name,
+            'type' => $type,
+        );
+        # Config and server, only in Roxie
+        if ($name eq 'roxie') {
+            $config{roxieconfig} = $xml_sw->{EspProcess}->{EspBinding}->{$roxieConfig}->{service}
+                                    if defined $roxieConfig;
+            my $xml_srv = $xml_sw->{RoxieCluster}->{RoxieServerProcess};
+            if (defined $xml_srv->{computer}) {
+                $config{roxieserver} = $xml_srv->{computer}.':'.$xml_srv->{port};
+            } elsif (defined $xml_srv) {
+                for my $farm_k (keys %$xml_srv) {
+                    my $farm = $xml_srv->{$farm_k};
+                    if (defined $farm->{computer} && defined $farm->{port}) {
+                        $config{roxieserver} = $farm->{computer}.':'.$farm->{port};
+                        last;
+                    }
+                }
+            }
+        }
+        # Append suite to list
+        $clusters .= $name.' ';
+
+        $ini->param(-block=>$name.'_suite', -value=> \%config);
+    }
+
+    # Global config
+    $ini->param(-block=>'*', -value=>{
+            'server' => $server,
+            'owner' => $username,
+            'password' => $passwd,
+            'setup_file_location' => $fileloc,
+            'os' => $os,
+            'parallel_queries' => $parallel,
+            'purge' => $purge,
+            'setup_clusters' => $clusters,
+    });
+
+    $ini->save($ini_file);
+}
+
 sub _read_config($)
 {
     my ($self) = @_;
@@ -707,7 +806,7 @@ sub _promptpw($)
     eval { require Term::Prompt; };
     $self->error("Config does not provide value for password and cannot prompt on terminal (Term::Prompt module unavailable)") if($@);
     my $pw = Term::Prompt::prompt('P', "Password for $self->{owner}:", 'Please enter password', '');
-    $self->{password} = $pw or $self->error("Blank password given at prompt");
+    $self->{password} = $pw; # Empty passwords allowed when there is no password checking
 }
 
 sub _current_time()
