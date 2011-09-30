@@ -1357,7 +1357,7 @@ bool EclAgent::expandLogicalName(StringBuffer & fullname, const char * logicalNa
 ILocalOrDistributedFile *EclAgent::resolveLFN(const char *fname, const char *errorTxt, bool optional, bool noteRead, bool isWrite, StringBuffer * expandedlfn)
 {
     StringBuffer lfn;
-    expandLogicalFilename(lfn, fname, *this);
+    expandLogicalFilename(lfn, fname, queryWorkUnit(), resolveFilesLocally);
     if (resolveFilesLocally && *fname != '~')
     {
         StringBuffer name;
@@ -1501,7 +1501,7 @@ __int64 EclAgent::countDiskFile(__int64 id, IHThorCountFileArg & arg)
     }
 
     StringBuffer mangled;
-    mangleHelperFileName(mangled, arg.getFileName(), *this, arg.getFlags());
+    mangleHelperFileName(mangled, arg.getFileName(), queryWuid(), arg.getFlags());
     Owned<ILocalOrDistributedFile> ldFile = resolveLFN(mangled, "CountDisk", 0 != (arg.getFlags() & TDRoptional));
     if (ldFile) 
     {
@@ -2651,6 +2651,11 @@ void EclAgent::checkPersistMatches(const char * logicalName, unsigned eclCRC)
 char *EclAgent::getWuid()
 {
     return strdup(wuid);
+}
+
+const char *EclAgent::queryWuid()
+{
+    return wuid.get();
 }
 
 char * EclAgent::getDaliServers()

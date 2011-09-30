@@ -104,6 +104,8 @@ struct IAgentContext : extends IGlobalCodeContext
     virtual IGroup *getHThorGroup(StringBuffer &grpnameout) = 0;
 
     virtual unsigned __int64 queryStopAfter() = 0;
+    
+    virtual const char *queryWuid() = 0;
 };
 
 struct WorkunitUpdate : public Owned<IWorkUnit>

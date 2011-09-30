@@ -1317,3 +1317,57 @@ ROXIEHELPER_API IOrderedOutputSerializer * createOrderedOutputSerializer(FILE * 
 {
     return new COrderedOutputSerializer(_outFile);
 }
+
+//=====================================================================================================
+
+ROXIEHELPER_API StringBuffer & mangleHelperFileName(StringBuffer & out, const char * in, const char * wuid, unsigned int flags)
+{
+    out = in;
+    if (flags & (TDXtemporary | TDXjobtemp))
+        out.append("__").append(wuid);
+    return out;
+}
+
+ROXIEHELPER_API StringBuffer & mangleLocalTempFilename(StringBuffer & out, char const * in)
+{
+    char const * start = in;
+    while(true)
+    {
+        char const * end = strstr(start, "::");
+        if(end)
+        {
+            out.append(end-start, start).append("__scope__");
+            start = end + 2;
+        }
+        else
+        {
+            out.append(start);
+            break;
+        }
+    }
+    return out;
+}
+
+ROXIEHELPER_API StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fname, IConstWorkUnit * wu, bool resolveLocally)
+{
+    if (fname[0]=='~')
+        logicalName.append(fname+1);
+    else if (resolveLocally)
+    {
+        StringBuffer sb(fname);
+        sb.replaceString("::",PATHSEPSTR);
+        makeAbsolutePath(sb.str(), logicalName.clear());
+    }
+    else
+    {
+        SCMStringBuffer lfn;
+        if (wu)
+        {
+            wu->getScope(lfn);
+            if(lfn.length())
+                logicalName.append(lfn.s).append("::");
+        }
+        logicalName.append(fname);
+    }
+    return logicalName;
+}
