@@ -249,10 +249,11 @@ public:
         return ctx->getHThorGroup(name);
     }
     
+    virtual const char *queryWuid()
+    {
+        return ctx->queryWuid();
+    }
     
-    
-    
-
 protected:
     IAgentContext * ctx;
 };
@@ -533,7 +534,7 @@ public:
     virtual char *resolveName(const char *in, char *out, unsigned outlen);
     virtual void logFileAccess(IDistributedFile * file, char const * component, char const * type);
     virtual IRecordLayoutTranslatorCache * queryRecordLayoutTranslatorCache() const { return rltCache; }
-    virtual ILocalOrDistributedFile  *resolveLFN(const char *logicalName, const char *errorTxt=NULL, bool optional=false, bool noteRead=true, bool write=false, StringBuffer * expandedlfn=NULL);//@@
+    virtual ILocalOrDistributedFile  *resolveLFN(const char *logicalName, const char *errorTxt=NULL, bool optional=false, bool noteRead=true, bool write=false, StringBuffer * expandedlfn=NULL);
 
     virtual void executeThorGraph(const char * graphName);
     virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract);
@@ -580,6 +581,7 @@ public:
     virtual unsigned __int64 getFileOffset(const char *logicalPart) { UNIMPLEMENTED; return 0; }
     virtual char *getOutputDir() { UNIMPLEMENTED; }
     virtual char *getWuid();
+    virtual const char *queryWuid();
     virtual IDistributedFileTransaction *querySuperFileTransaction();
     virtual unsigned getPriority() const { return 0; }
     virtual char *getPlatform() { return strdup(isStandAloneExe ? "standalone" : "hthor"); }
@@ -665,7 +667,6 @@ public:
     }
     
     IGroup *getHThorGroup(StringBuffer &out);
-    
     
 };
 
