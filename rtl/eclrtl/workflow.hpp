@@ -44,6 +44,26 @@ private:
     MessageAudience audience;
 };
 
+/** This is the main work-flow interface. The dependency tree is kept in the
+  * IWorkflowItemArray object and each item is executed in order, or recursed
+  * in case of dependencies.
+  *
+  * The workflow object is created with a global function createWorkflowItemArray
+  * and populated via the createWorkflowItem. Shouldn't be static member? Or better,
+  * using a builder or factory pattern?
+  *
+  * Calling the method perform will then execute the whole dependency graph recursively,
+  * depth-first, and account for workunits' scheduling and machine epilogue/prologue.
+  *
+  * The main features are:
+  *  - Allow a graph of dependent workflow items
+  *  - Allow actions to be performed on success/failure
+  *  - Allow recovery actions before retrying, with limits on number of retries.
+  *  - Ensure that workflow items inside SEQUENTIAL actions are executed correctly.
+  *  - Allow workflow items to be triggered on events.
+  *  - Support once, stored, persist workflow items.
+  *
+  */
 class ECLRTL_API WorkflowMachine : public CInterface
 {
 public:
@@ -59,23 +79,36 @@ public:
     void setCondition(bool value) { condition = value; }
 
 protected:
+    // Machine specific prologue/epilogue
     virtual void begin() = 0;
     virtual void end() = 0;
+    // Workflow specific scheduling
     virtual void schedulingStart() = 0;
     virtual bool schedulingPull() = 0;
     virtual bool schedulingPullStop() = 0;
+    // Error handling
     virtual void reportContingencyFailure(char const * type, IException * e) = 0;
     virtual void checkForAbort(unsigned wfid, IException * handling) = 0;
+    // Persistence styles varies from machine to machine
     virtual void doExecutePersistItem(IRuntimeWorkflowItem & item) = 0;
 
+    // Check conditions, item type and call operations below based on type
     bool executeItem(unsigned wfid, unsigned scheduledWfid);
+
+    // Iterate through dependencies and execute them
     bool doExecuteItemDependencies(IRuntimeWorkflowItem & item, unsigned scheduledWfid);
     bool doExecuteItemDependency(IRuntimeWorkflowItem & item, unsigned dep, unsigned scheduledWfid);
+    // Execute an item (wrapper to deal with exceptions)
     void doExecuteItem(IRuntimeWorkflowItem & item, unsigned scheduledWfid);
-    bool doExecuteConditionItem(IRuntimeWorkflowItem & item, unsigned scheduledWfid);
-    void doExecuteBeginWaitItem(IRuntimeWorkflowItem & item, unsigned scheduledWfid);
-    void doExecuteEndWaitItem(IRuntimeWorkflowItem & item);
+    // Actually executes item: calls process->perform()
     void performItem(unsigned wfid, unsigned scheduledWfid);
+    // Conditional dependency execution
+    bool doExecuteConditionItem(IRuntimeWorkflowItem & item, unsigned scheduledWfid);
+    // Block execution of the currently executing scheduled item
+    void doExecuteBeginWaitItem(IRuntimeWorkflowItem & item, unsigned scheduledWfid);
+    // Unblock the scheduled workflow item, which should mean execution continues.
+    void doExecuteEndWaitItem(IRuntimeWorkflowItem & item);
+
     bool attemptRetry(IRuntimeWorkflowItem & item, unsigned dep, unsigned scheduledWfid);
     void handleFailure(IRuntimeWorkflowItem & item, WorkflowException const * e, bool isDep);
 
