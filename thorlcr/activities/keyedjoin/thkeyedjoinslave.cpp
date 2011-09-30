@@ -527,7 +527,6 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
     Owned<IKeyIndexSet> tlkKeySet, partKeySet;
     IThorDataLink *input;
     bool preserveGroups, preserveOrder, eos, inputStopped, needsDiskRead, atMostProvided, dataRemote;
-    FPosTableEntry *offsetTable;
     unsigned joinFlags, abortLimit, parallelLookups, freeQSize, filePartTotal;
     size32_t fixedRecordSize;
     CJoinGroupPool *pool;
@@ -541,7 +540,8 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
     OwnedConstThorRow defaultRight;
     unsigned portbase, node;
     IArrayOf<IDelayedFile> fetchFiles;
-    FPosTableEntry *partTable;
+    FPosTableEntry *fPosToNodeMap; // maps fpos->node for all parts of logical file
+    FPosTableEntry *fPosToLocalPartMap; // maps fpos->local part #
     unsigned pendingGroups, superWidth;
     Semaphore pendingGroupSem;
     CriticalSection pendingGroupCrit, statCrit, lookupCrit;
@@ -620,57 +620,64 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
             }
             virtual void main()
             {
-                unsigned endRequestsCount = owner.container.queryJob().querySlaves();
-                Owned<IBitSet> endRequests = createBitSet(); // NB: verification only
-                while (!aborted)
-                {   
-                    rank_t sender;
-                    CMessageBuffer msg;
-                    if (comm.recv(msg, RANK_ALL, resultMpTag, &sender))
+                try
+                {
+                    unsigned endRequestsCount = owner.container.queryJob().querySlaves();
+                    Owned<IBitSet> endRequests = createBitSet(); // NB: verification only
+                    while (!aborted)
                     {
-                        if (!msg.length())
+                        rank_t sender;
+                        CMessageBuffer msg;
+                        if (comm.recv(msg, RANK_ALL, resultMpTag, &sender))
                         {
-                            unsigned prevVal = endRequests->testSet(((unsigned)sender)-1);
-                            assertex(0 == prevVal);
-                            if (0 == --endRequestsCount) // wait for all processors to signal end
-                                break;
-                            continue;
-                        }
-                        unsigned count;
-                        msg.read(count);
-
-                        CThorRowArray received;
-                        size32_t recvSz = msg.remaining();
-                        received.deserialize(*owner.fetchOutputRowIf->queryRowAllocator(), owner.fetchOutputRowIf->queryRowDeserializer(), recvSz, msg.readDirect(recvSz), false);
-
-                        unsigned c=0, c2=0;
-                        while (c<count && !aborted)
-                        {
-                            OwnedConstThorRow row = received.itemClear(c++);
-                            const byte *rowPtr = (const byte *)row.get();
-                            offset_t fpos;
-                            CJoinGroup *jg;
-                            memcpy(&fpos, rowPtr, sizeof(fpos));
-                            rowPtr += sizeof(fpos);
-                            memcpy(&jg, rowPtr, sizeof(jg));
-                            rowPtr += sizeof(jg);
-                            const void *fetchRow = *((const void **)rowPtr);
-                            if (fetchRow)
+                            if (!msg.length())
                             {
-                                LinkThorRow(fetchRow);
-                                jg->addRightMatch(fetchRow, fpos);
+                                unsigned prevVal = endRequests->testSet(((unsigned)sender)-1);
+                                assertex(0 == prevVal);
+                                if (0 == --endRequestsCount) // wait for all processors to signal end
+                                    break;
+                                continue;
                             }
-                            jg->noteEnd(0);
-                            ++c2;
-                            if (LOWTHROTTLE_GRANULARITY == c2) // prevent sender when busy waking up to send very few.
+                            unsigned count;
+                            msg.read(count);
+
+                            CThorRowArray received;
+                            size32_t recvSz = msg.remaining();
+                            received.deserialize(*owner.fetchOutputRowIf->queryRowAllocator(), owner.fetchOutputRowIf->queryRowDeserializer(), recvSz, msg.readDirect(recvSz), false);
+
+                            unsigned c=0, c2=0;
+                            while (c<count && !aborted)
                             {
+                                OwnedConstThorRow row = received.itemClear(c++);
+                                const byte *rowPtr = (const byte *)row.get();
+                                offset_t fpos;
+                                CJoinGroup *jg;
+                                memcpy(&fpos, rowPtr, sizeof(fpos));
+                                rowPtr += sizeof(fpos);
+                                memcpy(&jg, rowPtr, sizeof(jg));
+                                rowPtr += sizeof(jg);
+                                const void *fetchRow = *((const void **)rowPtr);
+                                if (fetchRow)
+                                {
+                                    LinkThorRow(fetchRow);
+                                    jg->addRightMatch(fetchRow, fpos);
+                                }
+                                jg->noteEnd(0);
+                                ++c2;
+                                if (LOWTHROTTLE_GRANULARITY == c2) // prevent sender when busy waking up to send very few.
+                                {
+                                    owner.fetchHandler->decPendingReplies(c2);
+                                    c2 = 0;
+                                }
+                            }
+                            if (c2)
                                 owner.fetchHandler->decPendingReplies(c2);
-                                c2 = 0;
-                            }
                         }
-                        if (c2)
-                            owner.fetchHandler->decPendingReplies(c2);
                     }
+                }
+                catch (IException *e)
+                {
+                    owner.fireException(e);
                 }
                 aborted = true;
                 owner.pendingGroupSem.signal(); // release puller if blocked on fetch groups pending, in case this has stopped early.
@@ -717,147 +724,154 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
             }
             virtual void main()
             {
-                rank_t sender;
-                CMessageBuffer msg;
-                unsigned endRequestsCount = owner.container.queryJob().querySlaves();
-                Owned<IBitSet> endRequests = createBitSet(); // NB: verification only
+                try
+                {
+                    rank_t sender;
+                    CMessageBuffer msg;
+                    unsigned endRequestsCount = owner.container.queryJob().querySlaves();
+                    Owned<IBitSet> endRequests = createBitSet(); // NB: verification only
 
-                Owned<IRowInterfaces> fetchDiskRowIf = createRowInterfaces(owner.helper->queryDiskRecordSize(),owner.queryActivityId(),owner.queryCodeContext());
-                while (!aborted)
-                {   
-                    CMessageBuffer replyMb;
-                    unsigned retCount = 0;
-                    replyMb.append(retCount); // place holder;
-                    if (comm.recv(msg, RANK_ALL, requestMpTag, &sender))
+                    Owned<IRowInterfaces> fetchDiskRowIf = createRowInterfaces(owner.helper->queryDiskRecordSize(),owner.queryActivityId(),owner.queryCodeContext());
+                    while (!aborted)
                     {
-                        if (!msg.length())
+                        CMessageBuffer replyMb;
+                        unsigned retCount = 0;
+                        replyMb.append(retCount); // place holder;
+                        if (comm.recv(msg, RANK_ALL, requestMpTag, &sender))
                         {
-                            unsigned prevVal = endRequests->testSet(((unsigned)sender)-1);
-                            assertex(0 == prevVal);
-                            // I will not get anymore from 'sender', tell sender I've processed all and there will be no more results.
-                            if (!comm.send(msg, sender, resultMpTag, LONGTIMEOUT))
-                                throw MakeActivityException(&owner, 0, "CKeyedFetchRequestProcessor {3} - comm send failed");
-                            if (0 == --endRequestsCount)
-                                break;
-                            continue;
-                        }
-                        unsigned count;
-                        msg.read(count);
+                            if (!msg.length())
+                            {
+                                unsigned prevVal = endRequests->testSet(((unsigned)sender)-1);
+                                assertex(0 == prevVal);
+                                // I will not get anymore from 'sender', tell sender I've processed all and there will be no more results.
+                                if (!comm.send(msg, sender, resultMpTag, LONGTIMEOUT))
+                                    throw MakeActivityException(&owner, 0, "CKeyedFetchRequestProcessor {3} - comm send failed");
+                                if (0 == --endRequestsCount)
+                                    break;
+                                continue;
+                            }
+                            unsigned count;
+                            msg.read(count);
 
-                        CThorRowArray received, replyRows;
-                        size32_t recvSz =  msg.remaining();
-                        received.deserialize(*owner.fetchInputMetaRowIf->queryRowAllocator(), owner.fetchInputMetaRowIf->queryRowDeserializer(), recvSz, msg.readDirect(recvSz), false);
-                        replyRows.setSizing(true, true);
-                        size32_t replySz = 0;
-                        unsigned c = 0;
-                        while (count--)
-                        {
+                            CThorRowArray received, replyRows;
+                            size32_t recvSz =  msg.remaining();
+                            received.deserialize(*owner.fetchInputMetaRowIf->queryRowAllocator(), owner.fetchInputMetaRowIf->queryRowDeserializer(), recvSz, msg.readDirect(recvSz), false);
+                            replyRows.setSizing(true, true);
+                            size32_t replySz = 0;
+                            unsigned c = 0;
+                            while (count--)
+                            {
 #ifdef TRACE_JOINGROUPS
-                            owner.fetchReadBack++;
+                                owner.fetchReadBack++;
 #endif
-                            if (aborted)
-                                break;
-                            OwnedConstThorRow row = received.itemClear(c++);
-                            const byte *rowPtr = (const byte *)row.get();
-                            offset_t fpos;
-                            memcpy(&fpos, rowPtr, sizeof(fpos));
-                            rowPtr += sizeof(fpos);
-                            rowPtr += sizeof(CJoinGroup *);
-
-                            const void *fetchKey = NULL;
-                            if (owner.fetchInputAllocator)
-                            {
-                                const void *fetchRow;
-                                memcpy(&fetchRow, rowPtr, sizeof(const void *));
-                                fetchKey = *((const void **)rowPtr);
-                            }
-
-                            unsigned __int64 localFpos;
-                            unsigned files = owner.dataParts.ordinality();
-                            unsigned filePartIndex = 0;
-                            switch (files)
-                            {
-                                case 0:
-                                    assertex(false);
-                                case 1:
-                                {
-                                    if (isLocalFpos(fpos))
-                                        localFpos = getLocalFposOffset(fpos);
-                                    else
-                                        localFpos = fpos-owner.offsetTable[0].base;
+                                if (aborted)
                                     break;
-                                }
-                                default:
+                                OwnedConstThorRow row = received.itemClear(c++);
+                                const byte *rowPtr = (const byte *)row.get();
+                                offset_t fpos;
+                                memcpy(&fpos, rowPtr, sizeof(fpos));
+                                rowPtr += sizeof(fpos);
+                                rowPtr += sizeof(CJoinGroup *);
+
+                                const void *fetchKey = NULL;
+                                if (owner.fetchInputAllocator)
                                 {
-                                    // which of multiple parts this slave is dealing with.
-                                    FPosTableEntry *result = (FPosTableEntry *)bsearch(&fpos, owner.partTable, files, sizeof(FPosTableEntry), partLookup);
-                                    if (isLocalFpos(fpos))
-                                        localFpos = getLocalFposOffset(fpos);
-                                    else
-                                        localFpos = fpos-result->base;
-                                    filePartIndex = result->index;
-                                    break;
+                                    const void *fetchRow;
+                                    memcpy(&fetchRow, rowPtr, sizeof(const void *));
+                                    fetchKey = *((const void **)rowPtr);
+                                }
+
+                                unsigned __int64 localFpos;
+                                unsigned files = owner.dataParts.ordinality();
+                                unsigned filePartIndex = 0;
+                                switch (files)
+                                {
+                                    case 0:
+                                        assertex(false);
+                                    case 1:
+                                    {
+                                        if (isLocalFpos(fpos))
+                                            localFpos = getLocalFposOffset(fpos);
+                                        else
+                                            localFpos = fpos-owner.fPosToLocalPartMap[0].base;
+                                        break;
+                                    }
+                                    default:
+                                    {
+                                        // which of multiple parts this slave is dealing with.
+                                        FPosTableEntry *result = (FPosTableEntry *)bsearch(&fpos, owner.fPosToLocalPartMap, files, sizeof(FPosTableEntry), partLookup);
+                                        if (isLocalFpos(fpos))
+                                            localFpos = getLocalFposOffset(fpos);
+                                        else
+                                            localFpos = fpos-result->base;
+                                        filePartIndex = result->index;
+                                        break;
+                                    }
+                                }
+
+                                RtlDynamicRowBuilder fetchOutRow(owner.fetchOutputRowIf->queryRowAllocator());
+                                byte *fetchOutPtr = fetchOutRow.getSelf();
+                                memcpy(fetchOutPtr, row.get(), FETCHKEY_HEADER_SIZE);
+                                fetchOutPtr += FETCHKEY_HEADER_SIZE;
+
+                                IFileIO &iFileIO = owner.queryFilePartIO(filePartIndex);
+                                Owned<ISerialStream> stream = createFileSerialStream(&iFileIO, localFpos);
+                                CThorStreamDeserializerSource ds(stream);
+
+                                RtlDynamicRowBuilder fetchedRowBuilder(fetchDiskRowIf->queryRowAllocator());
+                                size32_t fetchedLen = fetchDiskRowIf->queryRowDeserializer()->deserialize(fetchedRowBuilder, ds);
+                                OwnedConstThorRow diskFetchRow = fetchedRowBuilder.finalizeRowClear(fetchedLen);
+
+                                RtlDynamicRowBuilder joinFieldsRow(owner.joinFieldsAllocator);
+                                const void *fJoinFieldsRow = NULL;
+                                if (owner.helper->fetchMatch(fetchKey, diskFetchRow))
+                                {
+                                    size32_t sz = owner.helper->extractJoinFields(joinFieldsRow, diskFetchRow.get(), fpos, (IBlobProvider*)NULL); // JCSMORE it right that passing NULL IBlobProvider here??
+                                    fJoinFieldsRow = joinFieldsRow.finalizeRowClear(sz);
+                                    replySz += FETCHKEY_HEADER_SIZE + sz;
+                                    owner.statsArr[AS_DiskAccepted]++;
+                                    if (owner.statsArr[AS_DiskAccepted] > owner.rowLimit)
+                                        owner.onLimitExceeded();
+                                }
+                                else
+                                {
+                                    replySz += FETCHKEY_HEADER_SIZE;
+                                    owner.statsArr[AS_DiskRejected]++;
+                                }
+                                size32_t fopsz = owner.fetchOutputRowIf->queryRowAllocator()->queryOutputMeta()->getRecordSize(fetchOutRow.getSelf());
+                                // must be easier way? Is it sizeof(const void *)?
+                                memcpy(fetchOutPtr, &fJoinFieldsRow, sizeof(const void *));  // child row of fetchOutputRow
+                                replyRows.append(fetchOutRow.finalizeRowClear(fopsz));
+                                owner.statsArr[AS_DiskSeeks]++;
+                                ++retCount;
+                                if (replySz>=NEWFETCHREPLYMAX) // send back in chunks
+                                {
+                                    replyMb.writeDirect(0, sizeof(unsigned), &retCount);
+                                    retCount = 0;
+                                    replySz = 0;
+                                    replyRows.serialize(owner.fetchOutputRowIf->queryRowSerializer(),replyMb, false);
+                                    replyRows.clear();
+                                    if (!comm.send(replyMb, sender, resultMpTag, LONGTIMEOUT))
+                                        throw MakeActivityException(&owner, 0, "CKeyedFetchRequestProcessor {1} - comm send failed");
+                                    replyMb.rewrite(sizeof(retCount));
                                 }
                             }
-
-                            RtlDynamicRowBuilder fetchOutRow(owner.fetchOutputRowIf->queryRowAllocator());
-                            byte *fetchOutPtr = fetchOutRow.getSelf();
-                            memcpy(fetchOutPtr, row.get(), FETCHKEY_HEADER_SIZE);
-                            fetchOutPtr += FETCHKEY_HEADER_SIZE;
-
-                            IFileIO &iFileIO = owner.queryFilePartIO(filePartIndex);
-                            Owned<ISerialStream> stream = createFileSerialStream(&iFileIO, localFpos);
-                            CThorStreamDeserializerSource ds(stream);
-
-                            RtlDynamicRowBuilder fetchedRowBuilder(fetchDiskRowIf->queryRowAllocator());
-                            size32_t fetchedLen = fetchDiskRowIf->queryRowDeserializer()->deserialize(fetchedRowBuilder, ds);
-                            OwnedConstThorRow diskFetchRow = fetchedRowBuilder.finalizeRowClear(fetchedLen);
-
-                            RtlDynamicRowBuilder joinFieldsRow(owner.joinFieldsAllocator);
-                            const void *fJoinFieldsRow = NULL;
-                            if (owner.helper->fetchMatch(fetchKey, diskFetchRow))
-                            {
-                                size32_t sz = owner.helper->extractJoinFields(joinFieldsRow, diskFetchRow.get(), fpos, (IBlobProvider*)NULL); // JCSMORE it right that passing NULL IBlobProvider here??
-                                fJoinFieldsRow = joinFieldsRow.finalizeRowClear(sz);
-                                replySz += FETCHKEY_HEADER_SIZE + sz;
-                                owner.statsArr[AS_DiskAccepted]++;
-                                if (owner.statsArr[AS_DiskAccepted] > owner.rowLimit)
-                                    owner.onLimitExceeded();
-                            }
-                            else
-                            {
-                                replySz += FETCHKEY_HEADER_SIZE;
-                                owner.statsArr[AS_DiskRejected]++;
-                            }
-                            size32_t fopsz = owner.fetchOutputRowIf->queryRowAllocator()->queryOutputMeta()->getRecordSize(fetchOutRow.getSelf());
-                            // must be easier way? Is it sizeof(const void *)?
-                            memcpy(fetchOutPtr, &fJoinFieldsRow, sizeof(const void *));  // child row of fetchOutputRow
-                            replyRows.append(fetchOutRow.finalizeRowClear(fopsz));
-                            owner.statsArr[AS_DiskSeeks]++;
-                            ++retCount;
-                            if (replySz>=NEWFETCHREPLYMAX) // send back in chunks
+                            if (retCount)
                             {
                                 replyMb.writeDirect(0, sizeof(unsigned), &retCount);
                                 retCount = 0;
-                                replySz = 0;
                                 replyRows.serialize(owner.fetchOutputRowIf->queryRowSerializer(),replyMb, false);
                                 replyRows.clear();
                                 if (!comm.send(replyMb, sender, resultMpTag, LONGTIMEOUT))
-                                    throw MakeActivityException(&owner, 0, "CKeyedFetchRequestProcessor {1} - comm send failed");
+                                    throw MakeActivityException(&owner, 0, "CKeyedFetchRequestProcessor {2} - comm send failed");
                                 replyMb.rewrite(sizeof(retCount));
                             }
                         }
-                        if (retCount)
-                        {
-                            replyMb.writeDirect(0, sizeof(unsigned), &retCount);
-                            retCount = 0;
-                            replyRows.serialize(owner.fetchOutputRowIf->queryRowSerializer(),replyMb, false);
-                            replyRows.clear();
-                            if (!comm.send(replyMb, sender, resultMpTag, LONGTIMEOUT))
-                                throw MakeActivityException(&owner, 0, "CKeyedFetchRequestProcessor {2} - comm send failed");
-                            replyMb.rewrite(sizeof(retCount));
-                        }
                     }
+                }
+                catch (IException *e)
+                {
+                    owner.fireException(e);
                 }
                 aborted = true;
             }
@@ -931,12 +945,12 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
             else
             {
                 if (1 == owner.filePartTotal)
-                    dstNode = owner.offsetTable[0].index;
+                    dstNode = owner.fPosToNodeMap[0].index;
                 else if (isLocalFpos(fpos))
                     dstNode = getLocalFposPart(fpos);
                 else
                 {
-                    const void *result = bsearch(&fpos, owner.offsetTable, owner.filePartTotal, sizeof(FPosTableEntry), slaveLookup);
+                    const void *result = bsearch(&fpos, owner.fPosToNodeMap, owner.filePartTotal, sizeof(FPosTableEntry), slaveLookup);
                     if (!result)
                         throw MakeThorException(TE_FetchOutOfRange, "FETCH: Offset not found in offset table; fpos=%"I64F"d", fpos);
                     dstNode = ((FPosTableEntry *)result)->index;
@@ -1085,29 +1099,36 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
     // IThreaded
         virtual void main()
         {
-            CMessageBuffer msg;
-            loop
+            try
             {
-                crit.enter();
-                if (aborted || stopped)
+                CMessageBuffer msg;
+                loop
                 {
-                    crit.leave();
-                    break;
+                    crit.enter();
+                    if (aborted || stopped)
+                    {
+                        crit.leave();
+                        break;
+                    }
+                    if (0 == pendingSends)
+                    {
+                        writeWaiting = true;
+                        crit.leave();
+                        pendingSendsSem.wait();
+                    }
+                    else
+                        crit.leave();
+                    sendAll();
                 }
-                if (0 == pendingSends)
+                if (!aborted)
                 {
-                    writeWaiting = true;
-                    crit.leave();
-                    pendingSendsSem.wait();
+                    sendAll();
+                    sendStop();
                 }
-                else
-                    crit.leave();
-                sendAll();
             }
-            if (!aborted)
+            catch (IException *e)
             {
-                sendAll();
-                sendStop();
+                owner.fireException(e);
             }
         }
     friend class CKeyedFetchRequestProcessor;
@@ -1659,6 +1680,8 @@ public:
                 }
             }
             pendingGroupSem.wait();
+            if (abortSoon)
+                return false;
         }
         return true;
     }
@@ -1768,8 +1791,8 @@ public:
         rowLimit = (rowcount_t)helper->getRowLimit();
         additionalStats = 5; // (seeks, scans, accepted, prefiltered, postfiltered)
         needsDiskRead = helper->diskAccessRequired();
-        offsetTable = NULL;
-        partTable = NULL;
+        fPosToNodeMap = NULL;
+        fPosToLocalPartMap = NULL;
         fetchHandler = NULL;
         filePartTotal = 0;
 
@@ -1879,24 +1902,24 @@ public:
                     if (!rfn.queryIP().ipequals(container.queryJob().queryJobGroup().queryNode(0).endpoint()))
                         dataRemote = true;
 
-                    partTable = new FPosTableEntry[numDataParts];
+                    fPosToLocalPartMap = new FPosTableEntry[numDataParts];
                     unsigned f;
                     FPosTableEntry *e;
-                    for (f=0, e=&partTable[0]; f<numDataParts; f++, e++)
+                    for (f=0, e=&fPosToLocalPartMap[0]; f<numDataParts; f++, e++)
                     {
                         IPartDescriptor &part = dataParts.item(f);
                         e->base = part.queryProperties().getPropInt64("@offset");
                         e->top = e->base + part.queryProperties().getPropInt64("@size");
-                        e->index = f;
+                        e->index = f; // NB: index == which local part in dataParts
                     }
                 }
                 data.read(filePartTotal);
                 if (filePartTotal)
                 {
                     data.read(offsetMapSz);
-                    offsetTable = new FPosTableEntry[filePartTotal];
+                    fPosToNodeMap = new FPosTableEntry[filePartTotal];
                     const void *offsetMapBytes = (FPosTableEntry *)data.readDirect(offsetMapSz);
-                    memcpy(offsetTable, offsetMapBytes, offsetMapSz);       
+                    memcpy(fPosToNodeMap, offsetMapBytes, offsetMapSz);       
                 }
                 unsigned encryptedKeyLen;
                 void *encryptedKey;
@@ -1927,7 +1950,7 @@ public:
                 unsigned c;
                 for (c=0; c<filePartTotal; c++)
                 {
-                    FPosTableEntry &e = offsetTable[c];
+                    FPosTableEntry &e = fPosToNodeMap[c];
                     ActPrintLog("Table[%d] : base=%"I64F"d, top=%"I64F"d, slave=%d", c, e.base, e.top, e.index);
                 }
                 unsigned i=0;
@@ -1974,6 +1997,7 @@ public:
         CSlaveActivity::abort();
         if (resultDistStream)
             resultDistStream->stop();
+        pendingGroupSem.signal();
     }
     virtual void start()
     {
