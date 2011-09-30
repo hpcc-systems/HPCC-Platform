@@ -138,10 +138,8 @@ extern mp_decl IGroup *createIGroup(const char *endpointlist,unsigned short defp
 extern mp_decl IGroup *deserializeIGroup(MemoryBuffer &src); 
 
 extern mp_decl INode *queryNullNode(); 
-extern mp_decl INode * queryMyNode();
-
-
-
+extern INode * queryMyNode();
+extern mp_decl void initMyNode(unsigned short port);
 
 // Exceptions
 

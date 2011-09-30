@@ -907,7 +907,7 @@ interface IConstWorkUnit : extends IInterface
     virtual IPropertyTree * getDiskUsageStats() = 0;
     virtual IPropertyTreeIterator & getFileIterator() const = 0;
     virtual bool getCloneable() const = 0;
-    virtual IUserDescriptor * getUserDescriptor() const = 0;
+    virtual IUserDescriptor * queryUserDescriptor() const = 0;
     virtual IStringVal & getSnapshot(IStringVal & str) const = 0;
     virtual IDateTime & getTimeScheduled(IDateTime & val) const = 0;
     virtual IPropertyTreeIterator & getFilesReadIterator() const = 0;

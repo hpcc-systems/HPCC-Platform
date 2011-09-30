@@ -288,9 +288,11 @@ interface ILocalOrDistributedFile: extends IInterface
     virtual RemoteFilename &getPartFilename(RemoteFilename &rfn, unsigned partnum,unsigned copy=0) = 0;
     virtual offset_t getPartFileSize(unsigned partnum)=0;   // NB expanded size             
     virtual bool getPartCrc(unsigned partnum, unsigned &crc) = 0;
+    virtual bool exists() const = 0;   // if created for writing, this may be false
+    virtual bool isExternal() const = 0;
 };
 
-extern da_decl ILocalOrDistributedFile* createLocalDistributedFile(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs,bool iswrite=false);
+extern da_decl ILocalOrDistributedFile* createLocalOrDistributedFile(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs,bool iswrite=false);
 
 
 

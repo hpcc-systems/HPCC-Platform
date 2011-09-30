@@ -35,6 +35,7 @@
 #include "javahash.tpp"
 #include "thorstep.ipp"
 #include "thorpipe.hpp"
+#include "thorfile.hpp"
 #include "eclhelper.hpp"
 #include "eclrtl_imp.hpp"
 #include "rtlfield_imp.hpp"
@@ -316,6 +317,10 @@ public:
     {
         return ctx->resolveLFN(filename, isOpt);
     }
+    virtual IRoxieWriteHandler *createLFN(const char *filename, bool overwrite, bool extend, const StringArray &clusters)
+    {
+        return ctx->createLFN(filename, overwrite, extend, clusters);
+    }
     virtual void onFileCallback(const RoxiePacketHeader &header, const char *lfn, bool isOpt, bool isLocal)
     {
         ctx->onFileCallback(header, lfn, isOpt, isLocal);
@@ -355,6 +360,10 @@ public:
     virtual IWorkUnit *updateWorkUnit() const
     {
         return ctx->updateWorkUnit();
+    }
+    virtual IConstWorkUnit *queryWorkUnit() const
+    {
+        return ctx->queryWorkUnit();
     }
     virtual IRoxieServerContext *queryServerContext()
     {
@@ -740,9 +749,11 @@ protected:
     void setNumOutputs(unsigned num)
     {
         numOutputs = num;
-        processedArray = new unsigned __int64[numOutputs];
-        startedArray = new bool[numOutputs];
-        for (unsigned i = 0; i < numOutputs; i++)
+        if (!num)
+            num = 1; // Even sink activities like to track how many records they process
+        processedArray = new unsigned __int64[num];
+        startedArray = new bool[num];
+        for (unsigned i = 0; i < num; i++)
         {
             processedArray[i] = 0;
             startedArray[i] = 0;
@@ -751,7 +762,7 @@ protected:
 
     virtual void getEdgeProgressInfo(unsigned idx, IPropertyTree &edge) const
     {
-        assertex(idx <= numOutputs);
+        assertex(numOutputs ? idx < numOutputs : idx==0);
         CriticalBlock b(statsCrit);
         putStatsValue(&edge, "count", "sum", processedArray[idx]);
         putStatsValue(&edge, "started", "sum", startedArray[idx]);
@@ -759,6 +770,7 @@ protected:
 
     virtual void noteProcessed(unsigned idx, unsigned _processed, unsigned __int64 _totalCycles, unsigned __int64 _localCycles) const
     {
+        assertex(numOutputs ? idx < numOutputs : idx==0);
         CriticalBlock b(statsCrit);
         processedArray[idx] += _processed;
         totalCycles += _totalCycles;
@@ -767,6 +779,7 @@ protected:
 
     virtual void noteStarted(unsigned idx) const
     {
+        assertex(numOutputs ? idx < numOutputs : idx==0);
         CriticalBlock b(statsCrit);
         startedArray[idx] = true;
     }
@@ -10469,12 +10482,11 @@ public:
 
 //==================================================================================
 
-class CRoxieServerDiskWriteActivity : public CRoxieServerInternalSinkActivity
+class CRoxieServerDiskWriteActivity : public CRoxieServerInternalSinkActivity, implements IRoxiePublishCallback
 {
 protected:
     Owned<IExtRowWriter> outSeq;
     Owned<IOutputRowSerializer> rowSerializer;
-    Owned<IFile> file;
     Linked<IFileIOStream> diskout;
     bool blockcompressed;
     bool extend;
@@ -10483,14 +10495,14 @@ protected:
     bool grouped;
     IHThorDiskWriteArg &helper;
     StringBuffer lfn;   // logical filename
-    StringAttr filename; // physical filename
     CachedOutputMetaData diskmeta;
-    Owned<ClusterWriteHandler> clusterHandler;
+    Owned<IRoxieWriteHandler> writer;
 
     unsigned __int64 uncompressedBytesWritten;
 
     void updateWorkUnitResult(unsigned __int64 reccount)
     {
+        assertex(writer);
         // MORE - a lot of this is common with hthor
         if(lfn.length()) //this is required as long as temp files don't get a name which can be stored in the WU and automatically deleted by the WU
         {
@@ -10508,14 +10520,7 @@ protected:
                 else
                     fileKind = WUFileStandard;
                 StringArray clusters;
-                if (clusterHandler)
-                    clusterHandler->getClusters(clusters);
-                else
-                {
-                    SCMStringBuffer tgtCluster;
-                    wu->getClusterName(tgtCluster);
-                    clusters.append(tgtCluster.str());
-                }
+                writer->getClusters(clusters);
                 wu->addFile(lfn.str(), &clusters, helper.getTempUsageCount(), fileKind, NULL);
                 if (!(flags & TDXtemporary) && helper.getSequence() >= 0)
                 {
@@ -10538,178 +10543,36 @@ protected:
     {
         const char * rawLogicalName = helper.getFileName();
         assertex(rawLogicalName);
-        if((helper.getFlags() & TDXtemporary) == 0)
+        assertex((helper.getFlags() & TDXtemporary) == 0);
+        StringArray clusters;
+        unsigned clusterIdx = 0;
+        while(true)
         {
-            expandLogicalFilename(lfn, rawLogicalName, NULL, false); // MORE - should probably pass wu if we have one?
-            CDfsLogicalFileName logicalName;
-            if (!logicalName.setValidate(lfn.str()))
-                throw MakeStringException(99, "Cannot write %s, invalid logical name", lfn.str());
-            logicalName.set(lfn.str());
-            // MORE - this looks all wrong - queries dali connection then uses global..
-            if (queryContext()->queryServerContext()->checkDaliConnection())
-            {
-                Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(logicalName, ctx->queryCodeContext()->queryUserDescriptor(), true);
-                if (f) {
-                    if (logicalName.isExternal()) {
-                        // writing to an external file (or sql)
-                        if (f->numParts()!=1)
-                            throw MakeStringException(99, "Cannot write %s, external file has multiple parts)", lfn.str());
-                        RemoteFilename rfn;
-                        f->getPart(0)->getFilename(rfn,0);
-                        StringBuffer full;
-                        rfn.getRemotePath(full);
-                        if (!isSpecialPath(full.str())) {
-                            Owned<IFile> file = createIFile(rfn);
-                            if (file->exists()) {
-                                if (!overwrite) 
-                                    throw MakeStringException(99, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", full.str());
-                                file->remove();
-                            }
-                        }
-                        filename.set(full);
-                        CTXLOG("Writing to external file %s", filename.get());
-                        return;
-                    }
-                    if(extend)
-                    {
-                        CTXLOG("Extending %s", lfn.str());
-                        // agent.logFileAccess(f, "HThor", "EXTENDED");
-                    }
-                    else if(overwrite) 
-                    {
-                        CTXLOG("Removing %s from DFS", lfn.str());
-                        // agent.logFileAccess(f, "HThor", "DELETED");
-                        f->detach();
-                    }
-                    else {
-                        throw MakeStringException(99, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", lfn.str());
-                    }
-                }
-            }
-
-            clusterHandler.clear();
-            unsigned clusterIdx = 0;
-            while(true)
-            {
-                char const * cluster = helper.queryCluster(clusterIdx++);
-                if(!cluster)
-                    break;
-                if(!clusterHandler)
-                {
-                    if(extend)
-                        throw MakeStringException(0, "Cannot combine EXTEND and CLUSTER flags on disk write of file %s", logicalName.get());
-                    clusterHandler.setown(new ClusterWriteHandler(logicalName.get(), "OUTPUT"));
-                }
-                clusterHandler->addCluster(cluster);
-            }
-            if(clusterHandler)
-            {
-                clusterHandler->getLocalPhysicalFilename(filename);
-            }
-            else
-            {
-                StringBuffer filenameText;
-                makePhysicalPartName(logicalName.get(), 1, 1, filenameText, false);
-                filename.set(filenameText.str());
-            }
-
-            StringBuffer dir;
-            splitFilename(filename, &dir, &dir, NULL, NULL);
-            recursiveCreateDirectory(dir.str());
+            char const * cluster = helper.queryCluster(clusterIdx);
+            if(!cluster)
+                break;
+            clusters.append(cluster);
+            clusterIdx++;
+        }
+        if (clusters.length())
+        {
+            if (extend)
+                throw MakeStringException(0, "Cannot combine EXTEND and CLUSTER flags on disk write of file %s", rawLogicalName);
         }
         else
         {
-            throwUnexpected();
-        }
-    }
-
-    void publish()
-    {
-        // MORE - should go via the dali connection returned not just check it is there then use global
-        if (queryContext()->queryServerContext()->checkDaliConnection())
-        {
-            StringBuffer dir,base;
-            offset_t fileSize = file->size();
-            if(clusterHandler)
-                clusterHandler->splitPhysicalFilename(dir, base);
-            else
-                splitFilename(filename, &dir, &dir, &base, &base);
-
-            Owned<IFileDescriptor> desc = createFileDescriptor();
-            desc->setClusterRoxieLabel(0, roxieName);
-            desc->setDefaultDir(dir.str());
-
-            //properties of the first file part.
-            Owned<IPropertyTree> attrs = createPTree("Part");
-            if(blockcompressed)
+            if (ctx->queryWorkUnit())
             {
-                attrs->setPropInt64("@size", uncompressedBytesWritten);
-                attrs->setPropInt64("@compressedSize", fileSize);
+                // Not really sure if this code is wanted. What is the cluster name info in a workunit?
+                SCMStringBuffer cluster;
+                ctx->queryWorkUnit()->getClusterName(cluster);
+                clusters.append(cluster.str());
             }
             else
-                attrs->setPropInt64("@size", fileSize);
-            CDateTime createTime, modifiedTime, accessedTime;
-            file->getTime(&createTime, &modifiedTime, &accessedTime);
-            // round file time down to nearest sec. Nanosec accurancy is not preserved elsewhere and can lead to mismatch later.
-            unsigned hour, min, sec, nanosec;
-            modifiedTime.getTime(hour, min, sec, nanosec);
-            modifiedTime.setTime(hour, min, sec, 0);
-            StringBuffer timestr;
-            modifiedTime.getString(timestr);
-            if(timestr.length())
-                attrs->setProp("@modified", timestr.str());
-            if(clusterHandler)
-                clusterHandler->setDescriptorParts(desc, base.str(), attrs);
-            else
-                desc->setPart(0, queryMyNode(), base.str(), attrs);
-
-            // properties of the logical file
-            IPropertyTree & properties = desc->queryProperties();
-            properties.setPropInt64("@size", (blockcompressed) ? uncompressedBytesWritten : fileSize);
-            if (encrypted)
-                properties.setPropBool("@encrypted", true);
-            if (blockcompressed)
-                properties.setPropBool("@blockCompressed", true);
-            if (helper.getFlags() & TDWpersist)
-                properties.setPropBool("@persistent", true);
-//          if (grouped)
-//              properties.setPropBool("@grouped", true);
-            properties.setPropInt64("@recordCount", processed);
-            SCMStringBuffer info;
-//              properties.setProp("@owner", agent.queryWorkUnit()->getUser(info).str());
-            info.clear();
-            if (helper.getFlags() & (TDWowned|TDXjobtemp|TDXtemporary))
-                properties.setPropBool("@owned", true);
-            if (helper.getFlags() & TDWresult)
-                properties.setPropBool("@result", true);
-
-//              properties.setProp("@workunit", agent.queryWorkUnit()->getWuid(info).str());
-//              info.clear();
-//              properties.setProp("@job", agent.queryWorkUnit()->getJobName(info).str());
-            setFormat(desc);
-
-//              setExpiryTime(properties, helper.getExpiryDays());
-            if (helper.getFlags() & TDWupdate)
-            {
-                unsigned eclCRC;
-                unsigned __int64 totalCRC;
-                helper.getUpdateCRCs(eclCRC, totalCRC);
-                properties.setPropInt("@eclCRC", eclCRC);
-                properties.setPropInt64("@totalCRC", totalCRC);
-            }
-            properties.setPropInt("@formatCrc", helper.getFormatCrc());
-
-            CDfsLogicalFileName logicalName;
-            if (!logicalName.setValidate(lfn.str()))
-                throw MakeStringException(99, "Cannot publish %s, invalid logical name", lfn.str());
-            if (!logicalName.isExternal()) { // no need to publish externals
-                Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(desc);
-                if((helper.getFlags() & TDWpersist) && file->getModificationTime(modifiedTime))
-                    file->setAccessedTime(modifiedTime);
-                file->attach(logicalName.get(), NULL, ctx->queryCodeContext()->queryUserDescriptor());
-                //agent.logFileAccess(file, "HThor", "CREATED");
-            }
+                clusters.append(".");
         }
+        writer.setown(ctx->createLFN(rawLogicalName, overwrite, extend, clusters)); // MORE - if there's a workunit, use if for scope.
+        // MORE - need to check somewhere that single part if it's an existing file or an external one...
     }
 
 public:
@@ -10739,7 +10602,6 @@ public:
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
         
         resolve();
-        file.setown(createIFile(filename.get()));
         Owned<IFileIO> io;
         void *ekey;
         size32_t ekeylen;
@@ -10754,11 +10616,11 @@ public:
             blockcompressed = true;
         }
         if(blockcompressed)
-            io.setown(createCompressedFileWriter(file, (diskmeta.isFixedSize() ? diskmeta.getFixedSize() : 0), extend, true, ecomp));
+            io.setown(createCompressedFileWriter(writer->queryFile(), (diskmeta.isFixedSize() ? diskmeta.getFixedSize() : 0), extend, true, ecomp));
         else
-            io.setown(file->open(extend ? IFOwrite : IFOcreate));
+            io.setown(writer->queryFile()->open(extend ? IFOwrite : IFOcreate));
         if(!io)
-            throw MakeStringException(errno, "Failed to create%s file %s for writing", (encrypted ? " encrypted" : (blockcompressed ? " compressed" : "")), filename.get());
+            throw MakeStringException(errno, "Failed to create%s file %s for writing", (encrypted ? " encrypted" : (blockcompressed ? " compressed" : "")), writer->queryFile()->queryFilename());
         diskout.setown(createBufferedIOStream(io));
         if(extend)
             diskout->seek(0, IFSend);
@@ -10771,19 +10633,17 @@ public:
     {
         if (aborting)
         {
-            // MORE - delete the partial file!
+            if (writer)
+                writer->finish(false, this);
         }
         else
         {
             outSeq->flush();
             updateWorkUnitResult(processed);
-            if(clusterHandler)
-                clusterHandler->copyPhysical(file, false); // MORE - could give an option...
             uncompressedBytesWritten = outSeq->getPosition();
-            publish();
-            if(clusterHandler)
-                clusterHandler->finish(file);
+            writer->finish(true, this);
         }
+        writer.clear();
         CRoxieServerActivity::stop(aborting);
     }
 
@@ -10792,8 +10652,7 @@ public:
         CRoxieServerActivity::reset();
         diskout.clear();
         outSeq.clear();
-        file.clear();
-        filename.clear();
+        writer.clear();
         uncompressedBytesWritten = 0;
     }
 
@@ -10813,18 +10672,71 @@ public:
         }
     }
 
-    virtual void setFormat(IFileDescriptor * desc)
+    virtual void setFileProperties(IFileDescriptor *desc) const
     {
+        IPropertyTree &partProps = desc->queryPart(0)->queryProperties(); //properties of the first file part.
+        IPropertyTree &fileProps = desc->queryProperties(); // properties of the logical file
+        if (blockcompressed)
+        {
+            // caller has already set @size from file size...
+            fileProps.setPropBool("@blockCompressed", true);
+            partProps.setPropInt64("@compressedSize", partProps.getPropInt64("@size", 0));  // MORE should this be on logical too?
+            fileProps.setPropInt64("@size", uncompressedBytesWritten);
+            partProps.setPropInt64("@size", uncompressedBytesWritten);
+        }
+
+        if (encrypted)
+            fileProps.setPropBool("@encrypted", true);
+
+        fileProps.setPropInt64("@recordCount", processed);
+        unsigned flags = helper.getFlags();
+        if (flags & TDWpersist)
+            fileProps.setPropBool("@persistent", true);
+        if (grouped)
+            fileProps.setPropBool("@grouped", true);
+        if (flags & (TDWowned|TDXjobtemp|TDXtemporary))
+            fileProps.setPropBool("@owned", true);
+        if (flags & TDWresult)
+            fileProps.setPropBool("@result", true);
+
+        IConstWorkUnit *workUnit = ctx->queryWorkUnit();
+        if (workUnit)
+        {
+            SCMStringBuffer owner, wuid, job;
+            fileProps.setProp("@owner", workUnit->getUser(owner).str());
+            fileProps.setProp("@workunit", workUnit->getWuid(wuid).str());
+            fileProps.setProp("@job", workUnit->getJobName(job).str());
+        }
+        setExpiryTime(fileProps, helper.getExpiryDays());
+        if (flags & TDWupdate)
+        {
+            unsigned eclCRC;
+            unsigned __int64 totalCRC;
+            helper.getUpdateCRCs(eclCRC, totalCRC);
+            fileProps.setPropInt("@eclCRC", eclCRC);
+            fileProps.setPropInt64("@totalCRC", totalCRC);
+        }
+        fileProps.setPropInt("@formatCrc", helper.getFormatCrc());
+
         IRecordSize * inputMeta = input->queryOutputMeta();
         if ((inputMeta->isFixedSize()) && !isOutputTransformed())
-            desc->queryProperties().setPropInt("@recordSize", inputMeta->getFixedSize() + (grouped ? 1 : 0));
+            fileProps.setPropInt("@recordSize", inputMeta->getFixedSize() + (grouped ? 1 : 0));
 
         const char *recordECL = helper.queryRecordECL();
         if (recordECL && *recordECL)
-            desc->queryProperties().setProp("ECL", recordECL);
+            fileProps.setProp("ECL", recordECL);
     }
 
-    virtual bool isOutputTransformed() { return false; }
+    virtual IUserDescriptor *queryUserDescriptor() const
+    {
+        IConstWorkUnit *workUnit = ctx->queryWorkUnit();
+        if (workUnit)
+            return workUnit->queryUserDescriptor();
+        else
+            return NULL;
+    }
+
+    virtual bool isOutputTransformed() const { return false; }
 
 };
 
@@ -10876,13 +10788,13 @@ public:
         }
     }
 
-    virtual void setFormat(IFileDescriptor * desc)
+    virtual void setFileProperties(IFileDescriptor *desc) const
     {
-        // MORE - shouldn't this call parent's setFormat too?
+        CRoxieServerDiskWriteActivity::setFileProperties(desc);
         desc->queryProperties().setProp("@format","utf8n");
     }
 
-    virtual bool isOutputTransformed() { return true; }
+    virtual bool isOutputTransformed() const { return true; }
 };
 
 
@@ -10943,14 +10855,14 @@ public:
         rowTag.clear();
     }
 
-    virtual void setFormat(IFileDescriptor * desc)
+    virtual void setFileProperties(IFileDescriptor *desc) const
     {
-        // MORE - shouldn't this call parent's setFormat too?
+        CRoxieServerDiskWriteActivity::setFileProperties(desc);
         desc->queryProperties().setProp("@format","utf8n");
         desc->queryProperties().setProp("@rowTag",rowTag.get());
     }
 
-    virtual bool isOutputTransformed() { return true; }
+    virtual bool isOutputTransformed() const { return true; }
 };
 
 class CRoxieServerDiskWriteActivityFactory : public CRoxieServerMultiOutputFactory
@@ -27607,6 +27519,11 @@ public:
         return querySlaveDynamicFileCache()->lookupDynamicFile(*this, filename, cacheDate, header, isOpt, false);
     }
 
+    virtual IRoxieWriteHandler *createLFN(const char *filename, bool overwrite, bool extend, const StringArray &clusters)
+    {
+        throwUnexpected(); // only support writing on the server
+    }
+
     virtual void onFileCallback(const RoxiePacketHeader &header, const char *lfn, bool isOpt, bool isLocal)
     {
         // On a slave, we need to request info using our own header (not the one passed in) and need to get global rather than just local info 
@@ -27779,6 +27696,11 @@ public:
             return &workUnit->lock();
         else
             return NULL;
+    }
+
+    virtual IConstWorkUnit *queryWorkUnit() const
+    {
+        return workUnit;
     }
 };
 
@@ -29524,6 +29446,16 @@ public:
             dynamicPackage.setown(createPackage(NULL));
         }
         return dynamicPackage->lookupFileName(filename, isOpt, true);
+    }
+
+    virtual IRoxieWriteHandler *createLFN(const char *filename, bool overwrite, bool extend, const StringArray &clusters)
+    {
+        CriticalBlock b(daliUpdateCrit);
+        if (!dynamicPackage)
+        {
+            dynamicPackage.setown(createPackage(NULL));
+        }
+        return dynamicPackage->createFileName(filename, overwrite, extend, clusters);
     }
 
     virtual void onFileCallback(const RoxiePacketHeader &header, const char *lfn, bool isOpt, bool isLocal)
