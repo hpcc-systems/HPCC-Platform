@@ -791,7 +791,7 @@ void EclAgent::outputFormattedResult(const char * name, unsigned sequence, bool 
         }
     }
     if (close)
-        outputSerializer->close(sequence, outputFmt != ofRAW);
+        outputSerializer->close(sequence, false);
 }
 
 void EclAgent::setResultInt(const char * name, unsigned sequence, __int64 val)
@@ -1188,19 +1188,26 @@ void EclAgent::setResultSet(const char * name, unsigned sequence, bool isAll, si
         else if (outputFmt == ofXML)
         {
             assertex(xform);
-            CommonXmlWriter xmlwrite(0);
-            xmlwrite.outputBeginNested("Dataset", false);
+            StringBuffer datasetName, resultName;
             if (name)
-                xmlwrite.outputString(strlen(name), name, "@name");
+            {
+                datasetName.append(name);
+                resultName.append(name);
+            }
             else
             {
-                StringBuffer resultName;
-                resultName.appendf("Result %d", sequence+1);
-                xmlwrite.outputString(resultName.length(), resultName.str(), "@name");
+                datasetName.appendf("Result %d", sequence+1);
+                resultName.appendf("Result_%d", sequence+1);
             }
+            CommonXmlWriter xmlwrite(0,1);
+            xmlwrite.outputBeginNested("Row", false);
+            xmlwrite.outputBeginNested(resultName.str(), false);
             xform->toXML(isAll, len, (const byte *)val, xmlwrite);
-            xmlwrite.outputEndNested("Dataset");
-            outputSerializer->printf(sequence, "%s", xmlwrite.str()); 
+            xmlwrite.outputEndNested(resultName.str());
+            xmlwrite.outputEndNested("Row");
+            outputSerializer->printf(sequence, "<Dataset name=\'%s'>\n%s</Dataset>\n",
+                    datasetName.str(),
+                    xmlwrite.str());
             outputSerializer->close(sequence, false);
         }
         else
