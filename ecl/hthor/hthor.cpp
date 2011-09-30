@@ -5716,12 +5716,11 @@ void CHThorWorkUnitWriteActivity::execute()
         StringBuffer sb;
         const char *name = helper.queryName();
         if (name && *name)
-            sb.appendf("<Dataset name='%s'>", name);
+            sb.appendf("<Dataset name='%s'>\n", name);
         else
-            sb.appendf("<Dataset name='Result %d'>", seq+1);
+            sb.appendf("<Dataset name='Result %d'>\n", seq+1);
         agent.queryOutputSerializer()->fwrite(seq, (const void*)sb.str(), 1, sb.length());
     }
-    CommonXmlWriter xmlwrite(0,1);
     loop
     {
         if ((unsigned __int64)rows >= agent.queryStopAfter())
@@ -5766,11 +5765,11 @@ void CHThorWorkUnitWriteActivity::execute()
             }
             else if (agent.queryOutputFmt() == ofXML)
             {
+                CommonXmlWriter xmlwrite(0,1);
                 xmlwrite.outputBeginNested("Row", false);
                 helper.serializeXml((byte *) nextrec.get(), xmlwrite);
                 xmlwrite.outputEndNested("Row");
                 agent.queryOutputSerializer()->fwrite(seq, (const void*)xmlwrite.str(), 1, xmlwrite.length());
-                xmlwrite.clear();
             }
         }
         rows++;
@@ -5789,7 +5788,7 @@ void CHThorWorkUnitWriteActivity::execute()
         if (agent.queryOutputFmt() == ofXML)
         {
             StringBuffer sb;
-            sb.appendf("</Dataset>");
+            sb.appendf("</Dataset>\n");
             agent.queryOutputSerializer()->fwrite(seq, (const void*)sb.str(), 1, sb.length());
         }
         else if (agent.queryOutputFmt() != ofSTD)

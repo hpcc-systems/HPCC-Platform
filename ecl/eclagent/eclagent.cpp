@@ -791,7 +791,7 @@ void EclAgent::outputFormattedResult(const char * name, unsigned sequence, bool 
         }
     }
     if (close)
-        outputSerializer->close(sequence, outputFmt != ofRAW);
+        outputSerializer->close(sequence, false);
 }
 
 void EclAgent::setResultInt(const char * name, unsigned sequence, __int64 val)
