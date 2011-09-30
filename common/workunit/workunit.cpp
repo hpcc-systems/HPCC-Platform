@@ -6663,18 +6663,18 @@ IStringVal& CLocalWUResult::getResultXml(IStringVal &str) const
     p->getPropBin("Value", raw);
     const char * name = p->queryProp("@name");
     if (name)
-        xml.appendf("<Dataset name=\"%s\">", name);
+        xml.appendf("<Dataset name=\'%s\'>\n", name);
     else
-        xml.append("<Dataset>");
+        xml.append("<Dataset>\n");
 
     unsigned __int64 numrows = getResultRowCount();
     while (numrows--)
     {
-        xml.append("<Row>");
+        xml.append(" <Row>");
         readRow(xml, raw, types, names);
-        xml.append("</Row>");
+        xml.append("</Row>\n");
     }
-    xml.append("</Dataset>");
+    xml.append("</Dataset>\n");
     str.set(xml.str());
     return str;
 }
