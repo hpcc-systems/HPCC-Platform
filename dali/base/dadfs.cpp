@@ -7211,6 +7211,11 @@ GetFileClusterNamesType CDistributedFileDirectory::getFileClusterNames(const cha
 static CDistributedFileDirectory *DFdir = NULL;
 static CriticalSection dfdirCrit;
 
+/**
+ * Public method to control DistributedFileDirectory access
+ * as a singleton. This is the only way to get directories,
+ * files, super-files and logic-files.
+ */
 IDistributedFileDirectory &queryDistributedFileDirectory()
 {
     if (!DFdir) {
@@ -7221,7 +7226,9 @@ IDistributedFileDirectory &queryDistributedFileDirectory()
     return *DFdir;
 }
 
-
+/**
+ * Shutdown distributed file system (root directory).
+ */
 void closedownDFS()  // called by dacoven
 {
     CriticalBlock block(dfdirCrit);
