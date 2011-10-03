@@ -2243,6 +2243,10 @@ static bool setFileProtectTree(IPropertyTree &p,const char *owner, bool protect)
 
 extern bool isMulti(const char *str);
 
+/**
+ * Common methods for all DistributedFile objects. Forces implementation
+ * of an interface as template argument.
+ */
 template <class INTERFACE>
 class CDistributedFileBase : public CInterface, implements INTERFACE
 {
