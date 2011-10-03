@@ -15,7 +15,6 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-var labelPanel = null;
 var labelPopup = null;
 
 function format2(n)
@@ -92,17 +91,17 @@ function reload_graph(src)
     displayProgress('Querying dali ...');
 }
 
-function show_popup(x,y,wuid,graph,started,finished,finishTime,cluster) 
+function show_popup(evt,wuid,graph,started,finished,finishTime,cluster)
 {
     var svg=document.getElementById('SVG');
     if(!svg) return;
 
+    var x = evt.screenX, y = evt.screenY;
     var d=Math.floor(parseUTC(finished)-parseUTC(started))/1000,
         h=Math.floor(d/3600),
         m1=d-h*3600,
         m=Math.floor(m1/60),
         s=m1-m*60;
-
 
     var src='<table id="tab" style="font:menu"><colgroup><col align="left" valign="top"/></colgroup>'+
           '<tr><th>Wuid</th><td>'+wuid+'</td></tr>'+
@@ -111,73 +110,60 @@ function show_popup(x,y,wuid,graph,started,finished,finishTime,cluster)
           '<tr><th>Started</th><td>'+started+'</td></tr>'+
           '<tr><th>Finished</th><td>'+finishTime+'</td></tr>'+
           '<tr><th>Time</th><td>'+(h ? h+'h ':'')+(m ? m+'m ' : '')+(s +'s')+'</td></tr></table>';
-    if (!isFF)
+
+    if (typeof window.createPopup != 'undefined')
     {
+        var xp=x+svg.offsetLeft-document.body.scrollLeft+window.screenLeft-50,
+            yp=y+svg.offsetTop-document.body.scrollTop+window.screenTop+200;
+
         labelPopup=window.createPopup();
+
         var popupBody=labelPopup.document.body;
         popupBody.style.backgroundColor = "yellow";
         popupBody.style.border = "outset black 2px";
         popupBody.innerHTML=src;
-
-        var xp=x+svg.offsetLeft-document.body.scrollLeft+window.screenLeft-50,
-            yp=y+svg.offsetTop-document.body.scrollTop+window.screenTop+200;
-
         labelPopup.show(xp,yp,400,100,null);
 
         var w=labelPopup.document.getElementById('tab').clientWidth+5,
             h=labelPopup.document.getElementById('tab').clientHeight+5;
-            
         labelPopup.show(xp,yp,w,h,null);
     }
     else
     {
-        if(labelPanel)
-        { 
-            labelPanel.hide();
-            labelPanel=null;
-        }
+        var xp=x+svg.offsetLeft+document.body.scrollLeft-window.screenX-280, //- 180 - 100
+            yp=y+svg.offsetTop+document.body.scrollTop-window.screenY-370; //- 250 - 120
 
-        var l = x-1550;
-        var t = y-450;
-        labelPanel = new YAHOO.widget.Panel("labelPanel", { width:"200px", height:"120px", 
+        labelPopup = new YAHOO.widget.Panel("labelPanel", { width:"200px", height:"120px",
             visible:true, constraintoviewport:true, close:false,
-            xy: [l, t] 
+            xy: [xp, yp]
              } );   
-        //labelPanel.setHeader("WUInfo");   
-        labelPanel.setBody(src);   
-        labelPanel.render(document.body);  
-        labelPanel.show(); 
+        labelPopup.setBody(src);
+        labelPopup.render(document.body);
+        labelPopup.show();
     }
 }
                                             
-function show_popup1(evt,wuid,graph,started,finished,finishTime,cluster) 
+function close_popup()
 {
-    return show_popup(evt.screenX,evt.screenY,wuid,graph,started,finished,finishTime,cluster); 
-}
-
-function hide_popup()
-{
-    if (!isFF)
+    if(labelPopup)
     {
-        if(window.labelPopup)
+        if (typeof labelPopup.destroy != 'undefined')
         {
+            labelPopup.destroy();
+        }
+        else if (typeof labelPopup.close != 'undefined')
+        {
+            labelPopup.close();
+        }
+        else
             labelPopup.hide();
-            labelPopup=null;
-        }
-    }
-    else
-    {
-        if(labelPanel)
-        { 
-            labelPanel.hide();
-            labelPanel=null;
-        }
+
+        labelPopup=null;
     }
 }
 
 function open_workunit(wuid)
 {
-   //document.location.href='/WsWorkunits/WUInfo?Wuid='+wuid;
     var wu_window = window.open('/WsWorkunits/WUInfo?Wuid=' + wuid,
         'Workunit', 'location=0,status=1,scrollbars=1,resizable=1,width=500,height=600');
     wu_window.opener = window;
@@ -359,7 +345,6 @@ function displayJob(wuid,graph,started,finished,cluster,state,source,showall,bbt
     var svg=document.getElementById('SVG');
     var svgdoc=svg.getSVGDocument();
 
-    //var clr=(state=='failed' || state=='not finished') ? 'red' : state=='archived' ? 'black': 'darkblue';
     var clr;
     if(state == 'failed')
         clr = 'red';
@@ -384,112 +369,58 @@ function displayJob(wuid,graph,started,finished,cluster,state,source,showall,bbt
     if(state == 'not finished')
         finishTime = '';
         
-    if (!isFF)
+    var g=svgdoc.createElementNS("http://www.w3.org/2000/svg", "g");
+    g.setAttribute("stroke",clr);
+    g.setAttribute("stroke-width",1);
+    g.addEventListener("mouseover",function(evt) { show_popup(evt,wuid,graph,started,finished,finishTime,cluster); }, false);
+    g.addEventListener("mouseout",function(evt) { close_popup(); }, false);
+    if (source!='sasha')
+        g.addEventListener("click",function(evt) { open_workunit(wuid); }, false);
+
+    var x1=from.getHours()+from.getMinutes()/60+from.getSeconds()/3600,
+        y1=ZCMJD(from.getFullYear(),from.getMonth() + 1,from.getDate())-first,
+        x2=to.getHours()+to.getMinutes()/60+to.getSeconds()/3600,
+        y2=ZCMJD(to.getFullYear(),to.getMonth()+1,to.getDate())-first;
+
+    for(var y=y1;y<=y2;y++)
     {
-        var s='<g stroke-width="1" onmouseout="hide_popup()" '+(source=='sasha' ? '' : 'onclick="open_workunit(\''+wuid+'\')" ')+
-              'onmouseover="show_popup(window.evt.screenX,window.evt.screenY,\''+wuid+'\',\''+graph+'\',\''+
-              started+'\',\''+finished+'\',\''+finishTime+'\',\''+cluster+'\')" stroke="'+clr+'">';
+        var xx1= (y==y1 ? x1 : 0), xx2= (y==y2 ? x2 : 24);
+        var line=svgdoc.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("x1",xx1);
+        line.setAttribute("y1",y+2.5);
+        line.setAttribute("x2",xx2);
+        line.setAttribute("y2",y+2.5);
+        g.appendChild(line);
 
-        var x1=from.getHours()+from.getMinutes()/60+from.getSeconds()/3600,
-            y1=ZCMJD(from.getFullYear(),from.getMonth() + 1,from.getDate())-first,
-            x2=to.getHours()+to.getMinutes()/60+to.getSeconds()/3600,
-            y2=ZCMJD(to.getFullYear(),to.getMonth()+1,to.getDate())-first;
+        usageArray[y]=(usageArray[y] || 0)+100*(xx2-xx1)/24;
+        var bhours = ((betime < xx2)?betime:xx2) - ((bbtime > xx1)?bbtime:xx1);
+        if(bhours < 0)
+            bhours = 0;
+        var nbhours = (xx2 - xx1 - bhours);
 
-        for(var y=y1;y<=y2;y++)
+        if(bbtime + (24 - betime) <= 0.001)
+            nbusageArray[y] = (nbusageArray[y] || 0) + 0;
+        else
+            nbusageArray[y] = (nbusageArray[y] || 0) + 100*nbhours/(bbtime + (24 - betime));
+
+        if(betime - bbtime <= 0.001)
+            busageArray[y] = (busageArray[y] || 0) + 0;
+        else
+            busageArray[y] = (busageArray[y] || 0) + 100*bhours/(betime - bbtime);
+
+        var u=svgdoc.getElementById('usage'+y);
+        var usagestr = '';
+        if(usageArray[y] < 10)
+            usagestr += ' ';
+        usagestr += Math.round(usageArray[y])+'%';
+        if(showall)
         {
-            var xx1= (y==y1 ? x1 : 0),
-                xx2= (y==y2 ? x2 : 24);
-
-            s+='<line x1="'+xx1+'" y1="'+(y+2.5)+'" x2="'+xx2+'" y2="'+(y+2.5)+'" />'
-            usageArray[y]=(usageArray[y] || 0)+100*(xx2-xx1)/24;
-            var bhours = ((betime < xx2)?betime:xx2) - ((bbtime > xx1)?bbtime:xx1);
-            if(bhours < 0)
-                bhours = 0;
-            var nbhours = (xx2 - xx1 - bhours);
-
-            if(bbtime + (24 - betime) <= 0.001)
-                nbusageArray[y] = (nbusageArray[y] || 0) + 0;
-            else
-                nbusageArray[y] = (nbusageArray[y] || 0) + 100*nbhours/(bbtime + (24 - betime));
-
-            if(betime - bbtime <= 0.001)
-                busageArray[y] = (busageArray[y] || 0) + 0;
-            else
-                busageArray[y] = (busageArray[y] || 0) + 100*bhours/(betime - bbtime);
-
-                var u=svgdoc.getElementById('usage'+y);
-            var usagestr = '';
-            if(usageArray[y] < 10)
-                usagestr += ' ';
-            usagestr += Math.round(usageArray[y])+'%';
-            if(showall)
-            {
-                usagestr += ' ' + Math.round(busageArray[y])+'% ' + Math.round(nbusageArray[y])+'%';
-            }
-            u.replaceChild(svgdoc.createTextNode(usagestr), u.firstChild);
+            usagestr += ' ' + Math.round(busageArray[y])+'% ' + Math.round(nbusageArray[y])+'%';
         }
-
-        s+='</g>';
-        svgdoc.getElementById("top").appendChild(svg.getWindow().parseXML(s,svgdoc));
+        u.replaceChild(svgdoc.createTextNode(usagestr), u.firstChild);
     }
-    else
-    {
-       var g=svgdoc.createElementNS("http://www.w3.org/2000/svg", "g");
-       g.setAttribute("stroke",clr);
-       g.setAttribute("stroke-width",1);
 
-       g.addEventListener("mouseover",function(evt) { show_popup1(evt,wuid,graph,started,finished,finishTime,cluster); }, false);
-       g.addEventListener("mouseout",function(evt) { hide_popup(); }, false);
-       if (source!='sasha')
-          g.addEventListener("click",function(evt) { open_workunit(wuid); }, false);
-
-       var x1=from.getHours()+from.getMinutes()/60+from.getSeconds()/3600,
-            y1=ZCMJD(from.getFullYear(),from.getMonth() + 1,from.getDate())-first,
-            x2=to.getHours()+to.getMinutes()/60+to.getSeconds()/3600,
-            y2=ZCMJD(to.getFullYear(),to.getMonth()+1,to.getDate())-first;
-
-       for(var y=y1;y<=y2;y++)
-       {
-          var xx1= (y==y1 ? x1 : 0), xx2= (y==y2 ? x2 : 24);
-            
-          //s+='<line x1="'+xx1+'" y1="'+(y+2.5)+'" x2="'+xx2+'" y2="'+(y+2.5)+'" />'
-          var line=svgdoc.createElementNS("http://www.w3.org/2000/svg", "line");
-          line.setAttribute("x1",xx1);
-          line.setAttribute("y1",y+2.5);
-          line.setAttribute("x2",xx2);
-          line.setAttribute("y2",y+2.5);
-          g.appendChild(line);
-
-            usageArray[y]=(usageArray[y] || 0)+100*(xx2-xx1)/24;
-            var bhours = ((betime < xx2)?betime:xx2) - ((bbtime > xx1)?bbtime:xx1);
-            if(bhours < 0)
-                bhours = 0;
-            var nbhours = (xx2 - xx1 - bhours);
-
-            if(bbtime + (24 - betime) <= 0.001)
-                nbusageArray[y] = (nbusageArray[y] || 0) + 0;
-            else
-                nbusageArray[y] = (nbusageArray[y] || 0) + 100*nbhours/(bbtime + (24 - betime));
-
-            if(betime - bbtime <= 0.001)
-                busageArray[y] = (busageArray[y] || 0) + 0;
-            else
-                busageArray[y] = (busageArray[y] || 0) + 100*bhours/(betime - bbtime);
-
-                var u=svgdoc.getElementById('usage'+y);
-            var usagestr = '';
-            if(usageArray[y] < 10)
-                usagestr += ' ';
-            usagestr += Math.round(usageArray[y])+'%';
-            if(showall)
-            {
-                usagestr += ' ' + Math.round(busageArray[y])+'% ' + Math.round(nbusageArray[y])+'%';
-            }
-            u.replaceChild(svgdoc.createTextNode(usagestr), u.firstChild);
-       }
-
-       svgdoc.getElementById("top").appendChild(g);
-    }
+    svgdoc.getElementById("top").appendChild(g);
 }
 
 function displayEnd(xls)
@@ -510,9 +441,6 @@ function displayLegend()
 
     var svg=document.getElementById('SVG0');
     var svgdoc=svg.getSVGDocument();
-    ////var svgdoc = svg.ownerDocument;
-    ////var SVGRoot = svgdoc.documentElement;
-     
     var g1=svgdoc.createElementNS("http://www.w3.org/2000/svg", "g");
     g1.setAttribute("transform","translate(20,20) scale(25,20)");
     g1.setAttribute("id","top");
@@ -534,9 +462,9 @@ function displayLegend()
         line.setAttribute("y2",i*0.5);
         line.setAttribute("stroke",clrArray[i]);
         line.setAttribute("stroke-width",0.5);
+
         g.appendChild(line);
 
-        //var text=svgdoc.createElement("text");
         var text=svgdoc.createElementNS("http://www.w3.org/2000/svg", "text");
         text.setAttribute("x",2);
         text.setAttribute("y",i*0.5 + 0.2);
