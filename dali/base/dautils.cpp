@@ -81,7 +81,10 @@ inline bool validFNameChar(char c)
     return (c>=32 && c<127 && !strchr(invalids, c));
 }
 
-
+/**
+ * Multi-distributed logical file names. Used by SuperFiles to
+ * account for the names expanded from wildcards.
+ */
 class CMultiDLFN
 {
     unsigned count;
