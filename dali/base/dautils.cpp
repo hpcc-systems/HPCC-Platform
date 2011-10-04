@@ -83,7 +83,11 @@ inline bool validFNameChar(char c)
 
 /**
  * Multi-distributed logical file names. Used by SuperFiles to
- * account for the names expanded from wildcards.
+ * account for the names expanded from wildcards or lists, ex.
+ * DATASET('scope::{a, b, c}', ...)
+ *
+ * This helper class is used for temporary inline super-files
+ * only.
  */
 class CMultiDLFN
 {
