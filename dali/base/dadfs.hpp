@@ -113,7 +113,8 @@ enum GetFileClusterNamesType
 // ==DISTRIBUTED FILES===================================================================================================
 
 /**
- * A part of a file, in a specific machine in the cluster.
+ * Parts of a logic file, that is spread across the cluster. The same part can
+ * be replicated in several machines of the cluster.
  */
 interface IDistributedFilePart: implements IInterface
 {
@@ -162,7 +163,9 @@ typedef IIteratorOf<IDistributedFilePart> IDistributedFilePartIterator;
 class CDFAction ;
 
 /**
- * Actions on files.
+ * File operations can be included in a transaction to ensure that multiple
+ * updates are handled atomically. This is the interface to a transaction
+ * instance.
  */
 interface IDistributedFileTransaction: extends IInterface
 {
@@ -292,8 +295,8 @@ interface IDistributedFile: extends IInterface
 // ==SUPER FILES===================================================================================================
 
 /**
- * A DistributedSuperFile is a collection of files which are related in the ECL
- * level but not at the file-system level (ie. are not parts of the same file).
+ * A DistributedSuperFile is a collection of files (for example, from wildcard
+ * expansions), that can still be treated as a DistributedFile.
  */
 interface IDistributedSuperFile: extends IDistributedFile
 {
@@ -337,13 +340,6 @@ interface ISimpleSuperFileEnquiry: extends IInterface // lightweight local
     virtual unsigned getContents(StringArray &contents) const = 0;
 };
 
-
-/**
- * DistributedLogicFiles (to-be-implemented) are pointers to the same file that
- * take into account the context in which they were created. So different jobs in the cluster
- * can access different parts of the same file without forcing higher level programs
- * to know about that.
- */
 
 // ==DISTRIBUTED FILE DIRECTORY=========================================================================================
 
