@@ -46,7 +46,6 @@ private:
     StringAttr agentName;
     Owned<IJobQueue> queue;
     StringBuffer daliServers;
-    StringBuffer sentinel_filename;
 };
 
 #endif
