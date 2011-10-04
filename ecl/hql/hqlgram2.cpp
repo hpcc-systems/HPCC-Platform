@@ -271,10 +271,10 @@ void HqlGram::gatherActiveParameters(HqlExprCopyArray & target)
 
 
 /* In parm: scope not linked */
-HqlGram::HqlGram(IHqlScope * _containerScope, IFileContents * _text, HqlLookupContext & _ctx, IXmlScope *xmlScope, bool _hasFieldMap, bool loadImplicit)
+HqlGram::HqlGram(IHqlScope * _globalScope, IHqlScope * _containerScope, IFileContents * _text, HqlLookupContext & _ctx, IXmlScope *xmlScope, bool _hasFieldMap, bool loadImplicit)
 : lookupCtx(_ctx)
 {
-    init(_containerScope, _containerScope);
+    init(_globalScope, _containerScope);
     fieldMapUsed = _hasFieldMap;
     if (!lookupCtx.functionCache)
         lookupCtx.functionCache = &localFunctionCache;
@@ -344,9 +344,9 @@ void HqlGram::saveContext(HqlGramCtx & ctx, bool cloneScopes)
     parseScope->getSymbols(ctx.imports);
 };
 
-IHqlRemoteScope * HqlGram::queryGlobalRemoteScope()
+IHqlScope * HqlGram::queryGlobalScope()
 {
-    return ::queryRemoteScope(globalScope);
+    return globalScope;
 }
 
 void HqlGram::init(IHqlScope * _globalScope, IHqlScope * _containerScope)
@@ -372,7 +372,7 @@ void HqlGram::init(IHqlScope * _globalScope, IHqlScope * _containerScope)
     parseScope.setown(createPrivateScope(_containerScope));
     transformScope = NULL;
     if (globalScope->queryName() && legacyEclSemantics)
-        parseScope->defineSymbol(globalScope->queryName(), NULL, LINK(queryExpression(globalScope)), false, false, ob_module);
+        parseScope->defineSymbol(globalScope->queryName(), NULL, LINK(queryExpression(globalScope)), false, false, ob_import);
 
     boolType = makeBoolType();
     defaultIntegralType = makeIntType(8, true);
@@ -392,7 +392,7 @@ void HqlGram::init(IHqlScope * _globalScope, IHqlScope * _containerScope)
     serviceScope.clear();
     selfUsedOnRhs = false;
 
-    if (isPluginDllScope(globalScope))
+    if (globalScope->isPlugin())
     {
         StringBuffer plugin, version;
         globalScope->getProp(pluginAtom, plugin);
@@ -1076,7 +1076,7 @@ void HqlGram::processServiceFunction(const attribute & idAttr, _ATOM name, IHqlE
     IHqlExpression * formals = defineScopes.tos().createFormals(oldSetFormat);
     IHqlExpression * defaults = defineScopes.tos().createDefaults();
     IHqlExpression * func = createFunctionDefinition(name, call, formals, defaults, NULL);
-    serviceScope->defineSymbol(name, NULL, func, true, false, call->getObFlags(), NULL, 0, idAttr.pos.lineno, idAttr.pos.column);
+    serviceScope->defineSymbol(name, NULL, func, true, false, 0, NULL, 0, idAttr.pos.lineno, idAttr.pos.column);
     resetParameters();
 }
 
@@ -2568,7 +2568,7 @@ void HqlGram::processForwardModuleDefinition(const attribute & errpos)
 
     HqlGramCtx * parentCtx = new HqlGramCtx(lookupCtx);
     saveContext(*parentCtx, true);
-    Owned<IHqlScope> newScope = createForwardScope(queryGlobalRemoteScope(), parentCtx, lookupCtx.queryParseContext());
+    Owned<IHqlScope> newScope = createForwardScope(queryGlobalScope(), parentCtx, lookupCtx.queryParseContext());
     IHqlExpression * newScopeExpr = queryExpression(newScope);
 
     ForEachChild(i, scopeExpr)
@@ -2638,11 +2638,11 @@ void HqlGram::processForwardModuleDefinition(const attribute & errpos)
                 lexObject->getPosition(end);
                 checkNotAlreadyDefined(sharedSymbolName, newScope, errpos);
 
-                unsigned obFlags = 0;
+                unsigned symbolFlags = 0;
                 _ATOM moduleName = NULL;
                 Owned<IFileContents> contents = createFileContentsSubset(lexObject->queryFileContents(), start.position, end.position - start.position);
                 addForwardDefinition(newScope, sharedSymbolName, moduleName, contents,
-                                     obFlags, (sharedSymbolKind == EXPORT), start.lineno, start.column);
+                                     symbolFlags, (sharedSymbolKind == EXPORT), start.lineno, start.column);
 
                 //Looks like the end of the shared symbol => define it
                 start.set(end);
@@ -3016,7 +3016,7 @@ IHqlExpression *HqlGram::lookupSymbol(IHqlScope * scope, _ATOM searchName)
 IHqlExpression *HqlGram::lookupSymbol(_ATOM searchName, const attribute& errpos)
 {
 #if 0
-    if (stricmp(searchName->getAtomNamePtr(), "cmslib")==0)
+    if (stricmp(searchName->getAtomNamePtr(), "gh2")==0)
         searchName = searchName;
 #endif
     if (expectedUnknownId)
@@ -3066,10 +3066,7 @@ IHqlExpression *HqlGram::lookupSymbol(_ATOM searchName, const attribute& errpos)
 
         if (modScope)
         {
-            IHqlExpression *ret = modScope->lookupSymbol(searchName, LSFrequired, lookupCtx);
-            //currently modScope->queryName() is NULL for a module attribute, which avoids spurious child modules being added
-            reportExternalSymbol(modScope, ret);
-            return ret;
+            return modScope->lookupSymbol(searchName, LSFrequired, lookupCtx);
         }
 
         // Then come implicitly defined fields...
@@ -3148,10 +3145,6 @@ IHqlExpression *HqlGram::lookupSymbol(_ATOM searchName, const attribute& errpos)
                     ret = cur.localScope->lookupSymbol(searchName, LSFsharedOK, lookupCtx);
                     if (ret)
                     {
-                        if (scopeIdx == 0)
-                        {
-                            reportExternalSymbol(cur.localScope, ret); // from the same module
-                        }
                         return recordLookupInTemplateContext(searchName, ret, templateScope);
                     }
                 }
@@ -3173,7 +3166,6 @@ IHqlExpression *HqlGram::lookupSymbol(_ATOM searchName, const attribute& errpos)
             IHqlExpression *ret = plugin.lookupSymbol(searchName, LSFpublic, lookupCtx);
             if (ret)
             {
-                reportExternalSymbol(&plugin, ret);
                 recordLookupInTemplateContext(searchName, ret, templateScope);
                 return ret;
             }
@@ -8254,7 +8246,7 @@ void HqlGram::checkNotAlreadyDefined(_ATOM name, IHqlScope * scope, const attrib
     OwnedHqlExpr expr = scope->lookupSymbol(name, LSFsharedOK|LSFignoreBase, lookupCtx);
     if (expr)
     {
-        if (legacyEclSemantics && (expr->getOperator() == no_remotescope))
+        if (legacyEclSemantics && isImport(expr))
             reportWarning(ERR_ID_REDEFINE, idattr.pos, "Identifier '%s' hides previous import", name->str());
         else
             reportError(ERR_ID_REDEFINE, idattr, "Identifier '%s' is already defined", name->str());
@@ -8495,6 +8487,7 @@ bool HqlGram::okToAddSideEffects(IHqlExpression * expr)
     case no_record:
     case no_macro:
     case no_remotescope:
+    case no_mergedscope:
     case no_privatescope:
     case no_type:
     case no_typedef:
@@ -8653,9 +8646,9 @@ void HqlGram::defineSymbolInScope(IHqlScope * scope, DefineIdSt * defineid, IHql
     if (!inType)
         moduleName = createIdentifierAtom(scope->queryFullName());
 
-    unsigned obFlags = expr->getObFlags();
+    unsigned symbolFlags = 0;
     if (scopeExpr && scopeExpr->getOperator() == no_virtualscope)
-        obFlags |= ob_member;
+        symbolFlags |= ob_member;
 
     HqlExprCopyArray activeParameters;
     gatherActiveParameters(activeParameters);
@@ -8676,7 +8669,7 @@ void HqlGram::defineSymbolInScope(IHqlScope * scope, DefineIdSt * defineid, IHql
         expr = createJavadocAnnotation(expr, LINK(doc));
 
     Owned<IFileContents> contents = createFileContentsSubset(lexObject->query_FileContents(), lastpos, semiColonPos+1-lastpos);
-    scope->defineSymbol(defineid->id, moduleName, expr, (defineid->scope & EXPORT_FLAG) != 0, (defineid->scope & SHARED_FLAG) != 0, obFlags, contents, assignPos+2-lastpos, idattr.pos.lineno, idattr.pos.column);
+    scope->defineSymbol(defineid->id, moduleName, expr, (defineid->scope & EXPORT_FLAG) != 0, (defineid->scope & SHARED_FLAG) != 0, symbolFlags, contents, assignPos+2-lastpos, idattr.pos.lineno, idattr.pos.column);
 }
 
 
@@ -9217,7 +9210,7 @@ void HqlGram::checkLibraryParametersMatch(const attribute & errpos, bool isParam
 
 void HqlGram::checkNonGlobalModule(const attribute & errpos, IHqlExpression * scopeExpr)
 {
-    if (scopeExpr->getOperator() == no_remotescope)
+    if ((scopeExpr->getOperator() == no_remotescope) || (scopeExpr->getOperator() == no_mergedscope))
         reportError(ERR_NO_GLOBAL_MODULE, errpos, "Global module cannot be used in this context");
 }
 
@@ -9552,13 +9545,16 @@ IHqlScope * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpressio
             return NULL;
         }
 
-        OwnedHqlExpr importMatch = lookupCtx.queryRepository()->lookupRootSymbol(name, LSFimport, lookupCtx);
+        OwnedHqlExpr importMatch = lookupCtx.queryRepository()->queryRootScope()->lookupSymbol(name, LSFimport, lookupCtx);
         if (!importMatch)
             importMatch.setown(parseScope->lookupSymbol(name, LSFsharedOK, lookupCtx));
 
         IHqlScope * rootScope = importMatch ? importMatch->queryScope() : NULL;
         if (!rootScope)
         {
+            if (lookupCtx.queryParseContext().ignoreUnknownImport)
+                return NULL;
+
             StringBuffer msg;
             if (!importMatch)
                 msg.appendf("Import names unknown module \"%s\"", name->getAtomNamePtr()); 
@@ -9633,7 +9629,7 @@ void HqlGram::processImport(attribute & modulesAttr, _ATOM aliasName)
         {
             _ATOM newName = aliasName ? aliasName : module->queryName();
             defineImport(modulesAttr, queryExpression(module), newName);
-            if (isImplicitScope(module))
+            if (module->isImplicit())
                 defaultScopes.append(*LINK(module));
         }
     }
@@ -9698,7 +9694,7 @@ void HqlGram::defineImport(const attribute & errpos, IHqlExpression * imported, 
         reportWarning(ERR_ID_REDEFINE, errpos.pos, "import hides previously defined identifier");
     }
 
-    parseScope->defineSymbol(newName, NULL, LINK(imported), false, false, 0);
+    parseScope->defineSymbol(newName, NULL, LINK(imported), false, false, ob_import);
 }
 
 
@@ -10889,7 +10885,7 @@ IHqlExpression * reparseTemplateFunction(IHqlExpression * funcdef, IHqlScope *sc
 
     //Could use a merge string implementation of IFileContents instead of expanding...
     Owned<IFileContents> parseContents = createFileContentsFromText(text.str(), contents->querySourcePath());
-    HqlGram parser(scope, parseContents, ctx, NULL, hasFieldMap, true); 
+    HqlGram parser(scope, scope, parseContents, ctx, NULL, hasFieldMap, true);
     unsigned startLine = f->getStartLine();
 
     //MORE: I need a better calculation of the column/line that the body begins at 
@@ -10931,22 +10927,6 @@ IHqlExpression * PseudoPatternScope::lookupSymbol(_ATOM name, unsigned lookupFla
 }
 
 
-void HqlGram::reportExternalSymbol(IHqlScope * scope, IHqlExpression *expr)
-{
-    if (expr && lookupCtx.curAttrTree && !dependents.contains(*expr))
-    {
-        dependents.append(*expr);
-
-        _ATOM module = scope->queryName();
-        if (module)
-        {
-            IPropertyTree * depend = lookupCtx.curAttrTree->addPropTree("Depend", createPTree());
-            depend->setProp("@module", module->str());
-            depend->setProp("@name", expr->queryName()->str());
-        }
-    }
-}
-
 //===============================================================================================
 
 extern HQL_API IPropertyTree * createAttributeArchive()
@@ -10962,6 +10942,7 @@ extern HQL_API IPropertyTree * createAttributeArchive()
 
 IPropertyTree * queryEnsureArchiveModule(IPropertyTree * archive, const char * name, IHqlScope * scope)
 {
+    //MORE: Move this into a member of the parse context to also handle dependencies.
     StringBuffer lowerName;
     lowerName.append(name).toLowerCase();
 
@@ -10995,6 +10976,11 @@ IPropertyTree * queryEnsureArchiveModule(IPropertyTree * archive, const char * n
     return module;
 }
 
+IPropertyTree * HqlParseContext::queryEnsureArchiveModule(const char * name, IHqlScope * scope)
+{
+    return ::queryEnsureArchiveModule(archive, name, scope);
+}
+
 extern HQL_API IPropertyTree * queryArchiveAttribute(IPropertyTree * module, const char * name)
 {
     StringBuffer lowerName, xpath;
@@ -11013,25 +10999,127 @@ extern HQL_API IPropertyTree * createArchiveAttribute(IPropertyTree * module, co
     return attr;
 }
 
-extern HQL_API IHqlExpression * parseQuery(IHqlScope *scope, IFileContents * contents, HqlLookupContext & ctx, IXmlScope *xmlScope, bool loadImplicit)
+void getFileContentText(StringBuffer & result, IFileContents * contents)
 {
-    ISourcePath * sourcePath = contents->querySourcePath();
-    try 
+    unsigned len = contents->length();
+    const char * text = contents->getText();
+    if ((len >= 3) && (memcmp(text, UTF8_BOM, 3) == 0))
     {
-        if (scope && scope->queryName())
-        {
-            if (ctx.queryArchive())
-            {
-                IPropertyTree * module = queryEnsureArchiveModule(ctx.queryArchive(), scope->queryFullName(), scope);
+        len -= 3;
+        text += 3;
+    }
+    result.append(len, text);
+}
 
-                StringBuffer sillyTempBuffer;
-                sillyTempBuffer.append(contents->length(), contents->getText());
-                module->setProp("Text", sillyTempBuffer.str());
-                module->setProp("@sourcePath", sourcePath->str());
+void HqlLookupContext::noteBeginAttribute(IHqlScope * scope, IFileContents * contents, _ATOM name)
+{
+    if (queryNestedDependTree())
+        createDependencyEntry(scope, name);
+
+    if (parseCtx.globalDependTree)
+    {
+        IPropertyTree * attr = parseCtx.globalDependTree->addPropTree("Attribute", createPTree("Attribute"));
+        attr->setProp("@module", scope->queryFullName());
+        attr->setProp("@name", name->str());
+        //attr->setPropInt("@flags", symbol->getObType());  MORE
+    }
+
+    if (queryArchive())
+    {
+        const char * moduleName = scope->queryFullName();
+        ISourcePath * sourcePath = contents->querySourcePath();
+
+        IPropertyTree * module = parseCtx.queryEnsureArchiveModule(moduleName, scope);
+        IPropertyTree * attr = queryArchiveAttribute(module, name->str());
+        if (!attr)
+            attr = createArchiveAttribute(module, name->str());
+
+        StringBuffer sillyTempBuffer;
+        getFileContentText(sillyTempBuffer, contents);  // We can't rely on IFileContents->getText() being null terminated..
+        attr->setProp("", sillyTempBuffer);
+        attr->setProp("@sourcePath", sourcePath->str());
+    }
+}
+
+void HqlLookupContext::noteParseQuery(IHqlScope * scope, IFileContents * contents)
+{
+    if (queryArchive())
+    {
+        const char * moduleName = scope->queryFullName();
+        if (moduleName && *moduleName)
+        {
+            IPropertyTree * module = queryParseContext().queryEnsureArchiveModule(moduleName, scope);
+            ISourcePath * sourcePath = contents->querySourcePath();
+
+            StringBuffer sillyTempBuffer;
+            getFileContentText(sillyTempBuffer, contents);
+            module->setProp("Text", sillyTempBuffer.str());
+            module->setProp("@sourcePath", sourcePath->str());
+        }
+    }
+}
+
+
+void HqlLookupContext::noteExternalLookup(IHqlScope * parentScope, IHqlExpression * expr)
+{
+    if (queryArchive())
+    {
+        node_operator op = expr->getOperator();
+        if ((op == no_remotescope) || (op == no_mergedscope))
+        {
+            //Ensure the archive contains entries for each module - even if nothing is accessed from it
+            //It would be preferrable to only check once, but adds very little time anyway.
+            IHqlScope * resolvedScope = expr->queryScope();
+            parseCtx.queryEnsureArchiveModule(resolvedScope->queryFullName(), resolvedScope);
+        }
+    }
+
+    if (curAttrTree && !dependents.contains(*expr))
+    {
+        node_operator op = expr->getOperator();
+        if ((op != no_remotescope) && (op != no_mergedscope))
+        {
+            dependents.append(*expr);
+
+            const char * moduleName = parentScope->queryFullName();
+            if (moduleName)
+            {
+                IPropertyTree * depend = curAttrTree->addPropTree("Depend", createPTree());
+                depend->setProp("@module", moduleName);
+                depend->setProp("@name", expr->queryName()->str());
             }
         }
+    }
+}
 
-        HqlGram parser(scope, contents, ctx, xmlScope, false, loadImplicit); 
+
+void HqlLookupContext::createDependencyEntry(IHqlScope * parentScope, _ATOM name)
+{
+    const char * moduleName = parentScope->queryFullName();
+
+    StringBuffer xpath;
+    xpath.append("Attr[@module=\"").append(moduleName).append("\"][@name=\"").append(name).append("\"]");
+
+    IPropertyTree * attr = queryNestedDependTree()->queryPropTree(xpath.str());
+    if (!attr)
+    {
+        attr = queryNestedDependTree()->addPropTree("Attr", createPTree());
+        attr->setProp("@module", moduleName);
+        attr->setProp("@name", name->str());
+    }
+    curAttrTree.set(attr);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
+extern HQL_API IHqlExpression * parseQuery(IHqlScope *scope, IFileContents * contents, HqlLookupContext & ctx, IXmlScope *xmlScope, bool loadImplicit)
+{
+    assertex(scope);
+    try
+    {
+        ctx.noteParseQuery(scope, contents);
+
+        HqlGram parser(scope, scope, contents, ctx, xmlScope, false, loadImplicit);
         parser.setQuery(true);
         parser.getLexer()->set_yyLineNo(1);
         parser.getLexer()->set_yyColumn(1);
@@ -11042,6 +11130,7 @@ extern HQL_API IHqlExpression * parseQuery(IHqlScope *scope, IFileContents * con
     {
         if (ctx.errs)
         {
+            ISourcePath * sourcePath = contents->querySourcePath();
             if (E->errorCode()==0)
             {
                 StringBuffer s;
@@ -11083,35 +11172,16 @@ bool parseForwardModuleMember(HqlGramCtx & _parent, IHqlScope *scope, IHqlExpres
     return (prevErrors == ctx.errs->errCount());
 }
 
+
 void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContext & ctx, _ATOM name)
 {
-    const char * moduleName = scope->queryFullName();
-    if (ctx.queryArchive())
-    {
-        IPropertyTree * module = queryEnsureArchiveModule(ctx.queryArchive(), moduleName, scope);
-        IPropertyTree * attr = queryArchiveAttribute(module, name->str());
-        if (!attr)
-            attr = createArchiveAttribute(module, name->str());
-
-        StringBuffer sillyTempBuffer(contents->length(), contents->getText());  // We can't rely on IFileContents->getText() being null terminated..
-        const char * p = sillyTempBuffer.str();
-        if (0 == strncmp(p, (const char *)UTF8_BOM,3))
-            p += 3;
-        attr->setProp("", p);
-        attr->setProp("@sourcePath", contents->querySourcePath()->str());
-    }
-
     HqlLookupContext attrCtx(ctx);
-    if (attrCtx.queryDependTree())
-    {
-        IPropertyTree * attr = attrCtx.queryDependTree()->addPropTree("Attr", createPTree());
-        attrCtx.curAttrTree.set(attr);
-        attr->setProp("@module", scope->queryName()->str());
-        attr->setProp("@name", name->str());
-    }
+    attrCtx.noteBeginAttribute(scope, contents, name);
 
     //The attribute will be added to the current scope as a side-effect of parsing the attribute.
-    HqlGram parser(scope, contents, attrCtx, NULL, false, true); 
+    const char * moduleName = scope->queryFullName();
+    Owned<IHqlScope> globalScope = getResolveDottedScope(moduleName, LSFpublic, ctx);
+    HqlGram parser(globalScope, scope, contents, attrCtx, NULL, false, true);
     parser.setExpectedAttribute(name);
     parser.setAssociateWarnings(true);
     parser.getLexer()->set_yyLineNo(1);
@@ -11198,8 +11268,10 @@ IHqlExpression *HqlGram::doParse()
 {
     if (expectedAttribute)
     {
-        if (legacyEclSemantics)
+        if (queryExpression(containerScope)->getOperator() == no_forwardscope)
             enterScope(containerScope, true);
+        if (legacyEclSemantics)
+            enterScope(globalScope, true);
 
         //If expecting a particular attribute, add symbols to a private scope, and then copy result across
         enterScope(parseScope, true);
@@ -11238,7 +11310,7 @@ IHqlExpression *HqlGram::doParse()
         //This should really have a isImport flag like export/shared to avoid false positives.
         if (resolved && parseResults.ordinality())
         {
-            if (resolved->queryScope())
+            if (resolved->queryScope() && isImport(resolved))
                 resolved.clear();
         }
 

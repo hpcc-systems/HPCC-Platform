@@ -375,7 +375,7 @@ class HqlGram : public CInterface, implements IErrorReceiver
 
 public:
     HqlGram(HqlGramCtx &parent, IHqlScope * containerScope, IFileContents * text, IXmlScope *xmlScope);
-    HqlGram(IHqlScope * containerScope, IFileContents * text, HqlLookupContext & _ctx, IXmlScope *xmlScope, bool _hasFieldMap, bool loadImplicit);
+    HqlGram(IHqlScope * _globalScope, IHqlScope * _containerScope, IFileContents * text, HqlLookupContext & _ctx, IXmlScope *xmlScope, bool _hasFieldMap, bool loadImplicit);
     virtual ~HqlGram();
     IMPLEMENT_IINTERFACE
 
@@ -386,7 +386,7 @@ public:
     HqlLex* getLexer() { return lexObject; }
 
     void saveContext(HqlGramCtx & ctx, bool cloneScopes);
-    IHqlRemoteScope * queryGlobalRemoteScope();
+    IHqlScope * queryGlobalScope();
 
     bool canFollowCurrentState(int tok, const short * yyps);
     void syntaxError(const char *s, int token, int *expected);
@@ -709,7 +709,6 @@ protected:
     bool expandWholeAndExcept(IHqlExpression * dataset, const attribute & errpos, HqlExprArray & parms);
     void expandWholeAndExcept(IHqlExpression * dataset, attribute & a);
     void cleanCurTransform();
-    void reportExternalSymbol(IHqlScope * scope, IHqlExpression *expr);
     void unwindSelect(IHqlExpression* expr, HqlExprArray& r);
     void setSelfUsedOnRhs();
     void setDefaultString(attribute &a);
@@ -869,7 +868,6 @@ protected:
     Owned<ITypeInfo> curEnumType;
     unsigned sortDepth;
     Owned<IHqlScope> serviceScope;
-    HqlExprCopyArray dependents;
     HqlLookupContext lookupCtx;
     HqlExprAttr defaultServiceAttrs;
     CIArrayOf<FunctionCallInfo> activeFunctionCalls;
@@ -1210,8 +1208,12 @@ public:
     virtual bool hasBaseClass(IHqlExpression * searchBase) { return false; }
 
     virtual void ensureSymbolsDefined(HqlLookupContext & ctx) { }
-    virtual int getPropInt(_ATOM, int dft) { PSEUDO_UNIMPLEMENTED; return dft; }
-    virtual bool getProp(_ATOM, StringBuffer &) { PSEUDO_UNIMPLEMENTED; return false; }
+
+    virtual bool isImplicit() const { return false; }
+    virtual bool isPlugin() const { return false; }
+    virtual int getPropInt(_ATOM, int dft) const { PSEUDO_UNIMPLEMENTED; return dft; }
+    virtual bool getProp(_ATOM, StringBuffer &) const { PSEUDO_UNIMPLEMENTED; return false; }
+
     virtual IHqlScope * clone(HqlExprArray & children, HqlExprArray & symbols) { throwUnexpected(); }
     virtual IHqlScope * queryConcreteScope() { return this; }
     virtual IHqlScope * queryResolvedScope(HqlLookupContext * context) { return this; }

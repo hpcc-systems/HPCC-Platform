@@ -338,7 +338,7 @@ enum _node_operator {
         no_complex,
         no_assign_addfiles,
         no_debug_option_value,
-    no_unused12,
+        no_mergedscope,
     no_unused13,
     no_unused14,
     no_unused15,
@@ -867,6 +867,7 @@ public:
     : archive(_archive), eclRepository(_eclRepository)
     {
         expandCallsWhenBound = DEFAULT_EXPAND_CALL;
+        ignoreUnknownImport = false;
     }
 
     inline IEclRepository * queryRepository() const { return eclRepository; }
@@ -875,13 +876,17 @@ public:
         forwardLinks.append(*new ForwardScopeItem(owner, child));
     }
 
+    IPropertyTree * queryEnsureArchiveModule(const char * name, IHqlScope * scope);
+
 public:
     Linked<IPropertyTree> archive;
     Linked<IEclRepository> eclRepository;
-    Owned<IPropertyTree> dependTree;
+    Owned<IPropertyTree> nestedDependTree;
+    Owned<IPropertyTree> globalDependTree;
     HqlExprArray defaultFunctionCache;
     CIArrayOf<ForwardScopeItem> forwardLinks;
     bool expandCallsWhenBound;
+    bool ignoreUnknownImport;
 };
 
 class HqlDummyParseContext : public HqlParseContext
@@ -906,11 +911,20 @@ public:
         functionCache = &parseCtx.defaultFunctionCache;
     }
 
-    inline IPropertyTree * queryArchive() const { return parseCtx.archive; }
-    inline IPropertyTree * queryDependTree() const { return parseCtx.dependTree; }
+    void createDependencyEntry(IHqlScope * scope, _ATOM name);
+    void noteBeginAttribute(IHqlScope * scope, IFileContents * contents, _ATOM name);
+    void noteParseQuery(IHqlScope * scope, IFileContents * contents);
+    void noteExternalLookup(IHqlScope * parentScope, IHqlExpression * expr);
+
     inline IEclRepository * queryRepository() const { return parseCtx.eclRepository; }
     inline bool queryExpandCallsWhenBound() const { return parseCtx.expandCallsWhenBound; }
     inline HqlParseContext & queryParseContext() const { return parseCtx; }
+    inline unsigned numErrors() const { return errs ? errs->errCount() : 0; }
+
+protected:
+
+    inline IPropertyTree * queryArchive() const { return parseCtx.archive; }
+    inline IPropertyTree * queryNestedDependTree() const { return parseCtx.nestedDependTree; }
 
 private:
     HqlParseContext & parseCtx;
@@ -919,6 +933,7 @@ public:
     Linked<IErrorReceiver> errs;
     HqlExprArray * functionCache;
     Owned<IPropertyTree> curAttrTree;
+    HqlExprCopyArray dependents;
 };
 
 class HqlDummyLookupContext : public HqlLookupContext
@@ -963,8 +978,10 @@ interface IHqlScope : public IInterface
     virtual IHqlScope * queryResolvedScope(HqlLookupContext * context) = 0;
     virtual void ensureSymbolsDefined(HqlLookupContext & ctx) = 0;
 
-    virtual int getPropInt(_ATOM, int) = 0;
-    virtual bool getProp(_ATOM, StringBuffer &) = 0;
+    virtual bool isImplicit() const = 0;
+    virtual bool isPlugin() const = 0;
+    virtual int getPropInt(_ATOM, int) const = 0;
+    virtual bool getProp(_ATOM, StringBuffer &) const = 0;
 
     //IHqlCreateScope
     virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags, IFileContents *fc, int bodystart, int lineno, int column) = 0;
@@ -973,18 +990,13 @@ interface IHqlScope : public IInterface
     virtual void removeSymbol(_ATOM name) = 0;      // use with great care
 };
 
+interface IEclSource;
 interface IHqlRemoteScope : public IInterface
 {
     virtual IHqlScope * queryScope() = 0;
-    virtual IHqlRemoteScope * lookupRemoteModule(_ATOM name) = 0;
-    virtual void invalidateParsed() = 0;
-    virtual void noteTextModified() = 0;
-    virtual void addNestedScope(IHqlScope * childScope, unsigned flags) = 0;
-    virtual void removeNestedScope(_ATOM name) = 0;
-    virtual bool isEmpty() const = 0;
-    virtual void setText(IFileContents * query) = 0;
     virtual void setProp(_ATOM, const char *) = 0;
     virtual void setProp(_ATOM, int) = 0;
+    virtual IEclSource * queryEclSource() const = 0;
 };
 
 
@@ -1002,7 +1014,6 @@ interface IHqlExpression : public IInterface
 {
     virtual _ATOM queryName() const = 0;
     virtual node_operator getOperator() const = 0;
-    virtual bool isObject(object_type type) = 0;
     virtual bool isBoolean() = 0;
     virtual bool isDataset() = 0;
     virtual bool isDatarow() = 0;
@@ -1080,8 +1091,7 @@ interface IHqlExpression : public IInterface
     virtual IFileContents * queryDefinitionText() const = 0;
 
     virtual bool isExported() = 0;
-    virtual unsigned getObType() = 0;               // GH.  I'm not at all sure what these are used for, or why they differ
-    virtual unsigned getObFlags() = 0;              // I highly suspect they are legacy
+    virtual unsigned getSymbolFlags() = 0;              // only valid for a named symbol
 
     virtual unsigned            getCachedEclCRC() = 0;          // do not call directly - use getExpressionCRC()
     virtual IHqlExpression * queryAnnotationParameter(unsigned i) const = 0;
@@ -1117,9 +1127,6 @@ struct OwnedHqlExprItem : public CInterface
 {
     OwnedHqlExpr value;
 };
-
-typedef class MapXToMyClass<_ATOM, _ATOM, IHqlExpression> ExprTable;
-typedef class MapXToMyClass<_ATOM, _ATOM, IHqlRemoteScope> ModuleTable;
 
 extern HQL_API const char *getOpString(node_operator op);
 extern HQL_API IHqlExpression *createValue(node_operator op);
@@ -1197,7 +1204,7 @@ extern HQL_API IHqlExpression *createQuoted(const char * name, ITypeInfo *type);
 extern HQL_API IHqlExpression *createVariable(const char * name, ITypeInfo *type);
 extern HQL_API IHqlExpression *createSymbol(_ATOM name, ITypeInfo *type, IHqlExpression *expr);
 extern HQL_API IHqlExpression * createSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression *expr,
-                                             bool exported, bool shared, unsigned obFlags,
+                                             bool exported, bool shared, unsigned symbolFlags,
                                              IFileContents *fc, int _bodystart, int lineno, int column);
 extern HQL_API IHqlExpression *createAttribute(_ATOM name, IHqlExpression * value = NULL, IHqlExpression * value2 = NULL, IHqlExpression * value3 = NULL);
 extern HQL_API IHqlExpression *createAttribute(_ATOM name, HqlExprArray & args);
@@ -1304,7 +1311,7 @@ extern HQL_API IHqlScope *createService();
 extern HQL_API IHqlScope *createDatabase(IHqlExpression * name);
 extern HQL_API IHqlScope *createScope();
 extern HQL_API IHqlScope *createConcreteScope();
-extern HQL_API IHqlScope *createForwardScope(IHqlRemoteScope * remoteScope, HqlGramCtx * parentCtx, HqlParseContext & parseCtx);
+extern HQL_API IHqlScope *createForwardScope(IHqlScope * parentScope, HqlGramCtx * parentCtx, HqlParseContext & parseCtx);
 extern HQL_API IHqlScope *createLibraryScope();
 extern HQL_API IHqlScope *createVirtualScope();
 extern HQL_API IHqlScope* createVirtualScope(_ATOM name, const char * fullName);
@@ -1312,7 +1319,7 @@ extern HQL_API IHqlScope *createScope(node_operator op);
 extern HQL_API IHqlScope *createScope(IHqlScope * scope);
 extern HQL_API IHqlScope *createPrivateScope();
 extern HQL_API IHqlScope *createPrivateScope(IHqlScope * scope);
-extern HQL_API IHqlRemoteScope *createRemoteScope(_ATOM name, const char * fullName, IEclRepository *ds, IProperties* props, IFileContents * _text, bool lazy);
+extern HQL_API IHqlRemoteScope *createRemoteScope(_ATOM name, const char * fullName, IEclRepositoryCallback *ds, IProperties* props, IFileContents * _text, bool lazy, IEclSource * eclSource);
 extern HQL_API IHqlExpression * populateScopeAndClose(IHqlScope * scope, const HqlExprArray & children, const HqlExprArray & symbols);
 
 extern HQL_API IHqlScope* createContextScope();
@@ -1483,6 +1490,8 @@ extern HQL_API bool isNewSelector(IHqlExpression * expr);
 extern HQL_API IHqlExpression * queryRecordProperty(IHqlExpression * record, _ATOM name);
 extern HQL_API bool isExported(IHqlExpression * expr);
 extern HQL_API bool isShared(IHqlExpression * expr);
+extern HQL_API bool isImport(IHqlExpression * expr);
+
 extern HQL_API bool isPublicSymbol(IHqlExpression * expr);
 extern HQL_API ITypeInfo * getSumAggType(IHqlExpression * arg);
 extern HQL_API ITypeInfo * getSumAggType(ITypeInfo * argType);
@@ -1671,7 +1680,7 @@ extern HQL_API IFileContents * createFileContentsSubset(IFileContents * contents
 extern HQL_API IFileContents * createFileContents(IFile * file, ISourcePath * sourcePath);
 
 void addForwardDefinition(IHqlScope * scope, _ATOM symbolName, _ATOM moduleName, IFileContents * contents,
-                          unsigned obFlags, bool isExported, unsigned startLine, unsigned startColumn);
+                          unsigned symbolFlags, bool isExported, unsigned startLine, unsigned startColumn);
 
 extern HQL_API IPropertyTree * createAttributeArchive();
 extern HQL_API void ensureSymbolsDefined(IHqlExpression * scope, HqlLookupContext & ctx);

@@ -16,7 +16,7 @@
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -->
- <Module name="ghalliday">
+ <Module name="ghalliday.nested">
   <Attribute name="gh1">
 export gh1 := gh2 * gh3;
   </Attribute>
@@ -27,8 +27,8 @@ export gh2 := 100;
 export gh3 := 200;
   </Attribute>
  </Module>
- <SyntaxCheck module="ghalliday" attribute="gh1">
+ <SyntaxCheck module="ghalliday.nested" attribute="gh1">
 //Check no need to import, definition is overridden, and error reported
-export gh1 := gh2 * 'x';
- </SyntaxCheck>
+export gh1 := $.gh2 * 9;
+ </SyntaxCheck>>
 </Archive>

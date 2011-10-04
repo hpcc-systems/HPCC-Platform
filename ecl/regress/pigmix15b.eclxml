@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -->
 
-<Archive>
+<Archive ignoreUnknownImport="1">
  <Module name="pigtypes">
   <Attribute name="notype">
    export notype := string;

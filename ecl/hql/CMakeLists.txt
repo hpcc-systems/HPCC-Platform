@@ -30,6 +30,7 @@ project( hql )
 set (   SRCS 
         hqlatoms.cpp 
         hqlattr.cpp 
+        hqlcollect.cpp
         hqldsparam.cpp 
         hqlerror.cpp 
         hqlesp.cpp 
@@ -43,7 +44,6 @@ set (   SRCS
         hqlpmap.cpp 
         hqlplugininfo.cpp
         hqlpregex.cpp 
-        hqlremote.cpp 
         hqlrepository.cpp
         hqlscope.cpp 
         hqlstack.cpp 
@@ -62,6 +62,7 @@ set (   SRCS
         hql.hpp
         hqlatoms.hpp
         hqlattr.hpp
+        hqlcollect.hpp
         hqlesp.hpp
         hqlexpr.hpp
         hqlfold.hpp
@@ -72,7 +73,6 @@ set (   SRCS
         hqlplugininfo.hpp
         hqlpmap.hpp
         hqlpregex.hpp
-        hqlremote.hpp
         hqlrepository.hpp
         hqlscope.hpp
         hqlstack.hpp

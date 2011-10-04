@@ -70,34 +70,23 @@ typedef const char * user_t;
 
 enum object_type 
 {
-    // Object types the GUI can query
-    ob_table        = 1,
-    ob_dataset      = 2,
-    ob_field        = 4,
-    ob_assertion    = 8,
-    ob_module       = 0x10,
-    ob_value        = 0x20,
-    ob_declaration  = 0x40,
-    ob_record       = 0x80,
-    //used in repository    0x100
-    //used in repository    0x200
-    ob_action       = 0x400,
-    ob_error        = 0x800,
-    ob_exported     = 0x1000,
-    ob_datarow      = 0x2000,
-    ob_shared       = 0x4000,
-    ob_member       = 0x8000,       // is a member of a module
+//Flags set on symbols
+    ob_exported     = 0x0001,
+    ob_shared       = 0x0002,
+    ob_import       = 0x0004,
+    ob_member       = 0x0008,       // is a member of a module
 
-    ob_sandbox      = 0x10000,
-    ob_orphaned     = 0x20000,
-    ob_refsandbox   = 0x40000,
-    ob_showtext     = 0x80000,
-    ob_olderver     = 0x100000,
-    ob_refolderver  = 0x200000,
-    ob_locked       = 0x400000,
-    ob_lockedself   = 0x800000,
+//attributes returned from the repository to show the vcs status
+    ob_sandbox      = 0x00010000,
+    ob_orphaned     = 0x00020000,
+    ob_refsandbox   = 0x00040000,
+    ob_showtext     = 0x00080000,
+    ob_olderver     = 0x00100000,
+    ob_refolderver  = 0x00200000,
+    ob_locked       = 0x00400000,
+    ob_lockedself   = 0x00800000,
 
-    ob_registryflags = 0x7fff0300,
+    ob_registryflags= 0xffff0000,
 };
 
 enum cs_access
@@ -183,16 +172,21 @@ public:
     int column;
 };
 
+interface IFileContents;
 interface IEclRepository: public IInterface
 {
-    virtual IHqlExpression * lookupRootSymbol(IAtom * name, unsigned lookupFlags, HqlLookupContext & ctx) = 0;
-    virtual void getRootScopes(HqlScopeArray & rootScopes, HqlLookupContext & ctx) = 0;
+    virtual IHqlScope * queryRootScope() = 0;
     virtual void checkCacheValid() = 0;
+};
 
+//MORE: Make this more private
+interface IEclRepositoryCallback : public IEclRepository
+{
 //Should only be called and implemented for concrete repositories
     virtual bool loadModule(IHqlRemoteScope * rScope, IErrorReceiver * errs, bool forceAll) = 0;
-    virtual IHqlExpression * loadSymbol(IAtom * moduleName, IAtom * attrName) = 0;
+    virtual IHqlExpression * loadSymbol(IHqlRemoteScope *scope, IAtom * searchName) = 0;
 };
+
 
 #if defined(_DEBUG) && defined(_WIN32) && !defined(USING_MPATROL)
  #undef new
