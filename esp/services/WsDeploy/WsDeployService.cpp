@@ -566,7 +566,7 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
           sbName.clear().append(req.getReqInfo().getUserId());
           context.getPeer(sbUserIp);
 
-          if (m_pFile->isReadOnly())
+          if (m_pFile.get() && m_pFile->isReadOnly())
           {
             xml.appendf("Write access to the Environment cannot be provided as %s is Read Only.", m_envFile.str());
             resp.setXmlArgs(xml.str());
