@@ -295,8 +295,11 @@ interface IDistributedFile: extends IInterface
 // ==SUPER FILES===================================================================================================
 
 /**
- * A DistributedSuperFile is a collection of files (for example, from wildcard
- * expansions), that can still be treated as a DistributedFile.
+ * A DistributedSuperFile is a collection of specific logical files (wildcard
+ * expansion, lists, sequences of fileservice calls, etc), that can still be
+ * treated as an IDistributedFile.
+ *
+ * All sub files must have the same record layout, format, etc.
  */
 interface IDistributedSuperFile: extends IDistributedFile
 {
