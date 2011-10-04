@@ -44,7 +44,7 @@
             <link rel="stylesheet" type="text/css" href="/esp/files/css/eclwatch.css" />
             <script type="text/javascript" src="/esp/files/scripts/espdefault.js">&#160;</script>
           </head>
-          <body class="yui-skin-sam" onload="nof5();onChangeMachine(true)">
+          <body class="yui-skin-sam" onload="nof5();onChangeMachine(true);onChangeGroup();">
                         <form method="POST" action="/FileSpray/{$method}">
                             <xsl:call-template name="generateForm"/>
                         </form>
@@ -177,7 +177,6 @@
                     }
                     else
                     {
-                        onChangeGroup();
                         if (document.forms[0].label.value.length > 0)
                             onChangeLabel(document.forms[0].label)
                     }
@@ -202,14 +201,50 @@
                     labelChanged = true;
                 }               
 
+                var lastReplicateSelect = true; //as default
+                function replicateClicked(obj)
+                {
+                    lastReplicateSelect = obj.checked;
+                }
+
                 function onChangeGroup()
                 {
                     var groups = document.getElementById("destGroup");
-                    var group = groups.options[groups.selectedIndex];
-                    if (group.label0.substring(0,1) == 'T')
+                    var selected = groups.options[groups.selectedIndex];
+                    if (selected.title.substring(0,1) == 'T')
                         setThorGroup();
                     else
                         setRoxieGroup();
+
+                    var row = document.getElementById('replicateRow');
+                    var obj = document.getElementById('replicate');
+                    if (selected.title.substring(0,1) == 'T')
+                    {
+                        var replicateOption = 'true';
+                        var pos = selected.title.indexOf(';');
+                        if (pos >= 0)
+                        {
+                            replicateOption = selected.title.substring(pos+1);
+                        }
+
+                        if (replicateOption == 'false')
+                        {
+                            row.style.display = 'none';
+                            row.style.visibility = 'hidden';
+                            obj.checked = false;
+                        }
+                        else
+                        {
+                            row.style.display = 'table-row';
+                            row.style.visibility = 'visible';
+                            obj.checked = lastReplicateSelect;
+                        }
+                    }
+                    else
+                    {   //not set for roxie here
+                        row.style.display = 'none';
+                        row.style.visibility = 'hidden';
+                    }
                 }
                 
                 function setThorGroup()             
@@ -225,11 +260,8 @@
                     document.getElementById('Advanced').value='Advanced >>';
                     document.getElementById('option_span').style.display='none';
     
-                    //Disable Roxie replicate for now
-                    document.getElementById('replicate').disabled = false;
-                    //document.getElementById('ReplicateOffset').disabled = false;
-                    document.getElementById('wrap').checked = false;
-                    document.getElementById('wrap').disabled = false;
+                    document.getElementById('Wrap').checked = false;
+                    document.getElementById('Wrap').disabled = false;
                 }
                 
                 function setRoxieGroup()
@@ -237,11 +269,8 @@
                     document.getElementById('destGroupRoxie').value='Yes';
                     document.getElementById('roxie_span').style.display='block';
     
-                    //Disable Roxie replicate for now
-                    document.getElementById('replicate').disabled = true;
-                    //document.getElementById('ReplicateOffset').disabled = true;
-                    document.getElementById('wrap').checked = true;
-                    document.getElementById('wrap').disabled = true;
+                    document.getElementById('Wrap').checked = true;
+                    document.getElementById('Wrap').disabled = true;
                 }
 
                 function show_hide(obj_name)
@@ -578,7 +607,10 @@
                                 <optgroup label="Thor">
                                     <xsl:for-each select="Software/ThorCluster">
                                         <option>
-                                            <xsl:attribute name="label0"><xsl:text>T</xsl:text><xsl:value-of select="@name"/></xsl:attribute>
+                                            <xsl:attribute name="title">
+                                                <xsl:text>T</xsl:text>
+                                                <xsl:value-of select="@name"/>;<xsl:value-of select="@replicateOutputs"/>
+                                            </xsl:attribute>
                                             <xsl:attribute name="value"><xsl:value-of select="@name"/></xsl:attribute>
                                             <xsl:variable name="curgrp" select="@name"/>
                                             <xsl:if test="$grp = $curgrp">
@@ -589,7 +621,7 @@
                                     </xsl:for-each>
                                     <xsl:for-each select="Software/EclAgentProcess/Instance">
                                         <option>
-                                            <xsl:attribute name="label0"><xsl:text>T</xsl:text><xsl:value-of select="../@name"/></xsl:attribute>
+                                            <xsl:attribute name="title"><xsl:text>T</xsl:text><xsl:value-of select="../@name"/></xsl:attribute>
                                             <xsl:attribute name="value"><xsl:value-of select="@netAddress"/></xsl:attribute>
                                             <xsl:value-of select="../@name"/>
                                             <xsl:text> </xsl:text>
@@ -601,7 +633,7 @@
                                     <optgroup label="Roxie">
                                         <xsl:for-each select="Software/RoxieCluster">
                                             <option>
-                                                <xsl:attribute name="label0"><xsl:text>R</xsl:text><xsl:value-of select="@name"/></xsl:attribute>
+                                                <xsl:attribute name="title"><xsl:text>R</xsl:text><xsl:value-of select="@name"/></xsl:attribute>
                                                 <xsl:attribute name="value"><xsl:value-of select="@name"/></xsl:attribute>
                                                 <xsl:variable name="curgrp1" select="@name"/>
                                                 <xsl:if test="$grp = $curgrp1">
@@ -649,10 +681,10 @@
                         <b>Options</b>
                     </td>
                 </tr>
-                <tr>
+                <tr id="replicateRow">
                     <td>Replicate:</td>
                     <td>
-                        <input type="checkbox" name="replicate" id="replicate" checked="true"/>
+                        <input type="checkbox" name="replicate" id="replicate" checked="true" onclick="replicateClicked(this)"/>
                     </td>
                 </tr>
                 <tr>
