@@ -780,12 +780,13 @@ extern const char * getActivityText(ThorActivityKind kind)
     case TAKindexgroupexists:   return "Index Grouped Exists";
     case TAKhashdistributemerge:    return "Distribute Merge";
     case TAKselfjoinlight:          return "Lightweight Self Join";
-    case TAKwhen:                   return "When";
+    case TAKwhen_dataset:           return "When";
     case TAKhttp_rowdataset:        return "HTTP dataset";
     case TAKstreamediterator:       return "Streamed Dataset";
     case TAKexternalsource:         return "User Source";
     case TAKexternalsink:           return "User Output";
     case TAKexternalprocess:        return "User Proceess";
+    case TAKwhen_action:            return "When";
     }
     throwUnexpected();
 }
@@ -865,6 +866,7 @@ extern bool isActivitySink(ThorActivityKind kind)
     case TAKifaction:
     case TAKparallel:
     case TAKsequential:
+    case TAKwhen_action:
         return true;
     }
     return false;

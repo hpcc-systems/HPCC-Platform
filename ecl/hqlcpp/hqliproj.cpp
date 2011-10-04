@@ -904,6 +904,17 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
             assertex(extra->activityKind() == NonActivity);
             Parent::analyseExpr(expr);
             break;
+        case no_executewhen:
+            if (expr->isDataset())
+            {
+                assertex(extra->activityKind() == SimpleActivity);
+                Parent::analyseExpr(expr);
+                connect(expr->queryChild(0), expr);
+                break;
+            }
+            assertex(extra->activityKind() == NonActivity);
+            Parent::analyseExpr(expr);
+            break;
         case no_subgraph:
             assertex(extra->activityKind() == NonActivity);
             Parent::analyseExpr(expr);
@@ -1391,6 +1402,10 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
             return SimpleActivity;
         if (expr->isDatarow())
             return ComplexNonActivity;
+        return NonActivity;
+    case no_executewhen:
+        if (expr->isDataset() || expr->isDatarow())
+            return SimpleActivity;
         return NonActivity;
     case no_subgraph:
     case no_libraryscopeinstance:

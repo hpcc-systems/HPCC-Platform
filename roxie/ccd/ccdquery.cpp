@@ -533,7 +533,7 @@ protected:
             return createRoxieServerNonEmptyActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKprefetchproject:
             return createRoxieServerPrefetchProjectActivityFactory(id, subgraphId, *this, helperFactory, kind);
-        case TAKwhen:
+        case TAKwhen_dataset:
             return createRoxieServerWhenActivityFactory(id, subgraphId, *this, helperFactory, kind);
 
         // These are not required in Roxie for the time being - code generator should trap them

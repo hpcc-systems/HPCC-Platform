@@ -6259,7 +6259,7 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                 result = doBuildActivityCallSideEffect(ctx, expr);
                 break;
             case no_executewhen:
-                result = doBuildActivityExecuteWhen(ctx, expr);
+                result = doBuildActivityExecuteWhen(ctx, expr, isRoot);
                 break;
             case no_thor:
                 UNIMPLEMENTED;
@@ -14455,7 +14455,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCallSideEffect(BuildCtx & ctx,
 
 //---------------------------------------------------------------------------
 
-ABoundActivity * HqlCppTranslator::doBuildActivityExecuteWhen(BuildCtx & ctx, IHqlExpression * expr)
+ABoundActivity * HqlCppTranslator::doBuildActivityExecuteWhen(BuildCtx & ctx, IHqlExpression * expr, bool isRoot)
 {
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, expr->queryChild(0));
     Owned<ABoundActivity> associatedActivity = buildCachedActivity(ctx, expr->queryChild(1));
@@ -14486,11 +14486,12 @@ ABoundActivity * HqlCppTranslator::doBuildActivityExecuteWhen(BuildCtx & ctx, IH
     }
 
     bool useImplementationClass = options.minimizeActivityClasses;
-    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKwhen, expr, "WhenAction");
+    ThorActivityKind kind = (expr->isAction() ? TAKwhen_action : TAKwhen_dataset);
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, kind, expr, "WhenAction");
     if (useImplementationClass)
         instance->setImplementationClass(newWhenActionArgAtom);
 
-    buildActivityFramework(instance);
+    buildActivityFramework(instance, isRoot);
 
     buildInstancePrefix(instance);
     buildInstanceSuffix(instance);

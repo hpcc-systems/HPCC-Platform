@@ -1568,7 +1568,7 @@ public:
     ABoundActivity * doBuildActivityDistribution(BuildCtx & ctx, IHqlExpression * expr, bool isRoot);
     ABoundActivity * doBuildActivitySectionInput(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityEnth(BuildCtx & ctx, IHqlExpression * expr);
-    ABoundActivity * doBuildActivityExecuteWhen(BuildCtx & ctx, IHqlExpression * expr);
+    ABoundActivity * doBuildActivityExecuteWhen(BuildCtx & ctx, IHqlExpression * expr, bool isRoot);
     ABoundActivity * doBuildActivityForceLocal(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityFetch(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityFilter(BuildCtx & ctx, IHqlExpression * expr);

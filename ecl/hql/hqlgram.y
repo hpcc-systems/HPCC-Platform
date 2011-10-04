@@ -2569,9 +2569,13 @@ failAction
                             Owned<ITypeInfo> retType = $1.getType();
                             $$.setExpr(parser->leaveLamdaExpression($5), $7);
                         }
-    | WHEN '(' action ',' action ')'
+    | WHEN '(' action ',' action sideEffectOptions ')'
                         {
-                            $$.setExpr(createCompound($5.getExpr(), $3.getExpr()), $1);
+                            OwnedHqlExpr options = $6.getExpr();
+                            if (options)
+                                $$.setExpr(createValueF(no_executewhen, makeVoidType(), $3.getExpr(), $5.getExpr(), options.getClear(), NULL), $1);
+                            else
+                                $$.setExpr(createCompound($5.getExpr(), $3.getExpr()), $1);
                         }
     ;
 
