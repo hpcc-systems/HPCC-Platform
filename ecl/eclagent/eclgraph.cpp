@@ -207,6 +207,7 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
     case TAKemptyaction:
     case TAKifaction:
     case TAKwhen_dataset:
+    case TAKwhen_action:
         return createDummyActivity(agent, activityId, subgraphId, arg, kind);
     case TAKhashdedup:
         return createHashDedupActivity(agent, activityId, subgraphId, (IHThorHashDedupArg &)arg, kind);

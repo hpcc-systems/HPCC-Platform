@@ -8683,6 +8683,10 @@ sideEffectOptions
                         {
                             $$.setExpr(createAttribute(failureAtom), $2);
                         }
+    | ',' PARALLEL
+                        {
+                            $$.setExpr(createAttribute(parallelAtom), $2);
+                        }
     ;
 
 limitOptions
