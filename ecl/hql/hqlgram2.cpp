@@ -8568,13 +8568,13 @@ void HqlGram::doDefineSymbol(DefineIdSt * defineid, IHqlExpression * _expr, IHql
                 OwnedHqlExpr resolved = parseScope->lookupSymbol(expectedAttribute, LSFsharedOK, lookupCtx);
                 if (resolved)
                 {
-                    reportError(ERR_UNEXPECTED_PUBLIC_ID, idattr.pos, "Definition %s has a trailing public definition %s", expectedAttribute->str(), name->str());
+                    reportError(ERR_UNEXPECTED_PUBLIC_ID, idattr.pos, "Definition of '%s' has a trailing public definition '%s'", expectedAttribute->str(), name->str());
                 }
                 else
                 {
                     //Make this warning come out now - otherwise a subsequent error about an undefined symbol makes less sense.
                     RestoreValueBlock<bool> block(associateWarnings, false);
-                    reportWarning(ERR_UNEXPECTED_PUBLIC_ID, idattr.pos, "Definition %s cannot define a public symbol %s", expectedAttribute->str(), name->str());
+                    reportWarning(ERR_UNEXPECTED_PUBLIC_ID, idattr.pos, "Name of exported symbol '%s' does not match the expected name '%s'", name->str(), expectedAttribute->str());
                 }
                 defineid->scope = 0;
             }
