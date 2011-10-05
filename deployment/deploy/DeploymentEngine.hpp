@@ -305,6 +305,7 @@ private:
     void getBackupDirName(const char* from, StringBuffer& to);
     bool checkSSHFileExists(const char* dir) const;
     void setSSHVars(IPropertyTree& instance);
+    void clearSSHVars();
 
 protected:
    Owned<IThreadPool>      m_threadPool;
