@@ -16,6 +16,14 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
+/**
+ * Distributed File System: access to directories and files on the cluster.
+ *
+ * The distributed file system is based on sprayed files in distributed directories.
+ * Each DistributedFile is spread across multiple DistributedFileParts, which can be
+ * accessed from DistributedFileDirectory or DistributedSuperFile.
+ */
+
 #ifndef DADFS_HPP
 #define DADFS_HPP
 
@@ -104,6 +112,10 @@ enum GetFileClusterNamesType
 
 // ==DISTRIBUTED FILES===================================================================================================
 
+/**
+ * Parts of a logic file, that is spread across the cluster. The same part can
+ * be replicated in several machines of the cluster.
+ */
 interface IDistributedFilePart: implements IInterface
 {
     virtual unsigned getPartIndex() = 0;                                        // Part index (0 based)
@@ -150,6 +162,11 @@ typedef IIteratorOf<IDistributedFilePart> IDistributedFilePartIterator;
 
 class CDFAction ;
 
+/**
+ * File operations can be included in a transaction to ensure that multiple
+ * updates are handled atomically. This is the interface to a transaction
+ * instance.
+ */
 interface IDistributedFileTransaction: extends IInterface
 {
     virtual void start()=0;
@@ -171,6 +188,9 @@ interface IDistributedSuperFileIterator: extends IIteratorOf<IDistributedSuperFi
     virtual const char *queryName() = 0;
 };
 
+/**
+ * A distributed file, composed of one or more DistributedFileParts.
+ */
 interface IDistributedFile: extends IInterface
 {
 
@@ -274,7 +294,13 @@ interface IDistributedFile: extends IInterface
 
 // ==SUPER FILES===================================================================================================
 
-
+/**
+ * A DistributedSuperFile is a collection of specific logical files (wildcard
+ * expansion, lists, sequences of fileservice calls, etc), that can still be
+ * treated as an IDistributedFile.
+ *
+ * All sub files must have the same record layout, format, etc.
+ */
 interface IDistributedSuperFile: extends IDistributedFile
 {
     virtual IDistributedFileIterator *getSubFileIterator(bool supersub=false)=0;    // if supersub true recurse through sub-superfiles and only return normal files
@@ -318,7 +344,6 @@ interface ISimpleSuperFileEnquiry: extends IInterface // lightweight local
 };
 
 
-
 // ==DISTRIBUTED FILE DIRECTORY=========================================================================================
 
 interface IDfsLogicalFileNameIterator : extends IInterface
@@ -354,7 +379,9 @@ interface IFileRelationship: extends IInterface
 
 typedef IIteratorOf<IFileRelationship> IFileRelationshipIterator;
 
-
+/**
+ * A distributed directory. Can created, access and delete files, super-files and logic-files.
+ */
 interface IDistributedFileDirectory: extends IInterface
 {
     virtual IDistributedFile *lookup(   const char *logicalname,

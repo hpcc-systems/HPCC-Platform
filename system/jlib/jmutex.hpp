@@ -211,6 +211,9 @@ public:
 };
 #else
 
+/**
+ * Mutex locking wrapper. Use enter/leave to lock/unlock.
+ */
 class CriticalSection 
 {
 private:
@@ -247,6 +250,11 @@ public:
 };
 #endif
 
+/**
+ * Critical section delimiter, using scope to define lifetime of
+ * the lock on a critical section (parameter).
+ * Blocks on construction, unblocks on destruction.
+ */
 class CriticalBlock
 {
     CriticalSection &crit;
@@ -255,6 +263,11 @@ public:
     inline ~CriticalBlock()                             { crit.leave(); }
 };
 
+/**
+ * Critical section delimiter, using scope to define lifetime of
+ * the lock on a critical section (parameter).
+ * Unblocks on construction, blocks on destruction.
+ */
 class CriticalUnblock
 {
     CriticalSection &crit;

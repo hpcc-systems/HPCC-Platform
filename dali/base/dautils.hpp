@@ -45,6 +45,10 @@ enum DfsXmlBranchKind
 
 class da_decl CMultiDLFN;
 
+/**
+ * Maps between file names and its properties, for
+ * normal files, super files, logic files, etc.
+ */
 class da_decl CDfsLogicalFileName
 {
     StringAttr lfn;
