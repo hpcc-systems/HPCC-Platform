@@ -109,54 +109,6 @@ StringBuffer & ECLlocation::getText(StringBuffer & text) const
 
 //----------------------------------------------------------------------------
 
-void reportErrorVa(IErrorReceiver * errors, int errNo, const ECLlocation & loc, const char* format, va_list args)
-{
-    StringBuffer msg;
-    msg.valist_appendf(format, args);
-    if (errors)
-        errors->reportError(errNo, msg.str(), loc.sourcePath->str(), loc.lineno, loc.column, loc.position);
-    else
-        throw createECLError(errNo, msg.str(), loc.sourcePath->str(), loc.lineno, loc.column, loc.position);
-}
-
-void reportError(IErrorReceiver * errors, int errNo, const ECLlocation & loc, const char * format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    reportErrorVa(errors, errNo, loc, format, args);
-    va_end(args);
-}
-
-
-void expandReportError(IErrorReceiver * errors, IECLError* error)
-{
-    StringBuffer msg;
-    error->errorMessage(msg);
-    if (error->isError())
-        errors->reportError(error->errorCode(), msg.str(), error->getFilename(), error->getLine(), error->getColumn(), error->getPosition());
-    else
-        errors->reportWarning(error->errorCode(), msg.str(), error->getFilename(), error->getLine(), error->getColumn(), error->getPosition());
-
-}
-
-
-void ThrowingErrorReceiver::reportError(int errNo, const char *msg, const char *filename, int lineno, int column, int pos)
-{
-    throw createECLError(errNo, msg, filename, lineno, column, pos);
-}
-
-void ThrowingErrorReceiver::report(IECLError* error)
-{
-    expandReportError(this, error);
-}
-
-void ThrowingErrorReceiver::reportWarning(int warnNo, const char *msg, const char *filename, int lineno, int column, int pos) 
-{
-}
-
-
-//----------------------------------------------------------------------------
-
 
 IHqlExpression * checkCreateConcreteModule(IErrorReceiver * errors, IHqlExpression * expr, const ECLlocation & errpos)
 {

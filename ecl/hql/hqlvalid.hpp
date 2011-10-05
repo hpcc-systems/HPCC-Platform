@@ -20,35 +20,6 @@
 
 #include "hqlexpr.hpp"
 
-//Error reporting helpers.
-void HQL_API reportErrorVa(IErrorReceiver * errors, int errNo, const ECLlocation & loc, const char* format, va_list args);
-void HQL_API reportError(IErrorReceiver * errors, int errNo, const ECLlocation & loc, const char * format, ...) __attribute__((format(printf, 4, 5)));
-void HQL_API expandReportError(IErrorReceiver * errors, IECLError* error);
-
-class HQL_API ThrowingErrorReceiver : public CInterface, implements IErrorReceiver
-{
-    IMPLEMENT_IINTERFACE
-
-    virtual void reportError(int errNo, const char *msg, const char *filename=NULL, int lineno=0, int column=0, int pos=0);
-    virtual void report(IECLError* error);
-    virtual void reportWarning(int warnNo, const char *msg, const char *filename=NULL, int lineno=0, int column=0, int pos=0);
-    virtual size32_t errCount() { return 0; }
-    virtual size32_t warnCount() { return 0; }
-};
-
-class HQL_API NullErrorReceiver : public CInterface, implements IErrorReceiver
-{
-public:
-    IMPLEMENT_IINTERFACE;
-
-    void reportError(int errNo, const char *msg,  const char * filename, int _lineno, int _column, int _pos) {}
-    void reportWarning(int warnNo, const char *msg,  const char * filename, int _lineno, int _column, int _pos) {}
-    void report(IECLError*) { }
-    virtual size32_t errCount() { return 0; };
-    virtual size32_t warnCount() { return 0; };
-};
-
-
 //Checking functions
 IHqlExpression * checkCreateConcreteModule(IErrorReceiver * errors, IHqlExpression * expr, const ECLlocation & errpos);
 extern HQL_API IHqlExpression * checkCreateConcreteModule(IErrorReceiver * errors, IHqlExpression * expr, const IHqlExpression * locationExpr);
