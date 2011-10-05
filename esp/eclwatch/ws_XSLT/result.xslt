@@ -23,7 +23,6 @@
     <xsl:param name="pageSize" select="/WUResultResponse/Requested"/>
     <xsl:param name="rowStart" select="/WUResultResponse/Start"/>
     <xsl:param name="rowCount" select="/WUResultResponse/Count"/>
-  <xsl:param name="format" select="/WUResultResponse/Format"/>
     
     <xsl:variable name="debug" select="0"/>
     <xsl:variable name="stage1Only" select="0"/><!--for debugging: produce intermediate nodeset only-->
@@ -66,7 +65,7 @@
                 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
                 <title>Result <xsl:value-of select="Name"/>
                 </title>
-        <xsl:if test="$format='xls'">
+        <xsl:if test="(string-length(Format) &lt; 1) or (Format != 'xls')">
         <link rel="stylesheet" type="text/css" href="/esp/files/yui/build/fonts/fonts-min.css" />
         <link rel="stylesheet" type="text/css" href="/esp/files/css/espdefault.css" />
         <link rel="stylesheet" type="text/css" href="/esp/files/css/eclwatch.css" />
