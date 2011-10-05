@@ -32,11 +32,11 @@
 #include "hqlfold.hpp"
 #include "hqlplugins.hpp"
 #include "hqlmanifest.hpp"
+#include "hqlcollect.hpp"
 #include "hqlrepository.hpp"
 #include "hqlerror.hpp"
 
 #include "hqlgram.hpp"
-#include "hqlremote.hpp"
 #include "hqltrans.ipp"
 
 #include "build-config.h"
@@ -135,77 +135,6 @@ static bool extractOption(StringAttr & option, IProperties * globals, const char
     return ret;
 }
 
-//=========================================================================================
-
-class IndirectErrorReceiver : public CInterface, implements IErrorReceiver
-{
-public:
-    IndirectErrorReceiver(IErrorReceiver * _prev) : prev(_prev) {}
-    IMPLEMENT_IINTERFACE
-
-    virtual void reportError(int errNo, const char *msg, const char *filename, int lineno, int column, int pos)
-    {
-        prev->reportError(errNo, msg, filename, lineno, column, pos);
-    }
-    virtual void report(IECLError* err)
-    {
-        prev->report(err);
-    }
-    virtual void reportWarning(int warnNo, const char *msg, const char *filename, int lineno, int column, int pos)
-    {
-        prev->reportWarning(warnNo, msg, filename, lineno, column, pos);
-    }
-    virtual size32_t errCount()
-    {
-        return prev->errCount();
-    }
-    virtual size32_t warnCount()
-    {
-        return prev->warnCount();
-    }
-
-protected:
-    Linked<IErrorReceiver> prev;
-};
-
-class ErrorInserter : public IndirectErrorReceiver
-{
-public:
-    ErrorInserter(IErrorReceiver * _prev, IECLError * _error) : IndirectErrorReceiver(_prev), error(_error) {}
-
-    virtual void reportError(int errNo, const char *msg, const char *filename, int lineno, int column, int pos)
-    {
-        flush();
-        IndirectErrorReceiver::reportError(errNo, msg, filename, lineno, column, pos);
-    }
-    virtual void report(IECLError* err)
-    {
-        flush();
-        IndirectErrorReceiver::report(err);
-    }
-    virtual void reportWarning(int warnNo, const char *msg, const char *filename, int lineno, int column, int pos)
-    {
-        flush();
-        IndirectErrorReceiver::reportWarning(warnNo, msg, filename, lineno, column, pos);
-    }
-
-protected:
-    void flush()
-    {
-        if (error)
-        {
-            IndirectErrorReceiver::report(error);
-            error.clear();
-        }
-    }
-
-protected:
-    Linked<IECLError> error;
-};
-
-
-
-
 struct EclCompileInstance
 {
 public:
@@ -213,6 +142,7 @@ public:
       inputFile(_inputFile), errs(&_errs), errout(_errout), outputFilename(_outputFilename)
     {
         importAllModules = queryLegacyEclSemantics();
+        ignoreUnknownImport = false;
         fromArchive = false;
     }
 
@@ -226,9 +156,10 @@ public:
     StringAttr eclVersion;
     const char * outputFilename;
     FILE * errout;
-    bool importAllModules;
     Owned<IPropertyTree> srcArchive;
+    bool importAllModules;
     bool fromArchive;
+    bool ignoreUnknownImport;
 };
 
 class EclCC
@@ -269,9 +200,7 @@ protected:
     void getComplexity(IWorkUnit *wu, IHqlExpression * query, IErrorReceiver *errs);
     void processSingleQuery(EclCompileInstance & instance, IEclRepository * dataServer, const char * sourcePathname,
                                const char * queryText,
-                               const char * queryAttributePath,
-                               const char * syntaxCheckModule, const char * syntaxCheckAttribute
-                               );
+                               const char * queryAttributePath);
     void processXmlFile(EclCompileInstance & instance, const char *archiveXML);
     void processFile(EclCompileInstance & info);
     void processReference(EclCompileInstance & instance, const char * queryAttributePath);
@@ -284,7 +213,10 @@ protected:
 
 
 protected:
+    Owned<IEclRepository> pluginsRepository;
     Owned<IEclRepository> libraryRepository;
+    Owned<IEclRepository> includeRepository;
+    Owned<IEclRepository> searchRepository;
     const char * programName;
 
     StringBuffer pluginsPath;
@@ -648,81 +580,6 @@ void EclCC::getComplexity(IWorkUnit *wu, IHqlExpression * query, IErrorReceiver 
 
 //=========================================================================================
 
-static IHqlExpression * transformAttributeToQuery(EclCompileInstance & instance, IHqlExpression * expr, HqlLookupContext & ctx)
-{
-    if (expr->isMacro())
-    {
-        if (!queryLegacyEclSemantics())
-            return NULL;
-        //Only expand macros if legacy semantics enabled
-        IHqlExpression * macroBodyExpr;
-        if (expr->getOperator() == no_funcdef)
-        {
-            if (expr->queryChild(1)->numChildren() != 0)
-                return NULL;
-            macroBodyExpr = expr->queryChild(0);
-        }
-        else
-            macroBodyExpr = expr;
-
-        IFileContents * macroContents = static_cast<IFileContents *>(macroBodyExpr->queryUnknownExtra());
-        Owned<IHqlRemoteScope> scope = createRemoteScope(NULL, NULL, ctx.queryRepository(), NULL, NULL, false);
-        return parseQuery(scope->queryScope(), macroContents, ctx, NULL, true);
-    }
-
-    if (expr->isFunction())
-    {
-        //If a scope with parameters then assume we are building a library.
-        if (expr->isScope())
-            return LINK(expr);
-
-        HqlExprArray actuals;
-        if (!allParametersHaveDefaults(expr))
-        {
-            if (!expandMissingDefaultsAsStoreds(actuals, expr))
-            {
-                //For each parameter that doesn't have a default, create a stored variable of the appropriate type
-                //with a null value as the default value, and use that.
-                const char * name = expr->queryName()->str();
-                StringBuffer msg;
-                msg.appendf("Definition %s() does not supply default values for all parameters", name ? name : "");
-                ctx.errs->reportError(HQLERR_CannotSubmitFunction, msg.str(), NULL, 1, 0, 0);
-                return NULL;
-            }
-        }
-
-        return createBoundFunction(instance.errs, expr, actuals, ctx.functionCache, ctx.queryExpandCallsWhenBound());
-    }
-
-    if (expr->isScope())
-    {
-        IHqlScope * scope = expr->queryScope();
-        OwnedHqlExpr main = scope->lookupSymbol(createAtom("main"), LSFpublic, ctx);
-        if (main)
-            return main.getClear();
-
-        StringBuffer msg;
-        const char * name = scope->queryFullName();
-        msg.appendf("Module %s does not EXPORT an attribute main()", name ? name : "");
-        ctx.errs->reportError(HQLERR_CannotSubmitModule, msg.str(), NULL, 1, 0, 0);
-        return NULL;
-    }
-
-    return LINK(expr);
-}
-
-static IHqlExpression * convertAttributeToQuery(EclCompileInstance & instance, IHqlExpression * expr, HqlLookupContext & ctx)
-{
-    OwnedHqlExpr query = LINK(expr);
-    loop
-    {
-        OwnedHqlExpr transformed = transformAttributeToQuery(instance, query, ctx);
-        if (!transformed || transformed == query)
-            return transformed.getClear();
-        query.set(transformed);
-    }
-}
-
 inline bool endsWith(unsigned lenSrc, const char * src, unsigned lenSuffix, const char * suffix)
 {
     return (lenSrc >= lenSuffix) && (memcmp(src+lenSrc-lenSuffix, suffix, lenSuffix) == 0);
@@ -815,9 +672,7 @@ bool EclCC::checkWithinRepository(StringBuffer & attributePath, const char * sou
 
 void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * dataServer, const char * sourcePathname,
                                const char * queryText,
-                               const char * queryAttributePath,
-                               const char * syntaxCheckModule, const char * syntaxCheckAttribute
-                               )
+                               const char * queryAttributePath)
 {
     Owned<IErrorReceiver> wuErrs = new WorkUnitErrorReceiver(instance.wu, "eclcc");
     Owned<IErrorReceiver> errs = createCompoundErrorReceiver(instance.errs, wuErrs);
@@ -854,8 +709,8 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
             StringBuffer thisTail;
             splitFilename(expandedSourceName, &thisDirectory, &thisDirectory, &thisTail, &thisTail);
 
-            Owned<IEclRepository> localRepository =  createSourceFileEclRepository(errs, NULL, thisDirectory, NULL, 0);
-            Owned<IEclRepository> compound = createCompoundRepositoryF(repository, localRepository.get(), NULL);
+            Owned<IEclRepository> localRepository =  createNewSourceFileEclRepository(errs, thisDirectory, 0, 0);
+            Owned<IEclRepository> compound = createCompoundRepositoryF(repository.get(), localRepository.get(), NULL);
             repository.set(compound);
 
             if (convertPathToModule(attributePath, thisTail))
@@ -863,10 +718,9 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
         }
     }
 
-    Owned<IHqlRemoteScope> rScope;
     Owned<IHqlScope> scope;
     Owned<ISourcePath> sourcePath = createSourcePath(sourcePathname);
-    bool syntaxChecking = instance.wu->getDebugValueBool("syntaxCheck", false) || (syntaxCheckAttribute != NULL);
+    bool syntaxChecking = instance.wu->getDebugValueBool("syntaxCheck", false);
     size32_t prevErrs = errs->errCount();
     unsigned startTime = msTick();
     OwnedHqlExpr qquery;
@@ -875,29 +729,8 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
     {
         //Minimize the scope of the parse context to reduce lifetime of cached items.
         HqlParseContext parseCtx(repository, instance.archive);
-        if (!withinRepository && syntaxCheckModule)
-        {
-            if (!sourcePath)
-            {
-                StringBuffer temp;
-                temp.append(syntaxCheckModule).append('.').append(syntaxCheckAttribute);
-                sourcePath.setown(createSourcePath(temp));
-            }
-
-            scope.setown(createSyntaxCheckScope(parseCtx, syntaxCheckModule, syntaxCheckAttribute));
-            if (!scope)
-            {
-                StringBuffer msg;
-                msg.appendf("Module %s does not exist",syntaxCheckModule);
-                errs->reportError(0, msg.str(), sourcePath->str(), 1, 0, 0);
-                return;
-            }
-        }
-        else
-        {
-            rScope.setown(createRemoteScope(NULL, NULL, repository, NULL, NULL, false));
-            scope.set(rScope->queryScope());
-        }
+        parseCtx.ignoreUnknownImport = instance.ignoreUnknownImport;
+        scope.setown(createPrivateScope());
 
         try
         {
@@ -923,26 +756,18 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
                 Owned<IFileContents> contents = createFileContentsFromText(queryText, sourcePath);
 
                 if (instance.importAllModules)
-                {
-                    HqlScopeArray rootScopes;
-                    repository->getRootScopes(rootScopes, ctx);
-                    ForEachItemIn(i, rootScopes)
-                    {
-                        IHqlScope & cur = rootScopes.item(i);
-                        scope->defineSymbol(cur.queryName(), NULL, LINK(queryExpression(&cur)), false, true, ob_module);
-                    }
-                }
+                    importRootModulesToScope(scope, ctx);
 
                 qquery.setown(parseQuery(scope, contents, ctx, NULL, true));
             }
 
             gatherWarnings(ctx.errs, qquery);
 
+            if (qquery && !syntaxChecking)
+                qquery.setown(convertAttributeToQuery(qquery, ctx));
+
             if (instance.wu->getDebugValueBool("addTimingToWorkunit", true))
                 instance.wu->setTimerInfo("EclServer: parse query", NULL, msTick()-startTime, 1, 0);
-
-            if (qquery && !syntaxChecking)
-                qquery.setown(convertAttributeToQuery(instance, qquery, ctx));
         }
         catch (IException *e)
         {
@@ -1008,60 +833,62 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
 
 void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML)
 {
-    instance.srcArchive.setown(createPTreeFromXMLString(archiveXML, ipt_caseInsensitive));
-    Owned<IEclRepository> dataServer = createXmlDataServer(instance.srcArchive, libraryRepository);
-    Owned<IPropertyTreeIterator> iter = instance.srcArchive->getElements("Option");
+    Owned<IPropertyTree> archiveTree = createPTreeFromXMLString(archiveXML, ipt_caseInsensitive);
+
+    instance.srcArchive.set(archiveTree);
+    Owned<IPropertyTreeIterator> iter = archiveTree->getElements("Option");
     ForEach(*iter) 
     {
         IPropertyTree &item = iter->query();
         instance.wu->setDebugValue(item.queryProp("@name"), item.queryProp("@value"), true);
     }
 
-    const char * queryText = instance.srcArchive->queryProp("Query");
-    const char * queryAttributePath = instance.srcArchive->queryProp("Query/@attributePath");
+    const char * queryText = archiveTree->queryProp("Query");
+    const char * queryAttributePath = archiveTree->queryProp("Query/@attributePath");
     //Takes precedence over an entry in the archive - so you can submit parts of an archive.
     if (optQueryRepositoryReference)
         queryAttributePath = optQueryRepositoryReference;
 
-    const char * sourceFilename = instance.srcArchive->queryProp("Query/@originalFilename");
-    instance.eclVersion.set(instance.srcArchive->queryProp("@eclVersion"));
-    if (instance.eclVersion)
+    const char * sourceFilename = archiveTree->queryProp("Query/@originalFilename");
+    instance.eclVersion.set(archiveTree->queryProp("@eclVersion"));
+    instance.ignoreUnknownImport = archiveTree->getPropBool("@ignoreUnknownImport", false);
+
+    checkEclVersionCompatible(instance.errs, instance.eclVersion);
+
+    Owned<IEclSourceCollection> archiveCollection;
+    if (archiveTree->getPropBool("@testRemoteInterface", false))
     {
-        unsigned major, minor, subminor;
-        if (extractVersion(major, minor, subminor, instance.eclVersion))
-        {
-            if (major != LANGUAGE_VERSION_MAJOR)
-                throwError2(HQLERR_VersionMismatch, instance.eclVersion.get(), LANGUAGE_VERSION);
-            if (minor != LANGUAGE_VERSION_MINOR)
-            {
-                StringBuffer msg;
-                msg.appendf("Mismatch in minor version number (%s v %s)", instance.eclVersion.get(), LANGUAGE_VERSION);
-                instance.errs->reportWarning(HQLERR_VersionMismatch, msg.str(), NULL, 0, 0);
-            }
-            else if (subminor != LANGUAGE_VERSION_MINOR)
-            {
-                StringBuffer msg;
-                msg.appendf("Mismatch in subminor version number (%s v %s)", instance.eclVersion.get(), LANGUAGE_VERSION);
-                Owned<IECLError> warning = createECLWarning(HQLERR_VersionMismatch, msg.str(), NULL, 0, 0);
-                instance.errs.setown(new ErrorInserter(instance.errs, warning));
-            }
-        }
+        Owned<IXmlEclRepository> xmlRepository = createArchiveXmlEclRepository(archiveTree);
+        archiveCollection.setown(createRemoteXmlEclCollection(NULL, *xmlRepository, NULL, false));
+        archiveCollection->checkCacheValid();
     }
+    else
+        archiveCollection.setown(createArchiveEclCollection(archiveTree));
+
+    Owned<IEclRepository> archiveServer = createRepository(archiveCollection);
 
     if (queryText || queryAttributePath)
     {
-        processSingleQuery(instance, dataServer, sourceFilename, queryText, queryAttributePath, NULL, NULL);
+        Owned<IEclRepository> dataServer = createCompoundRepositoryF(pluginsRepository.get(), archiveServer.get(), NULL);
+        processSingleQuery(instance, dataServer, sourceFilename, queryText, queryAttributePath);
     }
     else
     {
         //This is really only useful for regression testing
-        const char * queryText = instance.srcArchive->queryProp("SyntaxCheck");
-        const char * syntaxCheckModule = instance.srcArchive->queryProp("SyntaxCheck/@module");
-        const char * syntaxCheckAttribute = instance.srcArchive->queryProp("SyntaxCheck/@attribute");
-        if (queryText && syntaxCheckModule && syntaxCheckAttribute)
-            processSingleQuery(instance, dataServer, syntaxCheckModule, queryText, NULL, syntaxCheckModule, syntaxCheckAttribute);
-        else
+        const char * queryText = archiveTree->queryProp("SyntaxCheck");
+        const char * syntaxCheckModule = archiveTree->queryProp("SyntaxCheck/@module");
+        const char * syntaxCheckAttribute = archiveTree->queryProp("SyntaxCheck/@attribute");
+        if (!queryText || !syntaxCheckModule || !syntaxCheckAttribute)
             throw MakeStringException(1, "No query found in xml");
+
+        instance.wu->setDebugValueInt("syntaxCheck", true, true);
+        StringBuffer fullPath;
+        fullPath.append(syntaxCheckModule).append('.').append(syntaxCheckAttribute);
+
+        //Create a repository with just that attribute, and place it before the archive in the resolution order.
+        Owned<IEclRepository> syntaxCheckRepository = createSingleDefinitionEclRepository(syntaxCheckModule, syntaxCheckAttribute, queryText);
+        Owned<IEclRepository> dataServer = createCompoundRepositoryF(pluginsRepository.get(), syntaxCheckRepository.get(), archiveServer.get(), NULL);
+        processSingleQuery(instance, dataServer, NULL, NULL, fullPath.str());
     }
 }
 
@@ -1097,7 +924,7 @@ void EclCC::processFile(EclCompileInstance & instance)
         processXmlFile(instance, queryTxt);
     }
     else
-        processSingleQuery(instance, libraryRepository, fname.str(), queryTxt, NULL, NULL, NULL);
+        processSingleQuery(instance, searchRepository, fname.str(), queryTxt, NULL);
 
     if (instance.reportErrorSummary())
         return;
@@ -1159,7 +986,7 @@ void EclCC::processReference(EclCompileInstance & instance, const char * queryAt
 
     instance.wu.setown(createLocalWorkUnit());
 
-    processSingleQuery(instance, libraryRepository, NULL, NULL, queryAttributePath, NULL, NULL);
+    processSingleQuery(instance, searchRepository, NULL, NULL, queryAttributePath);
 
     if (instance.reportErrorSummary())
         return;
@@ -1172,9 +999,16 @@ bool EclCC::processFiles()
     loadOptions();
 
     StringBuffer searchPath;
-    searchPath.append(eclLibraryPath).append(ENVSEPCHAR).append(stdIncludeLibraryPath).append(ENVSEPCHAR).append(includeLibraryPath);
+    searchPath.append(stdIncludeLibraryPath).append(ENVSEPCHAR).append(includeLibraryPath);
+
     Owned<IErrorReceiver> errs = createFileErrorReceiver(stderr);
-    libraryRepository.setown(createSourceFileEclRepository(errs, pluginsPath.str(), searchPath.str(), NULL, logVerbose ? PLUGIN_DLL_MODULE : 0));
+    pluginsRepository.setown(createNewSourceFileEclRepository(errs, pluginsPath.str(), ESFallowplugins, logVerbose ? PLUGIN_DLL_MODULE : 0));
+    libraryRepository.setown(createNewSourceFileEclRepository(errs, eclLibraryPath.str(), 0, 0));
+    includeRepository.setown(createNewSourceFileEclRepository(errs, searchPath.str(), 0, 0));
+    searchRepository.setown(createCompoundRepositoryF(pluginsRepository.get(), libraryRepository.get(), includeRepository.get(), NULL));
+
+    //Ensure symbols for plugins are initialised - see comment before CHqlMergedScope...
+//    lookupAllRootDefinitions(pluginsRepository);
 
     bool ok = true;
     if (optBatchMode)

@@ -140,6 +140,7 @@ void  jlib_decl setTerminateOnSEHInSystemDLLs(bool set=true);
 void jlib_decl setTerminateOnSEH(bool set=true);
 
 
+#define makeUnexpectedException()  MakeStringException(9999, "Internal Error at %s(%d)", __FILE__, __LINE__)
 #define throwUnexpected()          throw MakeStringException(9999, "Internal Error at %s(%d)", __FILE__, __LINE__)
 #define assertThrow(x)             assertex(x)
 

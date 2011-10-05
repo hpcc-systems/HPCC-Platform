@@ -15,6 +15,7 @@
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
+
 #include "hqlrepository.hpp"
 #include "hqlerrors.hpp"
 #include "hqlplugins.hpp"
@@ -22,33 +23,88 @@
 #include "jfile.hpp"
 #include "eclrtl.hpp"
 #include "hqlexpr.ipp"
+#include "hqlerror.hpp"
 
-bool isPluginDllScope(IHqlScope * scope)
+//-------------------------------------------------------------------------------------------------------------------
+
+static void getRootScopes(HqlScopeArray & rootScopes, IHqlScope * scope)
 {
-    if (!scope)
-        return false;
-    unsigned flags=scope->getPropInt(flagsAtom, 0);
-    return (flags & PLUGIN_DLL_MODULE) != 0;
+    HqlExprArray rootSymbols;
+    scope->getSymbols(rootSymbols);
+    ForEachItemIn(i, rootSymbols)
+    {
+        IHqlExpression & cur = rootSymbols.item(i);
+        IHqlScope * scope = cur.queryScope();
+        if (scope)
+            rootScopes.append(*LINK(scope));
+    }
 }
 
-inline bool isDynamicModule(IHqlScope * scope)
+void getRootScopes(HqlScopeArray & rootScopes, IHqlScope * scope, HqlLookupContext & ctx)
 {
-    unsigned flags=scope->getPropInt(flagsAtom, 0);
-    return !(flags & SOURCEFILE_CONSTANT);
+    scope->ensureSymbolsDefined(ctx);
+    getRootScopes(rootScopes, scope);
 }
 
-inline bool allowImplicitImport(IHqlScope * scope)
+void getRootScopes(HqlScopeArray & rootScopes, IEclRepository * repository, HqlLookupContext & ctx)
 {
-    unsigned flags=scope->getPropInt(flagsAtom, 0);
-    return !(flags & SOURCEFILE_PLUGIN);
+    getRootScopes(rootScopes, repository->queryRootScope(), ctx);
 }
 
-bool isImplicitScope(IHqlScope * scope)
+void getImplicitScopes(HqlScopeArray& implicitScopes, IEclRepository * repository, IHqlScope * scope, HqlLookupContext & ctx)
 {
-    unsigned flags=scope->getPropInt(flagsAtom, 0);
-    return (flags & (PLUGIN_IMPLICIT_MODULE)) != 0;
+    //Any implicit scope requires explicit module imports
+    if (scope->isImplicit())
+        return;
+
+    //See note before CMergedScope for notes about implicit scopes.
+    HqlScopeArray rootScopes;
+    getRootScopes(rootScopes, repository->queryRootScope(), ctx);
+    ForEachItemIn(i, rootScopes)
+    {
+        IHqlScope & scope = rootScopes.item(i);
+        if (scope.isImplicit())
+            implicitScopes.append(OLINK(scope));
+    }
 }
 
+
+extern HQL_API void importRootModulesToScope(IHqlScope * scope, HqlLookupContext & ctx)
+{
+    IEclRepository * eclRepository = ctx.queryRepository();
+    HqlScopeArray rootScopes;
+    getRootScopes(rootScopes, eclRepository, ctx);
+    ForEachItemIn(i, rootScopes)
+    {
+        IHqlScope & cur = rootScopes.item(i);
+        _ATOM curName = cur.queryName();
+        OwnedHqlExpr resolved = eclRepository->queryRootScope()->lookupSymbol(curName, LSFpublic, ctx);
+        if (resolved)
+            scope->defineSymbol(curName, NULL, resolved.getClear(), false, true, ob_import);
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+void lookupAllRootDefinitions(IHqlScope * scope, HqlLookupContext & ctx)
+{
+    HqlExprArray rootSymbols;
+    scope->getSymbols(rootSymbols);
+    ForEachItemIn(i, rootSymbols)
+    {
+        ::Release(scope->lookupSymbol(rootSymbols.item(i).queryName(), LSFsharedOK, ctx));
+    }
+}
+
+void lookupAllRootDefinitions(IEclRepository * repository)
+{
+    HqlParseContext parseCtx(repository, NULL);
+    ThrowingErrorReceiver errs;
+    HqlLookupContext ctx(parseCtx, &errs);
+    lookupAllRootDefinitions(repository->queryRootScope(), ctx);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
 
 IHqlExpression * getResolveAttributeFullPath(const char * attrname, unsigned lookupFlags, HqlLookupContext & ctx)
 {
@@ -76,7 +132,7 @@ IHqlExpression * getResolveAttributeFullPath(const char * attrname, unsigned loo
         }
         else
         {
-            resolved.setown(ctx.queryRepository()->lookupRootSymbol(moduleName, lookupFlags, ctx));
+            resolved.setown(ctx.queryRepository()->queryRootScope()->lookupSymbol(moduleName, lookupFlags, ctx));
         }
 
         if (!resolved || !dot)
@@ -94,6 +150,8 @@ IHqlExpression * getResolveAttributeFullPath(const char * attrname, unsigned loo
 
 IHqlScope * getResolveDottedScope(const char * modname, unsigned lookupFlags, HqlLookupContext & ctx)
 {
+    if (!modname || !*modname)
+        return LINK(ctx.queryRepository()->queryRootScope());
     OwnedHqlExpr matched = getResolveAttributeFullPath(modname, lookupFlags, ctx);
     if (matched)
         return LINK(matched->queryScope());
@@ -101,94 +159,39 @@ IHqlScope * getResolveDottedScope(const char * modname, unsigned lookupFlags, Hq
 }
 
 
-IHqlScope * createSyntaxCheckScope(HqlParseContext & parseCtx, const char * module, const char *attributes)
+//-------------------------------------------------------------------------------------------------------------------
+
+class HQL_API CompoundEclRepository : public CInterface, implements IEclRepository
 {
-    //MORE: This doesn't currently work on child modules, and the list of attributes is overkill - a single item would be enough.
-    parseCtx.queryRepository()->checkCacheValid();
+public:
+    CompoundEclRepository() { rootScope.setown(new CHqlMergedScope(NULL, NULL)); }
 
-    //GHMORE: This whole function should really die.
-    HqlLookupContext lookupCtx(parseCtx, NULL);
-    Owned<IHqlScope> parent = getResolveDottedScope(module, LSFimport, lookupCtx);
-    if (!parent)
-        return NULL;
+    IMPLEMENT_IINTERFACE;
 
-    return new CHqlSyntaxCheckScope(parent, parseCtx.queryRepository(), attributes, true);
+    void addRepository(IEclRepository & _repository);
+
+    virtual IHqlScope * queryRootScope() { return rootScope; }
+    virtual void checkCacheValid();
+
+protected:
+    IArrayOf<IEclRepository> repositories;
+    Owned<CHqlMergedScope> rootScope;
+};
+
+void CompoundEclRepository::addRepository(IEclRepository & _repository)
+{
+    repositories.append(OLINK(_repository));
+    rootScope->addScope(_repository.queryRootScope());
 }
 
 //-------------------------------------------------------------------------------------------------------------------
-
-ConcreteEclRepository::ConcreteEclRepository()
-{
-    rootScope.setown(createRemoteScope(NULL, NULL, this, NULL, NULL, false));
-}
-
-ConcreteEclRepository::~ConcreteEclRepository()
-{
-    rootScope->invalidateParsed();
-}
-
-void ConcreteEclRepository::checkCacheValid()
-{
-}
-
-IHqlExpression * ConcreteEclRepository::lookupRootSymbol(_ATOM name, unsigned lookupFlags, HqlLookupContext & ctx)
-{
-    CriticalBlock block(cs);
-    return rootScope->queryScope()->lookupSymbol(name, lookupFlags, ctx);
-}
-
-void ConcreteEclRepository::getRootScopes(HqlScopeArray & rootScopes, HqlLookupContext & ctx)
-{
-    CriticalBlock block(cs);
-    rootScope->queryScope()->ensureSymbolsDefined(ctx);
-
-    HqlExprArray rootSymbols;
-    rootScope->queryScope()->getSymbols(rootSymbols);
-    ForEachItemIn(i, rootSymbols)
-    {
-        IHqlExpression & cur = rootSymbols.item(i);
-        IHqlScope * scope = cur.queryScope();
-        if (scope)
-            rootScopes.append(*LINK(scope));
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-void CompoundEclRepository::getRootScopes(HqlScopeArray & rootScopes, HqlLookupContext & ctx)
-{
-    ForEachItemIn(i, repositories)
-        repositories.item(i).getRootScopes(rootScopes, ctx);
-}
-
-IHqlExpression * CompoundEclRepository::lookupRootSymbol(_ATOM name, unsigned lookupFlags, HqlLookupContext & ctx)
-{
-    ForEachItemInRev(i, repositories)
-    {
-        IHqlExpression * match = repositories.item(i).lookupRootSymbol(name, lookupFlags, ctx);
-        if (match)
-            return match;
-    }
-    return NULL;
-}
-
-
-bool CompoundEclRepository::loadModule(IHqlRemoteScope * rScope, IErrorReceiver * errs, bool forceAll)
-{
-    throwUnexpected();
-}
-
-IHqlExpression * CompoundEclRepository::loadSymbol(IAtom * moduleName, IAtom * attrName)
-{
-    throwUnexpected();
-}
 
 void CompoundEclRepository::checkCacheValid()
 {
-    CEclRepository::checkCacheValid();
     ForEachItemIn(i, repositories)
         repositories.item(i).checkCacheValid();
 }
+
 
 extern HQL_API IEclRepository * createCompoundRepositoryF(IEclRepository * repository, ...)
 {
@@ -206,305 +209,162 @@ extern HQL_API IEclRepository * createCompoundRepositoryF(IEclRepository * repos
     return compound.getClear();
 }
 
+
+extern HQL_API IEclRepository * createCompoundRepository(EclRepositoryArray & repositories)
+{
+    Owned<CompoundEclRepository> compound = new CompoundEclRepository;
+    ForEachItemIn(i, repositories)
+        compound->addRepository(repositories.item(i));
+    return compound.getClear();
+}
+
+
 //-------------------------------------------------------------------------------------------------------------------
 
-//DLLs should call CPluginCtx to manage memory
-class CPluginCtx : implements IPluginContext
+class HQL_API CNewEclRepository : public CInterface, implements IEclRepositoryCallback
 {
 public:
-    void * ctxMalloc(size_t size)               { return rtlMalloc(size); }
-    void * ctxRealloc(void * _ptr, size_t size) { return rtlRealloc(_ptr, size); }
-    void   ctxFree(void * _ptr)                 { rtlFree(_ptr); }
-    char * ctxStrdup(char * _ptr)               { return strdup(_ptr); }
-} PluginCtx;
-
-inline bool isNullOrBlank(const char * s) { return !s || !*s; }
-
-SourceFileEclRepository::SourceFileEclRepository(IErrorReceiver *errs, const char * _pluginPath, const char * _constSourceSearchPath, const char * _dynamicSourceSearchPath, unsigned _traceMask)
-: traceMask(_traceMask), dynamicSourceSearchPath(_dynamicSourceSearchPath)
-{
-    //MTIME_SECTION(timer,"SourceFileEclRepository::SourceFileEclRepository")
-
-    processSourceFiles(_pluginPath, errs, SOURCEFILE_PLUGIN|SOURCEFILE_CONSTANT);
-    processSourceFiles(_constSourceSearchPath, errs, SOURCEFILE_CONSTANT);
-    processSourceFiles(dynamicSourceSearchPath, errs, 0);
-}
-
-void SourceFileEclRepository::processSourceFiles(const char * sourceSearchPath, IErrorReceiver *errs, unsigned moduleFlags)
-{
-    if (!sourceSearchPath)
-        return;
-
-    const char * cursor = sourceSearchPath;
-    for (;*cursor;)
+    CNewEclRepository(IEclSourceCollection * _collection) : collection(_collection)
     {
-        StringBuffer searchPattern;
-        while (*cursor && *cursor != ENVSEPCHAR)
-            searchPattern.append(*cursor++);
-        if(*cursor)
-            cursor++;
-
-        if(!searchPattern.length())
-            continue;
-
-        StringBuffer dirPath, dirWildcard;
-        if (!containsFileWildcard(searchPattern))
-        {
-            Owned<IFile> file = createIFile(searchPattern.str());
-            if (file->isDirectory() == foundYes)
-            {
-                dirPath.append(searchPattern);
-                if (dirPath.charAt(dirPath.length() -1) != PATHSEPCHAR)
-                    dirPath.append(PATHSEPCHAR);
-                dirWildcard.append("*");
-            }
-            else if (file->isFile() == foundYes)
-            {
-                splitFilename(searchPattern.str(), &dirPath, &dirPath, &dirWildcard, &dirWildcard);
-            }
-            else
-            {
-                if (errs)
-                {
-                    StringBuffer msg;
-                    msg.appendf("Explicit source file %s not found", searchPattern.str());
-                    errs->reportWarning(10, msg.str());
-                }
-                else
-                    printf("Explicit source file %s not found\n", searchPattern.str());
-            }
-        }
-        else
-            splitFilename(searchPattern.str(), &dirPath, &dirPath, &dirWildcard, &dirWildcard);
-
-        Owned<IDirectoryIterator> dir = createDirectoryIterator(dirPath.str(), dirWildcard.str());
-        StringBuffer sourcePath;
-        loadDirectoryTree(rootScope, errs, dir, dirPath.str(), sourcePath, moduleFlags);
+        rootScope.setown(createRemoteScope(NULL, NULL, this, NULL, NULL, true, NULL));
     }
-}
+    IMPLEMENT_IINTERFACE
 
-void SourceFileEclRepository::loadDirectoryTree(IHqlRemoteScope * parentScope, IErrorReceiver *errs, IDirectoryIterator * dir, const char * dirPath, StringBuffer & sourcePath, unsigned moduleFlags)
+    virtual IHqlScope * queryRootScope() { return rootScope->queryScope(); }
+    virtual void checkCacheValid() { collection->checkCacheValid(); }
+    virtual bool loadModule(IHqlRemoteScope *scope, IErrorReceiver *errs, bool forceAll);
+    virtual IHqlExpression * loadSymbol(IHqlRemoteScope *scope, IAtom * searchName);
+
+protected:
+    IHqlExpression * createSymbol(IHqlRemoteScope * rScope, IEclSource * source);
+
+protected:
+    Linked<IEclSourceCollection> collection;
+    Owned<IHqlRemoteScope> rootScope;
+    CriticalSection cs;
+};
+
+
+
+bool CNewEclRepository::loadModule(IHqlRemoteScope * rScope, IErrorReceiver *errs, bool forceAll)
 {
-    unsigned prevSourcePathLen = sourcePath.length();
-    ForEach (*dir)
+    IEclSource * parent = rScope->queryEclSource();
+    CHqlRemoteScope * targetScope = static_cast<CHqlRemoteScope *>(rScope);
+    Owned<IEclSourceIterator> iter = collection->getContained(parent);
+    if (iter)
     {
-        IFile &file = dir->query();
-        Owned<IHqlRemoteScope> scope;
-        StringBuffer tail;
-        dir->getName(tail);
-        if (tail.length() && tail.charAt(0)=='.')
-            continue;
-        sourcePath.append(tail);
-        unsigned flags = moduleFlags;
-        _ATOM attrName = NULL;
-        if (file.isFile() == foundYes)
+        ForEach(*iter)
         {
-            StringBuffer module, version, fullpath;
-            const char *fname = tail.str();
-            const char *ext = strrchr(fname, '.');
-
-            if (ext)
-            {
-                Owned<IFileContents> fileContents;
-                Owned<ISourcePath> path = createSourcePath(sourcePath);
-                bool isECL = false;
-                fullpath.clear().append(dirPath).append(tail);
-                if (stricmp(ext, ".eclmod")==0 || stricmp(ext, ".hql")==0)
-                {
-                    fileContents.setown(createFileContents(&file, path));
-                    isECL = true;
-                    module.clear().append(fname, 0, ext-fname);
-                }
-                else if (stricmp(ext, ".ecllib")==0 || stricmp(ext, ".hqllib")==0)
-                {
-                    //Legacy.Same as .eclmod but always an implicit module.  Almost certainly a bad idea.
-                    fileContents.setown(createFileContents(&file, path));
-                    isECL = true;
-                    flags |= PLUGIN_IMPLICIT_MODULE;
-                    module.clear().append(fname, 0, ext-fname);
-                }
-                else if (stricmp(ext, ".ecl")==0 || stricmp(ext, ".eclattr")==0)
-                {
-                    assertex(parentScope);
-                    //Rather than defining a module this defines a single exported symbol
-                    Owned<IFileContents> contents = createFileContents(&file, path);
-                    StringAttr name;
-                    name.set(fname, ext-fname);
-                    IHqlExpression * cur = CHqlNamedSymbol::makeSymbol(createIdentifierAtom(name), parentScope->queryScope()->queryName(), 0, true, false, ob_declaration, contents, 0, 0, 0);
-                    static_cast<CHqlScope*>(parentScope->queryScope())->defineSymbol(cur);
-                }
-                else if (stricmp(ext, SharedObjectExtension)==0)
-                {
-                    if (moduleFlags & SOURCEFILE_PLUGIN)
-                    {
-                        try 
-                        {
-                            HINSTANCE h=LoadSharedObject(fullpath.str(), false, false);     // don't clash getECLPluginDefinition symbol
-                            if (h) 
-                            {
-                                EclPluginSetCtx pSetCtx = (EclPluginSetCtx) GetSharedProcedure(h,"setPluginContext");
-                                if (pSetCtx)
-                                    pSetCtx(&PluginCtx);
-
-                                EclPluginDefinition p= (EclPluginDefinition) GetSharedProcedure(h,"getECLPluginDefinition");
-                                if (p) 
-                                {
-                                    ECLPluginDefinitionBlock pb;
-                                    pb.size = sizeof(pb);
-                                    if (p(&pb) && (pb.magicVersion == PLUGIN_VERSION))
-                                    {
-                                        isECL = true;
-                                        flags |= pb.flags | PLUGIN_DLL_MODULE;
-                                        module.clear().append(pb.moduleName);
-                                        version.clear().append(pb.version);
-                                        //Don't use the dll name, or NULL - since no idea where problems are occuring.
-                                        Owned<ISourcePath> pluginPath = createSourcePath(module);
-                                        fileContents.setown(createFileContentsFromText(pb.ECL, pluginPath));
-                                    }
-                                    else
-                                    {
-                                        DBGLOG("Plugin %s exports getECLPluginDefinition but fails consistency check - not loading", fullpath.str());
-                                    }
-                                }
-                                else
-                                {
-                                    WARNLOG("getECLPluginDefinition not found in %s, unloading", fullpath.str());
-                                    FreeSharedObject(h);
-                                }
-                            
-                                //Don't unload the plugin dll!  
-                                //Otherwise if the plugin is used in a constant folding context it will keep being loaded and unloaded.
-                                //FreeSharedObject(h);
-                            }
-                        } 
-                        catch (...) 
-                        {
-                        }
-                    }
-                }
-                if (isECL)
-                {
-                    StringBuffer fullName;
-                    fullName.append(parentScope->queryScope()->queryFullName());
-                    if (fullName.length())
-                        fullName.append(".");
-                    fullName.append(module);
-
-                    assertex(fileContents);
-                    attrName = createIdentifierAtom(module.toCharArray());
-                    scope.setown(createRemoteScope(attrName, fullName.str(), this, NULL, fileContents, true));
-                    scope->setProp(flagsAtom, flags);
-                    if (version.length())
-                        scope->setProp(versionAtom, version.str());
-                    if (traceMask & flags)
-                        PrintLog("Loading plugin %s[%s] version = %s", fullName.str(), fname, version.str());
-
-                    if (flags & PLUGIN_DLL_MODULE)
-                        scope->setProp(pluginAtom, fullpath.str());
-                }
-            }
-        }
-        else if (file.isDirectory() == foundYes)
-        {
-            StringBuffer fullName;
-            fullName.append(parentScope->queryScope()->queryFullName());
-            if (fullName.length())
-                fullName.append(".");
-            fullName.append(tail);
-
-            attrName = createIdentifierAtom(tail.toCharArray());
-            scope.setown(createRemoteScope(attrName, fullName, this, NULL, NULL, false));
-            if (moduleFlags & SOURCEFILE_CONSTANT)
-                scope->setProp(flagsAtom, SOURCEFILE_CONSTANT);
-
-            Owned<IDirectoryIterator> childIter = file.directoryFiles(NULL, false, true);
-
-            StringBuffer dirPath;
-            dirPath.append(file.queryFilename()).append(PATHSEPCHAR);
-            sourcePath.append(PATHSEPCHAR);
-            loadDirectoryTree(scope, errs, childIter, dirPath, sourcePath, moduleFlags);
-        }
-
-        if (scope)
-        {
-            Owned <IHqlRemoteScope> found = parentScope->lookupRemoteModule(scope->queryScope()->queryName());
-            if (found)
-            {
-                StringBuffer wrn;
-                wrn.appendf("Duplicate module %s found at %s", tail.str(), dirPath);
-                errs->reportWarning(WRN_MODULE_DUPLICATED, wrn.str());
-            }
-            else
-            {
-                parentScope->addNestedScope(scope->queryScope(), 0);
-            }
-        }
-        sourcePath.setLength(prevSourcePathLen);
-    }
-}
-
-bool SourceFileEclRepository::loadModule(IHqlRemoteScope *rScope, IErrorReceiver *errs, bool forceAll)
-{
-    throwUnexpected();
-}
-
-void SourceFileEclRepository::checkCacheValid()
-{
-    ConcreteEclRepository::checkCacheValid();
-
-#if 0
-    //v1 - hash remove all modules in the dynamic list, and then recreate
-    AtomArray rootToRemove;
-    HashIterator nextmodule(rootModules);
-    for(nextmodule.first();nextmodule.isValid();nextmodule.next())
-    {
-        IHqlRemoteScope *rModule = rootModules.mapToValue(&nextmodule.query());
-        IHqlScope * module = rModule->queryScope();
-        if (isDynamicModule(rModule))
-            rootToRemove.append(*module->queryName());
-    }
-    
-    ForEachItemIn(iRoot, rootToRemove)
-        rootModules.remove(&rootToRemove.item(iRoot));
-
-    ForEachItemInRev(i, allModules)
-    {
-        IHqlRemoteScope & cur = allModules.item(i);
-        if (isDynamicModule(&cur))
-        {
-            cur.invalidateParsed();
-            allModules.remove(i);
+            IEclSource * next = &iter->query();
+            Owned<IHqlExpression> element = createSymbol(rScope, next);
+            targetScope->defineSymbol(LINK(element));
         }
     }
-
-    IErrorReceiver * errs = NULL;
-    processSourceFiles(dynamicSourceSearchPath, errs, 0);
-#endif
+    return true;
 }
 
-extern HQL_API IEclRepository *createSourceFileEclRepository(IErrorReceiver *errs, const char * pluginsPath, const char * constSourceSearchPath, const char * dynamicSourceSearchPath, unsigned trace)
+IHqlExpression * CNewEclRepository::loadSymbol(IHqlRemoteScope * rScope, IAtom * searchName)
 {
-    return new SourceFileEclRepository(errs, pluginsPath, constSourceSearchPath, dynamicSourceSearchPath, trace);
+    IEclSource * parent = rScope->queryEclSource();
+    Owned<IEclSource> source = collection->getSource(parent, searchName);
+    return createSymbol(rScope, source);
 }
 
-extern HQL_API IErrorReceiver *createFileErrorReceiver(FILE *f)
+
+static void getFullName(StringBuffer & fullName, IHqlScope * scope, _ATOM attrName)
 {
-    return new FileErrorReceiver(f);
+    fullName.append(scope->queryFullName());
+    if (fullName.length())
+        fullName.append(".");
+    fullName.append(attrName);
 }
 
-extern void getImplicitScopes(HqlScopeArray& implicitScopes, IEclRepository * repository, IHqlScope * scope, HqlLookupContext & ctx) 
-{
-    //Anything in the constant plugin list requires explicit module imports
-    //Slighlty ugly for backward compatibility with old archives.
-    if (!allowImplicitImport(scope) || isImplicitScope(scope))
-        return;
 
-    HqlScopeArray rootScopes;
-    repository->getRootScopes(rootScopes, ctx);
-    ForEachItemIn(i, rootScopes)
+IHqlExpression * CNewEclRepository::createSymbol(IHqlRemoteScope * rScope, IEclSource * source)
+{
+    _ATOM eclName = source->queryEclName();
+    IHqlScope * scope = rScope->queryScope();
+    StringBuffer fullName;
+    getFullName(fullName, scope, eclName);
+
+    EclSourceType sourceType = source->queryType();
+    IFileContents * contents = source->queryFileContents();
+    OwnedHqlExpr body;
+    unsigned symbolFlags = 0;
+    switch (sourceType)
     {
-        IHqlScope & scope = rootScopes.item(i);
-        if (isImplicitScope(&scope))
-            implicitScopes.append(OLINK(scope));
+    case ESTdefinition:
+        {
+            Owned<IProperties> props = source->getProperties();
+            if (props)
+            {
+                unsigned flags = props->getPropInt(flagsAtom->str(), 0);
+                if (flags & ob_sandbox)
+                    symbolFlags |= ob_sandbox;
+            }
+
+            /*
+            int flags = t->getPropInt("@flags", 0);
+            if(access >= cs_read)
+                flags|=ob_showtext;
+                */
+            break;
+        }
+    case ESTplugin:
+    case ESTmodule:
+    case ESTlibrary:
+        {
+            //Slightly ugly create a "delayed" nested scope instead.  But with a NULL owner - so will never be called back
+            //Probably should be a difference class instance
+            IProperties * props = source->getProperties();
+            Owned<IHqlRemoteScope> childScope = createRemoteScope(eclName, fullName.str(), NULL, props, contents, true, source);
+            body.set(queryExpression(childScope->queryScope()));
+            break;
+        }
+    case ESTcontainer:
+        {
+            IProperties * props = source->getProperties();
+            Owned<IHqlRemoteScope> childScope = createRemoteScope(eclName, fullName.str(), this, props, NULL, true, source);
+            body.set(queryExpression(childScope->queryScope()));
+            break;
+        }
+    default:
+        throwUnexpected();
     }
+    return CHqlNamedSymbol::makeSymbol(eclName, scope->queryName(), body.getClear(), NULL, true, true, symbolFlags, contents, 0);
+}
+
+
+extern HQL_API IEclRepository * createRepository(IEclSourceCollection * source)
+{
+    return new CNewEclRepository(source);
+}
+
+extern HQL_API IEclRepository * createRepository(EclSourceCollectionArray & sources)
+{
+    if (sources.ordinality() == 0)
+        return NULL;
+    if (sources.ordinality() == 1)
+        return createRepository(&sources.item(0));
+
+    EclRepositoryArray repositories;
+    ForEachItemIn(i, sources)
+        repositories.append(*createRepository(&sources.item(i)));
+    return createCompoundRepository(repositories);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+#include "hqlcollect.hpp"
+
+extern HQL_API IEclRepository * createNewSourceFileEclRepository(IErrorReceiver *errs, const char * path, unsigned flags, unsigned trace)
+{
+    Owned<IEclSourceCollection> source = createFileSystemEclCollection(errs, path, flags, trace);
+    return createRepository(source);
+}
+
+extern HQL_API IEclRepository * createSingleDefinitionEclRepository(const char * moduleName, const char * attrName, const char * text)
+{
+    Owned<IEclSourceCollection> source = createSingleDefinitionEclCollection(moduleName, attrName, text);
+    return createRepository(source);
 }

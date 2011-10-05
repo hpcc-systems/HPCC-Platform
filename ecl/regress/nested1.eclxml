@@ -1,5 +1,5 @@
 <Archive>
-<!--
+    <!--
 
     Copyright (C) 2011 HPCC Systems.
 
@@ -16,19 +16,33 @@
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -->
- <Module name="ghalliday">
-  <Attribute name="gh1">
-export gh1 := gh2 * gh3;
-  </Attribute>
-  <Attribute name="gh2">
-export gh2 := 100;
-  </Attribute>
-  <Attribute name="gh3">
-export gh3 := 200;
-  </Attribute>
- </Module>
- <SyntaxCheck module="ghalliday" attribute="gh1">
-//Check no need to import, definition is overridden, and error reported
-export gh1 := gh2 * 'x';
- </SyntaxCheck>
+    <Module name="">
+        <Attribute name="a0">
+            EXPORT a0 := MODULE
+            export v1 := 'level0';
+            END;
+        </Attribute>
+    </Module>
+    <Module name="a">
+        <Attribute name="a1">
+            EXPORT a1 := 'level1';
+        </Attribute>
+    </Module>
+    <Module name="b.c">
+        <Attribute name="a2">
+            EXPORT a2 := 'level2';
+        </Attribute>
+    </Module>
+    <Module name="d.e.f">
+        <Attribute name="a3">
+            EXPORT a3 := 'level3';
+        </Attribute>
+    </Module>
+    <Query>
+        import a0,a,b.c,d.e.f;
+        output(a0.v1);
+        output(a.a1);
+        output(c.a2);
+        output(f.a3);
+    </Query>
 </Archive>
