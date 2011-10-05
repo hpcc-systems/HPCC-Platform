@@ -16,4 +16,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-export issue377a := 'ggg'
+a := module
+ export b := dataset([{'1'}], {string f});
+ end;
+
+a.b t(a.b L) := transform
+ self.f := L.f;
+ end;
+
+output(PROJECT(a.b, t(LEFT)));
