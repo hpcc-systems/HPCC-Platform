@@ -33,7 +33,7 @@ class CParallelFunnel : public CSimpleInterface, implements IRowStream
 {
     class CInputHandler : public CInterface, implements IThreaded
     {
-        CThreaded threaded;
+        CThreadedPersistent threaded;
         CParallelFunnel &funnel;
         Linked<IRowStream> input;
         CriticalSection stopCrit;
@@ -43,7 +43,7 @@ class CParallelFunnel : public CSimpleInterface, implements IRowStream
         bool stopping;
     public:
         CInputHandler(CParallelFunnel &_funnel, IRowStream *_input, unsigned _inputIndex) 
-            : threaded("CInputHandler"), funnel(_funnel), input(_input), inputIndex(_inputIndex)
+            : threaded("CInputHandler", this), funnel(_funnel), input(_input), inputIndex(_inputIndex)
         {
             readThisInput = 0;
             StringBuffer s(funnel.idStr);
@@ -51,18 +51,15 @@ class CParallelFunnel : public CSimpleInterface, implements IRowStream
             idStr.set(s.str());
             stopping = false;
         }
-
         ~CInputHandler()
         {
             // stop();      too late to call stop I think
         }
-
         void start()
         {
             // NB don't start in constructor
-            threaded.init(this);
+            threaded.start();
         }
-
         void stop()
         {
             CriticalBlock b(stopCrit);

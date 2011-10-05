@@ -246,7 +246,7 @@ const char *CDiskReadSlaveActivityBase::queryLogicalFilename(unsigned index)
 
 void CDiskReadSlaveActivityBase::kill()
 {
-    if (actStarted && !abortSoon && 0 != (helper->getFlags() & TDXtemporary) && !container.queryJob().queryUseCheckpoints())
+    if (!abortSoon && 0 != (helper->getFlags() & TDXtemporary) && !container.queryJob().queryUseCheckpoints())
     {
         if (1 == partDescs.ordinality() && !partDescs.item(0).queryOwner().queryProperties().getPropBool("@pausefile"))
         {

@@ -131,7 +131,7 @@ class CPrefetchProjectSlaveActivity : public CSlaveActivity, public CThorDataLin
     class CPrefetcher : public CSimpleInterface, implements IThreaded
     {
         CPrefetchProjectSlaveActivity &parent;
-        CThreaded threaded;
+        CThreadedPersistent threaded;
         rowcount_t recordCount;
         bool full, blocked, stopped, eoi, eog, eoq;
         QueueOf<PrefetchInfo, true> prefetchQueue;
@@ -139,7 +139,7 @@ class CPrefetchProjectSlaveActivity : public CSlaveActivity, public CThorDataLin
         Semaphore blockedSem, fullSem;
 
     public:
-        CPrefetcher(CPrefetchProjectSlaveActivity &_parent) : threaded("CPrefetcher"), parent(_parent)
+        CPrefetcher(CPrefetchProjectSlaveActivity &_parent) : threaded("CPrefetcher", this), parent(_parent)
         {
         }
         ~CPrefetcher() { stop(); }
@@ -159,7 +159,7 @@ class CPrefetchProjectSlaveActivity : public CSlaveActivity, public CThorDataLin
             eoi = true;
             return NULL;
         }
-        void start() { recordCount = 0; full = blocked = eoq = eoi = stopped = false; eog = true; threaded.init(this); }
+        void start() { recordCount = 0; full = blocked = eoq = eoi = stopped = false; eog = true; threaded.start(); }
         void stop()
         {
             stopped = true;

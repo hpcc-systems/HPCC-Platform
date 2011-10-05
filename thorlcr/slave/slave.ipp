@@ -34,7 +34,7 @@ class ProcessSlaveActivity : public CSlaveActivity, implements IThreaded
 {
 protected:
     Owned<IException> exception;
-    CThreaded threaded;
+    CThreadedPersistent threaded;
     rowcount_t processed;
     unsigned __int64 lastCycles;
 
@@ -47,7 +47,7 @@ public:
     ProcessSlaveActivity(CGraphElementBase *container);
     ~ProcessSlaveActivity();
 
-    virtual void startProcess();
+    virtual void startProcess(bool async=true);
     virtual bool wait(unsigned timeout);
     virtual void done();
 

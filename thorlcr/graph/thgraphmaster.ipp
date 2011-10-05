@@ -74,6 +74,7 @@ public:
     virtual void create(size32_t parentExtractSz, const byte *parentExtract);
 
     virtual bool preStart(size32_t parentExtractSz, const byte *parentExtract);
+    virtual void start();
     virtual void done();
     virtual void abort(IException *e);
 // IExceptionHandler
@@ -220,6 +221,7 @@ typedef IArrayOf<ProgressInfo> ProgressInfoArray;
 class graphmaster_decl CMasterActivity : public CActivityBase, implements IThreaded
 {
     CThreaded threaded;
+    bool asyncStart;
     MemoryBuffer *data;
     CriticalSection progressCrit;
 protected:
@@ -247,7 +249,7 @@ public:
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave) { }
     virtual void slaveDone(size32_t slaveIdx, MemoryBuffer &mb) { }
 
-    virtual void startProcess();
+    virtual void startProcess(bool async=true);
     virtual bool wait(unsigned timeout);
 
 // IExceptionHandler

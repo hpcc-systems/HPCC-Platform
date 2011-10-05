@@ -51,7 +51,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 
 // ProcessSlaveActivity
 
-ProcessSlaveActivity::ProcessSlaveActivity(CGraphElementBase *container) : CSlaveActivity(container), threaded("ProcessSlaveActivity")
+ProcessSlaveActivity::ProcessSlaveActivity(CGraphElementBase *container) : CSlaveActivity(container), threaded("ProcessSlaveActivity", this)
 {
     processed = 0;
 }
@@ -67,10 +67,12 @@ ProcessSlaveActivity::~ProcessSlaveActivity()
     ActPrintLog("AFTER ProcessSlaveActivity : joining process thread");
 }
 
-void ProcessSlaveActivity::startProcess()
+void ProcessSlaveActivity::startProcess(bool async)
 {
-    CSlaveActivity::startProcess();
-    threaded.init(this);
+    if (async)
+        threaded.start();
+    else
+        main();
 }
 
 void ProcessSlaveActivity::main() 

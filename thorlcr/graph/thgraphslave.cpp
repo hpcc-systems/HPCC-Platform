@@ -468,9 +468,20 @@ bool CSlaveGraph::preStart(size32_t parentExtractSz, const byte *parentExtract)
     return true;
 }
 
-void CSlaveGraph::postStart()
+void CSlaveGraph::start()
 {
-    CGraphBase::postStart();
+    bool forceAsync = !queryOwner() || isGlobal();
+    Owned<IThorActivityIterator> iter = getSinkIterator();
+    unsigned sinks = 0;
+    ForEach(*iter)
+        ++sinks;
+    ForEach(*iter)
+    {
+        CGraphElementBase &container = iter->query();
+        CActivityBase *sinkAct = (CActivityBase *)container.queryActivity();
+        --sinks;
+        sinkAct->startProcess(forceAsync || 0 != sinks); // async, unless last
+    }
     if (!queryOwner())
     {
         if (globals->getPropBool("@watchdogProgressEnabled"))
@@ -627,14 +638,17 @@ void CSlaveGraph::done()
 void CSlaveGraph::end()
 {
     CGraphBase::end();
-    if (atomic_read(&nodesLoaded)) // wouldn't mean much if parallel jobs running
-        GraphPrintLog("JHTree node stats:\ncacheAdds=%d\ncacheHits=%d\nnodesLoaded=%d\nblobCacheHits=%d\nblobCacheAdds=%d\nleafCacheHits=%d\nleafCacheAdds=%d\nnodeCacheHits=%d\nnodeCacheAdds=%d\n", atomic_read(&cacheAdds), atomic_read(&cacheHits), atomic_read(&nodesLoaded), atomic_read(&blobCacheHits), atomic_read(&blobCacheAdds), atomic_read(&leafCacheHits), atomic_read(&leafCacheAdds), atomic_read(&nodeCacheHits), atomic_read(&nodeCacheAdds));
-    JSocketStatistics stats;
-    getSocketStatistics(stats);
-    StringBuffer s;
-    getSocketStatisticsString(stats,s);
-    GraphPrintLog("Socket statistics : %s\n",s.str());
-    resetSocketStatistics();
+    if (!queryOwner())
+    {
+        if (atomic_read(&nodesLoaded)) // wouldn't mean much if parallel jobs running
+            GraphPrintLog("JHTree node stats:\ncacheAdds=%d\ncacheHits=%d\nnodesLoaded=%d\nblobCacheHits=%d\nblobCacheAdds=%d\nleafCacheHits=%d\nleafCacheAdds=%d\nnodeCacheHits=%d\nnodeCacheAdds=%d\n", atomic_read(&cacheAdds), atomic_read(&cacheHits), atomic_read(&nodesLoaded), atomic_read(&blobCacheHits), atomic_read(&blobCacheAdds), atomic_read(&leafCacheHits), atomic_read(&leafCacheAdds), atomic_read(&nodeCacheHits), atomic_read(&nodeCacheAdds));
+        JSocketStatistics stats;
+        getSocketStatistics(stats);
+        StringBuffer s;
+        getSocketStatisticsString(stats,s);
+        GraphPrintLog("Socket statistics : %s\n",s.str());
+        resetSocketStatistics();
+    }
 }
 
 void CSlaveGraph::serializeStats(MemoryBuffer &mb)

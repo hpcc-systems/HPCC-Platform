@@ -283,7 +283,6 @@ public:
     void onCreate();
     void abort(IException *e);
     virtual void preStart(size32_t parentExtractSz, const byte *parentExtract);
-    virtual void start();
     const bool &isOnCreated() const { return onCreateCalled; }
     const bool &isPrepared() const { return prepared; }
     CGraphBase &queryOwner() const { return *owner; }
@@ -481,6 +480,7 @@ class graph_decl CGraphBase : public CInterface, implements ILocalGraph, impleme
     CGraphElementTable containers;
     CGraphElementArray sinks;
     bool sink, complete, global;
+    int localOnly;
     activity_id parentActivityId;
     IPropertyTree *xgmml;
     CGraphTable childGraphs;
@@ -676,7 +676,7 @@ public:
     const bool isGlobal() const { return global; }
     const bool isCreated() const { return created; }
     const bool isStarted() const { return started; }
-    bool isLocalOnly();
+    bool isLocalOnly(); // this graph and all upstream dependencies
     void setCompleteEx(bool tf=true) { complete = tf; }
     const byte *setParentCtx(size32_t _parentExtractSz, const byte *parentExtract)
     {
@@ -782,8 +782,7 @@ public:
     virtual bool prepare(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies, bool shortCircuit, bool async);
     virtual void create(size32_t parentExtractSz, const byte *parentExtract);
     virtual bool preStart(size32_t parentExtractSz, const byte *parentExtract);
-    virtual void start();
-    virtual void postStart() { }
+    virtual void start() = 0;
     virtual bool wait(unsigned timeout);
     virtual void done();
     virtual void end();
@@ -973,7 +972,7 @@ protected:
     CGraphElementBase &container;
     Linked<IHThorArg> baseHelper;
     mptag_t mpTag; // to be used by any direct inter master<->slave communication
-    bool abortSoon, actStarted;
+    bool abortSoon;
     const bool &timeActivities; // purely for access efficiency
     size32_t parentExtractSz;
     const byte *parentExtract;
@@ -997,9 +996,9 @@ public:
     virtual void clearConnections() { }
     virtual void releaseIOs() { }
     virtual void preStart(size32_t parentExtractSz, const byte *parentExtract) { }
-    virtual void startProcess() { actStarted = true; }
+    virtual void startProcess(bool async=true) { }
     virtual bool wait(unsigned timeout) { return true; } // NB: true == success
-    virtual void reset() { receiving = abortSoon = actStarted = cancelledReceive = false; }
+    virtual void reset() { receiving = abortSoon = cancelledReceive = false; }
     virtual void done() { }
     virtual void kill() { }
     virtual void abort();
