@@ -1152,6 +1152,7 @@
                      port="9876"
                      requestArrayThreads="5">
     <RoxieServerProcess computer="localhost" name="farm1_s1"/>
+    <RoxieServerProcess computer="localhost" name="farm1_s1b"/>
    </RoxieFarmProcess>
    <RoxieServerProcess 
                        computer="localhost"
@@ -1161,6 +1162,14 @@
                        netAddress="."
                        numThreads="30"
                        port="9876"
+                       requestArrayThreads="5"/>
+   <RoxieServerProcess 
+                       computer="localhost"
+                       dataDirectory="${RUNTIME_PATH}/hpcc-data/roxie"
+                       name="farm1_s1b"
+                       netAddress="."
+                       numThreads="30"
+                       port="0"
                        requestArrayThreads="5"/>
    <RoxieSlave computer="localhost" name="s1">
     <RoxieChannel dataDirectory="${RUNTIME_PATH}/hpcc-data/roxie" number="1"/>
