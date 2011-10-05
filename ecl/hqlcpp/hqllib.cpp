@@ -187,31 +187,34 @@ public:
         ignoreFirstScope = _isLibrary;
     }
 
+    IHqlExpression * doTransformLibrarySelect(IHqlExpression * expr)
+    {
+        //Map the new attribute
+        IHqlExpression * oldModule = expr->queryChild(1);
+        OwnedHqlExpr newModule = transform(oldModule);
+        if (oldModule == newModule)
+            return LINK(expr);
+
+        _ATOM attrName = expr->queryChild(3)->queryName();
+        HqlDummyLookupContext dummyctx(NULL);
+        OwnedHqlExpr value = newModule->queryScope()->lookupSymbol(attrName, makeLookupFlags(true, expr->hasProperty(ignoreBaseAtom), false), dummyctx);
+        assertex(value != NULL);
+        IHqlExpression * oldAttr = expr->queryChild(2);
+        if (oldAttr->isDataset() || oldAttr->isDatarow())
+            return value.getClear();
+
+        assertex(value->isDataset());
+        IHqlExpression * field = value->queryRecord()->queryChild(0);
+        OwnedHqlExpr select = createRow(no_selectnth, value.getClear(), createConstantOne());
+        return createSelectExpr(select.getClear(), LINK(field));        // no newAtom because not normalised yet
+    }
+
     virtual IHqlExpression * createTransformedBody(IHqlExpression * expr)
     {
         switch (expr->getOperator())
         {
         case no_libraryselect:
-            {
-                //Map the new attribute
-                IHqlExpression * oldModule = expr->queryChild(1);
-                OwnedHqlExpr newModule = transform(oldModule);
-                if (oldModule == newModule)
-                    return LINK(expr);
-
-                _ATOM attrName = expr->queryChild(3)->queryName();
-                HqlDummyLookupContext dummyctx(NULL);
-                OwnedHqlExpr value = newModule->queryScope()->lookupSymbol(attrName, makeLookupFlags(true, expr->hasProperty(ignoreBaseAtom), false), dummyctx);
-                assertex(value != NULL);
-                IHqlExpression * oldAttr = expr->queryChild(2);
-                if (oldAttr->isDataset() || oldAttr->isDatarow())
-                    return value.getClear();
-
-                assertex(value->isDataset());
-                IHqlExpression * field = value->queryRecord()->queryChild(0);
-                OwnedHqlExpr select = createRow(no_selectnth, value.getClear(), createConstantOne());
-                return createSelectExpr(select.getClear(), LINK(field));        // no newAtom because not normalised yet
-            }
+            return doTransformLibrarySelect(expr);
         }
 
         return QuickHqlTransformer::createTransformedBody(expr);

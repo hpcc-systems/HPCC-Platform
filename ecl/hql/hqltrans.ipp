@@ -241,6 +241,9 @@ public:
     }
     void setMapping(IHqlExpression * oldValue, IHqlExpression * newValue);
 
+protected:
+    IHqlExpression * doCreateTransformedScope(IHqlExpression * expr);
+
 
 protected:
     IErrorReceiver * errors;

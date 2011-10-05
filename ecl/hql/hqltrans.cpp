@@ -786,6 +786,26 @@ IHqlExpression * QuickHqlTransformer::createTransformed(IHqlExpression * expr)
     return createTransformedBody(expr);
 }
 
+IHqlExpression * QuickHqlTransformer::doCreateTransformedScope(IHqlExpression * expr)
+{
+    HqlExprArray children;
+    IHqlScope * scope = expr->queryScope();
+    bool same = transformChildren(expr, children);
+    if (expr->getOperator() == no_forwardscope)
+    {
+        scope = scope->queryResolvedScope(NULL);
+        same = false;
+    }
+    HqlExprArray newsyms;
+    if (!transformScope(newsyms, scope))
+        same = false;
+
+    if (same)
+        return LINK(expr);
+
+    return queryExpression(scope->clone(children, newsyms));
+}
+
 IHqlExpression * QuickHqlTransformer::createTransformedBody(IHqlExpression * expr)
 {
     node_operator op = expr->getOperator();
@@ -851,23 +871,7 @@ IHqlExpression * QuickHqlTransformer::createTransformedBody(IHqlExpression * exp
     case no_concretescope:
     case no_libraryscope:
     case no_forwardscope:
-        {
-            IHqlScope * scope = expr->queryScope();
-            bool same = transformChildren(expr, children);
-            if (op == no_forwardscope)
-            {
-                scope = scope->queryResolvedScope(NULL);
-                same = false;
-            }
-            HqlExprArray newsyms;
-            if (!transformScope(newsyms, scope))
-                same = false;
-
-            if (same)
-                return LINK(expr);
-
-            return queryExpression(scope->clone(children, newsyms));
-        }
+        return doCreateTransformedScope(expr);
     case no_type:
         return transformAlienType(expr);
     case no_enum:

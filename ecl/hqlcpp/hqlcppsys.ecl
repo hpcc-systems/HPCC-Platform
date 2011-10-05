@@ -645,9 +645,6 @@ const char * cppSystemText[]  = {
 
     "   _linkcounted_ dataset getResultRowset(const varstring stepname, unsigned4 sequence, boolean _allocator, boolean _deserializer, boolean isGrouped, boolean xmltransformer, boolean csvtransformer) : ctxmethod,allocator(false),pure,entrypoint='getResultRowset';",
 
-    //this is unlikely to change from one call to another within a wu, so make it pure
-    "   integer8 countDiskFile(const varstring lfn, unsigned4 recordsize) : ctxmethod,pure,entrypoint='countDiskFile';",
-
     //Don't make these pure because they may change over time.
     "   boolean isResult(const varstring stepname, unsigned4 sequence) : gctxmethod,entrypoint='isResult';",
     "   boolean fileExists(const varstring lfn) : gctxmethod,entrypoint='fileExists';",

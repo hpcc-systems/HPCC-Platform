@@ -3816,7 +3816,7 @@ extern HQL_API IHqlExpression * createStoredModule(IHqlExpression * scopeExpr)
                 HqlExprArray meta;
                 value.setown(attachWorkflowOwn(meta, value.getClear(), failure, NULL));
                 newScope->defineSymbol(name, moduleName, value.getClear(), 
-                                       true, false, cur.getObFlags(),
+                                       true, false, cur.getSymbolFlags(),
                                        NULL, 0, 0, 0);
             }
         }
@@ -7248,4 +7248,81 @@ IECLError * annotateExceptionWithLocation(IException * e, IHqlExpression * locat
     e->errorMessage(errorMsg);
     unsigned code = e->errorCode();
     return createECLError(code, errorMsg.str(), location->querySourcePath()->str(), location->getStartLine(), location->getStartColumn(), 0);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
+static IHqlExpression * transformAttributeToQuery(IHqlExpression * expr, HqlLookupContext & ctx)
+{
+    if (expr->isMacro())
+    {
+        if (!queryLegacyEclSemantics())
+            return NULL;
+        //Only expand macros if legacy semantics enabled
+        IHqlExpression * macroBodyExpr;
+        if (expr->getOperator() == no_funcdef)
+        {
+            if (expr->queryChild(1)->numChildren() != 0)
+                return NULL;
+            macroBodyExpr = expr->queryChild(0);
+        }
+        else
+            macroBodyExpr = expr;
+
+        IFileContents * macroContents = static_cast<IFileContents *>(macroBodyExpr->queryUnknownExtra());
+        Owned<IHqlScope> scope = createPrivateScope();
+        return parseQuery(scope, macroContents, ctx, NULL, true);
+    }
+
+    if (expr->isFunction())
+    {
+        //If a scope with parameters then assume we are building a library.
+        if (expr->isScope())
+            return LINK(expr);
+
+        HqlExprArray actuals;
+        if (!allParametersHaveDefaults(expr))
+        {
+            if (!expandMissingDefaultsAsStoreds(actuals, expr))
+            {
+                //For each parameter that doesn't have a default, create a stored variable of the appropriate type
+                //with a null value as the default value, and use that.
+                const char * name = expr->queryName()->str();
+                StringBuffer msg;
+                msg.appendf("Definition %s() does not supply default values for all parameters", name ? name : "");
+                ctx.errs->reportError(HQLERR_CannotSubmitFunction, msg.str(), NULL, 1, 0, 0);
+                return NULL;
+            }
+        }
+
+        return createBoundFunction(ctx.errs, expr, actuals, ctx.functionCache, ctx.queryExpandCallsWhenBound());
+    }
+
+    if (expr->isScope())
+    {
+        IHqlScope * scope = expr->queryScope();
+        OwnedHqlExpr main = scope->lookupSymbol(createAtom("main"), LSFpublic, ctx);
+        if (main)
+            return main.getClear();
+
+        StringBuffer msg;
+        const char * name = scope->queryFullName();
+        msg.appendf("Module %s does not EXPORT an attribute main()", name ? name : "");
+        ctx.errs->reportError(HQLERR_CannotSubmitModule, msg.str(), NULL, 1, 0, 0);
+        return NULL;
+    }
+
+    return LINK(expr);
+}
+
+IHqlExpression * convertAttributeToQuery(IHqlExpression * expr, HqlLookupContext & ctx)
+{
+    OwnedHqlExpr query = LINK(expr);
+    loop
+    {
+        OwnedHqlExpr transformed = transformAttributeToQuery(query, ctx);
+        if (!transformed || transformed == query)
+            return transformed.getClear();
+        query.set(transformed);
+    }
 }

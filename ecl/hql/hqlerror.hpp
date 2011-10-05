@@ -71,9 +71,31 @@ private:
     IECLErrorArray msgs;
     unsigned errs;
     unsigned warns;
-
-
 };
+
+class HQL_API ThrowingErrorReceiver : public CInterface, implements IErrorReceiver
+{
+    IMPLEMENT_IINTERFACE
+
+    virtual void reportError(int errNo, const char *msg, const char *filename=NULL, int lineno=0, int column=0, int pos=0);
+    virtual void report(IECLError* error);
+    virtual void reportWarning(int warnNo, const char *msg, const char *filename=NULL, int lineno=0, int column=0, int pos=0);
+    virtual size32_t errCount() { return 0; }
+    virtual size32_t warnCount() { return 0; }
+};
+
+class HQL_API NullErrorReceiver : public CInterface, implements IErrorReceiver
+{
+public:
+    IMPLEMENT_IINTERFACE;
+
+    void reportError(int errNo, const char *msg,  const char * filename, int _lineno, int _column, int _pos) {}
+    void reportWarning(int warnNo, const char *msg,  const char * filename, int _lineno, int _column, int _pos) {}
+    void report(IECLError*) { }
+    virtual size32_t errCount() { return 0; };
+    virtual size32_t warnCount() { return 0; };
+};
+
 
 extern HQL_API IECLError *createECLError(bool isError, int errNo, const char *msg, const char *filename, int lineno=0, int column=0, int pos=0);
 inline IECLError * createECLError(int errNo, const char *msg, const char *filename, int lineno=0, int column=0, int pos=0)
@@ -86,6 +108,12 @@ inline IECLError *createECLWarning(int errNo, const char *msg, const char *filen
 }
 extern HQL_API IECLError *changeErrorType(bool isError, IECLError * error);
 extern HQL_API void reportErrors(IErrorReceiver & receiver, IECLErrorArray & errors);
+void HQL_API reportErrorVa(IErrorReceiver * errors, int errNo, const ECLlocation & loc, const char* format, va_list args);
+void HQL_API reportError(IErrorReceiver * errors, int errNo, const ECLlocation & loc, const char * format, ...) __attribute__((format(printf, 4, 5)));
+void HQL_API expandReportError(IErrorReceiver * errors, IECLError* error);
+extern HQL_API IErrorReceiver *createFileErrorReceiver(FILE *f);
+
+extern HQL_API void checkEclVersionCompatible(Owned<IErrorReceiver> & errors, const char * eclVersion);
 
 
 #endif // _HQLERROR_HPP_

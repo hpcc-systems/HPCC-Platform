@@ -626,5 +626,6 @@ extern HQL_API IPropertyTree * queryArchiveAttribute(IPropertyTree * module, con
 extern HQL_API IPropertyTree * createArchiveAttribute(IPropertyTree * module, const char * name);
 
 extern HQL_API IECLError * annotateExceptionWithLocation(IException * e, IHqlExpression * location);
+extern HQL_API IHqlExpression * convertAttributeToQuery(IHqlExpression * expr, HqlLookupContext & ctx);
 
 #endif

@@ -23,7 +23,7 @@
 
 namespace repositoryCommon {
 
-extern HQL_API IEclRepository * loadPlugins(const char * pluginPath, const char * libraryPath, const char * dynamicPath);
+extern HQL_API IEclRepository * loadPlugins(const char * pluginPath);
 extern HQL_API IPropertyTree * createPluginPropertyTree(IEclRepository * plugins, bool includeModuleText);
 extern HQL_API IPropertyTree * getPlugin(IPropertyTree * p, IEclRepository * plugins, const char* modname, bool load);
 
