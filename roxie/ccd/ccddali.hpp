@@ -26,15 +26,6 @@
 #include "dadfs.hpp"
 #include "daclient.hpp"
 
-// MORE - this is duplicated here and eclagent - move into workunit ?
-
-struct WorkunitUpdate : public Owned<IWorkUnit>
-{
-public:
-    WorkunitUpdate(IWorkUnit *wu) : Owned<IWorkUnit>(wu) { }
-    ~WorkunitUpdate() { if (get()) get()->commit(); }
-};
-
 extern void addWuException(IConstWorkUnit *workUnit, IException *E);
 
 interface IDaliPackageWatcher : extends IInterface

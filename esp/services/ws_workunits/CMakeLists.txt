@@ -16,54 +16,60 @@
 ################################################################################
 
 
-# Component: ws_workunits 
+# Component: ws_workunits
 #####################################################
 # Description:
 # ------------
 #    Cmake Input File for ws_workunits
 #####################################################
 
-project( ws_workunits ) 
+project( ws_workunits )
 
 include(${HPCC_SOURCE_DIR}/esp/scm/smcscm.cmake)
 
-set (    SRCS 
-         ../../../dali/sasha/sacmd.cpp 
-         ${ESPSCM_GENERATED_DIR}/ws_workunits_esp.cpp 
+set (    SRCS
+         ../../../dali/sasha/sacmd.cpp
+         ${ESPSCM_GENERATED_DIR}/ws_workunits_esp.cpp
+         ${ESPSCM_GENERATED_DIR}/ws_fs_esp.cpp
          ${HPCC_SOURCE_DIR}/esp/scm/ws_workunits.ecm
-         ws_workunitsPlugin.cpp 
-         ws_workunitsService.cpp 
-         ws_workunitsService.hpp 
+         ws_workunitsPlugin.cpp
+         ws_workunitsService.cpp
+         ws_workunitsService.hpp
+         ws_workunitsHelpers.cpp
+         ws_workunitsHelpers.hpp
+         ws_workunitsAuditLogs.cpp
+         ws_workunitsQuerySets.cpp
     )
 
-include_directories ( 
-         ./../../esplib 
-         ./../../../system/mp 
-         ./../../platform 
-         ./../../../dali/sasha 
-         ./../../../common/roxiemanager 
-         ./../../../system/jlib 
-         ./../../../common/environment 
-         ./../../services 
-         ./../common 
-         ./../../../system/xmllib 
-         ./../../../common/deftype 
-         ./../../../ecl/hql 
-         ./../../../system/security/securesocket 
-         ./../../../system/security/shared   
-         ./../../../system/include 
-         ./../../../common/workunit 
+include_directories (
+         ./../../esplib
+         ./../../../system/mp
+         ./../../platform
+         ./../../../dali/dfu
+         ./../../../dali/sasha
+         ./../../../common/roxiemanager
+         ./../../../system/jlib
+         ./../../../common/environment
+         ./../../services
+         ./../common
+         ./../../../system/xmllib
+         ./../../../common/deftype
+         ./../../../ecl/hql
+         ./../../../system/security/securesocket
+         ./../../../system/security/shared
+         ./../../../system/include
+         ./../../../common/workunit
          ./../../../common/wuwebview
-         ./../../../ecl/schedulectrl 
-         ./../../clients 
-         ./../../../common/fileview2 
-         ./../../../dali/base 
-         ./../../../system/security/zcrypt 
-         ./../../../rtl/include 
-         ./../../../common/dllserver 
-         ./../../bindings 
-         ./../../smc/SMCLib 
-         ./../../bindings/SOAP/xpp 
+         ./../../../ecl/schedulectrl
+         ./../../clients
+         ./../../../common/fileview2
+         ./../../../dali/base
+         ./../../../system/security/zcrypt
+         ./../../../rtl/include
+         ./../../../common/dllserver
+         ./../../bindings
+         ./../../smc/SMCLib
+         ./../../bindings/SOAP/xpp
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DWS_WORKUNITS_EXPORTS )
@@ -71,31 +77,31 @@ ADD_DEFINITIONS( -D_USRDLL -DWS_WORKUNITS_EXPORTS )
 HPCC_ADD_LIBRARY( ws_workunits SHARED ${SRCS} )
 add_dependencies ( ws_workunits espscm )
 install ( TARGETS ws_workunits DESTINATION ${OSSDIR}/lib )
-target_link_libraries ( ws_workunits 
+target_link_libraries ( ws_workunits
          jlib
-         mp 
-         hrpc 
-         remote 
-         xmllib 
-         esphttp 
-         dalibase 
-         environment 
-         dalift 
-         dllserver 
-         nbcd 
-         eclrtl 
-         deftype 
-         workunit 
+         mp
+         hrpc
+         remote
+         xmllib
+         esphttp
+         dalibase
+         environment
+         dalift
+         dllserver
+         nbcd
+         eclrtl
+         deftype
+         workunit
          wuwebview
-         SMCLib 
-         schedulectrl 
-         roxiecommlib 
-         roxiemanager 
-         LdapSecurity 
-         hql 
-         jhtree 
-         fileview2 
-         securesocket 
+         SMCLib
+         schedulectrl
+         roxiecommlib
+         roxiemanager
+         LdapSecurity
+         hql
+         jhtree
+         fileview2
+         securesocket
     )
 
 IF (USE_ZLIB)
@@ -104,4 +110,3 @@ IF (USE_ZLIB)
       zcrypt
       )
 ENDIF()
-

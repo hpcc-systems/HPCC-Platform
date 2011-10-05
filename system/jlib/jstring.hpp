@@ -365,7 +365,8 @@ inline const char *encodeUtf8XML(const char *x, StringBuffer &ret, unsigned flag
 inline StringBuffer &appendXMLTag(StringBuffer &xml, const char *tag, const char *value, unsigned flags=0, unsigned len=(unsigned)-1, bool utf8=true)
 {
     xml.append('<').append(tag).append('>');
-    encodeXML(value, xml, flags, len, utf8);
+    if (value && *value)
+        encodeXML(value, xml, flags, len, utf8);
     return xml.append("</").append(tag).append('>');
 }
 

@@ -43,8 +43,8 @@ ESP_FACTORY IEspService * esp_service_factory(const char *name, const char* type
    }
    return NULL;
 }
- 
-   
+
+
 
 ESP_FACTORY IEspRpcBinding * esp_binding_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process)
 {
@@ -57,7 +57,7 @@ ESP_FACTORY IEspRpcBinding * esp_binding_factory(const char *name, const char* t
 #endif
         return new CWsWorkunitsSoapBindingEx(cfg, name, process, llevel);
     }
-    
+
     return NULL;
 }
 

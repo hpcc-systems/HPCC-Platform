@@ -961,17 +961,53 @@ ESPresponse [exceptions_inline] WUDebugResponse
     string Result;
 };
 
+ESPrequest WUCopyLogicalFilesRequest
+{
+    string Wuid;
+    string Cluster;
+    bool CopyLocal;
+};
+
+ESPStruct WULogicalFileCopyInfo
+{
+    bool IsIndex;
+    string LogicalName;
+    string DfuCopyWuid;
+    string DfuCopyError;
+    ESParray<string> Clusters;
+};
+
+ESPStruct WUCopyLogicalClusterFileSections
+{
+    string ClusterName;
+    ESParray<ESPstruct WULogicalFileCopyInfo> OnCluster;
+    ESParray<ESPstruct WULogicalFileCopyInfo> NotOnCluster;
+    ESParray<ESPstruct WULogicalFileCopyInfo> Foreign;
+    ESParray<ESPstruct WULogicalFileCopyInfo> NotFound;
+};
+
+ESPresponse [exceptions_inline] WUCopyLogicalFilesResponse
+{
+    string Wuid;
+    ESParray<ESPStruct WUCopyLogicalClusterFileSections, Cluster> ClusterFiles;
+};
+
+
 ESPrequest WUDeployWorkunitRequest
 {
     string Wuid;
     string JobName;
     int Activate;
     bool NotifyCluster(false);
+    bool showFiles(0);
+    bool CopyLocal(0);
 };
 
 ESPresponse [exceptions_inline] WUDeployWorkunitResponse
 {
+    string Wuid;
     string Result;
+    ESParray<ESPStruct WUCopyLogicalClusterFileSections, Cluster> ClusterFiles;
 };
 
 
@@ -1062,28 +1098,10 @@ ESPresponse [exceptions_inline] WUQuerySetActionAliasesResponse
     ESParray<ESPstruct QuerySetAliasAction> QuerysetAliasActions;
 };
 
-
 ESPservice [
     version("1.34"), default_client_version("1.34"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
-    ESPuses ESPStruct ECLException;
-    ESPuses ESPStruct ECLResult;
-    ESPuses ESPStruct ECLGraph;
-    ESPuses ESPStruct ECLGraphEx;
-    ESPuses ESPStruct ECLTimer; 
-    ESPuses ESPStruct ECLHelpFile; 
-    ESPuses ESPStruct ECLQuery;
-    ESPuses ESPStruct ECLWorkunit;
-    ESPuses ESPStruct ECLSourceFile;
-    ESPuses ESPStruct WUECLAttribute;
-    ESPuses ESPStruct DebugValue;
-    ESPuses ESPStruct ApplicationValue;
-    ESPuses ESPStruct ECLJob;
-    ESPuses ESPStruct QuerySet;
-    ESPuses ESPStruct QuerySetQueryAction;
-    ESPuses ESPStruct QuerySetAliasAction;
-
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/wuid.xslt")]     WUInfo(WUInfoRequest, WUInfoResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/wuiddetails.xslt")]     WUInfoDetails(WUInfoRequest, WUInfoResponse);
@@ -1136,17 +1154,15 @@ ESPservice [
 
     ESPmethod WUCDebug(WUDebugRequest, WUDebugResponse);
     
-    ESPmethod WUDeployWorkunit(WUDeployWorkunitRequest, WUDeployWorkunitResponse);
-    
+    ESPmethod [resp_xsl_default("/esp/xslt/WUDeployWorkunit.xslt")] WUDeployWorkunit(WUDeployWorkunitRequest, WUDeployWorkunitResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/WUQuerysets.xslt")] WUQuerysets(WUQuerysetsRequest, WUQuerysetsResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/WUQuerysetQueries.xslt")] WUQuerysetDetails(WUQuerySetDetailsRequest, WUQuerySetDetailsResponse);
     ESPmethod WUQuerysetActionQueries(WUQuerySetActionQueriesRequest, WUQuerySetActionQueriesResponse);
     ESPmethod WUQuerysetActionAliases(WUQuerySetActionAliasesRequest, WUQuerySetActionAliasesResponse);
-    
+    ESPmethod [resp_xsl_default("/esp/xslt/WUCopyLogicalFiles.xslt")] WUCopyLogicalFiles(WUCopyLogicalFilesRequest, WUCopyLogicalFilesResponse);
 };
 
 
 SCMexportdef(WSWU);
 
 SCMapi(WSWU) IClientWsWorkunits *createWsWorkunitsClient();
-

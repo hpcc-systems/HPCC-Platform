@@ -953,6 +953,7 @@ extern jlib_decl void UseSysLogForOperatorMessages(bool use=true);
 #define SYSLOG querySysLogEventLogger()->log
 #define AUDIT SYSLOG                               // bwd compatibility
 
+extern jlib_decl void AuditSystemAccess(const char *userid, bool success, char const * msg,...) __attribute__((format(printf, 3, 4)));
 
 /***************************************************************************/
 /* The simplest logging commands are:                                      */

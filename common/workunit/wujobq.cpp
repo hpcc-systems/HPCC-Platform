@@ -1897,5 +1897,31 @@ extern bool WORKUNIT_API runWorkUnit(const char *wuid)
         return false;
 }
 
+extern bool WORKUNIT_API switchWorkUnitQueue(IWorkUnit* wu, const char *cluster)
+{
+    if (!wu)
+        return false;
 
+    class cQswitcher: public CInterface, implements IQueueSwitcher
+    {
+    public:
+        IMPLEMENT_IINTERFACE;
+        void * getQ(const char * qname, const char * wuid)
+        {
+            Owned<IJobQueue> q = createJobQueue(qname);
+            return q->take(wuid);
+        }
+        void putQ(const char * qname, const char * wuid, void * qitem)
+        {
+            Owned<IJobQueue> q = createJobQueue(qname);
+            q->enqueue((IJobQueueItem *)qitem);
+        }
+        bool isAuto()
+        {
+            return false;
+        }
+    } switcher;
+
+    return wu->switchThorQueue(cluster, &switcher);
+}
 

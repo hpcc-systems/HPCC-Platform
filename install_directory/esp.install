@@ -1780,6 +1780,12 @@ Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/filerelationsea
 ### name=smc_xslt/filerelationlist.xslt
 Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/filerelationlist.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/WUDeployWorkunit.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/WUDeployWorkunit.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
+### name=smc_xslt/WUCopyLogicalFiles.xslt
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/WUCopyLogicalFiles.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
 ### name=smc_xslt/WUQuerysets.xslt
 Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/eclwatch/ws_XSLT/WUQuerysets.xslt DESTINATION ${OSSDIR}/componentfiles/smc_xslt
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
