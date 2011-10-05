@@ -1883,7 +1883,6 @@ ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ct
         }
         else
         {
-
             if (executedRemotely)
             {
                 GraphLocalisation localisation = queryActivityLocalisation(dataset);
@@ -5900,7 +5899,7 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
             case no_call:
             case no_externalcall:
                 if (expr->isAction())
-                    result = doBuildActivityAction(ctx, expr, isRoot, false);
+                    result = doBuildActivityAction(ctx, expr, isRoot);
                 else if (hasStreamedModifier(expr->queryType()))
                 {
                     result = doBuildActivityStreamedCall(ctx, expr);
@@ -5989,7 +5988,10 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                     result = doBuildActivityWorkunitRead(ctx, expr);
                 break;
             case no_fail:
-                result = doBuildActivityAction(ctx, expr, isRoot, !expr->isAction());
+                if (expr->isAction())
+                    result = doBuildActivityAction(ctx, expr, isRoot);
+                else
+                    result = doBuildActivitySideEffect(ctx, expr, isRoot, true);
                 break;
             case no_null:
                 if (expr->isDatarow())
@@ -6259,14 +6261,14 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                 result = doBuildActivityCallSideEffect(ctx, expr);
                 break;
             case no_executewhen:
-                result = doBuildActivityExecuteWhen(ctx, expr);
+                result = doBuildActivityExecuteWhen(ctx, expr, isRoot);
                 break;
             case no_thor:
                 UNIMPLEMENTED;
                 break;
             default:
                 if (expr->isAction())
-                    return doBuildActivityAction(ctx, expr, isRoot, false);
+                    return doBuildActivityAction(ctx, expr, isRoot);
                 if (expr->isDatarow())
                 {
                     OwnedHqlExpr row = createDatasetFromRow(LINK(expr));
@@ -14455,7 +14457,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCallSideEffect(BuildCtx & ctx,
 
 //---------------------------------------------------------------------------
 
-ABoundActivity * HqlCppTranslator::doBuildActivityExecuteWhen(BuildCtx & ctx, IHqlExpression * expr)
+ABoundActivity * HqlCppTranslator::doBuildActivityExecuteWhen(BuildCtx & ctx, IHqlExpression * expr, bool isRoot)
 {
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, expr->queryChild(0));
     Owned<ABoundActivity> associatedActivity = buildCachedActivity(ctx, expr->queryChild(1));
@@ -14486,11 +14488,12 @@ ABoundActivity * HqlCppTranslator::doBuildActivityExecuteWhen(BuildCtx & ctx, IH
     }
 
     bool useImplementationClass = options.minimizeActivityClasses;
-    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKwhen, expr, "WhenAction");
+    ThorActivityKind kind = (expr->isAction() ? TAKwhen_action : TAKwhen_dataset);
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, kind, expr, "WhenAction");
     if (useImplementationClass)
         instance->setImplementationClass(newWhenActionArgAtom);
 
-    buildActivityFramework(instance);
+    buildActivityFramework(instance, isRoot);
 
     buildInstancePrefix(instance);
     buildInstanceSuffix(instance);
@@ -16738,8 +16741,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNull(BuildCtx & ctx, IHqlExpre
 
 //---------------------------------------------------------------------------
 
-ABoundActivity * HqlCppTranslator::doBuildActivityAction(BuildCtx & ctx, IHqlExpression * expr, bool isRoot, bool expandChildren)
+ABoundActivity * HqlCppTranslator::doBuildActivitySideEffect(BuildCtx & ctx, IHqlExpression * expr, bool isRoot, bool expandChildren)
 {
+    //Something that is treated like an input, but causes something else to happen - e.g., a failure
     StringBuffer s;
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKsideeffect, expr,"Action");
 
@@ -16765,6 +16769,27 @@ ABoundActivity * HqlCppTranslator::doBuildActivityAction(BuildCtx & ctx, IHqlExp
     {
         buildStmt(funcctx, expr);
     }
+
+    buildInstanceSuffix(instance);
+
+    return instance->getBoundActivity();
+}
+
+
+ABoundActivity * HqlCppTranslator::doBuildActivityAction(BuildCtx & ctx, IHqlExpression * expr, bool isRoot)
+{
+    StringBuffer s;
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKsimpleaction, expr, "Action");
+
+    //-----------------
+    instance->graphLabel.set(getOpString(expr->getOperator()));         // label node as "fail"
+    buildActivityFramework(instance, isRoot);
+
+    buildInstancePrefix(instance);
+
+    BuildCtx funcctx(instance->startctx);
+    funcctx.addQuotedCompoundOpt("virtual void action()");
+    buildStmt(funcctx, expr);
 
     buildInstanceSuffix(instance);
 
