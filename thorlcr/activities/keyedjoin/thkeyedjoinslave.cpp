@@ -552,7 +552,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
     rowcount_t rowLimit;
     __int64 lastSeeks, lastScans;
     StringAttr indexName;
-    bool localKey, keyHasTlk;
+    bool localKey, keyHasTlk, onFailTransform;
     Owned<IThorRowAllocator> joinFieldsAllocator, keyLookupAllocator, fetchInputAllocator, indexInputAllocator;
     Owned<IEngineRowAllocator> fetchInputMetaAllocator;
     Owned<IRowInterfaces> fetchInputMetaRowIf, fetchOutputRowIf;
@@ -1571,7 +1571,7 @@ public:
         superWidth = 0;
         additionalStats = 0;
         lastSeeks = lastScans = 0;
-        localKey = keyHasTlk = false;
+        onFailTransform = localKey = keyHasTlk = false;
         dataRemote = false;
         fetchHandler = NULL;
 
@@ -1752,13 +1752,14 @@ public:
                 }
                 catch (IException *_e)
                 {
-                    if (0 == (joinFlags & JFonfail))
+                    if (!onFailTransform)
                         throw;
                     e.setown(_e);
                 }
                 RtlDynamicRowBuilder trow(queryRowAllocator());
                 size32_t transformedSize = helper->onFailTransform(trow, jg->queryLeft(), defaultRight, 0, e.get());
-                row.setown(trow.finalizeRowClear(transformedSize));
+                if (0 != transformedSize)
+                    row.setown(trow.finalizeRowClear(transformedSize));
             }
             return true;
         }
@@ -1804,9 +1805,10 @@ public:
         
         fixedRecordSize = helper->queryIndexRecordSize()->getFixedSize(); // 0 if variable and unused
         node = container.queryJob().queryMyRank()-1;
+        onFailTransform = (0 != (joinFlags & JFonfail)) && (0 == (joinFlags & JFmatchAbortLimitSkips));
 
         joinFieldsAllocator.setown(createThorRowAllocator(helper->queryJoinFieldsRecordSize(), queryActivityId()));
-        if (joinFlags & JFleftouter || joinFlags & JFonfail)
+        if (onFailTransform || (joinFlags & JFleftouter))
         {
             RtlDynamicRowBuilder rr(joinFieldsAllocator);
             size32_t sz = helper->createDefaultRight(rr);
@@ -2197,7 +2199,7 @@ public:
                             if (abortLimitAction(doneJG, abortRow)) // discard lhs row (yes, even if it is an outer join)
                             {
                                 doneJG.clear();
-                                if (0 != (joinFlags & JFonfail))
+                                if (abortRow.get())
                                 {
                                     dataLinkIncrement();
                                     return abortRow.getClear();
@@ -2233,7 +2235,7 @@ public:
                         if (abortLimitAction(doneJG, abortRow))
                         {
                             doneJG.clear();
-                            if (0 != (joinFlags & JFonfail))
+                            if (abortRow.get())
                             {
                                 dataLinkIncrement();
                                 return abortRow.getClear();
@@ -2281,7 +2283,7 @@ public:
                             OwnedConstThorRow abortRow;
                             if (abortLimitAction(jg, abortRow)) // might as well abort now if appropriate.
                             {
-                                if (0 != (joinFlags & JFonfail))
+                                if (abortRow.get())
                                 {
                                     dataLinkIncrement();
                                     return abortRow.getClear();
