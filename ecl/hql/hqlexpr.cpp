@@ -6539,7 +6539,7 @@ IHqlExpression *CHqlScope::clone(HqlExprArray &newkids)
 {
     HqlExprArray syms;
     getSymbols(syms);
-    return queryExpression(clone(newkids, syms));
+    return clone(newkids, syms)->queryExpression();
 }
 
 IHqlExpression * createFunctionDefinition(_ATOM name, IHqlExpression * value, IHqlExpression * parameters, IHqlExpression * defaults, IHqlExpression * attrs)
@@ -7100,7 +7100,7 @@ IHqlExpression *CHqlLocalScope::clone(HqlExprArray &newkids)
 {
     HqlExprArray syms;
     getSymbols(syms);
-    return queryExpression(clone(newkids, syms));
+    return clone(newkids, syms)->queryExpression();
 }
 
 IHqlScope * CHqlLocalScope::clone(HqlExprArray & children, HqlExprArray & symbols)
@@ -7652,7 +7652,7 @@ IHqlExpression * CHqlVirtualScope::closeExpr()
     if (isVirtual && !isAbstract)
     {
         concrete.setown(deriveConcreteScope());
-        if (!containsInternalVirtual(queryExpression(concrete)))
+        if (!containsInternalVirtual(concrete->queryExpression()))
             infoFlags &= ~HEFinternalVirtual;
     }
 
@@ -7662,7 +7662,7 @@ IHqlExpression * CHqlVirtualScope::closeExpr()
 IHqlScope * CHqlVirtualScope::deriveConcreteScope()
 {
     Owned<IHqlScope> scope = createConcreteScope();
-    IHqlExpression * scopeExpr = queryExpression(scope);
+    IHqlExpression * scopeExpr = scope->queryExpression();
 
     ForEachChild(i, this)
         scopeExpr->addOperand(LINK(queryChild(i)));
@@ -7680,7 +7680,7 @@ IHqlScope * CHqlVirtualScope::deriveConcreteScope()
         }
     }
 
-    return queryExpression(scope.getClear())->closeExpr()->queryScope();
+    return scope.getClear()->queryExpression()->closeExpr()->queryScope();
 }
 
 
@@ -7773,7 +7773,7 @@ CHqlForwardScope::CHqlForwardScope(IHqlScope * _parentScope, HqlGramCtx * _paren
         infoFlags |= HEFunbound;
 
     resolved.setown(createVirtualScope(NULL, NULL));
-    IHqlExpression * resolvedScopeExpr = queryExpression(resolved);
+    IHqlExpression * resolvedScopeExpr = resolved->queryExpression();
     ForEachChild(i, this)
         resolvedScopeExpr->addOperand(LINK(queryChild(i)));
     resolvedAll = false;
@@ -8147,7 +8147,7 @@ StringBuffer &CHqlScopeParameter::toString(StringBuffer &ret)
 IHqlExpression * CHqlScopeParameter::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     if (searchName == _parameterScopeType_Atom)
-        return LINK(queryExpression(typeScope));
+        return LINK(typeScope->queryExpression());
     OwnedHqlExpr match = typeScope->lookupSymbol(searchName, lookupFlags, ctx);
     if (!match)
         return NULL;
@@ -14098,11 +14098,6 @@ IHqlExpression * queryExpression(IHqlDataset * ds)
 {
     if (!ds) return NULL;
     return QUERYINTERFACE(ds, IHqlExpression);
-}
-
-IHqlExpression * queryExpression(IHqlScope * scope)
-{
-    return QUERYINTERFACE(scope, IHqlExpression);
 }
 
 IHqlScope * queryScope(ITypeInfo * type)

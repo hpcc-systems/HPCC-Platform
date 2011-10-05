@@ -965,6 +965,7 @@ inline unsigned makeLookupFlags(bool sharedOK, bool ignoreBase, bool required)
 //MORE: This should be split into a constant and creator interfaces
 interface IHqlScope : public IInterface
 {
+    virtual IHqlExpression * queryExpression() = 0;
     virtual IHqlExpression *lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx) = 0;
 
     virtual void    getSymbols(HqlExprArray& exprs) const= 0;
@@ -1464,7 +1465,7 @@ extern HQL_API IHqlExpression * createNullDataset();
 extern HQL_API IHqlExpression * queryNullRecord();
 extern HQL_API IHqlExpression * queryExpression(ITypeInfo * t);
 extern HQL_API IHqlExpression * queryExpression(IHqlDataset * ds);
-extern HQL_API IHqlExpression * queryExpression(IHqlScope * scope);
+inline IHqlExpression * queryExpression(IHqlScope * scope) { return scope ? scope->queryExpression() : NULL; }
 extern HQL_API IHqlScope * queryScope(ITypeInfo * t);
 extern HQL_API IHqlRemoteScope * queryRemoteScope(IHqlScope * scope);
 extern HQL_API IHqlAlienTypeInfo * queryAlienType(ITypeInfo * t);
@@ -1593,6 +1594,7 @@ inline bool isAbstractDataset(IHqlExpression * expr)
 }
 
 extern HQL_API bool isPureVirtual(IHqlExpression * cur);
+inline bool isForwardScope(IHqlScope * scope) { return scope && (queryExpression(scope)->getOperator() == no_forwardscope); }
 
 extern HQL_API bool isContextDependent(IHqlExpression * expr, bool ignoreFailures = false, bool ignoreGraph = false);
 
