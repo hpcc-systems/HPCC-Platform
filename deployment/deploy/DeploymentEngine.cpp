@@ -294,6 +294,7 @@ void CDeploymentEngine::start()
         }//for
         
         m_curInstance = NULL;
+        clearSSHVars();
     }
 }
 
@@ -397,6 +398,7 @@ void CDeploymentEngine::stop()
             }
         }
         m_curInstance = NULL;
+        clearSSHVars();
     }
 }
 
@@ -474,6 +476,7 @@ void CDeploymentEngine::check()
         checkInstance(instance);
     }
     m_curInstance = NULL;
+    clearSSHVars();
 }
 
 //---------------------------------------------------------------------------
@@ -605,6 +608,7 @@ void CDeploymentEngine::beforeDeploy()
 
         EnvMachineOS os = m_envDepEngine.lookupMachineOS( m_instances.item(0) );
         m_curInstance = "Cache";
+        clearSSHVars();
         copyInstallFiles("Cache", -1, tempPath, os);
     }
     else
@@ -645,6 +649,7 @@ void CDeploymentEngine::_deploy(bool useTempDir)
         }
     }
     m_curInstance = NULL;
+    clearSSHVars();
     afterDeploy();
 }
 
@@ -655,6 +660,7 @@ void CDeploymentEngine::deployInstance(IPropertyTree& instanceNode, bool useTemp
 {
     StringAttr hostDir(getHostDir(instanceNode).str());
     StringAttr destDir(useTempDir ? getDeployDir(instanceNode).str() : hostDir.get());
+    ensurePath(destDir);
     
     const char* pszHostDir = hostDir.get();
     if (pszHostDir && *pszHostDir==PATHSEPCHAR && *(pszHostDir+1)==PATHSEPCHAR && m_envDepEngine.lookupMachineOS(instanceNode) != MachineOsLinux)
@@ -790,6 +796,7 @@ void CDeploymentEngine::backupDirs()
         }
     }
     m_curInstance = NULL;
+    clearSSHVars();
     m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL);
 }
 
@@ -2673,4 +2680,11 @@ void CDeploymentEngine::setSSHVars(IPropertyTree& instance)
 
   if (depToFolder && *depToFolder)
     m_useSSHIfDefined = false;
+}
+
+void CDeploymentEngine::clearSSHVars()
+{
+  m_curSSHUser.clear();
+  m_curSSHKeyFile.clear();
+  m_curSSHKeyPassphrase.clear();
 }
