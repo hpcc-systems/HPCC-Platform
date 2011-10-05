@@ -1146,9 +1146,7 @@ defineid
                             $$.setType(type.getClear());
                             $$.setPosition($1);
                         }
-// This really causes grief in trying to rationalise the grammar. In particular allowing dataset ids to be redefined in conditional assignments.
-// | scopedDatasetId knownOrUnknownId   - needs '(' dataset ')' removed as a production, or worse...  Revisit here
-    | DATASET_ID knownOrUnknownId 
+    | globalScopedDatasetId knownOrUnknownId
                         {
                             OwnedHqlExpr ds = $1.getExpr();
                             parser->beginDefineId($2.getName(), ds->queryType());
@@ -10084,7 +10082,7 @@ swapTopForLeft
     ;
 
 scopedDatasetId
-    : DATASET_ID
+    : globalScopedDatasetId
     | dotScope DATASET_ID leaveScope
                         {
                             IHqlExpression *e1 = $1.getExpr();
@@ -10097,11 +10095,6 @@ scopedDatasetId
                                 $$.setExpr(e2);
                             }
                         }
-    | moduleScopeDot DATASET_ID leaveScope
-                        {
-                            OwnedHqlExpr scope = $1.getExpr();
-                            $$.setExpr($2.getExpr());
-                        }
     | datasetFunction '('
                         {
                             parser->beginFunctionCall($1);
@@ -10109,6 +10102,15 @@ scopedDatasetId
     actualParameters ')'
                         {
                             $$.setExpr(parser->bindParameters($1, $4.getExpr()));
+                        }
+    ;
+
+globalScopedDatasetId
+    : DATASET_ID
+    | moduleScopeDot DATASET_ID leaveScope
+                        {
+                            OwnedHqlExpr scope = $1.getExpr();
+                            $$.setExpr($2.getExpr());
                         }
     ;
 
