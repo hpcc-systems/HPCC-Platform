@@ -792,6 +792,7 @@ public:
     virtual IHqlScope * queryConcreteScope() { return this; }
     virtual IHqlScope * queryResolvedScope(HqlLookupContext * context) { return this; }
 
+    virtual IHqlExpression * queryExpression() { return this; }
     virtual IHqlScope * queryScope() { return this; }
 
 protected:
@@ -826,6 +827,7 @@ public:
     virtual void sethash();
 
 //interface IHqlScope
+    virtual IHqlExpression * queryExpression() { return this; }
     virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool isPublic, bool isShared, unsigned symbolFlags, IFileContents *, int bodystart, int lineno, int column);
     virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool exported, bool shared, unsigned symbolFlags);
     virtual void defineSymbol(IHqlExpression * expr);

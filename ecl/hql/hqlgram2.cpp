@@ -2520,6 +2520,47 @@ IHqlExpression * HqlGram::leaveLamdaExpression(attribute & exprattr)
     return expr.getClear();
 }
 
+//---------------------------------------------------------------------------------------------------------------------
+
+#ifdef _DEBUG
+#define PSEUDO_UNIMPLEMENTED
+//#define PSEUDO_UNIMPLEMENTED  UNIMPLEMENTED
+#else
+#define PSEUDO_UNIMPLEMENTED
+#endif
+class PseudoPatternScope : public CHqlScope
+{
+public:
+    PseudoPatternScope(IHqlExpression * _patternList);
+    IMPLEMENT_IINTERFACE
+
+    virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags, IFileContents *fc, int bodystart, int lineno, int column) { ::Release(value); PSEUDO_UNIMPLEMENTED; }
+    virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags) { ::Release(value); PSEUDO_UNIMPLEMENTED; }
+    virtual void defineSymbol(IHqlExpression * value) { PSEUDO_UNIMPLEMENTED; ::Release(value); }
+    virtual IHqlExpression *lookupSymbol(_ATOM name, unsigned lookupFlags, HqlLookupContext & ctx);
+    virtual void removeSymbol(_ATOM name) { PSEUDO_UNIMPLEMENTED; }
+
+    virtual void    getSymbols(HqlExprArray& exprs) const { PSEUDO_UNIMPLEMENTED; }
+    virtual _ATOM   queryName() const { PSEUDO_UNIMPLEMENTED; return NULL; }
+    virtual const char * queryFullName() const { PSEUDO_UNIMPLEMENTED; return NULL; }
+    virtual ISourcePath * querySourcePath() const { PSEUDO_UNIMPLEMENTED; return NULL; }
+    virtual bool hasBaseClass(IHqlExpression * searchBase) { return false; }
+
+    virtual void ensureSymbolsDefined(HqlLookupContext & ctx) { }
+
+    virtual bool isImplicit() const { return false; }
+    virtual bool isPlugin() const { return false; }
+    virtual int getPropInt(_ATOM, int dft) const { PSEUDO_UNIMPLEMENTED; return dft; }
+    virtual bool getProp(_ATOM, StringBuffer &) const { PSEUDO_UNIMPLEMENTED; return false; }
+
+    virtual IHqlScope * clone(HqlExprArray & children, HqlExprArray & symbols) { throwUnexpected(); }
+    virtual IHqlScope * queryConcreteScope() { return this; }
+    virtual IHqlScope * queryResolvedScope(HqlLookupContext * context) { return this; }
+
+protected:
+    IHqlExpression * patternList;   // NB: Not linked.
+};
+
 void HqlGram::enterPatternScope(IHqlExpression * pattern)
 {
     Owned<IHqlScope> scope = new PseudoPatternScope(pattern);
@@ -2532,6 +2573,7 @@ void HqlGram::leavePatternScope(const YYSTYPE & errpos)
     leaveScope(errpos);
 }
 
+//---------------------------------------------------------------------------------------------------------------------
 
 void HqlGram::releaseScopes()
 {
@@ -9528,11 +9570,11 @@ inline bool isDollarModule(IHqlExpression * expr)
     return expr->isAttribute() && (expr->queryName() == selfAtom);
 }
 
-IHqlScope * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpression * expr)
+IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpression * expr)
 {
     _ATOM name = expr->queryName();
     if (isDollarModule(expr))
-        return LINK(globalScope);
+        return LINK(queryExpression(globalScope));
     if (name != _dot_Atom)
     {
         if (!lookupCtx.queryRepository())
@@ -9549,8 +9591,7 @@ IHqlScope * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpressio
         if (!importMatch)
             importMatch.setown(parseScope->lookupSymbol(name, LSFsharedOK, lookupCtx));
 
-        IHqlScope * rootScope = importMatch ? importMatch->queryScope() : NULL;
-        if (!rootScope)
+        if (!importMatch || !importMatch->queryScope())
         {
             if (lookupCtx.queryParseContext().ignoreUnknownImport)
                 return NULL;
@@ -9567,14 +9608,14 @@ IHqlScope * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpressio
             return NULL;
         }
 
-        return LINK(rootScope);
+        return importMatch.getClear();
     }
 
-    Owned<IHqlScope> parent = resolveImportModule(errpos, expr->queryChild(0));
+    OwnedHqlExpr parent = resolveImportModule(errpos, expr->queryChild(0));
     if (!parent)
         return NULL;
     _ATOM childName = expr->queryChild(1)->queryName();
-    OwnedHqlExpr resolved = parent->lookupSymbol(childName, LSFpublic, lookupCtx);
+    OwnedHqlExpr resolved = parent->queryScope()->lookupSymbol(childName, LSFpublic, lookupCtx);
     if (!resolved)
     {
         reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a field named '%s'", parent->queryName()->str(), childName->str());
@@ -9586,7 +9627,7 @@ IHqlScope * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpressio
         reportError(ERR_OBJ_NOSUCHFIELD, errpos, "'%s' is not a module", childName->str());
         return NULL;
     }
-    return LINK(ret);
+    return resolved.getClear();
 }
 
 void HqlGram::processImportAll(attribute & modulesAttr)
@@ -9595,13 +9636,14 @@ void HqlGram::processImportAll(attribute & modulesAttr)
     modulesAttr.unwindCommaList(modules);
     ForEachItemIn(i, modules)
     {
-        Owned<IHqlScope> module = resolveImportModule(modulesAttr, &modules.item(i));
+        OwnedHqlExpr module = resolveImportModule(modulesAttr, &modules.item(i));
         if (module)
         {
-            if (!defaultScopes.contains(*module))
-                defaultScopes.append(*LINK(module));
+            IHqlScope * moduleScope = module->queryScope();
+            if (!defaultScopes.contains(*moduleScope))
+                defaultScopes.append(*LINK(moduleScope));
             if (!isDollarModule(&modules.item(i)))
-                defineImport(modulesAttr, queryExpression(module), module->queryName());
+                defineImport(modulesAttr, module, module->queryName());
         }
     }
 }
@@ -9624,13 +9666,14 @@ void HqlGram::processImport(attribute & modulesAttr, _ATOM aliasName)
         if (!aliasName && isDollarModule(&cur))
             continue;
 
-        Owned<IHqlScope> module = resolveImportModule(modulesAttr, &cur);
+        OwnedHqlExpr module = resolveImportModule(modulesAttr, &cur);
         if (module)
         {
             _ATOM newName = aliasName ? aliasName : module->queryName();
-            defineImport(modulesAttr, queryExpression(module), newName);
-            if (module->isImplicit())
-                defaultScopes.append(*LINK(module));
+            defineImport(modulesAttr, module, newName);
+            IHqlScope * moduleScope = module->queryScope();
+            if (moduleScope->isImplicit())
+                defaultScopes.append(*LINK(moduleScope));
         }
     }
 }
@@ -9662,13 +9705,14 @@ void HqlGram::processImport(attribute & membersAttr, attribute & modulesAttr, _A
         reportError(ERR_BAD_IMPORT, modulesAttr, "Expected a single definition with an alias");
         return;
     }
-    Owned<IHqlScope> module = resolveImportModule(modulesAttr, &modules.item(0));
+    OwnedHqlExpr module = resolveImportModule(modulesAttr, &modules.item(0));
     if (!module)
         return;
+    IHqlScope * moduleScope = module->queryScope();
     ForEachItemIn(i, members)
     {
         _ATOM name = members.item(i).queryName();
-        Owned<IHqlExpression> resolved = module->lookupSymbol(name, LSFpublic, lookupCtx);
+        Owned<IHqlExpression> resolved = moduleScope->lookupSymbol(name, LSFpublic, lookupCtx);
         if (resolved)
         {
             _ATOM newName = aliasName ? aliasName : name;
@@ -10900,7 +10944,7 @@ IHqlExpression * reparseTemplateFunction(IHqlExpression * funcdef, IHqlScope *sc
                         
 //===============================================================================================
 
-PseudoPatternScope::PseudoPatternScope(IHqlExpression * _patternList)
+PseudoPatternScope::PseudoPatternScope(IHqlExpression * _patternList) : CHqlScope(no_privatescope, NULL, NULL)
 {
     patternList = _patternList;     // Do not link!
 }
