@@ -1449,8 +1449,6 @@ FUNCTIONMACRO|MACRO {
                         //Need to process using an exclusive start condition unlike MACRO because many
                         //tokens in C++ aren't legal in ECL, so lexer->yyLex() will generate errors.
                         setupdatepos; 
-                        if (!lookup)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
                         BEGIN(CPP);
                         lexer->inCpp = true;
                     }

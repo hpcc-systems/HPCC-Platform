@@ -679,7 +679,7 @@ protected:
     IHqlExpression * createAssert(attribute & cond, attribute * msg, attribute & flags);
 
     void defineImport(const attribute & errpos, IHqlExpression * imported, _ATOM newName);
-    IHqlScope * resolveImportModule(const attribute & errpos, IHqlExpression * expr);
+    IHqlExpression * resolveImportModule(const attribute & errpos, IHqlExpression * expr);
 
     void setActiveAttrs(int activityToken, const TokenMap * attrs);
 
@@ -1181,47 +1181,6 @@ private:
 
 IHqlExpression *reparseTemplateFunction(IHqlExpression * funcdef, IHqlScope *scope, HqlLookupContext & ctx, bool hasFieldMap);
 extern HQL_API void resetLexerUniqueNames();        // to make regression suite consistent
-
-
-#ifdef _DEBUG
-#define PSEUDO_UNIMPLEMENTED
-//#define PSEUDO_UNIMPLEMENTED  UNIMPLEMENTED
-#else
-#define PSEUDO_UNIMPLEMENTED
-#endif
-class PseudoPatternScope : public CInterface, implements IHqlScope
-{
-public:
-    PseudoPatternScope(IHqlExpression * _patternList);
-    IMPLEMENT_IINTERFACE
-
-    virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags, IFileContents *fc, int bodystart, int lineno, int column) { ::Release(value); PSEUDO_UNIMPLEMENTED; }
-    virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags) { ::Release(value); PSEUDO_UNIMPLEMENTED; }
-    virtual void defineSymbol(IHqlExpression * value) { PSEUDO_UNIMPLEMENTED; ::Release(value); }
-    virtual IHqlExpression *lookupSymbol(_ATOM name, unsigned lookupFlags, HqlLookupContext & ctx);
-    virtual void removeSymbol(_ATOM name) { PSEUDO_UNIMPLEMENTED; }
-
-    virtual void    getSymbols(HqlExprArray& exprs) const { PSEUDO_UNIMPLEMENTED; }
-    virtual _ATOM   queryName() const { PSEUDO_UNIMPLEMENTED; return NULL; }
-    virtual const char * queryFullName() const { PSEUDO_UNIMPLEMENTED; return NULL; }
-    virtual ISourcePath * querySourcePath() const { PSEUDO_UNIMPLEMENTED; return NULL; }
-    virtual bool hasBaseClass(IHqlExpression * searchBase) { return false; }
-
-    virtual void ensureSymbolsDefined(HqlLookupContext & ctx) { }
-
-    virtual bool isImplicit() const { return false; }
-    virtual bool isPlugin() const { return false; }
-    virtual int getPropInt(_ATOM, int dft) const { PSEUDO_UNIMPLEMENTED; return dft; }
-    virtual bool getProp(_ATOM, StringBuffer &) const { PSEUDO_UNIMPLEMENTED; return false; }
-
-    virtual IHqlScope * clone(HqlExprArray & children, HqlExprArray & symbols) { throwUnexpected(); }
-    virtual IHqlScope * queryConcreteScope() { return this; }
-    virtual IHqlScope * queryResolvedScope(HqlLookupContext * context) { return this; }
-
-protected:
-    IHqlExpression * patternList;   // NB: Not linked.
-};
-
 extern HQL_API void testHqlInternals();
 
 #endif
