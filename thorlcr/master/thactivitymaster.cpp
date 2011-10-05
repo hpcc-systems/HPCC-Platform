@@ -365,7 +365,7 @@ public:
             case TAKcase:           // gen. time.
             case TAKif:
                 throwUnexpected();
-            case TAKwhen:
+            case TAKwhen_dataset:
                 ret = createWhenActivityMaster(this);
                 break;
             case TAKifaction:

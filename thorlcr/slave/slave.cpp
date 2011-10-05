@@ -599,7 +599,7 @@ public:
             case TAKif:
                 throwUnexpected();
                 break;
-            case TAKwhen:
+            case TAKwhen_dataset:
                 ret = createWhenSlave(this);
                 break;
             case TAKworkunitread:

@@ -981,7 +981,8 @@ bool isGlobalActivity(CGraphElementBase &container)
         case TAKtopn:
         case TAKprocess:
         case TAKchildcount:
-        case TAKwhen:
+        case TAKwhen_dataset:
+        case TAKwhen_action:
             if (!container.queryLocalOrGrouped())
                 return true;
             break;

@@ -831,6 +831,7 @@ YesNoOption HqlThorBoundaryTransformer::calcNormalizeThor(IHqlExpression * expr)
             return isNew ? OptionYes : OptionMaybe;
         }
     case NO_AGGREGATE:
+    case no_executewhen:
         return OptionYes;
     case NO_ACTION_REQUIRES_GRAPH:
         {

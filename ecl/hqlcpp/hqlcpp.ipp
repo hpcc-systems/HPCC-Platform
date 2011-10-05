@@ -1536,7 +1536,7 @@ public:
     bool buildNWayInputs(CIArrayOf<ABoundActivity> & inputs, BuildCtx & ctx, IHqlExpression * input);
 
 //Activities.   
-    ABoundActivity * doBuildActivityAction(BuildCtx & ctx, IHqlExpression * expr, bool isRoot, bool expandChildren);
+    ABoundActivity * doBuildActivityAction(BuildCtx & ctx, IHqlExpression * expr, bool isRoot);
     ABoundActivity * doBuildActivityAggregate(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityApply(BuildCtx & ctx, IHqlExpression * expr, bool isRoot);
     ABoundActivity * doBuildActivityAssert(BuildCtx & ctx, IHqlExpression * expr);
@@ -1568,7 +1568,7 @@ public:
     ABoundActivity * doBuildActivityDistribution(BuildCtx & ctx, IHqlExpression * expr, bool isRoot);
     ABoundActivity * doBuildActivitySectionInput(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityEnth(BuildCtx & ctx, IHqlExpression * expr);
-    ABoundActivity * doBuildActivityExecuteWhen(BuildCtx & ctx, IHqlExpression * expr);
+    ABoundActivity * doBuildActivityExecuteWhen(BuildCtx & ctx, IHqlExpression * expr, bool isRoot);
     ABoundActivity * doBuildActivityForceLocal(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityFetch(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityFilter(BuildCtx & ctx, IHqlExpression * expr);
@@ -1631,6 +1631,7 @@ public:
     ABoundActivity * doBuildActivitySetGraphResult(BuildCtx & ctx, IHqlExpression * expr, bool isRoot);
     ABoundActivity * doBuildActivitySetGraphLoopResult(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivitySetResult(BuildCtx & ctx, IHqlExpression * expr, bool isRoot);
+    ABoundActivity * doBuildActivitySideEffect(BuildCtx & ctx, IHqlExpression * expr, bool isRoot, bool expandChildren);
     ABoundActivity * doBuildActivitySpill(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivitySplit(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityHTTP(BuildCtx & ctx, IHqlExpression * expr, bool isSink, bool isRoot);

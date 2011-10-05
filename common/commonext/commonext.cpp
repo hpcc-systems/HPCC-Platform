@@ -193,12 +193,13 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     kindArray[TAKindexgroupcount] = "indexgroupcount";
     kindArray[TAKhashdistributemerge] = "hashdistributemerge";
     kindArray[TAKselfjoinlight] = "selfjoinlight";
-    kindArray[TAKwhen] = "when";
+    kindArray[TAKwhen_dataset] = "when_dataset";
     kindArray[TAKhttp_rowdataset] = "http";
     kindArray[TAKstreamediterator] = "streamediterator";
     kindArray[TAKexternalsource] = "externalsource";
     kindArray[TAKexternalsink] = "externalsink";
     kindArray[TAKexternalprocess] = "externalprocess";
+    kindArray[TAKwhen_action] = "when_action";
 
 //Non standard
     kindArray[TAKcountindex] = "countindex";
