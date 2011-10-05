@@ -296,8 +296,12 @@ int main(int argc, const char* argv[])
     NoQuickEditSection x;
 #endif
 
-    Owned<IFile> sentinelFile = createSentinelTarget();
-    removeSentinelFile(sentinelFile);
+    Owned<IFile> sentinelFile;
+    if (!coalescer)
+    {
+        sentinelFile.setown(createSentinelTarget());
+        removeSentinelFile(sentinelFile);
+    }
 
     OwnedIFile ifile = createIFile("sashaconf.xml");
     serverConfig.setown(ifile->exists()?createPTreeFromXMLFile("sashaconf.xml"):createPTree());
