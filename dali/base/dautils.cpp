@@ -2804,13 +2804,17 @@ class CLocalOrDistributedFile: public CInterface, implements ILocalOrDistributed
     Owned<IDistributedFile> dfile;
     CDfsLogicalFileName lfn;    // set if localpath but prob not useful
     StringAttr localpath;
+    bool fileExists;
 public:
     IMPLEMENT_IINTERFACE;
-
+    CLocalOrDistributedFile()
+    {
+        fileExists = false;
+    }
 
     const char *queryLogicalName()
     {
-        return localpath.isEmpty()?lfn.get():localpath.get();
+        return lfn.get();
     }
     IDistributedFile * queryDistributedFile() 
     { 
@@ -2819,35 +2823,52 @@ public:
 
     bool init(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs, bool write)
     {
+        fileExists = false;
         if (!onlydfs)
             lfn.allowOsPath(true);
         if (!lfn.setValidate(fname))
             return false;
-        if (!onlydfs) {
+        if (!onlydfs)
+        {
             bool gotlocal = true;
             if (isAbsolutePath(fname)||(stdIoHandle(fname)>=0)) 
                 localpath.set(fname);
-            else if (!strstr(fname,"::")) { // treat it as a relative file
+            else if (!strstr(fname,"::"))
+            {
+                // treat it as a relative file
                 StringBuffer fn;
                 localpath.set(makeAbsolutePath(fname,fn).str());
             }
             else if (!lfn.isExternal())
                 gotlocal = false;
-            if (gotlocal) {
-                if (!write)
-                    dfile.setown(queryDistributedFileDirectory().lookup(lfn,user,write));
+            if (gotlocal)
+            {
+                if (!write) // MORE - this means the dali access checks not happening... maybe that's ok?
+                    dfile.setown(queryDistributedFileDirectory().lookup(lfn,user,write)); // MORE - if dFile is not null then arguably exists should be true
+                // do I want to touch the dfile if I am writing to local file system only??
                 Owned<IFile> file = getPartFile(0,0);
-                if (file.get()&&(write||file->exists()))
-                    return true;
+                if (file.get())
+                {
+                    fileExists = file->exists();
+                    return fileExists || write;
+                }
             }
         }
-        if (!onlylocal) {
+        if (!onlylocal)
+        {
             dfile.setown(queryDistributedFileDirectory().lookup(lfn,user,write));
-            if (dfile.get()) {
-                if (write&&lfn.isExternal()&&(dfile->numParts()==1))   // if it is writing to an external file then don't return distributed
+            if (dfile.get())
+            {
+                if (write && lfn.isExternal()&&(dfile->numParts()==1))   // if it is writing to an external file then don't return distributed
                     dfile.clear();
                 return true;
             }
+            // MORE - should we create the IDistributedFile here ready for publishing (and/or to make sure it's locked while we write)?
+            StringBuffer physicalPath;
+            makePhysicalPartName(lfn.get(), 1, 1, physicalPath, false); // more - may need to override path for roxie
+            localpath.set(physicalPath);
+            fileExists = (dfile != NULL);
+            return write;
         }
         return false;
     }
@@ -2978,10 +2999,19 @@ public:
         return ret;
     }
 
+    virtual bool exists() const
+    {
+        return fileExists;
+    }
+
+    virtual bool isExternal() const
+    {
+        return lfn.isExternal();
+    }
 
 };
 
-ILocalOrDistributedFile* createLocalDistributedFile(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs, bool iswrite)
+ILocalOrDistributedFile* createLocalOrDistributedFile(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs, bool iswrite)
 {
     Owned<CLocalOrDistributedFile> ret = new CLocalOrDistributedFile();
     if (ret->init(fname,user,onlylocal,onlydfs,iswrite))

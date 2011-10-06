@@ -332,7 +332,7 @@ public:
             _checkOpen();
             tries++;
             if (tries == MAX_READ_RETRIES)
-                throw MakeStringException(ROXIE_FILE_FAIL, "Failed to read length %d offset %"I64F"x file %s after %d attempts", len, pos, sources.item(currentIdx).queryFilename(), tries);
+                throw MakeStringException(ROXIE_FILE_ERROR, "Failed to read length %d offset %"I64F"x file %s after %d attempts", len, pos, sources.item(currentIdx).queryFilename(), tries);
         }
     }
 
@@ -1624,7 +1624,7 @@ public:
     {
         if (part > numParts || part == 0)
         {
-            throw MakeStringException(ROXIE_FILE_FAIL, "Internal error - requesting base for non-existant file part %d (valid are 1-%d)", part, numParts);
+            throw MakeStringException(ROXIE_FILE_ERROR, "Internal error - requesting base for non-existant file part %d (valid are 1-%d)", part, numParts);
         }
         return map[part-1].base;
     }
@@ -1688,7 +1688,7 @@ public:
         if (!files.isItem(partNo))
         {
             DBGLOG("getFilePart requested invalid part %d", partNo);
-            throw MakeStringException(ROXIE_FILE_FAIL, "getFilePart requested invalid part %d", partNo);
+            throw MakeStringException(ROXIE_FILE_ERROR, "getFilePart requested invalid part %d", partNo);
         }
         IFileIO *file = files.item(partNo);
         if (!file)
@@ -2092,7 +2092,7 @@ public:
             if (keyset->numParts())
                 ret->addKey(keyset.getClear());
             else if (!isOpt)
-                throw MakeStringException(ROXIE_FILE_FAIL, "Key %s has no key parts", lfn.get());
+                throw MakeStringException(ROXIE_FILE_ERROR, "Key %s has no key parts", lfn.get());
             else if (traceLevel > 4)
                 DBGLOG(ROXIE_OPT_REPORTING, "Key %s has no key parts", lfn.get());
         }
@@ -2163,6 +2163,17 @@ public:
     virtual const IPropertyTree *queryProperties() const
     {
         return properties;
+    }
+    virtual void remove() const
+    {
+        if (dFile)
+        {
+            dFile->detach();
+        }
+        else
+        {
+            throwUnexpected();
+        }
     }
 };
 
@@ -2515,6 +2526,175 @@ MODULE_EXIT()
 extern IRoxieFileCache &queryFileCache()
 {
     return *fileCache;
+}
+
+class CRoxieWriteHandler : public CInterface, implements IRoxieWriteHandler
+{
+public:
+    IMPLEMENT_IINTERFACE;
+    CRoxieWriteHandler(IRoxieDaliHelper *_daliHelper, ILocalOrDistributedFile *_dFile, const StringArray &_clusters)
+    : daliHelper(_daliHelper), dFile(_dFile)
+    {
+        ForEachItemIn(idx, _clusters)
+        {
+            addCluster(_clusters.item(idx));
+        }
+        if (dFile->queryDistributedFile())
+        {
+            isTemporary = (localCluster.get() == NULL); // if only writing to remote clusters, write to a temporary first, then copy
+            if (isTemporary)
+            {
+                UNIMPLEMENTED;
+            }
+            else
+                localFile.setown(dFile->getPartFile(0, 0));
+        }
+        else
+        {
+            isTemporary = false;
+            localFile.setown(dFile->getPartFile(0, 0));
+        }
+        if (!recursiveCreateDirectoryForFile(localFile->queryFilename()))
+            throw MakeStringException(ROXIE_FILE_ERROR, "Cannot create directory for file %s", localFile->queryFilename());
+    }
+    virtual IFile *queryFile() const
+    {
+        return localFile;
+    }
+    void getClusters(StringArray &clusters) const
+    {
+        ForEachItemIn(idx, allClusters)
+        {
+            clusters.append(allClusters.item(idx));
+        }
+    }
+
+    virtual void finish(bool success, const IRoxiePublishCallback *activity)
+    {
+        if (success)
+        {
+            copyPhysical();
+            if (daliHelper && daliHelper->connected())
+                publish(activity);
+        }
+        if (isTemporary || !success)
+        {
+            localFile->remove();
+        }
+    }
+private:
+    bool isTemporary;
+    Linked<IRoxieDaliHelper> daliHelper;
+    Owned<ILocalOrDistributedFile> dFile;
+    Owned<IFile> localFile;
+    Owned<IGroup> localCluster;
+    IArrayOf<IGroup> remoteNodes;
+    StringArray allClusters;
+
+    void copyPhysical() const
+    {
+        if (remoteNodes.length())
+        {
+            RemoteFilename rfn, rdn;
+            dFile->getPartFilename(rfn, 0, 0);
+            StringBuffer physicalName, physicalDir, physicalBase;
+            rfn.getLocalPath(physicalName);
+            splitFilename(physicalName, &physicalDir, &physicalDir, &physicalBase, &physicalBase);
+            rdn.setLocalPath(physicalDir.str());
+            ForEachItemIn(idx, remoteNodes)
+            {
+                rdn.setEp(remoteNodes.item(idx).queryNode(0).endpoint());
+                rfn.setEp(remoteNodes.item(idx).queryNode(0).endpoint());
+                Owned<IFile> targetdir = createIFile(rdn);
+                Owned<IFile> target = createIFile(rfn);
+                targetdir->createDirectory();
+                copyFile(target, localFile);
+            }
+        }
+    }
+
+    void publish(const IRoxiePublishCallback *activity)
+    {
+        if (!dFile->isExternal())
+        {
+            Owned<IFileDescriptor> desc = createFileDescriptor();
+            desc->setNumParts(1);
+
+            RemoteFilename rfn;
+            dFile->getPartFilename(rfn, 0, 0);
+            StringBuffer physicalName, physicalDir, physicalBase;
+            rfn.getLocalPath(physicalName);
+            splitFilename(physicalName, &physicalDir, &physicalDir, &physicalBase, &physicalBase);
+            desc->setDefaultDir(physicalDir.str());
+            desc->setPartMask(physicalBase.str());
+
+            IPropertyTree &partProps = desc->queryPart(0)->queryProperties(); //properties of the first file part.
+            IPropertyTree &fileProps = desc->queryProperties(); // properties of the logical file
+            offset_t fileSize = localFile->size();
+            fileProps.setPropInt64("@size", fileSize);
+            partProps.setPropInt64("@size", fileSize);
+
+            CDateTime createTime, modifiedTime, accessedTime;
+            localFile->getTime(&createTime, &modifiedTime, &accessedTime);
+            // round file time down to nearest sec. Nanosec accurancy is not preserved elsewhere and can lead to mismatch later.
+            unsigned hour, min, sec, nanosec;
+            modifiedTime.getTime(hour, min, sec, nanosec);
+            modifiedTime.setTime(hour, min, sec, 0);
+            StringBuffer timestr;
+            modifiedTime.getString(timestr);
+            if(timestr.length())
+                partProps.setProp("@modified", timestr.str());
+
+            ClusterPartDiskMapSpec partmap;
+            if (localCluster)
+            {
+                desc->addCluster(localCluster, partmap);
+                desc->setClusterRoxieLabel(0, roxieName); // MORE not sure what this is for!!
+            }
+            ForEachItemIn(idx, remoteNodes)
+                desc->addCluster(&remoteNodes.item(idx), partmap);
+
+            if (activity)
+                activity->setFileProperties(desc);
+
+            Owned<IDistributedFile> publishFile = queryDistributedFileDirectory().createNew(desc); // MORE - we'll create this earlier if we change the locking paradigm
+            publishFile->setAccessedTime(modifiedTime);
+            publishFile->attach(dFile->queryLogicalName(), NULL, activity ? activity->queryUserDescriptor() : NULL);
+            // MORE should probably write to the roxielocalstate too in case Dali is down next time I look...
+        }
+    }
+
+    void addCluster(char const * cluster)
+    {
+        Owned<IGroup> group = queryNamedGroupStore().lookup(cluster);
+        if (!group)
+            throw MakeStringException(0, "Unknown cluster %s while writing file %s",
+                    cluster, dFile->queryLogicalName());
+        if (group->isMember())
+        {
+            if (localCluster)
+                throw MakeStringException(0, "Cluster %s occupies node already specified while writing file %s",
+                        cluster, dFile->queryLogicalName());
+            localCluster.setown(group.getClear());
+        }
+        else
+        {
+            ForEachItemIn(idx, remoteNodes)
+            {
+                Owned<INode> other = remoteNodes.item(idx).getNode(0);
+                if (group->isMember(other))
+                    throw MakeStringException(0, "Cluster %s occupies node already specified while writing file %s",
+                            cluster, dFile->queryLogicalName());
+            }
+            remoteNodes.append(*group.getClear());
+        }
+        allClusters.append(cluster);
+    }
+};
+
+extern IRoxieWriteHandler *createRoxieWriteHandler(IRoxieDaliHelper *_daliHelper, ILocalOrDistributedFile *_dFile, const StringArray &_clusters)
+{
+    return new CRoxieWriteHandler(_daliHelper, _dFile, _clusters);
 }
 
 #ifdef _USE_CPPUNIT

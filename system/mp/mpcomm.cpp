@@ -57,8 +57,6 @@
 #define MP_PROTOCOL_VERSION    0x102                   
 #define MP_PROTOCOL_VERSIONV6   0x202                   // extended for IPV6
 
-extern void initMyNode(unsigned short port=0); 
-
 #define CANCELTIMEOUT       1000        // 1 sec
 
 #define MP_BASE_PORT    7101 //..7999 (for Dali too) -- Thor reserves 7500+

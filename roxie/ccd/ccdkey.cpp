@@ -378,7 +378,7 @@ public:
         {
             size32_t size = recordSize->getFixedSize();
             if (length % size)
-                throw MakeStringException(ROXIE_FILE_FAIL, "File size %"I64F"u is not a multiple of fixed record size %u", length, size);
+                throw MakeStringException(ROXIE_FILE_ERROR, "File size %"I64F"u is not a multiple of fixed record size %u", length, size);
             maxPtrs += length / size;
         }
         else

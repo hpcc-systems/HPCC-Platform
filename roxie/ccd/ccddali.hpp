@@ -46,7 +46,7 @@ interface IDaliPackageWatcher : extends IInterface
 interface IRoxieDaliHelper : extends IInterface
 {
     virtual bool connected() const = 0;
-    virtual IDistributedFile *resolveLFN(const char *filename) = 0;
+    virtual IDistributedFile *resolveLFN(const char *filename, bool writeAccess) = 0;
     virtual IFileDescriptor *resolveCachedLFN(const char *filename) = 0;
     virtual IConstWorkUnit *attachWorkunit(const char *wuid, ILoadedDllEntry *source) = 0;
     virtual IPropertyTree *getQuerySet(const char *id) = 0;

@@ -21,6 +21,7 @@
 #include "jfile.hpp"
 #include "eclhelper.hpp"
 #include "ccddali.hpp"
+#include "dautils.hpp"
 
 enum RoxieFileStatus { FileSizeMismatch, FileDateMismatch, FileCRCMismatch, FileIsValid, FileNotFound };
 enum RoxieFileType { ROXIE_WU_DLL, ROXIE_PLUGIN_DLL, ROXIE_KEY, ROXIE_FILE, ROXIE_PATCH, ROXIE_BASEINDEX };
@@ -97,7 +98,6 @@ interface IRoxiePackage;
 
 interface IResolvedFile : extends ISimpleSuperFileEnquiry
 {
-    virtual const char *queryLFN() const = 0;
     virtual void serializePartial(MemoryBuffer &mb, unsigned channel, bool localInfoOnly) const = 0;
 
     virtual IFileIOArray *getIFileIOArray(bool isOpt, unsigned channel) const = 0;
@@ -112,6 +112,8 @@ interface IResolvedFile : extends ISimpleSuperFileEnquiry
     virtual void setCache(const IRoxiePackage *cache) = 0;
     virtual bool isAlive() const = 0;
     virtual const IPropertyTree *queryProperties() const = 0;
+
+    virtual void remove() const = 0;
 };
 
 interface IResolvedFileCreator : extends IResolvedFile
@@ -122,6 +124,21 @@ interface IResolvedFileCreator : extends IResolvedFile
 
 extern IResolvedFileCreator *createResolvedFile(const char *lfn);
 extern IResolvedFile *createResolvedFile(const char *lfn, IDistributedFile *dFile);
+
+interface IRoxiePublishCallback
+{
+    virtual void setFileProperties(IFileDescriptor *) const = 0;
+    virtual IUserDescriptor *queryUserDescriptor() const = 0;
+};
+
+interface IRoxieWriteHandler : public IInterface
+{
+    virtual IFile *queryFile() const = 0;
+    virtual void finish(bool success, const IRoxiePublishCallback *activity) = 0;
+    virtual void getClusters(StringArray &clusters) const = 0;
+};
+
+extern IRoxieWriteHandler *createRoxieWriteHandler(IRoxieDaliHelper *_daliHelper, ILocalOrDistributedFile *_dFile, const StringArray &_clusters);
 
 extern IRoxieFileCache &queryFileCache();
 extern IMemoryFile *createMemoryFile(const char *fileName);

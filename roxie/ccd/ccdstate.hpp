@@ -68,8 +68,10 @@ interface IRoxiePackage : extends IInterface
     virtual bool getEnableFieldTranslation() const = 0;
     // Return entire XML tree for package
     virtual const IPropertyTree *queryTree() const = 0;
-    // Lookup information in package to resolve logical file name
+    // Lookup information in package to resolve existing logical file name
     virtual const IResolvedFile *lookupFileName(const char *fileName, bool opt, bool cacheDaliResults) const = 0;
+    // Lookup information in package to create new logical file name
+    virtual IRoxieWriteHandler *createFileName(const char *fileName, bool overwrite, bool extend, const StringArray &clusters) const = 0;
     // Lookup information in package about what in-memory indexes should be built for file
     virtual IPropertyTreeIterator *getInMemoryIndexInfo(const IPropertyTree &graphNode) const = 0;
     // Retrieve hash for the package

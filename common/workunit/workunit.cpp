@@ -643,7 +643,7 @@ public:
     virtual void copyWorkUnit(IConstWorkUnit *cached);
     virtual unsigned queryFileUsage(const char *filename) const;
     virtual bool getCloneable() const;
-    virtual IUserDescriptor * getUserDescriptor() const;
+    virtual IUserDescriptor * queryUserDescriptor() const;
     virtual unsigned getCodeVersion() const;
     virtual void getBuildVersion(IStringVal & buildVersion, IStringVal & eclVersion) const;
     virtual IPropertyTree * getDiskUsageStats();
@@ -903,8 +903,8 @@ public:
             { return c->getIsQueryService(); }
     virtual bool getCloneable() const
             { return c->getCloneable(); }
-    virtual IUserDescriptor * getUserDescriptor() const
-            { return c->getUserDescriptor(); }
+    virtual IUserDescriptor * queryUserDescriptor() const
+            { return c->queryUserDescriptor(); }
     virtual IStringVal & getClusterName(IStringVal & str) const
             { return c->getClusterName(str); }
     virtual unsigned getCodeVersion() const
@@ -3330,11 +3330,8 @@ void CLocalWorkUnit::remoteCheckAccess(IUserDescriptor *user, bool writeaccess) 
     int perm = 255;
     const char *scopename = p->queryProp("@scope");
     if (scopename&&*scopename) {
-        Owned<IUserDescriptor> tmpuser;
-        if (!user) {
-            tmpuser.setown(getUserDescriptor()); // probably not that useful as presumably owner has access
-            user = tmpuser.get();
-        }
+        if (!user)
+            user = queryUserDescriptor();
         perm = querySessionManager().getPermissionsLDAP("workunit",scopename,user,auditflags);
         if (perm<0) {
             if (perm==-1) 
@@ -4144,10 +4141,9 @@ bool CLocalWorkUnit::getCloneable() const
     return p->getPropBool("@cloneable", false);
 }
 
-IUserDescriptor *CLocalWorkUnit::getUserDescriptor() const
+IUserDescriptor *CLocalWorkUnit::queryUserDescriptor() const
 {
     CriticalBlock block(crit);
-
     if (!userDesc)
     {
         SCMStringBuffer token, user, password;
@@ -4158,7 +4154,7 @@ IUserDescriptor *CLocalWorkUnit::getUserDescriptor() const
         userDesc.setown(createUserDescriptor());
         userDesc->set(user.str(), password.str());
     }
-    return LINK(userDesc);
+    return userDesc;
 }
 
 void CLocalWorkUnit::setCombineQueries(unsigned combine) 
@@ -5267,8 +5263,7 @@ void CLocalWorkUnit::deleteTempFiles(const char *graph, bool deleteOwned, bool d
         {
             const char *name = file.queryProp("@name");
             LOG(MCdebugProgress, unknownJob, "Removing workunit file %s from DFS", name);
-            Owned<IUserDescriptor> userDesc = getUserDescriptor();
-            queryDistributedFileDirectory().removePhysical(name, 0, NULL, NULL, userDesc);
+            queryDistributedFileDirectory().removePhysical(name, 0, NULL, NULL, queryUserDescriptor());
             toRemove.append(file);
         }
     }
@@ -5376,8 +5371,7 @@ void CLocalWorkUnit::releaseFile(const char *fileName)
             files->removeTree(file);
             if (!name.isEmpty()&&(1 == usageCount))
             {
-                Owned<IUserDescriptor> userDesc = getUserDescriptor();
-                if (queryDistributedFileDirectory().removePhysical(fileName, 0, NULL, NULL, userDesc)) 
+                if (queryDistributedFileDirectory().removePhysical(fileName, 0, NULL, NULL, queryUserDescriptor()))
                     LOG(MCdebugProgress, unknownJob, "Removed (released) file %s from DFS", name.get());
             }
         }

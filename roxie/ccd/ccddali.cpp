@@ -28,6 +28,7 @@
 #include "dllserver.hpp"
 #include "thorplugin.hpp"
 #include "workflow.hpp"
+#include "mpcomm.hpp"
 
 /*===============================================================================
 * Roxie is not a typical Dali client - it tries to keep the dali connection open 
@@ -83,33 +84,38 @@ private:
     // connect handles the operations generally performed by Dali clients at startup.
     bool connect()
     {
-        if (fileNameServiceDali.length() && !isConnected)
+        if (fileNameServiceDali.length())
         {
-            try
+            if (!isConnected)
             {
-                // Create server group
-                Owned<IGroup> serverGroup = createIGroup(fileNameServiceDali, DALI_SERVER_PORT);
+                try
+                {
+                    // Create server group
+                    Owned<IGroup> serverGroup = createIGroup(fileNameServiceDali, DALI_SERVER_PORT);
 
-                if (!serverGroup)
-                    throw MakeStringException(ROXIE_DALI_ERROR, "Could not instantiate dali IGroup");
+                    if (!serverGroup)
+                        throw MakeStringException(ROXIE_DALI_ERROR, "Could not instantiate dali IGroup");
 
-                // Initialize client process
-                if (!initClientProcess(serverGroup, DCR_RoxyMaster, 0, NULL, NULL, 60000))  // wait 1 minute
-                    throw MakeStringException(ROXIE_DALI_ERROR, "Could not initialize dali client");    
+                    // Initialize client process
+                    if (!initClientProcess(serverGroup, DCR_RoxyMaster, 0, NULL, NULL, 60000))  // wait 1 minute
+                        throw MakeStringException(ROXIE_DALI_ERROR, "Could not initialize dali client");
 
-                setPasswordsFromSDS();
-                CSDSServerStatus serverstatus("Roxieserver");
-                initDllServer(queryDirectory);
-                isConnected = true;
-            }
-            catch(IException *e)
-            {
-                StringBuffer text;
-                e->errorMessage(text);
-                DBGLOG(ROXIE_DALI_ERROR, "Error trying to connect to dali %s: %s", fileNameServiceDali.str(), text.str());
-                e->Release();
+                    setPasswordsFromSDS();
+                    CSDSServerStatus serverstatus("Roxieserver");
+                    initDllServer(queryDirectory);
+                    isConnected = true;
+                }
+                catch(IException *e)
+                {
+                    StringBuffer text;
+                    e->errorMessage(text);
+                    DBGLOG(ROXIE_DALI_ERROR, "Error trying to connect to dali %s: %s", fileNameServiceDali.str(), text.str());
+                    e->Release();
+                }
             }
         }
+        else
+            initMyNode(1); // Hack
         return isConnected;
     }
 
@@ -273,13 +279,13 @@ public:
         return ret.getClear();
     }
 
-    virtual IDistributedFile *resolveLFN(const char *logicalName)
+    virtual IDistributedFile *resolveLFN(const char *logicalName, bool writeAccess)
     {
         if (isConnected)
         {
             CDfsLogicalFileName lfn;
             lfn.set(logicalName);
-            Owned<IDistributedFile> dfsFile = queryDistributedFileDirectory().lookup(lfn, NULL);
+            Owned<IDistributedFile> dfsFile = queryDistributedFileDirectory().lookup(lfn, NULL, writeAccess); // MORE - may need a user sometime!
             if (dfsFile)
             {
                 IDistributedSuperFile *super = dfsFile->querySuperFile();
