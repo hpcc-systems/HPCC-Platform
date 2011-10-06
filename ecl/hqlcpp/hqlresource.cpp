@@ -1615,8 +1615,17 @@ bool ResourcerInfo::expandRatherThanSplit()
             if (options->targetClusterType == RoxieCluster)
                 return false;
             if (!expr->hasProperty(newAtom))
+            {
+                if (!options->useLinkedRawIterator || !hasLinkCountedModifier(expr))
+                    return false;
                 return true;
+            }
             break;
+        case no_rows:
+            //If executing in a child query then you'll have less thread contention if the iterator is duplicated
+            //So should probably uncomment the following.
+            //return true;
+            return false;
         default:
             return false;
         }
@@ -1774,6 +1783,7 @@ EclResourcer::EclResourcer(IErrorReceiver * _errors, IConstWorkUnit * _wu, Clust
     options.minimizeSkewBeforeSpill = _translatorOptions.minimizeSkewBeforeSpill;
     options.expandSingleConstRow = true;
     options.createSpillAsDataset = _translatorOptions.optimizeSpillProject && (targetClusterType != HThorCluster);
+    options.useLinkedRawIterator = _translatorOptions.useLinkedRawIterator;
 }
 
 EclResourcer::~EclResourcer()               
