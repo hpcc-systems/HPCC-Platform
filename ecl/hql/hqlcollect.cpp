@@ -402,8 +402,11 @@ void FileSystemDirectory::expandDirectoryTree(IDirectoryIterator * dir, bool all
 
 void FileSystemDirectory::populateChildren()
 {
-    Owned<IDirectoryIterator> childIter = directory->directoryFiles(NULL, false, true);
-    expandDirectoryTree(childIter, false);
+    if (directory)
+    {
+        Owned<IDirectoryIterator> childIter = directory->directoryFiles(NULL, false, true);
+        expandDirectoryTree(childIter, false);
+    }
 }
 
 
