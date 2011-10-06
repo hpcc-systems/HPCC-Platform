@@ -375,7 +375,6 @@ private:
     StringArray clusterNames;
     unsigned int clusterWidth;
     Owned<IDistributedFileTransaction> superfiletransaction;
-    Owned<IUserDescriptor> userDesc;
     mutable IArrayOf<IEngineRowAllocator> allAllocators;
     mutable SpinLock allAllocatorsLock;                 
     Owned<EclGraph> activeGraph;

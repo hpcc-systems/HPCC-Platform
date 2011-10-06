@@ -1091,21 +1091,24 @@ ClusterWriteHandler::ClusterWriteHandler(char const * _logicalName, char const *
 void ClusterWriteHandler::addCluster(char const * cluster)
 {
     Owned<IGroup> group = queryNamedGroupStore().lookup(cluster);
-    if(!group)
+    if (!group)
         throw MakeStringException(0, "Unknown cluster %s while writing file %s", cluster, logicalName.get());
-    if(group->isMember())
+    if (group->isMember())
     {
-        if(localCluster)
-            throw MakeStringException(0, "Cluster %s occupies node already specified while writing file %s", cluster, logicalName.get());
+        if (localCluster)
+            throw MakeStringException(0, "Cluster %s occupies node already specified while writing file %s", cluster,
+                    logicalName.get());
         localClusterName.set(cluster);
         localCluster.set(group);
     }
-    else {
+    else
+    {
         ForEachItemIn(idx, remoteNodes)
         {
             Owned<INode> other = remoteNodes.item(idx).getNode(0);
-            if(group->isMember(other))
-                throw MakeStringException(0, "Cluster %s occupies node already specified while writing file %s", cluster, logicalName.get());
+            if (group->isMember(other))
+                throw MakeStringException(0, "Cluster %s occupies node already specified while writing file %s",
+                        cluster, logicalName.get());
         }
         remoteNodes.append(*group.getClear());
         remoteClusters.append(cluster);

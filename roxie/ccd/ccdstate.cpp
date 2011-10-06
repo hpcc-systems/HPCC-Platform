@@ -33,6 +33,8 @@
 #include "hqlplugins.hpp"
 #include "thorplugin.hpp"
 #include "eclrtl.hpp"
+#include "dafdesc.hpp"
+#include "dautils.hpp"
 
 //-------------------------------------------------------------------------------------------
 // class CRoxiePluginCtx - provide the environments for plugins loaded by roxie. 
@@ -315,17 +317,17 @@ protected:
         return NULL;
     }
     // Use dali to resolve subfile into physical file info
-    virtual const IResolvedFile *resolveLFNusingDali(const char *fileName) const
+    virtual const IResolvedFile *resolveLFNusingDali(const char *fileName, bool writeAccess) const
     {
         if (daliHelper)
         {
             if (daliHelper->connected())
             {
-                Owned<IDistributedFile> dFile = daliHelper->resolveLFN(fileName);
+                Owned<IDistributedFile> dFile = daliHelper->resolveLFN(fileName, writeAccess);
                 if (dFile)
                     return createResolvedFile(fileName, dFile.getLink());
             }
-            else
+            else if (!writeAccess)  // If we need write access and expect a dali, but don't have one, we should probably fail
             {
                 // we have no dali, we can't lock..
                 Owned<IFileDescriptor> fd = daliHelper->resolveCachedLFN(fileName);
@@ -350,7 +352,7 @@ protected:
         }
         return NULL;
     }
-    // Use local package and its bases to resolve file into physical file info via all supported resolvers
+    // Use local package and its bases to resolve existing file into physical file info via all supported resolvers
     const IResolvedFile *lookupFile(const char *fileName, bool cache) const
     {
         // Order of resolution: 
@@ -397,7 +399,7 @@ protected:
         }
         result = resolveLFNusingPackage(fileName);
         if (!result)
-            result = resolveLFNusingDali(fileName);
+            result = resolveLFNusingDali(fileName, false);
         if (!result)
             result = resolveLFNusingLocal(fileName);
         if (result)
@@ -523,11 +525,33 @@ public:
         if (!result)
         {
             if (!opt)
-                throw MakeStringException(ROXIE_FILE_FAIL, "Could not resolve filename %s", fileName.str());
+                throw MakeStringException(ROXIE_FILE_ERROR, "Could not resolve filename %s", fileName.str());
             if (traceLevel > 4)
                 DBGLOG("Could not resolve OPT filename %s", fileName.str());
         }
         return result;
+    }
+
+    virtual IRoxieWriteHandler *createFileName(const char *_fileName, bool overwrite, bool extend, const StringArray &clusters) const
+    {
+        StringBuffer fileName;
+        expandLogicalFilename(fileName, _fileName, NULL, false);   // MORE - if we have a wu, and we have not yet got rid of the concept of scope, we should use it here
+        Owned<const IResolvedFile> resolved = lookupFile(fileName, true);
+        if (resolved)
+        {
+            if (!overwrite)
+                throw MakeStringException(99, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", resolved->queryFileName());
+            if (extend)
+                UNIMPLEMENTED; // How does extend fit in with the clusterwritemanager stuff? They can't specify cluster and extend together...
+            removeCache(resolved);
+            resolved->remove();
+            resolved.clear();
+        }
+        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, NULL, !daliHelper->connected(), false, true); // MORE - is onlyDFS right?
+        if (!ldFile)
+            throw MakeStringException(ROXIE_FILE_ERROR, "Cannot write %s, invalid filename", fileName.str());
+
+        return createRoxieWriteHandler(daliHelper, ldFile.getClear(), clusters);
     }
 
     virtual const IPropertyTree *queryTree() const

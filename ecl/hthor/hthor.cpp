@@ -404,36 +404,12 @@ void CHThorDiskWriteActivity::resolve()
     if((helper.getFlags() & TDXtemporary) == 0)
     {
         Owned<ILocalOrDistributedFile> f = agent.resolveLFN(mangledHelperFileName.str(),"Cannot write, invalid logical name",true,false,true,&lfn);
-        if (f) { // already exists or special/local/external
-            if (!f->queryDistributedFile()) { // special/local/external
-                if (f->numParts()!=1)
-                    throw MakeStringException(99, "Cannot write %s, external file has multiple parts)", lfn.str());
-                RemoteFilename rfn;
-                f->getPartFilename(rfn,0);
-                StringBuffer full;
-                if (rfn.isLocal())
-                    rfn.getLocalPath(full);
-                else
-                    rfn.getRemotePath(full);
-                filename.set(full);
-                if (isSpecialPath(filename)) {
-                    PROGLOG("Writing to query %s", filename.get());
-                    return;
-                }
-                if (stdIoHandle(filename)>=0) {
-                    PROGLOG("Writing to %s", filename.get());
-                    return;
-                }
-                Owned<IFile> file = createIFile(filename);
-                if (file->exists()) {
-                    if (!overwrite) 
-                        throw MakeStringException(99, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", full.str());
-                    file->remove();
-                }
-                PROGLOG("Writing to file %s", filename.get());
-            }
-            else {
-                if(extend) 
+        if (f)
+        {
+            if (f->queryDistributedFile())
+            {
+                // An already existing dali file
+                if(extend)
                     agent.logFileAccess(f->queryDistributedFile(), "HThor", "EXTENDED");
                 else if(overwrite) {
                     PrintLog("Removing %s from DFS", lfn.str());
@@ -447,8 +423,39 @@ void CHThorDiskWriteActivity::resolve()
                             file->remove();
                     }
                 }
-                else 
+                else
                     throw MakeStringException(99, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", lfn.str());
+            }
+            else if (f->exists())
+            {
+                // special/local/external file
+                if (f->numParts()!=1)
+                    throw MakeStringException(99, "Cannot write %s, external file has multiple parts)", lfn.str());
+                RemoteFilename rfn;
+                f->getPartFilename(rfn,0);
+                StringBuffer full;
+                if (rfn.isLocal())
+                    rfn.getLocalPath(full);
+                else
+                    rfn.getRemotePath(full);
+                filename.set(full);
+                if (isSpecialPath(filename))
+                {
+                    PROGLOG("Writing to query %s", filename.get());
+                    return;
+                }
+                if (stdIoHandle(filename)>=0) {
+                    PROGLOG("Writing to %s", filename.get());
+                    return;
+                }
+                Owned<IFile> file = createIFile(filename);
+                if (file->exists())
+                {
+                    if (!overwrite) 
+                        throw MakeStringException(99, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", full.str());
+                    file->remove();
+                }
+                PROGLOG("Writing to file %s", filename.get());
             }
             f.clear();
         }
@@ -972,8 +979,8 @@ void CHThorIndexWriteActivity::execute()
     unsigned __int64 fileSize = 0;
     if (helper.getDatasetName())
     {
-        Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(helper.getDatasetName(),"IndexWrite::execute",false,true,true);
-        if (ldFile)
+        Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(helper.getDatasetName(),"IndexWrite::execute",false,false,true);
+        if (ldFile )
         {
             IDistributedFile * dFile = ldFile->queryDistributedFile();
             fileSize = dFile ? dFile->queryProperties().getPropInt64("@size", 0) : ldFile->getPartFileSize(0);//MORE: is local part correct?
@@ -6860,7 +6867,7 @@ void CHThorWSCBaseActivity::init()
 {
     // Build authentication token
     StringBuffer uidpair;
-    Owned <IUserDescriptor> userDesc = agent.queryWorkUnit()->getUserDescriptor();
+    IUserDescriptor *userDesc = agent.queryCodeContext()->queryUserDescriptor();
     userDesc->getUserName(uidpair);
     uidpair.append(":");
     userDesc->getPassword(uidpair);

@@ -1130,8 +1130,8 @@ public:
                         skip = true;
                         break;
                     case 3: 
-                        logctx.CTXLOG("--------------- Throwing Exception String number %u NOW - testCase=%u  -----", ROXIE_FILE_FAIL, testCaseType);
-                        throw MakeStringException(ROXIE_FILE_FAIL, "Simulate File Exception in slave NOW");
+                        logctx.CTXLOG("--------------- Throwing Exception String number %u NOW - testCase=%u  -----", ROXIE_FILE_ERROR, testCaseType);
+                        throw MakeStringException(ROXIE_FILE_ERROR, "Simulate File Exception in slave NOW");
                         break;
                     case 4:
                         if (numSlaves[channel] == 1) 

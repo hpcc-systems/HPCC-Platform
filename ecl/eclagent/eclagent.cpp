@@ -756,8 +756,7 @@ IConstWUResult *EclAgent::getExternalResult(const char * wuid, const char *name,
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
     Owned<IConstWorkUnit> externalWU = factory->openWorkUnit(wuid, false);
-    Owned<IUserDescriptor> user = queryWorkUnit()->getUserDescriptor();
-    externalWU->remoteCheckAccess(user, false);
+    externalWU->remoteCheckAccess(queryUserDescriptor(), false);
     return getWorkUnitResult(externalWU, name, sequence);
 }
 
@@ -1381,7 +1380,7 @@ ILocalOrDistributedFile *EclAgent::resolveLFN(const char *fname, const char *err
     }
     if (expandedlfn)
         *expandedlfn = lfn;
-    Owned<ILocalOrDistributedFile> ldFile = createLocalDistributedFile(lfn.str(), queryUserDescriptor(), resolveFilesLocally, !resolveFilesLocally, isWrite);
+    Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(lfn.str(), queryUserDescriptor(), resolveFilesLocally, !resolveFilesLocally, isWrite);
     if (ldFile)
     {
         IDistributedFile * dFile = ldFile->queryDistributedFile();
@@ -1553,9 +1552,10 @@ void EclAgent::addWuAssertFailure(unsigned code, const char * text, const char *
 
 IUserDescriptor *EclAgent::queryUserDescriptor()
 {
-    if (!userDesc && isRemoteWorkunit)
-        userDesc.setown(wuRead->getUserDescriptor());
-    return userDesc;
+    if (isRemoteWorkunit)
+        return wuRead->queryUserDescriptor();
+    else
+        return NULL;
 }
 
 void EclAgent::fail(int code, const char * str)
