@@ -1739,7 +1739,11 @@ void HqlCppTranslator::postProcessOptions()
 {
 //Any post processing - e.g., dependent flags goes here...
     if (targetClusterType == ThorCluster)
+    {
         options.supportDynamicRows = false;
+        options.resourceConditionalActions = false;
+        options.resourceSequential = false;
+    }
 
     if (options.supportDynamicRows)
     {
@@ -1778,12 +1782,6 @@ void HqlCppTranslator::postProcessOptions()
 
     if (options.optimizeIndexSource && (targetClusterType != ThorCluster))          // thor doesn't support child queries - so still need following
         options.createCountIndex = false;
-
-    if (targetThor())
-    {
-        //options.resourceConditionalActions = false;
-        //options.resourceSequential = false;
-    }
 
     if (!targetThor())
     {
