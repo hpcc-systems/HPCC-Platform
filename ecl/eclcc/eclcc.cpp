@@ -138,10 +138,10 @@ static bool extractOption(StringAttr & option, IProperties * globals, const char
 struct EclCompileInstance
 {
 public:
-    EclCompileInstance(IFile * _inputFile, IErrorReceiver & _errs, FILE * _errout, const char * _outputFilename) :
+    EclCompileInstance(IFile * _inputFile, IErrorReceiver & _errs, FILE * _errout, const char * _outputFilename, bool _legacyMode) :
       inputFile(_inputFile), errs(&_errs), errout(_errout), outputFilename(_outputFilename)
     {
-        importAllModules = queryLegacyEclSemantics();
+        legacyMode = _legacyMode;
         ignoreUnknownImport = false;
         fromArchive = false;
     }
@@ -157,7 +157,7 @@ public:
     const char * outputFilename;
     FILE * errout;
     Owned<IPropertyTree> srcArchive;
-    bool importAllModules;
+    bool legacyMode;
     bool fromArchive;
     bool ignoreUnknownImport;
 };
@@ -170,6 +170,7 @@ public:
     {
         logVerbose = false;
         optArchive = false;
+        optLegacy = false;
         optShared = false;
         optWorkUnit = false;
         optNoCompile = false;
@@ -252,6 +253,7 @@ protected:
     bool optShared;
     bool optOnlyCompile;
     bool optSaveQueryText;
+    bool optLegacy;
 };
 
 
@@ -729,6 +731,10 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
     {
         //Minimize the scope of the parse context to reduce lifetime of cached items.
         HqlParseContext parseCtx(repository, instance.archive);
+        setLegacyEclSemantics(instance.legacyMode);
+        if (instance.archive)
+            instance.archive->setPropBool("@legacyMode", instance.legacyMode);
+
         parseCtx.ignoreUnknownImport = instance.ignoreUnknownImport;
         scope.setown(createPrivateScope());
 
@@ -755,7 +761,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
             {
                 Owned<IFileContents> contents = createFileContentsFromText(queryText, sourcePath);
 
-                if (instance.importAllModules)
+                if (instance.legacyMode)
                     importRootModulesToScope(scope, ctx);
 
                 qquery.setown(parseQuery(scope, contents, ctx, NULL, true));
@@ -849,15 +855,19 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
     if (optQueryRepositoryReference)
         queryAttributePath = optQueryRepositoryReference;
 
-    const char * sourceFilename = archiveTree->queryProp("Query/@originalFilename");
-    instance.eclVersion.set(archiveTree->queryProp("@eclVersion"));
+    //The legacy mode (if specified) in the archive takes precedence - it needs to match to compile.
+    instance.legacyMode = archiveTree->getPropBool("@legacyMode", instance.legacyMode);
+
+    //Some old archives contained imports, but no definitions of the module.  This option is to allow them to compile.
     instance.ignoreUnknownImport = archiveTree->getPropBool("@ignoreUnknownImport", false);
 
+    instance.eclVersion.set(archiveTree->queryProp("@eclVersion"));
     checkEclVersionCompatible(instance.errs, instance.eclVersion);
 
     Owned<IEclSourceCollection> archiveCollection;
     if (archiveTree->getPropBool("@testRemoteInterface", false))
     {
+        //This code is purely here for regression testing some of the classes used in the enterprise version.
         Owned<IXmlEclRepository> xmlRepository = createArchiveXmlEclRepository(archiveTree);
         archiveCollection.setown(createRemoteXmlEclCollection(NULL, *xmlRepository, NULL, false));
         archiveCollection->checkCacheValid();
@@ -866,9 +876,9 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
         archiveCollection.setown(createArchiveEclCollection(archiveTree));
 
     Owned<IEclRepository> archiveServer = createRepository(archiveCollection);
-
     if (queryText || queryAttributePath)
     {
+        const char * sourceFilename = archiveTree->queryProp("Query/@originalFilename");
         Owned<IEclRepository> dataServer = createCompoundRepositoryF(pluginsRepository.get(), archiveServer.get(), NULL);
         processSingleQuery(instance, dataServer, sourceFilename, queryText, queryAttributePath);
     }
@@ -926,7 +936,7 @@ void EclCC::processFile(EclCompileInstance & instance)
     else
         processSingleQuery(instance, searchRepository, fname.str(), queryTxt, NULL);
 
-    if (instance.reportErrorSummary())
+    if (instance.reportErrorSummary() && !instance.archive)
         return;
 
     if (instance.archive)
@@ -1018,13 +1028,13 @@ bool EclCC::processFiles()
     else if (inputFiles.ordinality() == 0)
     {
         assertex(optQueryRepositoryReference);
-        EclCompileInstance info(NULL, *errs, stderr, optOutputFilename);
+        EclCompileInstance info(NULL, *errs, stderr, optOutputFilename, optLegacy);
         processReference(info, optQueryRepositoryReference);
         ok = (errs->errCount() == 0);
     }
     else
     {
-        EclCompileInstance info(&inputFiles.item(0), *errs, stderr, optOutputFilename);
+        EclCompileInstance info(&inputFiles.item(0), *errs, stderr, optOutputFilename, optLegacy);
         processFile(info);
         ok = (errs->errCount() == 0);
     }
@@ -1123,9 +1133,8 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
             libraryPaths.append(tempArg);
         }
-        else if (iter.matchFlag(tempBool, "-legacy"))
+        else if (iter.matchFlag(optLegacy, "-legacy"))
         {
-            setLegacyEclSemantics(tempBool);
         }
         else if (iter.matchOption(optLogfile, "--logfile"))
         {
@@ -1338,7 +1347,7 @@ void EclCC::processBatchedFile(IFile & file, bool multiThreaded)
             }
 
             Owned<IErrorReceiver> localErrs = createFileErrorReceiver(logFile);
-            EclCompileInstance info(&file, *localErrs, logFile, outFilename);
+            EclCompileInstance info(&file, *localErrs, logFile, outFilename, optLegacy);
             processFile(info);
             //Following only produces output if the system has been compiled with TRANSFORM_STATS defined
             dbglogTransformStats(true);
