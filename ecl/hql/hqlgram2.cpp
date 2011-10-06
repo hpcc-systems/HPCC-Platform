@@ -2631,7 +2631,7 @@ void HqlGram::processForwardModuleDefinition(const attribute & errpos)
         switch (next)
         {
         case ASSIGN:
-            if ((sharedSymbolKind != 0) && prevId)
+            if ((sharedSymbolKind != 0) && prevId && (endNesting == 0))
             {
                 sharedSymbolName = prevId;
             }
