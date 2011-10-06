@@ -62,6 +62,7 @@ public:
     bool     useMpForDistribute;
     bool     expandSingleConstRow;
     bool     createSpillAsDataset;
+    bool     useLinkedRawIterator;
 
     IHqlExpression * graphIdExpr;
     unsigned nextResult;
