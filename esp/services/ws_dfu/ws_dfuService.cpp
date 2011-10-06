@@ -1623,6 +1623,76 @@ bool FindInStringArray(StringArray& clusters, const char *cluster)
     return bFound;
 }
 
+static void getFilePermission(const CDfsLogicalFileName &dlfn, ISecUser* user, IUserDescriptor* udesc, ISecManager* secmgr, int& permission)
+{
+    if (dlfn.isMulti())
+    {
+        unsigned i = dlfn.multiOrdinality();
+        while (i--)
+        {
+            getFilePermission(dlfn.multiItem(i), user, udesc, secmgr, permission);
+        }
+    }
+    else
+    {
+        int permissionTemp;
+        if (dlfn.isForeign())
+        {
+            permissionTemp = queryDistributedFileDirectory().getFilePermissions(dlfn.get(), udesc);
+        }
+        else
+        {
+            StringBuffer scopes;
+            dlfn.getScopes(scopes);
+            permissionTemp = secmgr->authorizeFileScope(*user, scopes.str());
+        }
+
+        //Descrease the permission whenever a component has a lower permission.
+        if (permissionTemp < permission)
+            permission = permissionTemp;
+    }
+
+    return;
+}
+
+bool CWsDfuEx::getUserFilePermission(IEspContext &context, IUserDescriptor* udesc, const char* logicalName, int& permission)
+{
+    ISecManager* secmgr = context.querySecManager();
+    if (!secmgr)
+    {
+        return false;
+    }
+
+    StringBuffer username;
+    StringBuffer password;
+    udesc->getUserName(username);
+    if (username.length() < 1)
+    {
+        DBGLOG("User Name not defined\n");
+        return false;
+    }
+
+    udesc->getPassword(password);
+    Owned<ISecUser> user = secmgr->createUser(username);
+    if (!user)
+    {
+        DBGLOG("User %s not found\n", username.str());
+        return false;
+    }
+
+    if (password.length() > 0)
+        user->credentials().setPassword(password);
+
+    CDfsLogicalFileName dlfn;
+    dlfn.set(logicalName);
+
+    //Start from the SecAccess_Full. Descrease the permission whenever a component has a lower permission.
+    permission = SecAccess_Full;
+    getFilePermission(dlfn, user, udesc, secmgr, permission);
+
+    return true;
+}
+
 void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, const char *name, const char *cluster, 
     const char *description,IEspDFUFileDetail& FileDetails)
 {
@@ -1904,45 +1974,29 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
 
     if (version > 1.08 && udesc)
     {
-        ISecManager* secmgr = context.querySecManager();
-        if (secmgr)
+        int permission;
+        if (getUserFilePermission(context, udesc, name, permission))
         {
-            StringBuffer username;
-            StringBuffer password;
-            udesc->getUserName(username);
-            if (username.length()) 
+            switch (permission)
             {
-                udesc->getPassword(password);
-                
-                Owned<ISecUser> user = secmgr->createUser(username);
-                if (user) 
-                {
-                    user->credentials().setPassword(password);
-
-                    StringBuffer accessStr;
-                    int access = secmgr->authorizeFileScope(*user, name);
-                    switch (access)
-                    {
-                    case SecAccess_Full:
-                        FileDetails.setUserPermission("Full Access Permission");
-                        break;
-                    case SecAccess_Write:
-                        FileDetails.setUserPermission("Write Access Permission");
-                        break;
-                    case SecAccess_Read:
-                        FileDetails.setUserPermission("Read Access Permission");
-                        break;
-                    case SecAccess_Access:
-                        FileDetails.setUserPermission("Access Permission");
-                        break;
-                    case SecAccess_None:
-                        FileDetails.setUserPermission("None Access Permission");
-                        break;
-                    default:
-                        FileDetails.setUserPermission("Permission Unknown");
-                        break;
-                    }
-                }
+            case SecAccess_Full:
+                FileDetails.setUserPermission("Full Access Permission");
+                break;
+            case SecAccess_Write:
+                FileDetails.setUserPermission("Write Access Permission");
+                break;
+            case SecAccess_Read:
+                FileDetails.setUserPermission("Read Access Permission");
+                break;
+            case SecAccess_Access:
+                FileDetails.setUserPermission("Access Permission");
+                break;
+            case SecAccess_None:
+                FileDetails.setUserPermission("None Access Permission");
+                break;
+            default:
+                FileDetails.setUserPermission("Permission Unknown");
+                break;
             }
         }
     }
@@ -2462,7 +2516,7 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
         }
         if(!fi)
             throw MakeStringException(ECLWATCH_CANNOT_GET_FILE_ITERATOR,"Cannot get information from file system.");
-        
+
         StringBuffer wuFrom, wuTo;
         if(req.getStartDate() && *req.getStartDate())
         {
