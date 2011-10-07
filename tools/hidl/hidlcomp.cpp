@@ -6272,12 +6272,18 @@ void EspServInfo::write_esp_client_ipp()
     outs("\tStringBuffer m_password;\n");
     outs("\tStringBuffer m_realm;\n");
     outs("\tStringBuffer m_action;\n");
-    
     outs("\tlong m_reqId;\n");
     outs("\npublic:\n");
     outs("\tIMPLEMENT_IINTERFACE;\n\n");
-    outf("\tCClient%s()\n\t{\n\t\tm_reqId=0;\n\t}\n\tvirtual ~CClient%s(){}\n", name_, name_);
-    
+
+    outf("\tCClient%s()\n\t{\n", name_);
+    outs("\t\tm_reqId=0;\n\t");
+    outf("\t\tm_action.append(\"%s\");\n\t", name_);
+    const char *ver = getMetaString("default_client_version", NULL);
+    if (ver && *ver)
+        outf("\t\tm_action.append(\"?ver_=\").append(%s);\n\t", ver);
+    outf("}\n\tvirtual ~CClient%s(){}\n", name_);
+
     outs("\tvirtual void setProxyAddress(const char *address)\n\t{\n\t\tm_proxy.set(address);\n\t}\n");
     outs("\tvirtual void addServiceUrl(const char *url)\n\t{\n\t\tm_url.set(url);\n\t}\n");
     outs("\tvirtual void removeServiceUrl(const char *url)\n\t{\n\t}\n");
