@@ -23,6 +23,7 @@
 #include "dautils.hpp"
 #include "dllserver.hpp"
 #include "ccddali.hpp"
+#include "ccdfile.hpp"
 #include "ccd.hpp"
 
 #include "dllserver.hpp"
@@ -102,7 +103,6 @@ private:
 
                     setPasswordsFromSDS();
                     CSDSServerStatus serverstatus("Roxieserver");
-                    initDllServer(queryDirectory);
                     isConnected = true;
                 }
                 catch(IException *e)
@@ -181,6 +181,7 @@ private:
             cache->setPropTree(xpath, LINK(val));
         else
             cache->removeProp(xpath);
+        ensureDirectory(queryDirectory);
         StringBuffer cacheFileName(queryDirectory);
         cacheFileName.append(roxieStateName);
         saveXML(cacheFileName, cache);
@@ -409,8 +410,13 @@ public:
 class CRoxieDllServer : public CInterface, implements IDllServer
 {
     static CriticalSection crit;
+    bool started;
 public:
     IMPLEMENT_IINTERFACE;
+    CRoxieDllServer()
+    {
+        started = false;
+    }
 
     virtual IIterator * createDllIterator() { throwUnexpected(); }
     virtual void ensureAvailable(const char * name, DllLocationType location) { throwUnexpected(); }
@@ -433,6 +439,12 @@ public:
         }
         CriticalBlock b(crit);
         Owned<IRoxieDaliHelper> daliHelper = connectToDali();
+        if (!started)
+        {
+            ensureDirectory(queryDirectory);
+            initDllServer(queryDirectory);
+            started = true;
+        }
         return queryDllServer().loadDll(name, location);
     }
 } roxieDllServer;
