@@ -2458,7 +2458,7 @@ CThorRowAggregator *mergeLocalAggs(CActivityBase &activity, IHThorRowAggregator 
             virtual unsigned hash(const void *rowMeta)
             {
                 const void *row;
-                memcpy(&row, ((const byte *)rowMeta)+sizeof(size32_t), sizeof(size32_t));
+                memcpy(&row, ((const byte *)rowMeta)+sizeof(size32_t), sizeof(const void *));
                 return baseHash->hash(row);
             }
         } nodeCompare(helperExtra.queryHashElement());
@@ -2471,7 +2471,7 @@ CThorRowAggregator *mergeLocalAggs(CActivityBase &activity, IHThorRowAggregator 
                 break;
             readCount++;
             const void *row;
-            memcpy(&row, ((const byte *)rowMeta.get())+sizeof(size32_t), sizeof(size32_t));
+            memcpy(&row, ((const byte *)rowMeta.get())+sizeof(size32_t), sizeof(const void *));
             globalAggTable->mergeElement(row);
         }
     }
