@@ -10561,13 +10561,8 @@ protected:
         }
         else
         {
-            if (ctx->queryWorkUnit())
-            {
-                // Not really sure if this code is wanted. What is the cluster name info in a workunit?
-                SCMStringBuffer cluster;
-                ctx->queryWorkUnit()->getClusterName(cluster);
-                clusters.append(cluster.str());
-            }
+            if (roxieName.length())
+                clusters.append(roxieName.str());
             else
                 clusters.append(".");
         }
