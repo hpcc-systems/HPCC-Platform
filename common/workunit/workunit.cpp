@@ -650,7 +650,7 @@ public:
     virtual IPropertyTreeIterator & getFileIterator() const;
     virtual bool archiveWorkUnit(const char *base,bool del,bool ignoredllerrors,bool deleteOwned);
     virtual void packWorkUnit(bool pack=true);
-    virtual IDateTime & getTimeScheduled(IDateTime &val) const;
+    virtual IJlibDateTime & getTimeScheduled(IJlibDateTime &val) const;
     virtual IPropertyTreeIterator & getFilesReadIterator() const;
     virtual void protect(bool protectMode);
     virtual IConstWULibrary * getLibraryByName(const char * name) const;
@@ -726,7 +726,7 @@ public:
     void resetBeforeGeneration();
     void deleteTempFiles(const char *graph, bool deleteOwned, bool deleteJobOwned);
     void addDiskUsageStats(__int64 avgNodeUsage, unsigned minNode, __int64 minNodeUsage, unsigned maxNode, __int64 maxNodeUsage, __int64 graphId);
-    void setTimeScheduled(const IDateTime &val);
+    void setTimeScheduled(const IJlibDateTime &val);
 
 // ILocalWorkUnit - used for debugging etc
     void loadXML(const char *xml);
@@ -1063,7 +1063,7 @@ public:
             { c->packWorkUnit(pack); }
     virtual unsigned queryFileUsage(const char *filename) const
             { return c->queryFileUsage(filename); }
-    virtual IDateTime & getTimeScheduled(IDateTime &val) const
+    virtual IJlibDateTime & getTimeScheduled(IJlibDateTime &val) const
             { return c->getTimeScheduled(val); }
     virtual unsigned getDebugAgentListenerPort() const
             { return c->getDebugAgentListenerPort(); }
@@ -1219,7 +1219,7 @@ public:
 
     virtual void setSnapshot(const char * value)
             { c->setSnapshot(value); }
-    virtual void setTimeScheduled(const IDateTime &val)
+    virtual void setTimeScheduled(const IJlibDateTime &val)
             { c->setTimeScheduled(val); }
     virtual void setDebugAgentListenerPort(unsigned port)
             { c->setDebugAgentListenerPort(port); }
@@ -2450,6 +2450,13 @@ extern WORKUNIT_API IWorkUnitFactory * getSecWorkUnitFactory(ISecManager &secmgr
     return new CSecureWorkUnitFactory(secmgr, secuser);
 }
 
+extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory(ISecManager *secmgr, ISecUser *secuser)
+{
+    if (secmgr && secuser)
+        return getSecWorkUnitFactory(*secmgr, *secuser);
+    else
+        return getWorkUnitFactory();
+}
 
 //==========================================================================================
 
@@ -2668,14 +2675,14 @@ void CLocalWorkUnit::cleanupAndDelete(bool deldll,bool deleteOwned)
     connection.clear();
 }
 
-void CLocalWorkUnit::setTimeScheduled(const IDateTime &val)
+void CLocalWorkUnit::setTimeScheduled(const IJlibDateTime &val)
 {
     SCMStringBuffer strval;
     val.getGmtString(strval);
     p->setProp("@timescheduled",strval.str());
 }
 
-IDateTime & CLocalWorkUnit::getTimeScheduled(IDateTime &val) const
+IJlibDateTime & CLocalWorkUnit::getTimeScheduled(IJlibDateTime &val) const
 {
     StringBuffer str;
     p->getProp("@timescheduled",str);
@@ -3795,7 +3802,9 @@ class CEnvironmentClusterInfo: public CInterface, implements IConstWUClusterInfo
     StringAttr serverQueue;
     StringAttr agentQueue;
     StringAttr roxieQueue;
+    StringAttr roxieProcess;
     StringAttr thorQueue;
+    StringArray thorProcesses;
     StringAttr prefix;
     StringAttr platform;
     StringAttr querySetName;
@@ -3814,6 +3823,7 @@ public:
             ForEachItemIn(i,thors) 
             {
                 IPropertyTree &thor = thors.item(i);
+                thorProcesses.append(thor.queryProp("@name"));
                 unsigned ts = thor.getPropInt("@slaves");
                 if (clusterWidth && (ts!=clusterWidth)) 
                     throw MakeStringException(WUERR_MismatchClusterSize,"CEnvironmentClusterInfo: mismatched thor sizes in cluster");
@@ -3828,6 +3838,7 @@ public:
         }
         else if (roxie)
         {
+            roxieProcess.set(roxie->queryProp("@name"));
             clusterWidth = roxie->getPropInt("@numChannels", 1);
             platform.set("roxie");
         }
@@ -3887,6 +3898,15 @@ public:
     {
         str.set(querySetName.get());
         return str;
+    }
+    IStringVal & getRoxieProcess(IStringVal & str) const
+    {
+        str.set(roxieProcess.get());
+        return str;
+    }
+    const StringArray & getThorProcesses() const
+    {
+        return thorProcesses;
     }
 
 };
@@ -4353,6 +4373,7 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached)
     updateProp(p, fromP, "allowedclusters");
     updateProp(p, fromP, "@submitID");
     updateProp(p, fromP, "CustomerID");
+    updateProp(p, fromP, "SNAPSHOT");
 
     //Variables may have been set up as parameters to the query - so need to preserve any values that were supplied.
     pt = fromP->getBranch("Variables");
@@ -7468,7 +7489,7 @@ extern WORKUNIT_API ILocalWorkUnit * createLocalWorkUnit()
     return ret;
 }
 
-StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str)
+extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str)
 {
     const CLocalWorkUnit *w = QUERYINTERFACE(wu, const CLocalWorkUnit);
     if (!w)

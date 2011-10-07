@@ -35,6 +35,7 @@
 
 #include "jiface.hpp"
 #include "errorlist.h"
+#include "jtime.hpp"
 
 #define CHEAP_UCHAR_DEF
 #ifdef _WIN32
@@ -72,28 +73,6 @@ interface IScmIterator : extends IInterface
     virtual bool next() = 0;
     virtual bool isValid() = 0;
 };
-
-interface IConstDateTime : extends IInterface
-{
-    virtual IStringVal & getGmtString(IStringVal & str) const = 0;
-    virtual IStringVal & getLocalString(IStringVal & str) const = 0;
-    virtual IStringVal & getGmtDateString(IStringVal & str) const = 0;
-    virtual IStringVal & getLocalDateString(IStringVal & str) const = 0;
-    virtual IStringVal & getGmtTimeString(IStringVal & str) const = 0;
-    virtual IStringVal & getLocalTimeString(IStringVal & str) const = 0;
-};
-
-
-interface IDateTime : extends IConstDateTime
-{
-    virtual void setGmtString(const char * pstr) = 0;
-    virtual void setLocalString(const char * pstr) = 0;
-    virtual void setGmtDateString(const char * pstr) = 0;
-    virtual void setLocalDateString(const char * pstr) = 0;
-    virtual void setGmtTimeString(const char * pstr) = 0;
-    virtual void setLocalTimeString(const char * pstr) = 0;
-};
-
 
 interface IQueueSwitcher : extends IInterface
 {
@@ -561,6 +540,8 @@ interface IConstWUClusterInfo : extends IInterface
     virtual IStringVal & getRoxieQueue(IStringVal & str) const = 0;
     virtual IStringVal & getServerQueue(IStringVal & str) const = 0;
     virtual IStringVal & getQuerySetName(IStringVal & str) const = 0;
+    virtual IStringVal & getRoxieProcess(IStringVal & str) const = 0;
+    virtual const StringArray & getThorProcesses() const = 0;
 };
 
 //! IWorkflowItem
@@ -909,7 +890,7 @@ interface IConstWorkUnit : extends IInterface
     virtual bool getCloneable() const = 0;
     virtual IUserDescriptor * queryUserDescriptor() const = 0;
     virtual IStringVal & getSnapshot(IStringVal & str) const = 0;
-    virtual IDateTime & getTimeScheduled(IDateTime & val) const = 0;
+    virtual IJlibDateTime & getTimeScheduled(IJlibDateTime & val) const = 0;
     virtual IPropertyTreeIterator & getFilesReadIterator() const = 0;
     virtual void protect(bool protectMode) = 0;
     virtual IStringVal & getAllowedClusters(IStringVal & str) const = 0;
@@ -994,7 +975,7 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void addDiskUsageStats(__int64 avgNodeUsage, unsigned minNode, __int64 minNodeUsage, unsigned maxNode, __int64 maxNodeUsage, __int64 graphId) = 0;
     virtual void setCloneable(bool value) = 0;
     virtual void setIsClone(bool value) = 0;
-    virtual void setTimeScheduled(const IDateTime & val) = 0;
+    virtual void setTimeScheduled(const IJlibDateTime & val) = 0;
     virtual void noteFileRead(IDistributedFile * file) = 0;
     virtual void clearGraphProgress() = 0;
     virtual void resetBeforeGeneration() = 0;
@@ -1035,12 +1016,12 @@ interface IConstWorkUnitIterator : extends IScmIterator
 
 interface IWUTimers : extends IInterface
 {
-    virtual void setTrigger(const IDateTime & dt) = 0;
-    virtual IDateTime & getTrigger(IDateTime & dt) const = 0;
-    virtual void setExpiration(const IDateTime & dt) = 0;
-    virtual IDateTime & getExpiration(IDateTime & dt) const = 0;
-    virtual void setSubmission(const IDateTime & dt) = 0;
-    virtual IDateTime & getSubmission(IDateTime & dt) const = 0;
+    virtual void setTrigger(const IJlibDateTime & dt) = 0;
+    virtual IJlibDateTime & getTrigger(IJlibDateTime & dt) const = 0;
+    virtual void setExpiration(const IJlibDateTime & dt) = 0;
+    virtual IJlibDateTime & getExpiration(IJlibDateTime & dt) const = 0;
+    virtual void setSubmission(const IJlibDateTime & dt) = 0;
+    virtual IJlibDateTime & getSubmission(IJlibDateTime & dt) const = 0;
 };
 
 
@@ -1132,6 +1113,13 @@ interface IExtendedWUInterface
     
 };
 
+struct WorkunitUpdate : public Owned<IWorkUnit>
+{
+public:
+    WorkunitUpdate(IWorkUnit *wu) : Owned<IWorkUnit>(wu) { }
+    ~WorkunitUpdate() { if (get()) get()->commit(); }
+};
+
 extern WORKUNIT_API IStringVal &getEclCCServerQueueNames(IStringVal &ret, const char *process);
 extern WORKUNIT_API IStringVal &getEclServerQueueNames(IStringVal &ret, const char *process);
 extern WORKUNIT_API IStringVal &getEclSchedulerQueueNames(IStringVal &ret, const char *process);
@@ -1151,8 +1139,10 @@ extern WORKUNIT_API bool parseGraphTimerLabel(const char *label, StringBuffer &g
 extern WORKUNIT_API void addExceptionToWorkunit(IWorkUnit * wu, WUExceptionSeverity severity, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column);
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory();
 extern WORKUNIT_API IWorkUnitFactory * getSecWorkUnitFactory(ISecManager &secmgr, ISecUser &secuser);
+extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory(ISecManager *secmgr, ISecUser *secuser);
 extern WORKUNIT_API ILocalWorkUnit* createLocalWorkUnit();
 extern WORKUNIT_API IStringVal& exportWorkUnitToXML(const IConstWorkUnit *wu, IStringVal &str);
+extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str);
 extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags);
 extern WORKUNIT_API void submitWorkUnit(const char *wuid, const char *username, const char *password);
 extern WORKUNIT_API void abortWorkUnit(const char *wuid);

@@ -449,11 +449,28 @@ void WuWebView::load(const char *wuid)
 
 extern WUWEBVIEW_API IWuWebView *createWuWebView(IConstWorkUnit &wu, const char *queryname, const char *dir, bool mapEspDirectories)
 {
-    return new WuWebView(wu, queryname, dir, mapEspDirectories);
+    try
+    {
+        return new WuWebView(wu, queryname, dir, mapEspDirectories);
+    }
+    catch (...)
+    {
+        SCMStringBuffer wuid;
+        DBGLOG("ERROR loading workunit %s shared object.", wu.getWuid(wuid).str());
+    }
+    return NULL;
 }
 
 extern WUWEBVIEW_API IWuWebView *createWuWebView(const char *wuid, const char *queryname, const char *dir, bool mapEspDirectories)
 {
-    return new WuWebView(wuid, queryname, dir, mapEspDirectories);
+    try
+    {
+        return new WuWebView(wuid, queryname, dir, mapEspDirectories);
+    }
+    catch (...)
+    {
+        DBGLOG("ERROR loading workunit %s shared object.", wuid);
+    }
+    return NULL;
 }
 

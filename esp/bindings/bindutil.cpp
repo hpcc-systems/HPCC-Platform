@@ -625,10 +625,10 @@ static unsigned char isValidUrlChar[96] =
     0x1,0x1,0x1,0x1,0x1,0x1,0x1,0x1,0x1,0x1,0x1,0x0,0x0,0x0,0x0,0x0  /* pqrstuvwxyz{\}~DEL */
 };
 
-void Utils::url_encode(const char* url, StringBuffer& encoded_url)
+StringBuffer &Utils::url_encode(const char* url, StringBuffer& encoded_url)
 {
     if(!url)
-        return;
+        return encoded_url;
     unsigned char c;
     int i = 0;
     while((c = url[i]) != 0)
@@ -641,6 +641,7 @@ void Utils::url_encode(const char* url, StringBuffer& encoded_url)
             encoded_url.appendf("%%%02X", c);
         i++;
     }
+    return encoded_url;
 }
 
 static char translateHex(char hex) {
