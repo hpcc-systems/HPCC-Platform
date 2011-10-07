@@ -53,6 +53,7 @@ GetOptions('help|?' => sub { pod2usage(-exitstatus => 0, -verbose => 2) },
            'listconfigs|lc' => \$options->{listconfigs},
            'describeonly' => \$options->{describeonly},
            'setup_generate|setup' => \$options->{setup_generate},
+           'generate_ini|ini=s' => \$options->{generate_ini},
            'suite|s=s' => \$options->{suite},
            'query=s' => \$options->{query},
            'variant=s' => \$options->{variant},
@@ -70,7 +71,7 @@ GetOptions('help|?' => sub { pod2usage(-exitstatus => 0, -verbose => 2) },
            'verbose' => \$options->{verbose},
            'config' => \$options->{configfile}) or pod2usage(-exitstatus => 2, -verbose => 1);
 
-if((@ARGV == 0) && !($options->{setup_generate} || $options->{listconfigs}))
+if((@ARGV == 0) && !($options->{setup_generate} || $options->{listconfigs} || $options->{generate_ini}))
 {
     print(STDERR "Missing argument (expected configuration name)\n");
     pod2usage(-exitstatus => 2, -verbose => 1);
@@ -86,6 +87,10 @@ my $engine = Regress::Engine->new($options);
 if($options->{listconfigs})
 {
     $engine->listconfigs();
+    exit(0);
+}
+if($options->{generate_ini})
+{
     exit(0);
 }
 $engine->init();
@@ -105,6 +110,10 @@ __END__
 =item B<-setup_generate>|B<-setup>|B<-se>
 
 Runs the setup queries rather than the test queries. May not be used with the options B<-class>, B<-query>, or B<-norun>.
+
+=item B<-generate_ini>|B<-ini>
+
+Builds the regress.ini file from the specified environment.xml file (created when HPCC builds). Needed to run -setup.
 
 =item B<-suite>|B<-s> I<suite>
 
