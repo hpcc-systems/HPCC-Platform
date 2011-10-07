@@ -43,7 +43,7 @@
                  <link rel="stylesheet" type="text/css" href="/esp/files/css/eclwatch.css" />
                  <script type="text/javascript" src="/esp/files/scripts/espdefault.js">&#160;</script>
                </head>
-               <body class="yui-skin-sam" onload="nof5();onChangeMachine(true)">
+               <body class="yui-skin-sam" onload="nof5();onChangeMachine(true);onChangeDestGroup()">
                   <form method="POST" action="/FileSpray/{$method}">
                      <xsl:call-template name="generateForm"/>
                   </form>
@@ -121,7 +121,33 @@
                if (document.forms[0].label.value.length > 0)
                 onChangeLabel(document.forms[0].label)
               }
-            }         
+            }
+
+            var lastReplicateSelect = true; //as default
+            function replicateClicked(obj)
+            {
+                lastReplicateSelect = obj.checked;
+            }
+
+            function onChangeDestGroup()
+            {
+                var row = document.getElementById('replicateRow');
+                var obj = document.getElementById('replicate');
+                var groups = document.getElementById("destGroup");
+                var selected = groups.options[groups.selectedIndex];
+                if (selected.title == 'false')
+                {
+                    row.style.display = 'none';
+                    row.style.visibility = 'hidden';
+                    obj.checked = false;
+                }
+                else
+                {
+                    row.style.display = 'table-row';
+                    row.style.visibility = 'visible';
+                    obj.checked = lastReplicateSelect;
+                }
+            }
                      
             function onChangeLabel(o)
             {   
@@ -469,11 +495,16 @@
          <tr>
             <td>Group:</td>
             <td>
-               <select name="destGroup" id="destGroup">
+               <select name="destGroup" id="destGroup" onkeyup="onChangeDestGroup()" onchange="onChangeDestGroup()">
                   <xsl:variable name="grp" select="Software/DfuWorkunit/Destination/@group"/>
                   <xsl:for-each select="Software/ThorCluster">
                      <option>
-                        <xsl:attribute name="value"><xsl:value-of select="@name"/></xsl:attribute>
+                        <xsl:attribute name="title"> <!--Specifies extra information about an element-->
+                            <xsl:value-of select="@replicateOutputs"/>
+                        </xsl:attribute>
+                        <xsl:attribute name="value">
+                            <xsl:value-of select="@name"/>
+                        </xsl:attribute>
                         <xsl:variable name="curgrp" select="@name"/>
                         <xsl:if test="$grp = $curgrp">
                            <xsl:attribute name="selected"/>
@@ -524,10 +555,10 @@
                <input type="checkbox" name="overwrite" value="1"/>
             </td>
          </tr>
-         <tr>
+         <tr id="replicateRow" >
             <td>Replicate:</td>
             <td>
-               <input type="checkbox" name="replicate" value="1" checked="1"/>
+               <input type="checkbox" id="replicate" name="replicate" value="1" checked="1" onclick="replicateClicked(this)"/>
             </td>
          </tr>
          <tr>
