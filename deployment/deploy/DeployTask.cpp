@@ -661,7 +661,7 @@ public:
              try
              {
                StringBuffer cmd;
-               cmd.clear().appendf("chmod -R 744 %s", destpath.str());
+               cmd.clear().appendf("chmod -R 755 %s", destpath.str());
                task->execSSHCmd(ip.str(), cmd, outbuf, errbuf);
              }
              catch(IException* e)
