@@ -334,15 +334,6 @@ void addChannel(unsigned channel, const char *dataDirectory, bool isMe, bool sus
     }
 }
 
-void ensureDirectory(StringBuffer &dir)
-{
-    StringBuffer absolute;
-    recursiveCreateDirectory(dir.str());
-    makeAbsolutePath(dir.str(), absolute);
-    dir.clear().append(absolute);
-    addPathSepChar(dir);
-}
-
 extern void doUNIMPLEMENTED(unsigned line, const char *file)
 {
     throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "UNIMPLEMENTED at %s:%d", file, line);
@@ -550,14 +541,8 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             if (!logDirectory.length())
                 logDirectory.append(codeDirectory).append("logs");
         }
-        ensureDirectory(logDirectory);
 
         StringBuffer initialFileName;
-        StringBuffer timeDiffInfo;
-        StringBuffer logFileParam;
-        bool timescan = false;
-        bool timediff = false;
-        bool haslogfile = false;
         if (globals->getPropBool("stdlog", traceLevel != 0) || topology->getPropBool("@forceStdLog", false))
             queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_thread | MSGFIELD_prefix);
         else
@@ -565,17 +550,12 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         if (globals->hasProp("logfile"))
         {
             initialFileName.appendf("%sroxie.",logDirectory.str());
-
-            haslogfile = true;
             StringBuffer log;
             globals->getProp("logfile", log);
-            logFileParam.append(log);
-
             // If it's in the form mm_dd_yyyy_hh_mm_ss, and we have rolled over, then use rolled-over form
             unsigned year,month,day,hour,min,sec;
             if (sscanf(log.str(), "%2u_%2u_%4u_%2u_%2u_%2u", &month, &day, &year, &hour, &min, &sec)==6)
             {
-                timescan = true;
                 time_t tNow;
                 time(&tNow);
                 struct tm ltNow;
@@ -584,8 +564,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 ltNow.tm_year += 1900; // localtime returns  Year less 1900 */
                 if(ltNow.tm_mday != day || ltNow.tm_mon != month || ltNow.tm_year != year)
                 {
-                    timediff = true;
-                    timeDiffInfo.appendf("current_day = %d  day = %d  current_month = %d  month = %d   current_year = %d  year = %d", ltNow.tm_mday, day, ltNow.tm_mon, month, ltNow.tm_year, year);
                     addFileTimestamp(log.clear(), true); // this call adds a '.' at the beginning
                 }
             }
@@ -593,41 +571,35 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 DBGLOG("no date match");
 
             initialFileName.appendf("%s.log", (log[0] !='.') ? log.str() : (log.str()+1)); // make sure 'log' does not start with a '.'
-        }
-        else  // if not started via start scripts (usually by developer)
-        {
-            initialFileName.appendf("%sroxie.",logDirectory.str());
-            StringBuffer log;
-            addFileTimestamp(log.clear(), false); // this call adds a '.' at the beginning
-            initialFileName.appendf("%s.log", (log[0] !='.') ? log.str() : (log.str()+1)); // make sure 'log' does not start with a '.'
-        }
 
-        // build the base log file name using the logDir setting in the topology file
-        StringBuffer logBaseName(logDirectory.str());
-        logBaseName.append("roxie");
+            // build the base log file name using the logDir setting in the topology file
+            ensureDirectory(logDirectory);
+            StringBuffer logBaseName(logDirectory.str());
+            logBaseName.append("roxie");
 
-        // set the alias name 
-        StringBuffer logAliasName(logBaseName.str());
-        logAliasName.append(".log");
+            // set the alias name
+            StringBuffer logAliasName(logBaseName.str());
+            logAliasName.append(".log");
 
 #ifdef _DEBUG
-        useLogQueue = topology->getPropBool("@useLogQueue", false);
+            useLogQueue = topology->getPropBool("@useLogQueue", false);
 #else
-        useLogQueue = topology->getPropBool("@useLogQueue", true);
+            useLogQueue = topology->getPropBool("@useLogQueue", true);
 #endif
-        logQueueLen = topology->getPropInt("@logQueueLen", 512);
-        logQueueDrop = topology->getPropInt("@logQueueDrop", 32);
+            logQueueLen = topology->getPropInt("@logQueueLen", 512);
+            logQueueDrop = topology->getPropInt("@logQueueDrop", 32);
 
-        ILogMsgFilter * filter = getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail, false);
-        logFileHandler = getRollingFileLogMsgHandler(logBaseName.str(), ".log", MSGFIELD_STANDARD, true, true, initialFileName.length() ? initialFileName.str() : NULL, logAliasName.str());
-        queryLogMsgManager()->addMonitorOwn(logFileHandler, filter);
-        if (useLogQueue)
-        {
-            queryLogMsgManager()->enterQueueingMode();
-            queryLogMsgManager()->setQueueDroppingLimit(logQueueLen, logQueueDrop);
+            ILogMsgFilter * filter = getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail, false);
+            logFileHandler = getRollingFileLogMsgHandler(logBaseName.str(), ".log", MSGFIELD_STANDARD, true, true, initialFileName.length() ? initialFileName.str() : NULL, logAliasName.str());
+            queryLogMsgManager()->addMonitorOwn(logFileHandler, filter);
+            if (useLogQueue)
+            {
+                queryLogMsgManager()->enterQueueingMode();
+                queryLogMsgManager()->setQueueDroppingLimit(logQueueLen, logQueueDrop);
+            }
+            if (globals->getPropBool("enableSysLog",true))
+                UseSysLogForOperatorMessages();
         }
-        if (globals->getPropBool("enableSysLog",true))
-            UseSysLogForOperatorMessages();
         roxieMetrics.setown(createRoxieMetricsManager());
  
         Owned<IPropertyTreeIterator> userMetrics = topology->getElements("./UserMetric");
@@ -666,9 +638,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 DBGLOG("Roxie starting, build = %s", BUILD_TAG);
             }
         }
-
-        if (traceLevel)
-            DBGLOG("%s log = %s originalLogName = %s logBaseName = %s  alias = %s  haslogfile = %d  timescan = %d   timediff = %d %s", BUILD_TAG, initialFileName.str(), logFileParam.str(), logBaseName.str(), logAliasName.str(), haslogfile, timescan, timediff, (timeDiffInfo.length()) ? timeDiffInfo.str() : " ");
 
         bool isCCD = false;
 
@@ -856,7 +825,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         topology->getProp("@pluginDirectory", pluginDirectory);
         if (pluginDirectory.length() == 0)
             pluginDirectory.append(codeDirectory).append("plugins");
-        ensureDirectory(pluginDirectory);
 
         if (queryDirectory.length() == 0)
         {
@@ -864,8 +832,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             if (queryDirectory.length() == 0)
                 queryDirectory.append(codeDirectory).append("queries");
         }
-
-        ensureDirectory(queryDirectory);
 
         baseDataDirectory.append(topology->queryProp("@baseDataDir"));
         queryFileCache().start();
