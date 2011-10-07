@@ -4965,7 +4965,6 @@ IHqlExpression * CExprFolderTransformer::percolateConstants(IHqlExpression * exp
             break;
         }
     case no_loop:
-    case no_loop2:
     case no_graphloop:
         //Safer to do nothing...
         break;
@@ -5339,7 +5338,6 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
     case no_activerow:
     case no_newrow:
     case no_loop:
-    case no_loop2:
     case no_graphloop:
     case no_rowsetindex:
     case no_rowsetrange:

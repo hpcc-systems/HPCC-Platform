@@ -1555,8 +1555,6 @@ unsigned getNumActivityArguments(IHqlExpression * expr)
         return expr->numChildren()-1;
     case no_forcelocal:
         return 0;
-    case no_loop2:
-        return 1;
     default:
         return getNumChildTables(expr);
     }
@@ -1581,8 +1579,9 @@ bool isDistributedSourceActivity(IHqlExpression * expr)
     case no_compound_indexcount:
     case no_compound_indexgroupaggregate:
         return true;
-    case no_workunit_dataset:
     case no_getgraphresult:
+        return expr->hasProperty(_distributed_Atom);
+    case no_workunit_dataset:
     case no_getgraphloopresult:
     case no_temptable:
     case no_inlinetable:
@@ -4220,24 +4219,32 @@ bool SplitDatasetAttributeTransformer::split(OwnedHqlExpr & dataset, OwnedHqlExp
             IHqlExpression * cur = &datasets.item(i);
             while ((cur->getOperator() == no_selectnth) || (cur->getOperator() == no_preservemeta))
                 cur = cur->queryChild(0);
+
+            bool remove = false;
             switch (cur->getOperator())
             {
-            case no_workunit_dataset:
             case no_getgraphresult:
+                remove = !expr->hasProperty(_distributed_Atom);
+                break;
+            case no_workunit_dataset:
             case no_getgraphloopresult:
             case no_left:
             case no_right:
             case no_colon:
             case no_globalscope:
             case no_nothor:
+                remove = true;
+                break;
+            }
+
+            if (remove)
+            {
                 datasets.remove(i);
                 newDatasets.remove(i);
                 num--;
-                break;
-            default:
-                i++;
-                break;
             }
+            else
+                i++;
         }
     }
 
@@ -5351,7 +5358,8 @@ int compareLibraryParameterOrder(IInterface * * pleft, IInterface * * pright)
 
 
 
-LibraryInputMapper::LibraryInputMapper(IHqlExpression * _libraryInterface) : libraryInterface(_libraryInterface)
+LibraryInputMapper::LibraryInputMapper(IHqlExpression * _libraryInterface)
+: libraryInterface(_libraryInterface)
 {
     assertex(libraryInterface->getOperator() == no_funcdef);
     scopeExpr.set(libraryInterface->queryChild(0));
@@ -5416,7 +5424,7 @@ IHqlExpression * LibraryInputMapper::resolveParameter(_ATOM search)
 }
 
 
-void LibraryInputMapper::mapRealToLogical(HqlExprArray & inputExprs, HqlExprArray & logicalParams, IHqlExpression * libraryId, bool canStream)
+void LibraryInputMapper::mapRealToLogical(HqlExprArray & inputExprs, HqlExprArray & logicalParams, IHqlExpression * libraryId, bool canStream, bool distributed)
 {
     //Create a list of expressions representing each of the inputs...
     ForEachItemIn(i1, realParameters)
@@ -5435,6 +5443,8 @@ void LibraryInputMapper::mapRealToLogical(HqlExprArray & inputExprs, HqlExprArra
                 args.append(*createAttribute(_streaming_Atom));
                 if (isGrouped(cur))
                     args.append(*createAttribute(groupedAtom));
+                if (distributed)
+                    args.append(*createAttribute(_distributed_Atom));
                 result = createDataset(no_getgraphresult, args);
             }
             else

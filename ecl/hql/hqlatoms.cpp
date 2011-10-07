@@ -86,6 +86,7 @@ _ATOM deprecatedAtom;
 _ATOM descAtom;
 _ATOM diskAtom;
 _ATOM distributedAtom;
+_ATOM _distributed_Atom;
 _ATOM _dot_Atom;
 _ATOM dynamicAtom;
 _ATOM ebcdicAtom;
@@ -457,6 +458,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(desc);
     MAKEATOM(disk);
     MAKEATOM(distributed);
+    MAKESYSATOM(distributed);
     MAKESYSATOM(dot);
     MAKEATOM(dynamic);
     MAKEATOM(ebcdic);

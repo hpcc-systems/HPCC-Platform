@@ -984,7 +984,6 @@ const char *getOpString(node_operator op)
     case no_enum: return "ENUM";
     case no_pat_or: return "|";
     case no_loop: return "LOOP";
-    case no_loop2: return "LOOP";
     case no_loopbody: return "no_loopbody";
     case no_cluster: return "CLUSTER";
     case no_forcenolocal: return "NOLOCAL";
@@ -1081,7 +1080,7 @@ const char *getOpString(node_operator op)
     case no_assign_addfiles: return "+=";
     case no_debug_option_value: return "__DEBUG__";
 
-    case no_unused1: case no_unused2: case no_unused3: case no_unused4: case no_unused5:
+    case no_unused1: case no_unused2: case no_unused3: case no_unused4: case no_unused5: case no_unused6:
     case no_unused13: case no_unused14: case no_unused15: case no_unused16: case no_unused17: case no_unused18: case no_unused19:
     case no_unused20: case no_unused21: case no_unused22: case no_unused23: case no_unused24: case no_unused25: case no_unused26: case no_unused27: case no_unused28: case no_unused29:
     case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38: case no_unused39:
@@ -1607,7 +1606,6 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_joincount:
     case no_combine:
     case no_combinegroup:   // Hmm really LEFT,rows but that's a bit too nasty.  RIGHT can be the first rhs record
-    case no_loop2:          // right is actually a row, but shouldn't cause issues.
     case no_process:
     case no_aggregate:
         return childdataset_leftright;
@@ -1789,8 +1787,6 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_normalizegroup:
     case no_owned_ds:
         return 1;
-    case no_loop2:
-        return 2;//hmm
     case no_childdataset:
     case no_left:
     case no_right:
@@ -1955,7 +1951,6 @@ node_operator queryHasRows(IHqlExpression * expr)
     case no_aggregate:
         return no_right;
     case no_loop:
-    case no_loop2:
     case no_graphloop:
     case no_rollupgroup:
     case no_nwayjoin:
@@ -2053,7 +2048,6 @@ bool definesColumnList(IHqlExpression * dataset)
     case no_iterate:
     case no_rollup:
     case no_loop:
-    case no_loop2:
     case no_graphloop:
     case no_newrow:         //only used while transforming
     case no_newaggregate:
@@ -10641,7 +10635,6 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
     case no_assert_ds:
     case no_spillgraphresult:
     case no_loop:
-    case no_loop2:
     case no_graphloop:
     case no_cluster:
     case no_forcenolocal:
