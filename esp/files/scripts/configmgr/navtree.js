@@ -4370,7 +4370,8 @@ function loadAndCheckFileNames(value)
           }
           else {
             var filename = '';
-            var pattern = /<Enter/;
+            var regEx = new RegExp('[,/\:*?""<>|]', 'g');
+
             if (value === '1')
               filename = document.getElementById('NewEnvTextBox');
             else if (value === '3')
@@ -4378,12 +4379,18 @@ function loadAndCheckFileNames(value)
             else
               filename = document.getElementById('blankEnvtextbox');
 
-            if (filename.value === '') {
-              alert("File name cannot be empty. Please enter file name.");
+            filename.value = trimStr(filename.value);
+
+            if (filename.value === '.xml') {
+              alert("File name cannot be '.xml'. Please enter file name.");
               filename.focus();
             }
-            else if ((filename.value).match(pattern) != null) {
-              alert("Cannot use <Enter file name> as filename. Please enter file name.");
+            else if (filename.value === '') {
+              alert("File name cannot be all spaces or empty. Please enter file name.");
+              filename.focus();
+            }
+            else if ((filename.value).search(regEx) != -1) {
+              alert("Invalid characters ',/\:*?\"<>|' found in filename. Please enter a valid file name.");
               filename.focus();
             }
             else {
@@ -4513,7 +4520,8 @@ function addFileExtToSourceFile(mode)
    default:
      break;
  }
- if ((filename.value).lastIndexOf(".xml") == -1)
+
+ if (filename.value.length < 4 || (filename.value).lastIndexOf(".xml") !== filename.value.length - 4)
    filename.value += ".xml";
 }
 
@@ -4732,4 +4740,9 @@ function onMenuItemSelectUnselect() {
 
   top.document.getElementById('SelectAllComputers').checked = false;
   dt.render();
+}
+
+function trimStr(str)
+{
+  return str.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
 }
