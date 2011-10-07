@@ -387,7 +387,7 @@ void FileSystemDirectory::expandDirectoryTree(IDirectoryIterator * dir, bool all
             newSource.setown(new FileSystemDirectory(deriveEclName(tail), &file));
         }
 
-        if (newSource)
+        if (newSource && newSource->queryEclName())
         {
             if (!find(newSource->queryEclName()))
                 contents.append(*newSource.getClear());
