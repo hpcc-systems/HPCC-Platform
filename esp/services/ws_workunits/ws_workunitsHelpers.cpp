@@ -1227,8 +1227,6 @@ void WsWuInfo::getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, un
 
 bool WsWuInfo::getResults(IEspECLWorkunit &info, unsigned flags)
 {
-    if (version < 1.17)
-        return true;
     try
     {
         unsigned count = 0;
