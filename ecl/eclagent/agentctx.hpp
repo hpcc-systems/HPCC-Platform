@@ -108,11 +108,4 @@ struct IAgentContext : extends IGlobalCodeContext
     virtual const char *queryWuid() = 0;
 };
 
-struct WorkunitUpdate : public Owned<IWorkUnit>
-{
-public:
-    WorkunitUpdate(IWorkUnit *wu) : Owned<IWorkUnit>(wu) { }
-    ~WorkunitUpdate() { if (get()) get()->commit(); }
-};
-
 #endif // AGENTCTX_HPP_INCL

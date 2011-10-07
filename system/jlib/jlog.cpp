@@ -2582,3 +2582,11 @@ extern jlib_decl void UseSysLogForOperatorMessages(bool use)
     }
 }
 
+extern jlib_decl void AuditSystemAccess(const char *userid, bool success, char const * msg,...)
+{
+    va_list args;
+    va_start(args, msg);
+    VStringBuffer s("User %s: ", userid);
+    SYSLOG((success) ? AUDIT_TYPE_ACCESS_SUCCESS : AUDIT_TYPE_ACCESS_FAILURE, s.valist_appendf(msg, args).str());
+    va_end(args);
+}
