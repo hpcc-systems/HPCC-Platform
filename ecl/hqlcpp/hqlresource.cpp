@@ -1184,6 +1184,8 @@ IHqlExpression * ResourcerInfo::createSpilledRead(IHqlExpression * spillReason)
         IHqlExpression * recordCountAttr = queryRecordCountInfo(original);
         if (recordCountAttr)
             args.append(*LINK(recordCountAttr));
+        if (options->targetThor() && original->isDataset() && !options->isChildQuery)
+            args.append(*createAttribute(_distributed_Atom));
         dataset.setown(createDataset(no_getgraphresult, args));
     }
     else if (useGlobalResult())
@@ -2179,7 +2181,7 @@ protected:
         case no_thisnode:
             throwUnexpected();
         case no_getgraphresult:
-            if (expr->hasProperty(_streaming_Atom))
+            if (expr->hasProperty(_streaming_Atom) || expr->hasProperty(_distributed_Atom))
             {
                 noteDataset(expr, expr, true);
                 return;
@@ -2195,7 +2197,7 @@ protected:
                 switch (ds->getOperator())
                 {
                 case no_getgraphresult:
-                    if (!expr->hasProperty(_streaming_Atom))
+                    if (!expr->hasProperty(_streaming_Atom) && !expr->hasProperty(_distributed_Atom))
                         break;
                     //fallthrough
                 case no_getgraphloopresult:

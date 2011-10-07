@@ -329,7 +329,6 @@ bool activityHidesRows(IHqlExpression * expr, IHqlExpression * selector)
     {
     case no_rollupgroup:
     case no_loop:
-    case no_loop2:
     case no_graphloop:
     case no_filtergroup:
         return (selectOp == no_left);

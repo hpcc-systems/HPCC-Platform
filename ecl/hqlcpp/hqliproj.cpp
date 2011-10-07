@@ -1536,7 +1536,6 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_rollupgroup:
     case no_regroup:
     case no_loop:
-    case no_loop2:
     case no_graphloop:
     case no_filtergroup:            //anything else would be tricky...
     case no_normalizegroup:

@@ -89,6 +89,7 @@ extern HQL_API _ATOM deprecatedAtom;
 extern HQL_API _ATOM descAtom;
 extern HQL_API _ATOM diskAtom;
 extern HQL_API _ATOM distributedAtom;
+extern HQL_API _ATOM _distributed_Atom;
 extern HQL_API _ATOM _dot_Atom;
 extern HQL_API _ATOM dynamicAtom;
 extern HQL_API _ATOM ebcdicAtom;

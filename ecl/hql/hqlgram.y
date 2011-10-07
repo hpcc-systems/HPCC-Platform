@@ -7399,55 +7399,6 @@ simpleDataSet
                             $$.setExpr(loopExpr);
                             $$.setPosition($1);
                         }
-    | LOOP '(' startLeftRowsSeqFilter beginCounterScope ',' startRightRowUpdateSeq ',' expression ',' dataSet ',' transform endCounterScope loopOptions ')' endRightFilter endRowsGroup endLeftFilter endSelectorSequence
-                        {
-                            parser->reportWarning(WRN_UNSUPPORTED_FEATURE, $1.pos, "LOOP with loop variables not yet supported");
-
-                            //New experimental syntax - which would allow RIGHT to specify a row used to store temporaries for each loop iteration
-                            parser->normalizeExpression($8);
-                            parser->ensureDatasetTypeMatch($10, $3.queryExpr());
-                            parser->checkBooleanOrNumeric($8);
-                            IHqlExpression * left = $3.getExpr();
-                            IHqlExpression * right = $6.getExpr();
-                            IHqlExpression * body = createValue(no_loopbody, makeNullType(), $10.getExpr());
-                            IHqlExpression * counter = $13.getExpr();
-                            if (counter)
-                                body = createComma(body, createAttribute(_countProject_Atom, counter));
-                            IHqlExpression * loopCondition = parser->createLoopCondition(left, $8.getExpr(), NULL, $19.queryExpr());
-                            IHqlExpression * loopExpr = createDataset(no_loop2, left, createComma(
-                                                            createComma(right, loopCondition),
-                                                            createComma(body, $12.getExpr(), $14.getExpr(), $17.getExpr()),
-                                                            $19.getExpr()
-                                                            ));
-                            parser->checkLoopFlags($1, loopExpr);
-                            $$.setExpr(loopExpr);
-                            $$.setPosition($1);
-                        }
-    | LOOP '(' startLeftRowsSeqFilter beginCounterScope ',' startRightRowUpdateSeq ',' expression ',' expression ',' dataSet ',' transform endCounterScope loopOptions ')' endRightFilter endRowsGroup endLeftFilter endSelectorSequence
-                        {
-                            parser->reportWarning(WRN_UNSUPPORTED_FEATURE, $1.pos, "LOOP with loop variables not yet supported");
-
-                            //New experimental syntax - which would allow RIGHT to specify a row used to store temporaries for each loop iteration
-                            parser->ensureDatasetTypeMatch($12, $3.queryExpr());
-                            parser->normalizeExpression($8);
-                            parser->checkBooleanOrNumeric($8);
-                            parser->normalizeExpression($10, type_boolean, false);
-                            IHqlExpression * left = $3.getExpr();
-                            IHqlExpression * right = $6.getExpr();
-                            IHqlExpression * body = createValue(no_loopbody, makeNullType(), $12.getExpr());
-                            IHqlExpression * counter = $15.getExpr();
-                            if (counter)
-                                body = createComma(body, createAttribute(_countProject_Atom, counter));
-                            IHqlExpression * loopCondition = parser->createLoopCondition(left, $8.getExpr(), $10.getExpr(), $21.queryExpr());
-                            IHqlExpression * loopExpr = createDataset(no_loop2, left, createComma(
-                                                            createComma(right, loopCondition),
-                                                            createComma(body, $14.getExpr(), $16.getExpr(), $19.getExpr()),
-                                                            $21.getExpr()
-                                                            ));
-                            parser->checkLoopFlags($1, loopExpr);
-                            $$.setExpr(loopExpr);
-                            $$.setPosition($1);
-                        }
     | GRAPH '(' startLeftRowsSeqFilter beginCounterScope ',' expression ',' dataSet endCounterScope graphOptions ')' endRowsGroup endLeftFilter endSelectorSequence
                         {
                             parser->ensureDatasetTypeMatch($8, $3.queryExpr());
