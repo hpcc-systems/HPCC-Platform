@@ -451,7 +451,7 @@ public:
     unsigned findParameter(_ATOM search);
 
     void mapLogicalToReal(HqlExprArray & mapped, HqlExprArray & params);
-    void mapRealToLogical(HqlExprArray & inputExprs, HqlExprArray & logicalParams, IHqlExpression * libraryId, bool canStream);
+    void mapRealToLogical(HqlExprArray & inputExprs, HqlExprArray & logicalParams, IHqlExpression * libraryId, bool canStream, bool distributed);
     inline unsigned numParameters() const { return realParameters.ordinality(); }
     inline unsigned numStreamedInputs() const { return streamingAllowed ? numDatasets : 0; }
 

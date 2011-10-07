@@ -1312,6 +1312,8 @@ unique_id_t ChildGraphBuilder::buildLoopBody(BuildCtx & ctx, IHqlExpression * da
     args.append(*createAttribute(_loop_Atom));
     if (multiInstance)
         args.append(*createAttribute(_streaming_Atom));
+    if (translator.targetThor())    // MORE: && !isChildQuery(ctx)..
+        args.append(*createAttribute(_distributed_Atom));
     OwnedHqlExpr inputResult= createDataset(no_getgraphresult, args);
 
     //Result 2 is the counter - if present

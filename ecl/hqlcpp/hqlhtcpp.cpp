@@ -6235,7 +6235,6 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                 result = doBuildActivityAssert(ctx, expr);
                 break;
             case no_loop:
-            case no_loop2:
                 result = doBuildActivityLoop(ctx, expr);
                 break;
             case no_graphloop:
@@ -8217,19 +8216,12 @@ bool HqlCppTranslator::isCurrentActiveGraph(BuildCtx & ctx, IHqlExpression * gra
 
 ABoundActivity * HqlCppTranslator::doBuildActivityLoop(BuildCtx & ctx, IHqlExpression * expr)
 {
-    unsigned curArg = 0;
-    IHqlExpression * dataset = expr->queryChild(curArg++);
-    IHqlExpression * rhs = NULL;
-    if (expr->getOperator() == no_loop2)
-        rhs = expr->queryChild(curArg++);
-    IHqlExpression * count = queryRealChild(expr, curArg++);
-    IHqlExpression * filter = queryRealChild(expr, curArg++);
-    IHqlExpression * loopCond = queryRealChild(expr, curArg++);
-    IHqlExpression * body = expr->queryChild(curArg++);
+    IHqlExpression * dataset = expr->queryChild(0);
+    IHqlExpression * count = queryRealChild(expr, 1);
+    IHqlExpression * filter = queryRealChild(expr, 2);
+    IHqlExpression * loopCond = queryRealChild(expr, 3);
+    IHqlExpression * body = expr->queryChild(4);
     assertex(body->getOperator() == no_loopbody);
-    IHqlExpression * rhsTransform = NULL;
-    if (rhs)
-        rhsTransform = expr->queryChild(curArg++);
 
     IHqlExpression * counter = queryPropertyChild(expr, _countProject_Atom, 0);
     IHqlExpression * rowsid = expr->queryProperty(_rowsid_Atom);
@@ -8343,10 +8335,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLoop(BuildCtx & ctx, IHqlExpre
 
 ABoundActivity * HqlCppTranslator::doBuildActivityGraphLoop(BuildCtx & ctx, IHqlExpression * expr)
 {
-    unsigned curArg = 0;
-    IHqlExpression * dataset = expr->queryChild(curArg++);
-    IHqlExpression * count = expr->queryChild(curArg++);
-    IHqlExpression * body = expr->queryChild(curArg++);
+    IHqlExpression * dataset = expr->queryChild(0);
+    IHqlExpression * count = expr->queryChild(1);
+    IHqlExpression * body = expr->queryChild(2);
     assertex(body->getOperator() == no_loopbody);
     IHqlExpression * counter = queryPropertyChild(expr, _countProject_Atom, 0);
     IHqlExpression * rowsid = expr->queryProperty(_rowsid_Atom);

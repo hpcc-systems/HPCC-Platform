@@ -657,7 +657,7 @@ enum _node_operator {
         no_cluster,
         no_forcenolocal,
         no_allnodes,
-        no_loop2,
+        no_unused6,
         no_matchrow,
         no_sequence,
         no_selfjoin,

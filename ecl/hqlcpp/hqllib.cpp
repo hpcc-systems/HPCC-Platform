@@ -154,7 +154,7 @@ unsigned HqlCppLibrary::queryOutputIndex(_ATOM name) const
 HqlCppLibraryImplementation::HqlCppLibraryImplementation(HqlCppTranslator & _translator, IHqlExpression * libraryInterface, IHqlExpression * _libraryId, ClusterType _clusterType)
 : HqlCppLibrary(_translator, libraryInterface, _clusterType), libraryId(_libraryId)
 {
-    inputMapper.mapRealToLogical(inputExprs, logicalParams, libraryId, (clusterType != HThorCluster));
+    inputMapper.mapRealToLogical(inputExprs, logicalParams, libraryId, (clusterType != HThorCluster), translator.targetThor());
 }
 
 

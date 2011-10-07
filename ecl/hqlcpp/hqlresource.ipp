@@ -73,6 +73,7 @@ public:
     inline bool canSplit() const            { return targetClusterType != HThorCluster; }
     inline bool checkResources() const      { return isThorCluster(targetClusterType) && !isChildQuery; }
     inline bool targetRoxie() const         { return targetClusterType == RoxieCluster; }
+    inline bool targetThor() const          { return targetClusterType == ThorCluster || targetClusterType == ThorLCRCluster; }
 };
 
 struct CResources : public CInterface
