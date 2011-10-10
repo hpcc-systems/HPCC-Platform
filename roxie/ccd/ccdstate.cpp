@@ -2193,13 +2193,15 @@ private:
     {
         // Called from reload inside critical block
         unsubscribe();
-        // We want tokill the old packages, but not until we have created the new ones (i.e. at the end of this function)
+        // We want to kill the old packages, but not until we have created the new ones (i.e. at the end of this function)
         // So that the query/dll caching will work for anything that is not affected by the changes
         CIArrayOf<CRoxieQueryPackageManager> oldQueryPackages;
         appendArray(oldQueryPackages, allQueryPackages);
         allQueryPackages.kill();
 
-        notifiers.append(*daliHelper->getPackageSetSubscription(roxieName, this));
+        Owned<IDaliPackageWatcher> notifier = daliHelper->getPackageSetSubscription(roxieName, this);
+        if (notifier)
+            notifiers.append(*notifier.getClear());
         Owned<IPropertyTree> packageTree = daliHelper->getPackageSet(roxieName);
         Owned<IPropertyTreeIterator> packageMaps = packageTree->getElements("PackageMap");
         ForEach(*packageMaps)
