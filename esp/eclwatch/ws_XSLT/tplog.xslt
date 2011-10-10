@@ -548,8 +548,8 @@
             </tr>
             <tr>
               <td colspan="4">
-                <input type="button" id="GetLog" class="sbutton"  size="40" value="Submit" onClick="return onGetLog(0)"/>
-                <input type="button" id="GetLogR" class="sbutton"  size="40" value="Reversely" onClick="return onGetLog(-1)"/>
+                <input type="button" id="GetLog" class="sbutton"  size="40" value="EarliestFirst" onClick="return onGetLog(0)"/>
+                <input type="button" id="GetLogR" class="sbutton"  size="40" value="LatestFirst" onClick="return onGetLog(-1)"/>
                 <input type="button" id="PrevPage" class="sbutton"  size="40" value="PrevPage" onClick="return onGetLog(1)"/>
                 <input type="button" id="NextPage" class="sbutton"  size="40" value="NextPage" onClick="return onGetLog(2)"/>
                 <input type="button" id="Download" class="sbutton"  size="40" value="Download" onClick="return onDownload(0)"/>
