@@ -6736,16 +6736,15 @@ IDistributedFile *CDistributedFileDirectory::createNew(IFileDescriptor *fdesc,co
     return file;
 }
 
-
 IDistributedSuperFile *CDistributedFileDirectory::createSuperFile(const char *_logicalname, bool _interleaved,bool ifdoesnotexist,IUserDescriptor *user)
 {
-    CDfsLogicalFileName logicalname;    
+    CDfsLogicalFileName logicalname;
     logicalname.set(_logicalname);
     checkLogicalName(logicalname,user,true,true,false,"have a superfile with");
     //assertex(!transaction); // transaction TBD
     StringBuffer tail;
     IPropertyTree *root = createPTree();
-    root->setPropInt("@interleaved",_interleaved?2:0);  
+    root->setPropInt("@interleaved",_interleaved?2:0);
     addEntry(logicalname,root,true,ifdoesnotexist);
     StringBuffer query;
     CFileConnectLock fcl("CDistributedFileDirectory::createSuperFile",logicalname,DXB_SuperFile,false,false,defaultTimeout);
