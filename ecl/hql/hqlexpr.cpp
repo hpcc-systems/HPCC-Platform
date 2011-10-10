@@ -65,11 +65,16 @@
 //#define DEBUG_SCOPE
 //#define CHECK_RECORD_CONSITENCY
 //#define PARANOID
-//#define SEARCH_NAME1   "vF"
+//#define SEARCH_NAME1   "vCP4"
 //#define SEARCH_NAME2   "vIJ"
 //#define SEARCH_IEXPR 0x03289048
 //#define CHECK_SELSEQ_CONSISTENCY
 //#define GATHER_COMMON_STATS
+
+#if defined(SEARCH_NAME1) || defined(SEARCH_NAME2)
+static void debugMatchedName() {}
+#endif
+
 #endif
 
 #define STDIO_BUFFSIZE 0x10000     // 64K
@@ -8156,11 +8161,11 @@ CHqlVariable::CHqlVariable(node_operator _op, const char * _name, ITypeInfo * _t
 {
 #ifdef SEARCH_NAME1
     if (strcmp(_name, SEARCH_NAME1) == 0)
-        name.clear();
+        debugMatchedName();
 #endif
 #ifdef SEARCH_NAME2
     if (strcmp(_name, SEARCH_NAME2) == 0)
-        name.clear();
+        debugMatchedName();
 #endif
     name.set(_name);
     infoFlags |= HEFtranslated;
