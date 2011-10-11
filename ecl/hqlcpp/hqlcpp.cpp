@@ -12085,6 +12085,11 @@ bool HqlCppTranslator::requiresTemp(BuildCtx & ctx, IHqlExpression * expr, bool 
     case no_if:
     case no_charlen:
         break;
+    case no_between:
+        //Assume the worse for decimals.
+        if (expr->queryChild(0)->queryType()->getTypeCode() == type_decimal)
+            return true;
+        break;
     case no_order:
     case no_crc:
     case no_hash:

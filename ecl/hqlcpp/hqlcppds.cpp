@@ -4238,14 +4238,20 @@ ABoundActivity * HqlCppTranslator::doBuildActivityGetGraphResult(BuildCtx & ctx,
     IHqlExpression * resultNum = expr->queryChild(2);
     ThorActivityKind activityKind = (expr->hasProperty(_streaming_Atom) ? TAKlocalstreamread : TAKlocalresultread);
 
+    bool useImplementationClass = options.minimizeActivityClasses && (resultNum->getOperator() == no_constant);
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, activityKind, expr, "LocalResultRead");
+    if (useImplementationClass)
+        instance->setImplementationClass(newLocalResultReadArgAtom);
     if (expr->hasProperty(_loop_Atom))
         instance->graphLabel.set("Begin Loop");
     buildActivityFramework(instance);
 
-
     buildInstancePrefix(instance);
-    doBuildUnsignedFunction(instance->classctx, "querySequence", expr->queryChild(2));
+    if (!useImplementationClass)
+        doBuildUnsignedFunction(instance->classctx, "querySequence", resultNum);
+    else
+        instance->addConstructorParameter(resultNum);
+
     if (targetRoxie())
         instance->addAttributeInt("_graphId", getIntValue(graphId->queryChild(0)));
     buildInstanceSuffix(instance);
