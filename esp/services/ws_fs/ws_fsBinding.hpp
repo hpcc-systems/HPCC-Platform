@@ -32,20 +32,32 @@
 
 class CFileSpraySoapBindingEx : public CFileSpraySoapBinding
 {
+    StringBuffer m_portalURL;
+
 public:
     CFileSpraySoapBindingEx(IPropertyTree* cfg, const char *bindname/*=NULL*/, const char *procname/*=NULL*/, http_soap_log_level level=hsl_none)
-      : CFileSpraySoapBinding(cfg, bindname, procname, level) {}
+      : CFileSpraySoapBinding(cfg, bindname, procname, level) {
+        StringBuffer xpath;
+        xpath.appendf("Software/EspProcess[@name='%s']/@portalurl", procname);
+        const char* portalURL = cfg->queryProp(xpath.str());
+        if (portalURL && *portalURL)
+            m_portalURL.append(portalURL);
+    }
     virtual ~CFileSpraySoapBindingEx(){}
 
     virtual void getNavigationData(IEspContext &context, IPropertyTree & data)
     {
+        StringBuffer path = "/WsSMC/NotInCommunityEdition?form_";
+        if (m_portalURL.length() > 0)
+            path.appendf("&EEPortal=%s", m_portalURL.str());
+
         IPropertyTree *folder0 = ensureNavFolder(data, "DFU Workunits", "DFU Workunits", NULL, false, 5);
         ensureNavLink(*folder0, "Search", "/FileSpray/DFUWUSearch", "Search Workunits", NULL, NULL, 1);
         ensureNavLink(*folder0, "Browse", "/FileSpray/GetDFUWorkunits", "Browse Workunits", NULL, NULL, 2);
         IPropertyTree *folder = ensureNavFolder(data, "DFU Files", "DFU Files", NULL, false, 6);
         ensureNavLink(*folder, "Upload/download File", "/FileSpray/DropZoneFiles", "Upload/download File", NULL, NULL, 1);
         ensureNavLink(*folder, "View Data File", "/WsDfu/DFUGetDataColumns?ChooseFile=1", "View Data File", NULL, NULL, 2);
-        ensureNavLink(*folder, "Search File Relationships", "/WsRoxieQuery/FileRelationSearch", "Search File Relationships", NULL, NULL, 3);
+        ensureNavLink(*folder, "Search File Relationships", path.str(), "Search File Relationships", NULL, NULL, 3);
         ensureNavLink(*folder, "Browse Space Usage", "/WsDfu/DFUSpace", "Browse Space Usage", NULL, NULL, 4);
         ensureNavLink(*folder, "Search Logical Files", "/WsDfu/DFUSearch", "Search Logical Files", NULL, NULL, 5);
         ensureNavLink(*folder, "Browse Logical Files", "/WsDfu/DFUQuery", "Browse Logical Files", NULL, NULL, 6);
