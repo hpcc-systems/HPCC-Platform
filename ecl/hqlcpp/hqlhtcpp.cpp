@@ -12052,7 +12052,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySelectNth(BuildCtx & ctx, IHql
     }
 #endif
 
+    bool useImplementationClass = options.minimizeActivityClasses && (index->getOperator() == no_constant);
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKselectn, expr, "SelectN");
+    if (useImplementationClass)
+        instance->setImplementationClass(newSelectNArgAtom);
     buildActivityFramework(instance);
 
     if (matchesConstantValue(index, 1))
@@ -12060,11 +12063,24 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySelectNth(BuildCtx & ctx, IHql
 
     buildInstancePrefix(instance);
 
-    BuildCtx funcctx(instance->startctx);
-    funcctx.addQuotedCompound("virtual unsigned __int64 getRowToSelect()");
-    buildReturn(funcctx, index);
+    if (!useImplementationClass)
+    {
+        BuildCtx funcctx(instance->startctx);
+        funcctx.addQuotedCompound("virtual unsigned __int64 getRowToSelect()");
+        buildReturn(funcctx, index);
 
-    buildClearRecordMember(instance->createctx, "", dataset);
+        buildClearRecordMember(instance->createctx, "", dataset);
+    }
+    else
+    {
+        instance->addConstructorParameter(index);
+        OwnedHqlExpr func = getClearRecordFunction(dataset->queryRecord());
+        //This is a mess - pretend that the pointer to function parameter is a boolean
+        //The code generator really should have better support for classes etc..  One day...
+        OwnedHqlExpr fakeFunc = createValue(no_typetransfer, makeBoolType(), LINK(func));
+        OwnedHqlExpr translatedFakeFunc = createValue(no_translated, makeBoolType(), LINK(fakeFunc));
+        instance->addConstructorParameter(translatedFakeFunc);
+    }
 
     buildInstanceSuffix(instance);
     

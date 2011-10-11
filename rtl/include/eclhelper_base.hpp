@@ -3370,6 +3370,39 @@ protected:
 };
 
 
+typedef size32_t (*rowClearFunction)(ARowBuilder & crSelf, IResourceContext * ctx);
+class CLibrarySelectNArg : public CThorSelectNArg
+{
+public:
+    inline CLibrarySelectNArg(unsigned __int64 _row, rowClearFunction _rowClear, IOutputMetaData * _meta = NULL)
+        : row(_row), rowClear(_rowClear), meta(_meta) {}
+
+    virtual IOutputMetaData * queryOutputMeta() { return meta; }
+    virtual unsigned __int64 getRowToSelect() { return row; }
+    virtual size32_t createDefault(ARowBuilder & rowBuilder) { return rowClear(rowBuilder, ctx); }
+
+protected:
+    IOutputMetaData * meta;
+    unsigned __int64 row;
+    rowClearFunction rowClear;
+};
+
+
+class CLibraryLocalResultReadArg : public CThorLocalResultReadArg
+{
+public:
+    inline CLibraryLocalResultReadArg(unsigned _sequence, IOutputMetaData * _meta = NULL)
+        : sequence(_sequence), meta(_meta) {}
+
+    virtual IOutputMetaData * queryOutputMeta() { return meta; }
+    virtual unsigned querySequence() { return sequence; }
+
+protected:
+    IOutputMetaData * meta;
+    unsigned sequence;
+};
+
+
 class EclProcess : public RtlCInterface, implements IEclProcess
 {
 public:

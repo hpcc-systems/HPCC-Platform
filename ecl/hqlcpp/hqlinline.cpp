@@ -34,6 +34,7 @@
 #include "hqlcatom.hpp"
 #include "hqlccommon.hpp"
 #include "hqlcerrors.hpp"
+#include "hqlpmap.hpp"
 
 //I don't think the following is needed yet, but when it is, just enable following...
 //#define ONSTART_IN_NESTED_TOPLEVEL
@@ -578,6 +579,13 @@ GraphLocalisation queryActivityLocalisation(IHqlExpression * expr)
     case no_actionlist:
     case no_definesideeffect:
         return GraphNoAccess;               // Will never access any data values from anywhere
+    case no_hqlproject:
+    case no_newusertable:
+        //Many more of these could return GraphNoAccess if I determined that only constants and the input
+        //row were accessed.  Examples are project, sort, group etc. etc.
+        //if (isSimpleProject(expr))
+        ///    return GraphNoAccess;
+        return GraphCoLocal;
     case no_datasetfromrow:
         {
             if (getNumActivityArguments(expr) != 0)
