@@ -1868,8 +1868,6 @@ extern bool WORKUNIT_API runWorkUnit(const char *wuid, const char *cluster)
     SCMStringBuffer agentQueue;
     clusterInfo->getAgentQueue(agentQueue);
     if (!agentQueue.length())
-        clusterInfo->getRoxieQueue(agentQueue);
-    if (!agentQueue.length())
         return false;
 
     Owned<IJobQueue> queue = createJobQueue(agentQueue.str());

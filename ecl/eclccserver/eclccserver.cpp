@@ -252,8 +252,7 @@ public:
             workunit.clear();
             return;
         }
-        SCMStringBuffer agentQueue, platform;
-        clusterInfo->getAgentQueue(agentQueue);
+        SCMStringBuffer platform;
         clusterInfo->getPlatform(platform);
         clusterInfo.clear();
         workunit->setState(WUStateCompiling);
@@ -261,11 +260,12 @@ public:
         bool ok = compile(wuid, platform.str(), clusterName.str());
         if (ok)
         {
+            workunit->setState(WUStateCompiled);
             if (isLibrary(workunit))
             {
                 workunit->setState(WUStateCompleted);
             }
-            else if (agentQueue.length() && workunit->getAction()==WUActionRun || workunit->getAction()==WUActionUnknown)  // Assume they meant run....
+            else if (workunit->getAction()==WUActionRun || workunit->getAction()==WUActionUnknown)  // Assume they meant run....
             {
                 workunit->schedule();
                 SCMStringBuffer dllBuff;
@@ -285,10 +285,11 @@ public:
                     }
                 }
                 else
+                {
+                    reportError("Failed to execute workunit (unknown DLL name)", 2);
                     workunit->setState(WUStateFailed);
+                }
             }
-            else if (workunit->getAction()==WUActionCompile)
-                workunit->setState(WUStateCompiled);
         }
         else if (workunit->getState() != WUStateAborted)
             workunit->setState(WUStateFailed);
