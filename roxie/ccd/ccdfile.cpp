@@ -2697,16 +2697,6 @@ extern IRoxieWriteHandler *createRoxieWriteHandler(IRoxieDaliHelper *_daliHelper
     return new CRoxieWriteHandler(_daliHelper, _dFile, _clusters);
 }
 
-extern void ensureDirectory(StringBuffer &dir)
-{
-    StringBuffer absolute;
-    if (!recursiveCreateDirectory(dir.str()))
-        throw MakeStringException(ROXIE_FILE_ERROR, "Unable to create directory %s", dir.str());
-    makeAbsolutePath(dir.str(), absolute);
-    dir.clear().append(absolute);
-    addPathSepChar(dir);
-}
-
 #ifdef _USE_CPPUNIT
 #include <cppunit/extensions/HelperMacros.h>
 

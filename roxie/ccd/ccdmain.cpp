@@ -462,7 +462,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         throw MakeStringException(ROXIE_INTERNAL_ERROR, "getcwd failed (%d)", errno);
 
     codeDirectory.set(currentDirectory);
-    ensureDirectory(codeDirectory);
+    addNonEmptyPathSepChar(codeDirectory);
     try
     {
         Owned<IProperties> globals = createProperties(true);
@@ -541,6 +541,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             if (!logDirectory.length())
                 logDirectory.append(codeDirectory).append("logs");
         }
+        addNonEmptyPathSepChar(logDirectory);
 
         StringBuffer initialFileName;
         if (globals->getPropBool("stdlog", traceLevel != 0) || topology->getPropBool("@forceStdLog", false))
@@ -573,7 +574,8 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             initialFileName.appendf("%s.log", (log[0] !='.') ? log.str() : (log.str()+1)); // make sure 'log' does not start with a '.'
 
             // build the base log file name using the logDir setting in the topology file
-            ensureDirectory(logDirectory);
+            if (!recursiveCreateDirectory(logDirectory))
+                throw MakeStringException(ROXIE_FILE_ERROR, "Unable to create directory %s", logDirectory.str());
             StringBuffer logBaseName(logDirectory.str());
             logBaseName.append("roxie");
 
@@ -832,6 +834,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             if (queryDirectory.length() == 0)
                 queryDirectory.append(codeDirectory).append("queries");
         }
+        addNonEmptyPathSepChar(queryDirectory);
 
         baseDataDirectory.append(topology->queryProp("@baseDataDir"));
         queryFileCache().start();
