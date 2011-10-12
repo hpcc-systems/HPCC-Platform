@@ -537,7 +537,6 @@ interface IConstWUClusterInfo : extends IInterface
     virtual unsigned getSize() const = 0;
     virtual IStringVal & getPlatform(IStringVal & str) const = 0;
     virtual IStringVal & getAgentQueue(IStringVal & str) const = 0;
-    virtual IStringVal & getRoxieQueue(IStringVal & str) const = 0;
     virtual IStringVal & getServerQueue(IStringVal & str) const = 0;
     virtual IStringVal & getQuerySetName(IStringVal & str) const = 0;
     virtual IStringVal & getRoxieProcess(IStringVal & str) const = 0;

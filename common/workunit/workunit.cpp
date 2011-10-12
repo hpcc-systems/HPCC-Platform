@@ -3801,7 +3801,6 @@ class CEnvironmentClusterInfo: public CInterface, implements IConstWUClusterInfo
     StringAttr name;
     StringAttr serverQueue;
     StringAttr agentQueue;
-    StringAttr roxieQueue;
     StringAttr roxieProcess;
     StringAttr thorQueue;
     StringArray thorProcesses;
@@ -3849,9 +3848,12 @@ public:
         }
 
         if (agent)
+        {
+            assertex(!roxie);
             agentQueue.set(queue.clear().append(name).append(".agent"));
-        if (roxie)
-            roxieQueue.set(queue.clear().append(name).append(".roxie"));
+        }
+        else if (roxie)
+            agentQueue.set(queue.clear().append(name).append(".roxie"));
         // MORE - does this need to be conditional?
         serverQueue.set(queue.clear().append(name).append(".eclserver"));
     }
@@ -3868,11 +3870,6 @@ public:
     IStringVal & getAgentQueue(IStringVal & str) const
     {
         str.set(agentQueue);
-        return str;
-    }
-    IStringVal & getRoxieQueue(IStringVal & str) const
-    {
-        str.set(roxieQueue);
         return str;
     }
     virtual IStringVal & getServerQueue(IStringVal & str) const
