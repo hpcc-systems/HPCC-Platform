@@ -181,7 +181,8 @@ private:
             cache->setPropTree(xpath, LINK(val));
         else
             cache->removeProp(xpath);
-        ensureDirectory(queryDirectory);
+        if (!recursiveCreateDirectory(queryDirectory))
+            throw MakeStringException(ROXIE_FILE_ERROR, "Unable to create directory %s", queryDirectory.str());
         StringBuffer cacheFileName(queryDirectory);
         cacheFileName.append(roxieStateName);
         saveXML(cacheFileName, cache);
@@ -441,7 +442,8 @@ public:
         Owned<IRoxieDaliHelper> daliHelper = connectToDali();
         if (!started)
         {
-            ensureDirectory(queryDirectory);
+            if (!recursiveCreateDirectory(queryDirectory))
+                throw MakeStringException(ROXIE_FILE_ERROR, "Unable to create directory %s", queryDirectory.str());
             initDllServer(queryDirectory);
             started = true;
         }
