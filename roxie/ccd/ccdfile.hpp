@@ -145,6 +145,4 @@ extern IMemoryFile *createMemoryFile(const char *fileName);
 extern IDiffFileInfoCache *queryDiffFileInfoCache();
 extern void releaseDiffFileInfoCache();
 
-extern void ensureDirectory(StringBuffer &dir);
-
 #endif
