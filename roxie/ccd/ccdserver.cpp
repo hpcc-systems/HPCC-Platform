@@ -30522,9 +30522,6 @@ public:
     RoxieWorkUnitListener(unsigned _poolSize, bool _suspended)
       : RoxieListener(_poolSize, _suspended)
     {
-        SCMStringBuffer names;
-        getRoxieQueueNames(names, topology->queryProp("@name"));
-        queueNames.set(names.str());
     }
 
     virtual const SocketEndpoint& queryEndpoint() const
@@ -30549,28 +30546,37 @@ public:
 
     virtual int run()
     {
-        if (traceLevel)
-            DBGLOG("roxie: Waiting on queue(s) '%s'", queueNames.get());
         running = true;
-        Owned<IJobQueue> queue = createJobQueue(queueNames.get());
-        queue->connect();
         started.signal();
-        while (running)
+        Owned<IRoxieDaliHelper> daliHelper = connectToDali();
+        if (daliHelper->connected())
         {
-            Owned<IJobQueueItem> item = queue->dequeue(5000);
-            if (item.get())
+            SCMStringBuffer queueNames;
+            getRoxieQueueNames(queueNames, topology->queryProp("@name"));
+            if (traceLevel)
+                DBGLOG("roxie: Waiting on queue(s) '%s'", queueNames.str());
+            Owned<IJobQueue> queue = createJobQueue(queueNames.str());
+            queue->connect();
+            while (running)
             {
-                if (traceLevel)
-                    PROGLOG("roxie: Dequeued workunit request '%s'", item->queryWUID());
-                pool->start((void *) item->queryWUID());
+                Owned<IJobQueueItem> item = queue->dequeue(5000);
+                if (item.get())
+                {
+                    if (traceLevel)
+                        PROGLOG("roxie: Dequeued workunit request '%s'", item->queryWUID());
+                    pool->start((void *) item->queryWUID());
+                }
             }
+        }
+        else
+        {
+            if (traceLevel)
+                DBGLOG("roxie: No dali connection - not waiting on queue");
         }
         return 0;
     }
 
     virtual IPooledThread* createNew();
-private:
-    StringAttr queueNames;
 };
 
 class RoxieSocketListener : public RoxieListener

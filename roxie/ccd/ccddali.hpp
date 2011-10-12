@@ -36,8 +36,9 @@ interface IDaliPackageWatcher : extends IInterface
 
 interface IRoxieDaliHelper : extends IInterface
 {
+    virtual void commitCache() = 0;
     virtual bool connected() const = 0;
-    virtual IDistributedFile *resolveLFN(const char *filename, bool writeAccess) = 0;
+    virtual IDistributedFile *resolveLFN(const char *filename, bool cacheIt, bool writeAccess) = 0;
     virtual IFileDescriptor *resolveCachedLFN(const char *filename) = 0;
     virtual IConstWorkUnit *attachWorkunit(const char *wuid, ILoadedDllEntry *source) = 0;
     virtual IPropertyTree *getQuerySet(const char *id) = 0;
@@ -46,6 +47,8 @@ interface IRoxieDaliHelper : extends IInterface
     virtual IDaliPackageWatcher *getPackageSetSubscription(const char *id, ISDSSubscription *notifier) = 0;
     virtual IPropertyTree *getPackageMap(const char *id) = 0;
     virtual IDaliPackageWatcher *getPackageMapSubscription(const char *id, ISDSSubscription *notifier) = 0;
+    virtual bool connect() = 0;
+    virtual void disconnect() = 0;
 };
 
 
