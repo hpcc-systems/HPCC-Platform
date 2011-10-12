@@ -6607,6 +6607,7 @@ IDistributedFile *CDistributedFileDirectory::dolookup(const CDfsLogicalFileName 
                                 break;
                         }
                     }
+                    fcl.remove();
                     return new CDistributedFile(this,fcl.detach(),*logicalname,user);  // found
                 }
                 // now super file
