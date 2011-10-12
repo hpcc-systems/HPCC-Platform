@@ -25,11 +25,10 @@ if [ $# -lt 7 ]; then
   exit 1
 fi
 
-mkdir -p $instancedir
-cd $instancedir
-
 sudo /etc/init.d/hpcc-init -c $hpcc_compname setup 2>/dev/null 2>/dev/null
-. $instancedir/setvars
+
+cd $instancedir
+. ./setvars
 
 slaveproc="thorslave_$THORSLAVEPORT"
 if [ "$multislaves" = "true" ] || [ "$localthor" = "true" ]; then
