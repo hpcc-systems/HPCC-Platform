@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <assert.h>
+
 #include "stringlib.hpp"
 #include "wildmatch.tpp"
 
@@ -32,9 +34,10 @@ static const char * compatibleVersions[] = {
     "STRINGLIB 1.1.10",
     "STRINGLIB 1.1.11",
     "STRINGLIB 1.1.12",
+    "STRINGLIB 1.1.13",
     NULL };
 
-#define STRINGLIB_VERSION "STRINGLIB 1.1.13"
+#define STRINGLIB_VERSION "STRINGLIB 1.1.14"
 
 const char * EclDefinition =  
 "export StringLib := SERVICE\n"
@@ -72,6 +75,9 @@ const char * EclDefinition =
 "  boolean EditDistanceWithinRadiusV2(const string l, const string r, unsigned4 radius) : c,pure,entrypoint='slEditDistanceWithinRadiusV2'; \n"
 "  string StringGetNthWord(const string src, unsigned4 n) : c, pure,entrypoint='slStringGetNthWord'; \n"
 "  unsigned4 StringWordCount(const string src) : c, pure,entrypoint='slStringWordCount'; \n"
+"  unsigned4 CountWords(const string src, const string _separator, BOOLEAN allow_blanks) : c, pure,entrypoint='slCountWords'; \n"
+"  SET OF STRING SplitWords(const string src, const string _separator, BOOLEAN allow_blanks) : c, pure,entrypoint='slSplitWords'; \n"
+"  STRING CombineWords(set of string src, const string _separator) : c, pure,entrypoint='slCombineWords'; \n"
 "END;";
 
 STRINGLIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb) 
@@ -1186,6 +1192,201 @@ STRINGLIB_API unsigned STRINGLIB_CALL slStringWordCount(unsigned srcLen,const ch
         }
     }
     return word_count;
+}
+
+//--------------------------------------------------------------------------------------------------------------------
+
+STRINGLIB_API unsigned STRINGLIB_CALL slCountWords(size32_t lenSrc, const char * src, size32_t lenSeparator, const char * separator, bool allowBlankItems)
+{
+    if (lenSrc == 0)
+        return 0;
+
+    if ((lenSeparator == 0) || (lenSrc < lenSeparator))
+        return 1;
+
+    unsigned numWords=0;
+    const char * end = src + lenSrc;
+    const char * max = end - (lenSeparator - 1);
+    const char * cur = src;
+    const char * startWord = NULL;
+    //MORE: optimize lenSeparator == 1!
+    while (cur < max)
+    {
+        if (memcmp(cur, separator, lenSeparator) == 0)
+        {
+            if (startWord || allowBlankItems)
+            {
+                numWords++;
+                startWord = NULL;
+            }
+            cur += lenSeparator;
+        }
+        else
+        {
+            if (!startWord)
+                startWord = cur;
+            cur++;
+        }
+    }
+    if (startWord || (cur != end) || allowBlankItems)
+        numWords++;
+    return numWords;
+}
+
+
+static unsigned calcWordSetSize(size32_t lenSrc, const char * src, size32_t lenSeparator, const char * separator, bool allowBlankItems)
+{
+    if (lenSrc == 0)
+        return 0;
+
+    if ((lenSeparator == 0) || (lenSrc < lenSeparator))
+        return sizeof(size32_t) + lenSrc;
+
+    unsigned sizeWords=0;
+    const char * end = src + lenSrc;
+    const char * max = end - (lenSeparator - 1);
+    const char * cur = src;
+    const char * startWord = NULL;
+    //MORE: optimize lenSeparator == 1!
+    while (cur < max)
+    {
+        if (memcmp(cur, separator, lenSeparator) == 0)
+        {
+            if (startWord)
+            {
+                sizeWords += sizeof(size32_t) + (cur - startWord);
+                startWord = NULL;
+            }
+            else if (allowBlankItems)
+                sizeWords += sizeof(size32_t);
+
+            cur += lenSeparator;
+        }
+        else
+        {
+            if (!startWord)
+                startWord = cur;
+            cur++;
+        }
+    }
+    if (startWord || (cur != end) || allowBlankItems)
+    {
+        if (!startWord)
+            startWord = cur;
+        sizeWords += sizeof(size32_t) + (end - startWord);
+    }
+    return sizeWords;
+}
+
+STRINGLIB_API void STRINGLIB_CALL slSplitWords(bool & __isAllResult, size32_t & __lenResult, void * & __result, size32_t lenSrc, const char * src, size32_t lenSeparator, const char * separator, bool allowBlankItems)
+{
+    unsigned sizeRequired = calcWordSetSize(lenSrc, src, lenSeparator, separator, allowBlankItems);
+    char * const result = static_cast<char *>(CTXMALLOC(parentCtx, sizeRequired));
+    __isAllResult = false;
+    __lenResult = sizeRequired;
+    __result = result;
+
+    if (lenSrc == 0)
+        return;
+
+    if ((lenSeparator == 0) || (lenSrc < lenSeparator))
+    {
+        *((size32_t *)result) = lenSrc;
+        memcpy(result+sizeof(size32_t), src, lenSrc);
+        return;
+    }
+
+    unsigned sizeWords=0;
+    char * target = result;
+    const char * end = src + lenSrc;
+    const char * max = end - (lenSeparator - 1);
+    const char * cur = src;
+    const char * startWord = NULL;
+    //MORE: optimize lenSeparator == 1!
+    while (cur < max)
+    {
+        if (memcmp(cur, separator, lenSeparator) == 0)
+        {
+            if (startWord || allowBlankItems)
+            {
+                size32_t len = startWord ? (cur - startWord) : 0;
+                memcpy(target, &len, sizeof(len));
+                memcpy(target+sizeof(size32_t), startWord, len);
+                target += sizeof(size32_t) + len;
+                startWord = NULL;
+            }
+
+            cur += lenSeparator;
+        }
+        else
+        {
+            if (!startWord)
+                startWord = cur;
+            cur++;
+        }
+    }
+    if (startWord || (cur != end) || allowBlankItems)
+    {
+        if (!startWord)
+            startWord = cur;
+        size32_t len = (end - startWord);
+        memcpy(target, &len, sizeof(len));
+        memcpy(target+sizeof(size32_t), startWord, len);
+        target += sizeof(size32_t) + len;
+    }
+    assert(target == result + sizeRequired);
+//        ctx->fail(1, "Size mismatch in StringLib.SplitWords");
+}
+
+
+static unsigned countWords(size32_t lenSrc, const char * src)
+{
+    unsigned count = 0;
+    unsigned offset = 0;
+    while (offset < lenSrc)
+    {
+        size32_t len;
+        memcpy(&len, src+offset, sizeof(len));
+        offset += sizeof(len) + len;
+        count++;
+    }
+    return count;
+}
+
+
+STRINGLIB_API void STRINGLIB_CALL slCombineWords(size32_t & __lenResult, void * & __result, bool isAllSrc, size32_t lenSrc, const char * src, size32_t lenSeparator, const char * separator, bool allowBlankItems)
+{
+    if (lenSrc == 0)
+    {
+        __lenResult = 0;
+        __result = NULL;
+        return;
+    }
+
+    unsigned numWords = countWords(lenSrc, src);
+    size32_t sizeRequired = lenSrc - numWords * sizeof(size32_t) + (numWords-1) * lenSeparator;
+    char * const result = static_cast<char *>(CTXMALLOC(parentCtx, sizeRequired));
+    __lenResult = sizeRequired;
+    __result = result;
+
+    char * target = result;
+    unsigned offset = 0;
+    while (offset < lenSrc)
+    {
+        if ((offset != 0) && lenSeparator)
+        {
+            memcpy(target, separator, lenSeparator);
+            target += lenSeparator;
+        }
+
+        size32_t len;
+        memcpy(&len, src+offset, sizeof(len));
+        offset += sizeof(len);
+        memcpy(target, src+offset, len);
+        target += len;
+        offset += len;
+    }
+    assert(target == result + sizeRequired);
 }
 
 

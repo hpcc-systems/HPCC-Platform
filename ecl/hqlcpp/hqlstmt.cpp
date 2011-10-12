@@ -210,6 +210,7 @@ IHqlStmt * BuildCtx::addContinue()
 
 IHqlStmt * BuildCtx::addDeclare(IHqlExpression * name, IHqlExpression * value)
 {
+    assertex(name->getOperator() == no_variable);
     if (ignoreInput)
         return NULL;
     HqlStmt * next = new HqlStmt(declare_stmt, curStmts);
@@ -224,6 +225,7 @@ IHqlStmt * BuildCtx::addDeclare(IHqlExpression * name, IHqlExpression * value)
 
 IHqlStmt * BuildCtx::addDeclareExternal(IHqlExpression * name)
 {
+    assertex(name->getOperator() == no_variable);
     if (ignoreInput)
         return NULL;
     HqlStmt * next = new HqlStmt(external_stmt, curStmts);
