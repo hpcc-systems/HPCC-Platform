@@ -41,6 +41,7 @@
 #include "hqlccommon.hpp"
 #include "hqlpmap.hpp"
 #include "hqlutil.hpp"
+#include "hqlinline.hpp"
 
 #define LIMIT_FOR_GET       (NULL)
 

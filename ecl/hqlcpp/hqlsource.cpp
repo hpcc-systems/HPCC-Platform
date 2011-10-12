@@ -47,6 +47,7 @@
 #include "hqlcse.ipp"
 #include "hqliter.ipp"
 #include "thorcommon.hpp"
+#include "hqlinline.hpp"
 
 //#define FLATTEN_DATASETS
 //#define HACK_TO_IGNORE_TABLE
@@ -2362,7 +2363,7 @@ void SourceBuilder::buildGroupAggregateTransformBody(BuildCtx & transformCtx, IH
     Owned<ParentExtract> extractBuilder;
     if (useExtract || (aggregate != mappedAggregate))
     {
-        extractBuilder.setown(translator.createExtractBuilder(transformCtx, GraphCoLocal, true));
+        extractBuilder.setown(translator.createExtractBuilder(transformCtx, PETcallback, GraphCoLocal, true));
         if (!translator.queryOptions().serializeRowsetInExtract)
             extractBuilder->setAllowDestructor();
         translator.beginExtract(transformCtx, extractBuilder);
