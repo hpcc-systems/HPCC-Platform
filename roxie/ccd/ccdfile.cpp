@@ -2164,8 +2164,10 @@ public:
     {
         return properties;
     }
-    virtual void remove() const
+    virtual void remove()
     {
+        subFiles.kill();
+        properties.clear();
         if (dFile)
         {
             dFile->detach();
