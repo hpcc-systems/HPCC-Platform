@@ -47,6 +47,7 @@
 #include "hqlgraph.ipp"
 #include "hqlccommon.hpp"
 #include "hqliter.ipp"
+#include "hqlinline.hpp"
 
 #define MAX_FIXED_SIZE_RAW 1024
 #define INLINE_TABLE_EXPAND_LIMIT 4
@@ -1171,7 +1172,7 @@ void ChildGraphBuilder::generateGraph(BuildCtx & ctx)
     OwnedHqlExpr query = createActionList(results);
     OwnedHqlExpr resourced = translator.getResourcedChildGraph(graphctx, query, represents, numResults, no_none);
 
-    Owned<ParentExtract> extractBuilder = translator.createExtractBuilder(graphctx, resourced, true);
+    Owned<ParentExtract> extractBuilder = translator.createExtractBuilder(graphctx, PETchild, resourced, true);
     if (!translator.queryOptions().serializeRowsetInExtract)
         extractBuilder->setAllowDestructor();
     translator.beginExtract(graphctx, extractBuilder);
@@ -1220,7 +1221,7 @@ void ChildGraphBuilder::generatePrefetchGraph(BuildCtx & _ctx, OwnedHqlExpr * re
     OwnedHqlExpr query = createActionList(results);
     OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, query, represents, numResults, no_none);
 
-    Owned<ParentExtract> extractBuilder = translator.createExtractBuilder(ctx, resourced, false);
+    Owned<ParentExtract> extractBuilder = translator.createExtractBuilder(ctx, PETchild, resourced, false);
     createBuilderAlias(aliasctx, extractBuilder);
     translator.beginExtract(ctx, extractBuilder);
 
@@ -1341,9 +1342,9 @@ unique_id_t ChildGraphBuilder::buildLoopBody(BuildCtx & ctx, IHqlExpression * da
     if (multiInstance)
         resourced.setown(appendOwnedOperand(resourced, createAttribute(multiInstanceAtom)));
 
-    bool isGlobalThorLoop = translator.targetThor() && !translator.insideChildGraph(ctx);
-    Owned<ParentExtract> extractBuilder = isGlobalThorLoop ? translator.createExtractBuilder(ctx, GraphRemote, false)
-                                                           : translator.createExtractBuilder(ctx, resourced, false);
+    bool isGlobalThorLoop = translator.targetThor() && !translator.insideChildQuery(ctx);
+    Owned<ParentExtract> extractBuilder = isGlobalThorLoop ? translator.createExtractBuilder(ctx, PETloop, GraphRemote, false)
+                                                           : translator.createExtractBuilder(ctx, PETloop, resourced, false);
 
     createBuilderAlias(subctx, extractBuilder);
 
@@ -1465,9 +1466,9 @@ unique_id_t ChildGraphBuilder::buildGraphLoopBody(BuildCtx & ctx, IHqlExpression
         resourced.setown(resourced->clone(args));
     }
 
-    bool isGlobalThorLoop = translator.targetThor() && !translator.insideChildGraph(ctx);
-    Owned<ParentExtract> extractBuilder = isGlobalThorLoop ? translator.createExtractBuilder(ctx, GraphRemote, false)
-                                                           : translator.createExtractBuilder(ctx, resourced, false);
+    bool isGlobalThorLoop = translator.targetThor() && !translator.insideChildQuery(ctx);
+    Owned<ParentExtract> extractBuilder = isGlobalThorLoop ? translator.createExtractBuilder(ctx, PETloop, GraphRemote, false)
+                                                           : translator.createExtractBuilder(ctx, PETloop, resourced, false);
 
     createBuilderAlias(subctx, extractBuilder);
 
@@ -1493,7 +1494,7 @@ unique_id_t ChildGraphBuilder::buildRemoteGraph(BuildCtx & ctx, IHqlExpression *
         query.set(ds);
     OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, query, represents, numResults, no_allnodes);
 
-    Owned<ParentExtract> extractBuilder = translator.createExtractBuilder(ctx, GraphRemote, false);
+    Owned<ParentExtract> extractBuilder = translator.createExtractBuilder(ctx, PETremote, GraphRemote, false);
 
     createBuilderAlias(subctx, extractBuilder);
 
@@ -1584,7 +1585,7 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
     gatherActiveCursors(ctx, activeRows);
     if (graphKind == no_loop)
     {
-        bool insideChild = insideChildGraph(ctx);
+        bool insideChild = insideChildQuery(ctx);
         resourced.setown(resourceLoopGraph(*this, activeRows, resourced, targetClusterType, graphIdExpr, &numResults, insideChild));
     }
     else
@@ -4457,7 +4458,7 @@ static IHqlExpression * queryResultExpr(IHqlExpression * expr)
 ABoundActivity * HqlCppTranslator::doBuildActivityForceLocal(BuildCtx & ctx, IHqlExpression * expr)
 {
     IHqlExpression * child = expr->queryChild(0);
-    if (targetHThor() || (targetThor() && !insideChildGraph(ctx)))
+    if (targetHThor() || (targetThor() && !insideChildQuery(ctx)))
     {
         WARNING(HQLWRN_LocalHasNoEffect);
         return buildCachedActivity(ctx, child);

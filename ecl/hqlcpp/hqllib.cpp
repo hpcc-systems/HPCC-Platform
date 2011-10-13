@@ -38,6 +38,7 @@
 #include "hqllib.ipp"
 #include "hqlwcpp.hpp"
 #include "hqlttcpp.ipp"
+#include "hqlinline.hpp"
 
 static IHqlExpression * queryLibraryInputSequence(IHqlExpression * expr)
 {
@@ -478,7 +479,7 @@ void HqlCppTranslator::buildLibraryInstanceExtract(BuildCtx & ctx, HqlCppLibrary
 
     BuildCtx beforeBuilderCtx(subctx);
     beforeBuilderCtx.addGroup();
-    Owned<ParentExtract> extractBuilder = createExtractBuilder(subctx, GraphNonLocal, false);
+    Owned<ParentExtract> extractBuilder = createExtractBuilder(subctx, PETlibrary, GraphNonLocal, false);
 
     StringBuffer s;
     s.append("rtlRowBuilder & ");
@@ -629,7 +630,7 @@ void HqlCppTranslator::buildLibraryGraph(BuildCtx & ctx, IHqlExpression * expr, 
         libraryContext->associateExpression(initctx, &parameter);
     }
 
-    Owned<ParentExtract> extractBuilder = createExtractBuilder(initctx, GraphRemote, false);
+    Owned<ParentExtract> extractBuilder = createExtractBuilder(initctx, PETlibrary, GraphRemote, false);
     beginExtract(initctx, extractBuilder);
 
     BuildCtx evalctx(ctx);
