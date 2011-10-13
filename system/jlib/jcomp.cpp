@@ -454,7 +454,7 @@ bool CppCompiler::compileFile(IThreadPool * pool, const char * filename, Semapho
     StringBuffer expanded;
     expandRootDirectory(expanded, cmdline);
     StringBuffer logFile;
-    logFile.append(filename).append(".log");
+    logFile.append(filename).append(".log.tmp");
     logFiles.append(logFile);
 
     Owned<CCompilerThreadParam> parm;
@@ -497,7 +497,7 @@ bool CppCompiler::doLink()
     DWORD runcode = 0;
     if (verbose)
         PrintLog("%s", expanded.toCharArray());
-    StringBuffer logFile = StringBuffer(CORE_NAME).append("_link.log");
+    StringBuffer logFile = StringBuffer(CORE_NAME).append("_link.log.tmp");
     logFiles.append(logFile);
     bool ret = invoke_program(expanded.toCharArray(), runcode, true, logFile) && (runcode == 0);
     return ret;
