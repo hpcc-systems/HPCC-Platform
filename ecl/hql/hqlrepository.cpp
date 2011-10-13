@@ -171,7 +171,6 @@ public:
     void addRepository(IEclRepository & _repository);
 
     virtual IHqlScope * queryRootScope() { return rootScope; }
-    virtual void checkCacheValid();
 
 protected:
     IArrayOf<IEclRepository> repositories;
@@ -185,13 +184,6 @@ void CompoundEclRepository::addRepository(IEclRepository & _repository)
 }
 
 //-------------------------------------------------------------------------------------------------------------------
-
-void CompoundEclRepository::checkCacheValid()
-{
-    ForEachItemIn(i, repositories)
-        repositories.item(i).checkCacheValid();
-}
-
 
 extern HQL_API IEclRepository * createCompoundRepositoryF(IEclRepository * repository, ...)
 {
@@ -221,17 +213,57 @@ extern HQL_API IEclRepository * createCompoundRepository(EclRepositoryArray & re
 
 //-------------------------------------------------------------------------------------------------------------------
 
+class HQL_API NestedEclRepository : public CInterface, implements IEclRepository
+{
+public:
+    NestedEclRepository(_ATOM name, IEclRepository * _repository) : repository(_repository)
+    {
+        rootScope.setown(createScope());
+        IHqlExpression * scope = repository->queryRootScope()->queryExpression();
+
+        rootScope->defineSymbol(name, NULL, LINK(scope), true, false, 0, NULL, 0, 0, 0);
+    }
+
+    IMPLEMENT_IINTERFACE;
+
+    virtual IHqlScope * queryRootScope() { return rootScope; }
+
+protected:
+    Linked<IEclRepository> repository;
+    Owned<IHqlScope> rootScope;
+};
+
+//-------------------------------------------------------------------------------------------------------------------
+
+extern HQL_API IEclRepository * createNestedRepository(_ATOM name, IEclRepository * repository)
+{
+    if (!repository)
+        return NULL;
+    return new NestedEclRepository(name, repository);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+static _ATOM queryModuleFromFullName(const char * name)
+{
+    if (!name)
+        return NULL;
+    const char * dot = strrchr(name, '.');
+    if (dot)
+        return createAtom(dot+1);
+    return createAtom(name);
+}
+
 class HQL_API CNewEclRepository : public CInterface, implements IEclRepositoryCallback
 {
 public:
-    CNewEclRepository(IEclSourceCollection * _collection) : collection(_collection)
+    CNewEclRepository(IEclSourceCollection * _collection, const char * rootScopeFullName) : collection(_collection)
     {
-        rootScope.setown(createRemoteScope(NULL, NULL, this, NULL, NULL, true, NULL));
+        rootScope.setown(createRemoteScope(queryModuleFromFullName(rootScopeFullName), rootScopeFullName, this, NULL, NULL, true, NULL));
     }
     IMPLEMENT_IINTERFACE
 
     virtual IHqlScope * queryRootScope() { return rootScope->queryScope(); }
-    virtual void checkCacheValid() { collection->checkCacheValid(); }
     virtual bool loadModule(IHqlRemoteScope *scope, IErrorReceiver *errs, bool forceAll);
     virtual IHqlExpression * loadSymbol(IHqlRemoteScope *scope, IAtom * searchName);
 
@@ -335,9 +367,9 @@ IHqlExpression * CNewEclRepository::createSymbol(IHqlRemoteScope * rScope, IEclS
 }
 
 
-extern HQL_API IEclRepository * createRepository(IEclSourceCollection * source)
+extern HQL_API IEclRepository * createRepository(IEclSourceCollection * source, const char * rootScopeFullName)
 {
-    return new CNewEclRepository(source);
+    return new CNewEclRepository(source, rootScopeFullName);
 }
 
 extern HQL_API IEclRepository * createRepository(EclSourceCollectionArray & sources)
@@ -363,8 +395,8 @@ extern HQL_API IEclRepository * createNewSourceFileEclRepository(IErrorReceiver 
     return createRepository(source);
 }
 
-extern HQL_API IEclRepository * createSingleDefinitionEclRepository(const char * moduleName, const char * attrName, const char * text)
+extern HQL_API IEclRepository * createSingleDefinitionEclRepository(const char * moduleName, const char * attrName, IFileContents * contents)
 {
-    Owned<IEclSourceCollection> source = createSingleDefinitionEclCollection(moduleName, attrName, text);
+    Owned<IEclSourceCollection> source = createSingleDefinitionEclCollection(moduleName, attrName, contents);
     return createRepository(source);
 }

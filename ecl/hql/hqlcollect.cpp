@@ -797,7 +797,7 @@ extern HQL_API IEclSourceCollection * createArchiveEclCollection(IPropertyTree *
 
 //---------------------------------------------------------------------------------------
 
-extern HQL_API IEclSourceCollection * createSingleDefinitionEclCollection(const char * moduleName, const char * attrName, const char * text)
+IEclSourceCollection * createSingleDefinitionEclCollection(const char * moduleName, const char * attrName, IFileContents * contents)
 {
     //Create an archive with a single module/
     Owned<IPropertyTree> archive = createPTree("Archive");
@@ -805,8 +805,25 @@ extern HQL_API IEclSourceCollection * createSingleDefinitionEclCollection(const 
     module->setProp("@name", moduleName);
     IPropertyTree * attr = module->addPropTree("Attribute", createPTree("Attribute"));
     attr->setProp("@name", attrName);
-    attr->setProp("", text);
+    const char * filename = contents->querySourcePath()->str();
+    if (filename)
+        attr->setProp("@sourcePath", filename);
+
+    StringBuffer temp;
+    temp.append(contents->length(), contents->getText());
+    attr->setProp("", temp.str());
     return createArchiveEclCollection(archive);
+}
+
+IEclSourceCollection * createSingleDefinitionEclCollection(const char * attrName, IFileContents * contents)
+{
+    const char * dot = strrchr(attrName, '.');
+    if (dot)
+    {
+        StringAttr module(attrName, dot-attrName);
+        return createSingleDefinitionEclCollection(module, attrName, contents);
+    }
+    return createSingleDefinitionEclCollection("", attrName, contents);
 }
 
 //---------------------------------------------------------------------------------------

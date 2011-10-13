@@ -199,8 +199,8 @@ protected:
     void generateOutput(EclCompileInstance & instance);
     void instantECL(EclCompileInstance & instance, IWorkUnit *wu, IHqlExpression * query, const char * queryFullName, IErrorReceiver *errs, const char * outputFile);
     void getComplexity(IWorkUnit *wu, IHqlExpression * query, IErrorReceiver *errs);
-    void processSingleQuery(EclCompileInstance & instance, IEclRepository * dataServer, const char * sourcePathname,
-                               const char * queryText,
+    void processSingleQuery(EclCompileInstance & instance, IEclRepository * dataServer,
+                               IFileContents * queryContents,
                                const char * queryAttributePath);
     void processXmlFile(EclCompileInstance & instance, const char *archiveXML);
     void processFile(EclCompileInstance & info);
@@ -217,7 +217,6 @@ protected:
     Owned<IEclRepository> pluginsRepository;
     Owned<IEclRepository> libraryRepository;
     Owned<IEclRepository> includeRepository;
-    Owned<IEclRepository> searchRepository;
     const char * programName;
 
     StringBuffer pluginsPath;
@@ -582,23 +581,18 @@ void EclCC::getComplexity(IWorkUnit *wu, IHqlExpression * query, IErrorReceiver 
 
 //=========================================================================================
 
-inline bool endsWith(unsigned lenSrc, const char * src, unsigned lenSuffix, const char * suffix)
-{
-    return (lenSrc >= lenSuffix) && (memcmp(src+lenSrc-lenSuffix, suffix, lenSuffix) == 0);
-}
-
 static bool convertPathToModule(StringBuffer & out, const char * filename)
 {
-    const unsigned len = strlen(filename);
-    unsigned trail;
-    if (endsWith(len, filename, 4, ".ecl"))
-        trail = 4;
-    else if (endsWith(len, filename, 7, ".eclmod"))
-        trail = 7;
+    const char * dot = strrchr(filename, '.');
+    if (dot)
+    {
+        if (!strieq(dot, ".ecl") && !strieq(dot, ".hql") && !strieq(dot, ".eclmod") && !strieq(dot, ".eclattr"))
+            return false;
+    }
     else
         return false;
 
-    const unsigned copyLen = len-trail;
+    const unsigned copyLen = dot-filename;
     if (copyLen == 0)
         return false;
 
@@ -672,8 +666,8 @@ bool EclCC::checkWithinRepository(StringBuffer & attributePath, const char * sou
 }
 
 
-void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * dataServer, const char * sourcePathname,
-                               const char * queryText,
+void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * dataServer,
+                               IFileContents * queryContents,
                                const char * queryAttributePath)
 {
     Owned<IErrorReceiver> wuErrs = new WorkUnitErrorReceiver(instance.wu, "eclcc");
@@ -689,44 +683,14 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
     if (optTargetCompiler != DEFAULT_COMPILER)
         instance.wu->setDebugValue("targetCompiler", compilerTypeText[optTargetCompiler], true);
 
-    StringBuffer attributePath;
-    bool withinRepository = false;
-    if (queryAttributePath)
-    {
-        withinRepository = true;
-        attributePath.append(queryAttributePath);
-    }
-    else if (!instance.fromArchive)
-    {
-        withinRepository = checkWithinRepository(attributePath, sourcePathname);
-
-        //Disable this for the moment when running the regression suite.
-        //It also doesn't work in batch mode for files in nested directories since filename is reduced to basename
-        if (!optBatchMode && !withinRepository)
-        {
-            StringBuffer expandedSourceName;
-            makeAbsolutePath(sourcePathname, expandedSourceName);
-
-            StringBuffer thisDirectory;
-            StringBuffer thisTail;
-            splitFilename(expandedSourceName, &thisDirectory, &thisDirectory, &thisTail, &thisTail);
-
-            Owned<IEclRepository> localRepository =  createNewSourceFileEclRepository(errs, thisDirectory, 0, 0);
-            Owned<IEclRepository> compound = createCompoundRepositoryF(repository.get(), localRepository.get(), NULL);
-            repository.set(compound);
-
-            if (convertPathToModule(attributePath, thisTail))
-                withinRepository = true;
-        }
-    }
-
+    bool withinRepository = (queryAttributePath && *queryAttributePath);
     Owned<IHqlScope> scope;
-    Owned<ISourcePath> sourcePath = createSourcePath(sourcePathname);
     bool syntaxChecking = instance.wu->getDebugValueBool("syntaxCheck", false);
     size32_t prevErrs = errs->errCount();
     unsigned startTime = msTick();
     OwnedHqlExpr qquery;
-    const char * defaultErrorPathname = sourcePathname ? sourcePathname : attributePath.str();
+    const char * sourcePathname = queryContents ? queryContents->querySourcePath()->str() : NULL;
+    const char * defaultErrorPathname = sourcePathname ? sourcePathname : queryAttributePath;
 
     {
         //Minimize the scope of the parse context to reduce lifetime of cached items.
@@ -747,24 +711,22 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
                 if (instance.archive)
                 {
                     instance.archive->setProp("Query", "");
-                    instance.archive->setProp("Query/@attributePath", attributePath);
+                    instance.archive->setProp("Query/@attributePath", queryAttributePath);
                 }
-                qquery.setown(getResolveAttributeFullPath(attributePath, LSFpublic, ctx));
+                qquery.setown(getResolveAttributeFullPath(queryAttributePath, LSFpublic, ctx));
                 if (!qquery && !syntaxChecking && (errs->errCount() == prevErrs))
                 {
                     StringBuffer msg;
-                    msg.append("Could not resolve attribute ").append(attributePath.str());
+                    msg.append("Could not resolve attribute ").append(queryAttributePath);
                     errs->reportError(3, msg.str(), defaultErrorPathname, 0, 0, 0);
                 }
             }
             else
             {
-                Owned<IFileContents> contents = createFileContentsFromText(queryText, sourcePath);
-
                 if (instance.legacyMode)
                     importRootModulesToScope(scope, ctx);
 
-                qquery.setown(parseQuery(scope, contents, ctx, NULL, true));
+                qquery.setown(parseQuery(scope, queryContents, ctx, NULL, true));
             }
 
             gatherWarnings(ctx.errs, qquery);
@@ -880,7 +842,10 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
     {
         const char * sourceFilename = archiveTree->queryProp("Query/@originalFilename");
         Owned<IEclRepository> dataServer = createCompoundRepositoryF(pluginsRepository.get(), archiveServer.get(), NULL);
-        processSingleQuery(instance, dataServer, sourceFilename, queryText, queryAttributePath);
+
+        Owned<ISourcePath> sourcePath = createSourcePath(sourceFilename);
+        Owned<IFileContents> contents = createFileContentsFromText(queryText, sourcePath);
+        processSingleQuery(instance, dataServer, contents, queryAttributePath);
     }
     else
     {
@@ -896,9 +861,10 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
         fullPath.append(syntaxCheckModule).append('.').append(syntaxCheckAttribute);
 
         //Create a repository with just that attribute, and place it before the archive in the resolution order.
-        Owned<IEclRepository> syntaxCheckRepository = createSingleDefinitionEclRepository(syntaxCheckModule, syntaxCheckAttribute, queryText);
+        Owned<IFileContents> contents = createFileContentsFromText(queryText, NULL);
+        Owned<IEclRepository> syntaxCheckRepository = createSingleDefinitionEclRepository(syntaxCheckModule, syntaxCheckAttribute, contents);
         Owned<IEclRepository> dataServer = createCompoundRepositoryF(pluginsRepository.get(), syntaxCheckRepository.get(), archiveServer.get(), NULL);
-        processSingleQuery(instance, dataServer, NULL, NULL, fullPath.str());
+        processSingleQuery(instance, dataServer, NULL, fullPath.str());
     }
 }
 
@@ -909,13 +875,8 @@ void EclCC::processFile(EclCompileInstance & instance)
 {
     const char * curFilename = instance.inputFile->queryFilename();
     assertex(curFilename);
-    StringBuffer fname;
-    if (optBatchMode)
-        splitFilename(curFilename, NULL, NULL, &fname, &fname);
-    else
-        fname.append(curFilename);
 
-    Owned<ISourcePath> sourcePath = createSourcePath(fname.str());
+    Owned<ISourcePath> sourcePath = createSourcePath(curFilename);
     Owned<IFileContents> queryText = createFileContentsFromFile(curFilename, sourcePath);
     const char * queryTxt = queryText->getText();
     if (optArchive)
@@ -934,7 +895,55 @@ void EclCC::processFile(EclCompileInstance & instance)
         processXmlFile(instance, queryTxt);
     }
     else
-        processSingleQuery(instance, searchRepository, fname.str(), queryTxt, NULL);
+    {
+        StringBuffer attributePath;
+        bool withinRepository = checkWithinRepository(attributePath, curFilename);
+
+        StringBuffer expandedSourceName;
+        makeAbsolutePath(curFilename, expandedSourceName);
+
+        EclRepositoryArray repositories;
+        repositories.append(*LINK(pluginsRepository));
+        repositories.append(*LINK(libraryRepository));
+
+        //Ensure that this source file is used as the definition (in case there are potential clashes)
+        //Note, this will not override standard library files.
+        if (withinRepository)
+        {
+            Owned<IEclSourceCollection> inputFileCollection = createSingleDefinitionEclCollection(attributePath, queryText);
+            repositories.append(*createRepository(inputFileCollection));
+        }
+        else
+        {
+            //Ensure that $ is valid for any file submitted - even if it isn't in the include direcotories
+            //Disable this for the moment when running the regression suite.
+            if (!optBatchMode && !withinRepository)
+            {
+                //Associate the contents of the directory with an internal module called _local_directory_
+                //(If it was root it might override existing root symbols).  $ is the only public way to get at the symbol
+                const char * moduleName = "_local_directory_";
+                _ATOM moduleNameAtom = createAtom(moduleName);
+
+                StringBuffer thisDirectory;
+                StringBuffer thisTail;
+                splitFilename(expandedSourceName, &thisDirectory, &thisDirectory, &thisTail, NULL);
+                attributePath.append(moduleName).append(".").append(thisTail);
+
+                Owned<IEclSourceCollection> inputFileCollection = createSingleDefinitionEclCollection(attributePath, queryText);
+                repositories.append(*createRepository(inputFileCollection));
+
+                Owned<IEclSourceCollection> directory = createFileSystemEclCollection(instance.errs, thisDirectory, 0, 0);
+                Owned<IEclRepository> directoryRepository = createRepository(directory, moduleName);
+                Owned<IEclRepository> nested = createNestedRepository(moduleNameAtom, directoryRepository);
+                repositories.append(*LINK(nested));
+            }
+        }
+
+        repositories.append(*LINK(includeRepository));
+
+        Owned<IEclRepository> searchRepository = createCompoundRepository(repositories);
+        processSingleQuery(instance, searchRepository, queryText, attributePath.str());
+    }
 
     if (instance.reportErrorSummary() && !instance.archive)
         return;
@@ -947,7 +956,7 @@ void EclCC::processFile(EclCompileInstance & instance)
             if (0 == strncmp(p, (const char *)UTF8_BOM,3))
                 p += 3;
             instance.archive->setProp("Query", p );
-            instance.archive->setProp("Query/@originalFilename", fname.str());
+            instance.archive->setProp("Query/@originalFilename", curFilename);
         }
     }
 
@@ -996,7 +1005,8 @@ void EclCC::processReference(EclCompileInstance & instance, const char * queryAt
 
     instance.wu.setown(createLocalWorkUnit());
 
-    processSingleQuery(instance, searchRepository, NULL, NULL, queryAttributePath);
+    Owned<IEclRepository> searchRepository = createCompoundRepositoryF(pluginsRepository.get(), libraryRepository.get(), includeRepository.get(), NULL);
+    processSingleQuery(instance, searchRepository, NULL, queryAttributePath);
 
     if (instance.reportErrorSummary())
         return;
@@ -1015,7 +1025,6 @@ bool EclCC::processFiles()
     pluginsRepository.setown(createNewSourceFileEclRepository(errs, pluginsPath.str(), ESFallowplugins, logVerbose ? PLUGIN_DLL_MODULE : 0));
     libraryRepository.setown(createNewSourceFileEclRepository(errs, eclLibraryPath.str(), 0, 0));
     includeRepository.setown(createNewSourceFileEclRepository(errs, searchPath.str(), 0, 0));
-    searchRepository.setown(createCompoundRepositoryF(pluginsRepository.get(), libraryRepository.get(), includeRepository.get(), NULL));
 
     //Ensure symbols for plugins are initialised - see comment before CHqlMergedScope...
 //    lookupAllRootDefinitions(pluginsRepository);
