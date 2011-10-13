@@ -214,10 +214,10 @@ protected:
             fileCache.remove(file->queryFileName());
     }
     // Lookup a filename in the cache
-    const IResolvedFile *lookupCache(const char *filename) const
+    IResolvedFile *lookupCache(const char *filename) const
     {
         CriticalBlock b(cacheLock);
-        const IResolvedFile *cache = fileCache.getValue(filename);
+        IResolvedFile *cache = fileCache.getValue(filename);
         if (cache)
         {
             LINK(cache);
@@ -301,7 +301,7 @@ protected:
         return NULL;
     }
     // Use local package file only to resolve subfile into physical file info
-    const IResolvedFile *resolveLFNusingPackage(const char *fileName) const
+    IResolvedFile *resolveLFNusingPackage(const char *fileName) const
     {
         if (node)
         {
@@ -317,7 +317,7 @@ protected:
         return NULL;
     }
     // Use dali to resolve subfile into physical file info
-    virtual const IResolvedFile *resolveLFNusingDali(const char *fileName, bool writeAccess) const
+    IResolvedFile *resolveLFNusingDali(const char *fileName, bool writeAccess) const
     {
         if (daliHelper)
         {
@@ -325,7 +325,7 @@ protected:
             {
                 Owned<IDistributedFile> dFile = daliHelper->resolveLFN(fileName, writeAccess);
                 if (dFile)
-                    return createResolvedFile(fileName, dFile.getLink());
+                    return createResolvedFile(fileName, dFile.getClear());
             }
             else if (!writeAccess)  // If we need write access and expect a dali, but don't have one, we should probably fail
             {
@@ -342,7 +342,7 @@ protected:
         return NULL;
     }
     // Use local package file's localFile info to resolve subfile into physical file info
-    const IResolvedFile *resolveLFNusingLocal(const char *fileName) const
+    IResolvedFile *resolveLFNusingLocal(const char *fileName) const
     {
         if (node && node->getPropBool("@localFiles"))
         {
@@ -353,7 +353,7 @@ protected:
         return NULL;
     }
     // Use local package and its bases to resolve existing file into physical file info via all supported resolvers
-    const IResolvedFile *lookupFile(const char *fileName, bool cache) const
+    IResolvedFile *lookupFile(const char *fileName, bool cache, bool writeAccess) const
     {
         // Order of resolution: 
         // 1. Files named in package
@@ -361,7 +361,7 @@ protected:
         // 3. If local file system lookup enabled, local file system?
         // 4. Files named in bases
 
-        const IResolvedFile* result = lookupCache(fileName);
+        IResolvedFile* result = lookupCache(fileName);
         if (result)
             return result;
 
@@ -374,7 +374,7 @@ protected:
                 // Optimize the common case of a single subfile
                 StringBuffer subFileName;
                 subFileInfo->getSubFileName(0, subFileName);
-                return lookupFile(subFileName, cache);
+                return lookupFile(subFileName, cache, writeAccess);
             }
             else
             {
@@ -384,7 +384,7 @@ protected:
                 {
                     StringBuffer subFileName;
                     subFileInfo->getSubFileName(idx, subFileName);
-                    Owned<const IResolvedFile> subFileInfo = lookupFile(subFileName, cache);
+                    Owned<const IResolvedFile> subFileInfo = lookupFile(subFileName, cache, writeAccess);
                     if (subFileInfo)
                     {
                         if (!super) 
@@ -399,7 +399,7 @@ protected:
         }
         result = resolveLFNusingPackage(fileName);
         if (!result)
-            result = resolveLFNusingDali(fileName, false);
+            result = resolveLFNusingDali(fileName, writeAccess);
         if (!result)
             result = resolveLFNusingLocal(fileName);
         if (result)
@@ -411,7 +411,7 @@ protected:
         ForEachItemIn(idx, bases)
         {
             const CRoxiePackage &basePackage = bases.item(idx);
-            const IResolvedFile *result = basePackage.lookupFile(fileName, cache);
+            IResolvedFile *result = basePackage.lookupFile(fileName, cache, writeAccess);
             if (result)
                 return result;
         }
@@ -521,7 +521,7 @@ public:
         StringBuffer fileName;
         expandLogicalFilename(fileName, _fileName, NULL, false);   // MORE - if we have a wu, and we have not yet got rid of the concept of scope, we should use it here
 
-        const IResolvedFile *result = lookupFile(fileName, cache);
+        const IResolvedFile *result = lookupFile(fileName, cache, false);
         if (!result)
         {
             if (!opt)
@@ -536,7 +536,7 @@ public:
     {
         StringBuffer fileName;
         expandLogicalFilename(fileName, _fileName, NULL, false);   // MORE - if we have a wu, and we have not yet got rid of the concept of scope, we should use it here
-        Owned<const IResolvedFile> resolved = lookupFile(fileName, true);
+        Owned<IResolvedFile> resolved = lookupFile(fileName, false, true);
         if (resolved)
         {
             if (!overwrite)

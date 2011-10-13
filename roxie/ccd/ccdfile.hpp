@@ -113,7 +113,7 @@ interface IResolvedFile : extends ISimpleSuperFileEnquiry
     virtual bool isAlive() const = 0;
     virtual const IPropertyTree *queryProperties() const = 0;
 
-    virtual void remove() const = 0;
+    virtual void remove() = 0;
 };
 
 interface IResolvedFileCreator : extends IResolvedFile
