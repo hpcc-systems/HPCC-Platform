@@ -81,6 +81,7 @@ class NSplitterSlaveActivity : public CSlaveActivity
     bool spill;
     bool eofHit;
     CriticalSection startCrit;
+    bool inputsConfigured;
     unsigned nstopped;
     rowcount_t recsReady;
     SpinLock timingLock;
@@ -184,24 +185,42 @@ protected: friend class SplitterOutput;
     public:
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-        CInputWrapper(NSplitterSlaveActivity &_activity) : CThorDataLink(&_activity), activity(_activity) { input = NULL; }
+        CInputWrapper(NSplitterSlaveActivity &_activity, IThorDataLink *_input) : CThorDataLink(&_activity), activity(_activity), input(_input) { }
+        virtual const void *nextRow() { return input->nextRow(); }
+        virtual void stop() { input->stop(); }
+    // IThorDataLink impl.
+        virtual void start()
+        {
+            input->start();
+        }
+        virtual bool isGrouped() { return input->isGrouped(); }
+        virtual void getMetaInfo(ThorDataLinkMetaInfo &info) { input->getMetaInfo(info); }
+    };
+
+    class CDelayedInput : public CSimpleInterface, public CThorDataLink
+    {
+        Owned<IThorDataLink> input;
+        NSplitterSlaveActivity &activity;
+
+    public:
+        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+        CDelayedInput(NSplitterSlaveActivity &_activity) : CThorDataLink(&_activity), activity(_activity) { }
         void setInput(IThorDataLink *_input) 
         {
-            if (input) return;
-            input = _input;
+            input.setown(_input);
         }
         virtual const void *nextRow() { return input->nextRow(); }
         virtual void stop() { input->stop(); }
     // IThorDataLink impl.
         virtual void start()
         {
-            setInput(activity.inputs.item(0));
+            activity.ensureInputsConfigured();
             input->start();
         }
-        virtual bool isGrouped() { setInput(activity.inputs.item(0)); return input->isGrouped(); }
-        virtual void getMetaInfo(ThorDataLinkMetaInfo &info) { setInput(activity.inputs.item(0)); input->getMetaInfo(info); }
+        virtual bool isGrouped() { return activity.inputs.item(0)->isGrouped(); }
+        virtual void getMetaInfo(ThorDataLinkMetaInfo &info) { activity.inputs.item(0)->getMetaInfo(info); }
     };
-
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
@@ -211,8 +230,46 @@ public:
         spill = false;
         input = NULL;
         nstopped = 0;
-        eofHit = false;
+        eofHit = inputsConfigured = false;
         recsReady = 0;
+    }
+    void ensureInputsConfigured()
+    {
+        CriticalBlock block(startCrit);
+        if (inputsConfigured)
+            return;
+        inputsConfigured = true;
+        unsigned noutputs = container.connectedOutputs.getCount();
+        if (1 == noutputs)
+        {
+            CIOConnection *io = NULL;
+            ForEachItemIn(o, container.connectedOutputs)
+            {
+                io = container.connectedOutputs.item(o);
+                if (io)
+                    break;
+            }
+            assertex(io);
+            ForEachItemIn(o2, outputs)
+            {
+                CDelayedInput *delayedInput = (CDelayedInput *)outputs.item(o2);
+                if (o2 == o)
+                    delayedInput->setInput(new CInputWrapper(*this, inputs.item(0)));
+                else
+                    delayedInput->setInput(new CNullInput(*this));
+            }
+        }
+        else
+        {
+            ForEachItemIn(o, outputs)
+            {
+                CDelayedInput *delayedInput = (CDelayedInput *)outputs.item(o);
+                if (NULL != container.connectedOutputs.queryItem(o))
+                    delayedInput->setInput(new SplitterOutput(*this, o));
+                else
+                    delayedInput->setInput(new CNullInput(*this));
+            }
+        }
     }
     void reset()
     {
@@ -221,46 +278,26 @@ public:
         grouped = false;
         eofHit = false;
         recsReady = 0;
+        inputsConfigured = false;
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        unsigned numOutputs = container.connectedOutputs.ordinality();
-        if (1 == numOutputs)
+        ForEachItemIn(o, container.outputs)
+            appendOutput(new CDelayedInput(*this));
+        IHThorSplitArg *helper = (IHThorSplitArg *)queryHelper();
+        int dV = (int)container.queryJob().getWorkUnitValueInt("splitterSpills", -1);
+        if (-1 == dV)
         {
-            unsigned activeOutIdx = container.connectedOutputsIndex.item(0);
-            ForEachItemIn(o, container.outputs)
+            spill = !helper->isBalanced();
+            bool forcedUnbalanced = queryContainer().queryXGMML().getPropBool("@unbalanced", false);
+            if (!spill && forcedUnbalanced)
             {
-                if (o == activeOutIdx)
-                    appendOutput(new CInputWrapper(*this));
-                else
-                    appendOutput(new CNullInput(*this));
+                ActPrintLog("Was marked balanced, but forced unbalanced due to UPDATE changes.");
+                spill = true;
             }
         }
         else
-        {
-            ForEachItemIn(o, container.outputs)
-            {
-                if (NotFound != container.connectedOutputsIndex.find(o))
-                    appendOutput(new SplitterOutput(*this, o));
-                else
-                    appendOutput(new CNullInput(*this));
-            }
-
-            IHThorSplitArg *helper = (IHThorSplitArg *)queryHelper();
-            int dV = (int)container.queryJob().getWorkUnitValueInt("splitterSpills", -1);
-            if (-1 == dV)
-            {
-                spill = !helper->isBalanced();
-                bool forcedUnbalanced = queryContainer().queryXGMML().getPropBool("@unbalanced", false);
-                if (!spill && forcedUnbalanced)
-                {
-                    ActPrintLog("Was marked balanced, but forced unbalanced due to UPDATE changes.");
-                    spill = true;
-                }
-            }
-            else
-                spill = dV>0;
-        }
+            spill = dV>0;
     }
     inline void more(rowcount_t &max)
     {

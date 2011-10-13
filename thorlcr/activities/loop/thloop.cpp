@@ -228,7 +228,8 @@ public:
     }
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
-        serializeMPtag(dst, mpTag);
+        if (!container.queryLocalOrGrouped())
+            serializeMPtag(dst, mpTag);
     }
     virtual IThorResult *createResult() = 0;
     virtual void process()
@@ -383,8 +384,7 @@ public:
     {
         IHThorGraphLoopResultWriteArg *helper = (IHThorGraphLoopResultWriteArg *)queryHelper();
         Owned<CGraphBase> graph = container.queryOwner().queryJob().getGraph(container.queryResultsGraph()->queryGraphId());
-        bool local = container.queryOwner().isLocalOnly();
-        return graph->createGraphLoopResult(*this, inputRowIf, local); // NB graph owns result
+        return graph->createGraphLoopResult(*this, inputRowIf); // NB graph owns result
     }
 };
 

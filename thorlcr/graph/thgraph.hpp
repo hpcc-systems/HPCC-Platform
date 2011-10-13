@@ -172,10 +172,55 @@ public:
     int controlId;
 
     CGraphDependency(CGraphBase *_graph, int _controlId) : graph(_graph), controlId(_controlId) { }
+    void connect(CActivityBase *activity);
+};
+
+class CIOConnection : public CInterface
+{
+public:
+    CGraphElementBase *activity;
+    unsigned index;
+    void connect(unsigned which, CActivityBase *activity);
+
+    CIOConnection(CGraphElementBase *_activity, unsigned _index) : activity(_activity), index(_index) { }
+};
+class COwningSimpleIOConnection : public CIOConnection
+{
+public:
+    COwningSimpleIOConnection(CGraphElementBase *_activity, unsigned index) : CIOConnection(_activity, index) { }
+    ~COwningSimpleIOConnection() { ::Release(activity); }
 };
 
 typedef CIArrayOf<CGraphBase> CGraphArray;
 typedef CIArrayOf<CGraphDependency> CGraphDependencyArray;
+
+inline CIOConnection *Array__Member2Param(CIOConnection * src)         { return src; }
+inline void Array__Assign(CIOConnection * & dest, CIOConnection * src) { dest = src; }
+inline void Array__Destroy(CIOConnection * & next)                           { if (next) next->Release(); }
+inline CIOConnection * Array__Member2ParamPtr(CIOConnection * src)     { return src; }
+MAKEArrayOf(CIOConnection *, CIOConnection *, _CIOConnectionArray);
+
+class CIOConnectionArray : public _CIOConnectionArray
+{
+public:
+    CIOConnection *queryItem(unsigned i)
+    {
+        if (!isItem(i))
+            return NULL;
+        return item(i);
+    }
+    const unsigned getCount()
+    {
+        unsigned c = 0;
+        ForEachItemIn(i, *this)
+        {
+            CIOConnection *io = item(i);
+            if (io)
+                ++c;
+        }
+        return c;
+    }
+};
 
 class CActivityBase;
 class CJobBase;
@@ -187,9 +232,6 @@ protected:
     Owned<IHThorArg> baseHelper;
     ThorActivityKind kind;
     activity_id id, ownerId;
-    UnsignedArray outputInputIndexes;
-
-
     StringAttr eclText;
     Owned<IPropertyTree> xgmml;
     bool isLocal, isGrouped, sink, prepared, onCreateCalled, onStartCalled, onlyUpdateIfChanged, nullAct;
@@ -206,18 +248,9 @@ public:
     bool alreadyUpdated, isEof, newWhichBranch;
     EclHelperFactory helperFactory;
 
-    UnsignedArray connectedInputsIndex;
-    CIArrayOf<CGraphElementBase> connectedInputs;
-    UnsignedArray connectedInputsInputOutIdx;
+    CIOConnectionArray inputs, outputs, connectedInputs, connectedOutputs;
 
-    UnsignedArray connectedOutputsIndex;
-    CopyCIArrayOf<CGraphElementBase> connectedOutputs;
-    UnsignedArray connectedOutputsInputIndex;
-
-    CopyCIArrayOf<CGraphElementBase> outputs;
     CGraphArray associatedChildGraphs;
-    CIArrayOf<CGraphElementBase> inputs;
-    UnsignedArray inputOutIndexes;
     unsigned whichBranch;
     Owned<IBitSet> whichBranchBitSet;
     Owned<IBitSet> sentActInitData;
@@ -226,18 +259,9 @@ public:
     ~CGraphElementBase();
 
     void doconnect();
-    void addInput(CGraphElementBase *input, unsigned inputOutIdx)
-    {
-        inputs.append(*LINK(input));
-        inputOutIndexes.append(inputOutIdx); // the OUTPUT index *from* the source input
-    }
-    void addOutput(CGraphElementBase *output, unsigned outputInIdx)
-    {
-        outputs.append(* output);
-        outputInputIndexes.append(outputInIdx); // the INPUT index *on* the target
-    }
-    void removeInput(unsigned which);
-    virtual void setInput(unsigned which, CGraphElementBase &input, unsigned inputOutIdx);
+    void addInput(unsigned input, CGraphElementBase *inputAct, unsigned inputOutIdx);
+    void clearConnections();
+    virtual void connectInput(unsigned which, CGraphElementBase *input, unsigned inputOutIdx);
     void setResultsGraph(CGraphBase *_resultsGraph) { resultsGraph = _resultsGraph; }
     void addAssociatedChildGraph(CGraphBase *childGraph) { associatedChildGraphs.append(*LINK(childGraph)); }
     void releaseIOs();
@@ -267,18 +291,17 @@ public:
     IThorGraphIterator *getAssociatedChildGraphs();
     IGraphTempHandler *queryTempHandler() const;
     CJobBase &queryJob() const;
-    unsigned getInputs() const { return inputs.ordinality(); } 
+    unsigned getInputs() const { return inputs.ordinality(); }
     unsigned getOutputs() const { return outputs.ordinality(); }
     bool isSource() const { return isActivitySource(kind); }
     bool isSink() const { return sink; }
     bool queryLocal() const { return isLocal; }
     bool queryGrouped() const { return isGrouped; }
     bool queryLocalOrGrouped() { return isLocal || isGrouped; }
-
     CGraphElementBase *queryInput(unsigned index) const
     {
-        if (inputs.isItem(index))
-            return &inputs.item(index);
+        if (inputs.isItem(index) && (NULL != inputs.item(index)))
+            return inputs.item(index)->activity;
         return NULL;
     }
     IHThorArg *queryHelper() const { return baseHelper; }
@@ -306,6 +329,19 @@ public:
 
 typedef CIArrayOf<CGraphElementBase> CGraphElementArray;
 interface IThorActivityIterator : extends IIteratorOf<CGraphElementBase> { };
+typedef ArrayIteratorOf<CGraphElementArray, CGraphElementBase &> ITAArrayIterator;
+class CGraphElementArrayIterator : public CInterface, public ITAArrayIterator, implements IThorActivityIterator
+{
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CGraphElementArrayIterator(CGraphElementArray &array) : ITAArrayIterator(array) { }
+    virtual bool first() { return ITAArrayIterator::first(); }
+    virtual bool next() { return ITAArrayIterator::next(); }
+    virtual bool isValid() { return ITAArrayIterator::isValid(); }
+    virtual CGraphElementBase & query() { return ITAArrayIterator::query(); }
+            CGraphElementBase & get() { CGraphElementBase &c = query(); c.Link(); return c; }
+};
 
 class graph_decl CGraphElementTableCopy : public SuperHashTableOf<CGraphElementBase, activity_id>
 {
@@ -602,33 +638,6 @@ protected:
         }
         CGraphElementBase & get() { CGraphElementBase &c = query(); c.Link(); return c; }
     };
-    class CGraphCreatedIterator : public CGraphGraphActElementIterator
-    {
-    public:
-        CGraphCreatedIterator(CGraphBase &graph) : CGraphGraphActElementIterator(graph, graph.queryXGMML()) { }
-        virtual bool first()
-        {
-            if (!CGraphGraphActElementIterator::first())
-                return false;
-            do
-            {
-                if (current->isOnCreated())
-                    return true;
-            }
-            while (CGraphGraphActElementIterator::next());
-            return false;
-        }
-        virtual bool next()
-        {
-            loop
-            {
-                if (!CGraphGraphActElementIterator::next())
-                    return false;
-                if (current->isOnCreated())
-                    return true;
-            }
-        }
-    };
     class CGraphElementIterator : public CInterface, implements IThorActivityIterator
     {
         SuperHashIteratorOf<CGraphElementBase> iter;
@@ -642,19 +651,6 @@ protected:
         virtual CGraphElementBase & query() { return iter.query(); }
                 CGraphElementBase & get() { CGraphElementBase &c = query(); c.Link(); return c; }
     };
-    typedef ArrayIteratorOf<CGraphElementArray, CGraphElementBase &> ITAArrayIterator;
-    class CGraphElementArrayIterator : public CInterface, public ITAArrayIterator, implements IThorActivityIterator
-    {
-    public:
-        IMPLEMENT_IINTERFACE;
-
-        CGraphElementArrayIterator(CGraphElementArray &array) : ITAArrayIterator(array) { }
-        virtual bool first() { return ITAArrayIterator::first(); }
-        virtual bool next() { return ITAArrayIterator::next(); }
-        virtual bool isValid() { return ITAArrayIterator::isValid(); }
-        virtual CGraphElementBase & query() { return ITAArrayIterator::query(); }
-                CGraphElementBase & get() { CGraphElementBase &c = query(); c.Link(); return c; }
-    };
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -666,8 +662,7 @@ public:
     ~CGraphBase();
     
     virtual void init() { }
-    IThorActivityIterator *getTraverseIterator(bool connected=true);
-    IThorActivityIterator *getTraverseIteratorCond();
+    IThorActivityIterator *getTraverseIterator(bool all=false); // all traverses and includes conditionals, others traverses connected nodes only
     void GraphPrintLog(const char *msg, ...) __attribute__((format(printf, 2, 3)));
     void GraphPrintLog(IException *e, const char *msg, ...) __attribute__((format(printf, 3, 4)));
     void createFromXGMML(IPropertyTree *node, CGraphBase *owner, CGraphBase *parent, CGraphBase *resultsGraph);
@@ -696,7 +691,7 @@ public:
     virtual void setComplete(bool tf=true) { complete=tf; }
     virtual void deserializeCreateContexts(MemoryBuffer &mb);
     virtual void deserializeStartContexts(MemoryBuffer &mb);
-    virtual void serializeCreateContexts(MemoryBuffer &mb, bool created);
+    virtual void serializeCreateContexts(MemoryBuffer &mb);
     virtual void serializeStartContexts(MemoryBuffer &mb);
     void reset();
     void disconnectActivities()
@@ -714,10 +709,6 @@ public:
     IThorActivityIterator *getIterator()
     {
         return new CGraphGraphActElementIterator(*this, *xgmml);
-    }
-    IThorActivityIterator *getCreatedIterator()
-    {
-        return new CGraphCreatedIterator(*this);
     }
     IThorActivityIterator *getSinkIterator()
     {
@@ -806,7 +797,7 @@ public:
     virtual IThorResult *queryGraphLoopResult(unsigned id);
     virtual IThorResult *getGraphLoopResult(unsigned id);
     virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool local=false);
-    virtual IThorResult *createGraphLoopResult(CActivityBase &activity, IRowInterfaces *rowIf, bool local=false);
+    virtual IThorResult *createGraphLoopResult(CActivityBase &activity, IRowInterfaces *rowIf);
 
 // ILocalGraph
     virtual void getResult(size32_t & len, void * & data, unsigned id);
@@ -1003,6 +994,7 @@ public:
 
 
     virtual void setInput(unsigned index, CActivityBase *inputActivity, unsigned inputOutIdx) { }
+    virtual void clearConnections() { }
     virtual void releaseIOs() { }
     virtual void preStart(size32_t parentExtractSz, const byte *parentExtract) { }
     virtual void startProcess() { actStarted = true; }

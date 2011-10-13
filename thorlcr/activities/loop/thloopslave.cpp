@@ -1254,8 +1254,7 @@ public:
     {
         IHThorGraphLoopResultWriteArg *helper = (IHThorGraphLoopResultWriteArg *)queryHelper();
         Owned<CGraphBase> graph = container.queryOwner().queryJob().getGraph(container.queryResultsGraph()->queryGraphId());
-        bool local = container.queryOwner().isLocalOnly();
-        return graph->createGraphLoopResult(*this, input->queryFromActivity(), local);
+        return graph->createGraphLoopResult(*this, input->queryFromActivity());
     }
 };
 

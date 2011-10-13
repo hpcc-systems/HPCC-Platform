@@ -54,7 +54,8 @@ public:
 
     CSlaveActivity(CGraphElementBase *container);
     ~CSlaveActivity();
-    void releaseIOs();
+    virtual void clearConnections();
+    virtual void releaseIOs();
     virtual void init(MemoryBuffer &in, MemoryBuffer &out) { }
     virtual void processDone(MemoryBuffer &mb) { };
     virtual void abort();
