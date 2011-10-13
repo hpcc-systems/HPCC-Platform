@@ -53,6 +53,7 @@
 #include "hqlscope.hpp"
 #include "hqlccommon.hpp"
 #include "deffield.hpp"
+#include "hqlinline.hpp"
 
 //The following are include to ensure they call compile...
 #include "eclhelper.hpp"
@@ -1844,7 +1845,7 @@ ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ct
     hasChildActivity = false;
 
     includedInHeader = false;
-    isCoLocal = true;
+    isCoLocal = false;
     executedRemotely = translator.targetThor();// && !translator.isNeverDistributed(dataset);
     containerActivity = NULL;
     subgraph = queryActiveSubGraph(ctx);
@@ -1853,32 +1854,36 @@ ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ct
 
     //count index and count disk need to be swapped to the new (much simpler) mechanism
     //until then, they need to be special cased.
-    activityLocalisation = GraphCoLocal;
+    activityLocalisation = GraphNoAccess;
     if (kind != TAKcountindex && kind != TAKcountdisk)
     {
         containerActivity = translator.queryCurrentActivity(ctx);
         parentEvalContext.set(translator.queryEvalContext(ctx));
         parentExtract.set(static_cast<ParentExtract*>(ctx.queryFirstAssociation(AssocExtract)));
+
         if (parentExtract)
         {
-            if (!translator.isAlwaysCoLocal())
-            {
-                GraphLocalisation localisation = parentExtract->queryLocalisation();
-                activityLocalisation = queryActivityLocalisation(dataset);
-                executedRemotely = ((activityLocalisation == GraphNonLocal) || (localisation == GraphRemote));
-                isCoLocal = !executedRemotely && (localisation != GraphNonLocal) && (activityLocalisation != GraphNoAccess);    // if we supported GraphNonCoLocal the last test would not be needed
-                //if top level activity within a query library then need to force access to the parent extract
-                if (!containerActivity && translator.insideLibrary())
-                {
-                    //there should be no colocal activity (container = null)
-                    if (activityLocalisation != GraphNoAccess)
-                        activityLocalisation = GraphNonLocal;
-                }
-                if (activityLocalisation == GraphNoAccess)
-                    parentExtract.clear();
-            }
+            GraphLocalisation localisation = parentExtract->queryLocalisation();
+            activityLocalisation = translator.isAlwaysCoLocal() ? GraphCoLocal : queryActivityLocalisation(dataset);
 
-            if (isCoLocal && containerActivity)
+            if (translator.targetThor() && !translator.insideChildQuery(ctx))
+                executedRemotely = true;
+            else
+                executedRemotely = ((activityLocalisation == GraphNonLocal) || (localisation == GraphRemote));
+
+            isCoLocal = containerActivity && !executedRemotely && (localisation != GraphNonLocal) && (activityLocalisation != GraphNoAccess);    // if we supported GraphNonCoLocal the last test would not be needed
+
+            //if top level activity within a query library then need to force access to the parent extract
+            if (!containerActivity && translator.insideLibrary())
+            {
+                //there should be no colocal activity (container = null)
+                if (activityLocalisation != GraphNoAccess)
+                    activityLocalisation = GraphNonLocal;
+            }
+            if (activityLocalisation == GraphNoAccess)
+                parentExtract.clear();
+
+            if (isCoLocal)
                 colocalMember.setown(createVariable("colocal", makeVoidType()));
         }
         else
@@ -1917,6 +1922,10 @@ ABoundActivity * ActivityInstance::getBoundActivity()
     return LINK(table);
 }
 
+BuildCtx & ActivityInstance::onlyEvalOnceContext()
+{
+    return evalContext->onCreate.childctx;
+}
 
 bool ActivityInstance::isExternal()
 {
@@ -2475,7 +2484,7 @@ ParentExtract * ActivityInstance::createNestedExtract()
 {
     if (!nestedExtract)
     {
-        nestedExtract.setown(new ParentExtract(translator, GraphCoLocal, evalContext));
+        nestedExtract.setown(new ParentExtract(translator, PETnested, GraphCoLocal, evalContext));
         nestedExtract->beginNestedExtract(startctx);
     }
     return LINK(nestedExtract);
@@ -8385,7 +8394,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityGraphLoop(BuildCtx & ctx, IHql
 ABoundActivity * HqlCppTranslator::doBuildActivityRemote(BuildCtx & ctx, IHqlExpression * expr, bool isRoot)
 {
     IHqlExpression * child = expr->queryChild(0);
-    if (targetHThor() || (targetThor() && !insideChildGraph(ctx)))
+    if (targetHThor() || (targetThor() && !insideChildQuery(ctx)))
     {
         if (!options.alwaysAllowAllNodes)
             throwError(HQLERR_RemoteNoMeaning);
@@ -8791,6 +8800,18 @@ bool HqlCppTranslator::insideChildGraph(BuildCtx & ctx)
     }
     return false;
 }
+
+bool HqlCppTranslator::insideChildQuery(BuildCtx & ctx)
+{
+    ParentExtract * extract = static_cast<ParentExtract*>(ctx.queryFirstAssociation(AssocExtract));
+    if (extract)
+        return extract->insideChildQuery();
+    EvalContext * instance = queryEvalContext(ctx);
+    if (instance)
+        return instance->insideChildQuery();
+    return false;
+}
+
 
 unsigned HqlCppTranslator::curSubGraphId(BuildCtx & ctx)
 {

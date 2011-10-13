@@ -52,6 +52,7 @@
 #include "hqlpopt.hpp"
 #include "hqlcse.ipp"
 #include "thorplugin.hpp"
+#include "hqlinline.hpp"
 
 #ifdef _DEBUG
 //#define ADD_ASSIGNMENT_COMMENTS

@@ -550,7 +550,7 @@
 #define HQLERR_LibraryNoWorkunitRead_Text       "INTERNAL: Library '%s' shouldn't access work unit temporary '%s'"
 #define HQLERR_LibraryNoWorkunitWrite_Text      "INTERNAL: Library '%s' shouldn't create work unit temporary '%s'"
 #define HQLERR_GraphInputAccessedChild_Text     "INTERNAL: Attempting to access graph output directly from a child query"
-#define HQLERR_InconsisentLocalisation_Text     "INTERNAL: Inconsistent activity localisation (%d:%d)"
+#define HQLERR_InconsisentLocalisation_Text     "INTERNAL: Inconsistent activity localisation (child %d:graph %d)"
 #define HQLERR_NoParentExtract_Text             "INTERNAL: No active parent extract - activity has incorrect localisation?"
 #define HQLERR_InconsistentNaryInput_Text       "INTERNAL: Inputs to nary operation have inconsistent record structures"
 #define HQLERR_LinkedDatasetNoContext_Text      "INTERNAL: Linked child rows required without legal context available"

@@ -40,6 +40,7 @@
 #include "hqlutil.hpp"
 #include "hqlcse.ipp"
 #include "hqliter.ipp"
+#include "hqlinline.hpp"
 
 //===========================================================================
 

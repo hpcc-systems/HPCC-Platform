@@ -84,6 +84,7 @@ public:
 //===========================================================================
 
 //MORE: I should derive the following and ActivityInstance from a common base class
+class GlobalClassEvalContext;
 class GlobalClassBuilder
 {
 public:
@@ -119,7 +120,7 @@ class JoinKeyInfo;
 class ActivityInstance;
 class NlpParseContext;
 extern StringBuffer &expandLiteral(StringBuffer &s, const char *f);
-
+class ActivityEvalContext;
 class ActivityInstance : public HqlExprAssociation
 {
 public:
@@ -161,7 +162,7 @@ public:
     void processHints(IHqlExpression * hintAttr);
     void processSection(IHqlExpression * hintAttr);
 
-    BuildCtx &   onlyEvalOnceContext()              { return evalContext->onCreate.childctx; }
+    BuildCtx &   onlyEvalOnceContext();
     inline IPropertyTree * querySubgraphNode() { return subgraph ? subgraph->tree.get() : NULL; }
     inline void setImplementationClass(_ATOM name) { implementationClassName = name; }
     void setInternalSink(bool value);

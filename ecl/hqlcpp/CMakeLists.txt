@@ -67,6 +67,7 @@ set (    SRCS
          hqlcpputil.hpp
          hqlecl.hpp
          hqlfunc.hpp
+         hqlinline.hpp
          hqlpopt.hpp
          hqlregex.hpp
          hqlres.hpp

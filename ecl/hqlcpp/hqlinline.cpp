@@ -35,6 +35,7 @@
 #include "hqlccommon.hpp"
 #include "hqlcerrors.hpp"
 #include "hqlpmap.hpp"
+#include "hqlinline.hpp"
 
 //I don't think the following is needed yet, but when it is, just enable following...
 //#define ONSTART_IN_NESTED_TOPLEVEL
@@ -695,9 +696,11 @@ bool HqlCppTranslator::isAlwaysCoLocal()
     return targetHThor();
 }
 
-GraphLocalisation HqlCppTranslator::getGraphLocalisation(IHqlExpression * expr)
+GraphLocalisation HqlCppTranslator::getGraphLocalisation(IHqlExpression * expr, bool isInsideChildQuery)
 {
     if (isAlwaysCoLocal()) return GraphCoLocal;
+    if (targetThor() && !isInsideChildQuery)
+        return GraphNonLocal;
 
     TransformMutexBlock lock;
     return doGetGraphLocalisation(expr);
@@ -722,7 +725,8 @@ bool HqlCppTranslator::isNeverDistributed(IHqlExpression * expr)
 //============================================================================
 
 
-ParentExtract::ParentExtract(HqlCppTranslator & _translator, GraphLocalisation _localisation, EvalContext * _container) : HqlExprAssociation(parentExtractMarkerExpr), translator(_translator)
+ParentExtract::ParentExtract(HqlCppTranslator & _translator, PEtype _type, GraphLocalisation _localisation, EvalContext * _container)
+: HqlExprAssociation(parentExtractMarkerExpr), translator(_translator), type(_type)
 {
     localisation = _localisation;
     container = _container;
@@ -908,6 +912,33 @@ void ParentExtract::endChildActivity()
 {
 }
 
+bool ParentExtract::requiresOnStart() const
+{
+    switch (type)
+    {
+    case PETchild:
+    case PETremote:
+    case PETloop:
+    case PETlibrary:
+        return true;
+    case PETnested:
+    case PETcallback:
+        return container->requiresOnStart();
+    default:
+        throwUnexpected();
+    }
+}
+
+
+bool ParentExtract::insideChildQuery() const
+{
+    switch (type)
+    {
+    case PETchild:
+        return true;
+    }
+    return container->insideChildQuery();
+}
 
 void ParentExtract::endCreateExtract(CHqlBoundExpr & boundExtract)
 {
@@ -1138,14 +1169,14 @@ void ParentExtract::gatherActiveRows(BuildCtx & ctx)
 
 //----------------------------------------------------------------------------
 
-ParentExtract * HqlCppTranslator::createExtractBuilder(BuildCtx & ctx, GraphLocalisation localisation, bool doDeclare)
+ParentExtract * HqlCppTranslator::createExtractBuilder(BuildCtx & ctx, PEtype type, GraphLocalisation localisation, bool doDeclare)
 {
     ParentExtract * extractor = NULL;
 //  if (localisation == GraphCoLocal)
 //      extract = checkForPreexistingExtract - find a bound association before a row association is found;
     if (!extractor)
     {
-        extractor = new ParentExtract(*this, localisation, queryEvalContext(ctx));
+        extractor = new ParentExtract(*this, type, localisation, queryEvalContext(ctx));
         extractor->beginCreateExtract(ctx, doDeclare);
     }
     else
@@ -1154,11 +1185,12 @@ ParentExtract * HqlCppTranslator::createExtractBuilder(BuildCtx & ctx, GraphLoca
 }
 
 
-ParentExtract * HqlCppTranslator::createExtractBuilder(BuildCtx & ctx, IHqlExpression * expr, bool doDeclare)
+ParentExtract * HqlCppTranslator::createExtractBuilder(BuildCtx & ctx, PEtype type, IHqlExpression * expr, bool doDeclare)
 {
     if (isAlwaysCoLocal())
-        return createExtractBuilder(ctx, GraphCoLocal, true);
-    return createExtractBuilder(ctx, getGraphLocalisation(expr), true);
+        return createExtractBuilder(ctx, type, GraphCoLocal, true);
+    bool isInsideChildQuery = (type == PETchild) || insideChildQuery(ctx);
+    return createExtractBuilder(ctx, type, getGraphLocalisation(expr, isInsideChildQuery), true);
 }
 
 
@@ -1290,9 +1322,23 @@ bool EvalContext::evaluateInParent(BuildCtx & ctx, IHqlExpression * expr, bool h
     return false;
 }
 
-bool EvalContext::insideChildQuery()
+bool EvalContext::insideChildQuery() const
 {
-    return insideQueryDepth(1);
+    if (parentExtract)
+        return parentExtract->insideChildQuery();
+    if (parent)
+        return parent->insideChildQuery();
+    return false;
+}
+
+
+bool EvalContext::requiresOnStart() const
+{
+    if (parentExtract)
+        return parentExtract->requiresOnStart();
+    if (parent)
+        return parent->requiresOnStart();
+    return false;
 }
 
 
@@ -1411,12 +1457,8 @@ void ClassEvalContext::doCallNestedHelpers(const char * member, const char * act
 
     onCreate.childctx.addQuoted(s.clear().append(member).append(".onCreate(ctx, ").append(activity).append(");"));
 
-    if (insideChildQuery())
+    if (requiresOnStart())
         onStart.childctx.addQuoted(s.clear().append(member).append(".onStart();"));
-#ifdef ONSTART_IN_NESTED_TOPLEVEL
-    else
-        onStart.childctx.addQuoted(s.clear().append(member).append(".onStart();"));
-#endif
 }
 
 
@@ -1593,17 +1635,6 @@ void ActivityEvalContext::callNestedHelpers(const char * member)
     doCallNestedHelpers(member, "this");
 }
 
-bool ActivityEvalContext::insideQueryDepth(unsigned depth)
-{
-    if (!activity->parentExtract)
-        return false;
-    if (depth == 1)
-        return true;
-    if (!parent)
-        return false;
-    return parent->insideQueryDepth(depth-1);
-}
-
 ActivityInstance * ActivityEvalContext::queryActivity()
 {
     return activity;
@@ -1649,12 +1680,7 @@ void NestedEvalContext::ensureHelpersExist()
 
         //void onStart(const byte * parentExtract)
         BuildCtx onstartctx(onStart.declarectx);
-#ifndef ONSTART_IN_NESTED_TOPLEVEL
-        bool hasOnStart = (insideChildQuery() || parentExtract->canSerializeFields());
-#else
-        bool hasOnStart = true;
-#endif
-        if (hasOnStart)
+        if (requiresOnStart())
         {
             onstartctx.addQuotedCompound("inline void onStart()");
             if (parentExtract)
@@ -1672,8 +1698,13 @@ void NestedEvalContext::ensureHelpersExist()
 
 void NestedEvalContext::initContext()
 {
-    if (insideChildQuery() || parentExtract->canSerializeFields())
+    if (requiresOnStart())
         ensureHelpersExist();
+    else if (parentExtract && parentExtract->canSerializeFields())
+    {
+        ensureHelpersExist();
+        parentExtract->associateCursors(onStart.declarectx, onStart.declarectx, GraphCoLocal);
+    }
 }
 
 bool NestedEvalContext::evaluateInParent(BuildCtx & ctx, IHqlExpression * expr, bool hasOnStart) 
@@ -1685,13 +1716,6 @@ bool NestedEvalContext::evaluateInParent(BuildCtx & ctx, IHqlExpression * expr, 
 void NestedEvalContext::callNestedHelpers(const char * member)
 {
     doCallNestedHelpers(member, "activity");
-}
-
-bool NestedEvalContext::insideQueryDepth(unsigned depth)
-{
-    if (parent)
-        return parent->insideQueryDepth(depth);
-    return false;
 }
 
 //---------------------------------------------------------------------------
@@ -1737,11 +1761,6 @@ void MemberEvalContext::initContext()
     parentExtract->associateCursors(ctx, ctx, GraphCoLocal);
 }
 
-
-bool MemberEvalContext::insideQueryDepth(unsigned depth)
-{
-    return parent->insideQueryDepth(depth);
-}
 
 bool MemberEvalContext::getInvariantMemberContext(BuildCtx * ctx, BuildCtx * * declarectx, BuildCtx * * initctx, bool isIndependentMaybeShared, bool invariantEachStart)
 {
