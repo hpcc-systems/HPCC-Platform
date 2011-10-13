@@ -215,6 +215,7 @@ public:
         eof = false;
         helper->createParentExtract(extractBuilder);
         maxIterations = helper->numIterations();
+        if ((int)maxIterations < 0) maxIterations = 0;
         loopPending.setown(createOverflowableBuffer(this, LOOP_SMART_BUFFER_SIZE));
         loopPendingCount = 0;
         finishedLooping = ((container.getKind() == TAKloopcount) && (maxIterations == 0));
