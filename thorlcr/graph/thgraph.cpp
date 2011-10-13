@@ -1099,7 +1099,7 @@ CGraphBase::CGraphBase(CJobBase &_job) : job(_job)
     executeReplyTag = TAG_NULL;
     poolThreadHandle = 0;
     parentExtractSz = 0;
-
+    counter = 0; // loop/graph counter, will be set by loop/graph activity if needed
 }
 
 CGraphBase::~CGraphBase()
@@ -1176,7 +1176,6 @@ void CGraphBase::deserializeStartContexts(MemoryBuffer &mb)
 void CGraphBase::reset()
 {
     setCompleteEx(false);
-    counter = 0;
     if (0 == containers.count())
     {
         SuperHashIteratorOf<CGraphBase> iter(childGraphs);
