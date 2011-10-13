@@ -630,8 +630,9 @@ GraphLocalisation queryActivityLocalisation(IHqlExpression * expr)
         if (!queryRealChild(expr, 3))
         {
             node_operator op = querySimpleAggregate(expr, false, false);
-            if (op != no_none)
+            if (op == no_existsgroup || op == no_countgroup)
                 return GraphNoAccess;
+            //Need to check if it accesses anything in the context!
         }
         break;
     }
