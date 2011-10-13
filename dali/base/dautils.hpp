@@ -69,13 +69,35 @@ public:
     bool setFromMask(const char *partmask,const char *rootdir=NULL);
     void clear();
     bool isSet() const;
+    /*
+     * Foreign files are distributed files whose meta data is stored on a foreign
+     * Dali Server, so their names are resolved externally.
+     */
     void setForeign(const SocketEndpoint &daliip,bool checklocal);
     void clearForeign();
+    bool isForeign() const;
+    /*
+     * External files are non-distributed files. Most of the time
+     * they refer to an input source, like files on a drop-zone
+     * (either local or foreign).
+     */
     void setExternal(const char *location,const char *path);
     void setExternal(const SocketEndpoint &dafsip,const char *path);
     void setExternal(const RemoteFilename &rfn);
+    bool isExternal() const { return external; }
+    /*
+     * Multi files are temporary SuperFiles only. SuperFiles created
+     * by the user do not fit into this category and are created
+     * directly by an IDistributedFileDirectory object.
+     */
+    bool isMulti() const { return multi!=NULL; };
+    /*
+     * A query to a file, not a direct path. e.g. RIFS SQL
+     */
     void setQuery(const char *location,const char *query);
     void setQuery(const SocketEndpoint &rfsep,const char *query);
+    bool isQuery() const;
+
     void setCluster(const char *cname); 
     StringBuffer &getCluster(StringBuffer &cname) const { return cname.append(cluster); }
 
@@ -87,10 +109,6 @@ public:
     StringBuffer &getScopes(StringBuffer &buf,bool removeforeign=false) const;
     unsigned numScopes(bool removeforeign=false) const; // not including tail
     StringBuffer &getScope(StringBuffer &buf,unsigned idx,bool removeforeign=false) const;
-    bool isForeign() const;
-    bool isExternal() const { return external; }
-    bool isMulti() const { return multi!=NULL; };
-    bool isQuery() const; // e.g. RIFS SQL
 
     StringBuffer &makeScopeQuery(StringBuffer &query, bool absolute=true) const; // returns xpath for containing scope
     StringBuffer &makeFullnameQuery(StringBuffer &query, DfsXmlBranchKind kind, bool absolute=true) const; // return xpath for branch
