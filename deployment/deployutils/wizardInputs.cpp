@@ -38,7 +38,7 @@
 CWizardInputs::CWizardInputs(const char* xmlArg,const char *service, 
                              IPropertyTree * cfg, 
                              MapStringTo<StringBuffer>* dirMap): m_service(service), 
-                             m_cfg(cfg), m_overrideDirs(dirMap)
+                             m_cfg(cfg), m_overrideDirs(dirMap), m_roxieOnDemand(true)
 {
   m_pXml.setown(createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>"));
 }
@@ -94,6 +94,8 @@ void CWizardInputs::setEnvironment()
   if (m_thorSlavesPerNode < 1)
     m_thorSlavesPerNode = 1;
 
+  m_roxieOnDemand = m_pXml->getPropBool("@roxieOnDemand", true);
+
   xpath.clear().appendf("Software/EspProcess/EspService[@name='%s']/LocalConfFile", m_service.str());
   const char* pConfFile = m_cfg->queryProp(xpath.str());
   xpath.clear().appendf("Software/EspProcess/EspService[@name='%s']/LocalEnvConfFile",  m_service.str());
@@ -132,6 +134,7 @@ void CWizardInputs::setWizardRules()
    m_roxieAgentRedChannels = 2;
    m_roxieAgentRedOffset = 1;
    m_genOptForAllComps = GENOPTIONAL_ALL;
+
    if(m_algProp)
    {
      Owned<IPropertyIterator> iter = m_algProp->getIterator();
@@ -564,6 +567,9 @@ void CWizardInputs::generateSoftwareTree(IPropertyTree* pNewEnvTree)
               if(!strcmp(buildSetName, "roxie") || !strcmp(buildSetName, "thor" ))
               {
                 addRoxieThorClusterToEnv(pNewEnvTree, pInstDetail, buildSetName);
+
+                if (!strcmp(buildSetName, "roxie") && m_roxieOnDemand)
+                  addRoxieThorClusterToEnv(pNewEnvTree, pInstDetail, buildSetName, true);
               }
               else
               {
@@ -755,7 +761,7 @@ unsigned CWizardInputs::getCntForAlreadyAssignedIPS()
    return cnt;
 }
 
-void CWizardInputs::addRoxieThorClusterToEnv(IPropertyTree* pNewEnvTree, CInstDetails* pInstDetails, const char* buildSetName)
+void CWizardInputs::addRoxieThorClusterToEnv(IPropertyTree* pNewEnvTree, CInstDetails* pInstDetails, const char* buildSetName, bool genRoxieOnDemand)
 {
   
   StringBuffer xmlForRoxieServer, xmlForRoxieSlave, xpath, compName, computerName, msg;
@@ -766,7 +772,12 @@ void CWizardInputs::addRoxieThorClusterToEnv(IPropertyTree* pNewEnvTree, CInstDe
     xpath.clear().appendf("./%s/%s/%s", XML_TAG_SOFTWARE, XML_TAG_ROXIECLUSTER, XML_ATTR_NAME);
     compName.clear().append(pNewEnvTree->queryProp(xpath.str()));
     
-    xmlForRoxieServer.clear().appendf("<RoxieData type=\"RoxieFarm\" parentName=\"\" roxieName=\"%s\" >", compName.str());
+    xmlForRoxieServer.clear().appendf("<RoxieData type=\"RoxieFarm\" parentName=\"\" roxieName=\"%s\" ", compName.str());
+
+    if (genRoxieOnDemand)
+      xmlForRoxieServer.append("port=\"0\" >");
+    else
+      xmlForRoxieServer.append(">");
 
     if (m_roxieNodes == 1)
       xmlForRoxieSlave.clear().appendf("<RoxieData type=\"None\" val1=\"undefined\" val2=\"undefined\" roxieName=\"%s\" >", compName.str());
@@ -791,7 +802,9 @@ void CWizardInputs::addRoxieThorClusterToEnv(IPropertyTree* pNewEnvTree, CInstDe
       xmlForRoxieServer.append("</RoxieData>");
       xmlForRoxieSlave.append("</RoxieData>");
       handleRoxieOperation(pNewEnvTree, "AddRoxieFarm", xmlForRoxieServer.str());
-      handleRoxieOperation(pNewEnvTree, "RoxieSlaveConfig" ,xmlForRoxieSlave.str());
+
+      if (!genRoxieOnDemand)
+        handleRoxieOperation(pNewEnvTree, "RoxieSlaveConfig" ,xmlForRoxieSlave.str());
     }
     xpath.clear().appendf("./%s/%s[%s=\"%s\"]/%s[%s=\"\"]", XML_TAG_SOFTWARE, XML_TAG_ROXIECLUSTER, XML_ATTR_NAME, compName.str(), XML_TAG_ROXIE_SERVER, XML_ATTR_NETADDRESS);
     pNewEnvTree->removeProp(xpath.str());

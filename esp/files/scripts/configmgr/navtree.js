@@ -3368,13 +3368,13 @@ if(top.document.displayModeDialog1)
       constraintoviewport:true,
       underlay: 'none',
       width: '500',
-      height: '500px'
+      height: '540px'
     });
     
     top.document.wizardpanel.renderEvent.subscribe(function() {
       if(!top.document.wizardpanel.layout){
         top.document.wizardpanel.layout = new YAHOO.widget.Layout('wizardLayout', {
-          height : 480,
+          height : 520,
           width: 475,
           units: [
            { position: 'top', height: 55, resize: false, body: 'wizardTop'},
@@ -3432,6 +3432,7 @@ function handleWizardScreen() {
     top.document.wizardDialog1 = new YAHOO.widget.Dialog('wizardIPAddressScreen', 
     {   
       width:((top.document.wizardpanel.layout.getUnitByPosition('center').get('width')) - 2),
+      height:((top.document.wizardpanel.layout.getUnitByPosition('center').get('height')) - 2),
       visible : true, 
       draggable : false,
       modal : false,
@@ -3802,6 +3803,7 @@ populateNumberOfNode();
     top.document.numNodesDialog = new YAHOO.widget.Dialog('wizardNumNodesPage', 
     {   
       width:((top.document.wizardpanel.layout.getUnitByPosition('center').get('width')) - 2),
+      height:((top.document.wizardpanel.layout.getUnitByPosition('center').get('height')) - 2),
       visible : true, 
       draggable : false,
       modal : false,
@@ -3923,12 +3925,14 @@ function submitInformation() {
   var thorNode = document.getElementById('node4Thor').value ;
   var iplist = document.getElementById('ipListText').value;
   var slavesPerNode = document.getElementById('slavesPerNode').value;
+  var roxieOnDemand = document.getElementById('roxieOnDemand').checked;
   
   var xmlStr = "<XmlArgs username=\"" ;
   xmlStr += "\" password=\"";
   xmlStr += "\" roxieNodes=\"" + roxieSrvNode;
   xmlStr += "\" thorNodes=\"" + thorNode;
   xmlStr += "\" slavesPerNode=\"" + slavesPerNode;
+  xmlStr += "\" roxieOnDemand=\"" + roxieOnDemand;
   xmlStr += "\" ipList=\"" + iplist;
   xmlStr += "\"/>";
 
