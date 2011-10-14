@@ -25,12 +25,13 @@
 typedef IArrayOf<IEclRepository> EclRepositoryArray;
 
 extern HQL_API IEclRepository * createNewSourceFileEclRepository(IErrorReceiver *err, const char * pluginPath, unsigned flags, unsigned traceMask);
-extern HQL_API IEclRepository * createSingleDefinitionEclRepository(const char * moduleName, const char * attrName, const char * text);
+extern HQL_API IEclRepository * createSingleDefinitionEclRepository(const char * moduleName, const char * attrName, IFileContents * contents);
 
 extern HQL_API IEclRepository * createCompoundRepositoryF(IEclRepository * repository, ...);
 extern HQL_API IEclRepository * createCompoundRepository(EclRepositoryArray & repositories);
-extern HQL_API IEclRepository * createRepository(IEclSourceCollection * source);
+extern HQL_API IEclRepository * createRepository(IEclSourceCollection * source, const char * rootScopeFullName = NULL);
 extern HQL_API IEclRepository * createRepository(EclSourceCollectionArray & sources);
+extern HQL_API IEclRepository * createNestedRepository(_ATOM name, IEclRepository * root);
 
 extern HQL_API void getRootScopes(HqlScopeArray & rootScopes, IHqlScope * scope, HqlLookupContext & ctx);
 extern HQL_API void getRootScopes(HqlScopeArray & rootScopes, IEclRepository * repository, HqlLookupContext & ctx);

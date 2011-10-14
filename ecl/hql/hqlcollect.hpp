@@ -80,7 +80,8 @@ enum EclSourceCollectionFlags {
 
 extern HQL_API IEclSourceCollection * createFileSystemEclCollection(IErrorReceiver *errs, const char * path, unsigned flags, unsigned trace);
 extern HQL_API IEclSourceCollection * createArchiveEclCollection(IPropertyTree * tree);
-extern HQL_API IEclSourceCollection * createSingleDefinitionEclCollection(const char * moduleName, const char * attrName, const char * text);
+extern HQL_API IEclSourceCollection * createSingleDefinitionEclCollection(const char * moduleName, const char * attrName, IFileContents * contents);
+extern HQL_API IEclSourceCollection * createSingleDefinitionEclCollection(const char * attrName, IFileContents * contents);
 extern HQL_API IEclSourceCollection * createRemoteXmlEclCollection(IEclUser * user, IXmlEclRepository & repository, const char * snapshot, bool useSandbox);
 
 extern HQL_API IXmlEclRepository * createArchiveXmlEclRepository(IPropertyTree * archive);
