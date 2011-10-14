@@ -253,7 +253,7 @@ bool CConfigEnvHelper::addRoxieServers(const char* xmlArg)
     xpath.clear().appendf("RoxieCluster[@name='%s']/"XML_TAG_ROXIE_FARM, pszRoxieCluster);
     pFarm = pParent->addPropTree(xpath.str(), createPTree());
     pFarm->addProp    (XML_ATTR_NAME,       sFarmName.str());
-    pFarm->addPropInt("@port",          9876);
+    pFarm->addPropInt("@port", pSrcTree->getPropInt("@port", 9876));
     pFarm->addProp    (XML_ATTR_DATADIRECTORY,  sDataDir.str());
     pFarm->addPropInt("@listenQueue", 200);
     pFarm->addPropInt("@numThreads",    30);
