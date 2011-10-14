@@ -62,9 +62,9 @@ public:
     void main()
     {
         stopped = false;
+        Linked<IRowWriter> writer = smartbuf->queryWriter();
         try
         {
-            Linked<IRowWriter> writer = smartbuf->queryWriter();
             while (!stopped)
             {
                 OwnedConstThorRow row = in->nextRow();
@@ -78,14 +78,19 @@ public:
                 }
                 writer->putRow(row.getClear());
             }
-            writer->flush();
-
             in->stop();
         }
         catch (IException *e)
         {
             ActPrintLog(activity, e, NULL);
             exception.setown(e);
+        }
+        try { writer->flush(); }
+        catch (IException *e)
+        {
+            ActPrintLog(activity, e, "Exception in writer->flush");
+            if (!exception.get())
+                exception.setown(e);
         }
     }
     virtual const void *nextRow()
