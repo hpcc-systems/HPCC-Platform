@@ -4063,39 +4063,37 @@ const char *getTargetClusterComponentName(const char *clustname, const char *pro
     return name.str();
 }
 
-unsigned getEnvironmentThorClusterNames(StringArray &clusternames, StringArray &groupnames, StringArray &qnames)
+unsigned getEnvironmentThorClusterNames(StringArray &thorNames, StringArray &groupNames, StringArray &targetNames)
 {
     Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
     if (!conn)
         return 0;
-    Owned<IPropertyTreeIterator> iter = conn->queryRoot()->getElements("Software/Topology/EclServerProcess/Cluster");
-    ForEach(*iter) {
-        IPropertyTree &tc = iter->query();
-        // I think we want the name here but it isn't exactly clear
-        const char *cname = tc.queryProp("@name");
-        if (cname&&*cname) {
-            Owned<IPropertyTreeIterator> iter2 = tc.getElements("ThorCluster");
-            ForEach(*iter2) {
-                IPropertyTree &tc2 = iter2->query();
-                StringBuffer query;
-                const char *pname = tc2.queryProp("@process");
-                query.appendf("Software/ThorCluster[@name=\"%s\"]",pname);
-                IPropertyTree *t = conn->queryRoot()->queryPropTree(query.str());
-                if (t) {
-                    const char *qname = t->queryProp("@queueName");
-                    if (!qname||!*qname)
-                        qname = pname;
-                    const char *gname = t->queryProp("@nodeGroup");
-                    if (!gname||!*gname)
-                        gname = pname;
-                    clusternames.append(cname);
-                    groupnames.append(gname);
-                    qnames.append(qname);
+    Owned<IPropertyTreeIterator> allTargets = conn->queryRoot()->getElements("Software/Topology/Cluster");
+    ForEach(*allTargets)
+    {
+        IPropertyTree &target = allTargets->query();
+        const char *targetName = target.queryProp("@name");
+        if (targetName && *targetName)
+        {
+            Owned<IPropertyTreeIterator> thorClusters = target.getElements("ThorCluster");
+            ForEach(*thorClusters)
+            {
+                const char *thorName = thorClusters->query().queryProp("@process");
+                VStringBuffer query("Software/ThorCluster[@name=\"%s\"]",thorName);
+                IPropertyTree *thorCluster = conn->queryRoot()->queryPropTree(query.str());
+                if (thorCluster)
+                {
+                    const char *groupName = thorCluster->queryProp("@nodeGroup");
+                    if (!groupName||!*groupName)
+                        groupName = thorName;
+                    thorNames.append(thorName);
+                    groupNames.append(groupName);
+                    targetNames.append(targetName);
                 }
             }
         }
     }
-    return clusternames.ordinality();
+    return thorNames.ordinality();
 }
 
 
