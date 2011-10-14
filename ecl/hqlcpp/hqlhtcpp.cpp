@@ -1235,7 +1235,7 @@ void UpdateTransformBuilder::optimizeAssigns(IHqlExpression * expr, IHqlExpressi
                 IHqlExpression * source = match->queryChild(1);
                 OwnedHqlExpr previous = createSelectExpr(LINK(prevSelector), LINK(expr));
                 bool usesPrevious = (source != previous) && exprReferencesDataset(source, prevSelector);
-                bool retainAssign = !canRemoveLeadingAssigns || needToReassignAll || usesPrevious || (match->getOperator() != no_assign);
+                bool retainAssign = !canRemoveLeadingAssigns || needToReassignAll || usesPrevious || (match->getOperator() != no_assign) || isGraphDependent(source);
                 if (retainAssign)
                 {
                     IHqlExpression * target = match->queryChild(0);
@@ -1376,11 +1376,7 @@ public:
 
     IHqlExpression * ensureAliased(IHqlExpression * expr)
     {
-        LinkedHqlExpr value = expr;
-        if (expr->getOperator() == no_select)
-            value.setown(ensureOwned(value));
-
-        OwnedHqlExpr alias = createAlias(value, NULL);
+        OwnedHqlExpr alias = createAlias(expr, NULL);
         builder.ensureAlias(alias);
         return alias.getClear();
     }
