@@ -389,7 +389,7 @@ void CHThorDiskWriteActivity::done()
         uncompressedBytesWritten = outSeq->getPosition();
     updateWorkUnitResult(numRecords);
     close();
-    if((helper.getFlags() & TDXtemporary) == 0 && !agent.queryResolveFilesLocally())
+    if((helper.getFlags() & (TDXtemporary | TDXjobtemp) ) == 0 && !agent.queryResolveFilesLocally())
         publish();
     incomplete = false;
     if(clusterHandler)
@@ -401,7 +401,7 @@ void CHThorDiskWriteActivity::resolve()
 {
     mangleHelperFileName(mangledHelperFileName, helper.getFileName(), agent.queryWuid(), helper.getFlags());
     assertex(mangledHelperFileName.str());
-    if((helper.getFlags() & TDXtemporary) == 0)
+    if((helper.getFlags() & (TDXtemporary | TDXjobtemp)) == 0)
     {
         Owned<ILocalOrDistributedFile> f = agent.resolveLFN(mangledHelperFileName.str(),"Cannot write, invalid logical name",true,false,true,&lfn);
         if (f)
