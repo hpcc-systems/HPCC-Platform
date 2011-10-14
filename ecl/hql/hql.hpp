@@ -176,7 +176,6 @@ interface IFileContents;
 interface IEclRepository: public IInterface
 {
     virtual IHqlScope * queryRootScope() = 0;
-    virtual void checkCacheValid() = 0;
 };
 
 //MORE: Make this more private
