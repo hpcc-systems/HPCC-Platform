@@ -1529,7 +1529,7 @@ void InlineDatasetBuilder::buildFinish(BuildCtx & ctx, CHqlBoundExpr & bound)
 void InlineDatasetBuilder::finishRow(BuildCtx & ctx, BoundRow * selfCursor)
 {
     CHqlBoundExpr bound;
-    translator.getRecordSize(ctx, selfCursor->queryDataset(), bound);
+    translator.getRecordSize(ctx, selfCursor->querySelector(), bound);
 
     if (translator.queryOptions().optimizeIncrement)
     {

@@ -664,6 +664,8 @@ void HqlCppTranslator::doBuildAssignAggregateLoop(BuildCtx & ctx, const CHqlBoun
             doBuildAssignAggregateLoop(ctx, target, expr, dataset->queryChild(1), doneFirstVar);
             return;
         }
+    case no_null:
+        return;
     }
 
     LinkedHqlExpr arg = expr->queryChild(1);
