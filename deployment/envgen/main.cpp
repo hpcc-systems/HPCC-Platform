@@ -50,7 +50,10 @@ void usage()
   puts("          If not specified or specified as 0, no thor nodes");
   puts("          are generated");
   puts("   -slavesPerNode <number of thor slaves per node>: Number of thor nodes ");
-  puts("          per slave. This feature is only available in Enterprise edition");
+  puts("          per slave.");
+  puts("   -roxieondemand <enable roxie on demand(1) or disable roxie on demand(any ");
+  puts("          other value)>: Enable roxie on demand by specifying 1 for flag. ");
+  puts("          Any other value will disable roxie on demand");
   puts("   -o <categoryname=newdirvalue>: overrides for any common directories");
   puts("          There can be multiple of the -o options. Each override should still");
   puts("          contain a [NAME] and either a [CATEGORY] or [INST]. ");
@@ -68,6 +71,7 @@ int main(int argc, char** argv)
   const char* in_ipfilename;
   StringBuffer ipAddrs;
   int roxieNodes=0, thorNodes=0, slavesPerNode=1;
+  bool roxieOnDemand = true;
   MapStringTo<StringBuffer> dirMap;
 
   int i = 1;
@@ -101,6 +105,13 @@ int main(int argc, char** argv)
     {
       i++;
       slavesPerNode = atoi(argv[i++]);
+    }
+    else if (stricmp(argv[i], "-roxieondemand") == 0)
+    {
+      i++;
+
+      if (atoi(argv[i++]) != 1)
+        roxieOnDemand = false;
     }
     else if (stricmp(argv[i], "-ip") == 0)
     {
@@ -162,8 +173,8 @@ int main(int argc, char** argv)
     const char* pServiceName = "WsDeploy_wsdeploy_esp";
     Owned<IPropertyTree> pCfg = createPTreeFromXMLFile(ENVGEN_PATH_TO_ESP_CONFIG);
 
-    optionsXml.appendf("<XmlArgs roxieNodes=\"%d\" thorNodes=\"%d\" slavesPerNode=\"%d\" ipList=\"%s\"/>", roxieNodes,
-                      thorNodes, slavesPerNode, ipAddrs.str());
+    optionsXml.appendf("<XmlArgs roxieNodes=\"%d\" thorNodes=\"%d\" slavesPerNode=\"%d\" roxieOnDemand=\"%s\" ipList=\"%s\"/>", roxieNodes,
+      thorNodes, slavesPerNode, roxieOnDemand?"true":"false", ipAddrs.str());
 
     buildEnvFromWizard(optionsXml, pServiceName, pCfg, envXml, &dirMap);
     if(envXml.length())

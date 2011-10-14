@@ -98,7 +98,7 @@ public:
   void generateSoftwareTree(IPropertyTree* pTree);
   void addInstanceToTree(IPropertyTree* pTree, StringBuffer attrName, const char* processName, const char* buildSetName, const char* instName);
   void getDefaultsForWizard(IPropertyTree* pTree);
-  void addRoxieThorClusterToEnv(IPropertyTree* pNewEnvTree, CInstDetails* pInstDetails, const char* buildSetName);
+  void addRoxieThorClusterToEnv(IPropertyTree* pNewEnvTree, CInstDetails* pInstDetails, const char* buildSetName, bool genRoxieOnDemand = false);
   unsigned getCntForAlreadyAssignedIPS();
   void addToCompIPMap(const char* buildSetName, const char* value, const char* compName);
   void getEspBindingInformation(IPropertyTree* pNewEnvTree);
@@ -135,6 +135,7 @@ private:
    unsigned m_thorSlavesPerNode;
    unsigned m_roxieAgentRedChannels;
    unsigned m_roxieAgentRedOffset;
+   bool m_roxieOnDemand;
    
    StringArray m_ipaddress;
    MapStringToMyClass<CInstDetails> m_compIpMap; 

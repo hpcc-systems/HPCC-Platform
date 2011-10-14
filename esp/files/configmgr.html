@@ -516,7 +516,7 @@ You need to have Javascript enabled in order to use ConfigMgr. Please enable Jav
                         <label id="autoipId" onmouseover="showTooltipForButtons(event)"><input id="autoIP" type="radio" name="ipRadiobutton" disabled value="2" onmouseover="showTooltipForButtons(event)" onclick="if (this.checked) document.forms['treeForm'].ipMode.value='2';getIPAddrThrAutoGenScript();enableTextArea(false)" title="This operation is only supported in Enterprise Editions (or higher )."/>Auto
                           Discovery</label>
                       </fieldset>
-                      <textarea id="ipListText" name="ipListText" rows="5" cols="69" wrap onclick="if(document.forms['treeForm'].textClear.value !== 'true') clearTextArea();"
+                      <textarea id="ipListText" name="ipListText" rows="8" cols="69" wrap onclick="if(document.forms['treeForm'].textClear.value !== 'true') clearTextArea();"
                         onkeyup="addNewLine(event)" class="textAreaCSS">Sample: X.X.X.X; X.X.X.X - XXX;</textarea>
                         <!--onchange="document.forms['treeForm'].isChanged.value='true'" -->
                     </td>
@@ -551,17 +551,24 @@ You need to have Javascript enabled in order to use ConfigMgr. Please enable Jav
                     <td>
                       <input id="node4Thor" type="textbox" name="node4Thor" style="width: 33px" value="1" />&nbsp;
                     </td>
+                    </tr>
                     <tr>
                      <td>
-                        <label id="slavePerNodelabel" onmouseover="showTooltipForButtons(event)"><br>Number of Thor slaves per node (default 1):<br></label><br>
+                        <label id="slavePerNodelabel" onmouseover="showTooltipForButtons(event)"><br>Number of Thor slaves per node (default 1)<br></label><br>
                      </td>
                      <td>
                        <input id="slavesPerNode" type="textbox" name="slavesPerNode" style="width: 33px" value="1" onmouseover="showTooltipForButtons(event)"/>&nbsp;
                      </td>
                   </tr>
+                  <tr>
+                     <td>
+                        <label id="roxieOnDemandLabel" onmouseover="showTooltipForButtons(event)"><br>Enable Roxie on demand<br></label><br>
+                     </td>
+                     <td>
+                       <input id="roxieOnDemand" type="checkbox" name="roxieOnDemand" value="true" checked onmouseover="showTooltipForButtons(event)"/>&nbsp;
+                     </td>
                   </tr>
                 </table>
-                <br>
                 <!--[if IE]>
                 <br>
                 <![endif]-->
