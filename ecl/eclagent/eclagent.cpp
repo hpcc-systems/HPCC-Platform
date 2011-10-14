@@ -2707,8 +2707,49 @@ char * EclAgent::getClusterName()
 
 char * EclAgent::getGroupName()
 {
-    // We don't know the name of the thor we will run on - can only tell the queue.
-    throwUnexpected();
+    StringBuffer groupName;
+    if (!isStandAloneExe)
+    {
+        const char * cluster = clusterNames.tos();
+        Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster);
+        if (!clusterInfo)
+            throw MakeStringException(-1, "Unknown cluster '%s'", cluster);
+        const StringArray &thors = clusterInfo->getThorProcesses();
+        if (thors.length())
+        {
+            StringArray envClusters, envGroups, envQueues;
+            getEnvironmentThorClusterNames(envClusters, envGroups, envQueues);
+            ForEachItemIn(i, thors)
+            {
+                const char *thorName = thors.item(i);
+                ForEachItemIn(j, envClusters)
+                {
+                    if (strieq(thorName, envClusters.item(j)))
+                    {
+                        const char *envGroup = envGroups.item(j);
+                        if (groupName.length())
+                        {
+                            if (!strieq(groupName, envGroup))
+                                throw MakeStringException(-1, "getGroupName(): ambiguous groups %s, %s", groupName.str(), envGroup);
+                        }
+                        else
+                            groupName.append(envGroup);
+                        break;
+                    }
+                }
+            }
+
+        }
+        else
+        {
+            // eclagent group name not stored in cluster info so reverse lookup in dali (bit of kludge)
+            SocketEndpoint ep = queryMyNode()->endpoint();
+            ep.port = 0;
+            Owned<IGroup> grp = createIGroup(1,&ep);
+            queryNamedGroupStore().find(grp, groupName);
+        }
+    }
+    return groupName.detach();
 }
 
 char * EclAgent::queryIndexMetaData(char const * lfn, char const * xpath)
