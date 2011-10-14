@@ -2211,7 +2211,7 @@ private:
             if (packageId && *packageId)
             {
                 bool isActive = ps.getPropBool("@active", true);
-                const char *querySet = ps.queryProp("querySet");
+                const char *querySet = ps.queryProp("@querySet");
                 if (!querySet)
                     querySet = roxieName.str();
                 if (traceLevel)
