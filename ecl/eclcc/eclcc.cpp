@@ -713,6 +713,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
                     instance.archive->setProp("Query", "");
                     instance.archive->setProp("Query/@attributePath", queryAttributePath);
                 }
+
                 qquery.setown(getResolveAttributeFullPath(queryAttributePath, LSFpublic, ctx));
                 if (!qquery && !syntaxChecking && (errs->errCount() == prevErrs))
                 {
@@ -727,6 +728,17 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
                     importRootModulesToScope(scope, ctx);
 
                 qquery.setown(parseQuery(scope, queryContents, ctx, NULL, true));
+
+                if (instance.archive)
+                {
+                    StringBuffer queryText;
+                    queryText.append(queryContents->length(), queryContents->getText());
+                    const char * p = queryText;
+                    if (0 == strncmp(p, (const char *)UTF8_BOM,3))
+                        p += 3;
+                    instance.archive->setProp("Query", p );
+                    instance.archive->setProp("Query/@originalFilename", sourcePathname);
+                }
             }
 
             gatherWarnings(ctx.errs, qquery);
@@ -947,18 +959,6 @@ void EclCC::processFile(EclCompileInstance & instance)
 
     if (instance.reportErrorSummary() && !instance.archive)
         return;
-
-    if (instance.archive)
-    {
-        if (!instance.archive->hasProp("Query/@attributePath"))
-        {
-            const char * p = queryTxt;
-            if (0 == strncmp(p, (const char *)UTF8_BOM,3))
-                p += 3;
-            instance.archive->setProp("Query", p );
-            instance.archive->setProp("Query/@originalFilename", curFilename);
-        }
-    }
 
     generateOutput(instance);
 }
