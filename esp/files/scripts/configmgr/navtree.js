@@ -136,9 +136,9 @@ function invokeWizard() {
       }
       document.getElementById('top1').style.display = 'block';
       if( document.forms['treeForm'].wizops != '3')
-        getMessagePanel("Please select wizard to create an environment or select open environment to view environment summary.");
+        getMessagePanel("Please select wizard to create an environment or select open environment to view environment summary.").show();
       else
-        getMessagePanel("Please select wizard or open an environment to create/edit environment.");
+        getMessagePanel("Please select wizard or open an environment to create/edit environment.").show();
     }
   }
   var prevMode = document.forms['treeForm'].mode.value;
@@ -4154,7 +4154,7 @@ function summaryPageForAdvance() {
 
      var fileopened = window.location.href.split(/\?/g);
      if (fileopened.length <= 1)
-       getMessagePanel("Please select wizard or open an environment to create/edit environment.");
+       invokeWizard();
      
   };
 
