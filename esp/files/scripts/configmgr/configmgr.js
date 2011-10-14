@@ -2926,7 +2926,7 @@ function onMenuItemClickHandleComputer(p_sType, p_aArgs, p_oValue) {
   if (menuItemName === "New" || menuItemName === "New Range...")
     oper = "New";
 
-  if (menuItemName === "New Range..." || menuItemName === "New") {
+  if (parentName === "Computers" && ( menuItemName === "New Range..." || menuItemName === "New")) {
     for (i = 0; i < recSet.getLength(); i++) {
       var arr = recSet.getRecord(i).getData('domain_extra');
       if (YAHOO.lang.isArray(arr))
