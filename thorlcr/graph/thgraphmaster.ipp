@@ -64,10 +64,9 @@ public:
     virtual void init();
     virtual void executeSubGraph(size32_t parentExtractSz, const byte *parentExtract);
     void handleSlaveDone(unsigned node, MemoryBuffer &mb);
-    void createForLocal();
-    void serializeCreateContexts(MemoryBuffer &mb, bool created);
+    void serializeCreateContexts(MemoryBuffer &mb);
     void serializeStartCtxs(MemoryBuffer &mb);
-    bool serializeActivityInitData(unsigned slave, MemoryBuffer &mb);
+    bool serializeActivityInitData(unsigned slave, MemoryBuffer &mb, IThorActivityIterator &iter);
     void readActivityInitData(MemoryBuffer &mb, unsigned slave);
     bool deserializeStats(unsigned node, MemoryBuffer &mb);
     virtual void setComplete(bool tf=true);

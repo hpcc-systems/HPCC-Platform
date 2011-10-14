@@ -41,7 +41,7 @@ private:
     
     void doReportGraph(IWUGraphProgress *progress, CGraphBase *graph, bool finished)
     {
-        Owned<IThorActivityIterator> iter = graph->getTraverseIterator(NULL==graph->queryOwner()); // if child query traverse all (as not setup in master, but progress will be present)
+        Owned<IThorActivityIterator> iter = (graph->queryOwner() && !graph->isGlobal()) ? graph->getIterator() : graph->getTraverseIterator();
         ForEach (*iter)
         {
             CMasterGraphElement &container = (CMasterGraphElement &)iter->query();
