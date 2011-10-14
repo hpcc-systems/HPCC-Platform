@@ -781,7 +781,22 @@ public:
             options->setNoSplit(ctx.superoptions->getNoSplit());
             options->setOverwrite(ctx.superoptions->getOverwrite());
             options->setReplicate(ctx.superoptions->getReplicate());
+            options->setNoRecover(ctx.superoptions->getNoRecover());
+            options->setIfNewer(ctx.superoptions->getIfNewer());
+            options->setIfModified(ctx.superoptions->getIfModified());
+            options->setCrcCheck(ctx.superoptions->getCrcCheck());
+            options->setmaxConnections(ctx.superoptions->getmaxConnections());
+            options->setPush(ctx.superoptions->getPush());
+            options->setRetry(ctx.superoptions->getRetry());
+            options->setCrc(ctx.superoptions->getCrc());
+            options->setThrottle(ctx.superoptions->getThrottle());
+            options->setTransferBufferSize(ctx.superoptions->getTransferBufferSize());
+            options->setVerify(ctx.superoptions->getVerify());
+            StringBuffer slave;
+            if (ctx.superoptions->getSlavePathOverride(slave))
+                options->setSlavePathOverride(slave);
             options->setSubfileCopy(true);
+
             wu->queryUpdateProgress()->setState(DFUstate_queued); // well, good as
             // should be no need for overwrite
             wuid.set(wu->queryId());
