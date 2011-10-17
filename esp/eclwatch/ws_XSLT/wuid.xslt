@@ -568,17 +568,17 @@
                 alert('The workunit must have a jobname to be published. \r\nEnter a jobname, then publish.');
                 return;
               }
-              var cObj = YAHOO.util.Connect.asyncRequest('POST', '/WsWorkunits/WUDeployWorkunit?Wuid=' + wuid + '&JobName=' + Jobname + '&Activate=1', publishCallback);
+              var cObj = YAHOO.util.Connect.asyncRequest('POST', '/WsWorkunits/WUPublishWorkunit?Wuid=' + wuid + '&JobName=' + Jobname + '&Activate=1', publishCallback);
             }
 
         /*
         <?xml version="1.0" encoding="utf-8"?>
 <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding" xmlns="http://webservices.seisint.com/WsWorkunits">
  <soap:Body>
-  <WUDeployWorkunitRequest>
+  <WUPublishWorkunitRequest>
    <Wuid>W20110125-150953</Wuid>
    <Activate>1</Activate>
-  </WUDeployWorkunitRequest>
+  </WUPublishWorkunitRequest>
  </soap:Body>
 </soap:Envelope>
         */

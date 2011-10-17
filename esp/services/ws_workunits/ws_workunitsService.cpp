@@ -38,10 +38,13 @@
 #include "roxiemanager.hpp"
 #include "dadfs.hpp"
 #include "dfuwu.hpp"
+#include "thorplugin.hpp"
 
 #ifdef _USE_ZLIB
 #include "zcrypt.hpp"
 #endif
+
+#define ESP_WORKUNIT_DIR "workunits/"
 
 void submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, const char* cluster, const char* snapshot, int maxruntime, bool compile, bool resetWorkflow)
 {
@@ -376,6 +379,8 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
     Owned<IFile> tmpdir = createIFile(TEMPZIPDIR);
     if(!tmpdir->exists())
         tmpdir->createDirectory();
+
+    recursiveCreateDirectory(ESP_WORKUNIT_DIR);
 
     m_sched.start();
 }
@@ -3077,4 +3082,138 @@ int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* req
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return onGetNotFound(context, request, response, service);
+}
+
+
+void deployArchive(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEspWUDeployWorkunitResponse & resp)
+{
+    const MemoryBuffer &obj = req.getObject();
+
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+    WorkunitUpdate wu(factory->createWorkUnit(NULL, "ws_workunits", context.queryUserId()));
+
+    SCMStringBuffer wuid;
+    wu->getWuid(wuid);
+
+    wu->setAction(WUActionCompile);
+
+    if (notEmpty(req.getName()))
+        wu->setJobName(req.getName());
+
+    Owned<IWUQuery> query=wu->updateQuery();
+    StringBuffer text(obj.length(), obj.toByteArray());
+    query->setQueryText(text.str());
+    query.clear();
+
+    wu->commit();
+    wu.clear();
+
+    submitWsWorkunit(context, wuid.str(), req.getCluster(), NULL, 0, true, false);
+    waitForWorkUnitToCompile(wuid.str(), req.getWait());
+
+    WsWuInfo winfo(context, wuid.str());
+    winfo.getCommon(resp.updateWorkunit(), WUINFO_All);
+
+    AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid.str());
+}
+
+
+StringBuffer &sharedObjectFileName(StringBuffer &filename, const char *name, const char *ext, unsigned copy)
+{
+    filename.append(name);
+    if (copy)
+        filename.append('-').append(copy);
+    if (notEmpty(ext))
+        filename.append(ext);
+    return filename;
+}
+
+void writeSharedObject(const char *srcpath, const MemoryBuffer &obj, StringBuffer &dllpath, StringBuffer &dllname)
+{
+    StringBuffer name, ext;
+    splitFilename(srcpath, NULL, NULL, &name, &ext);
+
+    unsigned copy=0;
+    dllpath.clear().append(ESP_WORKUNIT_DIR).append(sharedObjectFileName(dllname.clear(), name.str(), ext.str(), copy++));
+    while(checkFileExists(dllpath.str()))
+    {
+        dllpath.clear().append(ESP_WORKUNIT_DIR).append(sharedObjectFileName(dllname.clear(), name.str(), ext.str(), copy++));
+    }
+
+    Owned<IFile> f = createIFile(dllpath.str());
+    Owned<IFileIO> io = f->open(IFOcreate);
+    io->write(0, obj.length(), obj.toByteArray());
+}
+
+void deploySharedObject(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEspWUDeployWorkunitResponse & resp)
+{
+    if (isEmpty(req.getFileName()))
+       throw MakeStringException(ECLWATCH_INVALID_INPUT, "File name required when deploying a shared object.");
+
+    if (isEmpty(req.getCluster()))
+       throw MakeStringException(ECLWATCH_INVALID_INPUT, "Cluster name required when deploying a shared object.");
+
+    const MemoryBuffer &obj = req.getObject();
+    StringBuffer dllpath, dllname;
+    writeSharedObject(req.getFileName(), obj, dllpath, dllname);
+
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+    WorkunitUpdate wu(factory->createWorkUnit(NULL, "ws_workunits", context.queryUserId()));
+
+    SCMStringBuffer wuid;
+    wu->getWuid(wuid);
+    wu->setClusterName(req.getCluster());
+    wu->commit();
+
+    StringBuffer wuXML;
+    if (getWorkunitXMLFromFile(dllpath.str(), wuXML))
+    {
+        Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit();
+        embeddedWU->loadXML(wuXML);
+        queryExtendedWU(wu)->copyWorkUnit(embeddedWU);
+        //Owned<IWUQuery> query = workunit->updateQuery();
+        //query->setQueryText(eclQuery.s.str());
+    }
+
+    StringBuffer dllurl;
+    createUNCFilename(dllpath.str(), dllurl);
+    unsigned crc = crc_file(dllpath.str());
+
+    Owned<IWUQuery> query = wu->updateQuery();
+    associateLocalFile(query, FileTypeDll, dllpath, "Workunit DLL", crc);
+    queryDllServer().registerDll(dllname.str(), "Workunit DLL", dllurl.str());
+
+    if (notEmpty(req.getName()))
+        wu->setJobName(req.getName());
+    wu->setState(WUStateCompiled);
+    wu->commit();
+    wu.clear();
+
+    WsWuInfo winfo(context, wuid.str());
+    winfo.getCommon(resp.updateWorkunit(), WUINFO_All);
+
+    AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid.str());
+}
+
+bool CWsWorkunitsEx::onWUDeployWorkunit(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEspWUDeployWorkunitResponse & resp)
+{
+    const char *type = req.getObjType();
+
+    try
+    {
+        if (!context.validateFeatureAccess(OWN_WU_ACCESS, SecAccess_Write, false))
+            throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "Failed to create workunit. Permission denied.");
+
+        if (strieq(type, "archive"))
+            deployArchive(context, req, resp);
+        else if (strieq(type, "shared_object"))
+            deploySharedObject(context, req, resp);
+        else
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "WUDeployWorkunit '%s' unkown object type.", type);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
 }

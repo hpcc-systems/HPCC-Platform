@@ -199,7 +199,7 @@ bool CWsWorkunitsEx::onWUCopyLogicalFiles(IEspContext &context, IEspWUCopyLogica
     return true;
 }
 
-bool CWsWorkunitsEx::onWUDeployWorkunit(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEspWUDeployWorkunitResponse & resp)
+bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWorkunitRequest & req, IEspWUPublishWorkunitResponse & resp)
 {
     if (isEmpty(req.getWuid()))
         throw MakeStringException(ECLWATCH_NO_WUID_SPECIFIED,"No Workunit ID has been specified.");
@@ -218,7 +218,10 @@ bool CWsWorkunitsEx::onWUDeployWorkunit(IEspContext &context, IEspWUDeployWorkun
         cw->getJobName(queryName).str();
 
     SCMStringBuffer cluster;
-    cw->getClusterName(cluster);
+    if (notEmpty(req.getCluster()))
+        cluster.set(req.getCluster());
+    else
+        cw->getClusterName(cluster);
 
     Owned <IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster.str());
 
@@ -233,6 +236,11 @@ bool CWsWorkunitsEx::onWUDeployWorkunit(IEspContext &context, IEspWUDeployWorkun
     addQueryToQuerySet(wu, queryset.str(), queryName.str(), NULL, (WUQueryActivationOptions)req.getActivate(), queryId);
     wu->commit();
     wu.clear();
+
+    if (queryId.length())
+        resp.setQueryId(queryId.str());
+    resp.setQueryName(queryName.str());
+    resp.setQuerySet(queryset.str());
 
     if (req.getCopyLocal() || req.getShowFiles())
     {

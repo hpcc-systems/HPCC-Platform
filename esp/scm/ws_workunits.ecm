@@ -284,6 +284,21 @@ ESPresponse [exceptions_inline] WUCreateResponse
     ESPstruct ECLWorkunit Workunit;
 };
 
+ESPrequest WUDeployWorkunitRequest
+{
+    string Cluster;
+    string Name;
+    int Wait(-1);
+    string ObjType;
+    string FileName;
+    binary Object;
+};
+
+ESPresponse [exceptions_inline] WUDeployWorkunitResponse
+{
+    ESPstruct ECLWorkunit Workunit;
+};
+
 ESPrequest [nil_remove] WUQueryRequest
 {
     string Wuid;
@@ -993,9 +1008,10 @@ ESPresponse [exceptions_inline] WUCopyLogicalFilesResponse
 };
 
 
-ESPrequest WUDeployWorkunitRequest
+ESPrequest WUPublishWorkunitRequest
 {
     string Wuid;
+    string Cluster;
     string JobName;
     int Activate;
     bool NotifyCluster(false);
@@ -1003,10 +1019,13 @@ ESPrequest WUDeployWorkunitRequest
     bool CopyLocal(0);
 };
 
-ESPresponse [exceptions_inline] WUDeployWorkunitResponse
+ESPresponse [exceptions_inline] WUPublishWorkunitResponse
 {
     string Wuid;
     string Result;
+    string QuerySet;
+    string QueryName;
+    string QueryId;
     ESParray<ESPStruct WUCopyLogicalClusterFileSections, Cluster> ClusterFiles;
 };
 
@@ -1130,6 +1149,7 @@ ESPservice [
     ESPmethod WUSubmit(WUSubmitRequest, WUSubmitResponse);
     ESPmethod WUSchedule(WUScheduleRequest, WUScheduleResponse);
     ESPmethod WUPushEvent(WUPushEventRequest, WUPushEventResponse);
+    ESPmethod WUDeployWorkunit(WUDeployWorkunitRequest, WUDeployWorkunitResponse);
 
     ESPmethod WUAbort(WUAbortRequest, WUAbortResponse);
     ESPmethod WUProtect(WUProtectRequest, WUProtectResponse);
@@ -1154,7 +1174,7 @@ ESPservice [
 
     ESPmethod WUCDebug(WUDebugRequest, WUDebugResponse);
     
-    ESPmethod [resp_xsl_default("/esp/xslt/WUDeployWorkunit.xslt")] WUDeployWorkunit(WUDeployWorkunitRequest, WUDeployWorkunitResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/WUPublishWorkunit.xslt")] WUPublishWorkunit(WUPublishWorkunitRequest, WUPublishWorkunitResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/WUQuerysets.xslt")] WUQuerysets(WUQuerysetsRequest, WUQuerysetsResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/WUQuerysetQueries.xslt")] WUQuerysetDetails(WUQuerySetDetailsRequest, WUQuerySetDetailsResponse);
     ESPmethod WUQuerysetActionQueries(WUQuerySetActionQueriesRequest, WUQuerySetActionQueriesResponse);
