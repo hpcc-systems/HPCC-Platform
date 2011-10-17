@@ -960,6 +960,26 @@ extern HQL_API bool dedupMatchesWholeRecord(IHqlExpression * expr)
     return true;
 }
 
+IHqlExpression * getEquality(IHqlExpression * equality, IHqlExpression * left, IHqlExpression * right, IHqlExpression * activeSelector)
+{
+    IHqlExpression * lhs = equality->queryChild(0);
+    IHqlExpression * rhs = equality->queryChild(1);
+    if (containsSelector(lhs, left))
+    {
+        OwnedHqlExpr mappedLeft = replaceSelector(lhs, left, activeSelector);
+        OwnedHqlExpr mappedRight = replaceSelector(rhs, right, activeSelector);
+        if (mappedLeft == mappedRight)
+            return mappedLeft.getClear();
+    }
+    else if (containsSelector(lhs, right))
+    {
+        OwnedHqlExpr mappedLeft = replaceSelector(lhs, right, activeSelector);
+        OwnedHqlExpr mappedRight = replaceSelector(rhs, left, activeSelector);
+        if (mappedLeft == mappedRight)
+            return mappedLeft.getClear();
+    }
+    return NULL;
+}
 
 
 DedupInfoExtractor::DedupInfoExtractor(IHqlExpression * expr)
@@ -1010,6 +1030,16 @@ DedupInfoExtractor::DedupInfoExtractor(IHqlExpression * expr)
                     throwError(HQLERR_DedupFieldNotFound);
             }
             break;
+        case no_eq:
+            {
+                OwnedHqlExpr mapped = getEquality(cur, left, right, dataset->queryNormalizedSelector());
+                if (mapped)
+                {
+                    equalities.append(*mapped.getClear());
+                    break;
+                }
+                //fall through
+            }
         default:
             if (containsSelector(cur, left) || containsSelector(cur, right))
                 conds.append(*LINK(cur));

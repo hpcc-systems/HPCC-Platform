@@ -34,6 +34,6 @@ input3 := group(deduped3);
 
 deduped4 := dedup(input3,age,surname,ALL);
 
-deduped5 := dedup(deduped4,age,LEFT.surname = RIGHT.surname);
+deduped5 := dedup(deduped4,age,LEFT.surname = RIGHT.surname+nofold(''));
 
 output(deduped5,,'out.d00');
