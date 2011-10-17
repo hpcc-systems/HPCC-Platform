@@ -590,7 +590,7 @@ class CPackageMap : public CInterface, implements IPackageMap
 public:
     IMPLEMENT_IINTERFACE;
     CPackageMap(const char *_packageId, const char *_querySetId, bool _active)
-        : packageId(_packageId), querySetId(_querySetId), active(_active)
+        : packageId(_packageId), querySetId(_querySetId), active(_active), packages(true)
     {
     }
 
