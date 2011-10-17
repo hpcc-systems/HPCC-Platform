@@ -22,6 +22,7 @@
 
 #include "jisem.hpp"
 #include "jsort.hpp"
+#include "jregexp.hpp"
 
 #include "ccd.hpp"
 #include "ccdquery.hpp"
@@ -92,6 +93,7 @@ public:
         ForEach(_subs)
         {
             IPropertyTree &sub = _subs.query();
+            sub.Link();
             subFiles.append(sub);
         }
     }
@@ -268,7 +270,7 @@ protected:
     // Search this package and any bases for an element matching xpath1, then return iterator for its children that match xpath2
     IPropertyTreeIterator *lookupElements(const char *xpath1, const char *xpath2) const
     {
-        Owned<IPropertyTree> parentNode = node->queryPropTree(xpath1);
+        IPropertyTree *parentNode = node->queryPropTree(xpath1);
         if (parentNode)
             return parentNode->getElements(xpath2);
         ForEachItemIn(idx, bases)
@@ -466,7 +468,7 @@ public:
                     if (_base)
                     {
                         const CRoxiePackage *base = static_cast<const CRoxiePackage *>(_base);
-                        bases.append(const_cast<CRoxiePackage &>(*LINK(base)));   // should really be an arryof<const base> but that would require some fixing in jlib
+                        bases.append(const_cast<CRoxiePackage &>(*LINK(base)));   // should really be an arrayof<const base> but that would require some fixing in jlib
                         hash = rtlHash64Data(sizeof(base->hash), &base->hash, hash);
                         mergeEnvironment(base);
                     }
@@ -584,6 +586,7 @@ class CPackageMap : public CInterface, implements IPackageMap
     StringAttr querySetId;
     Owned<IPropertyTree> querySets;
     bool active;
+    StringArray wildMatches, wildIds;
 public:
     IMPLEMENT_IINTERFACE;
     CPackageMap(const char *_packageId, const char *_querySetId, bool _active)
@@ -599,6 +602,18 @@ public:
     virtual const IRoxiePackage *queryPackage(const char *name) const
     {
         return name ? packages.getValue(name) : NULL;
+    }
+    virtual const IRoxiePackage *matchPackage(const char *name) const
+    {
+        if (name)
+        {
+            ForEachItemIn(idx, wildMatches)
+            {
+                if (WildMatch(name, wildMatches.item(idx), true))
+                    return queryPackage(wildIds.item(idx));
+            }
+        }
+        return NULL;
     }
     virtual const char *queryQuerySetId() const
     {
@@ -623,6 +638,12 @@ public:
                 Owned<IRoxiePackage> package = createPackage(&packageTree);
                 package->resolveBases(this);
                 packages.setValue(id, package);
+                const char *queries = packageTree.queryProp("@queries");
+                if (queries && *queries)
+                {
+                    wildMatches.append(queries);
+                    wildIds.append(id);
+                }
             }
             else
                 throw MakeStringException(ROXIE_UNKNOWN_PACKAGE, "Invalid package map - Package element missing id attribute");
@@ -752,9 +773,20 @@ public:
                 if (!id || !*id || !dllName || !*dllName)
                     throw MakeStringException(ROXIE_QUERY_MODIFICATION, "dll and id must be specified");
                 Owned<const IQueryDll> queryDll = createQueryDll(dllName);
-                const IRoxiePackage *package = packages.queryPackage(id);
-                if (!package) package = packages.queryPackage("default");
-                if (!package) package = &queryRootPackage();
+                const IRoxiePackage *package = NULL;
+                const char *packageName = query.queryProp("@package");
+                if (packageName && *packageName)
+                {
+                    package = packages.queryPackage(packageName); // if a package is specified, require exact match
+                    if (!package)
+                        throw MakeStringException(ROXIE_QUERY_MODIFICATION, "Package %s specified by query %s not found", packageName, id);
+                }
+                else
+                {
+                    package = packages.queryPackage(id);  // Look for an exact match, then a fuzzy match, using query name as the package id
+                    if(!package) package = packages.matchPackage(id);
+                    if (!package) package = &queryRootPackage();
+                }
                 assertex(package);
                 addQuery(id, loadQueryFromDll(id, queryDll.getClear(), *package, &query));
             }

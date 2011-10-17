@@ -50,7 +50,10 @@ extern IFilePartMap *createFilePartMap(const char *fileName, IFileDescriptor &fd
 interface IRoxiePackage;
 interface IPackageMap : public IInterface
 {
+    // Lookup package using exact id
     virtual const IRoxiePackage *queryPackage(const char *name) const = 0;
+    // Lookup package using fuzzy id
+    virtual const IRoxiePackage *matchPackage(const char *name) const = 0;
     virtual const char *queryQuerySetId() const = 0;
     virtual const char *queryPackageId() const = 0;
     virtual bool isActive() const = 0;
