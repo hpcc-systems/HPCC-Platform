@@ -341,6 +341,13 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
+      <xs:attribute name="lockDali" type="xs:boolean" use="optional" default="false">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>If set, Roxie will use cached info from dali only, and will not connect to dali or refresh the cache.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
       <xs:attribute name="multicastBase" type="ipAddress" use="optional" default="239.1.1.1">
         <xs:annotation>
           <xs:appinfo>

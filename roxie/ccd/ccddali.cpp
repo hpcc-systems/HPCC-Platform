@@ -1,4 +1,4 @@
-/*##############################################################################
+*##############################################################################
 
     Copyright (C) 2011 HPCC Systems.
 
@@ -31,17 +31,6 @@
 #include "workflow.hpp"
 #include "mpcomm.hpp"
 
-/*===============================================================================
-* Roxie is not a typical Dali client - it tries to keep the dali connection open 
-* only when it needs it, reconnect when necessary, and degrade gracefully should
-* Dali not be available.
-* This single-instance class is designed to help with that. In particular it
-* - connects to dali on demand, and disconnects when all links to this object released
-* - caches dali information locally so that if dali cannot be read or is not present,
-*   Roxie continues to run.
-* Should the caching be handled by dali client code?
-=================================================================================*/
-
 const char *roxieStateName = "RoxieLocalState.xml";
 
 class CDaliPackageWatcher : public CInterface, implements ISDSSubscription, implements IDaliPackageWatcher
@@ -56,7 +45,6 @@ public:
     {
         notifier = _notifier;
         change = querySDS().subscribe(xpath, *this, true);
-
     }
     ~CDaliPackageWatcher()
     {
@@ -75,61 +63,43 @@ public:
     }
 };
 
+/*===============================================================================
+* Roxie is not a typical Dali client - if dali is available it will use it, but
+* it needs to be able to continue to serve any queries that have already been deployed
+* should Dali no longer be available, including the ability to restart a roxie while
+* the dali that originally provided its data is unavailable.
+*
+* This single-instance class is designed to help Roxie manage its dali connections.
+* it connects to dali on demand, and disconnects when all links to this object are
+* released - in practice that won't happen until termination as we keep an active dali
+* connection as long as any QuerySets are subscribed. This class also handles the
+* local caching of sufficient information retrieved from dali so that Roxie can restart
+* even if dali is not available.
+*
+* If dali is down. Data is delivered from the cache. If dali is up, the cache is populated from
+* the information retrieved from dali. We snapshot the cache at the end of each successful reload.
+*
+* For simplicity and safety, Roxie will not attempt to reconnect to a dali once it is
+* disconnected (roxie should be manually restarted once you are confident that dali has been
+* properly restored).
+*
+* TODO - Anything that gets an error talking to dali has to not crash...
+* TODO - Any info that needs to be available when dali is down has to be retrieved via this
+*      - class and cached
+* TODO - dynamic files can still resolve via daliHelper (will continue to give the same answer
+*      - they gave last time)? Or would it be better to fail?
+*
+* If we ever wanted to handle reconnects, it could possible be done by treating Dali
+* coming up as the same as generating a notification on all subscriptions?
+*
+=================================================================================*/
+
 class CRoxieDaliHelper : public CInterface, implements IRoxieDaliHelper
 {
 private:
     static bool isConnected;
     static CRoxieDaliHelper *daliHelper;  // Note - this does not own the helper
     static CriticalSection daliConnectionCrit; 
-
-    // connect handles the operations generally performed by Dali clients at startup.
-    bool connect()
-    {
-        if (fileNameServiceDali.length())
-        {
-            if (!isConnected)
-            {
-                try
-                {
-                    // Create server group
-                    Owned<IGroup> serverGroup = createIGroup(fileNameServiceDali, DALI_SERVER_PORT);
-
-                    if (!serverGroup)
-                        throw MakeStringException(ROXIE_DALI_ERROR, "Could not instantiate dali IGroup");
-
-                    // Initialize client process
-                    if (!initClientProcess(serverGroup, DCR_RoxyMaster, 0, NULL, NULL, 60000))  // wait 1 minute
-                        throw MakeStringException(ROXIE_DALI_ERROR, "Could not initialize dali client");
-
-                    setPasswordsFromSDS();
-                    CSDSServerStatus serverstatus("Roxieserver");
-                    isConnected = true;
-                }
-                catch(IException *e)
-                {
-                    StringBuffer text;
-                    e->errorMessage(text);
-                    DBGLOG(ROXIE_DALI_ERROR, "Error trying to connect to dali %s: %s", fileNameServiceDali.str(), text.str());
-                    e->Release();
-                }
-            }
-        }
-        else
-            initMyNode(1); // Hack
-        return isConnected;
-    }
-
-    static void disconnect()
-    {
-        if (isConnected)
-        {
-            closeDllServer();
-            closeEnvironment();
-            clientShutdownWorkUnit();
-            ::closedownClientProcess(); // dali client closedown
-            isConnected = false;
-        }
-    }
 
     virtual void beforeDispose()
     {
@@ -146,6 +116,16 @@ private:
     static CriticalSection cacheCrit;
     static Owned<IPropertyTree> cache;
 
+    static void initCache()
+    {
+        IPropertyTree *tree = createPTree("Roxie");
+        tree->addPropTree("QuerySets", createPTree("QuerySets"));
+        tree->addPropTree("PackageSets", createPTree("PackageSets"));
+        tree->addPropTree("PackageMaps", createPTree("PackageMaps"));
+        tree->addPropTree("Files", createPTree("Files"));
+        cache.setown(tree);
+    }
+
     static void loadCache()
     {
         if (!cache)
@@ -155,14 +135,7 @@ private:
             if (checkFileExists(cacheFileName))
                 cache.setown(createPTreeFromXMLFile(cacheFileName));
             else
-            {
-                IPropertyTree *tree = createPTree("Roxie");
-                tree->addPropTree("QuerySets", createPTree("QuerySets"));
-                tree->addPropTree("PackageSets", createPTree("PackageSets"));
-                tree->addPropTree("PackageMaps", createPTree("PackageMaps"));
-                tree->addPropTree("Files", createPTree("Files"));
-                cache.setown(tree);
-            }
+                initCache();
         }
     }
 
@@ -173,23 +146,19 @@ private:
         return cache->getPropTree(xpath);
     }
 
-    static void writeCache(const char *xpath, IPropertyTree *val)
+    static void writeCache(const char *foundLoc, const char *newLoc, IPropertyTree *val)
     {
         CriticalBlock b(cacheCrit);
-        loadCache();
+        cache->removeProp(foundLoc);
         if (val)
-            cache->setPropTree(xpath, LINK(val));
-        else
-            cache->removeProp(xpath);
-        if (!recursiveCreateDirectory(queryDirectory))
-            throw MakeStringException(ROXIE_FILE_ERROR, "Unable to create directory %s", queryDirectory.str());
-        StringBuffer cacheFileName(queryDirectory);
-        cacheFileName.append(roxieStateName);
-        saveXML(cacheFileName, cache);
+            cache->addPropTree(newLoc, LINK(val));
     }
 
-    IPropertyTree *loadDaliTree(const char *xpath)
+    IPropertyTree *loadDaliTree(const char *path, const char *id)
     {
+        StringBuffer xpath(path);
+        if (id)
+            xpath.appendf("[@id='%s']", id);
         Owned <IPropertyTree> localTree;
         if (isConnected)
         {
@@ -199,7 +168,7 @@ private:
                 Owned <IPropertyTree> daliTree = conn->getRoot();
                 localTree.setown(createPTreeFromIPT(daliTree));
             }
-            writeCache(xpath, localTree);
+            writeCache(xpath, path, localTree);
         }
         else
             localTree.setown(readCache(xpath));
@@ -221,8 +190,7 @@ public:
 
     virtual IPropertyTree *getQuerySet(const char *id)
     {
-        StringBuffer xpath;
-        Owned<IPropertyTree> ret = loadDaliTree(getQuerySetPath(xpath, id));
+        Owned<IPropertyTree> ret = loadDaliTree("QuerySets/QuerySet", id);
         if (!ret)
         {
             ret.setown(createPTree("QuerySet"));
@@ -239,8 +207,7 @@ public:
 
     virtual IPropertyTree *getPackageSet(const char *id)
     {
-        StringBuffer xpath;
-        Owned<IPropertyTree> ret = loadDaliTree(getPackageSetPath(xpath, id));
+        Owned<IPropertyTree> ret = loadDaliTree("PackageSets/PackageSet", id);
         if (!ret)
         {
             ret.setown(createPTree("PackageSet"));
@@ -257,8 +224,7 @@ public:
 
     virtual IPropertyTree *getPackageMap(const char *id)
     {
-        StringBuffer xpath;
-        Owned<IPropertyTree> ret = loadDaliTree(getPackageMapPath(xpath, id));
+        Owned<IPropertyTree> ret = loadDaliTree("PackageMaps/PackageMap", id);
         if (!ret)
         {
             ret.setown(createPTree("PackageMap"));
@@ -267,21 +233,7 @@ public:
         return ret.getClear();
     }
 
-    virtual IPropertyTree *getRoxieState(const char *id)
-    {
-        // The roxie state contains a list of loaded packages, the name of the query set, the name of the active package
-        StringBuffer xpath;
-        xpath.appendf("RoxieStates/RoxieState[@id='%s']", id);
-        Owned<IPropertyTree> ret = loadDaliTree(xpath);
-        if (!ret)
-        {
-            ret.setown(createPTree("RoxieStates"));
-            ret->setProp("@id", id);
-        }
-        return ret.getClear();
-    }
-
-    virtual IDistributedFile *resolveLFN(const char *logicalName, bool writeAccess)
+    virtual IDistributedFile *resolveLFN(const char *logicalName, bool cacheIt, bool writeAccess)
     {
         if (isConnected)
         {
@@ -294,20 +246,27 @@ public:
                 if (super && (0 == super->numSubFiles(true)))
                     dfsFile.clear();
             }
-            if (dfsFile)
+            if (cacheIt)
             {
-                Owned<IFileDescriptor> fd = dfsFile->getFileDescriptor();
-                Owned<IPropertyTree> pt = fd->getFileTree();
+                Owned<IFileDescriptor> fd;
+                Owned<IPropertyTree> pt;
+                if (dfsFile)
+                {
+                    fd.setown(dfsFile->getFileDescriptor());
+                    if (fd)
+                        pt.setown(fd->getFileTree());
+                }
                 StringBuffer xpath("Files/");
                 StringBuffer lcname;
                 xpath.append(lcname.append(logicalName).toLowerCase());
-                writeCache(xpath.str(), pt);
+                writeCache(xpath.str(), xpath.str(), pt);
             }
             return dfsFile.getClear();
         }
         else
             return NULL;
     }
+
     virtual IFileDescriptor *resolveCachedLFN(const char *logicalName)
     {
         StringBuffer xpath("Files/");
@@ -320,6 +279,28 @@ public:
         }
         else
             return NULL;
+    }
+
+    virtual void commitCache()
+    {
+        if (isConnected)
+        {
+            CriticalBlock b(cacheCrit);
+            if (!recursiveCreateDirectory(queryDirectory))
+                throw MakeStringException(ROXIE_FILE_ERROR, "Unable to create directory %s", queryDirectory.str());
+            VStringBuffer newCacheFileName("%s%s.new", queryDirectory.str(), roxieStateName);
+            VStringBuffer oldCacheFileName("%s%s.bak", queryDirectory.str(), roxieStateName);
+            VStringBuffer cacheFileName("%s%s", queryDirectory.str(), roxieStateName);
+            saveXML(newCacheFileName, cache);
+            Owned<IFile> oldFile = createIFile(oldCacheFileName);
+            Owned<IFile> newFile = createIFile(newCacheFileName);
+            Owned<IFile> cacheFile = createIFile(cacheFileName);
+            if (oldFile->exists())
+                oldFile->remove();
+            if (cacheFile->exists())
+                cacheFile->rename(oldCacheFileName);
+            newFile->rename(cacheFileName);
+        }
     }
 
     virtual IConstWorkUnit *attachWorkunit(const char *wuid, ILoadedDllEntry *source)
@@ -358,7 +339,8 @@ public:
             // NOTE - if daliHelper is not NULL but isAlive returned false, then we have an overlapping connect with a final disconnect
             // In this case the beforeDispose will have taken care NOT to disconnect, isConnected will remain set, and the connect() will be a no-op.
             daliHelper = new CRoxieDaliHelper();
-            daliHelper->connect();
+            if (!topology->getPropBool("@lockDali", false))
+                daliHelper->connect();
             return daliHelper;
         }
     }
@@ -406,6 +388,65 @@ public:
     {
         return isConnected;
     }
+
+    // connect handles the operations generally performed by Dali clients at startup.
+    virtual bool connect()
+    {
+        if (fileNameServiceDali.length())
+        {
+            if (!isConnected)
+            {
+                CriticalBlock b(daliConnectionCrit);
+                if (!isConnected)
+                {
+                    try
+                    {
+                        // Create server group
+                        Owned<IGroup> serverGroup = createIGroup(fileNameServiceDali, DALI_SERVER_PORT);
+
+                        if (!serverGroup)
+                            throw MakeStringException(ROXIE_DALI_ERROR, "Could not instantiate dali IGroup");
+
+                        // Initialize client process
+                        if (!initClientProcess(serverGroup, DCR_RoxyMaster, 0, NULL, NULL, 5000))  // wait 5 seconds
+                            throw MakeStringException(ROXIE_DALI_ERROR, "Could not initialize dali client");
+
+                        setPasswordsFromSDS();
+                        CSDSServerStatus serverstatus("Roxieserver");
+                        initCache();
+                        isConnected = true;
+                    }
+                    catch(IException *e)
+                    {
+                        StringBuffer text;
+                        e->errorMessage(text);
+                        DBGLOG(ROXIE_DALI_ERROR, "Error trying to connect to dali %s: %s", fileNameServiceDali.str(), text.str());
+                        e->Release();
+                    }
+                }
+            }
+        }
+        else
+            initMyNode(1); // Hack
+        return isConnected;
+    }
+
+    virtual void disconnect()
+    {
+        if (isConnected)
+        {
+            CriticalBlock b(daliConnectionCrit);
+            if (isConnected)
+            {
+                closeDllServer();
+                closeEnvironment();
+                clientShutdownWorkUnit();
+                ::closedownClientProcess(); // dali client closedown
+                isConnected = false;
+            }
+        }
+    }
+
 };
 
 class CRoxieDllServer : public CInterface, implements IDllServer
@@ -458,7 +499,6 @@ CriticalSection CRoxieDaliHelper::cacheCrit;
 Owned<IPropertyTree> CRoxieDaliHelper::cache;
 
 CriticalSection CRoxieDllServer::crit;
-
 
 IRoxieDaliHelper *connectToDali()
 {
