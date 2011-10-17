@@ -212,6 +212,7 @@ protected:
         IResolvedFile *goer = fileCache.getValue(file->queryFileName());
         if (goer == file)
             fileCache.remove(file->queryFileName());
+        // You might want to remove files from the daliServer cache too, but it's not safe to do so here as there may be multiple package caches
     }
     // Lookup a filename in the cache
     IResolvedFile *lookupCache(const char *filename) const
@@ -317,13 +318,13 @@ protected:
         return NULL;
     }
     // Use dali to resolve subfile into physical file info
-    IResolvedFile *resolveLFNusingDali(const char *fileName, bool writeAccess) const
+    IResolvedFile *resolveLFNusingDali(const char *fileName, bool cacheIt, bool writeAccess) const
     {
         if (daliHelper)
         {
             if (daliHelper->connected())
             {
-                Owned<IDistributedFile> dFile = daliHelper->resolveLFN(fileName, writeAccess);
+                Owned<IDistributedFile> dFile = daliHelper->resolveLFN(fileName, cacheIt, writeAccess);
                 if (dFile)
                     return createResolvedFile(fileName, dFile.getClear());
             }
@@ -399,7 +400,7 @@ protected:
         }
         result = resolveLFNusingPackage(fileName);
         if (!result)
-            result = resolveLFNusingDali(fileName, writeAccess);
+            result = resolveLFNusingDali(fileName, cache, writeAccess);
         if (!result)
             result = resolveLFNusingLocal(fileName);
         if (result)
@@ -1181,6 +1182,7 @@ public:
     virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {
         reload();
+        daliHelper->commitCache();
     }
 
     virtual void load()
@@ -1254,6 +1256,7 @@ public:
         try
         {
             reload();
+            daliHelper->commitCache();
             controlSem.signal();
         }
         catch(IException *E)
@@ -1327,6 +1330,7 @@ public:
     virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {
         reload();
+        daliHelper->commitCache();
     }
 
 private:
@@ -1673,6 +1677,12 @@ private:
             else if (stricmp(queryName, "control:listUnusedFiles")==0)
             {
                 UNIMPLEMENTED;
+            }
+            else if (stricmp(queryName, "control:lockDali")==0)
+            {
+                if (daliHelper)
+                    daliHelper->disconnect();
+                topology->setPropBool("@lockDali", true);
             }
             else if (stricmp(queryName, "control:logfullqueries")==0)
             {
@@ -2133,6 +2143,12 @@ private:
             {
                 udpTraceLevel = control->getPropInt("@level", 0);
                 topology->setPropInt("@udpTraceLevel", udpTraceLevel);
+            }
+            else if (stricmp(queryName, "control:unlockDali")==0)
+            {
+                if (daliHelper)
+                    daliHelper->connect();
+                topology->setPropBool("@lockDali", false);
             }
             else if (stricmp(queryName, "control:unsuspend")==0)
             {
