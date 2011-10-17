@@ -365,6 +365,11 @@ bool isDiskInput(ThorActivityKind kind)
     }
 }
 
+void CIOConnection::connect(unsigned which, CActivityBase *destActivity)
+{
+    destActivity->setInput(which, activity->queryActivity(), index);
+}
+
 /////////////////////////////////// 
 CGraphElementBase *createGraphElement(IPropertyTree &node, CGraphBase &owner, CGraphBase *resultsGraph)
 {
@@ -501,41 +506,35 @@ void CGraphElementBase::doconnect()
 {
     ForEachItemIn(i, connectedInputs)
     {
-        CGraphElementBase *input = &connectedInputs.item(i);
-        unsigned inputOutIdx = connectedInputsInputOutIdx.item(i);
-        unsigned which = connectedInputsIndex.item(i);
-        CActivityBase *inputActivity = input->queryActivity();
-        activity->setInput(which, inputActivity, inputOutIdx);
+        CIOConnection *io = connectedInputs.item(i);
+        if (io)
+            io->connect(i, activity);
     }
 }
 
-void CGraphElementBase::removeInput(unsigned which)
+void CGraphElementBase::clearConnections()
 {
-    assertex(activity);
-    ActPrintLog("DISCONNECTING (id=%"ACTPF"d, idx=%d)", queryId(), which);
-    unsigned pos = connectedInputsIndex.find(which);
-    assertex(NotFound != pos);
-    connectedInputsIndex.remove(pos);
-    Linked<CGraphElementBase> input = &connectedInputs.item(pos);
-    connectedInputs.remove(pos);
-    unsigned posO = connectedInputsInputOutIdx.find(pos);
-    assertex(NotFound != posO);
-    connectedInputsInputOutIdx.remove(pos);
-    input->connectedOutputsIndex.remove(posO);
-    input->connectedOutputs.remove(posO);
-    input->connectedOutputsInputIndex.remove(posO);
+    connectedInputs.kill();
+    connectedOutputs.kill();
+    if (activity)
+        activity->clearConnections();
 }
 
-void CGraphElementBase::setInput(unsigned which, CGraphElementBase &input, unsigned inputOutIdx)
+void CGraphElementBase::addInput(unsigned input, CGraphElementBase *inputAct, unsigned inputOutIdx)
 {
-    assertex(activity);
-    ActPrintLog("CONNECTING (id=%"ACTPF"d, idx=%d) to (id=%"ACTPF"d, idx=%d)", input.queryId(), inputOutIdx, queryId(), which);
-    connectedInputsIndex.append(which);
-    connectedInputs.append(*LINK(&input));
-    connectedInputsInputOutIdx.append(inputOutIdx);
-    input.connectedOutputsIndex.append(inputOutIdx);
-    input.connectedOutputs.append(*this);
-    input.connectedOutputsInputIndex.append(which);
+    while (inputs.ordinality()<=input) inputs.append(NULL);
+    inputs.replace(new COwningSimpleIOConnection(LINK(inputAct), inputOutIdx), input);
+    while (inputAct->outputs.ordinality()<=inputOutIdx) inputAct->outputs.append(NULL);
+    inputAct->outputs.replace(new CIOConnection(this, input), inputOutIdx);
+}
+
+void CGraphElementBase::connectInput(unsigned input, CGraphElementBase *inputAct, unsigned inputOutIdx)
+{
+    ActPrintLog("CONNECTING (id=%"ACTPF"d, idx=%d) to (id=%"ACTPF"d, idx=%d)", inputAct->queryId(), inputOutIdx, queryId(), input);
+    while (connectedInputs.ordinality()<=input) connectedInputs.append(NULL);
+    connectedInputs.replace(new COwningSimpleIOConnection(LINK(inputAct), inputOutIdx), input);
+    while (inputAct->connectedOutputs.ordinality()<=inputOutIdx) inputAct->connectedOutputs.append(NULL);
+    inputAct->connectedOutputs.replace(new CIOConnection(this, input), inputOutIdx);
 }
 
 void CGraphElementBase::serializeCreateContext(MemoryBuffer &mb)
@@ -663,11 +662,11 @@ bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *par
             onStart(parentExtractSz, parentExtract);
             IHThorIfArg *helper = (IHThorIfArg *)baseHelper.get();
             whichBranch = helper->getCondition() ? 0 : 1;       // True argument preceeds false...
-            if (inputs.isItem(whichBranch))
+            if (inputs.queryItem(whichBranch))
             {
                 if (!whichBranchBitSet->testSet(whichBranch)) // if not set, new
                     newWhichBranch = true;
-                return inputs.item(whichBranch).prepareContext(parentExtractSz, parentExtract, checkDependencies, false, async);
+                return inputs.item(whichBranch)->activity->prepareContext(parentExtractSz, parentExtract, checkDependencies, false, async);
             }
             return true;
         }
@@ -678,8 +677,8 @@ bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *par
             onStart(parentExtractSz, parentExtract);
             IHThorCaseArg *helper = (IHThorCaseArg *)baseHelper.get();
             whichBranch = helper->getBranch();
-            if (inputs.isItem(whichBranch))
-                return inputs.item(whichBranch).prepareContext(parentExtractSz, parentExtract, checkDependencies, false, async);
+            if (inputs.queryItem(whichBranch))
+                return inputs.item(whichBranch)->activity->prepareContext(parentExtractSz, parentExtract, checkDependencies, false, async);
             return true;
         }
         case TAKfilter:
@@ -708,8 +707,8 @@ bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *par
     }
     ForEachItemIn(i, inputs)
     {
-        CGraphElementBase &input = inputs.item(i);
-        if (!input.prepareContext(parentExtractSz, parentExtract, checkDependencies, shortCircuit, async))
+        CGraphElementBase *input = inputs.item(i)->activity;
+        if (!input->prepareContext(parentExtractSz, parentExtract, checkDependencies, shortCircuit, async))
             return false;
     }
     return true;
@@ -727,6 +726,9 @@ void CGraphElementBase::start()
 
 void CGraphElementBase::initActivity()
 {
+    if (activity)
+        return;
+    activity.setown(factory());
     switch (getKind())
     {
         case TAKlooprow:
@@ -746,7 +748,7 @@ void CGraphElementBase::initActivity()
 
 void CGraphElementBase::createActivity(size32_t parentExtractSz, const byte *parentExtract)
 {
-    if (activity)
+    if (connectedInputs.ordinality()) // ensure not traversed twice (e.g. via splitter)
         return;
     try
     {
@@ -754,33 +756,30 @@ void CGraphElementBase::createActivity(size32_t parentExtractSz, const byte *par
         {
             case TAKchildif:
             {
-                if (inputs.isItem(whichBranch))
+                if (inputs.queryItem(whichBranch))
                 {
-                    CGraphElementBase &input = inputs.item(whichBranch);
-                    input.createActivity(parentExtractSz, parentExtract);
+                    CGraphElementBase *input = inputs.item(whichBranch)->activity;
+                    input->createActivity(parentExtractSz, parentExtract);
                 }
                 onCreate();
-                activity.setown(factory());
                 initActivity();
-                if (whichBranch<inputs.ordinality())
+                if (inputs.queryItem(whichBranch))
                 {
-                    CGraphElementBase *input = &inputs.item(whichBranch);
-                    unsigned inputOutIdx = inputOutIndexes.item(whichBranch);
-                    setInput(whichBranch, *input, inputOutIdx);
+                    CIOConnection *inputIO = inputs.item(whichBranch);
+                    connectInput(whichBranch, inputIO->activity, inputIO->index);
                 }
                 break;
             }
             case TAKif:
             case TAKcase:
-                if (inputs.isItem(whichBranch))
+                if (inputs.queryItem(whichBranch))
                 {
-                    CGraphElementBase &input = inputs.item(whichBranch);
-                    input.createActivity(parentExtractSz, parentExtract);
+                    CGraphElementBase *input = inputs.item(whichBranch)->activity;
+                    input->createActivity(parentExtractSz, parentExtract);
                 }
                 else
                 {
                     onCreate();
-                    activity.setown(factory(TAKnull));
                     initActivity();
                 }
                 break;
@@ -789,59 +788,42 @@ void CGraphElementBase::createActivity(size32_t parentExtractSz, const byte *par
                 {
                     ForEachItemIn(i, inputs)
                     {
-                        CGraphElementBase &input = inputs.item(i);
-                        input.createActivity(parentExtractSz, parentExtract);
+                        CGraphElementBase *input = inputs.item(i)->activity;
+                        input->createActivity(parentExtractSz, parentExtract);
                     }
                 }
                 onCreate();
                 if (isDiskInput(getKind()))
                     onStart(parentExtractSz, parentExtract);
-                activity.setown(factory());
                 ForEachItemIn(i2, inputs)
                 {
-                    CGraphElementBase *input = &inputs.item(i2);
-                    unsigned inputOutIdx = inputOutIndexes.item(i2);
-                    CGraphElementBase *here = this;
+                    CIOConnection *inputIO = inputs.item(i2);
                     loop
                     {
+                        CGraphElementBase *input = inputIO->activity;
                         switch (input->getKind())
                         {
                             case TAKif:
 //                          case TAKchildif:
                             case TAKcase:
                             {
-                                CGraphElementBase *next = input;
-                                if (next->whichBranch >= input->inputs.ordinality()) // if, will have TAKnull activity, made at create time.
+                                if (input->whichBranch >= input->getInputs()) // if, will have TAKnull activity, made at create time.
                                 {
-                                    here = NULL;
+                                    input = NULL;
                                     break;
                                 }
-                                inputOutIdx = NotFound;
-                                input = &input->inputs.item(next->whichBranch);
-                                ForEachItemIn(o, input->outputs)
-                                {
-                                    CGraphElementBase &out = input->outputs.item(o);
-                                    if (next == &out)
-                                    {
-                                        if (next->whichBranch == input->outputInputIndexes.item(o))
-                                        {
-                                            inputOutIdx = o;
-                                            break;
-                                        }
-                                    }
-                                }
-                                assertex(NotFound!=inputOutIdx);
-                                here = next;
+                                inputIO = input->inputs.item(input->whichBranch);
+                                assertex(inputIO);
                                 break;
                             }
                             default:
-                                here = NULL;
+                                input = NULL;
                                 break;
                         }
-                        if (!here)
+                        if (!input)
                             break;
                     }
-                    setInput(i2, *input, inputOutIdx);
+                    connectInput(i2, inputIO->activity, inputIO->index);
                 }
                 initActivity();
                 break;
@@ -915,19 +897,13 @@ bool isGlobalActivity(CGraphElementBase &container)
         }
         case TAKspill:
             return false;
+// dependent on child acts?
         case TAKlooprow:
         case TAKloopcount:
         case TAKgraphloop:
         case TAKparallelgraphloop:
         case TAKloopdataset:
-// dependent on child acts?
-            // JCSMORE will synchronise when gets to executing child graphs?
-            // JCSMORE - well loop graph may be global, but that would mean loop act. would launch globally and sync, so ok?
-//          if (queryLoopGraph()->queryGraph())
-//              return queryLoopGraph()->queryGraph()->hasFinalInfo();
             return false;
-
-
 // dependent on local/grouped
         case TAKkeyeddistribute:
         case TAKhashdistribute:
@@ -986,7 +962,6 @@ bool isGlobalActivity(CGraphElementBase &container)
             if (!container.queryLocalOrGrouped())
                 return true;
             break;
-
         case TAKkeyedjoin:
         case TAKalljoin:
         case TAKlookupjoin:
@@ -1117,11 +1092,11 @@ void CGraphBase::clean()
     sinks.kill();
 }
 
-void CGraphBase::serializeCreateContexts(MemoryBuffer &mb, bool created)
+void CGraphBase::serializeCreateContexts(MemoryBuffer &mb)
 {
     unsigned pos = mb.length();
     mb.append((unsigned)0);
-    Owned<IThorActivityIterator> iter = created ? getCreatedIterator() : getTraverseIteratorCond();
+    Owned<IThorActivityIterator> iter = (queryOwner() && !isGlobal()) ? getIterator() : getTraverseIterator(true); // all if non-global-child, or graph with conditionals
     ForEach (*iter)
     {
         CGraphElementBase &element = iter->query();
@@ -1392,37 +1367,16 @@ bool CGraphBase::prepare(size32_t parentExtractSz, const byte *parentExtract, bo
 
 void CGraphBase::create(size32_t parentExtractSz, const byte *parentExtract)
 {
+    CGraphElementIterator iterC(containers);
+    ForEach(iterC)
+    {
+        CGraphElementBase &element = iterC.query();
+        element.clearConnections();
+    }
     ForEachItemIn(s, sinks)
     {
         CGraphElementBase &sink = sinks.item(s);
         sink.createActivity(parentExtractSz, parentExtract);
-    }
-    ForEachItemIn(i, ifs) // because sink traversal above, stops if hits act created, ifs need traversing too if newbranch created
-    {
-        CGraphElementBase &ifElem = ifs.item(i);
-        if (ifElem.newWhichBranch)
-        {
-            ifElem.newWhichBranch = false;
-            if (ifElem.inputs.isItem(ifElem.whichBranch))
-            {
-                CGraphElementBase &input = ifElem.inputs.item(ifElem.whichBranch);
-                input.createActivity(parentExtractSz, parentExtract);
-            }
-        }
-        if (ifElem.whichBranch<ifElem.inputs.ordinality())
-        {
-            if (NotFound == ifElem.connectedInputsIndex.find(ifElem.whichBranch))
-            {
-                if (ifElem.connectedInputsIndex.ordinality())
-                {
-                    assertex(1 == ifElem.connectedInputsIndex.ordinality());
-                    ifElem.removeInput(ifElem.connectedInputsIndex.item(0));
-                }
-                CGraphElementBase *input = &ifElem.inputs.item(ifElem.whichBranch);
-                unsigned inputOutIdx = ifElem.inputOutIndexes.item(ifElem.whichBranch);
-                ifElem.setInput(ifElem.whichBranch, *input, inputOutIdx);
-            }
-        }
     }
     created = true;
 }
@@ -1459,7 +1413,7 @@ void CGraphBase::end()
     }
 }
 
-class CGraphTraverseIterator : public CInterface, implements IThorActivityIterator
+class CGraphTraverseIteratorBase : public CInterface, implements IThorActivityIterator
 {
 protected:
     CGraphBase &graph;
@@ -1477,39 +1431,39 @@ protected:
         cur.setown(&others.popGet());
         return cur;
     }
-    CGraphElementBase *setNext(CIArrayOf<CGraphElementBase> &inputs, unsigned whichInput=((unsigned)-1))
+    CGraphElementBase *setNext(CIOConnectionArray &inputs, unsigned whichInput=((unsigned)-1))
     {
+        cur.clear();
         unsigned n = inputs.ordinality();
         if (((unsigned)-1) != whichInput)
         {
-            if (whichInput >= n)
-            {
-                if (!popNext())
-                    return NULL;
-            }
-            else
-                cur.set(&inputs.item(whichInput));
+            CIOConnection *io = inputs.queryItem(whichInput);
+            if (io)
+                cur.set(io->activity);
         }
         else
         {
-            if (0 == n) // get next from stack
+            bool first = true;
+            unsigned i=0;
+            for (; i<n; i++)
             {
-                assertex(whichInput==((unsigned)-1));
-                if (!popNext())
-                    return NULL;
+                CIOConnection *io = inputs.queryItem(i);
+                if (io)
+                {
+                    if (first)
+                    {
+                        first = false;
+                        cur.set(io->activity);
+                    }
+                    else
+                        others.append(*LINK(io->activity));
+                }
             }
-            else if (1 == n)
-            {
-                assertex(whichInput==((unsigned)-1));
-                cur.set(&inputs.item(0));
-            }
-            else
-            {
-                unsigned i=1;
-                for (; i<n; i++)
-                    others.append(*LINK(&inputs.item(i)));
-                cur.set(&inputs.item(0));
-            }
+        }
+        if (!cur)
+        {
+            if (!popNext())
+                return NULL;
         }
         // check haven't been here before
         loop
@@ -1531,7 +1485,7 @@ protected:
     }
 public:
     IMPLEMENT_IINTERFACE;
-    CGraphTraverseIterator(CGraphBase &_graph) : graph(_graph)
+    CGraphTraverseIteratorBase(CGraphBase &_graph) : graph(_graph)
     {
     }
     virtual bool first()
@@ -1559,59 +1513,36 @@ public:
             CGraphElementBase & get() { return *LINK(cur); }
 };
 
-class CGraphTraverseCondIterator : public CGraphTraverseIterator
+class CGraphTraverseIterator : public CGraphTraverseIteratorBase
 {
-    bool skipCond;
 public:
-    CGraphTraverseCondIterator(CGraphBase &graph, bool _skipCond) : CGraphTraverseIterator(graph), skipCond(_skipCond) { }
+    CGraphTraverseIterator(CGraphBase &graph) : CGraphTraverseIteratorBase(graph) { }
     virtual bool next()
     {
-        if (skipCond)
+        if (cur)
         {
-            setNext(cur->inputs);
-            loop
+            switch (cur->getKind())
             {
-                if (!cur)
-                    return false;
-                switch (cur->getKind())
-                {
-                    case TAKif:
-                    case TAKchildif:
-                    case TAKcase:
-                        setNext(cur->inputs, cur->whichBranch);
-                        break;
-                    default:
-                        return (cur!=NULL);
-                }
+                case TAKif:
+                case TAKchildif:
+                case TAKcase:
+                    setNext(cur->inputs, cur->whichBranch);
+                    break;
+                default:
+                    setNext(cur->inputs);
+                    break;
             }
-        }
-        else
-        {
-            if (cur)
-            {
-                switch (cur->getKind())
-                {
-                    case TAKif:
-                    case TAKchildif:
-                    case TAKcase:
-                        setNext(cur->inputs, cur->whichBranch);
-                        break;
-                    default:
-                        setNext(cur->inputs);
-                        break;
-                }
-                if (!cur)
-                    return false;
-            }
+            if (!cur)
+                return false;
         }
         return true;
     }
 };
 
-class CGraphTraverseConnectedIterator : public CGraphTraverseIterator
+class CGraphTraverseConnectedIterator : public CGraphTraverseIteratorBase
 {
 public:
-    CGraphTraverseConnectedIterator(CGraphBase &graph) : CGraphTraverseIterator(graph) { }
+    CGraphTraverseConnectedIterator(CGraphBase &graph) : CGraphTraverseIteratorBase(graph) { }
     virtual bool next()
     {
         if (cur->isEof)
@@ -1629,17 +1560,12 @@ public:
     }
 };
 
-IThorActivityIterator *CGraphBase::getTraverseIterator(bool connected)
+IThorActivityIterator *CGraphBase::getTraverseIterator(bool all)
 {
-    if (connected)
-        return new CGraphTraverseConnectedIterator(*this);
+    if (all)
+        return new CGraphTraverseIterator(*this); // all sinks + conditionals
     else
-        return new CGraphTraverseCondIterator(*this, true);
-}
-
-IThorActivityIterator *CGraphBase::getTraverseIteratorCond()
-{
-    return new CGraphTraverseCondIterator(*this, false);
+        return new CGraphTraverseConnectedIterator(*this);
 }
 
 bool CGraphBase::wait(unsigned timeout)
@@ -1827,8 +1753,7 @@ void CGraphBase::createFromXGMML(IPropertyTree *_node, CGraphBase *_owner, CGrap
         unsigned targetInput = edge.getPropInt("att[@name=\"_targetIndex\"]/@value", 0);
         CGraphElementBase *source = queryElement(edge.getPropInt("@source"));
         CGraphElementBase *target = queryElement(edge.getPropInt("@target"));
-        target->addInput(source, sourceOutput);
-        source->addOutput(target, targetInput);
+        target->addInput(targetInput, source, sourceOutput);
     }
     init();
 }
@@ -1958,9 +1883,9 @@ IThorResult *CGraphBase::createResult(CActivityBase &activity, unsigned id, IRow
     return localResults->createResult(activity, id, rowIf, local);
 }
 
-IThorResult *CGraphBase::createGraphLoopResult(CActivityBase &activity, IRowInterfaces *rowIf, bool local)
+IThorResult *CGraphBase::createGraphLoopResult(CActivityBase &activity, IRowInterfaces *rowIf)
 {
-    return graphLoopResults->createResult(activity, rowIf, local);
+    return graphLoopResults->createResult(activity, rowIf, true);
 }
 
 // ILocalGraph

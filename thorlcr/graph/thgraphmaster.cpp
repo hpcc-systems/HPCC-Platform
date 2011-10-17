@@ -202,7 +202,7 @@ void CSlaveMessageHandler::main()
                             element.onStart(parentExtractSz, parentExtract);
                     }
                     msg.clear();
-                    graph->serializeCreateContexts(msg, true);
+                    graph->serializeCreateContexts(msg);
                     job.queryJobComm().reply(msg);
                     break;
                 }
@@ -212,13 +212,25 @@ void CSlaveMessageHandler::main()
                     msg.read(gid);
                     Owned<CMasterGraph> graph = (CMasterGraph *)job.getGraph(gid);
                     assertex(graph);
+                    CGraphElementArray toSerialize;
+                    loop
+                    {
+                        activity_id id;
+                        msg.read(id);
+                        if (!id)
+                            break;
+                        CMasterGraphElement *element = (CMasterGraphElement *)graph->queryElement(id);
+                        assertex(element);
+                        element->doCreateActivity();
+                        toSerialize.append(*LINK(element));
+                    }
                     msg.clear();
                     CMessageBuffer replyMsg;
                     mptag_t replyTag = createReplyTag();
                     msg.append(replyTag); // second reply
                     replyMsg.setReplyTag(replyTag);
-                    graph->createForLocal();
-                    graph->serializeActivityInitData(((unsigned)sender)-1, msg);
+                    CGraphElementArrayIterator iter(toSerialize);
+                    graph->serializeActivityInitData(((unsigned)sender)-1, msg, iter);
                     job.queryJobComm().reply(msg);
                     if (!job.queryJobComm().recv(msg, sender, replyTag, NULL, MEDIUMTIMEOUT))
                         throwUnexpected();
@@ -485,14 +497,14 @@ bool CMasterGraphElement::checkUpdate()
 
 void CMasterGraphElement::initActivity()
 {
+    if (activity)
+        return;
     CGraphElementBase::initActivity();
     ((CMasterActivity *)activity.get())->init();
 }
 
 void CMasterGraphElement::doCreateActivity()
 {
-    if (activity)
-        return;
     bool ok=false;
     switch (getKind())
     {
@@ -515,7 +527,7 @@ void CMasterGraphElement::doCreateActivity()
     }
     if (!ok)
         return;
-    activity.setown(factory());
+    onCreate();
     initActivity();
 }
 
@@ -1812,21 +1824,10 @@ void CMasterGraph::abort(IException *e)
     }
 }
 
-void CMasterGraph::createForLocal()
+void CMasterGraph::serializeCreateContexts(MemoryBuffer &mb)
 {
-    CriticalBlock b(createdCrit);
-    Owned<IThorActivityIterator> iter = getIterator();
-    ForEach (*iter)
-    {
-        CMasterGraphElement &element = (CMasterGraphElement &)iter->query();
-        element.doCreateActivity();
-    }
-}
-
-void CMasterGraph::serializeCreateContexts(MemoryBuffer &mb, bool created)
-{
-    CGraphBase::serializeCreateContexts(mb, created);
-    Owned<IThorActivityIterator> iter = created ? getCreatedIterator() : getTraverseIterator(); // JCSMORE - created == true always surely?
+    CGraphBase::serializeCreateContexts(mb);
+    Owned<IThorActivityIterator> iter = (queryOwner() && !isGlobal()) ? getIterator() : getTraverseIterator();
     ForEach (*iter)
     {
         CMasterGraphElement &element = (CMasterGraphElement &)iter->query();
@@ -1851,14 +1852,14 @@ void CMasterGraph::serializeStartCtxs(MemoryBuffer &mb)
     mb.append((activity_id)0);
 }
 
-bool CMasterGraph::serializeActivityInitData(unsigned slave, MemoryBuffer &mb)
+bool CMasterGraph::serializeActivityInitData(unsigned slave, MemoryBuffer &mb, IThorActivityIterator &iter)
 {
+    CriticalBlock b(createdCrit);
     unsigned pos=mb.length();
     mb.append((unsigned)0);
-    Owned<IThorActivityIterator> iter = (queryOwner() && !isGlobal()) ? getCreatedIterator() : getTraverseIterator();
-    ForEach (*iter)
+    ForEach (iter)
     {
-        CMasterGraphElement &element = (CMasterGraphElement &)iter->query();
+        CMasterGraphElement &element = (CMasterGraphElement &)iter.query();
         if (!element.sentActInitData->testSet(slave))
         {
             CMasterActivity *activity = (CMasterActivity *)element.queryActivity();
@@ -1929,42 +1930,29 @@ void CMasterGraph::create(size32_t parentExtractSz, const byte *parentExtract)
                     CGraphElementBase &ifElem = ifs.item(i);
                     if (ifElem.newWhichBranch)
                     {
+                        ifElem.newWhichBranch = false;
                         sentInitData = false; // force re-request of create data.
                         break;
                     }
                 }
+                CMessageBuffer msg;
                 if (reinit || !sentInitData)
                 {
                     sentInitData = true;
-                    CMessageBuffer msg;
-                    serializeCreateContexts(msg, false);
-                    try
-                    {
-                        jobM.broadcastToSlaves(msg, mpTag, LONGTIMEOUT, "serializeCreateContexts", &bcastTag);
-                    }
-                    catch (IException *e)
-                    {
-                        GraphPrintLog(e, "Aborting graph create");
-                        if (abortException)
-                            throw LINK(abortException);
-                        throw;
-                    }
+                    serializeCreateContexts(msg);
                 }
                 else
-                {
-                    CMessageBuffer msg;
                     msg.append((unsigned)0);
-                    try
-                    {
-                        jobM.broadcastToSlaves(msg, mpTag, LONGTIMEOUT, "serializeCreateContexts", &bcastTag);
-                    }
-                    catch (IException *e)
-                    {
-                        GraphPrintLog(e, "Aborting graph create(2)");
-                        if (abortException)
-                            throw LINK(abortException);
-                        throw;
-                    }
+                try
+                {
+                    jobM.broadcastToSlaves(msg, mpTag, LONGTIMEOUT, "serializeCreateContexts", &bcastTag);
+                }
+                catch (IException *e)
+                {
+                    GraphPrintLog(e, "Aborting graph create(2)");
+                    if (abortException)
+                        throw LINK(abortException);
+                    throw;
                 }
             }
         }
@@ -1982,7 +1970,7 @@ void CMasterGraph::sendActivityInitData()
     for (; w<queryJob().querySlaves(); w++)
     {
         unsigned needActInit = 0;
-        Owned<IThorActivityIterator> iter = (queryOwner() && !isGlobal()) ? getCreatedIterator() : getTraverseIterator();
+        Owned<IThorActivityIterator> iter = getTraverseIterator();
         ForEach(*iter)
         {
             CGraphElementBase &element = iter->query();
@@ -1994,7 +1982,8 @@ void CMasterGraph::sendActivityInitData()
             try
             {
                 msg.rewrite(pos);
-                serializeActivityInitData(w, msg);
+                Owned<IThorActivityIterator> iter = getTraverseIterator();
+                serializeActivityInitData(w, msg, *iter);
             }
             catch (IException *e)
             {
@@ -2112,7 +2101,7 @@ void CMasterGraph::sendGraph()
     if (TAG_NULL == executeReplyTag)
         executeReplyTag = queryJob().allocateMPTag();
     serializeMPtag(msg, executeReplyTag);
-    serializeCreateContexts(msg, false);
+    serializeCreateContexts(msg);
     serializeGraphInit(msg);
     // slave graph data
     try
@@ -2332,6 +2321,7 @@ void CMasterGraph::setComplete(bool tf)
 
 bool CMasterGraph::deserializeStats(unsigned node, MemoryBuffer &mb)
 {
+    CriticalBlock b(createdCrit);
     unsigned count, _count;
     mb.read(count);
     _count = count;
@@ -2355,7 +2345,9 @@ bool CMasterGraph::deserializeStats(unsigned node, MemoryBuffer &mb)
                 Owned<IException> e;
                 try
                 {
-                    activity = (CMasterActivity *)element->factorySet(TAKnull); // purely as a place holder for graph progress deserialization/serialization
+                    element->onCreate();
+                    element->initActivity();
+                    activity = (CMasterActivity *)element->queryActivity();
                     created = true; // means some activities created within this graph
                 }
                 catch (IException *_e) { e.setown(_e); GraphPrintLog(_e, NULL); }

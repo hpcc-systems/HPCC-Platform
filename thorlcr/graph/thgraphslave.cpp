@@ -205,6 +205,11 @@ void CSlaveActivity::releaseIOs()
     outputs.kill(); // outputs tend to be self-references, this clears them explicitly, otherwise end up leaking with circular references.
 }
 
+void CSlaveActivity::clearConnections()
+{
+    inputs.kill();
+}
+
 MemoryBuffer &CSlaveActivity::queryInitializationData(unsigned slave) const
 {
     CriticalBlock b(crit);
@@ -310,7 +315,6 @@ void CSlaveGraph::initWithActData(MemoryBuffer &in, MemoryBuffer &out)
         if (0 == id) break;
         CSlaveGraphElement *element = (CSlaveGraphElement *)queryElement(id);
         assertex(element);
-        element->sentActInitData->set(0);
         out.append(id);
         out.append((size32_t)0);
         unsigned l = out.length();
@@ -319,7 +323,10 @@ void CSlaveGraph::initWithActData(MemoryBuffer &in, MemoryBuffer &out)
         unsigned aread = in.getPos();
         CSlaveActivity *activity = (CSlaveActivity *)element->queryActivity();
         if (activity)
+        {
+            element->sentActInitData->set(0);
             activity->init(in, out);
+        }
         aread = in.getPos()-aread;
         if (aread<sz)
         {
@@ -388,6 +395,14 @@ bool CSlaveGraph::recvActivityInitData()
             // initialize any for which no data was sent
             msg.append(smt_initActDataReq); // may cause graph to be created at master
             msg.append(queryGraphId());
+            Owned<IThorActivityIterator> iter = getTraverseIterator();
+            ForEach(*iter)
+            {
+                CSlaveGraphElement &element = (CSlaveGraphElement &)iter->query();
+                if (!element.sentActInitData->test(0))
+                    msg.append(element.queryId());
+            }
+            msg.append((activity_id)0);
             if (!queryJob().queryJobComm().sendRecv(msg, 0, queryJob().querySlaveMpTag(), LONGTIMEOUT))
                 throwUnexpected();
             replyTag = job.deserializeMPTag(msg);
@@ -515,7 +530,7 @@ void CSlaveGraph::create(size32_t parentExtractSz, const byte *parentExtract)
         if (isGlobal())
         {
             CMessageBuffer msg;
-            // nothing may have changed, unless master says checkIf() different, reply will be post create() in master.
+            // nothing changed if rerunning, unless conditional branches different
             if (!job.queryJobComm().recv(msg, 0, mpTag, NULL, LONGTIMEOUT))
                 throw MakeStringException(0, "Error receiving createctx data for graph: %"GIDPF"d", graphId);
             try
@@ -547,6 +562,7 @@ void CSlaveGraph::create(size32_t parentExtractSz, const byte *parentExtract)
                 CGraphElementBase &ifElem = ifs.item(i);
                 if (ifElem.newWhichBranch)
                 {
+                    ifElem.newWhichBranch = false;
                     sentInitData = false; // force re-request of create data.
                     break;
                 }
