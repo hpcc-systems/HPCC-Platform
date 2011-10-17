@@ -909,10 +909,14 @@ void EclCC::processFile(EclCompileInstance & instance)
     else
     {
         StringBuffer attributePath;
-        bool withinRepository = checkWithinRepository(attributePath, curFilename);
+        bool inputFromStdIn = streq(curFilename, "stdin:");
+        bool withinRepository = !inputFromStdIn && checkWithinRepository(attributePath, curFilename);
 
         StringBuffer expandedSourceName;
-        makeAbsolutePath(curFilename, expandedSourceName);
+        if (!inputFromStdIn)
+            makeAbsolutePath(curFilename, expandedSourceName);
+        else
+            expandedSourceName.append(curFilename);
 
         EclRepositoryArray repositories;
         repositories.append(*LINK(pluginsRepository));
@@ -929,7 +933,7 @@ void EclCC::processFile(EclCompileInstance & instance)
         {
             //Ensure that $ is valid for any file submitted - even if it isn't in the include direcotories
             //Disable this for the moment when running the regression suite.
-            if (!optBatchMode && !withinRepository)
+            if (!optBatchMode && !withinRepository && !inputFromStdIn)
             {
                 //Associate the contents of the directory with an internal module called _local_directory_
                 //(If it was root it might override existing root symbols).  $ is the only public way to get at the symbol
