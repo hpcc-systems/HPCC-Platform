@@ -374,7 +374,7 @@ if (NOT "${CMAKE_VERSION}" VERSION_LESS "2.8.1")
                 ## CPack instruction required for Debian
                 ###
                 message ("-- Packing BASH installation files")
-                set ( CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_BINARY_DIR}/initfiles/bash/sbin/deb/postinst;${CMAKE_BINARY_DIR}/initfiles/sbin/prerm;${CMAKE_BINARY_DIR}/initfiles/bash/sbin/deb/postrm" )
+                set ( CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_BINARY_DIR}/initfiles/bash/sbin/deb/postinst;${CMAKE_CURRENT_BINARY_DIR}/initfiles/sbin/prerm;${CMAKE_CURRENT_BINARY_DIR}/initfiles/bash/sbin/deb/postrm" )
             endif ()
 
         elseif ( ${packageManagement} STREQUAL "RPM" )
@@ -384,10 +384,10 @@ if (NOT "${CMAKE_VERSION}" VERSION_LESS "2.8.1")
             ###
             message("-- Will build RPM package")
             message ("-- Packing BASH installation files")
-            set ( CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${CMAKE_BINARY_DIR}/initfiles/bash/sbin/deb/postinst" )
+            set ( CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/initfiles/bash/sbin/deb/postinst" )
 
-            set ( CPACK_RPM_PRE_UNINSTALL_SCRIPT_FILE "${CMAKE_BINARY_DIR}/initfiles/sbin/prerm" )
-            set ( CPACK_RPM_POST_UNINSTALL_SCRIPT_FILE "${CMAKE_BINARY_DIR}/initfiles/bash/sbin/deb/postrm" )
+            set ( CPACK_RPM_PRE_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/initfiles/sbin/prerm" )
+            set ( CPACK_RPM_POST_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/initfiles/bash/sbin/deb/postrm" )
                 else()
             message("WARNING: Unsupported package ${packageManagement}.")
         endif ()
