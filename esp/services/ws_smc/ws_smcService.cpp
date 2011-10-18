@@ -1432,6 +1432,28 @@ int CWsSMCSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* request, 
             response->send();
             return 0;
         }
+        else if(stricmp(method,"DisabledInThisVersion")==0)
+        {
+            StringBuffer page;
+            page.append(
+                "<html>"
+                    "<head>"
+                        "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />"
+                        "<link rel=\"stylesheet\" type=\"text/css\" href=\"/esp/files/default.css\"/>"
+                        "<link rel=\"stylesheet\" type=\"text/css\" href=\"/esp/files/yui/build/fonts/fonts-min.css\" />"
+                        "<title>Disabled Feature in This Version</title>"
+                    "</head>"
+                    "<body>"
+                        "<h3 style=\"text-align:centre;\">Disabled Feature in This Version</h4>"
+                        "<p style=\"text-align:centre;\">This feature is disabled in this version. ");
+            page.append("</p></body>"
+                "</html>");
+
+            response->setContent(page.str());
+            response->setContentType("text/html");
+            response->send();
+            return 0;
+        }
     }
     catch(IException* e)
     {   
