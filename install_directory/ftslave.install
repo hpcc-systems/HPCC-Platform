@@ -18,5 +18,5 @@
 # ftslave Supplementals
 # SCHEMA: name=ftslave_linux.xsd method=schema
 ### name=run_thor
-Install ( FILES ${CMAKE_BINARY_DIR}/initfiles/componentfiles/ftslave/run_ftslave DESTINATION ${OSSDIR}/bin
+Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/initfiles/componentfiles/ftslave/run_ftslave DESTINATION ${OSSDIR}/bin
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
