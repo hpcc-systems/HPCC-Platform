@@ -704,7 +704,7 @@ void CHThorDiskWriteActivity::updateWorkUnitResult(unsigned __int64 reccount)
                 fileKind = WUFileStandard;
             wu->addFile(lfn.str(), &clusters, helper.getTempUsageCount(), fileKind, NULL);
         }
-        else if (TDXtemporary & flags)          
+        else if ((TDXtemporary | TDXjobtemp) & flags)          
             agent.noteTemporaryFilespec(filename);//note for later deletion
         if (!(flags & TDXtemporary) && helper.getSequence() >= 0)
         {
@@ -7468,7 +7468,7 @@ void CHThorDiskReadBaseActivity::done()
 void CHThorDiskReadBaseActivity::resolve()
 {
     mangleHelperFileName(mangledHelperFileName, helper.getFileName(), agent.queryWuid(), helper.getFlags());
-    if (helper.getFlags() & TDXtemporary)
+    if (helper.getFlags() & (TDXtemporary | TDXjobtemp))
     {
         StringBuffer mangledFilename;
         mangleLocalTempFilename(mangledFilename, mangledHelperFileName.str());
@@ -7488,7 +7488,7 @@ void CHThorDiskReadBaseActivity::resolve()
             {
                 persistent = dFile->queryProperties().getPropBool("@persistent");
                 dfsParts.setown(dFile->getIterator());
-                if((helper.getFlags() & TDXtemporary) == 0)
+                if((helper.getFlags() & (TDXtemporary | TDXjobtemp)) == 0)
                     agent.logFileAccess(dFile, "HThor", "READ");
                 if(!agent.queryWorkUnit()->getDebugValueBool("skipFileFormatCrcCheck", false) && !(helper.getFlags() & TDRnocrccheck))
                     verifyRecordFormatCrc();
@@ -8210,7 +8210,7 @@ const void *CHThorDiskCountActivity::nextInGroup()
     if (finished) return NULL;
 
     unsigned __int64 totalCount = 0;
-    if ((segMonitors.ordinality() == 0) && !helper.hasFilter() && (fixedDiskRecordSize != 0) && !(helper.getFlags() & TDXtemporary)
+    if ((segMonitors.ordinality() == 0) && !helper.hasFilter() && (fixedDiskRecordSize != 0) && !(helper.getFlags() & (TDXtemporary | TDXjobtemp))
         && !((helper.getFlags() & TDXcompress) && agent.queryResolveFilesLocally()) )
     {
         resolve();
