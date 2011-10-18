@@ -5844,6 +5844,12 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
                     buildExprEnsureType(ctx, castParam, bound, argType);
                 else
                     buildExpr(ctx, castParam, bound);
+
+                if (isUnknownSize(elemType))
+                {
+                    ITypeInfo * boundElemType = bound.queryType()->queryChildType();
+                    assertex(!boundElemType || isUnknownSize(boundElemType));
+                }
                 normalizeBoundExpr(ctx, bound);
                 break;
             }
@@ -7232,7 +7238,7 @@ void HqlCppTranslator::doBuildAssignIndex(BuildCtx & ctx, const CHqlBoundTarget 
 //---------------------------------------------------------------------------
 //-- no_list --
 
-bool isComplexSet(ITypeInfo * type)
+bool isComplexSet(ITypeInfo * type, bool isConstant)
 {
     ITypeInfo * childType = type->queryChildType();
     if (!childType)
@@ -7247,7 +7253,7 @@ bool isComplexSet(ITypeInfo * type)
     case type_unicode:
     case type_varstring:
     case type_varunicode:
-        return (childType->getSize() == UNKNOWN_LENGTH);
+        return isUnknownSize(childType) && !isConstant;
     case type_utf8:
     case type_swapint:
     case type_packedint:
@@ -7265,7 +7271,7 @@ bool isComplexSet(ITypeInfo * type)
 
 bool isComplexSet(IHqlExpression * expr)
 {
-    return isComplexSet(expr->queryType());
+    return isComplexSet(expr->queryType(), isConstantSet(expr));
 }
 
 bool isConstantSet(IHqlExpression * expr)
@@ -7282,6 +7288,30 @@ bool isConstantSet(IHqlExpression * expr)
 }
 
 
+bool createUnknownLengthStringSet(MemoryBuffer & target, IHqlExpression * set)
+{
+    ITypeInfo * elemType = set->queryType()->queryChildType();
+    type_t tc = elemType->getTypeCode();
+
+    ForEachChild(i, set)
+    {
+        IHqlExpression * cur = set->queryChild(i);
+        IValue * curValue = cur->queryValue();
+        if (!curValue)
+            return false;
+
+        size32_t sizeValue = curValue->getSize();
+        if ((tc != type_varstring) && (tc != type_varunicode))
+        {
+            size32_t lenValue = curValue->queryType()->getStringLen();
+            rtlWriteInt4(target.reserve(sizeof(size32_t)), lenValue);
+        }
+        curValue->toMem(target.reserve(sizeValue));
+    }
+    return true;
+}
+
+
 void HqlCppTranslator::doBuildExprConstList(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt)
 {
     BuildCtx declareCtx(*code, literalAtom);
@@ -7293,11 +7323,29 @@ void HqlCppTranslator::doBuildExprConstList(BuildCtx & ctx, IHqlExpression * exp
         if (!elementType)
             throwError(HQLERR_NullSetCannotGenerate);
         Owned<ITypeInfo> transferType;
-
+        OwnedHqlExpr table;
+        OwnedHqlExpr declare;
+        unsigned numElements = expr->numChildren();
         LinkedHqlExpr values = expr;
-        if ((isTypePassedByAddress(elementType) && (elementType->getTypeCode() != type_varstring)))
+        if ((isTypePassedByAddress(elementType) && ((elementType->getTypeCode() != type_varstring) || isUnknownSize(elementType))))
         {
-            if (elementType->isReference())
+            if (isUnknownSize(elementType))
+            {
+                MemoryBuffer serialized;
+                bool ok = createUnknownLengthStringSet(serialized, values);
+                assertex(ok);
+                Owned<IValue> value = createDataValue(serialized.toByteArray(), serialized.length());
+                OwnedHqlExpr constValue = createConstant(LINK(value));
+                OwnedHqlExpr initializer = createValue(no_create_initializer, constValue->getType(), LINK(constValue));
+
+                Owned<ITypeInfo> declareType = makeConstantModifier(constValue->getType());
+                declare.setown(declareCtx.getTempDeclare(declareType, initializer));
+
+                ITypeInfo * arrayType = makeReferenceModifier(makeSetType(LINK(elementType)));
+                table.setown(createValue(no_typetransfer, arrayType, LINK(declare)));
+                tgt.length.setown(getSizetConstant(serialized.length()));
+            }
+            else if (elementType->isReference())
             {
                 // use a var string type to get better C++ generated...
                 transferType.set(elementType);
@@ -7317,18 +7365,20 @@ void HqlCppTranslator::doBuildExprConstList(BuildCtx & ctx, IHqlExpression * exp
             }
         }
 
-        unsigned numElements = expr->numChildren();
-        Owned<ITypeInfo> t = makeConstantModifier(makeArrayType(LINK(elementType), numElements));
-        IHqlExpression * table = declareCtx.getTempDeclare(t, values);
-
-        if (transferType)
+        if (!declare)
         {
-            ITypeInfo * arrayType = makeArrayType(LINK(transferType), numElements);
-            table = createValue(no_typetransfer, arrayType, table);
+            Owned<ITypeInfo> t = makeConstantModifier(makeArrayType(LINK(elementType), numElements));
+            declare.setown(declareCtx.getTempDeclare(t, values));
+
+            if (transferType)
+            {
+                ITypeInfo * arrayType = makeArrayType(LINK(transferType), numElements);
+                table.setown(createValue(no_typetransfer, arrayType, LINK(declare)));
+            }
         }
 
         tgt.count.setown(getSizetConstant(numElements));
-        tgt.expr.setown(table);
+        tgt.expr.set(table ? table : declare);
 
         //make sure tables get added before any global functions
         declareCtx.associateExpr(expr, tgt);
@@ -7336,7 +7386,7 @@ void HqlCppTranslator::doBuildExprConstList(BuildCtx & ctx, IHqlExpression * exp
         if (options.spanMultipleCpp)
         {
             BuildCtx protoctx(*code, mainprototypesAtom);
-            protoctx.addDeclareExternal(table);
+            protoctx.addDeclareExternal(declare);
         }
     }
 }
@@ -7370,9 +7420,8 @@ void HqlCppTranslator::doBuildExprDynList(BuildCtx & ctx, IHqlExpression * expr,
     }
 }
 
-void HqlCppTranslator::doBuildExprList(BuildCtx & ctx, IHqlExpression * _expr, CHqlBoundExpr & tgt)
+void HqlCppTranslator::doBuildExprList(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt)
 {
-    OwnedHqlExpr expr = simplifyFixedLengthList(_expr);
     ITypeInfo * type = expr->queryType();
     switch (type->getTypeCode())
     {
@@ -7393,12 +7442,6 @@ void HqlCppTranslator::doBuildExprList(BuildCtx & ctx, IHqlExpression * _expr, C
             {
                 buildTempExpr(ctx, expr, tgt);
                 return;
-            }
-            else if (childType->getSize() == 0)
-            {
-                //codes := [''] convert it to a set of a single char string for the moment.
-                Owned<ITypeInfo> newType = makeSetType(getStretchedType(1, childType));
-                values.setown(ensureExprType(expr, newType));
             }
 
             if (isConstantSet(expr))
@@ -7455,8 +7498,9 @@ void HqlCppTranslator::doBuildAssignList(BuildCtx & ctx, const CHqlBoundTarget &
     else
     {
         OwnedHqlExpr cast = ensureExprType(expr, target.queryType());
+        OwnedHqlExpr simpleCast = simplifyFixedLengthList(cast);
         // can do a direct assignment without any casts
-        doBuildExprAssign(ctx, target, cast);
+        doBuildExprAssign(ctx, target, simpleCast);
     }
 }
 void HqlCppTranslator::doBuildExprAll(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt)
@@ -8914,7 +8958,7 @@ void HqlCppTranslator::doBuildExprOrdered(BuildCtx & ctx, IHqlExpression * expr,
         return;
 
     bool ascending = true;
-    IHqlExpression * list = expr->queryChild(0);
+    OwnedHqlExpr list = simplifyFixedLengthList(expr->queryChild(0));
     IHqlExpression * attr = expr->queryChild(1);
     if (attr && attr->isAttribute() && (attr->queryName() == descAtom))
         ascending = false;

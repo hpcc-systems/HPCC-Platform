@@ -27,6 +27,9 @@ EXPORT TestCountWords := MODULE
     EXPORT Test18 := ASSERT(Str.CountWords('$$x$$', '$$') = 1);
     EXPORT Test19 := ASSERT(Str.CountWords('$$x$$y', '$$') = 2);
     EXPORT Test20 := ASSERT(Str.CountWords('$$x$$xy', '$$') = 2);
+    EXPORT Test21 := ASSERT(Str.CountWords('a,c,d', ',', TRUE) = 3);
+    EXPORT Test22 := ASSERT(Str.CountWords('a,,d', ',', TRUE) = 3);
+    EXPORT Test23 := ASSERT(Str.CountWords(',,,', ',', TRUE) = 4);
   END;
 
 END;

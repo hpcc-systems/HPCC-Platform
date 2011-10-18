@@ -7213,6 +7213,7 @@ bool ConstantRowCreator::processElement(IHqlExpression * expr, IHqlExpression * 
     }
 }
 
+
 bool ConstantRowCreator::processRecord(IHqlExpression * record, IHqlExpression * parentSelector)
 {
     ForEachChild(idx, record)
@@ -7365,4 +7366,15 @@ IHqlExpression * convertAttributeToQuery(IHqlExpression * expr, HqlLookupContext
             return transformed.getClear();
         query.set(transformed);
     }
+}
+
+bool isSetWithUnknownElementSize(ITypeInfo * type)
+{
+    switch (type->getTypeCode())
+    {
+    case type_set:
+    case type_array:
+        return isUnknownSize(type->queryChildType());
+    }
+    return false;
 }

@@ -230,7 +230,7 @@ export BOOLEAN EndsWith(STRING src, STRING suffix) := src[LENGTH(TRIM(src))-LENG
  * @param src           The string being searched in.
  * @param suffix        The prefix to search for.
  */
-export STRING RemoveSuffix(STRING src, STRING suffix) :=
+EXPORT STRING RemoveSuffix(STRING src, STRING suffix) :=
             IF(EndsWith(src, suffix), src[1..length(trim(src))-length(trim(suffix))], src);
 
 
@@ -242,139 +242,10 @@ EXPORT STRING ExtractMultiple(string src, unsigned8 mask) := lib_stringlib.Strin
  * 
  * @param src           The string being searched in.
  * @param separator     The string used to separate words
+ * @param allow_blank   Indicates if empty/blank string items are included in the results.
  */
 
-export UNSIGNED4 CountWords(STRING src, STRING separator) := BEGINC++
-    if (lenSrc == 0)
-        return 0;
-            
-    if ((lenSeparator == 0) || (lenSrc < lenSeparator))
-        return 1;
-    
-    unsigned numWords=0;
-    const char * end = src + lenSrc;
-    const char * max = end - (lenSeparator - 1);
-    const char * cur = src;
-    const char * startWord = NULL;
-    //MORE: optimize lenSeparator == 1!
-    while (cur < max)
-    {
-        if (memcmp(cur, separator, lenSeparator) == 0)
-        {
-            if (startWord)
-            {
-                numWords++;
-                startWord = NULL;
-            }
-            cur += lenSeparator;
-        }
-        else
-        {
-            if (!startWord)
-                startWord = cur;
-            cur++;
-        }
-    }
-    if (startWord || (cur != end))
-        numWords++;
-    return numWords;
-ENDC++;
-
-
-SHARED UNSIGNED4 calcWordSetSize(STRING src, STRING separator) := BEGINC++
-    if (lenSrc == 0)
-        return 0;
-            
-    if ((lenSeparator == 0) || (lenSrc < lenSeparator))
-        return sizeof(size32_t) + lenSrc;
-    
-    unsigned sizeWords=0;
-    const char * end = src + lenSrc;
-    const char * max = end - (lenSeparator - 1);
-    const char * cur = src;
-    const char * startWord = NULL;
-    //MORE: optimize lenSeparator == 1!
-    while (cur < max)
-    {
-        if (memcmp(cur, separator, lenSeparator) == 0)
-        {
-            if (startWord)
-            {
-                sizeWords += sizeof(size32_t) + (cur - startWord);
-                startWord = NULL;
-            }
-            cur += lenSeparator;
-        }
-        else
-        {
-            if (!startWord)
-                startWord = cur;
-            cur++;
-        }
-    }
-    if (startWord || (cur != end))
-    {
-        if (!startWord)
-            startWord = cur;
-        sizeWords += sizeof(size32_t) + (end - startWord);
-    }
-    return sizeWords;
-ENDC++;
-
-
-//Should be moved into the stringlib helper dll + single character case optimized.
-SHARED SET OF STRING doSplitWords(STRING src, STRING separator, unsigned calculatedSize) := BEGINC++
-    char * result = static_cast<char *>(rtlMalloc(calculatedsize));
-    __isAllResult = false;
-    __lenResult = calculatedsize;
-    __result = result;
-    
-    if (lenSrc == 0)
-        return;
-            
-    if ((lenSeparator == 0) || (lenSrc < lenSeparator))
-    {
-        rtlWriteSize32t(result, lenSrc);
-        memcpy(result+sizeof(size32_t), src, lenSrc);
-        return;
-    }
-    
-    unsigned sizeWords=0;
-    const char * end = src + lenSrc;
-    const char * max = end - (lenSeparator - 1);
-    const char * cur = src;
-    const char * startWord = NULL;
-    //MORE: optimize lenSeparator == 1!
-    while (cur < max)
-    {
-        if (memcmp(cur, separator, lenSeparator) == 0)
-        {
-            if (startWord)
-            {
-                size32_t len = (cur - startWord);
-                rtlWriteSize32t(result, len);
-                memcpy(result+sizeof(size32_t), startWord, len);
-                result += sizeof(size32_t) + len;
-                startWord = NULL;
-            }
-            cur += lenSeparator;
-        }
-        else
-        {
-            if (!startWord)
-                startWord = cur;
-            cur++;
-        }
-    }
-    if (startWord || (cur != end))
-    {
-        if (!startWord)
-            startWord = cur;
-        size32_t len = (end - startWord);
-        rtlWriteSize32t(result, len);
-        memcpy(result+sizeof(size32_t), startWord, len);
-    }
-ENDC++;
+EXPORT UNSIGNED4 CountWords(STRING src, STRING separator, BOOLEAN allow_blank = FALSE) := lib_stringlib.StringLib.CountWords(src, separator, allow_blank);
 
 /**
  * Returns the list of words extracted from the string.  Words are separated by one or more separator strings. No 
@@ -382,9 +253,21 @@ ENDC++;
  * 
  * @param src           The string being searched in.
  * @param separator     The string used to separate words
+ * @param allow_blank   Indicates if empty/blank string items are included in the results.
  */
  
-EXPORT SET OF STRING SplitWords(STRING src, STRING separator) := doSplitWords(src, separator, calcWordSetSize(src, separator));
+EXPORT SET OF STRING SplitWords(STRING src, STRING separator, BOOLEAN allow_blank = FALSE) := lib_stringlib.StringLib.SplitWords(src, separator, allow_blank);
+
+
+/**
+ * Returns the list of words extracted from the string.  Words are separated by one or more separator strings. No
+ * spaces are stripped from either string before matching.
+ *
+ * @param words         The set of strings to be combined
+ * @param separator     The string used to separate words
+ */
+
+EXPORT STRING CombineWords(SET OF STRING words, STRING separator) := lib_stringlib.StringLib.CombineWords(words, separator);
 
 
 /**

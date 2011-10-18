@@ -619,6 +619,7 @@ extern HQL_API bool createConstantNullRow(MemoryBuffer & target, IHqlExpression 
 extern HQL_API IHqlExpression * createConstantRowExpr(IHqlExpression * transform);
 extern HQL_API IHqlExpression * createConstantNullRowExpr(IHqlExpression * record);
 extern HQL_API IHqlExpression * ensureOwned(IHqlExpression * expr);
+extern HQL_API bool isSetWithUnknownElementSize(ITypeInfo * type);
 
 //In hqlgram2.cpp
 extern HQL_API IPropertyTree * queryEnsureArchiveModule(IPropertyTree * archive, const char * name, IHqlScope * rScope);
