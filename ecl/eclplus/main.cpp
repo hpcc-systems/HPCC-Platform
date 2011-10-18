@@ -163,12 +163,12 @@ bool build_globals(int argc, const char *argv[], IProperties * globals)
             }
             else if (arg[1] == 'I')
             {
-                name.append("-feclcc:includeLibraryPath:").append(++eclccseq);
+                name.append("-feclcc-includeLibraryPath-").append(++eclccseq);
                 globals->setProp(name, arg+2);
             }
             else if (arg[1] == 'L')
             {
-                name.append("-feclcc:libraryPath:").append(++eclccseq);
+                name.append("-feclcc-libraryPath-").append(++eclccseq);
                 globals->setProp(name, arg+2);
             }
             else if (strcmp(arg, "-g") == 0)
@@ -177,7 +177,7 @@ bool build_globals(int argc, const char *argv[], IProperties * globals)
             }
             else if (strcmp(arg, "-legacy") == 0)
             {
-                globals->setProp("-feclcc:legacy", "1");
+                globals->setProp("-feclcc-legacy", "1");
             }
             else if (strcmp(arg, "-save-temps") == 0)
             {

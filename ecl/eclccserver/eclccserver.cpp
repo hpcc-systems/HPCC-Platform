@@ -131,14 +131,14 @@ class EclccCompileThread : public CInterface, implements IPooledThread
             SCMStringBuffer debugStr, valueStr;
             debugValues->str(debugStr);
             workunit->getDebugValue(debugStr.str(), valueStr);
-            if (memicmp(debugStr.str(), "eclcc:", 6) == 0)
+            if (memicmp(debugStr.str(), "eclcc-", 6) == 0)
             {
-                //Allow eclcc:xx:1 so that multiple values can be passed through
+                //Allow eclcc-xx-<n> so that multiple values can be passed through for the same named debug symbol
                 const char * start = debugStr.str() + 6;
-                const char * colon = strchr(start, ':');
+                const char * dash = strchr(start, '-');
                 StringAttr optName;
-                if (colon)
-                    optName.set(start, colon-start);
+                if (dash)
+                    optName.set(start, dash-start);
                 else
                     optName.set(start);
 
