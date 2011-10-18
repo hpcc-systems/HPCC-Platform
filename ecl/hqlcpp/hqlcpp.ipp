@@ -1970,7 +1970,7 @@ extern HQLCPP_API IHqlExpression * getPointer(IHqlExpression * source);
 extern IHqlExpression * adjustIndexBaseToZero(IHqlExpression * index);
 extern IHqlExpression * adjustIndexBaseToOne(IHqlExpression * index);
 extern IHqlExpression * multiplyValue(IHqlExpression * expr, unsigned __int64 value);
-extern bool isComplexSet(ITypeInfo * type);
+extern bool isComplexSet(ITypeInfo * type, bool isConstant);
 extern bool isComplexSet(IHqlExpression * expr);
 extern bool isConstantSet(IHqlExpression * expr);
 

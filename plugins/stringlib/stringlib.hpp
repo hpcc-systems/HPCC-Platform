@@ -77,6 +77,9 @@ STRINGLIB_API unsigned STRINGLIB_CALL slEditDistanceV2(unsigned leftLen, const c
 STRINGLIB_API bool STRINGLIB_CALL slEditDistanceWithinRadiusV2(unsigned leftLen, const char * left, unsigned rightLen, const char * right, unsigned radius);
 STRINGLIB_API void STRINGLIB_CALL slStringGetNthWord(unsigned & tgtLen, char * & tgt, unsigned srcLen, const char * src, unsigned n);
 STRINGLIB_API unsigned STRINGLIB_CALL slStringWordCount(unsigned srcLen, const char * src);
+STRINGLIB_API unsigned STRINGLIB_CALL slCountWords(size32_t lenSrc, const char * src, size32_t lenSeparator, const char * separator, bool allowBlankItems);
+STRINGLIB_API void STRINGLIB_CALL slSplitWords(bool & __isAllResult, size32_t & __lenResult, void * & __result, size32_t lenSrc, const char * src, size32_t lenSeparator, const char * separator, bool allowBlankItems);
+STRINGLIB_API void STRINGLIB_CALL slCombineWords(size32_t & __lenResult, void * & __result, bool isAllSrc, size32_t lenSrc, const char * src, size32_t lenSeparator, const char * separator, bool allowBlankItems);
 }
 
 #endif

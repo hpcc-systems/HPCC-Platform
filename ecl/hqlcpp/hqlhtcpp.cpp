@@ -5032,7 +5032,7 @@ void HqlCppTranslator::buildSetResultInfo(BuildCtx & ctx, IHqlExpression * origi
         if (options.spotCSE)
             cseValue.setown(spotScalarCSE(cseValue));
 
-        if ((retType == type_set) && isComplexSet(resultType) && castValue->getOperator() == no_list && !isNullList(castValue))
+        if ((retType == type_set) && isComplexSet(resultType, false) && castValue->getOperator() == no_list && !isNullList(castValue))
         {
             CHqlBoundTarget tempTarget;
             createTempFor(ctx, resultType, tempTarget, typemod_none, FormatBlockedDataset);
