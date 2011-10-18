@@ -15,9 +15,9 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-Install ( FILES ${CMAKE_BINARY_DIR}/configmgr.conf DESTINATION ${OSSDIR}${CONFIG_DIR}/configmgr
+Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/configmgr.conf DESTINATION ${OSSDIR}${CONFIG_DIR}/configmgr
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
-Install ( FILES ${CMAKE_BINARY_DIR}/esp.xml DESTINATION ${OSSDIR}${CONFIG_DIR}/configmgr
+Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/esp.xml DESTINATION ${OSSDIR}${CONFIG_DIR}/configmgr
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
 
 #Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/etc/init.d/configmgr DESTINATION ${OSSDIR}/etc/init.d
@@ -40,10 +40,10 @@ Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/configxml/D
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
 Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/configxml/directories.xsd DESTINATION ${OSSDIR}/componentfiles/configxml
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
-Install ( FILES ${CMAKE_BINARY_DIR}/initfiles/componentfiles/configxml/dropzone.xsd DESTINATION ${OSSDIR}/componentfiles/configxml
+Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/initfiles/componentfiles/configxml/dropzone.xsd DESTINATION ${OSSDIR}/componentfiles/configxml
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
 #Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/ecl/eclagent/eclagent_config.xsd DESTINATION ${OSSDIR}/componentfiles/configxml ##Changed on Sridhar's request
-Install ( FILES ${CMAKE_BINARY_DIR}/initfiles/componentfiles/configxml/eclagent_config.xsd DESTINATION ${OSSDIR}/componentfiles/configxml
+Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/initfiles/componentfiles/configxml/eclagent_config.xsd DESTINATION ${OSSDIR}/componentfiles/configxml
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
 Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/configxml/eclplus.xsd DESTINATION ${OSSDIR}/componentfiles/configxml
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
@@ -63,11 +63,11 @@ Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/configxml/e
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
 Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/configxml/esp_service_wsecl.xsd DESTINATION ${OSSDIR}/componentfiles/configxml
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
-Install ( FILES ${CMAKE_BINARY_DIR}/initfiles/componentfiles/configxml/espsmcservice.xsd DESTINATION ${OSSDIR}/componentfiles/configxml
+Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/initfiles/componentfiles/configxml/espsmcservice.xsd DESTINATION ${OSSDIR}/componentfiles/configxml
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
 Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/configxml/esp.xsd DESTINATION ${OSSDIR}/componentfiles/configxml
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
-Install ( FILES ${CMAKE_BINARY_DIR}/initfiles/componentfiles/configxml/ftslave_linux.xsd DESTINATION ${OSSDIR}/componentfiles/configxml
+Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/initfiles/componentfiles/configxml/ftslave_linux.xsd DESTINATION ${OSSDIR}/componentfiles/configxml
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
 Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/configxml/ftslave.xsd DESTINATION ${OSSDIR}/componentfiles/configxml
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
@@ -85,7 +85,7 @@ Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/configxml/p
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
 Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/configxml/regress.xsd DESTINATION ${OSSDIR}/componentfiles/configxml
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
-Install ( FILES ${CMAKE_BINARY_DIR}/initfiles/componentfiles/configxml/roxie.xsd DESTINATION ${OSSDIR}/componentfiles/configxml
+Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/initfiles/componentfiles/configxml/roxie.xsd DESTINATION ${OSSDIR}/componentfiles/configxml
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
 Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/configxml/sasha.xsd DESTINATION ${OSSDIR}/componentfiles/configxml
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
@@ -93,7 +93,7 @@ Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/configxml/S
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
 Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/configxml/soapplus.xsd DESTINATION ${OSSDIR}/componentfiles/configxml
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
-Install ( FILES ${CMAKE_BINARY_DIR}/initfiles/componentfiles/configxml/thor.xsd DESTINATION ${OSSDIR}/componentfiles/configxml
+Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/initfiles/componentfiles/configxml/thor.xsd DESTINATION ${OSSDIR}/componentfiles/configxml
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
 Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/configxml/topology.xsd DESTINATION ${OSSDIR}/componentfiles/configxml
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
@@ -124,7 +124,7 @@ Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/expand.gif DESTINATION
 Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/save.gif DESTINATION ${OSSDIR}/componentfiles/files/img
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
 
-Install ( FILES ${CMAKE_BINARY_DIR}/buildset.xml DESTINATION ${OSSDIR}/componentfiles/configxml
+Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/buildset.xml DESTINATION ${OSSDIR}/componentfiles/configxml
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
     
 Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/esp/files/img/cloud.jpg DESTINATION ${OSSDIR}/componentfiles/files/img
