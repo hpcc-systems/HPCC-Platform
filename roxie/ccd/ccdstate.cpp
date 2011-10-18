@@ -105,7 +105,7 @@ public:
     {
         if (subFiles.isItem(num))
         {
-            name.append(subFiles.item(num).queryProp("@val"));
+            name.append(subFiles.item(num).queryProp("@value"));
             return true;
         }
         else
@@ -115,7 +115,7 @@ public:
     {
         ForEachItemIn(idx, subFiles)
         {
-            if (stricmp(subFiles.item(idx).queryProp("@val"), subname))
+            if (stricmp(subFiles.item(idx).queryProp("@value"), subname))
                 return idx;
         }
         return NotFound;
@@ -124,7 +124,7 @@ public:
     {
         ForEachItemIn(idx, subFiles)
         {
-            contents.append(subFiles.item(idx).queryProp("@val"));
+            contents.append(subFiles.item(idx).queryProp("@value"));
         }
         return subFiles.length();
     }
@@ -238,14 +238,16 @@ protected:
         {
             IPropertyTree &env = envIterator->query();
             const char *id = env.queryProp("@id");
-            const char *val = env.queryProp("@val");
+            const char *val = env.queryProp("@value");
+            if (!val)
+                val = env.queryProp("@val"); // Historically we used val here - not sure why... other parts of package file used value
             if (id && val)
                 mergedEnvironment->setProp(id, val);
             else
             {
                 StringBuffer s;
                 toXML(&env, s);
-                throw MakeStringException(0, "PACKAGE_ERROR: Environment element missing id or val: %s", s.str());
+                throw MakeStringException(0, "PACKAGE_ERROR: Environment element missing id or value: %s", s.str());
             }
         }
         Owned<IAttributeIterator> attrs = node->getAttributes();
