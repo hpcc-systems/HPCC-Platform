@@ -38,7 +38,7 @@
 
 static int doMain(int argc, const char *argv[])
 {
-    EclCMDShell processor(argc, argv, createCoreEclCommand, BUILD_TAG);
+    EclCMDShell processor(argc, argv, createCoreEclCommand, BUILD_TAG, true);
     return processor.run();
 }
 
