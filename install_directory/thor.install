@@ -48,7 +48,7 @@ Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/thor/setup_
 Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/thor/sshslaves DESTINATION ${OSSDIR}/bin
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
 ### name=start_backupnode
-Install ( FILES ${CMAKE_BINARY_DIR}/initfiles/componentfiles/thor/start_backupnode DESTINATION ${OSSDIR}/bin
+Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/initfiles/componentfiles/thor/start_backupnode DESTINATION ${OSSDIR}/bin
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
 ### name=start_slave
 Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/initfiles/componentfiles/thor/start_slave DESTINATION ${OSSDIR}/bin
