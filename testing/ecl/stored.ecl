@@ -58,7 +58,7 @@ output(vu2a);
 
 data20 d1 := x'123456' : stored('d1'); 
 data20 d1a := d1 : stored ('d1a'); 
-if (d1 != d1a OR d1 != x'123456', FAIL('d1 did not match'));
+if (d1 != d1a OR d1 != (data20)x'123456', FAIL('d1 did not match'));
 output(d1a);
 
 data d2 := x'123456' : stored('d2'); 
