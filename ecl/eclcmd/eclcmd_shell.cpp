@@ -33,23 +33,58 @@
 
 //=========================================================================================
 
+#ifdef _WIN32
+//TODO - move to or use existing jlib
+#include "process.h"
+#define _execvp execvp
+#endif
+
+int EclCMDShell::callExternal(ArgvIterator &iter)
+{
+    char *argv[100];
+    StringBuffer cmdstr("ecl-");
+    cmdstr.append(cmd.sget());
+    int i=0;
+    argv[i++]=(char *)cmdstr.str();
+    if (optHelp)
+        argv[i++]="help";
+    for (; !iter.done(); iter.next())
+        argv[i++]=(char *)iter.query();
+    argv[i]=NULL;
+    if (execvp(cmdstr.str(), argv)==-1)
+    {
+        switch(errno)
+        {
+        case ENOENT:
+            fprintf(stderr, "ecl '%s' command not found\n", cmd.sget());
+            return 1;
+        default:
+            fprintf(stderr, "ecl '%s' command error %d\n", cmd.sget(), errno);
+            return 1;
+        }
+    }
+    return 0;
+}
+
 int EclCMDShell::processCMD(ArgvIterator &iter)
 {
     Owned<IEclCommand> c = factory(cmd.get());
     if (!c)
     {
+        if (runExternals)
+            return callExternal(iter);
         if (cmd.length())
-            fprintf(stdout, "ecl '%s' command not found\n", cmd.sget());
+            fprintf(stderr, "ecl '%s' command not found\n", cmd.sget());
         usage();
         return 1;
     }
     if (optHelp)
     {
         c->usage();
-        return 1;
+        return 0;
     }
     if (!c->parseCommandLineOptions(iter))
-        return 1;
+        return 0;
 
     c->finalizeOptions(globals);
 
@@ -106,34 +141,28 @@ int EclCMDShell::run()
 
 bool EclCMDShell::parseCommandLineOptions(ArgvIterator &iter)
 {
-    const char *dash = strchr(name.str(), '-');
-    if (dash)
-        cmd.set(dash+1);
-    else
+    if (iter.done())
     {
-        if (iter.done())
-        {
-            usage();
-            return false;
-        }
+        usage();
+        return false;
+    }
 
-        bool boolValue;
-        for (; !iter.done(); iter.next())
+    bool boolValue;
+    for (; !iter.done(); iter.next())
+    {
+        const char * arg = iter.query();
+        if (iter.matchFlag(optHelp, "help"))
+            continue;
+        else if (*arg!='-')
         {
-            const char * arg = iter.query();
-            if (iter.matchFlag(optHelp, "help"))
-                continue;
-            else if (*arg!='-')
-            {
-                cmd.set(arg);
-                iter.next();
-                break;
-            }
-            else if (iter.matchFlag(boolValue, "--version"))
-            {
-                fprintf(stdout, "\necl command line version %s\n\n", BUILD_TAG);
-                return false;
-            }
+            cmd.set(arg);
+            iter.next();
+            break;
+        }
+        else if (iter.matchFlag(boolValue, "--version"))
+        {
+            fprintf(stdout, "\necl command line version %s\n\n", BUILD_TAG);
+            return false;
         }
     }
     return true;

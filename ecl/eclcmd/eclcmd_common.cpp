@@ -29,13 +29,16 @@ bool extractOption(StringBuffer & option, IProperties * globals, const char * en
 {
     if (option.length())        // check if already specified via a command line option
         return true;
-    if (globals->getProp(propertyName, option))
+    if (propertyName && globals->getProp(propertyName, option))
         return true;
-    const char * env = getenv(envName);
-    if (env)
+    if (envName && *envName)
     {
-        option.append(env);
-        return true;
+        const char * env = getenv(envName);
+        if (env)
+        {
+            option.append(env);
+            return true;
+        }
     }
     if (defaultPrefix)
         option.append(defaultPrefix);
