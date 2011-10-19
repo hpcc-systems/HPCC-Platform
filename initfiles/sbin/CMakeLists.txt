@@ -40,5 +40,5 @@ FOREACH( oFILES
     ${CMAKE_CURRENT_BINARY_DIR}/regex.awk
     ${CMAKE_CURRENT_SOURCE_DIR}/alter_confs.sh
 )
-    install ( PROGRAMS ${oFILES} DESTINATION ${OSSDIR}/etc/init.d COMPONENT Runtime )
+    install ( PROGRAMS ${oFILES} DESTINATION ${OSSDIR}/sbin COMPONENT Runtime )
 ENDFOREACH ( oFILES )
