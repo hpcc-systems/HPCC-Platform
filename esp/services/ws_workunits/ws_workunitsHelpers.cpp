@@ -58,6 +58,8 @@
 //#define    File_DLL "dll"
 //#define    File_ArchiveQuery "ArchiveQuery"
 
+namespace ws_workunits {
+
 SecAccessFlags chooseWuAccessFlagsByOwnership(const char *user, const char *owner, SecAccessFlags accessOwn, SecAccessFlags accessOthers)
 {
     return (isEmpty(owner) || (user && streq(user, owner))) ? accessOwn : accessOthers;
@@ -2291,4 +2293,6 @@ int WUSchedule::run()
     if (m_container)
         m_container->exitESP();
     return 0;
+}
+
 }
