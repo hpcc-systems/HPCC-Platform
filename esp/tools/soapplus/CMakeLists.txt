@@ -46,7 +46,7 @@ include_directories (
 ADD_DEFINITIONS( -D_CONSOLE )
 
 add_executable ( soapplus ${SRCS} )
-install ( TARGETS soapplus DESTINATION ${OSSDIR}/bin )
+install ( TARGETS soapplus DESTINATION ${OSSDIR}/bin COMPONENT Runtime)
 
 target_link_libraries ( soapplus 
          jlib
@@ -54,4 +54,10 @@ target_link_libraries ( soapplus
          securesocket 
     )
 
+FOREACH( iFILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/EspMethods.txt
+    ${CMAKE_CURRENT_SOURCE_DIR}/README.txt
+)
+    Install ( FILES ${iFILES} DESTINATION ${OSSDIR}/componentfiles COMPONENT Runtime )
+ENDFOREACH ( iFILES )
 

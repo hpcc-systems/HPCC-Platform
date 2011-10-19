@@ -67,4 +67,14 @@ target_link_libraries ( eclrtl
       nbcd 
     )
 
+FOREACH( iFILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/eclrtl.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/eclrtl_imp.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/rtldistr.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/rtlds_imp.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/rtlfield_imp.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/rtlkey.hpp
+)
+    Install ( FILES ${iFILES} DESTINATION ${OSSDIR}/componentfiles/cl/include COMPONENT Runtime )
+ENDFOREACH ( iFILES )
 

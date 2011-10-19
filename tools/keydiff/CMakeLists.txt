@@ -29,3 +29,9 @@ project (AllProjects)
 include ( keydiff.cmake)
 include ( keypatch.cmake)
 
+FOREACH( iFILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/run_keypatch
+    ${CMAKE_CURRENT_SOURCE_DIR}/run_keydiff
+)
+    Install ( PROGRAMS ${iFILES} DESTINATION ${OSSDIR}/bin COMPONENT Runtime )
+ENDFOREACH ( iFILES )
