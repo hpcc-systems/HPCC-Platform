@@ -1344,7 +1344,7 @@ void streamJobQueueListResponse(IEspContext &context, const char *cluster, const
             break;
 
         sb.append("parent.displayQueue(");
-        appendQuoted(sb, count);
+        appendQuoted(sb, count, true);
         appendQuoted(sb, tq.getDT());
         appendQuoted(sb, tq.getRunningWUs());
         appendQuoted(sb, tq.getQueuedWUs());
