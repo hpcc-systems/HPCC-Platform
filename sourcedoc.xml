@@ -128,7 +128,9 @@
                   sudo apt-get install libxerces-c2-dev
                   sudo apt-get install libxalan110-dev
                   sudo apt-get install zlib1g-dev
-                  sudo apt-get libssl-dev
+                  sudo apt-get install libssl-dev
+                  sudo apt-get install libldap2-dev
+                  sudo apt-get install expect
                 </programlisting>
 
             </para>
