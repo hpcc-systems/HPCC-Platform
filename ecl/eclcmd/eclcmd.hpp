@@ -24,8 +24,8 @@
 class EclCMDShell
 {
 public:
-    EclCMDShell(int argc, const char *argv[], EclCommandFactory _factory, const char *_version)
-        : args(argc, argv), factory(_factory), version(_version), optHelp(false)
+    EclCMDShell(int argc, const char *argv[], EclCommandFactory _factory, const char *_version, bool _runExternals=false)
+        : args(argc, argv), factory(_factory), version(_version), optHelp(false), runExternals(_runExternals)
     {
         splitFilename(argv[0], NULL, NULL, &name, NULL);
     }
@@ -33,6 +33,7 @@ public:
     bool parseCommandLineOptions(ArgvIterator &iter);
     void finalizeOptions(IProperties *globals);
     int processCMD(ArgvIterator &iter);
+    int callExternal(ArgvIterator &iter);
     int run();
 
     virtual void usage();
@@ -43,6 +44,7 @@ protected:
     EclCommandFactory factory;
     StringBuffer name;
     StringAttr cmd;
+    bool runExternals;
 
     StringAttr version;
 

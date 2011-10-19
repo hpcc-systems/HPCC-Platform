@@ -95,6 +95,8 @@ public:
             Owned<IClientWsWorkunits> client = createWsWorkunitsClient();
             VStringBuffer url("http://%s:%s/WsWorkunits", optServer.sget(), optPort.sget());
             client->addServiceUrl(url.str());
+            if (optUsername.length())
+                client->setUsernameToken(optUsername.get(), optPassword.sget(), NULL);
             Owned<IClientWUDeployWorkunitRequest> req = client->createWUDeployWorkunitRequest();
             switch (optObj.type)
             {
@@ -209,6 +211,8 @@ public:
         Owned<IClientWsWorkunits> client = createWsWorkunitsClient();
         VStringBuffer url("http://%s:%s/WsWorkunits", optServer.sget(), optPort.sget());
         client->addServiceUrl(url.str());
+        if (optUsername.length())
+            client->setUsernameToken(optUsername.get(), optPassword.sget(), NULL);
 
         Owned<IClientWUPublishWorkunitRequest> req = client->createWUPublishWorkunitRequest();
         req->setWuid(optWuid.get());

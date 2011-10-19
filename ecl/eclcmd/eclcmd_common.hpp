@@ -39,6 +39,14 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_PORT_INI "eclWatchPort"
 #define ECLOPT_PORT_ENV "ECL_WATCH_PORT"
 
+#define ECLOPT_USERNAME "--username"
+#define ECLOPT_USERNAME_INI "eclUserName"
+#define ECLOPT_USERNAME_ENV "ECL_USER_NAME"
+
+#define ECLOPT_PASSWORD "--password"
+#define ECLOPT_PASSWORD_INI "eclPassword"
+#define ECLOPT_PASSWORD_ENV "ECL_PASSWORD"
+
 #define ECLOPT_ACTIVATE "--activate"
 #define ECLOPT_ACTIVATE_INI "activateDefault"
 #define ECLOPT_ACTIVATE_ENV NULL
@@ -88,7 +96,11 @@ public:
     {
         if (iter.matchOption(optServer, ECLOPT_SERVER))
             return true;
-        else if (iter.matchOption(optPort, ECLOPT_PORT))
+        if (iter.matchOption(optPort, ECLOPT_PORT))
+            return true;
+        if (iter.matchOption(optUsername, ECLOPT_USERNAME))
+            return true;
+        if (iter.matchOption(optPassword, ECLOPT_PASSWORD))
             return true;
         return false;
     }
@@ -96,17 +108,23 @@ public:
     {
         extractOption(optServer, globals, ECLOPT_SERVER_ENV, ECLOPT_SERVER_INI, ".", NULL);
         extractOption(optPort, globals, ECLOPT_PORT_ENV, ECLOPT_PORT_INI, "8010", NULL);
+        extractOption(optUsername, globals, ECLOPT_USERNAME_ENV, ECLOPT_USERNAME_INI, NULL, NULL);
+        extractOption(optPassword, globals, ECLOPT_PASSWORD_ENV, ECLOPT_PASSWORD_INI, NULL, NULL);
     }
     virtual void usage()
     {
         fprintf(stdout,
             "      --server=<ip>        ip of server running ecl services (eclwatch)\n"
             "      --port=<port>        ecl services port\n"
+            "      --username=<name>    username for accessing ecl services\n"
+            "      --password=<pw>      password for accessing ecl services\n"
         );
     }
 public:
     StringAttr optServer;
     StringAttr optPort;
+    StringAttr optUsername;
+    StringAttr optPassword;
 };
 
 #endif
