@@ -461,7 +461,7 @@ IPropertyTree* CWizardInputs::createEnvironment()
 
 void CWizardInputs::generateSoftwareTree(IPropertyTree* pNewEnvTree)
 {
-  StringBuffer xpath , sbNewName;
+  StringBuffer xpath;
 
   if(m_buildSetTree)
   {
@@ -502,90 +502,24 @@ void CWizardInputs::generateSoftwareTree(IPropertyTree* pNewEnvTree)
       updateDirsWithConfSettings(pNewEnvTree, pParams, ovrLog, ovrRun);
     }
 
+    const char* firstComp = "esp";
+    xpath.clear().appendf("./%s/%s/%s/[@name=\"%s\"]", XML_TAG_PROGRAMS, XML_TAG_BUILD, XML_TAG_BUILDSET, firstComp);
+    IPropertyTree* pEspBuildSet = m_buildSetTree->queryPropTree(xpath.str());
+    if (pEspBuildSet)
+      addComponentToSoftware(pNewEnvTree, pEspBuildSet);
+
     xpath.clear().appendf("./%s/%s/%s", XML_TAG_PROGRAMS, XML_TAG_BUILD, XML_TAG_BUILDSET);
     Owned<IPropertyTreeIterator> buildSetInsts = m_buildSetTree->getElements(xpath.str());
+
     ForEach(*buildSetInsts)
     {
       IPropertyTree* pBuildSet = &buildSetInsts->query();
-      StringBuffer buildSetPath, compName, assignedIP, sbl;
       const char* buildSetName = pBuildSet->queryProp(XML_ATTR_NAME);
-      const char* xsdFileName = pBuildSet->queryProp(XML_ATTR_SCHEMA);
-      const char* processName = pBuildSet->queryProp(XML_ATTR_PROCESS_NAME);
-      StringBuffer deployable = pBuildSet->queryProp("@"TAG_DEPLOYABLE);
-      unsigned numOfIpNeeded = 1;
 
-      if(m_doNotGenComp.find(buildSetName) != NotFound )
-         continue;
-
-      if(processName && *processName && buildSetName && * buildSetName && xsdFileName && *xsdFileName)
-      { 
-        Owned<IPropertyTree> pSchema = loadSchema(m_buildSetTree->queryPropTree("./"XML_TAG_PROGRAMS"/"XML_TAG_BUILD"[1]"), pBuildSet, buildSetPath, NULL);
-        IPropertyTree* pCompTree;
-        if (m_genOptForAllComps == GENOPTIONAL_ALL || (m_genOptForAllComps == GENOPTIONAL_COMPS && m_doNotGenOptOnComps.find(buildSetName) == NotFound ))
-          pCompTree = generateTreeFromXsd(pNewEnvTree, pSchema, processName, false);
-        else if (m_genOptForAllComps == GENOPTIONAL_NONE || (m_genOptForAllComps == GENOPTIONAL_COMPS && m_doNotGenOptOnComps.find(buildSetName) != NotFound ))
-          pCompTree = generateTreeFromXsd(pNewEnvTree, pSchema, processName, false, false, 0, false);
-
-        //Check for my in buildset before appending my to name like mysql
-        sbNewName.clear();
-        if( strstr(buildSetName ,"my") == NULL && ( strcmp(buildSetName, "topology") != 0) )
-          sbNewName.append("my");
-
-        addComponentToEnv(pNewEnvTree, buildSetName, sbNewName, pCompTree);
-              
-        if(!strcmp(processName, XML_TAG_ESPSERVICE) || !strcmp(processName, XML_TAG_PLUGINPROCESS))
-        {
-            processName = buildSetName;
-        }
-
-        if(strcmp(deployable,"no") != 0)
-        {
-          if(m_compOnAllNodes.find(buildSetName) != NotFound)
-          {
-            for(unsigned i = 0; i < m_ipaddress.ordinality(); i++)
-            {
-              sbl.clear().appendf("s").append(i+1);
-              assignedIP.clear().append(m_ipaddress.item(i));
-              addInstanceToTree(pNewEnvTree, assignedIP, processName, buildSetName,sbl.str());
-            }
-          }
-          else if(numOfIpNeeded > 0)
-          {
-            if(!strcmp(buildSetName, "roxie"))
-              numOfIpNeeded = m_roxieNodes;
-            else if(!strcmp(buildSetName, "thor"))
-            {
-              numOfIpNeeded = m_thorNodes;
-              if (m_thorNodes < m_ipaddress.ordinality())
-                numOfIpNeeded += 1;
-            }
-                    
-            CInstDetails* pInstDetail = getServerIPMap(sbNewName.str(), buildSetName, pNewEnvTree, numOfIpNeeded);
-                    
-            if(pInstDetail)
-            {
-              if(!strcmp(buildSetName, "roxie") || !strcmp(buildSetName, "thor" ))
-              {
-                addRoxieThorClusterToEnv(pNewEnvTree, pInstDetail, buildSetName);
-
-                if (!strcmp(buildSetName, "roxie") && m_roxieOnDemand)
-                  addRoxieThorClusterToEnv(pNewEnvTree, pInstDetail, buildSetName, true);
-              }
-              else
-              {
-                StringArray& ipArr = pInstDetail->getIpAssigned();
-                ForEachItemIn(x, ipArr)
-                {
-                  assignedIP.clear().append(ipArr.item(x));
-                   addInstanceToTree(pNewEnvTree, assignedIP, processName, buildSetName, "s1");
-                }
-              }
-            }
-          }
-        }
-        
-      }
+      if (strcmp(firstComp, buildSetName))
+        addComponentToSoftware(pNewEnvTree, &buildSetInsts->query());
     }
+
     getEspBindingInformation(pNewEnvTree);
     addTopology(pNewEnvTree);
     getDefaultsForWizard(pNewEnvTree);
@@ -1087,6 +1021,91 @@ void CWizardInputs::setTopologyParam()
         ForEachItemIn(y, clusterElemArr)
           compClusterArr->append(clusterElemArr.item(y));
         m_compForTopology.setValue(m_clusterForTopology.item(x),compClusterArr);
+      }
+    }
+  }
+}
+
+void CWizardInputs::addComponentToSoftware(IPropertyTree* pNewEnvTree, IPropertyTree* pBuildSet)
+{
+  if (!pBuildSet)
+    return;
+
+  StringBuffer xpath, sbNewName;
+  StringBuffer buildSetPath, compName, assignedIP, sbl;
+  const char* buildSetName = pBuildSet->queryProp(XML_ATTR_NAME);
+  const char* xsdFileName = pBuildSet->queryProp(XML_ATTR_SCHEMA);
+  const char* processName = pBuildSet->queryProp(XML_ATTR_PROCESS_NAME);
+  StringBuffer deployable = pBuildSet->queryProp("@"TAG_DEPLOYABLE);
+  unsigned numOfIpNeeded = 1;
+
+  if (m_doNotGenComp.find(buildSetName) != NotFound )
+    return;
+
+  if (processName && *processName && buildSetName && * buildSetName && xsdFileName && *xsdFileName)
+  {
+    Owned<IPropertyTree> pSchema = loadSchema(m_buildSetTree->queryPropTree("./"XML_TAG_PROGRAMS"/"XML_TAG_BUILD"[1]"), pBuildSet, buildSetPath, NULL);
+    IPropertyTree* pCompTree;
+
+    if (m_genOptForAllComps == GENOPTIONAL_ALL || (m_genOptForAllComps == GENOPTIONAL_COMPS && m_doNotGenOptOnComps.find(buildSetName) == NotFound ))
+      pCompTree = generateTreeFromXsd(pNewEnvTree, pSchema, processName, false);
+    else if (m_genOptForAllComps == GENOPTIONAL_NONE || (m_genOptForAllComps == GENOPTIONAL_COMPS && m_doNotGenOptOnComps.find(buildSetName) != NotFound ))
+      pCompTree = generateTreeFromXsd(pNewEnvTree, pSchema, processName, false, false, 0, false);
+
+    sbNewName.clear();
+    if (strstr(buildSetName ,"my") == NULL && (strcmp(buildSetName, "topology") != 0))
+      sbNewName.append("my");
+
+    addComponentToEnv(pNewEnvTree, buildSetName, sbNewName, pCompTree);
+
+    if (!strcmp(processName, XML_TAG_ESPSERVICE) || !strcmp(processName, XML_TAG_PLUGINPROCESS))
+      processName = buildSetName;
+
+    if (strcmp(deployable,"no") != 0)
+    {
+      if (m_compOnAllNodes.find(buildSetName) != NotFound)
+      {
+        for (unsigned i = 0; i < m_ipaddress.ordinality(); i++)
+        {
+          sbl.clear().appendf("s").append(i+1);
+          assignedIP.clear().append(m_ipaddress.item(i));
+          addInstanceToTree(pNewEnvTree, assignedIP, processName, buildSetName,sbl.str());
+        }
+      }
+      else if (numOfIpNeeded > 0)
+      {
+        if (!strcmp(buildSetName, "roxie"))
+          numOfIpNeeded = m_roxieNodes;
+        else if (!strcmp(buildSetName, "thor"))
+        {
+          numOfIpNeeded = m_thorNodes;
+
+          if (m_thorNodes < m_ipaddress.ordinality())
+            numOfIpNeeded += 1;
+        }
+
+        CInstDetails* pInstDetail = getServerIPMap(sbNewName.str(), buildSetName, pNewEnvTree, numOfIpNeeded);
+
+        if (pInstDetail)
+        {
+          if (!strcmp(buildSetName, "roxie") || !strcmp(buildSetName, "thor" ))
+          {
+            addRoxieThorClusterToEnv(pNewEnvTree, pInstDetail, buildSetName);
+
+            if (!strcmp(buildSetName, "roxie") && m_roxieOnDemand)
+              addRoxieThorClusterToEnv(pNewEnvTree, pInstDetail, buildSetName, true);
+          }
+          else
+          {
+            StringArray& ipArr = pInstDetail->getIpAssigned();
+
+            ForEachItemIn(x, ipArr)
+            {
+              assignedIP.clear().append(ipArr.item(x));
+              addInstanceToTree(pNewEnvTree, assignedIP, processName, buildSetName, "s1");
+            }
+          }
+        }
       }
     }
   }
