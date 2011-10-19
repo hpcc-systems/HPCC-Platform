@@ -17,6 +17,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 add_subdirectory (hrpc)
+add_subdirectory (include)
 add_subdirectory (jhtree)
 add_subdirectory (jlib)
 add_subdirectory (lzma)
