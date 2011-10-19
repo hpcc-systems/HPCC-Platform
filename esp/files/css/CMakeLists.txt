@@ -28,5 +28,5 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/sortabletable.css
     ${CMAKE_CURRENT_SOURCE_DIR}/tabs.css
 )
-    Install( FILES ${iFILES} DESTINATION ${OSSDIR}/componentfiles/files COMPONENT Runtime )
+    Install( FILES ${iFILES} DESTINATION ${OSSDIR}/componentfiles/files/css COMPONENT Runtime )
 ENDFOREACH ( iFILES )
