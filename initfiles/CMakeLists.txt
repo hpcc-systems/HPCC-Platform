@@ -40,6 +40,7 @@ set(bash-vars "${CMAKE_BINARY_DIR}/bash-vars")
 
 ADD_SUBDIRECTORY(bash)
 ADD_SUBDIRECTORY(bin)
+ADD_SUBDIRECTORY(etc)
 ADD_SUBDIRECTORY(sbin)
 ADD_SUBDIRECTORY(componentfiles)
 
