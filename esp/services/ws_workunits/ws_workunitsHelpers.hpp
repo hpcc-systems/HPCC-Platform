@@ -29,6 +29,7 @@
 #include <list>
 #include <vector>
 
+namespace ws_workunits {
 
 #define     OWN_WU_ACCESS      "OwnWorkunitsAccess"
 #define     OTHERS_WU_ACCESS   "OthersWorkunitsAccess"
@@ -319,4 +320,5 @@ public:
     }
 };
 
+}
 #endif
