@@ -418,7 +418,12 @@ static bool origValueChanged(const char *newValue, const char *origValue, String
         }
         return false;
     }
-    return (newValue || origValue);
+    if (newValue)
+    {
+        s.append(newValue).trim();
+        return true;
+    }
+    return (origValue!=NULL);
 }
 
 bool CWsWorkunitsEx::onWUUpdate(IEspContext &context, IEspWUUpdateRequest &req, IEspWUUpdateResponse &resp)
