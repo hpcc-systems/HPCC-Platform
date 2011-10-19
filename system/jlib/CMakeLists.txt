@@ -206,3 +206,5 @@ if (WIN32)
     add_custom_target ( jelog ALL DEPENDS ${EXECUTABLE_OUTPUT_PATH}/${CMAKE_CFG_INTDIR}/jelog.dll )
     add_dependencies( jlib jelog )
 endif ()
+
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/jscm.hpp DESTINATION ${OSSDIR}/componentfiles/cl/include COMPONENT Runtime )

@@ -47,4 +47,4 @@ target_link_libraries ( mp
          jlib
     )
 
-
+add_subdirectory(test)

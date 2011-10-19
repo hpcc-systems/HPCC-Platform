@@ -48,3 +48,4 @@ target_link_libraries ( eclagent
       ${CPPUNIT_LIBRARIES}
     )
 
+Install ( PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/start_eclagent DESTINATION ${OSSDIR}/bin COMPONENT Runtime )

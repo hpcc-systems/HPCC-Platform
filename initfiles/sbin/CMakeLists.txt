@@ -16,15 +16,29 @@
 ################################################################################
 
 SET(outFiles)
-GENERATE_BASH(processor ${bash-vars} "add_conf_settings.sh.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "hpcc_setenv.in" outFiles)
+GENERATE_BASH(processor ${bash-vars} "complete-uninstall.sh.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "keygen.sh.in" outFiles)
-GENERATE_BASH(processor ${bash-vars} "prerm.in" outFiles)
+GENERATE_BASH(processor ${bash-vars} "add_conf_settings.sh.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "rm_conf_settings.sh.in" outFiles)
+GENERATE_BASH(processor ${bash-vars} "configmgr.in" outFiles)
+GENERATE_BASH(processor ${bash-vars} "get_ip_address.sh.in" outFiles)
+GENERATE_BASH(processor ${bash-vars} "install-cluster.sh.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "hpcc-push.sh.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "hpcc-run.sh.in" outFiles)
-GENERATE_BASH(processor ${bash-vars} "install-cluster.sh.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "remote-install-engine.sh.in" outFiles)
-GENERATE_BASH(processor ${bash-vars} "complete-uninstall.sh.in" outFiles)
-ADD_CUSTOM_TARGET(ProcessFiles-initfiles-sbin ALL DEPENDS ${outFiles})
 
+SET(noInstall)
+GENERATE_BASH(processor ${bash-vars} "prerm.in" noInstall)
+
+
+ADD_CUSTOM_TARGET(ProcessFiles-initfiles-sbin ALL DEPENDS ${outFiles} ${noInstall})
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/regex.awk.in.cmake" "${CMAKE_CURRENT_BINARY_DIR}/regex.awk")
+
+FOREACH( oFILES
+    ${outFiles}
+    ${CMAKE_CURRENT_BINARY_DIR}/regex.awk
+    ${CMAKE_CURRENT_SOURCE_DIR}/alter_confs.sh
+)
+    install ( PROGRAMS ${oFILES} DESTINATION ${OSSDIR}/etc/init.d COMPONENT Runtime )
+ENDFOREACH ( oFILES )

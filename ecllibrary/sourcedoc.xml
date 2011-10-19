@@ -23,8 +23,4 @@ section SYSTEM "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd">
   <title>ecllibrary</title>
   <para>The ecllibrary directory contains the sources for the ecl
   standard library.</para>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-              href="std/sourcedoc.xml" />
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-              href="teststd/sourcedoc.xml" />
 </section>
