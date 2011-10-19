@@ -17,4 +17,6 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 add_subdirectory (eclrtl)
+add_subdirectory (ecltpl)
+add_subdirectory (include)
 add_subdirectory (nbcd)
