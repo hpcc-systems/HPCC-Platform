@@ -17,8 +17,8 @@
 ################################################################################
 FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/authorized_keys
-    ${CMAKE_CURRENT_SOURCE_DIR}/id_rsa
     ${CMAKE_CURRENT_SOURCE_DIR}/id_rsa.pub
 )
     Install ( FILES ${iFILES} DESTINATION ${OSSDIR}/etc/sshkey/.ssh COMPONENT Runtime )
 ENDFOREACH ( iFILES )
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/id_rsa DESTINATION ${OSSDIR}/etc/sshkey/.ssh COMPONENT Runtime PERMISSIONS OWNER_READ OWNER_WRITE  )
