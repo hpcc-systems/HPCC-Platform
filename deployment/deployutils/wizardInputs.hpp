@@ -112,10 +112,13 @@ public:
   void checkAndAddDependComponent(const char* key);
   unsigned getNumOfNodes(const char* compName);
   void setTopologyParam();
-        
+
  IMPLEMENT_IINTERFACE;
   bool generateEnvironment(StringBuffer& envXml);
   IPropertyTree* createEnvironment();
+
+private:
+  void addComponentToSoftware(IPropertyTree* pNewEnvTree, IPropertyTree* pBuildSet);
 
 private:
   typedef StringArray* StringArrayPtr;
