@@ -534,7 +534,7 @@ void TransferServer::appendTransformed(unsigned chunkIndex, ITransformer * input
             offset_t outputOffset = out->tell();
             offset_t inputOffset = input->tell();
             if (totalLengthToRead)
-                LOG(MCdebugProgress, unknownJob, "Progress: %d%% done.", (unsigned)(totalLengthRead*100/totalLengthToRead));
+                LOG(MCdebugProgress, unknownJob, "Progress: %d%% done. [%"I64F"u]", (unsigned)(totalLengthRead*100/totalLengthToRead), (unsigned __int64)totalLengthRead);
 
             curProgress.status = (gotLength == 0) ? OutputProgress::StatusCopied : OutputProgress::StatusActive;
             curProgress.inputLength = input->tell()-startInputOffset;
