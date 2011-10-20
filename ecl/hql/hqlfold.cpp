@@ -3031,12 +3031,14 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             break;
         }
     case no_index:
+    case no_rowsetindex:
         {
             IHqlExpression * leftChild = expr->queryChild(0);
             IHqlExpression * rightChild = expr->queryChild(1);
-            if (leftChild->getOperator() == no_null)
+            node_operator leftOp = leftChild->getOperator();
+            if (leftOp == no_null)
                 return createNullValue(expr);
-            if (leftChild->getOperator() != no_list)
+            if ((leftOp != no_list) && (leftOp != no_datasetlist))
                 break;
             IValue * rightValue = rightChild->queryValue();
             if(rightValue)
