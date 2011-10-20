@@ -364,15 +364,6 @@
         </xs:annotation>
       </xs:attribute>
       <xs:attribute name="pluginsPath" type="relativePath" default="${PLUGINS_PATH}/"/>
-      <xs:attribute name="queueName" type="xs:string" use="optional">
-        <xs:annotation>
-          <xs:appinfo>
-            <tooltip>Name of queue for this Thor. Leave blank if this Thor is not load balanced.</tooltip>
-            <autogenforwizard>1</autogenforwizard>
-            <autogendefaultvalue>$processname</autogendefaultvalue>
-          </xs:appinfo>
-        </xs:annotation>
-      </xs:attribute>
       <xs:attribute name="nodeGroup" type="xs:string" use="optional">
         <xs:annotation>
           <xs:appinfo>
