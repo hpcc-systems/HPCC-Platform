@@ -113,16 +113,6 @@
       <xsl:attribute name="slaves">
         <xsl:value-of select="count(ThorSlaveProcess)"/>
       </xsl:attribute>
-      <xsl:attribute name="queueName">
-        <xsl:choose>
-          <xsl:when test="string(@queueName) = ''">
-            <xsl:value-of select="@name"/>
-          </xsl:when>
-          <xsl:otherwise>
-            <xsl:value-of select="@queueName"/>
-          </xsl:otherwise>
-        </xsl:choose>
-      </xsl:attribute>
       <xsl:attribute name="nodeGroup">
         <xsl:choose>
           <xsl:when test="string(@nodeGroup) = ''">

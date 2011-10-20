@@ -681,16 +681,18 @@ int main( int argc, char *argv[]  )
         return -1;
     }
     StringBuffer queueName;
+    SCMStringBuffer _queueNames;
+    const char *thorName = globals->queryProp("@name");
+    if (!thorName) thorName = "thor";
+    getThorQueueNames(_queueNames, thorName);
+    queueName.set(_queueNames.str());
+
     try {
         CSDSServerStatus &serverStatus = openThorServerStatus();
 
         Owned<CRegistryServer> registry = new CRegistryServer();
         StringBuffer thorEpStr;
         LOG(MCdebugProgress, thorJob, "ThorMaster version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getUrlStr(thorEpStr).toCharArray());
-        if (!globals->getProp("@queueName", queueName)) 
-            queueName.append(thorname);
-        queueName.append(".thor");
-
 
         unsigned gmemsize = globals->getPropInt("@masterGlobalMemorySize"); // in MB
         if (gmemsize==0) {
