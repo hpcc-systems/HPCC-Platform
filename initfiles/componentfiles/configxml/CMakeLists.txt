@@ -25,8 +25,6 @@ CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/thor.xsd.in ${CMAKE_CURRENT_BINARY_DI
 
 if ( ${HPCC_PROJECT} STREQUAL "community" )
     configure_file("buildsetCC.xml.in" "buildset.xml")
-else ()
-    configure_file("buildsetEE.xml.in" "buildset.xml")
 endif()
 
 FOREACH( iFILES
