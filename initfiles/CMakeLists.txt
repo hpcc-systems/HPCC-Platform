@@ -30,6 +30,7 @@ MACRO(GENERATE_BASH processor bash-vars in out)
     ADD_CUSTOM_COMMAND(OUTPUT "${outfile}"
         COMMAND ${processorLocation}
         "${bash-vars}" "${infile}" "${outfile}"
+        COMMAND chmod 0755 ${outfile}
         DEPENDS "${infile}" processor # depends on the 'processor'
         COMMENT "Generating: ${outfile}")
     SET(${out} ${${out}} "${outfile}")
