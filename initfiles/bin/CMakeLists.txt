@@ -25,7 +25,6 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/init_configesp
     ${CMAKE_CURRENT_SOURCE_DIR}/init_dali
     ${CMAKE_CURRENT_SOURCE_DIR}/init_dfuserver
-    ${CMAKE_CURRENT_SOURCE_DIR}/init_eclserver
     ${CMAKE_CURRENT_SOURCE_DIR}/init_eclccserver
     ${CMAKE_CURRENT_SOURCE_DIR}/init_eclscheduler
     ${CMAKE_CURRENT_SOURCE_DIR}/init_esp
