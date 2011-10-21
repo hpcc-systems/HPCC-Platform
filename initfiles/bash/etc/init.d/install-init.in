@@ -180,6 +180,7 @@ installFile "$binPath/esp" "$binPath/configesp" 1 || exit 1
 installFile "$initPath/hpcc-init" "/etc/init.d/hpcc-init" 1 || exit 1
 installFile "$initPath/dafilesrv" "/etc/init.d/dafilesrv" 1 || exit 1
 installFile "$binPath/dfuplus" "/usr/bin/dfuplus" 1 || exit 1
+installFile "$binPath/ecl" "/usr/bin/ecl" 1 || exit 1
 installFile "$binPath/eclcc" "/usr/bin/eclcc" 1 || exit 1
 installFile "$binPath/eclplus" "/usr/bin/eclplus" 1 || exit 1
 installFile "$binPath/soapplus" "/usr/bin/soapplus" 1 || exit 1
