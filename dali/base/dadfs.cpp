@@ -51,9 +51,7 @@
 #define DFSSERVER_THROTTLE_COUNT 20
 #define DFSSERVER_THROTTLE_TIME 1000
 
-//#define SUBFILE_COMPATIBILITY_CHECKING        
-//subfile format compatibility no longer checked
-
+#define SUBFILE_COMPATIBILITY_CHECKING
 
 //#define PACK_ECL
 
@@ -2582,38 +2580,67 @@ public:
     }
 
 
-    virtual bool checkFormatAttr(IPropertyTree &to,IDistributedFileTransaction *) 
+    virtual void checkFormatAttr(IDistributedFile *sub, IDistributedFileTransaction *, const char* exprefix="")
     {
         // check file has same (or similar) format
-        IPropertyTree &from = queryProperties();
-#ifdef SUBFILE_COMPATIBILITY_CHECKING
-        bool isSoft = to.hasProp("_record_layout");
-        if (!isSoft) {
-            unsigned rs1 = from.getPropInt("@recordSize",0);
-            unsigned rs2 = to.getPropInt("@recordSize",0);
-            if (rs1&&rs2&&(rs1!=rs2))
-                return false;
-        }
-#endif
-        bool blocked1=false;
-        bool blocked2=false;
-        if ((::isCompressed(from,&blocked1)!=::isCompressed(to,&blocked2))||(blocked1!=blocked2))
-            return false;   // this may fail if an empty superfile added to a compressed superfile
-#ifdef SUBFILE_COMPATIBILITY_CHECKING
-        StringBuffer f1;
-        StringBuffer f2;
-        if (!isSoft&&from.getProp("@format",f1)&&to.getProp("@format",f2))
-            if (strcmp(normalizeFormat(f1).str(),normalizeFormat(f2).str())!=0)
-                return false;
-#endif
-        if (from.getPropInt("@local",0)!=to.getPropInt("@local",0))
-            return false;
-        int repo1 = from.getPropInt("@replicateOffset",1);  
-        int repo2 = to.getPropInt("@replicateOffset",1);
-        if (repo1!=repo2)
-            return false;
-        return true;
+        IPropertyTree &superProp = queryProperties();
+        IPropertyTree &subProp = sub->queryProperties();
+        if (!exprefix)
+            exprefix = "CheckFormatAttr";
 
+        bool superBlocked = false;
+        bool superComp = ::isCompressed(superProp,&superBlocked);
+        bool subBlocked = false;
+        bool subComp = ::isCompressed(subProp,&subBlocked);
+        // FIXME: this may fail if an empty superfile added to a compressed superfile
+        if (superComp != subComp)
+            throw MakeStringException(-1,"%s: %s's compression setting (%s) is different than %s's (%s)",
+                    exprefix, sub->queryLogicalName(), (subComp?"compressed":"uncompressed"),
+                    queryLogicalName(), (superComp?"compressed":"uncompressed"));
+        if (superBlocked != subBlocked)
+            throw MakeStringException(-1,"%s: %s's blocked setting (%s) is different than %s's (%s)",
+                    exprefix, sub->queryLogicalName(), (subBlocked?"blocked":"unblocked"),
+                    queryLogicalName(), (superBlocked?"blocked":"unblocked"));
+
+#ifdef SUBFILE_COMPATIBILITY_CHECKING
+        bool subSoft = subProp.hasProp("_record_layout");
+        bool superSoft = superProp.hasProp("_record_layout");
+        if (superSoft != subSoft)
+            throw MakeStringException(-1,"%s: %s's record layout (%s) is different than %s's (%s)",
+                    exprefix, sub->queryLogicalName(), (subSoft?"dynamic":"fixed"),
+                    queryLogicalName(), (superSoft?"dynamic":"fixed"));
+        // If they don't, they must have the same size
+        if (!superSoft) {
+            unsigned superSize = superProp.getPropInt("@recordSize",0);
+            unsigned subSize = subProp.getPropInt("@recordSize",0);
+            // Variable length files (CSV, etc) have zero record size
+            if (superSize && subSize && (superSize != subSize))
+                throw MakeStringException(-1,"%s: %s's record size (%d) is different than %s's (%d)",
+                        exprefix, sub->queryLogicalName(), subSize, queryLogicalName(), superSize);
+        }
+        StringBuffer superFmt;
+        bool superHasFmt = superProp.getProp("@format",superFmt);
+        StringBuffer subFmt;
+        bool subHasFmt = subProp.getProp("@format",subFmt);
+        if (subHasFmt && superHasFmt)
+            if (strcmp(normalizeFormat(superFmt).str(),normalizeFormat(subFmt).str()) != 0)
+                throw MakeStringException(-1,"%s: %s's format (%s) is different than %s's (%s)",
+                        exprefix, sub->queryLogicalName(), superFmt.str(),
+                        queryLogicalName(), subFmt.str());
+#endif
+        bool superLocal = superProp.getPropInt("@local",0);
+        bool subLocal = subProp.getPropInt("@local",0);
+        if (subLocal != superLocal)
+            throw MakeStringException(-1,"%s: %s's local setting (%s) is different than %s's (%s)",
+                    exprefix, sub->queryLogicalName(), (subLocal?"local":"global"),
+                    queryLogicalName(), (superLocal?"local":"global"));
+
+        int superRepO = superProp.getPropInt("@replicateOffset",1);
+        int subRepO = subProp.getPropInt("@replicateOffset",1);
+        if (subRepO != superRepO)
+            throw MakeStringException(-1,"%s: %s's replication offset (%d) is different than %s's (%d)",
+                    exprefix, sub->queryLogicalName(), subRepO,
+                    queryLogicalName(), superRepO);
     }
 
 
@@ -4435,28 +4462,27 @@ protected:
         parent->linkSuperOwner(subfiles.item(pos),queryLogicalName(),false);
     }
 
-    bool checkSubFormatAttr(IPropertyTree &to,IDistributedFileTransaction *_transaction) 
+    void checkSubFormatAttr(IDistributedFile *sub, IDistributedFileTransaction *_transaction, const char* exprefix="")
     {
         // empty super files now pass
         ForEachItemIn(i,subfiles) {
             IDistributedSuperFile* super = subfiles.item(i).querySuperFile();
             if (super) {
                 CDistributedSuperFile *cdsuper = QUERYINTERFACE(super,CDistributedSuperFile);
-                if (cdsuper&&!cdsuper->checkSubFormatAttr(to,_transaction))
-                    return false;
-                return true;
+                if (cdsuper)
+                    cdsuper->checkSubFormatAttr(sub,_transaction,exprefix);
+                return;
             }
             CDistributedFile *cdfile = QUERYINTERFACE(&subfiles.item(0),CDistributedFile);
             if (cdfile)
-                return cdfile->checkFormatAttr(to,_transaction);        // any file will do
+                cdfile->checkFormatAttr(sub,_transaction,exprefix);        // any file will do
         }
-        return true;
     }
 
-    bool checkFormatAttr(IPropertyTree &to,IDistributedFileTransaction *_transaction)       
+    void checkFormatAttr(IDistributedFile *sub, IDistributedFileTransaction *_transaction, const char* exprefix="")
     {
-// only check sub files not siblings, which is excessive (format checking is really only debug aid)
-        return checkSubFormatAttr(to,_transaction);
+        // only check sub files not siblings, which is excessive (format checking is really only debug aid)
+        checkSubFormatAttr(sub,_transaction,exprefix);
     }
 
 
@@ -5073,8 +5099,8 @@ public:
     {
         if (strcmp(sub->queryLogicalName(),queryLogicalName())==0)
             throw MakeStringException(-1,"addSubFile: Cannot add file %s to itself", queryLogicalName());
-        if (subfiles.ordinality()&&!checkFormatAttr(sub->queryProperties(),transaction))
-            throw MakeStringException(-1,"addSubFile: File %s has different format to %s (compression?)", sub->queryLogicalName(),queryLogicalName());
+        if (subfiles.ordinality())
+            checkFormatAttr(sub,transaction,"addSubFile");
         if (findSubFile(sub->queryLogicalName())!=NotFound) 
             throw MakeStringException(-1,"addSubFile: File %s is already a subfile of %s", sub->queryLogicalName(),queryLogicalName());
 
