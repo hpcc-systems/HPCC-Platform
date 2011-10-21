@@ -39,11 +39,6 @@
   <Component name="eclplus" processName='EclPlusProcess' schema='eclplus.xsd'>
     <File name="eclplus.xsl" method="xslt" destName="eclplus.ini"/>
   </Component>
-  <Component name="eclserver" processName='EclServerProcess' schema='eclserver.xsd'>
-    <File name="plugins.xsl" method="xslt_deployment" destName="eclplugins.xml" destPath="@temp"/>
-    <File name="eclserver.xsl" method="xslt" destName="eclserver.xml"/>
-    <File name="lib_system.xsl" method="xslt" destName="lib_system.eclmod"/>
-  </Component>
     <Component name="eclccserver" processName='EclCCServerProcess' schema='eclccserver.xsd'>
         <File name="eclccserver.xsl" method="xslt" destName="eclccserver.xml"/>
         <File name="eclcc.xsl" method="xslt" destName="eclcc.ini"/>
