@@ -10251,8 +10251,10 @@ IHqlExpression * HqlTreeNormalizer::transformTable(IHqlExpression * untransforme
 
     OwnedHqlExpr modeThor = createValue(no_thor);
     IHqlExpression * diskRead = replaceChild(transformed, 2, modeThor);
-    IHqlExpression * pipe = mode->queryChild(0);
-    return createDataset(no_pipe, diskRead, LINK(pipe));
+    HqlExprArray args;
+    args.append(*diskRead);
+    unwindChildren(args, mode);
+    return createDataset(no_pipe, args);
 }
 
 IHqlExpression * HqlTreeNormalizer::optimizeAssignSkip(HqlExprArray & children, IHqlExpression * expr, IHqlExpression * cond, unsigned depth)
