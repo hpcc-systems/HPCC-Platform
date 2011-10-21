@@ -94,7 +94,24 @@ class EclccCompileThread : public CInterface, implements IPooledThread
 
     bool compile(const char *wuid, const char *target, const char *targetCluster)
     {
-        StringBuffer eclccCmd("eclcc - -shared");
+        Owned<IConstWUQuery> query = workunit->getQuery();
+        if (!query)
+        {
+            reportError("Workunit does not contain a query", 2);
+            return false;
+        }
+
+        SCMStringBuffer mainDefinition;
+        SCMStringBuffer eclQuery;
+        query->getQueryText(eclQuery);
+        query->getQueryMainDefinition(mainDefinition);
+
+        StringBuffer eclccCmd("eclcc -shared");
+        if (eclQuery.length())
+            eclccCmd.append(" -");
+        if (mainDefinition.length())
+            eclccCmd.append(" -main ").append(mainDefinition);
+
         Owned<IPropertyTreeIterator> options = globals->getElements("./Option");
         ForEach(*options)
         {
@@ -117,14 +134,7 @@ class EclccCompileThread : public CInterface, implements IPooledThread
         }
         eclccCmd.appendf(" -o%s", wuid);
         eclccCmd.appendf(" -target=%s", target);
-        Owned<IConstWUQuery> query = workunit->getQuery();
-        SCMStringBuffer eclQuery;
-        if (!query)
-        {
-            reportError("Workunit does not contain a query", 2);
-            return false;
-        }
-        query->getQueryText(eclQuery);
+
         Owned<IStringIterator> debugValues = &workunit->getDebugValues();
         ForEach (*debugValues)
         {
