@@ -230,7 +230,7 @@ void SashaMain()
                 PROGLOG("Sasha stopping");
                 break;
             }
-            else if (!verifyCovenConnection(5*60*1000)) {
+            else if (!verifyCovenConnection(30*1000)) {
                 PROGLOG("Dali stopped");
                 stopped = true;
             }
