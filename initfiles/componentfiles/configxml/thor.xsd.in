@@ -347,15 +347,6 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="LCR" type="xs:boolean" use="optional" default="true">
-        <xs:annotation>
-          <xs:appinfo>
-            <tooltip>Enable Link Counted Rows in Thor</tooltip>
-            <autogenforwizard>1</autogenforwizard>
-            <autogendefaultvalue>true</autogendefaultvalue>
-          </xs:appinfo>
-        </xs:annotation>
-      </xs:attribute>
       <xs:attribute name="globalMemorySize" type="xs:nonNegativeInteger" use="optional" default="2048">
         <xs:annotation>
           <xs:appinfo>

@@ -98,8 +98,6 @@
 
   <!--eat attributes not needed to be generated or those which would be processed somewhere else -->
   <xsl:template match="@build|@buildSet|@computer|@description|@directory"/>
-  <xsl:template match="@LCR"/> <!-- used by setvars but not thor.xml -->
-  
 
   <xsl:template match="@*">
     <xsl:copy-of select="."/>
