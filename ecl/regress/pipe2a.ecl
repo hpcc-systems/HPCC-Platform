@@ -16,8 +16,19 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-import std.system.thorlib;
+import lib_stringlib;
+import std.str;
 
-d := dataset('CFB::rawfile', {integer4 aa}, pipe('hello ' + thorlib.node(), CSV));
-output(d);
+d := dataset([{ 'Hello there'}, {'what a nice day'}, {'1234'}], { varstring20 line}) : stored('nofold');
 
+dt := TABLE(d, { string l := line });
+
+p1 := PIPE(dt(l!='p1'), 'sort', { string lout }, flat, output(csv));
+p2 := PIPE(dt(l!='p2'), 'sort', { string lout }, csv, output(flat), REPEAT);
+p3 := CHOOSEN(PIPE(dt(l!='p3'), 'sort', { string lout }, thor, output(csv)), 1);
+p4 := CHOOSEN(PIPE(dt(l!='p4'), 'sort', { string lout }, REPEAT, csv, output(thor)), 1);
+
+output(p1, { lout, '\n' } );
+output(p2, { string20 l := Str.FindReplace(lout, '\r', ' ') } );
+output(p3, { string20 l := Str.FindReplace(lout, '\r', ' ') } );
+output(p4, { string20 l := Str.FindReplace(lout, '\r', ' ') } );

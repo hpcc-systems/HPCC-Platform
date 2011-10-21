@@ -7885,9 +7885,18 @@ simpleDataSet
                             parser->transferOptions($3, $8);
                             parser->normalizeExpression($3, type_string, false);
 
-                            IHqlExpression *mode = $7.getExpr();
+                            OwnedHqlExpr mode = $7.getExpr();
                             OwnedHqlExpr options = $8.getExpr();
                             OwnedHqlExpr filename = $3.getExpr();
+                            if (mode->getOperator() == no_comma)
+                            {
+                                //Handle a messy common-grammar production which isn't in the format we want
+                                assertex(mode->queryChild(0)->getOperator() == no_pipe);
+                                HqlExprArray args;
+                                unwindChildren(args, mode->queryChild(0));
+                                mode->queryChild(1)->unwindList(args, no_comma);
+                                mode.setown(createValue(no_pipe, makeNullType(), args));
+                            }
 
                             //LOCAL(expression) is now an overloaded the syntax, so disambiguate here...
                             if (filename->getOperator() == no_forcelocal)
@@ -7895,7 +7904,7 @@ simpleDataSet
                                 filename.setown(createValue(no_assertconstant, filename->getType(), LINK(filename->queryChild(0))));
                                 options.setown(createComma(options.getClear(), createAttribute(localUploadAtom)));
                             }
-                            IHqlExpression * dataset = createNewDataset(filename.getClear(), $5.getExpr(), mode, NULL, NULL, options.getClear());
+                            IHqlExpression * dataset = createNewDataset(filename.getClear(), $5.getExpr(), mode.getClear(), NULL, NULL, options.getClear());
                             parser->checkValidRecordMode(dataset, $4, $7);
                             $$.setExpr(dataset);
                             $$.setPosition($1);
@@ -9246,6 +9255,8 @@ pipeFormatOption
                             $3.unwindCommaList(args);
                             $$.setExpr(createExprAttribute(xmlAtom, args), $1);
                         }
+    | FLAT              {   $$.setExpr(createAttribute(flatAtom), $1);   }
+    | THOR              {   $$.setExpr(createAttribute(thorAtom), $1);   }
     ;
 
 setCountList
