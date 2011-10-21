@@ -29,8 +29,6 @@ p3 := CHOOSEN(PIPE(dt(l!='p3'), 'sort', { string lout }, csv, output(csv)), 1);
 p4 := CHOOSEN(PIPE(dt(l!='p4'), 'sort', { string lout }, REPEAT, csv, output(csv)), 1);
 
 output(p1, { lout, '\n' } );
-/*output(p2, { string20 l := Str.FindReplace(lout, '\r', ' ') } );
+output(p2, { string20 l := Str.FindReplace(lout, '\r', ' ') } );
 output(p3, { string20 l := Str.FindReplace(lout, '\r', ' ') } );
 output(p4, { string20 l := Str.FindReplace(lout, '\r', ' ') } );
-*/
-
