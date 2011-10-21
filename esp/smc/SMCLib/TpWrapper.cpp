@@ -80,7 +80,7 @@ bool CTpWrapper::getClusterLCR(const char* clusterType, const char* clusterName)
     if (!pCluster)
         throw MakeStringException(ECLWATCH_CLUSTER_NOT_IN_ENV_INFO, "'%s %s' is not defined.", clusterType, clusterName);
 
-    bLCR = pCluster->getPropBool("LCR");
+    bLCR = !pCluster->getPropBool("@Legacy");
 
     return bLCR;
 }

@@ -3827,11 +3827,11 @@ public:
                 if (clusterWidth && (ts!=clusterWidth)) 
                     throw MakeStringException(WUERR_MismatchClusterSize,"CEnvironmentClusterInfo: mismatched thor sizes in cluster");
                 clusterWidth = ts;
-                bool islcr = thor.getPropBool("@LCR");
+                bool islcr = !thor.getPropBool("@Legacy");
                 if (i==0)
                     lcr = islcr;
                 else if (lcr!=islcr)
-                    throw MakeStringException(WUERR_MismatchThorType,"CEnvironmentClusterInfo: mismatched thor LCR in cluster");
+                    throw MakeStringException(WUERR_MismatchThorType,"CEnvironmentClusterInfo: mismatched thor Legacy in cluster");
             }
             platform.set(lcr ? "thorlcr" : "thor");
         }

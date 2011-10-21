@@ -918,7 +918,7 @@ bool WsWuInfo::getClusterInfo(IEspECLWorkunit &info, unsigned flags)
             VStringBuffer xpath("Software/ThorCluster[@name='%s']", clusterProcess.str());
             IPropertyTree *ptCluster = root->queryPropTree(xpath.str());
             if (ptCluster)
-                info.setThorLCR(ptCluster->getPropBool("LCR", false));
+                info.setThorLCR(!ptCluster->getPropBool("@Legacy", false));
         }
     }
     return true;
