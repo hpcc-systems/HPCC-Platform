@@ -850,6 +850,7 @@ public:
     CNWaySelectActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this), CThorSteppable(this)
     {
         helper = (IHThorNWaySelectArg *)queryHelper();
+        selectedInput = NULL;
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
@@ -934,6 +935,8 @@ public:
         initMetaInfo(info);
         if (selectedInput)
             calcMetaInfoSize(info, selectedInput);
+        else if (!started())
+            info.canStall = true; // unkwown if !started
     }
     virtual bool isGrouped() { return selectedInput ? selectedInput->isGrouped() : false; }
 // steppable
