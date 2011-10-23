@@ -60,42 +60,23 @@ void AccessFailure(IEspContext& context, char const * msg,...)
 
 struct QueueWrapper
 {
-    QueueWrapper(const char* cluster)
+    QueueWrapper(int clusterType, const char* targetName)
     {
-        StringBuffer name;
-        name<<cluster<<".thor";
-        queue.setown(createJobQueue(name.str()));
-    }
-
-    QueueWrapper(int clusterType, const char* cluster)
-    {
-        if (!cluster || !*cluster)
+        if (!targetName || !*targetName)
             return;
 
-        const char* type = eqThorCluster;
+        StringBuffer name(targetName);
         if (clusterType < 1)
-            type = eqRoxieCluster;
-
-        CTpWrapper dummy;
-        IArrayOf<IEspTpLogicalCluster> clusters;
-        dummy.getTargetClusterList(clusters, type, cluster);
-        if (clusters.length() < 1)
-            return;
-
-        IEspTpLogicalCluster &cluster0 = clusters.item(0);
-        const char *name0 = cluster0.getName();
-        if (!name0 || !*name0)
-            return;
-
-        StringBuffer name;
-        name<<name0<<".thor";
+            name.append(".roxie");
+        else
+            name.append(".thor");
         queue.setown(createJobQueue(name.str()));
     }
 
-    QueueWrapper(const char* clusterName, const char* queueName)
+    QueueWrapper(const char* targetName, const char* queueName)
     {
         StringBuffer name;
-        name<<clusterName<<"."<<queueName;
+        name<<targetName<<"."<<queueName;
         queue.setown(createJobQueue(name.str()));
     }
 
@@ -450,21 +431,22 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
         bool doCommand=(context.authorizeFeature(THORQUEUE_FEATURE, access) && access>=SecAccess_Full);
 
         CTpWrapper dummy;
-        IArrayOf<IEspTpCluster> clusters;
-        dummy.getClusterProcessList(eqThorCluster,clusters,true);
+        StringArray thorNames, groupNames, targetNames;
+        getEnvironmentThorClusterNames(thorNames, groupNames, targetNames);
 
         IArrayOf<IEspThorCluster> ThorClusters;
-        ForEachItemIn(x, clusters)
+        ForEachItemIn(x, thorNames)
         {
-            IEspTpCluster& cluster = clusters.item(x);
+            const char* thorName = thorNames.item(x);
+            const char* targetName = targetNames.item(x);
             IEspThorCluster* returnCluster = new CThorCluster("","");
                 
-            returnCluster->setClusterName(cluster.getName());
-            returnCluster->setQueueName(cluster.getQueueName());
+            returnCluster->setClusterName(thorName);
+            returnCluster->setQueueName(targetName);
 
             if (version > 1.08)
             {
-                bool bThorLCR = dummy.getClusterLCR(eqThorCluster, cluster.getName());
+                bool bThorLCR = dummy.getClusterLCR(eqThorCluster, thorName);
                 if (bThorLCR)
                     returnCluster->setThorLCR("withLCR");
                 else
@@ -473,13 +455,12 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
 
             int i = 0;
             int serverID = -1;
-            const char* queueName = cluster.getQueueName();
-            if (queueName && (runningQueues > 0))
+            if (targetName && (runningQueues > 0))
             {
                 for (int i = 0; i < runningQueues; i++)
                 {
                     const char* serverName = runningQueueNames[i].str();
-                    if (serverName && !stricmp(serverName, queueName))
+                    if (serverName && !stricmp(serverName, targetName))
                     {
                         serverID = i;
                         break;
@@ -487,16 +468,7 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                 }
             }
 
-            IArrayOf<IEspTpLogicalCluster> clusters1;
-            dummy.getTargetClusterList(clusters1, eqThorCluster, cluster.getName());
-            const char* queuename1 = cluster.getQueueName();
-            if (clusters1.length() > 0)
-            {
-                IEspTpLogicalCluster& logicalCluster = clusters1.item(0);
-                queuename1 = logicalCluster.getName();
-            }
-
-            QueueWrapper queue(queuename1);
+            QueueWrapper queue(targetName, "thor");
             CJobQueueContents contents;
             queue->copyItems(contents);
             Owned<IJobQueueIterator> iter = contents.getIterator();
@@ -509,8 +481,8 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                     {
                             Owned<IEspActiveWorkunit> wu(new CActiveWorkunitWrapper(context, iter->query().queryWUID(),++count));
                             wu->setServer("ThorMaster");
-                            wu->setInstance(cluster.getName());
-                            wu->setQueueName(cluster.getQueueName());
+                            wu->setInstance(thorName);
+                            wu->setQueueName(targetName);
 
                             aws.append(*wu.getLink());
                     }
@@ -519,8 +491,8 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                         StringBuffer msg;
                         Owned<IEspActiveWorkunit> wu(new CActiveWorkunitWrapper(iter->query().queryWUID(), "", "", e->errorMessage(msg).str(), "normal"));
                         wu->setServer("ThorMaster");
-                        wu->setInstance(cluster.getName());
-                        wu->setQueueName(cluster.getQueueName());
+                        wu->setInstance(thorName);
+                        wu->setQueueName(targetName);
                         
                         aws.append(*wu.getLink());
                     }
@@ -574,26 +546,19 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
         if (version > 1.06)
         {
             IArrayOf<IEspRoxieCluster> RoxieClusters;
-            IArrayOf<IEspTpCluster> clusters1;
-            dummy.getClusterProcessList(eqRoxieCluster,clusters1,true);
-            ForEachItemIn(x1, clusters1)
+            StringArray roxieNames, roxieGroupNames, targetNamesWithRoxie;
+            getEnvironmentRoxieClusterNames(roxieNames, roxieGroupNames, targetNamesWithRoxie);
+
+            ForEachItemIn(x1, roxieNames)
             {
-                IEspTpCluster& cluster = clusters1.item(x1);
+                const char* roxieName = roxieNames.item(x1);
+                const char* targetName = targetNamesWithRoxie.item(x1);
                 IEspRoxieCluster* returnCluster = new CRoxieCluster("","");
                     
-                returnCluster->setClusterName(cluster.getName());
-                returnCluster->setQueueName(cluster.getQueueName());
+                returnCluster->setClusterName(roxieName);
+                returnCluster->setQueueName(targetName);
                 
-                IArrayOf<IEspTpLogicalCluster> clusters1;
-                dummy.getTargetClusterList(clusters1, eqRoxieCluster, cluster.getName());
-                const char* queuename1 = cluster.getQueueName();
-                if (clusters1.length() > 0)
-                {
-                    IEspTpLogicalCluster& logicalCluster = clusters1.item(0);
-                    queuename1 = logicalCluster.getName();
-                }
-
-                QueueWrapper queue(queuename1);
+                QueueWrapper queue(targetName, "roxie");
 
                 CJobQueueContents contents;
                 queue->copyItems(contents);
@@ -605,8 +570,8 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                     {
                         Owned<IEspActiveWorkunit> wu(new CActiveWorkunitWrapper(context, iter->query().queryWUID(),++count));
                         wu->setServer("RoxieServer");
-                        wu->setInstance(cluster.getName());
-                        wu->setQueueName(cluster.getQueueName());
+                        wu->setInstance(roxieName);
+                        wu->setQueueName(targetName);
 
                         aws.append(*wu.getLink());
                     }
@@ -615,8 +580,8 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                         StringBuffer msg;
                         Owned<IEspActiveWorkunit> wu(new CActiveWorkunitWrapper(iter->query().queryWUID(), "", "", e->errorMessage(msg).str(), "normal"));
                         wu->setServer("RoxieServer");
-                        wu->setInstance(cluster.getName());
-                        wu->setQueueName(cluster.getQueueName());
+                        wu->setInstance(roxieName);
+                        wu->setQueueName(targetName);
                         
                         aws.append(*wu.getLink());
                     }
@@ -767,7 +732,7 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
         resp.setThorClusters(ThorClusters);
         resp.setRunning(aws);
 
-        clusters.kill();
+        IArrayOf<IEspTpCluster> clusters;
         dummy.getClusterProcessList(eqHoleCluster,clusters);
         IArrayOf<IEspHoleCluster> HoleClusters;
         ForEachItemIn(y, clusters)
@@ -1122,20 +1087,20 @@ bool CWsSMCEx::onGetThorQueueAvailability(IEspContext &context, IEspGetThorQueue
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_SMC_ACCESS_DENIED, "Failed to get Thor Queue availability. Permission denied.");
 
-        CTpWrapper dummy;
-        IArrayOf<IEspTpCluster> clusters;
-        dummy.getClusterProcessList(eqThorCluster,clusters,true);
+        StringArray thorNames, groupNames, targetNames;
+        getEnvironmentThorClusterNames(thorNames, groupNames, targetNames);
 
         IArrayOf<IEspThorCluster> ThorClusters;
-        ForEachItemIn(x, clusters)
+        ForEachItemIn(x, thorNames)
         {
-            IEspTpCluster& cluster = clusters.item(x);
+            const char* thorName = thorNames.item(x);
+            const char* targetName = targetNames.item(x);
             IEspThorCluster* returnCluster = new CThorCluster("","");
                 
-            returnCluster->setClusterName(cluster.getName());
-            returnCluster->setQueueName(cluster.getQueueName());
+            returnCluster->setClusterName(thorName);
+            returnCluster->setQueueName(targetName);
 
-            QueueWrapper queue(cluster.getQueueName());
+            QueueWrapper queue(targetName, "thor");
             if(queue->stopped())
                 returnCluster->setQueueStatus("stopped");
             else if (queue->paused())

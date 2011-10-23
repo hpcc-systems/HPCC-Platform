@@ -1133,6 +1133,7 @@ extern WORKUNIT_API bool restoreWorkUnit(const char *base,const char *wuid);
 extern WORKUNIT_API void clientShutdownWorkUnit();
 extern WORKUNIT_API IExtendedWUInterface * queryExtendedWU(IWorkUnit * wu);
 extern WORKUNIT_API unsigned getEnvironmentThorClusterNames(StringArray &thorNames, StringArray &groupNames, StringArray &targetNames);
+extern WORKUNIT_API unsigned getEnvironmentRoxieClusterNames(StringArray &roxieNames, StringArray &groupNames, StringArray &targetNames);
 extern WORKUNIT_API StringBuffer &formatGraphTimerLabel(StringBuffer &str, const char *graphName, unsigned subGraphNum=0, unsigned __int64 subId=0);
 extern WORKUNIT_API bool parseGraphTimerLabel(const char *label, StringBuffer &graphName, unsigned &subGraphNum, unsigned __int64  &subId);
 extern WORKUNIT_API void addExceptionToWorkunit(IWorkUnit * wu, WUExceptionSeverity severity, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column);

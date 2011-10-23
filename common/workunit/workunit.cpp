@@ -4097,6 +4097,40 @@ unsigned getEnvironmentThorClusterNames(StringArray &thorNames, StringArray &gro
 }
 
 
+unsigned getEnvironmentRoxieClusterNames(StringArray &roxieNames, StringArray &groupNames, StringArray &targetNames)
+{
+    Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+    if (!conn)
+        return 0;
+    Owned<IPropertyTreeIterator> allTargets = conn->queryRoot()->getElements("Software/Topology/Cluster");
+    ForEach(*allTargets)
+    {
+        IPropertyTree &target = allTargets->query();
+        const char *targetName = target.queryProp("@name");
+        if (targetName && *targetName)
+        {
+            Owned<IPropertyTreeIterator> roxieClusters = target.getElements("RoxieCluster");
+            ForEach(*roxieClusters)
+            {
+                const char *roxieName = roxieClusters->query().queryProp("@process");
+                VStringBuffer query("Software/RoxieCluster[@name=\"%s\"]",roxieName);
+                IPropertyTree *roxieCluster = conn->queryRoot()->queryPropTree(query.str());
+                if (roxieCluster)
+                {
+                    const char *groupName = roxieCluster->queryProp("@nodeGroup");
+                    if (!groupName||!*groupName)
+                        groupName = roxieName;
+                    roxieNames.append(roxieName);
+                    groupNames.append(groupName);
+                    targetNames.append(targetName);
+                }
+            }
+        }
+    }
+    return roxieNames.ordinality();
+}
+
+
 IStringVal& CLocalWorkUnit::getScope(IStringVal &str) const 
 {
     CriticalBlock block(crit);
