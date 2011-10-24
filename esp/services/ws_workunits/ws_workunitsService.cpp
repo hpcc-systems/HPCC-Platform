@@ -46,6 +46,32 @@
 
 #define ESP_WORKUNIT_DIR "workunits/"
 
+class NewWsWorkunit : public Owned<IWorkUnit>
+{
+public:
+    NewWsWorkunit(IWorkUnitFactory *factory, IEspContext &context)
+    {
+        create(factory, context);
+    }
+
+    NewWsWorkunit(IEspContext &context)
+    {
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+        create(factory, context);
+    }
+
+    ~NewWsWorkunit() { if (get()) get()->commit(); }
+
+    void create(IWorkUnitFactory *factory, IEspContext &context)
+    {
+        setown(factory->createWorkUnit(NULL, "ws_workunits", context.queryUserId()));
+        if(!get())
+          throw MakeStringException(ECLWATCH_CANNOT_CREATE_WORKUNIT,"Could not create workunit.");
+        get()->setUser(context.queryUserId());
+    }
+};
+
+
 void submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, const char* cluster, const char* snapshot, int maxruntime, bool compile, bool resetWorkflow)
 {
     ensureWsWorkunitAccess(context, *cw, SecAccess_Write);
@@ -392,8 +418,7 @@ bool CWsWorkunitsEx::onWUCreate(IEspContext &context, IEspWUCreateRequest &req, 
         if (!context.validateFeatureAccess(OWN_WU_ACCESS, SecAccess_Write, false))
             throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "Failed to create workunit. Permission denied.");
 
-        Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-        Owned<IWorkUnit> wu = factory->createWorkUnit(NULL, "ws_workunits", context.queryUserId());
+        NewWsWorkunit wu(context);
         SCMStringBuffer wuid;
         resp.updateWorkunit().setWuid(wu->getWuid(wuid).str());
         AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid.str());
@@ -559,6 +584,20 @@ bool CWsWorkunitsEx::onWUUpdate(IEspContext &context, IEspWUUpdateRequest &req, 
 
 bool CWsWorkunitsEx::onWUCreateAndUpdate(IEspContext &context, IEspWUUpdateRequest &req, IEspWUUpdateResponse &resp)
 {
+    try
+    {
+        if (!context.validateFeatureAccess(OWN_WU_ACCESS, SecAccess_Write, false))
+            throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "Failed to create workunit. Permission denied.");
+
+        NewWsWorkunit wu(context);
+        SCMStringBuffer wuid;
+        wu->getWuid(wuid);
+        req.setWuid(wuid.str());
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
     return onWUUpdate(context, req, resp);
 }
 
@@ -704,10 +743,9 @@ bool CWsWorkunitsEx::onWUResubmit(IEspContext &context, IEspWUResubmitRequest &r
                 if(req.getCloneWorkunit() || req.getRecompile())
                 {
                     Owned<IConstWorkUnit> src(factory->openWorkUnit(wuid.str(), false));
-                    WorkunitUpdate wu(factory->createWorkUnit(NULL, "ws_workunits", context.queryUserId()));
+                    NewWsWorkunit wu(factory, context);
                     wu->getWuid(wuid);
                     queryExtendedWU(wu)->copyWorkUnit(src);
-                    wu->setUser(context.queryUserId());
 
                     SCMStringBuffer token;
                     wu->setSecurityToken(createToken(wuid.str(), context.queryUserId(), context.queryPassword(), token).str());
@@ -906,8 +944,7 @@ bool CWsWorkunitsEx::onWUSyntaxCheckECL(IEspContext &context, IEspWUSyntaxCheckR
     try
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-        WorkunitUpdate wu(factory->createWorkUnit(NULL, "ws_workunits", context.queryUserId()));
-
+        NewWsWorkunit wu(factory, context);
         wu->setAction(WUActionCheck);
         if(notEmpty(req.getModuleName()) && notEmpty(req.getAttributeName()))
         {
@@ -955,7 +992,7 @@ bool CWsWorkunitsEx::onWUCompileECL(IEspContext &context, IEspWUCompileECLReques
         ensureWsCreateWorkunitAccess(context);
 
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-        Owned<IWorkUnit> wu = factory->createWorkUnit(NULL, "ws_workunits", context.queryUserId());
+        NewWsWorkunit wu(factory, context);
 
         if(req.getIncludeComplexity())
         {
@@ -1045,12 +1082,9 @@ bool CWsWorkunitsEx::onWUGetDependancyTrees(IEspContext& context, IEspWUGetDepen
         DBGLOG("WUGetDependancyTrees");
 
         unsigned int timeMilliSec = 500;
-        Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-        WorkunitUpdate wu = factory->createWorkUnit(NULL, "ws_workunits", context.queryUserId());
-        if(!wu)
-          throw MakeStringException(ECLWATCH_CANNOT_CREATE_WORKUNIT,"Cannot create a workunit.");
 
-        wu->setUser(context.queryUserId());
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+        NewWsWorkunit wu(factory, context);
         wu->setAction(WUActionCheck);
 
         if (notEmpty(req.getCluster()))
