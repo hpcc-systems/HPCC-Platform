@@ -499,7 +499,10 @@
                   <xsl:variable name="grp" select="Software/DfuWorkunit/Destination/@group"/>
                   <xsl:for-each select="Software/ThorCluster">
                      <option>
-                        <xsl:attribute name="title"> <!--Specifies extra information about an element-->
+                        <!--The 'title' attribute is used to pass the replicateOutputs flag to onChangeDestGroup().
+                        If it is set to be false, the onChangeDestGroup() will hide the "Replicate" checkbox and
+                        set the "Replicate" option to false. -->
+                        <xsl:attribute name="title">
                             <xsl:value-of select="@replicateOutputs"/>
                         </xsl:attribute>
                         <xsl:attribute name="value">
@@ -514,8 +517,10 @@
                   </xsl:for-each>
                   <xsl:for-each select="Software/EclAgentProcess/Instance">
                      <option>
-                        <!--xsl:attribute name="value"><xsl:value-of select="@netAddress"/></xsl:attribute>
-                        <xsl:value-of select="../@name"/><xsl:text> </xsl:text><xsl:value-of select="@netAddress"/-->
+                         <!--The 'title' attribute is used to pass the replicate flag to onChangeDestGroup(). Since
+                        hthor never replicates, the 'title' attribute is set to be false and the onChangeDestGroup()
+                        will hide the "Replicate" checkbox and set the "Replicate" option to false. -->
+                        <xsl:attribute name="title">false</xsl:attribute>
                         <xsl:attribute name="value"><xsl:value-of select="@gname"/><xsl:text> </xsl:text><xsl:value-of select="@netAddress"/></xsl:attribute>
                         <xsl:value-of select="@gname"/><xsl:text> </xsl:text><xsl:value-of select="@netAddress"/>
                      </option>
