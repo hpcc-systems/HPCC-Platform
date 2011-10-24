@@ -4097,6 +4097,44 @@ unsigned getEnvironmentThorClusterNames(StringArray &thorNames, StringArray &gro
 }
 
 
+unsigned getEnvironmentHThorClusterNames(StringArray &eclAgentNames, StringArray &groupNames, StringArray &targetNames)
+{
+    Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+    if (!conn)
+        return 0;
+    Owned<IPropertyTreeIterator> allEclAgents = conn->queryRoot()->getElements("Software/EclAgentProcess");
+    ForEach(*allEclAgents)
+    {
+        IPropertyTree &eclAgent = allEclAgents->query();
+        const char *eclAgentName = eclAgent.queryProp("@name");
+        if (eclAgentName && *eclAgentName)
+        {
+            Owned<IPropertyTreeIterator> allTargets = conn->queryRoot()->getElements("Software/Topology/Cluster");
+            ForEach(*allTargets)
+            {
+                IPropertyTree &target = allTargets->query();
+                const char *targetName = target.queryProp("@name");
+                if (targetName && *targetName)
+                {
+                    StringBuffer xpath;
+                    xpath.appendf("EclAgentProcess[@process=\"%s\"]", eclAgentName);
+                    if (target.hasProp(xpath) && !target.hasProp("ThorCluster"))
+                    {
+                        StringBuffer groupName("hthor__");
+                        groupName.append(eclAgentName);
+
+                        groupNames.append(groupName);
+                        eclAgentNames.append(eclAgentName);
+                        targetNames.append(targetName);
+                    }
+                }
+            }
+        }
+    }
+    return eclAgentNames.ordinality();
+}
+
+
 IStringVal& CLocalWorkUnit::getScope(IStringVal &str) const 
 {
     CriticalBlock block(crit);
