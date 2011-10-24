@@ -38,6 +38,8 @@
                 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
                 <title><xsl:value-of select="$wuid"/></title>
         <link rel="stylesheet" type="text/css" href="/esp/files/yui/build/fonts/fonts-min.css" />
+        <link rel="stylesheet" type="text/css" href="/esp/files/yui/build/button/assets/skins/sam/button.css" />
+        <link rel="stylesheet" type="text/css" href="/esp/files/yui/build/container/assets/skins/sam/container.css" />
         <link rel="stylesheet" type="text/css" href="/esp/files/css/espdefault.css" />
         <link rel="stylesheet" type="text/css" href="/esp/files/css/eclwatch.css" />
         <link type="text/css" rel="StyleSheet" href="/esp/files_/css/sortabletable.css"/>
@@ -48,6 +50,9 @@
         <script type="text/javascript" src="/esp/files/yui/build/yahoo/yahoo-min.js"></script>
         <script type="text/javascript" src="/esp/files/yui/build/event/event-min.js"></script>
         <script type="text/javascript" src="/esp/files/yui/build/connection/connection-min.js"></script>
+        <script type="text/javascript" src="/esp/files/yui/build/element/element-min.js"></script>
+        <script type="text/javascript" src="/esp/files/yui/build/button/button-min.js"></script>
+        <script type="text/javascript" src="/esp/files/yui/build/container/container-min.js"></script>
         <script type="text/javascript" src="/esp/files/scripts/espdefault.js">&#160;</script>
         ]]></xsl:text>
         <script type="text/javascript">
@@ -542,13 +547,42 @@
             }
 
             var publishSuccess = function(o){
-                var i = o.responseText.indexOf('"MessageText">');
+                var i = o.responseText.indexOf('<h3>Exception');
+                var handleOk = function() {
+                     this.hide();
+                };
+
+                var exceptionHtml = "Workunit successfully published.";
+
                 if (i > -1) {
-                   var j = o.responseText.indexOf('<', i+14);
-                   alert('Workunit not Published. ' + o.responseText.substring(i+14, j));
-                } else {
-                   alert('Workunit Published.');
+                    var j = o.responseText.indexOf('<table');
+                    if (j > -1) {
+                        var k = o.responseText.indexOf('</table>');
+                        if (k > -1) {
+                            exceptionHtml = o.responseText.substring(j, k+8);
+                        }
+                    }
                 }
+                var publishDialog =
+                     new YAHOO.widget.SimpleDialog("publishDialog",
+                      { width: "300px",
+                        fixedcenter: true,
+                        visible: false,
+                        draggable: false,
+                        close: true,
+                        text: exceptionHtml,
+                        icon: YAHOO.widget.SimpleDialog.ICON_HELP,
+                        constraintoviewport: true,
+                        buttons: [ { text:"Ok", handler:handleOk, isDefault:true } ]
+                      } );
+
+                if ( i > -1) {
+                    publishDialog.setHeader("Error Publishing Workunit.");
+                } else {
+                    publishDialog.setHeader("Workunit Published.");
+                }
+                publishDialog.render("publishContainer");
+                publishDialog.show();
             };
              
             var publishFailure = function(o){
@@ -630,6 +664,7 @@
           <div id="encodeDiv" name="encodeDiv" style="display:none; visibility:hidden;"></div>
         ]]></xsl:text>
 
+        <div id="publishContainer" />
 
       </body>
         </html>
