@@ -221,7 +221,7 @@ for IP in $IPS; do
             echo "$IP: Has SSH Key, No install actions done.";
         fi
     else
-        echo "$IP: FAIL"
+        echo "$IP: Cannot Ping host? (Host Alive?)"
     fi
 done
 

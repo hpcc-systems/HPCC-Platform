@@ -64,6 +64,6 @@ for IP in $IPS; do
 			copyFile $1 $2
 		fi
 	else
-		echo "$IP: FAIL"
+        echo "$IP: Cannot Ping host? (Host Alive?)"
 	fi
 done
