@@ -49,7 +49,6 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/submitNavForm.html
     ${CMAKE_CURRENT_SOURCE_DIR}/tabularForm.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/transformDlg.html
-    ${CMAKE_CURRENT_SOURCE_DIR}/useradd.html
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_app_tree.html
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_app.html
 )
