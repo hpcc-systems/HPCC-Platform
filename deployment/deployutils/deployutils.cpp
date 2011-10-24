@@ -935,7 +935,7 @@ public:
             {
               // MORE - attribute servers would be ok here too
               nCtrlType = 4;//LVC_COMBO;
-              LoadComboBox("Software/EclCCServerProcess", bAddBlank, m_pEnv, m_pEnv, strBuf);
+              LoadComboBox("Software/EclServerProcess", bAddBlank, m_pEnv, m_pEnv, strBuf);
               extraInfo = strBuf.str();
             }
             else if (strcmp(type, "eclCCServerType")==0)
@@ -1640,7 +1640,7 @@ public:
         }
         else if(!strcmp(type, "eclServerType"))
         {
-          tempPath.clear().append("./Software/EclCCServerProcess[1]/@name");
+          tempPath.clear().append("./Software/EclServerProcess[1]/@name");
           wizDefVal.clear().append(m_pEnv->queryProp(tempPath.str()));
         }
         else if(!strcmp(type, "eclCCServerType"))
