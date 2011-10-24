@@ -138,7 +138,7 @@ if [ "${cmd}" == "restart" ]; then
                     runCmd $CMD
                 fi
             else
-                echo "$DIP: FAIL"
+                echo "$DIP: Cannot Ping host? (Host Alive?)"
             fi 
         fi
 
@@ -156,7 +156,7 @@ if [ "${cmd}" == "restart" ]; then
                     runCmd $CMD
                 fi
             else
-                echo "$IP: FAIL"
+                echo "$IP: Cannot Ping host? (Host Alive?)"
             fi
         done
         
@@ -172,7 +172,7 @@ if [ "${cmd}" == "restart" ]; then
                     runCmd $CMD
                 fi
             else
-                echo "$DIP: FAIL"
+                echo "$DIP: Cannot Ping host? (Host Alive?)"
             fi
         fi
     done
@@ -189,7 +189,7 @@ else
                 runCmd $CMD
             fi
         else
-            echo "$DIP: FAIL"
+            echo "$DIP: Cannot Ping host? (Host Alive?)"
         fi 
     fi
 
@@ -207,7 +207,7 @@ else
                 runCmd $CMD
             fi
         else
-            echo "$IP: FAIL"
+            echo "$IP: Cannot Ping host? (Host Alive?)"
         fi
     done
         
@@ -223,7 +223,7 @@ else
                 runCmd $CMD
             fi
         else
-             echo "$DIP: FAIL"
+             echo "$DIP: Cannot Ping host? (Host Alive?)"
         fi
     fi
 fi

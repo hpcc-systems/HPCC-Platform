@@ -32,21 +32,21 @@ source  ${INSTALL_DIR}/etc/init.d/export-path
 
 
 getIPS(){
-	IPS=`${INSTALL_DIR}/sbin/configgen -env ${envfile} -machines | awk -F, '{print \$1}'  | sort | uniq`
+    IPS=`${INSTALL_DIR}/sbin/configgen -env ${envfile} -machines | awk -F, '{print \$1}'  | sort | uniq`
 }
 
 copyFile(){
-	echo "$IP: Copying $1 to $2 on $IP";
-	SCP=`scp -i $home/$user/.ssh/id_rsa $1 $user@$IP:$2; echo $?`
-	if [ "$SCP" -eq 0 ]; then
-		echo "$IP: Success";
-	else
-		echo "$IP: Failure";
-	fi
+    echo "$IP: Copying $1 to $2 on $IP";
+    SCP=`scp -i $home/$user/.ssh/id_rsa $1 $user@$IP:$2; echo $?`
+    if [ "$SCP" -eq 0 ]; then
+        echo "$IP: Success";
+    else
+        echo "$IP: Failure";
+    fi
 }
 
 if [ $# -ne 2 ]; then
-	echo "usage: hpcc-push.sh [user@]host1:]file1 [[user@]host2:]file2"
+    echo "usage: hpcc-push.sh [user@]host1:]file1 [[user@]host2:]file2"
 fi
 
 set_environmentvars
@@ -55,15 +55,15 @@ envfile=$configs/$environment
 getIPS
 
 for IP in $IPS; do
-	if ping -c 1 -w 5 -n $IP > /dev/null 2>&1; then
-		echo "$IP: Host is alive."
-		CAN_SSH="`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@$IP exit > /dev/null 2>&1; echo $?`"
-		if [ "$CAN_SSH" -eq 255 ]; then
-			echo "$IP: Cannot SSH to host.";
-		else
-			copyFile $1 $2
-		fi
-	else
-		echo "$IP: FAIL"
-	fi
+    if ping -c 1 -w 5 -n $IP > /dev/null 2>&1; then
+        echo "$IP: Host is alive."
+        CAN_SSH="`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@$IP exit > /dev/null 2>&1; echo $?`"
+        if [ "$CAN_SSH" -eq 255 ]; then
+            echo "$IP: Cannot SSH to host.";
+        else
+            copyFile $1 $2
+        fi
+    else
+        echo "$IP: Cannot Ping host? (Host Alive?)"
+    fi
 done
