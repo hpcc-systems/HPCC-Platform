@@ -112,7 +112,7 @@ fileCheck ()
         echo "Fail"
         echo "*** Security Alert ***"
         echo "You are using a publicly available default key."
-        echo "Please run ${path}/sbin/keygen.sh to generate a new key to make your system secure."
+        echo "Please run 'sudo ${path}/sbin/keygen.sh' to generate a new key to make your system secure."
         echo "***  Security Alert  ***"
     else
         __fileCheck=1
