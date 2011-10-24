@@ -23,6 +23,7 @@ instancedir=$4
 slaveport=$5
 hpcc_compname=$6
 hpcc_setenv=$7
+logredirect=$8
 
 source ${hpcc_setenv}
 PID_NAME="$PID/${hpcc_compname}_slave.pid"
@@ -31,12 +32,14 @@ INSTALL_DIR=`dirname ${hpcc_setenv}`/..
 source  ${INSTALL_DIR}/etc/init.d/hpcc_common
 which_pidof
 
-if [ $# -lt 7 ]; then
-  echo usage: $0 thordeploydir slaveno logdir workingdir slaveport hpcc_compname hpcc_setenv
+if [ $# -lt 8 ]; then
+  echo usage: $0 thordeploydir slaveno logdir workingdir slaveport hpcc_compname hpcc_setenv logredirect
   exit 1
 fi
 
 sudo /etc/init.d/hpcc-init -c $hpcc_compname setup 2>/dev/null 2>/dev/null
+
+exec >$logredirect 2>&1
 
 cd $instancedir
 . ./setvars

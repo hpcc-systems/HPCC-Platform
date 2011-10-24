@@ -28,7 +28,7 @@ if [ "$localthor" = "true" ]; then
         if [ "$slaveport" = "" ]; then
             slaveport=$THORSLAVEPORT
         fi
-        $deploydir/start_slave $deploydir $n $logpth $instancedir $slaveport $THORNAME $PATH_PRE &> $logdir/start_slave_$logpthtail.$n.log
+        $deploydir/start_slave $deploydir $n $logpth $instancedir $slaveport $THORNAME $PATH_PRE $logdir/start_slave_$logpthtail.$n.log
         let "n += 1";
         done
 else
@@ -40,14 +40,16 @@ else
                 if [ "$slaveport" = "" ]; then
                     slaveport=$THORSLAVEPORT
                 fi
-                frunssh $ip "/bin/sh -c '$deploydir/start_slave $deploydir $n $logpth $instancedir $slaveport $THORNAME $PATH_PRE&> $logdir/start_slave_$logpthtail.$n.log'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries 2>&1
+                logredirect="$logdir/start_slave_$logpthtail.$n.log"
+                frunssh $ip "/bin/sh -c '$deploydir/start_slave $deploydir $n $logpth $instancedir $slaveport $THORNAME $PATH_PRE $logredirect'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries 2>&1
                 let "n += 1";
             done
         else
             if [ -e $instancedir/thorgroup ]; then
                 mv $instancedir/thorgroup $instancedir/thorgroup.local
             fi
-            frunssh $instancedir/slaves "/bin/sh -c '$deploydir/start_slave $deploydir %n $logpth $instancedir $THORSLAVEPORT $THORNAME $PATH_PRE &> $logdir/start_slave_$logpthtail.log'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries 2>&1
+            logredirect="$logdir/start_slave_$logpthtail.log"
+            frunssh $instancedir/slaves "/bin/sh -c '$deploydir/start_slave $deploydir %n $logpth $instancedir $THORSLAVEPORT $THORNAME $PATH_PRE $logredirect'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries 2>&1
         fi
 fi
 echo thorslaves started
