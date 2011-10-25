@@ -16,4 +16,4 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
-Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/g++ DESTINATION ${OSSDIR}/componentfiles COMPONENT Runtime )
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/g++ DESTINATION ${OSSDIR}/componentfiles/cl/bin COMPONENT Runtime )
