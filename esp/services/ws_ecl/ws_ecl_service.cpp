@@ -261,6 +261,22 @@ void CWsEclBinding::getRootNavigationFolders(IEspContext &context, IPropertyTree
     }
 }
 
+void CWsEclBinding::addQueryNavLink(IPropertyTree &data, IPropertyTree *query, const char *setname, const char *qname)
+{
+    if (!query)
+        return;
+    if (query->getPropBool("@suspended"))
+        return;
+    if (!qname || !*qname)
+        qname = query->queryProp("@id");
+    if (!setname || !*setname || !qname || !*qname)
+        return;
+
+    StringBuffer navPath;
+    navPath.appendf("/WsEcl/tabview/query/%s/%s", setname, qname);
+    ensureNavLink(data, qname, navPath.str(), qname, "menu2", navPath.str());
+}
+
 void CWsEclBinding::getDynNavData(IEspContext &context, IProperties *params, IPropertyTree & data)
 {
     if (!params)
@@ -274,17 +290,27 @@ void CWsEclBinding::getDynNavData(IEspContext &context, IProperties *params, IPr
     else if (params->hasProp("queryset"))
     {
         const char *setname = params->queryProp("queryset");
-
         Owned<IPropertyTree> settree = getQueryRegistry(setname, true);
-        Owned<IPropertyTreeIterator> iter = settree->getElements("Query");
-        ForEach(*iter)
+
+        if (params->hasProp("QueryList"))
         {
-            IPropertyTree &query = iter->query();
-            const char *qname = query.queryProp("@id");
-            const char *wuid = query.queryProp("@wuid");
-            StringBuffer navPath;
-            navPath.appendf("/WsEcl/tabview/wuid/%s?qset=%s&qname=%s", wuid, setname, qname);
-            ensureNavLink(data, qname, navPath.str(), qname, "menu2", navPath.str());
+            Owned<IPropertyTreeIterator> iter = settree->getElements("Query");
+            ForEach(*iter)
+                addQueryNavLink(data, &iter->query(), setname);
+        }
+        else
+        {
+            Owned<IPropertyTreeIterator> iter = settree->getElements("Alias");
+            ForEach(*iter)
+            {
+                IPropertyTree &alias = iter->query();
+                const char *id = alias.queryProp("@id");
+                if (id && *id)
+                {
+                    VStringBuffer xpath("Query[@id='%s']", id);
+                    addQueryNavLink(data, settree->queryPropTree(xpath.str()), setname, alias.queryProp("@name"));
+                }
+            }
         }
     }
 }
@@ -878,60 +904,55 @@ int CWsEclBinding::getWsEcl2TabView(CHttpRequest* request, CHttpResponse* respon
     IEspContext *context = request->queryContext();
     IProperties *parms = request->queryParameters();
 
-    StringBuffer viewtype;
-    nextPathNode(thepath, viewtype);
+    StringBuffer wuid;
+    StringBuffer qs;
+    StringBuffer qid;
+    splitLookupInfo(request->queryParameters(), thepath, wuid, qs, qid);
 
-    if (!stricmp(viewtype.str(), "wuid"))
+    WsWuInfo wsinfo(wuid.str(), qs.str(), qid.str(), context->queryUserId(), context->queryPassword());
+
+    StringBuffer xml;
+    xml.append("<tabview>");
+    xml.append("<version>3</version>");
+    xml.appendf("<wuid>%s</wuid>", wsinfo.wuid.sget());
+    xml.appendf("<qset>%s</qset>", wsinfo.qsetname.sget());
+    xml.appendf("<qname>%s</qname>", wsinfo.queryname.sget());
+
+    StringBuffer xsds;
+    wsinfo.getSchemas(xsds);
+    Owned<IPropertyTree> xsdtree;
+    if (xsds.length())
+        xsdtree.setown(createPTreeFromXMLString(xsds.str()));
+
+    if (xsdtree)
     {
-        StringBuffer wuid;
-        nextPathNode(thepath, wuid);
-        Owned<WsWuInfo> wsinfo = new WsWuInfo(wuid.str(), parms->queryProp("qset"), parms->queryProp("qname"), context->queryUserId(), context->queryPassword());
-
-        StringBuffer xml;
-        xml.append("<tabview>");
-        xml.append("<version>3</version>");
-        xml.appendf("<wuid>%s</wuid>", wuid.str());
-        xml.appendf("<qset>%s</qset>", wsinfo->qsetname.sget());
-        xml.appendf("<qname>%s</qname>", wsinfo->queryname.sget());
-
-        StringBuffer xsds;
-        wsinfo->getSchemas(xsds);
-        Owned<IPropertyTree> xsdtree;
-        if (xsds.length())
-            xsdtree.setown(createPTreeFromXMLString(xsds.str()));
-
-        if (xsdtree)
+        xml.append("<input_datasets>");
+        Owned<IPropertyTreeIterator> input_xsds =xsdtree->getElements("Input");
+        ForEach (*input_xsds)
         {
-            xml.append("<input_datasets>");
-            Owned<IPropertyTreeIterator> input_xsds =xsdtree->getElements("Input");
-            ForEach (*input_xsds)
-            {
-                xml.append("<dataset>");
-                xml.append("<name>").append(input_xsds->query().queryProp("@name")).append("</name>");
-                xml.append("</dataset>");
-            }
-            xml.append("</input_datasets>");
-            xml.append("<result_datasets>");
-            Owned<IPropertyTreeIterator> result_xsds =xsdtree->getElements("Result");
-            ForEach (*result_xsds)
-            {
-                xml.append("<dataset>");
-                xml.append("<name>").append(result_xsds->query().queryProp("@name")).append("</name>");
-                xml.append("</dataset>");
-            }
-            xml.append("</result_datasets>");
+            xml.append("<dataset>");
+            xml.append("<name>").append(input_xsds->query().queryProp("@name")).append("</name>");
+            xml.append("</dataset>");
         }
-
-
-        xml.append("</tabview>");
-
-        StringBuffer html;
-        xsltTransform(xml.str(), xml.length(), "./xslt/wsecl3_tabview.xsl", NULL, html);
-        response->setStatus("200 OK");
-        response->setContent(html.str());
-        response->setContentType("text/html");
-        response->send();
+        xml.append("</input_datasets>");
+        xml.append("<result_datasets>");
+        Owned<IPropertyTreeIterator> result_xsds =xsdtree->getElements("Result");
+        ForEach (*result_xsds)
+        {
+            xml.append("<dataset>");
+            xml.append("<name>").append(result_xsds->query().queryProp("@name")).append("</name>");
+            xml.append("</dataset>");
+        }
+        xml.append("</result_datasets>");
     }
+    xml.append("</tabview>");
+
+    StringBuffer html;
+    xsltTransform(xml.str(), xml.length(), "./xslt/wsecl3_tabview.xsl", NULL, html);
+    response->setStatus("200 OK");
+    response->setContent(html.str());
+    response->setContentType("text/html");
+    response->send();
 
     return 0;
 }
@@ -1336,8 +1357,6 @@ int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttp
     StringBuffer page;
     Owned<IXslProcessor> xslp = getXslProcessor();
 
-    Owned<IWuWebView> web = createWuWebView(*wsinfo.wu.get(), wsinfo.queryname.get(), getCFD(), true);
-
     StringBuffer v;
     StringBuffer formxml("<FormInfo>");
     appendXMLTag(formxml, "WUID", wsinfo.wuid.sget());
@@ -1345,17 +1364,25 @@ int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttp
     appendXMLTag(formxml, "QueryName", wsinfo.queryname.sget());
     appendXMLTag(formxml, "ClientVersion", v.appendf("%g",context.getClientVersion()).str());
     appendXMLTag(formxml, "RequestElement", v.clear().append(wsinfo.queryname).append("Request").str());
-    appendXMLTag(formxml, "Help", web->aggregateResources("HELP", v.clear()).str());
-    appendXMLTag(formxml, "Info", web->aggregateResources("INFO", v.clear()).str());
+
+    Owned<IWuWebView> web = createWuWebView(*wsinfo.wu.get(), wsinfo.queryname.get(), getCFD(), true);
+    if (web)
+    {
+        appendXMLTag(formxml, "Help", web->aggregateResources("HELP", v.clear()).str());
+        appendXMLTag(formxml, "Info", web->aggregateResources("INFO", v.clear()).str());
+    }
 
     context.addOptions(ESPCTX_ALL_ANNOTATION);
     getSchema(formxml, context, request, wsinfo);
 
-    StringArray views;
-    web->getResultViewNames(views);
     formxml.append("<CustomViews>");
-    ForEachItemIn(i, views)
-        appendXMLTag(formxml, "Result", views.item(i));
+    if (web)
+    {
+        StringArray views;
+        web->getResultViewNames(views);
+        ForEachItemIn(i, views)
+            appendXMLTag(formxml, "Result", views.item(i));
+    }
     formxml.append("</CustomViews>");
     formxml.append("</FormInfo>");
 
@@ -1849,7 +1876,8 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsWuInfo &wsinfo, 
         else if (xsltname)
         {
             Owned<IWuWebView> web = createWuWebView(wuid.str(), wsinfo.queryname.get(), getCFD(), true);
-            web->applyResultsXSLT(xsltname, out);
+            if (web)
+                web->applyResultsXSLT(xsltname, out);
         }
         else
         {
@@ -2028,7 +2056,9 @@ int CWsEclBinding::onSubmitQueryOutputXML(IEspContext &context, CHttpRequest* re
 
         StringBuffer roxieresp;
         httpclient->sendRequest("POST", "text/xml", soapmsg, roxieresp, status);
+        output.appendf("<%sResponse><Result>", wsinfo.queryname.sget());
         getResultsXmlBody(roxieresp.str(), output);
+        output.appendf("</Result></%sResponse>", wsinfo.queryname.sget());
     }
     else
     {
