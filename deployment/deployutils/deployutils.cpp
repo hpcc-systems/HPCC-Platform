@@ -1991,6 +1991,7 @@ bool generateHeaderForTopology(const IPropertyTree* pEnv, StringBuffer& sbDefn, 
   addTopologyType(jsStrBuf, pEnv, "", TAG_NAME, "", 1, 1, "", 1);
   addTopologyType(jsStrBuf, pEnv, "", TAG_BUILDSET, "", 1, 1, "", 1);
   addTopologyType(jsStrBuf, pEnv, XML_TAG_ECLCCSERVERPROCESS,  TAG_PROCESS, "", 0, 1, XML_TAG_SOFTWARE"/EclCCServerProcess", 4);
+  addTopologyType(jsStrBuf, pEnv, XML_TAG_ECLSERVERPROCESS,  TAG_PROCESS, "", 0, 1, XML_TAG_SOFTWARE"/EclServerProcess", 4);
   addTopologyType(jsStrBuf, pEnv, XML_TAG_ECLSCHEDULERPROCESS,  TAG_PROCESS, "", 0, 1, XML_TAG_SOFTWARE"/EclSchedulerProcess", 4);
   addTopologyType(jsStrBuf, pEnv, XML_TAG_ECLAGENTPROCESS,  TAG_PROCESS, "", 0, 1, XML_TAG_SOFTWARE"/EclAgentProcess", 4);
   addTopologyType(jsStrBuf, pEnv, XML_TAG_THORCLUSTER,  TAG_PROCESS, "", 0, 1, XML_TAG_SOFTWARE"/ThorCluster", 4);
