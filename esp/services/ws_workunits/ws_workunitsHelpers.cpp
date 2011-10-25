@@ -144,13 +144,9 @@ StringBuffer &getWuidFromLogicalFileName(IEspContext &context, const char *logic
 
 const char *getThorQueueName(const char *cluster)
 {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-    Owned<IConstEnvironment> environment = factory->openEnvironmentByFile();
-    Owned<IPropertyTree> root = &environment->getPTree();
-    if (!root)
-        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
-    VStringBuffer xpath("Software/ThorCluster[@name='%s']/@queueName", cluster);
-    return root->queryProp(xpath.str());
+    SCMStringBuffer thorQueues;
+    getThorQueueNames(thorQueues, cluster);
+    return thorQueues.str();
 }
 
 void formatDuration(StringBuffer &s, unsigned ms)
