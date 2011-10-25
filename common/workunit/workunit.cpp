@@ -1424,6 +1424,7 @@ public:
     virtual IStringVal& getQueryText(IStringVal &str) const;
     virtual IStringVal& getQueryShortText(IStringVal &str) const;
     virtual IStringVal& getQueryName(IStringVal &str) const;
+    virtual IStringVal & getQueryMainDefinition(IStringVal & str) const;
     virtual IStringVal& getQueryDllName(IStringVal &str) const;
     virtual unsigned getQueryDllCrc() const;
     virtual IStringVal& getQueryCppName(IStringVal &str) const;
@@ -1434,6 +1435,7 @@ public:
     virtual void        setQueryType(WUQueryType qt);
     virtual void        setQueryText(const char *pstr);
     virtual void        setQueryName(const char *);
+    virtual void        setQueryMainDefinition(const char * str);
     virtual void        addAssociatedFile(WUFileType type, const char * name, const char * ip, const char * desc, unsigned crc);
     virtual void        removeAssociatedFiles();
 };
@@ -6127,6 +6129,12 @@ IStringVal& CLocalWUQuery::getQueryName(IStringVal &str) const
     return str;
 }
 
+IStringVal & CLocalWUQuery::getQueryMainDefinition(IStringVal & str) const
+{
+    str.set(p->queryProp("@main"));
+    return str;
+}
+
 IStringVal& CLocalWUQuery::getQueryDllName(IStringVal &str) const
 {
     Owned<IConstWUAssociatedFile> entry = getAssociatedFile(FileTypeDll, 0);
@@ -6167,6 +6175,11 @@ void CLocalWUQuery::setQueryText(const char *text)
 void CLocalWUQuery::setQueryName(const char *qname)
 {
     p->setProp("@name", qname);
+}
+
+void CLocalWUQuery::setQueryMainDefinition(const char * str)
+{
+    p->setProp("@main", str);
 }
 
 void CLocalWUQuery::addAssociatedFile(WUFileType type, const char * name, const char * ip, const char * desc, unsigned crc)
