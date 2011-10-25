@@ -11,12 +11,33 @@ WsWuInfo::WsWuInfo(const char *wuid_, const char *qset, const char *qname, const
         Owned<IPropertyTree> qstree = getQueryRegistry(qsetname.sget(), true);
         if (qstree)
         {
-            VStringBuffer xpath("Query[@id=\"%s\"]", queryname.sget());
-            IPropertyTree *query = qstree->queryPropTree(xpath.str());
-            if (query)
-                wuid.set(query->queryProp("@wuid"));
+            IPropertyTree *query = NULL;
+            VStringBuffer xpath("Alias[@name=\"%s\"]", queryname.sget());
+            IPropertyTree *alias = qstree->queryPropTree(xpath.str());
+            if (alias)
+            {
+                const char *quid = alias->queryProp("@id");
+                if (!quid)
+                    throw MakeStringException(-1, "Alias %s/%s has no Query defined", qsetname.sget(), queryname.sget());
+                xpath.clear().appendf("Query[@id='%s']", quid);
+                query = qstree->queryPropTree(xpath.str());
+                if (!query)
+                    throw MakeStringException(-1, "Alias %s/%s refers to a non existing query %s", qsetname.sget(), queryname.sget(), quid);
+            }
             else
-                throw MakeStringException(-1, "Query %s not found in QuerySet %s", queryname.sget(), qsetname.sget());
+            {
+                xpath.clear().appendf("Query[@id=\"%s\"]", queryname.sget());
+                query = qstree->queryPropTree(xpath.str());
+            }
+            if (query)
+            {
+                if (query->getPropBool("@suspended"))
+                    throw MakeStringException(-1, "Query %s/%s is currently suspended", qsetname.sget(), queryname.sget());
+
+                wuid.set(query->queryProp("@wuid"));
+            }
+            else
+                throw MakeStringException(-1, "Query %s/%s not found", qsetname.sget(), queryname.sget());
         }
         else
             throw MakeStringException(-1, "QuerySet %s not found", qsetname.sget());

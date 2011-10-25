@@ -177,8 +177,14 @@ background-position:center;
             </div>
             </div>
 <div id="left1">
+    <div id="espNavHeader" style="font-size:0.90em; xpadding: 2px;">
+        <img src="/esp/files/img/refresh.png" style="cursor:pointer" onclick="removeTreeNodes();" title="Refresh Tree" width="17" height="17" align="right" vspace="1">
+        <select id="wsecl_tree_select" name="wsecl_tree_select" style="width: 92%;" onchange="removeTreeNodes();">
+            <option value="AliasList" selected="selected">QuerySet Aliases</option>
+            <option value="QueryList">QuerySet Queries</option>
+        </select>
+    </div>
     <div id="espNavObj" class=" ygtv-highlight" style="font-size:0.90em; padding: 2px; height: 100%; width: 60">&nbsp;</div>
-
 </div>
 <div id="center1" style="height:100%; width:100%">
     <iframe id="center1frame" name="main" style="height:100%; width:100%; border:0;" ></iframe>
@@ -192,6 +198,16 @@ background-position:center;
       var viewType;
       var leftcfg;
       var start_page;
+
+function removeTreeNodes()
+{
+    var childnodes = tree.getRoot().children[0].children;
+    for(var i = childnodes.length-1; i>=0; i--)
+    {
+        tree.removeChildren(childnodes[i]);
+    }
+    tree.getRoot().expand();
+}
 
 function getURLParameter(name)
 {
@@ -231,6 +247,8 @@ function writeESPText()
             titlediv.innerHTML =  "<font size=\"4\"><b class=\"ESPchar\">E</b>nterprise&nbsp;<b class=\"ESPchar\">S</b>ervices&nbsp;<b class=\"ESPchar\">P</b>latform&nbsp;&nbsp;&nbsp;</font>";
     }
 }
+
+
 
 function writeESPappname(appname)
 {
@@ -539,8 +557,11 @@ function writeESPappname(appname)
         var nodeLabel = encodeURI(node.label);
         tree.locked = false;
 
+        var e = document.getElementById('wsecl_tree_select');
+        var viewtype = e.options[e.selectedIndex].value;
+
         //prepare URL for XHR request:
-        var sUrl = "/esp/navdata?" + node.data.params;
+        var sUrl = "/esp/navdata?" + node.data.params + "&" + viewtype;
 
         //prepare our callback object
         var callback = {
