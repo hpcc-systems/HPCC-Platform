@@ -778,7 +778,11 @@
                                 </a>
                                 </xsl:when>
                                 <xsl:otherwise>
-                                    <xsl:value-of select="$queue"/>
+                                    <xsl:choose>
+                                      <xsl:when test="$roxie!='0'">RoxieCluster - </xsl:when>
+                                      <xsl:when test="$thor!='0'">ThorCluster - </xsl:when>
+                                    </xsl:choose>
+                                    <xsl:value-of select="$cluster"/>
                                 </xsl:otherwise>
                             </xsl:choose>
                         </td>
@@ -819,11 +823,19 @@
                     <xsl:if test="string-length($status)">
                                             <xsl:attribute name="href">javascript:go('/WsTopology/TpClusterInfo?Name=<xsl:value-of select="$queue"/>')</xsl:attribute>
                                         </xsl:if>
-                                        <xsl:value-of select="$queue"/>
+                                        <xsl:choose>
+                                          <xsl:when test="$roxie!='0'">RoxieCluster - </xsl:when>
+                                          <xsl:when test="$thor!='0'">ThorCluster - </xsl:when>
+                                        </xsl:choose>
+                                        <xsl:value-of select="$cluster"/>
                                     </a>
                                 </xsl:when>
                                 <xsl:otherwise>
-                                    <xsl:value-of select="$queue"/>
+                                    <xsl:choose>
+                                      <xsl:when test="$roxie!='0'">RoxieCluster - </xsl:when>
+                                      <xsl:when test="$thor!='0'">ThorCluster - </xsl:when>
+                                    </xsl:choose>
+                                    <xsl:value-of select="$cluster"/>
                                 </xsl:otherwise>
                             </xsl:choose>
                         </td>
