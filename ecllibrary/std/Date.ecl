@@ -2,6 +2,10 @@
 ## Copyright (c) 2011 HPCC Systems.  All rights reserved.
 ############################################################################## */
 
+/* The functions defined in this module are provisional, and subject to change */
+
+import lib_stringlib.StringLib;
+
 EXPORT Date := MODULE
 
 // Three different date representations are defined
@@ -262,12 +266,28 @@ EXPORT ToDaysSince1900(Date_t date) := DaysSince1900(Year(date),Month(date),Day(
 
 EXPORT FromDaysSince1900(Days_t days) := ToGregorianDate(days + Date1900Delta);
 
+months_between(Date_t lower, Date_t upper) := FUNCTION
+    years := Year(upper) - Year(lower);
+    months := Month(upper) - Month(lower);
+    result := years * 12 + months;
+    RETURN result - IF (Day(upper) >= Day(lower), 0, 1);
+END;
+
+/*
+ * Calculate the number of whole months between two dates.
+ *
+ * @param from          The first date
+ * @param to            The last date
+ * @return              The number of months between them
+ */
+
+EXPORT MonthsBetween(Date_t from, Date_t to) := IF(from < to, months_between(from, to), -months_between(to, from));
+
 /*
  * Returns the current date
  *
  * @return              A date_t representing the current date.
  */
-import lib_stringlib.StringLib;
 EXPORT Today() := (date_t)StringLib.GetDateYYYYMMDD();
 
 /*
@@ -291,5 +311,78 @@ END;
  * @return              A date_t representing the combined values.
  */
 EXPORT DateFromRec(date_rec date) := ( date.year * 100 + date.month ) * 100 + date.day;
+
+/*
+ * Converts a string to a date using the relevant string format.
+ *
+ * @param date_text     The string to be converted.
+ * @param format        The format of the input string.  (See documentation for strptime)
+                        e.g., http://linux.die.net/man/3/strftime
+ * @return              The date that was matched in the string.  Returns 0 if failed to match.
+ *
+ * Supported characters:
+    %b or %B    Month name (full or abbreviation)
+    %d            Day of month
+    %m            Month
+    %t            Whitespace
+    %y            year within century (00-99)
+    %Y            Full year (yyyy)
+
+Common date formats
+    American    '%m/%d/%Y'    mm/dd/yyyy
+    Euro        '%d/%m/%Y'    dd/mm/yyyy
+    Iso format    '%Y-%m-%d'    yyyy-mm-dd
+    Iso basic    '%Y%m%d'    yyyymmdd
+                '%d-%b-%Y'  dd-mon-yyyy    e.g., '21-Mar-1954'
+ */
+
+EXPORT Date_t FromString(STRING date_text, VARSTRING format) := StringLib.StringToDate(date_text, format);
+
+
+/*
+ * Matches a string against a set of date strings, and returns the Formats a date as a string.
+ *
+ * @param date_text     The string to be converted.
+ * @param formats       A set of formats to check against the string.   (See documentation for strptime)
+ * @return              The date that was matched in the string.  Returns 0 if failed to match.
+ */
+
+EXPORT Date_t MatchDateString(STRING date_text, SET OF VARSTRING formats) := StringLib.MatchDate(date_text, formats);
+
+
+/*
+ * Formats a date as a string.
+ *
+ * @param date          The date to be converted.
+ * @param format        The format the date is output in.  (See documentation for strftime)
+ * @return              Blank if date is 0, or the date output in the requested format.
+ */
+
+EXPORT STRING ToString(Date_t date, VARSTRING format) := StringLib.FormatDate(date, format);
+
+
+/*
+ * Converts a date from one format to another
+ *
+ * @param date_text     The string containing the date to be converted.
+ * @param from_format   The format the date is to be converted from.
+ * @param to_format     The format the date is to be converted to.
+ * @return              The converted string, or blank if it failed to match the format.
+ */
+
+EXPORT STRING ConvertFormat(STRING date_text, VARSTRING from_format='%m/%d/%Y', VARSTRING to_format='%Y%m%d') :=
+    StringLib.FormatDate(StringLib.StringToDate(date_text, from_format), to_format);
+
+/*
+ * Converts a date that matches one of a set of formats to another.
+ *
+ * @param date_text     The string containing the date to be converted.
+ * @param from_formats  The list of formats the date is to be converted from.
+ * @param to_format     The format the date is to be converted to.
+ * @return              The converted string, or blank if it failed to match the format.
+ */
+
+EXPORT STRING ConvertFormatMultiple(STRING date_text, SET OF VARSTRING from_formats, VARSTRING to_format='%Y%m%d') :=
+    StringLib.FormatDate(StringLib.MatchDate(date_text, from_formats), to_format);
 
 END;
