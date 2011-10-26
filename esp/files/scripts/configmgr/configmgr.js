@@ -2388,12 +2388,16 @@ function onContextMenuBeforeShow(p_sType, p_aArgs) {
       "TopologyEclCCServer": [
                                 { text: "Delete", onclick: { fn: onMenuItemClickTopology} }
                             ],
+      "TopologyEclServer": [
+                                { text: "Delete", onclick: { fn: onMenuItemClickTopology} }
+                           ],
       "TopologyEclScheduler": [
                                 { text: "Delete", onclick: { fn: onMenuItemClickTopology} }
                             ],                            
       "TopologyCluster": [
                                { text: "Add EclAgent", onclick: { fn: onMenuItemClickTopology} },
                                { text: "Add EclCCServer", onclick: { fn: onMenuItemClickTopology} },
+                               { text: "Add EclServer", onclick: { fn: onMenuItemClickTopology} },
                                { text: "Add EclScheduler", onclick: { fn: onMenuItemClickTopology} },
                                { text: "Add Thor", onclick: { fn: onMenuItemClickTopology} },
                                { text: "Add Roxie", onclick: { fn: onMenuItemClickTopology} },
@@ -2449,6 +2453,8 @@ function onContextMenuBeforeShow(p_sType, p_aArgs) {
         parentName += "Cluster";
       else if (recName.indexOf("EclCCServer") === 0)
         parentName += "EclCCServer";
+      else if (recName.indexOf("EclServer") === 0)
+        parentName += "EclServer";
       else if (recName.indexOf("EclScheduler") === 0)
         parentName += "EclScheduler";  
       else if (recName.indexOf("ThorCluster") === 0)
@@ -2492,12 +2498,24 @@ function onContextMenuBeforeShow(p_sType, p_aArgs) {
           if (r.getData('parent') === record.getData('id'))
           {
             if (r.getData('name').indexOf('ThorCluster') == 0) {
-              this.getItem(4).cfg.setProperty("disabled", true);
+              this.getItem(5).cfg.setProperty("disabled", true);
               break;
             }
             else if (r.getData('name').indexOf('RoxieCluster') == 0) {
-              this.getItem(3).cfg.setProperty("disabled", true);
+              this.getItem(4).cfg.setProperty("disabled", true);
               break;
+            }
+            else {
+              var flag = false;
+
+              for (i = 0; i < top.document.navDT.navTreeData[0]["menuComps"].length; i++)
+                if (top.document.navDT.navTreeData[0]["menuComps"][i] === 'eclserver') {
+                  flag = true;
+                  break;
+                }
+
+              if (!flag)
+                this.getItem(2).cfg.setProperty("disabled", true);
             }
           }
         }
