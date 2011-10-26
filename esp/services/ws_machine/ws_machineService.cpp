@@ -251,7 +251,6 @@ void Cws_machineEx::init(IPropertyTree *cfg, const char *process, const char *se
     xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]", process, service);
     Owned<IPropertyTree> pProcessNode = cfg->getPropTree(xpath.str());
     m_useDefaultHPCCInit = pProcessNode->getPropBool("UseDefaultHPCCInit", true);
-    m_useDefaultPIDFileName = pProcessNode->getPropBool("UseDefaultPIDFileName", false);
 
     const char* machineInfoPath = pProcessNode->queryProp("MachineInfoFile");
     if (machineInfoPath && *machineInfoPath)
@@ -1111,24 +1110,15 @@ void Cws_machineEx::doGetMachineInfo(IEspContext& context, CMachineInfoThreadPar
         CMachineInfo machineInfo;
 
         StringBuffer preFlightCommand;
-        if (m_useDefaultPIDFileName)
-        {
-            StringBuffer sBuf = pParam->m_sPath;
-            if (sBuf.charAt(sBuf.length() - 1) == '/')
-                sBuf.remove(sBuf.length()-1, 1);
-            preFlightCommand.appendf("sudo /sbin/preflight %s component", sBuf.str());
-        }
-        else
-        {
-            preFlightCommand.appendf("/%s/sbin/%s %s", environmentConfData.m_executionPath.str(), m_machineInfoFile.str(), environmentConfData.m_pidPath.str());
-            if (preFlightCommand.charAt(preFlightCommand.length() - 1) == '/')
-                preFlightCommand.remove(preFlightCommand.length()-1, 1);
-            preFlightCommand.appendf(" %s", pParam->m_sCompName.str());
-            if (!stricmp(pParam->m_sProcessType.str(), "ThorMasterProcess"))
-                preFlightCommand.append("_master");
-         else if (!stricmp(pParam->m_sProcessType.str(), "ThorSlaveProcess"))
+        preFlightCommand.appendf("/%s/sbin/%s %s", environmentConfData.m_executionPath.str(), m_machineInfoFile.str(), environmentConfData.m_pidPath.str());
+        if (preFlightCommand.charAt(preFlightCommand.length() - 1) == '/')
+            preFlightCommand.remove(preFlightCommand.length()-1, 1);
+        preFlightCommand.appendf(" %s", pParam->m_sCompName.str());
+
+        if (!stricmp(pParam->m_sProcessType.str(), "ThorMasterProcess"))
+            preFlightCommand.append("_master");
+        else if (!stricmp(pParam->m_sProcessType.str(), "ThorSlaveProcess"))
             preFlightCommand.append("_slave");
-      }
 
         StringBuffer sResponse;
         iRet = remoteGetMachineInfo(context, pParam->m_sAddress.str(), pParam->m_sConfigAddress.str(), preFlightCommand.str(), pParam->m_sUserName.str(), pParam->m_sPassword.str(), sResponse, machineInfo);
