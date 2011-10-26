@@ -450,9 +450,6 @@ void EspHttpBinding::populateRequest(CHttpRequest *request)
 
     ctx->setSecManger(m_secmgr.getLink());
     ctx->setFeatureAuthMap(m_feature_authmap.getLink());
-    StringBuffer useragent;
-    request->getHeader("User-Agent", useragent);
-    ctx->setUseragent(useragent.str());
 
     StringBuffer userid, password,realm,peer;
     ctx->getUserID(userid);
