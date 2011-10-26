@@ -1129,12 +1129,14 @@ extern WORKUNIT_API IStringVal &getRoxieQueueNames(IStringVal &ret, const char *
 extern WORKUNIT_API IStringVal &getThorQueueNames(IStringVal &ret, const char *process);
 extern WORKUNIT_API IStringIterator *getTargetClusters(const char *processType, const char *processName);
 extern WORKUNIT_API IConstWUClusterInfo* getTargetClusterInfo(const char *clustname);
+typedef IArrayOf<IConstWUClusterInfo> CConstWUClusterInfoArray;
+extern WORKUNIT_API unsigned getEnvironmentClusterInfo(CConstWUClusterInfoArray &clusters);
 
 extern WORKUNIT_API bool getWorkUnitCreateTime(const char *wuid,CDateTime &time); // based on WUID
 extern WORKUNIT_API bool restoreWorkUnit(const char *base,const char *wuid);
 extern WORKUNIT_API void clientShutdownWorkUnit();
 extern WORKUNIT_API IExtendedWUInterface * queryExtendedWU(IWorkUnit * wu);
-extern WORKUNIT_API unsigned getEnvironmentThorClusterNames(StringArray &thorNames, StringArray &groupNames, StringArray &targetNames);
+extern WORKUNIT_API unsigned getEnvironmentThorClusterNames(StringArray &thorNames, StringArray &groupNames, StringArray &targetNames, StringArray &queueNames);
 extern WORKUNIT_API unsigned getEnvironmentHThorClusterNames(StringArray &eclAgentNames, StringArray &groupNames, StringArray &targetNames);
 extern WORKUNIT_API StringBuffer &formatGraphTimerLabel(StringBuffer &str, const char *graphName, unsigned subGraphNum=0, unsigned __int64 subId=0);
 extern WORKUNIT_API bool parseGraphTimerLabel(const char *label, StringBuffer &graphName, unsigned &subGraphNum, unsigned __int64  &subId);

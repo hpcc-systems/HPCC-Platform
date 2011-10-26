@@ -65,7 +65,6 @@ public:
 private:
     void addCapabilities( IPropertyTree* pFeatureNode, const char* access, 
                                  IArrayOf<IEspCapability>& capabilities);
-    bool isInWuList(IArrayOf<IEspActiveWorkunit>& aws, const char* wuid);
 };
 
 

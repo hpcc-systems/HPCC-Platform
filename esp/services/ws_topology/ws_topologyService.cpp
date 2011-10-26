@@ -1299,43 +1299,32 @@ bool CWsTopologyEx::onTpClusterInfo(IEspContext &context, IEspTpClusterInfoReque
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to get Cluster Information. Permission denied.");
 
-        CClusterQueue cq(req.getName());                // NB name is probably queue name
-        if (cq.thors.ordinality()>0) 
+        Owned<IRemoteConnection> conn = querySDS().connect("/Status/Servers/", myProcessSession(),RTM_SUB,SDS_LOCK_TIMEOUT);
+        if (conn)
         {
-            IPropertyTree &tree = cq.thors.item(0);
-            resp.setName(tree.queryProp("@thorname"));
-            resp.setWorkUnit(tree.queryProp("WorkUnit"));
-
-            double version = context.getClientVersion();
-            if (version > 1.09)
-            {       
-                IArrayOf<IEspTpQueue> Queues;
-                ForEachItemIn(i,cq.thors) 
+            Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(req.getName());
+            SCMStringBuffer thorQueues;
+            clusterInfo->getThorQueue(thorQueues);
+            resp.setName(req.getName());
+            StringArray qlist;
+            CslToStringArray(thorQueues.str(), qlist, true);
+            IArrayOf<IEspTpQueue> Queues;
+            ForEachItemIn(q, qlist)
+            {
+                const char *queueName = qlist.item(q);
+                StringBuffer xpath("Server[@name=\"ThorMaster\"][@queue=\"");
+                xpath.append(queueName).append("\"]");
+                Owned<IPropertyTreeIterator> iter = conn->getElements(xpath.str()); // NB: should only be one
+                ForEach(*iter)
                 {
-                    IPropertyTree &tree = cq.thors.item(i);
-
+                    IPropertyTree &server = iter->query();
                     IEspTpQueue* pQueue = createTpQueue("","");
-                    pQueue->setName(tree.queryProp("@thorname"));
-                    pQueue->setWorkUnit(tree.queryProp("WorkUnit"));
+                    pQueue->setName(server.queryProp("@thorname"));
+                    pQueue->setWorkUnit(server.queryProp("WorkUnit"));
                     Queues.append(*pQueue);
                 }
-                resp.setTpQueues(Queues);
             }
-        }
-        else // fallback to cluster name
-        {
-            IArrayOf<IEspTpQueue> Queues;
-            
-            CCluster conn(req.getName());                   
-            IPropertyTree* tree = conn->queryRoot();
-            IEspTpQueue* pQueue = createTpQueue("","");
-            pQueue->setName(req.getName());
-            pQueue->setWorkUnit(tree->queryProp("WorkUnit"));
-            Queues.append(*pQueue);
             resp.setTpQueues(Queues);
-
-            resp.setName(req.getName());
-            resp.setWorkUnit(tree->queryProp("WorkUnit"));          
         }
     }
     catch(IException* e)

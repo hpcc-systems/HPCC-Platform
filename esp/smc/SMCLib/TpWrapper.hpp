@@ -200,12 +200,5 @@ private:
     Owned<IRemoteConnection> conn;
 };
 
-class TPWRAPPER_API CClusterQueue // looks up all thor clusters active based on queue name
-{
-public:
-    CClusterQueue(const char* qname);
-    IArrayOf<IPropertyTree> thors;
-};
-
 #endif //_ESPWIZ_TpWrapper_HPP__
 
