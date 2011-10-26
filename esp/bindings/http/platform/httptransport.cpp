@@ -1517,6 +1517,10 @@ void CHttpRequest::updateContext()
             else
                 m_context->setClientVersion(0.0);
         }
+
+        StringBuffer useragent;
+        getHeader("User-Agent", useragent);
+        m_context->setUseragent(useragent.str());
     }
 }
 
