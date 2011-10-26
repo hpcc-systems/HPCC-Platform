@@ -2717,8 +2717,8 @@ char * EclAgent::getGroupName()
         const StringArray &thors = clusterInfo->getThorProcesses();
         if (thors.length())
         {
-            StringArray envClusters, envGroups, envQueues;
-            getEnvironmentThorClusterNames(envClusters, envGroups, envQueues);
+            StringArray envClusters, envGroups, envTargets, envQueues;
+            getEnvironmentThorClusterNames(envClusters, envGroups, envTargets, envQueues);
             ForEachItemIn(i, thors)
             {
                 const char *thorName = thors.item(i);

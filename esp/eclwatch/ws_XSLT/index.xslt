@@ -49,10 +49,11 @@
                   <xsl:text disable-output-escaping="yes"><![CDATA[
 
 
-                function commandQueue(action,isThor,queue,wuid)
+                function commandQueue(action,isThor,cluster,queue,wuid)
                 {
                     document.getElementById("ClusterType").value=isThor;
-                    document.getElementById("Cluster").value=queue;
+                    document.getElementById("Cluster").value=cluster;
+                    document.getElementById("QueueName").value=queue;
                     document.getElementById("Wuid").value=wuid || '';
                     document.forms["queue"].action='/WsSMC/'+action;
                     document.forms["queue"].submit();
@@ -67,21 +68,21 @@
                       isThor = 1;
                     function clearQueue()
                     {
-                        if(confirm('Clear the queue for '+queue))
-                            commandQueue("ClearQueue",isThor,queue);
+                        if(confirm('Clear the queue for cluster: '+cluster))
+                            commandQueue("ClearQueue",isThor,cluster,queue);
                     }
                     function stopQueue()
                     {
-                        if(confirm('Stop the queue for '+queue))
-                            commandQueue("StopQueue",isThor,queue);
+                        if(confirm('Stop the queue for cluster '+cluster))
+                            commandQueue("StopQueue",isThor,cluster,queue);
                     }
                     function pauseQueue()
                     {
-                        commandQueue("PauseQueue",isThor,queue);
+                        commandQueue("PauseQueue",isThor,cluster,queue);
                     }
                     function resumeQueue()
                     {
-                        commandQueue("ResumeQueue",isThor,queue);
+                        commandQueue("ResumeQueue",isThor,cluster,queue);
                     }
                     function showUsage()
                     {
@@ -109,7 +110,7 @@
                     return false;
                 }
 
-                function activePopup(type, isRoxie, queue,wuid,highpriority, PosId)
+                function activePopup(type, isRoxie, cluster,queue,wuid,highpriority, PosId)
                 {
                     isThor = 0;
                     if (isRoxie < 1)
@@ -148,12 +149,12 @@
 
                     function setHighPriority()
                     {
-                        commandQueue("SetJobPriority?Priority=High",isThor, queue,wuid);
+                        commandQueue("SetJobPriority?Priority=High",isThor, cluster,queue,wuid);
                     }
 
                     function setNormalPriority()
                     {
-                        commandQueue("SetJobPriority?Priority=Normal",isThor, queue,wuid);
+                        commandQueue("SetJobPriority?Priority=Normal",isThor, cluster,queue,wuid);
                     }
 
                     var xypos = YAHOO.util.Dom.getXY('amn' + PosId);
@@ -193,40 +194,40 @@
                     return false;
                 }
 
-                function wuidPopup(isRoxie, queue,wuid,prev,next,highpriority, PosId)
+                function wuidPopup(isRoxie, cluster,queue,wuid,prev,next,highpriority, PosId)
                 {
                     isThor = 0;
                     if (isRoxie < 1)
                       isThor = 1;
                     function moveupWuid()
                     {
-                        commandQueue("MoveJobUp",isThor, queue,wuid);
+                        commandQueue("MoveJobUp",isThor, cluster,queue,wuid);
                     }
                     function movedownWuid()
                     {
-                        commandQueue("MoveJobDown",isThor, queue,wuid);
+                        commandQueue("MoveJobDown",isThor, cluster,queue,wuid);
                     }
                     function movefrontWuid()
                     {
-                        commandQueue("MoveJobFront",isThor, queue,wuid);
+                        commandQueue("MoveJobFront",isThor, cluster,queue,wuid);
                     }
                     function movebackWuid()
                     {
-                        commandQueue("MoveJobBack",isThor, queue,wuid);
+                        commandQueue("MoveJobBack",isThor, cluster,queue,wuid);
                     }
                     function removeWuid()
                     {
                         if(confirm('Remove '+wuid))
-                            commandQueue("RemoveJob",isThor, queue,wuid);
+                            commandQueue("RemoveJob",isThor, cluster,queue,wuid);
                     }
                     function setHighPriority()
                     {
-                        commandQueue("SetJobPriority?Priority=High",isThor, queue,wuid);
+                        commandQueue("SetJobPriority?Priority=High",isThor, cluster,queue,wuid);
                     }
 
                     function setNormalPriority()
                     {
-                        commandQueue("SetJobPriority?Priority=Normal",isThor, queue,wuid);
+                        commandQueue("SetJobPriority?Priority=Normal",isThor, cluster,queue,wuid);
                     }
 
                     var xypos = YAHOO.util.Dom.getXY('wmn' + PosId);
@@ -506,6 +507,7 @@
                 <form id="queue" action="/WsSMC" method="post">
                     <input type="hidden" name="ClusterType" id="ClusterType" value=""/>
           <input type="hidden" name="Cluster" id="Cluster" value=""/>
+          <input type="hidden" name="QueueName" id="QueueName" value=""/>
           <input type="hidden" name="Wuid" id="Wuid" value=""/>
                     <!--table class="clusters" border="1" frame="box" rules="groups">
                         <tr>
@@ -696,7 +698,7 @@
           <xsl:call-template name="show-queue">
                     <xsl:with-param name="workunits" select="$workunits[Instance=$cluster]"/>
                     <xsl:with-param name="cluster" select="$cluster"/>
-            <xsl:with-param name="server" select="$server"/>
+                    <xsl:with-param name="server" select="$server"/>
                     <xsl:with-param name="queue" select="$queue"/>
             <xsl:with-param name="showtitle" select="'0'"/>
                 </xsl:call-template>
@@ -773,12 +775,20 @@
                         <xsl:attribute name="title">Queue running - Thor running</xsl:attribute>
                       </xsl:otherwise>
                     </xsl:choose>
-                    <xsl:attribute name="href">javascript:go('/WsTopology/TpClusterInfo?Name=<xsl:value-of select="$queue"/>')</xsl:attribute>
-                    <xsl:value-of select="$queue"/>
+                    <xsl:attribute name="href">javascript:go('/WsTopology/TpClusterInfo?Name=<xsl:value-of select="$cluster"/>')</xsl:attribute>
+                    <xsl:choose>
+                      <xsl:when test="$roxie!='0'">RoxieCluster - </xsl:when>
+                      <xsl:when test="$thor!='0'">ThorCluster - </xsl:when>
+                    </xsl:choose>
+                    <xsl:value-of select="$cluster"/>
                                 </a>
                                 </xsl:when>
                                 <xsl:otherwise>
-                                    <xsl:value-of select="$queue"/>
+                                    <xsl:choose>
+                                      <xsl:when test="$roxie!='0'">RoxieCluster - </xsl:when>
+                                      <xsl:when test="$thor!='0'">ThorCluster - </xsl:when>
+                                    </xsl:choose>
+                                    <xsl:value-of select="$cluster"/>
                                 </xsl:otherwise>
                             </xsl:choose>
                         </td>
@@ -817,13 +827,21 @@
                       </xsl:otherwise>
                     </xsl:choose>
                     <xsl:if test="string-length($status)">
-                                            <xsl:attribute name="href">javascript:go('/WsTopology/TpClusterInfo?Name=<xsl:value-of select="$queue"/>')</xsl:attribute>
+                                            <xsl:attribute name="href">javascript:go('/WsTopology/TpClusterInfo?Name=<xsl:value-of select="$cluster"/>')</xsl:attribute>
                                         </xsl:if>
-                                        <xsl:value-of select="$queue"/>
+                                        <xsl:choose>
+                                          <xsl:when test="$roxie!='0'">RoxieCluster - </xsl:when>
+                                          <xsl:when test="$thor!='0'">ThorCluster - </xsl:when>
+                                        </xsl:choose>
+                                        <xsl:value-of select="$cluster"/>
                                     </a>
                                 </xsl:when>
                                 <xsl:otherwise>
-                                    <xsl:value-of select="$queue"/>
+                                    <xsl:choose>
+                                      <xsl:when test="$roxie!='0'">RoxieCluster - </xsl:when>
+                                      <xsl:when test="$thor!='0'">ThorCluster - </xsl:when>
+                                    </xsl:choose>
+                                    <xsl:value-of select="$cluster"/>
                                 </xsl:otherwise>
                             </xsl:choose>
                         </td>
@@ -856,8 +874,8 @@
                         <xsl:call-template name="show-queue0">
                             <xsl:with-param name="workunits" select="$workunits"/>
                             <xsl:with-param name="cluster" select="$cluster"/>
-              <xsl:with-param name="server" select="$server"/>
-              <xsl:with-param name="queue" select="$queue"/>
+                            <xsl:with-param name="server" select="$server"/>
+                            <xsl:with-param name="queue" select="$queue"/>
                             <xsl:with-param name="command" select="$command"/>
               <xsl:with-param name="thor" select="$thor"/>
               <xsl:with-param name="roxie" select="$roxie"/>
@@ -892,7 +910,8 @@
                                 </xsl:text>
                             </xsl:if>
                             <xsl:apply-templates select=".">
-                                <xsl:with-param name="cluster" select="$queue"/>
+                                <xsl:with-param name="cluster" select="$cluster"/>
+                                <xsl:with-param name="queue" select="$queue"/>
                                 <xsl:with-param name="command" select="$command"/>
                 <xsl:with-param name="thor" select="$thor"/>
                 <xsl:with-param name="roxie" select="$roxie"/>
@@ -909,10 +928,11 @@
                 <tr>
                     <xsl:apply-templates select=".">
                       <xsl:with-param name="server" select="$server"/>
-            <xsl:with-param name="cluster" select="$queue"/>
-            <xsl:with-param name="command" select="$command"/>
-            <xsl:with-param name="thor" select="$thor"/>
-            <xsl:with-param name="roxie" select="$roxie"/>
+                      <xsl:with-param name="cluster" select="$cluster"/>
+                      <xsl:with-param name="queue" select="$queue"/>
+                      <xsl:with-param name="command" select="$command"/>
+                      <xsl:with-param name="thor" select="$thor"/>
+                      <xsl:with-param name="roxie" select="$roxie"/>
                     </xsl:apply-templates>
                 </tr>
             </xsl:for-each>
@@ -922,6 +942,7 @@
     <xsl:template match="ActiveWorkunit">
         <xsl:param name="server" select="''"/>
         <xsl:param name="cluster" select="''"/>
+        <xsl:param name="queue" select="''"/>
         <xsl:param name="command" select="0"/>
         <xsl:param name="thor" select="'0'"/>
     <xsl:param name="roxie" select="'0'"/>
@@ -939,18 +960,18 @@
             <xsl:when test="State='running'">
               <xsl:choose>
                 <xsl:when test="$thor='0' or $thor='noLCR'">
-                  return activePopup(0, '<xsl:value-of select="$roxie"/>','<xsl:value-of select="$cluster"/>','<xsl:value-of select="Wuid"/>',<xsl:value-of select="Priority='high'"/>, '<xsl:value-of select="Wuid"/>');
+                  return activePopup(0, '<xsl:value-of select="$roxie"/>','<xsl:value-of select="$cluster"/>','<xsl:value-of select="$queue"/>','<xsl:value-of select="Wuid"/>',<xsl:value-of select="Priority='high'"/>, '<xsl:value-of select="Wuid"/>');
                 </xsl:when>
                 <xsl:otherwise>
-                  return activePopup(1, '<xsl:value-of select="$roxie"/>','<xsl:value-of select="$cluster"/>','<xsl:value-of select="Wuid"/>',<xsl:value-of select="Priority='high'"/>, '<xsl:value-of select="Wuid"/>');
+                  return activePopup(1, '<xsl:value-of select="$roxie"/>','<xsl:value-of select="$cluster"/>','<xsl:value-of select="$queue"/>','<xsl:value-of select="Wuid"/>',<xsl:value-of select="Priority='high'"/>, '<xsl:value-of select="Wuid"/>');
                 </xsl:otherwise>
               </xsl:choose>   
             </xsl:when>
           <xsl:when test="State='paused'">
-            return activePopup(2, '<xsl:value-of select="$roxie"/>','<xsl:value-of select="$cluster"/>','<xsl:value-of select="Wuid"/>',<xsl:value-of select="Priority='high'"/>, '<xsl:value-of select="Wuid"/>');
+            return activePopup(2, '<xsl:value-of select="$roxie"/>','<xsl:value-of select="$cluster"/>','<xsl:value-of select="$queue"/>','<xsl:value-of select="Wuid"/>',<xsl:value-of select="Priority='high'"/>, '<xsl:value-of select="Wuid"/>');
           </xsl:when>
           <xsl:when test="starts-with(State,'queued')">
-            return wuidPopup('<xsl:value-of select="$roxie"/>','<xsl:value-of select="$cluster"/>','<xsl:value-of select="Wuid"/>',<xsl:value-of select="starts-with(preceding-sibling::*[Instance=current()/Instance][position()=1]/State,'queued')"/>,<xsl:value-of select="starts-with(following-sibling::*[Instance=current()/Instance][position()=1]/State,'queued')"/>,<xsl:value-of select="Priority='high'"/>, '<xsl:value-of select="Wuid"/>');
+            return wuidPopup('<xsl:value-of select="$roxie"/>','<xsl:value-of select="$cluster"/>','<xsl:value-of select="$queue"/>','<xsl:value-of select="Wuid"/>',<xsl:value-of select="starts-with(preceding-sibling::*[Instance=current()/Instance][position()=1]/State,'queued')"/>,<xsl:value-of select="starts-with(following-sibling::*[Instance=current()/Instance][position()=1]/State,'queued')"/>,<xsl:value-of select="Priority='high'"/>, '<xsl:value-of select="Wuid"/>');
             </xsl:when>
         </xsl:choose> 
         </xsl:variable>

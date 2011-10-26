@@ -3990,26 +3990,18 @@ extern WORKUNIT_API IStringIterator *getTargetClusters(const char *processType, 
     return ret.getClear();
 }
 
-IConstWUClusterInfo* getTargetClusterInfo(const char *clustname)
+IConstWUClusterInfo* getTargetClusterInfo(IPropertyTree *environment, IPropertyTree *cluster)
 {
-    if (!clustname)
-        return NULL;
-    Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-    if (!conn)
-        return NULL;
-    StringBuffer xpath;
+    const char *clustname = cluster->queryProp("@name");
 
     // MORE - at the moment configenf specifies eclagent and thor queues by (in effect) placing an 'example' thor or eclagent in the topology 
     // that uses the queue that will be used.
     // We should and I hope will change that, at which point the code below gets simpler
 
-    xpath.appendf("Software/Topology/Cluster[@name=\"%s\"]", clustname);
-    Owned<IPropertyTree> cluster = conn->queryRoot()->getPropTree(xpath.str());
-    if (!cluster) 
-        return NULL;
     StringBuffer prefix(cluster->queryProp("@prefix"));
     prefix.toLowerCase();
 
+    StringBuffer xpath;
     StringBuffer querySetName;
     
     IPropertyTree *agent = NULL;
@@ -4017,7 +4009,7 @@ IConstWUClusterInfo* getTargetClusterInfo(const char *clustname)
     if (agentName) 
     {
         xpath.clear().appendf("Software/EclAgentProcess[@name=\"%s\"]", agentName);
-        agent = conn->queryRoot()->queryPropTree(xpath.str());
+        agent = environment->queryPropTree(xpath.str());
     }
     Owned<IPropertyTreeIterator> ti = cluster->getElements("ThorCluster");
     IArrayOf<IPropertyTree> thors;
@@ -4027,7 +4019,7 @@ IConstWUClusterInfo* getTargetClusterInfo(const char *clustname)
         if (thorName) 
         {
             xpath.clear().appendf("Software/ThorCluster[@name=\"%s\"]", thorName);
-            thors.append(*conn->queryRoot()->getPropTree(xpath.str()));
+            thors.append(*environment->getPropTree(xpath.str()));
         }
     }
     IPropertyTree *roxie = NULL;
@@ -4035,7 +4027,7 @@ IConstWUClusterInfo* getTargetClusterInfo(const char *clustname)
     if (roxieName) 
     {
         xpath.clear().appendf("Software/RoxieCluster[@name=\"%s\"]", roxieName);
-        roxie = conn->queryRoot()->queryPropTree(xpath.str());
+        roxie = environment->queryPropTree(xpath.str());
         querySetName.clear().append(roxieName);
     }
 
@@ -4043,6 +4035,36 @@ IConstWUClusterInfo* getTargetClusterInfo(const char *clustname)
         querySetName.append(clustname);
 
     return new CEnvironmentClusterInfo(clustname, prefix, querySetName, agent, thors, roxie);
+}
+
+IConstWUClusterInfo* getTargetClusterInfo(const char *clustname)
+{
+    if (!clustname)
+        return NULL;
+    Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+    if (!conn)
+        return NULL;
+    StringBuffer xpath;
+    xpath.appendf("Software/Topology/Cluster[@name=\"%s\"]", clustname);
+    Owned<IPropertyTree> cluster = conn->queryRoot()->getPropTree(xpath.str());
+    if (!cluster)
+        return NULL;
+    return getTargetClusterInfo(conn->queryRoot(), cluster);
+}
+
+unsigned getEnvironmentClusterInfo(CConstWUClusterInfoArray &clusters)
+{
+    Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+    if (!conn)
+        return 0;
+    Owned<IPropertyTreeIterator> clusterIter = conn->queryRoot()->getElements("Software/Topology/Cluster");
+    ForEach(*clusterIter)
+    {
+        IPropertyTree &node = clusterIter->query();
+        Owned<IConstWUClusterInfo> cluster = getTargetClusterInfo(conn->queryRoot(), &node);
+        clusters.append(*cluster.getClear());
+    }
+    return clusters.ordinality();
 }
 
 const char *getTargetClusterComponentName(const char *clustname, const char *processType, StringBuffer &name)
@@ -4065,7 +4087,7 @@ const char *getTargetClusterComponentName(const char *clustname, const char *pro
     return name.str();
 }
 
-unsigned getEnvironmentThorClusterNames(StringArray &thorNames, StringArray &groupNames, StringArray &targetNames)
+unsigned getEnvironmentThorClusterNames(StringArray &thorNames, StringArray &groupNames, StringArray &targetNames, StringArray &queueNames)
 {
     Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
     if (!conn)
@@ -4091,6 +4113,8 @@ unsigned getEnvironmentThorClusterNames(StringArray &thorNames, StringArray &gro
                     thorNames.append(thorName);
                     groupNames.append(groupName);
                     targetNames.append(targetName);
+                    StringBuffer queueName(targetName);
+                    queueNames.append(queueName.append(".thor"));
                 }
             }
         }

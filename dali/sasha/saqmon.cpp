@@ -74,11 +74,12 @@ public:
                 return false;
             StringArray cna;
             StringArray gna;
+            StringArray tna;
             StringArray qna;
-            if (getEnvironmentThorClusterNames(cna,gna,qna)==0)
+            if (getEnvironmentThorClusterNames(cna,gna,tna,qna)==0)
                 return false;
-            ForEachItemIn(i1,qna) {
-                const char *qname = qna.item(i1);
+            ForEachItemIn(i1,tna) {
+                const char *qname = tna.item(i1); // JCSMORE - ThorQMon/@queues is actually matching targets, rename property to @targets ?
                 bool ok = false;
                 ForEachItemIn(i2,qs) {
                     if (WildMatch(qname,qs.item(i2),true)) {

@@ -1756,36 +1756,3 @@ void CTpWrapper::getAttPath(const char* Path,StringBuffer& returnStr)
     StringBuffer decodedStr;
     JBASE64_Decode(Path, returnStr);
 }
-
-CClusterQueue::CClusterQueue(const char* qname)
-{
-    if (!qname||!*qname)
-        return;
-    Owned<IRemoteConnection> conn = querySDS().connect("/Status/Servers",myProcessSession(),RTM_SUB,SDS_LOCK_TIMEOUT);
-    if (!conn)
-        return;
-    // lookup active thor clusters based on qname (this could also look up eclservers if we so wanted)
-    StringBuffer xpath;
-    xpath.appendf("Server[@name=\"ThorMaster\"][@queue=\"%s.thor\"]",qname);
-    Owned<IPropertyTreeIterator> iter = conn->getElements(xpath.str());
-    ForEach(*iter)
-    {
-        // use simple insertion sort
-        IPropertyTree &tree = iter->get();
-        const char *name = tree.queryProp("@thorname");
-        if (name&&*name) {
-            unsigned i = 0;
-            loop {
-                if (i==thors.ordinality()) {
-                    thors.append(tree);
-                    break;
-                }
-                if (stricmp(name,thors.item(i).queryProp("@thorname"))<0) {
-                    thors.add(tree,i);
-                    break;
-                }
-                i++;
-            }
-        }
-    }
-}
