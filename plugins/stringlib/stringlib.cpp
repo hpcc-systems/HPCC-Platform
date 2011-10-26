@@ -78,6 +78,9 @@ const char * EclDefinition =
 "  unsigned4 CountWords(const string src, const string _separator, BOOLEAN allow_blanks) : c, pure,entrypoint='slCountWords'; \n"
 "  SET OF STRING SplitWords(const string src, const string _separator, BOOLEAN allow_blanks) : c, pure,entrypoint='slSplitWords'; \n"
 "  STRING CombineWords(set of string src, const string _separator) : c, pure,entrypoint='slCombineWords'; \n"
+"  UNSIGNED4 StringToDate(const string src, const varstring format) : c, pure,entrypoint='slStringToDate'; \n"
+"  UNSIGNED4 MatchDate(const string src, set of varstring formats) : c, pure,entrypoint='slMatchDate'; \n"
+"  STRING FormatDate(UNSIGNED4 date, const varstring format) : c, pure,entrypoint='slFormatDate'; \n"
 "END;";
 
 STRINGLIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb) 
@@ -1387,6 +1390,198 @@ STRINGLIB_API void STRINGLIB_CALL slCombineWords(size32_t & __lenResult, void * 
         offset += len;
     }
     assert(target == result + sizeRequired);
+}
+
+//--------------------------------------------------------------------------------------------------------------------
+
+inline bool readValue(unsigned & value, size32_t & _offset, size32_t lenStr, const char * str, unsigned max)
+{
+    unsigned total = 0;
+    unsigned offset = _offset;
+    if (lenStr - offset < max)
+        max = lenStr - offset;
+    unsigned i=0;
+    for (; i < max; i++)
+    {
+        char next = str[offset+i];
+        if (next >= '0' && next <= '9')
+            total = total * 10 + (next - '0');
+        else
+            break;
+    }
+    if (i == 0)
+        return false;
+    value = total;
+    _offset = offset+i;
+    return true;
+}
+
+const char * const monthNames[12] = { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
+
+inline bool matchString(unsigned & value, size32_t & strOffset, size32_t lenStr, const byte * str, unsigned num, const char * const * strings, unsigned minMatch)
+{
+    unsigned startOffset = strOffset;
+    for (unsigned i =0; i < num; i++)
+    {
+        const char * cur = strings[i];
+        unsigned offset = startOffset;
+        while (offset < lenStr)
+        {
+            byte next = *cur++;
+            if (!next || toupper(next) != toupper(str[offset]))
+                break;
+            offset++;
+        }
+        if (offset - startOffset >= minMatch)
+        {
+            value = i;
+            strOffset = offset;
+            return true;
+        }
+    }
+    return false;
+}
+
+//This implements a subset of the specifiers allowed for strptime
+//Another difference is it works on a string with a separate length
+static const char * simple_strptime(size32_t lenStr, const char * str, const char * format, struct tm * tm)
+{
+    const char * curFormat = format;
+    size32_t offset = 0;
+    const byte * src = (const byte *)str;
+    unsigned value;
+
+    byte next;
+    while ((next = *curFormat++) != '\0')
+    {
+        if (next == '%')
+        {
+            switch (*curFormat++)
+            {
+            case 't':
+                while ((offset < lenStr) && isspace(src[offset]))
+                    offset++;
+                break;
+            case 'Y':
+                if (!readValue(value, offset, lenStr, str, 4))
+                    return NULL;
+                tm->tm_year = value-1900;
+                break;
+            case 'y':
+                if (!readValue(value, offset, lenStr, str, 2))
+                    return NULL;
+                tm->tm_year = value > 68 ? value : value + 100;
+                break;
+            case 'm':
+                if (!readValue(value, offset, lenStr, str, 2) || (value < 1) || (value > 12))
+                    return NULL;
+                tm->tm_mon = value-1;
+                break;
+            case 'd':
+                if (!readValue(value, offset, lenStr, str, 2) || (value < 1) || (value > 31))
+                    return NULL;
+                tm->tm_mday = value;
+                break;
+            case 'b':
+            case 'B':
+            case 'h':
+                if (!matchString(value, offset, lenStr, src, sizeof(monthNames)/sizeof(*monthNames), monthNames, 3))
+                    return NULL;
+                tm->tm_mon = value;
+                break;
+            case 'H':
+                if (!readValue(value, offset, lenStr, str, 2)|| (value > 24))
+                    return NULL;
+                tm->tm_hour = value;
+                break;
+            case 'M':
+                if (!readValue(value, offset, lenStr, str, 2)|| (value > 59))
+                    return NULL;
+                tm->tm_min = value;
+                break;
+            case 'S':
+                if (!readValue(value, offset, lenStr, str, 2)|| (value > 59))
+                    return NULL;
+                tm->tm_sec = value;
+                break;
+            default:
+                return NULL;
+            }
+        }
+        else
+        {
+            if (isspace(next))
+            {
+                while ((offset < lenStr) && isspace(src[offset]))
+                    offset++;
+            }
+            else
+            {
+                if ((offset >= lenStr) || (src[offset++] != next))
+                    return NULL;
+            }
+        }
+    }
+    return str+offset;
+}
+
+
+inline unsigned makeDate(const tm & tm)
+{
+    return (tm.tm_year + 1900) * 10000 + (tm.tm_mon + 1) * 100 + tm.tm_mday;
+}
+
+inline void extractDate(tm & tm, unsigned date)
+{
+    tm.tm_year = (date / 10000) - 1900;
+    tm.tm_mon = ((date / 100) % 100) - 1;
+    tm.tm_mday = (date % 100);
+}
+
+STRINGLIB_API unsigned STRINGLIB_CALL slStringToDate(size32_t lenS, const char * s, const char * fmtin)
+{
+    struct tm tm;
+    memset(&tm, 0, sizeof(tm));
+    if (simple_strptime(lenS, s, fmtin, &tm))
+        return makeDate(tm);
+    return 0;
+}
+
+
+STRINGLIB_API unsigned STRINGLIB_CALL slMatchDate(size32_t lenS, const char * s, bool isAllFormats, unsigned lenFormats, const void * _formats)
+{
+    struct tm tm;
+    memset(&tm, 0, sizeof(tm));
+
+    const char * formats = (const char *)_formats;
+    for (unsigned off=0; off < lenFormats; )
+    {
+        const char * curFormat = formats+off;
+        if (simple_strptime(lenS, s, curFormat, &tm))
+            return makeDate(tm);
+        off += strlen(curFormat) + 1;
+    }
+    return 0;
+}
+
+STRINGLIB_API void STRINGLIB_CALL slFormatDate(size32_t & __lenResult, char * & __result, unsigned date, const char * format)
+{
+    size32_t len = 0;
+    char * out = NULL;
+    if (date)
+    {
+        struct tm tm;
+        memset(&tm, 0, sizeof(tm));
+        extractDate(tm, date);
+        char buf[255];
+        strftime(buf, sizeof(buf), format, &tm);
+        len = strlen(buf);
+        out = static_cast<char *>(CTXMALLOC(parentCtx, len));
+        memcpy(out, buf, len);
+    }
+
+    __lenResult = len;
+    __result = out;
 }
 
 
