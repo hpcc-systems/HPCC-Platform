@@ -52,7 +52,8 @@
                 function commandQueue(action,isThor,queue,wuid)
                 {
                     document.getElementById("ClusterType").value=isThor;
-                    document.getElementById("Cluster").value=queue;
+                    document.getElementById("Cluster").value=cluster;
+                    document.getElementById("Queue").value=queue;
                     document.getElementById("Wuid").value=wuid || '';
                     document.forms["queue"].action='/WsSMC/'+action;
                     document.forms["queue"].submit();
@@ -506,6 +507,7 @@
                 <form id="queue" action="/WsSMC" method="post">
                     <input type="hidden" name="ClusterType" id="ClusterType" value=""/>
           <input type="hidden" name="Cluster" id="Cluster" value=""/>
+          <input type="hidden" name="Queue" id="Queue" value=""/>
           <input type="hidden" name="Wuid" id="Wuid" value=""/>
                     <!--table class="clusters" border="1" frame="box" rules="groups">
                         <tr>

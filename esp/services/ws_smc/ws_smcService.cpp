@@ -720,7 +720,7 @@ bool CWsSMCEx::onMoveJobDown(IEspContext &context, IEspSMCJobRequest &req, IEspS
     {
         checkAccess(context,THORQUEUE_FEATURE,SecAccess_Full);
 
-        Owned<IJobQueue> queue = createJobQueue(req.getCluster());
+        Owned<IJobQueue> queue = createJobQueue(req.getQueueName());
         QueueLock lock(queue);
         unsigned index=queue->findRank(req.getWuid());
         if(index<queue->ordinality())
@@ -747,7 +747,7 @@ bool CWsSMCEx::onMoveJobUp(IEspContext &context, IEspSMCJobRequest &req, IEspSMC
     {
         checkAccess(context,THORQUEUE_FEATURE,SecAccess_Full);
 
-        Owned<IJobQueue> queue = createJobQueue(req.getCluster());
+        Owned<IJobQueue> queue = createJobQueue(req.getQueueName());
         QueueLock lock(queue);
         unsigned index=queue->findRank(req.getWuid());
         if(index>0 && index<queue->ordinality())
@@ -774,7 +774,7 @@ bool CWsSMCEx::onMoveJobBack(IEspContext &context, IEspSMCJobRequest &req, IEspS
     {
         checkAccess(context,THORQUEUE_FEATURE,SecAccess_Full);
 
-        Owned<IJobQueue> queue = createJobQueue(req.getCluster());
+        Owned<IJobQueue> queue = createJobQueue(req.getQueueName());
         QueueLock lock(queue);
         
         unsigned index=queue->findRank(req.getWuid());
@@ -817,7 +817,7 @@ bool CWsSMCEx::onMoveJobFront(IEspContext &context, IEspSMCJobRequest &req, IEsp
     {
         checkAccess(context,THORQUEUE_FEATURE,SecAccess_Full);
 
-        Owned<IJobQueue> queue = createJobQueue(req.getCluster());
+        Owned<IJobQueue> queue = createJobQueue(req.getQueueName());
         QueueLock lock(queue);
         
         unsigned index=queue->findRank(req.getWuid());
@@ -862,7 +862,7 @@ bool CWsSMCEx::onRemoveJob(IEspContext &context, IEspSMCJobRequest &req, IEspSMC
 
         secAbortWorkUnit(req.getWuid(), *context.querySecManager(), *context.queryUser());
 
-        Owned<IJobQueue> queue = createJobQueue(req.getCluster());
+        Owned<IJobQueue> queue = createJobQueue(req.getQueueName());
         QueueLock lock(queue);
         
         unsigned index=queue->findRank(req.getWuid());
@@ -888,7 +888,7 @@ bool CWsSMCEx::onStopQueue(IEspContext &context, IEspSMCQueueRequest &req, IEspS
     {
         checkAccess(context,THORQUEUE_FEATURE,SecAccess_Full);
 
-        Owned<IJobQueue> queue = createJobQueue(req.getCluster());
+        Owned<IJobQueue> queue = createJobQueue(req.getQueueName());
         queue->stop();
         AccessSuccess(context, "Stopped queue %s",req.getCluster());
         resp.setRedirectUrl("/WsSMC/");
@@ -906,7 +906,7 @@ bool CWsSMCEx::onResumeQueue(IEspContext &context, IEspSMCQueueRequest &req, IEs
     {
         checkAccess(context,THORQUEUE_FEATURE,SecAccess_Full);
 
-        Owned<IJobQueue> queue = createJobQueue(req.getCluster());
+        Owned<IJobQueue> queue = createJobQueue(req.getQueueName());
         queue->resume();
         AccessSuccess(context, "Resumed queue %s",req.getCluster());
         resp.setRedirectUrl("/WsSMC/");
@@ -924,7 +924,7 @@ bool CWsSMCEx::onPauseQueue(IEspContext &context, IEspSMCQueueRequest &req, IEsp
     {
         checkAccess(context,THORQUEUE_FEATURE,SecAccess_Full);
 
-        Owned<IJobQueue> queue = createJobQueue(req.getCluster());
+        Owned<IJobQueue> queue = createJobQueue(req.getQueueName());
         queue->pause();
         AccessSuccess(context, "Paused queue %s",req.getCluster());
         resp.setRedirectUrl("/WsSMC/");
@@ -941,7 +941,7 @@ bool CWsSMCEx::onClearQueue(IEspContext &context, IEspSMCQueueRequest &req, IEsp
     try
     {
         checkAccess(context,THORQUEUE_FEATURE,SecAccess_Full);
-        Owned<IJobQueue> queue = createJobQueue(req.getCluster());
+        Owned<IJobQueue> queue = createJobQueue(req.getQueueName());
         {
             QueueLock lock(queue);
             for(unsigned i=0;i<queue->ordinality();i++)
@@ -974,7 +974,7 @@ bool CWsSMCEx::onSetJobPriority(IEspContext &context, IEspSMCPriorityRequest &re
 
         // set job priority
         int priority = lw->getPriorityValue();  
-        Owned<IJobQueue> queue = createJobQueue(req.getCluster());
+        Owned<IJobQueue> queue = createJobQueue(req.getQueueName());
         QueueLock lock(queue);
         queue->changePriority(req.getWuid(),priority);
 

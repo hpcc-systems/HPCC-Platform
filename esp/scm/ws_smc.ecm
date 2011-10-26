@@ -145,6 +145,7 @@ ESPrequest SMCQueueRequest
 {
     int ClusterType;
     string Cluster;
+    string QueueName;
 };
 
 
@@ -156,6 +157,7 @@ ESPrequest SMCJobRequest
 {
     int ClusterType;
     string Cluster;
+    string QueueName;
     string Wuid;
 };
 
@@ -168,6 +170,7 @@ ESPrequest SMCPriorityRequest
 {
     int ClusterType;
     string Cluster;
+    string QueueName;
     string Wuid;
     string Priority;
 };

@@ -1302,8 +1302,9 @@ bool CWsTopologyEx::onTpClusterInfo(IEspContext &context, IEspTpClusterInfoReque
         Owned<IRemoteConnection> conn = querySDS().connect("/Status/Servers/", myProcessSession(),RTM_SUB,SDS_LOCK_TIMEOUT);
         if (conn)
         {
+            Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(req.getName());
             SCMStringBuffer thorQueues;
-            getThorQueueNames(thorQueues, req.getName());
+            clusterInfo->getThorQueue(thorQueues);
             resp.setName(req.getName());
             StringArray qlist;
             CslToStringArray(thorQueues.str(), qlist, true);
