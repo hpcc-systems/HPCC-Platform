@@ -140,6 +140,7 @@ public:
     void getNavigationData(IEspContext &context, IPropertyTree & data);
     void getRootNavigationFolders(IEspContext &context, IPropertyTree & data);
     void getDynNavData(IEspContext &context, IProperties *params, IPropertyTree & data);
+    void addQueryNavLink(IPropertyTree &data, IPropertyTree *query, const char *setname, const char *qname=NULL);
 
     virtual const char* getRootPage() {return "files/esp_app_tree.html";}
 
