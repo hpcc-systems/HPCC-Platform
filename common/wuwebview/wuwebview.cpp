@@ -117,7 +117,7 @@ public:
 
     virtual void beginNode(const char *tag, offset_t startOffset)
     {
-        if (streq("Dataset", tag))
+        if (streq("Dataset", tag) || streq("Exception", tag))
             datasetLevel++;
         if (datasetLevel)
             buffer.append('<').append(tag);
@@ -145,7 +145,7 @@ public:
                     buffer.append((const char *)value);
             }
             buffer.append("</").append(tag).append('>');
-            if (streq("Dataset", tag))
+            if (streq("Dataset", tag) || streq("Exception", tag))
                 datasetLevel--;
         }
     }
@@ -239,7 +239,7 @@ IPropertyTree *WuWebView::ensureManifest()
     if (!manifest)
     {
         StringBuffer xml;
-        manifest.setown(getEmbeddedManifestXML(loadedDll, xml) ? createPTreeFromXMLString(xml.str()) : createPTree());
+        manifest.setown((loadedDll && getEmbeddedManifestXML(loadedDll, xml)) ? createPTreeFromXMLString(xml.str()) : createPTree());
     }
     return manifest.get();
 }
@@ -276,8 +276,12 @@ bool WuWebView::getInclude(const char *includename, MemoryBuffer &includebuf, bo
     StringBuffer abspath;
     makeAbsolutePath(relpath.str(), abspath);
 
-    VStringBuffer xpath("Resource[@res_include_path='%s']", abspath.str());
-    IPropertyTree *res = manifest->queryPropTree(xpath.str());
+    IPropertyTree *res = NULL;
+    if (manifest)
+    {
+        VStringBuffer xpath("Resource[@res_include_path='%s']", abspath.str());
+        res = manifest->queryPropTree(xpath.str());
+    }
     if (res)
     {
         StringBuffer xslt;
@@ -315,6 +319,8 @@ void WuWebView::getResultViewNames(StringArray &names)
 
 void WuWebView::getResource(IPropertyTree *res, StringBuffer &content)
 {
+    if (!loadedDll)
+        return;
     if (res->hasProp("@id"))
     {
         int id = res->getPropInt("@id");
@@ -381,7 +387,8 @@ void WuWebView::renderResults(const char *viewName, const char *xml, StringBuffe
 {
     WuExpandedResultBuffer buffer(name.str());
     buffer.appendDatasetsFromXML(xml);
-    buffer.appendManifestSchemas(*ensureManifest(), *loadedDll);
+    if (loadedDll)
+        buffer.appendManifestSchemas(*ensureManifest(), *loadedDll);
     renderExpandedResults(viewName, buffer.finalize(), out);
 }
 
@@ -389,14 +396,16 @@ void WuWebView::renderResults(const char *viewName, StringBuffer &out)
 {
     WuExpandedResultBuffer buffer(name.str());
     buffer.appendResults(wu, username.get(), pw.get());
-    buffer.appendManifestSchemas(*ensureManifest(), *loadedDll);
+    if (loadedDll)
+        buffer.appendManifestSchemas(*ensureManifest(), *loadedDll);
     renderExpandedResults(viewName, buffer.finalize(), out);
 }
 
 void WuWebView::renderSingleResult(const char *viewName, const char *resultname, StringBuffer &out)
 {
     WuExpandedResultBuffer buffer(name.str());
-    buffer.appendManifestResultSchema(*ensureManifest(), resultname, *loadedDll);
+    if (loadedDll)
+        buffer.appendManifestResultSchema(*ensureManifest(), resultname, *loadedDll);
     buffer.appendSingleResult(wu, resultname, username.get(), pw.get());
     renderExpandedResults(viewName, buffer.finalize(), out);
 }
@@ -405,7 +414,8 @@ void WuWebView::applyResultsXSLT(const char *filename, const char *xml, StringBu
 {
     WuExpandedResultBuffer buffer(name.str());
     buffer.appendDatasetsFromXML(xml);
-    buffer.appendManifestSchemas(*ensureManifest(), *loadedDll);
+    if (loadedDll)
+        buffer.appendManifestSchemas(*ensureManifest(), *loadedDll);
 
     Owned<IXslTransform> t = getXslProcessor()->createXslTransform();
     t->setIncludeHandler(this);
@@ -421,7 +431,7 @@ void WuWebView::applyResultsXSLT(const char *filename, const char *xml, StringBu
 void WuWebView::applyResultsXSLT(const char *filename, StringBuffer &out)
 {
     SCMStringBuffer xml;
-    getFullWorkUnitResultsXML(username.get(), pw.get(), wu, xml, false, ExceptionSeverityError);
+    getFullWorkUnitResultsXML(username.get(), pw.get(), wu, xml, false, ExceptionSeverityInformation);
     applyResultsXSLT(filename, xml.str(), out);
 }
 
@@ -435,7 +445,14 @@ void WuWebView::load(IConstWorkUnit &cwu)
     }
     Owned<IConstWUQuery> q = wu->getQuery();
     q->getQueryDllName(dllname);
-    loadedDll.setown(queryDllServer().loadDll(dllname.str(), DllLocationAnywhere));
+    try
+    {
+        loadedDll.setown(queryDllServer().loadDll(dllname.str(), DllLocationAnywhere));
+    }
+    catch(...)
+    {
+        DBGLOG("Failed to load %s", dllname.str());
+    }
 }
 
 void WuWebView::load(const char *wuid)

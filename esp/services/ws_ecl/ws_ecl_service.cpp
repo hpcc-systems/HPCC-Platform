@@ -1883,7 +1883,7 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsWuInfo &wsinfo, 
         {
             Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
             StringBufferAdaptor result(out);
-            getFullWorkUnitResultsXML(context.queryUserId(), context.queryPassword(), cw.get(), result, false, ExceptionSeverityError);
+            getFullWorkUnitResultsXML(context.queryUserId(), context.queryPassword(), cw.get(), result, false, ExceptionSeverityInformation);
             cw.clear();
         }
     }
