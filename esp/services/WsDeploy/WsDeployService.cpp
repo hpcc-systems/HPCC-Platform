@@ -1663,7 +1663,8 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
 
         if (sbName)
         {
-          if (strstr(sbName, "EclCCServerProcess") == sbName || 
+          if (strstr(sbName, "EclCCServerProcess") == sbName ||
+              strstr(sbName, "EclServerProcess") == sbName ||
               strstr(sbName, "EclAgentProcess") == sbName ||
               strstr(sbName, "EclSchedulerProcess") == sbName)
           {
@@ -4523,7 +4524,8 @@ bool CWsDeployFileInfo::handleTopology(IEspContext &context, IEspHandleTopologyR
 
     if (sbName)
     {
-      if (strstr(sbName, "EclCCServerProcess") == sbName || 
+      if (strstr(sbName, "EclCCServerProcess") == sbName ||
+          strstr(sbName, "EclServerProcess") == sbName ||
           strstr(sbName, "EclAgentProcess") == sbName ||
           strstr(sbName, "EclSchedulerProcess") == sbName)
       {
@@ -4560,6 +4562,8 @@ bool CWsDeployFileInfo::handleTopology(IEspContext &context, IEspHandleTopologyR
 
     if (!strcmp(newType, "EclCCServer"))
       sbNewType.clear().append(XML_TAG_ECLCCSERVERPROCESS);
+    else if (!strcmp(newType, "EclServer"))
+      sbNewType.clear().append(XML_TAG_ECLSERVERPROCESS);
     else if (!strcmp(newType, "EclAgent"))
       sbNewType.clear().append(XML_TAG_ECLAGENTPROCESS);
     else if (!strcmp(newType, "EclScheduler"))
@@ -4571,7 +4575,8 @@ bool CWsDeployFileInfo::handleTopology(IEspContext &context, IEspHandleTopologyR
 
     IPropertyTree* pNode = createPTree(sbNewType.str());
 
-    if (!strcmp(sbNewType.str(), XML_TAG_ECLCCSERVERPROCESS) || 
+    if (!strcmp(sbNewType.str(), XML_TAG_ECLCCSERVERPROCESS) ||
+      !strcmp(sbNewType.str(), XML_TAG_ECLSERVERPROCESS) ||
       !strcmp(sbNewType.str(), XML_TAG_ECLAGENTPROCESS) ||
       !strcmp(sbNewType.str(), XML_TAG_ECLSCHEDULERPROCESS) ||
       !strcmp(sbNewType.str(), XML_TAG_THORCLUSTER) ||
