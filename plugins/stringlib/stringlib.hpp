@@ -80,6 +80,9 @@ STRINGLIB_API unsigned STRINGLIB_CALL slStringWordCount(unsigned srcLen, const c
 STRINGLIB_API unsigned STRINGLIB_CALL slCountWords(size32_t lenSrc, const char * src, size32_t lenSeparator, const char * separator, bool allowBlankItems);
 STRINGLIB_API void STRINGLIB_CALL slSplitWords(bool & __isAllResult, size32_t & __lenResult, void * & __result, size32_t lenSrc, const char * src, size32_t lenSeparator, const char * separator, bool allowBlankItems);
 STRINGLIB_API void STRINGLIB_CALL slCombineWords(size32_t & __lenResult, void * & __result, bool isAllSrc, size32_t lenSrc, const char * src, size32_t lenSeparator, const char * separator, bool allowBlankItems);
+STRINGLIB_API unsigned STRINGLIB_CALL slStringToDate(size32_t lenS, const char * s, const char * fmtin);
+STRINGLIB_API unsigned STRINGLIB_CALL slMatchDate(size32_t lenS, const char * s, bool isAllFormats, unsigned lenFormats, const void * _formats);
+STRINGLIB_API void STRINGLIB_CALL slFormatDate(size32_t & __lenResult, char * & __result, unsigned date, const char * format);
 }
 
 #endif

@@ -6,19 +6,27 @@ IMPORT Std.Date;
 
 EXPORT TestDate := MODULE
 
-  EXPORT TestConstant := MODULE
-    EXPORT Test01 := ASSERT(NOT date.IsLeapYear(1900), CONST);
-    EXPORT Test02 := ASSERT(date.IsLeapYear(1904), CONST);
-    EXPORT Test03 := ASSERT(NOT date.IsLeapYear(2100), CONST);
-    EXPORT Test04 := ASSERT(date.IsLeapYear(2000), CONST);
-    EXPORT Test05 := ASSERT(NOT date.IsLeapYear(1901), CONST);
-    EXPORT Test06 := ASSERT(date.FromDaysSince1900(0) = 19000101, CONST);
-    EXPORT Test07 := ASSERT(date.ToGregorianDate(1) = 00010101, CONST);
-    EXPORT Test08 := ASSERT(date.DaysSince1900(1900,1,1)=0, CONST);
-    EXPORT Test09 := ASSERT(date.FromGregorianYMD(1,1,1)=1, CONST);
-    EXPORT Test10 := ASSERT(date.ToJulianDate(1) = 00010101, CONST);
-    EXPORT Test11 := ASSERT(date.FromJulianYMD(1,1,1)=1, CONST);
-  END;
+  EXPORT TestConstant := [
+    ASSERT(NOT date.IsLeapYear(1900), CONST);
+    ASSERT(date.IsLeapYear(1904), CONST);
+    ASSERT(NOT date.IsLeapYear(2100), CONST);
+    ASSERT(date.IsLeapYear(2000), CONST);
+    ASSERT(NOT date.IsLeapYear(1901), CONST);
+    ASSERT(date.FromDaysSince1900(0) = 19000101, CONST);
+    ASSERT(date.ToGregorianDate(1) = 00010101, CONST);
+    ASSERT(date.DaysSince1900(1900,1,1)=0, CONST);
+    ASSERT(date.FromGregorianYMD(1,1,1)=1, CONST);
+    ASSERT(date.ToJulianDate(1) = 00010101, CONST);
+    ASSERT(date.FromJulianYMD(1,1,1)=1, CONST);
+    ASSERT(date.MonthsBetween(19700101,19701231)=11, CONST);
+    ASSERT(date.MonthsBetween(19701231,19710101)=0, CONST);
+    ASSERT(date.MonthsBetween(19701231,19711231)=12, CONST);
+    ASSERT(date.MonthsBetween(19711231,19701231)=-12, CONST);
+    ASSERT(date.MonthsBetween(19700606,19700706)=1, CONST);
+    ASSERT(date.MonthsBetween(19700606,19700705)=0, CONST);
+    ASSERT(date.MonthsBetween(19700606,19700607)=0, CONST);
+    ASSERT(TRUE, CONST)
+  ];
 
   EXPORT TestDynamic := MODULE
     //Iterate through all lots of dates, incrementing the day and the date to check they convert correctly.
