@@ -71,10 +71,12 @@ int EclCMDShell::processCMD(ArgvIterator &iter)
     Owned<IEclCommand> c = factory(cmd.get());
     if (!c)
     {
-        if (runExternals)
-            return callExternal(iter);
         if (cmd.length())
+        {
+            if (runExternals)
+                return callExternal(iter);
             fprintf(stderr, "ecl '%s' command not found\n", cmd.sget());
+        }
         usage();
         return 1;
     }
@@ -161,7 +163,7 @@ bool EclCMDShell::parseCommandLineOptions(ArgvIterator &iter)
         }
         else if (iter.matchFlag(boolValue, "--version"))
         {
-            fprintf(stdout, "\necl command line version %s\n\n", BUILD_TAG);
+            fprintf(stdout, "%s\n", BUILD_TAG);
             return false;
         }
     }
