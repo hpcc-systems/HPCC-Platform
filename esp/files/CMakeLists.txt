@@ -34,7 +34,6 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/gen_form.js
     ${CMAKE_CURRENT_SOURCE_DIR}/get_input.js
     ${CMAKE_CURRENT_SOURCE_DIR}/graph.js
-    ${CMAKE_CURRENT_SOURCE_DIR}/groupadd.html
     ${CMAKE_CURRENT_SOURCE_DIR}/hashtable.js
     ${CMAKE_CURRENT_SOURCE_DIR}/hint.js
     ${CMAKE_CURRENT_SOURCE_DIR}/joblist.js
