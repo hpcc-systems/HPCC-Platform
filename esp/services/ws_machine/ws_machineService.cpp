@@ -250,7 +250,6 @@ void Cws_machineEx::init(IPropertyTree *cfg, const char *process, const char *se
 
     xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]", process, service);
     Owned<IPropertyTree> pProcessNode = cfg->getPropTree(xpath.str());
-    m_useDefaultSSHUserID = pProcessNode->getPropBool("UseDefaultSSHUserID", true);
     m_useDefaultHPCCInit = pProcessNode->getPropBool("UseDefaultHPCCInit", true);
     m_useDefaultPIDFileName = pProcessNode->getPropBool("UseDefaultPIDFileName", false);
 
@@ -268,11 +267,12 @@ void Cws_machineEx::init(IPropertyTree *cfg, const char *process, const char *se
     IPropertyTree* pEnvSettings = pRoot->getPropTree("EnvSettings");
     if (pEnvSettings)
     {
-        pEnvSettings->getProp("configs", m_environmentConfData.m_configsPath.clear());
-        pEnvSettings->getProp("path", m_environmentConfData.m_executionPath.clear());
-        pEnvSettings->getProp("runtime", m_environmentConfData.m_runtimePath.clear());
-        pEnvSettings->getProp("lock", m_environmentConfData.m_lockPath.clear());
-        pEnvSettings->getProp("pid", m_environmentConfData.m_pidPath.clear());
+        pEnvSettings->getProp("configs", environmentConfData.m_configsPath.clear());
+        pEnvSettings->getProp("path", environmentConfData.m_executionPath.clear());
+        pEnvSettings->getProp("runtime", environmentConfData.m_runtimePath.clear());
+        pEnvSettings->getProp("lock", environmentConfData.m_lockPath.clear());
+        pEnvSettings->getProp("pid", environmentConfData.m_pidPath.clear());
+        pEnvSettings->getProp("user", environmentConfData.m_user.clear());
     }
     IThreadFactory* pThreadFactory = new CWsMachineThreadFactory();
     m_threadPool.setown(createThreadPool("WsMachine Thread Pool", pThreadFactory,
@@ -937,16 +937,8 @@ int Cws_machineEx::runCommand(IEspContext& context, const char* sAddress, const 
          To get around this, we pipe "n" to plink without using its -batch parameter.  We need
          help from cmd.exe to do this though...
          */
-            if (!m_useDefaultSSHUserID)
-            {
-                cmdLine.appendf("cmd /c \"echo y | .\\plink.exe -ssh -l espuser -i id_rsa.ppk %s bash -c '%s' 2>&1\"",
-                    sAddress, command.str());
-            }
-            else
-            {
-                cmdLine.appendf("cmd /c \"echo y | .\\plink.exe -ssh -l %s -pw %s %s sudo bash -c '%s' 2>&1\"",
-                    userId.str(), password.str(), sAddress, command.str());
-            }
+         cmdLine.appendf("cmd /c \"echo y | .\\plink.exe -ssh -l %s -pw %s %s sudo bash -c '%s' 2>&1\"",
+             environmentConfData.m_user.str(), password.str(), sAddress, command.str());
       }
       else
       {
@@ -961,19 +953,8 @@ int Cws_machineEx::runCommand(IEspContext& context, const char* sAddress, const 
       if (bLinux)
       {
          command.replace('\\', '/');//replace all '\\' by '/'
-         //cmdLine.appendf("./pssh %s@%s -o password=%s -o StrictHostKeyChecking=no sudo %s 2>&1",
-         //   userId.str(), sAddress, password.str(), command.str());
-            ///cmdLine.appendf("echo %s | %s/bin/pssh %s@%s -o password=%s -o StrictHostKeyChecking=no sudo -S %s 2>&1",
-         ///   password.str(), m_environmentConfData.m_executionPath.str(), userId.str(), sAddress, password.str(), command.str());
-            cmdLine.appendf("ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5");
-            if (!m_useDefaultSSHUserID)
-            {
-                cmdLine.appendf(" -i /home/espuser/.ssh/id_rsa espuser@%s '%s' 2>&1", sAddress, command.str());
-            }
-            else
-            {
-                cmdLine.appendf(" %s '%s' 2>&1", sAddress, command.str());
-            }
+         cmdLine.appendf("ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5");
+         cmdLine.appendf(" %s '%s' 2>&1", sAddress, command.str());
       }
       else
       {
@@ -985,19 +966,8 @@ int Cws_machineEx::runCommand(IEspContext& context, const char* sAddress, const 
       if (bLinux)
       {
          command.replace('\\', '/');//replace all '\\' by '/'
-         //cmdLine.appendf("./pssh %s@%s -o password=%s -o StrictHostKeyChecking=no sudo %s 2>&1",
-         //   userId.str(), sAddress, password.str(), command.str());
-            ///cmdLine.appendf("echo %s | %s/bin/pssh %s@%s -o password=%s -o StrictHostKeyChecking=no sudo -S %s 2>&1",
-         ///   password.str(), m_environmentConfData.m_executionPath.str(), userId.str(), sAddress, password.str(), command.str());
-            cmdLine.appendf("ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5");
-            if (!m_useDefaultSSHUserID)
-            {
-                cmdLine.appendf(" -i /home/espuser/.ssh/id_rsa espuser@%s '%s' 2>&1", sAddress, command.str());
-            }
-            else
-            {
-                cmdLine.appendf(" %s '%s' 2>&1", sAddress, command.str());
-            }
+         cmdLine.appendf("ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5");
+         cmdLine.appendf(" %s '%s' 2>&1", sAddress, command.str());
       }
       else
       {
@@ -1150,7 +1120,7 @@ void Cws_machineEx::doGetMachineInfo(IEspContext& context, CMachineInfoThreadPar
         }
         else
         {
-            preFlightCommand.appendf("/%s/sbin/%s %s", m_environmentConfData.m_executionPath.str(), m_machineInfoFile.str(), m_environmentConfData.m_pidPath.str());
+            preFlightCommand.appendf("/%s/sbin/%s %s", environmentConfData.m_executionPath.str(), m_machineInfoFile.str(), environmentConfData.m_pidPath.str());
             if (preFlightCommand.charAt(preFlightCommand.length() - 1) == '/')
                 preFlightCommand.remove(preFlightCommand.length()-1, 1);
             preFlightCommand.appendf(" %s", pParam->m_sCompName.str());
@@ -1582,7 +1552,7 @@ void Cws_machineEx::checkRunningProcessesByPID(IEspContext& context, CMachineInf
 {
     StringBuffer sCommand;
     StringBuffer sResponse;
-    sCommand.appendf("ls %s", m_environmentConfData.m_pidPath.str());
+    sCommand.appendf("ls %s", environmentConfData.m_pidPath.str());
     int iRet = runCommand(context, pParam->m_sAddress.str(), pParam->m_sConfigAddress.str(), sCommand.str(), pParam->m_sUserName.str(), pParam->m_sPassword.str(), sResponse);
     if (iRet == 0)
     {
