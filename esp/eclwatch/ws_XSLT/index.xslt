@@ -776,7 +776,11 @@
                       </xsl:otherwise>
                     </xsl:choose>
                     <xsl:attribute name="href">javascript:go('/WsTopology/TpClusterInfo?Name=<xsl:value-of select="$cluster"/>')</xsl:attribute>
-                    <xsl:value-of select="$queue"/>
+                    <xsl:choose>
+                      <xsl:when test="$roxie!='0'">RoxieCluster - </xsl:when>
+                      <xsl:when test="$thor!='0'">ThorCluster - </xsl:when>
+                    </xsl:choose>
+                    <xsl:value-of select="$cluster"/>
                                 </a>
                                 </xsl:when>
                                 <xsl:otherwise>
