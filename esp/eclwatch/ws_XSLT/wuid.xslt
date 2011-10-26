@@ -571,7 +571,7 @@
                         draggable: false,
                         close: true,
                         text: exceptionHtml,
-                        icon: YAHOO.widget.SimpleDialog.ICON_HELP,
+                        icon: (i > -1) ? YAHOO.widget.SimpleDialog.ICON_ALARM : YAHOO.widget.SimpleDialog.ICON_INFO,
                         constraintoviewport: true,
                         buttons: [ { text:"Ok", handler:handleOk, isDefault:true } ]
                       } );
