@@ -290,16 +290,14 @@ private:
     void readRunningProcess(const char* lineBuf, IArrayOf<IEspProcessInfo>& runningProcesses);
     void checkRunningProcessesByPID(IEspContext& context, CMachineInfoThreadParam* pParam, set<string>* pRequiredProcesses);
 
-//data members
+    //data members
     StringBuffer m_sTestStr1;
     StringBuffer m_sTestStr2;
 
     bool m_useDefaultHPCCInit;
-    bool m_useDefaultPIDFileName;
 
     Owned<IPropertyTree>     m_monitorCfg;
-   Owned<IPropertyTree>     m_processFilters;
-    ///Owned<IConstEnvironment> m_constEnv;
+    Owned<IPropertyTree>     m_processFilters;
     Owned<IThreadPool>       m_threadPool;
     Owned<IEnvironmentFactory> m_envFactory;
     bool                     m_bMonitorDaliFileServer;
