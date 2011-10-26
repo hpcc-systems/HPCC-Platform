@@ -39,7 +39,10 @@ struct CEnvironmentConfData
     StringBuffer m_runtimePath;
     StringBuffer m_lockPath;
     StringBuffer m_pidPath;
+    StringBuffer m_user;
 };
+
+static CEnvironmentConfData     environmentConfData;
 
 struct CField
 {
@@ -291,7 +294,6 @@ private:
     StringBuffer m_sTestStr1;
     StringBuffer m_sTestStr2;
 
-    bool m_useDefaultSSHUserID;
     bool m_useDefaultHPCCInit;
     bool m_useDefaultPIDFileName;
 
@@ -305,7 +307,6 @@ private:
     set<string>                  m_excludePartitions;
     set<string>                  m_excludePartitionPatterns;
     StringBuffer                 m_machineInfoFile;
-    CEnvironmentConfData     m_environmentConfData;
 };
 
 //---------------------------------------------------------------------------------------------

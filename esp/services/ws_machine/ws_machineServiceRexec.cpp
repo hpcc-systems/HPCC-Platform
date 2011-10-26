@@ -43,20 +43,19 @@ public:
    StringBuffer m_password;
     StringBuffer m_sConfigAddress;
    bool m_bWait;        
-    bool m_useDefaultSSHUserID;
    IEspContext& m_context;
 
-    CRemoteExecThreadParam( const char* pszAddress, const char* cmd, bool wait, bool useDefaultSSHUserID,
+    CRemoteExecThreadParam( const char* pszAddress, const char* cmd, bool wait,
                            Cws_machineEx* pService, IEspContext &context)
                                  : CWsMachineThreadParam(pszAddress, "", pService),
-                                   m_sCommand(cmd), m_bWait(wait), m_useDefaultSSHUserID(useDefaultSSHUserID), m_context(context)
+                                   m_sCommand(cmd), m_bWait(wait), m_context(context)
    {
    }
 
     CRemoteExecThreadParam( const char* pszAddress, const char* pszConfigAddress, const char* cmd, bool wait, 
-                                    bool useDefaultSSHUserID, Cws_machineEx* pService, IEspContext &context)
+                                    Cws_machineEx* pService, IEspContext &context)
                                  : CWsMachineThreadParam(pszAddress, "", "", pService),
-                                   m_sCommand(cmd), m_bWait(wait), m_useDefaultSSHUserID(useDefaultSSHUserID), m_context(context)
+                                   m_sCommand(cmd), m_bWait(wait), m_context(context)
    {
         m_sConfigAddress = pszConfigAddress;
    }
@@ -151,16 +150,8 @@ public:
             To get around this, we pipe "n" to plink without using its -batch parameter.  We need
             help from cmd.exe to do this though...
             */
-                if (!m_useDefaultSSHUserID)
-                {
-                    cmdLine.appendf("cmd /c \"echo y | .\\plink.exe -ssh -l espuser -i id_rsa.ppk %s bash -c '%s' 2>&1\"",
-                        m_sAddress.str(), m_sCommand.str());
-                }
-                else
-                {
-                    cmdLine.appendf("cmd /c \"echo y | .\\plink.exe -ssh -l %s -pw %s %s sudo bash -c '%s' 2>&1\"",
-                        userId.str(), password.str(), m_sAddress.str(), m_sCommand.str());
-                }
+            cmdLine.appendf("cmd /c \"echo y | .\\plink.exe -ssh -l %s -pw %s %s sudo bash -c '%s' 2>&1\"",
+                environmentConfData.m_user.str(), password.str(), m_sAddress.str(), m_sCommand.str());
          }
          else
          {
@@ -174,16 +165,8 @@ public:
 #else
          if (bLinux)
          {
-                if (!m_useDefaultSSHUserID)
-                {
-                    m_sCommand.replace('\\', '/');//replace all '\\' by '/'
-                    cmdLine.appendf("ssh -o StrictHostKeyChecking=no -i /home/espuser/.ssh/id_rsa espuser@%s '%s'", m_sAddress.str(), m_sCommand.str());
-                }
-                else
-                {
-                    m_sCommand.replace('\\', '/');//replace all '\\' by '/'
-                    cmdLine.appendf("ssh -o StrictHostKeyChecking=no %s '%s'", m_sAddress.str(), m_sCommand.str());
-                }
+            m_sCommand.replace('\\', '/');//replace all '\\' by '/'
+            cmdLine.appendf("ssh -o StrictHostKeyChecking=no %s '%s'", m_sAddress.str(), m_sCommand.str());
          }
          else
          {
@@ -194,16 +177,8 @@ public:
 #else
          if (bLinux)
          {
-                if (!m_useDefaultSSHUserID)
-                {
-                    m_sCommand.replace('\\', '/');//replace all '\\' by '/'
-                    cmdLine.appendf("ssh -o StrictHostKeyChecking=no -i /home/espuser/.ssh/id_rsa espuser@%s '%s'", m_sAddress.str(), m_sCommand.str());
-                }
-                else
-                {
-                    m_sCommand.replace('\\', '/');//replace all '\\' by '/'
-                    cmdLine.appendf("ssh -o StrictHostKeyChecking=no %s '%s'", m_sAddress.str(), m_sCommand.str());
-                }
+            m_sCommand.replace('\\', '/');//replace all '\\' by '/'
+            cmdLine.appendf("ssh -o StrictHostKeyChecking=no %s '%s'", m_sAddress.str(), m_sCommand.str());
          }
          else
          {
@@ -304,14 +279,14 @@ public:
     bool m_useHPCCInit;
 
 #ifndef OLD_START_STOP
-   CStartStopThreadParam( const char* pszAddress, const char* pszConfigAddress, bool bStop, bool useDefaultSSHUserID, bool useHPCCInit, Cws_machineEx* pService, IEspContext &context)
-                        : CRemoteExecThreadParam(pszAddress, pszConfigAddress, "", true, useDefaultSSHUserID, pService, context),
+   CStartStopThreadParam( const char* pszAddress, const char* pszConfigAddress, bool bStop, bool useHPCCInit, Cws_machineEx* pService, IEspContext &context)
+                        : CRemoteExecThreadParam(pszAddress, pszConfigAddress, "", true, pService, context),
                                   m_bStop(bStop), m_useHPCCInit(useHPCCInit)
    {
    }
 #else
-    CStartStopThreadParam( const char* pszAddress, bool bStop, bool useDefaultSSHUserID, bool useHPCCInit, Cws_machineEx* pService, IEspContext &context)
-                        : CRemoteExecThreadParam(pszAddress, "", true, useDefaultSSHUserID, pService, context),
+    CStartStopThreadParam( const char* pszAddress, bool bStop, bool useHPCCInit, Cws_machineEx* pService, IEspContext &context)
+                        : CRemoteExecThreadParam(pszAddress, "", true, pService, context),
                                   m_bStop(bStop), m_useHPCCInit(useHPCCInit)
    {
    }
@@ -715,7 +690,7 @@ bool Cws_machineEx::doStartStop(IEspContext &context, StringArray& addresses, ch
             resultsArray.append(*pResult.getLink());
 
             CStartStopThreadParam* pThreadReq;
-            pThreadReq = new CStartStopThreadParam(address, configAddress, bStop, m_useDefaultSSHUserID, m_useDefaultHPCCInit, this, context);
+            pThreadReq = new CStartStopThreadParam(address, configAddress, bStop, m_useDefaultHPCCInit, this, context);
             pThreadReq->setResultObject( pResult );
 
             if (userName && *userName)
@@ -743,7 +718,7 @@ bool Cws_machineEx::doStartStop(IEspContext &context, StringArray& addresses, ch
             resultsArray.append(*pResult.getLink());
 
             CStartStopThreadParam* pThreadReq;
-            pThreadReq = new CStartStopThreadParam(address, bStop, m_useDefaultSSHUserID, this, context);
+            pThreadReq = new CStartStopThreadParam(address, bStop, this, context);
             pThreadReq->setResultObject( pResult );
 
             if (userName && *userName)
