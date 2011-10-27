@@ -19,5 +19,7 @@ rem ############################################################################
 
 setlocal enableextensions
 md %regresstgt% 2>nul
+set start=%time%
 call %~dp0\regress1 -m %*
+echo Time: %start%  %time%
 if EXIST %~dp0\rcompare.bat. call %~dp0\rcompare %~n1
