@@ -302,7 +302,6 @@ public:
 };
 
 StringBuffer &getWuidFromLogicalFileName(IEspContext &context, const char *logicalName, StringBuffer &wuid);
-const char *getThorQueueName(const char *cluster);
 
 bool addToQueryString(StringBuffer &queryString, const char *name, const char *value, const char delim = '&');
 

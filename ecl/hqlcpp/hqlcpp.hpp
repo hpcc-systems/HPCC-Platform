@@ -84,11 +84,6 @@ The following debug options are currently supported by the code generator:
 
 #define DEFAULT_conditionalStatements false
 
-enum ClusterType { NoCluster, ThorCluster, HThorCluster, RoxieCluster, ThorLCRCluster };
-
-extern HQLCPP_API ClusterType getClusterType(const char * platform, ClusterType dft = NoCluster);
-inline bool isThorCluster(ClusterType type) { return (type == ThorCluster) || (type == ThorLCRCluster); }
-
 #define STRING_RESOURCES
 
 #define CREATE_DEAULT_ROW_IF_NULL
