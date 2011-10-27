@@ -189,20 +189,21 @@
                     endDate=dt;
                 }
                 var src='';
-                //if (getGraph > 2)
-                //  src='/WsWorkunits/JobList?Cluster=';                
-                //else if (getGraph > 1)
-                //  src='/WsWorkunits/WUClusterJobSummaryXLS?Cluster=';
-                //else
-                //  src='/WsWorkunits/JobList?Type=Multi;Cluster=';
                 if (getGraph > 1)
-                    src='/WsWorkunits/JobQueue?Cluster=';                
-                else if (getGraph > 0)
-                    src='/WsWorkunits/JobList?Cluster=';                
+                {
+                    src='/WsWorkunits/JobQueue?Cluster=';
+                    var select=document.getElementById('TargetCluster');
+                    src+=select.value;
+                }
                 else
-                    src='/WsWorkunits/WUClusterJobSummaryXLS?Cluster=';
-                var select=document.getElementById('Cluster');
-                if(select.selectedIndex>=0) src+=select.options[select.selectedIndex].text;
+                {
+                    if (getGraph > 0)
+                        src='/WsWorkunits/JobList?Cluster=';
+                    else
+                        src='/WsWorkunits/WUClusterJobSummaryXLS?Cluster=';
+                    var select=document.getElementById('Cluster');
+                    if(select.selectedIndex>=0) src+=select.options[select.selectedIndex].text;
+                }
                 if(startDate) src+='&StartDate='+startDate;
                 if(endDate) src+='&EndDate='+endDate;
                 src+='&ShowAll=1';
@@ -215,7 +216,6 @@
                     reload_graph(src);
                 else
                     document.location.href=src;
-        
               return false;
          }
 
@@ -236,6 +236,7 @@
     <body class="yui-skin-sam" onload="nof5();onLoad()">
          Display workunits:<br/><br/>
          <form onsubmit="return submit_list()">
+         <input type="hidden" id="TargetCluster" name="TargetCluster" value="{TargetCluster}"/>
          <table>
             <tr>
                 <td>Cluster</td>

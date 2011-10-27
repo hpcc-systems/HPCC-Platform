@@ -3097,6 +3097,7 @@ int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* req
                         xml.append("<Cluster").append('>').append(thorInstances.item(i)).append("</Cluster>");
                     }
                 }
+                xml.append("<TargetCluster>").append(cluster).append("</TargetCluster>");
                 xml.append("</WUJobList>");
                 xslt.append(getCFD()).append("./smc_xslt/jobs_search.xslt");
                 response->addHeader("Expires", "0");
