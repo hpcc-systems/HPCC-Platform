@@ -970,10 +970,11 @@ void streamJobListResponse(IEspContext &context, const char *cluster, const char
         appendQuoted(sb, job->getFinishedDate());
         appendQuoted(sb, job->getCluster());
         appendQuoted(sb, job->getState());
-        appendQuoted(sb, showall ? "1" : "0");
-        appendQuoted(sb, bbtime);
-        appendQuoted(sb, betime);
-        sb.append(")\r\n");
+        if (showall)
+            sb.append(",\'\',\'1\'");
+        else
+            sb.append(",\'\',\'0\'");
+        sb.append(',').append(bbtime).append(',').append(betime).append(")\r\n");
         if(++count>=50)
         {
             sb.append("</script>\r\n");
@@ -1014,10 +1015,12 @@ void streamJobListResponse(IEspContext &context, const char *cluster, const char
             appendQuoted(sb, finished.str());
             appendQuoted(sb, unfinishedClusters.item(idx3));
             appendQuoted(sb, "not finished");
-            appendQuoted(sb, showall ? "1" : "0");
-            appendQuoted(sb, bbtime);
-            appendQuoted(sb, betime);
-            sb.append(")\r\n");
+            if (showall)
+                sb.append(",\'\',\'1\'");
+            else
+                sb.append(",\'\',\'0\'");
+            sb.append(',').append(bbtime).append(',').append(betime).append(")\r\n");
+
             if(++count>=50)
             {
                 sb.append("</script>\r\n");
