@@ -28,6 +28,7 @@
 #include "hqlfold.ipp"
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
+#include "hqlerror.hpp"
 #include "hqlerrors.hpp"
 #include "hqlutil.hpp"
 #include "hqlpmap.hpp"
@@ -4669,6 +4670,18 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
                 return removeProperty(expr, _countProject_Atom);
         }
         break;
+    case no_temptable:
+        {
+            if (expr->queryChild(0)->getOperator() == no_list)
+            {
+                ECLlocation dummyLocation(0, 0, 0, NULL);
+                ThrowingErrorReceiver errorReporter;
+                OwnedHqlExpr inlineTable = convertTempTableToInlineTable(&errorReporter, dummyLocation, expr);
+                if (expr != inlineTable)
+                    return inlineTable.getClear();
+            }
+            break;
+        }
     }
 
     return LINK(expr);
