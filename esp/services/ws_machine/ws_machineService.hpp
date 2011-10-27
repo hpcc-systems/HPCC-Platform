@@ -294,8 +294,6 @@ private:
     StringBuffer m_sTestStr1;
     StringBuffer m_sTestStr2;
 
-    bool m_useDefaultHPCCInit;
-
     Owned<IPropertyTree>     m_monitorCfg;
     Owned<IPropertyTree>     m_processFilters;
     Owned<IThreadPool>       m_threadPool;
