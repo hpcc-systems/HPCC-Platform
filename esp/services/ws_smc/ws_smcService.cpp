@@ -481,7 +481,7 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
             if (cluster.getThorProcesses().ordinality())
             {
                 IEspThorCluster* returnCluster = new CThorCluster("","");
-                returnCluster->setThorLCR(0 == strcmp("thorlcr", cluster.getPlatform(str).str()) ? "withLCR" : "noLCR");
+                returnCluster->setThorLCR(ThorLCRCluster == cluster.getPlatform() ? "withLCR" : "noLCR");
                 str.clear();
                 returnCluster->setClusterName(cluster.getName(str).str());
                 str.clear();

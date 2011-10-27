@@ -164,19 +164,6 @@ IHqlExpression * DatasetReference::mapScalar(IHqlExpression * expr, IHqlExpressi
 
 //---------------------------------------------------------------------------
 
-extern ClusterType getClusterType(const char * platform, ClusterType dft)
-{
-    if (stricmp(platform, "thor") == 0)
-        return ThorCluster;
-    if (stricmp(platform, "thorlcr") == 0)
-        return ThorLCRCluster;
-    if (stricmp(platform, "hthor") == 0)
-        return HThorCluster;
-    if (stricmp(platform, "roxie") == 0)
-        return RoxieCluster;
-    return dft;
-}
-
 IHqlExpression * createVariable(ITypeInfo * type)
 {
     StringBuffer tempName;

@@ -3798,6 +3798,35 @@ public:
 
 };
 
+ClusterType getClusterType(const char * platform, ClusterType dft)
+{
+    if (stricmp(platform, "thor") == 0)
+        return ThorCluster;
+    if (stricmp(platform, "thorlcr") == 0)
+        return ThorLCRCluster;
+    if (stricmp(platform, "hthor") == 0)
+        return HThorCluster;
+    if (stricmp(platform, "roxie") == 0)
+        return RoxieCluster;
+    return dft;
+}
+
+const char *clusterTypeString(ClusterType clusterType)
+{
+    switch (clusterType)
+    {
+    case ThorCluster:
+        return "thor";
+    case ThorLCRCluster:
+        return "thorlcr";
+    case RoxieCluster:
+        return "roxie";
+    case HThorCluster:
+        return "hthor";
+    }
+    throwUnexpected();
+}
+
 class CEnvironmentClusterInfo: public CInterface, implements IConstWUClusterInfo
 {
     StringAttr name;
@@ -3807,7 +3836,7 @@ class CEnvironmentClusterInfo: public CInterface, implements IConstWUClusterInfo
     StringAttr thorQueue;
     StringArray thorProcesses;
     StringAttr prefix;
-    StringAttr platform;
+    ClusterType platform;
     StringAttr querySetName;
     unsigned clusterWidth;
 public:
@@ -3835,18 +3864,18 @@ public:
                 else if (lcr!=islcr)
                     throw MakeStringException(WUERR_MismatchThorType,"CEnvironmentClusterInfo: mismatched thor Legacy in cluster");
             }
-            platform.set(lcr ? "thorlcr" : "thor");
+            platform = lcr ? ThorLCRCluster : ThorCluster;
         }
         else if (roxie)
         {
             roxieProcess.set(roxie->queryProp("@name"));
             clusterWidth = roxie->getPropInt("@numChannels", 1);
-            platform.set("roxie");
+            platform = RoxieCluster;
         }
         else 
         {
             clusterWidth = 1;
-            platform.set("hthor");
+            platform = HThorCluster;
         }
 
         if (agent)
@@ -3888,10 +3917,9 @@ public:
     {
         return clusterWidth;
     }
-    virtual IStringVal & getPlatform(IStringVal & str) const
+    virtual const ClusterType getPlatform() const
     {
-        str.set(platform);
-        return str;
+        return platform;
     }
     IStringVal & getQuerySetName(IStringVal & str) const
     {
