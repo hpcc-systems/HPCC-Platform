@@ -3081,24 +3081,20 @@ int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* req
             }
             else if (strieq(method,"WUJobList"))
             {
-                StringBuffer defcluster;
-                request->getParameter("Cluster",defcluster);
+                StringBuffer cluster;
+                request->getParameter("Cluster", cluster);
                 StringBuffer range;
                 request->getParameter("Range",range);
-
-                Owned<IPropertyTreeIterator> it = root->getElements("Software/ThorCluster");
+                Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster);
                 xml.append("<WUJobList>");
                 if (range.length())
                     appendXMLTag(xml, "Range", range.str());
-                ForEach (*it)
+                if (clusterInfo)
                 {
-                    const char *name = it->query().queryProp("@name");
-                    if (notEmpty(name))
+                    const StringArray &thorInstances = clusterInfo->getThorProcesses();
+                    ForEachItemIn(i, thorInstances)
                     {
-                        xml.append("<Cluster");
-                        if(strieq(name, defcluster.str()))
-                            xml.append(" selected=\"1\"");
-                        xml.append('>').append(name).append("</Cluster>");
+                        xml.append("<Cluster").append('>').append(thorInstances.item(i)).append("</Cluster>");
                     }
                 }
                 xml.append("</WUJobList>");

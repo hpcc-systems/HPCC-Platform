@@ -1309,19 +1309,25 @@ bool CWsTopologyEx::onTpClusterInfo(IEspContext &context, IEspTpClusterInfoReque
             StringArray qlist;
             CslToStringArray(thorQueues.str(), qlist, true);
             IArrayOf<IEspTpQueue> Queues;
+            // look for the thor processes which are listening to this clusters queue, some may be listening to other clusters queues as well.
             ForEachItemIn(q, qlist)
             {
                 const char *queueName = qlist.item(q);
-                StringBuffer xpath("Server[@name=\"ThorMaster\"][@queue=\"");
-                xpath.append(queueName).append("\"]");
-                Owned<IPropertyTreeIterator> iter = conn->getElements(xpath.str()); // NB: should only be one
+                StringBuffer xpath("Server[@name=\"ThorMaster\"]");
+                Owned<IPropertyTreeIterator> iter = conn->getElements(xpath.str());
                 ForEach(*iter)
                 {
                     IPropertyTree &server = iter->query();
-                    IEspTpQueue* pQueue = createTpQueue("","");
-                    pQueue->setName(server.queryProp("@thorname"));
-                    pQueue->setWorkUnit(server.queryProp("WorkUnit"));
-                    Queues.append(*pQueue);
+                    const char *queues = server.queryProp("@queue");
+                    StringArray thorqlist;
+                    CslToStringArray(queues, thorqlist, true);
+                    if (NotFound != thorqlist.find(queueName))
+                    {
+                        IEspTpQueue* pQueue = createTpQueue("","");
+                        pQueue->setName(server.queryProp("@thorname"));
+                        pQueue->setWorkUnit(server.queryProp("WorkUnit"));
+                        Queues.append(*pQueue);
+                    }
                 }
             }
             resp.setTpQueues(Queues);

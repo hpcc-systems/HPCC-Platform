@@ -142,13 +142,6 @@ StringBuffer &getWuidFromLogicalFileName(IEspContext &context, const char *logic
     return wuid.append(df->queryProperties().queryProp("@workunit"));
 }
 
-const char *getThorQueueName(const char *cluster)
-{
-    SCMStringBuffer thorQueues;
-    getThorQueueNames(thorQueues, cluster);
-    return thorQueues.str();
-}
-
 void formatDuration(StringBuffer &s, unsigned ms)
 {
     unsigned days = ms / (1000*60*60*24);
@@ -868,54 +861,24 @@ bool WsWuInfo::getClusterInfo(IEspECLWorkunit &info, unsigned flags)
     if (version > 1.23 && clusterName.length())
     {
         int clusterTypeFlag = 0;
-        StringBuffer clusterProcess = clusterName.str();
 
         Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
-        Owned<IConstEnvironment> constEnv = envFactory->openEnvironmentByFile();
+        Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IPropertyTree> root = &constEnv->getPTree();
         if (!root)
             throw MakeStringException(ECLWATCH_CANNOT_CONNECT_DALI,"Cannot connect to DALI server.");
 
-        VStringBuffer xpath("Software/Topology/Cluster[@name='%s']", clusterName.str());
-        IPropertyTree *ptTopCluster = root->queryPropTree(xpath.str());
-        if (ptTopCluster)
+        Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName.str());
+        ClusterType platform = clusterInfo->getPlatform();
+        if (isThorCluster(platform))
         {
-            IPropertyTree *ptProcCluster = ptTopCluster->queryPropTree("ThorCluster");
-            if (ptProcCluster)
-            {
-                clusterProcess.set(ptProcCluster->queryProp("@process"));
-                clusterTypeFlag=1;
-            }
-            else
-            {
-                ptProcCluster = ptTopCluster->queryPropTree("RoxieCluster");
-                if (ptProcCluster)
-                {
-                    clusterProcess.set(ptProcCluster->queryProp("@process"));
-                    clusterTypeFlag=2;
-                }
-            }
+            clusterTypeFlag=1;
+            if (version > 1.29)
+                info.setThorLCR(ThorLCRCluster == platform);
         }
-
-        if (clusterTypeFlag==0)
-        {
-            SCMStringBuffer val;
-            cw->getDebugValue("targetclustertype", val);
-            if (strieq(val.str(), "thor"))
-                clusterTypeFlag=1;
-            else if (strieq(val.str(), "roxie"))
-                clusterTypeFlag = 2;
-        }
-
+        else if (RoxieCluster == platform)
+            clusterTypeFlag=2;
         info.setClusterFlag(clusterTypeFlag);
-
-        if (version > 1.29 && (clusterTypeFlag == 1))
-        {
-            VStringBuffer xpath("Software/ThorCluster[@name='%s']", clusterProcess.str());
-            IPropertyTree *ptCluster = root->queryPropTree(xpath.str());
-            if (ptCluster)
-                info.setThorLCR(!ptCluster->getPropBool("@Legacy", false));
-        }
     }
     return true;
 }
@@ -1878,16 +1841,7 @@ WsWuJobQueueAuditInfo::WsWuJobQueueAuditInfo(IEspContext &context, const char *c
 
     StringBuffer filter("ThorQueueMonitor");
     if(notEmpty(cluster))
-    {
-        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-        Owned<IConstEnvironment> environment = factory->openEnvironmentByFile();
-        Owned<IPropertyTree> root = &environment->getPTree();
-        if (!root)
-            throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
-        VStringBuffer xpath("Software/ThorCluster[@name='%s']/@queueName", cluster);
-        const char* queuename = root->queryProp(xpath.str());
-        filter.appendf(",%s", notEmpty(queuename) ? queuename : cluster);
-    }
+        filter.appendf(",%s", cluster);
 
     StringAttrArray lines;
     queryAuditLogs(fromTime, toTime, filter.str(), lines);

@@ -262,12 +262,11 @@ public:
             workunit.clear();
             return;
         }
-        SCMStringBuffer platform;
-        clusterInfo->getPlatform(platform);
+        ClusterType platform = clusterInfo->getPlatform();
         clusterInfo.clear();
         workunit->setState(WUStateCompiling);
         workunit->commit();
-        bool ok = compile(wuid, platform.str(), clusterName.str());
+        bool ok = compile(wuid, clusterTypeString(platform), clusterName.str());
         if (ok)
         {
             workunit->setState(WUStateCompiled);

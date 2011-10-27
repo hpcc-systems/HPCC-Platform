@@ -73,11 +73,8 @@ bool getClusterJobQueueXLS(StringBuffer &xml, const char* cluster, const char* s
     xml.append(">").newline();
 
     StringBuffer filter("ThorQueueMonitor");
-    if(notEmpty(cluster))
-    {
-        const char* queuename = getThorQueueName(cluster);
-        filter.appendf(",%s", notEmpty(queuename) ? queuename : cluster);
-    }
+    if (notEmpty(cluster))
+        filter.appendf(",%s", cluster);
 
     StringAttrArray lines;
     queryAuditLogs(fromTime, toTime, filter.str(), lines);
@@ -1294,10 +1291,7 @@ void streamJobQueueListResponse(IEspContext &context, const char *cluster, const
 
     StringBuffer filter("ThorQueueMonitor");
     if (notEmpty(cluster))
-    {
-        const char* queuename = getThorQueueName(cluster);
-        filter.appendf(",%s", notEmpty(queuename) ? queuename : cluster);
-    }
+        filter.appendf(",%s", cluster);
 
     StringAttrArray lines;
     queryAuditLogs(fromTime, toTime, filter.str(), lines);
@@ -1344,7 +1338,7 @@ void streamJobQueueListResponse(IEspContext &context, const char *cluster, const
             break;
 
         sb.append("parent.displayQueue(");
-        appendQuoted(sb, count);
+        appendQuoted(sb, count, true);
         appendQuoted(sb, tq.getDT());
         appendQuoted(sb, tq.getRunningWUs());
         appendQuoted(sb, tq.getQueuedWUs());
@@ -1383,8 +1377,8 @@ int CWsWorkunitsSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* respo
 
     try
     {
-        StringBuffer path;
-        request->getPath(path);
+         StringBuffer path;
+         request->getPath(path);
 
          if(!strnicmp(path.str(), "/WsWorkunits/JobList", 20))
          {
@@ -1499,10 +1493,7 @@ bool CWsWorkunitsEx::onWUClusterJobQueueLOG(IEspContext &context,IEspWUClusterJo
         const char *cluster = req.getCluster();
         StringBuffer filter("ThorQueueMonitor");
         if (notEmpty(cluster))
-        {
-            const char* queuename = getThorQueueName(cluster);
-            filter.appendf(",%s", notEmpty(queuename) ? queuename : cluster);
-        }
+            filter.appendf(",%s", cluster);
 
         StringAttrArray lines;
         queryAuditLogs(fromTime, toTime, filter.str(), lines);

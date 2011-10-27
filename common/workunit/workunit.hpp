@@ -530,6 +530,12 @@ interface IConstWUExceptionIterator : extends IScmIterator
     virtual IConstWUException & query() = 0;
 };
 
+enum ClusterType { NoCluster, ThorCluster, HThorCluster, RoxieCluster, ThorLCRCluster };
+
+extern WORKUNIT_API ClusterType getClusterType(const char * platform, ClusterType dft = NoCluster);
+extern WORKUNIT_API const char *clusterTypeString(ClusterType clusterType);
+inline bool isThorCluster(ClusterType type) { return (type == ThorCluster) || (type == ThorLCRCluster); }
+
 //! IClusterInfo
 interface IConstWUClusterInfo : extends IInterface
 {
@@ -537,7 +543,7 @@ interface IConstWUClusterInfo : extends IInterface
     virtual IStringVal & getScope(IStringVal & str) const = 0;
     virtual IStringVal & getThorQueue(IStringVal & str) const = 0;
     virtual unsigned getSize() const = 0;
-    virtual IStringVal & getPlatform(IStringVal & str) const = 0;
+    virtual ClusterType getPlatform() const = 0;
     virtual IStringVal & getAgentQueue(IStringVal & str) const = 0;
     virtual IStringVal & getServerQueue(IStringVal & str) const = 0;
     virtual IStringVal & getQuerySetName(IStringVal & str) const = 0;
