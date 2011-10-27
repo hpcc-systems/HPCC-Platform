@@ -3917,7 +3917,7 @@ public:
     {
         return clusterWidth;
     }
-    virtual const ClusterType getPlatform() const
+    virtual ClusterType getPlatform() const
     {
         return platform;
     }

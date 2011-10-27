@@ -543,7 +543,7 @@ interface IConstWUClusterInfo : extends IInterface
     virtual IStringVal & getScope(IStringVal & str) const = 0;
     virtual IStringVal & getThorQueue(IStringVal & str) const = 0;
     virtual unsigned getSize() const = 0;
-    virtual const ClusterType getPlatform() const = 0;
+    virtual ClusterType getPlatform() const = 0;
     virtual IStringVal & getAgentQueue(IStringVal & str) const = 0;
     virtual IStringVal & getServerQueue(IStringVal & str) const = 0;
     virtual IStringVal & getQuerySetName(IStringVal & str) const = 0;
