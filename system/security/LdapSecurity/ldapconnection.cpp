@@ -18,7 +18,9 @@
 
 // LDAP prototypes use char* where they should be using const char *, resulting in lots of spurious warnings
 #pragma warning( disable : 4786 )
+#ifdef __GNUC__
 #pragma GCC diagnostic ignored "-Wwrite-strings"
+#endif
 
 #include "permissions.ipp"
 #include "aci.ipp"
@@ -116,7 +118,7 @@ public:
 
         nextIndex = 0;
 
-        for(int ind = 0; ind < hostArray.length(); ind++)
+        for(unsigned ind = 0; ind < hostArray.length(); ind++)
         {
             DBGLOG("Added ldap server %s", hostArray.item(ind));
         }
@@ -1241,7 +1243,7 @@ public:
     {
         bool ret = true;
 
-        for(int i = 0; i < resources.length(); i++)
+        for(unsigned i = 0; i < resources.length(); i++)
         {
             ISecResource* resource = &resources.item(i);
             if(resource != NULL)
@@ -3023,7 +3025,7 @@ public:
         {
             StringArray allgroups;
             getAllGroups(allgroups);
-            for(int i = 0; i < allgroups.length(); i++)
+            for(unsigned i = 0; i < allgroups.length(); i++)
             {
                 const char* grp = allgroups.item(i);
                 StringBuffer grpdn, usrdn;
@@ -3810,7 +3812,7 @@ private:
 
     void ConvertCToW(unsigned short* pszDest, const CHAR* pszSrc)
     {
-        int i = 0;
+        unsigned i = 0;
         for(i = 0; i < strlen(pszSrc); i++)
             pszDest[i] = (unsigned short) pszSrc[i];
         pszDest[i] = (unsigned short)'\0';

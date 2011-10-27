@@ -327,7 +327,7 @@ public:
     {
         acibuf.appendf("(targetattr = \"%s\") (version %s;acl \"%s\";", m_targetattr.str(), m_version.str(), m_name.str());
         acibuf.append(m_isDeny?"deny (":"allow (");
-        int i;
+        unsigned i;
         for(i = 0; i < m_perms.length(); i++)
         {
             if(i > 0)
@@ -363,7 +363,7 @@ public:
             printf("deny:\n");
         else
             printf("allow:\n");
-        int y;
+        unsigned y;
         for(y = 0; y < m_perms.length(); y++)
         {
             printf("\t%s\n", m_perms.item(y));
@@ -575,7 +575,7 @@ public:
             printf("allow:\n");
         printf("\t%s\n", m_perms.str());
         printf("\nuserdns:\n");
-        int y;
+        unsigned y;
         for(y = 0; y < m_userdns.length(); y++)
         {
             printf("\t%s\n", m_userdns.item(y));
@@ -730,7 +730,7 @@ public:
                 denies = aci.permission();
             else
                 allows = aci.permission();
-            int i;
+            unsigned i;
             for(i = 0; i < aci.groupdns().length(); i++)
             {
                 const char* dn = aci.groupdns().item(i);
@@ -898,7 +898,7 @@ AciProcessor::AciProcessor(IPropertyTree* cfg)
 
 bool AciProcessor::getPermissions(ISecUser& user, IArrayOf<CSecurityDescriptor>& sdlist, IArrayOf<ISecResource>& resources)
 {
-    for(int i = 0; i < sdlist.length(); i++)
+    for(unsigned i = 0; i < sdlist.length(); i++)
     {
         CSecurityDescriptor& sd = sdlist.item(i);
         ISecResource& res = resources.item(i);
@@ -996,7 +996,7 @@ int AciProcessor::sdSegments(CSecurityDescriptor* sd)
         return 0;
 
     const char* sdptr = sd->getDescriptor().toByteArray();
-    int curind = 0;
+    unsigned curind = 0;
     int segs = 0;
     bool endofone = true;
     while(curind < sd->getDescriptor().length())

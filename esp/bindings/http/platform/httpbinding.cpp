@@ -1413,7 +1413,7 @@ static void genSampleXml(StringStack& parent, IXmlType* type, StringBuffer& out,
         out.appendf("<%s", tag);
         if (ns)
             out.append(' ').append(ns);
-        for (int i=0; i<type->getAttrCount(); i++)
+        for (unsigned i=0; i<type->getAttrCount(); i++)
         {
             IXmlAttribute* attr = type->queryAttr(i);
             out.appendf(" %s='", attr->queryName());
@@ -1481,7 +1481,7 @@ void EspHttpBinding::generateSampleXml(bool isRequest, IEspContext &context, CHt
     MethodInfoArray info;
     getQualifiedNames(context, info);
     StringBuffer element;
-    for (int i=0; i<info.length(); i++)
+    for (unsigned i=0; i<info.length(); i++)
     {
         CMethodInfo& m = info.item(i);
         if (stricmp(m.m_label, methodQName)==0)
@@ -1991,7 +1991,7 @@ int EspHttpBinding::onGetXForm(IEspContext &context, CHttpRequest* request, CHtt
 
         MethodInfoArray info;
         getQualifiedNames(context, info);
-        for (int i=0; i<info.length(); i++)
+        for (unsigned i=0; i<info.length(); i++)
         {
             CMethodInfo& m = info.item(i);
             if (stricmp(m.m_label, methodQName)==0)
@@ -2359,7 +2359,7 @@ void EspHttpBinding::validateResponse(IEspContext& context, CHttpRequest* reques
         v->validate();
         e->appendProp("Result", "No error found");
     } catch (IMultiException* me) {
-        for (int i=0; i<me->ordinality(); i++) 
+        for (unsigned i=0; i<me->ordinality(); i++)
         {
             IException& item = me->item(i);
             StringBuffer s;

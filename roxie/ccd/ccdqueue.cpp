@@ -491,7 +491,7 @@ void SlaveContextLogger::set(IRoxieQueryPacket *packet)
                 traceLength -= debugLen + sizeof(unsigned short);
             }
             // Passing the wuid via the logging context is a bit of a hack...
-            int wuidLen = 0;
+            unsigned wuidLen = 0;
             while (wuidLen < traceLength)
             {
                 if (traceInfo[wuidLen]=='@')

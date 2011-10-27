@@ -2628,8 +2628,8 @@ public:
                         exprefix, sub->queryLogicalName(), superFmt.str(),
                         queryLogicalName(), subFmt.str());
 #endif
-        bool superLocal = superProp.getPropInt("@local",0);
-        bool subLocal = subProp.getPropInt("@local",0);
+        bool superLocal = superProp.getPropInt("@local",0) != 0;
+        bool subLocal = subProp.getPropInt("@local",0) != 0;
         if (subLocal != superLocal)
             throw MakeStringException(-1,"%s: %s's local setting (%s) is different than %s's (%s)",
                     exprefix, sub->queryLogicalName(), (subLocal?"local":"global"),
