@@ -59,8 +59,12 @@ public:
             const char *arg = iter.query();
             if (*arg!='-')
             {
+                if (optObj.value.length())
+                {
+                    fprintf(stderr, "\nmultiple targets (%s and %s) not currently supported\n", optObj.value.sget(), arg);
+                    return false;
+                }
                 optObj.set(arg);
-                break;
             }
             else if (EclCmdCommon::matchCommandLineOption(iter))
                 continue;
@@ -70,7 +74,12 @@ public:
                 continue;
             else if (iter.matchFlag(boolValue, ECLOPT_VERSION))
             {
-                fprintf(stdout, "\necl delploy version %s\n\n", BUILD_TAG);
+                fprintf(stdout, "%s\n", BUILD_TAG);
+                return false;
+            }
+            else
+            {
+                fprintf(stderr, "\n%s command not recognized\n", arg);
                 return false;
             }
         }
@@ -168,8 +177,12 @@ public:
             const char *arg = iter.query();
             if (*arg!='-')
             {
+                if (optWuid.length())
+                {
+                    fprintf(stderr, "\nmultiple targets (%s and %s) not currently supported\n", optWuid.sget(), arg);
+                    return false;
+                }
                 optWuid.set(arg);
-                break;
             }
             else if (EclCmdCommon::matchCommandLineOption(iter))
                 continue;
@@ -186,7 +199,12 @@ public:
             }
             else if (iter.matchFlag(boolValue, ECLOPT_VERSION))
             {
-                fprintf(stdout, "\necl publish version %s\n\n", BUILD_TAG);
+                fprintf(stdout, "%s\n", BUILD_TAG);
+                return false;
+            }
+            else
+            {
+                fprintf(stderr, "\n%s command not recognized\n", arg);
                 return false;
             }
         }
