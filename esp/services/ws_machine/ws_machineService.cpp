@@ -250,7 +250,6 @@ void Cws_machineEx::init(IPropertyTree *cfg, const char *process, const char *se
 
     xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]", process, service);
     Owned<IPropertyTree> pProcessNode = cfg->getPropTree(xpath.str());
-    m_useDefaultHPCCInit = pProcessNode->getPropBool("UseDefaultHPCCInit", true);
 
     const char* machineInfoPath = pProcessNode->queryProp("MachineInfoFile");
     if (machineInfoPath && *machineInfoPath)
@@ -1296,16 +1295,8 @@ void Cws_machineEx::determineRequredProcesses(CMachineInfoThreadParam* pParam,
 
       //if this process name is valid and either we are monitoring dali file server or
       //(we are not monitoring that and) it is not that process then add it to list of required processes
-        if (m_useDefaultHPCCInit)
-        {
-            if (*sProcessName.str() && (bMonitorDaliFileServer || 0 != strcmp(sProcessName.str(), "dafilesrv")))
-                requiredProcesses.insert(sProcessName.str());
-        }
-        else
-        {
-            if (*sProcessName.str() && (bMonitorDaliFileServer || 0 != strcmp(sProcessName.str(), "dafilesrv")))
-                requiredProcesses.insert(sProcessName.str());
-        }
+      if (*sProcessName.str() && (bMonitorDaliFileServer || 0 != strcmp(sProcessName.str(), "dafilesrv")))
+         requiredProcesses.insert(sProcessName.str());
    }
 
    //insert all additional processes that may have been specified with the request
@@ -1798,37 +1789,6 @@ void Cws_machineEx::doGetSWRunInfo(IEspContext& context, CMachineInfoThreadParam
    if (bFilterProcesses)
    {
         bAddColumn = true;
-        if (!m_useDefaultHPCCInit)
-        {
-            set<string> requiredProcesses;
-            determineRequredProcesses( pParam, pszProcessType, bMonitorDaliFileServer, additionalProcesses,
-                                                requiredProcesses);
-            //now enumerate the processes running on this box and remove them from required processes
-            //ignoring any non-required process
-            if (runningProcesses.length() > 0)
-            {
-                enumerateRunningProcesses( pParam, runningProcesses, bLinuxInstance, true, NULL, pidMap, &requiredProcesses);
-            }
-
-            set<string>::const_iterator it   = requiredProcesses.begin();
-            set<string>::const_iterator iEnd = requiredProcesses.end();
-
-            for (; it != iEnd; it++) //add in sorted order simply by traversing the map
-            {
-                const char* procName = (*it).c_str();
-                if (procName && *procName)
-                {
-                    IEspSWRunInfo* info = static_cast<IEspSWRunInfo*>(new CSWRunInfo(""));
-                    if (!stricmp(procName, "dafilesrv"))
-                        bDafilesrvDown = true;
-
-                    info->setName(procName);
-                    info->setInstances(0);
-
-                    output.append(*info);
-                }
-            }
-        }
     }
    else
    {
@@ -1846,45 +1806,13 @@ void Cws_machineEx::doGetSWRunInfo(IEspContext& context, CMachineInfoThreadParam
                                             bFilterProcesses, &processMap, pidMap, NULL);
         }
 
-      map<string, StlLinked<IEspSWRunInfo> >::const_iterator it;
-      map<string, StlLinked<IEspSWRunInfo> >::const_iterator iEnd = processMap.end();
+        map<string, StlLinked<IEspSWRunInfo> >::const_iterator it;
+        map<string, StlLinked<IEspSWRunInfo> >::const_iterator iEnd = processMap.end();
 
-        if (!m_useDefaultHPCCInit)
+        for (it=processMap.begin(); it != iEnd; it++) //add in sorted order simply by traversing the map
         {
-            set<string> requiredProcesses;
-            determineRequredProcesses( pParam, pszProcessType, bMonitorDaliFileServer, additionalProcesses,
-                                                requiredProcesses);
-
-            set<string>::const_iterator it1   = requiredProcesses.begin();
-            for (; it1 != requiredProcesses.end(); it1++) //add in sorted order simply by traversing the map
-            {
-                const char* procName = (*it1).c_str();
-                if (procName && *procName && !stricmp(procName, "dafilesrv"))
-                {
-                    bDafilesrvDown = true;
-                }
-            }
-
-            for (it=processMap.begin(); it != iEnd; it++) //add in sorted order simply by traversing the map
-            {
-                Linked<IEspSWRunInfo> info( (*it).second );
-
-                const char* procName = info->getName();
-                if (procName && *procName && !stricmp(procName, "dafilesrv"))
-                {
-                    bDafilesrvDown = false;
-                }
-
-                output.append( *info.getLink() );
-            }
-        }
-        else
-        {
-            for (it=processMap.begin(); it != iEnd; it++) //add in sorted order simply by traversing the map
-            {
-                Linked<IEspSWRunInfo> info( (*it).second );
-                output.append( *info.getLink() );
-            }
+            Linked<IEspSWRunInfo> info( (*it).second );
+            output.append( *info.getLink() );
         }
     }
 

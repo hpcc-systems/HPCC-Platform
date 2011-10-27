@@ -690,7 +690,7 @@ bool Cws_machineEx::doStartStop(IEspContext &context, StringArray& addresses, ch
             resultsArray.append(*pResult.getLink());
 
             CStartStopThreadParam* pThreadReq;
-            pThreadReq = new CStartStopThreadParam(address, configAddress, bStop, m_useDefaultHPCCInit, this, context);
+            pThreadReq = new CStartStopThreadParam(address, configAddress, bStop, true, this, context);
             pThreadReq->setResultObject( pResult );
 
             if (userName && *userName)
