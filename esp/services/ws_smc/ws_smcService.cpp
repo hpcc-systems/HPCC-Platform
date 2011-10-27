@@ -399,11 +399,17 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                 }
                 if (qname.length() > 0)
                 {
-                    serverID = runningQueueNames.find(qname);
-                    if (NotFound == serverID)
+                    StringArray qlist;
+                    CslToStringArray(qname.str(), qlist, true);
+                    ForEachItemIn(q, qlist)
                     {
-                        serverID = runningQueueNames.ordinality(); // i.e. last
-                        runningQueueNames.append(qname);
+                        const char *_qname = qlist.item(q);
+                        serverID = runningQueueNames.find(_qname);
+                        if (NotFound == serverID)
+                        {
+                            serverID = runningQueueNames.ordinality(); // i.e. last
+                            runningQueueNames.append(_qname);
+                        }
                     }
                 }
                 Owned<IPropertyTreeIterator> wuids(node.getElements("WorkUnit"));
@@ -485,9 +491,8 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                 str.clear();
                 returnCluster->setClusterName(cluster.getName(str).str());
                 str.clear();
-                returnCluster->setQueueName(cluster.getThorQueue(str).str());
-                str.clear();
                 const char *queueName = cluster.getThorQueue(str).str();
+                returnCluster->setQueueName(queueName);
                 Owned<IJobQueue> queue = createJobQueue(queueName);
                 addQueuedWorkUnits(queueName, queue, aws, context, "ThorMaster", NULL);
 
