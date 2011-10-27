@@ -708,25 +708,34 @@ public:
 
     void addSuper(const char *superfname, unsigned numtoadd, const char **subfiles, const char *before,IUserDescriptor *user)
     {
+        Owned<IDistributedFileTransaction> transaction;
+        if (numtoadd>1) {
+            transaction.setown(createDistributedFileTransaction(user));
+            transaction->start();
+        }
         Owned<IDistributedSuperFile> superfile = queryDistributedFileDirectory().lookupSuperFile(superfname,user);
-        if (!superfile)
+        IDelayedDelete *supertodel=NULL;
+        if (!superfile) {
             superfile.setown(queryDistributedFileDirectory().createSuperFile(superfname,true,false,user));
+            if (transaction.get())
+                supertodel = transaction->addNewFile(superfname, user);
+        }
         if (numtoadd) {
             unsigned i;
             for (i=0;i<numtoadd;i++)
                 if (superfile->querySubFileNamed(subfiles[i]))
                     throwError1(DFUERR_DSuperFileContainsSub, subfiles[i]);
-            Owned<IDistributedFileTransaction> transaction;
-            if (numtoadd>1) {
-                transaction.setown(createDistributedFileTransaction(user));
-                transaction->start();
-            }
             //StringBuffer before;
             for (i=0;i<numtoadd;i++) {
-                if (before&&*before)
+                if (before&&*before) {
                     superfile->addSubFile(subfiles[i],true,(stricmp(before,"*")==0)?NULL:before,false,transaction);
-                else
+                    if (supertodel)
+                        supertodel->addSubFile(subfiles[i]);
+                } else {
                     superfile->addSubFile(subfiles[i],false,NULL,false,transaction);
+                    if (supertodel)
+                        supertodel->addSubFile(subfiles[i]);
+                }
             }
             if (transaction.get()) {
                 superfile.clear(); // superfile must not be active when transactiion committed

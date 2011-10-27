@@ -163,6 +163,16 @@ typedef IIteratorOf<IDistributedFilePart> IDistributedFilePartIterator;
 class CDFAction ;
 
 /**
+ * Holds information on temporary files for deletion/cleanup
+ * upon commit/rollback of transactions.
+ */
+interface IDelayedDelete
+{
+    virtual void addSubFile(const char *lfn)=0; // Add sub-files for clean up (SuperOwner props, et al)
+    virtual void doDelete()=0;
+};
+
+/**
  * File operations can be included in a transaction to ensure that multiple
  * updates are handled atomically. This is the interface to a transaction
  * instance.
@@ -178,6 +188,7 @@ interface IDistributedFileTransaction: extends IInterface
     virtual IDistributedSuperFile *lookupSuperFile(const char *slfn,bool fixmissing=false,unsigned timeout=INFINITE)=0;
     virtual IUserDescriptor *queryUser()=0;
     virtual bool addDelayedDelete(const char *lfn,bool remphys,IUserDescriptor *user)=0; // used internally to delay deletes untill commit 
+    virtual IDelayedDelete *addNewFile(const char *lfn,IUserDescriptor *user)=0; // if files are added during a transaction (and need to be removed on rollback)
     virtual void addAction(CDFAction *action)=0; // internal
     virtual void clearFiles()=0; // internal
     virtual IDistributedFileTransaction *baseTransaction()=0;
@@ -411,7 +422,7 @@ interface IDistributedFileDirectory: extends IInterface
     virtual bool removePhysical(const char *name,unsigned short port=0,const char *cluster=NULL,IMultiException *exceptions=NULL,IUserDescriptor *user=NULL) = 0;                           // removes the physical parts as well as entry
     virtual bool renamePhysical(const char *oldname,const char *newname,unsigned short port=0,IMultiException *exceptions=NULL,IUserDescriptor *user=NULL) = 0;                         // renames the physical parts as well as entry
     virtual void removeEmptyScope(const char *scope) = 0;   // does nothing if called on non-empty scope
-    
+    virtual void removeSuperOwner(const char *lfn, const char *sublfn,IUserDescriptor *user)=0; // when subfile wasn't added (failed), but still needs removing
 
     virtual bool exists(const char *logicalname,bool notsuper=false,bool superonly=false,IUserDescriptor *user=NULL) = 0;                           // logical name exists
     virtual bool existsPhysical(const char *logicalname,IUserDescriptor *user=NULL) = 0;                                                    // physical parts exists

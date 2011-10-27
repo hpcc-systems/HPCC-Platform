@@ -961,6 +961,7 @@ public:
     bool removePhysical(const char *_logicalname,unsigned short port,const char *cluster,IMultiException *mexcept,IUserDescriptor *user);
     bool renamePhysical(const char *oldname,const char *newname,unsigned short port,IMultiException *exceptions,IUserDescriptor *user);
     void removeEmptyScope(const char *name);
+    void removeSuperOwner(const char *lfn,const char *sublfn,IUserDescriptor *user); // when subfile wasn't added (failed), but still needs removing
 
     IDistributedSuperFile *lookupSuperFile(const char *logicalname,IUserDescriptor *user,IDistributedFileTransaction *transaction,bool fixmissing=false,unsigned timeout=INFINITE);
 
@@ -1148,16 +1149,21 @@ static StringBuffer &checkNeedFQ(const char *filename, const char *dir, RemoteFi
     return out.append(filename);
 }
 
-class CDelayedDelete: public CInterface
+class CDelayedDelete: public CInterface, implements IDelayedDelete
 {
     StringAttr lfn;
     bool remphys;
     Linked<IUserDescriptor> user;
+    StringAttrArray sublfns; // sub-files, for cleaning on rollback
 public:
     CDelayedDelete(const char *_lfn,bool _remphys,IUserDescriptor *_user)
         : lfn(_lfn),user(_user)
     {
         remphys = _remphys;
+    }
+    void addSubFile(const char *lfn)
+    {
+        sublfns.append(* new StringAttrItem(lfn));
     }
     void doDelete()
     {
@@ -1166,6 +1172,10 @@ public:
                 queryDistributedFileDirectory().removePhysical(lfn.get(),0,NULL,NULL,user);
             else 
                 queryDistributedFileDirectory().removeEntry(lfn.get(),user);
+            // For any left-overs from half-added files
+            ForEachItemIn(i,sublfns)
+                queryDistributedFileDirectory().removeSuperOwner(lfn,sublfns.item(i).text.get(),user);
+            sublfns.kill();
         }
         catch (IException *e) {
 
@@ -1185,6 +1195,7 @@ class CDistributedFileTransaction: public CInterface, implements IDistributedFil
     bool isactive;
     Linked<IUserDescriptor> udesc;
     CIArrayOf<CDelayedDelete> delayeddelete;
+    CIArrayOf<CDelayedDelete> newfiles; // files created during transaction
 public:
     IMPLEMENT_IINTERFACE;
     CDistributedFileTransaction(IUserDescriptor *user)
@@ -1269,12 +1280,17 @@ public:
     }
     void rollback()
     {
+        // These must run, even if inactive (paused)
+        dflist.kill();
+        ForEachItemIn(i,newfiles)
+            newfiles.item(i).doDelete();
+        newfiles.kill();
+        // Not sure about this...
         if (!isactive)
             return;
         isactive = false;
         delayeddelete.kill();
         actions.kill();
-        dflist.kill();
     }
 
 
@@ -1348,6 +1364,13 @@ public:
         return udesc;
     }
 
+    IDelayedDelete *addNewFile(const char *lfn, IUserDescriptor *user)
+    {
+        CDelayedDelete *todel = new CDelayedDelete(lfn,true,user);
+        newfiles.append(*todel);
+        return todel;
+    }
+
     bool addDelayedDelete(const char *lfn,bool remphys,IUserDescriptor *user)
     {
         delayeddelete.append(*new CDelayedDelete(lfn,remphys,user));
@@ -1406,6 +1429,11 @@ public:
         return queryDistributedFileDirectory().lookupSuperFile(slfn,udesc,NULL,fixmissing,timeout);
     }
     IUserDescriptor *queryUser() { if (chain) return chain->queryUser(); return udesc; }
+    IDelayedDelete *addNewFile(const char *lfn,IUserDescriptor *user)
+    {
+        // Implement, if necessary
+        return NULL;
+    }
     bool addDelayedDelete(const char *lfn,bool remphys,IUserDescriptor *user)
     {
         if (chain)
@@ -6859,6 +6887,25 @@ bool CDistributedFileDirectory::cannotRemove(CDfsLogicalFileName &dlfn,IProperty
     return false;
 }
 
+void CDistributedFileDirectory::removeSuperOwner(const char *lfn, const char *sublfn, IUserDescriptor *user)
+{
+    IDistributedFile *sub = lookup(sublfn, user, false, NULL, defaultTimeout);
+    CDfsLogicalFileName fn;
+    fn.set(lfn);
+    CDfsLogicalFileName subfn;
+    subfn.set(sublfn);
+    CFileConnectLock fconnlock;
+    DfsXmlBranchKind subbkind;
+    if (fconnlock.initany("CDistributedFileDirectory::removeSuperOwner",subfn,subbkind,false,false,defaultTimeout)) {
+        IPropertyTree *subfroot = fconnlock.queryRoot();
+        if (subfroot) {
+            StringBuffer oquery;
+            oquery.append("SuperOwner[@name=\"").append(fn.get()).append("\"]");
+            subfroot->removeProp(oquery.str());
+        }
+    }
+}
+
 bool CDistributedFileDirectory::doRemoveEntry(CDfsLogicalFileName &dlfn,IUserDescriptor *user,bool ignoresub)
 {
     const char *logicalname = dlfn.get();
@@ -6910,6 +6957,7 @@ bool CDistributedFileDirectory::doRemoveEntry(CDfsLogicalFileName &dlfn,IUserDes
             return false;
         }
         if (bkind==DXB_SuperFile) {
+            // TODO: Can this be factored together with removeSuperOwner?
             Owned<IPropertyTreeIterator> iter = froot->getElements("SubFile");
             StringBuffer oquery;
             oquery.append("SuperOwner[@name=\"").append(logicalname).append("\"]");
