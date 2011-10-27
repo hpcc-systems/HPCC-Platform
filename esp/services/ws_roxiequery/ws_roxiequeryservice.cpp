@@ -660,8 +660,6 @@ bool CWsRoxieQueryEx::onShowGVCGraph(IEspContext &context, IEspShowGVCGraphReque
         getClusterConfig(ROXIE_CLUSTER, cluster, ROXIE_FARMERPROCESS1, netAddress, port);
         ep.set(netAddress.str(), port);
 
-        ep.set("10.239.219.15", port); // jo remove
-
         StringArray graphNames;
         enumerateGraphs(queryName, ep, graphNames);
 
