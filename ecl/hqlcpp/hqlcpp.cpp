@@ -4058,6 +4058,19 @@ IHqlExpression * HqlCppTranslator::createWrapperTemp(BuildCtx & ctx, ITypeInfo *
     Owned<ITypeInfo> declType = makeWrapperModifier(rawType.getClear());
     declType.setown(makeModifier(declType.getClear(), modifier));
 
+    switch (declType->getTypeCode())
+    {
+    case type_set:  //needed if we have sets with link counted elements
+    case type_row:
+    case type_array:
+    case type_table:
+    case type_groupedtable:
+        //Ensure row and dataset temporaries are active throughout a function, so pointers to the row
+        //or rows within a dataset remain valid (e.g., outside conditions).
+        if ((modifier != typemod_member) && ctx.queryMatchExpr(queryConditionalRowMarker()))
+            ctx.setNextPriority(BuildCtx::OutermostScopePrio);
+        break;
+    }
     return ctx.getTempDeclare(declType, NULL);
 }
 
@@ -4169,8 +4182,6 @@ void HqlCppTranslator::createTempFor(BuildCtx & ctx, ITypeInfo * _exprType, CHql
     case type_groupedtable:
         {
             OwnedITypeInfo lenType = makeModifier(LINK(sizetType), modifier);
-            if ((modifier != typemod_member) && ctx.queryMatchExpr(queryConditionalRowMarker()))
-                ctx.setNextPriority(BuildCtx::OutermostScopePrio);
             target.expr.setown(createWrapperTemp(ctx, exprType, modifier));
             if (isArrayRowset(exprType))
             {
