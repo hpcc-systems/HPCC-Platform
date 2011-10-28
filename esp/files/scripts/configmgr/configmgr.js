@@ -2497,6 +2497,7 @@ function onContextMenuBeforeShow(p_sType, p_aArgs) {
             }
             else if (r.getData('name').indexOf('RoxieCluster') == 0) {
               this.getItem(3).cfg.setProperty("disabled", true);
+              this.getItem(0).cfg.setProperty("disabled", true);
               break;
             }
           }
