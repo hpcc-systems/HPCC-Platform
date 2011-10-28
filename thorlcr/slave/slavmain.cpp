@@ -258,10 +258,10 @@ public:
                         CJobSlave *job = jobs.find(jobKey.get());
                         if (!job)
                             throw MakeStringException(0, "Job not found: %s", jobKey.get());
-                        PROGLOG("GraphInit: %s", jobKey.get());
                         Owned<IPropertyTree> graphNode = createPTree(msg);
                         Owned<CSlaveGraph> subGraph = (CSlaveGraph *)job->createGraph();
                         subGraph->createFromXGMML(graphNode, NULL, NULL, NULL);
+                        PROGLOG("GraphInit: %s, graphId=%"GIDPF"d", jobKey.get(), subGraph->queryGraphId());
                         subGraph->setExecuteReplyTag(subGraph->queryJob().deserializeMPTag(msg));
                         unsigned len;
                         msg.read(len);
