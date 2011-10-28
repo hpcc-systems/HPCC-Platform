@@ -80,11 +80,11 @@ public:
 // IJobManager
     virtual void stop();
     virtual void replyException(CJobMaster &job, IException *e);
-    virtual void setWuid(const char *wuid);
+    virtual void setWuid(const char *wuid, const char *cluster=NULL);
     virtual IDeMonServer *queryDeMonServer() { return demonServer; }
     virtual void fatal(IException *e);
     virtual void addCachedSo(const char *name);
-    };
+};
 
 // CJobManager impl.
 
@@ -547,15 +547,21 @@ bool CJobManager::doit(IConstWorkUnit *workunit, const char *graphName, const So
 }
 
 
-void CJobManager::setWuid(const char *wuid)
+void CJobManager::setWuid(const char *wuid, const char *cluster)
 {
     currentWuid.set(wuid);
     try
     {
         if (wuid && *wuid)
+        {
             queryServerStatus().queryProperties()->setProp("WorkUnit", wuid);
+            queryServerStatus().queryProperties()->setProp("Cluster", cluster);
+        }
         else
+        {
             queryServerStatus().queryProperties()->removeProp("WorkUnit");
+            queryServerStatus().queryProperties()->removeProp("Cluster");
+        }
         queryServerStatus().commitProperties();
     }
     catch (IException *e)
@@ -737,8 +743,8 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
             wu->setState(WUStateRunning);
         }
 
-        SCMStringBuffer wuid;
-        setWuid(workunit.getWuid(wuid).str());
+        SCMStringBuffer wuid, clusterName;
+        setWuid(workunit.getWuid(wuid).str(), workunit.getClusterName(clusterName).str());
 
         allDone = job->go();
 

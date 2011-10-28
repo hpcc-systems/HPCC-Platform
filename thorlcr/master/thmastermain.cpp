@@ -705,7 +705,7 @@ int main( int argc, char *argv[]  )
         LOG(MCdebugProgress, thorJob, "Thor name = %s, queue = %s, nodeGroup = %s",thorname,queueName.str(),nodeGroup.str());
 
         serverStatus.queryProperties()->setProp("@thorname", thorname);
-        serverStatus.queryProperties()->setProp("@cluster", nodeGroup.str());
+        serverStatus.queryProperties()->setProp("@cluster", nodeGroup.str()); // JCSMORE rename
         serverStatus.queryProperties()->setProp("LogFile", logUrl.str()); // LogFile read by eclwatch (possibly)
         serverStatus.queryProperties()->setProp("@nodeGroup", nodeGroup.str());
         serverStatus.queryProperties()->setProp("@queue", queueName.str());

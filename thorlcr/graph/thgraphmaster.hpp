@@ -50,7 +50,7 @@ interface IJobManager : extends IInterface
 {
     virtual void stop() = 0;
     virtual void replyException(CJobMaster &job, IException *e) = 0;
-    virtual void setWuid(const char *wuid) = 0;
+    virtual void setWuid(const char *wuid, const char *cluster=NULL) = 0;
     virtual IDeMonServer *queryDeMonServer() = 0;
     virtual void fatal(IException *e) = 0;
     virtual void addCachedSo(const char *name) = 0;
