@@ -1133,6 +1133,11 @@ extern WORKUNIT_API IStringVal &getEclSchedulerQueueNames(IStringVal &ret, const
 extern WORKUNIT_API IStringVal &getAgentQueueNames(IStringVal &ret, const char *process);
 extern WORKUNIT_API IStringVal &getRoxieQueueNames(IStringVal &ret, const char *process);
 extern WORKUNIT_API IStringVal &getThorQueueNames(IStringVal &ret, const char *process);
+extern WORKUNIT_API StringBuffer &getClusterThorQueueName(StringBuffer &ret, const char *cluster);
+extern WORKUNIT_API StringBuffer &getClusterRoxieQueueName(StringBuffer &ret, const char *cluster);
+extern WORKUNIT_API StringBuffer &getClusterEclCCServerQueueName(StringBuffer &ret, const char *cluster);
+extern WORKUNIT_API StringBuffer &getClusterEclServerQueueName(StringBuffer &ret, const char *cluster);
+extern WORKUNIT_API StringBuffer &getClusterEclAgentQueueName(StringBuffer &ret, const char *cluster);
 extern WORKUNIT_API IStringIterator *getTargetClusters(const char *processType, const char *processName);
 extern WORKUNIT_API IConstWUClusterInfo* getTargetClusterInfo(const char *clustname);
 typedef IArrayOf<IConstWUClusterInfo> CConstWUClusterInfoArray;
