@@ -330,6 +330,8 @@ bool getClusterJobXLS(double version, StringBuffer &xml, const char* cluster, co
 
         jobList.append(*job.getClear());
     }
+    xml.append("</Dataset>").newline();
+
     return true;
 }
 
@@ -1544,7 +1546,6 @@ bool CWsWorkunitsEx::onWUClusterJobXLS(IEspContext &context, IEspWUClusterJobXLS
         StringBuffer xml("<WUResultExcel><Result>");
         getClusterJobXLS(context.getClientVersion(), xml, req.getCluster(), req.getStartDate(), req.getEndDate(), req.getShowAll(), req.getBusinessStartTime(), req.getBusinessEndTime());
         xml.append("</Result></WUResultExcel>");
-
         Owned<IProperties> params(createProperties());
         params->setProp("showCount",0);
 
