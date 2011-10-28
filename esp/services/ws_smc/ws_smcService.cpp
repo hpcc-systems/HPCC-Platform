@@ -371,7 +371,6 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
         IArrayOf<IEspActiveWorkunit> aws;
         if (conn.get()) 
         {
-
             Owned<IPropertyTreeIterator> it(conn->queryRoot()->getElements("Server"));
             ForEach(*it) 
             {
@@ -423,9 +422,16 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                     {
                         IEspActiveWorkunit* wu=new CActiveWorkunitWrapper(context,wuid);
                         const char* servername = node.queryProp("@name");
+                        const char *cluster = node.queryProp("Cluster");
                         wu->setServer(servername);
                         wu->setInstance(instance.str());
-                        wu->setQueueName(qname.str());
+                        StringBuffer thorQueue;
+                        if (cluster) // backward compat check.
+                            getClusterThorQueueName(thorQueue, cluster);
+                        else
+                            thorQueue.append(qname);
+                        serverID = runningQueueNames.find(thorQueue.str());
+                        wu->setQueueName(thorQueue);
                         double version = context.getClientVersion();
                         if (version > 1.01)
                         {
