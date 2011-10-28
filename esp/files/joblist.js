@@ -425,7 +425,10 @@ function displayJob(wuid,graph,started,finished,cluster,state,source,showall,bbt
 
 function displayEnd(xls)
 {
-    displayProgress('<table><tr><td>Total: '+(totalWorkunits)+' graphs (<a href=\"/WsWorkunits/WUClusterJobXLS?' + xls +'\">xls</a>...<a href=\"/WsWorkunits/WUClusterJobSummaryXLS?' + xls +'\">summary</a>)</td></tr></table>');
+    if (totalWorkunits > 0)
+        displayProgress('<table><tr><td>Total: '+(totalWorkunits)+' graphs (<a href=\"/WsWorkunits/WUClusterJobXLS?' + xls +'\">xls</a>...<a href=\"/WsWorkunits/WUClusterJobSummaryXLS?' + xls +'\">summary</a>)</td></tr></table>');
+    else
+        displayProgress('<table><tr><td>Total: '+(totalWorkunits)+' graphs</td></tr></table>');
 }
 
 function displaySasha()
