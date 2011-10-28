@@ -3847,7 +3847,7 @@ public:
         StringBuffer queue;
         if (thors.ordinality())
         {
-            thorQueue.set(queue.clear().append(name).append(".thor"));
+            thorQueue.set(getClusterThorQueueName(queue.clear(), name));
             clusterWidth = 0;
             bool lcr = false;
             ForEachItemIn(i,thors) 
@@ -3881,12 +3881,12 @@ public:
         if (agent)
         {
             assertex(!roxie);
-            agentQueue.set(queue.clear().append(name).append(".agent"));
+            agentQueue.set(getClusterEclAgentQueueName(queue.clear(), name));
         }
         else if (roxie)
-            agentQueue.set(queue.clear().append(name).append(".roxie"));
+            agentQueue.set(getClusterRoxieQueueName(queue.clear(), name));
         // MORE - does this need to be conditional?
-        serverQueue.set(queue.clear().append(name).append(".eclserver"));
+        serverQueue.set(getClusterEclCCServerQueueName(queue.clear(), name));
     }
     IStringVal & getName(IStringVal & str) const
     {
@@ -3965,34 +3965,66 @@ IStringVal &getProcessQueueNames(IStringVal &ret, const char *process, const cha
     return ret;
 }
 
+#define ROXIE_QUEUE_EXT ".roxie"
+#define THOR_QUEUE_EXT ".thor"
+#define ECLCCSERVER_QUEUE_EXT ".eclserver"
+#define ECLSERVER_QUEUE_EXT ECLCCSERVER_QUEUE_EXT
+#define ECLSCHEDULER_QUEUE_EXT ".eclscheduler"
+#define ECLAGENT_QUEUE_EXT ".agent"
+
 extern WORKUNIT_API IStringVal &getEclCCServerQueueNames(IStringVal &ret, const char *process)
 {
-    return getProcessQueueNames(ret, process, "EclCCServerProcess", ".eclserver");
+    return getProcessQueueNames(ret, process, "EclCCServerProcess", ECLCCSERVER_QUEUE_EXT);
 }
 
 extern WORKUNIT_API IStringVal &getEclServerQueueNames(IStringVal &ret, const char *process)
 {
-    return getProcessQueueNames(ret, process, "EclServerProcess", ".eclserver"); // shares queue name with EclCCServer
+    return getProcessQueueNames(ret, process, "EclServerProcess", ECLSERVER_QUEUE_EXT); // shares queue name with EclCCServer
 }
 
 extern WORKUNIT_API IStringVal &getEclSchedulerQueueNames(IStringVal &ret, const char *process)
 {
-    return getProcessQueueNames(ret, process, "EclCCServerProcess", ".eclscheduler"); // Shares deployment/config with EclCCServer
+    return getProcessQueueNames(ret, process, "EclSchedulerProcess", ECLSCHEDULER_QUEUE_EXT); // Shares deployment/config with EclCCServer
 }
 
 extern WORKUNIT_API IStringVal &getAgentQueueNames(IStringVal &ret, const char *process)
 {
-    return getProcessQueueNames(ret, process, "EclAgentProcess", ".agent");
+    return getProcessQueueNames(ret, process, "EclAgentProcess", ECLAGENT_QUEUE_EXT);
 }
 
 extern WORKUNIT_API IStringVal &getRoxieQueueNames(IStringVal &ret, const char *process)
 {
-    return getProcessQueueNames(ret, process, "RoxieCluster", ".roxie");
+    return getProcessQueueNames(ret, process, "RoxieCluster", ROXIE_QUEUE_EXT);
 }
 
 extern WORKUNIT_API IStringVal &getThorQueueNames(IStringVal &ret, const char *process)
 {
-    return getProcessQueueNames(ret, process, "ThorCluster", ".thor");
+    return getProcessQueueNames(ret, process, "ThorCluster", THOR_QUEUE_EXT);
+}
+
+extern WORKUNIT_API StringBuffer &getClusterThorQueueName(StringBuffer &ret, const char *cluster)
+{
+    return ret.append(cluster).append(THOR_QUEUE_EXT);
+}
+
+extern WORKUNIT_API StringBuffer &getClusterRoxieQueueName(StringBuffer &ret, const char *cluster)
+{
+    return ret.append(cluster).append(ROXIE_QUEUE_EXT);
+}
+
+extern WORKUNIT_API StringBuffer &getClusterEclCCServerQueueName(StringBuffer &ret, const char *cluster)
+{
+    return ret.append(cluster).append(ECLCCSERVER_QUEUE_EXT);
+}
+
+extern WORKUNIT_API StringBuffer &getClusterEclServerQueueName(StringBuffer &ret, const char *cluster)
+{
+    return ret.append(cluster).append(ECLSERVER_QUEUE_EXT);
+}
+
+extern WORKUNIT_API StringBuffer &getClusterEclAgentQueueName(StringBuffer &ret, const char *cluster)
+{
+    return ret.append(cluster).append(ECLAGENT_QUEUE_EXT);
 }
 
 extern WORKUNIT_API IStringIterator *getTargetClusters(const char *processType, const char *processName)
@@ -4142,7 +4174,7 @@ unsigned getEnvironmentThorClusterNames(StringArray &thorNames, StringArray &gro
                     groupNames.append(groupName);
                     targetNames.append(targetName);
                     StringBuffer queueName(targetName);
-                    queueNames.append(queueName.append(".thor"));
+                    queueNames.append(queueName.append(THOR_QUEUE_EXT));
                 }
             }
         }
