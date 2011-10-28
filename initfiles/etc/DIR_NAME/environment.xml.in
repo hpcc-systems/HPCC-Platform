@@ -233,13 +233,13 @@
         <Process name="daserver"/>
        </ProcessFilter>
        <ProcessFilter multipleInstances="true" name="DfuServerProcess">
-        <Process name="."/>
+        <Process name="dfuserver"/>
        </ProcessFilter>
        <ProcessFilter multipleInstances="true" name="EclCCServerProcess">
-        <Process name="."/>
+        <Process name="eclccserver"/>
        </ProcessFilter>
        <ProcessFilter multipleInstances="true" name="EspProcess">
-        <Process name="."/>
+        <Process name="esp"/>
         <Process name="dafilesrv" remove="true"/>
        </ProcessFilter>
        <ProcessFilter name="FTSlaveProcess">
