@@ -1178,6 +1178,7 @@ extern HQL_API IHqlExpression *createConstant(__int64 constant);
 extern HQL_API IHqlExpression *createConstant(const char *constant);
 extern HQL_API IHqlExpression *createConstant(double constant);
 extern HQL_API IHqlExpression *createConstant(IValue * constant);
+extern HQL_API IHqlExpression *createConstant(__int64 constant, ITypeInfo * ownedType);
 extern HQL_API IHqlExpression *createDataset(node_operator op, IHqlExpression *dataset);
 extern HQL_API IHqlExpression *createDataset(node_operator op, IHqlExpression *dataset, IHqlExpression *elist);
 extern HQL_API IHqlExpression *createDataset(node_operator op, HqlExprArray & parms);       // inScope should only be set internally.

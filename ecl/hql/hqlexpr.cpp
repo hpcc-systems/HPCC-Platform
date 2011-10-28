@@ -11006,6 +11006,11 @@ extern IHqlExpression *createConstant(__int64 constant)
     return CHqlConstant::makeConstant(createIntValue(constant, size, sign));
 }
 
+extern IHqlExpression *createConstant(__int64 constant, ITypeInfo * type)
+{
+    return createConstant(createIntValue(constant, type));
+}
+
 extern IHqlExpression *createConstant(double constant)
 {
     return CHqlConstant::makeConstant(createRealValue(constant, DEFAULT_REAL_SIZE));

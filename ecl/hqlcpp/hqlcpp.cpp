@@ -11897,6 +11897,7 @@ IHqlExpression * HqlCppTranslator::getElementPointer(IHqlExpression * source)
         case type_utf8:
         case type_varunicode:
         case type_set:
+        case type_array:
             break;
         default:
             throwUnexpectedType(srcType);
