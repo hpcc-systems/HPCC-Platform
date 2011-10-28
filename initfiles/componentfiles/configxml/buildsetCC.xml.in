@@ -211,10 +211,10 @@
         <Process name="ftslave"/>
        </ProcessFilter>
        <ProcessFilter name="RoxieServerProcess">
-        <Process name="ccd"/>
+        <Process name="roxie"/>
        </ProcessFilter>
        <ProcessFilter name="RoxieSlaveProcess">
-        <Process name="ccd"/>
+        <Process name="roxie"/>
        </ProcessFilter>
        <ProcessFilter name="SchedulerProcess">
         <Process name="scheduler"/>
@@ -240,13 +240,13 @@
         <Process name="daserver"/>
        </ProcessFilter>
        <ProcessFilter multipleInstances="true" name="DfuServerProcess">
-        <Process name="."/>
+        <Process name="dfuserver"/>
        </ProcessFilter>
        <ProcessFilter multipleInstances="true" name="EclCCServerProcess">
-        <Process name="."/>
+        <Process name="eclccserver"/>
        </ProcessFilter>
        <ProcessFilter multipleInstances="true" name="EspProcess">
-        <Process name="."/>
+        <Process name="esp"/>
         <Process name="dafilesrv" remove="true"/>
        </ProcessFilter>
        <ProcessFilter name="FTSlaveProcess">
@@ -258,10 +258,10 @@
         <Process name="dhcpd"/>
        </ProcessFilter>
        <ProcessFilter name="RoxieServerProcess">
-        <Process name="ccd"/>
+        <Process name="roxie"/>
        </ProcessFilter>
        <ProcessFilter name="RoxieSlaveProcess">
-        <Process name="ccd"/>
+        <Process name="roxie"/>
        </ProcessFilter>
        <ProcessFilter name="SchedulerProcess">
         <Process name="scheduler"/>
