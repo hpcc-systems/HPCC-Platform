@@ -2499,11 +2499,13 @@ function onContextMenuBeforeShow(p_sType, p_aArgs) {
           {
             if (r.getData('name').indexOf('ThorCluster') == 0) {
               this.getItem(5).cfg.setProperty("disabled", true);
-              break;
             }
             else if (r.getData('name').indexOf('RoxieCluster') == 0) {
               this.getItem(4).cfg.setProperty("disabled", true);
-              break;
+              this.getItem(0).cfg.setProperty("disabled", true);
+            }
+            else if (r.getData('name').indexOf('EclAgent') == 0) {
+              this.getItem(5).cfg.setProperty("disabled", true);
             }
             else {
               var flag = false;
