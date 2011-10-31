@@ -88,7 +88,8 @@ int EclCMDShell::processCMD(ArgvIterator &iter)
     if (!c->parseCommandLineOptions(iter))
         return 0;
 
-    c->finalizeOptions(globals);
+    if (!c->finalizeOptions(globals))
+        return 0;
 
     return c->processCMD();
 }

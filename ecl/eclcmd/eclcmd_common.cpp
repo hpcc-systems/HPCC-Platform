@@ -25,7 +25,7 @@
 #include "ws_workunits.hpp"
 #include "eclcmd_common.hpp"
 
-bool extractOption(StringBuffer & option, IProperties * globals, const char * envName, const char * propertyName, const char * defaultPrefix, const char * defaultSuffix)
+bool extractEclCmdOption(StringBuffer & option, IProperties * globals, const char * envName, const char * propertyName, const char * defaultPrefix, const char * defaultSuffix)
 {
     if (option.length())        // check if already specified via a command line option
         return true;
@@ -47,21 +47,29 @@ bool extractOption(StringBuffer & option, IProperties * globals, const char * en
     return false;
 }
 
-bool extractOption(StringAttr & option, IProperties * globals, const char * envName, const char * propertyName, const char * defaultPrefix, const char * defaultSuffix)
+bool extractEclCmdOption(StringAttr & option, IProperties * globals, const char * envName, const char * propertyName, const char * defaultPrefix, const char * defaultSuffix)
 {
     if (option)
         return true;
     StringBuffer temp;
-    bool ret = extractOption(temp, globals, envName, propertyName, defaultPrefix, defaultSuffix);
+    bool ret = extractEclCmdOption(temp, globals, envName, propertyName, defaultPrefix, defaultSuffix);
     option.set(temp.str());
     return ret;
 }
 
-bool extractOption(bool & option, IProperties * globals, const char * envName, const char * propertyName, bool defval)
+bool extractEclCmdOption(bool & option, IProperties * globals, const char * envName, const char * propertyName, bool defval)
 {
     StringBuffer temp;
-    bool ret = extractOption(temp, globals, envName, propertyName, defval ? "1" : "0", NULL);
+    bool ret = extractEclCmdOption(temp, globals, envName, propertyName, defval ? "1" : "0", NULL);
     option=(streq(temp.str(),"1")||strieq(temp.str(),"true"));
+    return ret;
+}
+
+bool extractEclCmdOption(unsigned & option, IProperties * globals, const char * envName, const char * propertyName, unsigned defval)
+{
+    StringBuffer temp;
+    bool ret = extractEclCmdOption(temp, globals, envName, propertyName, NULL, NULL);
+    option = (ret) ? strtoul(temp.str(), NULL, 10) : defval;
     return ret;
 }
 
