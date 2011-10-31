@@ -2568,23 +2568,22 @@ const char * GetCachedHostName()
     if (!cachehostname.get())
     {
 #ifndef _WIN32
-        StringBuffer ifs;
         IpAddress ip;
         if (EnvConfPath.length() == 0)
             EnvConfPath.append(CONFIG_DIR).append(PATHSEPSTR).append("environment.conf");
         Owned<IProperties> conf = createProperties(EnvConfPath.str(), true);
-        if (conf->getProp("interface", ifs) && ifs.length())
+
+        StringBuffer ifs;
+        conf->getProp("interface", ifs);
+        if (getInterfaceIp(ip, ifs.str()))
         {
-            if (getInterfaceIp(ip, ifs.str()))
+            StringBuffer ips;
+            ip.getIpText(ips);
+            if (ips.length())
             {
-                StringBuffer ips;
-                ip.getIpText(ips);
-                if (ips.length())
-                {
-                    cachehostname.set(ips.str());
-                    cachehostip.ipset(ip);
-                    return cachehostname.get();
-                }
+                cachehostname.set(ips.str());
+                cachehostip.ipset(ip);
+                return cachehostname.get();
             }
         }
 #endif
