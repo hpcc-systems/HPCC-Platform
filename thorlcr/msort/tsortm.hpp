@@ -41,7 +41,7 @@ public:
                             const char *cosortfilenames,
                             IRowInterfaces *auxrowif
                         )=0;
-    virtual bool Sort(unsigned __int64 threshold, double skewWarning, double skewError, size32_t deviance, bool canoptimizenullcolumns, bool usepartitionrow, bool betweensort, unsigned minisortthresholdmb)=0;
+    virtual void Sort(unsigned __int64 threshold, double skewWarning, double skewError, size32_t deviance, bool canoptimizenullcolumns, bool usepartitionrow, bool betweensort, unsigned minisortthresholdmb)=0;
     virtual bool MiniSort(rowcount_t totalrows)=0;
     virtual void SortDone()=0;
 };

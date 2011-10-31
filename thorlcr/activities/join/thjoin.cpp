@@ -177,9 +177,21 @@ public:
                     }
                     imaster->SortSetup(rowif,cmpleft, helper->querySerializeLeft(), false, true, NULL, NULL);
                     if (barrier->wait(false)) { // local sort complete
-                        if (!imaster->Sort(skewThreshold,skewWarning,skewError,maxdeviance,false,false,false,0)) {
-                            Owned<IThorException> e = MakeActivityException(this, TE_JoinFailedSkewExceeded,"JOIN failed, skew exceeded (1)");
-                            fireException(e);
+                        try
+                        {
+                            imaster->Sort(skewThreshold,skewWarning,skewError,maxdeviance,false,false,false,0);
+                        }
+                        catch (IThorException *e)
+                        {
+                            if (TE_SkewError == e->errorCode())
+                            {
+                                StringBuffer s;
+                                Owned<IThorException> e2 = MakeActivityException(this, TE_JoinFailedSkewExceeded, "SELFJOIN failed. %s", e->errorMessage(s).str());
+                                e->Release();
+                                fireException(e2);
+                            }
+                            else
+                                throw;
                         }
                         ActPrintLog("JOIN waiting for barrier.1");
                         barrier->wait(false);
@@ -193,9 +205,21 @@ public:
                     ActPrintLog("JOIN waiting for barrier.1");
                     if (barrier->wait(false)) {
                         ActPrintLog("JOIN barrier.1 raised");
-                        if (!imaster->Sort(skewThreshold,skewWarning,skewError,maxdeviance,false,false,false,0)) {
-                            Owned<IThorException> e = MakeActivityException(this, TE_JoinFailedSkewExceeded,"JOIN failed, skew exceeded (2)");
-                            fireException(e);
+                        try
+                        {
+                            imaster->Sort(skewThreshold,skewWarning,skewError,maxdeviance,false,false,false,0);
+                        }
+                        catch (IThorException *e)
+                        {
+                            if (TE_SkewError == e->errorCode())
+                            {
+                                StringBuffer s;
+                                Owned<IThorException> e2 = MakeActivityException(this, TE_JoinFailedSkewExceeded, "JOIN failed, skewed %s. %s", rightpartition?"RHS":"LHS", e->errorMessage(s).str());
+                                e->Release();
+                                fireException(e2);
+                            }
+                            else
+                                throw;
                         }
                         ActPrintLog("JOIN waiting for barrier.2");
                         if (barrier->wait(false)) { // merge complete
@@ -207,9 +231,22 @@ public:
                             ActPrintLog("JOIN waiting for barrier.3");
                             if (barrier->wait(false)) { // local sort complete
                                 ActPrintLog("JOIN barrier.3 raised");
-                                if (!imaster->Sort(skewThreshold,skewWarning,skewError,maxdeviance,false,nosortPrimary(),betweenjoin,0)) {
-                                    Owned<IThorException> e = MakeActivityException(this, TE_JoinFailedSkewExceeded,"JOIN failed, skew exceeded (3)");
-                                    fireException(e);
+                                try
+                                {
+                                    imaster->Sort(skewThreshold,skewWarning,skewError,maxdeviance,false,nosortPrimary(),betweenjoin,0);
+                                }
+                                catch (IThorException *e)
+                                {
+                                    if (TE_SkewError == e->errorCode())
+                                    {
+                                        VStringBuffer s("JOIN failed, %s skewed, based on distribution of %s partition points. ", rightpartition?"LHS":"RHS", rightpartition?"RHS":"LHS");
+                                        e->errorMessage(s);
+                                        Owned<IThorException> e2 = MakeActivityException(this, TE_JoinFailedSkewExceeded, "%s", s.str());
+                                        e->Release();
+                                        fireException(e2);
+                                    }
+                                    else
+                                        throw;
                                 }
                                 ActPrintLog("JOIN waiting for barrier.4");
                                 barrier->wait(false); // merge complete
@@ -226,9 +263,22 @@ public:
                     ActPrintLog("JOIN waiting for barrier.1");
                     if (barrier->wait(false)) { // local sort complete
                         ActPrintLog("JOIN barrier.1 raised");
-                        if (!imaster->Sort(skewThreshold,skewWarning,skewError,maxdeviance,false,nosortPrimary(),false,0)) {
-                            Owned<IThorException> e = MakeActivityException(this, TE_JoinFailedSkewExceeded,"JOIN failed, skew exceeded (3)");
-                            fireException(e);
+                        try
+                        {
+                            imaster->Sort(skewThreshold,skewWarning,skewError,maxdeviance,false,nosortPrimary(),false,0);
+                        }
+                        catch (IThorException *e)
+                        {
+                            if (TE_SkewError == e->errorCode())
+                            {
+                                VStringBuffer s("JOIN failed. %s skewed, based on distribution of presorted %s partition points. ", rightpartition?"LHS":"RHS", rightpartition?"RHS":"LHS");
+                                e->errorMessage(s);
+                                Owned<IThorException> e2 = MakeActivityException(this, TE_JoinFailedSkewExceeded, "%s", s.str());
+                                e->Release();
+                                fireException(e2);
+                            }
+                            else
+                                throw;
                         }
                         ActPrintLog("JOIN waiting for barrier.2");
                         barrier->wait(false); // merge complete

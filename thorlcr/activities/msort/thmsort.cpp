@@ -158,9 +158,21 @@ protected:
             imaster->SortSetup(rowif,helper->queryCompare(),helper->querySerialize(),cosortfilenames.length()!=0,true,cosortfilenames.toCharArray(),auxrowif);
             if (barrier->wait(false)) { // local sort complete
                 size32_t maxdeviance=globals->getPropInt("@sort_max_deviance", 10*1024*1024);
-                if (!imaster->Sort(skewThreshold,skewWarning,skewError,maxdeviance,true,false,false,(unsigned)globals->getPropInt("@smallSortThreshold"))) {
-                    Owned<IThorException> e = MakeActivityException(this, TE_SortFailedSkewExceeded,"SORT failed, skew exceeded");
-                    fireException(e);
+                try
+                {
+                    imaster->Sort(skewThreshold,skewWarning,skewError,maxdeviance,true,false,false,(unsigned)globals->getPropInt("@smallSortThreshold"));
+                }
+                catch (IThorException *e)
+                {
+                    if (TE_SkewError == e->errorCode())
+                    {
+                        StringBuffer s;
+                        Owned<IThorException> e2 = MakeActivityException(this, TE_SortFailedSkewExceeded, "SORT failed. %s", e->errorMessage(s).str());
+                        e->Release();
+                        fireException(e2);
+                    }
+                    else
+                        throw;
                 }
                 barrier->wait(false); // merge complete
             }
