@@ -448,6 +448,17 @@ bool WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned flags)
                 q->setText(qname.str());
             }
 
+            if (version > 1.34)
+            {
+                SCMStringBuffer mainDefinition;
+                query->getQueryMainDefinition(mainDefinition);
+                if(mainDefinition.length())
+                {
+                    IEspECLQuery* q=&info.updateQuery();
+                    q->setQueryMainDefinition(mainDefinition.str());
+                }
+            }
+
             if (version > 1.30)
             {
                 SCMStringBuffer qText;

@@ -281,7 +281,7 @@ bool build_globals(int argc, const char *argv[], IProperties * globals)
     // This assumption may have to go when more ecl related options are added.
     if (!globals->hasProp("action"))
     {
-        if (globals->hasProp("ecl"))
+        if (globals->hasProp("ecl") || globals->hasProp("main"))
             globals->setProp("action", "query");
         else if (globals->hasProp("file"))
             globals->setProp("action", "view");

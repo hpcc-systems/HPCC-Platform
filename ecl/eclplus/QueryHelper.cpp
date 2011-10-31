@@ -69,6 +69,8 @@ bool QueryHelper::doit(FILE * fp)
         }
         ureq->setQueryText(ecl.str());
     }
+    else if (globals->hasProp("main"))
+        ureq->setQueryMainDefinition(globals->queryProp("main"));
     else if (globals->hasProp("attr"))
         ureq->setQueryText(globals->queryProp("attr"));
 
