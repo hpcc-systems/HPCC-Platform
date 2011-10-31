@@ -309,68 +309,105 @@ bool CWsWorkunitsEx::onWUQuerysetDetails(IEspContext &context, IEspWUQuerySetDet
     return true;
 }
 
-bool CWsWorkunitsEx::onWUQuerysetActionQueries(IEspContext &context, IEspWUQuerySetActionQueriesRequest & req, IEspWUQuerySetActionQueriesResponse & resp)
+bool CWsWorkunitsEx::onWUQuerysetQueryAction(IEspContext &context, IEspWUQuerySetQueryActionRequest & req, IEspWUQuerySetQueryActionResponse & resp)
 {
     resp.setQuerySetName(req.getQuerySetName());
-    resp.setRemove(req.getRemove());
+    resp.setAction(req.getAction());
 
-    Owned<IPropertyTree> queryRegistry = getQueryRegistry(req.getQuerySetName(), false);
+    if (isEmpty(req.getQuerySetName()))
+        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Queryset name required");
+    Owned<IPropertyTree> queryset = getQueryRegistry(req.getQuerySetName(), true);
+    if (!queryset)
+        throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Queryset %s not found", req.getQuerySetName());
 
-    IArrayOf<IEspQuerySetQueryAction> actions;
-    ForEachItemIn(qa, req.getQuerysetQueryActions())
+    IArrayOf<IEspQuerySetQueryActionResult> results;
+    ForEachItemIn(i, req.getQueries())
     {
-        IConstQuerySetQueryAction& item=req.getQuerysetQueryActions().item(qa);
-        if(notEmpty(item.getId()))
+        IConstQuerySetQueryActionItem& item=req.getQueries().item(i);
+        Owned<IEspQuerySetQueryActionResult> result = createQuerySetQueryActionResult();
+        try
         {
-            if (req.getRemove())
+            VStringBuffer xpath("Query[@id='%s']", item.getQueryId());
+            IPropertyTree *query = queryset->queryPropTree(xpath.str());
+            if (!query)
+                throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND, "Query %s/%s not found.", req.getQuerySetName(), item.getQueryId());
+            switch (req.getAction())
             {
-                removeAliasesFromNamedQuery(queryRegistry, item.getId());
-                removeNamedQuery(queryRegistry, item.getId());
-
-                Owned<IEspQuerySetQueryAction> action = createQuerySetQueryAction("", "");
-                action->setId(item.getId());
-                action->setStatus("Completed");
-                actions.append(*action.getClear());
+                case CQuerySetQueryActionTypes_ToggleSuspend:
+                    setQuerySuspendedState(queryset, item.getQueryId(), !item.getClientState().getSuspended());
+                    break;
+                case CQuerySetQueryActionTypes_Suspend:
+                    setQuerySuspendedState(queryset, item.getQueryId(), true);
+                    break;
+                case CQuerySetQueryActionTypes_Unsuspend:
+                    setQuerySuspendedState(queryset, item.getQueryId(), false);
+                    break;
+                case CQuerySetQueryActionTypes_Activate:
+                    setQueryAlias(queryset, query->queryProp("@name"), item.getQueryId());
+                    break;
+                case CQuerySetQueryActionTypes_Delete:
+                    removeAliasesFromNamedQuery(queryset, item.getQueryId());
+                    removeNamedQuery(queryset, item.getQueryId());
+                    break;
+                case CQuerySetQueryActionTypes_RemoveAllAliases:
+                    removeAliasesFromNamedQuery(queryset, item.getQueryId());
+                    break;
             }
-            if (req.getToggleSuspend())
-            {
-                setQuerySuspendedState(queryRegistry, item.getId(), !item.getSuspended());
-
-                Owned<IEspQuerySetQueryAction> action = createQuerySetQueryAction("", "");
-                action->setId(item.getId());
-                action->setStatus("Completed");
-                actions.append(*action.getClear());
-            }
+            result->setSuccess(true);
+            result->setSuspended(query->getPropBool("@suspended"));
         }
+        catch(IException *e)
+        {
+            StringBuffer msg;
+            result->setMessage(e->errorMessage(msg).str());
+            result->setCode(e->errorCode());
+            result->setSuccess(false);
+        }
+        results.append(*result.getClear());
     }
-    resp.setQuerysetQueryActions(actions);
+    resp.setResults(results);
     return true;
 }
 
-bool CWsWorkunitsEx::onWUQuerysetActionAliases(IEspContext &context, IEspWUQuerySetActionAliasesRequest & req, IEspWUQuerySetActionAliasesResponse & resp)
+bool CWsWorkunitsEx::onWUQuerysetAliasAction(IEspContext &context, IEspWUQuerySetAliasActionRequest &req, IEspWUQuerySetAliasActionResponse &resp)
 {
     resp.setQuerySetName(req.getQuerySetName());
-    resp.setRemove(req.getRemove());
+    resp.setAction(req.getAction());
 
-    Owned<IPropertyTree> queryRegistry = getQueryRegistry(req.getQuerySetName(), false);
+    if (isEmpty(req.getQuerySetName()))
+        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Queryset name required");
+    Owned<IPropertyTree> queryset = getQueryRegistry(req.getQuerySetName(), true);
+    if (!queryset)
+        throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Queryset %s not found", req.getQuerySetName());
 
-    IArrayOf<IEspQuerySetAliasAction> actions;
-    ForEachItemIn(aa, req.getQuerysetAliasActions())
+    IArrayOf<IEspQuerySetAliasActionResult> results;
+    ForEachItemIn(i, req.getAliases())
     {
-        IConstQuerySetAliasAction& item=req.getQuerysetAliasActions().item(aa);
-        if (req.getRemove())
+        IConstQuerySetAliasActionItem& item=req.getAliases().item(i);
+        Owned<IEspQuerySetAliasActionResult> result = createQuerySetAliasActionResult();
+        try
         {
-            if(notEmpty(item.getId()))
+            VStringBuffer xpath("Alias[@name='%s']", item.getName());
+            IPropertyTree *alias = queryset->queryPropTree(xpath.str());
+            if (!alias)
+                throw MakeStringException(ECLWATCH_ALIAS_NOT_FOUND, "Alias %s/%s not found.", req.getQuerySetName(), item.getName());
+            switch (req.getAction())
             {
-                removeAliasesFromNamedQuery(queryRegistry, item.getId());
-                Owned<IEspQuerySetAliasAction> action = createQuerySetAliasAction("", "");
-                action->setId(item.getId());
-                action->setStatus("Completed");
-                actions.append(*action.getClear());
-
+                case CQuerySetAliasActionTypes_Deactivate:
+                    removeQuerySetAlias(req.getQuerySetName(), item.getName());
+                    break;
             }
+            result->setSuccess(true);
         }
+        catch(IException *e)
+        {
+            StringBuffer msg;
+            result->setMessage(e->errorMessage(msg).str());
+            result->setCode(e->errorCode());
+            result->setSuccess(false);
+        }
+        results.append(*result.getClear());
     }
-    resp.setQuerysetAliasActions(actions);
+    resp.setResults(results);
     return true;
 }

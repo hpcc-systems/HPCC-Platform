@@ -57,6 +57,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_CLUSTER "--cluster"
 #define ECLOPT_NAME "--name"
 #define ECLOPT_ACTIVATE "--activate"
+#define ECLOPT_QUERYSET "--queryset"
 #define ECLOPT_VERSION "--version"
 
 bool extractEclCmdOption(StringBuffer & option, IProperties * globals, const char * envName, const char * propertyName, const char * defaultPrefix, const char * defaultSuffix);

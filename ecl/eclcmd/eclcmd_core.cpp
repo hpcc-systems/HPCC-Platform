@@ -80,6 +80,11 @@ public:
                 case EclCmdOptionMatch:
                     break;
             }
+            else
+            {
+                fprintf(stderr, "\n%s option not recognized\n", arg);
+                return false;
+            }
         }
         return true;
     }
@@ -124,52 +129,43 @@ public:
     virtual int processCMD()
     {
         StringBuffer s;
-        if (optObj.type==eclObjTypeUnknown)
-            fprintf(stderr, "\nCan't determine content type of argument %s\n", optObj.value.sget());
-        else if (optObj.type==eclObjSource)
-            fprintf(stderr, "\nDirect deployment of ECL source is not yet supported\n");
-        else if (optObj.type==eclObjWuid || optObj.type==eclObjQueryId)
-            fprintf(stderr, "\nRemote objects already deployed %s\n", optObj.getDescription(s).str());
-        else
+        fprintf(stdout, "\nDeploying %s\n", optObj.getDescription(s).str());
+        Owned<IClientWsWorkunits> client = createWsWorkunitsClient();
+        VStringBuffer url("http://%s:%s/WsWorkunits", optServer.sget(), optPort.sget());
+        client->addServiceUrl(url.str());
+        if (optUsername.length())
+            client->setUsernameToken(optUsername.get(), optPassword.sget(), NULL);
+        Owned<IClientWUDeployWorkunitRequest> req = client->createWUDeployWorkunitRequest();
+        switch (optObj.type)
         {
-            fprintf(stdout, "\nDeploying %s\n", optObj.getDescription(s).str());
-            Owned<IClientWsWorkunits> client = createWsWorkunitsClient();
-            VStringBuffer url("http://%s:%s/WsWorkunits", optServer.sget(), optPort.sget());
-            client->addServiceUrl(url.str());
-            if (optUsername.length())
-                client->setUsernameToken(optUsername.get(), optPassword.sget(), NULL);
-            Owned<IClientWUDeployWorkunitRequest> req = client->createWUDeployWorkunitRequest();
-            switch (optObj.type)
+            case eclObjArchive:
             {
-                case eclObjArchive:
-                {
-                    req->setObjType("archive");
-                    break;
-                }
-                case eclObjSharedObject:
-                {
-                    req->setObjType("shared_object");
-                    break;
-                }
+                req->setObjType("archive");
+                break;
             }
-            MemoryBuffer mb;
-            Owned<IFile> file = createIFile(optObj.value.sget());
-            Owned<IFileIO> io = file->open(IFOread);
-            read(io, 0, (size32_t)file->size(), mb);
-            if (optName.length())
-                req->setName(optName.get());
-            if (optCluster.length())
-                req->setCluster(optCluster.get());
-            req->setFileName(optObj.value.sget());
-            req->setObject(mb);
-            Owned<IClientWUDeployWorkunitResponse> resp = client->WUDeployWorkunit(req);
-            if (resp->getExceptions().ordinality())
-                outputMultiExceptions(resp->getExceptions());
-            const char *wuid = resp->getWorkunit().getWuid();
-            if (wuid && *wuid)
+            case eclObjSharedObject:
             {
-                fprintf(stdout, "\nDeployed\nwuid: %s\nstate: %s\n", wuid, resp->getWorkunit().getState());
+                req->setObjType("shared_object");
+                break;
             }
+        }
+        MemoryBuffer mb;
+        Owned<IFile> file = createIFile(optObj.value.sget());
+        Owned<IFileIO> io = file->open(IFOread);
+        read(io, 0, (size32_t)file->size(), mb);
+        if (optName.length())
+            req->setName(optName.get());
+        if (optCluster.length())
+            req->setCluster(optCluster.get());
+        req->setFileName(optObj.value.sget());
+        req->setObject(mb);
+        Owned<IClientWUDeployWorkunitResponse> resp = client->WUDeployWorkunit(req);
+        if (resp->getExceptions().ordinality())
+            outputMultiExceptions(resp->getExceptions());
+        const char *wuid = resp->getWorkunit().getWuid();
+        if (wuid && *wuid)
+        {
+            fprintf(stdout, "Deployed\nwuid: %s\nstate: %s\n", wuid, resp->getWorkunit().getState());
         }
         return 0;
     }
@@ -179,6 +175,9 @@ public:
             "ecl deploy --cluster=<cluster> --name=<name> <archive>\n"
             "ecl deploy [--cluster=<cluster>] [--name=<name>] <so|dll>\n\n"
             "   Options:\n"
+            "      <archive>            ecl archive to deploy\n"
+            "      <so|dll>             dll or shared object to deploy\n"
+            "      --name=<name>        workunit job name\n"
             "      --cluster=<cluster>  cluster to associate workunit with\n"
             "      --name=<name>        workunit job name\n"
         );
@@ -238,6 +237,11 @@ public:
                 case EclCmdOptionMatch:
                     break;
             }
+            else
+            {
+                fprintf(stderr, "\n%s option not recognized\n", arg);
+                return false;
+            }
         }
         return true;
     }
@@ -256,13 +260,6 @@ public:
     }
     virtual int processCMD()
     {
-        StringBuffer s;
-        if (!optWuid.length())
-        {
-            fprintf(stderr, "\nError: wuid parameter required\n");
-            return 1;
-        }
-
         fprintf(stdout, "\nPublishing %s\n", optWuid.get());
         Owned<IClientWsWorkunits> client = createWsWorkunitsClient();
         VStringBuffer url("http://%s:%s/WsWorkunits", optServer.sget(), optPort.sget());
@@ -292,6 +289,7 @@ public:
         fprintf(stdout,"\nUsage:\n\n"
             "ecl publish [--cluster=<cluster>][--name=<name>][--activate] <wuid>\n\n"
             "   Options:\n"
+            "      <wuid>               workunit to publish\n"
             "      --cluster=<cluster>  cluster to publish workunit to\n"
             "                           (defaults to cluster defined inside workunit)\n"
             "      --name=<name>        query name to use for published workunit\n"
@@ -307,6 +305,226 @@ private:
     bool activateSet;
 };
 
+class EclCmdActivate : public EclCmdCommon
+{
+public:
+    EclCmdActivate()
+    {
+    }
+    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        if (iter.done())
+        {
+            usage();
+            return false;
+        }
+
+        bool boolValue;
+        for (; !iter.done(); iter.next())
+        {
+            const char *arg = iter.query();
+            if (*arg!='-')
+            {
+                if (optQueryId.length())
+                {
+                    fprintf(stderr, "\nmultiple query ids (%s and %s) not supported\n", optQueryId.sget(), arg);
+                    return false;
+                }
+                optQueryId.set(arg);
+            }
+            else if (EclCmdCommon::matchCommandLineOption(iter))
+                continue;
+            else if (iter.matchOption(optQuerySet, ECLOPT_QUERYSET))
+                continue;
+            else if (iter.matchFlag(boolValue, ECLOPT_VERSION))
+            {
+                fprintf(stdout, "%s\n", BUILD_TAG);
+                return false;
+            }
+            else
+            {
+                fprintf(stderr, "\n%s option not recognized\n", arg);
+                return false;
+            }
+        }
+        return true;
+    }
+    virtual bool finalizeOptions(IProperties *globals)
+    {
+        if (!EclCmdCommon::finalizeOptions(globals))
+            return false;
+        if (optQuerySet.isEmpty())
+        {
+            fprintf(stderr, "\nError: queryset parameter required\n");
+            return false;
+        }
+        if (optQueryId.isEmpty())
+        {
+            fprintf(stderr, "\nError: queryid parameter required\n");
+            return false;
+        }
+        return true;
+    }
+    virtual int processCMD()
+    {
+        Owned<IClientWsWorkunits> client = createWsWorkunitsClient();
+        VStringBuffer url("http://%s:%s/WsWorkunits", optServer.sget(), optPort.sget());
+        client->addServiceUrl(url.str());
+        if (optUsername.length())
+            client->setUsernameToken(optUsername.get(), optPassword.sget(), NULL);
+
+        Owned<IClientWUQuerySetQueryActionRequest> req = client->createWUQuerysetQueryActionRequest();
+        IArrayOf<IEspQuerySetQueryActionItem> queries;
+        Owned<IEspQuerySetQueryActionItem> item = createQuerySetQueryActionItem();
+        item->setQueryId(optQueryId.get());
+        queries.append(*item.getClear());
+        req->setQueries(queries);
+
+        req->setAction("Activate");
+        req->setQuerySetName(optQuerySet.get());
+
+        Owned<IClientWUQuerySetQueryActionResponse> resp = client->WUQuerysetQueryAction(req);
+        IArrayOf<IConstQuerySetQueryActionResult> &results = resp->getResults();
+        if (resp->getExceptions().ordinality())
+            outputMultiExceptions(resp->getExceptions());
+        else if (results.empty())
+            fprintf(stderr, "\nError Empty Result!\n");
+        else
+        {
+            IConstQuerySetQueryActionResult &item = results.item(0);
+            if (item.getSuccess())
+                fprintf(stdout, "\nActivated %s/%s\n", optQuerySet.sget(), optQueryId.sget());
+            else if (item.getCode()|| item.getMessage())
+                fprintf(stderr, "Error (%d) %s\n", item.getCode(), item.getMessage());
+        }
+        return 0;
+    }
+    virtual void usage()
+    {
+        fprintf(stdout,"\nUsage:\n\n"
+            "ecl activate --queryset=<queryset> <queryid>\n"
+            "   Options:\n"
+            "      <queryid>             queryid of query to activate\n"
+            "      --queryset=<queryset> name of queryset containing query to activate\n"
+        );
+        EclCmdCommon::usage();
+    }
+private:
+    StringAttr optQuerySet;
+    StringAttr optQueryId;
+};
+
+
+class EclCmdDeactivate : public EclCmdCommon
+{
+public:
+    EclCmdDeactivate()
+    {
+    }
+    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        if (iter.done())
+        {
+            usage();
+            return false;
+        }
+
+        bool boolValue;
+        for (; !iter.done(); iter.next())
+        {
+            const char *arg = iter.query();
+            if (*arg!='-')
+            {
+                if (optAlias.length())
+                {
+                    fprintf(stderr, "\nmultiple aliases not supported\n");
+                    return false;
+                }
+                optAlias.set(arg);
+            }
+            else if (EclCmdCommon::matchCommandLineOption(iter))
+                continue;
+            else if (iter.matchOption(optQuerySet, ECLOPT_QUERYSET))
+                continue;
+            else if (iter.matchFlag(boolValue, ECLOPT_VERSION))
+            {
+                fprintf(stdout, "%s\n", BUILD_TAG);
+                return false;
+            }
+            else
+            {
+                fprintf(stderr, "\n%s option not recognized\n", arg);
+                return false;
+            }
+        }
+        return true;
+    }
+    virtual bool finalizeOptions(IProperties *globals)
+    {
+        if (!EclCmdCommon::finalizeOptions(globals))
+            return false;
+        if (optQuerySet.isEmpty())
+        {
+            fprintf(stderr, "\nError: queryset parameter required\n");
+            return false;
+        }
+        if (optAlias.isEmpty())
+        {
+            fprintf(stderr, "\nError: alias parameter required\n");
+            return false;
+        }
+        return true;
+    }
+    virtual int processCMD()
+    {
+        StringBuffer s;
+        Owned<IClientWsWorkunits> client = createWsWorkunitsClient();
+        VStringBuffer url("http://%s:%s/WsWorkunits", optServer.sget(), optPort.sget());
+        client->addServiceUrl(url.str());
+        if (optUsername.length())
+            client->setUsernameToken(optUsername.get(), optPassword.sget(), NULL);
+
+        Owned<IClientWUQuerySetAliasActionRequest> req = client->createWUQuerysetAliasActionRequest();
+        IArrayOf<IEspQuerySetAliasActionItem> aliases;
+        Owned<IEspQuerySetAliasActionItem> item = createQuerySetAliasActionItem();
+        item->setName(optAlias.get());
+        aliases.append(*item.getClear());
+        req->setAliases(aliases);
+
+        req->setAction("Deactivate");
+        req->setQuerySetName(optQuerySet.get());
+
+        Owned<IClientWUQuerySetAliasActionResponse> resp = client->WUQuerysetAliasAction(req);
+        IArrayOf<IConstQuerySetAliasActionResult> &results = resp->getResults();
+        if (resp->getExceptions().ordinality())
+            outputMultiExceptions(resp->getExceptions());
+        else if (results.empty())
+            fprintf(stderr, "\nError Empty Result!\n");
+        else
+        {
+            IConstQuerySetAliasActionResult &item = results.item(0);
+            if (item.getSuccess())
+                fprintf(stdout, "Deactivated alias %s/%s\n", optQuerySet.sget(), optAlias.sget());
+            else if (item.getCode()|| item.getMessage())
+                fprintf(stderr, "Error (%d) %s\n", item.getCode(), item.getMessage());
+        }
+        return 0;
+    }
+    virtual void usage()
+    {
+        fprintf(stdout,"\nUsage:\n\n"
+            "ecl deactivate --queryset=<queryset> <alias>\n"
+            "   Options:\n"
+            "      <alias>               alias to deactivate (delete)\n"
+            "      queryset=<queryset>   queryset containing alias to deactivate\n"
+        );
+        EclCmdCommon::usage();
+    }
+private:
+    StringAttr optQuerySet;
+    StringAttr optAlias;
+};
+
 //=========================================================================================
 
 IEclCommand *createCoreEclCommand(const char *cmdname)
@@ -317,5 +535,9 @@ IEclCommand *createCoreEclCommand(const char *cmdname)
         return new EclCmdDeploy();
     if (strieq(cmdname, "publish"))
         return new EclCmdPublish();
+    if (strieq(cmdname, "activate"))
+        return new EclCmdActivate();
+    if (strieq(cmdname, "deactivate"))
+        return new EclCmdDeactivate();
     return NULL;
 }

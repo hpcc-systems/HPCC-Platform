@@ -62,6 +62,9 @@
               function toggleQueries() {
                 actionWorkunits('ToggleSuspend');
               }
+              function activateQueries() {
+                actionWorkunits('Activate');
+              }
 
               function actionWorkunits(Action) {
                   var connectionCallback = {
@@ -92,7 +95,8 @@
               function getQueryActions(Action) {
                   var remove = Action == 'Remove' ? 1 : 0;
                   var toggleSuspend = Action == 'ToggleSuspend' ? 1 : 0;
-                  var soapXML = '<WUQuerysetActionQueries><QuerySetName>' + querySet + '</QuerySetName><Remove>' + remove + '</Remove><ToggleSuspend>' + toggleSuspend + '</ToggleSuspend><QuerysetQueryActions>';
+                  var activate = Action == 'Activate' ? 1 : 0;
+                  var soapXML = '<WUQuerysetActionQueries><QuerySetName>' + querySet + '</QuerySetName><Remove>' + remove + '</Remove><ToggleSuspend>' + toggleSuspend + '</ToggleSuspend><Activate>' + activate + '</Activate><QuerysetQueryActions>';
 
                   // get records and iterate.
 
@@ -261,6 +265,11 @@
                   <button type="button" name="ToggleSuspendButton" onclick="toggleQueries();">Toggle Suspend</button>
                 </em>
               </span>
+              <span id="ActivateButton" class="yui-button yui-push-button">
+                <em class="first-child">
+                    <button type="button" name="ActivateButton" onclick="activateQueries();">Activate</button>
+                </em>
+             </span>
             </div>
             <div>
               <div id="aliasdiv">&#160;</div>
