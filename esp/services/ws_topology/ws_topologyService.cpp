@@ -41,9 +41,8 @@
 static const char* FEATURE_URL = "ClusterTopologyAccess";
 static const char* MACHINE_URL = "MachineInfoAccess";
 
-//static const long LOGFILESIZELIMIT = 10000000; //In case of a huge file
+static const unsigned THORSTATUSDETAILS_REFRESH_MINS = 1;
 static const long LOGFILESIZELIMIT = 100000; //Limit page size to 100k
-//static const long LOGFILESIZELIMIT = 1000; //In case of a huge file
 static const long AVERAGELOGROWSIZE = 2000;
 const char* TEMPZIPDIR = "tempzipfiles";
 
@@ -558,13 +557,15 @@ bool CWsTopologyEx::onTpXMLFile(IEspContext &context,IEspTpXMLFileRequest  &req,
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to get Configuration File. Permission denied.");
 
-        StringBuffer strBuff;
-        getThorXml(req.getName(),strBuff);
+        StringBuffer strBuff, xmlBuff;
+        strBuff.append("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?><?xml-stylesheet href=\"../esp/xslt/xmlformatter.xsl\" type=\"text/xsl\"?>");
+        getThorXml(req.getName(),xmlBuff);
+        strBuff.append(xmlBuff);
         
         MemoryBuffer membuff;
         membuff.setBuffer(strBuff.length(), (void*)strBuff.toCharArray());
-        
-        resp.setThefile_mimetype("text/xml");
+
+        resp.setThefile_mimetype(HTTP_TYPE_TEXT_XML);
         resp.setThefile(membuff);
     }
     catch(IException* e)
@@ -1759,4 +1760,58 @@ bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context,
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
+}
+
+bool CWsTopologyEx::onTpThorStatus(IEspContext &context, IEspTpThorStatusRequest &req, IEspTpThorStatusResponse &resp)
+{
+    try
+    {
+        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
+            throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to access Thor status. Permission denied.");
+
+        const char* name   = req.getName();
+        if (!name || !*name)
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Thor name not specified.");
+
+        CCluster conn(name);
+        IPropertyTree *root = conn->queryRoot();
+        if (!root)
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Failed to access Thor status.");
+
+        resp.setName( name );
+        resp.setQueue( root->queryProp("@queue") );
+        resp.setGroup( root->queryProp("@nodeGroup") );
+        resp.setThorMasterIPAddress( root->queryProp("@node"));
+        resp.setPort( root->getPropInt("@mpport", -1));
+        resp.setStartTime( root->queryProp("@started") );
+        const char *LogFile = root->queryProp("LogFile");
+        if (LogFile && *LogFile)
+            resp.setLogFile( LogFile );
+        const char *wuid = root->queryProp("WorkUnit");
+        if (wuid && *wuid)
+        {
+            resp.setWuid( wuid );
+            const char *graph = root->queryProp("@graph");
+            if (graph && *graph)
+            {
+                resp.setGraph( graph );
+                int subgraph = root->getPropInt("@subgraph", -1);
+                if (subgraph > -1)
+                {
+                    resp.setSubGraph( subgraph );
+                }
+                int duration = root->getPropInt("@sg_duration", -1);
+                if (duration > -1)
+                {
+                    resp.setSubGraphDuration( duration );
+                }
+            }
+        }
+        resp.setAutoRefresh(THORSTATUSDETAILS_REFRESH_MINS);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return false;
 }
