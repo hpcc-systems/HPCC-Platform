@@ -821,7 +821,7 @@ IEclSourceCollection * createSingleDefinitionEclCollection(const char * attrName
     if (dot)
     {
         StringAttr module(attrName, dot-attrName);
-        return createSingleDefinitionEclCollection(module, attrName, contents);
+        return createSingleDefinitionEclCollection(module, dot+1, contents);
     }
     return createSingleDefinitionEclCollection("", attrName, contents);
 }
