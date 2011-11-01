@@ -6437,7 +6437,7 @@ bool CCovenSDSManager::setSDSDebug(StringArray &params, StringBuffer &reply)
             reply.append("datalockHoldStack currently set to '").append(readWriteStackTracing?"on":"off").append("'");
             return false;
         }
-        readWriteStackTracing = (0 == stricmp("on", params.item(2)));
+        readWriteStackTracing = (0 == stricmp("on", params.item(1)));
 
         PROGLOG("datalock, held time stacks set to '%s'", readWriteStackTracing?"on":"off");
     }
