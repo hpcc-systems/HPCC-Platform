@@ -39,6 +39,7 @@ typedef DALI_UID SecurityToken;  // currently use 0
 #define FIXED_HT_SIZE 4096 // elements
 #define FIXED_KEY_SIZE 24
 
+// NB: careful not to reorder existing enumerated roles, for backward compatibility reasons
 enum DaliClientRole // if changed must update queryRoleName()
 {
     DCR_Unknown,
@@ -46,9 +47,9 @@ enum DaliClientRole // if changed must update queryRoleName()
     DCR_Diagnostic,
     DCR_ThorSlave,
     DCR_ThorMaster,
-    DCR_HoleProcessor,
-    DCR_HoleCollator,
-    DCR_HoleServer,
+    DCR_Deprecated1, // legacy role
+    DCR_Deprecated2, // legacy role
+    DCR_Deprecated3, // legacy role
     DCR_EclServer,
     DCR_EclAgent,
     DCR_DaliServer, // special (self)

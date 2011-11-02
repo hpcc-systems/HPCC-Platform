@@ -32,12 +32,11 @@ void usage()
     printf("USAGE: CapExport <output-filename> <system-id> <server-password> <commands>\n");
     printf("where commands are:\n");
     printf("                     THORWIDTH <width>\n");
-    printf("                or:  HOLEWIDTH <width>\n");
     printf("                or:  DALINODE <mac-address>\n");
     printf("                or:  DALINODE <local-ip>\n");
     printf("\n");
     printf("e.g. capexport update1.xml XYZ001 QyTTzAB ^\n");
-    printf("               THORWIDTH 600 HOLEWIDTH 300 DALINODE 10.150.28.12\n");
+    printf("               THORWIDTH 600 DALINODE 10.150.28.12\n");
 }
 
 int main(int argc, char* argv[])
@@ -64,9 +63,6 @@ int main(int argc, char* argv[])
             const char *param = argv[i];
             if (stricmp(cmd,"THORWIDTH")==0) {
                 cc->setLimit(DCR_ThorSlave,atoi(param));
-            }
-            else if (stricmp(cmd,"HOLEWIDTH")==0) {
-                cc->setLimit(DCR_HoleProcessor,atoi(param));
             }
             else if (stricmp(cmd,"DALINODE")==0) {
                 StringBuffer mac;
