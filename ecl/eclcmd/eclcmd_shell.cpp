@@ -41,15 +41,15 @@
 
 int EclCMDShell::callExternal(ArgvIterator &iter)
 {
-    char *argv[100];
+    const char *argv[100];
     StringBuffer cmdstr("ecl-");
     cmdstr.append(cmd.sget());
     int i=0;
-    argv[i++]=(char *)cmdstr.str();
+    argv[i++]=cmdstr.str();
     if (optHelp)
         argv[i++]="help";
     for (; !iter.done(); iter.next())
-        argv[i++]=(char *)iter.query();
+        argv[i++]=iter.query();
     argv[i]=NULL;
     if (execvp(cmdstr.str(), argv)==-1)
     {
