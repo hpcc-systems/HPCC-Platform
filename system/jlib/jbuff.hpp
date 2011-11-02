@@ -58,6 +58,42 @@ private:
 };
 
 
+template <class CLASS> class OwnedMalloc
+{
+public:
+    inline OwnedMalloc()                        { ptr = NULL; }
+    inline OwnedMalloc(CLASS * _ptr)            { ptr = _ptr; }
+    inline ~OwnedMalloc()                       { free(ptr); }
+
+    inline CLASS * operator -> () const         { return ptr; }
+    inline operator CLASS *() const             { return ptr; }
+
+    inline void clear()                         { CLASS *temp=ptr; ptr=NULL; free(temp); }
+    inline CLASS * get() const                  { return ptr; }
+    inline CLASS * getClear()                   { CLASS * temp = ptr; ptr = NULL; return temp; }
+    inline void setown(CLASS * _ptr)            { CLASS * temp = ptr; ptr = _ptr; free(temp); }
+
+    inline void allocate(bool clearMemory = false)   { allocateN(1, clearMemory); }
+    inline void allocateN(unsigned n, bool clearMemory = false)
+    {
+        clear();
+        void * mem = clearMemory ? calloc(n, sizeof(CLASS)) : malloc(n * sizeof(CLASS));
+        ptr = static_cast<CLASS *>(mem);
+    }
+
+private:
+    inline OwnedMalloc(const OwnedMalloc<CLASS> & other);
+
+    void operator = (CLASS * _ptr);
+    void operator = (const OwnedMalloc<CLASS> & other);
+    void set(CLASS * _ptr);
+    void set(const OwnedMalloc<CLASS> &other);
+    void setown(const OwnedMalloc<CLASS> &other);
+
+private:
+    CLASS * ptr;
+};
+
 class jlib_decl MemoryBuffer
 {
 public:
