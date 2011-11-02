@@ -85,9 +85,43 @@ public:
         }
         return true;
     }
-    virtual void finalizeOptions(IProperties *globals)
+    virtual bool finalizeOptions(IProperties *globals)
     {
-        EclCmdCommon::finalizeOptions(globals);
+        if (!EclCmdCommon::finalizeOptions(globals))
+            return false;
+        if (optObj.value.isEmpty())
+        {
+            fprintf(stderr, "\nNo target Archive or DLL specified for deployment\n");
+            return false;
+        }
+        if (optObj.type==eclObjTypeUnknown)
+        {
+            fprintf(stderr, "\nCan't determine content type of argument %s\n", optObj.value.sget());
+            return false;
+        }
+        if (optObj.type==eclObjSource)
+        {
+            fprintf(stderr, "\nDirect deployment of ECL source is not yet supported\n");
+            return false;
+        }
+        if (optObj.type==eclObjWuid)
+        {
+            StringBuffer s;
+            fprintf(stderr, "\nWUID (%s) cannot be the target for deployment\n", optObj.getDescription(s).str());
+            return false;
+        }
+        if (optObj.type==eclObjQueryId)
+        {
+            StringBuffer s;
+            fprintf(stderr, "\nQuery (%s) cannot be the target for deployment\n", optObj.getDescription(s).str());
+            return false;
+        }
+        if (optObj.type==eclObjArchive && optCluster.isEmpty())
+        {
+            fprintf(stderr, "\nCluster must be specified when deploying an ECL Archive\n");
+            return false;
+        }
+        return true;
     }
     virtual int processCMD()
     {
@@ -144,10 +178,11 @@ public:
     virtual void usage()
     {
         fprintf(stdout,"\nUsage:\n\n"
-            "ecl deploy [options][<archive>|<eclfile>|<so>|<dll>]\n\n"
+            "ecl deploy --cluster=<cluster> --name=<name> <archive>\n"
+            "ecl deploy [--cluster=<cluster>] [--name=<name>] <so|dll>\n\n"
             "   Options:\n"
             "      --cluster=<cluster>  cluster to associate workunit with\n"
-            "      --name=<name>        workunit job name\n\n"
+            "      --name=<name>        workunit job name\n"
         );
         EclCmdCommon::usage();
     }
@@ -210,11 +245,18 @@ public:
         }
         return true;
     }
-    virtual void finalizeOptions(IProperties *globals)
+    virtual bool finalizeOptions(IProperties *globals)
     {
-        EclCmdCommon::finalizeOptions(globals);
+        if (!EclCmdCommon::finalizeOptions(globals))
+            return false;
         if (!activateSet)
-            extractOption(optActivate, globals, ECLOPT_ACTIVATE_ENV, ECLOPT_ACTIVATE_INI, false);
+            extractEclCmdOption(optActivate, globals, ECLOPT_ACTIVATE_ENV, ECLOPT_ACTIVATE_INI, false);
+        if (optWuid.isEmpty())
+        {
+            fprintf(stderr, "\nMust specify a WUID to publish\n");
+            return false;
+        }
+        return true;
     }
     virtual int processCMD()
     {
@@ -252,13 +294,12 @@ public:
     virtual void usage()
     {
         fprintf(stdout,"\nUsage:\n\n"
-            "ecl publish [options][<wuid>]\n\n"
+            "ecl publish [--cluster=<cluster>][--name=<name>][--activate] <wuid>\n\n"
             "   Options:\n"
             "      --cluster=<cluster>  cluster to publish workunit to\n"
             "                           (defaults to cluster defined inside workunit)\n"
             "      --name=<name>        query name to use for published workunit\n"
-            "      --wuid=<wuid>        workunit id to publish\n"
-            "      --activate           activates query when published\n\n"
+            "      --activate           activates query when published\n"
         );
         EclCmdCommon::usage();
     }
