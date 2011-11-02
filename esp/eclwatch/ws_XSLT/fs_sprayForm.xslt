@@ -313,7 +313,7 @@
                <tr>
                   <td>Record Length:</td>
                   <td>
-                     <input type="text" name="sourceRecordSize" id="sourceRecordSize" value="{Software/DfuWorkunit/Source/Attr/@recordSize}" size="4" 
+                     <input type="text" name="sourceRecordSize" id="sourceRecordSize" value="{Software/DfuWorkunit/Source/Attr/@recordSize}" size="6"
                         onchange="handleSubmitBtn()" onblur="handleSubmitBtn()"/>
                   </td>
                </tr>
@@ -450,26 +450,26 @@
                <tr>
                   <td>Max Record Length:</td>
                   <td>
-                     <input type="text" id="sourceMaxRecordSize" name="sourceMaxRecordSize" value="{$rsz}" size="4" onchange="handleSubmitBtn()" onblur="handleSubmitBtn()"/>
+                     <input type="text" id="sourceMaxRecordSize" name="sourceMaxRecordSize" value="{$rsz}" size="6" onchange="handleSubmitBtn()" onblur="handleSubmitBtn()"/>
                   </td>
                </tr>
               <xsl:choose><xsl:when test="$submethod='csv'">
                <tr>
                   <td>Separator:</td>
                   <td>
-                     <input type="text" id="sourceCsvSeparate" name="sourceCsvSeparate" size="4" value="{$sep}" onchange="handleSubmitBtn()" onblur="handleSubmitBtn()"/>
+                     <input type="text" id="sourceCsvSeparate" name="sourceCsvSeparate" size="6" value="{$sep}" onchange="handleSubmitBtn()" onblur="handleSubmitBtn()"/>
                   </td>
                </tr>
                <tr>
                   <td>Line Terminator:</td>
                   <td>
-                     <input type="text" id="sourceCsvTerminate" name="sourceCsvTerminate" size="4" value="{$term}" onchange="handleSubmitBtn()" onblur="handleSubmitBtn()"/>
+                     <input type="text" id="sourceCsvTerminate" name="sourceCsvTerminate" size="6" value="{$term}" onchange="handleSubmitBtn()" onblur="handleSubmitBtn()"/>
                   </td>
                </tr>
                <tr>
                   <td>Quote:</td>
                   <td>
-                     <input type="text" id="sourceCsvQuote" name="sourceCsvQuote" size="4" value="{$quote}"  maxlength="1" onchange="handleSubmitBtn()" onblur="handleSubmitBtn()"/>
+                     <input type="text" id="sourceCsvQuote" name="sourceCsvQuote" size="6" value="{$quote}"  maxlength="1" onchange="handleSubmitBtn()" onblur="handleSubmitBtn()"/>
                   </td>
                </tr>
                </xsl:when>
