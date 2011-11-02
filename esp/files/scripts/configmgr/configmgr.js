@@ -2507,17 +2507,25 @@ function onContextMenuBeforeShow(p_sType, p_aArgs) {
             else if (r.getData('name').indexOf('EclAgent') == 0) {
               this.getItem(5).cfg.setProperty("disabled", true);
             }
+            else if (r.getData('name').indexOf('EclServer') == 0) {
+              this.getItem(1).cfg.setProperty("disabled", true);
+            }
+            else if (r.getData('name').indexOf('EclCCServer') == 0) {
+              this.getItem(2).cfg.setProperty("disabled", true);
+            }
             else {
-              var flag = false;
+              var flag = this.getItem(2).cfg.getProperty("disabled");
 
-              for (i = 0; i < top.document.navDT.navTreeData[0]["menuComps"].length; i++)
-                if (top.document.navDT.navTreeData[0]["menuComps"][i] === 'eclserver') {
-                  flag = true;
-                  break;
-                }
+              if (!flag) {
+                for (i = 0; i < top.document.navDT.navTreeData[0]["menuComps"].length; i++)
+                  if (top.document.navDT.navTreeData[0]["menuComps"][i] === 'eclserver') {
+                    flag = true;
+                    break;
+                  }
 
-              if (!flag)
-                this.getItem(2).cfg.setProperty("disabled", true);
+                if (!flag)
+                  this.getItem(2).cfg.setProperty("disabled", true);
+              }
             }
           }
         }
