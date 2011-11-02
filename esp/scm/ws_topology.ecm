@@ -522,6 +522,27 @@ ESPresponse [exceptions_inline] TpGetComponentFileResponse
     [http_content("application/octet-stream")] binary FileContents;
 };
 
+ESPrequest TpThorStatusRequest
+{
+    string Name;
+};
+
+ESPresponse [exceptions_inline,encode(0)] TpThorStatusResponse
+{
+    string Name;
+    string Queue;
+    string Group;
+    string ThorMasterIPAddress;
+    int Port;
+    string StartTime;
+    string LogFile;
+    string Wuid;
+    string Graph;
+    int SubGraph;
+    int SubGraphDuration;
+    int AutoRefresh;
+};
+
 ESPservice [noforms, version("1.17"), default_client_version("1.17"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
 {
     ESPuses ESPStruct TpBinding;
@@ -551,6 +572,7 @@ ESPservice [noforms, version("1.17"), default_client_version("1.17"), exceptions
     ESPmethod TpGroupQuery(TpGroupQueryRequest, TpGroupQueryResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/machines.xslt")] TpMachineQuery(TpMachineQueryRequest, TpMachineQueryResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/cluster_info.xslt")] TpClusterInfo(TpClusterInfoRequest, TpClusterInfoResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/thor_status.xslt")] TpThorStatus(TpThorStatusRequest, TpThorStatusResponse);
 
     ESPmethod [resp_xsl_default("/esp/xslt/services.xslt")] TpServiceQuery(TpServiceQueryRequest, TpServiceQueryResponse);
     ESPmethod TpSetMachineStatus(TpSetMachineStatusRequest, TpSetMachineStatusResponse);

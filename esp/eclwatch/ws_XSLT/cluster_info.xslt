@@ -186,7 +186,7 @@
         </a>
       </td>
       <td>
-        <a href="/WsTopology/TpLogFile/{Name}?Name={Name}&amp;Type=xml">
+        <a href="/WsTopology/TpThorStatus?Name={Name}">
           <xsl:value-of select="Name"/>
         </a>
       </td>
