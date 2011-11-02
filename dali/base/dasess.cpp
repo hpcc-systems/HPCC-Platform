@@ -46,9 +46,6 @@ const char *queryRoleName(DaliClientRole role)
     case DCR_Diagnostic: return "Diagnostic";
     case DCR_ThorSlave: return "ThorSlave";
     case DCR_ThorMaster: return "ThorMaster";
-    case DCR_HoleProcessor: return "HoleProcessor";
-    case DCR_HoleCollator: return "HoleCollator";
-    case DCR_HoleServer: return "HoleServer";
     case DCR_EclServer: return "EclServer";
     case DCR_EclAgent: return "EclAgent";
     case DCR_AgentExec: return "AgentExec";
