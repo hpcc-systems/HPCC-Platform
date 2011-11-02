@@ -24,7 +24,7 @@
 interface IEclCommand : extends IInterface
 {
     virtual bool parseCommandLineOptions(ArgvIterator &iter)=0;
-    virtual void finalizeOptions(IProperties *globals)=0;
+    virtual bool finalizeOptions(IProperties *globals)=0;
     virtual int processCMD()=0;
     virtual void usage()=0;
 };
@@ -34,10 +34,12 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_SERVER "--server"
 #define ECLOPT_SERVER_INI "eclWatchIP"
 #define ECLOPT_SERVER_ENV "ECL_WATCH_IP"
+#define ECLOPT_SERVER_DEFAULT "."
 
 #define ECLOPT_PORT "--port"
 #define ECLOPT_PORT_INI "eclWatchPort"
 #define ECLOPT_PORT_ENV "ECL_WATCH_PORT"
+#define ECLOPT_PORT_DEFAULT "8010"
 
 #define ECLOPT_USERNAME "--username"
 #define ECLOPT_USERNAME_INI "eclUserName"
@@ -57,9 +59,10 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_ACTIVATE "--activate"
 #define ECLOPT_VERSION "--version"
 
-bool extractOption(StringBuffer & option, IProperties * globals, const char * envName, const char * propertyName, const char * defaultPrefix, const char * defaultSuffix);
-bool extractOption(StringAttr & option, IProperties * globals, const char * envName, const char * propertyName, const char * defaultPrefix, const char * defaultSuffix);
-bool extractOption(bool & option, IProperties * globals, const char * envName, const char * propertyName, bool defval);
+bool extractEclCmdOption(StringBuffer & option, IProperties * globals, const char * envName, const char * propertyName, const char * defaultPrefix, const char * defaultSuffix);
+bool extractEclCmdOption(StringAttr & option, IProperties * globals, const char * envName, const char * propertyName, const char * defaultPrefix, const char * defaultSuffix);
+bool extractEclCmdOption(bool & option, IProperties * globals, const char * envName, const char * propertyName, bool defval);
+bool extractEclCmdOption(unsigned & option, IProperties * globals, const char * envName, const char * propertyName, unsigned defval);
 
 enum eclObjParameterType
 {
@@ -85,6 +88,7 @@ public:
     unsigned accept;
 };
 
+
 class EclCmdCommon : public CInterface, implements IEclCommand
 {
 public:
@@ -104,12 +108,13 @@ public:
             return true;
         return false;
     }
-    virtual void finalizeOptions(IProperties *globals)
+    virtual bool finalizeOptions(IProperties *globals)
     {
-        extractOption(optServer, globals, ECLOPT_SERVER_ENV, ECLOPT_SERVER_INI, ".", NULL);
-        extractOption(optPort, globals, ECLOPT_PORT_ENV, ECLOPT_PORT_INI, "8010", NULL);
-        extractOption(optUsername, globals, ECLOPT_USERNAME_ENV, ECLOPT_USERNAME_INI, NULL, NULL);
-        extractOption(optPassword, globals, ECLOPT_PASSWORD_ENV, ECLOPT_PASSWORD_INI, NULL, NULL);
+        extractEclCmdOption(optServer, globals, ECLOPT_SERVER_ENV, ECLOPT_SERVER_INI, ECLOPT_SERVER_DEFAULT, NULL);
+        extractEclCmdOption(optPort, globals, ECLOPT_PORT_ENV, ECLOPT_PORT_INI, ECLOPT_PORT_DEFAULT, NULL);
+        extractEclCmdOption(optUsername, globals, ECLOPT_USERNAME_ENV, ECLOPT_USERNAME_INI, NULL, NULL);
+        extractEclCmdOption(optPassword, globals, ECLOPT_PASSWORD_ENV, ECLOPT_PASSWORD_INI, NULL, NULL);
+        return true;
     }
     virtual void usage()
     {

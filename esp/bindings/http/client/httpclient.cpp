@@ -39,7 +39,7 @@
      CHttpClient Implementation
 **************************************************************************/
 #define URL_MAX  512
-
+#define HTTP_CLIENT_DEFAULT_CONNECT_TIMEOUT 3000
 
 CHttpClientContext::CHttpClientContext()
 {
@@ -231,7 +231,7 @@ int CHttpClient::connect(StringBuffer& errmsg)
         if(m_timeout)
             m_socket = ISocket::connect_timeout(ep,m_timeout);
         else
-            m_socket = ISocket::connect(ep);
+            m_socket = ISocket::connect_timeout(ep, HTTP_CLIENT_DEFAULT_CONNECT_TIMEOUT);
 
         if(strcmp(m_protocol.get(), "HTTPS") == 0)
         {
