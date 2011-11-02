@@ -53,7 +53,6 @@ public:
             return false;
         }
 
-        bool boolValue;
         for (; !iter.done(); iter.next())
         {
             const char *arg = iter.query();
@@ -65,22 +64,21 @@ public:
                     return false;
                 }
                 optObj.set(arg);
+                continue;
             }
-            else if (EclCmdCommon::matchCommandLineOption(iter))
+            if (iter.matchOption(optCluster, ECLOPT_CLUSTER))
                 continue;
-            else if (iter.matchOption(optCluster, ECLOPT_CLUSTER))
+            if (iter.matchOption(optName, ECLOPT_NAME))
                 continue;
-            else if (iter.matchOption(optName, ECLOPT_NAME))
-                continue;
-            else if (iter.matchFlag(boolValue, ECLOPT_VERSION))
+            switch (EclCmdCommon::matchCommandLineOption(iter))
             {
-                fprintf(stdout, "%s\n", BUILD_TAG);
-                return false;
-            }
-            else
-            {
-                fprintf(stderr, "\n%s command not recognized\n", arg);
-                return false;
+                case EclCmdOptionNoMatch:
+                    fprintf(stderr, "\n%s option not recognized\n", arg);
+                    return false;
+                case EclCmdOptionCompletion:
+                    return false;
+                case EclCmdOptionMatch:
+                    break;
             }
         }
         return true;
@@ -206,7 +204,6 @@ public:
             return false;
         }
 
-        bool boolValue;
         for (; !iter.done(); iter.next())
         {
             const char *arg = iter.query();
@@ -218,29 +215,28 @@ public:
                     return false;
                 }
                 optWuid.set(arg);
+                continue;
             }
-            else if (EclCmdCommon::matchCommandLineOption(iter))
+            if (iter.matchOption(optWuid, ECLOPT_WUID))
                 continue;
-            else if (iter.matchOption(optWuid, ECLOPT_WUID))
+            if (iter.matchOption(optName, ECLOPT_NAME))
                 continue;
-            else if (iter.matchOption(optName, ECLOPT_NAME))
+            if (iter.matchOption(optCluster, ECLOPT_CLUSTER))
                 continue;
-            else if (iter.matchOption(optCluster, ECLOPT_CLUSTER))
-                continue;
-            else if (iter.matchFlag(optActivate, ECLOPT_ACTIVATE))
+            if (iter.matchFlag(optActivate, ECLOPT_ACTIVATE))
             {
                 activateSet=true;
                 continue;
             }
-            else if (iter.matchFlag(boolValue, ECLOPT_VERSION))
+            switch (EclCmdCommon::matchCommandLineOption(iter))
             {
-                fprintf(stdout, "%s\n", BUILD_TAG);
-                return false;
-            }
-            else
-            {
-                fprintf(stderr, "\n%s command not recognized\n", arg);
-                return false;
+                case EclCmdOptionNoMatch:
+                    fprintf(stderr, "\n%s option not recognized\n", arg);
+                    return false;
+                case EclCmdOptionCompletion:
+                    return false;
+                case EclCmdOptionMatch:
+                    break;
             }
         }
         return true;

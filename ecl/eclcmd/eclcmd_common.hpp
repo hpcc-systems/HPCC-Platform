@@ -88,6 +88,12 @@ public:
     unsigned accept;
 };
 
+enum eclCmdOptionMatchIndicator
+{
+    EclCmdOptionNoMatch=0,
+    EclCmdOptionMatch=1,
+    EclCmdOptionCompletion=2
+};
 
 class EclCmdCommon : public CInterface, implements IEclCommand
 {
@@ -96,17 +102,23 @@ public:
     EclCmdCommon()
     {
     }
-    virtual bool matchCommandLineOption(ArgvIterator &iter)
+    virtual eclCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter)
     {
+        bool boolValue;
+        if (iter.matchFlag(boolValue, ECLOPT_VERSION))
+        {
+            fprintf(stdout, "%s\n", BUILD_TAG);
+            return EclCmdOptionCompletion;
+        }
         if (iter.matchOption(optServer, ECLOPT_SERVER))
-            return true;
+            return EclCmdOptionMatch;
         if (iter.matchOption(optPort, ECLOPT_PORT))
-            return true;
+            return EclCmdOptionMatch;
         if (iter.matchOption(optUsername, ECLOPT_USERNAME))
-            return true;
+            return EclCmdOptionMatch;
         if (iter.matchOption(optPassword, ECLOPT_PASSWORD))
-            return true;
-        return false;
+            return EclCmdOptionMatch;
+        return EclCmdOptionNoMatch;
     }
     virtual bool finalizeOptions(IProperties *globals)
     {
