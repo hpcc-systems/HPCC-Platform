@@ -51,7 +51,7 @@ int EclCMDShell::callExternal(ArgvIterator &iter)
     for (; !iter.done(); iter.next())
         argv[i++]=iter.query();
     argv[i]=NULL;
-    if (execvp(cmdstr.str(), argv)==-1)
+    if (execvp(cmdstr.str(), const_cast<char **>(argv))==-1)
     {
         switch(errno)
         {
