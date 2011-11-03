@@ -33,6 +33,11 @@ public:
         splitDirTail(absFilename, dir);
     }
 
+    ResourceManifest(IPropertyTree *_manifest)
+        : manifest(LINK(_manifest))
+    {
+    }
+
     void addToArchive(IPropertyTree *archive);
     void loadResource(const char *filepath, MemoryBuffer &content);
     bool checkResourceFilesExist();
@@ -48,10 +53,16 @@ bool ResourceManifest::checkResourceFilesExist()
     Owned<IPropertyTreeIterator> resources = manifest->getElements("Resource[@filename]");
     ForEach(*resources)
     {
-        const char *filename = resources->query().queryProp("@filename");
+        IPropertyTree &res = resources->query();
+        const char *filename = res.queryProp("@filename");
         StringBuffer fullpath;
         if (!isAbsolutePath(filename))
-            fullpath.append(dir);
+        {
+            if (res.hasProp("@rootPath"))
+                fullpath.append(res.queryProp("@rootPath"));
+            else
+                fullpath.append(dir);
+        }
         fullpath.append(filename);
         if (!checkFileExists(fullpath.str()))
         {
@@ -79,22 +90,32 @@ void ResourceManifest::addToArchive(IPropertyTree *archive)
     if (!additionalFiles->hasProp("@xmlns:xsi"))
         additionalFiles->setProp("@xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
 
+    IPropertyTree *addManifest = additionalFiles->addPropTree("Manifest", createPTree());
+    if (!origPath.isEmpty())
+    {
+        addManifest->setProp("@originalFilename", origPath.sget());
+        manifest->setProp("@originalFilename", origPath.sget());
+    }
     StringBuffer xml;
     toXML(manifest, xml);
-    additionalFiles->setProp("Manifest", xml.str());
-    additionalFiles->setProp("Manifest/@originalFilename", origPath.sget());
+    addManifest->setProp(NULL, xml.str());
 
     Owned<IPropertyTreeIterator> resources = manifest->getElements("Resource[@filename]");
     ForEach(*resources)
     {
+        IPropertyTree &res = resources->query();
         StringBuffer absResPath;
-        const char *filename = resources->query().queryProp("@filename");
+        const char *filename = res.queryProp("@filename");
         VStringBuffer xpath("Resource[@originalFilename='%s']", filename);
         if (!additionalFiles->hasProp(xpath.str()))
         {
             if (!isAbsolutePath(filename))
             {
-                StringBuffer relResPath(dir);
+                StringBuffer relResPath;
+                if (res.hasProp("@rootPath"))
+                    relResPath.append(res.queryProp("@rootPath"));
+                else
+                    relResPath.append(dir);
                 relResPath.append(filename);
                 makeAbsolutePath(relResPath.str(), absResPath);
             }
@@ -115,6 +136,42 @@ void addManifestResourcesToArchive(IPropertyTree *archive, const char *filename)
 {
     ResourceManifest manifest(filename);
     manifest.addToArchive(archive);
+}
+
+void addManifestResourcesToArchive(IPropertyTree *archive, IPropertyTree *mft)
+{
+    ResourceManifest manifest(mft);
+    manifest.addToArchive(archive);
+}
+
+void addIncludeResourcesToArchive(IPropertyTree *archive, IPropertyTree *includes)
+{
+    if (!archive || !includes)
+        return;
+    Owned<IPropertyTree> directIncludeManifest = createPTree("Manifest");
+    Owned<IPropertyTreeIterator> it = includes->getElements("*");
+    ForEach(*it)
+    {
+        IPropertyTree &item = it->query();
+        StringBuffer path(item.queryProp("@scope"));
+        if (path.length())
+            path.replace('.', '/').append('/');
+        if (strieq(item.queryName(), "manifest"))
+        {
+            StringBuffer filename(path);
+            filename.append(item.queryProp("@filename"));
+            addManifestResourcesToArchive(archive, filename.str());
+        }
+        else
+        {
+            if (path.length())
+                item.setProp("@rootPath", path.str());
+            item.setProp("@type", item.queryName());
+            directIncludeManifest->addPropTree("Resource", LINK(&item));
+        }
+    }
+    if (directIncludeManifest->hasChildren())
+        addManifestResourcesToArchive(archive, directIncludeManifest);
 }
 
 bool isManifestFileValid(const char *filename)

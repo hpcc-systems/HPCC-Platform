@@ -20,6 +20,7 @@
 
 #include "hql.hpp"
 
+extern HQL_API void addIncludeResourcesToArchive(IPropertyTree *archive, IPropertyTree *includes);
 extern HQL_API void addManifestResourcesToArchive(IPropertyTree *archive, const char *filename);
 extern HQL_API bool isManifestFileValid(const char *filename);
 
