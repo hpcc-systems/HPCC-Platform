@@ -48,6 +48,7 @@
 #include "hqltrans.ipp"
 #include "hqlvalid.hpp"
 #include "hqlrepository.hpp"
+#include "hqlmanifest.hpp"
 
 #define FAST_FIND_FIELD
 //#define USE_WHEN_FOR_SIDEEFFECTS
@@ -9723,6 +9724,18 @@ void HqlGram::processImport(attribute & membersAttr, attribute & modulesAttr, _A
     }
 }
 
+void HqlGram::processResourceInclude(attribute &typeAttr, attribute &fileAttr, attribute *nameAttr)
+{
+    StringBuffer restype;
+    extractConstantString(restype, typeAttr);
+    StringBuffer resfile;
+    extractConstantString(resfile, fileAttr);
+    StringBuffer resname;
+    if (nameAttr)
+        extractConstantString(resname, *nameAttr);
+
+    lookupCtx.noteResourceInclude(parseScope, restype.str(), resfile.str(), resname.str());
+}
 
 void HqlGram::defineImport(const attribute & errpos, IHqlExpression * imported, _ATOM newName)
 {
@@ -11043,6 +11056,11 @@ extern HQL_API IPropertyTree * createArchiveAttribute(IPropertyTree * module, co
     return attr;
 }
 
+IPropertyTree * HqlParseContext::queryEnsureArchiveManifest()
+{
+    return ensurePTree(archive, "AdditionalFiles/Manifest");
+}
+
 void getFileContentText(StringBuffer & result, IFileContents * contents)
 {
     unsigned len = contents->length();
@@ -11101,6 +11119,24 @@ void HqlLookupContext::noteParseQuery(IHqlScope * scope, IFileContents * content
             module->setProp("@sourcePath", sourcePath->str());
         }
     }
+}
+
+void HqlParseContext::addResouceInclude(IHqlScope * owner, const char *restype, const char *filename, const char *name)
+{
+    if (!restype || !*restype || !filename || !*filename)
+        return;
+    IPropertyTree *item = ensureResourceIncludes()->addPropTree(restype, createPTree());
+    item->setProp("@scope", owner->queryFullName());
+    item->setProp("@filename", filename);
+    if (name && *name)
+        item->setProp("@name", name);
+}
+
+void HqlLookupContext::noteResourceInclude(IHqlScope * scope, const char *restype, const char *filename, const char *name)
+{
+    if (!restype || !*restype || !filename || !*filename)
+        return;
+    parseCtx.addResouceInclude(scope, restype, filename, name);
 }
 
 

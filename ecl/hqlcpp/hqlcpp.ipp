@@ -134,6 +134,7 @@ public:
     virtual void addCompressResource(const char * type, unsigned len, const void * data, IPropertyTree *manifestEntry=NULL, unsigned id=(unsigned)-1);
     virtual void addManifest(const char *filename){resources.addManifest(filename);}
     virtual void addManifestFromArchive(IPropertyTree *archive){resources.addManifestFromArchive(archive);}
+    virtual void addResourceIncludes(IPropertyTree *includes){resources.addResourceIncludes(includes);}
     virtual void addWebServiceInfo(IPropertyTree *wsinfo){resources.addWebServiceInfo(wsinfo);}
     
     bool useFunction(IHqlExpression * funcdef);

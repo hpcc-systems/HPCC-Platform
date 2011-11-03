@@ -147,6 +147,18 @@ public:
     }
 
     bool reportErrorSummary();
+    void addResourceIncludes(IPropertyTree *includes)
+    {
+        if (legacyMode || srcArchive)
+            return;
+        if (archive)
+            addIncludeResourcesToArchive(archive, includes);
+        else
+        {   if (!resourceIncludes)
+                resourceIncludes.setown(createPTree());
+            mergePTree(resourceIncludes, includes);
+        }
+    }
 
 public:
     Linked<IFile> inputFile;
@@ -157,6 +169,7 @@ public:
     const char * outputFilename;
     FILE * errout;
     Owned<IPropertyTree> srcArchive;
+    Owned<IPropertyTree> resourceIncludes;
     bool legacyMode;
     bool fromArchive;
     bool ignoreUnknownImport;
@@ -498,6 +511,8 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, IHqlExpress
                     generator->addManifest(optManifestFilename);
                 if (instance.srcArchive)
                     generator->addManifestFromArchive(instance.srcArchive);
+                if (instance.resourceIncludes)
+                    generator->addResourceIncludes(instance.resourceIncludes);
                 generator->setSaveGeneratedFiles(optSaveCpp);
 
                 bool generateOk = generator->processQuery(qquery, target);
@@ -740,6 +755,8 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
                     instance.archive->setProp("Query/@originalFilename", sourcePathname);
                 }
             }
+
+            instance.addResourceIncludes(parseCtx.resourceIncludes);
 
             gatherWarnings(ctx.errs, qquery);
 

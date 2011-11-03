@@ -876,13 +876,24 @@ public:
         forwardLinks.append(*new ForwardScopeItem(owner, child));
     }
 
+    IPropertyTree * ensureResourceIncludes()
+    {
+        if (!resourceIncludes)
+            resourceIncludes.setown(createPTree("ResourceIncludes"));
+        return resourceIncludes.get();
+    }
+
+    void addResouceInclude(IHqlScope * owner, const char *restype, const char *filename, const char *name);
+
     IPropertyTree * queryEnsureArchiveModule(const char * name, IHqlScope * scope);
+    IPropertyTree * queryEnsureArchiveManifest();
 
 public:
     Linked<IPropertyTree> archive;
     Linked<IEclRepository> eclRepository;
     Owned<IPropertyTree> nestedDependTree;
     Owned<IPropertyTree> globalDependTree;
+    Owned<IPropertyTree> resourceIncludes;
     HqlExprArray defaultFunctionCache;
     CIArrayOf<ForwardScopeItem> forwardLinks;
     bool expandCallsWhenBound;
@@ -915,6 +926,7 @@ public:
     void noteBeginAttribute(IHqlScope * scope, IFileContents * contents, _ATOM name);
     void noteParseQuery(IHqlScope * scope, IFileContents * contents);
     void noteExternalLookup(IHqlScope * parentScope, IHqlExpression * expr);
+    void noteResourceInclude(IHqlScope * scope, const char *type, const char *path, const char *name);
 
     inline IEclRepository * queryRepository() const { return parseCtx.eclRepository; }
     inline bool queryExpandCallsWhenBound() const { return parseCtx.expandCallsWhenBound; }

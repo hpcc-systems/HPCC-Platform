@@ -399,6 +399,7 @@ public:
     void processImportAll(attribute & modulesAttr);
     void processImport(attribute & modulesAttr, _ATOM as);
     void processImport(attribute & membersAttr, attribute & modulesAttr, _ATOM as);
+    void processResourceInclude(attribute & typeAttr, attribute & fileAttr, attribute * nameAttr);
     void applyDefaultPromotions(attribute &a1);
     unsigned checkCompatible(ITypeInfo * a1, ITypeInfo * t2, const attribute &ea, bool complain=true);
     void checkMaxCompatible(IHqlExpression * sortOrder, IHqlExpression * values, attribute & errpos);

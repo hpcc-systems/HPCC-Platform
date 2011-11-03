@@ -365,6 +365,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   REMOTE
   REPEAT
   RESPONSE
+  RESOURCE
   RETRY
   RETURN
   RIGHT
@@ -607,6 +608,19 @@ setActiveToExpected
     :                   {   parser->setCurrentToExpected(); $$.clear(); }
     ;
     
+
+resourceInclude
+    : RESOURCE '(' STRING_CONST ',' STRING_CONST ')'
+                        {
+                            parser->processResourceInclude($3, $5, NULL);
+                            $$.clear();
+                        }
+    | RESOURCE '(' STRING_CONST ',' STRING_CONST ',' STRING_CONST ')'
+                        {
+                            parser->processResourceInclude($3, $5, &$7);
+                            $$.clear();
+                        }
+    ;
 
 importSection
     : startIMPORT importItem endIMPORT   
@@ -1343,6 +1357,7 @@ simpleDefinition
                             $$.clear();
                         }
     | importSection
+    | resourceInclude
     | metaCommandWithNoSemicolon simpleDefinition
     ;
 

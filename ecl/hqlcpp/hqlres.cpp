@@ -126,14 +126,10 @@ bool ResourceManager::getDuplicateResourceId(const char *srctype, const char *fi
     return false;
 }
 
-void ResourceManager::addManifest(const char *filename)
+void ResourceManager::addManifest(IPropertyTree *manifestSrc, const char *dir)
 {
     if (finalized)
         throwError1(HQLERR_ResourceAddAfterFinalManifest, "MANIFEST");
-    Owned<IPropertyTree> manifestSrc = createPTreeFromXMLFile(filename);
-
-    StringBuffer dir; 
-    splitDirTail(filename, dir);
 
     ensureManifestInfo();
     Owned<IAttributeIterator> aiter = manifestSrc->getAttributes();
@@ -145,6 +141,8 @@ void ResourceManager::addManifest(const char *filename)
         IPropertyTree &item = iter->query();
         if (streq(item.queryName(), "Resource") && item.hasProp("@filename"))
         {
+            if (dir && !item.hasProp("@rootPath"))
+                item.setProp("@rootPath", dir);
             if (!item.hasProp("@type"))
                 item.setProp("@type", "UNKNOWN");
             const char *filename = item.queryProp("@filename");
@@ -157,8 +155,8 @@ void ResourceManager::addManifest(const char *filename)
             else
             {
                 StringBuffer fullpath;
-                if (!isAbsolutePath(filename))
-                    fullpath.append(dir);
+                if (!isAbsolutePath(filename) && item.hasProp("@rootPath"))
+                    fullpath.append(item.queryProp("@rootPath"));
                 fullpath.append(filename);
 
                 MemoryBuffer content;
@@ -169,6 +167,19 @@ void ResourceManager::addManifest(const char *filename)
         else
             manifest->addPropTree(item.queryName(), LINK(&item));
     }
+}
+
+void ResourceManager::addManifest(const char *filename)
+{
+    Owned<IPropertyTree> manifestSrc = createPTreeFromXMLFile(filename);
+
+    if (!strieq(manifestSrc->queryName(), "manifest"))
+        throwError1(HQLERR_IncorrectResourceContentType, "MANIFEST");
+
+    StringBuffer dir;
+    splitDirTail(filename, dir);
+
+    addManifest(manifestSrc, dir.str());
 }
 
 void ResourceManager::addManifestFromArchive(IPropertyTree *archive)
@@ -186,12 +197,15 @@ void ResourceManager::addManifestFromArchive(IPropertyTree *archive)
         Owned<IAttributeIterator> aiter = manifestSrc->getAttributes();
         ForEach (*aiter)
             manifest->setProp(aiter->queryName(), aiter->queryValue());
+        const char *manifestFilename = manifestSrc->queryProp("@originalFilename");
         Owned<IPropertyTreeIterator> iter = manifestSrc->getElements("*");
         ForEach(*iter)
         {
             IPropertyTree &item = iter->query();
             if (streq(item.queryName(), "Resource")&& item.hasProp("@filename"))
             {
+                if (manifestFilename && *manifestFilename && !item.hasProp("@rootPath"))
+                    item.setProp("@rootPath", manifestFilename);
                 if (!item.hasProp("@type"))
                     item.setProp("@type", "UNKNOWN");
                 const char *filename = item.queryProp("@filename");
@@ -213,6 +227,35 @@ void ResourceManager::addManifestFromArchive(IPropertyTree *archive)
                 manifest->addPropTree(item.queryName(), LINK(&item));
         }
     }
+}
+
+void ResourceManager::addResourceIncludes(IPropertyTree *includes)
+{
+    if (!includes)
+        return;
+    if (finalized)
+        throwError1(HQLERR_ResourceAddAfterFinalManifest, "MANIFEST");
+    ensureManifestInfo();
+    Owned<IPropertyTree> directIncludeManifest = createPTree("Manifest");
+    Owned<IPropertyTreeIterator> it = includes->getElements("*");
+    ForEach(*it)
+    {
+        IPropertyTree &item = it->query();
+        StringBuffer path(item.queryProp("@scope"));
+        if (path.length())
+            path.replace('.', '/').append('/');
+        if (strieq(item.queryName(), "manifest"))
+            addManifest(path.append(item.queryProp("@filename")).str());
+        else
+        {
+            if (path.length())
+                item.setProp("@rootPath", path.str());
+            item.setProp("@type", item.queryName());
+            directIncludeManifest->addPropTree("Resource", LINK(&item));
+        }
+    }
+    if (directIncludeManifest->hasChildren())
+        addManifest(directIncludeManifest, NULL);
 }
 
 void ResourceManager::addWebServiceInfo(IPropertyTree *wsinfo)

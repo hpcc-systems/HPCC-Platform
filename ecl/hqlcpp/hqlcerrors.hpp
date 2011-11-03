@@ -205,6 +205,7 @@
 #define HQLERR_OutsideGroupAggregate            4182
 #define HQLERR_ResourceAddAfterFinalManifest    4183
 #define HQLERR_SkipInsideCreateRow              4184
+#define HQLERR_IncorrectResourceContentType     4185
 
 //Warnings....
 #define HQLWRN_PersistDataNotLikely             4500
@@ -481,6 +482,7 @@
 #define HQLERR_OutsideGroupAggregate_Text       "%s used outside of a TABLE aggregation"
 #define HQLERR_ResourceAddAfterFinalManifest_Text "%s resource added after manifest was finalized"
 #define HQLERR_SkipInsideCreateRow_Text         "SKIP inside a ROW(<transform>) not supported.  It is only allowed in a DATASET transform."
+#define HQLERR_IncorrectResourceContentType_Text "Incorrect %s resource file contents"
 
 //Warnings.
 #define HQLWRN_CannotRecreateDistribution_Text  "Cannot recreate the distribution for a persistent dataset"
