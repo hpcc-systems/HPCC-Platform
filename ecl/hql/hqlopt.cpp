@@ -2891,7 +2891,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                 }
                 break;
             case no_inlinetable:
-                if ((options & HOOfoldconstantdatasets) && isConstantDataset(child))
+                if (options & HOOfoldconstantdatasets)
                 {
                     HqlExprArray conditions;
                     unwindChildren(conditions, transformed, 1);
@@ -2900,7 +2900,10 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
 
                     HqlExprArray filtered;
                     IHqlExpression * values = child->queryChild(0);
+                    unsigned numValues = values->numChildren();
                     unsigned numOk = 0;
+                    //A vague rule of thumb for the maximum proportion to retain if the dataset is shared.
+                    unsigned maxSharedFiltered = (numValues >= 10) ? numValues / 10 : 1;
                     ForEachChild(i, values)
                     {
                         IHqlExpression * curTransform = values->queryChild(i);
@@ -2910,8 +2913,10 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                         NewProjectMapper2 mapper;
                         mapper.setMapping(curTransform);
                         OwnedHqlExpr expandedFilter = mapper.expandFields(filterCondition, child, NULL, NULL);
-//                        if (!expandedFilter->isConstant())
-//                            break;
+                        //This can prematurely ignore some expressions e.g., x and (' ' = ' '), but saves lots of
+                        //additional constant folding on non constant expressions, so worthwhile.
+                        if (!expandedFilter->isConstant())
+                            break;
 
                         OwnedHqlExpr folded = foldHqlExpression(expandedFilter);
                         IValue * value = folded->queryValue();
@@ -2922,15 +2927,14 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                         {
                             filtered.append(*LINK(curTransform));
 
-                            //Only break sharing on an inline dataset if it generates a single row
-                            //A vague rule of thumb, should possibly be a % of the #elements.
-                            if (shared && (filtered.ordinality() > 1))
+                            //Only break sharing on an inline dataset if it generates something significantly smaller.
+                            if (shared && (filtered.ordinality() > maxSharedFiltered))
                                 break;
                         }
 
                         numOk++;
                     }
-                    if (numOk == values->numChildren())
+                    if (numOk == numValues)
                     {
                         if (filtered.ordinality() == 0)
                             return replaceWithNull(transformed);
