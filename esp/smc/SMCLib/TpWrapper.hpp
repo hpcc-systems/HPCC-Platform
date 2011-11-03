@@ -200,5 +200,24 @@ private:
     Owned<IRemoteConnection> conn;
 };
 
+//helper functions
+//Map a name from originalNames to the name in newNames. If not found, return the original name.
+inline char* mapName(const char* originalName, StringArray& originalNames, StringArray& newNames)
+{
+    char* newName = (char*) originalName;
+    ForEachItemIn(x,originalNames)
+    {
+        const char* name = originalNames.item(x);
+        if (strieq(originalName, name))
+        {
+            newName = (char*) newNames.item(x);
+            break;
+        }
+    }
+
+    return newName;
+}
+
+
 #endif //_ESPWIZ_TpWrapper_HPP__
 

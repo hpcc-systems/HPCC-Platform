@@ -135,7 +135,7 @@
                 var obj = document.getElementById('replicate');
                 var groups = document.getElementById("destGroup");
                 var selected = groups.options[groups.selectedIndex];
-                if (selected.title == 'false')
+                if (selected.title == '0')
                 {
                     row.style.display = 'none';
                     row.style.visibility = 'hidden';
@@ -506,23 +506,23 @@
                             <xsl:value-of select="@replicateOutputs"/>
                         </xsl:attribute>
                         <xsl:attribute name="value">
-                            <xsl:value-of select="@name"/>
+                            <xsl:value-of select="@gname"/>
                         </xsl:attribute>
-                        <xsl:variable name="curgrp" select="@name"/>
+                        <xsl:variable name="curgrp" select="@tname"/>
                         <xsl:if test="$grp = $curgrp">
                            <xsl:attribute name="selected"/>
                         </xsl:if>
-                        <xsl:value-of select="@name"/>
+                        <xsl:value-of select="@tname"/>
                      </option>
                   </xsl:for-each>
-                  <xsl:for-each select="Software/EclAgentProcess/Instance">
+                  <xsl:for-each select="Software/EclAgentProcess">
                      <option>
                          <!--The 'title' attribute is used to pass the replicate flag to onChangeDestGroup(). Since
                         hthor never replicates, the 'title' attribute is set to be false and the onChangeDestGroup()
                         will hide the "Replicate" checkbox and set the "Replicate" option to false. -->
-                        <xsl:attribute name="title">false</xsl:attribute>
+                        <xsl:attribute name="title">0</xsl:attribute>
                         <xsl:attribute name="value"><xsl:value-of select="@gname"/><xsl:text> </xsl:text><xsl:value-of select="@netAddress"/></xsl:attribute>
-                        <xsl:value-of select="@gname"/><xsl:text> </xsl:text><xsl:value-of select="@netAddress"/>
+                        <xsl:value-of select="@tname"/>
                      </option>
                   </xsl:for-each>
                </select>

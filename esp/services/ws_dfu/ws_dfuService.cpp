@@ -138,26 +138,10 @@ bool CWsDfuEx::onDFUSearch(IEspContext &context, IEspDFUSearchRequest & req, IEs
             userdesc->set(username.str(), passwd);
         }
 
-        CTpWrapper dummy;
-        IArrayOf<IEspTpCluster> clusters;
-        dummy.getClusterProcessList(eqThorCluster, clusters);
-        dummy.getHthorClusterList(clusters);
-
-        StringArray dfuclusters;
-        ForEachItemIn(k, clusters)
-        {
-            IEspTpCluster& cluster = clusters.item(k);
-            dfuclusters.append(cluster.getName());
-        }
-
-        IArrayOf<IEspTpCluster> clusters1;
-        dummy.getClusterProcessList(eqRoxieCluster, clusters1);
-        ForEachItemIn(k1, clusters1)
-        {
-            IEspTpCluster& cluster = clusters1.item(k1);
-            StringBuffer slaveName = cluster.getName();
-            dfuclusters.append(slaveName.str());
-        }
+        StringArray processNames, groupNames, targetNames, queueNames;
+        getEnvironmentThorClusterNames(processNames, groupNames, targetNames, queueNames);
+        getEnvironmentHThorClusterNames(processNames, groupNames, targetNames);
+        getEnvironmentRoxieClusterNames(processNames, groupNames, targetNames, queueNames);
 
         StringArray ftarray;
         ftarray.append("Logical Files and Superfiles");
@@ -167,7 +151,7 @@ bool CWsDfuEx::onDFUSearch(IEspContext &context, IEspDFUSearchRequest & req, IEs
 
         if (req.getShowExample() && *req.getShowExample())
             resp.setShowExample(req.getShowExample());
-        resp.setClusterNames(dfuclusters);
+        resp.setClusterNames(targetNames);
         resp.setFileTypes(ftarray);
     }
     catch(IException* e)
@@ -1702,11 +1686,16 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
     if(!df)
         throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",name);
 
+    StringArray processNames, groupNames, targetNames, queueNames;
+    getEnvironmentThorClusterNames(processNames, groupNames, targetNames, queueNames);
+    getEnvironmentHThorClusterNames(processNames, groupNames, targetNames);
+    getEnvironmentRoxieClusterNames(processNames, groupNames, targetNames, queueNames);
+
     StringArray clusters;
     if (cluster && *cluster)
     {
         df->getClusterNames(clusters);
-        if(!FindInStringArray(clusters, cluster))
+        if(!FindInStringArray(clusters, mapName(cluster, targetNames, groupNames)))
             throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",name);
     }
 
@@ -2481,6 +2470,14 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
     }
     else
     {
+        StringArray roxieClusterNames, processNames, groupNames, targetNames, queueNames;
+        getEnvironmentRoxieClusterNames(processNames, groupNames, targetNames, queueNames);
+        ForEachItemIn(x, targetNames)
+            roxieClusterNames.append(targetNames.item(x));
+
+        getEnvironmentThorClusterNames(processNames, groupNames, targetNames, queueNames);
+        getEnvironmentHThorClusterNames(processNames, groupNames, targetNames);
+
         StringBuffer filter;
         const char* fname = req.getLogicalName();
         if(fname && *fname)
@@ -2592,17 +2589,6 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
             pagesize = nFirstN;
         }
 
-        StringArray roxieClusterNames;
-        IArrayOf<IEspTpCluster> roxieclusters;
-        CTpWrapper dummy;
-        dummy.getClusterProcessList(eqRoxieCluster, roxieclusters);
-        ForEachItemIn(k, roxieclusters)
-        {
-            IEspTpCluster& cluster = roxieclusters.item(k);
-            StringBuffer sName = cluster.getName();
-            roxieClusterNames.append(sName.str());
-        }
-
         StringArray clustersReq;
         const char* clustersReq0 = req.getClusterName();
         if (clustersReq0 && *clustersReq0)
@@ -2624,7 +2610,7 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
                     pStr = ppStr+1;
                 }
 
-                clustersReq.append(clusterName);
+                clustersReq.append(mapName(clusterName, targetNames, groupNames));
             }
         }
 
@@ -2647,35 +2633,15 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
                 pref.append(logicalName);
 
             const char* owner=attr.queryProp("@owner");
-        if (req.getOwner() && *req.getOwner()!=0)
+            if (req.getOwner() && *req.getOwner()!=0)
             {
                 if (!owner || stricmp(owner, req.getOwner()))
                     continue;
             }
-#if 0
-            char* clusterName = (char*)attr.queryProp("@group");      // ** TBD - Handling for multiple clusters?
-            if (clusterName)
-            {//special process for roxie cluster names
-                unsigned len = strlen(clusterName);
-                if (len > 8)
-                {
-                    char *pName = clusterName + len - 8; 
-                    if (!stricmp(pName, "__slaves"))
-                    {
-                        pName[0] = 0;//we did not specify slaves when copy/spray the file
-                    }
-                }
-            }
 
-        if (req.getClusterName() && *req.getClusterName()!=0)
-            {
-                if (!clusterName || stricmp(clusterName, req.getClusterName()))
-                    continue;
-            }
-#else
             StringArray clusters;
-            StringArray clusters1;
-            if (getFileGroups(&attr,clusters1)==0) 
+            StringArray fileGroups;
+            if (getFileGroups(&attr,fileGroups)==0)
             {
                 if (clustersReq.length() < 1)
                 {
@@ -2692,31 +2658,27 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
                         StringBuffer clusterFound;
 
                         const char * cluster0 = clustersReq.item(ii);
-                        ForEachItemIn(i,clusters1) 
+                        ForEachItemIn(i,fileGroups)
                         {
-                            if (!stricmp(clusters1.item(i), cluster0))
+                            if (strieq(fileGroups.item(i), cluster0))
                             {
                                 clusterFound.append(cluster0);
                                 break;
                             }
                         }
                         if (clusterFound.length() > 0)
-                            clusters.append(clusterFound);
+                            clusters.append(mapName(clusterFound.str(), groupNames, targetNames));
                     }
                 }
                 else
                 {
-                    if (clusters1.length() > 0)
+                    ForEachItemIn(i,fileGroups)
                     {
-                        ForEachItemIn(i,clusters1) 
-                        {
-                            const char * cluster0 = clusters1.item(i);
-                            clusters.append(cluster0);
-                        }
+                        clusters.append(mapName(fileGroups.item(i), groupNames, targetNames));
                     }
                 }
             }
-#endif
+
             const char* desc = attr.queryProp("@description");
             if(req.getDescription() && *req.getDescription())
             {

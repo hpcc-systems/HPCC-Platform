@@ -18,6 +18,7 @@
 
 #include "ws_fsService.hpp"
 #include "ws_fsBinding.hpp"
+#include "workunit.hpp"
 #include "TpWrapper.hpp"
 #include "environment.hpp"
 #include "jwrapper.hpp"
@@ -306,47 +307,67 @@ IPropertyTree* CFileSpraySoapBindingEx::createPTreeForXslt(const char* method, c
             }
         }
 
-        it.setown(pEnvSoftware->getElements("ThorCluster"));
-        ForEach(*it)
-            pSoftware->addPropTree("ThorCluster", &it->get());
-
-        it.setown(pEnvSoftware->getElements("EclAgentProcess"));
-        ForEach(*it)
+        StringArray eclAgentNames, thorNames, groupNames, targetNames, queueNames;
+        getEnvironmentThorClusterNames(thorNames, groupNames, targetNames, queueNames);
+        ForEachItemIn(x, thorNames)
         {
-            IPropertyTree &cluster = it->query();
-            const char* name = cluster.queryProp("@name");
-            if (!name||!*name)
+            const char* thorName = thorNames.item(x);
+            const char* targetName = targetNames.item(x);
+            const char* groupName = groupNames.item(x);
+            if (!thorName || !*thorName || !targetName || !*targetName || !groupName || !*groupName)
                 continue;
+
+            IPropertyTree* thorTree=createPTree("ThorCluster");
+            thorTree->setProp("@name", thorName);
+            thorTree->setProp("@tname", targetName);
+            thorTree->setProp("@gname", groupName);
             
-            unsigned ins = 0;
-            Owned<IPropertyTreeIterator> insts = cluster.getElements("Instance");
-            ForEach(*insts) 
+            StringBuffer xpath;
+            xpath.appendf("ThorCluster[@name=\"%s\"]", thorName);
+            IPropertyTree *ret = pEnvSoftware->queryPropTree(xpath.str());
+            if (ret)
+            {
+                bool replicateOutputs = ret->getPropBool("@replicateOutputs", true);
+                thorTree->setPropBool("@replicateOutputs", replicateOutputs);
+            }
+            pSoftware->addPropTree("ThorCluster", thorTree);
+        }
+
+        targetNames.kill();
+        groupNames.kill();
+        getEnvironmentHThorClusterNames(eclAgentNames, groupNames, targetNames);
+        ForEachItemIn(x1, eclAgentNames)
+        {
+            const char* eclAgentName = eclAgentNames.item(x1);
+            const char* targetName = targetNames.item(x1);
+            const char* groupName = groupNames.item(x1);
+            if (!eclAgentName || !*eclAgentName || !targetName || !*targetName || !groupName || !*groupName)
+                continue;
+
+            IPropertyTree* eclAgentTree=createPTree("EclAgentProcess");
+            eclAgentTree->setProp("@name", eclAgentName);
+            eclAgentTree->setProp("@tname", targetName);
+            eclAgentTree->setProp("@gname", groupName);
+
+            StringBuffer xpath;
+            xpath.appendf("EclAgentProcess[@name=\"%s\"]/Instance", eclAgentName);
+            Owned<IPropertyTreeIterator> insts = pEnvSoftware->getElements(xpath);
+            ForEach(*insts)
             {
                 const char *na = insts->query().queryProp("@netAddress");
-                if (!na || !*na) 
-                {
-                    insts->query().setProp("@gname", name);
+                if (!na || !*na)
                     continue;
-                }
-                
+
                 SocketEndpoint ep(na);
                 if (ep.isNull())
                     continue;
 
-                ins++;
-                StringBuffer gname("hthor__");
-                //StringBuffer gname;
-                gname.append(name);
-                if (ins>1)
-                    gname.append('_').append(ins);
-
-                insts->query().setProp("@gname", gname.str());
-
+                eclAgentTree->setProp("@netAddress", na);
+                break;
             }
 
-            pSoftware->addPropTree("EclAgentProcess", &it->get());
+            pSoftware->addPropTree("EclAgentProcess", eclAgentTree);
         }
-
         if (stricmp(method, "CopyInput") == 0) //Limit for this method only
         {
             it.setown(pEnvSoftware->getElements("RoxieCluster"));
