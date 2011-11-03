@@ -31933,8 +31933,8 @@ protected:
         {
             input[i] = new char[11];
             output[i] = new char[11];
-            sprintf(input[i], "1", i);
-            sprintf(output[i], "1", i);
+            sprintf(input[i], "1");
+            sprintf(output[i], "1");
         }
         testActivity(activity, input, output);
         // Ascending
@@ -32126,9 +32126,9 @@ protected:
 
     void testMiscellaneous()
     {
-        DBGLOG("sizeof(CriticalSection)=%d", sizeof(CriticalSection));
-        DBGLOG("sizeof(SpinLock)=%d", sizeof(SpinLock));
-        DBGLOG("sizeof(CJoinGroup)=%d", sizeof(CJoinGroup));
+        DBGLOG("sizeof(CriticalSection)=%u", (unsigned) sizeof(CriticalSection));
+        DBGLOG("sizeof(SpinLock)=%u", (unsigned) sizeof(SpinLock));
+        DBGLOG("sizeof(CJoinGroup)=%u", (unsigned) sizeof(CJoinGroup));
         ASSERT(sizeof(CJoinGroup) <= 120);
     }
 };
