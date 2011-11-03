@@ -1230,7 +1230,7 @@ bool PermissionProcessor::getPermissionsArray(CSecurityDescriptor *sd, IArrayOf<
         if(account_name.length() > 0)
         {
             bool found = false;
-            for(int i = 0; i < permissions.length(); i++)
+            for(unsigned i = 0; i < permissions.length(); i++)
             {
                 CPermission& curperm = permissions.item(i);
                 const char* curname = curperm.getAccount_name();

@@ -53,7 +53,7 @@ bool httpContentFromFile(const char *filepath, StringBuffer &mimetype, MemoryBuf
         Owned<IFileIO> io = file->open(IFOread);
         if (io)
         {
-            size32_t filesize = io->size();
+            size32_t filesize = (size32_t)io->size();
             io->read(0, filesize, fileContents.reserveTruncate(filesize));
             mimetype.clear();
 
@@ -559,7 +559,7 @@ void CHttpMessage::setContent(IFileIOStream* stream)
     if(stream != NULL)
     {
         m_content.clear();
-        m_content_length = stream->size();
+        m_content_length = (int)stream->size();
         m_content_length64 = stream->size();
         m_content_stream.setown(stream);
     }
