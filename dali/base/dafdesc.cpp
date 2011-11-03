@@ -17,6 +17,9 @@
 ############################################################################## */
 
 #define da_decl __declspec(dllexport)
+#ifndef _WIN32
+#include <glob.h>
+#endif
 #include "platform.h"
 #include "portlist.h"
 #include "jlib.hpp"
@@ -39,6 +42,12 @@
 
 #define SERIALIZATION_VERSION ((byte)0xd4)
 #define SERIALIZATION_VERSION2 ((byte)0xd5) // with trailing superfile info
+
+const char * DEF_UNIX_DATA_DIR =    "/HPCCSystems/thordata";    //relative to users $HOME directory
+const char * DEF_UNIX_MIRROR_DIR =  "/HPCCSystems/thordata/mirror"; //relative to users $HOME directory
+
+const char * DEF_WIN32_DATA_DIR =   "c:\\thordata";
+const char * DEF_WIN32_MIRROR_DIR = "d:\\thordata";
 
 bool isMulti(const char *str)
 {
@@ -2156,14 +2165,33 @@ static StringAttr unixreplicatedir;
 
 static StringAttr defaultpartmask("$L$._$P$_of_$N$");
 
+const char * getHomeDirectory(StringBuffer &home)//get home dir ("/home/user")
+{
+#ifdef _WIN32
+    return NULL;
+#else
+    glob_t globbuf;
+    char *result = NULL;
+
+    if (glob("~", GLOB_TILDE, NULL, &globbuf) == 0)
+    {
+        assertex(globbuf.gl_pathc == 1);
+        char **v = globbuf.gl_pathv;
+        home.append(v[0]);
+        globfree(&globbuf);
+    }
+    return home.str();
+#endif
+}
+
 void loadDefaultBases()
 {
     // assumed default first thor
     // first set 
     if (winreplicatedir.isEmpty())
-        winreplicatedir.set("d:\\thordata");
+        winreplicatedir.set(DEF_WIN32_MIRROR_DIR);
     if (winbasedir.isEmpty())
-        winbasedir.set("c:\\thordata");
+        winbasedir.set(DEF_WIN32_DATA_DIR);
     SessionId mysessid = myProcessSession();
     if (mysessid&&(unixreplicatedir.isEmpty()||unixbasedir.isEmpty())) {
         Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software/Directories", mysessid, RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
@@ -2183,11 +2211,23 @@ void loadDefaultBases()
 
         }
     }
-    if (unixreplicatedir.isEmpty())
-        unixreplicatedir.set("/d$/thordata");
-    if (unixbasedir.isEmpty())
-        unixbasedir.set("/c$/thordata");
-
+    if (unixreplicatedir.isEmpty() || unixbasedir.isEmpty())
+    {
+        StringBuffer home;
+        getHomeDirectory(home);
+        if (unixreplicatedir.isEmpty())
+        {
+            StringBuffer path(home);
+            path.append(DEF_UNIX_MIRROR_DIR);
+            unixreplicatedir.set(path.str());
+        }
+        if (unixbasedir.isEmpty())
+        {
+            StringBuffer path(home);
+            path.append(DEF_UNIX_DATA_DIR);
+            unixbasedir.set(path.str());
+        }
+    }
 }
 
 
@@ -2213,7 +2253,7 @@ void setBaseDirectory(const char * dir,bool replicate,DFD_OS os)
 {
     // 2 possibilities
     // either its an absolute path
-    // or use /c$/thordata and /d$/thordata 
+    // or use $HOME/HPCCSystems/thordata and $HOME/HPCCSystems/thordata/mirror
     if (os==DFD_OSdefault)
 #ifdef _WIN32
         os = DFD_OSwindows;
@@ -2224,14 +2264,19 @@ void setBaseDirectory(const char * dir,bool replicate,DFD_OS os)
     if (!dir||!*dir||!isAbsolutePath(dir)) {
         if (os==DFD_OSwindows) {
             if (replicate)
-                out.append("d:\\thordata");
+                out.append(DEF_WIN32_MIRROR_DIR);
             else
-                out.append("c:\\thordata");
+                out.append(DEF_WIN32_DATA_DIR);
         }
-        else if (replicate)
-            out.append("/d$/thordata");
-        else
-            out.append("/c$/thordata");
+        else//unix
+        {
+            StringBuffer home;
+            getHomeDirectory(home);
+            if (replicate)
+                out.append(home).append(DEF_UNIX_MIRROR_DIR);
+            else
+                out.append(home).append(DEF_UNIX_DATA_DIR);
+        }
         dir = out.str();
     }
     size32_t l = strlen(dir);
