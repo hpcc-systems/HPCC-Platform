@@ -2945,6 +2945,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                         HqlExprArray args;
                         args.append(*values->clone(filtered));
                         unwindChildren(args, child, 1);
+                        decUsage(child);
                         return child->clone(args);
                     }
                 }
@@ -3534,6 +3535,14 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             HqlExprArray args;
             args.append(*createValue(no_transformlist, makeNullType(), allTransforms));
             args.append(*LINK(child->queryRecord()));
+
+            ForEachChild(i2, transformed)
+            {
+                IHqlExpression * cur = transformed->queryChild(i2);
+                if (!cur->isAttribute())
+                    decUsage(cur);
+            }
+
             OwnedHqlExpr ret = createDataset(no_inlinetable, args);
             return transformed->cloneAllAnnotations(ret);
         }
