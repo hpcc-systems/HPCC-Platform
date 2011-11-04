@@ -70,21 +70,8 @@ public:
                 continue;
             if (iter.matchOption(optName, ECLOPT_NAME))
                 continue;
-            switch (EclCmdCommon::matchCommandLineOption(iter))
-            {
-                case EclCmdOptionNoMatch:
-                    fprintf(stderr, "\n%s option not recognized\n", arg);
-                    return false;
-                case EclCmdOptionCompletion:
-                    return false;
-                case EclCmdOptionMatch:
-                    break;
-            }
-            else
-            {
-                fprintf(stderr, "\n%s option not recognized\n", arg);
+            if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
-            }
         }
         return true;
     }
@@ -227,21 +214,8 @@ public:
                 activateSet=true;
                 continue;
             }
-            switch (EclCmdCommon::matchCommandLineOption(iter))
-            {
-                case EclCmdOptionNoMatch:
-                    fprintf(stderr, "\n%s option not recognized\n", arg);
-                    return false;
-                case EclCmdOptionCompletion:
-                    return false;
-                case EclCmdOptionMatch:
-                    break;
-            }
-            else
-            {
-                fprintf(stderr, "\n%s option not recognized\n", arg);
+            if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
-            }
         }
         return true;
     }
@@ -319,7 +293,6 @@ public:
             return false;
         }
 
-        bool boolValue;
         for (; !iter.done(); iter.next())
         {
             const char *arg = iter.query();
@@ -331,21 +304,12 @@ public:
                     return false;
                 }
                 optQueryId.set(arg);
-            }
-            else if (EclCmdCommon::matchCommandLineOption(iter))
                 continue;
-            else if (iter.matchOption(optQuerySet, ECLOPT_QUERYSET))
+            }
+            if (iter.matchOption(optQuerySet, ECLOPT_QUERYSET))
                 continue;
-            else if (iter.matchFlag(boolValue, ECLOPT_VERSION))
-            {
-                fprintf(stdout, "%s\n", BUILD_TAG);
+            if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
-            }
-            else
-            {
-                fprintf(stderr, "\n%s option not recognized\n", arg);
-                return false;
-            }
         }
         return true;
     }
@@ -429,7 +393,6 @@ public:
             return false;
         }
 
-        bool boolValue;
         for (; !iter.done(); iter.next())
         {
             const char *arg = iter.query();
@@ -441,21 +404,12 @@ public:
                     return false;
                 }
                 optAlias.set(arg);
-            }
-            else if (EclCmdCommon::matchCommandLineOption(iter))
                 continue;
-            else if (iter.matchOption(optQuerySet, ECLOPT_QUERYSET))
+            }
+            if (iter.matchOption(optQuerySet, ECLOPT_QUERYSET))
                 continue;
-            else if (iter.matchFlag(boolValue, ECLOPT_VERSION))
-            {
-                fprintf(stdout, "%s\n", BUILD_TAG);
+            if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
-            }
-            else
-            {
-                fprintf(stderr, "\n%s option not recognized\n", arg);
-                return false;
-            }
         }
         return true;
     }
