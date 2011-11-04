@@ -3018,3 +3018,12 @@ ILocalOrDistributedFile* createLocalOrDistributedFile(const char *fname,IUserDes
         return ret.getClear();
     return NULL;
 }
+
+static bool transactionLoggingOn=false;
+const bool &queryTransactionLogging() { return transactionLoggingOn; }
+bool traceAllTransactions(bool on)
+{
+    bool ret = transactionLoggingOn;
+    transactionLoggingOn = on;
+    return ret;
+}

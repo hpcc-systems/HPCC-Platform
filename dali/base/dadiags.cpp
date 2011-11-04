@@ -207,12 +207,12 @@ public:
                     if(traceAllTransactions(true))
                         mb.append("OK - no change");
                     else
-                        mb.append("OK - SDS tracing enabled");
+                        mb.append("OK - transaction tracing enabled");
                 }
                 else if (0 == stricmp(id, "cleartracetransactions")) {
                     PROGLOG("Dalidiag requests Trace Transactions stopped");
                     if(traceAllTransactions(false))
-                        mb.append("OK - SDS tracing disabled");
+                        mb.append("OK - transaction tracing disabled");
                     else
                         mb.append("OK - no change");
                 }

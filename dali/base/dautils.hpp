@@ -130,8 +130,105 @@ public:
     const void resolveWild();  // only for multi
     IPropertyTree *createSuperTree() const;
     void allowOsPath(bool set=true) { allowospath = true; } // allow local OS path to be specified
-
 };
+
+// abstract class, define getCmdText to return tracing text of commands
+class da_decl CTransactionLogTracker
+{
+    unsigned max;
+    atomic_t *counts;
+public:
+    CTransactionLogTracker(int _max) : max(_max)
+    {
+        counts = new atomic_t[max+1]; // +1 reserve for unknown commands
+        unsigned t=0;
+        for (; t<=max; t++)
+            atomic_set(&counts[t],0);
+    }
+    ~CTransactionLogTracker()
+    {
+        delete [] counts;
+    }
+    inline const unsigned &getMax() const { return max; }
+    inline void startTransaction(unsigned cmd)
+    {
+        atomic_inc(&counts[cmd]);
+    }
+    inline void endTransaction(unsigned cmd)
+    {
+        atomic_dec(&counts[cmd]);
+    }
+    unsigned getTransactionCount(unsigned cmd) const
+    {
+        return (unsigned)atomic_read(&counts[cmd]);
+    }
+    virtual StringBuffer &getCmdText(unsigned cmd, StringBuffer &ret) const = 0;
+};
+
+extern da_decl const bool &queryTransactionLogging();
+struct da_decl TransactionLog
+{
+    CTransactionLogTracker &owner;
+    unsigned startMs, extraStartMs;
+    StringBuffer msg;
+    unsigned cmd;
+    const SocketEndpoint &ep;
+    inline TransactionLog(CTransactionLogTracker &_owner, const unsigned _cmd, const SocketEndpoint &_ep) : owner(_owner), cmd(_cmd), ep(_ep)
+    {
+        if (queryTransactionLogging())
+        {
+            if (cmd > owner.getMax())
+                cmd = owner.getMax(); // unknown
+            extraStartMs = 0;
+            owner.startTransaction(cmd);
+            owner.getCmdText(cmd, msg);
+            msg.append(", endpoint=");
+            ep.getUrlStr(msg);
+            startMs = msTick();
+        }
+        else
+            startMs = 0;
+    }
+    inline ~TransactionLog()
+    {
+        if (startMs)
+        {
+            unsigned now = msTick();
+            unsigned transCount = owner.getTransactionCount(cmd);
+            owner.endTransaction(cmd);
+            if (extraStartMs)
+                PROGLOG("<<<[%d] (Timing: total=%d, from mark=%d) %s", transCount, now-startMs, extraStartMs-startMs, msg.str());
+            else
+                PROGLOG("<<<[%d] (Timing: total=%d) %s", transCount, now-startMs, msg.str());
+        }
+    }
+    inline void log()
+    {
+        unsigned transCount = owner.getTransactionCount(cmd);
+        PROGLOG(">>>[%d] %s", transCount, msg.str());
+    }
+    inline void log(const char *formatMsg, ...)
+    {
+        va_list args;
+        va_start(args, formatMsg);
+        msg.append(" ");
+        msg.valist_appendf(formatMsg, args);
+        log();
+    }
+    inline void markExtra()
+    {
+        if (!extraStartMs)
+            extraStartMs = msTick();
+    }
+    inline void extra(const char *formatMsg, ...)
+    {
+        va_list args;
+        va_start(args, formatMsg);
+        msg.valist_appendf(formatMsg, args);
+        markExtra();
+    }
+};
+
 
 
 extern da_decl const char * skipScope(const char *lname,const char *scope); // skips a sspecified scope (returns NULL if scope doesn't match)
@@ -186,8 +283,6 @@ class da_decl CSDSFileScanner // NB should use dadfs iterators in preference to 
 protected:
     bool includefiles;
     bool includesuper;
-
-
 public:
 
     virtual void processFile(IPropertyTree &file,StringBuffer &name) {}
@@ -209,9 +304,6 @@ public:
               bool includesuper=false);
               
     bool singlefile(IRemoteConnection *conn,CDfsLogicalFileName &lfn);  // useful if just want to process 1 file using same code
-
-
-
 };
 
 extern da_decl const char *queryDfsXmlBranchName(DfsXmlBranchKind kind);
@@ -315,7 +407,5 @@ interface ILocalOrDistributedFile: extends IInterface
 };
 
 extern da_decl ILocalOrDistributedFile* createLocalOrDistributedFile(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs,bool iswrite=false);
-
-
 
 #endif

@@ -29,13 +29,13 @@
 #include "mplog.hpp"
 #include "jptree.ipp"
 #include "jqueue.tpp"
+#include "dautils.hpp"
 
 #define DEBUG_DIR "debug"
 #define DEFAULT_KEEP_LASTN_STORES 1
 #define MAXDELAYS 5
 static const char *deltaHeader = "<CRC>0000000000</CRC>"; // fill in later
 static unsigned deltaHeaderCrcOff = 5;
-static bool TransactionLogging=false;
 
 static unsigned readWriteSlowTracing = 10000; // 10s default
 static bool readWriteStackTracing = false;
@@ -127,6 +127,66 @@ bool setNotifyHandlerName(const char *handlerName, IPropertyTree *tree)
 #endif
     tree->setProp(NOTIFY_ATTR, handlerName);
     return true;
+}
+
+StringBuffer &getSdsCmdText(SdsCommand cmd, StringBuffer &ret)
+{
+    switch (cmd)
+    {
+        case DAMP_SDSCMD_CONNECT:
+            return ret.append("DAMP_SDSCMD_CONNECT");
+        case DAMP_SDSCMD_GET:
+            return ret.append("DAMP_SDSCMD_GET");
+        case DAMP_SDSCMD_GETCHILDREN:
+            return ret.append("DAMP_SDSCMD_GETCHILDREN");
+        case DAMP_SDSCMD_REVISIONS:
+            return ret.append("DAMP_SDSCMD_REVISIONS");
+        case DAMP_SDSCMD_DATA:
+            return ret.append("DAMP_SDSCMD_DATA");
+        case DAMP_SDSCMD_DISCONNECT:
+            return ret.append("DAMP_SDSCMD_DISCONNECT");
+        case DAMP_SDSCMD_CONNECTSERVER:
+            return ret.append("DAMP_SDSCMD_CONNECTSERVER");
+        case DAMP_SDSCMD_DATASERVER:
+            return ret.append("DAMP_SDSCMD_DATASERVER");
+        case DAMP_SDSCMD_DISCONNECTSERVER:
+            return ret.append("DAMP_SDSCMD_DISCONNECTSERVER");
+        case DAMP_SDSCMD_CHANGEMODE:
+            return ret.append("DAMP_SDSCMD_CHANGEMODE");
+        case DAMP_SDSCMD_CHANGEMODESERVER:
+            return ret.append("DAMP_SDSCMD_CHANGEMODESERVER");
+        case DAMP_SDSCMD_EDITION:
+            return ret.append("DAMP_SDSCMD_EDITION");
+        case DAMP_SDSCMD_GETSTORE:
+            return ret.append("DAMP_SDSCMD_GETSTORE");
+        case DAMP_SDSCMD_VERSION:
+            return ret.append("DAMP_SDSCMD_VERSION");
+        case DAMP_SDSCMD_DIAGNOSTIC:
+            return ret.append("DAMP_SDSCMD_DIAGNOSTIC");
+        case DAMP_SDSCMD_GETELEMENTS:
+            return ret.append("DAMP_SDSCMD_GETELEMENTS");
+        case DAMP_SDSCMD_MCONNECT:
+            return ret.append("DAMP_SDSCMD_MCONNECT");
+        case DAMP_SDSCMD_GETCHILDREN2:
+            return ret.append("DAMP_SDSCMD_GETCHILDREN2");
+        case DAMP_SDSCMD_GET2:
+            return ret.append("DAMP_SDSCMD_GET2");
+        case DAMP_SDSCMD_GETPROPS:
+            return ret.append("DAMP_SDSCMD_GETPROPS");
+        case DAMP_SDSCMD_GETXPATHS:
+            return ret.append("DAMP_SDSCMD_GETXPATHS");
+        case DAMP_SDSCMD_GETEXTVALUE:
+            return ret.append("DAMP_SDSCMD_GETEXTVALUE");
+        case DAMP_SDSCMD_GETXPATHSPLUSIDS:
+            return ret.append("DAMP_SDSCMD_GETXPATHSPLUSIDS");
+        case DAMP_SDSCMD_GETXPATHSCRITERIA:
+            return ret.append("DAMP_SDSCMD_GETXPATHSCRITERIA");
+        case DAMP_SDSCMD_GETELEMENTSRAW:
+            return ret.append("DAMP_SDSCMD_GETELEMENTSRAW");
+        default:
+            return ret.append("UNKNOWN");
+    };
+    return ret;
 }
 
 #ifdef USECHECKEDCRITICALSECTIONS
@@ -390,7 +450,7 @@ private:
     unsigned long size;
 };
 
-class CSDSTransactionServer : public Thread
+class CSDSTransactionServer : public Thread, public CTransactionLogTracker
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -407,6 +467,12 @@ public:
 
 // Thread
     virtual int run();
+
+// CTransactionLogTracker
+    virtual StringBuffer &getCmdText(unsigned cmd, StringBuffer &ret) const
+    {
+        return getSdsCmdText((SdsCommand)cmd, ret);
+    }
 
 private:
     TimingStats xactTimingStats;
@@ -528,7 +594,6 @@ public:
             parent->removeTree(root);
     }
     virtual IPropertyTree *queryRoot();
-
 
 private:
     ConnInfoFlags connInfoFlags;
@@ -3450,7 +3515,7 @@ template <> void CLockInfoTable::onRemove(void *et)
 ///////////////
 
 CSDSTransactionServer::CSDSTransactionServer(CCovenSDSManager &_manager)
- : Thread("SDS Manager, CSDSTransactionServer"), manager(_manager)
+ : Thread("SDS Manager, CSDSTransactionServer"), manager(_manager), CTransactionLogTracker(DAMP_SDSCMD_MAX)
 {
     stopped = true;
 }
@@ -3620,32 +3685,7 @@ int CSDSTransactionServer::run()
     return 0;
 }
 
-class CheckTime
-{
-    unsigned start;
-    StringBuffer msg;
-public:
-    CheckTime(const char *s)
-    {
-        msg.append(s);
-        start = msTick();
-    }
-    ~CheckTime()
-    {
-        unsigned e=msTick()-start;
-        if (e>1000) 
-            DBGLOG("TIME: %s took %d", msg.str(), e);
-    }
-    bool slow() { return ((msTick()-start) > 1000); }
-    StringBuffer &appendMsg(const char *s)
-    {
-        msg.append(s);
-        return msg;
-    }
-};
-
 // backward compat.
-
 bool checkOldFormat(CServerRemoteTree *parentServerTree, IPropertyTree *tree, MemoryBuffer &mb)
 {
     CPState state;
@@ -3822,9 +3862,9 @@ bool translateOldFormat(CServerRemoteTree *parentServerTree, IPropertyTree *pare
 
 ///
 
+
 void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
 {
-    unsigned start = msTick();
     TimingBlock xactTimingBlock(xactTimingStats);
     ICoven &coven = queryCoven();
 
@@ -3840,6 +3880,8 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
         mb.read((int &)action);
         bool getExt = 0 == (action & DAMP_SDSCMD_LAZYEXT);
         action = (SdsCommand) (((unsigned)action) & ~DAMP_SDSCMD_LAZYEXT);
+
+        TransactionLog transactionLog(*this, action, mb.getSender()); // only active if TransactionLogging=true
         switch (action)
         {
             case DAMP_SDSCMD_CONNECT:
@@ -3852,15 +3894,15 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 mb.read(mode);
                 mb.read(timeout);
                 mb.read(xpath);
-                if (TransactionLogging) 
-                {
-                    PROGLOG(">>> DAMP_SDSCMD_CONNECT %s mode=%d",xpath.get()?xpath.get():"???",(unsigned)mode);
-                }
+                if (queryTransactionLogging())
+                    transactionLog.log("xpath='%s' mode=%d", xpath.get(), (unsigned)mode);
                 Owned<LinkingCriticalBlock> connectCritBlock = new LinkingCriticalBlock(manager.connectCrit, __FILE__, __LINE__);
                 if (RTM_CREATE == (mode & RTM_CREATE_MASK) || RTM_CREATE_QUERY == (mode & RTM_CREATE_MASK))
                     lockBlock.setown(new CLCWriteLockBlock(manager.dataRWLock, readWriteTimeout, __FILE__, __LINE__));
                 else
                     lockBlock.setown(new CLCReadLockBlock(manager.dataRWLock, readWriteTimeout, __FILE__, __LINE__));
+                if (queryTransactionLogging())
+                    transactionLog.markExtra();
                 connectionId = 0;
                 CServerRemoteTree *_tree;
                 Owned<CServerRemoteTree> tree;
@@ -3893,10 +3935,8 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 TimingBlock connectTimingBlock(connectTimingStats);
                 Owned<CLCLockBlock> lockBlock;
 
-                if (TransactionLogging)
-                {
-                    PROGLOG(">>> DAMP_SDSCMD_MCONNECT");
-                }
+                if (queryTransactionLogging())
+                    transactionLog.log();
                 unsigned startPos = mb.getPos();
                 mb.read(id);
                 mb.read(timeout);
@@ -3916,6 +3956,8 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                         unsigned mode;
                         mConnect->getConnectionDetails(c, xpath, mode);
 
+                        if (queryTransactionLogging())
+                            transactionLog.extra(", xpath='%s', mode=%d", xpath.get(), mode);
                         connectionId = 0;
                         CServerRemoteTree *_tree;
                         Owned<CServerRemoteTree> tree;
@@ -3967,16 +4009,18 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
             case DAMP_SDSCMD_GET2:
             {
                 mb.read(connectionId);
-                if (TransactionLogging)
-                {
-                    CServerConnection *conn = manager.queryConnection(connectionId);
-                    PROGLOG(">>> DAMP_SDSCMD_CONNECT %s",conn?conn->queryXPath():"???");
-                }
+                if (queryTransactionLogging())
+                    transactionLog.log();
                 __int64 serverId;
                 mb.read(serverId);
                 CHECKEDDALIREADLOCKBLOCK(manager.dataRWLock, readWriteTimeout);
                 CHECKEDCRITICALBLOCK(SDSManager->treeRegCrit, fakeCritTimeout);
                 Owned<CServerRemoteTree> tree = manager.getRegisteredTree(serverId);
+                if (queryTransactionLogging())
+                {
+                    CServerConnection *conn = manager.queryConnection(connectionId);
+                    transactionLog.extra(", xpath='%s', node=%s", conn?conn->queryXPath():"???", tree?tree->queryName():"???");
+                }
                 mb.clear();
                 if (!tree)
                 {
@@ -4007,10 +4051,10 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
             case DAMP_SDSCMD_GETCHILDREN2:
             {
                 mb.read(connectionId);
-                if (TransactionLogging)
+                if (queryTransactionLogging())
                 {
                     CServerConnection *conn = manager.queryConnection(connectionId);
-                    PROGLOG(">>> DAMP_SDSCMD_GETCHILDREN %s",conn?conn->queryXPath():"???");
+                    transactionLog.log("%s",conn?conn->queryXPath():"???");
                 }
                 __int64 serverId;
                 CHECKEDDALIREADLOCKBLOCK(manager.dataRWLock, readWriteTimeout);
@@ -4058,6 +4102,8 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                         if (DAMP_SDSCMD_GETCHILDREN2 == action)
                             replyMb.append(true);
                         parent->serializeCutOffChildrenRT(replyMb, 0==levels ? (unsigned)-1 : levels, 0, getExt);
+                        if (queryTransactionLogging())
+                            transactionLog.extra(", node=%s",parent->queryName());
                     }
                     first = false;
                 }
@@ -4068,18 +4114,21 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
             case DAMP_SDSCMD_GETELEMENTS:
             {
                 mb.read(connectionId);
-                if (TransactionLogging)
+                if (queryTransactionLogging())
                 {
                     CServerConnection *conn = manager.queryConnection(connectionId);
-                    PROGLOG(">>> DAMP_SDSCMD_GETELEMENTS %s",conn?conn->queryXPath():"???");
+                    transactionLog.log("%s",conn?conn->queryXPath():"???");
                 }
                 CHECKEDDALIREADLOCKBLOCK(manager.dataRWLock, readWriteTimeout);
                 CHECKEDCRITICALBLOCK(SDSManager->treeRegCrit, fakeCritTimeout);
+
                 CServerConnection *connection = manager.queryConnection(connectionId);
                 if (!connection)
                     throw MakeSDSException(SDSExcpt_ConnectionAbsent, " [getElements]");
                 StringAttr xpath;
                 mb.read(xpath);
+                if (queryTransactionLogging())
+                    transactionLog.extra(", xpath='%s'", xpath.get());
                 Owned<IPropertyTreeIterator> iter = connection->queryRoot()->getElements(xpath);
                 ICopyArrayOf<CServerRemoteTree> arr;
                 ForEach (*iter) arr.append((CServerRemoteTree &)iter->query());
@@ -4099,11 +4148,6 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 CheckTime block0("DAMP_SDSCMD_DATA total");
                 unsigned inputStart = mb.getPos();
                 mb.read(connectionId);
-                if (TransactionLogging)
-                {
-                    CServerConnection *conn = manager.queryConnection(connectionId);
-                    PROGLOG(">>> DAMP_SDSCMD_DATA %s",conn?conn->queryXPath():"???");
-                }
                 byte disconnect; // kludge, high bit to indicate new client format. (for backward compat.)
                 bool deleteRoot;
                 mb.read(disconnect);
@@ -4112,6 +4156,11 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 if (1 == disconnect)
                     mb.read(deleteRoot);
                 bool data = mb.length() != mb.getPos();
+                if (queryTransactionLogging())
+                {
+                    CServerConnection *conn = manager.queryConnection(connectionId);
+                    transactionLog.log("disconnect=%s, data=%s", disconnect?"true":"false", data?"true":"false");
+                }
                 Owned<CLCLockBlock> lockBlock;
                 { 
                     CheckTime block1("DAMP_SDSCMD_DATA.1");
@@ -4127,6 +4176,9 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                     throw MakeSDSException(SDSExcpt_ConnectionAbsent, " [commit]");
                 try
                 {
+                    if (queryTransactionLogging())
+                        transactionLog.extra(", xpath='%s'", connection->queryXPath());
+
                     CServerRemoteTree *tree = data ? (CServerRemoteTree *)connection->queryRoot() : (CServerRemoteTree *)connection->queryRootUnvalidated();
                     MemoryBuffer newIds;
                     Owned<IPropertyTree> changeTree;
@@ -4172,17 +4224,16 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
             case DAMP_SDSCMD_CHANGEMODE:
             {
                 mb.read(connectionId);
-                if (TransactionLogging)
-                {
-                    CServerConnection *conn = manager.queryConnection(connectionId);
-                    PROGLOG(">>> DAMP_SDSCMD_CHANGEMODE %s",conn?conn->queryXPath():"???");
-                }   
+                if (queryTransactionLogging())
+                    transactionLog.log();
                 CHECKEDDALIWRITELOCKBLOCK(manager.dataRWLock, readWriteTimeout);
                 Linked<CServerConnection> connection = manager.queryConnection(connectionId);
                 if (!connection)
                     throw MakeSDSException(SDSExcpt_ConnectionAbsent, " [changeMode]");
                 CServerRemoteTree *tree = (CServerRemoteTree *) connection->queryRoot();
                 assertex(tree);
+                if (queryTransactionLogging())
+                    transactionLog.extra(", xpath='%s'", connection->queryXPath());
 
                 unsigned newMode;
                 unsigned timeout;
@@ -4207,10 +4258,8 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 __int64 serverId;
                 mb.read(serverId);
                 mb.read(xpath);
-                if (TransactionLogging)
-                {
-                    PROGLOG(">>> DAMP_SDSCMD_GETXPATHS %s",xpath.get()?xpath.get():"???");
-                }
+                if (queryTransactionLogging())
+                    transactionLog.log("xpath='%s'", xpath.get());
                 mb.clear();
                 Owned<IPropertyTree> matchTree = SDSManager->getXPaths(serverId, xpath, DAMP_SDSCMD_GETXPATHSPLUSIDS==action);
                 if (matchTree)
@@ -4229,16 +4278,18 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 unsigned from, limit;
                 
                 mb.read(xpath);
-                if (TransactionLogging)
-                {
-                    PROGLOG(">>> DAMP_SDSCMD_GETXPATHSCRITERIA %s",xpath.get()?xpath.get():"???");
-                }
                 mb.read(matchXPath);
                 mb.read(sortBy);
                 mb.read(caseinsensitive);
                 mb.read(ascending);
                 mb.read(from);
                 mb.read(limit);
+                if (queryTransactionLogging())
+                {
+                    transactionLog.log("xpath='%s',matchXPath='%s',sortBy='%s',acscending=%s,from=%d,limit=%d",
+                        xpath.get(), matchXPath.get(), sortBy.get(),
+                        ascending?"true":"false", from, limit);
+                }
                 mb.clear();
                 Owned<IPropertyTree> matchTree = SDSManager->getXPathsSortLimitMatchTree(xpath, matchXPath, sortBy, caseinsensitive, ascending, from, limit);
                 if (matchTree)
@@ -4255,6 +4306,11 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 __int64 serverId;
                 mb.read(serverId);
                 mb.clear().append((int) DAMP_SDSREPLY_OK);
+                if (queryTransactionLogging())
+                {
+                    CServerRemoteTree *idTree = (CServerRemoteTree *) SDSManager->queryRegisteredTree(serverId);
+                    transactionLog.log("%s", idTree?idTree->queryName():"???");
+                }
                 SDSManager->getExternalValueFromServerId(serverId, mb);
                 break;
             }
@@ -4263,10 +4319,8 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 CHECKEDDALIREADLOCKBLOCK(manager.dataRWLock, readWriteTimeout);
                 StringAttr _xpath;
                 mb.read(_xpath);
-                if (TransactionLogging)
-                {
-                    PROGLOG(">>> DAMP_SDSCMD_GETELEMENTSRAW %s",xpath.get()?xpath.get():"???");
-                }
+                if (queryTransactionLogging())
+                    transactionLog.log("%s", xpath.get());
                 CMessageBuffer replyMb;
                 replyMb.init(mb.getSender(), mb.getTag(), mb.getReplyTag());
                 replyMb.append((int)DAMP_SDSREPLY_OK);
@@ -4356,10 +4410,6 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
             LOG(MCwarning, unknownJob, e, "Failed to reply and failed to send reply error to client");
             e->Release();
         }
-    }
-    if (TransactionLogging)
-    {
-        PROGLOG("<<< EXIT processMessage took %d",msTick()-start);
     }
 }
 
@@ -8643,13 +8693,6 @@ bool applyXmlDeltas(IPropertyTree &root, IIOStream &stream, bool stopOnError)
         e->Release();
     }
     return !deltaProcessor.hadError;
-}
-
-bool traceAllTransactions(bool on)
-{
-    bool ret = TransactionLogging;
-    TransactionLogging = on;
-    return ret;
 }
 
 void LogRemoteConn(IRemoteConnection *conn)
