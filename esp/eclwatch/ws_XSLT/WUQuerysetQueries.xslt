@@ -56,7 +56,7 @@
                             var sortableTable = null;
 
               function deleteQueries() {
-                actionWorkunits('Remove');
+                actionWorkunits('Delete');
               }
 
               function toggleQueries() {
@@ -79,38 +79,35 @@
                       }
                   };
 
-                  var postBody = '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding" xmlns="http://webservices.seisint.com/ws_roxieconfig"><soap:Body>' + getQueryActions(Action) + '</soap:Body></soap:Envelope>';
+                  var postBody = '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding" xmlns="http://webservices.seisint.com/WsWorkunits"><soap:Body>' + getQueryActions(Action) + '</soap:Body></soap:Envelope>';
 
-                  YAHOO.util.Connect.initHeader("SOAPAction", "/WsWorkunits/WUQuerysetActionQueries?");
+                  YAHOO.util.Connect.initHeader("SOAPAction", "/WsWorkunits/WUQuerysetQueryAction?");
                   YAHOO.util.Connect.initHeader("Content-Type", "text/xml");
                   YAHOO.util.Connect._use_default_post_header = false;
 
                   var getXML = YAHOO.util.Connect.asyncRequest("POST",
-                          "/WsWorkunits/WUQuerysetActionQueries",
+                          "/WsWorkunits/WUQuerysetQueryAction",
                           connectionCallback, postBody);
                   return;
 
               }
 
               function getQueryActions(Action) {
-                  var remove = Action == 'Remove' ? 1 : 0;
-                  var toggleSuspend = Action == 'ToggleSuspend' ? 1 : 0;
-                  var activate = Action == 'Activate' ? 1 : 0;
-                  var soapXML = '<WUQuerysetActionQueries><QuerySetName>' + querySet + '</QuerySetName><Remove>' + remove + '</Remove><ToggleSuspend>' + toggleSuspend + '</ToggleSuspend><Activate>' + activate + '</Activate><QuerysetQueryActions>';
+                  var soapXML = '<WUQuerysetQueryAction><QuerySetName>' + querySet + '</QuerySetName><Action>' + Action + '</Action><Queries>';
 
                   // get records and iterate.
 
                   var selectedRows = queryDataTable.getSelectedRows();
                   for (var i = 0; i < selectedRows.length; i++) {
                      var record = queryDataTable.getRecord(selectedRows[i]);
-                     soapXML += '<QuerysetQueryAction><Id>' + record.getData('Id') + '</Id><Suspended>' + record.getData('Suspended') + '</Suspended></QuerysetQueryAction>';
+                     soapXML += '<QuerySetQueryActionItem><QueryId>' + record.getData('Id') + '</QueryId><ClientState><Suspended>' + record.getData('Suspended') + '</Suspended></ClientState></QuerySetQueryActionItem>';
                   }
-                  soapXML += '</QuerysetQueryActions></WUQuerysetActionQueries>';
+                  soapXML += '</Queries></WUQuerysetQueryAction>';
                   return soapXML;
               }
 
               function deleteAliases() {
-                actionAliases('Remove');
+                actionAliases('Deactivate');
               }
 
               function actionAliases(Action) {
@@ -140,17 +137,16 @@
               }
 
               function getAliasActions(Action) {
-                  var remove = Action == 'Remove' ? 1 : 1;
-                  var soapXML = '<WUQuerysetActionAliases><QuerySetName>' + querySet + '</QuerySetName><Remove>' + remove + '</Remove><QuerysetAliasActions>';
+                  var soapXML = '<WUQuerysetAliasAction><QuerySetName>' + querySet + '</QuerySetName><Action>' + Action + '</Action><Aliases>';
 
                   // get records and iterate.
 
                   var selectedRows = aliasDataTable.getSelectedRows();
                   for (var i = 0; i < selectedRows.length; i++) {
                      var record = aliasDataTable.getRecord(selectedRows[i]);
-                     soapXML += '<QuerysetAliasAction><Id>' + record.getData('Id') + '</Id></QuerysetAliasAction>';
+                     soapXML += '<Alias><Name>' + record.getData('Name') + '</Name></Alias>';
                   }
-                  soapXML += '</QuerysetAliasActions></WUQuerysetActionAliases>';
+                  soapXML += '</Alias></WUQuerysetAliasAction>';
                   return soapXML;
               }
 

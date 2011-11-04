@@ -354,7 +354,9 @@ bool CWsWorkunitsEx::onWUQuerysetQueryAction(IEspContext &context, IEspWUQuerySe
                     break;
             }
             result->setSuccess(true);
-            result->setSuspended(query->getPropBool("@suspended"));
+            query = queryset->queryPropTree(xpath.str()); // refresh
+            if (query)
+                result->setSuspended(query->getPropBool("@suspended"));
         }
         catch(IException *e)
         {
