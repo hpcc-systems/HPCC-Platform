@@ -588,17 +588,17 @@ public:
     }
 
 
-    rowmap_t * CalcPartitionUsingSampling()
+    rowmap_t *CalcPartitionUsingSampling()
     {   // doesn't support between
 #define OVERSAMPLE 16
-        rowmap_t *splitmap=(rowmap_t *)calloc(numnodes*numnodes,sizeof(rowmap_t));
+        OwnedMalloc<rowmap_t> splitMap(numnodes*numnodes, true);
         if (sizeof(rowmap_t)<=4) 
             assertex(total/numnodes<INT_MAX); // keep record numbers on individual nodes in 31 bits
         unsigned numsplits=numnodes-1;
         if (total==0) {
             // no partition info!
             partitioninfo->kill();
-            return splitmap;
+            return splitMap.getClear();
         }
         unsigned averagesamples = OVERSAMPLE*numnodes;  
         rowmap_t averagerecspernode = (rowmap_t)(total/numnodes);
@@ -744,13 +744,13 @@ public:
                     res[numnodes-1] = slave.numrecs;
                 }
             }
-        } afor3(slaves,splitmap,numnodes,numsplits);
+        } afor3(slaves, splitMap, numnodes, numsplits);
         afor3.For(numnodes, 20, true);
 #else
         for (i=0;i<numnodes;i++) {
             CSortNode &slave = slaves.item(i);
             if (slave.numrecs!=0) {
-                rowmap_t *res=splitmap+(i*numnodes);
+                rowmap_t *res=splitMap+(i*numnodes);
                 slave.MultiBinChopStop(numsplits,res);
                 res[numnodes-1] = slave.numrecs;
             }
@@ -762,18 +762,17 @@ public:
             StringBuffer str;
             str.appendf("%d: ",i);
             for (unsigned j=0;j<numnodes;j++) {
-                str.appendf("%" RCPF "d, ",splitmap[j+i*numnodes]);
+                str.appendf("%" RCPF "d, ",splitMap[j+i*numnodes]);
             }
             PrintLog("%s",str.str());
         }
 #endif
 #endif
-        return splitmap;
-
+        return splitMap.getClear();
     }
 
 
-    rowmap_t * CalcPartition(bool logging) 
+    rowmap_t *CalcPartition(bool logging)
     {
         CriticalBlock block(ECFcrit);       
         // this is a bit long winded
@@ -783,11 +782,11 @@ public:
         OwnedConstThorRow mink;
         OwnedConstThorRow maxk;
         // so as won't overflow
-        rowmap_t *splitmap=(rowmap_t *)calloc(numnodes*numnodes,sizeof(rowmap_t));
+        OwnedMalloc<rowmap_t> splitmap(numnodes*numnodes, true);
         if (CalcMinMax(mink,maxk)==0) {
             // no partition info!
             partitioninfo->kill();
-            return splitmap;
+            return splitmap.getClear();
         }
         unsigned numsplits=numnodes-1;
         VarElemArray emin(rowif,keyserializer);
@@ -845,7 +844,6 @@ public:
                 Semaphore *nextsem = new Semaphore[numnodes];
                 CriticalSection nextsect;
 
-                void **ptrs = (void **)calloc(numnodes,sizeof(void *));
                 totmid.clear();
                 class casyncfor2: public CAsyncFor
                 {
@@ -1031,12 +1029,11 @@ public:
             }
         }
 #endif
-        return splitmap;    
-
+        return splitmap.getClear();
     }
 
 
-    rowmap_t * UsePartitionInfo(PartitionInfo &pi,bool uppercmp)
+    rowmap_t *UsePartitionInfo(PartitionInfo &pi, bool uppercmp)
     {
         unsigned i;
 #ifdef _TRACE
@@ -1049,16 +1046,13 @@ public:
         }
 #endif
 #endif
-    
-
-
         // first find split points
         unsigned numnodes = pi.numnodes;
         unsigned numsplits = numnodes-1;
-        rowmap_t *splitmap=(rowmap_t *)calloc(numnodes*numnodes,sizeof(rowmap_t));
-        rowmap_t *res=(rowmap_t *)malloc(numsplits*sizeof(rowmap_t));
+        OwnedMalloc<rowmap_t> splitMap(numnodes*numnodes, true);
+        OwnedMalloc<rowmap_t> res(numsplits);
         unsigned j;
-        rowmap_t *mapp=splitmap;
+        rowmap_t *mapp=splitMap;
         for (i=0;i<numnodes;i++) {
             CSortNode &slave = slaves.item(i);
             if (numsplits>0) {
@@ -1086,11 +1080,10 @@ public:
             *mapp = slave.numrecs; // final entry is number in node
             mapp++;
         }
-        free(res);
 #ifdef _TRACE
 #ifdef TRACE_PARTITION
         ActPrintLog(activity, "UsePartitionInfo result");
-        rowmap_t *p = splitmap;
+        rowmap_t *p = splitMap;
         for (i=0;i<numnodes;i++) {
             StringBuffer s;
             s.appendf("%d: ",i);
@@ -1102,7 +1095,7 @@ public:
         }
 #endif
 #endif
-        return splitmap;
+        return splitMap.getClear();
     }
 
     void CalcExtPartition()
@@ -1164,14 +1157,14 @@ public:
         partitioninfo->numnodes = numnodes;
     }
 
-    bool CheckSkewed(unsigned __int64 threshold, double skewWarning, double skewError, rowmap_t n, unsigned __int64 total, rowcount_t max)
+    IThorException *CheckSkewed(unsigned __int64 threshold, double skewWarning, double skewError, rowmap_t n, unsigned __int64 total, rowcount_t max)
     {
         if (n<=0)
-            return false;
+            return NULL;
         if (total==0)
-            return false;
+            return NULL;
         if (skewError<0)
-            return false;
+            return NULL;
         if (threshold==0)
             threshold = 1000000000;
         if (skewError<0.000000001)
@@ -1182,17 +1175,20 @@ public:
         if ((unsigned __int64)max*(unsigned __int64)estrecsize>threshold)
         {
             if (cSkew > skewError)
-                return true;
+            {
+                Owned<IThorException> e = MakeActivityException(activity, TE_SkewError, "Exceeded skew limit: %f, estimated skew: %f", skewError, cSkew);
+                return e.getClear();
+            }
             else if (skewWarning && cSkew > skewWarning)
             {
-                Owned<IThorException> e = MakeActivityWarning(activity, TE_SkewWarning, "Exceeded skew warning limit: %f", skewWarning);
+                Owned<IThorException> e = MakeActivityWarning(activity, TE_SkewWarning, "Exceeded skew warning limit: %f, estimated skew: %f", skewWarning, cSkew);
                 activity->fireException(e);
             }
         }
-        return false;
+        return NULL;
     }
 
-    bool Sort(unsigned __int64 threshold, double skewWarning, double skewError, size32_t _maxdeviance,bool canoptimizenullcolumns, bool usepartitionrow, bool betweensort, unsigned minisortthresholdmb)
+    void Sort(unsigned __int64 threshold, double skewWarning, double skewError, size32_t _maxdeviance,bool canoptimizenullcolumns, bool usepartitionrow, bool betweensort, unsigned minisortthresholdmb)
     {
         memsize_t minisortthreshold = 1024*1024*(memsize_t)minisortthresholdmb;
         if ((minisortthreshold>0)&&(ThorRowMemoryAvailable()/2<minisortthreshold))
@@ -1226,14 +1222,13 @@ public:
         unsigned numnodes = slaves.ordinality();
         if (!usepartitionrow&&!betweensort&&(totalmem<minisortthreshold)&&!overflowed) {
             sorted = MiniSort(total);
-            return true;
+            return;
         }
 #ifdef USE_SAMPLE_PARTITIONING
         bool usesampling = true;        
 #endif
         loop {
-            rowmap_t *splitmap=NULL;
-            rowmap_t *splitmapupper=NULL;
+            OwnedMalloc<rowmap_t> splitMap, splitMapUpper;
             CTimer timer;
             if (numnodes>1) {
                 timer.start();
@@ -1246,16 +1241,16 @@ public:
                     canoptimizenullcolumns = false;
                 }
                 if (partitioninfo->IsOK()) {
-                    splitmap=UsePartitionInfo(*partitioninfo,betweensort);
+                    splitMap.setown(UsePartitionInfo(*partitioninfo, betweensort));
                     if (betweensort) {
-                        splitmapupper=UsePartitionInfo(*partitioninfo,false);
+                        splitMapUpper.setown(UsePartitionInfo(*partitioninfo, false));
                         canoptimizenullcolumns = false;
                     }
                 }
                 else {
                     // check for small sort here
                     if ((skewError<0.0)&&!betweensort) {
-                        splitmap = CalcPartitionUsingSampling();
+                        splitMap.setown(CalcPartitionUsingSampling());
                         skewError = -skewError;
 #ifdef USE_SAMPLE_PARTITIONING
                         usesampling = false;
@@ -1267,13 +1262,13 @@ public:
 
 #ifdef USE_SAMPLE_PARTITIONING
                         if (usesampling)
-                            splitmap = CalcPartitionUsingSampling();
+                            splitMap.setown(CalcPartitionUsingSampling());
                         else
 #endif
 #ifdef TRACE_PARTITION
-                            splitmap=CalcPartition(true);
+                            splitMap.setown(CalcPartition(true));
 #else
-                            splitmap=CalcPartition(false);
+                            splitMap.setown(CalcPartition(false));
 #endif
                     }
                     if (!partitioninfo->splitkeys.checksorted(icompare)) {
@@ -1283,7 +1278,7 @@ public:
                 }
                 timer.stop("Calculating split map");
             }
-            SocketEndpoint *endpoints=(SocketEndpoint *)malloc(numnodes*sizeof(SocketEndpoint));
+            OwnedMalloc<SocketEndpoint> endpoints(numnodes);
             SocketEndpoint *epp = endpoints;
             for (i=0;i<numnodes;i++) {
                 CSortNode &slave = slaves.item(i);
@@ -1327,46 +1322,46 @@ public:
                     for (i=0;i<numnodes;i++) {
                         CSortNode &slave = slaves.item(i);
                         if (slave.overflow) 
-                            slave.OverflowAdjustMapStart(numnodes,splitmap+i*numnodes,mbsk.length(),(const byte *)mbsk.bufferBase(),CMPFN_COLLATE);
+                            slave.OverflowAdjustMapStart(numnodes,splitMap+i*numnodes,mbsk.length(),(const byte *)mbsk.bufferBase(),CMPFN_COLLATE);
                     }
                     for (i=0;i<numnodes;i++) {
                         CSortNode &slave = slaves.item(i);
                         if (slave.overflow) 
-                            slave.AdjustNumRecs(slave.OverflowAdjustMapStop(numnodes,splitmap+i*numnodes));
+                            slave.AdjustNumRecs(slave.OverflowAdjustMapStop(numnodes,splitMap+i*numnodes));
                     }
-                    if (splitmapupper) {
+                    if (splitMapUpper.get()) {
                         for (i=0;i<numnodes;i++) {
                             CSortNode &slave = slaves.item(i);
                             if (slave.overflow) 
-                                slave.OverflowAdjustMapStart(numnodes,splitmapupper+i*numnodes,mbsk.length(),(const byte *)mbsk.bufferBase(),CMPFN_UPPER);
+                                slave.OverflowAdjustMapStart(numnodes,splitMapUpper+i*numnodes,mbsk.length(),(const byte *)mbsk.bufferBase(),CMPFN_UPPER);
                         }
                         for (i=0;i<numnodes;i++) {
                             CSortNode &slave = slaves.item(i);
                             if (slave.overflow) 
-                                slave.OverflowAdjustMapStop(numnodes,splitmapupper+i*numnodes);
+                                slave.OverflowAdjustMapStop(numnodes,splitMapUpper+i*numnodes);
                         }
                     }
                 }
 
-                rowmap_t *tot= (rowmap_t *)calloc(numnodes,sizeof(rowmap_t));
+                OwnedMalloc<rowmap_t> tot(numnodes, true);
                 rowcount_t max=0;
                 unsigned imax=numnodes;
                 for (i=0;i<imax;i++) {
                     unsigned j;
                     for (j=0;j<numnodes;j++) {
-                        if (splitmapupper)
-                            tot[i]+=splitmapupper[i+j*numnodes];
+                        if (splitMapUpper)
+                            tot[i]+=splitMapUpper[i+j*numnodes];
                         else
-                            tot[i]+=splitmap[i+j*numnodes];
+                            tot[i]+=splitMap[i+j*numnodes];
                         if (i)
-                            tot[i]-=splitmap[i+j*numnodes-1];
+                            tot[i]-=splitMap[i+j*numnodes-1];
                     }
                     if (tot[i]>max)
                         max = tot[i];
                     if (!betweensort&&canoptimizenullcolumns&&(tot[i]==0)) {
                         for (j=0;j<numnodes;j++) {
                             for (unsigned k=i+1;k<numnodes;k++) {
-                                splitmap[k+j*numnodes-1] = splitmap[k+j*numnodes];
+                                splitMap[k+j*numnodes-1] = splitMap[k+j*numnodes];
                             }
                         }
                         imax--;
@@ -1379,15 +1374,13 @@ public:
                     slave.endpoint.getUrlStr(url,sizeof(url));
                     ActPrintLog(activity, "Split point %d: %"RCPF"d rows on %s", i, tot[i], url);
                 }
-                if (CheckSkewed(threshold,skewWarning,skewError,numnodes,total,max)) {
+                Owned<IThorException> e = CheckSkewed(threshold,skewWarning,skewError,numnodes,total,max);
+                if (e)
+                {
 #ifdef _TRACE_SKEW_SPLIT
-                    free(splitmap);
-                    splitmap = CalcPartition(true);
+                    splitMap.clear();
+                    splitMap.setown(CalcPartition(true));
 #endif
-                    free(endpoints);
-                    free(splitmap);
-                    free(splitmapupper);
-                    free(tot);
 #ifdef USE_SAMPLE_PARTITIONING
                     if (usesampling) {
                         ActPrintLog(activity, "Partioning using sampling failed, trying iterative partitioning"); 
@@ -1395,33 +1388,28 @@ public:
                         continue;
                     }
 #endif
-                    return false;
+                    throw e.getClear();
                 }
                 ActPrintLog(activity, "Starting Merge of %"RCPF"d records",total);
                 for (i=0;i<numnodes;i++) {
                     CSortNode &slave = slaves.item(i);
                     char url[100];
                     slave.endpoint.getUrlStr(url,sizeof(url));
-                    if (splitmapupper) 
-                        slave.MultiMergeBetween(numnodes*numnodes,splitmap,splitmapupper,numnodes,endpoints);
+                    if (splitMapUpper)
+                        slave.MultiMergeBetween(numnodes*numnodes,splitMap,splitMapUpper,numnodes,endpoints);
                     else
-                        slave.MultiMerge(numnodes*numnodes,splitmap,numnodes,endpoints);  
+                        slave.MultiMerge(numnodes*numnodes,splitMap,numnodes,endpoints);
     //              ActPrintLog(activity, "Merge %d started: %d rows on %s",i,tot[i],url);
                 }
-                free(tot);
             }
             else {
                 CSortNode &slave = slaves.item(0);
                 slave.SingleMerge();
                 ActPrintLog(activity, "Merge started");
             }
-            free(endpoints);
-            free(splitmap);
-            free(splitmapupper);
             sorted = true;
             break;
         }
-        return true;
     }
 
     bool MiniSort(rowcount_t _totalrows)
@@ -1446,8 +1434,6 @@ public:
         afor1.For(slaves.ordinality(), CONNECT_IN_PARALLEL);
         return true;
     }
-
-
 };
 
 VarElemArray *CSortMaster::ECFarray;
