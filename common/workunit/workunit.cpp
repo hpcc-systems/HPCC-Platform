@@ -8691,22 +8691,20 @@ static void clearAliases(IPropertyTree * queryRegistry, const char * id)
 
 IPropertyTree * addNamedQuery(IPropertyTree * queryRegistry, const char * name, const char * wuid, const char * dll)
 {
-    StringBuffer xpath;
-    xpath.append("Query[@wuid=\"").append(wuid).append("\"]");
-    IPropertyTree *q = queryRegistry->queryPropTree(xpath.str());
-    if (q)
-        return q;
-
     StringBuffer lcName(name);
     lcName.toLowerCase();
-    xpath.clear();
+    StringBuffer xpath;
     xpath.append("Query[@name=\"").append(lcName.str()).append("\"]");
 
     Owned<IPropertyTreeIterator> iter = queryRegistry->getElements(xpath);
     unsigned seq = 1;
     ForEach(*iter)
     {
-        unsigned thisSeq = iter->query().getPropInt("@seq");
+        IPropertyTree &item = iter->query();
+        const char *thisWuid = item.queryProp("@wuid");
+        if (strieq(wuid, thisWuid))
+            return &item;
+        unsigned thisSeq = item.getPropInt("@seq");
         if (thisSeq >= seq)
             seq = thisSeq + 1;
     }
