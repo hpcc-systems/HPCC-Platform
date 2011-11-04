@@ -83,6 +83,17 @@ bool isTypePassedByAddress(ITypeInfo * type)
     return false;
 }
 
+static StringBuffer & appendCapital(StringBuffer & s, StringBuffer & _name)
+{
+    const char * name = _name.str();
+    if (name && name[0])
+    {
+        s.append((char)toupper(*name));
+        s.append(name+1);
+    }
+    return s;
+}
+
 //---------------------------------------------------------------------------
 
 CppWriterTemplate::CppWriterTemplate()
@@ -358,6 +369,11 @@ protected:
     bool typeOnLeft;
 };
 
+void HqlCppWriter::generateType(StringBuffer & result, ITypeInfo * type, const char * name)
+{
+    ::generateTypeCpp(result, type, name, compiler);
+}
+
 void HqlCppWriter::generateType(ITypeInfo * type, const char * name)
 {
     TypeNameBuilder result(name);
@@ -523,7 +539,7 @@ void HqlCppWriter::generateType(ITypeInfo * type, const char * name)
                 {
                     if (i)
                         parameterText.append(", ");
-                    ::generateExprCpp(parameterText, args->queryChild(i), compiler);
+                    generateExprCpp(parameterText, args->queryChild(i));
                 }
 
                 //Walk args and add the types
@@ -553,6 +569,120 @@ void HqlCppWriter::generateType(ITypeInfo * type, const char * name)
         type = next;
     }
 }
+
+
+bool HqlCppWriter::generateFunctionPrototype(IHqlExpression * funcdef)
+{
+    IHqlExpression *body = funcdef->queryChild(0);
+    StringBuffer name;
+    getProperty(body, entrypointAtom, name);
+    if (!name.length())
+        name.append(funcdef->queryName());
+    return generateFunctionPrototype(funcdef, name);
+}
+
+bool HqlCppWriter::generateFunctionPrototype(IHqlExpression * funcdef, const char * name)
+{
+    IHqlExpression *body = funcdef->queryChild(0);
+    IHqlExpression *formals = funcdef->queryChild(1);
+
+    if (body->hasProperty(includeAtom) || body->hasProperty(ctxmethodAtom) || body->hasProperty(gctxmethodAtom) || body->hasProperty(methodAtom) || body->hasProperty(sysAtom) || body->hasProperty(omethodAtom))
+        return false;
+
+    enum { ServiceApi, RtlApi, BcdApi, CApi, LocalApi } api = ServiceApi;
+    bool isVirtual = funcdef->hasProperty(virtualAtom);
+    bool isLocal = body->hasProperty(localAtom);
+    if (body->hasProperty(eclrtlAtom))
+        api = RtlApi;
+    else if (body->hasProperty(bcdAtom))
+        api = BcdApi;
+    else if (body->hasProperty(cAtom))
+        api = CApi;
+    else if (isLocal || isVirtual)
+        api = LocalApi;
+
+    if (isVirtual)
+        out.append("virtual");
+    else
+        out.append("extern ");
+
+    if ((api == ServiceApi) || api == CApi)
+        out.append("\"C\" ");
+
+    switch (api)
+    {
+    case ServiceApi: out.append(" SERVICE_API"); break;
+    case RtlApi:     out.append(" RTL_API"); break;
+    case BcdApi:     out.append(" BCD_API"); break;
+    }
+    out.append(" ");
+
+    StringBuffer returnParameters;
+    ITypeInfo * retType = funcdef->queryType()->queryChildType();
+    generateFunctionReturnType(returnParameters, retType, body);
+
+    switch (api)
+    {
+    case CApi:
+        switch (compiler)
+        {
+        case Vs6CppCompiler:
+            out.append(" _cdecl");
+            break;
+        }
+        break;
+    case BcdApi:
+        switch (compiler)
+        {
+        case Vs6CppCompiler:
+            out.append(" __fastcall");
+            break;
+        }
+        break;
+    }
+
+    out.append(" ").append(name);
+
+    bool firstParam = true;
+    out.append('(');
+    if (body->hasProperty(contextAtom))
+    {
+        out.append("ICodeContext * ctx");
+        firstParam = false;
+    }
+    else if (body->hasProperty(globalContextAtom) )
+    {
+        out.append("IGlobalCodeContext * gctx");
+        firstParam = false;
+    }
+    else if (body->hasProperty(userMatchFunctionAtom))
+    {
+        out.append("IMatchWalker * results");
+        firstParam = false;
+    }
+
+    if (returnParameters.length())
+    {
+        if (!firstParam)
+            out.append(',');
+        out.append(returnParameters);
+        firstParam = false;
+    }
+
+    ForEachChild(i, formals)
+    {
+        if (!firstParam)
+            out.append(',');
+        else
+            firstParam = false;
+
+        IHqlExpression * param = formals->queryChild(i);
+        generateParamCpp(param);
+    }
+    out.append(")");
+    return true;
+}
+
 
 
 void HqlCppWriter::generateInitializer(IHqlExpression * expr)
@@ -640,21 +770,9 @@ void HqlCppWriter::generateInitializer(IHqlExpression * expr)
 }
 
 
-static StringBuffer & appendCapital(StringBuffer & s, StringBuffer & _name)
-{
-    const char * name = _name.str();
-    if (name && name[0])
-    {
-        s.append((char)toupper(*name));
-        s.append(name+1);
-    }
-    return s;
-}
-
 void HqlCppWriter::generateParamCpp(IHqlExpression * param)
 {
     ITypeInfo *paramType = param->queryType();
-
     
     //Case is significant if these parameters are use for BEGINC++ sections
     _ATOM paramName = param->queryName();
@@ -798,6 +916,105 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param)
     }
     if (paramName && !nameappended)
         out.append(" ").append(paramNameText);
+}
+
+void HqlCppWriter::generateFunctionReturnType(StringBuffer & params, ITypeInfo * retType, IHqlExpression * attrs)
+{
+    type_t tc = retType->getTypeCode();
+    switch (tc)
+    {
+    case type_varstring:
+    case type_varunicode:
+        if (retType->getSize() == UNKNOWN_LENGTH)
+        {
+            generateType(retType, NULL);
+            break;
+        }
+        //fall through
+    case type_qstring:
+    case type_string:
+    case type_data:
+    case type_unicode:
+    case type_utf8:
+        {
+            OwnedITypeInfo ptrType = makeReferenceModifier(LINK(retType));
+            out.append("void");
+            if (retType->getSize() == UNKNOWN_LENGTH)
+            {
+                if (retType->getTypeCode() != type_varstring)
+                    params.append("size32_t & __lenResult,");
+
+    //          if (hasConstModifier(retType))
+    //              params.append("const ");
+                generateType(params, retType, NULL);
+                params.append(" & __result");
+            }
+            else
+            {
+                generateType(params, ptrType, "__result");
+            }
+            break;
+        }
+    case type_transform:
+        out.append("size32_t");
+        params.append("ARowBuilder & __self");
+        break;
+    case type_table:
+    case type_groupedtable:
+        if (hasStreamedModifier(retType))
+        {
+            out.append("IRowStream *");
+            params.append("IEngineRowAllocator * _resultAllocator");
+        }
+        else if (hasLinkCountedModifier(retType))
+        {
+            out.append("void");
+            params.append("size32_t & __countResult,");
+    //      if (hasConstModifier(retType))
+    //          params.append("const ");
+            params.append("byte * * & __result");
+            if (hasNonNullRecord(retType) && getBoolProperty(attrs, allocatorAtom, true))
+                params.append(", IEngineRowAllocator * _resultAllocator");
+        }
+        else
+        {
+            out.append("void");
+            params.append("size32_t & __lenResult,");
+    //      if (hasConstModifier(retType))
+    //          params.append("const ");
+            params.append("void * & __result");
+        }
+        break;
+    case type_set:
+        {
+            out.append("void");
+            if (!getBoolProperty(attrs, oldSetFormatAtom))
+            {
+                params.append("bool & __isAllResult,");
+                params.append("size32_t & __lenResult,");
+            }
+            else
+                params.append("unsigned & __numResult,");
+
+//          if (hasConstModifier(retType))
+//              params.append("const ");
+            params.append("void * & __result");
+            break;
+        }
+    case type_row:
+        out.append("void");
+        params.append("byte * __result");
+        break;
+    default:
+        generateType(retType, NULL);
+        break;
+    }
+}
+
+
+StringBuffer & HqlCppWriter::generateExprCpp(StringBuffer & result, IHqlExpression * expr)
+{
+    return ::generateExprCpp(result, expr, compiler);
 }
 
 StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
@@ -1383,6 +1600,9 @@ void HqlCppWriter::generateStmt(IHqlStmt * stmt)
             generateExprCpp(stmt->queryExpr(0)).append(';');
             newline();
             break;
+        case function_stmt:
+            generateStmtFunction(stmt);
+            break;
         case alias_stmt:
         case group_stmt:
         case pass_stmt:
@@ -1697,6 +1917,15 @@ void HqlCppWriter::generateStmtFilter(IHqlStmt * stmt)
 }
 
 
+void HqlCppWriter::generateStmtFunction(IHqlStmt * stmt)
+{
+    IHqlExpression * funcdef = stmt->queryExpr(0);
+    indent();
+    generateFunctionPrototype(funcdef);
+    generateChildren(stmt, true);
+}
+
+
 void HqlCppWriter::generateStmtLoop(IHqlStmt * stmt)
 {
     IHqlExpression * cond = stmt->queryExpr(0);
@@ -1858,4 +2087,17 @@ extern HQLCPP_API StringBuffer & generateTypeCpp(StringBuffer & out, ITypeInfo *
     HqlCppWriter writer(out, compiler);
     writer.generateType(type, name);
     return out;
+}
+
+void generateFunctionReturnType(StringBuffer & prefix, StringBuffer & params, ITypeInfo * retType, IHqlExpression * attrs, CompilerType compiler)
+{
+    HqlCppWriter writer(prefix, compiler);
+    writer.generateFunctionReturnType(params, retType, attrs);
+}
+
+
+bool generateFunctionPrototype(StringBuffer & out, IHqlExpression * funcdef, CompilerType compiler)
+{
+    HqlCppWriter writer(out, compiler);
+    return writer.generateFunctionPrototype(funcdef);
 }

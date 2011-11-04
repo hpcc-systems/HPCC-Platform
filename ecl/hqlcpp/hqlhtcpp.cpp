@@ -3192,13 +3192,26 @@ void HqlCppTranslator::doBuildFunction(BuildCtx & ctx, ITypeInfo * type, const c
         if (options.spotCSE)
             cseValue.setown(spotScalarCSE(cseValue));
 
-        StringBuffer s, returnParameters;
-        s.append("virtual ");
-        expandFunctionReturnType(s, returnParameters, type, NULL);
-        s.append(" ").append(name).append("(").append(returnParameters).append(")");
-
         BuildCtx funcctx(ctx);
-        funcctx.addQuotedCompound(s);
+        if (false)
+        {
+            HqlExprArray parameters;
+            OwnedHqlExpr entrypoint = createAttribute(entrypointAtom, createConstant(name));
+            OwnedHqlExpr body = createValue(no_null, LINK(type), LINK(entrypoint));
+            OwnedHqlExpr formals = createValue(no_sortlist, makeSortListType(NULL), parameters);
+            OwnedHqlExpr attrs = createAttribute(virtualAtom);
+            OwnedHqlExpr function = createFunctionDefinition(NULL, LINK(body), LINK(formals), NULL, LINK(attrs));
+            funcctx.addFunction(function);
+        }
+        else
+        {
+            StringBuffer s, returnParameters;
+            s.append("virtual ");
+            generateFunctionReturnType(s, returnParameters, type, NULL, options.targetCompiler);
+            s.append(" ").append(name).append("(").append(returnParameters).append(")");
+            funcctx.addQuotedCompound(s);
+        }
+
         doBuildFunctionReturn(funcctx, type, cseValue);
     }
 }
