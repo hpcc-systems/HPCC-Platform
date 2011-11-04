@@ -1072,49 +1072,80 @@ ESPresponse [exceptions_inline] WUQuerySetDetailsResponse
     ESParray<ESPstruct QuerySetAlias> QuerysetAliases;
 };
 
-ESPStruct QuerySetQueryAction
+ESPenum QuerySetQueryActionTypes : string
 {
-    string Id;
-    string Name;
+    Suspend("Suspend"),
+    Unsuspend("Unsuspend"),
+    ToggleSuspend("ToggleSuspend"),
+    Activate("Activate"),
+    Delete("Delete"),
+    RemoveAllAliases("RemoveAllAliases")
+};
+
+ESPStruct QuerySetQueryClientState
+{
     bool Suspended;
-    string Status;
 };
 
-ESPrequest WUQuerySetActionQueriesRequest
+ESPStruct QuerySetQueryActionItem
 {
-    string  QuerySetName;
-    bool Remove(false);
-    bool ToggleSuspend(false);
-    ESParray<ESPstruct QuerySetQueryAction> QuerysetQueryActions;
+    string QueryId;
+    ESPstruct QuerySetQueryClientState ClientState;
 };
 
-ESPresponse [exceptions_inline] WUQuerySetActionQueriesResponse
+ESPrequest WUQuerySetQueryActionRequest
 {
-    string  QuerySetName;
-    bool Remove;
-    bool ToggleSuspend;
-    ESParray<ESPstruct QuerySetQueryAction> QuerysetQueryActions;
+    ESPenum QuerySetQueryActionTypes Action;
+    string QuerySetName;
+    ESParray<ESPstruct QuerySetQueryActionItem, Query> Queries;
 };
 
-ESPStruct QuerySetAliasAction
+ESPStruct QuerySetQueryActionResult
 {
-    string Id;
+    string QueryId;
+    bool Suspended;
+    bool Success;
+    int Code;
+    string Message;
+};
+
+ESPresponse [exceptions_inline] WUQuerySetQueryActionResponse
+{
+    ESPenum QuerySetQueryActionTypes Action;
+    string QuerySetName;
+    ESParray<ESPstruct QuerySetQueryActionResult, Result> Results;
+};
+
+ESPenum QuerySetAliasActionTypes : string
+{
+    Deactivate("Deactivate")
+};
+
+ESPStruct QuerySetAliasActionItem
+{
     string Name;
-    string Status;
 };
 
-ESPrequest WUQuerySetActionAliasesRequest
+ESPrequest WUQuerySetAliasActionRequest
 {
-    string  QuerySetName;
-    bool Remove(false);
-    ESParray<ESPstruct QuerySetAliasAction> QuerysetAliasActions;
+    ESPenum QuerySetAliasActionTypes Action;
+    string QuerySetName;
+    ESParray<ESPstruct QuerySetAliasActionItem, Alias> Aliases;
 };
 
-ESPresponse [exceptions_inline] WUQuerySetActionAliasesResponse
+ESPStruct QuerySetAliasActionResult
 {
-    string  QuerySetName;
-    bool Remove;
-    ESParray<ESPstruct QuerySetAliasAction> QuerysetAliasActions;
+    string Name;
+    bool Success;
+    int Code;
+    string Message;
+};
+
+ESPresponse [exceptions_inline] WUQuerySetAliasActionResponse
+{
+    ESPenum QuerySetAliasActionTypes Action;
+    string QuerySetName;
+    ESParray<ESPstruct QuerySetAliasActionResult, Result> Results;
 };
 
 ESPservice [
@@ -1177,8 +1208,8 @@ ESPservice [
     ESPmethod [resp_xsl_default("/esp/xslt/WUPublishWorkunit.xslt")] WUPublishWorkunit(WUPublishWorkunitRequest, WUPublishWorkunitResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/WUQuerysets.xslt")] WUQuerysets(WUQuerysetsRequest, WUQuerysetsResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/WUQuerysetQueries.xslt")] WUQuerysetDetails(WUQuerySetDetailsRequest, WUQuerySetDetailsResponse);
-    ESPmethod WUQuerysetActionQueries(WUQuerySetActionQueriesRequest, WUQuerySetActionQueriesResponse);
-    ESPmethod WUQuerysetActionAliases(WUQuerySetActionAliasesRequest, WUQuerySetActionAliasesResponse);
+    ESPmethod WUQuerysetQueryAction(WUQuerySetQueryActionRequest, WUQuerySetQueryActionResponse);
+    ESPmethod WUQuerysetAliasAction(WUQuerySetAliasActionRequest, WUQuerySetAliasActionResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/WUCopyLogicalFiles.xslt")] WUCopyLogicalFiles(WUCopyLogicalFilesRequest, WUCopyLogicalFilesResponse);
 };
 
