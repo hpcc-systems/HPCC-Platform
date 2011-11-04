@@ -207,7 +207,7 @@ int main(int argc, const char *argv[])
     Owned<IGroup> serverGroup = createIGroup(daliServers, DALI_SERVER_PORT);
     try
     {
-        initClientProcess(serverGroup, DCR_EclServer);
+        initClientProcess(serverGroup, DCR_EclScheduler);
         Owned <IStringIterator> targetClusters = getTargetClusters("EclSchedulerProcess", globals->queryProp("@name"));
         if (!targetClusters->first())
             throw MakeStringException(0, "No clusters found to schedule for");
