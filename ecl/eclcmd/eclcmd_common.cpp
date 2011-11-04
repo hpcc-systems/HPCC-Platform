@@ -217,3 +217,33 @@ StringBuffer &EclObjectParameter::getDescription(StringBuffer &s)
 {
     return s.append(queryTypeName()).append(' ').append(value.get());
 }
+
+eclCmdOptionMatchIndicator EclCmdCommon::matchCommandLineOption(ArgvIterator &iter, bool finalAttempt)
+{
+    bool boolValue;
+    if (iter.matchFlag(boolValue, ECLOPT_VERSION))
+    {
+        fprintf(stdout, "%s\n", BUILD_TAG);
+        return EclCmdOptionCompletion;
+    }
+    if (iter.matchOption(optServer, ECLOPT_SERVER))
+        return EclCmdOptionMatch;
+    if (iter.matchOption(optPort, ECLOPT_PORT))
+        return EclCmdOptionMatch;
+    if (iter.matchOption(optUsername, ECLOPT_USERNAME))
+        return EclCmdOptionMatch;
+    if (iter.matchOption(optPassword, ECLOPT_PASSWORD))
+        return EclCmdOptionMatch;
+    if (finalAttempt)
+        fprintf(stderr, "\n%s option not recognized\n", iter.query());
+    return EclCmdOptionNoMatch;
+}
+
+bool EclCmdCommon::finalizeOptions(IProperties *globals)
+{
+    extractEclCmdOption(optServer, globals, ECLOPT_SERVER_ENV, ECLOPT_SERVER_INI, ECLOPT_SERVER_DEFAULT, NULL);
+    extractEclCmdOption(optPort, globals, ECLOPT_PORT_ENV, ECLOPT_PORT_INI, ECLOPT_PORT_DEFAULT, NULL);
+    extractEclCmdOption(optUsername, globals, ECLOPT_USERNAME_ENV, ECLOPT_USERNAME_INI, NULL, NULL);
+    extractEclCmdOption(optPassword, globals, ECLOPT_PASSWORD_ENV, ECLOPT_PASSWORD_INI, NULL, NULL);
+    return true;
+}
