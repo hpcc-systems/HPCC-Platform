@@ -155,7 +155,8 @@
 #define TE_NotSorted                            TE_Base + 131
 #define TE_LargeAggregateTable                  TE_Base + 132
 #define TE_SkewWarning                          TE_Base + 133
-#define TE_Final                                TE_Base + 134       // keep this last
+#define TE_SkewError                            TE_Base + 134
+#define TE_Final                                TE_Base + 135       // keep this last
 #define ISTHOREXCEPTION(n) (n > TE_Base && n < TE_Final)
 
 #endif

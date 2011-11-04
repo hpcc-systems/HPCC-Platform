@@ -63,6 +63,7 @@ template <class CLASS> class OwnedMalloc
 public:
     inline OwnedMalloc()                        { ptr = NULL; }
     inline OwnedMalloc(CLASS * _ptr)            { ptr = _ptr; }
+    explicit inline OwnedMalloc(unsigned n, bool clearMemory = false) { doAllocate(n, clearMemory); }
     inline ~OwnedMalloc()                       { free(ptr); }
 
     inline CLASS * operator -> () const         { return ptr; }
@@ -77,13 +78,17 @@ public:
     inline void allocateN(unsigned n, bool clearMemory = false)
     {
         clear();
-        void * mem = clearMemory ? calloc(n, sizeof(CLASS)) : malloc(n * sizeof(CLASS));
-        ptr = static_cast<CLASS *>(mem);
+        doAllocate(n, clearMemory);
     }
 
 private:
     inline OwnedMalloc(const OwnedMalloc<CLASS> & other);
 
+    inline void doAllocate(unsigned n, bool clearMemory = false)
+    {
+        void * mem = clearMemory ? calloc(n, sizeof(CLASS)) : malloc(n * sizeof(CLASS));
+        ptr = static_cast<CLASS *>(mem);
+    }
     void operator = (CLASS * _ptr);
     void operator = (const OwnedMalloc<CLASS> & other);
     void set(CLASS * _ptr);
