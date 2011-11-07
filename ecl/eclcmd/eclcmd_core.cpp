@@ -39,6 +39,48 @@ void outputMultiExceptions(const IMultiException &me)
     fprintf(stderr, "\n");
 }
 
+bool doDeploy(IClientWsWorkunits *client, EclObjectParameter &optObj, const char *cluster, const char *name, StringBuffer *wuid)
+{
+    StringBuffer s;
+    fprintf(stdout, "\nDeploying %s\n", optObj.getDescription(s).str());
+    Owned<IClientWUDeployWorkunitRequest> req = client->createWUDeployWorkunitRequest();
+    switch (optObj.type)
+    {
+        case eclObjArchive:
+            req->setObjType("archive");
+            break;
+        case eclObjSharedObject:
+            req->setObjType("shared_object");
+            break;
+        default:
+            fprintf(stdout, "Can only deploy shared objects and ECL archives\n");
+            return false;
+    }
+
+    MemoryBuffer mb;
+    Owned<IFile> file = createIFile(optObj.value.sget());
+    Owned<IFileIO> io = file->open(IFOread);
+    read(io, 0, (size32_t)file->size(), mb);
+    if (name && *name)
+        req->setName(name);
+    if (cluster && *cluster)
+        req->setCluster(cluster);
+    req->setFileName(optObj.value.sget());
+    req->setObject(mb);
+    Owned<IClientWUDeployWorkunitResponse> resp = client->WUDeployWorkunit(req);
+    if (resp->getExceptions().ordinality())
+        outputMultiExceptions(resp->getExceptions());
+    const char *w = resp->getWorkunit().getWuid();
+    if (w && *w)
+    {
+        if (wuid)
+            wuid->append(w);
+        fprintf(stdout, "Deployed\nwuid: %s\nstate: %s\n", w, resp->getWorkunit().getState());
+        return true;
+    }
+    return false;
+}
+
 class EclCmdDeploy : public EclCmdCommon
 {
 public:
@@ -115,46 +157,12 @@ public:
     }
     virtual int processCMD()
     {
-        StringBuffer s;
-        fprintf(stdout, "\nDeploying %s\n", optObj.getDescription(s).str());
         Owned<IClientWsWorkunits> client = createWsWorkunitsClient();
         VStringBuffer url("http://%s:%s/WsWorkunits", optServer.sget(), optPort.sget());
         client->addServiceUrl(url.str());
         if (optUsername.length())
             client->setUsernameToken(optUsername.get(), optPassword.sget(), NULL);
-        Owned<IClientWUDeployWorkunitRequest> req = client->createWUDeployWorkunitRequest();
-        switch (optObj.type)
-        {
-            case eclObjArchive:
-            {
-                req->setObjType("archive");
-                break;
-            }
-            case eclObjSharedObject:
-            {
-                req->setObjType("shared_object");
-                break;
-            }
-        }
-        MemoryBuffer mb;
-        Owned<IFile> file = createIFile(optObj.value.sget());
-        Owned<IFileIO> io = file->open(IFOread);
-        read(io, 0, (size32_t)file->size(), mb);
-        if (optName.length())
-            req->setName(optName.get());
-        if (optCluster.length())
-            req->setCluster(optCluster.get());
-        req->setFileName(optObj.value.sget());
-        req->setObject(mb);
-        Owned<IClientWUDeployWorkunitResponse> resp = client->WUDeployWorkunit(req);
-        if (resp->getExceptions().ordinality())
-            outputMultiExceptions(resp->getExceptions());
-        const char *wuid = resp->getWorkunit().getWuid();
-        if (wuid && *wuid)
-        {
-            fprintf(stdout, "Deployed\nwuid: %s\nstate: %s\n", wuid, resp->getWorkunit().getState());
-        }
-        return 0;
+        return doDeploy(client, optObj, optCluster.get(), optName.get(), NULL) ? 0 : 1;
     }
     virtual void usage()
     {
@@ -163,7 +171,7 @@ public:
             "ecl deploy [--cluster=<cluster>] [--name=<name>] <so|dll>\n\n"
             "   Options:\n"
             "      <archive>            ecl archive to deploy\n"
-            "      <so|dll>             dll or shared object to deploy\n"
+            "      <so|dll>             workunit dll or shared object to deploy\n"
             "      --name=<name>        workunit job name\n"
             "      --cluster=<cluster>  cluster to associate workunit with\n"
             "      --name=<name>        workunit job name\n"
@@ -179,7 +187,7 @@ private:
 class EclCmdPublish : public EclCmdCommon
 {
 public:
-    EclCmdPublish() : optActivate(false), activateSet(false)
+    EclCmdPublish() : optActivate(false), activateSet(false), optObj(eclObjWuid | eclObjArchive | eclObjSharedObject)
     {
     }
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
@@ -195,15 +203,15 @@ public:
             const char *arg = iter.query();
             if (*arg!='-')
             {
-                if (optWuid.length())
+                if (optObj.value.length())
                 {
-                    fprintf(stderr, "\nmultiple targets (%s and %s) not currently supported\n", optWuid.sget(), arg);
+                    fprintf(stderr, "\nmultiple targets (%s and %s) not currently supported\n", optObj.value.sget(), arg);
                     return false;
                 }
-                optWuid.set(arg);
+                optObj.set(arg);
                 continue;
             }
-            if (iter.matchOption(optWuid, ECLOPT_WUID))
+            if (iter.matchOption(optObj.value, ECLOPT_WUID))
                 continue;
             if (iter.matchOption(optName, ECLOPT_NAME))
                 continue;
@@ -225,24 +233,61 @@ public:
             return false;
         if (!activateSet)
             extractEclCmdOption(optActivate, globals, ECLOPT_ACTIVATE_ENV, ECLOPT_ACTIVATE_INI, false);
-        if (optWuid.isEmpty())
+        if (optObj.value.isEmpty())
         {
-            fprintf(stderr, "\nMust specify a WUID to publish\n");
+            fprintf(stderr, "\nMust specify a WUID, Archive, or shared object to publish\n");
             return false;
+        }
+        if (optObj.type==eclObjTypeUnknown)
+        {
+            fprintf(stderr, "\nCan't determine content type of argument %s\n", optObj.value.sget());
+            return false;
+        }
+        if (optObj.type==eclObjSource)
+        {
+            fprintf(stderr, "\nPublishing ECL source directly is not yet supported\n");
+            return false;
+        }
+        if (optObj.type==eclObjQueryId)
+        {
+            StringBuffer s;
+            fprintf(stderr, "\nQuery (%s) cannot be the target for pulishing\n", optObj.getDescription(s).str());
+            return false;
+        }
+        if (optObj.type==eclObjArchive)
+        {
+            if (optCluster.isEmpty())
+            {
+                fprintf(stderr, "\nCluster must be specified when publishing an ECL Archive\n");
+                return false;
+            }
+            if (optName.isEmpty())
+            {
+                fprintf(stderr, "\nQuery name must be specified when publishing an ECL Archive\n");
+                return false;
+            }
         }
         return true;
     }
     virtual int processCMD()
     {
-        fprintf(stdout, "\nPublishing %s\n", optWuid.get());
         Owned<IClientWsWorkunits> client = createWsWorkunitsClient();
         VStringBuffer url("http://%s:%s/WsWorkunits", optServer.sget(), optPort.sget());
         client->addServiceUrl(url.str());
         if (optUsername.length())
             client->setUsernameToken(optUsername.get(), optPassword.sget(), NULL);
 
+        StringBuffer wuid;
+        if (optObj.type==eclObjWuid)
+            wuid.set(optObj.value.get());
+        else if (!doDeploy(client, optObj, optCluster.get(), optName.get(), &wuid))
+            return 1;
+
+        StringBuffer descr;
+        fprintf(stdout, "\nPublishing %s\n", wuid.str());
+
         Owned<IClientWUPublishWorkunitRequest> req = client->createWUPublishWorkunitRequest();
-        req->setWuid(optWuid.get());
+        req->setWuid(wuid.str());
         req->setActivate(optActivate);
         if (optName.length())
             req->setJobName(optName.get());
@@ -261,9 +306,13 @@ public:
     virtual void usage()
     {
         fprintf(stdout,"\nUsage:\n\n"
-            "ecl publish [--cluster=<cluster>][--name=<name>][--activate] <wuid>\n\n"
+            "ecl publish [--cluster=<cluster>] [--name=<name>] [--activate] <wuid>\n"
+            "ecl publish [--cluster=<cluster>] [--name=<name>] [--activate] <so|dll>\n"
+            "ecl publish --cluster=<cluster> --name=<name> [--activate] <archive>\n\n"
             "   Options:\n"
             "      <wuid>               workunit to publish\n"
+            "      <archive>            archive to publish\n"
+            "      <so|dll>             workunit dll or shared object to publish\n"
             "      --cluster=<cluster>  cluster to publish workunit to\n"
             "                           (defaults to cluster defined inside workunit)\n"
             "      --name=<name>        query name to use for published workunit\n"
@@ -273,7 +322,7 @@ public:
     }
 private:
     StringAttr optCluster;
-    StringAttr optWuid;
+    EclObjectParameter optObj;
     StringAttr optName;
     bool optActivate;
     bool activateSet;

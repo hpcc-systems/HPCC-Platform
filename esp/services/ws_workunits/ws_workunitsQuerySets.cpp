@@ -216,12 +216,16 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
         queryName.set(req.getJobName());
     else
         cw->getJobName(queryName).str();
+    if (!queryName.length())
+        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Query/Job name not defined for publishing workunit %s", req.getWuid());
 
     SCMStringBuffer cluster;
     if (notEmpty(req.getCluster()))
         cluster.set(req.getCluster());
     else
         cw->getClusterName(cluster);
+    if (!cluster.length())
+        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Cluster name not defined for publishing workunit %s", req.getWuid());
 
     Owned <IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster.str());
 
