@@ -1163,12 +1163,12 @@ bool HqlCppInstance::useFunction(IHqlExpression * func)
     if (pluginAttr)
     {
         StringBuffer plugin, version;
-        pluginAttr->queryChild(0)->queryValue()->getStringValue(plugin);
-        pluginAttr->queryChild(1)->queryValue()->getStringValue(version);
+        getStringValue(plugin, pluginAttr->queryChild(0));
+        getStringValue(version, pluginAttr->queryChild(1));
         addPlugin(plugin.str(), version.str(), false);
         if (!libname.length())
         {
-            pluginAttr->queryChild(0)->queryValue()->getStringValue(libname);
+            getStringValue(libname, pluginAttr->queryChild(0));
             getFullFileName(libname, true);
         }
     }
