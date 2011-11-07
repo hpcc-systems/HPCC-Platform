@@ -2525,6 +2525,10 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                             return ret;
                         break;
                     }
+                case no_inlinetable:
+                    //shared is checked within the code below....
+                    okToContinue = true;
+                    break;
                 }
             }
         case no_hqlproject:
@@ -2536,7 +2540,13 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                     okToContinue = true;
                     break;
                 }
+                break;
             }
+        case no_addfiles:
+            //It is generally worth always combining inlinetable + inlinetable because it opens the scope
+            //for more optimizations (e.g., filters on inlinetables) and the counts also become a known constant.
+            okToContinue = true;
+            break;
         }
 
         if (!okToContinue)
@@ -2881,7 +2891,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                 }
                 break;
             case no_inlinetable:
-                if ((options & HOOfoldconstantdatasets) && isConstantDataset(child))
+                if (options & HOOfoldconstantdatasets)
                 {
                     HqlExprArray conditions;
                     unwindChildren(conditions, transformed, 1);
@@ -2889,43 +2899,53 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                     OwnedHqlExpr filterCondition = createBalanced(no_and, boolType, conditions);
 
                     HqlExprArray filtered;
-                    bool allFilteredOk = true;
                     IHqlExpression * values = child->queryChild(0);
+                    unsigned numValues = values->numChildren();
+                    unsigned numOk = 0;
+                    //A vague rule of thumb for the maximum proportion to retain if the dataset is shared.
+                    unsigned maxSharedFiltered = (numValues >= 10) ? numValues / 10 : 1;
                     ForEachChild(i, values)
                     {
                         IHqlExpression * curTransform = values->queryChild(i);
                         if (!isKnownTransform(curTransform))
-                        {
-                            allFilteredOk = false;
                             break;
-                        }
+
                         NewProjectMapper2 mapper;
                         mapper.setMapping(curTransform);
                         OwnedHqlExpr expandedFilter = mapper.expandFields(filterCondition, child, NULL, NULL);
+                        //This can prematurely ignore some expressions e.g., x and (' ' = ' '), but saves lots of
+                        //additional constant folding on non constant expressions, so worthwhile.
+                        if (!expandedFilter->isConstant())
+                            break;
+
                         OwnedHqlExpr folded = foldHqlExpression(expandedFilter);
                         IValue * value = folded->queryValue();
-
-                        if (value)
-                        {
-                            if (value->getBoolValue())
-                                filtered.append(*LINK(curTransform));
-                        }
-                        else
-                        {
-                            allFilteredOk = false;
+                        if (!value)
                             break;
+
+                        if (value->getBoolValue())
+                        {
+                            filtered.append(*LINK(curTransform));
+
+                            //Only break sharing on an inline dataset if it generates something significantly smaller.
+                            if (shared && (filtered.ordinality() > maxSharedFiltered))
+                                break;
                         }
+
+                        numOk++;
                     }
-                    if (allFilteredOk)
+                    if (numOk == numValues)
                     {
                         if (filtered.ordinality() == 0)
                             return replaceWithNull(transformed);
                         if (filtered.ordinality() == values->numChildren())
                             return removeParentNode(transformed);
+
                         DBGLOG("Optimizer: Node %s reduce values in child: %s from %d to %d", queryNode0Text(transformed), queryNode1Text(child), values->numChildren(), filtered.ordinality());
                         HqlExprArray args;
                         args.append(*values->clone(filtered));
                         unwindChildren(args, child, 1);
+                        decUsage(child);
                         return child->clone(args);
                     }
                 }
@@ -3515,6 +3535,14 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             HqlExprArray args;
             args.append(*createValue(no_transformlist, makeNullType(), allTransforms));
             args.append(*LINK(child->queryRecord()));
+
+            ForEachChild(i2, transformed)
+            {
+                IHqlExpression * cur = transformed->queryChild(i2);
+                if (!cur->isAttribute())
+                    decUsage(cur);
+            }
+
             OwnedHqlExpr ret = createDataset(no_inlinetable, args);
             return transformed->cloneAllAnnotations(ret);
         }
