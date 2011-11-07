@@ -122,6 +122,7 @@ ESPStruct [nil_remove] ECLQuery
     string ResTxt;
     string Dll;
     string ThorLog;
+    [min_ver("1.35")] string QueryMainDefinition;
 };
 //  ===========================================================================
 
@@ -392,6 +393,7 @@ ESPrequest [nil_remove] WUUpdateRequest
     [min_ver("1.05")] string ClusterOrig;
     [min_ver("1.22")] string XmlParams;
     [min_ver("1.25")] string ThorSlaveIP;
+    [min_ver("1.35")] string QueryMainDefinition;
 
     ESParray<ESPstruct DebugValue>       DebugValues;
     ESParray<ESPstruct ApplicationValue> ApplicationValues;
@@ -1149,7 +1151,7 @@ ESPresponse [exceptions_inline] WUQuerySetAliasActionResponse
 };
 
 ESPservice [
-    version("1.34"), default_client_version("1.34"),
+    version("1.35"), default_client_version("1.35"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);

@@ -517,6 +517,12 @@ bool CWsWorkunitsEx::onWUUpdate(IEspContext &context, IEspWUUpdateRequest &req, 
             query->setQueryText(req.getQueryText());
         }
 
+        if (version > 1.34 && notEmpty(req.getQueryMainDefinition()))
+        {
+            Owned<IWUQuery> query=wu->updateQuery();
+            query->setQueryMainDefinition(req.getQueryMainDefinition());
+        }
+
         if (!req.getResultLimit_isNull())
             wu->setResultLimit(req.getResultLimit());
 
