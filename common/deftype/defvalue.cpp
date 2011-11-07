@@ -3054,6 +3054,8 @@ IValue * concatValues(IValue * left, IValue * right)
 {
     ITypeInfo * leftType = left->queryType();
     ITypeInfo * rightType = right->queryType();
+    type_t ltc = leftType->getTypeCode();
+    type_t rtc = rightType->getTypeCode();
     if(isUnicodeType(leftType))
     {
         assertex(isUnicodeType(rightType));
@@ -3061,8 +3063,7 @@ IValue * concatValues(IValue * left, IValue * right)
 
         rtlDataAttr out;
         unsigned outlen;
-        type_t ltc = leftType->getTypeCode();
-        if (ltc == type_utf8 && rightType->getTypeCode() == type_utf8)
+        if (ltc == type_utf8 && rtc == type_utf8)
         {
             rtlConcatUtf8(outlen, out.addrstr(), leftType->getStringLen(), (char const *)left->queryValue(), rightType->getStringLen(), (char const *)right->queryValue(), -1);
             ITypeInfo * newtype = makeUtf8Type(outlen, leftType->queryLocale());
@@ -3088,15 +3089,19 @@ IValue * concatValues(IValue * left, IValue * right)
         StringBuffer s;
         lv->getStringValue(s);
         rv->getStringValue(s);
-        if (lt->getTypeCode() == type_varstring || rt->getTypeCode() == type_varstring)
+        if (ltc == type_varstring || rtc == type_varstring)
         {
             ITypeInfo * newtype = makeVarStringType(len);
             return createVarStringValue(len, s.str(), newtype);
         }
-        else
+        else if (ltc == type_string || rtc == type_string)
         {
             ITypeInfo * newtype = makeStringType(len, LINK(lt->queryCharset()), LINK(lt->queryCollation()));
             return createStringValue(s.str(), newtype);
+        }
+        else
+        {
+            return createDataValue(s.str(), len);
         }
     }
 }
@@ -3219,6 +3224,10 @@ IValue * logicalOrValues(unsigned num, IValue * * values)
 
 int orderValues(IValue * left, IValue * right)
 {
+    //The following line can be uncommented to check that the types are consistent everywhere
+    //but remains commented out to improve resilience when the types are wrong.
+//    return left->compare(right);
+
     Owned<ITypeInfo> pt = getPromotedCompareType(left->queryType(), right->queryType());
     Owned<IValue> lv = left->castTo(pt);
     Owned<IValue> rv = right->castTo(pt);

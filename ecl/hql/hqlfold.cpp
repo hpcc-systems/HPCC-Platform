@@ -74,6 +74,28 @@ static bool isOrderedType(ITypeInfo * type)
     return true;
 }
 
+static IHqlExpression * createCompareResult(node_operator op, int compare)
+{
+    switch (op)
+    {
+    case no_eq:
+        return createConstant(compare == 0);
+    case no_ne:
+        return createConstant(compare != 0);
+    case no_lt:
+        return createConstant(compare < 0);
+    case no_le:
+        return createConstant(compare <= 0);
+    case no_gt:
+        return createConstant(compare > 0);
+    case no_ge:
+        return createConstant(compare >= 0);
+    case no_order:
+        return createConstant(createIntValue(compare, 4, true));
+    default:
+        throwUnexpectedOp(op);
+    }
+}
 
 /*In castExpr, constExpr: NOT linked. Out: linked */
 static IHqlExpression * optimizeCast(node_operator compareOp, IHqlExpression * castExpr, IHqlExpression * constExpr)
@@ -114,29 +136,8 @@ static IHqlExpression * optimizeCast(node_operator compareOp, IHqlExpression * c
         int rc = castValue->rangeCompare(uncastType);
         if (rc != 0)
         {
-            switch (compareOp)
-            {
-            case no_eq:
-                createFalseConst = true;
-                break;
-            case no_ne:
-                createTrueConst = true;
-                break;
-            case no_le:
-            case no_lt:
-                if (rc > 0)     // value overflows => test field will always be less than
-                    createTrueConst = true;
-                else
-                    createFalseConst = true;
-                break;
-            case no_gt:
-            case no_ge:
-                if (rc < 0) // value underflows => test field will always be less than
-                    createTrueConst = true;
-                else
-                    createFalseConst = true;
-                break;
-            }
+            //This is effectively RHS compare min/max lhs, so invert the compare result
+            return createCompareResult(compareOp, -rc);
         }
         else
         {
@@ -301,90 +302,21 @@ static IHqlExpression * compareLists(node_operator op, IHqlExpression * leftList
 {
     unsigned lnum = leftList->numChildren();
     unsigned rnum = rightList->numChildren();
-    OwnedIValue res(createBoolValue(true));
-
-    if (!(lnum || rnum))
+    int order = 0;
+    unsigned num = lnum > rnum ? rnum : lnum;
+    for (unsigned i=0; i < num; i++)
     {
-        switch(op)
-        {
-        case no_ne:
-        case no_lt:
-        case no_gt:
-            res.setown(createBoolValue(false));
-            break;
-        case no_order:
-            res.setown(createIntValue(0, 4, true));
-            break;
-        }
+        IValue * leftValue = leftList->queryChild(i)->queryValue();
+        IValue * rightValue = rightList->queryChild(i)->queryValue();
+        order = orderValues(leftValue, rightValue);
+        if (order != 0)
+            return createCompareResult(op, order);
     }
-    else
-    {
-        bool more = true;
-        unsigned num = lnum > rnum ? rnum : lnum;
-        bool isOrder = op == no_order ? true : false;
-        while (num && (res->getBoolValue() || isOrder))
-        {
-            num--;
-            IValue * leftValue = leftList->queryChild(num)->queryValue();
-            IValue * rightValue = rightList->queryChild(num)->queryValue();
-            res.setown(compareValues(op, leftValue, rightValue));
-            switch (op)
-            {
-            case no_gt:
-            case no_lt:
-                if (!res->getBoolValue())
-                {
-                    res.setown(compareValues(no_eq, leftValue, rightValue));
-                    more = true;
-                }
-                else
-                    more = false;
-                break;
-            case no_order:
-                if (res->getIntValue() != 0)
-                {
-                    num = 0;
-                    more = false;
-                }
-                break;
-            }
-        }
-
-        if (!num && more)
-        {
-            switch (op)
-            {
-            case no_eq:
-                if (lnum != rnum)
-                    res.setown(createBoolValue(false));
-                break;
-            case no_ne:
-                if (lnum == rnum)
-                    res.setown(createBoolValue(false));
-                break;
-            case no_gt:
-                if (lnum <= rnum)
-                    res.setown(createBoolValue(false));
-                break;
-            case no_lt:
-                if (lnum >= rnum)
-                    res.setown(createBoolValue(false));
-                break;
-            case no_order:
-                {
-                    int val = 0;
-                    if (lnum > rnum)
-                        val = 1;
-                    else if (lnum < rnum)
-                        val = -1;
-                    res.setown(createIntValue(val, 4, true));
-                }
-                break;
-            }
-        }
-    }
-    return createConstant(res.getClear());
+    if (lnum != rnum)
+        order = lnum > rnum ? +1 : -1;
+    return createCompareResult(op, order);
 }
+
 
 static IHqlExpression * optimizeListConstant(node_operator op, IHqlExpression * list, IValue * constVal)
 {
@@ -472,50 +404,14 @@ static IHqlExpression * optimizeCompare(IHqlExpression * expr)
     if ((leftChild->queryBody() == rightChild->queryBody()) ||
         (leftOp == no_all && rightOp == no_all))
     {
-        switch (op)
-        {
-        case no_eq:
-        case no_ge:
-        case no_le:
-            return createConstant(true);
-        case no_order:
-            return createConstant(expr->queryType()->castFrom(true, I64C(0)));
-        default:
-            return createConstant(false);
-        }
+        return createCompareResult(op, 0);
     }
 
     if ((leftOp == no_all) && rightChild->isConstant())
-    {
-        bool val = false;
-        switch(op)
-        {
-        case no_ne:
-        case no_gt:
-        case no_ge:
-            val = true;
-            break;
-        case no_order:
-            return createConstant(expr->queryType()->castFrom(true, I64C(1)));
-        }
-        return createConstant(val); 
-    }
+        return createCompareResult(op, +1);
     
     if ((rightOp == no_all) && leftChild->isConstant())
-    {
-        bool val = false;
-        switch(op)
-        {
-        case no_ne:
-        case no_lt:
-        case no_le:
-            val = true;
-            break;
-        case no_order:
-            return createConstant(expr->queryType()->castFrom(true, I64C(-1)));
-        }
-        return createConstant(val); 
-    }
+        return createCompareResult(op, -1);
     
     if ((leftOp == no_list) && (rightOp == no_list))
         return compareLists(op, leftChild, rightChild);
@@ -524,8 +420,8 @@ static IHqlExpression * optimizeCompare(IHqlExpression * expr)
     IValue * rightValue = rightChild->queryValue();
     if (leftValue && rightValue)
     {
-        IValue * newConst = compareValues(op, leftValue, rightValue);
-        return createConstant(newConst); 
+        int order = orderValues(leftValue, rightValue);
+        return createCompareResult(op, order);
     }
 
     if (op == no_order)
@@ -2983,18 +2879,19 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
     case no_which:
     case no_rejected:
         {
-            bool allConst = true;
             bool isWhich = (op == no_which);
             unsigned num = expr->numChildren();
+            ITypeInfo * exprType = expr->queryType();
             switch (num)
             {
             case 1:
                 {
                     int trueValue = isWhich ? 1 : 0;
-                    return createValue(no_if, expr->getType(), LINK(expr->queryChild(0)), createConstant(trueValue), createConstant(1 - trueValue));
+                    return createValue(no_if, LINK(exprType), LINK(expr->queryChild(0)), createConstant(trueValue, LINK(exprType)), createConstant(1 - trueValue, LINK(exprType)));
                 }
             }
-            //MORE: Rewrite this in the same way as MAP was rewritten...
+
+            bool allConst = true;
             IHqlExpression * newWhich = createOpenValue(op, expr->getType());
             for (unsigned idx = 0; idx < num; idx++)
             {
@@ -3008,10 +2905,11 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                         if (allConst)
                         {
                             newWhich->closeExpr()->Release();
-                            return createConstant((__int64)idx+1);
+                            return createConstant((__int64)idx+1, LINK(exprType));
                         }
                         else
                         {
+                            //Add a value which will always match
                             newWhich->addOperand(createConstant(isWhich));
                             return newWhich->closeExpr();
                         }
@@ -3027,7 +2925,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             }
             newWhich->closeExpr()->Release();
             if (allConst)
-                return createConstant(0);
+                return createConstant(0, LINK(exprType));
             break;
         }
     case no_index:
