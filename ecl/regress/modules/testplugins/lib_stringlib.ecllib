@@ -1,0 +1,60 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+EXPORT StringLib := SERVICE : PLUGIN('stringlib.dll','STRINGLIB 1.1.14')
+  string StringFilterOut(const string src, const string _within) : c, pure,entrypoint='slStringFilterOut';
+  string StringFilter(const string src, const string _within) : c, pure,entrypoint='slStringFilter';
+  string StringSubstituteOut(const string src, const string _within, const string _newchar) : c, pure,entrypoint='slStringSubsOut';
+  string StringSubstitute(const string src, const string _within, const string _newchar) : c, pure,entrypoint='slStringSubs';
+  string StringRepad(const string src, unsigned4 size) : c, pure,entrypoint='slStringRepad';
+  unsigned integer4 StringFind(const string src, const string tofind, unsigned4 instance ) : c, pure,entrypoint='slStringFind';
+  unsigned integer4 StringUnboundedUnsafeFind(const string src, const string tofind ) : c, pure,entrypoint='slStringFind2';
+  unsigned integer4 StringFindCount(const string src, const string tofind) : c, pure,entrypoint='slStringFindCount';
+  unsigned integer4 EbcdicStringFind(const ebcdic string src, const ebcdic string tofind , unsigned4 instance ) : c,pure,entrypoint='slStringFind';
+  unsigned integer4 EbcdicStringUnboundedUnsafeFind(const ebcdic string src, const ebcdic string tofind ) : c,pure,entrypoint='slStringFind2';
+  string StringExtract(const string src, unsigned4 instance) : c,pure,entrypoint='slStringExtract';
+  string8 GetDateYYYYMMDD() : c,once,entrypoint='slGetDateYYYYMMDD2';
+  varstring GetBuildInfo() : c,once,entrypoint='slGetBuildInfo';
+  string Data2String(const data src) : c,pure,entrypoint='slData2String';
+  data String2Data(const string src) : c,pure,entrypoint='slString2Data';
+  string StringToLowerCase(const string src) : c,pure,entrypoint='slStringToLowerCase';
+  string StringToUpperCase(const string src) : c,pure,entrypoint='slStringToUpperCase';
+  string StringToProperCase(const string src) : c,pure,entrypoint='slStringToProperCase';
+  string StringToCapitalCase(const string src) : c,pure,entrypoint='slStringToCapitalCase';
+  string StringToTitleCase(const string src) : c,pure,entrypoint='slStringToTitleCase';
+  integer4 StringCompareIgnoreCase(const string src1, string src2) : c,pure,entrypoint='slStringCompareIgnoreCase';
+  string StringReverse(const string src) : c,pure,entrypoint='slStringReverse';
+  string StringFindReplace(const string src, const string stok, const string rtok) : c,pure,entrypoint='slStringFindReplace';
+  string StringCleanSpaces(const string src) : c,pure,entrypoint='slStringCleanSpaces';
+  boolean StringWildMatch(const string src, const string _pattern, boolean _noCase) : c, pure,entrypoint='slStringWildMatch';
+  boolean StringWildExactMatch(const string src, const string _pattern, boolean _noCase) : c, pure,entrypoint='slStringWildExactMatch';
+  boolean StringContains(const string src, const string _pattern, boolean _noCase) : c, pure,entrypoint='slStringContains';
+  string StringExtractMultiple(const string src, unsigned8 mask) : c,pure,entrypoint='slStringExtractMultiple';
+  unsigned integer4 EditDistance(const string l, const string r) : c, pure,entrypoint='slEditDistance';
+  boolean EditDistanceWithinRadius(const string l, const string r, unsigned4 radius) : c,pure,entrypoint='slEditDistanceWithinRadius';
+  unsigned integer4 EditDistanceV2(const string l, const string r) : c, pure,entrypoint='slEditDistanceV2';
+  boolean EditDistanceWithinRadiusV2(const string l, const string r, unsigned4 radius) : c,pure,entrypoint='slEditDistanceWithinRadiusV2';
+  string StringGetNthWord(const string src, unsigned4 n) : c, pure,entrypoint='slStringGetNthWord';
+  unsigned4 StringWordCount(const string src) : c, pure,entrypoint='slStringWordCount';
+  unsigned4 CountWords(const string src, const string _separator, BOOLEAN allow_blanks) : c, pure,entrypoint='slCountWords';
+  SET OF STRING SplitWords(const string src, const string _separator, BOOLEAN allow_blanks) : c, pure,entrypoint='slSplitWords';
+  STRING CombineWords(set of string src, const string _separator) : c, pure,entrypoint='slCombineWords';
+  UNSIGNED4 StringToDate(const string src, const varstring format) : c, pure,entrypoint='slStringToDate';
+  UNSIGNED4 MatchDate(const string src, set of varstring formats) : c, pure,entrypoint='slMatchDate';
+  STRING FormatDate(UNSIGNED4 date, const varstring format) : c, pure,entrypoint='slFormatDate';
+END;
