@@ -295,6 +295,16 @@ IHqlStmt * BuildCtx::addFilter(IHqlExpression * condition)
 }
 
 
+IHqlStmt * BuildCtx::addFunction(IHqlExpression * funcdef)
+{
+    if (ignoreInput)
+        return NULL;
+    HqlCompoundStmt * next = new HqlCompoundStmt(function_stmt, curStmts);
+    next->addExpr(LINK(funcdef));
+    return appendCompound(next);
+}
+
+
 IHqlStmt * BuildCtx::addIndirection(const BuildCtx & _parent)
 {
     HqlCompoundStmt * next = new HqlCompoundStmt(indirect_stmt, _parent.curStmts);

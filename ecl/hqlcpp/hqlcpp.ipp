@@ -824,7 +824,6 @@ public:
 // Helper functions
 
     void ThrowStringException(int code,const char *format, ...) __attribute__((format(printf, 3, 4)));            // override the global function to try and add more context information
-    void buildServicePrototypes(IHqlScope * scope);
 
     void buildAddress(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void buildBlockCopy(BuildCtx & ctx, IHqlExpression * tgt, CHqlBoundExpr & src);
@@ -1083,9 +1082,8 @@ public:
     void assignBound(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * rhs);             // assign rhs to 
     void assignBoundToTemp(BuildCtx & ctx, IHqlExpression * lhs, IHqlExpression * rhs);
 
-    void expandFunctionReturnType(StringBuffer & prefix, StringBuffer & params, ITypeInfo * retType, IHqlExpression * attrs);
-    bool expandFunctionPrototype(StringBuffer & s, IHqlExpression * funcdef, bool force);
-    void expandFunctionPrototype(BuildCtx & ctx, IHqlExpression * funcdef, bool force);
+    bool expandFunctionPrototype(StringBuffer & s, IHqlExpression * funcdef);
+    void expandFunctionPrototype(BuildCtx & ctx, IHqlExpression * funcdef);
     void buildFunctionDefinition(IHqlExpression * externalDef, IHqlExpression * funcdef);
     void assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & target, CHqlBoundExpr & expr);
     void assignCastUnknownLength(BuildCtx & ctx, const CHqlBoundTarget & target, CHqlBoundExpr & pure);
