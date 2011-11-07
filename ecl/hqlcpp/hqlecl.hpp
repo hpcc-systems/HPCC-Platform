@@ -26,7 +26,6 @@
 
 interface IWorkUnit;
 
-extern HQLCPP_API void generateCppPrototypes(IHqlScope * scope, const char * name, const char * template_dir);
 extern HQLCPP_API double getECLcomplexity(IHqlExpression * exprs, IErrorReceiver * errs, IWorkUnit *wu, ClusterType targetClusterType);
 extern HQLCPP_API void dumpActivityCounts();
 

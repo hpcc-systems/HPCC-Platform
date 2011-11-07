@@ -79,7 +79,6 @@ public:
     virtual void addWebServiceInfo(IPropertyTree *wsinfo){ code->addWebServiceInfo(wsinfo); }
 
     virtual double getECLcomplexity(IHqlExpression * exprs);
-    virtual void generateCppPrototypes(IHqlScope * scope);
     virtual void setSaveGeneratedFiles(bool value) { deleteGenerated = !value; }
 
 protected:
@@ -461,28 +460,10 @@ double HqlDllGenerator::getECLcomplexity(IHqlExpression * exprs)
 }
 
 
-void HqlDllGenerator::generateCppPrototypes(IHqlScope * scope)
-{
-    Owned<IHqlCppInstance> code = createCppInstance(NULL, NULL);
-
-    HqlCppTranslator translator(NULL, wuname, code, ThorCluster, NULL);
-    translator.buildServicePrototypes(scope);
-
-    expandCode(PROTO_TEMPLATE, NULL, code, false, 0, translator.queryOptions().targetCompiler);
-}
-
-
-
 extern HQLCPP_API double getECLcomplexity(IHqlExpression * exprs, IErrorReceiver * errs, IWorkUnit *wu, ClusterType targetClusterType)
 {
     HqlDllGenerator generator(errs, "unknown", NULL, wu, NULL, targetClusterType, NULL, false);
     return generator.getECLcomplexity(exprs);
-}
-
-extern HQLCPP_API void generateCppPrototypes(IHqlScope * scope, const char * name, const char *template_dir)
-{
-    HqlDllGenerator generator(NULL, name, NULL, NULL, template_dir, ThorCluster, NULL, false);
-    generator.generateCppPrototypes(scope);
 }
 
 extern HQLCPP_API IHqlExprDllGenerator * createDllGenerator(IErrorReceiver * errs, const char *wuname, const char * targetdir, IWorkUnit *wu, const char * template_dir, ClusterType targetClusterType, ICodegenContextCallback *ctxCallback, bool checkForLocalFileUploads)

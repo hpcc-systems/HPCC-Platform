@@ -70,9 +70,12 @@ public:
     HqlCppWriter(CompilerType _compiler);
     HqlCppWriter(StringBuffer & _out, CompilerType _compiler);
 
-    void generateType(ITypeInfo * type, const char * name);
     StringBuffer & generateExprCpp(IHqlExpression * expr);
+    bool generateFunctionPrototype(IHqlExpression * funcdef);
+    void generateFunctionReturnType(StringBuffer & params, ITypeInfo * retType, IHqlExpression * attrs);
     void generateStatementsForPass(HqlStmts & stmts, unsigned indent, unsigned pass);
+    void generateType(ITypeInfo * type, const char * name);
+
     void noteLines(size32_t count) { outputLineNum += count; }
     void setOutput(IFile * out, IIOStream * outStream); 
 
@@ -81,6 +84,7 @@ protected:
     void generate(HqlStmtArray & stmts);
     void generateChildren(IHqlStmt * stmt, bool addBraces);
     StringBuffer & generateChildExpr(StringBuffer & out, IHqlExpression * expr, unsigned childIndex);
+    bool generateFunctionPrototype(IHqlExpression * funcdef, const char * name);
     void generateInitializer(IHqlExpression * expr);
     void generateParamCpp(IHqlExpression * expr);
     void generateSimpleAssign(IHqlExpression * target, IHqlExpression * source);
@@ -90,10 +94,16 @@ protected:
     void generateStmtCase(IHqlStmt * stmt);
     void generateStmtDeclare(IHqlStmt * declare);
     void generateStmtFilter(IHqlStmt * stmt);
+    void generateStmtFunction(IHqlStmt * stmt);
     void generateStmtLine(IHqlStmt * stmt);
     void generateStmtLoop(IHqlStmt * stmt);
     void generateStmtSwitch(IHqlStmt * stmt);
     void generateStmtForPass(IHqlStmt * stmt, unsigned pass);
+
+    //Wrappers around recursive calls.
+    StringBuffer & generateExprCpp(StringBuffer & out, IHqlExpression * expr);
+    void generateType(StringBuffer & result, ITypeInfo * type, const char * name);
+
     StringBuffer & indent();
     void indent(int delta)          { curIndent += delta; }
     StringBuffer & newline();

@@ -101,6 +101,7 @@ public:
     IHqlStmt *                  addExprOwn(IHqlExpression * condition);
     IHqlStmt *                  addReturn(IHqlExpression * value);
     IHqlStmt *                  addFilter(IHqlExpression * condition);
+    IHqlStmt *                  addFunction(IHqlExpression * funcdef);
     IHqlStmt *                  addGoto(const char * labelText);
     IHqlStmt *                  addGroup(); // like a block but no {}
     IHqlStmt *                  addGroupPass(IHqlExpression * pass);
@@ -187,6 +188,7 @@ enum StmtKind {
              alias_stmt,
              line_stmt,
              continue_stmt,
+             function_stmt,
 };
 
 
