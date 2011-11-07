@@ -394,7 +394,7 @@ public:
     {
         const char* frombuf = from.toByteArray();
         char tmp[3];
-        for(int i = 0; i < from.length(); i++)
+        for(unsigned i = 0; i < from.length(); i++)
         {
             unsigned char c = frombuf[i];
             sprintf(tmp, "%02X", c);
