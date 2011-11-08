@@ -20,7 +20,9 @@
 #include "jlog.hpp"
 #include "jfile.hpp"
 #include "jargv.hpp"
+#include "junicode.hpp"
 #include "build-config.h"
+#include "workunit.hpp"
 
 #include "ws_workunits.hpp"
 #include "eclcmd_common.hpp"
@@ -93,104 +95,108 @@ static bool looksLikeOnlyAWuid(const char * wuid)
 
 //=========================================================================================
 
-static const char * skipWhitespace(const char * s)
-{
-    while (*s && strchr(" \t\r\n", *s))
-        s++;
-    return s;
-}
-
-static const char * skipXmlDeclaration(const char *s)
-{
-    while (*s)
-    {
-        s = skipWhitespace(s);
-        if (*s!='<' || (s[1]!='?'))
-            return s;
-        while (*s && *s++!='>');
-    }
-    return s;
-}
-
 #define PE_OFFSET_LOCATION_IN_DOS_SECTION 0x3C
-
-class determineEclObjParameterType
-{
-public:
-    determineEclObjParameterType(const char *path, unsigned _accept=0x00) : accept(_accept)
-    {
-        file.setown(createIFile(path));
-        io.setown(file->open(IFOread));
-        read(io, 0, (size32_t) 1024, signature);
-        signature.append((char)0);
-    }
-    bool isArchive()
-    {
-        const char *s = skipXmlDeclaration(signature.toByteArray());
-        return (strnicmp("<Archive", s, 8)==0);
-    }
-    bool isElfFile()
-    {
-        const char *s = signature.toByteArray();
-        return (s[0]==0x7F && s[1]=='E' && s[2]=='L' && s[3]=='F');
-    }
-    bool isPEFile()
-    {
-        if (file->size()<=PE_OFFSET_LOCATION_IN_DOS_SECTION)
-            return false;
-        const char *buffer = signature.toByteArray();
-        if (memcmp("MZ", buffer, 2)!=0)
-            return false;
-        unsigned long PESectStart = *((unsigned long *)(buffer + PE_OFFSET_LOCATION_IN_DOS_SECTION));
-        if (file->size()<=PESectStart)
-            return false;
-        unsigned len = signature.length()-1;
-        if (len<PESectStart+2)
-        {
-            signature.setLength(len);
-            read(io, len, (size32_t) PESectStart+2-len, signature);
-            signature.append((char)0);
-        }
-        if (signature.length()<PESectStart+3)
-            return false;
-        buffer = signature.toByteArray()+PESectStart;
-        if (memcmp("PE", buffer, 2)!=0)
-            return false;
-        return true;
-    }
-    eclObjParameterType checkType()
-    {
-        if ((!accept || accept & eclObjSharedObject) && isElfFile() || isPEFile())
-            return eclObjSharedObject;
-        if ((!accept || accept & eclObjArchive) && isArchive())
-            return eclObjArchive;
-        else if (!accept || accept & eclObjSource)
-            return eclObjSource;
-        else if (accept & eclObjQueryId)
-            return eclObjQueryId;
-        return eclObjTypeUnknown;
-    }
-public:
-    Owned<IFile> file;
-    Owned<IFileIO> io;
-    MemoryBuffer signature;
-    unsigned accept;
-};
-
 
 EclObjectParameter::EclObjectParameter(unsigned _accept) : type(eclObjTypeUnknown), accept(_accept)
 {
 }
 
-eclObjParameterType EclObjectParameter::set(const char *_value)
+bool EclObjectParameter::isElfContent()
 {
-    value.set(_value);
-    if (checkFileExists(_value))
+    const char *s = mb.toByteArray();
+    return (s[0]==0x7F && s[1]=='E' && s[2]=='L' && s[3]=='F');
+}
+
+bool EclObjectParameter::isPEContent()
+{
+    if (mb.length()<=PE_OFFSET_LOCATION_IN_DOS_SECTION)
+        return false;
+    const char *buffer = mb.toByteArray();
+    if (memcmp("MZ", buffer, 2)!=0)
+        return false;
+    unsigned long PESectStart = *((unsigned long *)(buffer + PE_OFFSET_LOCATION_IN_DOS_SECTION));
+    if (mb.length()<PESectStart+3)
+        return false;
+    if (memcmp("PE", buffer + PESectStart, 2)!=0)
+        return false;
+    return true;
+}
+
+void EclObjectParameter::ensureUtf8Content()
+{
+    //If looks like utf16 then convert it to utf8
+    const void * zero = memchr(mb.bufferBase(), 0, mb.length());
+    if (zero)
     {
-        determineEclObjParameterType fileType(_value, accept);
-        type = fileType.checkType();
+        MemoryBuffer translated;
+        if (convertToUtf8(translated, mb.length(), mb.bufferBase()))
+            mb.swapWith(translated);
+        else
+            throw MakeStringException(1, "%s content doesn't appear to be UTF8", value.get());
     }
-    else if (looksLikeOnlyAWuid(_value))
+}
+
+eclObjParameterType EclObjectParameter::finalizeContentType()
+{
+    if (accept & eclObjSharedObject && (isElfContent() || isPEContent()))
+        type = eclObjSharedObject;
+    else if (accept & eclObjSourceOrArchive)
+    {
+        ensureUtf8Content();
+        mb.append((byte)0);
+        type = isArchiveQuery(mb.toByteArray()) ? eclObjArchive : eclObjSource;
+    }
+    else
+        mb.setLength(0);
+    mb.truncate();
+    return type;
+}
+#define STDIO_BUFFSIZE 0x10000     // 64K
+
+void EclObjectParameter::loadStdIn()
+{
+    Owned<IFile> file = createIFile("stdin:");
+    Owned<IFileIO> io = file->openShared(IFOread, IFSHread);
+    if (!io)
+        throw MakeStringException(1, "stdin could not be opened");
+    size32_t rd;
+    size32_t sizeRead = 0;
+    do {
+        rd = io->read(sizeRead, STDIO_BUFFSIZE, mb.reserve(STDIO_BUFFSIZE+1)); // +1 as will need
+        sizeRead += rd;
+        mb.setLength(sizeRead);
+    } while (rd);
+    finalizeContentType();
+}
+
+void EclObjectParameter::loadFile()
+{
+    Owned<IFile> file = createIFile(value.get());
+    Owned<IFileIO> io = file->openShared(IFOread, IFSHread);
+    if (!io)
+        throw MakeStringException(1, "File %s could not be opened", file->queryFilename());
+
+    offset_t size = io->size();
+    size32_t sizeToRead = (size32_t)size;
+    if (sizeToRead != size)
+        throw MakeStringException(1, "File %s is larger than 4Gb", file->queryFilename());
+
+    mb.ensureCapacity(sizeToRead+1);
+    byte * contents = static_cast<byte *>(mb.reserve(sizeToRead));
+    size32_t sizeRead = io->read(0, sizeToRead, contents);
+    if (sizeRead != sizeToRead)
+        throw MakeStringException(1, "File %s only read %u of %u bytes", file->queryFilename(), sizeRead, sizeToRead);
+    finalizeContentType();
+}
+
+eclObjParameterType EclObjectParameter::set(const char *param)
+{
+    value.set(param);
+    if (streq(param, "stdin"))
+        loadStdIn();
+    else if (checkFileExists(param))
+        loadFile();
+    else if (looksLikeOnlyAWuid(param))
         type = eclObjWuid;
     return type;
 }
@@ -207,7 +213,6 @@ const char *EclObjectParameter::queryTypeName()
         return "ECL Archive";
     case eclObjSharedObject:
         return "ECL Shared Object";
-    case eclObjTypeUnknown:
     default:
         return "Unknown";
     }
@@ -234,6 +239,18 @@ eclCmdOptionMatchIndicator EclCmdCommon::matchCommandLineOption(ArgvIterator &it
         return EclCmdOptionMatch;
     if (iter.matchOption(optPassword, ECLOPT_PASSWORD))
         return EclCmdOptionMatch;
+    StringAttr tempArg;
+    if (iter.matchOption(tempArg, "-brk"))
+    {
+#if defined(_WIN32) && defined(_DEBUG)
+        unsigned id = atoi(tempArg.sget());
+        if (id == 0)
+            DebugBreak();
+        else
+            _CrtSetBreakAlloc(id);
+#endif
+        return EclCmdOptionMatch;
+    }
     if (finalAttempt)
         fprintf(stderr, "\n%s option not recognized\n", iter.query());
     return EclCmdOptionNoMatch;
