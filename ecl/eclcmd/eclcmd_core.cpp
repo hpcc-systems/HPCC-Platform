@@ -57,16 +57,12 @@ bool doDeploy(IClientWsWorkunits *client, EclObjectParameter &optObj, const char
             return false;
     }
 
-    MemoryBuffer mb;
-    Owned<IFile> file = createIFile(optObj.value.sget());
-    Owned<IFileIO> io = file->open(IFOread);
-    read(io, 0, (size32_t)file->size(), mb);
     if (name && *name)
         req->setName(name);
     if (cluster && *cluster)
         req->setCluster(cluster);
     req->setFileName(optObj.value.sget());
-    req->setObject(mb);
+    req->setObject(optObj.mb);
     Owned<IClientWUDeployWorkunitResponse> resp = client->WUDeployWorkunit(req);
     if (resp->getExceptions().ordinality())
         outputMultiExceptions(resp->getExceptions());
@@ -98,6 +94,11 @@ public:
         for (; !iter.done(); iter.next())
         {
             const char *arg = iter.query();
+            if (streq(arg, "-"))
+            {
+                optObj.set("stdin");
+                continue;
+            }
             if (*arg!='-')
             {
                 if (optObj.value.length())
@@ -142,12 +143,6 @@ public:
             fprintf(stderr, "\nWUID (%s) cannot be the target for deployment\n", optObj.getDescription(s).str());
             return false;
         }
-        if (optObj.type==eclObjQueryId)
-        {
-            StringBuffer s;
-            fprintf(stderr, "\nQuery (%s) cannot be the target for deployment\n", optObj.getDescription(s).str());
-            return false;
-        }
         if (optObj.type==eclObjArchive && optCluster.isEmpty())
         {
             fprintf(stderr, "\nCluster must be specified when deploying an ECL Archive\n");
@@ -167,11 +162,12 @@ public:
     virtual void usage()
     {
         fprintf(stdout,"\nUsage:\n\n"
-            "ecl deploy --cluster=<cluster> --name=<name> <archive>\n"
-            "ecl deploy [--cluster=<cluster>] [--name=<name>] <so|dll>\n\n"
+            "ecl deploy --cluster=<cluster> --name=<name> <archive|->\n"
+            "ecl deploy [--cluster=<cluster>] [--name=<name>] <so|dll|->\n\n"
+            "      -                    specifies object should be read from stdin\n"
+            "      <archive|->          ecl archive to deploy\n"
+            "      <so|dll|->           workunit dll or shared object to deploy\n"
             "   Options:\n"
-            "      <archive>            ecl archive to deploy\n"
-            "      <so|dll>             workunit dll or shared object to deploy\n"
             "      --name=<name>        workunit job name\n"
             "      --cluster=<cluster>  cluster to associate workunit with\n"
             "      --name=<name>        workunit job name\n"
@@ -201,6 +197,11 @@ public:
         for (; !iter.done(); iter.next())
         {
             const char *arg = iter.query();
+            if (streq(arg, "-"))
+            {
+                optObj.set("stdin");
+                continue;
+            }
             if (*arg!='-')
             {
                 if (optObj.value.length())
@@ -246,12 +247,6 @@ public:
         if (optObj.type==eclObjSource)
         {
             fprintf(stderr, "\nPublishing ECL source directly is not yet supported\n");
-            return false;
-        }
-        if (optObj.type==eclObjQueryId)
-        {
-            StringBuffer s;
-            fprintf(stderr, "\nQuery (%s) cannot be the target for pulishing\n", optObj.getDescription(s).str());
             return false;
         }
         if (optObj.type==eclObjArchive)
@@ -307,12 +302,13 @@ public:
     {
         fprintf(stdout,"\nUsage:\n\n"
             "ecl publish [--cluster=<cluster>] [--name=<name>] [--activate] <wuid>\n"
-            "ecl publish [--cluster=<cluster>] [--name=<name>] [--activate] <so|dll>\n"
-            "ecl publish --cluster=<cluster> --name=<name> [--activate] <archive>\n\n"
-            "   Options:\n"
+            "ecl publish [--cluster=<cluster>] [--name=<name>] [--activate] <so|dll|->\n"
+            "ecl publish --cluster=<cluster> --name=<name> [--activate] <archive|->\n\n"
+            "      -                    specifies object should be read from stdin\n"
             "      <wuid>               workunit to publish\n"
-            "      <archive>            archive to publish\n"
-            "      <so|dll>             workunit dll or shared object to publish\n"
+            "      <archive|->          archive to publish\n"
+            "      <so|dll|->           workunit dll or shared object to publish\n"
+            "   Options:\n"
             "      --cluster=<cluster>  cluster to publish workunit to\n"
             "                           (defaults to cluster defined inside workunit)\n"
             "      --name=<name>        query name to use for published workunit\n"

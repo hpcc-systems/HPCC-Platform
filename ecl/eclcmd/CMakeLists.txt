@@ -65,9 +65,10 @@ include_directories (
 ADD_DEFINITIONS( -D_CONSOLE )
 
 add_executable ( ecl ${SRCS} )
-add_dependencies ( ecl espscm ws_workunits )
+add_dependencies ( ecl espscm workunit ws_workunits )
 install ( TARGETS ecl DESTINATION ${OSSDIR}/bin )
 target_link_libraries ( ecl
         jlib
         esphttp
+        workunit
     )
