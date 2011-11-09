@@ -1130,6 +1130,10 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
             testHqlInternals();
         }
+        else if (iter.matchFlag(tempBool, "-save-cpps"))
+        {
+            setDebugOption("saveCppTempFiles", tempBool);
+        }
         else if (iter.matchFlag(tempBool, "-save-temps"))
         {
             setDebugOption("saveEclTempFiles", tempBool);
@@ -1292,7 +1296,8 @@ void EclCC::usage()
            "                  executable, or stdout)\n"
            "    -Ppath        Specify the path of the output files\n"
            "    -Wc,xx        Supply option for the c++ compiler\n"
-           "    -save-temps   Do not delete intermediate files (implied if -g)\n"
+           "    -save-cpps    Do not delete generated c++ files (implied if -g)\n"
+           "    -save-temps   Do not delete intermediate files\n"
            "    -manifest     Specify path to manifest file listing resources to add\n"
            "\nECL options:\n"
            "    -E            Output preprocessed ECL in xml archive form\n"
