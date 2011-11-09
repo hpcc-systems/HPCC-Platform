@@ -833,7 +833,8 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
     instance.legacyMode = archiveTree->getPropBool("@legacyMode", instance.legacyMode);
 
     //Some old archives contained imports, but no definitions of the module.  This option is to allow them to compile.
-    instance.ignoreUnknownImport = archiveTree->getPropBool("@ignoreUnknownImport", false);
+    //It shouldn't be needed for new archives in non-legacy mode. (But neither should it cause any harm.)
+    instance.ignoreUnknownImport = archiveTree->getPropBool("@ignoreUnknownImport", true);
 
     instance.eclVersion.set(archiveTree->queryProp("@eclVersion"));
     checkEclVersionCompatible(instance.errs, instance.eclVersion);
