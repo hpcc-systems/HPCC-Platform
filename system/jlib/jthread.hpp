@@ -135,10 +135,97 @@ class CThreaded : public Thread
 {
     IThreaded *owner;
 public:
+    inline CThreaded(const char *name, IThreaded *_owner) : Thread(name), owner(_owner) { }
     inline CThreaded(const char *name) : Thread(name) { owner = NULL; }
     inline void init(IThreaded *_owner) { owner = _owner; start(); }
     virtual int run() { owner->main(); return 1; }
 };
+
+// Similar to above, but the underlying thread always remains running. This can make repeated start + join's significantly quicker
+class CThreadedPersistent : public CInterface
+{
+    class CAThread : public Thread
+    {
+        CThreadedPersistent &owner;
+    public:
+        CAThread(CThreadedPersistent &_owner, const char *name) : Thread(name), owner(_owner) { }
+        virtual int run() { owner.main(); return 1; }
+    } athread;
+    IThreaded *owner;
+    bool stopped, running, joinWaiting;
+    Semaphore sem, joinSem;
+    SpinLock spin;
+
+    void stop()
+    {
+        stopped = true;
+        sem.signal();
+    }
+    void main()
+    {
+        loop
+        {
+            sem.wait();
+            if (stopped)
+                break;
+            owner->main();
+
+            spin.enter();
+            running = false;
+            if (joinWaiting)
+            {
+                spin.leave();
+                joinWaiting = false;
+                joinSem.signal();
+            }
+            else
+                spin.leave();
+        }
+    }
+public:
+    inline CThreadedPersistent(const char *name, IThreaded *_owner) : athread(*this, name), owner(_owner)
+    {
+        stopped = false;
+        running = false;
+        joinWaiting = false;
+        athread.start();
+    }
+    inline ~CThreadedPersistent()
+    {
+        join(INFINITE);
+        stop();
+        athread.join();
+    }
+    inline void start()
+    {
+        assertex(!stopped);
+        SpinBlock b(spin);
+        if (running)
+            throw MakeStringException(0, "CThreadedPersistent(%s) already running", athread.queryThreadName()->get());
+        running = true;
+        sem.signal();
+    }
+    inline bool join(unsigned timeout=INFINITE)
+    {
+        assertex(!stopped);
+        spin.enter();
+        if (running)
+        {
+            joinWaiting = true;
+            spin.leave();
+            if (!joinSem.wait(timeout))
+            {
+                SpinBlock b(spin);
+                joinWaiting = false;
+                return false;
+            }
+        }
+        else
+            spin.leave();
+        return true;
+    }
+};
+
 
 // Asynchronous 'for' utility class
 // see HRPCUTIL.CPP for example of usage
