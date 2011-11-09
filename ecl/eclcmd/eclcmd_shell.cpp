@@ -100,27 +100,27 @@ void EclCMDShell::finalizeOptions(IProperties *globals)
 
 int EclCMDShell::run()
 {
-    if (!parseCommandLineOptions(args))
-        return 1;
-
-    if (!optIniFilename)
-    {
-        if (checkFileExists(INIFILE))
-            optIniFilename.set(INIFILE);
-        else
-        {
-            StringBuffer fn(SYSTEMCONFDIR);
-            fn.append(PATHSEPSTR).append(DEFAULTINIFILE);
-            if (checkFileExists(fn))
-                optIniFilename.set(fn);
-        }
-    }
-
-    globals.setown(createProperties(optIniFilename, true));
-    finalizeOptions(globals);
-
     try
     {
+        if (!parseCommandLineOptions(args))
+            return 1;
+
+        if (!optIniFilename)
+        {
+            if (checkFileExists(INIFILE))
+                optIniFilename.set(INIFILE);
+            else
+            {
+                StringBuffer fn(SYSTEMCONFDIR);
+                fn.append(PATHSEPSTR).append(DEFAULTINIFILE);
+                if (checkFileExists(fn))
+                    optIniFilename.set(fn);
+            }
+        }
+
+        globals.setown(createProperties(optIniFilename, true));
+        finalizeOptions(globals);
+
         return processCMD(args);
     }
     catch (IException *E)
@@ -156,16 +156,27 @@ bool EclCMDShell::parseCommandLineOptions(ArgvIterator &iter)
         const char * arg = iter.query();
         if (iter.matchFlag(optHelp, "help"))
             continue;
-        else if (*arg!='-')
+        if (*arg!='-')
         {
             cmd.set(arg);
             iter.next();
             break;
         }
-        else if (iter.matchFlag(boolValue, "--version"))
+        if (iter.matchFlag(boolValue, "--version"))
         {
             fprintf(stdout, "%s\n", BUILD_TAG);
             return false;
+        }
+        StringAttr tempArg;
+        if (iter.matchOption(tempArg, "-brk"))
+        {
+#if defined(_WIN32) && defined(_DEBUG)
+            unsigned id = atoi(tempArg.sget());
+            if (id == 0)
+                DebugBreak();
+            else
+                _CrtSetBreakAlloc(id);
+#endif
         }
     }
     return true;

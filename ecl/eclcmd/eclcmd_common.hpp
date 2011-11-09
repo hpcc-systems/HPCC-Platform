@@ -71,9 +71,10 @@ enum eclObjParameterType
     eclObjSource = 0x01,
     eclObjArchive = 0x02,
     eclObjSharedObject = 0x04,
-    eclObjWuid = 0x08,
-    eclObjQueryId = 0x10
+    eclObjWuid = 0x08
 };
+
+#define eclObjSourceOrArchive (eclObjSource|eclObjArchive)
 
 class EclObjectParameter
 {
@@ -82,10 +83,19 @@ public:
     eclObjParameterType set(const char *_value);
     const char *queryTypeName();
     StringBuffer &getDescription(StringBuffer &s);
+    void loadStdIn();
+    void loadFile();
+
+    eclObjParameterType finalizeContentType();
+
+    bool isElfContent();
+    bool isPEContent();
+    void ensureUtf8Content();
 
 public:
     eclObjParameterType type;
     StringAttr value;
+    MemoryBuffer mb;
     unsigned accept;
 };
 
