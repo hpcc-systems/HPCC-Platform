@@ -459,6 +459,9 @@ protected:
     IHqlExpression *          extractWorkflow(IHqlExpression * untransformed, IHqlExpression * transformed);
     IHqlExpression *          extractClusterWorkflow(IHqlExpression * expr);
     IHqlExpression *          extractCommonWorkflow(IHqlExpression * expr, IHqlExpression * transformed);
+
+    IHqlExpression *          transformInternalCall(IHqlExpression * transformed);
+    IHqlExpression *          transformInternalFunction(IHqlExpression * transformed);
     
     IHqlExpression *          createCompoundWorkflow(IHqlExpression * expr);
     IHqlExpression *          createIfWorkflow(IHqlExpression * expr);
@@ -512,6 +515,7 @@ protected:
     HqlExprCopyArray          activeLocations;
     unsigned                  trivialStoredWfid;
     unsigned                  onceWfid;
+    unsigned                  nextInternalFunctionId;
     HqlExprArray              trivialStoredExprs;
     HqlExprArray              onceExprs;
     bool                      combineAllStored;

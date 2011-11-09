@@ -916,6 +916,7 @@ const char *getOpString(node_operator op)
     case no_pat_case: return "CASE";
     case no_pat_nocase: return "NOCASE";
     case no_evaluate_stmt: return "EVALUATE";
+    case no_return_stmt: return "RETURN";
     case no_activetable: return "<Active>";
     case no_preload: return "PRELOAD";
     case no_createset: return "SET";
@@ -1086,7 +1087,7 @@ const char *getOpString(node_operator op)
     case no_debug_option_value: return "__DEBUG__";
 
     case no_unused1: case no_unused2: case no_unused3: case no_unused4: case no_unused5: case no_unused6:
-    case no_unused13: case no_unused14: case no_unused15: case no_unused16: case no_unused17: case no_unused18: case no_unused19:
+    case no_unused13: case no_unused14: case no_unused15: case no_unused17: case no_unused18: case no_unused19:
     case no_unused20: case no_unused21: case no_unused22: case no_unused23: case no_unused24: case no_unused25: case no_unused26: case no_unused27: case no_unused28: case no_unused29:
     case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38: case no_unused39:
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
@@ -11050,6 +11051,24 @@ extern IHqlExpression *createExternalReference(_ATOM name, ITypeInfo *_type, IHq
 extern IHqlExpression *createExternalReference(_ATOM name, ITypeInfo *_type, HqlExprArray & attributes)
 {
     return CHqlExternal::makeExternalReference(name, _type, attributes)->closeExpr();
+}
+
+IHqlExpression * createExternalFuncdefFromInternal(IHqlExpression * funcdef)
+{
+    IHqlExpression * body = funcdef->queryChild(0);
+    HqlExprArray attrs;
+    unwindChildren(attrs, body, 1);
+
+    if (body->isPure())
+        attrs.append(*createAttribute(pureAtom));
+    if (body->getInfoFlags() & HEFaction)
+        attrs.append(*createAttribute(actionAtom));
+    if (body->getInfoFlags() & HEFcontextDependentException)
+        attrs.append(*createAttribute(contextSensitiveAtom));
+
+    ITypeInfo * returnType = funcdef->queryType()->queryChildType();
+    OwnedHqlExpr externalExpr = createExternalReference(funcdef->queryName(), LINK(returnType), attrs);
+    return replaceChild(funcdef, 0, externalExpr);
 }
 
 extern IHqlExpression* createValue(node_operator op, HqlExprArray& operands) {

@@ -7378,3 +7378,16 @@ bool isSetWithUnknownElementSize(ITypeInfo * type)
     }
     return false;
 }
+
+IHqlExpression * replaceParameters(IHqlExpression * body, IHqlExpression * oldParams, IHqlExpression * newParams)
+{
+    HqlMapTransformer simpleTransformer;
+    ForEachChild(i, oldParams)
+    {
+        IHqlExpression * from = oldParams->queryChild(i);
+        IHqlExpression * to = newParams->queryChild(i);
+        simpleTransformer.setMapping(from, to);
+    }
+
+    return simpleTransformer.transformRoot(body);
+}
