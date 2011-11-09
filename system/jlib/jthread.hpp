@@ -135,10 +135,35 @@ class CThreaded : public Thread
 {
     IThreaded *owner;
 public:
+    inline CThreaded(const char *name, IThreaded *_owner) : Thread(name), owner(_owner) { }
     inline CThreaded(const char *name) : Thread(name) { owner = NULL; }
     inline void init(IThreaded *_owner) { owner = _owner; start(); }
     virtual int run() { owner->main(); return 1; }
 };
+
+// Similar to above, but the underlying thread always remains running. This can make repeated start + join's significantly quicker
+class jlib_decl CThreadedPersistent : public CInterface
+{
+    class CAThread : public Thread
+    {
+        CThreadedPersistent &owner;
+    public:
+        CAThread(CThreadedPersistent &_owner, const char *name) : Thread(name), owner(_owner) { }
+        virtual int run() { owner.main(); return 1; }
+    } athread;
+    IThreaded *owner;
+    Semaphore sem, joinSem;
+    atomic_t state;
+    enum ThreadStates { s_stop, s_ready, s_running, s_joining };
+
+    void main();
+public:
+    CThreadedPersistent(const char *name, IThreaded *_owner);
+    ~CThreadedPersistent();
+    void start();
+    bool join(unsigned timeout=INFINITE);
+};
+
 
 // Asynchronous 'for' utility class
 // see HRPCUTIL.CPP for example of usage

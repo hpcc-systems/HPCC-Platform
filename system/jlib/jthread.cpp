@@ -509,6 +509,80 @@ StringBuffer &getThreadName(int thandle,unsigned tid,StringBuffer &name)
     return name;
 }
 
+
+// CThreadedPersistent
+
+CThreadedPersistent::CThreadedPersistent(const char *name, IThreaded *_owner) : athread(*this, name), owner(_owner)
+{
+    atomic_set(&state, s_ready);
+    athread.start();
+}
+
+CThreadedPersistent::~CThreadedPersistent()
+{
+    join(INFINITE);
+    atomic_set(&state, s_stop);
+    sem.signal();
+    athread.join();
+}
+
+void CThreadedPersistent::main()
+{
+    loop
+    {
+        sem.wait();
+        if (s_stop == atomic_read(&state))
+            break;
+        owner->main();
+        if (!atomic_cas(&state, s_ready, s_running))
+            if (atomic_cas(&state, s_ready, s_joining))
+                joinSem.signal();
+    }
+}
+
+void CThreadedPersistent::start()
+{
+    if (!atomic_cas(&state, s_running, s_ready))
+    {
+        VStringBuffer msg("CThreadedPersistent::start(%s) - not ready", athread.getName());
+        WARNLOG("%s", msg.str());
+#ifdef _DEBUG
+        PrintStackReport();
+        throw MakeStringException(-1, "%s", msg.str());
+#endif
+        return;
+    }
+    sem.signal();
+}
+
+bool CThreadedPersistent::join(unsigned timeout)
+{
+    if (atomic_cas(&state, s_joining, s_running))
+    {
+        if (joinSem.wait(timeout)) // NB: state change to ready by signaller
+            return true;
+        if (!atomic_cas(&state, s_running, s_joining)) // put back if still in running state
+        {   // if here, either a) main() made s_ready after timeout and has or will signal, or b) stopped
+            if (s_ready == atomic_read(&state)) // need to swallow signal
+                if (!joinSem.wait(60000)) // should be instant
+                    throwUnexpected();
+            return true;
+        }
+        return false;
+    }
+#ifdef _DEBUG
+    ThreadStates s = (ThreadStates) atomic_read(&state);
+    if (s != s_stop && s != s_ready)
+    {
+        VStringBuffer msg("CThreadedPersistent(%s)::join called while not running, state now: %d", athread.getName(), s);
+        PROGLOG("%s", msg.str());
+        PrintStackReport();
+        throw MakeStringException(-1, "%s", msg.str());
+    }
+#endif
+    return true;
+}
+
 //class CAsyncFor
 
 void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException, bool shuffled)
