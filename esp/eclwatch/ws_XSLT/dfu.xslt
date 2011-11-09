@@ -110,7 +110,8 @@
             }
             function showRoxieQueries()
             {
-              document.location.href='/WsRoxieQuery/QueriesAction?Type=ListQueries&Cluster='+cluster+'&LogicalName='+filename;
+              //document.location.href='/WsRoxieQuery/QueriesAction?Type=ListQueries&Cluster='+cluster+'&LogicalName='+filename;
+              document.location.href='/WsSMC/DisabledInThisVersion?form_';
             }
             var xypos = YAHOO.util.Dom.getXY('mn' + PosId);
             if (oMenu) {
