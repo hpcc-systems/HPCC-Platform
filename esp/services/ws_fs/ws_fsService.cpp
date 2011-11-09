@@ -28,6 +28,7 @@
 #include "wshelpers.hpp"
 #include "dfuwu.hpp"
 #include "ws_fsService.hpp"
+#include "workunit.hpp"
 #ifdef _WIN32
 #include "windows.h"
 #endif
@@ -180,52 +181,11 @@ static void DeepAssign(IConstDFUWorkUnit *src, IEspDFUWorkunit &dest)
         char *clusterName = (char *)tmp.str();
         if (clusterName && *clusterName)
         {
-            StringBuffer clusterNameForDisplay(clusterName);
-            
-            Owned<IPropertyTreeIterator> clusters= root->getElements("Software/Topology/Cluster");
-            if (clusters->first())
-            {
-                do {
-                    IPropertyTree &cluster = clusters->query(); 
-                    const char* name = cluster.queryProp("@name");
-                    if (!name || !*name)
-                        continue;
-
-                    Owned<IPropertyTreeIterator> thorClusters= cluster.getElements(eqThorCluster);
-                    Owned<IPropertyTreeIterator> roxieClusters= cluster.getElements(eqRoxieCluster);
-                    if (thorClusters->first() || roxieClusters->first())
-                    {
-                        if (thorClusters->first())
-                        {
-                            IPropertyTree &thorCluster = thorClusters->query();                 
-                            const char* process = thorCluster.queryProp("@process");
-                            if (process && *process)
-                            {
-                                if (clusterName && !stricmp(clusterName, process))
-                                {
-                                    clusterNameForDisplay.clear().append(name);
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (roxieClusters->first())
-                        {
-                            IPropertyTree &roxieCluster = roxieClusters->query();                   
-                            const char* process = roxieCluster.queryProp("@process");
-                            if (process && *process)
-                            {
-                                if (clusterName && !stricmp(clusterName, name))
-                                {
-                                    clusterNameForDisplay.clear().append(name);
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                } while (clusters->next());
-            }
-            dest.setClusterName(clusterNameForDisplay.str());
+            StringArray processNames, groupNames, targetNames, queueNames;
+            getEnvironmentThorClusterNames(processNames, groupNames, targetNames, queueNames);
+            getEnvironmentHThorClusterNames(processNames, groupNames, targetNames);
+            getEnvironmentRoxieClusterNames(processNames, groupNames, targetNames, queueNames);
+            dest.setClusterName(mapName(clusterName, groupNames, targetNames));
         }
     }
     
@@ -792,59 +752,10 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
             clusterReq.append(clusterName);
         }
 
-        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
-        Owned<IConstEnvironment> constEnv = envFactory->openEnvironmentByFile();
-        Owned<IPropertyTree> root = &constEnv->getPTree();
-        if (!root)
-            throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
-
-        StringArray targetClusters, clusterProcesses;
-        Owned<IPropertyTreeIterator> clusters= root->getElements("Software/Topology/Cluster");
-        if (clusters->first())
-        {
-            do {
-                IPropertyTree &cluster = clusters->query(); 
-                const char* name = cluster.queryProp("@name");
-                if (!name || !*name)
-                    continue;
-
-                Owned<IPropertyTreeIterator> thorClusters= cluster.getElements(eqThorCluster);
-                Owned<IPropertyTreeIterator> roxieClusters= cluster.getElements(eqRoxieCluster);
-                if (thorClusters->first() || roxieClusters->first())
-                {
-                    bool bFound = false;
-                    if (thorClusters->first())
-                    {
-                        IPropertyTree &thorCluster = thorClusters->query();                 
-                        const char* process = thorCluster.queryProp("@process");
-                        if (process && *process)
-                        {
-                            targetClusters.append(name);
-                            clusterProcesses.append(process);
-                            if (clusterName && !stricmp(clusterName, name))
-                            {
-                                clusterReq.clear().append(process);
-                            }
-                        }
-                    }
-
-                    if (!bFound && roxieClusters->first())
-                    {
-                        IPropertyTree &roxieCluster = roxieClusters->query();                   
-                        const char* process = roxieCluster.queryProp("@process");
-                        if (process && *process)
-                        {
-                            targetClusters.append(name);
-                            clusterProcesses.append(process);
-                            if (clusterName && !stricmp(clusterName, name))
-                            {
-                                clusterReq.clear().append(process);
-                            }
-                        }
-                    }
-                }
-            } while (clusters->next());
-        }
+        StringArray processNames, groupNames, targetNames, queueNames;
+        getEnvironmentThorClusterNames(processNames, groupNames, targetNames, queueNames);
+        getEnvironmentHThorClusterNames(processNames, groupNames, targetNames);
+        getEnvironmentRoxieClusterNames(processNames, groupNames, targetNames, queueNames);
 
         __int64 cachehint=0;
         __int64 pagesize = req.getPageSize();
@@ -905,7 +816,7 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
         {
             filters[filterCount] = DFUsf_cluster;
             filterCount++;
-            filterbuf.append(clusterReq.str());
+            filterbuf.append(mapName(clusterReq.str(), targetNames, groupNames));
         }
 
         if(req.getOwner() && *req.getOwner())
@@ -947,21 +858,7 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
             const char* clusterName = wu->getClusterName(cluster).str();
             if (clusterName)
             {
-                StringBuffer clusterForDisplay(clusterName);
-
-                if (clusterProcesses.ordinality())
-                {
-                    for (unsigned i = 0; i < clusterProcesses.length(); i++)
-                    {
-                        const char* clusterProcessName = clusterProcesses.item(i);
-                        if (!stricmp(clusterProcessName, clusterName))
-                        {
-                            clusterForDisplay.clear().append(targetClusters.item(i));
-                            break;
-                        }
-                    }
-                }
-                resultWU->setClusterName(clusterForDisplay.str());
+                resultWU->setClusterName(mapName(clusterName, groupNames, targetNames));
             }
 
             resultWU->setIsProtected(wu->isProtected());

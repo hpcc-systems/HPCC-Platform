@@ -619,13 +619,11 @@
                                             <xsl:value-of select="@name"/>
                                         </option>
                                     </xsl:for-each>
-                                    <xsl:for-each select="Software/EclAgentProcess/Instance">
+                                    <xsl:for-each select="Software/EclAgentProcess">
                                         <option>
-                                            <xsl:attribute name="title"><xsl:text>T</xsl:text><xsl:value-of select="../@name"/></xsl:attribute>
+                                            <xsl:attribute name="title"><xsl:text>T</xsl:text><xsl:value-of select="@name"/></xsl:attribute>
                                             <xsl:attribute name="value"><xsl:value-of select="@netAddress"/></xsl:attribute>
-                                            <xsl:value-of select="../@name"/>
-                                            <xsl:text> </xsl:text>
-                                            <xsl:value-of select="@netAddress"/>
+                                            <xsl:value-of select="@name"/>
                                         </option>
                                     </xsl:for-each>
                                 </optgroup>
