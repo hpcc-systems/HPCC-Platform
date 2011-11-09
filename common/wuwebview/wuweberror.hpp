@@ -26,5 +26,6 @@
 #define WUWEBERR_WorkUnitNotFound               5500
 #define WUWEBERR_ManifestNotFound               5501
 #define WUWEBERR_ViewResourceNotFound           5502
+#define WUWEBERR_UnknownViewType                5503
 
 #endif
