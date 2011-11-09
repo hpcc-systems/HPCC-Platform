@@ -234,6 +234,13 @@ EXPORT STRING RemoveSuffix(STRING src, STRING suffix) :=
             IF(EndsWith(src, suffix), src[1..length(trim(src))-length(trim(suffix))], src);
 
 
+/**
+ * Returns a string containing a list of elements from a comma separated string.
+ *
+ * @param src           The string containing the comma separated list.
+ * @param mask          A bitmask of which elements should be included.  Bit 0 is item1, bit1 item 2 etc.
+ */
+
 EXPORT STRING ExtractMultiple(string src, unsigned8 mask) := lib_stringlib.StringLib.StringExtractMultiple(src, mask);
 
 /**
