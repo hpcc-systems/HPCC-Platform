@@ -129,7 +129,7 @@ public:
     const CDfsLogicalFileName &multiItem(unsigned idx) const;
     const void resolveWild();  // only for multi
     IPropertyTree *createSuperTree() const;
-    void allowOsPath(bool set=true) { allowospath = true; } // allow local OS path to be specified
+    void allowOsPath(bool allow=true) { allowospath = allow; } // allow local OS path to be specified
 };
 
 // abstract class, define getCmdText to return tracing text of commands
