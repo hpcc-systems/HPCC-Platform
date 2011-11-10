@@ -1287,7 +1287,7 @@ public:
             ret = f->querySuperFile();
             if (ret)
                 return LINK(ret);
-        }   
+        }
         ret = queryDistributedFileDirectory().lookupSuperFile(name,udesc,this,fixmissing,timeout);
         if (!ret)
             return NULL;
@@ -1306,7 +1306,7 @@ public:
     bool setActive(bool on)
     {
         bool old = isactive;
-        isactive = false;
+        isactive = on;
         return old;
     }
 
@@ -5058,7 +5058,7 @@ public:
             // action is now owned by transaction so don't unlink or delete!
             return;
         }
-        Owned<IDistributedFile> sub = parent->lookup(subfile,udesc,false,transaction,defaultTimeout);  
+        Owned<IDistributedFile> sub = transaction ? transaction->lookupFile(subfile) : parent->lookup(subfile,udesc,false,NULL,defaultTimeout);
         if (!sub)
             throw MakeStringException(-1,"addSubFile(3): File %s cannot be found to add",subfile);
         bool lockreleased;
@@ -5367,16 +5367,17 @@ public:
         if (!file)
             return false;
         StringBuffer subname;
-        StringAttrArray subnames1;  // will be built reversed
-        StringAttrArray subnames2;  // will be built reversed
+        StringArray subnames1; // will be built reversed
+        StringArray subnames2; // will be built reversed
         unsigned pos = subfiles.ordinality();
         lockProperties(defaultTimeout);
         if (pos) {
             do {
                 pos--;
+                subfiles.item(pos).lockProperties(defaultTimeout);
                 unlinkSubFile(pos,transaction);
                 removeItem(pos,subname.clear());
-                subnames1.append(* new StringAttrItem(subname.str()));
+                subnames1.append(subname.str());
             } while (pos);
         }
         file->lockProperties(defaultTimeout);
@@ -5384,16 +5385,33 @@ public:
         if (pos) {
             do {
                 pos--;
+                file->subfiles.item(pos).lockProperties(defaultTimeout);
                 file->unlinkSubFile(pos,transaction);
                 file->removeItem(pos,subname.clear());
-                subnames2.append(* new StringAttrItem(subname.str()));
+                subnames2.append(subname.str());
             } while (pos);
         }
         ForEachItemInRev(i1,subnames1) {
-            file->addSubFile(subnames1.item(i1).text.get());
+            Owned<IDistributedFile> sub = transaction ? transaction->lookupFile(subnames1.item(i1)) : parent->lookup(subnames1.item(i1),udesc,false,NULL,defaultTimeout);
+            file->doAddSubFile(LINK(sub), false, NULL, transaction);
         }
         ForEachItemInRev(i2,subnames2) {
-            addSubFile(subnames2.item(i2).text.get());
+            Owned<IDistributedFile> sub = transaction ? transaction->lookupFile(subnames2.item(i2)) : parent->lookup(subnames2.item(i2),udesc,false,NULL,defaultTimeout);
+            doAddSubFile(LINK(sub), false, NULL, transaction);
+        }
+        pos = subfiles.ordinality();
+        if (pos) {
+            do {
+                pos--;
+                subfiles.item(pos).unlockProperties();
+            } while(pos);
+        }
+        pos = file->subfiles.ordinality();
+        if (pos) {
+            do {
+                pos--;
+                file->subfiles.item(pos).unlockProperties();
+            } while(pos);
         }
         file->setModified();
         file->updateFileAttrs();
@@ -8569,6 +8587,7 @@ void CDistributedFileDirectory::resolveForeignFiles(IPropertyTree *tree,const IN
 
 void CDistributedFileDirectory::linkSuperOwner(IDistributedFile &subfile,const char *superfile,bool link,IDistributedFileTransaction *transaction)
 {
+    subfile.lockProperties();
     IDistributedSuperFile *ssub = subfile.querySuperFile();
     if (ssub) {
         CDistributedSuperFile *cdsuper = QUERYINTERFACE(ssub,CDistributedSuperFile);
@@ -8578,6 +8597,7 @@ void CDistributedFileDirectory::linkSuperOwner(IDistributedFile &subfile,const c
         CDistributedFile *cdfile = QUERYINTERFACE(&subfile,CDistributedFile);
         cdfile->linkSuperOwner(superfile,link,transaction);
     }
+    subfile.unlockProperties();
 }
 
 int CDistributedFileDirectory::getFilePermissions(const char *lname,IUserDescriptor *user,unsigned auditflags)
