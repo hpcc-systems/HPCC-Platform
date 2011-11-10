@@ -342,7 +342,7 @@ enum _node_operator {
         no_hash32,
         no_hash64,
         no_crc,
-    no_unused16,
+        no_return_stmt,
         no_update,    
     no_unused17,
     no_unused18,
@@ -1191,6 +1191,7 @@ extern HQL_API IHqlExpression *createRecord();
 extern HQL_API IHqlExpression *createRecord(const HqlExprArray & fields);
 extern HQL_API IHqlExpression *createExternalReference(_ATOM name, ITypeInfo *_type, IHqlExpression *props);
 extern HQL_API IHqlExpression *createExternalReference(_ATOM name, ITypeInfo *_type, HqlExprArray & attributes);
+HQL_API IHqlExpression * createExternalFuncdefFromInternal(IHqlExpression * funcdef);
 extern HQL_API IHqlExpression *createBoundFunction(IErrorReceiver * errors, IHqlExpression *func, HqlExprArray & ownedActuals, HqlExprArray * functionCache, bool forceExpansion);
 extern HQL_API IHqlExpression *createReboundFunction(IHqlExpression *func, HqlExprArray & ownedActuals);
 extern HQL_API IHqlExpression *createTranslatedExternalCall(IErrorReceiver * errors, IHqlExpression *func, HqlExprArray &actuals);

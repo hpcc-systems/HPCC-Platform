@@ -5008,6 +5008,7 @@ WorkflowTransformer::WorkflowTransformer(IWorkUnit * _wu, HqlCppTranslator & _tr
 : NewHqlTransformer(workflowTransformerInfo), wu(_wu), translator(_translator), wfidCount(0)
 {
     trivialStoredWfid = 0;
+    nextInternalFunctionId = 0;
     onceWfid = 0;
     combineAllStored = translator.queryOptions().combineAllStored;
     combineTrivialStored = translator.queryOptions().combineTrivialStored;
@@ -5503,6 +5504,59 @@ IHqlExpression * WorkflowTransformer::extractCommonWorkflow(IHqlExpression * exp
     return getValue.getClear();
 }
 
+IHqlExpression * WorkflowTransformer::transformInternalFunction(IHqlExpression * newFuncDef)
+{
+    IHqlExpression * body = newFuncDef->queryChild(0);
+    if (body->getOperator() != no_outofline)
+        return LINK(newFuncDef);
+
+    IHqlExpression * ecl = body->queryChild(0);
+
+    StringBuffer funcname;
+    funcname.append("user").append(++nextInternalFunctionId);
+    if (translator.queryOptions().debugGeneratedCpp)
+        funcname.append("_").append(newFuncDef->queryName()).toLowerCase();
+    OwnedHqlExpr funcNameExpr = createConstant(funcname);
+
+    IHqlExpression * formals = newFuncDef->queryChild(1);
+    OwnedHqlExpr newFormals = mapInternalFunctionParameters(formals);
+
+    HqlExprArray bodyArgs;
+    bodyArgs.append(*replaceParameters(ecl, formals, newFormals));
+    unwindChildren(bodyArgs, body, 1);
+    bodyArgs.append(*createLocalAttribute());
+    bodyArgs.append(*createExprAttribute(entrypointAtom, LINK(funcNameExpr)));
+    OwnedHqlExpr newBody = body->clone(bodyArgs);
+    inheritDependencies(newBody);
+
+    HqlExprArray funcdefArgs;
+    funcdefArgs.append(*LINK(newBody));
+    funcdefArgs.append(*LINK(newFormals));
+    unwindChildren(funcdefArgs, newFuncDef, 2);
+    OwnedHqlExpr namedFuncDef = newFuncDef->clone(funcdefArgs);
+    inheritDependencies(namedFuncDef);
+
+    if (ecl->getOperator() == no_cppbody)
+        return namedFuncDef.getClear();
+
+    WorkflowItem * item = new WorkflowItem(namedFuncDef);
+    workflowOut->append(*item);
+    return createExternalFuncdefFromInternal(namedFuncDef);
+}
+
+IHqlExpression * WorkflowTransformer::transformInternalCall(IHqlExpression * transformed)
+{
+    IHqlExpression * funcDef = transformed->queryDefinition();
+    Owned<IHqlExpression> newFuncDef = transform(funcDef);
+
+    HqlExprArray paramters;
+    unwindChildren(paramters, transformed);
+    OwnedHqlExpr rebound = createReboundFunction(newFuncDef, paramters);
+    inheritDependencies(rebound);
+    return rebound.getClear();
+}
+
+
 IHqlExpression * WorkflowTransformer::createTransformed(IHqlExpression * expr)
 {
     //Could short-circuit if doesn't contain workflow, but it also modifies outputs/buildindex...
@@ -5611,6 +5665,12 @@ IHqlExpression * WorkflowTransformer::createTransformed(IHqlExpression * expr)
             }
             break;
         }
+    case no_funcdef:
+        transformed.setown(transformInternalFunction(transformed));
+        break;
+    case no_call:
+        transformed.setown(transformInternalCall(transformed));
+        break;
     }
 
     return extractCommonWorkflow(expr, transformed);
@@ -6024,7 +6084,7 @@ void WorkflowTransformer::percolateScheduledIds(WorkflowArray & workflow)
     {
         WorkflowItem & cur = workflow.item(i);
         Owned<IWorkflowItem> wf = lookupWorkflowItem(cur.queryWfid());
-        if (wf->isScheduledNow())
+        if (wf && wf->isScheduledNow())
         {
             ForEachItemIn(i2, cur.dependencies)
             {
@@ -11832,9 +11892,18 @@ bool HqlCppTranslator::transformGraphForGeneration(IHqlExpression * query, Workf
 
     if (outputLibrary && workflow.ordinality() > 1)
     {
-        SCMStringBuffer libraryName;
-        getOutputLibraryName(libraryName, wu());
-        throwError2(HQLERR_LibraryCannotContainWorkflow, libraryName.str(), "");
+        unsigned cnt = 0;
+        ForEachItemIn(i, workflow)
+        {
+            if (!workflow.item(i).isFunction())
+                cnt++;
+        }
+        if (cnt > 1)
+        {
+            SCMStringBuffer libraryName;
+            getOutputLibraryName(libraryName, wu());
+            throwError2(HQLERR_LibraryCannotContainWorkflow, libraryName.str(), "");
+        }
     }
 
     {

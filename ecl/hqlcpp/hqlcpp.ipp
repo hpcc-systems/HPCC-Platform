@@ -438,13 +438,17 @@ class WorkflowItem : public CInterface
 {
     friend class WorkflowTransformer;
 public:
-    WorkflowItem(unsigned _wfid) : wfid(_wfid) {}
+    WorkflowItem(unsigned _wfid) : wfid(_wfid) { }
+    WorkflowItem(IHqlExpression * _function);
     IMPLEMENT_IINTERFACE;
 
-    unsigned queryWfid() { return wfid; }
+    bool isFunction() const { return function != NULL; }
+    IHqlExpression * getFunction() const;
+    unsigned queryWfid() const { return wfid; }
     HqlExprArray & queryExprs() { return exprs; }
 
 private:
+    LinkedHqlExpr function;
     unsigned wfid;
     HqlExprArray exprs;
     UnsignedArray dependencies;
@@ -1084,7 +1088,7 @@ public:
 
     bool expandFunctionPrototype(StringBuffer & s, IHqlExpression * funcdef);
     void expandFunctionPrototype(BuildCtx & ctx, IHqlExpression * funcdef);
-    void buildFunctionDefinition(IHqlExpression * externalDef, IHqlExpression * funcdef);
+    void buildFunctionDefinition(IHqlExpression * funcdef);
     void assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & target, CHqlBoundExpr & expr);
     void assignCastUnknownLength(BuildCtx & ctx, const CHqlBoundTarget & target, CHqlBoundExpr & pure);
     void assignSwapInt(BuildCtx & ctx, ITypeInfo * to, const CHqlBoundTarget & target, CHqlBoundExpr & pure);
