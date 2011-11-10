@@ -63,12 +63,6 @@ public:
         reader->load();
     }
 
-    void appendDatasetXML(const char *xml)
-    {
-        assertex(!finalized);
-        buffer.append(xml);
-    }
-
     void append(const char *value)
     {
         assertex(!finalized);
@@ -113,6 +107,17 @@ public:
         IPropertyTree *res=manifest.queryPropTree(xpath.str());
         if (res)
             appendSchemaResource(*res, loadedDll);
+    }
+
+    void appendXML(IPropertyTree *xml, const char *tag=NULL)
+    {
+        assertex(!finalized);
+        if (tag)
+            buffer.append('<').append(tag).append('>');
+        if (xml)
+            toXML(xml, buffer);
+        if (tag)
+            buffer.append("</").append(tag).append('>');
     }
 
     virtual void beginNode(const char *tag, offset_t startOffset)
@@ -211,12 +216,12 @@ public:
     virtual void applyResultsXSLT(const char *filename, StringBuffer &out);
     virtual StringBuffer &aggregateResources(const char *type, StringBuffer &content);
 
-    void renderExpandedResults(const char *viewName, const StringBuffer &expanded, StringBuffer &out);
+    void renderExpandedResults(const char *viewName, WuExpandedResultBuffer &expanded, StringBuffer &out);
 
     void appendResultSchemas(WuExpandedResultBuffer &buffer);
     void getResultXSLT(const char *viewName, StringBuffer &xslt, StringBuffer &abspath);
     void getResource(IPropertyTree *res, StringBuffer &content);
-    void getResource(const char *name, StringBuffer &content, StringBuffer &abspath);
+    void getResource(const char *name, StringBuffer &content, StringBuffer &abspath, const char *type);
 
     void calculateResourceIncludePaths();
     virtual bool getInclude(const char *includename, MemoryBuffer &includebuf, bool &pathOnly);
@@ -340,9 +345,11 @@ void WuWebView::getResource(IPropertyTree *res, StringBuffer &content)
     }
 }
 
-void WuWebView::getResource(const char *name, StringBuffer &content, StringBuffer &includepath)
+void WuWebView::getResource(const char *name, StringBuffer &content, StringBuffer &includepath, const char *type)
 {
     VStringBuffer xpath("Resource[@name='%s']", name);
+    if (type)
+        xpath.append("[@type='").append(type).append("']");
     IPropertyTree *res = ensureManifest()->queryPropTree(xpath.str());
     calculateResourceIncludePaths();
     includepath.append(res->queryProp("@res_include_path"));
@@ -364,22 +371,42 @@ void WuWebView::getResultXSLT(const char *viewName, StringBuffer &xslt, StringBu
     VStringBuffer xpath("Views/Results[@name='%s']/@resource", viewName);
     const char *resource = ensureManifest()->queryProp(xpath.str());
     if (resource)
-        getResource(resource, xslt, abspath);
+        getResource(resource, xslt, abspath, "XSLT");
 }
 
-void WuWebView::renderExpandedResults(const char *viewName, const StringBuffer &expanded, StringBuffer &out)
+void WuWebView::renderExpandedResults(const char *viewName, WuExpandedResultBuffer &expanded, StringBuffer &out)
 {
+    IPropertyTree *mf = ensureManifest();
+    VStringBuffer xpath("Views/Results[@name='%s']", viewName);
+    IPropertyTree *view = mf->queryPropTree(xpath.str());
+    if (!view)
+        throw MakeStringException(WUWEBERR_ViewResourceNotFound, "Result view %s not found", viewName);
+    expanded.appendXML(view, "view");
+    if (loadedDll)
+        expanded.appendManifestSchemas(*mf, *loadedDll);
+    expanded.finalize();
+    const char *type=view->queryProp("@type");
+    if (!type)
+        throw MakeStringException(WUWEBERR_UnknownViewType, "No type defined for view %s", viewName);
+    else if (strieq(type, "xml"))
+    {
+        out.swapWith(expanded.buffer);
+        return;
+    }
+    else if (!strieq(type, "xslt"))
+        throw MakeStringException(WUWEBERR_UnknownViewType, "View %s has an unknown type of %s", viewName, type);
+
     StringBuffer xslt;
     StringBuffer rootpath;
     getResultXSLT(viewName, xslt, rootpath);
     if (!xslt.length())
-        throw MakeStringException(WUWEBERR_ViewResourceNotFound, "Result view %s not found", viewName);
+        throw MakeStringException(WUWEBERR_ViewResourceNotFound, "XSLT for %s view not found", viewName);
     Owned<IXslTransform> t = getXslProcessor()->createXslTransform();
     t->setIncludeHandler(this);
     StringBuffer cacheId(viewName);
     cacheId.append('@').append(dllname.str()); //using dllname, cloned workunits can share cache entry
     t->setXslSource(xslt.str(), xslt.length(), cacheId.str(), rootpath.str());
-    t->setXmlSource(expanded.str(), expanded.length());
+    t->setXmlSource(expanded.buffer.str(), expanded.buffer.length());
     t->transform(out);
 }
 
@@ -387,27 +414,21 @@ void WuWebView::renderResults(const char *viewName, const char *xml, StringBuffe
 {
     WuExpandedResultBuffer buffer(name.str());
     buffer.appendDatasetsFromXML(xml);
-    if (loadedDll)
-        buffer.appendManifestSchemas(*ensureManifest(), *loadedDll);
-    renderExpandedResults(viewName, buffer.finalize(), out);
+    renderExpandedResults(viewName, buffer, out);
 }
 
 void WuWebView::renderResults(const char *viewName, StringBuffer &out)
 {
     WuExpandedResultBuffer buffer(name.str());
     buffer.appendResults(wu, username.get(), pw.get());
-    if (loadedDll)
-        buffer.appendManifestSchemas(*ensureManifest(), *loadedDll);
-    renderExpandedResults(viewName, buffer.finalize(), out);
+    renderExpandedResults(viewName, buffer, out);
 }
 
 void WuWebView::renderSingleResult(const char *viewName, const char *resultname, StringBuffer &out)
 {
     WuExpandedResultBuffer buffer(name.str());
-    if (loadedDll)
-        buffer.appendManifestResultSchema(*ensureManifest(), resultname, *loadedDll);
     buffer.appendSingleResult(wu, resultname, username.get(), pw.get());
-    renderExpandedResults(viewName, buffer.finalize(), out);
+    renderExpandedResults(viewName, buffer, out);
 }
 
 void WuWebView::applyResultsXSLT(const char *filename, const char *xml, StringBuffer &out)
