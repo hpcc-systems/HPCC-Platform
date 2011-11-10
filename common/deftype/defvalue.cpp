@@ -1167,8 +1167,7 @@ IValue * createUtf8Value(size32_t len, const char * text, ITypeInfo * type)
         return createUtf8Value(text, type);
 
     rtlDataAttr buff(nlen * 4);
-    unsigned bufflen = 0;
-    rtlUtf8SubStrFT(bufflen, buff.getstr(), len, text, 1, nlen);
+    rtlUtf8SubStrFT(nlen, buff.getstr(), len, text, 1, nlen);
     return new Utf8Value(buff.getstr(), type);
 }
 
