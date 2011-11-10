@@ -2590,7 +2590,7 @@ public:
             if (t) {
                 if (!link) {
                     root->removeTree(t);
-                    if (!transaction)
+                    if (!transaction || !transaction->active())
                     {
                         conn->commit();
                         dfCheckRoot("linkSuperOwner",root,conn);
@@ -2599,7 +2599,7 @@ public:
             }
             else if (link) {
                 t.setown(addNamedPropTree(root,"SuperOwner","@name",superfile));
-                if (!transaction)
+                if (!transaction || !transaction->active())
                 {
                     conn->commit();
                     dfCheckRoot("linkSuperOwner.2",root,conn);
@@ -4072,7 +4072,6 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
 //                  throw MakeStringException(-1,"addSubFile: File %s is already a subfile of %s", subfile.get(),parent->queryLogicalName());
             }
             if (parent->lockTransaction(SDS_SUB_LOCK_TIMEOUT))
-                if (sub->lockTransaction(SDS_SUB_LOCK_TIMEOUT))
                     return true;
             sub.clear();
             parent.clear();
@@ -4090,7 +4089,6 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
         }
         void unlock(bool commit,bool rollback)
         {
-            sub->unlockTransaction(commit,rollback);
             parent->unlockTransaction(commit,rollback);
             CDistributedSuperFile *sf = QUERYINTERFACE(parent.get(),CDistributedSuperFile);                 
             if (sf&&commit)
@@ -5206,8 +5204,7 @@ public:
                             WARNLOG("addSubFile: File %s is not a subfile of %s", subfile.get(),parent->queryLogicalName());
                     }
                     if (parent->lockTransaction(SDS_SUB_LOCK_TIMEOUT))
-                        if (!sub || sub->lockTransaction(SDS_SUB_LOCK_TIMEOUT))
-                            return true;
+                        return true;
                     parent.clear();
                     sub.clear();
                     return false;
@@ -5219,8 +5216,6 @@ public:
                 }
                 void unlock(bool commit,bool rollback)
                 {
-                    if (sub)
-                        sub->unlockTransaction(commit,rollback);
                     parent->unlockTransaction(commit,rollback); 
                     parent.clear();
                     sub.clear();
