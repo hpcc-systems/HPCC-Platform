@@ -3233,19 +3233,12 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
             PrintLog("ECLAGENT build %s", BUILD_TAG);
             startLogMsgParentReceiver();    
             connectLogMsgManagerToDali();
-            StringBuffer datadir;
-            StringBuffer repdir;
 
-            const char * overrideBaseDirectory = "hthor";         // relative to UserDataDirectory in dali
-            const char * overrideReplicateDirectory = "hthor";    // relative to UserMirrorDirectory in dali
-            if (getConfigurationDirectory(agentTopology->queryPropTree("Directories"),"data","eclagent",agentTopology->queryProp("@name"),datadir))
-                overrideBaseDirectory = datadir.str();
-            if (getConfigurationDirectory(agentTopology->queryPropTree("Directories"),"mirror","eclagent",agentTopology->queryProp("@name"),repdir))
-                overrideReplicateDirectory = repdir.str();
-            if (overrideBaseDirectory&&*overrideBaseDirectory)
-                setBaseDirectory(overrideBaseDirectory, false);
-            if (overrideReplicateDirectory&&*overrideReplicateDirectory)
-                setBaseDirectory(overrideReplicateDirectory, true);
+            StringBuffer baseDir;
+            if (getConfigurationDirectory(agentTopology->queryPropTree("Directories"),"data","eclagent",agentTopology->queryProp("@name"),baseDir.clear()))
+                setBaseDirectory(baseDir.str(), false);
+            if (getConfigurationDirectory(agentTopology->queryPropTree("Directories"),"mirror","eclagent",agentTopology->queryProp("@name"),baseDir.clear()))
+                setBaseDirectory(baseDir.str(), true);
 
             if (standAloneWorkUnit)
             {
