@@ -138,6 +138,31 @@ void SubStringInfo::bindToFrom(HqlCppTranslator & translator, BuildCtx & ctx)
 
 //---------------------------------------------------------------------------
 
+WorkflowItem::WorkflowItem(IHqlExpression * _function) : wfid(0), function(_function)
+{
+    IHqlExpression * body = function->queryChild(0);
+    assertex(body->getOperator() == no_outofline);
+    IHqlExpression * ecl = body->queryChild(0);
+    exprs.append(*createValue(no_return_stmt, makeVoidType(), LINK(ecl)));
+}
+
+IHqlExpression * WorkflowItem::getFunction() const
+{
+    IHqlExpression * body = function->queryChild(0);
+    unsigned max = exprs.ordinality();
+    assertex(max);
+    LinkedHqlExpr newecl = exprs.item(max-1).queryChild(0);
+    for (unsigned i=max-1; i--; )
+    {
+        IHqlExpression * cur = &exprs.item(i);
+        newecl.setown(createCompound(LINK(cur), newecl.getClear()));
+    }
+    OwnedHqlExpr newBody = replaceChild(body, 0, newecl);
+    return replaceChild(function, 0, newBody);
+}
+
+//---------------------------------------------------------------------------
+
 IHqlExpression * DatasetReference::querySelector() const
 {
     if (side == no_none)
@@ -5416,68 +5441,18 @@ void HqlCppTranslator::normalizeBoundExpr(BuildCtx & ctx, CHqlBoundExpr & bound)
 }
 
 
-static IHqlExpression * mapInternalFunctionParameters(IHqlExpression * expr)
-{
-    switch (expr->getOperator())
-    {
-    case no_sortlist:
-        {
-            HqlExprArray args;
-            ForEachChild(i, expr)
-                args.append(*mapInternalFunctionParameters(expr->queryChild(i)));
-            return cloneOrLink(expr, args);
-        }
-    case no_param:
-        {
-            ITypeInfo * type = expr->queryType();
-            //String parameters need to be passed as c++ const string parameters
-            switch (type->getTypeCode())
-            {
-            case type_string:
-            case type_varstring:
-            case type_data:
-            case type_qstring:
-            case type_unicode:
-            case type_utf8:
-            case type_varunicode:
-                if (!expr->hasProperty(constAtom))
-                    return appendOwnedOperand(expr, createAttribute(constAtom));
-                break;
-            }
-            break;
-        }
-    }
-
-    return LINK(expr);
-}
-
-
 IHqlExpression * HqlCppTranslator::doBuildInternalFunction(IHqlExpression * funcdef)
 {
     unsigned match = internalFunctions.find(*funcdef);
     if (match != NotFound)
         return LINK(&internalFunctionExternals.item(match));
 
-    StringBuffer funcname;
-    funcname.append("user").append(internalFunctions.ordinality()+1);
-    if (options.debugGeneratedCpp)
-        funcname.append("_").append(funcdef->queryName()).toLowerCase();
-
-    HqlExprArray attrs;
-    attrs.append(*createLocalAttribute());
-    attrs.append(*createExprAttribute(entrypointAtom, createConstant(funcname)));
-
-    HqlExprArray funcdefArgs;
-    ITypeInfo * returnType = funcdef->queryType()->queryChildType();
-    funcdefArgs.append(*createExternalReference(funcdef->queryName(), LINK(returnType), attrs));
-    funcdefArgs.append(*mapInternalFunctionParameters(queryFunctionParameters(funcdef)));
-    unwindChildren(funcdefArgs, funcdef, 1);
-    OwnedHqlExpr externalFuncdef = funcdef->clone(funcdefArgs);
+    OwnedHqlExpr externalFuncdef = createExternalFuncdefFromInternal(funcdef);
 
     internalFunctions.append(*LINK(funcdef));
     internalFunctionExternals.append(*LINK(externalFuncdef));
 
-    buildFunctionDefinition(externalFuncdef, funcdef);
+    buildFunctionDefinition(funcdef);
     return LINK(externalFuncdef);
 }
 
@@ -11229,12 +11204,12 @@ void HqlCppTranslator::doBuildUserFunctionReturn(BuildCtx & ctx, ITypeInfo * typ
 }
 
 
-void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * externalDef, IHqlExpression * funcdef)
+void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * funcdef)
 {
-    IHqlExpression *body = funcdef->queryChild(0);
+    IHqlExpression * outofline = funcdef->queryChild(0);
     ITypeInfo * returnType = funcdef->queryType()->queryChildType();
-    if (body->getOperator() == no_outofline)
-        body = body->queryChild(0);
+    assertex(outofline->getOperator() == no_outofline);
+    IHqlExpression * bodyCode = outofline->queryChild(0);
 
     StringBuffer s;
     BuildCtx funcctx(*code, helperAtom);
@@ -11244,19 +11219,19 @@ void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * externalDef, IHq
         OwnedHqlExpr pass = getSizetConstant(cppIndexNextActivity(inChildActivity));
         funcctx.addGroupPass(pass);
     }
-    expandFunctionPrototype(s, externalDef);
+    expandFunctionPrototype(s, funcdef);
 
-    if (body->getOperator() == no_cppbody)
+    if (bodyCode->getOperator() == no_cppbody)
     {
         if (!allowEmbeddedCpp())
             throwError(HQLERR_EmbeddedCppNotAllowed);
 
-        IHqlExpression * location = queryLocation(body);
+        IHqlExpression * location = queryLocation(bodyCode);
         const char * locationFilename = location ? location->querySourcePath()->str() : NULL;
         unsigned startLine = location ? location->getStartLine() : 0;
-        IHqlExpression * cppBody = body->queryChild(0);
+        IHqlExpression * cppBody = bodyCode->queryChild(0);
         if (cppBody->getOperator() == no_record)
-            cppBody = body->queryChild(1);
+            cppBody = bodyCode->queryChild(1);
 
         StringBuffer text;
         cppBody->queryValue()->getStringValue(text);
@@ -11302,9 +11277,13 @@ void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * externalDef, IHq
     else
     {
         funcctx.addQuotedCompound(s);
-        OwnedHqlExpr newBody = replaceInlineParameters(funcdef, body);
-        newBody.setown(foldHqlExpression(newBody));
-        doBuildUserFunctionReturn(funcctx, returnType, newBody);
+        //MORE: Need to work out how to handle functions that require the context.
+        //Need to create a class instead.
+        assertex(!outofline->hasProperty(contextAtom));
+
+        OwnedHqlExpr newCode = replaceInlineParameters(funcdef, bodyCode);
+        newCode.setown(foldHqlExpression(newCode));
+        doBuildUserFunctionReturn(funcctx, returnType, newCode);
     }
 }
 

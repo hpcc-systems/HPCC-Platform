@@ -50,6 +50,7 @@ extern IHqlExpression * ensurePositiveOrZeroInt64(IHqlExpression * expr);
 extern void getOutputLibraryName(SCMStringBuffer & libraryName, IConstWorkUnit * wu);
 extern bool canCreateTemporary(IHqlExpression * expr);
 extern IHqlExpression * projectCreateSetDataset(IHqlExpression * createsetExpr);
+extern IHqlExpression * mapInternalFunctionParameters(IHqlExpression * expr);
 
 //Common types and expressions...
 extern ITypeInfo * boolType;

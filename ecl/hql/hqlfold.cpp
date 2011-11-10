@@ -5081,6 +5081,19 @@ IHqlExpression * CExprFolderTransformer::createTransformed(IHqlExpression * expr
                 return cloneAnnotationAndTransform(expr, result);
             break;
         }
+    case no_call:
+        {
+            //Ensure the bodies of out of line function calls are also folded.
+            IHqlExpression * funcDef = expr->queryDefinition();
+            Owned<IHqlExpression> newFuncDef = transform(funcDef);
+            if (funcDef != newFuncDef)
+            {
+                HqlExprArray children;
+                transformChildren(expr, children);
+                dft.setown(createReboundFunction(newFuncDef, children));
+            }
+            break;
+        }
     }
 
     if (!dft)

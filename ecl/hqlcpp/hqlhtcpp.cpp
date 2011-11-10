@@ -5475,15 +5475,35 @@ bool HqlCppTranslator::buildCode(IHqlExpression * exprlist, const char * embedde
         if (insideLibrary())
         {
             //always do these checks for consistency
-            assertex(workflow.ordinality() == 1);
-            HqlExprArray & exprs = workflow.item(0).queryExprs();
-            assertex(exprs.ordinality() == 1);
-            IHqlExpression & expr = exprs.item(0);
-            assertex(expr.getOperator() == no_thor);
+            OwnedHqlExpr graph;
+            ForEachItemIn(i, workflow)
+            {
+                WorkflowItem & cur = workflow.item(i);
+                if (!cur.isFunction())
+                {
+                    assertex(!graph);
+                    HqlExprArray & exprs = cur.queryExprs();
+                    assertex(exprs.ordinality() == 1);
+                    graph.set(&exprs.item(0));
+                    assertex(graph->getOperator() == no_thor);
+                }
+            }
+
+            //More: this should be cleaned up - with a flag in the workflow items to indicate a library graph instead...
             if (embeddedLibraryName)
             {
+                ForEachItemIn(i, workflow)
+                {
+                    WorkflowItem & cur = workflow.item(i);
+                    if (cur.isFunction())
+                    {
+                        OwnedHqlExpr function = cur.getFunction();
+                        buildFunctionDefinition(function);
+                    }
+                }
+
                 BuildCtx ctx(*code, goAtom);
-                buildLibraryGraph(ctx, &expr, embeddedLibraryName);
+                buildLibraryGraph(ctx, graph, embeddedLibraryName);
             }
             else
                 buildWorkflow(workflow);
@@ -16906,6 +16926,7 @@ void HqlCppTranslator::buildWorkflow(WorkflowArray & workflow)
     {
         WorkflowItem & action = workflow.item(idx);
         HqlExprArray & exprs = action.queryExprs();
+        unsigned wfid = action.queryWfid();
 
         bool isEmpty = exprs.ordinality() == 0;
         if (exprs.ordinality() == 1 && (exprs.item(0).getOperator() == no_workflow_action))
@@ -16913,22 +16934,29 @@ void HqlCppTranslator::buildWorkflow(WorkflowArray & workflow)
 
         if (!isEmpty)
         {
-            OwnedHqlExpr expr = createActionList(action.queryExprs());
-            unsigned wfid = action.queryWfid();
-
-            IHqlExpression * persistAttr = expr->queryProperty(_workflowPersist_Atom);
-            if (persistAttr)
+            if (action.isFunction())
             {
-                if (!options.freezePersists)
-                {
-                    HqlExprArray args2;
-                    unwindChildren(args2, expr);
-                    OwnedHqlExpr setResult = createSetResult(args2);
-                    buildWorkflowItem(switchctx, switchStmt, wfid, setResult);
-                }
+                OwnedHqlExpr function = action.getFunction();
+                buildFunctionDefinition(function);
             }
             else
-                buildWorkflowItem(switchctx, switchStmt, wfid, expr);
+            {
+                OwnedHqlExpr expr = createActionList(action.queryExprs());
+
+                IHqlExpression * persistAttr = expr->queryProperty(_workflowPersist_Atom);
+                if (persistAttr)
+                {
+                    if (!options.freezePersists)
+                    {
+                        HqlExprArray args2;
+                        unwindChildren(args2, expr);
+                        OwnedHqlExpr setResult = createSetResult(args2);
+                        buildWorkflowItem(switchctx, switchStmt, wfid, setResult);
+                    }
+                }
+                else
+                    buildWorkflowItem(switchctx, switchStmt, wfid, expr);
+            }
         }
     }
 
@@ -17916,6 +17944,8 @@ static bool needsRealThor(IHqlExpression *expr, unsigned flags)
 
     case no_ensureresult:
     case no_setresult:
+    case no_evaluate_stmt:
+    case no_return_stmt:
         {
             IHqlExpression * child0 = expr->queryChild(0);
             if (!child0->queryType()->isScalar())
