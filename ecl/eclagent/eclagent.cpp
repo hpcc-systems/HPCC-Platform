@@ -2044,8 +2044,10 @@ void EclAgent::runProcess(IEclProcess *process)
     setHThorRowManager(rowManager.get());
     rtlSetReleaseRowHook(queryHThorRtlRowCallback());
 
-    int memLimit = queryWorkUnit()->getDebugValueInt("hthorMemoryLimit", DEFAULT_MEM_LIMIT); // value is limit in MB
-    roxiemem::setTotalMemoryLimit(memLimit * 1024 * 1024);
+    //Get memory limit. Workunit specified value takes precedence over config file
+    int memLimitMB = globals->getPropInt("defaultMemoryLimitMB", DEFAULT_MEM_LIMIT);
+    memLimitMB = queryWorkUnit()->getDebugValueInt("hthorMemoryLimit", memLimitMB);
+    roxiemem::setTotalMemoryLimit(memLimitMB * 1024 * 1024);
 
     if (debugContext)
         debugContext->checkBreakpoint(DebugStateReady, NULL, NULL);
