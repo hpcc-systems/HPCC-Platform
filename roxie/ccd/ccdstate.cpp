@@ -867,6 +867,22 @@ public:
         }
     }
 
+    virtual void getQueries(StringBuffer &reply) const
+    {
+        HashIterator elems(queries);
+        for (elems.first(); elems.isValid(); elems.next())
+        {
+            IMapping &cur = elems.query();
+            reply.appendf(" <Query id='%s'/>\n", queries.mapToValue(&cur)->queryQueryName());
+        }
+        HashIterator aliasIterator(aliases);
+        for (aliasIterator.first(); aliasIterator.isValid(); aliasIterator.next())
+        {
+            IMapping &cur = aliasIterator.query();
+            reply.appendf(" <Alias id='%s' query='%s'/>\n", (const char *) cur.getKey(), aliases.mapToValue(&cur)->queryQueryName());
+        }
+    }
+
     virtual IQueryFactory * lookupLibrary(const char * libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const
     {
 #ifdef _DEBUG
@@ -1150,6 +1166,11 @@ public:
                 slaveManagers->item(channel)->getActivityMetrics(reply);
             }
         }
+    }
+    void getQueries(StringBuffer &reply) const
+    {
+        CriticalBlock b2(updateCrit);
+        serverManager->getQueries(reply);
     }
 protected:
     void reloadQueryManagers(CRoxieSlaveQuerySetManagerSet *newSlaveManagers, IRoxieQuerySetManager *newServerManager)
@@ -1829,7 +1850,13 @@ private:
         case 'Q':
             if (stricmp(queryName, "control:queries")==0)
             {
-                UNIMPLEMENTED; // only for QuerySets case...
+                reply.append("<Queries>\n");
+                ForEachItemIn(idx, allQueryPackages)
+                {
+                    CRoxieQueryPackageManager &qpm = allQueryPackages.item(idx);
+                    qpm.getQueries(reply);
+                }
+                reply.append("</Queries>\n");
             }
             else if (stricmp(queryName, "control:queryAggregates")==0)
             {
