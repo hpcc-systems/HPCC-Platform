@@ -16,6 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 #include "platform.h"
+#include "build-config.h"
 
 #if defined(_DEBUG) && defined(_WIN32) && !defined(USING_MPATROL)
  #undef new
@@ -47,6 +48,7 @@
 #include "hqlmeta.hpp"
 #include "workunit.hpp"
 #include "hqlrepository.hpp"
+#include "hqldesc.hpp"
 
 //This nearly works - but there are still some examples which have problems - primarily libraries, old parameter syntax, enums and other issues.
 
@@ -432,8 +434,8 @@ extern HQL_API IHqlExpression * forceCloneSymbol(IHqlExpression * donor, IHqlExp
 extern HQL_API IHqlExpression * cloneSymbol(IHqlExpression * donor, _ATOM newname, IHqlExpression * newbody, IHqlExpression * newfuncdef, HqlExprArray * operands)
 {
     assertex(donor->getAnnotationKind() == annotate_symbol);
-    CHqlNamedSymbol * cast = static_cast<CHqlNamedSymbol *>(donor);
-    return cast->cloneSymbol(newname, newbody, newfuncdef, operands);
+    IHqlNamedAnnotation * annotation = static_cast<IHqlNamedAnnotation *>(donor->queryAnnotation());
+    return annotation->cloneSymbol(newname, newbody, newfuncdef, operands);
 }
 
 
@@ -563,8 +565,303 @@ static bool isSameText(IFileContents * text1, IFileContents * text2)
     return memcmp(text1->getText(), text2->getText(), len1) == 0;
 }
 
+void getFileContentText(StringBuffer & result, IFileContents * contents)
+{
+    unsigned len = contents->length();
+    const char * text = contents->getText();
+    if ((len >= 3) && (memcmp(text, UTF8_BOM, 3) == 0))
+    {
+        len -= 3;
+        text += 3;
+    }
+    result.append(len, text);
+}
 
-//==============================================================================================================
+//---------------------------------------------------------------------------------------------------------------------
+
+void setFullNameProp(IPropertyTree * tree, const char * prop, const char * module, const char * def)
+{
+    if (module && *module)
+    {
+        StringBuffer s;
+        s.append(module).append('.').append(def);
+        tree->setProp(prop, s.str());
+    }
+    else
+        tree->setProp(prop, def);
+}
+
+void HqlParseContext::addForwardReference(IHqlScope * owner, IHasUnlinkedOwnerReference * child)
+{
+    forwardLinks.append(*new ForwardScopeItem(owner, child));
+}
+
+void HqlParseContext::addImport(IHqlExpression * expr, _ATOM name, int position)
+{
+    IPropertyTree * import = metaState.nesting.tos()->addPropTree("Import", createPTree("Import"));
+    import->setProp("@name", name->str());
+    import->setPropInt("@start", position);
+    IHqlScope * scope = expr->queryScope();
+    if (scope)
+        import->setProp("@ref", scope->queryFullName());
+    else
+        setFullNameProp(import, "@ref", expr->queryFullModuleName()->str(), expr->queryName()->str());
+}
+
+IPropertyTree * HqlParseContext::queryEnsureArchiveModule(const char * name, IHqlScope * scope)
+{
+    return ::queryEnsureArchiveModule(archive, name, scope);
+}
+
+void HqlParseContext::setGatherMeta(const MetaOptions & options)
+{
+    metaOptions = options;
+    metaState.gatherNow = !options.onlyGatherRoot;
+    metaTree.setown(createPTree("Meta"));
+}
+
+
+void HqlParseContext::noteBeginAttribute(IHqlScope * scope, IFileContents * contents, _ATOM name)
+{
+    if (queryArchive())
+    {
+        const char * moduleName = scope->queryFullName();
+        ISourcePath * sourcePath = contents->querySourcePath();
+
+        IPropertyTree * module = queryEnsureArchiveModule(moduleName, scope);
+        IPropertyTree * attr = queryArchiveAttribute(module, name->str());
+        if (!attr)
+            attr = createArchiveAttribute(module, name->str());
+
+        StringBuffer sillyTempBuffer;
+        getFileContentText(sillyTempBuffer, contents);  // We can't rely on IFileContents->getText() being null terminated..
+        attr->setProp("", sillyTempBuffer);
+        attr->setProp("@sourcePath", sourcePath->str());
+    }
+
+    if (checkBeginMeta())
+    {
+        ISourcePath * sourcePath = contents->querySourcePath();
+
+        IPropertyTree * attr = metaTree->addPropTree("Source", createPTree("Source"));
+        setFullNameProp(attr, "@name", scope->queryFullName(), name->str());
+        attr->setProp("@sourcePath", sourcePath->str());
+        metaState.nesting.append(attr);
+    }
+
+    if (globalDependTree)
+    {
+        IPropertyTree * attr = globalDependTree->addPropTree("Attribute", createPTree("Attribute"));
+        attr->setProp("@module", scope->queryFullName());
+        attr->setProp("@name", name->str());
+        //attr->setPropInt("@flags", symbol->getObType());  MORE
+    }
+}
+
+void HqlParseContext::noteBeginQuery(IHqlScope * scope, IFileContents * contents)
+{
+    if (queryArchive())
+    {
+        const char * moduleName = scope->queryFullName();
+        if (moduleName && *moduleName)
+        {
+            IPropertyTree * module = queryEnsureArchiveModule(moduleName, scope);
+            ISourcePath * sourcePath = contents->querySourcePath();
+
+            StringBuffer sillyTempBuffer;
+            getFileContentText(sillyTempBuffer, contents);
+            module->setProp("Text", sillyTempBuffer.str());
+            module->setProp("@sourcePath", sourcePath->str());
+        }
+    }
+
+    if (checkBeginMeta())
+    {
+        ISourcePath * sourcePath = contents->querySourcePath();
+
+        IPropertyTree * attr = metaTree->addPropTree("Query", createPTree("Query"));
+        attr->setProp("@sourcePath", sourcePath->str());
+        metaState.nesting.append(attr);
+    }
+}
+
+void HqlParseContext::noteEndAttribute()
+{
+    if (checkEndMeta())
+        finishMeta();
+}
+
+void HqlParseContext::noteEndQuery()
+{
+    if (checkEndMeta())
+        finishMeta();
+}
+
+void HqlParseContext::noteFinishedParse(IHqlScope * scope)
+{
+    if (metaState.gatherNow)
+        expandScopeSymbolsMeta(metaState.nesting.tos(), scope);
+}
+
+bool HqlParseContext::checkBeginMeta()
+{
+    if (!metaTree)
+        return false;
+    if (!metaOptions.onlyGatherRoot)
+        return true;
+    metaState.gatherNow = (metaState.nesting.ordinality() == 0);
+    return metaState.gatherNow;
+}
+
+bool HqlParseContext::checkEndMeta()
+{
+    if (!metaTree)
+        return false;
+    if (!metaOptions.onlyGatherRoot)
+        return true;
+    bool wasGathering = metaState.gatherNow;
+    metaState.gatherNow = (metaState.nesting.ordinality() == 2);
+    return wasGathering;
+}
+
+void HqlParseContext::finishMeta()
+{
+    metaState.nesting.pop();
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
+
+extern HQL_API IPropertyTree * createAttributeArchive()
+{
+    Owned<IPropertyTree> archive = createPTree("Archive");
+    archive->setProp("@build", BUILD_TAG);
+    archive->setProp("@eclVersion", LANGUAGE_VERSION);
+    return archive.getClear();
+}
+
+IPropertyTree * queryEnsureArchiveModule(IPropertyTree * archive, const char * name, IHqlScope * scope)
+{
+    //MORE: Move this into a member of the parse context to also handle dependencies.
+    StringBuffer lowerName;
+    lowerName.append(name).toLowerCase();
+
+    StringBuffer xpath,s;
+    xpath.append("Module[@key=\"").append(lowerName).append("\"]");
+    IPropertyTree * module = archive->queryPropTree(xpath);
+    if (!module)
+    {
+        module = archive->addPropTree("Module", createPTree());
+        module->setProp("@name", name ? name : "");
+        module->setProp("@key", lowerName);
+        if (scope)
+        {
+            unsigned flagsToSave = (scope->getPropInt(flagsAtom, 0) & PLUGIN_SAVEMASK);
+            if (flagsToSave)
+                module->setPropInt("@flags", flagsToSave);
+            scope->getProp(pluginAtom, s.clear());
+            if (s.length())
+            {
+                module->setProp("@fullname", s.str());
+
+                StringBuffer pluginName(s.str());
+                getFileNameOnly(pluginName, false);
+                module->setProp("@plugin", pluginName.str());
+            }
+            scope->getProp(versionAtom, s.clear());
+            if (s.length())
+                module->setProp("@version", s.str());
+        }
+    }
+    return module;
+}
+
+extern HQL_API IPropertyTree * queryArchiveAttribute(IPropertyTree * module, const char * name)
+{
+    StringBuffer lowerName, xpath;
+    lowerName.append(name).toLowerCase();
+    xpath.append("Attribute[@key=\"").append(lowerName).append("\"]");
+    return module->queryPropTree(xpath);
+}
+
+extern HQL_API IPropertyTree * createArchiveAttribute(IPropertyTree * module, const char * name)
+{
+    StringBuffer lowerName;
+    lowerName.append(name).toLowerCase();
+    IPropertyTree * attr = module->addPropTree("Attribute", createPTree());
+    attr->setProp("@name", name);
+    attr->setProp("@key", lowerName);
+    return attr;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
+void HqlLookupContext::noteBeginAttribute(IHqlScope * scope, IFileContents * contents, _ATOM name)
+{
+    if (queryNestedDependTree())
+        createDependencyEntry(scope, name);
+
+    parseCtx.noteBeginAttribute(scope, contents, name);
+}
+
+
+void HqlLookupContext::noteBeginQuery(IHqlScope * scope, IFileContents * contents)
+{
+    parseCtx.noteBeginQuery(scope, contents);
+}
+
+
+void HqlLookupContext::noteExternalLookup(IHqlScope * parentScope, IHqlExpression * expr)
+{
+    if (queryArchive())
+    {
+        node_operator op = expr->getOperator();
+        if ((op == no_remotescope) || (op == no_mergedscope))
+        {
+            //Ensure the archive contains entries for each module - even if nothing is accessed from it
+            //It would be preferrable to only check once, but adds very little time anyway.
+            IHqlScope * resolvedScope = expr->queryScope();
+            parseCtx.queryEnsureArchiveModule(resolvedScope->queryFullName(), resolvedScope);
+        }
+    }
+
+    if (curAttrTree && !dependents.contains(*expr))
+    {
+        node_operator op = expr->getOperator();
+        if ((op != no_remotescope) && (op != no_mergedscope))
+        {
+            dependents.append(*expr);
+
+            const char * moduleName = parentScope->queryFullName();
+            if (moduleName)
+            {
+                IPropertyTree * depend = curAttrTree->addPropTree("Depend", createPTree());
+                depend->setProp("@module", moduleName);
+                depend->setProp("@name", expr->queryName()->str());
+            }
+        }
+    }
+}
+
+
+void HqlLookupContext::createDependencyEntry(IHqlScope * parentScope, _ATOM name)
+{
+    const char * moduleName = parentScope->queryFullName();
+
+    StringBuffer xpath;
+    xpath.append("Attr[@module=\"").append(moduleName).append("\"][@name=\"").append(name).append("\"]");
+
+    IPropertyTree * attr = queryNestedDependTree()->queryPropTree(xpath.str());
+    if (!attr)
+    {
+        attr = queryNestedDependTree()->addPropTree("Attr", createPTree());
+        attr->setProp("@module", moduleName);
+        attr->setProp("@name", name->str());
+    }
+    curAttrTree.set(attr);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
 
 const char *getOpString(node_operator op)
 {
@@ -5505,7 +5802,7 @@ unsigned int CHqlAnnotation::getCachedEclCRC()
     return body->getCachedEclCRC();
 }
 
-bool CHqlAnnotation::isExported()
+bool CHqlAnnotation::isExported() const
 {
     return body->isExported();
 }
@@ -5597,34 +5894,9 @@ IHqlExpression * CHqlAnnotation::queryBody(bool singleLevel)
     return body->queryBody(singleLevel);
 }
 
-IPropertyTree * CHqlAnnotation::getDocumentation()
+IPropertyTree * CHqlAnnotation::getDocumentation() const
 {
     return body->getDocumentation();
-}
-
-void CHqlAnnotation::setStartColumn(int col)
-{
-    body->setStartColumn(col);
-}
-
-void CHqlAnnotation::setStartLine(int line)
-{
-    body->setStartLine(line);
-}
-
-int CHqlAnnotation::getStartColumn()
-{
-    return body->getStartColumn();
-}
-
-int CHqlAnnotation::getStartLine()
-{
-    return body->getStartLine();
-}
-
-bool CHqlAnnotation::isParameter()
-{
-    return body->isParameter();
 }
 
 bool CHqlAnnotation::isGroupAggregateFunction()
@@ -5645,6 +5917,16 @@ bool CHqlAnnotation::isType()
 bool CHqlAnnotation::isScope()
 {
     return body->isScope();
+}
+
+int CHqlAnnotation::getStartColumn() const
+{
+    return body->getStartColumn();
+}
+
+int CHqlAnnotation::getStartLine() const
+{
+    return body->getStartLine();
 }
 
 IAtom * CHqlAnnotation::queryName() const 
@@ -5691,24 +5973,12 @@ CHqlNamedSymbol *CHqlNamedSymbol::makeSymbol(_ATOM _name, _ATOM _module, IHqlExp
 }
 
  
-CHqlNamedSymbol *CHqlNamedSymbol::makeSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _flags, IFileContents *_text, int _bodystart)
+CHqlNamedSymbol *CHqlNamedSymbol::makeSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _flags, IFileContents *_text, int _bodystart, int lineno, int column)
 {
     CHqlNamedSymbol *e = new CHqlNamedSymbol(_name, _module, _expr, _funcdef, _exported, _shared, _flags, _text, _bodystart);
+    e->setStartLine(lineno);
+    e->setStartColumn(column);
     return (CHqlNamedSymbol *) e->closeExpr();
-}
-
-IHqlExpression * CHqlNamedSymbol::makeSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression * value,
-                             bool exported, bool shared, unsigned symbolFlags,
-                             IFileContents *fc, int _bodystart, int lineno, int column)
-
-{
-    CHqlNamedSymbol *symbol;
-    IHqlExpression * funcdef = NULL;
-
-    symbol = new CHqlNamedSymbol(_name, moduleName, value, funcdef, exported, shared, symbolFlags, fc, _bodystart);
-    symbol->setStartLine(lineno);
-    symbol->setStartColumn(column);
-    return symbol->closeExpr();
 }
 
 void CHqlNamedSymbol::sethash()
@@ -5986,25 +6256,36 @@ IHqlExpression *CHqlNamedSymbol::queryFunctionDefinition() const
     return funcdef;
 }
 
-bool isExported(IHqlExpression * expr)
+IHqlExpression *CHqlNamedSymbol::queryExpression()
+{
+    return this;
+}
+
+IHqlNamedAnnotation * queryNameAnnotation(IHqlExpression * expr)
 {
     IHqlExpression * symbol = queryNamedSymbol(expr);
-    CHqlNamedSymbol * named = QUERYINTERFACE(symbol, CHqlNamedSymbol);
-    return (named && named->isExported());
+    if (!symbol)
+        return NULL;
+    return static_cast<IHqlNamedAnnotation *>(symbol->queryAnnotation());
+}
+
+
+bool isExported(IHqlExpression * expr)
+{
+    IHqlNamedAnnotation * symbol = queryNameAnnotation(expr);
+    return (symbol && symbol->isExported());
 }
 
 bool isShared(IHqlExpression * expr)
 {
-    IHqlExpression * symbol = queryNamedSymbol(expr);
-    CHqlNamedSymbol * named = QUERYINTERFACE(symbol, CHqlNamedSymbol);
-    return (named && named->isShared());
+    IHqlNamedAnnotation * symbol = queryNameAnnotation(expr);
+    return (symbol && symbol->isShared());
 }
 
 bool isPublicSymbol(IHqlExpression * expr)
 {
-    IHqlExpression * symbol = queryNamedSymbol(expr);
-    CHqlNamedSymbol * named = QUERYINTERFACE(symbol, CHqlNamedSymbol);
-    return (named && (named->isExported() || named->isShared()));
+    IHqlNamedAnnotation * symbol = queryNameAnnotation(expr);
+    return (symbol && symbol->isPublic());
 }
 
 bool isImport(IHqlExpression * expr)
@@ -6596,12 +6877,8 @@ void CHqlScope::defineSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression *valu
 {
     if (!moduleName)
         moduleName = name;
-    CHqlNamedSymbol *symbol = CHqlNamedSymbol::makeSymbol(_name, moduleName, value, NULL, exported, shared, symbolFlags, fc, _bodystart);
 
-    //Really shouldn't modify after creation - but these aren't hashed...
-    symbol->setStartLine(lineno);
-    symbol->setStartColumn(column);
-
+    CHqlNamedSymbol *symbol = CHqlNamedSymbol::makeSymbol(_name, moduleName, value, NULL, exported, shared, symbolFlags, fc, _bodystart, lineno, column);
     defineSymbol(symbol);
 }
 
@@ -6901,7 +7178,7 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(_ATOM searchName, unsigned lookupF
         throw createECLError(ERR_EXPORT_OR_SHARE, msg.toCharArray(), filename, 0, 0, 1);
     }
 
-    OwnedHqlExpr recursionGuard = CHqlNamedSymbol::makeSymbol(searchName, NULL, LINK(processingMarker), true, false, 0);
+    OwnedHqlExpr recursionGuard = createSymbol(searchName, LINK(processingMarker), ob_exported);
     resolved->defineSymbol(LINK(recursionGuard));
 
     unsigned prevErrors = ctx.numErrors();
@@ -7177,7 +7454,7 @@ IHqlExpression * CHqlMergedScope::lookupSymbol(_ATOM searchName, unsigned lookup
             return NULL;
     }
 
-    OwnedHqlExpr recursionGuard = CHqlNamedSymbol::makeSymbol(searchName, NULL, LINK(processingMarker), true, false, 0);
+    OwnedHqlExpr recursionGuard = createSymbol(searchName, LINK(processingMarker), ob_exported);
     defineSymbol(LINK(recursionGuard));
 
     OwnedHqlExpr previousMatch;
@@ -7257,8 +7534,7 @@ void CHqlMergedScope::ensureSymbolsDefined(HqlLookupContext & ctx)
         ForEachItemIn(iSym, scopeSymbols)
         {
             IHqlExpression & cur = scopeSymbols.item(iSym);
-            CHqlNamedSymbol & curSymbol = static_cast<CHqlNamedSymbol &>(cur);
-            _ATOM curName = curSymbol.queryName();
+            _ATOM curName = cur.queryName();
 
             OwnedHqlExpr prev = symbols.getLinkedValue(curName);
             if (prev)
@@ -7269,13 +7545,13 @@ void CHqlMergedScope::ensureSymbolsDefined(HqlLookupContext & ctx)
                     //a child scope hasn't resolved it yet.
                     if (prev->getOperator() != no_nobody)
                     {
-                        CHqlNamedSymbol* newSymbol = CHqlNamedSymbol::makeSymbol(curName, name, NULL, true, false, 0);
+                        IHqlExpression * newSymbol = CHqlNamedSymbol::makeSymbol(curName, name, NULL, true, false, 0);
                         defineSymbol(newSymbol);
                     }
                 }
             }
             else
-                defineSymbol(LINK(&curSymbol));
+                defineSymbol(LINK(&cur));
         }
     }
 
@@ -7811,15 +8087,16 @@ IHqlExpression *CHqlForwardScope::lookupSymbol(_ATOM searchName, unsigned lookup
     if (!parentScope)
         return NULL;
 
-    CHqlNamedSymbol * oldSymbol = static_cast<CHqlNamedSymbol *>(ret.get());
-    IHqlExpression * processingSymbol = CHqlNamedSymbol::makeSymbol(searchName, NULL, LINK(processingMarker), true, false, 0);
+    IHqlExpression * processingSymbol = createSymbol(searchName, LINK(processingMarker), ob_exported);
     resolved->defineSymbol(processingSymbol);
 
     bool ok = parseForwardModuleMember(*parentCtx, this, ret, ctx);
-    Owned<CHqlNamedSymbol> newSymbol = static_cast<CHqlNamedSymbol *>(resolved->lookupSymbol(searchName, lookupFlags, ctx));
+    OwnedHqlExpr newSymbol = resolved->lookupSymbol(searchName, lookupFlags, ctx);
 
     if(!ok || !newSymbol || (newSymbol == processingSymbol))
     {
+        IHqlNamedAnnotation * oldSymbol = queryNameAnnotation(ret);
+        assertex(oldSymbol);
         resolved->removeSymbol(searchName);
         const char * filename = parentCtx->sourcePath->str();
         StringBuffer msg("Definition must contain EXPORT or SHARED value for ");
@@ -7865,13 +8142,10 @@ IHqlScope * CHqlForwardScope::queryResolvedScope(HqlLookupContext * context)
 
 void addForwardDefinition(IHqlScope * scope, _ATOM symbolName, _ATOM moduleName, IFileContents * contents, unsigned symbolFlags, bool isExported, unsigned startLine, unsigned startColumn)
 {
-    CHqlNamedSymbol* cur = CHqlNamedSymbol::makeSymbol(symbolName, moduleName, NULL, NULL, 
+    IHqlExpression * cur = createSymbol(symbolName, moduleName, NULL, NULL,
                             isExported, !isExported, symbolFlags,
-                            contents, 0);
+                            contents, 0, startLine, startColumn);
 
-    //Really shouldn't modify after creation - but these aren't hashed...
-    cur->setStartLine(startLine);
-    cur->setStartColumn(startColumn);
     scope->defineSymbol(cur);
 }
 
@@ -7999,7 +8273,7 @@ CHqlContextScope::CHqlContextScope(IHqlScope* _scope) : CHqlScope(no_privatescop
     for(it.first();it.isValid();it.next())
     {
         IMapping* name = &it.query();       
-        CHqlNamedSymbol *value = scope->defined.mapToValue(name);
+        IHqlExpression * value = scope->defined.mapToValue(name);
         
         if(value)
         {
@@ -9046,23 +9320,16 @@ extern HQL_API IHqlExpression *createSequence(node_operator op, ITypeInfo * type
     return ret->closeExpr();
 }
 
-IHqlExpression *createSymbol(IAtom *name, ITypeInfo *type, IHqlExpression *expr)
+IHqlExpression *createSymbol(_ATOM name, IHqlExpression *expr, unsigned exportFlags)
 {
-    if (type)
-    {
-        if (type != expr->queryType())
-            expr = createValue(no_implicitcast, type, expr);
-        else
-            ::Release(type);
-    }
-    return CHqlNamedSymbol::makeSymbol(name, NULL, expr, false, false, 0);
+    return CHqlNamedSymbol::makeSymbol(name, NULL, expr, (exportFlags & ob_exported) != 0, (exportFlags & ob_shared) != 0, 0);
 }
 
-IHqlExpression * createSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression *expr,
+IHqlExpression * createSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression *expr, IHqlExpression * funcdef,
                              bool exported, bool shared, unsigned symbolFlags,
                              IFileContents *fc, int _bodystart, int lineno, int column)
 {
-    return CHqlNamedSymbol::makeSymbol(_name, moduleName, expr,
+    return CHqlNamedSymbol::makeSymbol(_name, moduleName, expr, funcdef,
                              exported, shared, symbolFlags,
                              fc, _bodystart, lineno, column);
 }
@@ -12195,8 +12462,7 @@ void exportData(IPropertyTree *data, IHqlExpression *table, bool flatten)
             tt = createPTree(StringBuffer(prefix).append("Table").str(), ipt_caseInsensitive);
             StringBuffer name;
             tt->setProp("@name", getExportName(table, name).str());
-            CHqlNamedSymbol *a = QUERYINTERFACE(table, CHqlNamedSymbol);
-            tt->setProp("@exported", a && a->isExported() ? "true" : "false");
+            tt->setProp("@exported", table->isExported() ? "true" : "false");
             unsigned size = exportRecord(tt, table->queryChild(1), flatten);
             if (mode->getOperator()==no_flat)
                 tt->setPropInt("@recordLength", size);
@@ -12218,8 +12484,7 @@ void exportData(IPropertyTree *data, IHqlExpression *table, bool flatten)
             tt = createPTree("LogicalTable", ipt_caseInsensitive);
             StringBuffer name;
             tt->setProp("@name", getExportName(table, name).str());
-            CHqlNamedSymbol *a = QUERYINTERFACE(table, CHqlNamedSymbol);
-            tt->setProp("@exported", a && a->isExported() ? "true" : "false");
+            tt->setProp("@exported", table->isExported() ? "true" : "false");
             exportRecord(tt, table->queryChild(1), flatten);
             if (filter)
             {

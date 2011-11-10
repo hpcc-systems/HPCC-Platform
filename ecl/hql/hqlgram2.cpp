@@ -26,7 +26,6 @@
 #include "jfile.hpp" 
 #include "junicode.hpp"
 
-#include "build-config.h"
 #include "hqlgram.hpp"
 #include "hqlgram.h"
 
@@ -3220,7 +3219,7 @@ IHqlExpression *HqlGram::lookupSymbol(_ATOM searchName, const attribute& errpos)
             errorHandler->report(error);
         error->Release();
         // recover: to avoid reload the definition again and again
-        return createSymbol(searchName, NULL, createConstant(0));
+        return createSymbol(searchName, createConstant(0), ob_private);
     }
     return NULL;
 }
@@ -9739,6 +9738,7 @@ void HqlGram::defineImport(const attribute & errpos, IHqlExpression * imported, 
     }
 
     parseScope->defineSymbol(newName, NULL, LINK(imported), false, false, ob_import);
+    lookupCtx.noteImport(imported, newName, errpos.pos.position);
 }
 
 
@@ -10921,16 +10921,18 @@ void HqlGram::setTemplateAttribute()
 IHqlExpression * reparseTemplateFunction(IHqlExpression * funcdef, IHqlScope *scope, HqlLookupContext & ctx, bool hasFieldMap)
 {
     // get func body text
-    CHqlNamedSymbol* f = QUERYINTERFACE(funcdef,CHqlNamedSymbol);
-    assertex(f);
-    Owned<IFileContents> contents = f->getBodyContents();
+    IHqlExpression * symbol = queryAnnotation(funcdef, annotate_symbol);
+    assertex(symbol);
+    IHqlNamedAnnotation * nameExtra = static_cast<IHqlNamedAnnotation *>(symbol->queryAnnotation());
+    assertex(nameExtra);
+    Owned<IFileContents> contents = nameExtra->getBodyContents();
     StringBuffer text;
     text.append("=>").append(contents->length(), contents->getText());
 
     //Could use a merge string implementation of IFileContents instead of expanding...
     Owned<IFileContents> parseContents = createFileContentsFromText(text.str(), contents->querySourcePath());
     HqlGram parser(scope, scope, parseContents, ctx, NULL, hasFieldMap, true);
-    unsigned startLine = f->getStartLine();
+    unsigned startLine = funcdef->getStartLine();
 
     //MORE: I need a better calculation of the column/line that the body begins at 
     //e.g. if multiple lines of parameters etc.
@@ -10971,189 +10973,6 @@ IHqlExpression * PseudoPatternScope::lookupSymbol(_ATOM name, unsigned lookupFla
 }
 
 
-//===============================================================================================
-
-extern HQL_API IPropertyTree * createAttributeArchive()
-{
-    Owned<IPropertyTree> archive = createPTree("Archive");
-    archive->setProp("@build", BUILD_TAG);
-    archive->setProp("@eclVersion", LANGUAGE_VERSION);
-    return archive.getClear();
-}
-
-//===============================================================================================
-//   Functions that can be used externally
-
-IPropertyTree * queryEnsureArchiveModule(IPropertyTree * archive, const char * name, IHqlScope * scope)
-{
-    //MORE: Move this into a member of the parse context to also handle dependencies.
-    StringBuffer lowerName;
-    lowerName.append(name).toLowerCase();
-
-    StringBuffer xpath,s;
-    xpath.append("Module[@key=\"").append(lowerName).append("\"]");
-    IPropertyTree * module = archive->queryPropTree(xpath);
-    if (!module)
-    {
-        module = archive->addPropTree("Module", createPTree());
-        module->setProp("@name", name ? name : "");
-        module->setProp("@key", lowerName);
-        if (scope)
-        {
-            unsigned flagsToSave = (scope->getPropInt(flagsAtom, 0) & PLUGIN_SAVEMASK);
-            if (flagsToSave)
-                module->setPropInt("@flags", flagsToSave);
-            scope->getProp(pluginAtom, s.clear());
-            if (s.length())
-            {
-                module->setProp("@fullname", s.str());
-
-                StringBuffer pluginName(s.str());
-                getFileNameOnly(pluginName, false);
-                module->setProp("@plugin", pluginName.str());
-            }
-            scope->getProp(versionAtom, s.clear());
-            if (s.length())
-                module->setProp("@version", s.str());
-        }
-    }
-    return module;
-}
-
-IPropertyTree * HqlParseContext::queryEnsureArchiveModule(const char * name, IHqlScope * scope)
-{
-    return ::queryEnsureArchiveModule(archive, name, scope);
-}
-
-extern HQL_API IPropertyTree * queryArchiveAttribute(IPropertyTree * module, const char * name)
-{
-    StringBuffer lowerName, xpath;
-    lowerName.append(name).toLowerCase();
-    xpath.append("Attribute[@key=\"").append(lowerName).append("\"]");
-    return module->queryPropTree(xpath);
-}
-
-extern HQL_API IPropertyTree * createArchiveAttribute(IPropertyTree * module, const char * name)
-{
-    StringBuffer lowerName;
-    lowerName.append(name).toLowerCase();
-    IPropertyTree * attr = module->addPropTree("Attribute", createPTree());
-    attr->setProp("@name", name);
-    attr->setProp("@key", lowerName);
-    return attr;
-}
-
-void getFileContentText(StringBuffer & result, IFileContents * contents)
-{
-    unsigned len = contents->length();
-    const char * text = contents->getText();
-    if ((len >= 3) && (memcmp(text, UTF8_BOM, 3) == 0))
-    {
-        len -= 3;
-        text += 3;
-    }
-    result.append(len, text);
-}
-
-void HqlLookupContext::noteBeginAttribute(IHqlScope * scope, IFileContents * contents, _ATOM name)
-{
-    if (queryNestedDependTree())
-        createDependencyEntry(scope, name);
-
-    if (parseCtx.globalDependTree)
-    {
-        IPropertyTree * attr = parseCtx.globalDependTree->addPropTree("Attribute", createPTree("Attribute"));
-        attr->setProp("@module", scope->queryFullName());
-        attr->setProp("@name", name->str());
-        //attr->setPropInt("@flags", symbol->getObType());  MORE
-    }
-
-    if (queryArchive())
-    {
-        const char * moduleName = scope->queryFullName();
-        ISourcePath * sourcePath = contents->querySourcePath();
-
-        IPropertyTree * module = parseCtx.queryEnsureArchiveModule(moduleName, scope);
-        IPropertyTree * attr = queryArchiveAttribute(module, name->str());
-        if (!attr)
-            attr = createArchiveAttribute(module, name->str());
-
-        StringBuffer sillyTempBuffer;
-        getFileContentText(sillyTempBuffer, contents);  // We can't rely on IFileContents->getText() being null terminated..
-        attr->setProp("", sillyTempBuffer);
-        attr->setProp("@sourcePath", sourcePath->str());
-    }
-}
-
-void HqlLookupContext::noteParseQuery(IHqlScope * scope, IFileContents * contents)
-{
-    if (queryArchive())
-    {
-        const char * moduleName = scope->queryFullName();
-        if (moduleName && *moduleName)
-        {
-            IPropertyTree * module = queryParseContext().queryEnsureArchiveModule(moduleName, scope);
-            ISourcePath * sourcePath = contents->querySourcePath();
-
-            StringBuffer sillyTempBuffer;
-            getFileContentText(sillyTempBuffer, contents);
-            module->setProp("Text", sillyTempBuffer.str());
-            module->setProp("@sourcePath", sourcePath->str());
-        }
-    }
-}
-
-
-void HqlLookupContext::noteExternalLookup(IHqlScope * parentScope, IHqlExpression * expr)
-{
-    if (queryArchive())
-    {
-        node_operator op = expr->getOperator();
-        if ((op == no_remotescope) || (op == no_mergedscope))
-        {
-            //Ensure the archive contains entries for each module - even if nothing is accessed from it
-            //It would be preferrable to only check once, but adds very little time anyway.
-            IHqlScope * resolvedScope = expr->queryScope();
-            parseCtx.queryEnsureArchiveModule(resolvedScope->queryFullName(), resolvedScope);
-        }
-    }
-
-    if (curAttrTree && !dependents.contains(*expr))
-    {
-        node_operator op = expr->getOperator();
-        if ((op != no_remotescope) && (op != no_mergedscope))
-        {
-            dependents.append(*expr);
-
-            const char * moduleName = parentScope->queryFullName();
-            if (moduleName)
-            {
-                IPropertyTree * depend = curAttrTree->addPropTree("Depend", createPTree());
-                depend->setProp("@module", moduleName);
-                depend->setProp("@name", expr->queryName()->str());
-            }
-        }
-    }
-}
-
-
-void HqlLookupContext::createDependencyEntry(IHqlScope * parentScope, _ATOM name)
-{
-    const char * moduleName = parentScope->queryFullName();
-
-    StringBuffer xpath;
-    xpath.append("Attr[@module=\"").append(moduleName).append("\"][@name=\"").append(name).append("\"]");
-
-    IPropertyTree * attr = queryNestedDependTree()->queryPropTree(xpath.str());
-    if (!attr)
-    {
-        attr = queryNestedDependTree()->addPropTree("Attr", createPTree());
-        attr->setProp("@module", moduleName);
-        attr->setProp("@name", name->str());
-    }
-    curAttrTree.set(attr);
-}
-
 //---------------------------------------------------------------------------------------------------------------------
 
 extern HQL_API IHqlExpression * parseQuery(IHqlScope *scope, IFileContents * contents, HqlLookupContext & ctx, IXmlScope *xmlScope, bool loadImplicit)
@@ -11161,13 +10980,14 @@ extern HQL_API IHqlExpression * parseQuery(IHqlScope *scope, IFileContents * con
     assertex(scope);
     try
     {
-        ctx.noteParseQuery(scope, contents);
+        ctx.noteBeginQuery(scope, contents);
 
         HqlGram parser(scope, scope, contents, ctx, xmlScope, false, loadImplicit);
         parser.setQuery(true);
         parser.getLexer()->set_yyLineNo(1);
         parser.getLexer()->set_yyColumn(1);
         OwnedHqlExpr ret = parser.yyParse(false, true);
+        ctx.noteEndQuery();
         return parser.clearFieldMap(ret.getClear());
     }
     catch (IException *E)
@@ -11231,6 +11051,7 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
     parser.getLexer()->set_yyLineNo(1);
     parser.getLexer()->set_yyColumn(1);
     ::Release(parser.yyParse(false, false));
+    attrCtx.noteEndAttribute();
 }
 
 void testHqlInternals()
@@ -11334,6 +11155,8 @@ IHqlExpression *HqlGram::doParse()
     if (prevErrors != nowErrors)
         return NULL;
 
+    lookupCtx.noteFinishedParse(defineScopes.tos().privateScope);
+    lookupCtx.noteFinishedParse(parseScope);
     if (parsingTemplateAttribute)
     {
         if (parseResults.ordinality() == 0)

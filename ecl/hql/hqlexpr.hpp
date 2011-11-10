@@ -15,7 +15,6 @@
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
-// Documentation for this file can be found at http://mgweb/WebHelp/hql/html/hqlexpr_hpp.html
 
 #ifndef HQLEXPR_INCL
 #define HQLEXPR_INCL
@@ -860,33 +859,70 @@ interface IHasUnlinkedOwnerReference : public IInterface
 
 typedef SafeOwnerReference<IHqlScope, IHasUnlinkedOwnerReference> ForwardScopeItem;
 
-class HqlParseContext
+class HQL_API HqlParseContext
 {
 public:
+    class MetaOptions
+    {
+    public:
+        MetaOptions() { _clear(*this); }
+
+        bool includePublicDefinitions;   // include details of SHARED and EXPORTED symbols
+        bool includePrivateDefinitions;  // include details of local symbols/parameters etc.
+        bool onlyGatherRoot;             // only gather information for the main definition processed.
+        bool includeInternalUses;        // gather use of internal symbols
+        bool includeExternalUses;        // gather use of external symbols
+        bool includeImports;            // gather imports
+        bool includeLocations;          // include information about source locations
+        bool includeJavadoc;
+    };
+
     HqlParseContext(IEclRepository * _eclRepository, IPropertyTree * _archive)
     : archive(_archive), eclRepository(_eclRepository)
     {
         expandCallsWhenBound = DEFAULT_EXPAND_CALL;
         ignoreUnknownImport = false;
+        _clear(metaState);
     }
 
-    inline IEclRepository * queryRepository() const { return eclRepository; }
-    void addForwardReference(IHqlScope * owner, IHasUnlinkedOwnerReference * child)
-    {
-        forwardLinks.append(*new ForwardScopeItem(owner, child));
-    }
-
+    void addForwardReference(IHqlScope * owner, IHasUnlinkedOwnerReference * child);
+    void noteBeginAttribute(IHqlScope * scope, IFileContents * contents, _ATOM name);
+    void noteBeginQuery(IHqlScope * scope, IFileContents * contents);
+    void noteEndAttribute();
+    void noteEndQuery();
+    void noteFinishedParse(IHqlScope * scope);
+    inline void noteImport(IHqlExpression * expr, _ATOM name, int position) { if (metaState.gatherNow) addImport(expr, name, position); }
     IPropertyTree * queryEnsureArchiveModule(const char * name, IHqlScope * scope);
+
+    void setGatherMeta(const MetaOptions & options);
+
+    inline IPropertyTree * getMetaTree() { return LINK(metaTree); }
+    inline IPropertyTree * queryArchive() const { return archive; }
+    inline IEclRepository * queryRepository() const { return eclRepository; }
 
 public:
     Linked<IPropertyTree> archive;
     Linked<IEclRepository> eclRepository;
     Owned<IPropertyTree> nestedDependTree;
     Owned<IPropertyTree> globalDependTree;
+    Owned<IPropertyTree> metaTree;
     HqlExprArray defaultFunctionCache;
     CIArrayOf<ForwardScopeItem> forwardLinks;
     bool expandCallsWhenBound;
     bool ignoreUnknownImport;
+
+private:
+    void addImport(IHqlExpression * expr, _ATOM name, int position);
+    bool checkBeginMeta();
+    bool checkEndMeta();
+    void finishMeta();
+
+    MetaOptions metaOptions;
+
+    struct {
+        bool gatherNow;
+        PointerArrayOf<IPropertyTree> nesting;
+    } metaState;
 };
 
 class HqlDummyParseContext : public HqlParseContext
@@ -913,8 +949,12 @@ public:
 
     void createDependencyEntry(IHqlScope * scope, _ATOM name);
     void noteBeginAttribute(IHqlScope * scope, IFileContents * contents, _ATOM name);
-    void noteParseQuery(IHqlScope * scope, IFileContents * contents);
+    void noteBeginQuery(IHqlScope * scope, IFileContents * contents);
+    inline void noteEndAttribute() { parseCtx.noteEndAttribute(); }
+    inline void noteEndQuery() { parseCtx.noteEndQuery(); }
+    inline void noteFinishedParse(IHqlScope * scope) { parseCtx.noteFinishedParse(scope); }
     void noteExternalLookup(IHqlScope * parentScope, IHqlExpression * expr);
+    inline void noteImport(IHqlExpression * expr, _ATOM name, int position) { parseCtx.noteImport(expr, name, position); }
 
     inline IEclRepository * queryRepository() const { return parseCtx.eclRepository; }
     inline bool queryExpandCallsWhenBound() const { return parseCtx.expandCallsWhenBound; }
@@ -1011,6 +1051,7 @@ interface IHqlDataset : public IInterface
 extern HQL_API int getPrecedence(node_operator op);
 
 struct BindParameterContext;
+interface IHqlAnnotation;
 interface IHqlExpression : public IInterface
 {
     virtual _ATOM queryName() const = 0;
@@ -1030,23 +1071,19 @@ interface IHqlExpression : public IInterface
     virtual bool isFunction() = 0;
     virtual bool isAggregate() = 0;
     virtual bool isGroupAggregateFunction() = 0;
-    virtual bool isParameter() = 0;
     virtual bool isPure() = 0;
     virtual bool isAttribute() const = 0;
     virtual annotate_kind getAnnotationKind() const = 0;
+    virtual IHqlAnnotation * queryAnnotation() = 0;
 
     virtual unsigned getInfoFlags() const = 0;
     virtual unsigned getInfoFlags2() const = 0;
 
-    // JF: defined only for macro definition. Maybe used for function/attribute definition as well
-    virtual int  getStartLine() = 0;
-    virtual int  getStartColumn() = 0;
-    virtual void setStartLine(int) = 0;
-    virtual void setStartColumn(int) = 0;
-
     virtual ISourcePath * querySourcePath() const = 0;
     virtual _ATOM queryFullModuleName() const = 0;              // only defined for a named symbol
-    virtual IPropertyTree * getDocumentation() = 0;
+    virtual int  getStartLine() const = 0;
+    virtual int  getStartColumn() const = 0;
+    virtual IPropertyTree * getDocumentation() const = 0;
 
     virtual ITypeInfo *queryType() const = 0;
     virtual ITypeInfo *getType() = 0;
@@ -1091,8 +1128,8 @@ interface IHqlExpression : public IInterface
     virtual StringBuffer& getTextBuf(StringBuffer& buf) = 0;
     virtual IFileContents * queryDefinitionText() const = 0;
 
-    virtual bool isExported() = 0;
     virtual unsigned getSymbolFlags() = 0;              // only valid for a named symbol
+    virtual bool isExported() const = 0;
 
     virtual unsigned            getCachedEclCRC() = 0;          // do not call directly - use getExpressionCRC()
     virtual IHqlExpression * queryAnnotationParameter(unsigned i) const = 0;
@@ -1119,6 +1156,24 @@ interface IHqlExpression : public IInterface
     inline IHqlExpression * queryDefinition() { return queryBody()->queryFunctionDefinition(); }
     inline unsigned numCallParameters() { return numChildren(); }
 };
+
+interface IHqlAnnotation : public IInterface
+{
+    virtual annotate_kind getAnnotationKind() const = 0;
+    virtual IHqlExpression * queryExpression() = 0;
+};
+
+interface IHqlNamedAnnotation : public IHqlAnnotation
+{
+    virtual IFileContents * getBodyContents() = 0;
+    virtual IHqlExpression * cloneSymbol(_ATOM optname, IHqlExpression * optnewbody, IHqlExpression * optnewfuncdef, HqlExprArray * optargs) = 0;
+    virtual bool isExported() const = 0;
+    virtual bool isShared() const = 0;
+    virtual bool isPublic() const = 0;
+    virtual int getStartLine() const = 0;
+    virtual int getStartColumn() const = 0;
+};
+
 
 typedef Linked<IHqlExpression> HqlExprAttr;
 typedef Linked<IHqlExpression> LinkedHqlExpr;
@@ -1205,8 +1260,8 @@ extern HQL_API void expandDelayedFunctionCalls(IErrorReceiver * errors, HqlExprA
 
 extern HQL_API IHqlExpression *createQuoted(const char * name, ITypeInfo *type);
 extern HQL_API IHqlExpression *createVariable(const char * name, ITypeInfo *type);
-extern HQL_API IHqlExpression *createSymbol(_ATOM name, ITypeInfo *type, IHqlExpression *expr);
-extern HQL_API IHqlExpression * createSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression *expr,
+extern HQL_API IHqlExpression * createSymbol(_ATOM name, IHqlExpression *expr, unsigned exportFlags);
+extern HQL_API IHqlExpression * createSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression *expr, IHqlExpression * funcdef,
                                              bool exported, bool shared, unsigned symbolFlags,
                                              IFileContents *fc, int _bodystart, int lineno, int column);
 extern HQL_API IHqlExpression *createAttribute(_ATOM name, IHqlExpression * value = NULL, IHqlExpression * value2 = NULL, IHqlExpression * value3 = NULL);
@@ -1364,6 +1419,8 @@ extern HQL_API unsigned getExpressionCRC(IHqlExpression * expr);
 extern HQL_API IHqlExpression * queryPropertyInList(_ATOM search, IHqlExpression * cur);
 extern HQL_API IHqlExpression * queryProperty(_ATOM search, HqlExprArray & exprs);
 extern HQL_API IHqlExpression * queryAnnotation(IHqlExpression * expr, annotate_kind search);       // return first match
+extern HQL_API IHqlNamedAnnotation * queryNameAnnotation(IHqlExpression * expr);
+
 inline bool hasAnnotation(IHqlExpression * expr, annotate_kind search){ return queryAnnotation(expr, search) != NULL; }
 inline IHqlExpression * queryNamedSymbol(IHqlExpression * expr) { return queryAnnotation(expr, annotate_symbol); }
 inline bool hasNamedSymbol(IHqlExpression * expr) { return hasAnnotation(expr, annotate_symbol); }
