@@ -5,7 +5,7 @@
  <Row><area>1</area><zone>4</zone><prob>0.196</prob></Row>
  <Row><area>2</area><zone>2</zone><prob>0.24</prob></Row>
  <Row><area>2</area><zone>3</zone><prob>0.144</prob></Row>
- <Row><area>2</area><zone>4</zone><prob>0.567</prob></Row>
+ <Row><area>2</area><zone>4</zone><prob>0.5669999999999999</prob></Row>
  <Row><area>3</area><zone>1</zone><prob>0.027</prob></Row>
  <Row><area>3</area><zone>2</zone><prob>0.216</prob></Row>
  <Row><area>3</area><zone>4</zone><prob>0.008</prob></Row>
@@ -17,7 +17,7 @@
  <Row><area>1</area><zone>4</zone><prob>0.196</prob></Row>
  <Row><area>2</area><zone>2</zone><prob>0.24</prob></Row>
  <Row><area>2</area><zone>3</zone><prob>0.144</prob></Row>
- <Row><area>2</area><zone>4</zone><prob>0.567</prob></Row>
+ <Row><area>2</area><zone>4</zone><prob>0.5669999999999999</prob></Row>
  <Row><area>3</area><zone>1</zone><prob>0.027</prob></Row>
  <Row><area>3</area><zone>2</zone><prob>0.216</prob></Row>
  <Row><area>3</area><zone>4</zone><prob>0.008</prob></Row>
@@ -27,7 +27,7 @@
  <Row><area>1</area><zone>4</zone><prob>0.196</prob></Row>
  <Row><area>2</area><zone>2</zone><prob>0.24</prob></Row>
  <Row><area>2</area><zone>3</zone><prob>0.144</prob></Row>
- <Row><area>2</area><zone>4</zone><prob>0.567</prob></Row>
+ <Row><area>2</area><zone>4</zone><prob>0.5669999999999999</prob></Row>
  <Row><area>3</area><zone>2</zone><prob>0.216</prob></Row>
 </Dataset>
 <Dataset name='j2inf'>
@@ -35,7 +35,7 @@
  <Row><area>1</area><zone>4</zone><prob>0.196</prob></Row>
  <Row><area>2</area><zone>2</zone><prob>0.24</prob></Row>
  <Row><area>2</area><zone>3</zone><prob>0.144</prob></Row>
- <Row><area>2</area><zone>4</zone><prob>0.567</prob></Row>
+ <Row><area>2</area><zone>4</zone><prob>0.5669999999999999</prob></Row>
  <Row><area>3</area><zone>2</zone><prob>0.216</prob></Row>
 </Dataset>
 <Dataset name='j1inf2'>
@@ -70,7 +70,7 @@
  <Row><area>1</area><zone>6</zone><prob>0.7</prob></Row>
  <Row><area>2</area><zone>2</zone><prob>0.24</prob></Row>
  <Row><area>2</area><zone>3</zone><prob>0.144</prob></Row>
- <Row><area>2</area><zone>4</zone><prob>0.567</prob></Row>
+ <Row><area>2</area><zone>4</zone><prob>0.5669999999999999</prob></Row>
  <Row><area>3</area><zone>1</zone><prob>0.027</prob></Row>
  <Row><area>3</area><zone>2</zone><prob>0.216</prob></Row>
  <Row><area>3</area><zone>4</zone><prob>0.008</prob></Row>
@@ -85,7 +85,7 @@
  <Row><area>1</area><zone>6</zone><prob>0.7</prob></Row>
  <Row><area>2</area><zone>2</zone><prob>0.24</prob></Row>
  <Row><area>2</area><zone>3</zone><prob>0.144</prob></Row>
- <Row><area>2</area><zone>4</zone><prob>0.567</prob></Row>
+ <Row><area>2</area><zone>4</zone><prob>0.5669999999999999</prob></Row>
  <Row><area>3</area><zone>1</zone><prob>0.027</prob></Row>
  <Row><area>3</area><zone>2</zone><prob>0.216</prob></Row>
  <Row><area>3</area><zone>4</zone><prob>0.008</prob></Row>
@@ -100,7 +100,7 @@
  <Row><area>1</area><zone>6</zone><prob>0.7</prob></Row>
  <Row><area>2</area><zone>2</zone><prob>0.24</prob></Row>
  <Row><area>2</area><zone>3</zone><prob>0.144</prob></Row>
- <Row><area>2</area><zone>4</zone><prob>0.567</prob></Row>
+ <Row><area>2</area><zone>4</zone><prob>0.5669999999999999</prob></Row>
  <Row><area>3</area><zone>1</zone><prob>0.3</prob></Row>
  <Row><area>3</area><zone>2</zone><prob>0.216</prob></Row>
  <Row><area>3</area><zone>4</zone><prob>0.2</prob></Row>
@@ -115,7 +115,7 @@
  <Row><area>1</area><zone>6</zone><prob>0.7</prob></Row>
  <Row><area>2</area><zone>2</zone><prob>0.24</prob></Row>
  <Row><area>2</area><zone>3</zone><prob>0.144</prob></Row>
- <Row><area>2</area><zone>4</zone><prob>0.567</prob></Row>
+ <Row><area>2</area><zone>4</zone><prob>0.5669999999999999</prob></Row>
  <Row><area>3</area><zone>1</zone><prob>0.3</prob></Row>
  <Row><area>3</area><zone>2</zone><prob>0.216</prob></Row>
  <Row><area>3</area><zone>4</zone><prob>0.2</prob></Row>
@@ -126,7 +126,7 @@
  <Row><area>1</area><zone>6</zone><prob>0.7</prob></Row>
  <Row><area>2</area><zone>2</zone><prob>0.24</prob></Row>
  <Row><area>2</area><zone>3</zone><prob>0.144</prob></Row>
- <Row><area>2</area><zone>4</zone><prob>0.567</prob></Row>
+ <Row><area>2</area><zone>4</zone><prob>0.5669999999999999</prob></Row>
  <Row><area>3</area><zone>2</zone><prob>0.216</prob></Row>
 </Dataset>
 <Dataset name='j2ous'>
@@ -135,6 +135,6 @@
  <Row><area>1</area><zone>6</zone><prob>0.7</prob></Row>
  <Row><area>2</area><zone>2</zone><prob>0.24</prob></Row>
  <Row><area>2</area><zone>3</zone><prob>0.144</prob></Row>
- <Row><area>2</area><zone>4</zone><prob>0.567</prob></Row>
+ <Row><area>2</area><zone>4</zone><prob>0.5669999999999999</prob></Row>
  <Row><area>3</area><zone>2</zone><prob>0.216</prob></Row>
 </Dataset>
