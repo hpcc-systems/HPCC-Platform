@@ -165,7 +165,7 @@ class ICopyArrayOf : public CopyArray
 {
 public:
     inline TYPE & item(aindex_t pos) const        { return (TYPE &)CopyArray::item(pos); }
-    inline TYPE & pop(bool nodel = 0)             { return (TYPE &)CopyArray::pop(); }
+    inline TYPE & pop()                           { return (TYPE &)CopyArray::pop(); }
     inline TYPE & tos(void) const                 { return (TYPE &)CopyArray::tos(); }
     inline TYPE & tos(aindex_t num) const         { return (TYPE &)CopyArray::tos(num); }
     inline TYPE **getArray(aindex_t pos = 0)      { return (TYPE **)CopyArray::getArray(pos); }
@@ -206,7 +206,7 @@ public:
     inline aindex_t find(TYPE * x) const        { return PointerArray::find(x); }
     inline TYPE **getArray(aindex_t pos = 0)    { return (TYPE **)PointerArray::getArray(pos); }
     inline TYPE * item(aindex_t pos) const      { return (TYPE *)PointerArray::item(pos); }
-    inline TYPE * pop(bool nodel = 0)           { return (TYPE *)PointerArray::pop(nodel); }
+    inline TYPE * pop()                         { return (TYPE *)PointerArray::pop(); }
     inline void replace(TYPE * x, aindex_t pos) { PointerArray::replace(x, pos); }
     inline TYPE * tos(void) const               { return (TYPE *)PointerArray::tos(); }
     inline TYPE * tos(aindex_t num) const       { return (TYPE *)PointerArray::tos(num); }
