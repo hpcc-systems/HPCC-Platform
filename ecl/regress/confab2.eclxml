@@ -1,4 +1,4 @@
-<Archive useArchivePlugins="1">
+<Archive ignoreUnknownImport="0">
 <!--
 
     Copyright (C) 2011 HPCC Systems.
