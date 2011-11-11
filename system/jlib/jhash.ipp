@@ -259,7 +259,7 @@ class MapBetween : extends MapOf<KEY, MAPPING>
           return &map->getValue();
        return NULL;
     }
-    VALUE_T * mapToValue(IMapping * _map) const
+    static inline VALUE_T * mapToValue(IMapping * _map)
     {
        MAPPING * map = (MAPPING *)_map;
        return &map->getValue();
@@ -288,7 +288,7 @@ class MapStringTo : extends StringMapOf<MAPPING>
           return &map->getValue();
        return NULL;
     }
-    VALUE_T * mapToValue(IMapping * _map) const
+    static inline VALUE_T * mapToValue(IMapping * _map)
     {
        MAPPING * map = (MAPPING *)_map;
        return &map->getValue();
