@@ -974,7 +974,7 @@ ReplaceSuperFile(const varstring lsuperfn,const varstring lfn,const varstring by
 FinishSuperFileTransaction(boolean rollback=false);
 */
 
-static bool lookupSuperFile(ICodeContext *ctx, const char *lsuperfn, Owned<IDistributedSuperFile> &file,IDistributedFileTransaction *&transaction, bool throwerr, StringBuffer &lsfn, bool fixmissing, bool allowforeign)
+static bool lookupSuperFile(ICodeContext *ctx, const char *lsuperfn, Owned<IDistributedSuperFile> &file,IDistributedFileTransaction *&transaction, bool throwerr, StringBuffer &lsfn, bool fixmissing, bool allowforeign, bool cacheFiles=false)
 {
     lsfn.clear();
     transaction = ctx->querySuperFileTransaction();
@@ -985,7 +985,25 @@ static bool lookupSuperFile(ICodeContext *ctx, const char *lsuperfn, Owned<IDist
         if (dlfn.isForeign())
             throw MakeStringException(0, "Foreign superfile not allowed: %s", lsfn.str());
     }
-    file.setown(transaction->lookupSuperFile(lsfn.str(),fixmissing));
+    if (cacheFiles)
+    {
+        struct CTempActiveTransaction
+        {
+            CTempActiveTransaction(IDistributedFileTransaction *_transaction, bool onOff) : transaction(_transaction)
+            {
+                prev = transaction->setActive(onOff);
+            }
+            ~CTempActiveTransaction()
+            {
+                transaction->setActive(prev);
+            }
+            IDistributedFileTransaction *transaction;
+            bool prev;
+        } temp(transaction, true);
+        file.setown(transaction->lookupSuperFile(lsfn.str(),fixmissing));
+    }
+    else
+        file.setown(transaction->lookupSuperFile(lsfn.str(),fixmissing));
     if (file.get())
         return true;
     if (throwerr)
@@ -1134,7 +1152,8 @@ FILESERVICES_API void FILESERVICES_CALL fslAddSuperFile(ICodeContext *ctx, const
     IDistributedFileTransaction *transaction;
     Owned<IDistributedSuperFile> file;
     StringBuffer lsfn;
-    if (!lookupSuperFile(ctx, lsuperfn, file,transaction, strict, lsfn, false, false)) {
+    // NB: if adding contents, tell lookupSuperFile to cache the subfiles in the transaction
+    if (!lookupSuperFile(ctx, lsuperfn, file,transaction, strict, lsfn, false, false, addcontents)) {
         // auto create
         fsCreateSuperFile(ctx,lsuperfn,false,false);
         lookupSuperFile(ctx, lsuperfn, file,transaction, true, lsfn, false, false);
