@@ -5145,6 +5145,9 @@ void CHqlDataset::cacheParent()
                 normalized.setown(createInScopeSelectExpr(LINK(normalizedLeft), LINK(queryChild(1))));
 
             container = LINK(queryDatasetCursor(ds)->queryNormalizedSelector(false));
+#ifdef _DEBUG
+            assertex(!hasProperty(newAtom) || !isAlwaysActiveRow(ds));
+#endif
             break;
         }
     case no_if:
@@ -9843,6 +9846,9 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
         {
             IHqlExpression * field = &parms.item(1);
             datasetType = field->queryType();
+            //This can occur in very unusual situations...
+            if ((parms.ordinality() > 2) && isAlwaysActiveRow(&parms.item(0)))
+                removeProperty(parms, newAtom);
         }
         break;
     default:
