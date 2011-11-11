@@ -1391,6 +1391,8 @@ IHqlExpression * NewHqlTransformer::createTransformed(IHqlExpression * expr)
                 children.replace(*LINK(ds.queryChild(0)), 0);
                 removeProperty(children, newAtom);
             }
+            if ((children.ordinality() > 2) && isAlwaysActiveRow(&ds))
+                removeProperty(children, newAtom);
         }
         else
             return createTransformedActiveSelect(expr);
@@ -2670,7 +2672,11 @@ IHqlExpression * MergingHqlTransformer::createTransformed(IHqlExpression * expr)
             bool same = optimizedTransformChildren(expr, children);
             popChildContext();
             if (!same)
+            {
+                if ((children.ordinality() > 2) && isAlwaysActiveRow(child))
+                    removeProperty(children, newAtom);
                 return expr->clone(children);
+            }
             return LINK(expr);
         }
     case childdataset_merge:
