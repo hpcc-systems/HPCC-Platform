@@ -2235,20 +2235,22 @@ public:
                     break;
                 }
                 if (job.queryPausing()) return; // pending graphs will re-run on resubmission
-                assertex(running.ordinality() <= limit);
                 bool added = false;
-                while (toRun.ordinality())
+                if (running.ordinality() < limit)
                 {
-                    Linked<CGraphExecutorGraphInfo> graphInfo = &toRun.item(0);
-                    toRun.remove(0);
-                    running.append(*LINK(graphInfo));
-                    CGraphBase *subGraph = graphInfo->subGraph;
-                    PROGLOG("Wait: Launching graph thread for graphId=%"GIDPF"d", subGraph->queryGraphId());
-                    added = true;
-                    PooledThreadHandle h = graphPool->start(graphInfo.getClear());
-                    subGraph->poolThreadHandle = h;
-                    if (running.ordinality() >= limit)
-                        break;
+                    while (toRun.ordinality())
+                    {
+                        Linked<CGraphExecutorGraphInfo> graphInfo = &toRun.item(0);
+                        toRun.remove(0);
+                        running.append(*LINK(graphInfo));
+                        CGraphBase *subGraph = graphInfo->subGraph;
+                        PROGLOG("Wait: Launching graph thread for graphId=%"GIDPF"d", subGraph->queryGraphId());
+                        added = true;
+                        PooledThreadHandle h = graphPool->start(graphInfo.getClear());
+                        subGraph->poolThreadHandle = h;
+                        if (running.ordinality() >= limit)
+                            break;
+                    }
                 }
                 if (!added)
                     Sleep(1000); // still more to come
