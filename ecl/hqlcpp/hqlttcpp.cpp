@@ -7650,7 +7650,7 @@ IHqlExpression * ThorCountTransformer::createTransformed(IHqlExpression * expr)
                 if (queryTableMode(ds) == no_flat)
                 {
                     OwnedHqlExpr record = getSerializedForm(ds->queryRecord());
-                    if (countDiskFuncOk && !isVariableSizeRecord(record))
+                    if (countDiskFuncOk && !isVariableSizeRecord(record) && ds->queryChild(0)->isConstant())
                     {
 #if 0
                         OwnedHqlExpr transformed = NewHqlTransformer::createTransformed(expr);
