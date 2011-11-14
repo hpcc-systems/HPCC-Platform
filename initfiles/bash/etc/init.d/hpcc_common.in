@@ -389,7 +389,7 @@ createRuntime() {
 }
 
 start_dafilesrv() {
-   ${SERV} dafilesrv status 1>/dev/null 2>/dev/null
+   /etc/init.d/dafilesrv status 1>/dev/null 2>/dev/null
    if [ $? -ne 0 ];then
       #Dafilesrv is not running so start it , before starting cleanup the lock and pid file.
        if [ ${DEBUG} != "NO_DEBUG" ]; then
@@ -402,7 +402,7 @@ start_dafilesrv() {
       fi
 
       noStatusCheck=1
-      ${SERV} dafilesrv setup 1>/dev/null 2>/dev/null
+      /etc/init.d/dafilesrv setup 1>/dev/null 2>/dev/null
       startCmd ${compName} ${noStatusCheck}
       return $?
    else 
@@ -630,15 +630,15 @@ start_component() {
 
 restart_component() {
     if strstr "${compType}" "dafilesrv" ;then
-       ${SERV} dafilesrv status 1>/dev/null 2>/dev/null
+       /etc/init.d/dafilesrv status 1>/dev/null 2>/dev/null
        if [ $? -eq 0 ];then
-         ${SERV} dafilesrv stop 2>/dev/null
+         /etc/init.d/dafilesrv stop 2>/dev/null
        else
            echo "Component $compName was not running. Will start it now for you ...."
            removePid ${PIDPATH}
            unlock ${LOCKPATH}
        fi
-         ${SERV} dafilesrv start 2>/dev/null
+         /etc/init.d/dafilesrv start 2>/dev/null
     else
        check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
        RCRESTART=$?
