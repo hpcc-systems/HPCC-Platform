@@ -780,7 +780,8 @@ void CGraphElementBase::createActivity(size32_t parentExtractSz, const byte *par
                 else
                 {
                     onCreate();
-                    initActivity();
+                    if (!activity)
+                        factorySet(TAKnull);
                 }
                 break;
             default:
