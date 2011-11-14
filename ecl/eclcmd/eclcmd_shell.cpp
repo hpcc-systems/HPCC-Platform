@@ -34,9 +34,7 @@
 //=========================================================================================
 
 #ifdef _WIN32
-//TODO - move to or use existing jlib
 #include "process.h"
-#define _execvp execvp
 #endif
 
 int EclCMDShell::callExternal(ArgvIterator &iter)
@@ -51,7 +49,12 @@ int EclCMDShell::callExternal(ArgvIterator &iter)
     for (; !iter.done(); iter.next())
         argv[i++]=iter.query();
     argv[i]=NULL;
+//TODO - add common routine or use existing in jlib
+#ifdef _WIN32
+    if (_spawnvp(_P_WAIT, cmdstr.str(), const_cast<char **>(argv))==-1)
+#else
     if (execvp(cmdstr.str(), const_cast<char **>(argv))==-1)
+#endif
     {
         switch(errno)
         {
