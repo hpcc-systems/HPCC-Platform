@@ -27470,18 +27470,6 @@ public:
     
     virtual __int64 countIndex(__int64 activityId, IHThorCountIndexArg & arg) 
     {
-        Owned<IHThorCountIndexArg> a = &arg;  // to make sure it gets released when I am done....
-        Owned<IRoxieServerActivityFactory> f = factory->getRoxieServerActivityFactory((unsigned) activityId);
-        if (f)
-        {
-            Owned<IRoxieServerActivity> fa = f->createFunction(*a.getClear(), NULL);
-            fa->onCreate(this, NULL);
-            fa->start(0, NULL, false);
-            __int64 ret = fa->evaluate();
-            fa->stop(false);
-            fa->reset();
-            return ret;
-        }
         throwUnexpected();
     }
 

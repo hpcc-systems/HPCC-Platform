@@ -129,7 +129,6 @@ _ATOM _conditionalRowMarker_Atom;
 _ATOM containerAtom;
 _ATOM cosAtom;
 _ATOM coshAtom;
-_ATOM countIndexAtom;
 _ATOM countProviderAtom;
 _ATOM countRoxieDiskFileAtom;
 _ATOM countRowsAtom;
@@ -834,7 +833,6 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(container);
     cosAtom = createAtom("_cos");
     coshAtom = createAtom("_cosh");
-    MAKEATOM(countIndex);
     MAKEATOM(countProvider);
     MAKEATOM(countRoxieDiskFile);
     MAKEATOM(countRows);

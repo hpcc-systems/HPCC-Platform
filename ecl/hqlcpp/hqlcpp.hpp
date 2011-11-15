@@ -72,7 +72,6 @@ The following debug options are currently supported by the code generator:
 "spotCSE"                true   - Look for common sub-expressions in transforms/filters?
 "spotTopN"               true   - Convert choosen(sort()) into a topN activity.
 "spotLocalMerge"         false  - if local join, and both sides sorted generate a light-weight merge
-"countIndex"             false  - optimize count(index) into optimized version. (also requires optimizeThorCounts)
 "allowThroughSpill"      true   - allow through spills.
 "spillMultiCondition"    false  - another roxie variant.
 "spotThroughAggregate"   true   - whether aggregates are done as through aggregates (generally more efficient)
