@@ -71,7 +71,7 @@ extern HQL_API ISourcePath * createSourcePath(const char * name);
 extern HQL_API ISourcePath * createSourcePath(unsigned len, const char * name);
 
 class HqlGramCtx;       // opaque, but still not very nice
-class HqlExprArray : public IArrayOf<IHqlExpression>
+class HQL_API HqlExprArray : public IArrayOf<IHqlExpression>
 {
 public:
     void swapWith(HqlExprArray & other);
@@ -1438,6 +1438,7 @@ extern HQL_API bool okToAddLocation(IHqlExpression *);
 
 extern HQL_API IHqlExpression * cloneAnnotationKind(IHqlExpression * donor, IHqlExpression * expr, annotate_kind search);
 extern HQL_API IHqlExpression * cloneInheritedAnnotations(IHqlExpression * donor, IHqlExpression * expr);
+extern HQL_API IHqlExpression * cloneMissingAnnotations(IHqlExpression * donor, IHqlExpression * body);
 extern HQL_API IHqlExpression * forceCloneSymbol(IHqlExpression * donor, IHqlExpression * expr);
 
 // donor must be a symbol.  Any of the other arguments can be null to inherit the existing values

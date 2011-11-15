@@ -28,7 +28,8 @@
 project( hqlcpp ) 
 
 set (    SRCS 
-         hqlcatom.cpp 
+         hqlalias.cpp
+         hqlcatom.cpp
          hqlccommon.cpp 
          hqlckey.cpp 
          hqlcpp.cpp 
@@ -59,6 +60,7 @@ set (    SRCS
          hqlttcpp.cpp 
          hqlwcpp.cpp 
     
+         hqlalias.hpp
          hqlcatom.hpp
          hqlccommon.hpp
          hqlcerrors.hpp

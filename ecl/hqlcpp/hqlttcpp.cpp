@@ -38,6 +38,7 @@
 #include "hqlsource.ipp"
 #include "hqlvalid.hpp"
 #include "hqlerror.hpp"
+#include "hqlalias.hpp"
 
 #define TraceExprPrintLog(x, expr) TOSTRLOG(MCdebugInfo(300), unknownJob, x, (expr)->toString);
 //Following are for code that currently cause problems, but are probably a good idea
@@ -11884,6 +11885,16 @@ bool HqlCppTranslator::transformGraphForGeneration(IHqlExpression * query, Workf
         unsigned startTime = msTick();
         hoistNestedCompound(*this, workflow);
         DEBUG_TIMER("EclServer: tree transform: hoist nested compound", msTick()-startTime);
+    }
+
+    if (options.optimizeNestedConditional)
+    {
+        cycle_t time = msTick();
+        ForEachItemIn(idx, workflow)
+            optimizeNestedConditional(workflow.item(idx).queryExprs());
+        DEBUG_TIMER("EclServer: optimize nested conditional", msTick()-time);
+        traceExpressions("nested", workflow);
+        checkNormalized(workflow);
     }
 
     checkNormalized(workflow);

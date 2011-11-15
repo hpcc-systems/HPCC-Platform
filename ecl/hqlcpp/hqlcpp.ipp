@@ -699,6 +699,7 @@ struct HqlCppOptions
     bool                convertWhenExecutedToCompound;
     bool                standAloneExe;
     bool                enableCompoundCsvRead;
+    bool                optimizeNestedConditional;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class

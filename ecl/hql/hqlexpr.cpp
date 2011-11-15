@@ -424,6 +424,18 @@ extern HQL_API IHqlExpression * cloneInheritedAnnotations(IHqlExpression * donor
     }
 }
 
+IHqlExpression * cloneMissingAnnotations(IHqlExpression * donor, IHqlExpression * body)
+{
+    annotate_kind kind = donor->getAnnotationKind();
+    if (kind == annotate_none)
+        return LINK(body);
+
+    OwnedHqlExpr newbody = cloneMissingAnnotations(donor->queryBody(true), body);
+    if (queryAnnotation(newbody, kind))
+        return newbody.getClear();
+    return donor->cloneAnnotation(newbody);
+}
+
 extern HQL_API IHqlExpression * forceCloneSymbol(IHqlExpression * donor, IHqlExpression * expr)
 {
     OwnedHqlExpr result = cloneAnnotationKind(donor, expr, annotate_symbol);
@@ -519,13 +531,17 @@ extern HQL_API void gatherMetaProperties(HqlExprCopyArray & matches, _ATOM searc
 
 extern HQL_API IHqlExpression * queryLocation(IHqlExpression * expr)
 {
+    IHqlExpression * best = NULL;
     loop
     {
         annotate_kind kind = expr->getAnnotationKind();
         if (kind == annotate_none)
-            return NULL;
-        if (kind == annotate_location || kind == annotate_symbol)
+            return best;
+        if (kind == annotate_location)
             return expr;
+        if (kind == annotate_symbol)
+            return expr;
+//            best = expr;
         expr = expr->queryBody(true);
     }
 }

@@ -1668,6 +1668,9 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.convertWhenExecutedToCompound,"convertWhenExecutedToCompound", queryLegacyEclSemantics()),
         DebugOption(options.standAloneExe,"standAloneExe", false),
         DebugOption(options.enableCompoundCsvRead,"enableCompoundCsvRead", true),
+        // The following works 99% of the time, but disabled due to potential problems with the ambiguity of LEFT
+        //possibly causing filters on nested records to be incorrectly removed.
+        DebugOption(options.optimizeNestedConditional,"optimizeNestedConditional", false),
     };
 
     //get options values from workunit
