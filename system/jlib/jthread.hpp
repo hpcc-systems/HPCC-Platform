@@ -151,10 +151,12 @@ class jlib_decl CThreadedPersistent : public CInterface
         CAThread(CThreadedPersistent &_owner, const char *name) : Thread(name), owner(_owner) { }
         virtual int run() { owner.main(); return 1; }
     } athread;
+    Owned<IException> exception;
     IThreaded *owner;
     Semaphore sem, joinSem;
     atomic_t state;
-    enum ThreadStates { s_stop, s_ready, s_running, s_joining };
+    bool halt;
+    enum ThreadStates { s_ready, s_running, s_joining };
 
     void main();
 public:
