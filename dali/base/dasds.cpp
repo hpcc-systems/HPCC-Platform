@@ -3881,7 +3881,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
         bool getExt = 0 == (action & DAMP_SDSCMD_LAZYEXT);
         action = (SdsCommand) (((unsigned)action) & ~DAMP_SDSCMD_LAZYEXT);
 
-        TransactionLog transactionLog(*this, action, mb.getSender()); // only active if TransactionLogging=true
+        TransactionLog transactionLog(*this, action, mb.getSender()); // only active if queryTransactionLogging()==true
         switch (action)
         {
             case DAMP_SDSCMD_CONNECT:
