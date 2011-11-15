@@ -499,7 +499,7 @@ enum _node_operator {
         no_setmeta,
         no_throughaggregate,
         no_joincount,
-        no_countindex,
+    no_unused7,
         no_countcompare,
         no_limit,
         no_evaluate_stmt,

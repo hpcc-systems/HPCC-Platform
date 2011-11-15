@@ -1627,7 +1627,6 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.optimizeIndexSource,"optimizeIndexSource", true),
         DebugOption(options.optimizeChildSource,"optimizeChildSource", false),
         DebugOption(options.createCountFile,"countFile", true),
-        DebugOption(options.createCountIndex,"countIndex", false),
         DebugOption(options.reportLocations,"reportLocations", true),
         DebugOption(options.debugGeneratedCpp,"debugGeneratedCpp", false),
         DebugOption(options.addFilesnamesToGraph,"addFilesnamesToGraph", true),
@@ -1792,9 +1791,6 @@ void HqlCppTranslator::postProcessOptions()
         options.optimizeDiskFlag |= CSFnewindex;
     if (options.optimizeChildSource)
         options.optimizeDiskFlag |= CSFnewchild;
-
-    if (options.optimizeIndexSource && (targetClusterType != ThorCluster))          // thor doesn't support child queries - so still need following
-        options.createCountIndex = false;
 
     if (!targetThor())
     {
@@ -2774,9 +2770,6 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
         return;
     case no_countfile:
         doBuildExprCountFile(ctx, expr, tgt);
-        return;
-    case no_countindex:
-        doBuildExprCountIndex(ctx, expr, tgt);
         return;
     case no_evaluate:
         doBuildExprEvaluate(ctx, expr, tgt);
