@@ -1484,7 +1484,6 @@ unsigned getNumActivityArguments(IHqlExpression * expr)
     case no_table:
     case no_preload:
     case no_countfile:
-    case no_countindex:
     case no_allnodes:
     case no_thisnode:
     case no_keydiff:
@@ -4144,7 +4143,6 @@ void SplitDatasetAttributeTransformer::analyseExpr(IHqlExpression * expr)
         return;
     case NO_AGGREGATE:
     case no_createset:
-    case no_countindex:
     case no_countfile:
     case no_colon:
     case no_globalscope:

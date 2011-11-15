@@ -731,7 +731,6 @@ public:
 
 protected:
     HqlCppTranslator &      translator;
-    bool transformCountIndex;
     bool countDiskFuncOk;
 };
 

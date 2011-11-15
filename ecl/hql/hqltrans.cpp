@@ -3057,7 +3057,6 @@ void ScopedTransformer::analyseChildren(IHqlExpression * expr)
         //fallthrough
     case NO_AGGREGATE:
     case no_countfile:
-    case no_countindex:
     case no_buildindex:
     case no_apply:
     case no_distributer:
@@ -3441,7 +3440,6 @@ IHqlExpression * ScopedTransformer::createTransformed(IHqlExpression * expr)
     case NO_AGGREGATE:
     case no_joined:
     case no_countfile:
-    case no_countindex:
     case no_buildindex:
     case no_apply:
     case no_distribution:

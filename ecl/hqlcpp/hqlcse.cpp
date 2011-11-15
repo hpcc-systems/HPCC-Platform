@@ -365,7 +365,6 @@ bool CseSpotter::containsPotentialCSE(IHqlExpression * expr)
     case no_filepos:
     case no_file_logicalname:
     case no_countfile:
-    case no_countindex:
     case no_matched:
     case no_matchtext:
     case no_matchunicode:
@@ -1223,7 +1222,6 @@ bool TableInvariantTransformer::isInvariant(IHqlExpression * expr)
     switch (op)
     {
     case no_record:
-    case no_countindex:
     case no_null:
     case no_activetable:
     case no_activerow:
