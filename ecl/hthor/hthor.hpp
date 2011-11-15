@@ -147,7 +147,6 @@ extern HTHOR_API IHThorActivity *createCsvFetchActivity(IAgentContext &_agent, u
 extern HTHOR_API IHThorActivity *createParseActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorParseArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createEnthActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorEnthArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createTopNActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorTopNArg &arg, ThorActivityKind kind);
-extern HTHOR_API IHThorActivity *createCountIndexActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorCountIndexArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createXmlParseActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorXmlParseArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createXmlFetchActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorXmlFetchArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createMergeActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorMergeArg &arg, ThorActivityKind kind);

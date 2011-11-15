@@ -129,7 +129,6 @@ extern _ATOM concatVUnicodeToUnicodeAtom;
 extern _ATOM _conditionalRowMarker_Atom;
 extern _ATOM cosAtom;
 extern _ATOM coshAtom;
-extern _ATOM countIndexAtom;
 extern _ATOM countProviderAtom;
 extern _ATOM countRoxieDiskFileAtom;
 extern _ATOM countRowsAtom;
