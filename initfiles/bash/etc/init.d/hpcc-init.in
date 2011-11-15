@@ -285,13 +285,13 @@ fi
 if [ ! -z "${compDafilesrv}" ];then
     case "$1" in
         start)
-            ${SERV} dafilesrv status 1>/dev/null 2>/dev/null
+            /etc/init.d/dafilesrv status 1>/dev/null 2>/dev/null
             if [ $? -ne 0 ];then
-              ${SERV} dafilesrv $1 2>/dev/null
+              /etc/init.d/dafilesrv $1 2>/dev/null
             fi
             ;;
         status|setup)
-            ${SERV} dafilesrv ${1} 2>/dev/null
+            /etc/init.d/dafilesrv ${1} 2>/dev/null
             ;;
         stop|restart)
             ;;
