@@ -7985,7 +7985,6 @@ public:
             IPropertyTree *root = sroot->queryPropTree(querySdsRelationshipsRoot());
             Owned<IPropertyTreeIterator> iter = root?root->getElements(xpath.str()):NULL;
             mb.append(count);
-            unsigned start = msTick();
             // save as sequence of branches
             if (iter) {
                 ForEach(*iter.get()) {

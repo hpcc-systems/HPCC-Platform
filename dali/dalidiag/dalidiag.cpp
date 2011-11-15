@@ -63,8 +63,8 @@ void usage(const char *exe)
     printf("-permissions <logicalname> <user> <password> -- get file permissions\n");
     printf("-unlock <connection_id> [close] -- forcibly disconnect an sds lock\n"); 
     printf("                                   (use id's given by '-locks'\n");
-    printf("-settracetransactions    -- trace SDS transactions\n");
-    printf("-cleartracetransactions  -- stop tracing SDS transactions\n");
+    printf("-settracetransactions    -- trace dali transactions\n");
+    printf("-cleartracetransactions  -- stop tracing dali transactions\n");
     printf("-setldapflags <val>      -- set LDAP flags\n");
     printf("-getldapflags            -- get LDAP flags\n");
 
