@@ -1472,22 +1472,7 @@ void EclAgent::deleteFile(const char * logicalName)
 
 __int64 EclAgent::countIndex(__int64 id, IHThorCountIndexArg & arg)
 {
-    Owned<IHThorCountIndexArg> a = &arg;  // make sure it gets destroyed....
-
-    //MORE: This needs rewriting if it is to be called from a child query, but I expect the
-    //whole activity to be replaced with something else in that case.
-    try
-    {
-        arg.onCreate(queryCodeContext(), NULL, NULL);
-        arg.onStart(NULL, NULL);
-    }
-    catch(IException * e)
-    {
-        throw makeHThorException(TAKcountindex, (unsigned)id, 0, e);
-    }
-
-    Owned<IHThorActivity> counter = createCountIndexActivity(*this, (unsigned)id, 0, arg, TAKcountindex);
-    return counter->getCount();
+    throwUnexpected();
 }
 
 __int64 EclAgent::countDiskFile(__int64 id, IHThorCountFileArg & arg)

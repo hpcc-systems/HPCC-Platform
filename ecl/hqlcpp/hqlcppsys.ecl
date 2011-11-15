@@ -650,7 +650,6 @@ const char * cppSystemText[]  = {
     "   boolean fileExists(const varstring lfn) : gctxmethod,entrypoint='fileExists';",
     "   varstring getExpandLogicalName(const varstring lfn) : ctxmethod,entrypoint='getExpandLogicalName';",
     "   deleteFile(const varstring lfn) : gctxmethod,entrypoint='deleteFile';",
-    "   integer8 countIndex(integer8 id, boolean monitors) : ctxmethod,entrypoint='countIndex';",
     "   integer8 countRoxieDiskFile(unsigned4 id, boolean monitors) : ctxmethod,entrypoint='countDiskFile';",       // id is actually 8 bytes, for backward compatibility
     "   integer4 getRecoveringCount() : ctxmethod,entrypoint='getRecoveringCount';",
 

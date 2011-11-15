@@ -202,7 +202,6 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     kindArray[TAKwhen_action] = "when_action";
 
 //Non standard
-    kindArray[TAKcountindex] = "countindex";
     kindArray[TAKcountdisk] = "countdisk";
     kindArray[TAKsubgraph] = "subgraph";
 

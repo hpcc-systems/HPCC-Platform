@@ -676,7 +676,6 @@ extern const char * getActivityText(ThorActivityKind kind)
     case TAKcsvfetch:               return "Csv Fetch";
     case TAKxmlwrite:               return "Xml Write";
     case TAKparse:                  return "Parse";
-    case TAKcountindex:             return "Count Index";
     case TAKcountdisk:              return "Count Disk";
     case TAKsideeffect:             return "Simple Action";
     case TAKtopn:                   return "Top N";
