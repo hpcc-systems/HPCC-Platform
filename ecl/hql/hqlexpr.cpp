@@ -917,7 +917,6 @@ const char *getOpString(node_operator op)
     case no_compound: return ",";
     case no_count: case no_countlist: return "COUNT";
     case no_countfile: return "COUNTFILE";
-    case no_countindex: return "COUNTINDEX";
     case no_counter: return "COUNTER";
     case no_countgroup: return "COUNT";
     case no_distribution: return "DISTRIBUTION";
@@ -1665,7 +1664,6 @@ int getPrecedence(node_operator op)
     case no_limit:
     case no_catchds:
     case no_countfile:
-    case no_countindex:
     case no_distribution:
     case NO_AGGREGATE:
     case no_keyedlimit:
@@ -1786,7 +1784,6 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_catchds:
     case no_fieldmap:
     case no_countfile:
-    case no_countindex:
     case NO_AGGREGATE:
     case no_output:
     case no_buildindex:
@@ -2039,7 +2036,6 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_usertable:
     case NO_AGGREGATE:
     case no_countfile:
-    case no_countindex:
     case no_output:
     case no_buildindex:
     case no_distribution:
@@ -3222,7 +3218,6 @@ void CHqlExpression::updateFlagsAfterOperands()
         }
         break;
     case NO_AGGREGATE:
-    case no_countindex:
         infoFlags2 |= HEF2containsNewDataset;
         //fall through
     case no_countfile:
@@ -4151,7 +4146,6 @@ bool CHqlExpression::isAggregate()
     {
     case NO_AGGREGATE:
     case NO_AGGREGATEGROUP:
-    case no_countindex:
     case no_countfile:
     case no_distribution:
 
@@ -4709,7 +4703,6 @@ void CHqlExpression::cacheTablesUsed()
                 addActiveTable(inScopeTables, this);
                 break;
             case NO_AGGREGATE:
-            case no_countindex:
             case no_countfile:
             case no_createset:
                 {

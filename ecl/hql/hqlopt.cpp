@@ -2279,7 +2279,6 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             break;
         }
     case NO_AGGREGATE:
-    case no_countindex:
         return optimizeAggregateDataset(transformed);
     case no_selectnth:
         {
@@ -3474,7 +3473,6 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             return optimizeAggregateDataset(transformed);
         }
     case NO_AGGREGATE:
-    case no_countindex:
         return optimizeAggregateDataset(transformed);
 
     case no_fetch:

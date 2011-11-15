@@ -2818,7 +2818,6 @@ const char * HqltHql::getEclOpString(node_operator op)
     case no_compound_indexread:
         return "INDEXREAD";
     case no_countfile:
-    case no_countindex:
         if (expandProcessed)
             return ::getOpString(op);
         else

@@ -467,7 +467,6 @@ public:
         switch (op)
         {
         case no_countfile:
-        case no_countindex:
         case no_createset:
             //not really good enough - need to prevent anything within these from being hoisted.
             return;
@@ -1851,7 +1850,7 @@ ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ct
     //count index and count disk need to be swapped to the new (much simpler) mechanism
     //until then, they need to be special cased.
     activityLocalisation = GraphNoAccess;
-    if (kind != TAKcountindex && kind != TAKcountdisk)
+    if (kind != TAKcountdisk)
     {
         containerActivity = translator.queryCurrentActivity(ctx);
         parentEvalContext.set(translator.queryEvalContext(ctx));
@@ -2294,7 +2293,7 @@ void ActivityInstance::buildPrefix()
 
     classctx.set(helperAtom);
     //Count index functions are referenced from the calling helper => they need to be defined earlier.
-    if ((kind == TAKcountindex) || (kind == TAKcountdisk))
+    if (kind == TAKcountdisk)
         classctx.setNextPriority(BuildCtx::EarlyPrio);
     classGroupStmt = classctx.addGroupPass(sourceFileSequence);
 
@@ -2372,7 +2371,7 @@ void ActivityInstance::buildPrefix()
     //  if (!isMember)
     //      classGroupStmt->setIncomplete(true);
 
-        if (translator.queryOptions().spanMultipleCpp && ((kind == TAKcountindex) || (kind == TAKcountdisk)))
+        if (translator.queryOptions().spanMultipleCpp && (kind == TAKcountdisk))
             moveDefinitionToHeader();
     }
     else
@@ -7515,103 +7514,6 @@ void FilterExtractor::assignCursors(IHqlExpression * helper)
 }
 
 
-void HqlCppTranslator::doBuildExprCountIndex(BuildCtx & ctx, IHqlExpression * _expr, CHqlBoundExpr & tgt)
-{
-    //NB: Parameter has already be converted to physical - i.e., 
-    //filepos has been removed, optimized and folded...  I'm not completely sure that
-    //is correct....
-    LinkedHqlExpr expr = _expr;
-    bool needToCreateGraph = !graph;
-    if (needToCreateGraph)
-    {
-        beginGraph(ctx);
-        expr.setown(spotTableInvariantChildren(expr));
-    }
-
-    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKcountindex, expr, "CountIndex");
-    buildActivityFramework(instance);
-
-    buildInstancePrefix(instance);
-
-    IHqlExpression * filter = expr->queryChild(0);
-    loop
-    {
-        node_operator op = filter->getOperator();
-        if ((op != no_hqlproject) && (op != no_newusertable) && (op != no_compound_indexread))
-            break;
-        filter = filter->queryChild(0);
-    }   
-
-    IHqlExpression * index = queryPhysicalRootTable(filter);
-    assertex(index == filter || index == filter->queryChild(0));
-
-    //virtual const char * getIndexFileName() = 0;
-    buildFilenameFunction(*instance, instance->startctx, "getIndexFileName", index->queryChild(3), hasDynamicFilename(index));
-
-    //virtual IOutputMetaData * queryIndexRecordSize() = 0; //Excluding fpos and sequence
-    buildMetaMember(instance->classctx, index, "queryIndexRecordSize");
-
-    //Now extract the context dependent information from the filter
-    FilterExtractor extractor(*this, instance->startctx, ctx, index);
-    OwnedHqlExpr newFilter = extractor.buildExtractLookupFields(filter);
-    MonitorExtractor monitors(index, *this, -(int)numPayloadFields(index), false);
-    monitors.extractAllFilters(newFilter);
-
-    // virtual void createSegmentMonitors(IIndexReadContext *irc)
-    BuildCtx createSegmentCtx(instance->startctx);
-    createSegmentCtx.addQuotedCompound("virtual void createSegmentMonitors(IIndexReadContext *irc)");
-    monitors.buildSegments(createSegmentCtx, "irc", false);
-
-    //virtual size32_t isValid(const void * src)
-    if (monitors.queryExtraFilter())
-    {
-        instance->classctx.addQuoted("virtual bool hasPostFilter() { return true; }");
-        BuildCtx validctx(instance->startctx);
-        validctx.addQuotedCompound("virtual size32_t isValid(const void * _key, unsigned __int64 _fpos, IBlobProvider * blobs)");
-        validctx.addQuoted("const unsigned char * key = (const unsigned char *) _key;");
-
-        OwnedHqlExpr fposField = createVariable("_fpos", makeIntType(8,false));
-        OwnedHqlExpr fposExpr = getFilepos(index, false);
-
-        IHqlExpression * key = index->queryNormalizedSelector();
-        OwnedHqlExpr boundSrc = createVariable("key", makeRowReferenceType(key));
-        HqlExprAttr srcRecord = index->queryChild(1);
-        bindTableCursor(validctx, key, boundSrc);
-        validctx.associateExpr(fposExpr, fposField);
-
-        buildReturn(validctx, monitors.queryExtraFilter());
-    }
-
-    if (monitors.queryGlobalGuard())
-        doBuildBoolFunction(instance->classctx, "canMatchAny", monitors.queryGlobalGuard());
-
-    if (targetRoxie())
-        instance->addAttributeBool("_isIndexOpt", index->hasProperty(optAtom));
-
-    buildInstanceSuffix(instance);
-
-    Owned<IWUActivity> activity = wu()->updateActivity(instance->activityId);
-    activity->setKind(TAKcountindex);
-    activity->setHelper(instance->factoryName);
-
-    // Create the helper, assign any cursors, and then call the count activity.
-    StringBuffer s,name;
-    getUniqueId(name.append("help"));
-    ctx.addQuoted(s.append(instance->className).append(" & ").append(name).append(" = * new ").append(instance->className).append(";"));
-    OwnedHqlExpr helper = createQuoted(name.str(), makeBoolType());
-    extractor.assignCursors(helper);
-
-    // Now call the count function - takes ownership of the helper.
-    HqlExprArray args;
-    args.append(*createConstant((__int64)instance->activityId));
-    args.append(*LINK(helper));
-    OwnedHqlExpr call = bindFunctionCall(countIndexAtom, args);
-    buildExpr(ctx, call, tgt);
-    if (needToCreateGraph)
-        endGraph();
-}
-
-
 void HqlCppTranslator::doBuildExprCountFile(BuildCtx & ctx, IHqlExpression * _expr, CHqlBoundExpr & tgt)
 {
     //NB: This is currently only applied to fixed width unfiltered files
@@ -9097,17 +8999,6 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
         checkDependencyConsistency(resourced);
 
     checkNormalized(resourced);
-    if (allowCountIndex())
-    {
-        //Second attempt to spot count index and count disk file -
-        //catches counts on persist files, and counts on indexes enabled by the optimizeHqlExpression
-        ITypeInfo * type = resourced->queryType();
-        if (type && (type->isScalar() || type->getTypeCode()==type_void))
-        {
-            ThorCountTransformer countTransformer(*this, false);
-            resourced.setown(countTransformer.transformRoot(resourced));
-        }
-    }
 
     resourced.setown(optimizeGraphPostResource(resourced, csfFlags));
     if (options.optimizeSpillProject)
@@ -17956,7 +17847,6 @@ static bool needsRealThor(IHqlExpression *expr, unsigned flags)
             {
             case no_externalcall:
             case no_countfile:
-            case no_countindex:
             case no_constant:
             case no_all:
                 return false;
@@ -18153,7 +18043,7 @@ o extractWorkflow(exprs)
 --- together so increase likely hood for cses and reduce connections to the query engines.
 
 o optimizeThorCounts
-  - A first go at transforming count(table) to a no_countdisk and a count(index) to a no_countindex.
+  - A first go at transforming count(table) to a no_countdisk
   !!This should be deleted/changed once we have aggregate source activities
 
 o migrateExprToNaturalLevel [NewScopeMigrateTransformer]

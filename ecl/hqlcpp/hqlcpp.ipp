@@ -559,7 +559,6 @@ struct HqlCppOptions
     bool                evaluateCoLocalRowInvariantInExtract;
     bool                allowInlineSpill;
     bool                spanMultipleCpp;
-    bool                createCountIndex;
     bool                createCountFile;
     bool                optimizeGlobalProjects;
     bool                optimizeResourcedProjects;
@@ -1001,7 +1000,6 @@ public:
     void noteXpathUsed(const char * xpath);
     void noteXpathUsed(IHqlExpression * expr);
 
-    bool allowCountIndex() { return options.createCountIndex; }
     bool allowCountFile() { return options.createCountFile; }
     HqlCppOptions const & queryOptions() const { return options; }
     ITimeReporter * queryTimeReporter() const { return timeReporter; }
@@ -1238,7 +1236,6 @@ public:
     void doBuildExprCompareElement(BuildCtx & ctx, node_operator comp_op, IHqlExpression * lhs, IHqlExpression * rhs, CHqlBoundExpr & tgt);
     void doBuildExprCount(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprCountFile(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
-    void doBuildExprCountIndex(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprCounter(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprCppBody(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr * tgt);
     void doBuildExprDivide(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);

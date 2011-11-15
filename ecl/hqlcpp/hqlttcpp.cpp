@@ -661,7 +661,6 @@ IHqlExpression * HqlThorBoundaryTransformer::createTransformed(IHqlExpression * 
     case no_left:
     case no_right:
     case no_countfile:
-    case no_countindex:
         return LINK(expr);
     case no_sizeof:
     case no_offsetof:
@@ -811,7 +810,6 @@ YesNoOption HqlThorBoundaryTransformer::calcNormalizeThor(IHqlExpression * expr)
     case no_self:
     case no_activerow:
     case no_countfile:          // could evaluate either place
-    case no_countindex:
         return OptionMaybe;
     case no_evaluate:
         throwUnexpected();
@@ -1529,7 +1527,6 @@ IHqlExpression * evalNormalizeAggregateExpr(IHqlExpression * selector, IHqlExpre
 
     case no_count:
     case no_countfile:
-    case no_countindex:
     case no_sum:
     case no_max:
     case no_min:
@@ -7019,7 +7016,6 @@ void NewScopeMigrateTransformer::analyseExpr(IHqlExpression * expr)
     case NO_ACTION_REQUIRES_GRAPH:
     case no_extractresult:
     case no_countfile:
-    case no_countindex:
     case no_distributer:
     case no_within:
     case no_notwithin:
@@ -7362,7 +7358,6 @@ void AutoScopeMigrateTransformer::doAnalyseExpr(IHqlExpression * expr)
     switch (expr->getOperator())
     {
     case no_allnodes:
-    case no_countindex:
     case no_keyedlimit:
     case no_nothor:
         return;
@@ -7413,7 +7408,6 @@ IHqlExpression * AutoScopeMigrateTransformer::createTransformed(IHqlExpression *
     switch (expr->getOperator())
     {
     case no_allnodes:
-    case no_countindex:         // gets messed up if anything is hoisted
     case no_keyedlimit:
     case no_libraryscope:
     case no_nothor:
@@ -7618,7 +7612,6 @@ static HqlTransformerInfo thorCountTransformerInfo("ThorCountTransformer");
 ThorCountTransformer::ThorCountTransformer(HqlCppTranslator & _translator, bool _countDiskFuncOk)
 : NewHqlTransformer(thorCountTransformerInfo), translator(_translator)
 {
-    transformCountIndex = translator.allowCountIndex();
     countDiskFuncOk = _countDiskFuncOk && translator.allowCountFile();
 }
 
@@ -7664,23 +7657,6 @@ IHqlExpression * ThorCountTransformer::createTransformed(IHqlExpression * expr)
 #endif
                     }
                 }
-            }
-            //check for index and replace with a no_countindex
-            if (transformCountIndex && isFilteredIndex(ds))
-            {
-                OwnedHqlExpr newExpr = NewHqlTransformer::createTransformed(expr);
-                OwnedHqlExpr transformed = translator.buildIndexFromPhysical(newExpr->queryChild(0));
-                transformed.setown(optimizeHqlExpression(transformed, HOOfold));
-                transformed.setown(foldHqlExpression(transformed));
-
-                HqlExprArray children;
-#if 0
-                unwindChildren(children, newExpr);
-                children.replace(*LINK(transformed), 0);
-#else
-                children.append(*LINK(transformed));
-#endif
-                return createValue(no_countindex, newExpr->getType(), children);
             }
         }
         break;
@@ -8143,7 +8119,6 @@ IHqlExpression * NestedSelectorNormalizer::createTransformed(IHqlExpression * ex
         case NO_AGGREGATE:
         case no_joined:
         case no_countfile:
-        case no_countindex:
         case no_buildindex:
         case no_apply:
         case no_distribution:
@@ -9022,7 +8997,6 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
         return transformSelect(expr);
     case NO_AGGREGATE:
     case no_countfile:
-    case no_countindex:
     case no_createset:
         {
             beginTableScope();
@@ -11768,7 +11742,7 @@ void HqlCppTranslator::substituteClusterSize(HqlExprArray & exprs)
 
 void HqlCppTranslator::optimizeThorCounts(HqlExprArray & exprs)
 {
-    if (allowCountFile() || allowCountIndex())
+    if (allowCountFile())
     {
         ThorCountTransformer countTransformer(*this, true);
         HqlExprArray transformed;
