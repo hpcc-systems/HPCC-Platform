@@ -71,6 +71,7 @@ typedef const char * user_t;
 enum object_type 
 {
 //Flags set on symbols
+    ob_private      = 0x0000,
     ob_exported     = 0x0001,
     ob_shared       = 0x0002,
     ob_import       = 0x0004,

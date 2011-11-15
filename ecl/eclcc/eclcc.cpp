@@ -157,6 +157,7 @@ public:
     const char * outputFilename;
     FILE * errout;
     Owned<IPropertyTree> srcArchive;
+    Owned<IPropertyTree> generatedMeta;
     bool legacyMode;
     bool fromArchive;
     bool ignoreUnknownImport;
@@ -170,6 +171,8 @@ public:
     {
         logVerbose = false;
         optArchive = false;
+        optGenerateMeta = false;
+        optIncludeMeta = false;
         optLegacy = false;
         optShared = false;
         optWorkUnit = false;
@@ -199,6 +202,7 @@ protected:
     void generateOutput(EclCompileInstance & instance);
     void instantECL(EclCompileInstance & instance, IWorkUnit *wu, IHqlExpression * query, const char * queryFullName, IErrorReceiver *errs, const char * outputFile);
     void getComplexity(IWorkUnit *wu, IHqlExpression * query, IErrorReceiver *errs);
+    void outputXmlToOutputFile(EclCompileInstance & instance, IPropertyTree * xml);
     void processSingleQuery(EclCompileInstance & instance, IEclRepository * dataServer,
                                IFileContents * queryContents,
                                const char * queryAttributePath);
@@ -246,6 +250,8 @@ protected:
     unsigned optLogDetail;
     bool logVerbose;
     bool optArchive;
+    bool optGenerateMeta;
+    bool optIncludeMeta;
     bool optWorkUnit;
     bool optNoCompile;
     bool optBatchMode;
@@ -695,6 +701,20 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
     {
         //Minimize the scope of the parse context to reduce lifetime of cached items.
         HqlParseContext parseCtx(repository, instance.archive);
+        if (optGenerateMeta || optIncludeMeta)
+        {
+            HqlParseContext::MetaOptions options;
+            options.includePublicDefinitions = instance.wu->getDebugValueBool("metaIncludePublic", true);
+            options.includePrivateDefinitions = instance.wu->getDebugValueBool("metaIncludePrivate", true);
+            options.onlyGatherRoot = instance.wu->getDebugValueBool("metaIncludeMainOnly", false);
+            options.includeImports = instance.wu->getDebugValueBool("metaIncludeImports", true);
+            options.includeExternalUses = instance.wu->getDebugValueBool("metaIncludeExternalUse", true);
+            options.includeExternalUses = instance.wu->getDebugValueBool("metaIncludeExternalUse", true);
+            options.includeLocations = instance.wu->getDebugValueBool("metaIncludeLocations", true);
+            options.includeJavadoc = instance.wu->getDebugValueBool("metaIncludeJavadoc", true);
+            parseCtx.setGatherMeta(options);
+        }
+
         setLegacyEclSemantics(instance.legacyMode);
         if (instance.archive)
             instance.archive->setPropBool("@legacyMode", instance.legacyMode);
@@ -748,6 +768,9 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
 
             if (instance.wu->getDebugValueBool("addTimingToWorkunit", true))
                 instance.wu->setTimerInfo("EclServer: parse query", NULL, msTick()-startTime, 1, 0);
+
+            if (optIncludeMeta || optGenerateMeta)
+                instance.generatedMeta.setown(parseCtx.getMetaTree());
         }
         catch (IException *e)
         {
@@ -767,7 +790,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
     if (instance.archive)
         return;
 
-    if (syntaxChecking)
+    if (syntaxChecking || optGenerateMeta)
         return;
 
     StringBuffer targetFilename;
@@ -968,6 +991,24 @@ void EclCC::processFile(EclCompileInstance & instance)
     generateOutput(instance);
 }
 
+
+void EclCC::outputXmlToOutputFile(EclCompileInstance & instance, IPropertyTree * xml)
+{
+    StringBuffer archiveName;
+    if (instance.outputFilename && !streq(instance.outputFilename, "-"))
+        addNonEmptyPathSepChar(archiveName.append(optOutputDirectory)).append(instance.outputFilename);
+    else
+        archiveName.append("stdout:");
+
+    //Work around windows problem writing 64K to stdout if not redirected/piped
+    OwnedIFile ifile = createIFile(archiveName);
+    OwnedIFileIO ifileio = ifile->open(IFOcreate);
+    Owned<IIOStream> stream = createIOStream(ifileio.get());
+    Owned<IIOStream> buffered = createBufferedIOStream(stream,0x8000);
+    saveXML(*buffered, xml);
+}
+
+
 void EclCC::generateOutput(EclCompileInstance & instance)
 {
     const char * outputFilename = instance.outputFilename;
@@ -976,19 +1017,11 @@ void EclCC::generateOutput(EclCompileInstance & instance)
         if (optManifestFilename)
             addManifestResourcesToArchive(instance.archive, optManifestFilename);
 
-        //Work around windows problem writing 64K to stdout if not redirected/piped
-        StringBuffer archiveName;
-        if (instance.outputFilename && !streq(instance.outputFilename, "-"))
-            addNonEmptyPathSepChar(archiveName.append(optOutputDirectory)).append(instance.outputFilename);
-        else
-            archiveName.append("stdout:");
-            
-        OwnedIFile ifile = createIFile(archiveName);
-        OwnedIFileIO ifileio = ifile->open(IFOcreate);
-        Owned<IIOStream> stream = createIOStream(ifileio.get());
-        Owned<IIOStream> buffered = createBufferedIOStream(stream,0x8000);
-        saveXML(*buffered, instance.archive);
+        outputXmlToOutputFile(instance, instance.archive);
     }
+
+    if (optGenerateMeta && instance.generatedMeta)
+        outputXmlToOutputFile(instance, instance.generatedMeta);
 
     if (optWorkUnit && instance.wu)
     {
@@ -1162,6 +1195,12 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchFlag(optDebugMemLeak, "-m"))
         {
         }
+        else if (iter.matchFlag(optIncludeMeta, "-meta"))
+        {
+        }
+        else if (iter.matchFlag(optGenerateMeta, "-M"))
+        {
+        }
         else if (iter.matchFlag(optOutputFilename, "-o"))
         {
         }
@@ -1255,7 +1294,7 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
             processArgvFilename(inputFiles, arg);
     }
     // Option post processing follows:
-    if (optArchive || optWorkUnit)
+    if (optArchive || optWorkUnit || optGenerateMeta)
         optNoCompile = true;
 
     if (inputFiles.ordinality() == 0)

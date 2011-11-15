@@ -401,11 +401,10 @@ void HqlLex::setMacroParam(const YYSTYPE & errpos, IHqlExpression* funcdef, Stri
 /* This is pushing a macro definition. */
 void HqlLex::pushMacro(IHqlExpression *expr)
 {
-    /* expr points to:
-        CHqlNamedSymbol
-        body  ----------------------->no_funcdef
-        body -> no_none                 0->body of macro
-                                        1->parameters
+    /* expr points to namedSymbol(no_funcdef):
+        child(0)-> no_macro = macro body
+        child(1) = parameters
+        child(2) = defaults for parameters
     */
 
     YYSTYPE nextToken;

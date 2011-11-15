@@ -169,7 +169,7 @@ IHqlExpression * RegexIdAllocator::createKey(IHqlExpression * expr, _ATOM name)
         return NULL;
     IHqlExpression * body = expr->queryBody();
     if (name)
-        return createSymbol(name, body->getType(), LINK(body));
+        return createSymbol(name, LINK(body), ob_private);
     return LINK(body);
 }
 

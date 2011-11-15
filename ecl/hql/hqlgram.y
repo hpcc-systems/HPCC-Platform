@@ -942,7 +942,7 @@ macro
 #endif
 
                             //Use a named symbol to associate a line number/column
-                            expr = createSymbol(macroAtom, NULL, expr,
+                            expr = createSymbol(macroAtom, NULL, expr, NULL,
                                                 false, false, (object_type)0,
                                                 NULL, 0,
                                                 yylval.pos.lineno, yylval.pos.column);
@@ -958,7 +958,7 @@ macro
 #endif
 
                             //Use a named symbol to associate a line number/column
-                            expr = createSymbol(macroAtom, NULL, expr,
+                            expr = createSymbol(macroAtom, NULL, expr, NULL,
                                                 false, false, (object_type)0,
                                                 NULL, 0,
                                                 yylval.pos.lineno, yylval.pos.column);
