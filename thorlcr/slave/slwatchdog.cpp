@@ -32,7 +32,7 @@
 class CGraphProgressHandler : public CSimpleInterface, implements ISlaveWatchdog, implements IThreaded
 {
     CriticalSection crit;
-    CIArrayOf<CGraphBase> activeGraphs;
+    CGraphArray activeGraphs;
     bool stopped, progressEnabled;
     Owned<ISocket> sock;
     CThreaded threaded;
