@@ -10872,7 +10872,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
                     _ATOM simpleName = simplifyUniqueAttributeName(name);
                     if (simpleName)
                         name = simpleName;
-                    return createSymbol(name, NULL, transformed.getClear());
+                    return createSymbol(name, transformed.getClear(), ob_private);
                 }
             }
             return transformed.getClear();

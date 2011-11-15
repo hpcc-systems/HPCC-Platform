@@ -5495,7 +5495,7 @@ void LibraryInputMapper::mapRealToLogical(HqlExprArray & inputExprs, HqlExprArra
                 result = createValue(no_libraryinput, cur->getType(), seq);
         }
         
-        inputExprs.append(*createSymbol(cur->queryName(), result->getType(), result));
+        inputExprs.append(*createSymbol(cur->queryName(), result, ob_private));
     }
 
     IHqlExpression * formals = libraryInterface->queryChild(1);
@@ -5518,7 +5518,7 @@ IHqlExpression * LibraryInputMapper::mapRealToLogical(const HqlExprArray & input
             IHqlExpression * param = resolveParameter(createMangledName(expr, &cur));
             OwnedHqlExpr mapped = mapRealToLogical(inputExprs, param, libraryId);
 
-            OwnedHqlExpr named = createSymbol(cur.queryName(), mapped->getType(), LINK(mapped));
+            OwnedHqlExpr named = createSymbol(cur.queryName(), LINK(mapped), ob_private);
             newScope->defineSymbol(named.getClear());
         }
         return queryExpression(closeScope(newScope.getClear()));

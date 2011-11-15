@@ -135,7 +135,6 @@ public:
     virtual IHqlExpression *queryExternalDefinition() const { return NULL; };
     virtual unsigned getInfoFlags() const { return infoFlags; }
     virtual unsigned getInfoFlags2() const { return infoFlags2; }
-    virtual bool isParameter() { return false; }
     virtual bool isBoolean();
     virtual bool isConstant();
     virtual bool isDataset();
@@ -151,15 +150,14 @@ public:
     virtual bool isTransform();
     virtual bool isFunction();
     virtual annotate_kind getAnnotationKind() const { return annotate_none; }
+    virtual IHqlAnnotation * queryAnnotation() { return NULL; }
     virtual bool isPure()       { return pure(); }
     virtual bool isAttribute() const { return false; }
     virtual IHqlExpression *queryNormalizedSelector(bool skipIndex) { return this; }
 
-    virtual int  getStartLine() { throwUnexpected(); }
-    virtual int  getStartColumn() { throwUnexpected(); }
-    virtual void setStartLine(int _startLine) { throwUnexpected(); }
-    virtual void setStartColumn(int _startColumn) { throwUnexpected(); }
-    virtual IPropertyTree * getDocumentation()              { return NULL; }
+    virtual int  getStartLine() const { throwUnexpected(); }
+    virtual int  getStartColumn() const { throwUnexpected(); }
+    virtual IPropertyTree * getDocumentation() const { return NULL; }
 
     virtual ITypeInfo *queryType() const;
     virtual ITypeInfo *getType();
@@ -195,7 +193,7 @@ public:
 
     virtual StringBuffer& getTextBuf(StringBuffer& buf) { assertex(false); return buf; }
     virtual IFileContents * queryDefinitionText() const { return NULL; }
-    virtual bool isExported() { assertex(false); return false; }
+    virtual bool isExported() const { return false; }
 
     virtual IHqlExpression * queryAnnotationParameter(unsigned i) const { return NULL; }
 
@@ -340,17 +338,14 @@ public:
     virtual bool isConstant();
     virtual bool isMacro();
     virtual bool isGroupAggregateFunction();
-    virtual bool isParameter();
     virtual annotate_kind getAnnotationKind() const = 0;
     virtual bool isPure();
     virtual bool isAttribute() const;
     virtual unsigned getInfoFlags() const;
     virtual unsigned getInfoFlags2() const;
-    virtual int  getStartLine();
-    virtual int  getStartColumn();
-    virtual void setStartLine(int);
-    virtual void setStartColumn(int);
-    virtual IPropertyTree * getDocumentation();
+    virtual int  getStartLine() const;
+    virtual int  getStartColumn() const;
+    virtual IPropertyTree * getDocumentation() const;
     virtual StringBuffer &toString(StringBuffer &ret);
     virtual IHqlExpression *queryChild(unsigned idx) const;
     virtual unsigned numChildren() const;
@@ -375,7 +370,7 @@ public:
     virtual IHqlExpression *addOperand(IHqlExpression *);
     virtual StringBuffer& getTextBuf(StringBuffer& buf);
     virtual IFileContents * queryDefinitionText() const;
-    virtual bool isExported();
+    virtual bool isExported() const;
     virtual unsigned getSymbolFlags();
     virtual unsigned            getCachedEclCRC();
 
@@ -386,7 +381,7 @@ public:
 };
 
 
-class HQL_API CHqlNamedSymbol: public CHqlAnnotation
+class HQL_API CHqlNamedSymbol: public CHqlAnnotation, public IHqlNamedAnnotation
 {
 protected:
     IHqlExpression *funcdef;
@@ -403,17 +398,17 @@ protected:
     CHqlNamedSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, bool _exported, bool _shared, unsigned _obFlags);
     CHqlNamedSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _flags, IFileContents *_text, int _bodystart);
     ~CHqlNamedSymbol();
+
 public:
     static CHqlNamedSymbol *makeSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, bool _exported, bool _shared, unsigned _flags);
-    static CHqlNamedSymbol *makeSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _flags, IFileContents *_text, int _bodystart);
-    static IHqlExpression * makeSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression *expr,
-                             bool exported, bool shared, unsigned symbolFlags,
-                             IFileContents *fc, int _bodystart, int lineno, int column);
+    static CHqlNamedSymbol *makeSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _flags, IFileContents *_text, int _bodystart, int lineno, int column);
+
+    IMPLEMENT_IINTERFACE_USING(CHqlAnnotation)
 
     virtual _ATOM queryName() const { return name; }
 
-    virtual bool isExported() { return (symbolFlags&ob_exported)!=0; };
     virtual annotate_kind getAnnotationKind() const { return annotate_symbol; }
+    virtual IHqlAnnotation * queryAnnotation() { return this; }
     virtual IHqlExpression *queryFunctionDefinition() const;
     virtual StringBuffer &toString(StringBuffer &ret);
     virtual IHqlExpression * cloneAnnotation(IHqlExpression * body);
@@ -426,24 +421,25 @@ public:
     
     virtual StringBuffer& getTextBuf(StringBuffer& buf) { return buf.append(text->length(),text->getText()); }
     virtual IFileContents * queryDefinitionText() const;
-    virtual int  getStartLine() { return startLine; }
-    virtual int  getStartColumn() { return startColumn; }
-    virtual void setStartLine(int _startLine) { startLine = _startLine; }
-    virtual void setStartColumn(int _startColumn) { startColumn = _startColumn; }
+    virtual int  getStartLine() const { return startLine; }
+    virtual int  getStartColumn() const { return startColumn; }
 
-public:
-    void setSymbolFlags(int f) { symbolFlags |= f; } // To preserve flags like ob_locked, ob_sandbox, etc.
-
-    inline bool isShared() { return (symbolFlags&ob_shared)!=0; };
-    inline bool isPublic() const { return (symbolFlags&(ob_shared|ob_exported))!=0; };
-
+//interface IHqlNamedAnnotation
+    virtual IHqlExpression * queryExpression();
     virtual IFileContents * getBodyContents();
+    virtual IHqlExpression * cloneSymbol(_ATOM optname, IHqlExpression * optnewbody, IHqlExpression * optnewfuncdef, HqlExprArray * optargs);
+    virtual bool isExported() const { return (symbolFlags&ob_exported)!=0; };
+    virtual bool isShared() const { return (symbolFlags&ob_shared)!=0; };
+    virtual bool isPublic() const { return (symbolFlags&(ob_shared|ob_exported))!=0; };
 
+    void setSymbolFlags(int f) { symbolFlags |= f; } // To preserve flags like ob_locked, ob_sandbox, etc.
     IHqlExpression * createBoundSymbol(IHqlExpression * newBody, HqlExprArray & ownedActuals);
-    IHqlExpression * cloneSymbol(_ATOM optname, IHqlExpression * optnewbody, IHqlExpression * optnewfuncdef, HqlExprArray * optargs);
 
 protected:
     IHqlExpression * cloneSymbol(IHqlExpression * body, IHqlExpression * funcdef);
+
+    inline void setStartLine(int _startLine) { startLine = _startLine; }
+    inline void setStartColumn(int _startColumn) { startColumn = _startColumn; }
 };
 
 class HQL_API CHqlAnnotationWithOperands: public CHqlAnnotation
@@ -491,8 +487,8 @@ public:
     virtual bool equals(const IHqlExpression & other) const;
 
     virtual ISourcePath * querySourcePath() const { return sourcePath; }
-    virtual int  getStartLine() { return lineno; }
-    virtual int  getStartColumn() { return column; }
+    virtual int  getStartLine() const { return lineno; }
+    virtual int  getStartColumn() const { return column; }
 
 protected:
     CHqlLocationAnnotation(IHqlExpression * _expr, ISourcePath * _sourcePath, int _lineno, int _column);
@@ -538,9 +534,9 @@ public:
     virtual annotate_kind getAnnotationKind() const { return annotate_javadoc; }
     virtual IHqlExpression * cloneAnnotation(IHqlExpression * body);
 
-    virtual IPropertyTree * getDocumentation()  { return LINK(queryDocumentation()); }
+    virtual IPropertyTree * getDocumentation() const { return LINK(queryDocumentation()); }
 
-    inline IPropertyTree * queryDocumentation() { return static_cast<IPropertyTree *>(extra.get()); }
+    inline IPropertyTree * queryDocumentation() const { return static_cast<IPropertyTree *>(extra.get()); }
 
 protected:
     CHqlJavadocAnnotation(IHqlExpression * _expr, IPropertyTree * _ownedJavadoc);
@@ -638,18 +634,18 @@ public:
     inline bool contain(_ATOM name) const
     {
         CriticalBlock block(cs);
-        CHqlNamedSymbol* ret = map.getValue(name);
+        IHqlExpression * ret = map.getValue(name);
         return (ret != NULL);
     }
-    inline CHqlNamedSymbol* getLinkedValue(_ATOM name) const
+    inline IHqlExpression * getLinkedValue(_ATOM name) const
     {
         CriticalBlock block(cs);
-        CHqlNamedSymbol* ret = map.getValue(name);
+        IHqlExpression * ret = map.getValue(name);
         if (ret)
             ret->Link();
         return ret;
     }
-    inline CHqlNamedSymbol * mapToValue(IMapping * mapping) const   {
+    inline IHqlExpression * mapToValue(IMapping * mapping) const   {
         return map.mapToValue(mapping);
     }
     inline void kill()
@@ -678,7 +674,7 @@ public:
     }
 
 protected:
-    MapXToMyClassViaBase<_ATOM, _ATOM, CHqlNamedSymbol, IHqlExpression> map;
+    MapXToMyClass<_ATOM, _ATOM, IHqlExpression> map;
     mutable CriticalSection cs;
 };
 
@@ -696,12 +692,12 @@ protected:
     SymbolTable & table;
 };
 #else
-class SymbolTable : public MapXToMyClassViaBase<_ATOM, _ATOM, CHqlNamedSymbol, IHqlExpression>
+class SymbolTable : public MapXToMyClass<_ATOM, _ATOM, IHqlExpression>
 {
 public:
-    inline CHqlNamedSymbol* getLinkedValue(_ATOM name) const
+    inline IHqlExpression * getLinkedValue(_ATOM name) const
     {
-        CHqlNamedSymbol* ret = getValue(name);
+        IHqlExpression * ret = getValue(name);
         if (ret)
             ret->Link();
         return ret;
@@ -1117,7 +1113,6 @@ public:
 
     StringBuffer &toString(StringBuffer &ret);
     virtual IHqlExpression *clone(HqlExprArray &newkids);
-    virtual bool isParameter() { return true; }
     virtual IHqlSimpleScope *querySimpleScope();
     virtual _ATOM queryName() const { return name; }
     virtual unsigned __int64 querySequenceExtra() { return idx; }
@@ -1163,7 +1158,6 @@ public:
 
 //IHqlExpression
     virtual bool assignableFrom(ITypeInfo * source);
-    virtual bool isParameter() { return true; }
     virtual bool equals(const IHqlExpression & other) const;
     virtual StringBuffer &toString(StringBuffer &ret);
 

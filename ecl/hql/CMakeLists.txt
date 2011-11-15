@@ -31,6 +31,7 @@ set (   SRCS
         hqlatoms.cpp 
         hqlattr.cpp 
         hqlcollect.cpp
+        hqldesc.cpp
         hqldsparam.cpp 
         hqlerror.cpp 
         hqlesp.cpp 
@@ -63,6 +64,7 @@ set (   SRCS
         hqlatoms.hpp
         hqlattr.hpp
         hqlcollect.hpp
+        hqldesc.hpp
         hqlesp.hpp
         hqlexpr.hpp
         hqlfold.hpp
