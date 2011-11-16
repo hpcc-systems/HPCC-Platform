@@ -3967,7 +3967,7 @@ IHqlExpression *CHqlExpression::queryProperty(_ATOM propname) const
     return NULL;
 }
 
-unsigned CHqlExpression::getSymbolFlags()
+unsigned CHqlExpression::getSymbolFlags() const
 {
     throwUnexpected();
     return 0;
@@ -5730,7 +5730,7 @@ unsigned CHqlAnnotation::getInfoFlags2() const
     return body->getInfoFlags2();
 }
 
-unsigned CHqlAnnotation::getSymbolFlags()
+unsigned CHqlAnnotation::getSymbolFlags() const
 {
     return body->getSymbolFlags();
 }
@@ -5936,200 +5936,7 @@ IAtom * CHqlAnnotation::queryName() const
 }
 
 
-
 //==============================================================================================================
-
-
-CHqlNamedSymbol::CHqlNamedSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, bool _exported, bool _shared, unsigned _symbolFlags)
-: CHqlAnnotation(_expr)
-{
-    name = _name;
-    symbolFlags = _symbolFlags | (_exported ? ob_exported : 0) | (_shared ? ob_shared : 0);
-    module = _module;
-    funcdef = NULL;
-    bodystart = 0;
-    startLine = 0;
-    startColumn = 0;
-}
-
-CHqlNamedSymbol::CHqlNamedSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _symbolFlags, IFileContents *_text, int _bodystart)
-  : CHqlAnnotation(_expr)
-{
-    name = _name;
-    symbolFlags = _symbolFlags | (_exported ? ob_exported : 0) | (_shared ? ob_shared : 0);
-    module = _module;
-    funcdef = _funcdef;
-    text.set(_text);
-    bodystart = _bodystart;
-    if (funcdef && containsInternalVirtual(funcdef))
-        infoFlags |= HEFinternalVirtual;
-    startLine = 0;
-    startColumn = 0;
-}
-
-CHqlNamedSymbol *CHqlNamedSymbol::makeSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, bool _exported, bool _shared, unsigned _flags)
-{
-    CHqlNamedSymbol *e = new CHqlNamedSymbol(_name, _module, _expr, _exported, _shared, _flags);
-    return (CHqlNamedSymbol *) e->closeExpr();
-}
-
- 
-CHqlNamedSymbol *CHqlNamedSymbol::makeSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _flags, IFileContents *_text, int _bodystart, int lineno, int column)
-{
-    CHqlNamedSymbol *e = new CHqlNamedSymbol(_name, _module, _expr, _funcdef, _exported, _shared, _flags, _text, _bodystart);
-    e->setStartLine(lineno);
-    e->setStartColumn(column);
-    return (CHqlNamedSymbol *) e->closeExpr();
-}
-
-void CHqlNamedSymbol::sethash()
-{
-//  assertex(op != no_func || funcdef);
-//  CHqlExpression::sethash();
-    hashcode = 0;
-    HASHFIELD(name);
-    HASHFIELD(body);
-//  if (isPublic())
-    {
-        HASHFIELD(module);
-    }
-}
-
-CHqlNamedSymbol::~CHqlNamedSymbol()
-{
-    ::Release(funcdef);
-}
-
-bool CHqlNamedSymbol::equals(const IHqlExpression & other) const
-{
-    if (!CHqlAnnotation::equals(other))
-        return false;
-
-    //Must be a named symbol if got here
-    const CHqlNamedSymbol * cast = static_cast<const CHqlNamedSymbol *>(&other);
-    if (name != other.queryName())
-        return false;
-
-    if ((symbolFlags != cast->symbolFlags) ||
-        (funcdef != cast->funcdef))
-        return false;
-
-    if (module != cast->module)
-        return false;
-
-    if (op == no_nobody)
-    {
-        //no_nobody is currently used for attributes that have had their text read
-        //but have not been parsed.  If so, we need to check the text matches.
-        //There should almost certainly be a different representation for delayed expressions.
-        if (!isSameText(queryDefinitionText(), other.queryDefinitionText()))
-            return false;
-    }
-    return true;
-}
-
-
-unsigned CHqlNamedSymbol::getSymbolFlags()
-{
-    return symbolFlags;
-}
-
-StringBuffer &CHqlNamedSymbol::toString(StringBuffer &s)
-{
-#ifdef TRACE_THIS
-    if (name)
-        s.append('"').append(*name).appendf("\":[%x]", this);
-#endif
-    return body ? body->toString(s) : s;
-}
-
-IHqlExpression * CHqlNamedSymbol::cloneAnnotation(IHqlExpression * newbody)
-{
-    if (body == newbody)
-        return LINK(this);
-    return cloneSymbol(newbody, funcdef);
-}
-
-IHqlExpression * CHqlNamedSymbol::cloneSymbol(IHqlExpression * newbody, IHqlExpression * newfuncdef)
-{
-    if (newbody==body && newfuncdef==funcdef)
-        return LINK(this);
-
-    CHqlNamedSymbol * e = new CHqlNamedSymbol(name, module, LINK(newbody), LINK(newfuncdef), isExported(), isShared(), symbolFlags, text, bodystart);
-    e->setStartLine(getStartLine());
-    e->setStartColumn(getStartColumn());
-
-    //NB: do not all doAppendOpeand() because the parameters to a named symbol do not change it's attributes - e.g., whether pure.
-    e->operands.ensure(operands.ordinality());
-    ForEachItemIn(idx, operands)
-        e->operands.append(OLINK(operands.item(idx)));
-    return e->closeExpr();
-}
-
-
-IHqlExpression * CHqlNamedSymbol::cloneSymbol(_ATOM optname, IHqlExpression * optnewbody, IHqlExpression * optnewfuncdef, HqlExprArray * optargs)
-{
-    if (!optname)
-        optname = name;
-    if (!optnewbody)
-        optnewbody = body;
-    if (!optnewfuncdef)
-        optnewfuncdef = funcdef;
-    if (!optargs)
-        optargs = &operands;
-
-    if (optnewbody==body && optnewfuncdef==funcdef)
-    {
-        if (optargs == &operands || arraysSame(*optargs, operands))
-            return LINK(this);
-    }
-
-    CHqlNamedSymbol * e = new CHqlNamedSymbol(optname, module, LINK(optnewbody), LINK(optnewfuncdef), isExported(), isShared(), symbolFlags, text, bodystart);
-    e->setStartLine(getStartLine());
-    e->setStartColumn(getStartColumn());
-
-    //NB: do not all doAppendOpeand() because the parameters to a named symbol do not change it's attributes - e.g., whether pure.
-    e->operands.ensure(optargs->ordinality());
-    ForEachItemIn(idx, *optargs)
-        e->operands.append(OLINK(optargs->item(idx)));
-    return e->closeExpr();
-}
-
-
-
-IHqlExpression *CHqlNamedSymbol::createBoundSymbol(IHqlExpression * newBody, HqlExprArray & actuals)
-{
-    CHqlNamedSymbol * e = new CHqlNamedSymbol(name, module, newBody, LINK(this), false, false, symbolFlags, text, bodystart);
-    e->setStartLine(getStartLine());
-    e->setStartColumn(getStartColumn());
-
-    unsigned max = actuals.ordinality();
-    if (max)
-    {
-        //NB: do not call doAppendOperand()
-        e->operands.swapWith(actuals);
-    }
-
-    return e->closeExpr();
-}
-
-
-IFileContents * CHqlNamedSymbol::getBodyContents()
-{
-    return createFileContentsSubset(text, bodystart, text->length()-bodystart);
-}
-
-IFileContents * CHqlNamedSymbol::queryDefinitionText() const
-{
-    return text;
-}
-
-ISourcePath * CHqlNamedSymbol::querySourcePath() const
-{
-    if (text)
-        return text->querySourcePath();
-    return CHqlAnnotation::querySourcePath();
-}
 
 CHqlCachedBoundFunction::CHqlCachedBoundFunction(IHqlExpression *func, bool _forceOutOfLineExpansion)
 : CHqlExpression(no_bound_func, NULL, LINK(func), NULL) 
@@ -6227,39 +6034,191 @@ static void associateBindByName(HqlExprArray & selects, IHqlExpression * formal,
 }
 #endif
 
-static void createAssignAll(HqlExprArray & assigns, IHqlExpression * self, IHqlExpression * left, IHqlExpression * record)
+//---------------------------------------------------------------------------------------------------------------------
+
+CHqlSymbolAnnotation::CHqlSymbolAnnotation(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression * _funcdef, unsigned _symbolFlags)
+: CHqlAnnotation(_expr)
 {
-    ForEachChild(i, record)
+    name = _name;
+    symbolFlags = _symbolFlags;
+    module = _module;
+    funcdef = _funcdef;
+    if (funcdef && containsInternalVirtual(funcdef))
+        infoFlags |= HEFinternalVirtual;
+}
+
+void CHqlSymbolAnnotation::sethash()
+{
+    hashcode = 0;
+    HASHFIELD(name);
+    HASHFIELD(body);
+    HASHFIELD(module);
+}
+
+CHqlSymbolAnnotation::~CHqlSymbolAnnotation()
+{
+    ::Release(funcdef);
+}
+
+bool CHqlSymbolAnnotation::equals(const IHqlExpression & other) const
+{
+    if (!CHqlAnnotation::equals(other))
+        return false;
+
+    //Must be a named symbol if got here
+    if (name != other.queryName())
+        return false;
+
+    if ((symbolFlags != other.getSymbolFlags()) || (funcdef != other.queryFunctionDefinition()))
+        return false;
+
+    if (module != other.queryFullModuleName())
+        return false;
+
+    if (op == no_nobody)
     {
-        IHqlExpression * cur = record->queryChild(i);
-        switch (cur->getOperator())
-        {
-        case no_record:
-            createAssignAll(assigns, self, left, cur);
-            break;
-        case no_ifblock:
-            createAssignAll(assigns, self, left, cur->queryChild(1));
-            break;
-        case no_field:
-            {
-                OwnedHqlExpr target = createSelectExpr(LINK(self), LINK(cur));
-                OwnedHqlExpr source = createSelectExpr(LINK(left), LINK(cur));
-                assigns.append(*createAssign(target.getClear(), source.getClear()));
-                break;
-            }
-        }
+        //no_nobody is currently used for attributes that have had their text read
+        //but have not been parsed.  If so, we need to check the text matches.
+        //There should almost certainly be a different representation for delayed expressions.
+        if (!isSameText(queryDefinitionText(), other.queryDefinitionText()))
+            return false;
     }
+    return true;
 }
 
 
-IHqlExpression *CHqlNamedSymbol::queryFunctionDefinition() const
+unsigned CHqlSymbolAnnotation::getSymbolFlags() const
+{
+    return symbolFlags;
+}
+
+IHqlExpression * CHqlSymbolAnnotation::cloneAnnotation(IHqlExpression * newbody)
+{
+    if (body == newbody)
+        return LINK(this);
+    return cloneSymbol(name, newbody, funcdef, NULL);
+}
+
+IHqlExpression *CHqlSymbolAnnotation::queryFunctionDefinition() const
 {
     return funcdef;
 }
 
-IHqlExpression *CHqlNamedSymbol::queryExpression()
+IHqlExpression *CHqlSymbolAnnotation::queryExpression()
 {
     return this;
+}
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
+inline unsigned combineSymbolFlags(unsigned symbolFlags, bool exported, bool shared)
+{
+    return symbolFlags | (exported ? ob_exported : 0) | (shared ? ob_shared : 0);
+}
+
+CHqlSimpleSymbol::CHqlSimpleSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression * _funcdef, unsigned _symbolFlags)
+: CHqlSymbolAnnotation(_name, _module, _expr, _funcdef, _symbolFlags)
+{
+}
+
+IHqlExpression *CHqlSimpleSymbol::makeSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression * _funcdef, unsigned _flags)
+{
+    CHqlSimpleSymbol *e = new CHqlSimpleSymbol(_name, _module, _expr, _funcdef, _flags);
+    return e->closeExpr();
+}
+
+IHqlExpression * CHqlSimpleSymbol::cloneSymbol(_ATOM optname, IHqlExpression * optnewbody, IHqlExpression * optnewfuncdef, HqlExprArray * optargs)
+{
+    _ATOM newname = optname ? optname : name;
+    IHqlExpression * newbody = optnewbody ? optnewbody : body;
+    IHqlExpression * newfuncdef = optnewfuncdef ? optnewfuncdef : funcdef;
+    HqlExprArray * newoperands = optargs ? optargs : &operands;
+
+    if (newname == name && newbody==body && newfuncdef==funcdef)
+    {
+        if (newoperands == &operands || arraysSame(*newoperands, operands))
+            return LINK(this);
+    }
+
+    CHqlSimpleSymbol * e = new CHqlSimpleSymbol(newname, module, LINK(newbody), LINK(newfuncdef), symbolFlags);
+    //NB: do not all doAppendOpeand() because the parameters to a named symbol do not change it's attributes - e.g., whether pure.
+    e->operands.ensure(newoperands->ordinality());
+    ForEachItemIn(idx, *newoperands)
+        e->operands.append(OLINK(newoperands->item(idx)));
+    return e->closeExpr();
+}
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
+
+CHqlNamedSymbol::CHqlNamedSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, bool _exported, bool _shared, unsigned _symbolFlags)
+: CHqlSymbolAnnotation(_name, _module, _expr, NULL, combineSymbolFlags(_symbolFlags, _exported, _shared))
+{
+    bodystart = 0;
+    startLine = 0;
+    startColumn = 0;
+}
+
+CHqlNamedSymbol::CHqlNamedSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _symbolFlags, IFileContents *_text, int _bodystart, int _startLine, int _startColumn)
+: CHqlSymbolAnnotation(_name, _module, _expr, _funcdef, combineSymbolFlags(_symbolFlags, _exported, _shared))
+{
+    text.set(_text);
+    bodystart = _bodystart;
+    startLine = _startLine;
+    startColumn = _startColumn;
+}
+
+CHqlNamedSymbol *CHqlNamedSymbol::makeSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, bool _exported, bool _shared, unsigned _flags)
+{
+    CHqlNamedSymbol *e = new CHqlNamedSymbol(_name, _module, _expr, _exported, _shared, _flags);
+    return (CHqlNamedSymbol *) e->closeExpr();
+}
+
+
+CHqlNamedSymbol *CHqlNamedSymbol::makeSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _flags, IFileContents *_text, int _bodystart, int _startLine, int _startColumn)
+{
+    CHqlNamedSymbol *e = new CHqlNamedSymbol(_name, _module, _expr, _funcdef, _exported, _shared, _flags, _text, _bodystart, _startLine, _startColumn);
+    return (CHqlNamedSymbol *) e->closeExpr();
+}
+
+IHqlExpression * CHqlNamedSymbol::cloneSymbol(_ATOM optname, IHqlExpression * optnewbody, IHqlExpression * optnewfuncdef, HqlExprArray * optargs)
+{
+    _ATOM newname = optname ? optname : name;
+    IHqlExpression * newbody = optnewbody ? optnewbody : body;
+    IHqlExpression * newfuncdef = optnewfuncdef ? optnewfuncdef : funcdef;
+    HqlExprArray * newoperands = optargs ? optargs : &operands;
+
+    if (newname == name && newbody==body && newfuncdef==funcdef)
+    {
+        if (newoperands == &operands || arraysSame(*newoperands, operands))
+            return LINK(this);
+    }
+
+    CHqlNamedSymbol * e = new CHqlNamedSymbol(newname, module, LINK(newbody), LINK(newfuncdef), isExported(), isShared(), symbolFlags, text, bodystart, startLine, startColumn);
+    //NB: do not all doAppendOpeand() because the parameters to a named symbol do not change it's attributes - e.g., whether pure.
+    e->operands.ensure(newoperands->ordinality());
+    ForEachItemIn(idx, *newoperands)
+        e->operands.append(OLINK(newoperands->item(idx)));
+    return e->closeExpr();
+}
+
+IFileContents * CHqlNamedSymbol::getBodyContents()
+{
+    return createFileContentsSubset(text, bodystart, text->length()-bodystart);
+}
+
+IFileContents * CHqlNamedSymbol::queryDefinitionText() const
+{
+    return text;
+}
+
+ISourcePath * CHqlNamedSymbol::querySourcePath() const
+{
+    if (text)
+        return text->querySourcePath();
+    return CHqlAnnotation::querySourcePath();
 }
 
 IHqlNamedAnnotation * queryNameAnnotation(IHqlExpression * expr)
@@ -6269,6 +6228,8 @@ IHqlNamedAnnotation * queryNameAnnotation(IHqlExpression * expr)
         return NULL;
     return static_cast<IHqlNamedAnnotation *>(symbol->queryAnnotation());
 }
+
+//---------------------------------------------------------------------------------------------------------------------
 
 
 bool isExported(IHqlExpression * expr)
@@ -6879,7 +6840,7 @@ void CHqlScope::defineSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression *valu
     if (!moduleName)
         moduleName = name;
 
-    CHqlNamedSymbol *symbol = CHqlNamedSymbol::makeSymbol(_name, moduleName, value, NULL, exported, shared, symbolFlags, fc, _bodystart, lineno, column);
+    IHqlExpression * symbol = createSymbol(_name, moduleName, value, NULL, exported, shared, symbolFlags, fc, _bodystart, lineno, column);
     defineSymbol(symbol);
 }
 
@@ -6887,7 +6848,7 @@ void CHqlScope::defineSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression *valu
 {
     if (!moduleName) moduleName = name;
     if (!_name) _name = internalAtom;
-    defineSymbol(CHqlNamedSymbol::makeSymbol(_name, moduleName, value, exported, shared, symbolFlags));
+    defineSymbol(createSymbol(_name, moduleName, value, exported, shared, symbolFlags));
 }
 
 void CHqlScope::defineSymbol(IHqlExpression * expr)
@@ -7205,10 +7166,11 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(_ATOM searchName, unsigned lookupF
         throw createECLError(ERR_EXPORT_OR_SHARE, msg.toCharArray(), filename, 0, 0, 1);
     }
 
-    CHqlNamedSymbol * castNewSymbol = static_cast<CHqlNamedSymbol *>(newSymbol.get());
-    unsigned repositoryFlags=ret->getSymbolFlags()&ob_registryflags;
-    castNewSymbol->setSymbolFlags(repositoryFlags);
-    ret.set(newSymbol.get());
+    //Preserve ob_sandbox etc. annotated on the original definition, but not on the parsed code.
+    unsigned repositoryFlags=ret->getSymbolFlags();
+    IHqlNamedAnnotation * symbol = queryNameAnnotation(newSymbol);
+    assertex(symbol);
+    symbol->setRepositoryFlags(repositoryFlags);
 
     if (repositoryFlags&ob_sandbox)
     {
@@ -7216,12 +7178,10 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(_ATOM searchName, unsigned lookupF
             ctx.errs->reportWarning(WRN_DEFINITION_SANDBOXED,"Definition is sandboxed",filename,0,0,0);
     }
 
-    if (!(ret->isExported() || (lookupFlags & LSFsharedOK)))
+    if (!(newSymbol->isExported() || (lookupFlags & LSFsharedOK)))
         return NULL;
 
-//  StringBuffer s;
-//  PrintLog("Lookup %s got %s", searchName->getAtomNamePtr(), ret ? ret->toString(s).toCharArray() : "<null>");
-    return ret.getLink();
+    return newSymbol.getClear();
 }
 
 void CHqlRemoteScope::getSymbols(HqlExprArray& exprs) const
@@ -7503,7 +7463,7 @@ IHqlExpression * CHqlMergedScope::lookupSymbol(_ATOM searchName, unsigned lookup
     if (mergeScope)
     {
         OwnedHqlExpr newScope = mergeScope.getClear()->closeExpr();
-        CHqlNamedSymbol* symbol = CHqlNamedSymbol::makeSymbol(searchName, name, LINK(newScope), true, false, symbolFlags);
+        IHqlExpression * symbol = createSymbol(searchName, name, LINK(newScope), true, false, symbolFlags);
         defineSymbol(symbol);
         return LINK(symbol);
     }
@@ -7554,7 +7514,7 @@ void CHqlMergedScope::ensureSymbolsDefined(HqlLookupContext & ctx)
                         //a child scope hasn't resolved it yet.
                         if (prev->getOperator() != no_nobody)
                         {
-                            IHqlExpression * newSymbol = CHqlNamedSymbol::makeSymbol(curName, name, NULL, true, false, 0);
+                            IHqlExpression * newSymbol = createSymbol(curName, name, NULL, true, false, 0);
                             defineSymbol(newSymbol);
                         }
                     }
@@ -9332,7 +9292,14 @@ extern HQL_API IHqlExpression *createSequence(node_operator op, ITypeInfo * type
 
 IHqlExpression *createSymbol(_ATOM name, IHqlExpression *expr, unsigned exportFlags)
 {
-    return CHqlNamedSymbol::makeSymbol(name, NULL, expr, (exportFlags & ob_exported) != 0, (exportFlags & ob_shared) != 0, 0);
+//    return CHqlNamedSymbol::makeSymbol(name, NULL, expr, (exportFlags & ob_exported) != 0, (exportFlags & ob_shared) != 0, 0);
+    return CHqlSimpleSymbol::makeSymbol(name, NULL, expr, NULL, exportFlags);
+}
+
+IHqlExpression * createSymbol(_ATOM name, _ATOM moduleName, IHqlExpression * expr, bool exported, bool shared, unsigned symbolFlags)
+{
+//    return CHqlNamedSymbol::makeSymbol(name, moduleName, expr, exported, shared, symbolFlags);
+    return CHqlSimpleSymbol::makeSymbol(name, moduleName, expr, NULL, combineSymbolFlags(symbolFlags, exported, shared));
 }
 
 IHqlExpression * createSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression *expr, IHqlExpression * funcdef,
@@ -9485,8 +9452,9 @@ inline IHqlExpression * createCallExpression(IHqlExpression * funcdef, HqlExprAr
         if (call->getOperator() == no_externalcall)
             return LINK(call);
 
-        CHqlNamedSymbol * named = static_cast<CHqlNamedSymbol*>(funcdef);
-        return named->createBoundSymbol(call.getClear(), clonedActuals);
+        IHqlNamedAnnotation * annotation = static_cast<IHqlNamedAnnotation *>(funcdef->queryAnnotation());
+        return annotation->cloneSymbol(NULL, call, funcdef, &clonedActuals);
+        //return annotation->createBoundSymbol(call.getClear(), clonedActuals);
     }
 
     if (funcdef->getOperator() == no_funcdef)
@@ -9813,6 +9781,29 @@ protected:
 
 //-------------------------------------------------------------------------------------
 
+static void createAssignAll(HqlExprArray & assigns, IHqlExpression * self, IHqlExpression * left, IHqlExpression * record)
+{
+    ForEachChild(i, record)
+    {
+        IHqlExpression * cur = record->queryChild(i);
+        switch (cur->getOperator())
+        {
+        case no_record:
+            createAssignAll(assigns, self, left, cur);
+            break;
+        case no_ifblock:
+            createAssignAll(assigns, self, left, cur->queryChild(1));
+            break;
+        case no_field:
+            {
+                OwnedHqlExpr target = createSelectExpr(LINK(self), LINK(cur));
+                OwnedHqlExpr source = createSelectExpr(LINK(left), LINK(cur));
+                assigns.append(*createAssign(target.getClear(), source.getClear()));
+                break;
+            }
+        }
+    }
+}
 
 static void normalizeCallParameters(HqlExprArray & resolvedActuals, IHqlExpression *funcdef, const HqlExprArray &actuals)
 {
