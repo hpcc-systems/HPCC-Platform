@@ -1128,7 +1128,7 @@ interface IHqlExpression : public IInterface
     virtual StringBuffer& getTextBuf(StringBuffer& buf) = 0;
     virtual IFileContents * queryDefinitionText() const = 0;
 
-    virtual unsigned getSymbolFlags() = 0;              // only valid for a named symbol
+    virtual unsigned getSymbolFlags() const = 0;              // only valid for a named symbol
     virtual bool isExported() const = 0;
 
     virtual unsigned            getCachedEclCRC() = 0;          // do not call directly - use getExpressionCRC()
@@ -1172,6 +1172,7 @@ interface IHqlNamedAnnotation : public IHqlAnnotation
     virtual bool isPublic() const = 0;
     virtual int getStartLine() const = 0;
     virtual int getStartColumn() const = 0;
+    virtual void setRepositoryFlags(unsigned _flags) = 0;  // To preserve flags like ob_locked, ob_sandbox, etc.
 };
 
 
@@ -1261,6 +1262,7 @@ extern HQL_API void expandDelayedFunctionCalls(IErrorReceiver * errors, HqlExprA
 extern HQL_API IHqlExpression *createQuoted(const char * name, ITypeInfo *type);
 extern HQL_API IHqlExpression *createVariable(const char * name, ITypeInfo *type);
 extern HQL_API IHqlExpression * createSymbol(_ATOM name, IHqlExpression *expr, unsigned exportFlags);
+extern HQL_API IHqlExpression * createSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, bool _exported, bool _shared, unsigned _flags);
 extern HQL_API IHqlExpression * createSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression *expr, IHqlExpression * funcdef,
                                              bool exported, bool shared, unsigned symbolFlags,
                                              IFileContents *fc, int _bodystart, int lineno, int column);
