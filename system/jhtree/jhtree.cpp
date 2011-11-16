@@ -1433,7 +1433,10 @@ CJHTreeNode *CKeyIndex::loadNode(char *nodeData, offset_t pos, bool needsCopy)
             ret.setown(new CJHTreeNode());
             break;
         case 1:
-            ret.setown(keyHdr->isVariable() ? new CJHVarTreeNode() : new CJHTreeNode());
+        	if (keyHdr->isVariable())
+        		ret.setown(new CJHVarTreeNode());
+        	else
+        		ret.setown(new CJHTreeNode());
             break;
         case 2:
             ret.setown(new CJHTreeBlobNode());

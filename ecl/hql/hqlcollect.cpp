@@ -466,7 +466,7 @@ void FileSystemEclCollection::processFilePath(const char * sourceSearchPath, boo
                 {
                     StringBuffer msg;
                     msg.appendf("Explicit source file %s not found", searchPattern.str());
-                    errs->reportWarning(10, msg.str());
+                    errs->reportWarning(10, msg.str(), NULL, 0, 0, 0);
                 }
                 else
                     printf("Explicit source file %s not found\n", searchPattern.str());

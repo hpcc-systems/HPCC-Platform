@@ -37,10 +37,10 @@ interface IMemoryMappedFile;
 class MemoryBuffer;
 class Semaphore;
 
-typedef enum { IFOcreate, IFOread, IFOwrite, IFOreadwrite, IFOcreaterw }                    IFOmode;    // modes for open
-typedef enum { IFSHnone, IFSHread=0x8, IFSHfull=0x10}                                       IFSHmode;   // sharing modes
-typedef enum { IFScurrent = FILE_CURRENT, IFSend = FILE_END, IFSbegin = FILE_BEGIN }        IFSmode;    // seek mode
-typedef enum { CFPcontinue, CFPcancel, CFPstop }                                            CFPmode;    // modes for ICopyFileProgress::onProgress return
+enum IFOmode { IFOcreate, IFOread, IFOwrite, IFOreadwrite, IFOcreaterw };    // modes for open
+enum IFSHmode { IFSHnone, IFSHread=0x8, IFSHfull=0x10};   // sharing modes
+enum IFSmode { IFScurrent = FILE_CURRENT, IFSend = FILE_END, IFSbegin = FILE_BEGIN };    // seek mode
+enum CFPmode { CFPcontinue, CFPcancel, CFPstop };    // modes for ICopyFileProgress::onProgress return
 
 class CDateTime;
 
