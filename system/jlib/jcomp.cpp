@@ -294,7 +294,7 @@ void CppCompiler::addLibrary(const char * libName)
     {
         quote = "\"";
     }
-    linkerOptions.append(" ").append(USE_LIB_FLAG[targetCompiler]).append(quote).append(lname).append(USE_LIB_TAIL[targetCompiler]).append(quote);
+    linkerLibraries.append(" ").append(USE_LIB_FLAG[targetCompiler]).append(quote).append(lname).append(USE_LIB_TAIL[targetCompiler]).append(quote);
 }
 
 void CppCompiler::addLibraryPath(const char * libPath)
@@ -483,6 +483,8 @@ bool CppCompiler::doLink()
 
     ForEachItemIn(i0, allSources)
         cmdline.append(" ").append("\"").append(targetDir).append(allSources.item(i0)).append(".").append(OBJECT_FILE_EXT[targetCompiler]).append("\"");
+
+    cmdline.append(linkerLibraries);
 
     StringBuffer outName;
     outName.append(createDLL ? SharedObjectPrefix : NULL).append(CORE_NAME).append(createDLL ? SharedObjectExtension : ProcessExtension);
