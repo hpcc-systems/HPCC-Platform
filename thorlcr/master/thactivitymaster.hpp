@@ -63,7 +63,14 @@ public:
     }
     unsigned queryParts() { return partToNode.ordinality(); }
     unsigned queryNumMaps() { return maps.ordinality(); }
-    unsigned queryMapWidth(unsigned map) { return maps.isItem(map)?maps.item(map).ordinality():0; }
+    unsigned queryMapWidth(unsigned map)
+    {
+        if (local)
+            map = 0;
+        if (!maps.isItem(map))
+            return 0;
+        return maps.item(map).ordinality();
+    }
     void serializeFileOffsetMap(MemoryBuffer &mb);
     void getParts(unsigned i, IArrayOf<IPartDescriptor> &parts);
     void serializeMap(unsigned map, MemoryBuffer &mb, IGetSlaveData *extra=NULL);
