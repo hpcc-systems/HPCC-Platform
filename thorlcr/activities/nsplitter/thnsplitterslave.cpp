@@ -82,6 +82,7 @@ class NSplitterSlaveActivity : public CSlaveActivity
     bool eofHit;
     CriticalSection startCrit;
     bool inputsConfigured;
+    CriticalSection startLock;
     unsigned nstopped;
     rowcount_t recsReady;
     SpinLock timingLock;
@@ -89,7 +90,7 @@ class NSplitterSlaveActivity : public CSlaveActivity
     class CWriter : public CSimpleInterface, IThreaded
     {
         NSplitterSlaveActivity &parent;
-        CThreaded threaded;
+        CThreadedPersistent threaded;
         Semaphore sem;
         bool stopped;
         rowcount_t writerMax;
@@ -97,7 +98,7 @@ class NSplitterSlaveActivity : public CSlaveActivity
         SpinLock recLock;
 
     public:
-        CWriter(NSplitterSlaveActivity &_parent) : parent(_parent), threaded("CWriter")
+        CWriter(NSplitterSlaveActivity &_parent) : parent(_parent), threaded("CWriter", this)
         {
             stopped = true;
             writerMax = 0;
@@ -124,7 +125,7 @@ class NSplitterSlaveActivity : public CSlaveActivity
         {
             stopped = false;
             writerMax = 0;
-            threaded.init(this);
+            threaded.start();
         }
         virtual void stop()
         {
@@ -305,7 +306,7 @@ public:
     }
     void prepareInput(unsigned output)
     {
-        CriticalBlock block(startCrit);
+        CriticalBlock block(startLock);
         if (!input)
         {
             input = inputs.item(0);
@@ -313,17 +314,22 @@ public:
                 startInput(input);
                 grouped = input->isGrouped();
                 nstopped = outputs.ordinality();
-                if (spill)
-                {
-                    StringBuffer tempname;
-                    GetTempName(tempname,"nsplit",true); // use alt temp dir
-                    smartBuf.setown(createSharedSmartDiskBuffer(this, tempname.str(), outputs.ordinality(), queryRowInterfaces(input), &container.queryJob().queryIDiskUsage()));
-                    ActPrintLog("Using temp spill file: %s", tempname.str());
-                }
+                if (smartBuf)
+                    smartBuf->reset();
                 else
                 {
-                    ActPrintLog("Spill is 'balanced'");
-                    smartBuf.setown(createSharedSmartMemBuffer(this, outputs.ordinality(), queryRowInterfaces(input), NSPLITTER_SPILL_BUFFER_SIZE));
+                    if (spill)
+                    {
+                        StringBuffer tempname;
+                        GetTempName(tempname,"nsplit",true); // use alt temp dir
+                        smartBuf.setown(createSharedSmartDiskBuffer(this, tempname.str(), outputs.ordinality(), queryRowInterfaces(input), &container.queryJob().queryIDiskUsage()));
+                        ActPrintLog("Using temp spill file: %s", tempname.str());
+                    }
+                    else
+                    {
+                        ActPrintLog("Spill is 'balanced'");
+                        smartBuf.setown(createSharedSmartMemBuffer(this, outputs.ordinality(), queryRowInterfaces(input), NSPLITTER_SPILL_BUFFER_SIZE));
+                    }
                 }
                 writer.start();
             }
@@ -383,16 +389,6 @@ public:
             input = NULL;
         }
     }
-    void doStopInput()
-    {
-        CriticalBlock block(startCrit);
-        if (nstopped)
-        {
-            nstopped = 0;
-            stopInput(input);
-            input = NULL;
-        }
-    }
     void abort()
     {
         CSlaveActivity::abort();
@@ -432,7 +428,7 @@ void SplitterOutput::start()
 
 void SplitterOutput::stop() 
 { 
-    CriticalBlock block(activity.startCrit);
+    CriticalBlock block(activity.startLock);
     activity.smartBuf->queryOutput(output)->stop();
     activity.inputStopped();
     dataLinkStop();

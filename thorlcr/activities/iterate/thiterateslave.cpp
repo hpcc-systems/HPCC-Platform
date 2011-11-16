@@ -473,7 +473,7 @@ class CStreamedIteratorSlaveActivity : public CSlaveActivity, public CThorDataLi
 {
     IHThorStreamedIteratorArg *helper;
     Owned<IRowStream> rows;
-    bool eof, isLocal, isLocalCache;
+    bool eof, isLocal;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
@@ -486,15 +486,11 @@ public:
     {
         appendOutputLinked(this);   // adding 'me' to outputs array
         helper = static_cast <IHThorStreamedIteratorArg *> (queryHelper());
-        isLocalCache = isLocal = false;
+        isLocal = false;
     }
     virtual void start()
     {
-        if (!isLocalCache)
-        {
-            isLocalCache = true;
-            isLocal = container.queryOwnerId() && container.queryOwner().isLocalOnly();
-        }
+        isLocal = container.queryOwnerId() && container.queryOwner().isLocalOnly();
         eof = isLocal ? false : (container.queryJob().queryMyRank()>1);
         if (!eof)
             rows.setown(helper->createInput());

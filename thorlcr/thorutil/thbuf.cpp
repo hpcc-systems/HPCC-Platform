@@ -806,8 +806,9 @@ public:
     CRowSet(unsigned _chunk) : chunk(_chunk)
     {
     }
-    ~CRowSet()
+    void reset(unsigned _chunk)
     {
+        chunk = _chunk;
         rows.clear();
     }
     inline const unsigned queryChunk() { return chunk; }
@@ -861,6 +862,21 @@ class CSharedWriteAheadBase : public CSimpleInterface, implements ISharedSmartBu
     rowcount_t rowsWritten;
     IArrayOf<IRowStream> outputs;
     unsigned readersWaiting;
+
+    virtual void init()
+    {
+        stopped = false;
+        writeAtEof = false;
+        rowsWritten = 0;
+        readersWaiting = 0;
+        totalChunksOut = lowestChunk = 0;
+        lowestOutput = 0;
+#ifdef TRACE_WRITEAHEAD
+        totalOutChunkSize = sizeof(unsigned);
+#else
+        totalOutChunkSize = 0;
+#endif
+    }
 
     inline bool isEof(rowcount_t rowsRead)
     {
@@ -920,6 +936,14 @@ protected:
         CRowSet *rowSet;
         unsigned row, rowsInRowSet;
 
+        void init()
+        {
+            rowsRead = 0;
+            currentChunkNum = 0;
+            rowsInRowSet = row = 0;
+            readerWaiting = eof = false;
+            rowSet = NULL;
+        }
         inline void doStop()
         {
             if (eof) return;
@@ -962,11 +986,12 @@ protected:
 
         COutput(CSharedWriteAheadBase &_parent, unsigned _output) : parent(_parent), output(_output)
         {
-            rowsRead = 0;
-            currentChunkNum = 0;
-            rowsInRowSet = row = 0;
-            readerWaiting = eof = false;
-            rowSet = NULL;
+            init();
+        }
+        void reset()
+        {
+            init();
+            outputOwnedRows.clear();
         }
         inline CRowSet *queryRowSet() { return rowSet; }
         const void *nextRow()
@@ -1103,20 +1128,14 @@ protected:
     virtual CRowSet *readRows(unsigned output, unsigned chunk) = 0;
     virtual void flushRows() = 0;
     virtual size32_t rowSize(const void *row) = 0;
-
-
-    COutput *o1, *o2;
 public:
 
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     CSharedWriteAheadBase(CActivityBase *_activity, unsigned _outputCount, IRowInterfaces *rowIf) : activity(_activity), outputCount(_outputCount), meta(rowIf->queryRowMetaData())
     {
-        stopped = false;
-        writeAtEof = false;
-        rowsWritten = 0;
+        init();
         minChunkSize = 0x2000;
-        readersWaiting = 0;
         size32_t minSize = meta->getMinRecordSize();
         if (minChunkSize<minSize*10) // if rec minSize bigish, ensure reasonable minChunkSize
         {
@@ -1129,20 +1148,8 @@ public:
         for (; c<outputCount; c++)
         {
             outputs.append(* new COutput(*this, c));
-
-            if (0 == c)
-                o1 = &queryCOutput(0);
-            else if (1 == c)
-                o2 = &queryCOutput(1);
         }
-        totalChunksOut = lowestChunk = 0;
         inMemRows.setown(new CRowSet(0));
-        lowestOutput = 0;
-#ifdef TRACE_WRITEAHEAD
-        totalOutChunkSize = sizeof(unsigned);
-#else
-        totalOutChunkSize = 0;
-#endif
     }
     ~CSharedWriteAheadBase()
     {
@@ -1221,6 +1228,14 @@ public:
         CriticalBlock b(crit);
         stopAll();
         signalReaders();
+    }
+    virtual void reset()
+    {
+        init();
+        unsigned c=0;
+        for (; c<outputCount; c++)
+            queryCOutput(c).reset();
+        inMemRows->reset(0);
     }
 friend class COutput;
 };
@@ -1524,6 +1539,19 @@ public:
         }
         PROGLOG("CSharedWriteAheadDisk: highOffset=%"I64F"d", highOffset);
     }
+    virtual void reset()
+    {
+        CSharedWriteAheadBase::reset();
+        loop
+        {
+            Owned<Chunk> chunk = savedChunks.dequeue();
+            if (!chunk) break;
+        }
+        freeChunks.kill();
+        freeChunksSized.kill();
+        highOffset = 0;
+        spillFileIO->setSize(0);
+    }
 };
 
 ISharedSmartBuffer *createSharedSmartDiskBuffer(CActivityBase *activity, const char *spillname, unsigned outputs, IRowInterfaces *rowIf, IDiskUsage *iDiskUsage)
@@ -1618,6 +1646,17 @@ public:
             if (!rowSet)
                 break;
         }
+    }
+    virtual void reset()
+    {
+        CSharedWriteAheadBase::reset();
+        loop
+        {
+            Owned<CRowSet> rowSet = chunkPool.dequeue();
+            if (!rowSet)
+                break;
+        }
+        writerBlocked = false;
     }
 };
 

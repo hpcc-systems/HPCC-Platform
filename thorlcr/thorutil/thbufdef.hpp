@@ -41,8 +41,7 @@
 #define WORKUNITWRITE_SMART_BUFFER_SIZE         (0x100000*3)            // 3MB
 #define DEFAULT_BLOCK_INPUT_BUFFER_SIZE         (0x10000)               // 64K
 #define AGGREGATE_INPUT_BUFFER_SIZE             (0x10000)               // 64K
-#define NSPLITTER_SPILL_BUFFER_SIZE             (0x10000)               // 64K
-#define NSPLITTER_BLOCK_BUFFER_SIZE             (0x10000)               // 64K
+#define NSPLITTER_SPILL_BUFFER_SIZE             (0x100000)              // 1MB
 #define DISTRIBUTE_PULL_BUFFER_SIZE             (0x100000*32)           // 32MB
 #define SORT_BUFFER_TOTAL                       (0x100000*20)           // 20MB (estimate)
 #define DISTRIBUTE_SINGLE_BUFFER_SIZE           (0x10000)               // 64K  - NB per node and multiplied by async send

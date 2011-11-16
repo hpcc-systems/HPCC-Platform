@@ -112,7 +112,7 @@ public:
     virtual void serializeStats(MemoryBuffer &mb);
     virtual bool prepare(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies, bool shortCircuit, bool async);
     virtual bool preStart(size32_t parentExtractSz, const byte *parentExtract);
-    virtual void postStart();
+    virtual void start();
     virtual void create(size32_t parentExtractSz, const byte *parentExtract);
     virtual void abort(IException *e);
     virtual void done();

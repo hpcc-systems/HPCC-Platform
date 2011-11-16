@@ -566,7 +566,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
     class CKeyedFetchHandler : public CSimpleInterface, implements IThreaded
     {
         CKeyedJoinSlave &owner;
-        CThreaded threaded;
+        CThreadedPersistent threaded;
         bool writeWaiting, replyWaiting, stopped, aborted;
         unsigned pendingSends, pendingReplies, nodes, minFetchSendSz, totalSz, fetchMin;
         size32_t perRowMin;
@@ -590,16 +590,16 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
     public:
         class CKeyedFetchResultProcessor : public CSimpleInterface, implements IThreaded
         {
-            CThreaded threaded;
+            CThreadedPersistent threaded;
             CKeyedJoinSlave &owner;
             ICommunicator &comm;
             mptag_t resultMpTag;
             bool aborted;
         public:
-            CKeyedFetchResultProcessor(CKeyedJoinSlave &_owner, ICommunicator &_comm, mptag_t _mpTag) : threaded("CKeyedFetchResultProcessor"), owner(_owner), comm(_comm), resultMpTag(_mpTag)
+            CKeyedFetchResultProcessor(CKeyedJoinSlave &_owner, ICommunicator &_comm, mptag_t _mpTag) : threaded("CKeyedFetchResultProcessor", this), owner(_owner), comm(_comm), resultMpTag(_mpTag)
             {
                 aborted = false;
-                threaded.init(this);
+                threaded.start();
             }
             ~CKeyedFetchResultProcessor()
             {
@@ -685,7 +685,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
         } *resultProcessor;
         class CKeyedFetchRequestProcessor : public CSimpleInterface, implements IThreaded
         {
-            CThreaded threaded;
+            CThreadedPersistent threaded;
             CKeyedJoinSlave &owner;
             ICommunicator &comm;
             mptag_t requestMpTag, resultMpTag;
@@ -704,10 +704,10 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
             }
 
         public:
-            CKeyedFetchRequestProcessor(CKeyedJoinSlave &_owner, ICommunicator &_comm, mptag_t _requestMpTag, mptag_t _resultMpTag) : threaded("CKeyedFetchRequestProcessor"), owner(_owner), comm(_comm), requestMpTag(_requestMpTag), resultMpTag(_resultMpTag)
+            CKeyedFetchRequestProcessor(CKeyedJoinSlave &_owner, ICommunicator &_comm, mptag_t _requestMpTag, mptag_t _resultMpTag) : threaded("CKeyedFetchRequestProcessor", this), owner(_owner), comm(_comm), requestMpTag(_requestMpTag), resultMpTag(_resultMpTag)
             {
                 aborted = false;
-                threaded.init(this);
+                threaded.start();
             }
             ~CKeyedFetchRequestProcessor()
             {
@@ -877,7 +877,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
             }
         } *requestProcessor;
     public:
-        CKeyedFetchHandler(CKeyedJoinSlave &_owner) : threaded("CKeyedFetchHandler"), owner(_owner)
+        CKeyedFetchHandler(CKeyedJoinSlave &_owner) : threaded("CKeyedFetchHandler", this), owner(_owner)
         {
             minFetchSendSz = NEWFETCHSENDMAX;
             totalSz = 0;
@@ -901,7 +901,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
             requestProcessor = new CKeyedFetchRequestProcessor(owner, owner.container.queryJob().queryJobComm(), requestMpTag, resultMpTag); // remote receive of fetch fpos'
             resultProcessor = new CKeyedFetchResultProcessor(owner, owner.container.queryJob().queryJobComm(), resultMpTag); // asynchronously receiving results back
 
-            threaded.init(this);
+            threaded.start();
         }
         ~CKeyedFetchHandler()
         {
