@@ -89,6 +89,7 @@ private:
         void * mem = clearMemory ? calloc(n, sizeof(CLASS)) : malloc(n * sizeof(CLASS));
         ptr = static_cast<CLASS *>(mem);
     }
+    void allocate(unsigned n, bool clearMemory = false);
     void operator = (CLASS * _ptr);
     void operator = (const OwnedMalloc<CLASS> & other);
     void set(CLASS * _ptr);
