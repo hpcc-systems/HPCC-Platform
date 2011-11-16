@@ -188,7 +188,7 @@ interface IThorException : extends IException
     virtual const char *queryOrigin() = 0;
     virtual WUExceptionSeverity querySeverity() = 0;
     virtual const char *queryMessage() = 0;
-    virtual const bool queryNotified() const = 0;
+    virtual bool queryNotified() const = 0;
     virtual MemoryBuffer &queryData() = 0;
     virtual void setNotified() = 0;
     virtual void setAction(ThorExceptionAction _action) = 0;
@@ -309,7 +309,7 @@ extern graph_decl memsize_t queryLargeMemSize();
 extern graph_decl StringBuffer &getCompoundQueryName(StringBuffer &compoundName, const char *queryName, unsigned version);
 
 extern graph_decl void setClusterGroup(IGroup *group);
-extern graph_decl const bool clusterInitialized();
+extern graph_decl bool clusterInitialized();
 extern graph_decl ICommunicator &queryClusterComm();
 extern graph_decl IGroup &queryClusterGroup();
 extern graph_decl IGroup &querySlaveGroup();

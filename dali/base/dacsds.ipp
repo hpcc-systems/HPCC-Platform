@@ -103,10 +103,10 @@ public:
     inline bool queryConnected() { return connected; }
     inline void setConnected(bool _connected) { connected = _connected; }
     inline void setOrphaned() { orphaned = true; }
-    inline const bool queryServerIter() const { return serverIter; }
-    inline const bool queryServerIterAvailable() const { return serverIterAvailable; }
-    inline const bool queryServerGetIdsAvailable() const { return serverGetIdsAvailable; }
-    inline const bool queryUseAppendOpt() const { return useAppendOpt; }
+    inline bool queryServerIter() const { return serverIter; }
+    inline bool queryServerIterAvailable() const { return serverIterAvailable; }
+    inline bool queryServerGetIdsAvailable() const { return serverGetIdsAvailable; }
+    inline bool queryUseAppendOpt() const { return useAppendOpt; }
 
     void getDetails(MemoryBuffer &mb);
     void clearCommitChanges();

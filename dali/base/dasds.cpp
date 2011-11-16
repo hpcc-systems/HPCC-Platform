@@ -375,7 +375,7 @@ public:
         CriticalBlock b(crit);
         return LINK(_queryElem(id));
     }
-    const unsigned maxElements() const { return nextId; } // actual is nextId - however many in free chain
+    unsigned maxElements() const { return nextId; } // actual is nextId - however many in free chain
 };
 
 ////////////////

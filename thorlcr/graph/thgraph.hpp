@@ -110,11 +110,12 @@ interface IThorResult : extends IInterface
     virtual void setResultStream(IRowWriterMultiReader *stream, rowcount_t count) = 0;
     virtual IRowStream *getRowStream() = 0;
     virtual IOutputMetaData *queryMeta() = 0;
-    virtual const bool isLocal() const = 0;
+    virtual bool isLocal() const = 0;
     virtual void getResult(size32_t & retSize, void * & ret) = 0;
     virtual void getLinkedResult(unsigned & count, byte * * & ret) = 0;
 };
 
+class CActivityBase;
 // JCSMORE - based on IHThorGraphResults
 interface IThorGraphResults : extends IEclGraphResults
 {
@@ -145,7 +146,7 @@ class CFileUsageEntry : public CInterface
     WUFileKind fileKind;
 public:
     CFileUsageEntry(const char *_name, graph_id _graphId, WUFileKind _fileKind, unsigned _usage) :name(_name), graphId(_graphId), fileKind(_fileKind), usage(_usage) { }
-    const unsigned queryUsage() const { return usage; }
+    unsigned queryUsage() const { return usage; }
     const graph_id queryGraphId() const { return graphId; }
     const WUFileKind queryKind() const { return fileKind; }
     const char *queryName() const { return name.get(); }
@@ -154,9 +155,8 @@ public:
     const char *queryFindString() const { return name; }
 };
 
-interface IFileUsageIterator : extends IIteratorOf<CFileUsageEntry> 
-{
-};
+typedef IIteratorOf<CFileUsageEntry> IFileUsageIterator;
+
 interface IGraphTempHandler : extends IInterface
 {
     virtual void registerFile(const char *name, graph_id graphId, unsigned usageCount, bool temp, WUFileKind fileKind=WUFileStandard, StringArray *clusters=NULL) = 0;
@@ -175,6 +175,9 @@ public:
     void connect(CActivityBase *activity);
 };
 
+typedef CIArrayOf<CGraphDependency> CGraphDependencyArray;
+typedef IIteratorOf<CGraphDependency> IThorGraphDependencyIterator;
+
 class CIOConnection : public CInterface
 {
 public:
@@ -184,21 +187,19 @@ public:
 
     CIOConnection(CGraphElementBase *_activity, unsigned _index) : activity(_activity), index(_index) { }
 };
-class COwningSimpleIOConnection : public CIOConnection
-{
-public:
-    COwningSimpleIOConnection(CGraphElementBase *_activity, unsigned index) : CIOConnection(_activity, index) { }
-    ~COwningSimpleIOConnection() { ::Release(activity); }
-};
-
-typedef CIArrayOf<CGraphBase> CGraphArray;
-typedef CIArrayOf<CGraphDependency> CGraphDependencyArray;
 
 inline CIOConnection *Array__Member2Param(CIOConnection * src)         { return src; }
 inline void Array__Assign(CIOConnection * & dest, CIOConnection * src) { dest = src; }
 inline void Array__Destroy(CIOConnection * & next)                           { if (next) next->Release(); }
 inline CIOConnection * Array__Member2ParamPtr(CIOConnection * src)     { return src; }
 MAKEArrayOf(CIOConnection *, CIOConnection *, _CIOConnectionArray);
+
+class COwningSimpleIOConnection : public CIOConnection
+{
+public:
+    COwningSimpleIOConnection(CGraphElementBase *_activity, unsigned index) : CIOConnection(_activity, index) { }
+    ~COwningSimpleIOConnection() { ::Release(activity); }
+};
 
 class CIOConnectionArray : public _CIOConnectionArray
 {
@@ -209,7 +210,7 @@ public:
             return NULL;
         return item(i);
     }
-    const unsigned getCount()
+    unsigned getCount() const
     {
         unsigned c = 0;
         ForEachItemIn(i, *this)
@@ -222,10 +223,14 @@ public:
     }
 };
 
-class CActivityBase;
+typedef SimpleHashTableOf<CGraphBase, graph_id> CGraphTableCopy;
+typedef OwningSimpleHashTableOf<CGraphBase, graph_id> CGraphTable;
+typedef CIArrayOf<CGraphBase> CGraphArray;
+typedef CopyCIArrayOf<CGraphBase> CGraphArrayCopy;
+typedef IIteratorOf<CGraphBase> IThorGraphIterator;
+typedef ArrayIIteratorOf<const CGraphArray, CGraphBase, IThorGraphIterator> CGraphArrayIterator;
+
 class CJobBase;
-interface IThorGraphIterator;
-interface IThorGraphDependencyIterator;
 class graph_decl CGraphElementBase : public CInterface, implements IInterface
 {
 protected:
@@ -244,6 +249,8 @@ protected:
 
 public:
     IMPLEMENT_IINTERFACE;
+
+    const void *queryFindParam() const { return &queryId(); } // for SimpleHashTableOf
 
     bool alreadyUpdated, isEof, newWhichBranch;
     EclHelperFactory helperFactory;
@@ -266,7 +273,7 @@ public:
     void addAssociatedChildGraph(CGraphBase *childGraph) { associatedChildGraphs.append(*LINK(childGraph)); }
     void releaseIOs();
     void addDependsOn(CGraphBase *graph, int controlId);
-    IThorGraphDependencyIterator *getDependsIterator();
+    IThorGraphDependencyIterator *getDependsIterator() const;
     void ActPrintLog(const char *format, ...)  __attribute__((format(printf, 2, 3)));
     void ActPrintLog(IException *e, const char *format, ...) __attribute__((format(printf, 3, 4)));
 
@@ -287,7 +294,7 @@ public:
     const bool &isPrepared() const { return prepared; }
     CGraphBase &queryOwner() const { return *owner; }
     CGraphBase *queryResultsGraph() const { return resultsGraph; }
-    IThorGraphIterator *getAssociatedChildGraphs();
+    IThorGraphIterator *getAssociatedChildGraphs() const;
     IGraphTempHandler *queryTempHandler() const;
     CJobBase &queryJob() const;
     unsigned getInputs() const { return inputs.ordinality(); }
@@ -327,84 +334,22 @@ public:
 };
 
 typedef CIArrayOf<CGraphElementBase> CGraphElementArray;
-interface IThorActivityIterator : extends IIteratorOf<CGraphElementBase> { };
-typedef ArrayIteratorOf<CGraphElementArray, CGraphElementBase &> ITAArrayIterator;
-class CGraphElementArrayIterator : public CInterface, public ITAArrayIterator, implements IThorActivityIterator
+typedef CopyCIArrayOf<CGraphElementBase> CGraphElementArrayCopy;
+typedef OwningSimpleHashTableOf<CGraphElementBase, activity_id> CGraphElementTable;
+typedef IIteratorOf<CGraphElementBase> IThorActivityIterator;
+typedef ArrayIIteratorOf<const CGraphElementArray, CGraphElementBase, IThorActivityIterator> CGraphElementArrayIterator;
+class CGraphElementIterator : public CInterface, implements IThorActivityIterator
 {
+    SuperHashIteratorOf<CGraphElementBase> iter;
 public:
     IMPLEMENT_IINTERFACE;
 
-    CGraphElementArrayIterator(CGraphElementArray &array) : ITAArrayIterator(array) { }
-    virtual bool first() { return ITAArrayIterator::first(); }
-    virtual bool next() { return ITAArrayIterator::next(); }
-    virtual bool isValid() { return ITAArrayIterator::isValid(); }
-    virtual CGraphElementBase & query() { return ITAArrayIterator::query(); }
+    CGraphElementIterator(const CGraphElementTable &table) : iter(table) { }
+    virtual bool first() { return iter.first(); }
+    virtual bool next() { return iter.next(); }
+    virtual bool isValid() { return iter.isValid(); }
+    virtual CGraphElementBase & query() { return iter.query(); }
             CGraphElementBase & get() { CGraphElementBase &c = query(); c.Link(); return c; }
-};
-
-class graph_decl CGraphElementTableCopy : public SuperHashTableOf<CGraphElementBase, activity_id>
-{
-public:
-    IMPLEMENT_SUPERHASHTABLEOF_REF_FIND(CGraphElementBase, activity_id);
-
-    ~CGraphElementTableCopy() { kill(); }
-
-    virtual void onAdd(void *et) { }
-    virtual void onRemove(void *et) { }
-    virtual unsigned getHashFromElement(const void *et) const
-    {
-        return hashc((const unsigned char *) &(((CGraphElementBase *) et)->queryId()), sizeof(activity_id), 0);
-    }
-    virtual unsigned getHashFromFindParam(const void *fp) const
-    {
-        return hashc((const unsigned char *) fp, sizeof(activity_id), 0);
-    }
-    virtual const void *getFindParam(const void *et) const
-    {
-        return &(((CGraphElementBase *)et)->queryId());
-    }
-    virtual bool matchesFindParam(const void *et, const void *fp, unsigned fphash) const
-    {
-        return (((CGraphElementBase *) et)->queryId()) == *(activity_id *)fp;
-    }
-};
-
-class graph_decl CGraphElementTable : public CGraphElementTableCopy
-{
-public:
-    ~CGraphElementTable() { kill(); }
-    virtual void onRemove(void *et) { ((CGraphElementBase *)et)->Release(); }
-};
-
-class CGraphBase;
-class graph_decl CGraphTableCopy : public SuperHashTableOf<CGraphBase, graph_id>
-{
-public:
-    IMPLEMENT_SUPERHASHTABLEOF_REF_FIND(CGraphBase, graph_id);
-
-    ~CGraphTableCopy() { kill(); }
-
-    virtual void onAdd(void *et) { }
-    virtual void onRemove(void *et) { }
-    virtual unsigned getHashFromElement(const void *et) const;
-    virtual unsigned getHashFromFindParam(const void *fp) const;
-    virtual const void *getFindParam(const void *et) const;
-    virtual bool matchesFindParam(const void *et, const void *fp, unsigned fphash) const;
-};
-
-class graph_decl CGraphTable : public CGraphTableCopy
-{
-public:
-    ~CGraphTable() { kill(); }
-    virtual void onRemove(void *et);
-};
-
-interface IThorGraphIterator : extends IIteratorOf<CGraphBase>
-{
-};
-
-interface IThorGraphDependencyIterator : extends IIteratorOf<CGraphDependency>
-{
 };
 
 // Stolen from eclagent.ipp 'EclCounterMeta'
@@ -475,12 +420,12 @@ class CJobBase;
 interface IPropertyTree;
 class graph_decl CGraphBase : public CInterface, implements ILocalGraph, implements IThorChildGraph, implements IExceptionHandler
 {
-    CriticalSection crit;
+    mutable CriticalSection crit;
     CriticalSection evaluateCrit;
     CGraphElementTable containers;
     CGraphElementArray sinks;
     bool sink, complete, global;
-    int localOnly;
+    mutable int localOnly;
     activity_id parentActivityId;
     IPropertyTree *xgmml;
     CGraphTable childGraphs;
@@ -576,7 +521,7 @@ class graph_decl CGraphBase : public CInterface, implements ILocalGraph, impleme
 protected:
     CGraphBase *owner, *parent;
     Owned<IException> abortException;
-    CopyCIArrayOf<CGraphElementBase> ifs;
+    CGraphElementArrayCopy ifs;
     Owned<IPropertyTree> node;
     IBarrier *startBarrier, *waitBarrier, *doneBarrier;
     mptag_t mpTag, startBarrierTag, waitBarrierTag, doneBarrierTag;
@@ -638,29 +583,18 @@ protected:
         }
         CGraphElementBase & get() { CGraphElementBase &c = query(); c.Link(); return c; }
     };
-    class CGraphElementIterator : public CInterface, implements IThorActivityIterator
-    {
-        SuperHashIteratorOf<CGraphElementBase> iter;
-    public:
-        IMPLEMENT_IINTERFACE;
-
-        CGraphElementIterator(CGraphElementTable &table) : iter(table) { }
-        virtual bool first() { return iter.first(); }
-        virtual bool next() { return iter.next(); }
-        virtual bool isValid() { return iter.isValid(); }
-        virtual CGraphElementBase & query() { return iter.query(); }
-                CGraphElementBase & get() { CGraphElementBase &c = query(); c.Link(); return c; }
-    };
 
 public:
     IMPLEMENT_IINTERFACE;
 
     PooledThreadHandle poolThreadHandle;
-    CopyCIArrayOf<CGraphBase> dependentSubGraphs;
+    CGraphArrayCopy dependentSubGraphs;
 
     CGraphBase(CJobBase &job);
     ~CGraphBase();
     
+    const void *queryFindParam() const { return &queryGraphId(); } // for SimpleHashTableOf
+
     virtual void init() { }
     IThorActivityIterator *getTraverseIterator(bool all=false); // all traverses and includes conditionals, others traverses connected nodes only
     void GraphPrintLog(const char *msg, ...) __attribute__((format(printf, 2, 3)));
@@ -671,12 +605,12 @@ public:
     IGraphTempHandler *queryTempHandler() const { assertex(tmpHandler.get()); return tmpHandler; }
     CGraphBase *queryOwner() { return owner; }
     CGraphBase *queryParent() { return parent?parent:this; }
-    const bool isComplete() const { return complete; }
-    const bool isPrepared() const { return prepared; }
-    const bool isGlobal() const { return global; }
-    const bool isCreated() const { return created; }
-    const bool isStarted() const { return started; }
-    bool isLocalOnly(); // this graph and all upstream dependencies
+    bool isComplete() const { return complete; }
+    bool isPrepared() const { return prepared; }
+    bool isGlobal() const { return global; }
+    bool isCreated() const { return created; }
+    bool isStarted() const { return started; }
+    bool isLocalOnly() const; // this graph and all upstream dependencies
     void setCompleteEx(bool tf=true) { complete = tf; }
     const byte *setParentCtx(size32_t _parentExtractSz, const byte *parentExtract)
     {
@@ -687,7 +621,7 @@ public:
     }
     virtual ICodeContext *queryCodeContext() { return &graphCodeContext; }
     void setLoopCounter(unsigned _counter) { counter = _counter; }
-    const unsigned queryLoopCounter() const { return counter; }
+    unsigned queryLoopCounter() const { return counter; }
     virtual void setComplete(bool tf=true) { complete=tf; }
     virtual void deserializeCreateContexts(MemoryBuffer &mb);
     virtual void deserializeStartContexts(MemoryBuffer &mb);
@@ -710,7 +644,7 @@ public:
     {
         return new CGraphGraphActElementIterator(*this, *xgmml);
     }
-    IThorActivityIterator *getSinkIterator()
+    IThorActivityIterator *getSinkIterator() const
     {
         return new CGraphElementArrayIterator(sinks);
     }
@@ -769,7 +703,7 @@ public:
         CriticalBlock b(crit);
         return LINK(childGraphs.find(gid));
     }
-    IThorGraphIterator *getChildGraphs();
+    IThorGraphIterator *getChildGraphs() const;
 
     void executeChildGraphs(size32_t parentExtractSz, const byte *parentExtract);
     void doExecute(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies);
@@ -807,6 +741,20 @@ public:
 //  virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id);
     virtual IEclGraphResults *evaluate(unsigned parentExtractSz, const byte * parentExtract);
 friend class CGraphElementBase;
+};
+
+class CGraphTableIterator : public CInterface, implements IThorGraphIterator
+{
+    SuperHashIteratorOf<CGraphBase> iter;
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CGraphTableIterator(const CGraphTable &table) : iter(table) { }
+    virtual bool first() { return iter.first(); }
+    virtual bool next() { return iter.next(); }
+    virtual bool isValid() { return iter.isValid(); }
+    virtual CGraphBase & query() { return iter.query(); }
+            CGraphBase & get() { CGraphBase &c = query(); c.Link(); return c; }
 };
 
 interface IGraphExecutor : extends IInterface
@@ -929,7 +877,7 @@ public:
     const offset_t queryMaxDiskUsage() const { return maxDiskUsage; }
     mptag_t querySlaveMpTag() const { return slavemptag; }
     mptag_t queryJobMpTag() const { return mpJobTag; }
-    const unsigned querySlaves() const { return slaveGroup->ordinality(); }
+    unsigned querySlaves() const { return slaveGroup->ordinality(); }
     ICommunicator &queryJobComm() const { return *jobComm; }
     IGroup &queryJobGroup() const { return *jobGroup; }
     const bool &queryTimeActivities() const { return timeActivities; }
