@@ -289,7 +289,7 @@ public:
     const char *queryOrigin() { return origin; }
     const char *queryMessage() { return msg; }
     WUExceptionSeverity querySeverity() { return severity; }
-    const bool queryNotified() const { return notified; }
+    bool queryNotified() const { return notified; }
     MemoryBuffer &queryData() { return data; }
     void setNotified() { notified = true; }
     void setActivityId(activity_id _id) { id = _id; }
@@ -856,7 +856,7 @@ void setClusterGroup(IGroup *group)
     dfsGroup = createIGroup(nodes.ordinality(), nodes.getArray());
     clusterComm = createCommunicator(clusterGroup);
 }
-const bool clusterInitialized() { return NULL != clusterComm; }
+bool clusterInitialized() { return NULL != clusterComm; }
 ICommunicator &queryClusterComm() { return *clusterComm; }
 IGroup &queryClusterGroup() { return *clusterGroup; }
 IGroup &querySlaveGroup() { return *slaveGroup; }

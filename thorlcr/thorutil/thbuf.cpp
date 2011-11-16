@@ -811,8 +811,8 @@ public:
         chunk = _chunk;
         rows.clear();
     }
-    inline const unsigned queryChunk() { return chunk; }
-    inline const unsigned getRowCount() const { return rows.ordinality(); }
+    inline unsigned queryChunk() const { return chunk; }
+    inline unsigned getRowCount() const { return rows.ordinality(); }
     inline void addRow(const void *row) { rows.append(row); }
     inline const void *getRow(unsigned r)
     {

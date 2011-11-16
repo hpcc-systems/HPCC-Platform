@@ -92,7 +92,7 @@ public:
         readers = true;
         return rowBuffer->getReader();
     }
-    virtual const bool isLocal() const { return local; }
+    virtual bool isLocal() const { return local; }
     virtual IOutputMetaData *queryMeta() { return meta; }
     virtual void getResult(size32_t &len, void * & data)
     {
@@ -176,7 +176,7 @@ class CThorGraphResults : public CInterface, implements IThorGraphResults
         virtual void setResultStream(IRowWriterMultiReader *stream, rowcount_t count) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual IRowStream *getRowStream() { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual IOutputMetaData *queryMeta() { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
-        virtual const bool isLocal() const { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
+        virtual bool isLocal() const { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual void getResult(size32_t & retSize, void * & ret) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual void getLinkedResult(unsigned & count, byte * * & ret) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
     };
@@ -456,14 +456,14 @@ void CGraphElementBase::addDependsOn(CGraphBase *graph, int controlId)
     dependsOn.append(*new CGraphDependency(graph, controlId));
 }
 
-IThorGraphIterator *CGraphElementBase::getAssociatedChildGraphs()
+IThorGraphIterator *CGraphElementBase::getAssociatedChildGraphs() const
 {
-    return new ArrayIIteratorOf<CGraphArray, CGraphBase, IThorGraphIterator>(associatedChildGraphs);
+    return new CGraphArrayIterator(associatedChildGraphs);
 }
 
-IThorGraphDependencyIterator *CGraphElementBase::getDependsIterator()
+IThorGraphDependencyIterator *CGraphElementBase::getDependsIterator() const
 {
-    return new ArrayIIteratorOf<CGraphDependencyArray, CGraphDependency, IThorGraphDependencyIterator>(dependsOn);
+    return new ArrayIIteratorOf<const CGraphDependencyArray, CGraphDependency, IThorGraphDependencyIterator>(dependsOn);
 }
 
 void CGraphElementBase::reset()
@@ -832,46 +832,8 @@ ICodeContext *CGraphElementBase::queryCodeContext()
 {
     return queryOwner().queryCodeContext();
 }
-/////
-
-unsigned CGraphTableCopy::getHashFromElement(const void *et) const
-{
-    return hashc((const unsigned char *) &(((CGraphBase *) et)->queryGraphId()), sizeof(graph_id), 0);
-}
-
-unsigned CGraphTableCopy::getHashFromFindParam(const void *fp) const
-{
-    return hashc((const unsigned char *) fp, sizeof(graph_id), 0);
-}
-
-const void *CGraphTableCopy::getFindParam(const void *et) const
-{
-    return &(((CGraphBase *)et)->queryGraphId());
-}
-
-bool CGraphTableCopy::matchesFindParam(const void *et, const void *fp, unsigned fphash) const
-{
-    return (((CGraphBase *) et)->queryGraphId()) == *(graph_id *)fp;
-}
 
 /////
-
-void CGraphTable::onRemove(void *et) { ((CGraphBase *)et)->Release(); }
-
-/////
-
-class CSubGraphIterator : public CInterface, implements IThorGraphIterator
-{
-    SuperHashIteratorOf<CGraphBase> iter;
-public:
-    IMPLEMENT_IINTERFACE;
-
-    CSubGraphIterator(CGraphTable &table) : iter(table) { }
-    virtual bool first() { return iter.first(); }
-    virtual bool next() { return iter.next(); }
-    virtual bool isValid() { return iter.isValid(); }
-    virtual CGraphBase & query() { return iter.query(); }
-};
 
 // JCSMORE loop - probably need better way to check if any act in graph is global(meaning needs some synchronization between slaves in activity execution)
 bool isGlobalActivity(CGraphElementBase &container)
@@ -1175,10 +1137,10 @@ void CGraphBase::addChildGraph(CGraphBase &graph)
     job.associateGraph(graph);
 }
 
-IThorGraphIterator *CGraphBase::getChildGraphs()
+IThorGraphIterator *CGraphBase::getChildGraphs() const
 {
     CriticalBlock b(crit);
-    return new CSubGraphIterator(childGraphs);
+    return new CGraphTableIterator(childGraphs);
 }
 
 bool CGraphBase::fireException(IException *e)
@@ -1406,7 +1368,7 @@ protected:
     CGraphBase &graph;
     Linked<CGraphElementBase> cur;
     CIArrayOf<CGraphElementBase> others;
-    CopyCIArrayOf<CGraphElementBase> covered;
+    CGraphElementArrayCopy covered;
 
     CGraphElementBase *popNext()
     {
@@ -1900,8 +1862,8 @@ IEclGraphResults *CGraphBase::evaluate(unsigned _parentExtractSz, const byte *pa
     return LINK(localResults);
 }
 
-static bool isLocalOnly(CGraphElementBase &activity);
-static bool isLocalOnly(CGraphBase &graph) // checks all dependencies, if something needs to be global, whole body is forced to be execution sync.
+static bool isLocalOnly(const CGraphElementBase &activity);
+static bool isLocalOnly(const CGraphBase &graph) // checks all dependencies, if something needs to be global, whole body is forced to be execution sync.
 {
     if (0 == graph.activityCount())
     {
@@ -1931,7 +1893,7 @@ static bool isLocalOnly(CGraphBase &graph) // checks all dependencies, if someth
     return true;
 }
 
-static bool isLocalOnly(CGraphElementBase &activity)
+static bool isLocalOnly(const CGraphElementBase &activity)
 {
     Owned<IThorGraphDependencyIterator> deps = activity.getDependsIterator();
     ForEach(*deps)
@@ -1951,7 +1913,7 @@ static bool isLocalOnly(CGraphElementBase &activity)
     return true;
 }
 
-bool CGraphBase::isLocalOnly() // checks all dependencies, if something needs to be global, whole body is forced to be execution sync.
+bool CGraphBase::isLocalOnly() const // checks all dependencies, if something needs to be global, whole body is forced to be execution sync.
 {
     if (-1 == localOnly)
         localOnly = (int)::isLocalOnly(*this);
@@ -2348,7 +2310,7 @@ void CJobBase::clean()
 IThorGraphIterator *CJobBase::getSubGraphs()
 {
     CriticalBlock b(crit);
-    return new CSubGraphIterator(subGraphs);
+    return new CGraphTableIterator(subGraphs);
 }
 
 static void getGlobalDeps(CGraphBase &graph, CopyCIArrayOf<CGraphDependency> &deps)
@@ -2370,8 +2332,8 @@ static void getGlobalDeps(CGraphBase &graph, CopyCIArrayOf<CGraphDependency> &de
 
 void CJobBase::addDependencies(IPropertyTree *xgmml, bool failIfMissing)
 {
-    CopyCIArrayOf<CGraphBase> childGraphs;
-    CopyCIArrayOf<CGraphElementBase> targetActivities;
+    CGraphArrayCopy childGraphs;
+    CGraphElementArrayCopy targetActivities;
 
     Owned<IPropertyTreeIterator> iter = xgmml->getElements("edge");
     ForEach(*iter)
