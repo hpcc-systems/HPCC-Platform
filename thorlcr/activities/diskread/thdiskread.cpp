@@ -78,7 +78,7 @@ public:
     virtual void done()
     {
         IHThorDiskReadBaseArg *helper = (IHThorDiskReadBaseArg *)queryHelper();
-        if (actStarted && 0 != (helper->getFlags() & TDXtemporary) && !container.queryJob().queryUseCheckpoints())
+        if (0 != (helper->getFlags() & TDXtemporary) && !container.queryJob().queryUseCheckpoints())
             container.queryTempHandler()->deregisterFile(helper->getFileName(), fileDesc->queryProperties().getPropBool("@pausefile"));
     }
     virtual void init()

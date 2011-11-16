@@ -719,11 +719,6 @@ void CGraphElementBase::preStart(size32_t parentExtractSz, const byte *parentExt
     activity->preStart(parentExtractSz, parentExtract);
 }
 
-void CGraphElementBase::start()
-{
-    queryActivity()->startProcess();
-}
-
 void CGraphElementBase::initActivity()
 {
     if (activity)
@@ -1167,8 +1162,10 @@ void CGraphBase::reset()
             element.reset();
         }
     }
-    job.queryTimeReporter().reset();
-    clearNodeStats();
+    if (!queryOwner() || isGlobal())
+        job.queryTimeReporter().reset();
+    if (!queryOwner())
+        clearNodeStats();
 }
 
 void CGraphBase::addChildGraph(CGraphBase &graph)
@@ -1198,16 +1195,6 @@ bool CGraphBase::preStart(size32_t parentExtractSz, const byte *parentExtract)
         element.preStart(parentExtractSz, parentExtract);
     }
     return true;
-}
-
-void CGraphBase::start()
-{
-    Owned<IThorActivityIterator> iter = getTraverseIterator();
-    ForEach (*iter)
-    {
-        CGraphElementBase &act = iter->query();
-        act.start();
-    }
 }
 
 void CGraphBase::executeSubGraph(size32_t parentExtractSz, const byte *parentExtract)
@@ -1305,7 +1292,6 @@ void CGraphBase::doExecute(size32_t parentExtractSz, const byte *parentExtract, 
         }
         if (!preStart(parentExtractSz, parentExtract)) return;
         start();
-        postStart();
         if (!wait(aborted?MEDIUMTIMEOUT:INFINITE)) // can't wait indefinetely, query may have aborted and stall, but prudent to wait a short time for underlying graphs to unwind.
             GraphPrintLogEx(this, thorlog_null, MCuserWarning, "Graph wait cancelled, aborted=%s", aborted?"true":"false");
         graphDone = true;
@@ -1685,6 +1671,7 @@ void CGraphBase::createFromXGMML(IPropertyTree *_node, CGraphBase *_owner, CGrap
     sink = xgmml->getPropBool("att[@name=\"rootGraph\"]/@value", false);
     graphId = node->getPropInt("@id");
     global = false;
+    localOnly = -1; // unset
     parentActivityId = node->getPropInt("att[@name=\"_parentActivity\"]/@value", 0);
 
     CGraphBase *graphContainer = this;
@@ -1966,7 +1953,9 @@ static bool isLocalOnly(CGraphElementBase &activity)
 
 bool CGraphBase::isLocalOnly() // checks all dependencies, if something needs to be global, whole body is forced to be execution sync.
 {
-    return ::isLocalOnly(*this);
+    if (-1 == localOnly)
+        localOnly = (int)::isLocalOnly(*this);
+    return 1==localOnly;
 }
 
 ////
@@ -2551,7 +2540,7 @@ IThorResource &queryThor()
 CActivityBase::CActivityBase(CGraphElementBase *_container) : container(*_container), timeActivities(_container->queryJob().queryTimeActivities())
 {
     mpTag = TAG_NULL;
-    abortSoon = actStarted = cancelledReceive = false;
+    abortSoon = cancelledReceive = false;
     baseHelper.set(container.queryHelper());
     parentExtractSz = 0;
     parentExtract = NULL;

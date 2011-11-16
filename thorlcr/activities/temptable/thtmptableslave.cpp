@@ -30,7 +30,7 @@ private:
     bool eof;
     unsigned currentRow;
     size32_t maxrecsize;
-    bool isLocal, isLocalCache;
+    bool isLocal;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
@@ -39,7 +39,7 @@ public:
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         appendOutputLinked(this);
-        isLocalCache = isLocal = false;
+        isLocal = false;
         helper = static_cast <IHThorTempTableArg *> (queryHelper());
     }
     void start()
@@ -47,11 +47,7 @@ public:
         ActivityTimer s(totalCycles, timeActivities, NULL);
         dataLinkStart("TEMPTABLE", container.queryId());
         currentRow = 0;
-        if (!isLocalCache)
-        {
-            isLocalCache = true;
-            isLocal = container.queryOwnerId() && container.queryOwner().isLocalOnly();
-        }
+        isLocal = container.queryOwnerId() && container.queryOwner().isLocalOnly();
         eof = isLocal ? false : (container.queryJob().queryMyRank()>1);
     }
     void stop()

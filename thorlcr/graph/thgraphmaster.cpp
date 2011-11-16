@@ -306,11 +306,12 @@ void CSlaveMessageHandler::main()
 
 //////////////////////
 
-CMasterActivity::CMasterActivity(CGraphElementBase *_container) : CActivityBase(_container), threaded("CMasterActivity")
+CMasterActivity::CMasterActivity(CGraphElementBase *_container) : CActivityBase(_container), threaded("CMasterActivity", this)
 {
     notedWarnings = createBitSet();
     mpTag = TAG_NULL;
     data = new MemoryBuffer[container.queryJob().querySlaves()];
+    asyncStart = false;
     if (container.isSink())
         progressInfo.append(*new ProgressInfo);
     else
@@ -323,7 +324,7 @@ CMasterActivity::CMasterActivity(CGraphElementBase *_container) : CActivityBase(
 
 CMasterActivity::~CMasterActivity()
 {
-    if (actStarted)
+    if (asyncStart)
         threaded.join();
     notedWarnings->Release();
     container.queryJob().freeMPTag(mpTag);
@@ -365,14 +366,21 @@ void CMasterActivity::main()
     }
 }
 
-void CMasterActivity::startProcess()
+void CMasterActivity::startProcess(bool async)
 {
-    CActivityBase::startProcess();
-    threaded.init(this);
+    if (async)
+    {
+        asyncStart = true;
+        threaded.start();
+    }
+    else
+        main();
 }
 
 bool CMasterActivity::wait(unsigned timeout)
 {
+    if (!asyncStart)
+        return true;
     return threaded.join(timeout);
 }
 
@@ -402,6 +410,7 @@ bool CMasterActivity::fireException(IException *_e)
 
 void CMasterActivity::reset()
 {
+    asyncStart = false;
     CActivityBase::reset();
 }
 
@@ -1957,6 +1966,13 @@ void CMasterGraph::create(size32_t parentExtractSz, const byte *parentExtract)
             }
         }
     }
+}
+
+void CMasterGraph::start()
+{
+    Owned<IThorActivityIterator> iter = getTraverseIterator();
+    ForEach (*iter)
+        iter->query().queryActivity()->startProcess();
 }
 
 void CMasterGraph::sendActivityInitData()
