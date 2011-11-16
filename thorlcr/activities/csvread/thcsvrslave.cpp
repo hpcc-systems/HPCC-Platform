@@ -42,6 +42,11 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
     Owned<IRowStream> out;
     rowcount_t limit;
     rowcount_t stopAfter;
+    unsigned headerLines;
+    OwnedMalloc<unsigned> headerLinesRemaining, localLastPart;
+    Owned<IBitSet> gotHeaderLines, sentHeaderLines;
+    ISuperFileDescriptor *superFDesc;
+    unsigned subFiles;
 
     class CCsvPartHandler : public CDiskPartHandlerBase
     {
@@ -107,31 +112,30 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
                 iFileIO.setown(iFile->open(IFOread));
 
             inputStream.setown(createFileSerialStream(iFileIO));
-            unsigned pnum = partDesc->queryPartIndex();
-            ISuperFileDescriptor *superFDesc = partDesc->queryOwner().querySuperFileDescriptor();
-            if (superFDesc)
+            if (activity.headerLines)
             {
-                unsigned subfile;
-                unsigned lnum;
-                if (superFDesc->mapSubPart(pnum, subfile, lnum))
+                unsigned subFile = 0;
+                unsigned pnum = partDesc->queryPartIndex();
+                if (activity.superFDesc)
+                {
+                    unsigned lnum;
+                    if (!activity.superFDesc->mapSubPart(pnum, subFile, lnum))
+                        throwUnexpected(); // was validated earlier
                     pnum = lnum;
-                else
-                {
-                    IThorException *e = MakeActivityWarning(&activity, 0, "mapSubPart failed, file=%s, partnum=%d", activity.logicalFilename.get(), pnum);
-                    EXCLOG(e, NULL);
                 }
-            }
-            if (0==pnum)
-            {
-                //Skip header lines.... but only on the first part.
-                unsigned lines = activity.helper->queryCsvParameters()->queryHeaderLen();
-                while (lines--)
+                unsigned &headerLinesRemaining = activity.getHeaderLines(subFile);
+                if (headerLinesRemaining)
                 {
-                    unsigned lineLength = splitLine();
-                    if (0 == lineLength)
-                        break;
-                    inputStream->skip(lineLength);
+                    do
+                    {
+                        unsigned lineLength = splitLine();
+                        if (0 == lineLength)
+                            break;
+                        inputStream->skip(lineLength);
+                    }
+                    while (--headerLinesRemaining);
                 }
+                activity.sendHeaderLines(subFile, pnum);
             }
         }
         virtual void close(CRC32 &fileCRC)
@@ -139,7 +143,6 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
             inputStream.clear();
             fileCRC = inputCRC;
         }
-
         const void *nextRow()
         {
             RtlDynamicRowBuilder row(allocator);
@@ -160,12 +163,131 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
                 }
             }
         }
-
         offset_t getLocalOffset() { return localOffset; }
-
-
     };
 
+    unsigned &getHeaderLines(unsigned subFile)
+    {
+        if (headerLinesRemaining[subFile])
+        {
+            if (!gotHeaderLines->test(subFile))
+            {
+                bool gotWanted = false;
+                CMessageBuffer msgMb;
+                loop
+                {
+                    if (!receiveMsg(msgMb, container.queryJob().queryMyRank()-1, mpTag) || 0 == msgMb.length())
+                    {
+                        // all [remaining] headers read, or abort
+                        // may potentially zero out previously received headers, but ok
+                        unsigned hL=0;
+                        for (; hL<subFiles; hL++)
+                        {
+                            headerLinesRemaining[hL] = 0;
+                            gotHeaderLines->set(hL);
+                        }
+                        break;
+                    }
+                    else
+                    {
+                        unsigned which;
+                        loop
+                        {
+                            msgMb.read(which);
+                            assertex(!gotHeaderLines->testSet(which));
+                            msgMb.read(headerLinesRemaining[which]);
+                            if (subFile == which)
+                            {
+                                assertex(!gotWanted);
+                                gotWanted = true;
+                            }
+                            if (0 == msgMb.remaining())
+                                break;
+                        }
+                        if (gotWanted)
+                            break;
+                    }
+                }
+            }
+        }
+        return headerLinesRemaining[subFile];
+    }
+    void sendAllDone()
+    {
+        CMessageBuffer msgMb;
+        unsigned s=container.queryJob().queryMyRank();
+        while (s<container.queryJob().querySlaves())
+        {
+            ++s;
+            container.queryJob().queryJobComm().send(msgMb, s, mpTag);
+        }
+        // mark any unmarked as sent
+        unsigned which = sentHeaderLines->scanInvert(0, false);
+        while (which < subFiles)
+            which = sentHeaderLines->scanInvert(which+1, false);
+    }
+    void sendHeaderLines(unsigned subFile, unsigned part)
+    {
+        if (0 == headerLinesRemaining[subFile])
+        {
+            if (sentHeaderLines->testSet(subFile))
+                return;
+            unsigned which = gotHeaderLines->scan(0, false);
+            if (which == subFiles) // all received
+            {
+                bool someLeft=false;
+                unsigned hL=0;
+                for (; hL<subFiles; hL++)
+                {
+                    if (headerLinesRemaining[hL])
+                    {
+                        someLeft = true;
+                        break;
+                    }
+                }
+                if (!someLeft)
+                {
+                    sendAllDone();
+                    return;
+                }
+            }
+        }
+        else
+        {
+            if (localLastPart[subFile] != part) // only ready to send if last local part
+                return;
+            if (sentHeaderLines->testSet(subFile))
+                return;
+        }
+        CMessageBuffer msgMb;
+        msgMb.append(subFile);
+        msgMb.append(headerLinesRemaining[subFile]);
+        container.queryJob().queryJobComm().send(msgMb, container.queryJob().queryMyRank()+1, mpTag);
+    }
+    void sendRemainingHeaderLines()
+    {
+        if (!headerLines)
+            return;
+        unsigned which = sentHeaderLines->scanInvert(0, false);
+        if (which < subFiles)
+        {
+            CMessageBuffer msgMb;
+            bool someLeft=false;
+            do
+            {
+                if (0 != headerLinesRemaining[which])
+                    someLeft = true;
+                msgMb.append(which);
+                msgMb.append(headerLinesRemaining[which]);
+                which = sentHeaderLines->scanInvert(which+1, false);
+            }
+            while (which < subFiles);
+            if (someLeft)
+                container.queryJob().queryJobComm().send(msgMb, container.queryJob().queryMyRank()+1, mpTag);
+            else
+                sendAllDone();
+        }
+    }
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
@@ -177,6 +299,9 @@ public:
             limit = RCMAX;
         else
             limit = (rowcount_t)helper->getRowLimit();
+        headerLines = helper->queryCsvParameters()->queryHeaderLen();
+        superFDesc = NULL;
+        subFiles = 0;
     }
 
 // IThorSlaveActivity
@@ -192,6 +317,31 @@ public:
             if (b) data.read(csvSeparate);
             data.read(b);
             if (b) data.read(csvTerminate);
+        }
+        if (headerLines)
+        {
+            mpTag = container.queryJob().deserializeMPTag(data);
+            data.read(subFiles);
+            superFDesc = partDescs.ordinality() ? partDescs.item(0).queryOwner().querySuperFileDescriptor() : NULL;
+            localLastPart.allocateN(subFiles, true);
+            ForEachItemIn(p, partDescs)
+            {
+                IPartDescriptor &partDesc = partDescs.item(p);
+                unsigned subFile = 0;
+                unsigned pnum = partDesc.queryPartIndex();
+                if (superFDesc)
+                {
+                    unsigned lnum;
+                    if (!superFDesc->mapSubPart(pnum, subFile, lnum))
+                        throw MakeActivityException(this, 0, "mapSubPart failed, file=%s, partnum=%d", logicalFilename.get(), pnum);
+                    pnum = lnum;
+                }
+                if (pnum > localLastPart[subFile]) // don't think they can really be out of order
+                    localLastPart[subFile] = pnum;
+            }
+            headerLinesRemaining.allocateN(subFiles);
+            gotHeaderLines.setown(createBitSet());
+            sentHeaderLines.setown(createBitSet());
         }
         partHandler.setown(new CCsvPartHandler(*this));
         appendOutputLinked(this);
@@ -215,34 +365,58 @@ public:
         }
         info = cachedMetaInfo;
     }
-
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities, NULL);
         OwnedConstThorRow row = out->nextRow();
-        if (!row)
-            return NULL;
-        rowcount_t c = getDataLinkCount();
-        if (stopAfter && (c >= stopAfter)) // NB: only slave limiter, global performed in chained choosen activity 
-            return NULL;
-        if (c >= limit) // NB: only slave limiter, global performed in chained limit activity
+        if (row)
         {
-            helper->onLimitExceeded();
-            return NULL;
+            rowcount_t c = getDataLinkCount();
+            if (0 == stopAfter || (c < stopAfter)) // NB: only slave limiter, global performed in chained choosen activity
+            {
+                if (c < limit) // NB: only slave limiter, global performed in chained limit activity
+                {
+                    dataLinkIncrement();
+                    return row.getClear();
+                }
+                helper->onLimitExceeded();
+            }
         }
-        dataLinkIncrement();
-        return row.getClear();
+        sendRemainingHeaderLines();
+        return NULL;
     }
     virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
+        if (headerLines)
+        {
+            bool noSend = container.queryLocal() || lastNode();
+            bool got = container.queryLocal() || firstNode();
+            sentHeaderLines->reset();
+            gotHeaderLines->reset();
+            unsigned hL=0;
+            for (; hL<subFiles; hL++)
+            {
+                headerLinesRemaining[hL] = headerLines;
+                if (got)
+                    gotHeaderLines->set(hL);
+                if (noSend)
+                    sentHeaderLines->set(hL);
+            }
+        }
         out.setown(createSequentialPartHandler(partHandler, partDescs, false));
         dataLinkStart("CCsvReadSlaveActivity", container.queryId());
     }
     virtual void stop()
     {
+        sendRemainingHeaderLines();
         out.clear();
         dataLinkStop();
+    }
+    void abort()
+    {
+        CDiskReadSlaveActivityBase::abort();
+        cancelReceiveMsg(container.queryJob().queryMyRank()-1, mpTag);
     }
     virtual bool isGrouped() { return false; }
 
