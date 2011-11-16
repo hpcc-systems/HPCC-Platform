@@ -67,6 +67,7 @@ protected:
     StringBuffer    compilerOptions;
     StringAttr      libraryOptions;
     StringBuffer    linkerOptions;
+    StringBuffer    linkerLibraries;
     StringAttr      sourceDir;
     StringAttr      targetDir;
     StringArray     allSources;
