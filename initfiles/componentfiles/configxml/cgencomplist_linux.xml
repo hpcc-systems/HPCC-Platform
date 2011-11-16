@@ -105,9 +105,6 @@
 <Component name="ws_ecl" processName='EspService' schema='esp_service_wsecl2.xsd' deployable='no'>
     <File name="@temp/esp_service.xsl" method="esp_service_module"/>
   </Component>  
-  <Component name="ws_roxieconfig" processName='EspService' schema='esp_service_roxieconfig.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module"/>
-  </Component>
   <Component name="ws_ssn" processName='EspService' schema='ws_ssn.xsd' deployable='no'>
     <File name="@temp/esp_service.xsl" method="esp_service_module" destName="ws_ssn.xml" destPath="@temp"/>
   </Component>
