@@ -52,7 +52,8 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   set (USE_OPENSSL 1)      # option(USE_OPENSSL "Configure use of OpenSSL" ON)
   option(USE_ZLIB "Configure use of zlib" ON)
   option(USE_NATIVE_LIBRARIES "Search standard OS locations for thirdparty libraries" ON)
-  option(USE_GIT_DESCRIBE "Use git describe to generate BUILD_TAG" OFF)
+  option(USE_GIT_DESCRIBE "Use git describe to generate build tag" ON)
+  option(CHECK_GIT_TAG "Require git tag to match the generated build tag" OFF)
 
   option(PORTALURL "Set url to hpccsystems portal download page")
 
