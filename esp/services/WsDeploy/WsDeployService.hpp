@@ -288,6 +288,7 @@ public:
     virtual bool rollbackEnvironmentForCloud(IEspContext &context, IEspRollbackEnvironmentForCloudRequest &req, IEspRollbackEnvironmentForCloudResponse &resp);
     virtual bool notifyInitSystemSaveEnvForCloud(IEspContext &context, IEspNotifyInitSystemSaveEnvForCloudRequest &req, IEspNotifyInitSystemSaveEnvForCloudResponse &resp);
     virtual bool getSummary(IEspContext &context, IEspGetSummaryRequest &req, IEspGetSummaryResponse &resp);
+    virtual bool addReqdComps(IEspContext &context, IEspAddReqdCompsRequest &req, IEspAddReqdCompsResponse &resp);
     
     void environmentUpdated()
     {
@@ -325,9 +326,10 @@ private:
     void checkForRefresh(IEspContext &context, IConstWsDeployReqInfo *reqInfo, bool checkWriteAccess);
     IPropertyTree* getEnvTree(IEspContext &context, IConstWsDeployReqInfo *reqInfo);
     void activeUserNotResponding();
-    void saveEnvironment(IEspContext* pContext, IConstWsDeployReqInfo *reqInfo, bool saveAs = false);
+    void saveEnvironment(IEspContext* pContext, IConstWsDeployReqInfo *reqInfo, StringBuffer& errMsg, bool saveAs = false);
     void unlockEnvironment(IEspContext* pContext, IConstWsDeployReqInfo *reqInfo, const char* xmlarg, StringBuffer& sbMsg, bool saveEnv = false);
     void setEnvironment(IEspContext &context, IConstWsDeployReqInfo *reqInfo, const char* newEnv, const char* fnName, StringBuffer& sbBackup, bool validate = true, bool updateDali = true);
+    bool checkForRequiredComponents(IPropertyTree* pEnvRoot, const char* ip, StringBuffer& reqdCompNames, bool autoAdd=false);
   
     Owned<CSdsSubscription>   m_pSubscription;
     Owned<IConstEnvironment>  m_constEnvRdOnly;
@@ -720,6 +722,7 @@ public:
     virtual bool onRollbackEnvironmentForCloud(IEspContext &context, IEspRollbackEnvironmentForCloudRequest &req, IEspRollbackEnvironmentForCloudResponse &resp);
     virtual bool onNotifyInitSystemSaveEnvForCloud(IEspContext &context, IEspNotifyInitSystemSaveEnvForCloudRequest &req, IEspNotifyInitSystemSaveEnvForCloudResponse &resp);
     virtual bool onGetSummary(IEspContext &context, IEspGetSummaryRequest &req, IEspGetSummaryResponse &resp);
+    virtual bool onAddReqdComps(IEspContext &context, IEspAddReqdCompsRequest &req, IEspAddReqdCompsResponse &resp);
 
     void getNavigationData(IEspContext &context, IPropertyTree* pData);
     CWsDeployFileInfo* getFileInfo(const char* fileName, bool addIfNotFound=false, bool createFile = false);

@@ -346,6 +346,7 @@ protected:
     bool       m_createIni;
     bool       m_abort;
     bool m_useSSHIfDefined;
+    bool m_instanceCheck;
 };
 
 

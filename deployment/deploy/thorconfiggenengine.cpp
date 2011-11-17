@@ -38,6 +38,7 @@ CThorConfigGenEngine::CThorConfigGenEngine(IEnvDeploymentEngine& envDepEngine,
 //---------------------------------------------------------------------------
 void CThorConfigGenEngine::check()
 {
+   m_instanceCheck = false;
    CDeploymentEngine::check();
 
    const char* dali  = m_process.queryProp("@daliServers");

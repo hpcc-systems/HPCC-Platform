@@ -83,6 +83,7 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/roxievars_linux.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/sasha.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/eclcc.xsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/validateAll.xsl
 )
     Install ( FILES ${iFILES} DESTINATION ${OSSDIR}/componentfiles/configxml COMPONENT Runtime)
 ENDFOREACH ( iFILES )
