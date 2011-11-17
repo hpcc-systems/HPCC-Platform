@@ -1925,6 +1925,33 @@ void CClientSDSManager::setConfigOpt(const char *opt, const char *value)
     }
 }
 
+#define MIN_QUERYCOUNT_SVER "3.8"
+unsigned CClientSDSManager::queryCount(const char *xpath)
+{
+    CDaliVersion serverVersionNeeded(MIN_QUERYCOUNT_SVER);
+    if (queryDaliServerVersion().compare(serverVersionNeeded) < 0)
+        throw MakeSDSException(SDSExcpt_VersionMismatch, "Requires dali server version >= " MIN_QUERYCOUNT_SVER " for queryCount(<xpath>)");
+
+    CMessageBuffer mb;
+    mb.append((int)DAMP_SDSCMD_GETCOUNT);
+    mb.append(xpath);
+
+    if (!sendRequest(mb, true))
+        throw MakeSDSException(SDSExcpt_FailedToCommunicateWithServer, ", queryCount(%s)", xpath);
+
+    unsigned count=0;
+    SdsReply replyMsg;    
+    mb.read((int &)replyMsg);
+    if (DAMP_SDSREPLY_OK == replyMsg)
+        mb.read(count);
+    else
+    {
+        assertex(replyMsg == DAMP_SDSREPLY_ERROR);
+        throwMbException("SDS Reply Error ", mb);
+    }
+    return count;
+}
+
 //////////////
 
 ISDSManager &querySDS()
