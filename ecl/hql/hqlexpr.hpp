@@ -390,7 +390,7 @@ enum _node_operator {
     no_unused47,
     no_unused48,
     no_unused49,
-    no_unused50,
+        no_merge_nomatch,
         no_nullptr,
         no_sizeof,
         no_offsetof, 
@@ -733,7 +733,7 @@ enum _node_operator {
         no_indirect,
         no_selectindirect,
         no_nohoist,                             //purely for debugging/test generation
-    no_unused53,
+        no_merge_pending,
         no_httpcall,
         no_getenv,
         no_last_op,
