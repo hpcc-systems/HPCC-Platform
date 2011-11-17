@@ -16,6 +16,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
+#ifdef _WIN32 // Just to shut up any code-checkers on linux side
+
 #pragma warning(disable:4786)
 
 #include "win32.hpp"
@@ -77,12 +79,6 @@ extern "C" WINREMOTE_API IRemoteOutput* queryStderr()
 {
     return &stdErr;
 }
-
-
-interface IErrorReceiver
-{
-    virtual void reportError(const char* machine,const char* error)=0;
-};
 
 class ServiceTask: public CInterface, implements ITask
 {
@@ -899,3 +895,4 @@ BOOL APIENTRY DllMain(HANDLE,DWORD,LPVOID)
 {
     return TRUE;
 }
+#endif
