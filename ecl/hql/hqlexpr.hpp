@@ -498,7 +498,7 @@ enum _node_operator {
         no_setmeta,
         no_throughaggregate,
         no_joincount,
-    no_unused7,
+        no_merge_nomatch,
         no_countcompare,
         no_limit,
         no_evaluate_stmt,
@@ -732,7 +732,7 @@ enum _node_operator {
         no_indirect,
         no_selectindirect,
         no_nohoist,                             //purely for debugging/test generation
-    no_unused53,
+        no_merge_pending,
         no_httpcall,
         no_getenv,
         no_last_op,
