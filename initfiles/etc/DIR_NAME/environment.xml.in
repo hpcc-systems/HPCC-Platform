@@ -725,7 +725,6 @@
               buildSet="espsmc"
               description="ESP services for SMC"
               disableUppercaseTranslation="false"
-              eclServer="myeclccserver"
               enableSystemUseRewrite="false"
               excludePartitions="/,/dev*,/sys,/usr,/proc/*"
               monitorDaliFileServer="false"
