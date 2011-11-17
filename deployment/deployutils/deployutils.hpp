@@ -83,5 +83,5 @@ extern DEPLOYUTILS_API void getSummary(const IPropertyTree* pEnvRoot, StringBuff
 extern DEPLOYUTILS_API void mergeAttributes(IPropertyTree* pTo, IPropertyTree* pFrom);
 extern DEPLOYUTILS_API void addEspBindingInformation(const char* xmlArg, IPropertyTree* pEnvRoot, StringBuffer& sbNewName, IConstEnvironment* pConstEnv);
 extern DEPLOYUTILS_API bool updateDirsWithConfSettings(IPropertyTree* pEnvRoot, IProperties* pParams, bool ovrLog = true, bool ovrRun = true);
-extern DEPLOYUTILS_API bool validateEnv(IConstEnvironment* pConstEnv);
+extern DEPLOYUTILS_API bool validateEnv(IConstEnvironment* pConstEnv, bool abortOnException = true);
 #endif

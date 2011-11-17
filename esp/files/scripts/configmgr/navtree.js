@@ -1579,10 +1579,32 @@ function unlockEnvironment(navtable, saveEnv) {
           var isErr = false;
           if (temp.length > 0) {
             var temp1 = temp[1].split(/<\/XmlArgs>/g);
-            if (temp1.length > 0 && temp1[0].length > 0 && temp1[0].charAt(0) != '<') {
-              isErr = true;
-              updateEnvCtrls(true);
-              alert(temp1[0]);
+            if (temp1.length > 0 && temp1[0].length > 0) {
+              if (temp1[0].indexOf("<Warning>") === 0) {
+                var warning = o.responseText.split(/<Warning>/g);
+                if (warning.length > 0) {
+                  var warning1 = warning[1].split(/<\/Warning>/g);
+                  if (warning1.length > 0 && warning1[0].length > 0 && warning1[0].charAt(0) != '<')
+                  {
+                    alert(warning1[0]);
+                    var err = o.responseText.split(/<\/Warning>/g);
+                    if (err.length > 1) {
+                      var err1 = err[1].split(/<\/XmlArgs>/g);
+                      if (err1.length > 0 && err1[0].length > 0 && err1[0].charAt(0) != '<') {
+                        isErr = true;
+                        updateEnvCtrls(true);
+                        alert(err1[0]);
+                      }
+                    }
+                  }
+                }
+              }
+              else if (temp1[0].charAt(0) != '<')
+              {
+                isErr = true;
+                updateEnvCtrls(true);
+                alert(temp1[0]);
+              }
             }
           }
 
@@ -1735,6 +1757,14 @@ function saveEnvironment(saveas) {
           if (LastSaved1[0].charAt(0) != '<')
             form.lastSaved.value = LastSaved1[0];
 
+          var xmlargs = o.responseText.split(/<XmlArgs>/g);
+          if (xmlargs.length > 0) {
+            var xmlargs1 = xmlargs[1].split(/<\/XmlArgs>/g);
+            if (xmlargs1.length > 0 && xmlargs1[0].length > 0 && xmlargs1[0].charAt(0) != '<') {
+              promptValidationErrs(xmlargs1[0]);
+            }
+          }
+
           refresh();
           form.saveInProgress.value = "false";
         }
@@ -1818,7 +1848,7 @@ function validateEnvironment() {
         if (o.responseText.indexOf("<html") === 0) {
           var temp = o.responseText.split(/td align=\"left\">/g);
           var temp1 = temp[1].split(/<\/td>/g);
-          alert(temp1[0]);
+          promptValidationErrs(temp1[0]);
         }
       }
       else {
@@ -2059,11 +2089,62 @@ function displayAddInstanceDlg() {
             alert("Cannot add instances for the following computers as there can be only one instance of a component per computer.\n" + dup1[0]);
           }
         }
+
+        var reqdcomps = o.responseText.split(/<AddReqdComps>/g);
+        if (reqdcomps.length > 1) {
+          var reqdcomps1 = reqdcomps[1].split(/<\/AddReqdComps>/g);
+          if (reqdcomps1.length > 1 && reqdcomps1[0].length > 0) {
+            var reqNames = o.responseText.split(/<ReqdCompNames>/g);
+            if (reqNames.length > 1) {
+              var reqNames1 = reqNames[1].split(/<\/ReqdCompNames>/g);
+              if (reqNames1.length > 1 && reqNames1[0].length > 0) {
+                var msg = "Following required component(s) '" + reqNames1[0] + "' do not have instance(s) on the following computer(s) '" + reqdcomps1[0] + "'. ";
+                msg += "Would you like to add instances of the required components on these computers?";
+                var fnyes = function() {
+                  this.hide();
+                  var xmlStr1 = "<ReqdComps>";
+                  var ips = reqdcomps1[0].split(/\n/g);
+
+                  for (var i = 0; i < ips.length; i++)
+                    xmlStr1 += "<Computer netAddress=\"" + ips[i] + "\"/>";
+
+                  xmlStr1 += "</ReqdComps>";
+
+                  YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/AddReqdComps', {
+                    success: function(o) {
+                      var failed = o.responseText.split(/<Failures>/g);
+
+                      if (failed.length > 1) {
+                        var failed1 = failed[1].split(/<\/Failures>/g);
+                        if (failed1.length > 1 && failed1[0].length > 0) {
+                          var msg1 = "Failed to add required components for the following addresses.\n" + reqNames1[0];
+                          msg1 += "\nPlease add instances for the following components manually\n" + reqNames1[0];
+                          alert(msg1);
+                        }
+                      }
+                    },
+                    failure: function(o) {
+                      top.document.stopWait();
+                      alert(o.statusText);
+                    },
+                    scope: this
+                  },
+                  getFileName(true) + 'XmlArgs=' + xmlStr1);
+                }
+
+                var fnno = function() {this.hide();}
+                promptYesNoCancel(msg, fnyes, fnno, null);
+              }
+            }
+          }
+        }
+
         var form = top.window.document.forms['treeForm'];
         form.isChanged.value = "true";
         top.document.stopWait();
         clickCurrentSelOrName(tmpdt);
         var temp = o.responseText.split(/<NewName>/g);
+
         if (temp.length > 1) {
           var temp1 = temp[1].split(/<\/NewName>/g);
           if (temp1.length > 1) {
@@ -3125,13 +3206,73 @@ function promptYesNoCancel(msg, fnYes, fnNo, fnCancel) {
   }
 
   var myButtons = [{ text: "Yes", handler: fnYes, isDefault: true },
-                      { text: "No", handler: fnNo },
-                      { text: "Cancel", handler: fnCancel}];
-                      tmpdt.YNCancelPanel.cfg.queueProperty("buttons", myButtons);
+                      { text: "No", handler: fnNo }];
+
+  if (fnCancel !== null)
+    myButtons[myButtons.length] = { text: "Cancel", handler: fnCancel};
+
+  tmpdt.YNCancelPanel.cfg.queueProperty("buttons", myButtons);
   document.getElementById('YesNoCancelPanel').style.display = 'block';
   tmpdt.YNCancelPanel.setBody(msg);
   tmpdt.YNCancelPanel.render(document.body);
   tmpdt.YNCancelPanel.show();
+}
+
+function promptValidationErrs(msg) {
+ if(!top.document.ValidationErrPanel){
+    var fn = function () { this.hide(); }
+    top.document.ValidationErrPanel = new YAHOO.widget.Dialog('validationErrPage',
+    {
+      width:500,
+      height :550,
+      visible : false,
+      draggable : true,
+      modal : true,
+      close : false,
+      constraintoviewport: true,
+      underlay: 'none',
+      buttons :[ { text:"Ok", handler:fn, isDefault:true}]
+    });
+
+    top.document.ValidationErrPanel.renderEvent.subscribe(function(){
+     if (!top.document.ValidationErrPanel.layout) {
+        top.document.ValidationErrPanel.layout = new YAHOO.widget.Layout('validationErrLayout', {
+        height: (top.document.ValidationErrPanel.body.offsetHeight - 25),
+        units: [
+           { position: 'center' , body: 'validationErrLayoutTextArea'} ]
+        });
+        top.document.ValidationErrPanel.layout.render();
+      }
+    });
+  }
+
+  resize = new YAHOO.util.Resize('validationErrPage', {
+    handles: ['br'],
+    autoRatio: true,
+    status: false,
+    minWidth: 280,
+    minHeight: 350
+  });
+
+  resize.on('resize', function(args) {
+     var panelHeight = args.height,
+     padding = 20;
+     YAHOO.util.Dom.setStyle('validationErrLayout', 'display', 'none');
+     this.cfg.setProperty("height", panelHeight + 'px');
+     top.document.ValidationErrPanel.layout.set('height', this.body.offsetHeight - padding);
+     top.document.ValidationErrPanel.layout.set('width', this.body.offsetWidth - padding);
+     YAHOO.util.Dom.setStyle('validationErrs', 'height', this.body.offsetHeight - padding - 10);
+     YAHOO.util.Dom.setStyle('validationErrs', 'width', this.body.offsetWidth - padding);
+     YAHOO.util.Dom.setStyle('validationErrLayout', 'display', 'block');
+     top.document.ValidationErrPanel.layout.resize();
+
+  }, top.document.ValidationErrPanel, true);
+
+  document.getElementById('validationErrPage').style.display = 'block';
+  document.getElementById('validationErrs').value = msg;
+  top.document.ValidationErrPanel.render();
+  top.document.ValidationErrPanel.show();
+  top.document.ValidationErrPanel.center();
 }
 
 function unlockUser() {
@@ -3557,6 +3698,20 @@ function unlockEnvForWizard(fnCallback, saveEnv){
           if (o.responseText.indexOf("<?xml") === 0) {
             var form = document.forms['treeForm'];
             form.isWizLocked.value = "false";
+            var temp = o.responseText.split(/<XmlArgs>/g);
+            if (temp.length > 0) {
+              var temp1 = temp[1].split(/<\/XmlArgs>/g);
+              if (temp1.length > 0 && temp1[0].length > 0) {
+                if (temp1[0].indexOf("<Warning>") === 0) {
+                  var warning = o.responseText.split(/<Warning>/g);
+                  if (warning.length > 0) {
+                    var warning1 = warning[1].split(/<\/Warning>/g);
+                    if (warning1.length > 0 && warning1[0].length > 0 && warning1[0].charAt(0) != '<')
+                      alert(warning1[0]);
+                  }
+                }
+              }
+            }
           }
           else if (o.responseText.indexOf("<html") === 0) {
             var temp = o.responseText.split(/td align=\"left\">/g);

@@ -52,6 +52,7 @@ public:
         m_bInteractiveMode(true)
     {
         m_pCallback.set(&callback);
+        m_validateAllXsl.clear().append("validateAll.xsl");
 
     if (pSelectedComponents)
     {
@@ -258,8 +259,7 @@ public:
         Owned<IXslFunction>  externalFunction;
         externalFunction.setown(m_transform->createExternalFunction("validationMessage", validationMessageFromXSLT));
         m_transform->setExternalFunction(SEISINT_NAMESPACE, externalFunction.get(), true);
-        
-        m_transform->loadXslFromFile("validateAll.xsl");
+        m_transform->loadXslFromFile(m_validateAllXsl.str());
         m_transform->setUserData(this);
         
         try
@@ -561,7 +561,7 @@ public:
             pEnvDepEngine->m_nValidationErrors++;
 
             if (!compType || !compName)//if this error is not being reported under a particular component in tree
-                pEnvDepEngine->m_sValidationErrors.append(msg);
+                pEnvDepEngine->m_sValidationErrors.append(msg).append("\n");
         }
         else if (!strnicmp(msgType, "warn", 4))
             statusType = STATUS_WARN;
@@ -912,6 +912,7 @@ protected:
     bool m_bInteractiveMode;
     StringBuffer m_sSshUserid;
     StringBuffer m_sSshPassword;
+    StringBuffer m_validateAllXsl;
     unsigned int m_nValidationErrors;
     StringBuffer m_sValidationErrors;
     StringArray  m_tempFiles;
@@ -939,6 +940,12 @@ public:
     m_compType(compType),
     m_hostIpAddr(ipAddr)
   {
+    m_validateAllXsl.clear().append(inputDir);
+    if (m_validateAllXsl.length() > 0 &&
+        m_validateAllXsl.charAt(m_validateAllXsl.length() - 1) != PATHSEPCHAR)
+      m_validateAllXsl.append(PATHSEPCHAR);
+    m_validateAllXsl.append("validateAll.xsl");
+
     Owned<IPropertyTree> pSelComps;
     if (!pSelectedComponents)
     {
@@ -1025,6 +1032,26 @@ public:
     deployEngine->setXsl(m_processor, m_transform);
     m_processes.append(*deployEngine); // array releases members when destroyed
     return deployEngine;
+  }
+
+  void deploy(unsigned flags, BackupMode backupMode, bool bStop, bool bStart)
+  {
+    switch (backupMode)
+    {
+      case DEBACKUP_NONE:
+          check();
+          CEnvironmentDeploymentEngine::deploy(flags, false);
+          break;
+
+      case DEBACKUP_COPY:
+          throw MakeStringException(-1, "Invalid option Backup copy while generating configurations");
+
+      case DEBACKUP_RENAME:
+          throw MakeStringException(-1, "Invalid option Backup rename while generating configurations");
+
+      default:
+          throw MakeStringException(-1, "Invalid option while generating configurations");
+    }
   }
 
 private:

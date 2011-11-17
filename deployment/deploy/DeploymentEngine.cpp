@@ -52,7 +52,8 @@ CDeploymentEngine::CDeploymentEngine(IEnvDeploymentEngine& envDepEngine,
                                      m_startable(unknown),
                                      m_stoppable(unknown),
                                      m_createIni(createIni),
-                                     m_curInstance(NULL)
+                                     m_curInstance(NULL),
+                                     m_instanceCheck(true)
 {
     m_pCallback.set(&callback);
     m_installFiles.setDeploymentEngine(*this);
@@ -466,14 +467,17 @@ void CDeploymentEngine::check()
     if (m_instances.empty())
         throw MakeStringException(0, "Process %s has no instances defined.  Nothing to do!", m_name.get());
     
-    ForEachItemIn(idx, m_instances)
+    if (m_instanceCheck)
     {
-        checkAbort();
-        
-        IPropertyTree& instance = m_instances.item(idx);
-        m_curInstance = instance.queryProp("@name");
-        
-        checkInstance(instance);
+      ForEachItemIn(idx, m_instances)
+      {
+          checkAbort();
+
+          IPropertyTree& instance = m_instances.item(idx);
+          m_curInstance = instance.queryProp("@name");
+
+          checkInstance(instance);
+      }
     }
     m_curInstance = NULL;
     clearSSHVars();

@@ -703,7 +703,7 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
       StringBuffer xml;
       try 
       {
-        StringBuffer sbUser, sbUserIp;
+        StringBuffer sbUser, sbUserIp, errMsg;
         context.getUserID(sbUser);
         sbUser.clear().append(req.getReqInfo().getUserId());
         context.getPeer(sbUserIp);
@@ -713,13 +713,17 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
           Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>");
           IPropertyTree* pSaveEnv = pSrcTree->queryPropTree("SaveEnv[@flag='true']");
 
+          StringBuffer sbErrMsg;
           if (pSaveEnv)
           {
+            StringBuffer sb;
             m_skipEnvUpdateFromNotification = true;
-            saveEnvironment(&context, &req.getReqInfo());
+            saveEnvironment(&context, &req.getReqInfo(), sb);
+
+            if (sb.length())
+              sbErrMsg.appendf("<Warning>%s</Warning>", sb.str());
           }
 
-          StringBuffer sbErrMsg;
           unlockEnvironment(&context, &req.getReqInfo(), xmlArg, sbErrMsg, pSaveEnv != NULL);
           if (sbErrMsg.length())
           {
@@ -795,7 +799,7 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
     else if (!stricmp(cmd, "SaveEnvironment"))
     {
       StringBuffer xml;
-      StringBuffer sbUser, sbIp;
+      StringBuffer sbUser, sbIp, sbErrMsg;
       sbUser.clear().append(req.getReqInfo().getUserId());
       context.getPeer(sbIp);
 
@@ -803,7 +807,11 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
          !strcmp(m_userWithLock.str(), sbUser.str()) && !strcmp(m_userIp.str(), sbIp.str()) && 
          m_Environment != NULL)
       {
-        saveEnvironment(&context, &req.getReqInfo());
+        saveEnvironment(&context, &req.getReqInfo(), sbErrMsg);
+
+        if (sbErrMsg.length())
+          resp.setXmlArgs(sbErrMsg.str());
+
         StringBuffer tmp;
         m_lastSaved.getString(tmp);
         resp.setLastSaved(tmp.str());
@@ -830,6 +838,8 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
       if (envSaveAs && *envSaveAs)
       {
         StringBuffer filePath(m_pService->getSourceDir());
+        StringBuffer sbErrMsg;
+
         if (filePath.charAt(filePath.length() - 1) != PATHSEPCHAR)
           filePath.append(PATHSEPCHAR);
         filePath.append(envSaveAs);
@@ -839,8 +849,7 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
              !strcmp(m_userWithLock.str(), sbUser.str()) && !strcmp(m_userIp.str(), sbIp.str()) && 
              m_Environment != NULL)
           {
-            saveEnvironment(&context, &req.getReqInfo());
-            StringBuffer sbErrMsg;
+            saveEnvironment(&context, &req.getReqInfo(), sbErrMsg);
             unlockEnvironment(&context, &req.getReqInfo(), "", sbErrMsg);
             if (sbErrMsg.length())
             {
@@ -856,7 +865,11 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
           }
           else if (m_userWithLock.length() == 0 && m_userIp.length() == 0)
           {
-            saveEnvironment(&context, &req.getReqInfo(), true);
+            saveEnvironment(&context, &req.getReqInfo(), sbErrMsg, true);
+
+            if (sbErrMsg.length())
+              resp.setXmlArgs(sbErrMsg.str());
+
             StringBuffer tmp;
             m_lastSaved.getString(tmp);
             resp.setLastSaved(tmp.str());
@@ -867,7 +880,7 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
         else
         {
           CWsDeployFileInfo* fi = m_pService->getFileInfo(envSaveAs, true);
-          StringBuffer sbUser, sbIp, sbXml;
+          StringBuffer sbUser, sbIp, sbXml, sbErrMsg;
           if ((fi->isLocked(sbUser, sbIp) && m_userWithLock.length() != 0 && m_userIp.length() != 0 &&
                !strcmp(m_userWithLock.str(), sbUser.str()) && !strcmp(m_userIp.str(), sbIp.str())) ||
                (!fi->isLocked(sbUser, sbIp) && m_userWithLock.length() != 0 && m_userIp.length() != 0))
@@ -876,13 +889,12 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
             toXML(&m_constEnvRdOnly->getPTree(), sbXml);
         
           if (fi->updateEnvironment(sbXml))
-            fi->saveEnvironment(NULL, &req.getReqInfo(), true);
+            fi->saveEnvironment(NULL, &req.getReqInfo(), sbErrMsg, true);
           else
             throw MakeStringException(-1, "Environment Save as operation has failed");
 
           if (m_userWithLock.length() != 0 && m_userIp.length() != 0)
           {
-            StringBuffer sbErrMsg;
             unlockEnvironment(&context, &req.getReqInfo(), "", sbErrMsg);
             if (sbErrMsg.length())
             {
@@ -890,6 +902,9 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
               return true;
             }
           }
+
+          if (sbErrMsg.length())
+            resp.setXmlArgs(sbErrMsg.str());
 
           StringBuffer tmp;
           fi->getLastSaved(tmp);
@@ -912,7 +927,7 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
          m_Environment != NULL)
       {
         if (m_envFile.length())
-          validateEnv((IConstEnvironment*)m_Environment);
+          validateEnv((IConstEnvironment*)m_Environment, false);
         
         resp.setComponent( "WsDeploy" );
         resp.setCommand ( "ValidateEnvironment" );
@@ -4029,7 +4044,7 @@ bool CWsDeployFileInfo::handleInstance(IEspContext &context, IEspHandleInstanceR
   buildSetIter->first();
   IPropertyTree* pBuildSet = &buildSetIter->query();
   const char* processName = pBuildSet->queryProp(XML_ATTR_PROCESS_NAME);
-  StringBuffer dups;
+  StringBuffer dups, reqdComps, reqdCompNames;
 
   if (!strcmp(operation, "Add"))
   {
@@ -4111,8 +4126,13 @@ bool CWsDeployFileInfo::handleInstance(IEspContext &context, IEspHandleInstanceR
           }
         }
       }
+
+      if (!checkForRequiredComponents(pEnvRoot, pComputerNode->queryProp(XML_ATTR_NETADDRESS), reqdCompNames))
+        reqdComps.appendf("\n%s", pComputerNode->queryProp(XML_ATTR_NETADDRESS));
     }
 
+    resp.setReqdCompNames(reqdCompNames.str());
+    resp.setAddReqdComps(reqdComps.str());
     resp.setDuplicates(dups.str());
   }
   else if (!strcmp(operation, "Delete"))
@@ -4164,6 +4184,31 @@ bool CWsDeployFileInfo::handleInstance(IEspContext &context, IEspHandleInstanceR
   return true;
 }
 
+bool CWsDeployFileInfo::addReqdComps(IEspContext &context, IEspAddReqdCompsRequest &req, IEspAddReqdCompsResponse &resp)
+{
+  synchronized block(m_mutex);
+  checkForRefresh(context, &req.getReqInfo(), true);
+
+  const char* xmlArg = req.getXmlArgs();
+  Owned<IPropertyTree> instances = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<ReqdComps/>");
+  Owned<IPropertyTree> pEnvRoot = getEnvTree(context, &req.getReqInfo());
+
+  Owned<IPropertyTreeIterator> iterComp = instances->getElements("*");
+  bool bAdded = false;
+  StringBuffer reqCompNames, failed;
+
+  ForEach(*iterComp)
+  {
+    IPropertyTree& pComputer = iterComp->query();
+
+    if (!checkForRequiredComponents(pEnvRoot, pComputer.queryProp(XML_ATTR_NETADDRESS), reqCompNames, true))
+      failed.appendf("\n%s", pComputer.queryProp(XML_ATTR_NETADDRESS));
+  }
+
+  resp.setFailures(failed.str());
+  resp.setStatus("true");
+  return true;
+}
 
 bool CWsDeployFileInfo::handleEspServiceBindings(IEspContext &context, IEspHandleEspServiceBindingsRequest &req, IEspHandleEspServiceBindingsResponse &resp)
 {
@@ -5189,21 +5234,30 @@ void CWsDeployFileInfo::getNavigationData(IEspContext &context, IPropertyTree* p
   }
 }
 
-void CWsDeployFileInfo::saveEnvironment(IEspContext* pContext, IConstWsDeployReqInfo *reqInfo, bool saveAs)
+void CWsDeployFileInfo::saveEnvironment(IEspContext* pContext, IConstWsDeployReqInfo *reqInfo, StringBuffer& errMsg, bool saveAs)
 {
   if (m_envFile.length())
   {
     Owned<IPropertyTree> pEnvRoot;
-    
-    if (!saveAs || (saveAs && m_Environment))
+    StringBuffer valerrs;
+
+    try
     {
-      pEnvRoot.setown(&m_Environment->getPTree());
-      validateEnv((IConstEnvironment*)m_Environment);
+      if (!saveAs || (saveAs && m_Environment))
+      {
+        pEnvRoot.setown(&m_Environment->getPTree());
+        validateEnv((IConstEnvironment*)m_Environment, false);
+      }
+      else if (saveAs)
+      {
+        pEnvRoot.setown(&m_constEnvRdOnly->getPTree());
+        validateEnv(m_constEnvRdOnly, false);
+      }
     }
-    else if (saveAs)
+    catch(IException* e)
     {
-      pEnvRoot.setown(&m_constEnvRdOnly->getPTree());
-      validateEnv(m_constEnvRdOnly);
+      e->errorMessage(valerrs);
+      e->Release();
     }
 
     //save and write to backup
@@ -5298,6 +5352,9 @@ void CWsDeployFileInfo::saveEnvironment(IEspContext* pContext, IConstWsDeployReq
     //reset the readonly tree
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
     m_constEnvRdOnly.setown(factory->loadLocalEnvironment(sXML.str()));
+
+    if (valerrs.length())
+      errMsg.appendf("Save operation was successful. However the following exceptions were raised.\n%s", valerrs.str());
   }
   else
   {
@@ -5405,7 +5462,7 @@ void CWsDeployFileInfo::unlockEnvironment(IEspContext* context, IConstWsDeployRe
     if (!ret || sbMsg.length())
     {
       if (saveEnv)
-        sbErrMsg.clear().append("Save operation is successful. However, ");
+        sbErrMsg.append("Save operation is successful. However, ");
       sbErrMsg.appendf("Write access to the Environment cannot be revoked. Reason(s):\n%s", sbMsg.str());
       return;
     }
@@ -5846,8 +5903,9 @@ void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite)
 
   try
   {
+    StringBuffer err;
     if (modified && fileExists)
-      saveEnvironment(NULL, NULL);
+      saveEnvironment(NULL, NULL, err);
   }
   catch(IException* e)
   {
@@ -6314,6 +6372,13 @@ bool CWsDeployExCE::onGetSummary(IEspContext &context, IEspGetSummaryRequest &re
   CWsDeployFileInfo* fi = getFileInfo(req.getReqInfo().getFileName(), true);
   return fi->getSummary(context, req, resp);
 }
+
+bool CWsDeployExCE::onAddReqdComps(IEspContext &context, IEspAddReqdCompsRequest &req, IEspAddReqdCompsResponse &resp)
+{
+  CWsDeployFileInfo* fi = getFileInfo(req.getReqInfo().getFileName(), true);
+  return fi->addReqdComps(context, req, resp);
+}
+
 bool CWsDeployEx::onDeploy(IEspContext &context, IEspDeployRequest& req, IEspDeployResponse& resp)
 {
   CWsDeployFileInfo* fi = getFileInfo(req.getReqInfo().getFileName());
@@ -6636,4 +6701,124 @@ CWsDeployExCE* createWsDeployCE(IPropertyTree *cfg, const char* name)
     return new CWsDeployEx;
   
   return new CWsDeployExCE;
+}
+
+bool CWsDeployFileInfo::checkForRequiredComponents(IPropertyTree* pEnvRoot, const char* ip,
+                                                   StringBuffer& reqdCompNames, bool autoadd/*=false*/)
+{
+  StringBuffer prop, xpath, genEnvConf;
+  Owned<IProperties> algProps;
+  StringArray compOnAllNodes;
+  bool retVal = true;
+
+  xpath.clear().appendf("Software/EspProcess/EspService[@name='%s']/LocalConfFile", m_pService->getName());
+  const char* pConfFile = m_pService->getCfg()->queryProp(xpath.str());
+  xpath.clear().appendf("Software/EspProcess/EspService[@name='%s']/LocalEnvConfFile", m_pService->getName());
+  const char* pEnvConfFile = m_pService->getCfg()->queryProp(xpath.str());
+
+  if (pConfFile && *pConfFile && pEnvConfFile && *pEnvConfFile)
+  {
+    Owned<IProperties> pParams = createProperties(pConfFile);
+    Owned<IProperties> pEnvParams = createProperties(pEnvConfFile);
+    const char* genenv = pParams->queryProp("wizardalgorithm");
+
+    if (genenv && *genenv)
+    {
+      const char* cfgpath = pEnvParams->queryProp("configs");
+
+      if (!cfgpath || !*cfgpath)
+        cfgpath = CONFIG_DIR;
+
+      genEnvConf.clear().append(cfgpath);
+
+      if (genEnvConf.charAt(genEnvConf.length() - 1) != PATHSEPCHAR)
+        genEnvConf.append(PATHSEPCHAR);
+
+      genEnvConf.append(genenv);
+
+      if(checkFileExists(genEnvConf.str()))
+        algProps.setown(createProperties(genEnvConf.str()));
+      else
+        throw MakeStringException( -1 , "The algorithm file %s does not exists", genEnvConf.str());
+
+      algProps->getProp("comps_on_all_nodes", prop);
+      DelimToStringArray(prop.str(), compOnAllNodes, ",");
+      const char* flag = pParams->queryProp("autoaddallnodescomp");
+
+      if (!autoadd)
+        autoadd = (flag && *flag == '1') ? true : false;
+    }
+  }
+
+  for(unsigned i = 0; i < compOnAllNodes.ordinality(); i++)
+  {
+    xpath.clear().appendf("./Programs/Build/BuildSet[@name=\"%s\"]", compOnAllNodes.item(i));
+    Owned<IPropertyTreeIterator> buildSetIter = pEnvRoot->getElements(xpath.str());
+    buildSetIter->first();
+    IPropertyTree* pBuildSet;
+
+    if (buildSetIter->isValid())
+      pBuildSet = &buildSetIter->query();
+    else
+      continue;
+
+    const char* processName = pBuildSet->queryProp(XML_ATTR_PROCESS_NAME);
+    xpath.clear().appendf("./Software/%s[1]", processName);
+    IPropertyTree* pCompTree = pEnvRoot->queryPropTree(xpath.str());
+
+    if (!pCompTree)
+    {
+      if (autoadd)
+      {
+        StringBuffer buildSetPath, sbNewName;
+        Owned<IPropertyTree> pSchema = loadSchema(pEnvRoot->queryPropTree("./Programs/Build[1]"), pBuildSet, buildSetPath, m_Environment);
+        xpath.clear().appendf("./Software/%s[@name='%s']", processName, compOnAllNodes.item(i));
+        pCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName, false);
+        IPropertyTree* pInstTree = pCompTree->queryPropTree(XML_TAG_INSTANCE);
+
+        if (pInstTree)
+          pCompTree->removeTree(pInstTree);
+
+        addComponentToEnv(pEnvRoot, compOnAllNodes.item(i), sbNewName, pCompTree);
+      }
+      else
+      {
+        reqdCompNames.appendf("%s\n", compOnAllNodes.item(i));
+        retVal = false;
+        continue;
+      }
+    }
+
+    xpath.clear().appendf(XML_TAG_INSTANCE"["XML_ATTR_NETADDRESS"='%s']", ip);
+    IPropertyTree* pInst = pCompTree->queryPropTree(xpath.str());
+
+    if (!pInst)
+    {
+      if (autoadd)
+      {
+        StringBuffer sb, sbl, compName, nodeName;
+        xpath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_HARDWARE, XML_TAG_COMPUTER,
+          XML_ATTR_NETADDRESS, ip);
+        IPropertyTree* computer = pEnvRoot->queryPropTree(xpath.str());
+
+        if(computer)
+        {
+          nodeName.clear().append(computer->queryProp(XML_ATTR_NAME));
+          xpath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, processName, XML_ATTR_BUILDSET, compOnAllNodes.item(i));
+          sb.clear().appendf("<Instance buildSet=\"%s\" compName=\"%s\" ><Instance name=\"%s\" /></Instance>",
+            compOnAllNodes.item(i), pCompTree->queryProp(XML_ATTR_NAME), nodeName.str());
+          Owned<IPropertyTree> pInstance = createPTreeFromXMLString(sb.str());
+          addInstanceToCompTree(pEnvRoot, pInstance, sbl.clear(), sb.clear(), NULL);
+        }
+      }
+      else
+      {
+        reqdCompNames.appendf("%s\n", compOnAllNodes.item(i));
+        retVal = false;
+        continue;
+      }
+    }
+  }
+
+  return retVal;
 }
