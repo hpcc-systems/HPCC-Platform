@@ -56,14 +56,6 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="eclServer" type="eclCCServerType" use="optional">
-                <xs:annotation>
-                    <xs:appinfo>
-                        <tooltip>Name of the ECLCC server or job server where the jobs are dispatched</tooltip>
-                        <autogenforwizard>1</autogenforwizard>
-                    </xs:appinfo>
-                </xs:annotation>
-            </xs:attribute>
             <xs:attribute name="syntaxCheckQueue" type="xs:string" use="optional">
                 <xs:annotation>
                     <xs:appinfo>
