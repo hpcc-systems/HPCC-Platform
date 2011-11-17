@@ -183,6 +183,8 @@ StringBuffer &getSdsCmdText(SdsCommand cmd, StringBuffer &ret)
             return ret.append("DAMP_SDSCMD_GETXPATHSCRITERIA");
         case DAMP_SDSCMD_GETELEMENTSRAW:
             return ret.append("DAMP_SDSCMD_GETELEMENTSRAW");
+        case DAMP_SDSCMD_GETCOUNT:
+            return ret.append("DAMP_SDSCMD_GETCOUNT");
         default:
             return ret.append("UNKNOWN");
     };
@@ -1906,6 +1908,7 @@ public:
     virtual IPropertyTree &queryProperties() const;
     virtual IPropertyTreeIterator *getElementsRaw(const char *xpath,INode *remotedali=NULL, unsigned timeout=MP_WAIT_FOREVER);
     virtual void setConfigOpt(const char *opt, const char *value);
+    virtual unsigned queryCount(const char *xpath);
 
 // ISubscriptionManager impl.
     virtual void add(ISubscription *subs,SubscriptionId id);
@@ -3565,6 +3568,7 @@ int CSDSTransactionServer::run()
                         case DAMP_SDSCMD_GETXPATHSPLUSIDS:
                         case DAMP_SDSCMD_GETEXTVALUE:
                         case DAMP_SDSCMD_GETELEMENTSRAW:
+                        case DAMP_SDSCMD_GETCOUNT:
                         {
                             mb.reset();
                             handler.handleMessage(mb);
@@ -4339,6 +4343,17 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 replyMb.writeDirect(pos,sizeof(count),&count);
                 mb.clear();
                 mb.transferFrom(replyMb);
+                break;
+            }
+            case DAMP_SDSCMD_GETCOUNT:
+            {
+                mb.read(xpath);
+                if (queryTransactionLogging())
+                    transactionLog.log("xpath='%s'", xpath.get());
+                CHECKEDDALIREADLOCKBLOCK(manager.dataRWLock, readWriteTimeout);
+                mb.clear();
+                mb.append((int)DAMP_SDSREPLY_OK);
+                mb.append(manager.queryCount(xpath));
                 break;
             }
             default:
@@ -6809,6 +6824,17 @@ void CCovenSDSManager::setConfigOpt(const char *opt, const char *value)
         return;
     ensurePTree(&queryProperties(), opt);
     queryProperties().setProp(opt, value);
+}
+
+unsigned CCovenSDSManager::queryCount(const char *xpath)
+{
+    unsigned count = 0;
+    if (xpath && *xpath == '/')
+        ++xpath;
+    Owned<IPropertyTreeIterator> iter = root->getElements(xpath);
+    ForEach(*iter)
+        ++count;
+    return count;
 }
 
 void CCovenSDSManager::start()

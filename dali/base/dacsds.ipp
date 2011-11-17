@@ -402,6 +402,7 @@ public:
     virtual IPropertyTree &queryProperties() const;
     virtual IPropertyTreeIterator *getElementsRaw(const char *xpath, INode *remotedali, unsigned timeout);
     virtual void setConfigOpt(const char *opt, const char *value);
+    virtual unsigned queryCount(const char *xpath);
 
 private:
     CriticalSection crit;
