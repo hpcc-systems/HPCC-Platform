@@ -341,7 +341,6 @@
              path="componentfiles/configxml"
              processName="RoxieCluster"
              schema="roxie.xsd"/>
-   <BuildSet installSet="deploy_map.xml" name="roxieconfig" path="componentfiles/roxieconfig" overide="no"/>
    <BuildSet installSet="deploy_map.xml"
              name="sasha"
              path="componentfiles/sasha"
@@ -725,7 +724,6 @@
               buildSet="espsmc"
               description="ESP services for SMC"
               disableUppercaseTranslation="false"
-              eclServer="myeclccserver"
               enableSystemUseRewrite="false"
               excludePartitions="/,/dev*,/sys,/usr,/proc/*"
               monitorDaliFileServer="false"

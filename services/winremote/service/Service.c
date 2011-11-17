@@ -22,6 +22,8 @@ FUNCTIONS:
 
 ---------------------------------------------------------------------------*/
 
+#ifdef _WIN32 // Just to shut up any code-checkers on linux side
+
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -601,3 +603,4 @@ LPTSTR GetLastErrorText( LPTSTR lpszBuf, DWORD dwSize )
 
    return lpszBuf;
 }
+#endif

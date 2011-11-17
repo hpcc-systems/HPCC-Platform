@@ -47,14 +47,12 @@ extern "C" {
 #endif
 
 
-static void *SzAlloc(void *p, size_t size) 
+static void *SzAlloc(void *, size_t size)
 { 
-    p = p; 
     return checked_malloc(size,-1);
 }
-static void SzFree(void *p, void *address) 
-{ 
-    p = p; 
+static void SzFree(void *, void *address)
+{
     free(address);
 }
 static ISzAlloc g_Alloc = { SzAlloc, SzFree };

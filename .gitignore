@@ -2,3 +2,4 @@ externals/
 .project
 .svn/
 ln/
+.cproject
