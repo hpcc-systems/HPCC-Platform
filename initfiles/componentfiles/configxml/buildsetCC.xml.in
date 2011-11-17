@@ -348,10 +348,6 @@
              path="componentfiles/configxml"
              processName="RoxieCluster"
              schema="roxie.xsd"/>
-   <BuildSet installSet="deploy_map.xml" 
-             name="roxieconfig" 
-             path="componentfiles/roxieconfig"
-             overide="no"/>
    <BuildSet installSet="deploy_map.xml"
              name="sasha"
              path="componentfiles/sasha"
