@@ -71,6 +71,7 @@ void usage(const char *exe)
   printf("  wget <xpath>               -- (gets all matching xpath)\n");
   printf("  add <xpath> <value>        -- adds new value\n");
   printf("  delv <xpath>               -- deletes value\n");
+  printf("  count <xpath>              -- counts xpath matches\n");
   printf("\n");
   printf("Logical File meta information commands:\n");
   printf("  dfsfile <logicalname>          -- get meta information for file\n");
@@ -514,6 +515,14 @@ static void delv(const char *path)
     root->removeProp(tail);
     OUTLOG("Value of %s was: '%s'",path,val.str());
     conn->close();
+}
+
+//=============================================================================
+
+static void count(const char *path)
+{
+    unsigned result = querySDS().queryCount(path);
+    OUTLOG("Count of %s is: %d", path, result);
 }
 
 //=============================================================================
@@ -2244,6 +2253,10 @@ int main(int argc, char* argv[])
             else if (stricmp(cmd,"delv")==0) {
                 CHECKPARAMS(1,1);
                 delv(params.item(1));
+            }
+            else if (stricmp(cmd,"count")==0) {
+                CHECKPARAMS(1,1);
+                count(params.item(1));
             }
             else if (stricmp(cmd,"dfsfile")==0) {
                 CHECKPARAMS(1,1);
