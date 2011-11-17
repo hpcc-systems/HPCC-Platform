@@ -393,7 +393,6 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_xmlparse:
     case no_normalizegroup:
     case no_owned_ds:
-case no_unused53:
 
 //Multiple different kinds of values
     case no_select:
@@ -418,6 +417,8 @@ case no_unused53:
     case no_fieldmap:
     case no_template_context:
     case no_processing:
+    case no_merge_pending:
+    case no_merge_nomatch:
     case no_namedactual:
     case no_assertconstant:
 
@@ -610,7 +611,7 @@ case no_unused53:
     case no_unused20: case no_unused21: case no_unused22: case no_unused23: case no_unused24: case no_unused25: case no_unused26: case no_unused27: case no_unused28: case no_unused29:
     case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38: case no_unused39:
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
-    case no_unused50: case no_unused52:
+    case no_unused52:
     case no_is_null:
     case no_position:
     case no_current_time:
