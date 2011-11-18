@@ -346,7 +346,7 @@ extern IActivityGraph *createActivityGraph(const char *graphName, unsigned id, A
 extern IProbeManager *createProbeManager();
 extern IProbeManager *createDebugManager(IDebuggableContext *debugContext, const char *graphName);
 extern IRoxieSlaveContext *createSlaveContext(const IQueryFactory *factory, const SlaveContextLogger &logctx, unsigned timeLimit, memsize_t memoryLimit, IRoxieQueryPacket *packet);
-extern IRoxieServerContext *createRoxieServerContext(IPropertyTree *context, const IQueryFactory *factory, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, unsigned priority, const IRoxieContextLogger &logctx, const SocketEndpoint &poolEndpoint, XmlReaderOptions xmlReadFlags);
+extern IRoxieServerContext *createRoxieServerContext(IPropertyTree *context, const IQueryFactory *factory, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, unsigned priority, const IRoxieContextLogger &logctx, XmlReaderOptions xmlReadFlags);
 extern IRoxieServerContext *createOnceServerContext(const IQueryFactory *factory, const IRoxieContextLogger &_logctx);
 extern IRoxieServerContext *createWorkUnitServerContext(IConstWorkUnit *wu, const IQueryFactory *factory, const IRoxieContextLogger &logctx);
 extern WorkflowMachine *createRoxieWorkflowMachine(IPropertyTree *_workflowInfo, bool doOnce, const IRoxieContextLogger &_logctx);
