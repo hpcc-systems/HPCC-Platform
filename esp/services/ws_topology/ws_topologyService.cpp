@@ -1532,7 +1532,7 @@ bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context,
             else if (!stricmp(compType, eqDfu))
                 fileName = "dfuserver.log";
             else if (!stricmp(compType, eqEclServer))
-                fileName = "ECLSERVER.log";
+                fileName = "eclserver.log";
             else if (!stricmp(compType, eqEclCCServer))
                 fileName = "eclccserver.log";
             else if (!stricmp(compType, eqEclScheduler))
