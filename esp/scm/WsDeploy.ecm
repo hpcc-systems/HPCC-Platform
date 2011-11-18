@@ -277,6 +277,20 @@ ESPresponse [exceptions_inline, encode(0)] HandleInstanceResponse
     string Status;
     string NewName;
     string Duplicates;
+    string ReqdCompNames;
+    string AddReqdComps;
+};
+
+ESPrequest AddReqdCompsRequest
+{
+    string XmlArgs;
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] AddReqdCompsResponse
+{
+    string Status;
+    string Failures;
 };
 
 ESPrequest HandleEspServiceBindingsRequest
@@ -578,6 +592,8 @@ ESPservice [exceptions_inline("xslt/exceptions.xslt")] WsDeploy
         GetSubnetIPAddr(GetSubnetIPAddrRequest, GetSubnetIPAddrResponse);
     ESPmethod[description("To get the environment summary"), help("")]
             GetSummary(GetSummaryRequest, GetSummaryResponse);
+    ESPmethod[description("Add the required components on given ip addresses."), help("")]
+        AddReqdComps(AddReqdCompsRequest, AddReqdCompsResponse);
 };
 
 SCMexportdef(WsDeploy);

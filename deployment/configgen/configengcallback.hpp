@@ -66,7 +66,7 @@ class CConfigEngCallback: public CInterface, implements IDeploymentCallback
         StringBuffer sbErrCode;
 
         if (task->getErrorCode() > 0)
-            sbErrCode.appendlong(task->getErrorCode());
+          sbErrCode.appendlong(task->getErrorCode());
         
         if (sbErr.length() == 0 && sbWarnings.length() == 0 && sbErrCode.length() == 0)
             sb.append("Result: Success\n");
@@ -122,29 +122,56 @@ class CConfigEngCallback: public CInterface, implements IDeploymentCallback
         IException* e, const char* szMessage=NULL, const char* szCaption=NULL,
         IDeployTask* pTask = NULL )
     {
-        if (m_abortOnException) 
+      StringBuffer sb;
+
+      if (m_errIdx > 1)
+        sb.append("\n");
+
+      sb.appendf("Error %d:\n", m_errIdx++);
+
+      if (szMessage)
+      {
+        if (processType)
+          sb.append("Component type: ").append(processType).append("\n");
+        if (process)
+          sb.append("Component Name: ").append(process).append("\n");
+
+        StringBuffer errMsg(szMessage);
+        String str(errMsg.trim());
+
+        if (str.lastIndexOf('[') > 0)
         {
-            StringBuffer sb;
+          errMsg.clear();
+          String* sub1 = str.substring(str.lastIndexOf('[') + 1, str.length() - 1);
 
-            if (processType)
-                sb.append("Process type: ").append(processType).append("\n");
-            if (process)
-                sb.append("Component: ").append(process).append("\n");
-            if (instance)
-                sb.append("Instance: ").append(instance).append("\n");
-            if (szMessage)
-                sb.append("Message: ").append(szMessage).append("\n");
+          if (sub1)
+          {
+            String* sub2 = sub1->substring(sub1->indexOf(':') + 1, sub1->length());
 
-            if (!m_abort)
-                m_abort = true;
+            if (sub2)
+            {
+              StringBuffer sb2(*sub2);
+              sb2.trim();
+              sb2.replaceString("  ", " ");
+              errMsg.append(sb2.str());
+              delete sub2;
+            }
 
-            if (szMessage)
-                m_sbExMsg.append(sb);
-
-            throw MakeStringException(0, "%s", m_sbExMsg.str());
+            delete sub1;
+          }
         }
-        
-        return true;
+
+        sb.append(errMsg).append("\n");
+        m_sbExMsg.append(sb);
+      }
+
+      if (m_abortOnException)
+      {
+        m_abort = true;
+        throw MakeStringException(0, "%s", m_sbExMsg.str());
+      }
+
+      return true;
     }
     virtual IEnvDeploymentEngine* getEnvDeploymentEngine()const{return NULL;}
     virtual void* getWindowHandle() const{return NULL;}
@@ -156,8 +183,11 @@ private:
     bool m_abortOnException;
     bool m_abort;
     StringBuffer m_sbExMsg;
+    unsigned m_errIdx;
 public: // IDeploymentCallback
     IMPLEMENT_IINTERFACE;
-    CConfigEngCallback(bool verbose = false, bool abortOnException = false){m_verbose = verbose;m_abortOnException=abortOnException;m_abort=false;}
+    CConfigEngCallback(bool verbose = false, bool abortOnException = false){m_verbose = verbose;m_abortOnException=abortOnException;m_abort=false;m_errIdx=1;}
+    virtual const char* getErrorMsg() { return m_sbExMsg.str(); }
+    virtual unsigned getErrorCount() { return m_errIdx;}
 };
 #endif

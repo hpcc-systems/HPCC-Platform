@@ -3118,6 +3118,18 @@ void addInstanceToCompTree(const IPropertyTree* pEnvRoot,const IPropertyTree* pI
       }
     }
   }
+
+  int nCount = 1;
+  xpath.clear().appendf("Instance");
+  Owned<IPropertyTreeIterator> iter = pCompTree->getElements(xpath.str());
+  StringBuffer sName;
+
+  ForEach(*iter)
+  {
+    sName.clear().append("s").append(nCount);
+    iter->query().setProp(XML_ATTR_NAME, sName.str());
+    nCount++;
+  }
 }
 
 void formIPList(const char* ip, StringArray& formattedIpList)
@@ -3609,7 +3621,7 @@ void getTempPath(char* tempPath, unsigned int bufsize, const char* subdir/*=NULL
 }
 #endif
 
-bool validateEnv(IConstEnvironment* pConstEnv)
+bool validateEnv(IConstEnvironment* pConstEnv, bool abortOnException)
 {
   char tempdir[_MAX_PATH];
   StringBuffer sb;
@@ -3628,7 +3640,7 @@ bool validateEnv(IConstEnvironment* pConstEnv)
 
   try
   {
-    CConfigEngCallback callback(false, true);
+    CConfigEngCallback callback(false, abortOnException);
     Owned<IEnvDeploymentEngine> configGenMgr;
     Owned<IPropertyTree> pEnvRoot = &pConstEnv->getPTree();
     const char* inDir = pEnvRoot->queryProp(XML_TAG_ENVSETTINGS"/path");
@@ -3637,56 +3649,19 @@ bool validateEnv(IConstEnvironment* pConstEnv)
     configGenMgr.setown(createConfigGenMgr(*pConstEnv, callback, NULL, inDir?sb.str():STANDARD_CONFIGXMLDIR, tempdir, NULL, NULL, NULL));
     configGenMgr->deploy(DEFLAGS_CONFIGFILES, DEBACKUP_NONE, false, false);
     deleteRecursive(tempdir);
+    const char* msg = callback.getErrorMsg();
+    if (msg && *msg)
+    {
+      StringBuffer sb("Errors or warnings were found when validating the environment.\n\n");
+      sb.append(msg).append("\n");
+      sb.appendf("Total errors/warnings: %d", callback.getErrorCount() - 1);
+      throw MakeStringExceptionDirect(-1, sb.str());
+    }
   }
   catch(IException* e)
   {
     deleteRecursive(tempdir);
-    StringBuffer sb, newMsg, errMsg;
-    e->errorMessage(sb);
-    String str(sb.trim());
-    String* sub1 = str.substring(str.lastIndexOf('[') + 1, str.length() - 1);
-    if (sub1)
-    {
-      String* sub2 = sub1->substring(sub1->indexOf(':') + 1, sub1->length());
-      if (sub2)
-      {
-        StringBuffer sb2(*sub2);
-        sb2.trim();
-        sb2.replaceString("  ", " ");
-        errMsg.append("Error: ").append(sb2.str()).append("\n");
-        delete sub2;
-      }
-
-      delete sub1;
-    }
-
-    if (errMsg.length())
-    {
-      sb.replaceString(": ", "=");
-      try
-      {
-        Owned<IProperties> pParams = createProperties();
-        pParams->loadProps(sb.str());
-
-        const char* ptype = pParams->queryProp("Process type");
-        if (ptype)
-          newMsg.appendf("Component Type: %s\n", ptype);
-
-        const char* cname = pParams->queryProp("Component");
-        if (cname)
-          newMsg.appendf("Component Name: %s\n", cname);
-      }
-      catch(IException* e1)
-      {
-        e1->Release();
-        throw e;
-      }
-
-      e->Release();
-      throw MakeStringException(-1, "%s", newMsg.append(errMsg.str()).str());
-    }
-    else
-      throw e;
+    throw e;
   }
 
   return true;
