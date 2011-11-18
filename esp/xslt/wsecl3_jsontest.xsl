@@ -51,6 +51,7 @@
                 <script type="text/javascript" src="/esp/files/stringbuffer.js"/>
 
 <script type="text/javascript">
+<xsl:text disable-output-escaping="yes">
 <![CDATA[ 
   var xmlhttp = null;
 
@@ -353,7 +354,7 @@ function onSendRequest()
     document.getElementById("resp_body").value = "";
     document.getElementById("resp_header").value = "";
     
-    var url = "]]><xsl:value-of select="$destination"/><![CDATA[";
+    var url = "]]></xsl:text><xsl:value-of disable-output-escaping="yes" select="$destination"/><xsl:text disable-output-escaping="yes"><![CDATA[";
     var user = document.getElementById("username").value;
     var passwd = document.getElementById("password").value;
     loadJsonDoc(url,user,passwd);
@@ -566,7 +567,7 @@ function onImportConciseRequest()
       showGetInputWnd('The Concise Request Text (from esp log):', 'inputReturnMethod()');     
 }
 
-var jsonreq = ']]><xsl:value-of select="/srcxml/jsonreq"/><![CDATA[';
+var jsonreq = ']]></xsl:text><xsl:value-of select="/srcxml/jsonreq"/><xsl:text disable-output-escaping="yes"><![CDATA[';
 
 function setJsonReq()
 {
@@ -576,7 +577,7 @@ function setJsonReq()
      return true;
 }
 
-]]>
+]]></xsl:text>
 
 var gServiceName = "<xsl:value-of select="$serviceName"/>";
 var gMethodName = "<xsl:value-of select="$methodName"/>";;

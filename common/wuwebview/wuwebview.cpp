@@ -269,17 +269,18 @@ bool WuWebView::getInclude(const char *includename, MemoryBuffer &includebuf, bo
     if (len<8)
         return false;
     //eliminate "file://"
-    includename+=7;
+    if (strncmp(includename, "file://", 7)==0)
+        includename+=7;
     //eliminate extra '/' for windows absolute paths
     if (len>9 && includename[2]==':')
         includename++;
     StringBuffer relpath;
     if (mapEspDirectories && !strnicmp(includename, "/esp/", 5))
-        relpath.append(dir.get()).append(includename+=5);
+        relpath.append(includename+=5);
     else
         relpath.append(includename); //still correct for OS
     StringBuffer abspath;
-    makeAbsolutePath(relpath.str(), abspath);
+    makeAbsolutePath(relpath.str(), dir.get(), abspath);
 
     IPropertyTree *res = NULL;
     if (manifest)

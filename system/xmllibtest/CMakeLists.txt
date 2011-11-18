@@ -15,51 +15,37 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-# Component: xmllib 
+
+# Component: xmllibtest
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for xmllib
+#    Cmake Input File for xmllibtest
 #####################################################
 
-project( xmllib )
 
-if ( USE_XALAN )
-    set(LIB_INCLUDE_DIR ${XALAN_INCLUDE_DIR} ${XERCES_INCLUDE_DIR})
-    set(LIB_LIBRARIES ${XALAN_LIBRARIES} ${XERCES_LIBRARIES})
-    set(LIB_SOURCE
-        xalan_processor.cpp
-        xerces_validator.cpp
-    )
-else()
-    set(LIB_INCLUDE_DIR ${LIBXSLT_INCLUDE_DIR} ${LIBEXSLT_INCLUDE_DIR} ${LIBXML2_INCLUDE_DIR})
-    set(LIB_LIBRARIES ${LIBXSLT_LIBRARIES} ${LIBEXLST_LIBRARIES} ${LIBXML2_LIBRARIES})
-    set(LIB_SOURCE
-        libxslt_processor.cpp
-        libxml_validator.cpp
-    )
-endif()
+project( xmllibtest )
 
-set (    SRCS 
-         xsdparser.cpp
-         xslcache.cpp
-         ${LIB_SOURCE}
+include(${HPCC_SOURCE_DIR}/esp/scm/smcscm.cmake)
+
+set (    SRCS
+         xmllibtest.cpp
     )
 
 include_directories (
-         ./../../common/deftype
-         ./../../system/include
-         ./../../system/jlib
-         ./../../ecl/hql
-         ${LIB_INCLUDE_DIR}
+         ${CMAKE_BINARY_DIR}
+         ${CMAKE_BINARY_DIR}/oss
+         ./../xmllib
+         ./../jlib
+         ./../include
     )
 
-ADD_DEFINITIONS( -D_USRDLL -DXMLLIB_EXPORTS )
+ADD_DEFINITIONS( -D_CONSOLE )
 
-HPCC_ADD_LIBRARY( xmllib SHARED ${SRCS} )
-install ( TARGETS xmllib DESTINATION ${OSSDIR}/lib )
-target_link_libraries ( xmllib
-         ${LIB_LIBRARIES}
-         jlib
+add_executable ( xmllibtest ${SRCS} )
+add_dependencies ( xmllibtest xmllib )
+install ( TARGETS xmllibtest DESTINATION ${OSSDIR}/bin )
+target_link_libraries ( xmllibtest
+        jlib
+        xmllib
     )
-

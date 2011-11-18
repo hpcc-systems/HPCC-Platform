@@ -277,9 +277,9 @@
                                                                 <xsl:when test="$clusterType='THORMACHINES'">Thor </xsl:when>
                                                                 <xsl:when test="$clusterType='HOLEMACHINES'">Hole </xsl:when>
                                                             </xsl:choose>
-                                                            <xsl:text>Cluster '</xsl:text>
+                                                            <xsl:text disable-output-escaping="yes">Cluster '</xsl:text>
                                         <xsl:value-of select="$clusterName"/>
-                                        <xsl:text>'</xsl:text>
+                                        <xsl:text disable-output-escaping="yes">'</xsl:text>
                                     </xsl:when>
                                     <xsl:otherwise>Machine Information</xsl:otherwise>
                                  </xsl:choose>

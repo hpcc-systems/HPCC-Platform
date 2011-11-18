@@ -19,8 +19,8 @@
 -->
 
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xml:space="default" 
-xmlns:xalan="http://xml.apache.org/xalan" xmlns:seisint="http://seisint.com" exclude-result-prefixes="xalan seisint">
-    <xsl:output method="xml" indent="yes" omit-xml-declaration="no"/>
+xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-result-prefixes="seisint set">
+    <xsl:output method="xml" indent="yes" omit-xml-declaration="no" encoding="UTF-8"/>
     <xsl:param name="process" select="'esp_dermot'"/>
     <xsl:param name="instance" select="'dermot'"/>
     <xsl:param name="isLinuxInstance" select="0"/>
@@ -558,7 +558,7 @@ xmlns:xalan="http://xml.apache.org/xalan" xmlns:seisint="http://seisint.com" exc
                     <xsl:message terminate="yes">The plugins file '<xsl:value-of select="$pluginsFilePath"/>' was either not generated or failed to open!</xsl:message>
                 </xsl:if>
                 <xsl:variable name="pluginsNodes" select="$pluginsRoot/Plugins/Plugin/@destName"/>
-                <xsl:if test="not(function-available('xalan:distinct'))">
+                <xsl:if test="not(function-available('set:distinct'))">
                     <xsl:message terminate="yes">This XSL transformation can only be run by Apache's Xalan processor!</xsl:message>
                 </xsl:if>
                 <Plugins>

@@ -207,9 +207,9 @@
                                 <xsl:when test="$clusterType='THORMACHINES'">Thor </xsl:when>
                                 <xsl:when test="$clusterType='HOLEMACHINES'">Hole </xsl:when>
                             </xsl:choose>
-                            <xsl:text>Cluster '</xsl:text>
+                            <xsl:text disable-output-escaping="yes">Cluster '</xsl:text>
                             <xsl:value-of select="$clusterName"/>
-                            <xsl:text>'</xsl:text>
+                            <xsl:text disable-output-escaping="yes">'</xsl:text>
                         </xsl:when>
                         <xsl:otherwise>Nodes</xsl:otherwise>
                     </xsl:choose>
@@ -329,20 +329,20 @@
                         <xsl:text>esp_iframe_title=Log file for </xsl:text>
                         <xsl:value-of select="concat($displayType, ' [', Netaddress, '] of ')"/>
                         <xsl:variable name="clusterType" select="$clusterType"/>
-                        <xsl:text> cluster '</xsl:text>
+                        <xsl:text disable-output-escaping="yes"> cluster '</xsl:text>
                         <xsl:value-of select="$clusterName"/>
-                        <xsl:text>'</xsl:text>
+                        <xsl:text disable-output-escaping="yes">'</xsl:text>
                     </xsl:variable>
                     <xsl:attribute name="onclick">
-                        <xsl:text>return popup('</xsl:text>
+                        <xsl:text disable-output-escaping="yes">return popup('</xsl:text>
                         <xsl:value-of select="Netaddress"/>
-                        <xsl:text>', '</xsl:text>
+                        <xsl:text disable-output-escaping="yes">', '</xsl:text>
                         <xsl:value-of select="translate(/TpMachineQueryResponse/LogDirectory, '\', '/')"/>
-                        <xsl:text>', '</xsl:text>
+                        <xsl:text disable-output-escaping="yes">', '</xsl:text>
                         <xsl:value-of select="$url"/>
-                        <xsl:text>', "</xsl:text>
+                        <xsl:text disable-output-escaping="yes">', "</xsl:text>
                         <xsl:value-of select="$pageCaption"/>
-                        <xsl:text>",</xsl:text>
+                        <xsl:text disable-output-escaping="yes">",</xsl:text>
                         <xsl:value-of select="OS"/>
                         <xsl:text>);</xsl:text>
                     </xsl:attribute>

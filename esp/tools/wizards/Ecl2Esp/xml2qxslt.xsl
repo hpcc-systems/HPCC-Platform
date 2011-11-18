@@ -99,7 +99,7 @@ static QxHandle* createRequestHandle()
                 <xsl:variable name="outName">
                     <xsl:call-template name="getOutNameNode"/>
                 </xsl:variable>
-                <xsl:text>      { "</xsl:text>
+                <xsl:text disable-output-escaping="yes">      { "</xsl:text>
                 <xsl:value-of select="$outName"/>", <xsl:choose>
                     <xsl:when test="$outName!=name()">
                         <xsl:value-of select="concat($quote, name(), $quote)"/>
@@ -147,7 +147,7 @@ static QxHandle* createResponseHandle()<xsl:text>
     BEGIN_HANDLE(Dataset)
         {"<xsl:value-of select="$row"/>", "Record", <xsl:value-of select="$outName"/>H},
     END_HANDLE_RESP_KEEPTAG(Dataset)
-    <xsl:text>
+    <xsl:text disable-output-escaping="yes">
     
     PARENTSUB_HANDLE2(Header, HeaderH)
     
@@ -472,7 +472,7 @@ QUICKXSLT_CAPI int Rx<xsl:value-of select="$method"/>Resp(IEspContext&amp; ctx, 
             <xsl:variable name="numberSuffix">
                 <xsl:call-template name="getNumberSuffixForNode"/>
             </xsl:variable> 
-            <xsl:text>      { "</xsl:text>
+            <xsl:text disable-output-escaping="yes">      { "</xsl:text>
             <xsl:value-of select="$name2"/>
             <xsl:if test="@name">[@name='<xsl:value-of select="@name"/>']</xsl:if>
             <xsl:value-of select="$quote"/>
@@ -554,7 +554,7 @@ QUICKXSLT_CAPI int Rx<xsl:value-of select="$method"/>Resp(IEspContext&amp; ctx, 
             </xsl:if>
         </xsl:when>
         <xsl:otherwise><!--request-->
-            <xsl:text>      { "</xsl:text>
+            <xsl:text disable-output-escaping="yes">      { "</xsl:text>
             <xsl:choose>
                 <xsl:when test="$group">
                     <xsl:value-of select="concat($outName, $listSuffix, $quote, ', ', $quote, $quote, ', ', $listHName)"/>
@@ -662,9 +662,9 @@ QUICKXSLT_CAPI int Rx<xsl:value-of select="$method"/>Resp(IEspContext&amp; ctx, 
 
 <xsl:template name="printFunctionHeader">
 <xsl:param name="fnName"/>
-<xsl:text>
+<xsl:text disable-output-escaping="yes">
 //======================================================================
-// </xsl:text><xsl:value-of select="$fnName"/><xsl:text>
+// </xsl:text><xsl:value-of select="$fnName"/><xsl:text disable-output-escaping="yes">
 //======================================================================
 static QxHandle* </xsl:text><xsl:value-of select="concat($fnName, $eol, '{')"/>
 </xsl:template>
