@@ -82,7 +82,6 @@ namespace ccdserver_hqlhelper
 //#define _CHECK_HEAPSORT
 //#undef PARALLEL_EXECUTE
 //#define TRACE_SEEK_REQUESTS
-//#define FORCE_DEBUG_ALL
 #endif
 
 using roxiemem::OwnedRoxieRow;
@@ -28095,6 +28094,53 @@ protected:
         traceActivityTimes = false;
     }
 
+    void startWorkUnit()
+    {
+        WorkunitUpdate wu(&workUnit->lock());
+        if (!context->getPropBool("@outputToSocket", false))
+            client = NULL;
+        SCMStringBuffer wuParams;
+        if (workUnit->getXmlParams(wuParams).length())
+        {
+            // Merge in params from WU. Ones on command line take precedence though...
+            Owned<IPropertyTree> wuParamTree = createPTreeFromXMLString(wuParams.str(), ipt_caseInsensitive);
+            Owned<IPropertyTreeIterator> params = wuParamTree ->getElements("*");
+            ForEach(*params)
+            {
+                IPropertyTree &param = params->query();
+                if (!context->hasProp(param.queryName()))
+                    context->addPropTree(param.queryName(), LINK(&param));
+            }
+        }
+        if (workUnit->getDebugValueBool("Debug", false))
+        {
+            bool breakAtStart = workUnit->getDebugValueBool("BreakAtStart", true);
+            wu->setState(WUStateDebugRunning);
+            SCMStringBuffer wuid;
+            initDebugMode(breakAtStart, workUnit->getWuid(wuid).str());
+        }
+        else
+            wu->setState(WUStateRunning);
+    }
+
+    void initDebugMode(bool breakAtStart, const char *debugUID)
+    {
+        if (!debugPermitted || !ownEP.port)
+            throw MakeStringException(ROXIE_ACCESS_ERROR, "Debug queries are not permitted on this system");
+        debugContext.setown(new CRoxieServerDebugContext(this, logctx, factory->cloneQueryXGMML(), *client));
+        debugContext->debugInitialize(debugUID, factory->queryQueryName(), breakAtStart);
+        if (workUnit)
+        {
+            WorkunitUpdate wu(&workUnit->lock());
+            wu->setDebugAgentListenerPort(ownEP.port); //tells debugger what port to write commands to
+            StringBuffer sb;
+            ownEP.getIpText(sb);
+            wu->setDebugAgentListenerIP(sb); //tells debugger what IP to write commands to
+        }
+        timeLimit = 0;
+        warnTimeLimit = 0;
+    }
+
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -28115,9 +28161,10 @@ public:
         rowManager->setMemoryLimit(serverQueryFactory->getMemoryLimit());
         workflow.setown(_factory->createWorkflowMachine(false, logctx));
         context.setown(createPTree(ipt_caseInsensitive));
+        startWorkUnit();
     }
 
-    CRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, bool _isXml, bool _isRaw, bool _isBlocked, HttpHelper &httpHelper, bool _trim, unsigned _priority, const IRoxieContextLogger &_logctx, const SocketEndpoint &poolEndpoint, XmlReaderOptions _xmlReadFlags)
+    CRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, bool _isXml, bool _isRaw, bool _isBlocked, HttpHelper &httpHelper, bool _trim, unsigned _priority, const IRoxieContextLogger &_logctx, XmlReaderOptions _xmlReadFlags)
         : CSlaveContext(_factory, _logctx, 0, 0, NULL, false, false), serverQueryFactory(_factory)
     {
         init();
@@ -28134,9 +28181,6 @@ public:
         timeLimit = context->getPropInt("_TimeLimit", timeLimit);
         warnTimeLimit = context->getPropInt("_warnTimeLimit", warnTimeLimit);
 
-        bool breakAtStart = false;
-        bool debugRequested = false;
-        const char *debugUID = NULL;
         const char *wuid = context->queryProp("@wuid");
         if (wuid)
         {
@@ -28145,67 +28189,19 @@ public:
             workUnit.setown(daliHelper->attachWorkunit(wuid, _factory->queryDll())); 
             if (!workUnit)
                 throw MakeStringException(ROXIE_DALI_ERROR, "Failed to open workunit %s", wuid);
-            WorkunitUpdate wu(&workUnit->lock());
-            debugRequested = workUnit->getDebugValueBool("Debug", false);
-            if (debugRequested)
-            {
-                breakAtStart = workUnit->getDebugValueBool("BreakAtStart", true);
-                debugUID = wuid;
-                wu->setState(WUStateDebugRunning);
-            }
-            else
-                wu->setState(WUStateRunning);
-            if (!context->getPropBool("@outputToSocket", false))
-                client = NULL;
-            SCMStringBuffer wuParams;
-            if (workUnit->getXmlParams(wuParams).length())
-            {
-                // Merge in params from WU. Ones on command line take precedence though...
-                Owned<IPropertyTree> wuParamTree = createPTreeFromXMLString(wuParams.str(), ipt_caseInsensitive);
-                Owned<IPropertyTreeIterator> params = wuParamTree ->getElements("*");
-                ForEach(*params)
-                {
-                    IPropertyTree &param = params->query();
-                    if (!context->hasProp(param.queryName()))
-                        context->addPropTree(param.queryName(), LINK(&param));
-                }
-            }
+            startWorkUnit();
         }
-        else 
+        else if (context->getPropBool("@debug", false))
         {
-            debugRequested = context->getPropBool("@debug", false);
-            if (debugRequested)
-            {
-                breakAtStart = context->getPropBool("@break", true);
-                debugUID = context->queryProp("@uid");
-            }
-        }
-#ifdef FORCE_DEBUG_ALL
-        if (!debugRequested)
-        {
-            debugRequested = true;
-            debugUID="debug_force";
-            breakAtStart = false;
-        }
-#endif
-        if (debugRequested && debugUID)
-        {
-            debugContext.setown(new CRoxieServerDebugContext(this, _logctx, _factory->cloneQueryXGMML(), *client));
-            debugContext->debugInitialize(debugUID, _factory->queryQueryName(), breakAtStart);
-            if (workUnit)
-            {
-                WorkunitUpdate wu(&workUnit->lock());
-                wu->setDebugAgentListenerPort(poolEndpoint.port);   //tells debugger what port to write commands to
-                StringBuffer sb;
-                poolEndpoint.getIpText(sb);
-                wu->setDebugAgentListenerIP(sb);    //tells debugger what IP to write commands to
-            }
-            timeLimit = 0;
-            warnTimeLimit = 0;
+            bool breakAtStart = context->getPropBool("@break", true);
+            const char *debugUID = context->queryProp("@uid");
+            if (debugUID && *debugUID)
+                initDebugMode(breakAtStart, debugUID);
         }
         else if (context->getPropBool("_Probe", false))
             probeQuery.setown(_factory->cloneQueryXGMML());
 
+        // MORE some of these might be appropriate in wu case too?
         rowManager->setActivityTracking(context->getPropBool("_TraceMemory", false));
         rowManager->setCheckingHeap(context->getPropInt("_CheckingHeap", defaultCheckingHeap));
         rowManager->setMemoryLimit((memsize_t) context->getPropInt64("_MemoryLimit", _factory->getMemoryLimit()));
@@ -29693,8 +29689,8 @@ private:
     StringAttr queryName;
 
 public:
-    CSoapRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, HttpHelper &httpHelper, unsigned _priority, const IRoxieContextLogger &_logctx, const SocketEndpoint &poolEndpoint, XmlReaderOptions xmlReadFlags)
-        : CRoxieServerContext(_context, _factory, _client, true, false, false, httpHelper, true, _priority, _logctx, poolEndpoint, xmlReadFlags)
+    CSoapRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, HttpHelper &httpHelper, unsigned _priority, const IRoxieContextLogger &_logctx, XmlReaderOptions xmlReadFlags)
+        : CRoxieServerContext(_context, _factory, _client, true, false, false, httpHelper, true, _priority, _logctx, xmlReadFlags)
     {
         queryName.set(_context->queryName());
     }
@@ -29746,12 +29742,12 @@ public:
     }
 };
 
-IRoxieServerContext *createRoxieServerContext(IPropertyTree *context, const IQueryFactory *factory, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, unsigned priority, const IRoxieContextLogger &_logctx, const SocketEndpoint &poolEndpoint, XmlReaderOptions xmlReadFlags)
+IRoxieServerContext *createRoxieServerContext(IPropertyTree *context, const IQueryFactory *factory, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, unsigned priority, const IRoxieContextLogger &_logctx, XmlReaderOptions xmlReadFlags)
 {
     if (httpHelper.isHttp())
-        return new CSoapRoxieServerContext(context, factory, client, httpHelper, priority, _logctx, poolEndpoint, xmlReadFlags);
+        return new CSoapRoxieServerContext(context, factory, client, httpHelper, priority, _logctx, xmlReadFlags);
     else
-        return new CRoxieServerContext(context, factory, client, isXml, isRaw, isBlocked, httpHelper, trim, priority, _logctx, poolEndpoint, xmlReadFlags);
+        return new CRoxieServerContext(context, factory, client, isXml, isRaw, isBlocked, httpHelper, trim, priority, _logctx, xmlReadFlags);
 }
 
 IRoxieServerContext *createOnceServerContext(const IQueryFactory *factory, const IRoxieContextLogger &_logctx)
@@ -30268,15 +30264,14 @@ private:
     Linked<IQueryFactory> f;
     SafeSocket &client;
     HttpHelper &httpHelper;
-    const SocketEndpoint &poolEndpoint;
     XmlReaderOptions xmlReadFlags;
     unsigned &memused;
     unsigned &slaveReplyLen;
     CriticalSection crit;
 
 public:
-    CSoapRequestAsyncFor(const char *_queryName, IQueryFactory *_f, IArrayOf<IPropertyTree> &_requestArray, SafeSocket &_client, HttpHelper &_httpHelper, unsigned &_memused, unsigned &_slaveReplyLen, const char *_queryText, const IRoxieContextLogger &_logctx, const SocketEndpoint &_poolEndpoint, XmlReaderOptions _xmlReadFlags) :
-      f(_f), requestArray(_requestArray), client(_client), httpHelper(_httpHelper), memused(_memused), slaveReplyLen(_slaveReplyLen), logctx(_logctx), poolEndpoint(_poolEndpoint), xmlReadFlags(_xmlReadFlags)
+    CSoapRequestAsyncFor(const char *_queryName, IQueryFactory *_f, IArrayOf<IPropertyTree> &_requestArray, SafeSocket &_client, HttpHelper &_httpHelper, unsigned &_memused, unsigned &_slaveReplyLen, const char *_queryText, const IRoxieContextLogger &_logctx, XmlReaderOptions _xmlReadFlags) :
+      f(_f), requestArray(_requestArray), client(_client), httpHelper(_httpHelper), memused(_memused), slaveReplyLen(_slaveReplyLen), logctx(_logctx), xmlReadFlags(_xmlReadFlags)
     {
         queryName = _queryName;
         queryText = _queryText;
@@ -30300,7 +30295,7 @@ public:
         try
         {
             IPropertyTree &request = requestArray.item(idx);
-            Owned<IRoxieServerContext> ctx = f->createContext(&request, client, true, false, false, httpHelper, true, logctx, poolEndpoint, xmlReadFlags);
+            Owned<IRoxieServerContext> ctx = f->createContext(&request, client, true, false, false, httpHelper, true, logctx, xmlReadFlags);
             ctx->process();
             ctx->flush(idx);
             CriticalBlock b(crit);
@@ -31182,7 +31177,7 @@ readAnother:
                 pool->checkAccess(peer, queryName, sanitizedText, isBlind);
                 if (isDebug)
                 {
-                    if (!debugPermitted)
+                    if (!debugPermitted || !ownEP.port)
                         throw MakeStringException(ROXIE_ACCESS_ERROR, "Debug queries are not permitted on this system");
                 }
                 isBlind = isBlind || blindLogging;
@@ -31195,7 +31190,7 @@ readAnother:
                 }
                 if (strnicmp(rawText.str(), "<debug:", 7)==0)
                 {
-                    if (!debugPermitted)
+                    if (!debugPermitted || !ownEP.port)
                         throw MakeStringException(ROXIE_ACCESS_ERROR, "Debug queries are not permitted on this system");
                     if (!debuggerContext)
                     {
@@ -31322,12 +31317,12 @@ readAnother:
                             unknownQueryStats.noteComplete();
                             if (isHTTP)
                             {
-                                CSoapRequestAsyncFor af(queryName, queryFactory, requestArray, *client, httpHelper, memused, slavesReplyLen, sanitizedText, logctx, pool->queryEndpoint(), xmlReadFlags);
+                                CSoapRequestAsyncFor af(queryName, queryFactory, requestArray, *client, httpHelper, memused, slavesReplyLen, sanitizedText, logctx, xmlReadFlags);
                                 af.For(requestArray.length(), numRequestArrayThreads);
                             }
                             else
                             {
-                                Owned<IRoxieServerContext> ctx = queryFactory->createContext(queryXml, *client, isXml, isRaw, isBlocked, httpHelper, trim, logctx, pool->queryEndpoint(), xmlReadFlags);
+                                Owned<IRoxieServerContext> ctx = queryFactory->createContext(queryXml, *client, isXml, isRaw, isBlocked, httpHelper, trim, logctx, xmlReadFlags);
                                 if (client && !ctx->outputResultsToSocket())
                                 {
                                     unsigned replyLen = 0;
