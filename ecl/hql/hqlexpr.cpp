@@ -6827,12 +6827,13 @@ IHqlExpression * createFunctionDefinition(_ATOM name, HqlExprArray & args)
 
 void CHqlScope::defineSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression *value, 
                              bool exported, bool shared, unsigned symbolFlags,
-                             IFileContents *fc, int _bodystart, int lineno, int column)
+                             IFileContents *fc, int lineno, int column,
+                             int _startpos, int _bodypos, int _endpos)
 {
     if (!moduleName)
         moduleName = name;
 
-    IHqlExpression * symbol = createSymbol(_name, moduleName, value, NULL, exported, shared, symbolFlags, fc, _bodystart, lineno, column);
+    IHqlExpression * symbol = createSymbol(_name, moduleName, value, NULL, exported, shared, symbolFlags, fc, lineno, column, _startpos, _bodypos, _endpos);
     defineSymbol(symbol);
 }
 
@@ -8097,7 +8098,7 @@ void addForwardDefinition(IHqlScope * scope, _ATOM symbolName, _ATOM moduleName,
 {
     IHqlExpression * cur = createSymbol(symbolName, moduleName, NULL, NULL,
                             isExported, !isExported, symbolFlags,
-                            contents, 0, startLine, startColumn);
+                            contents, startLine, startColumn, 0, 0, 0);
 
     scope->defineSymbol(cur);
 }
@@ -8140,14 +8141,14 @@ CHqlSyntaxCheckScope::CHqlSyntaxCheckScope(IHqlScope *_parent, IEclRepository * 
 
 }
 
-void CHqlSyntaxCheckScope::defineSymbol(_ATOM _name, _ATOM _moduleName, IHqlExpression *value, bool exported, bool shared, unsigned symbolFlags, IFileContents *_fc, int _bodystart, int lineno, int column)
+void CHqlSyntaxCheckScope::defineSymbol(_ATOM _name, _ATOM _moduleName, IHqlExpression *value, bool exported, bool shared, unsigned symbolFlags, IFileContents *_fc, int lineno, int column, int _startpos, int _bodypos, int _endpos)
 {
 #ifdef TRACE_PARTIAL
     DBGLOG("CHqlSyntaxCheckScope::defineSymbol(1) %s", _name->getAtomNamePtr());
 #endif
     redefine.setValue(_name, NULL);
     // MORE: define func/macro etc with parameter?
-    CHqlScope::defineSymbol(_name, _moduleName, value, exported, shared, symbolFlags, _fc, _bodystart, lineno, column);
+    CHqlScope::defineSymbol(_name, _moduleName, value, exported, shared, symbolFlags, _fc, lineno, column, _startpos, _bodypos, _endpos);
 }
 
 void CHqlSyntaxCheckScope::defineSymbol(_ATOM _name, _ATOM _moduleName, IHqlExpression *value, bool exported, bool shared, unsigned symbolFlags)
@@ -9287,11 +9288,12 @@ IHqlExpression * createSymbol(_ATOM name, _ATOM moduleName, IHqlExpression * exp
 
 IHqlExpression * createSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression *expr, IHqlExpression * funcdef,
                              bool exported, bool shared, unsigned symbolFlags,
-                             IFileContents *fc, int _bodystart, int lineno, int column)
+                             IFileContents *fc, int lineno, int column,
+                             int _startpos, int _bodypos, int _endpos)
 {
     return CHqlNamedSymbol::makeSymbol(_name, moduleName, expr, funcdef,
                              exported, shared, symbolFlags,
-                             fc, _bodystart, lineno, column);
+                             fc, _bodypos, lineno, column);
 }
 
 
