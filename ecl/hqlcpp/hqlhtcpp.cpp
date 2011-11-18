@@ -16226,7 +16226,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityInlineTable(BuildCtx & ctx, IH
         {
             OwnedHqlExpr whichRow = createVariable("row", LINK(unsignedType));
             BuildCtx subctx(funcctx);
-            OwnedHqlExpr test = createValue(no_ge, LINK(whichRow), getSizetConstant(maxRows));
+            OwnedHqlExpr test = createValue(no_ge, makeBoolType(), LINK(whichRow), getSizetConstant(maxRows));
             subctx.addFilter(test);
             buildReturn(subctx, queryZero());
             OwnedHqlExpr ds = bound.getTranslatedExpr();
