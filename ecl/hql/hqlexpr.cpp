@@ -122,6 +122,8 @@ static IHqlExpression * defaultSelectorSequenceExpr;
 static IHqlExpression * newSelectAttrExpr;
 static IHqlExpression * recursiveExpr;
 static IHqlExpression * processingMarker;
+static IHqlExpression * mergePendingMarker;
+static IHqlExpression * mergeNoMatchMarker;
 static IHqlExpression * nullIntValue[9][2];
 static CriticalSection * exprCacheCS;
 static CriticalSection * crcCS;
@@ -175,6 +177,8 @@ MODULE_INIT(INIT_PRIORITY_HQLINTERNAL)
     newSelectAttrExpr = createExprAttribute(newAtom);
     recursiveExpr = createAttribute(recursiveAtom);
     processingMarker = createValue(no_processing, makeNullType());
+    mergePendingMarker = createValue(no_merge_pending, makeNullType());
+    mergeNoMatchMarker = createValue(no_merge_nomatch, makeNullType());
     cachedNoBody = createValue(no_nobody, makeNullType());
     return true;
 }
@@ -186,6 +190,8 @@ MODULE_EXIT()
         ::Release(nullIntValue[i][1]);
     }
     cachedNoBody->Release();
+    mergeNoMatchMarker->Release();
+    mergePendingMarker->Release();
     processingMarker->Release();
     recursiveExpr->Release();
     newSelectAttrExpr->Release();
@@ -1355,6 +1361,8 @@ const char *getOpString(node_operator op)
     case no_uncommoned_comma: return ",";
     case no_nameof: return "__NAMEOF__";
     case no_processing: return "no_processing";
+    case no_merge_pending: return "no_merge_pending";
+    case no_merge_nomatch: return "no_merge_nomatch";
     case no_toxml: return "TOXML";
     case no_catchds: return "CATCH";
     case no_readspill: return "no_readspill";
@@ -1387,7 +1395,7 @@ const char *getOpString(node_operator op)
     case no_unused20: case no_unused21: case no_unused22: case no_unused23: case no_unused24: case no_unused25: case no_unused26: case no_unused27: case no_unused28: case no_unused29:
     case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38: case no_unused39:
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
-    case no_unused50: case no_unused52: case no_unused53:
+    case no_unused50: case no_unused52:
         return "unused";
     /* if fail, use "hqltest -internal" to find out why. */
     default: assertex(false); return "???";
@@ -7432,12 +7440,14 @@ IHqlExpression * CHqlMergedScope::lookupSymbol(_ATOM searchName, unsigned lookup
     if (resolved)
     {
         node_operator resolvedOp = resolved->getOperator();
-        if (resolvedOp == no_processing)
+        if (resolvedOp == no_merge_pending)
         {
             if (lookupFlags & LSFrequired)
                 throwRecursiveError(searchName);
             return NULL;
         }
+        if (resolvedOp == no_merge_nomatch)
+            return NULL;
         if (resolvedOp != no_nobody)
             return resolved;
     }
@@ -7447,7 +7457,7 @@ IHqlExpression * CHqlMergedScope::lookupSymbol(_ATOM searchName, unsigned lookup
             return NULL;
     }
 
-    OwnedHqlExpr recursionGuard = createSymbol(searchName, LINK(processingMarker), ob_exported);
+    OwnedHqlExpr recursionGuard = createSymbol(searchName, LINK(mergePendingMarker), ob_exported);
     defineSymbol(LINK(recursionGuard));
 
     OwnedHqlExpr previousMatch;
@@ -7502,6 +7512,8 @@ IHqlExpression * CHqlMergedScope::lookupSymbol(_ATOM searchName, unsigned lookup
         defineSymbol(LINK(previousMatch));
         return previousMatch.getClear();
     }
+    //Indicate that no match was found to save work next time.
+    defineSymbol(createSymbol(searchName, LINK(mergeNoMatchMarker), ob_exported));
     return NULL;
 }
 
@@ -7532,14 +7544,19 @@ void CHqlMergedScope::ensureSymbolsDefined(HqlLookupContext & ctx)
             OwnedHqlExpr prev = symbols.getLinkedValue(curName);
             if (prev)
             {
-                if (canMergeDefinition(prev))
+                //Unusual - check that this hasn't already been resolved by a call to lookupSymbol()
+                //otherwise recreating a merged scope can cause problems.
+                if ((prev->getOperator() != no_mergedscope) && (prev != &cur))
                 {
-                    //no_nobody means it need to be resolve - either because multiple matches, or because
-                    //a child scope hasn't resolved it yet.
-                    if (prev->getOperator() != no_nobody)
+                    if (canMergeDefinition(prev))
                     {
-                        IHqlExpression * newSymbol = CHqlNamedSymbol::makeSymbol(curName, name, NULL, true, false, 0);
-                        defineSymbol(newSymbol);
+                        //no_nobody means it need to be resolve - either because multiple matches, or because
+                        //a child scope hasn't resolved it yet.
+                        if (prev->getOperator() != no_nobody)
+                        {
+                            IHqlExpression * newSymbol = CHqlNamedSymbol::makeSymbol(curName, name, NULL, true, false, 0);
+                            defineSymbol(newSymbol);
+                        }
                     }
                 }
             }
@@ -9376,6 +9393,8 @@ extern IHqlExpression *createDatasetF(node_operator op, ...)
 
 IHqlExpression * createAliasOwn(IHqlExpression * expr, IHqlExpression * attr)
 {
+    if (expr->getOperator() == no_alias)
+        return expr;
     if (expr->isDataset())
         return createDataset(no_alias, expr, attr);
     if (expr->isDatarow())
