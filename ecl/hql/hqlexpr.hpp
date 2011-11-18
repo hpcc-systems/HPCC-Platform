@@ -1025,7 +1025,7 @@ interface IHqlScope : public IInterface
     virtual bool getProp(_ATOM, StringBuffer &) const = 0;
 
     //IHqlCreateScope
-    virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags, IFileContents *fc, int bodystart, int lineno, int column) = 0;
+    virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags, IFileContents *fc, int lineno, int column, int _startpos, int _bodypos, int _endpos) = 0;
     virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags) = 0;
     virtual void defineSymbol(IHqlExpression * expr) = 0;       // use with great care, expr must be a named symbol.
     virtual void removeSymbol(_ATOM name) = 0;      // use with great care
@@ -1265,7 +1265,7 @@ extern HQL_API IHqlExpression * createSymbol(_ATOM name, IHqlExpression *expr, u
 extern HQL_API IHqlExpression * createSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, bool _exported, bool _shared, unsigned _flags);
 extern HQL_API IHqlExpression * createSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression *expr, IHqlExpression * funcdef,
                                              bool exported, bool shared, unsigned symbolFlags,
-                                             IFileContents *fc, int _bodystart, int lineno, int column);
+                                             IFileContents *fc, int lineno, int column, int _startpos, int _bodypos, int _endpos);
 extern HQL_API IHqlExpression *createAttribute(_ATOM name, IHqlExpression * value = NULL, IHqlExpression * value2 = NULL, IHqlExpression * value3 = NULL);
 extern HQL_API IHqlExpression *createAttribute(_ATOM name, HqlExprArray & args);
 extern HQL_API IHqlExpression *createExprAttribute(_ATOM name, IHqlExpression * value = NULL, IHqlExpression * value2 = NULL, IHqlExpression * value3 = NULL);

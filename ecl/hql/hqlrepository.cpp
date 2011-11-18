@@ -221,7 +221,7 @@ public:
         rootScope.setown(createScope());
         IHqlExpression * scope = repository->queryRootScope()->queryExpression();
 
-        rootScope->defineSymbol(name, NULL, LINK(scope), true, false, 0, NULL, 0, 0, 0);
+        rootScope->defineSymbol(name, NULL, LINK(scope), true, false, 0);
     }
 
     IMPLEMENT_IINTERFACE;
@@ -363,7 +363,7 @@ IHqlExpression * CNewEclRepository::createSymbol(IHqlRemoteScope * rScope, IEclS
     default:
         throwUnexpected();
     }
-    return ::createSymbol(eclName, scope->queryName(), body.getClear(), NULL, true, true, symbolFlags, contents, 0, 0, 0);
+    return ::createSymbol(eclName, scope->queryName(), body.getClear(), NULL, true, true, symbolFlags, contents, 0, 0, 0, 0, contents ? contents->length() : 0);
 }
 
 
