@@ -1057,7 +1057,7 @@ public:
     {
         throwUnexpected();   // only implemented in derived server class
     }
-    virtual IRoxieServerContext *createContext(IPropertyTree *xml, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, const IRoxieContextLogger &_logctx, const SocketEndpoint &poolEndpoint, XmlReaderOptions xmlReadFlags) const
+    virtual IRoxieServerContext *createContext(IPropertyTree *xml, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, const IRoxieContextLogger &_logctx, XmlReaderOptions xmlReadFlags) const
     {
         throwUnexpected();   // only implemented in derived server class
     }
@@ -1209,11 +1209,11 @@ public:
         }
     }
 
-    virtual IRoxieServerContext *createContext(IPropertyTree *context, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, const IRoxieContextLogger &_logctx, const SocketEndpoint &_poolEndpoint, XmlReaderOptions _xmlReadFlags) const
+    virtual IRoxieServerContext *createContext(IPropertyTree *context, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, const IRoxieContextLogger &_logctx, XmlReaderOptions _xmlReadFlags) const
     {
         checkSuspended();
         checkOnceDone(_logctx);
-        return createRoxieServerContext(context, this, client, isXml, isRaw, isBlocked, httpHelper, trim, priority, _logctx, _poolEndpoint, _xmlReadFlags);
+        return createRoxieServerContext(context, this, client, isXml, isRaw, isBlocked, httpHelper, trim, priority, _logctx, _xmlReadFlags);
     }
 
     virtual IRoxieServerContext *createContext(IConstWorkUnit *wu, const IRoxieContextLogger &_logctx) const
