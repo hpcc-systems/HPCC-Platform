@@ -2654,20 +2654,245 @@ public:
     virtual void setAccessedTime(const CDateTime &dt) = 0;                      // set date and time last accessed
 };
 
-template <class INTERFACE>
-class CFileClusterOwner: public INTERFACE
+class CDistributedFile: public CDistributedFileBase<IDistributedFile>
 {
 protected:
-    FileClusterInfoArray clusters;                      
-public:
+    Owned<IFileDescriptor> fdesc;
+    CDistributedFilePartArray parts;            // use queryParts to access
+    CriticalSection sect;
+    StringAttr directory;
+    StringAttr partmask;
+    FileClusterInfoArray clusters;
 
-    CFileClusterOwner<INTERFACE>()
+    void savePartsAttr(bool force)
     {
+        CriticalBlock block (sect);
+        IPropertyTree *pt;
+        if (parts.ordinality()==1) { // single part saved as part
+            if (parts.item(0).clearDirty()||force) {
+                CDistributedFilePart &part = parts.item(0);
+                while ((pt=root->queryPropTree("Part[1]"))!=NULL)
+                    root->removeTree(pt);
+                pt = createPTreeFromIPT(part.queryAttr());
+                pt->setPropInt("@num",1);
+                const char *grp = root->queryProp("@group");
+                if (!grp||!*grp) {
+                    StringBuffer eps;
+                    pt->addProp("@node",part.queryNode(0)->endpoint().getUrlStr(eps).str()); // legacy
+                }
+                const char *override = part.queryOverrideName();
+                if (override&&*override)
+                    pt->setProp("@name",override);
+                else {
+                    pt->removeProp("@name");
+                    const char *mask=queryPartMask();
+                    if (mask&&*mask) {
+                        StringBuffer tmp;
+                        expandMask(tmp,mask,0,1);
+                        pt->setProp("@name",tmp.str());
+                    }
+                }
+                root->setPropTree("Part",pt);
+            }
+        }
+        else {
+            unsigned n = parts.ordinality();
+            unsigned i1;
+            for (i1=0;i1<n;i1++) {
+                if (parts.item(i1).clearDirty()||force) {
+                    MemoryBuffer mb;
+                    CriticalBlock block (sect);
+                    ForEachItemIn(i2,parts)
+                        serializePartAttr(mb,parts.item(i2).queryAttr());
+                    root->setPropBin("Parts",mb.length(),mb.toByteArray());
+                    while ((pt=root->queryPropTree("Part[1]"))!=NULL)
+                        root->removeTree(pt);
+                    break;
+                }
+            }
+            while (i1<n)
+                parts.item(i1++).clearDirty();
+        }
     }
 
-    virtual ~CFileClusterOwner<INTERFACE>()
+protected: friend class CDistributedFilePart;
+    CDistributedFilePartArray &queryParts()
     {
+        return parts;
+    }
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CDistributedFile(CDistributedFileDirectory *_parent, IRemoteConnection *_conn,const CDfsLogicalFileName &lname,IUserDescriptor *user) // takes ownership of conn
+    {
+        setUserDescriptor(udesc,user);
+        logicalName.set(lname);
+        parent = _parent;
+        conn.setown(_conn);
+        CClustersLockedSection sect(logicalName);
+        root.setown(conn->getRoot());
+        root->queryBranch(".");     // load branch
+#ifdef EXTRA_LOGGING
+        LOGPTREE("CDistributedFile.a root",root);
+#endif
+        Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(root,&queryNamedGroupStore(),0);
+#ifdef EXTRA_LOGGING
+        LOGFDESC("CDistributedFile.a fdesc",fdesc);
+#endif
+        setFileAttrs(fdesc,false);
+        setClusters(fdesc);
+        setPreferredClusters(_parent->defprefclusters);
+        setParts(fdesc,false);
+        //shrinkFileTree(root); // enable when safe!
+    }
+
+    CDistributedFile(CDistributedFileDirectory *_parent, IFileDescriptor *fdesc, bool includeports)
+    {
+#ifdef EXTRA_LOGGING
+        LOGFDESC("CDistributedFile.b fdesc",fdesc);
+#endif
+        parent = _parent;
+        root.setown(createPTree(queryDfsXmlBranchName(DXB_File)));
+//      fdesc->serializeTree(*root,IFDSF_EXCLUDE_NODES);
+        setFileAttrs(fdesc,true);
+        setClusters(fdesc);
+        setPreferredClusters(_parent->defprefclusters);
+        saveClusters();
+        setParts(fdesc,true);
+#ifdef EXTRA_LOGGING
+        LOGPTREE("CDistributedFile.b root.1",root);
+#endif
+        offset_t totalsize=0;
+        unsigned checkSum = ~0;
+        bool useableCheckSum = true;
+        MemoryBuffer pmb;
+        unsigned n = fdesc->numParts();
+        for (unsigned i=0;i<n;i++) {
+            IPropertyTree *partattr = &fdesc->queryPart(i)->queryProperties();
+            if (!partattr)
+            {
+                totalsize = (unsigned)-1;
+                useableCheckSum = false;
+            }
+            else
+            {
+                offset_t psz;
+                if (totalsize!=(offset_t)-1) {
+                    psz = (offset_t)partattr->getPropInt64("@size", -1);
+                    if (psz==(offset_t)-1)
+                        totalsize = psz;
+                    else
+                        totalsize += psz;
+                }
+                if (useableCheckSum) {
+                    unsigned crc;
+                    if (fdesc->queryPart(i)->getCrc(crc))
+                        checkSum ^= crc;
+                    else
+                        useableCheckSum = false;
+                }
+            }
+        }
+        lockProperties(defaultTimeout);         // only needed to load attr (no lock)
+        shrinkFileTree(root);
+        if (totalsize!=(offset_t)-1)
+            attr->setPropInt64("@size", totalsize);
+        if (useableCheckSum)
+            attr->setPropInt64("@checkSum", checkSum);
+        setModified();
+        unlockProperties();
+#ifdef EXTRA_LOGGING
+        LOGPTREE("CDistributedFile.b root.2",root);
+#endif
+    }
+
+    void killParts()
+    {
+        ForEachItemIn(i,parts)
+            parts.item(i).childRelease();
+        parts.kill(true);
+    }
+
+    ~CDistributedFile()
+    {
+        clearLockedProperties();    // there actually shouldn't be any!
+        if (conn)
+            conn->rollback();       // changes should always be done in locked properties
+        killParts();
         clusters.kill();
+    }
+
+    IFileDescriptor *getFileDescriptor(const char *clustername)
+    {
+        CriticalBlock block (sect);
+        Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(root,&queryNamedGroupStore(),0);
+        fdesc->setTraceName(logicalName.get());
+        StringArray cnames;
+        if (clustername&&*clustername)
+            cnames.append(clustername);
+        else
+            getClusterNames(cnames);
+        fdesc->setClusterOrder(cnames,clustername&&*clustername);
+        return fdesc.getClear();
+    }
+
+    void setFileAttrs(IFileDescriptor *fdesc,bool save)
+    {
+        directory.set(fdesc->queryDefaultDir());
+        partmask.set(fdesc->queryPartMask());
+        const char *lfn = logicalName.get();
+        if (lfn&&*lfn) {
+            if (partmask.isEmpty()) {
+                StringBuffer mask;
+                getPartMask(mask,lfn,0);
+                partmask.set(mask);
+            }
+        }
+        attr.clear();
+        if (!save)
+            return;
+        if (directory.isEmpty())
+            root->removeProp("@directory");
+        else
+            root->setProp("@directory",directory);
+        if (partmask.isEmpty())
+            root->removeProp("@partmask");
+        else
+            root->setProp("@partmask",partmask);
+        IPropertyTree *t = &fdesc->queryProperties();
+        if (isEmptyPTree(t))
+            root->removeProp("Attr");
+        else
+            root->setPropTree("Attr",createPTreeFromIPT(t));
+    }
+
+    void setClusters(IFileDescriptor *fdesc)
+    {
+        clusters.clear();
+        unsigned nc = fdesc->numClusters();
+        if (nc) {
+            for (unsigned i=0;i<nc;i++) {
+                StringBuffer cname;
+                StringBuffer clabel;
+                IClusterInfo &cluster = *createClusterInfo(
+                                    fdesc->getClusterGroupName(i,cname,NULL).str(),
+                                    fdesc->queryClusterGroup(i),
+                                    fdesc->queryPartDiskMapping(i),
+                                    &queryNamedGroupStore(),
+                                    fdesc->queryClusterRoxieLabel(i)
+                                    );
+#ifdef EXTRA_LOGGING
+                PROGLOG("setClusters(%d,%s)",i,cname.str());
+#endif
+
+                if (!cluster.queryGroup(&queryNamedGroupStore())) {
+                    ERRLOG("IDistributedFileDescriptor cannot set cluster for %s",logicalName.get());
+                }
+                clusters.append(cluster);
+            }
+        }
+        else
+            ERRLOG("No cluster specified for %s",logicalName.get());
     }
 
     unsigned numClusters()
@@ -2688,11 +2913,11 @@ public:
     void reloadClusters()
     {
         // called from CClustersLockedSection
-        if (!INTERFACE::conn)
+        if (!CDistributedFileBase::conn)
             return;
-        assertex(INTERFACE::proplockcount==0); // cannot reload clusters if properties locked
-        INTERFACE::conn->reload(); // should only be cluster changes but a bit dangerous
-        IPropertyTree *t = INTERFACE::conn->queryRoot();  // NB not INTERFACE::queryRoot();
+        assertex(CDistributedFileBase::proplockcount==0); // cannot reload clusters if properties locked
+        CDistributedFileBase::conn->reload(); // should only be cluster changes but a bit dangerous
+        IPropertyTree *t = CDistributedFileBase::conn->queryRoot();  // NB not CDistributedFileBase::queryRoot();
 
         if (!t)
             return;
@@ -2704,14 +2929,14 @@ public:
     {
         // called from CClustersLockedSection
         IPropertyTree *t;
-        if (INTERFACE::conn)
-            t = INTERFACE::conn->queryRoot();  
+        if (CDistributedFileBase::conn)
+            t = CDistributedFileBase::conn->queryRoot();
         else
-            t = INTERFACE::queryRoot(); //cache
+            t = CDistributedFileBase::queryRoot(); //cache
         if (!t)
             return;
         IPropertyTree *pt;
-        IPropertyTree *tc = INTERFACE::queryRoot(); //cache
+        IPropertyTree *tc = CDistributedFileBase::queryRoot(); //cache
         IPropertyTree *t0 = t;
         StringBuffer grplist;
         // the following is complicated by fact there is a cache of the file branch
@@ -2745,15 +2970,15 @@ public:
                 break;
             t = tc; // now fix cache
         }
-        if (INTERFACE::conn) 
-            INTERFACE::conn->commit(); // should only be cluster changes but a bit dangerous
+        if (CDistributedFileBase::conn)
+            CDistributedFileBase::conn->commit(); // should only be cluster changes but a bit dangerous
     }
 
     void addCluster(const char *clustername,ClusterPartDiskMapSpec &mspec)
     {
         if (!clustername&&!*clustername)
             return;
-        CClustersLockedSection cls(INTERFACE::logicalName);
+        CClustersLockedSection cls(CDistributedFileBase::logicalName);
         reloadClusters();
         if (findCluster(clustername)!=NotFound) {
             if (findCluster(clustername)!=NotFound) {
@@ -2774,11 +2999,11 @@ public:
 
     void removeCluster(const char *clustername)
     {
-        CClustersLockedSection cls(INTERFACE::logicalName);
+        CClustersLockedSection cls(CDistributedFileBase::logicalName);
         reloadClusters();
         unsigned i = findCluster(clustername);
         if (i!=NotFound) {
-            if (clusters.ordinality()==1) 
+            if (clusters.ordinality()==1)
                 throw MakeStringException(-1,"CFileClusterOwner::removeCluster cannot remove sole cluster %s",clustername);
             clusters.remove(i);
             saveClusters();
@@ -2787,7 +3012,7 @@ public:
 
     void setPreferredClusters(const char *clusterlist)
     {
-        clusters.setPreferred(clusterlist,INTERFACE::logicalName);
+        clusters.setPreferred(clusterlist,CDistributedFileBase::logicalName);
     }
 
 
@@ -2835,7 +3060,7 @@ public:
     unsigned copyClusterNum(unsigned part, unsigned copy,unsigned *replicate)
     {
         return clusters.copyNum(part,copy, numParts(),replicate);
-    } 
+    }
 
     ClusterPartDiskMapSpec &queryPartDiskMapping(unsigned clusternum)
     {
@@ -2845,7 +3070,7 @@ public:
 
     void updatePartDiskMapping(const char *clustername,const ClusterPartDiskMapSpec &spec)
     {
-        CClustersLockedSection cls(INTERFACE::logicalName);
+        CClustersLockedSection cls(CDistributedFileBase::logicalName);
         reloadClusters();
         unsigned i = findCluster(clustername);
         if (i!=NotFound) {
@@ -2868,8 +3093,6 @@ public:
     {
         clusters.setSingleClusterOnly();
     }
-
-    virtual unsigned numParts() = 0;
 
     unsigned numClusterCopies(unsigned cnum,unsigned partnum)
     {
@@ -2897,7 +3120,7 @@ public:
             while (i<nc) {
                 StringBuffer dcmp;
                 clusters.item(i).getBaseDir(dcmp,SepCharBaseOs(getPathSepChar(ds)));    // no trailing sep
-                const char *t = dcmp.str(); 
+                const char *t = dcmp.str();
                 const char *d = ds;
                 while (*d&&(*t==*d)) {
                     d++;
@@ -2929,249 +3152,8 @@ public:
             unsigned n;
             unsigned d;
             clusters.item(cluster).queryPartDiskMapping().calcPartLocation(partno,numParts(),rep,clusters.queryGroup(cluster)?clusters.queryGroup(cluster)->ordinality():numParts(),n,d);
-            setReplicateFilename(path,d);  
+            setReplicateFilename(path,d);
         }
-    }
-};
-
-class CDistributedFile: public CFileClusterOwner< CDistributedFileBase<IDistributedFile> >
-{
-protected:
-    Owned<IFileDescriptor> fdesc;
-    CDistributedFilePartArray parts;            // use queryParts to access
-    CriticalSection sect;
-    StringAttr directory;
-    StringAttr partmask;
-
-
-    void savePartsAttr(bool force)
-    {
-        CriticalBlock block (sect);
-        IPropertyTree *pt;
-        if (parts.ordinality()==1) { // single part saved as part
-            if (parts.item(0).clearDirty()||force) { 
-                CDistributedFilePart &part = parts.item(0);
-                while ((pt=root->queryPropTree("Part[1]"))!=NULL)
-                    root->removeTree(pt);
-                pt = createPTreeFromIPT(part.queryAttr());
-                pt->setPropInt("@num",1);
-                const char *grp = root->queryProp("@group");
-                if (!grp||!*grp) {
-                    StringBuffer eps;
-                    pt->addProp("@node",part.queryNode(0)->endpoint().getUrlStr(eps).str()); // legacy
-                }
-                const char *override = part.queryOverrideName();
-                if (override&&*override) 
-                    pt->setProp("@name",override);
-                else {
-                    pt->removeProp("@name");
-                    const char *mask=queryPartMask();
-                    if (mask&&*mask) {
-                        StringBuffer tmp;
-                        expandMask(tmp,mask,0,1);
-                        pt->setProp("@name",tmp.str());
-                    }
-                }
-                root->setPropTree("Part",pt);
-            }
-        }
-        else {
-            unsigned n = parts.ordinality();
-            unsigned i1;
-            for (i1=0;i1<n;i1++) {
-                if (parts.item(i1).clearDirty()||force) { 
-                    MemoryBuffer mb;
-                    CriticalBlock block (sect);
-                    ForEachItemIn(i2,parts) 
-                        serializePartAttr(mb,parts.item(i2).queryAttr());
-                    root->setPropBin("Parts",mb.length(),mb.toByteArray());
-                    while ((pt=root->queryPropTree("Part[1]"))!=NULL)
-                        root->removeTree(pt);
-                    break;
-                }
-            }
-            while (i1<n)
-                parts.item(i1++).clearDirty();
-        }
-    }
-
-protected: friend class CDistributedFilePart;
-    CDistributedFilePartArray &queryParts()
-    {
-        return parts;
-    }
-public:
-    IMPLEMENT_IINTERFACE;
-
-    CDistributedFile(CDistributedFileDirectory *_parent, IRemoteConnection *_conn,const CDfsLogicalFileName &lname,IUserDescriptor *user) // takes ownership of conn
-    {
-        setUserDescriptor(udesc,user);
-        logicalName.set(lname);
-        parent = _parent;
-        conn.setown(_conn);
-        CClustersLockedSection sect(logicalName);
-        root.setown(conn->getRoot());
-        root->queryBranch(".");     // load branch
-#ifdef EXTRA_LOGGING
-        LOGPTREE("CDistributedFile.a root",root);
-#endif
-        Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(root,&queryNamedGroupStore(),0);
-#ifdef EXTRA_LOGGING
-        LOGFDESC("CDistributedFile.a fdesc",fdesc);
-#endif
-        setFileAttrs(fdesc,false);
-        setClusters(fdesc);
-        setPreferredClusters(_parent->defprefclusters);     
-        setParts(fdesc,false);
-        //shrinkFileTree(root); // enable when safe!
-    }
-
-    CDistributedFile(CDistributedFileDirectory *_parent, IFileDescriptor *fdesc, bool includeports)
-    {
-#ifdef EXTRA_LOGGING
-        LOGFDESC("CDistributedFile.b fdesc",fdesc);
-#endif
-        parent = _parent;
-        root.setown(createPTree(queryDfsXmlBranchName(DXB_File)));
-//      fdesc->serializeTree(*root,IFDSF_EXCLUDE_NODES); 
-        setFileAttrs(fdesc,true);
-        setClusters(fdesc);
-        setPreferredClusters(_parent->defprefclusters);     
-        saveClusters();
-        setParts(fdesc,true);
-#ifdef EXTRA_LOGGING
-        LOGPTREE("CDistributedFile.b root.1",root);
-#endif
-        offset_t totalsize=0;
-        unsigned checkSum = ~0;
-        bool useableCheckSum = true;
-        MemoryBuffer pmb;
-        unsigned n = fdesc->numParts();
-        for (unsigned i=0;i<n;i++) {
-            IPropertyTree *partattr = &fdesc->queryPart(i)->queryProperties();
-            if (!partattr)
-            {
-                totalsize = (unsigned)-1;
-                useableCheckSum = false;
-            }
-            else
-            {
-                offset_t psz;
-                if (totalsize!=(offset_t)-1) {
-                    psz = (offset_t)partattr->getPropInt64("@size", -1);
-                    if (psz==(offset_t)-1) 
-                        totalsize = psz;
-                    else
-                        totalsize += psz;
-                }
-                if (useableCheckSum) {
-                    unsigned crc;
-                    if (fdesc->queryPart(i)->getCrc(crc))
-                        checkSum ^= crc;
-                    else
-                        useableCheckSum = false;
-                }
-            }
-        }
-        lockProperties(defaultTimeout);         // only needed to load attr (no lock)
-        shrinkFileTree(root);
-        if (totalsize!=(offset_t)-1) 
-            attr->setPropInt64("@size", totalsize);
-        if (useableCheckSum)
-            attr->setPropInt64("@checkSum", checkSum);
-        setModified();
-        unlockProperties();
-#ifdef EXTRA_LOGGING
-        LOGPTREE("CDistributedFile.b root.2",root);
-#endif
-    }
-
-    void killParts()
-    {
-        ForEachItemIn(i,parts)
-            parts.item(i).childRelease();
-        parts.kill(true);
-    }
-
-    ~CDistributedFile()
-    {
-        clearLockedProperties();    // there actually shouldn't be any!
-        if (conn)
-            conn->rollback();       // changes should always be done in locked properties
-        killParts();
-    }
-
-    IFileDescriptor *getFileDescriptor(const char *clustername)
-    {
-        CriticalBlock block (sect);
-        Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(root,&queryNamedGroupStore(),0);
-        fdesc->setTraceName(logicalName.get());
-        StringArray cnames;
-        if (clustername&&*clustername)
-            cnames.append(clustername);
-        else
-            getClusterNames(cnames);
-        fdesc->setClusterOrder(cnames,clustername&&*clustername);
-        return fdesc.getClear();
-    }
-
-    void setFileAttrs(IFileDescriptor *fdesc,bool save)
-    {
-        directory.set(fdesc->queryDefaultDir());
-        partmask.set(fdesc->queryPartMask());
-        const char *lfn = logicalName.get();
-        if (lfn&&*lfn) {
-            if (partmask.isEmpty()) {
-                StringBuffer mask;
-                getPartMask(mask,lfn,0);
-                partmask.set(mask);
-            }
-        }
-        attr.clear();
-        if (!save)
-            return;
-        if (directory.isEmpty())
-            root->removeProp("@directory");
-        else
-            root->setProp("@directory",directory);
-        if (partmask.isEmpty())
-            root->removeProp("@partmask");
-        else
-            root->setProp("@partmask",partmask);
-        IPropertyTree *t = &fdesc->queryProperties();
-        if (isEmptyPTree(t)) 
-            root->removeProp("Attr");
-        else
-            root->setPropTree("Attr",createPTreeFromIPT(t));
-    }
-
-    void setClusters(IFileDescriptor *fdesc)
-    {
-        clusters.clear();
-        unsigned nc = fdesc->numClusters();
-        if (nc) {
-            for (unsigned i=0;i<nc;i++) {
-                StringBuffer cname;
-                StringBuffer clabel;
-                IClusterInfo &cluster = *createClusterInfo(
-                                    fdesc->getClusterGroupName(i,cname,NULL).str(),
-                                    fdesc->queryClusterGroup(i),
-                                    fdesc->queryPartDiskMapping(i),
-                                    &queryNamedGroupStore(),
-                                    fdesc->queryClusterRoxieLabel(i)
-                                    );
-#ifdef EXTRA_LOGGING
-                PROGLOG("setClusters(%d,%s)",i,cname.str());
-#endif
-
-                if (!cluster.queryGroup(&queryNamedGroupStore())) {
-                    ERRLOG("IDistributedFileDescriptor cannot set cluster for %s",logicalName.get());
-                }
-                clusters.append(cluster);
-            }
-        }
-        else
-            ERRLOG("No cluster specified for %s",logicalName.get());
     }
 
     void setParts(IFileDescriptor *fdesc,bool save)
