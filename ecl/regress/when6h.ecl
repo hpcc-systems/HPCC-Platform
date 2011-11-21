@@ -1,5 +1,4 @@
-<Archive>
-<!--
+/*##############################################################################
 
     Copyright (C) 2011 HPCC Systems.
 
@@ -15,8 +14,10 @@
 
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
--->
-<Query>
+############################################################################## */
+
+#option ('targetClusterType', 'hthor');
+
 r := {unsigned f1, unsigned f2, unsigned f3, unsigned f4 };
 
 r t(unsigned a, unsigned b, unsigned c, unsigned d) := TRANSFORM
@@ -32,7 +33,7 @@ ds := dataset([
         t(9,3,4,5),
         t(3,4,2,9)]);
 
-simple := dedup(ds, f1);
+simple := dedup(nofold(ds), f1);
 
 osum := output(TABLE(simple, { s := sum(group, f1) }, f3));
 
@@ -41,5 +42,3 @@ x1 := when(simple, osum, parallel);
 o1 := output(TABLE(x1, { f1 }));
 o2 := output(TABLE(simple, { c := count(group) }, f3));
 when(o1, o2, success);
-</Query>
-</Archive>
