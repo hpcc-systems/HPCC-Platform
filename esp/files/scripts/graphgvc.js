@@ -49,6 +49,8 @@ var havesubgraphtimings = '1';
 
 var espUri = null;
 
+var sliderNoFeedback=false;
+
 function go(url)
 {
    document.location.href=url;
@@ -93,7 +95,7 @@ function selectionChanged(items) {
     DisplaySelectedProperties(items);
 }
 
-function selectionChangedRHS(items) {
+function mouseDoubleClickRHS(items) {
     var selection = pluginRHS().getSelectionAsGlobalID();
     pluginLHS().setSelectedAsGlobalID(selection);
     DisplaySelectedProperties(pluginLHS().getSelection());
@@ -168,21 +170,27 @@ function layoutFinished() {
 }
 
 function scaled(newScale) {
+    sliderNoFeedback = true;
     slider.setValue(newScale);
+    sliderNoFeedback = false;
 }
 
 function scaled2(newScale) {
+    sliderNoFeedback = true;
     slider2.setValue(newScale);
+    sliderNoFeedback = false;
 }
 
 var oldScale;
 function setScale(newScale) {
-    oldScale = pluginLHS().setScale(newScale);
+    if (!sliderNoFeedback)
+        oldScale = pluginLHS().setScale(newScale);
 }
 
 var oldScale;
 function setScaleRHS(newScale) {
-    oldScale = pluginRHS().setScale(newScale);
+    if (!sliderNoFeedback)
+        oldScale = pluginRHS().setScale(newScale);
 }
 
 function onUnload()
