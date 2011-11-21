@@ -1407,87 +1407,6 @@ public:
 };
 
 
-class CDistributedFileIterator: public CInterface, implements IDistributedFileIterator
-{
-    unsigned index;
-    Owned<IDistributedFile> cur;
-    IDistributedFileDirectory *dir;
-    PointerArray files;
-    Linked<IUserDescriptor> udesc;
-
-public:
-    IMPLEMENT_IINTERFACE;
-
-    CDistributedFileIterator(IDistributedFileDirectory *_dir,const char *wildname,bool includesuper,IUserDescriptor *user) 
-    {
-        setUserDescriptor(udesc,user);
-        if (!wildname||!*wildname)
-            wildname = "*";
-        dir = _dir;
-        bool recursive = (stricmp(wildname,"*")==0);
-        Owned<IDFAttributesIterator> attriter = dir->getDFAttributesIterator(wildname,recursive,includesuper,NULL,user);
-        ForEach(*attriter) {
-            IPropertyTree &pt = attriter->query();
-            files.append(strdup(pt.queryProp("@name")));
-        }
-        index = 0;
-        if (files.ordinality()>1)
-            qsortvec(files.getArray(),files.ordinality(),strcompare);
-    }
-
-    ~CDistributedFileIterator()
-    {
-        ForEachItemIn(i,files) {
-            free(files.item(i));
-        }
-    }
-    
-    bool first()
-    {
-        index = 0;
-        return set();
-    }
-
-    bool set()
-    {
-        cur.clear();
-        while (isValid()) {
-            cur.setown(dir->lookup(queryName(),udesc,false,NULL));
-            if (cur)
-                return true;
-            index++;
-        }
-        return false;
-    }
-
-    bool next()
-    {   
-        index++;
-        return set();
-    }
-
-    bool  isValid()
-    {
-        return index<files.ordinality();
-    }
-
-    const char *queryName()
-    {
-        return (const char *)files.item(index);
-    }
-
-    StringBuffer & getName(StringBuffer &name)
-    {
-        return name.append(queryName());
-    }
-    
-    IDistributedFile & query()
-    {
-        return *cur;
-    }
-};
-
-
 static bool recursiveCheckEmptyScope(IPropertyTree &ct)
 {
     Owned<IPropertyTreeIterator> iter = ct.getElements("*");
@@ -1992,126 +1911,190 @@ public:
 
 // --------------------------------------------------------
 
-class CDistributedFilePartIterator: public CInterface, implements IDistributedFilePartIterator
+/**
+ * Base Iterator class for all iterator types. Implements basic iteration
+ * logic and forces all iterators to behave similarly. This will simplify
+ * future compatibility with STL containers/algorithms.
+ *
+ * INTERFACE needs to be extended from IIteratorOf<>
+ * ARRAYTY need to be extended from IArrayOf<>
+ */
+template <class INTERFACE, class ARRAYTY>
+class CDistributedFileIteratorBase: public CInterface, implements INTERFACE
 {
-    unsigned idx;
-    CDistributedFilePartArray partsa;
+protected:
+    unsigned index;
+    ARRAYTY list;
+
+    virtual bool set() { return isValid(); }
 public:
     IMPLEMENT_IINTERFACE;
-    CDistributedFilePartIterator(CDistributedFilePartArray &parts,IDFPartFilter *filter)
-    {
-        idx = 0;
-        ForEachItemIn(i,parts) {
-            if (!filter||filter->includePart(i))
-                appendPart(LINK(&parts.item(i)));
-        }
-    }
-    CDistributedFilePartIterator()
-    {
-        idx = 0;
-    }
-    ~CDistributedFilePartIterator()
-    {
-    }
 
-    void appendPart(CDistributedFilePart *part) // takes ownership
+    CDistributedFileIteratorBase()
+        : index(0)
     {
-        if (part)
-            partsa.append(*part);
+    }
+    virtual ~CDistributedFileIteratorBase()
+    {
+        list.kill();
     }
 
     bool first()
     {
-        if (partsa.ordinality()==0)
+        if (list.ordinality() == 0)
             return false;
-        idx = 0;
-        return isValid();
+        index = 0;
+        return set();
     }
+
     bool next()
     {
-        idx++;
+        index++;
+        set();
         return isValid();
     }
+
     bool isValid()
     {
-        return idx<partsa.ordinality();
+        return (index < list.ordinality());
     }
+};
+
+/**
+ * FilePart Iterator, used by files to manipulate its parts.
+ */
+class CDistributedFilePartIterator: public CDistributedFileIteratorBase<IDistributedFilePartIterator, CDistributedFilePartArray>
+{
+public:
+    CDistributedFilePartIterator(CDistributedFilePartArray &parts, IDFPartFilter *filter)
+    {
+        ForEachItemIn(i,parts) {
+            if (!filter||filter->includePart(i))
+                list.append(*LINK(&parts.item(i)));
+        }
+    }
+
+    CDistributedFilePartIterator()
+    {
+    }
+
     IDistributedFilePart & query()
     {
-        return partsa.item(idx);
+        return list.item(index);
     }
+
     IDistributedFilePart & get()
     {
-        IDistributedFilePart &ret = partsa.item(idx);
+        IDistributedFilePart &ret = list.item(index);
         ret.Link();
         return ret;
     }
 
     CDistributedFilePartArray &queryParts()
     {
-        return partsa;
+        return list;
     }
 };
 
-
-class CDistributedSuperFileIterator: public CInterface, implements IDistributedSuperFileIterator
+/**
+ * File Iterator, used by directory to list file search results.
+ */
+class CDistributedFileIterator: public CDistributedFileIteratorBase<IDistributedFileIterator, PointerArray>
 {
-    StringAttrArray names;
-    unsigned idx;
-    Owned<IDistributedSuperFile> cur;
+    Owned<IDistributedFile> cur;
+    IDistributedFileDirectory *parent;
+    Linked<IUserDescriptor> udesc;
+    Linked<IDistributedFileTransaction> transaction;
+
+    bool set()
+    {
+        while (isValid()) {
+            cur.setown(parent->lookup(queryName(),udesc,false,NULL));
+            if (cur)
+                return true;
+            index++;
+        }
+        return false;
+    }
+
+public:
+    CDistributedFileIterator(IDistributedFileDirectory *_dir,const char *wildname,bool includesuper,IUserDescriptor *user,IDistributedFileTransaction *_transaction=NULL)
+        : transaction(_transaction)
+    {
+        setUserDescriptor(udesc,user);
+        if (!wildname||!*wildname)
+            wildname = "*";
+        parent = _dir;
+        bool recursive = (stricmp(wildname,"*")==0);
+        Owned<IDFAttributesIterator> attriter = parent->getDFAttributesIterator(wildname,recursive,includesuper,NULL,user);
+        ForEach(*attriter) {
+            IPropertyTree &pt = attriter->query();
+            list.append(strdup(pt.queryProp("@name")));
+        }
+        index = 0;
+        if (list.ordinality()>1)
+            qsortvec(list.getArray(),list.ordinality(),strcompare);
+    }
+
+    const char *queryName()
+    {
+        return (const char *)list.item(index);
+    }
+
+    StringBuffer & getName(StringBuffer &name)
+    {
+        return name.append(queryName());
+    }
+
+    IDistributedFile & query()
+    {
+        return *cur;
+    }
+};
+
+/**
+ * SuperFile Iterator, used by CDistributedFile to list all its super-owners by name.
+ */
+class CDistributedSuperFileIterator: public CDistributedFileIteratorBase<IDistributedSuperFileIterator, StringAttrArray>
+{
     CDistributedFileDirectory *parent;
     Linked<IUserDescriptor> udesc;
     Linked<IDistributedFileTransaction> transaction;
+    Owned<IDistributedSuperFile> cur;
+
 public:
-    IMPLEMENT_IINTERFACE;
     CDistributedSuperFileIterator(CDistributedFileDirectory *_parent,IPropertyTree *root,IUserDescriptor *user, IDistributedFileTransaction *_transaction)
         : transaction(_transaction)
     {
         setUserDescriptor(udesc,user);
         parent = _parent;
-        idx = 0;
         if (root) {
             Owned<IPropertyTreeIterator> iter = root->getElements("SuperOwner");
             StringBuffer pname;
             ForEach(*iter) {
                 iter->query().getProp("@name",pname.clear());
                 if (pname.length())
-                    names.append(* new StringAttrItem(pname.str()));
+                    list.append(* new StringAttrItem(pname.str()));
             }
         }
     }
-    ~CDistributedSuperFileIterator()
-    {
-        cur.clear();
-    }
-    bool first()
-    {
-        if (names.ordinality()==0)
-            return false;
-        idx = 0;
-        return true;
-    }
-    bool next()
-    {
-        idx++;
-        if (idx>=names.ordinality()) 
-            return false;
-        return true;
-    }
-    bool isValid()
-    {
-        return idx<names.ordinality();
-    }
+
     IDistributedSuperFile & query()
     {
-        do {
-            if (transaction.get())
-                cur.setown(transaction->lookupSuperFile(queryName()));
-            else
-                cur.setown(parent->lookupSuperFile(queryName(),udesc,NULL));
-        } while (!cur.get()&&next()); // this should never be needed but match previous semantics   
+        // NOTE: This used to include a do/while (!cur.get()&&next()) loop
+        // this should never be needed but match previous semantics
+        // throwing an exception now, to catch the error early on
+        if (transaction.get())
+            cur.setown(transaction->lookupSuperFile(queryName()));
+        else
+            cur.setown(parent->lookupSuperFile(queryName(),udesc,NULL));
+
+        if (!cur.get())
+            throw  MakeStringException(-1,"superFileIter: invalid super-file on query at %s", queryName());
+
         return *cur;
     }
+
     IDistributedSuperFile & get()
     {
         cur->Link();
@@ -2121,7 +2104,7 @@ public:
     virtual const char *queryName()
     {
         if (isValid())
-            return names.item(idx).text.get();
+            return list.item(index).text.get();
         return NULL;
     }
 };
@@ -4292,13 +4275,12 @@ protected:
         }
     }
 
-    class cSubFileIterator: public CInterface, implements IDistributedFileIterator
+    /**
+     * SubFile Iterator, used only to list sub-files of a super-file.
+     */
+    class cSubFileIterator: public CDistributedFileIteratorBase< IDistributedFileIterator, IArrayOf<IDistributedFile> >
     {
-        unsigned cur;
-        IArrayOf<IDistributedFile> subfiles;
     public:
-        IMPLEMENT_IINTERFACE;
-
         cSubFileIterator(IArrayOf<IDistributedFile> &_subfiles, bool supersub) 
         {
             ForEachItemIn(i,_subfiles) {
@@ -4306,40 +4288,21 @@ protected:
                 if (super) {
                     Owned<IDistributedFileIterator> iter = super->getSubFileIterator(true);
                     ForEach(*iter) 
-                        subfiles.append(iter->get());
+                        list.append(iter->get());
                 }
                 else
-                    subfiles.append(*LINK(&_subfiles.item(i)));
+                    list.append(*LINK(&_subfiles.item(i)));
             }
-            cur = 0;
         }
         
-
-        bool first()
-        {
-            cur = 0;
-            return (subfiles.ordinality()!=0);
-        }
-
-        bool next()
-        {
-            cur++;
-            return (cur<subfiles.ordinality());
-        }
-                                
-        bool  isValid()
-        {
-            return (cur<subfiles.ordinality());
-        }
-
         StringBuffer & getName(StringBuffer &name)
         {
-            return subfiles.item(cur).getLogicalName(name);
+            return list.item(index).getLogicalName(name);
         }
         
         IDistributedFile & query()
         {
-            return subfiles.item(cur);
+            return list.item(index);
         }
     };
 
