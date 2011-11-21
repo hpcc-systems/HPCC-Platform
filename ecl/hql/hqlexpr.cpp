@@ -9293,13 +9293,11 @@ extern HQL_API IHqlExpression *createSequence(node_operator op, ITypeInfo * type
 
 IHqlExpression *createSymbol(_ATOM name, IHqlExpression *expr, unsigned exportFlags)
 {
-//    return CHqlNamedSymbol::makeSymbol(name, NULL, expr, (exportFlags & ob_exported) != 0, (exportFlags & ob_shared) != 0, 0);
     return CHqlSimpleSymbol::makeSymbol(name, NULL, expr, NULL, exportFlags);
 }
 
 IHqlExpression * createSymbol(_ATOM name, _ATOM moduleName, IHqlExpression * expr, bool exported, bool shared, unsigned symbolFlags)
 {
-//    return CHqlNamedSymbol::makeSymbol(name, moduleName, expr, exported, shared, symbolFlags);
     return CHqlSimpleSymbol::makeSymbol(name, moduleName, expr, NULL, combineSymbolFlags(symbolFlags, exported, shared));
 }
 
@@ -9456,7 +9454,6 @@ inline IHqlExpression * createCallExpression(IHqlExpression * funcdef, HqlExprAr
 
         IHqlNamedAnnotation * annotation = static_cast<IHqlNamedAnnotation *>(funcdef->queryAnnotation());
         return annotation->cloneSymbol(NULL, call, funcdef, &clonedActuals);
-        //return annotation->createBoundSymbol(call.getClear(), clonedActuals);
     }
 
     if (funcdef->getOperator() == no_funcdef)
