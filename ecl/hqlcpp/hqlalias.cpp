@@ -36,8 +36,6 @@ static bool isSubsetOf(IHqlExpression * search, IHqlExpression * expr)
             return true;
         if (expr->getOperator() != no_and)
             return false;
-        //MORE: Remove if think it is worth doing more work
-//        return false;
         //Check in order most likely to no recurse too deeply.
         if (isSubsetOf(search, expr->queryChild(1)))
             return true;
