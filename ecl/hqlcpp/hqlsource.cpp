@@ -5436,7 +5436,7 @@ bool MonitorExtractor::extractSimpleCompareFilter(KeyConditionInfo & matches, IH
         node_operator newOp = getModifiedOp(op, duplicate);
         if (newOp != no_none)
         {
-            OwnedHqlExpr newFilter = createValue(newOp, LINK(l), LINK(r));
+            OwnedHqlExpr newFilter = createValue(newOp, expr->getType(), LINK(l), LINK(r));
             result.setown(new KeyCondition(matchedSelector, newFilter, keyedKind));
         }
     }
@@ -5449,7 +5449,7 @@ bool MonitorExtractor::extractSimpleCompareFilter(KeyConditionInfo & matches, IH
             node_operator newOp = getModifiedOp(getReverseOp(op), duplicate);
             if (newOp != no_none)
             {
-                OwnedHqlExpr newFilter = createValue(newOp, LINK(r), LINK(l));
+                OwnedHqlExpr newFilter = createValue(newOp, expr->getType(), LINK(r), LINK(l));
                 result.setown(new KeyCondition(matchedSelector, newFilter, keyedKind));
             }
         }
@@ -5469,7 +5469,7 @@ bool MonitorExtractor::extractSimpleCompareFilter(KeyConditionInfo & matches, IH
             }
             else if (!leftHasSelects && rightHasSelects && (op != no_in) && (op != no_notin))
             {
-                OwnedHqlExpr newFilter = createValue(getReverseOp(op), LINK(r), LINK(l));
+                OwnedHqlExpr newFilter = createValue(getReverseOp(op), expr->getType(), LINK(r), LINK(l));
                 result.setown(createTranslatedCondition(newFilter, keyedKind));
             }
         }
@@ -5734,7 +5734,7 @@ bool MonitorExtractor::extractBoolFieldFilter(KeyConditionInfo & matches, IHqlEx
     {
         if (isKeySelect(selector) && okToKey(selector, keyedKind))
         {
-            OwnedHqlExpr newFilter = createValue(no_eq, LINK(selector), createConstant(compareValue));
+            OwnedHqlExpr newFilter = createValue(no_eq, makeBoolType(), LINK(selector), createConstant(compareValue));
             matches.appendCondition(*new KeyCondition(selector, newFilter, keyedKind));
             return true;
         }

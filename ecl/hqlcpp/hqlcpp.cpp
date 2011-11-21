@@ -5278,7 +5278,7 @@ void HqlCppTranslator::doBuildExprAbs(BuildCtx & ctx, IHqlExpression * expr, CHq
             buildTempExpr(ctx, expr->queryChild(0), temp);
 
             ITypeInfo * type = expr->getType();
-            IHqlExpression * cond = createValue(no_ge, temp.expr.getLink(), createConstant(type->castFrom(true, 0)));
+            IHqlExpression * cond = createValue(no_ge, makeBoolType(), temp.expr.getLink(), createConstant(type->castFrom(true, 0)));
             tgt.expr.setown(createValue(no_if, type, cond, temp.expr.getLink(), createValue(no_negate, LINK(type), temp.expr.getLink())));
         }
         break;
