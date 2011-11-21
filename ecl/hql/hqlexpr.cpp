@@ -62,6 +62,7 @@
 //#define TRACE_THIS
 //#define CONSISTENCY_CHECK
 //#define GATHER_LINK_STATS
+//#define VERIFY_EXPR_INTEGRITY
 
 #ifdef _DEBUG
 //#define DEBUG_SCOPE
@@ -72,6 +73,7 @@
 //#define SEARCH_IEXPR 0x03289048
 //#define CHECK_SELSEQ_CONSISTENCY
 //#define GATHER_COMMON_STATS
+#define VERIFY_EXPR_INTEGRITY
 
 #if defined(SEARCH_NAME1) || defined(SEARCH_NAME2)
 static void debugMatchedName() {}
@@ -3400,7 +3402,7 @@ void CHqlExpression::updateFlagsAfterOperands()
         }
     }
 
-#ifdef _DEBUG
+#ifdef VERIFY_EXPR_INTEGRITY
 switch (op)
     {
     case no_select:
@@ -3464,6 +3466,16 @@ switch (op)
         break;
     case no_getgraphloopresult:
         assertex(!isAction());
+        break;
+    case no_in:
+    case no_notin:
+    case no_eq:
+    case no_ne:
+    case no_ge:
+    case no_gt:
+    case no_le:
+    case no_lt:
+        assertex(type->getTypeCode() == type_boolean);
         break;
     case no_alias:
         assertex(queryChild(0)->getOperator() != no_alias);
