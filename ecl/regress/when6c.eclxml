@@ -32,14 +32,14 @@ ds := dataset([
         t(9,3,4,5),
         t(3,4,2,9)]);
 
-simple := dedup(ds, f1);
+simple := limit(dedup(ds, f1),1);
 
-osum := output(TABLE(simple, { s := sum(group, f1) }, f3));
+osum := output(TABLE(simple, { sum(group, f1) }, f3));
 
-x1 := when(simple, osum, parallel);
+x1 := when(simple, osum, failure);
 
 o1 := output(TABLE(x1, { f1 }));
-o2 := output(TABLE(simple, { c := count(group) }, f3));
-when(o1, o2, success);
+o2 := output(TABLE(simple, { count(group) }, f3));
+when(o1, o2);
 </Query>
 </Archive>

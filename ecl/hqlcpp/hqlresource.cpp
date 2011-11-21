@@ -2720,9 +2720,12 @@ void EclResourcer::createInitialGraph(IHqlExpression * expr, IHqlExpression * ow
             createInitialGraph(expr->queryChild(1), expr, thisGraph, UnconditionalLink, false);
             return;
         case no_executewhen:
-            createInitialGraph(expr->queryChild(0), expr, thisGraph, UnconditionalLink, false);
-            createInitialGraph(expr->queryChild(1), expr, thisGraph, UnconditionalLink, true);
-            return;
+            {
+                bool newGraph = expr->isAction() && (options.targetClusterType == HThorCluster);
+                createInitialGraph(expr->queryChild(0), expr, thisGraph, UnconditionalLink, newGraph);
+                createInitialGraph(expr->queryChild(1), expr, thisGraph, UnconditionalLink, true);
+                return;
+            }
         case no_keyindex:
         case no_newkeyindex:
             return;

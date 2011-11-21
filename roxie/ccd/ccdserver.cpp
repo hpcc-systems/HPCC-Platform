@@ -18479,6 +18479,7 @@ public:
         savedExtractSize = parentExtractSize;
         savedExtract = parentExtract;
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        executeDependencies(parentExtractSize, parentExtract, WhenParallelId);        // MORE: This should probably be done in parallel!
     }
 
     virtual void stop(bool aborting)
@@ -18493,10 +18494,12 @@ public:
         ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext()); // bit of a waste of time....
         return input->nextInGroup();
     }
+
 protected:
     unsigned savedExtractSize;
     const byte *savedExtract;
 };
+
 
 class CRoxieServerWhenActivityFactory : public CRoxieServerActivityFactory
 {
@@ -18512,9 +18515,76 @@ public:
     }
 };
 
+
 extern IRoxieServerActivityFactory *createRoxieServerWhenActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
 {
     return new CRoxieServerWhenActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+}
+
+
+//=================================================================================
+
+class CRoxieServerWhenActionActivity : public CRoxieServerActionBaseActivity
+{
+public:
+    CRoxieServerWhenActionActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActionBaseActivity(_factory, _probeManager)
+    {
+        savedExtractSize = 0;
+        savedExtract = NULL;
+    }
+
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    {
+        savedExtractSize = parentExtractSize;
+        savedExtract = parentExtract;
+        CRoxieServerActionBaseActivity::start(parentExtractSize, parentExtract, paused);
+        executeDependencies(parentExtractSize, parentExtract, WhenParallelId);        // MORE: This should probably be done in parallel!
+    }
+
+    virtual void stop(bool aborting)
+    {
+        if (state != STATEstopped)
+            executeDependencies(savedExtractSize, savedExtract, aborting ? WhenFailureId : WhenSuccessId);
+        CRoxieServerActionBaseActivity::stop(aborting);
+    }
+
+    virtual void doExecuteAction(unsigned parentExtractSize, const byte * parentExtract)
+    {
+        executeDependencies(parentExtractSize, parentExtract, 1);
+    }
+
+
+protected:
+    unsigned savedExtractSize;
+    const byte *savedExtract;
+};
+
+
+class CRoxieServerWhenActionActivityFactory : public CRoxieServerActivityFactory
+{
+public:
+    CRoxieServerWhenActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), isRoot(_isRoot)
+    {
+    }
+
+    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    {
+        return new CRoxieServerWhenActionActivity(this, _probeManager);
+    }
+
+    virtual bool isSink() const
+    {
+        return isRoot;
+    }
+private:
+    bool isRoot;
+};
+
+extern IRoxieServerActivityFactory *createRoxieServerWhenActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
+{
+    return new CRoxieServerWhenActionActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _isRoot);
 }
 
 //=================================================================================

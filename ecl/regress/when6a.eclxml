@@ -34,12 +34,12 @@ ds := dataset([
 
 simple := dedup(ds, f1);
 
-osum := output(TABLE(simple, { s := sum(group, f1) }, f3));
+osum := output(TABLE(simple, { sum(group, f1) }, f3));
 
-x1 := when(simple, osum, parallel);
+x1 := when(simple, osum, success);
 
 o1 := output(TABLE(x1, { f1 }));
-o2 := output(TABLE(simple, { c := count(group) }, f3));
-when(o1, o2, success);
+o2 := output(TABLE(simple, { count(group) }, f3));
+when(o1, o2);
 </Query>
 </Archive>
