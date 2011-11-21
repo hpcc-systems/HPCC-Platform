@@ -14446,7 +14446,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivityExecuteWhen(BuildCtx & ctx, IH
     buildInstancePrefix(instance);
     buildInstanceSuffix(instance);
 
-    buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
+    if (expr->isAction())
+        addDependency(ctx, boundDataset, instance->queryBoundActivity(), dependencyAtom, NULL, 1);
+    else
+        buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
     addDependency(ctx, associatedActivity, instance->queryBoundActivity(), dependencyAtom, label, when);
 
     return instance->getBoundActivity();

@@ -535,6 +535,8 @@ protected:
             return createRoxieServerPrefetchProjectActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKwhen_dataset:
             return createRoxieServerWhenActivityFactory(id, subgraphId, *this, helperFactory, kind);
+        case TAKwhen_action:
+            return createRoxieServerWhenActionActivityFactory(id, subgraphId, *this, helperFactory, kind, isRootAction(node));
 
         // These are not required in Roxie for the time being - code generator should trap them
         case TAKdistribution:
