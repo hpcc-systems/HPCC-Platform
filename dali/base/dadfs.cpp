@@ -1983,13 +1983,6 @@ public:
         return list.item(index);
     }
 
-    IDistributedFilePart & get()
-    {
-        IDistributedFilePart &ret = list.item(index);
-        ret.Link();
-        return ret;
-    }
-
     CDistributedFilePartArray &queryParts()
     {
         return list;
@@ -2092,12 +2085,6 @@ public:
         if (!cur.get())
             throw  MakeStringException(-1,"superFileIter: invalid super-file on query at %s", queryName());
 
-        return *cur;
-    }
-
-    IDistributedSuperFile & get()
-    {
-        cur->Link();
         return *cur;
     }
 
