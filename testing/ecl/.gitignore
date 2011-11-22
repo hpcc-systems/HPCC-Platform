@@ -1,0 +1,9 @@
+hthor_suite/
+hthor_suite.bak/
+thor_suite/
+thor_suite.bak/
+setup_generate.bak/
+setup_generate/
+*.log
+eclplus
+regress.ini
