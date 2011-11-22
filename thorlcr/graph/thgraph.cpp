@@ -616,10 +616,6 @@ bool CGraphElementBase::executeDependencies(size32_t parentExtractSz, const byte
 
 bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies, bool shortCircuit, bool async)
 {
-//  if (isPrepared()) // if >1 output, another arm may have traversed already
-//      return true;
-//  prepared = true;
-
     bool _shortCircuit = shortCircuit;
     Owned<IThorGraphDependencyIterator> deps = getDependsIterator();
     bool depsDone = true;
@@ -627,9 +623,11 @@ bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *par
     {
         CGraphDependency &dep = deps->query();
         if (0 == dep.controlId && NotFound == owner->dependentSubGraphs.find(*dep.graph))
+        {
             owner->dependentSubGraphs.append(*dep.graph);
-        if (!dep.graph->isComplete())
-            depsDone = false;
+            if (!dep.graph->isComplete())
+                depsDone = false;
+        }
     }
     if (depsDone) _shortCircuit = false;
     if (!depsDone && checkDependencies)
@@ -1123,6 +1121,7 @@ void CGraphBase::reset()
             CGraphElementBase &element = iterC.query();
             element.reset();
         }
+        dependentSubGraphs.kill();
     }
     if (!queryOwner() || isGlobal())
         job.queryTimeReporter().reset();
