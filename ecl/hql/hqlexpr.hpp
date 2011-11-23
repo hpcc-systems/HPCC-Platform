@@ -1025,7 +1025,7 @@ interface IHqlScope : public IInterface
     virtual bool getProp(_ATOM, StringBuffer &) const = 0;
 
     //IHqlCreateScope
-    virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags, IFileContents *fc, int bodystart, int lineno, int column) = 0;
+    virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags, IFileContents *fc, int lineno, int column, int _startpos, int _bodypos, int _endpos) = 0;
     virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags) = 0;
     virtual void defineSymbol(IHqlExpression * expr) = 0;       // use with great care, expr must be a named symbol.
     virtual void removeSymbol(_ATOM name) = 0;      // use with great care
@@ -1128,7 +1128,7 @@ interface IHqlExpression : public IInterface
     virtual StringBuffer& getTextBuf(StringBuffer& buf) = 0;
     virtual IFileContents * queryDefinitionText() const = 0;
 
-    virtual unsigned getSymbolFlags() = 0;              // only valid for a named symbol
+    virtual unsigned getSymbolFlags() const = 0;              // only valid for a named symbol
     virtual bool isExported() const = 0;
 
     virtual unsigned            getCachedEclCRC() = 0;          // do not call directly - use getExpressionCRC()
@@ -1172,6 +1172,7 @@ interface IHqlNamedAnnotation : public IHqlAnnotation
     virtual bool isPublic() const = 0;
     virtual int getStartLine() const = 0;
     virtual int getStartColumn() const = 0;
+    virtual void setRepositoryFlags(unsigned _flags) = 0;  // To preserve flags like ob_locked, ob_sandbox, etc.
 };
 
 
@@ -1261,9 +1262,10 @@ extern HQL_API void expandDelayedFunctionCalls(IErrorReceiver * errors, HqlExprA
 extern HQL_API IHqlExpression *createQuoted(const char * name, ITypeInfo *type);
 extern HQL_API IHqlExpression *createVariable(const char * name, ITypeInfo *type);
 extern HQL_API IHqlExpression * createSymbol(_ATOM name, IHqlExpression *expr, unsigned exportFlags);
+extern HQL_API IHqlExpression * createSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, bool _exported, bool _shared, unsigned _flags);
 extern HQL_API IHqlExpression * createSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression *expr, IHqlExpression * funcdef,
                                              bool exported, bool shared, unsigned symbolFlags,
-                                             IFileContents *fc, int _bodystart, int lineno, int column);
+                                             IFileContents *fc, int lineno, int column, int _startpos, int _bodypos, int _endpos);
 extern HQL_API IHqlExpression *createAttribute(_ATOM name, IHqlExpression * value = NULL, IHqlExpression * value2 = NULL, IHqlExpression * value3 = NULL);
 extern HQL_API IHqlExpression *createAttribute(_ATOM name, HqlExprArray & args);
 extern HQL_API IHqlExpression *createExprAttribute(_ATOM name, IHqlExpression * value = NULL, IHqlExpression * value2 = NULL, IHqlExpression * value3 = NULL);

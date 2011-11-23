@@ -944,8 +944,8 @@ macro
                             //Use a named symbol to associate a line number/column
                             expr = createSymbol(macroAtom, NULL, expr, NULL,
                                                 false, false, (object_type)0,
-                                                NULL, 0,
-                                                yylval.pos.lineno, yylval.pos.column);
+                                                NULL,
+                                                yylval.pos.lineno, yylval.pos.column, 0, 0, 0);
                             $$.setExpr(expr, $1);
                         }
     | COMPLEX_MACRO     {
@@ -960,8 +960,8 @@ macro
                             //Use a named symbol to associate a line number/column
                             expr = createSymbol(macroAtom, NULL, expr, NULL,
                                                 false, false, (object_type)0,
-                                                NULL, 0,
-                                                yylval.pos.lineno, yylval.pos.column);
+                                                NULL,
+                                                yylval.pos.lineno, yylval.pos.column, 0, 0, 0);
 
                             $$.setExpr(expr, $1);
                         }

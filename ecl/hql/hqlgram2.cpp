@@ -1075,7 +1075,7 @@ void HqlGram::processServiceFunction(const attribute & idAttr, _ATOM name, IHqlE
     IHqlExpression * formals = defineScopes.tos().createFormals(oldSetFormat);
     IHqlExpression * defaults = defineScopes.tos().createDefaults();
     IHqlExpression * func = createFunctionDefinition(name, call, formals, defaults, NULL);
-    serviceScope->defineSymbol(name, NULL, func, true, false, 0, NULL, 0, idAttr.pos.lineno, idAttr.pos.column);
+    serviceScope->defineSymbol(name, NULL, func, true, false, 0, NULL, idAttr.pos.lineno, idAttr.pos.column, 0, 0, 0);
     resetParameters();
 }
 
@@ -8710,7 +8710,7 @@ void HqlGram::defineSymbolInScope(IHqlScope * scope, DefineIdSt * defineid, IHql
         expr = createJavadocAnnotation(expr, LINK(doc));
 
     Owned<IFileContents> contents = createFileContentsSubset(lexObject->query_FileContents(), lastpos, semiColonPos+1-lastpos);
-    scope->defineSymbol(defineid->id, moduleName, expr, (defineid->scope & EXPORT_FLAG) != 0, (defineid->scope & SHARED_FLAG) != 0, symbolFlags, contents, assignPos+2-lastpos, idattr.pos.lineno, idattr.pos.column);
+    scope->defineSymbol(defineid->id, moduleName, expr, (defineid->scope & EXPORT_FLAG) != 0, (defineid->scope & SHARED_FLAG) != 0, symbolFlags, contents, idattr.pos.lineno, idattr.pos.column, 0, assignPos+2-lastpos, semiColonPos+1-lastpos);
 }
 
 
@@ -11249,7 +11249,8 @@ IHqlExpression *HqlGram::doParse()
 
     _ATOM moduleName = createIdentifierAtom(globalScope->queryFullName());
     Owned<IFileContents> contents = LINK(lexObject->query_FileContents());
-    containerScope->defineSymbol(expectedAttribute, moduleName, actions.getClear(), true, false, 0, contents, 0, 1, 1);
+    unsigned lengthText = 0;
+    containerScope->defineSymbol(expectedAttribute, moduleName, actions.getClear(), true, false, 0, contents, 1, 1, 0, 0, lengthText);
     return NULL;
 }
 
