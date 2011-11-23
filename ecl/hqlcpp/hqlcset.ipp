@@ -25,7 +25,7 @@ public:
     IMPLEMENT_IINTERFACE
 
     virtual BoundRow * buildIterateLoop(BuildCtx & ctx, bool needToBreak);
-    virtual void buildIterateClass(BuildCtx & ctx, OwnedHqlExpr & iter, OwnedHqlExpr & row);
+    virtual void buildIterateClass(BuildCtx & ctx, SharedHqlExpr & iter, SharedHqlExpr & row);
     virtual BoundRow * buildSelect(BuildCtx & ctx, IHqlExpression * indexExpr);
     virtual void buildIterateMembers(BuildCtx & declarectx, BuildCtx & initctx);
 

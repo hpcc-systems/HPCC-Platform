@@ -2835,7 +2835,7 @@ IHqlExpression * HqlGram::getSelfDotExpr(const attribute & errpos)
     return LINK(querySelfReference());
 }
 
-bool HqlGram::checkValidBaseModule(const attribute & attr, OwnedHqlExpr & expr)
+bool HqlGram::checkValidBaseModule(const attribute & attr, SharedHqlExpr & expr)
 {
     node_operator op = expr->getOperator();
     if ((op == no_virtualscope) || (op == no_libraryscopeinstance) || (op == no_param))
@@ -7062,7 +7062,7 @@ IHqlExpression * HqlGram::createIndexFromRecord(IHqlExpression * record, IHqlExp
 }
 
 
-void HqlGram::inheritRecordMaxLength(IHqlExpression * dataset, OwnedHqlExpr & record)
+void HqlGram::inheritRecordMaxLength(IHqlExpression * dataset, SharedHqlExpr & record)
 {
     IHqlExpression * maxLength = queryRecordProperty(dataset->queryRecord(), maxLengthAtom);
 //  if (maxLength && isVariableSizeRecord(record) && !queryRecordProperty(record, maxLengthAtom))
@@ -7709,7 +7709,7 @@ void HqlGram::expandPayload(HqlExprArray & fields, IHqlExpression * payload, IHq
     }
 }
 
-void HqlGram::modifyIndexPayloadRecord(OwnedHqlExpr & record, OwnedHqlExpr & payload, OwnedHqlExpr & extra, const attribute & errpos)
+void HqlGram::modifyIndexPayloadRecord(SharedHqlExpr & record, SharedHqlExpr & payload, SharedHqlExpr & extra, const attribute & errpos)
 {
     IHqlSimpleScope * scope = record->querySimpleScope();
 
@@ -7763,7 +7763,7 @@ void HqlGram::modifyIndexPayloadRecord(OwnedHqlExpr & record, OwnedHqlExpr & pay
     record.setown(createRecord(fields));
 }
 
-void HqlGram::extractRecordFromExtra(OwnedHqlExpr & record, OwnedHqlExpr & extra)
+void HqlGram::extractRecordFromExtra(SharedHqlExpr & record, SharedHqlExpr & extra)
 {
     while (record->getOperator() == no_comma)
     {
@@ -7788,7 +7788,7 @@ void HqlGram::transferOptions(attribute & filenameAttr, attribute & optionsAttr)
 }
 
 
-IHqlExpression * HqlGram::extractTransformFromExtra(OwnedHqlExpr & extra)
+IHqlExpression * HqlGram::extractTransformFromExtra(SharedHqlExpr & extra)
 {
     IHqlExpression * ret = NULL;
     if (extra)
@@ -7806,7 +7806,7 @@ IHqlExpression * HqlGram::extractTransformFromExtra(OwnedHqlExpr & extra)
 }
             
 
-void HqlGram::applyPayloadAttribute(const attribute & errpos, IHqlExpression * record, OwnedHqlExpr & extra)
+void HqlGram::applyPayloadAttribute(const attribute & errpos, IHqlExpression * record, SharedHqlExpr & extra)
 {
     IHqlExpression * payload = queryPropertyInList(payloadAtom, extra);
     if (payload)

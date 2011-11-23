@@ -91,7 +91,7 @@ BoundRow * BaseDatasetCursor::buildIterateLoop(BuildCtx & ctx, bool needToBreak)
     return cursor;
 }
 
-void BaseDatasetCursor::buildIterateClass(BuildCtx & ctx, OwnedHqlExpr & iter, OwnedHqlExpr & row)
+void BaseDatasetCursor::buildIterateClass(BuildCtx & ctx, SharedHqlExpr & iter, SharedHqlExpr & row)
 {
     StringBuffer cursorName, rowName;
     buildIterateClass(ctx, cursorName, NULL);

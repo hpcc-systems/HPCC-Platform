@@ -73,7 +73,7 @@ static IKeyIndex *openKeyFile(IDistributedFilePart & keyFile)
     throw MakeStringException(1001, "Could not open key file at %s%s", url.str(), (numCopies > 1) ? " or any alternate location." : ".");
 }
 
-void enterSingletonSuperfiles(Owned<IDistributedFile> & file)
+void enterSingletonSuperfiles(Shared<IDistributedFile> & file)
 {
     IDistributedSuperFile * super = file->querySuperFile();
     while(super && (super->numSubFiles() == 1))

@@ -2629,7 +2629,7 @@ void CXmlColumnInfo::buildColumnExpr(HqlCppTranslator & translator, BuildCtx & c
     translator.buildExpr(ctx, call, bound);
 }
 
-void HqlCppTranslator::buildXmlReadChildrenIterator(BuildCtx & ctx, const char * iterTag, IHqlExpression * rowName, OwnedHqlExpr & subRowExpr)
+void HqlCppTranslator::buildXmlReadChildrenIterator(BuildCtx & ctx, const char * iterTag, IHqlExpression * rowName, SharedHqlExpr & subRowExpr)
 {
     StringBuffer s, iterName, subRowName;
     unique_id_t id = getUniqueId();
@@ -3404,7 +3404,7 @@ IHqlExpression * SerializationRow::ensureSerialized(BuildCtx & ctx, IHqlExpressi
 
 IHqlExpression * SerializationRow::ensureSerialized(IHqlExpression * path, IHqlExpression * colocal, bool isConditional)
 {
-    OwnedHqlExpr * mapped = mapping.getValue(path);
+    SharedHqlExpr * mapped = mapping.getValue(path);
     if (mapped)
         return LINK(mapped->get());
 
