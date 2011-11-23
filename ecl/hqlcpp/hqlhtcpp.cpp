@@ -11027,10 +11027,7 @@ void HqlCppTranslator::generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx,
         funcctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
 
         OwnedHqlExpr groupOrder = createValueSafe(no_sortlist, makeSortListType(NULL), sorts);
-        OwnedHqlExpr diff = doCompare(funcctx, groupOrder, dataset);
-
-        funcctx.setNextDestructor();
-        funcctx.addReturn(diff);
+        buildReturnOrder(funcctx, groupOrder, dataset);
 
         endNestedClass();
     }
@@ -15131,22 +15128,6 @@ IHqlExpression * HqlCppTranslator::createOrderFromSortList(const DatasetReferenc
     return createValue(no_order, LINK(signedType), createValue(no_sortlist, makeSortListType(NULL), leftList), createValue(no_sortlist, makeSortListType(NULL), rightList));
 }
 
-
-IHqlExpression * HqlCppTranslator::doCompare(BuildCtx & ctx, IHqlExpression *sortList, const DatasetReference & dataset)
-{
-    OwnedHqlExpr selSeq = createDummySelectorSequence();
-    OwnedHqlExpr leftSelect = dataset.getSelector(no_left, selSeq);
-    OwnedHqlExpr rightSelect = dataset.getSelector(no_right, selSeq);
-    OwnedHqlExpr order = createOrderFromSortList(dataset, sortList, leftSelect, rightSelect);
-    
-    bindTableCursor(ctx, dataset.queryDataset(), "left", no_left, selSeq);
-    bindTableCursor(ctx, dataset.queryDataset(), "right", no_right, selSeq);
-
-    CHqlBoundExpr bound;
-    buildCachedExpr(ctx, order, bound);
-
-    return bound.expr.getClear();
-}
 
 void HqlCppTranslator::buildReturnOrder(BuildCtx & ctx, IHqlExpression *sortList, const DatasetReference & dataset)
 {

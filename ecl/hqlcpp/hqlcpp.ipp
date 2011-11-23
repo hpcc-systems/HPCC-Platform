@@ -1569,7 +1569,6 @@ public:
     IHqlExpression * createOrderFromSortList(const DatasetReference & dataset, IHqlExpression * sortList, IHqlExpression * leftSelect, IHqlExpression * rightSelect);
 
     void buildSkewThresholdMembers(BuildCtx & ctx, IHqlExpression * expr);
-    IHqlExpression * doCompare(BuildCtx & ctx, IHqlExpression *sortList, const DatasetReference & dataset);
     void doCompareLeftRight(BuildCtx & ctx, const char * funcname, const DatasetReference & datasetLeft, const DatasetReference & datasetRight, HqlExprArray & left, HqlExprArray & right);
     void buildSlidingMatchFunction(BuildCtx & ctx, HqlExprArray & leftEq, HqlExprArray & rightEq, HqlExprArray & slidingMatches, const char * funcname, unsigned childIndex, const DatasetReference & datasetL, const DatasetReference & datasetR);
     void doBuildIndexOutputTransform(BuildCtx & ctx, IHqlExpression * record, OwnedHqlExpr & rawRecord);
