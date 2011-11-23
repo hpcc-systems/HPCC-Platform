@@ -759,7 +759,6 @@ class HQLCPP_API HqlCppTranslator : public CInterface, implements IHqlCppTransla
     friend class FetchBuilder;
     friend class MonitorExtractor;
     friend class NlpParseContext;
-    friend class FilterExtractor;
     friend class KeyedJoinInfo;
     friend class ChildGraphBuilder;
 public:

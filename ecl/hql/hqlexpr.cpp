@@ -11507,23 +11507,22 @@ inline IHqlExpression * normalizeSelectLhs(IHqlExpression * lhs, bool & isNew)
     }
 }
 
-inline void checkRhsSelect(IHqlExpression * rhs, IHqlExpression * attr)
+inline void checkRhsSelect(IHqlExpression * rhs)
 {
 #ifdef _DEBUG
     node_operator rhsOp = rhs->getOperator();
-    assertex(rhsOp == no_field || rhsOp == no_ifblock || rhsOp == no_indirect || attr && attr->queryName() == internalAtom);
+    assertex(rhsOp == no_field || rhsOp == no_ifblock || rhsOp == no_indirect);
 #endif
 }
 
-extern IHqlExpression * createSelectExpr(IHqlExpression * _lhs, IHqlExpression * rhs, IHqlExpression * _attr)
+extern IHqlExpression * createSelectExpr(IHqlExpression * _lhs, IHqlExpression * rhs, bool _isNew)
 {
     OwnedHqlExpr lhs = _lhs;
-    OwnedHqlExpr attr = _attr;
-    bool isNew = (attr != NULL);
+    bool isNew = _isNew;
     IHqlExpression * normalLhs = normalizeSelectLhs(lhs, isNew);
     IHqlExpression * newAttr = isNew ? newSelectAttrExpr : NULL;
 
-    checkRhsSelect(rhs, attr);
+    checkRhsSelect(rhs);
 
     type_t t = rhs->queryType()->getTypeCode();
     if (t == type_table || t == type_groupedtable)
@@ -11533,39 +11532,6 @@ extern IHqlExpression * createSelectExpr(IHqlExpression * _lhs, IHqlExpression *
 
     IHqlExpression * ret = new CHqlSelectExpression(LINK(normalLhs), rhs, LINK(newAttr));
     return ret->closeExpr();
-}
-
-extern IHqlExpression * createSelectExpr(IHqlExpression * _lhs, IHqlExpression * rhs)
-{
-    OwnedHqlExpr lhs = _lhs;
-    bool isNew = false;
-    IHqlExpression * normalLhs = normalizeSelectLhs(lhs, isNew);
-    IHqlExpression * newAttr = isNew ? newSelectAttrExpr : NULL;
-
-    checkRhsSelect(rhs, NULL);
-
-    type_t t = rhs->queryType()->getTypeCode();
-    if (t == type_table || t == type_groupedtable)
-        return createDataset(no_select, LINK(normalLhs), createComma(rhs, LINK(newAttr)));
-    if (t == type_row)
-        return createRow(no_select, LINK(normalLhs), createComma(rhs, LINK(newAttr)));
-
-    IHqlExpression * ret = new CHqlSelectExpression(LINK(normalLhs), rhs, LINK(newAttr));
-    return ret->closeExpr();
-}
-
-extern IHqlExpression * createNewSelectExpr(IHqlExpression * lhs, IHqlExpression * rhs)
-{
-    switch (lhs->getOperator())
-    {
-    case no_left:
-    case no_right:
-    case no_top:
-    case no_activetable:
-        //Minor special cases
-        return createSelectExpr(lhs, rhs, NULL);
-    }
-    return createSelectExpr(lhs, rhs, LINK(newSelectAttrExpr));
 }
 
 extern IHqlExpression * createSelectExpr(HqlExprArray & args)
@@ -11589,8 +11555,7 @@ extern IHqlExpression * createSelectExpr(HqlExprArray & args)
         args.append(*LINK(newSelectAttrExpr));
 
     IHqlExpression * rhs = &args.item(1);
-    IHqlExpression * attr = args.ordinality() > 2 ? &args.item(2) : NULL;
-    checkRhsSelect(rhs, attr);
+    checkRhsSelect(rhs);
 
     type_t t = rhs->queryType()->getTypeCode();
     if (t == type_table || t == type_groupedtable)
@@ -13284,13 +13249,13 @@ IHqlExpression * replaceSelectorDataset(IHqlExpression * expr, IHqlExpression * 
 {
     assertex(expr->getOperator() == no_select);
     IHqlExpression * ds = expr->queryChild(0);
-    IHqlExpression * newSelector;
     if ((ds->getOperator() == no_select) && !ds->isDataset())
-        newSelector = replaceSelectorDataset(ds, newDataset);
+    {
+        OwnedHqlExpr newSelector = replaceSelectorDataset(ds, newDataset);
+        return replaceChild(expr, 0, newSelector);
+    }
     else
-        newSelector = LINK(newDataset);
-    //Call createSelectExpr instead of clone() so that no_newrow/no_activerow are handled correctly
-    return createSelectExpr(newSelector, LINK(expr->queryChild(1)), LINK(expr->queryChild(2)));
+        return replaceChild(expr, 0, newDataset);
 }
 
 IHqlExpression * querySkipDatasetMeta(IHqlExpression * dataset)

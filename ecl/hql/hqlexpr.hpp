@@ -1325,10 +1325,10 @@ extern HQL_API IHqlExpression* createValue(node_operator op, HqlExprArray& opera
 extern HQL_API IHqlExpression *createValue(node_operator op, IHqlExpression *p1);
 extern HQL_API IHqlExpression* createConstant(int ival);
 extern HQL_API IHqlExpression* createBoolExpr(node_operator op, HqlExprArray& operands);
-extern HQL_API IHqlExpression* createSelectExpr(IHqlExpression * lhs, IHqlExpression * rhs, IHqlExpression * attr);
-extern HQL_API IHqlExpression* createSelectExpr(IHqlExpression * lhs, IHqlExpression * rhs);
+extern HQL_API IHqlExpression* createSelectExpr(IHqlExpression * lhs, IHqlExpression * rhs, bool isNew);
+inline IHqlExpression* createSelectExpr(IHqlExpression * lhs, IHqlExpression * rhs) { return createSelectExpr(lhs, rhs, false); }
+inline IHqlExpression* createNewSelectExpr(IHqlExpression * lhs, IHqlExpression * rhs) { return createSelectExpr(lhs, rhs, true); }
 extern HQL_API IHqlExpression* createSelectExpr(HqlExprArray & args);
-extern HQL_API IHqlExpression* createNewSelectExpr(IHqlExpression * lhs, IHqlExpression * rhs);
 
 inline IHqlExpression* createAction(node_operator op, HqlExprArray& operands) { return createValue(op, makeVoidType(), operands); }
 

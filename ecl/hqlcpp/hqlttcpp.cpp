@@ -2737,19 +2737,7 @@ IHqlExpression * ThorHqlTransformer::normalizeScalarAggregate(IHqlExpression * e
     if (!project)
         throwUnexpected();
     IHqlExpression * field = project->queryRecord()->queryChild(0);
-
-    HqlExprArray args;
-    ForEachChild(i, expr)
-    {
-        IHqlExpression * cur = expr->queryChild(i);
-        if (cur->isAttribute())
-        {
-            _ATOM name = cur->queryName();
-            if ((name != keyedAtom) && (name != prefetchAtom))
-                args.append(*LINK(cur));
-        }
-    }
-    OwnedHqlExpr ret = createSelectExpr(project.getClear(), LINK(field), createExprAttribute(newAtom, args));
+    OwnedHqlExpr ret = createNewSelectExpr(project.getClear(), LINK(field));
     return expr->cloneAllAnnotations(ret);
 }
 
@@ -8742,10 +8730,7 @@ IHqlExpression * HqlScopeTagger::transformSelect(IHqlExpression * expr)
     }
     //MORE: What about child datasets - should really be tagged as
     //if (!isNewDataset && field->isDataset() && !containsSelf(ds) && !isDatasetActive(ds)) isNew = true;
-
-    HqlExprArray attrs;
-    endTableScope(attrs, ds, newDs);
-    return createSelectExpr(newDs.getClear(), LINK(field), createExprAttribute(newAtom, attrs));
+    return createNewSelectExpr(newDs.getClear(), LINK(field));
 }
 
 IHqlExpression * HqlScopeTagger::transformSelectorsAttr(IHqlExpression * expr)
@@ -8925,7 +8910,7 @@ IHqlExpression * HqlScopeTagger::transformWithin(IHqlExpression * dataset, IHqlE
         return createSelectExpr(newDs.getClear(), LINK(field));
     }
     OwnedHqlExpr newDs = transformWithin(ds, scope);
-    return createSelectExpr(newDs.getClear(), LINK(field), createExprAttribute(newAtom));
+    return createNewSelectExpr(newDs.getClear(), LINK(field));
 }
 
 IHqlExpression * HqlScopeTagger::transformRelated(IHqlExpression * expr)
