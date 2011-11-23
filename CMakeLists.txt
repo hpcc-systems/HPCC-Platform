@@ -122,7 +122,9 @@ SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 include(${HPCC_SOURCE_DIR}/cmake_modules/commonSetup.cmake)
 
-add_subdirectory (initfiles)
+if ( CMAKE_SYSTEM MATCHES Linux )
+    add_subdirectory (initfiles)
+endif ()
 add_subdirectory (tools)
 add_subdirectory (common)
 add_subdirectory (dali)
