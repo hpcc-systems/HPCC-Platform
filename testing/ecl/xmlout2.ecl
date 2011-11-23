@@ -58,8 +58,8 @@ namesTable := dataset([
         {'Halliday','Abigail','09876',654321,false,'','',false,[{'The cat in the hat','Suess'},{'Wolly the sheep',''}], ['Red','Yellow']}
         ], personRecord);
 
-output(namesTable,,'REGRESS::TEMP::output.xml',overwrite,xml(heading('','')));
+output(namesTable,,'REGRESS::TEMP::output2.xml',overwrite,xml(heading('','')));
 
-inf := dataset('REGRESS::TEMP::output.xml', { string text }, csv);
+inf := dataset('REGRESS::TEMP::output2.xml', { string text }, csv);
 output(inf);
 
