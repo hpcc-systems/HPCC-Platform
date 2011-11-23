@@ -3870,8 +3870,7 @@ extern HQL_API IHqlExpression * createStoredModule(IHqlExpression * scopeExpr)
                 HqlExprArray meta;
                 value.setown(attachWorkflowOwn(meta, value.getClear(), failure, NULL));
                 newScope->defineSymbol(name, moduleName, value.getClear(), 
-                                       true, false, cur.getSymbolFlags(),
-                                       NULL, 0, 0, 0);
+                                       true, false, cur.getSymbolFlags());
             }
         }
     }
