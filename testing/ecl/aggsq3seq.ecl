@@ -61,9 +61,9 @@ d := dataset([
             }
         ], houseRecord);
 
-output(d,,'houses2',overwrite);
+output(d,,'houses3s',overwrite);
 
-houseTable2 := dataset('houses2', houseRecord, thor);
+houseTable2 := dataset('houses3s', houseRecord, thor);
 
 p := table(houseTable2.occupants.extra(age != 0), { surname });
 

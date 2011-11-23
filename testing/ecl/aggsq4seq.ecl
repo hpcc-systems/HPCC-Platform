@@ -57,9 +57,9 @@ d := dataset([
             }
         ], houseRecord);
 
-output(d,,'houses2',overwrite);
+output(d,,'houses4s',overwrite);
 
-houseTable2 := dataset('houses2', houseRecord, thor);
+houseTable2 := dataset('houses4s', houseRecord, thor);
 
 output(table(houseTable2, { addr, numFamilies := count(dedup(occupants.extra, surname, all)); }));
 
