@@ -48,7 +48,7 @@ public:
         dataLinkStart("TEMPTABLE", container.queryId());
         currentRow = 0;
         isLocal = container.queryOwnerId() && container.queryOwner().isLocalOnly();
-        eof = isLocal ? false : (container.queryJob().queryMyRank()>1);
+        eof = isLocal ? false : !firstNode();
     }
     void stop()
     {
@@ -74,7 +74,7 @@ public:
         initMetaInfo(info);
         info.isSource = true;
         info.unknownRowsOutput = false;
-        if (isLocal || 1 == container.queryJob().queryMyRank())
+        if (isLocal || firstNode())
             info.totalRowsMin = helper->numRows();
         else
             info.totalRowsMin = 0;

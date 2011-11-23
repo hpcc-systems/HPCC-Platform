@@ -48,7 +48,7 @@ public:
         processed = THORDATALINK_STARTED;
         try
         {
-            if (container.queryLocalOrGrouped() || 1 == container.queryJob().queryMyRank())
+            if (container.queryLocalOrGrouped() || firstNode())
                 helper->start();
             while(!abortSoon)
             {
@@ -59,7 +59,7 @@ public:
                 helper->apply(r);
                 processed++;
             }
-            if (container.queryLocalOrGrouped() || 1 == container.queryJob().queryMyRank())
+            if (container.queryLocalOrGrouped() || firstNode())
                 helper->end();
         }
         catch(CATCHALL)

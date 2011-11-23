@@ -301,7 +301,7 @@ public:
         if (needFirstRow)
         {
             needFirstRow = false;
-            if (global && container.queryJob().queryMyRank()>1)
+            if (global && !firstNode())
             {
                 CMessageBuffer msg;
                 if (!receiveMsg(msg, container.queryJob().queryMyRank()-1, mpTag)) // from previous node
@@ -326,7 +326,7 @@ public:
     {
         assertex(global);
         eos = true;
-        if (container.queryJob().queryMyRank()==container.queryJob().querySlaves()) // is last
+        if (lastNode())
             return false;
         CMessageBuffer msg;
         msg.append(numKept);

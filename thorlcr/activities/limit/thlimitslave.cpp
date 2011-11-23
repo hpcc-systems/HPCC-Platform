@@ -271,7 +271,7 @@ public:
             if (!gather())
             {
                 eof = true;
-                if (rowTransform&&helperex&&(container.queryJob().queryMyRank()==1))
+                if (rowTransform&&helperex && firstNode())
                 {
                     try
                     {

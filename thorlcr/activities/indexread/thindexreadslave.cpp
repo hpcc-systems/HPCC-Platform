@@ -543,7 +543,7 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase, public CThorDataLink
             {
                 limitHit = true;
                 eoi = true;
-                if (container.queryLocalOrGrouped() || 1 == container.queryJob().queryMyRank())
+                if (container.queryLocalOrGrouped() || firstNode())
                 {
                     if (0 == (TIRkeyedlimitskips & helper->getFlags()))
                     {
@@ -938,7 +938,7 @@ public:
         if (totalCountKnown)
         {
             totalCount = preknownTotalCount;
-            if (!container.queryLocalOrGrouped() && 1 != container.queryJob().queryMyRank())
+            if (!container.queryLocalOrGrouped() && !firstNode())
                 return NULL;
         }
         else
@@ -975,7 +975,7 @@ public:
             if (!container.queryLocalOrGrouped())
             {
                 sendPartialCount(*this, totalCount);
-                if (1 != container.queryJob().queryMyRank())
+                if (!firstNode())
                     return NULL;
                 totalCount = getFinalCount(*this);
             }
@@ -1308,7 +1308,7 @@ public:
         else
         {
             aggregator.sendResult(ret.get());
-            if (1 == container.queryJob().queryMyRank())
+            if (firstNode())
             {
                 ret.setown(aggregator.getResult());
                 if (ret)

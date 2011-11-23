@@ -29,7 +29,6 @@ private:
     bool eogNext, prevEog, eof;
     unsigned short transferAcceptPort;
     Owned<CGroupTransfer> rollover;
-    bool lastNode;
     bool rolloverEnabled;
     IThorDataLink *input;
     OwnedConstThorRow next;
@@ -73,8 +72,6 @@ public:
 #ifdef _TESTING
             ActPrintLog("Node number = %d, Total Nodes = %d", container.queryJob().queryMyRank(), container.queryJob().querySlaves());
 #endif
-            lastNode = (container.queryJob().queryMyRank() == container.queryJob().querySlaves());
-
             rollover.clear(); // JCSMORE - should be able to reuse the CGroupTranser obj.
             rollover.setown(new CGroupTransfer(&container, queryRowAllocator(), queryRowSerializer(), queryRowDeserializer(), transferAcceptPort));
         }
@@ -85,7 +82,7 @@ public:
 
         getNext(); // prime inputBuffer
 
-        if (rolloverEnabled&&(container.queryJob().queryMyRank() > 1))  // 1st node can have nothing to send
+        if (rolloverEnabled && !firstNode())  // 1st node can have nothing to send
         {
             CThorRowArray sendGroup;
             sendGroup.setSizing(true,true);
@@ -133,7 +130,7 @@ public:
         next.setown(input->ungroupedNextRow());
         if(next) 
             return true;
-        if (rolloverEnabled && !lastNode) {
+        if (rolloverEnabled && !lastNode()) {
             next.setown(rollover->nextRow());
             if (next) 
                 return true;

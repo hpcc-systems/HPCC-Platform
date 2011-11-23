@@ -191,7 +191,7 @@ class CEnthSlaveActivity : public BaseEnthActivity
 
     void sendCount(rowcount_t count)
     {
-        if (container.queryJob().queryMyRank() == container.queryJob().querySlaves()) // don't send if last node
+        if (lastNode())
             return;
         CMessageBuffer msg;
         msg.append(count);
@@ -217,7 +217,7 @@ public:
     virtual void abort()
     {
         BaseEnthActivity::abort();
-        if (1 != container.queryJob().queryMyRank())
+        if (!firstNode())
             cancelReceiveMsg(RANK_ALL, mpTag);
     }
     CATCH_NEXTROW()
@@ -226,7 +226,7 @@ public:
         if (first)
         {
             first = false;
-            if (container.queryJob().queryMyRank() > 1) // no need if 1st node
+            if (!firstNode()) // no need if 1st node
             {
                 CMessageBuffer msg;
                 if (!receiveMsg(msg, container.queryJob().queryMyRank()-1, mpTag))

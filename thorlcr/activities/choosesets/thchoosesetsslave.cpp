@@ -184,7 +184,7 @@ public:
         ActPrintLog("CHOOSESETS: abort()");
 #endif
         CSlaveActivity::abort();
-        if (!container.queryLocalOrGrouped() && (1 != container.queryJob().queryMyRank()))
+        if (!container.queryLocalOrGrouped() && !firstNode())
             cancelReceiveMsg(RANK_ALL, mpTag);
     }
     CATCH_NEXTROW()
@@ -193,7 +193,7 @@ public:
         if (first) 
         {
             first = false;
-            if (!container.queryLocalOrGrouped() || (1 == container.queryJob().queryMyRank()))
+            if (!container.queryLocalOrGrouped() || firstNode())
                 memset(tallies, 0, sizeof(unsigned)*numSets);
             else
                 getTallies();
@@ -217,11 +217,8 @@ public:
                 }
             }
         }
-        if (!container.queryLocalOrGrouped())
-        {
-            if (container.queryJob().queryMyRank() != container.queryJob().querySlaves()) // don't send if last node
-                sendTallies();
-        }
+        if (!container.queryLocalOrGrouped() && !lastNode())
+            sendTallies();
         return false;       
     }
     void getMetaInfo(ThorDataLinkMetaInfo &info)
@@ -335,7 +332,6 @@ public:
         input.clear();
         dataLinkStop();
     }
-
     virtual void abort()
     {
         CSlaveActivity::abort();

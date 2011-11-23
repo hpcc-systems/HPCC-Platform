@@ -81,7 +81,7 @@ protected:
 protected:
     virtual void write()
     {
-        if (!singleHF || 1 == container.queryJob().queryMyRank())
+        if (!singleHF || firstNode())
         {
             const char * header = helper->queryCsvParameters()->queryHeader();
             if (header)
@@ -115,7 +115,7 @@ protected:
 
             processed++;
         }
-        if (!singleHF || container.queryJob().querySlaves() == container.queryJob().queryMyRank())
+        if (!singleHF || lastNode())
         {
             const char * footer = helper->queryCsvParameters()->queryFooter();
             if (footer)

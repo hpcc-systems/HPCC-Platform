@@ -63,7 +63,7 @@ public:
         originalIndexPart.setown(deserializePartFileDescriptor(data));
         patchPart.setown(deserializePartFileDescriptor(data));
         newIndexPart.setown(deserializePartFileDescriptor(data));
-        if (1 == container.queryJob().queryMyRank())
+        if (firstNode())
         {
             data.read(tlk);
             if (tlk)

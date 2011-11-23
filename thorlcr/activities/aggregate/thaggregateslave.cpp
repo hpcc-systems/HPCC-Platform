@@ -91,7 +91,7 @@ public:
         appendOutputLinked(this);
         helper = (IHThorAggregateArg *)queryHelper();
 
-        if (1 == container.queryJob().queryMyRank())
+        if (firstNode())
         {
             mpTag = createReplyTag();
             slaveData.append((int &)mpTag);
@@ -100,7 +100,7 @@ public:
     void abort()
     {
         AggregateSlaveBase::abort();
-        if (1 == container.queryJob().queryMyRank())
+        if (firstNode())
             cancelReceiveMsg(0, mpTag);
     }
     const void * getResult()
@@ -163,7 +163,7 @@ public:
         OwnedConstThorRow result(resultcr.finalizeRowClear(sz));
         sendResult(result.get(),queryRowSerializer()); // send partial result
 
-        if (container.queryJob().queryMyRank()>1)
+        if (!firstNode())
             return NULL; 
 
         OwnedConstThorRow ret = getResult();
