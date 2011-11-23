@@ -49,7 +49,7 @@ output(sqHouseDs, { addr, count(personsDsDs(exists(booksDsDsDs(price>personsDs.b
 //which means sizeof(row-of-books) is wrong, and the iterators etc. don't work correctly!
 
 // How many people have books worth more than twice their average book price
-output(sqHousePersonBookDs, { addr, count(persons(exists(books(price>ave(books, price)*2)))) });
+output(sqHousePersonBookDs, { addr, count(persons(exists(books(price>ave(__ALIAS__(books), price)*2)))) });
 output(sqHousePersonBookDs, { addr, count(persons(exists(booksDs(price>ave(books, price)*2)))) });
 output(sqHousePersonBookDs, { addr, count(persons(exists(booksDs(price>ave(booksDs, price)*2)))) });
 //output(sqHousePersonBookDs, { addr, count(personsDs(exists(booksDsDs(price>ave(booksDs, price)*2)))) });

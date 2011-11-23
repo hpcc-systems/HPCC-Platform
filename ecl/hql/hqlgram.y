@@ -6991,9 +6991,7 @@ simpleDataSet
                         }
     | ALIAS '(' dataSet ')'
                         {
-                            //MORE: This needs to create a node which is then processed appropriately.
-                            $$.setExpr($3.getExpr());
-                            $$.setPosition($1);
+                            $$.setExpr(createDataset(no_dataset_alias, $3.getExpr(), ::createUniqueId()), $1);
                         }
     | EBCDIC '(' startTopFilter ')' endTopFilter
                         {

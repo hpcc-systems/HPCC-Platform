@@ -5993,9 +5993,6 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
             case no_compound_selectnew:
                 result = doBuildActivityCompoundSelectNew(ctx, expr);
                 break;
-            case no_keyed:
-                result = buildCachedActivity(ctx, expr->queryChild(0));
-                break;
             case no_denormalize:
             case no_denormalizegroup:
                 result = doBuildActivityDenormalize(ctx, expr);
@@ -6127,6 +6124,8 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
             case no_globalscope:
             case no_thisnode:
             case no_forcegraph:
+            case no_keyed:
+            case no_dataset_alias:
                 result = buildCachedActivity(ctx, expr->queryChild(0));
                 break;
             case no_alias_scope:

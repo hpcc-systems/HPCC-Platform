@@ -97,6 +97,7 @@ protected:
     void initFlagsBeforeOperands();
     void updateFlagsAfterOperands();
 
+    IHqlExpression * calcNormalizedSelector() const;
     void mergeGathered(CopyArray &, CopyArray &);
     IHqlExpression *fixScope(IHqlDataset *table);
     CHqlExpression(node_operator op, ITypeInfo *type, ...);
@@ -247,6 +248,7 @@ class CHqlSelectExpression : public CHqlExpression
 {
 public:
     CHqlSelectExpression(IHqlExpression * left, IHqlExpression * right, IHqlExpression * attr);
+    CHqlSelectExpression(HqlExprArray & ownedOperands);
 
     virtual IHqlExpression *clone(HqlExprArray &newkids);
     virtual IHqlExpression *queryNormalizedSelector(bool skipIndex);

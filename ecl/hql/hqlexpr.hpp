@@ -374,7 +374,7 @@ enum _node_operator {
     no_unused37,
     no_unused38,
         no_is_null,
-    no_unused39,
+        no_dataset_alias,
     no_unused40,
     no_unused41,
     no_unused52,
@@ -1145,7 +1145,7 @@ interface IHqlExpression : public IInterface
     inline bool isAnnotation() const { return getAnnotationKind() != annotate_none; }
     inline bool isNamedSymbol() const { return getAnnotationKind() == annotate_symbol; }
     inline bool isFunctionDefinition() const { return getOperator() == no_funcdef; }
-    inline bool hasProperty(_ATOM propName) { return queryProperty(propName) != NULL; }
+    inline bool hasProperty(_ATOM propName) const { return queryProperty(propName) != NULL; }
     inline bool hasText() const 
     { 
         IFileContents * contents = queryDefinitionText();
@@ -1325,8 +1325,9 @@ extern HQL_API IHqlExpression* createValue(node_operator op, HqlExprArray& opera
 extern HQL_API IHqlExpression *createValue(node_operator op, IHqlExpression *p1);
 extern HQL_API IHqlExpression* createConstant(int ival);
 extern HQL_API IHqlExpression* createBoolExpr(node_operator op, HqlExprArray& operands);
-extern HQL_API IHqlExpression* createInScopeSelectExpr(IHqlExpression * lhs, IHqlExpression * rhs);
-extern HQL_API IHqlExpression* createSelectExpr(IHqlExpression * lhs, IHqlExpression * rhs, IHqlExpression * attr = NULL);
+extern HQL_API IHqlExpression* createSelectExpr(IHqlExpression * lhs, IHqlExpression * rhs, IHqlExpression * attr);
+extern HQL_API IHqlExpression* createSelectExpr(IHqlExpression * lhs, IHqlExpression * rhs);
+extern HQL_API IHqlExpression* createSelectExpr(HqlExprArray & args);
 extern HQL_API IHqlExpression* createNewSelectExpr(IHqlExpression * lhs, IHqlExpression * rhs);
 
 inline IHqlExpression* createAction(node_operator op, HqlExprArray& operands) { return createValue(op, makeVoidType(), operands); }
