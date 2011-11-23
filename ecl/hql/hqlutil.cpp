@@ -2760,6 +2760,32 @@ IHqlExpression * getInverse(IHqlExpression * op)
     return createValue(no_not, makeBoolType(), LINK(op));
 }
 
+IHqlExpression * getNormalizedCondition(IHqlExpression * expr)
+{
+    if (expr->getOperator() == no_not)
+        return getInverse(expr->queryChild(0)->queryBody());
+    return LINK(expr->queryBody());
+}
+
+bool areInverseExprs(IHqlExpression * left, IHqlExpression* right)
+{
+    if (left->getOperator() == no_not)
+        return left->queryChild(0)->queryBody() == right->queryBody();
+    if (right->getOperator() == no_not)
+        return right->queryChild(0)->queryBody() == left->queryBody();
+
+    node_operator leftOp = left->getOperator();
+    node_operator rightOp = right->getOperator();
+    if (leftOp != rightOp)
+    {
+        if (getInverseOp(leftOp) != rightOp)
+            return false;
+    }
+
+    OwnedHqlExpr inverseLeft = getInverse(left->queryBody());
+    return inverseLeft->queryBody() == right->queryBody();
+}
+
 
 IHqlExpression * getNegative(IHqlExpression * expr)
 {
@@ -7287,6 +7313,25 @@ IECLError * annotateExceptionWithLocation(IException * e, IHqlExpression * locat
     e->errorMessage(errorMsg);
     unsigned code = e->errorCode();
     return createECLError(code, errorMsg.str(), location->querySourcePath()->str(), location->getStartLine(), location->getStartColumn(), 0);
+}
+
+StringBuffer & appendLocation(StringBuffer & s, IHqlExpression * location, const char * suffix)
+{
+    if (location)
+    {
+        int line = location->getStartLine();
+        int column = location->getStartColumn();
+        s.append(location->querySourcePath()->str());
+        if (line)
+        {
+            s.append("(").append(location->getStartLine());
+            if (column)
+                s.append(",").append(location->getStartColumn());
+            s.append(")");
+        }
+        s.append(suffix);
+    }
+    return s;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
