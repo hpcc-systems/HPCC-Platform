@@ -2025,7 +2025,7 @@ void CMasterGraph::sendActivityInitData()
             rank_t sender;
             msg.clear();
             if (!job.queryJobComm().recv(msg, w+1, replyTag, &sender, LONGTIMEOUT))
-                throw MakeStringException(0, "Timeout receiving from slaves after graph sent");
+                throw MakeGraphException(this, 0, "Timeout receiving from slaves after graph sent");
 
             bool error;
             msg.read(error);
@@ -2064,6 +2064,12 @@ void CMasterGraph::serializeGraphInit(MemoryBuffer &mb)
         CMasterGraph &childGraph = (CMasterGraph &)childIter->query();
         childGraph.serializeGraphInit(mb);
     }
+}
+
+// IThorChildGraph impl.
+IEclGraphResults *CMasterGraph::evaluate(unsigned _parentExtractSz, const byte *parentExtract)
+{
+    throw MakeGraphException(this, 0, "Thor master does not support the execution of child queries");
 }
 
 void CMasterGraph::executeSubGraph(size32_t parentExtractSz, const byte *parentExtract)
@@ -2207,7 +2213,7 @@ void CMasterGraph::getFinalProgress()
     msg.append(job.queryKey());
     msg.append(queryGraphId());
     if (!job.queryJobComm().send(msg, RANK_ALL_OTHER, masterSlaveMpTag, LONGTIMEOUT))
-        throw MakeStringException(0, "Timeout sending to slaves");
+        throw MakeGraphException(this, 0, "Timeout sending to slaves");
 
     unsigned n=queryJob().querySlaves();
     while (n--)

@@ -477,13 +477,18 @@ public:
     {
         ActPrintLog(activity, "Sort Done in");
         synchronized proc(slavemutex);
+        if (activity->queryAbortSoon())
+            return;
 #ifdef CLOSE_IN_PARALLEL
         class casyncfor: public CAsyncFor
         {
+            CActivityBase &activity;
         public:
-            casyncfor(NodeArray &_slaves) : slaves(_slaves) { wait = false; }
+            casyncfor(CActivityBase &_activity, NodeArray &_slaves) : activity(_activity), slaves(_slaves) { wait = false; }
             void Do(unsigned i)
             {
+                if (activity.queryAbortSoon())
+                    return;
                 if (wait)
                     slaves.item(i).CloseWait();
                 else
@@ -493,8 +498,10 @@ public:
             bool wait;
         private:
             NodeArray &slaves;
-        } afor(slaves);
+        } afor(*activity, slaves);
         afor.For(slaves.ordinality(), CLOSE_IN_PARALLEL);
+        if (activity->queryAbortSoon())
+            return;
         afor.wait = true;
         afor.For(slaves.ordinality(), CLOSE_IN_PARALLEL);
 #else

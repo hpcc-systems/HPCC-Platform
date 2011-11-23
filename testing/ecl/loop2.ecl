@@ -19,6 +19,7 @@
 //Information derived from http://en.wikipedia.org/wiki/Template:HarryPotterFamilyTree
 //This example file alone licenced under licence http://creativecommons.org/licenses/by-sa/3.0/
 //nothor
+//nothorlcr
 
 potterRecord := RECORD
     unsigned id;
