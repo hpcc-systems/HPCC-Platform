@@ -53,7 +53,7 @@ public:
         factory.set(fac);
     }
 
-    StlLinked<T> get(long timeout=0)
+    Linked<T> get(long timeout=0)
     {   
         const long interval=1000;
 
@@ -61,15 +61,15 @@ public:
         {
             {
                 CriticalBlock b(crit); 
-                typename std::vector<StlLinked<T> >::iterator it;
+                typename std::vector<Linked<T> >::iterator it;
                 for(it=resources.begin();it!=resources.end();it++)
                 {
                     if(it->get() == NULL)
                     {
-                        StlLinked<T> e = factory->createResource();
+                        Owned<T> e = factory->createResource();
                         if(e)
                         {
-                            it->setown(e.get());
+                            it->set(e.get());
                             return e;
                         }
                     }
@@ -106,7 +106,7 @@ public:
 
         {
         CriticalBlock b(crit); 
-        typename std::vector<StlLinked<T> >::iterator it;
+        typename std::vector<Linked<T> >::iterator it;
         for(it=resources.begin();it!=resources.end();it++)
         {
             if(it->get() && it->get() == t)
@@ -121,7 +121,7 @@ public:
     void clearAll()
     {
         CriticalBlock b(crit); 
-        typename std::vector<StlLinked<T> >::iterator it;
+        typename std::vector<Linked<T> >::iterator it;
         for(it=resources.begin();it!=resources.end();it++)
         {
             if(it->get())
@@ -134,7 +134,7 @@ public:
 protected:
     CriticalSection crit;
     Semaphore sem;
-    std::vector<StlLinked<T> > resources;
+    std::vector<Linked<T> > resources;
     Linked<IResourceFactory<T> > factory;
 };
 

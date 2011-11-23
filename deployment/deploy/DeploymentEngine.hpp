@@ -122,9 +122,9 @@ bool operator()(const string& _X, const string& _Y) const
     {return stricmp(_X.c_str(), _Y.c_str()) < 0; }
 };
 
-typedef StlLinked<CInstallFile> StlLinkedFilePtr;
+typedef Linked<CInstallFile> LinkedFilePtr;
 
-class CInstallFileMap : public std::multimap<std::string, StlLinkedFilePtr, iless_string> 
+class CInstallFileMap : public std::multimap<std::string, LinkedFilePtr, iless_string>
 {
 public:
    CInstallFileMap()
@@ -146,7 +146,7 @@ private:
    IDeploymentEngine* m_pDepEngine;
 };
 
-typedef vector<StlLinked<CInstallFile> > CInstallFileList;
+typedef vector<Linked<CInstallFile> > CInstallFileList;
 
 struct CInstallFiles 
 {
@@ -173,7 +173,7 @@ public:
    }
    CInstallFile* addInstallFile(const char* method, const char* srcPath, const char* destPath, bool bCacheable, const char* params)
    {
-        StlLinkedFilePtr pFile = new CInstallFile(method, srcPath, destPath, bCacheable);
+        LinkedFilePtr pFile = new CInstallFile(method, srcPath, destPath, bCacheable);
         
         if (params)
             pFile->setParams(params);

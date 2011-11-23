@@ -113,7 +113,7 @@ void HQL_API reportError(IErrorReceiver * errors, int errNo, const ECLlocation &
 void HQL_API expandReportError(IErrorReceiver * errors, IECLError* error);
 extern HQL_API IErrorReceiver *createFileErrorReceiver(FILE *f);
 
-extern HQL_API void checkEclVersionCompatible(Owned<IErrorReceiver> & errors, const char * eclVersion);
+extern HQL_API void checkEclVersionCompatible(Shared<IErrorReceiver> & errors, const char * eclVersion);
 
 
 #endif // _HQLERROR_HPP_

@@ -696,13 +696,13 @@ public:
 
     virtual void buildMembers(IHqlExpression * expr) = 0;
     virtual void buildTransformFpos(BuildCtx & transformCtx) = 0;
-    virtual void extractMonitors(IHqlExpression * ds, OwnedHqlExpr & unkeyedFilter, HqlExprArray & conds);
+    virtual void extractMonitors(IHqlExpression * ds, SharedHqlExpr & unkeyedFilter, HqlExprArray & conds);
     virtual void buildTransformElements(BuildCtx & ctx, IHqlExpression * expr, bool ignoreFilters);
     virtual void buildTransform(IHqlExpression * expr) = 0;
     virtual void analyse(IHqlExpression * expr);
 
     void buildFilenameMember();
-    void appendFilter(OwnedHqlExpr & unkeyedFilter, IHqlExpression * expr);
+    void appendFilter(SharedHqlExpr & unkeyedFilter, IHqlExpression * expr);
     void buildKeyedLimitHelper(IHqlExpression * expr);
     void buildLimits(BuildCtx & classctx, IHqlExpression * expr, unique_id_t id);
     void buildReadMembers( IHqlExpression * expr);
@@ -735,7 +735,7 @@ protected:
     void buildGroupingMonitors(IHqlExpression * expr, MonitorExtractor & monitors);
     void buildGroupAggregateTransformBody(BuildCtx & transformctx, IHqlExpression * expr, bool useExtract);
     void buildNormalizeHelpers(IHqlExpression * expr);
-    void buildTargetCursor(Owned<BoundRow> & tempRow, Owned<BoundRow> & rowBuilder, BuildCtx & ctx, IHqlExpression * expr);
+    void buildTargetCursor(Shared<BoundRow> & tempRow, Shared<BoundRow> & rowBuilder, BuildCtx & ctx, IHqlExpression * expr);
     void associateTargetCursor(BuildCtx & subctx, BuildCtx & ctx, BoundRow * tempRow, BoundRow * rowBuilder, IHqlExpression * expr);
     IHqlExpression * ensureAggregateGroupingAliased(IHqlExpression * aggregate);
     void gatherSteppingMeta(IHqlExpression * expr, SourceSteppingInfo & info);
@@ -1042,7 +1042,7 @@ void SourceBuilder::analyse(IHqlExpression * expr)
     }
 }
 
-void SourceBuilder::appendFilter(OwnedHqlExpr & unkeyedFilter, IHqlExpression * expr)
+void SourceBuilder::appendFilter(SharedHqlExpr & unkeyedFilter, IHqlExpression * expr)
 {
     if (expr)
     {
@@ -1189,7 +1189,7 @@ void SourceBuilder::buildTransformBody(BuildCtx & transformCtx, IHqlExpression *
     rootSelfRow = NULL;
 }
 
-void SourceBuilder::buildTargetCursor(Owned<BoundRow> & tempRow, Owned<BoundRow> & rowBuilder, BuildCtx & ctx, IHqlExpression * expr)
+void SourceBuilder::buildTargetCursor(Shared<BoundRow> & tempRow, Shared<BoundRow> & rowBuilder, BuildCtx & ctx, IHqlExpression * expr)
 {
     assertex(lastTransformer != NULL);
     if (expr == lastTransformer)
@@ -1661,7 +1661,7 @@ void SourceBuilder::checkDependencies(BuildCtx & ctx, IHqlExpression * expr)
     translator.addFileDependency(nameExpr, bound);
 }
 
-void SourceBuilder::extractMonitors(IHqlExpression * ds, OwnedHqlExpr & unkeyedFilter, HqlExprArray & conds)
+void SourceBuilder::extractMonitors(IHqlExpression * ds, SharedHqlExpr & unkeyedFilter, HqlExprArray & conds)
 {
     ForEachItemIn(i, conds)
     {
@@ -2511,7 +2511,7 @@ public:
 
     virtual void buildMembers(IHqlExpression * expr);
     virtual void buildTransformFpos(BuildCtx & transformCtx);
-    virtual void extractMonitors(IHqlExpression * ds, OwnedHqlExpr & unkeyedFilter, HqlExprArray & conds);
+    virtual void extractMonitors(IHqlExpression * ds, SharedHqlExpr & unkeyedFilter, HqlExprArray & conds);
 
 protected:
     virtual void buildFlagsMember(IHqlExpression * expr);
@@ -2635,7 +2635,7 @@ void DiskReadBuilderBase::buildTransformFpos(BuildCtx & transformCtx)
 }
 
 
-void DiskReadBuilderBase::extractMonitors(IHqlExpression * ds, OwnedHqlExpr & unkeyedFilter, HqlExprArray & conds)
+void DiskReadBuilderBase::extractMonitors(IHqlExpression * ds, SharedHqlExpr & unkeyedFilter, HqlExprArray & conds)
 {
     ForEachItemIn(i, conds)
     {
@@ -3959,13 +3959,13 @@ static IHqlExpression * createCompareRecast(node_operator op, IHqlExpression * v
 }
 
 
-void MonitorExtractor::extractCompareInformation(BuildCtx & ctx, IHqlExpression * expr, OwnedHqlExpr & compare, OwnedHqlExpr & normalized, IHqlExpression * expandedSelector, bool isComputed)
+void MonitorExtractor::extractCompareInformation(BuildCtx & ctx, IHqlExpression * expr, SharedHqlExpr & compare, SharedHqlExpr & normalized, IHqlExpression * expandedSelector, bool isComputed)
 {
     extractCompareInformation(ctx, expr->queryChild(0), expr->queryChild(1), compare, normalized, expandedSelector, isComputed);
 }
 
 
-void MonitorExtractor::extractCompareInformation(BuildCtx & ctx, IHqlExpression * lhs, IHqlExpression * value, OwnedHqlExpr & compare, OwnedHqlExpr & normalized, IHqlExpression * expandedSelector, bool isComputed)
+void MonitorExtractor::extractCompareInformation(BuildCtx & ctx, IHqlExpression * lhs, IHqlExpression * value, SharedHqlExpr & compare, SharedHqlExpr & normalized, IHqlExpression * expandedSelector, bool isComputed)
 {
     LinkedHqlExpr compareValue = value->queryBody();
     OwnedHqlExpr recastValue;
@@ -5229,7 +5229,7 @@ static IHqlExpression * queryLengthFromRange(IHqlExpression * range)
     }
 }
 
-static void extendRangeCheck(OwnedHqlExpr & globalGuard, OwnedHqlExpr & localCond, IHqlExpression * selector, IHqlExpression * lengthExpr, bool compareEqual)
+static void extendRangeCheck(SharedHqlExpr & globalGuard, SharedHqlExpr & localCond, IHqlExpression * selector, IHqlExpression * lengthExpr, bool compareEqual)
 {
 #if 0
     //This might be a good idea, but probably doesn't make a great deal of difference at runtime
@@ -5645,14 +5645,14 @@ bool MonitorExtractor::containsTableSelects(IHqlExpression * expr)
 }
 
 
-void MonitorExtractor::extractFilters(IHqlExpression * expr, OwnedHqlExpr & extraFilter)
+void MonitorExtractor::extractFilters(IHqlExpression * expr, SharedHqlExpr & extraFilter)
 {
     HqlExprArray conds;
     expr->unwindList(conds, no_and);
     extractFilters(conds, extraFilter);
 }
 
-void MonitorExtractor::extractFilters(HqlExprArray & exprs, OwnedHqlExpr & extraFilter)
+void MonitorExtractor::extractFilters(HqlExprArray & exprs, SharedHqlExpr & extraFilter)
 {
     OwnedHqlExpr savedFilter = keyed.postFilter.getClear();
     ForEachItemIn(i1, exprs)
@@ -6088,7 +6088,7 @@ public:
     }
 
     virtual void buildMembers(IHqlExpression * expr);
-    virtual void extractMonitors(IHqlExpression * ds, OwnedHqlExpr & unkeyedFilter, HqlExprArray & conds);
+    virtual void extractMonitors(IHqlExpression * ds, SharedHqlExpr & unkeyedFilter, HqlExprArray & conds);
 
 protected:
     virtual void buildFlagsMember(IHqlExpression * expr);
@@ -6187,7 +6187,7 @@ void IndexReadBuilderBase::buildFlagsMember(IHqlExpression * expr)
         translator.doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
 }
 
-void IndexReadBuilderBase::extractMonitors(IHqlExpression * ds, OwnedHqlExpr & unkeyedFilter, HqlExprArray & conds)
+void IndexReadBuilderBase::extractMonitors(IHqlExpression * ds, SharedHqlExpr & unkeyedFilter, HqlExprArray & conds)
 {
     OwnedHqlExpr extraFilter;
     monitors.extractFilters(conds, extraFilter);

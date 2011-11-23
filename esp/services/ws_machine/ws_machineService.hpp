@@ -284,7 +284,7 @@ private:
         IArrayOf<IEspProcessInfo>& runningProcesses, const char* pszProcessType, bool bFilterProcesses, bool bMonitorDaliFileServer, const StringArray& additionalProcesses);
     const char* lookupProcessname(const StringBuffer& sProcessType);
     void enumerateRunningProcesses(CMachineInfoThreadParam* pParam, IArrayOf<IEspProcessInfo>& runningProcesses, bool bLinuxInstance,
-            bool bFilterProcesses, map<string, StlLinked<IEspSWRunInfo> >* processMap, map<int, StlLinked<IEspSWRunInfo> >& pidMap,
+            bool bFilterProcesses, map<string, Linked<IEspSWRunInfo> >* processMap, map<int, Linked<IEspSWRunInfo> >& pidMap,
                                                              set<string>* pRequiredProcesses);
     char* skipChar(const char* sBuf, char c);
     void readRunningProcess(const char* lineBuf, IArrayOf<IEspProcessInfo>& runningProcesses);

@@ -32,7 +32,7 @@ private:
     bool m_complete;
     StringAttr m_name;
     IArrayOf<ISecResource> m_rlist;
-    std::map<std::string, StlLinked<ISecResource> > m_rmap;  
+    std::map<std::string, Linked<ISecResource> > m_rmap;
 
 public:
     IMPLEMENT_IINTERFACE

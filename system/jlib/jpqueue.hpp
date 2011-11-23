@@ -256,7 +256,7 @@ private:
     }
 
  
-    WaitQueue<StlLinked<ITask> > queue;
+    WaitQueue<Linked<ITask> > queue;
 
     size32_t maxsize;
     friend class WorkerThread;

@@ -264,8 +264,8 @@ protected:
     IHqlExpression * expandDatasetReferences(IHqlExpression * expr, IHqlExpression * ds);
     IHqlExpression * optimizeTransfer(HqlExprArray & fields, HqlExprArray & values, IHqlExpression * expr, IHqlExpression * leftSelector);
     void optimizeExtractJoinFields();
-    void optimizeTransfer(OwnedHqlExpr & targetDataset, OwnedHqlExpr & targetTransform, OwnedHqlExpr & keyedFilter, OwnedHqlExpr * extraFilter);
-    void splitFilter(IHqlExpression * filter, OwnedHqlExpr & keyTarget);
+    void optimizeTransfer(SharedHqlExpr & targetDataset, SharedHqlExpr & targetTransform, SharedHqlExpr & keyedFilter, OwnedHqlExpr * extraFilter);
+    void splitFilter(IHqlExpression * filter, SharedHqlExpr & keyTarget);
 
 protected:
     HqlCppTranslator & translator;
@@ -757,7 +757,7 @@ IHqlExpression * reverseOptimizeTransfer(IHqlExpression * left, IHqlExpression *
 
 
 
-void KeyedJoinInfo::optimizeTransfer(OwnedHqlExpr & targetDataset, OwnedHqlExpr & targetTransform, OwnedHqlExpr & filter, OwnedHqlExpr * extraFilter)
+void KeyedJoinInfo::optimizeTransfer(SharedHqlExpr & targetDataset, SharedHqlExpr & targetTransform, SharedHqlExpr & filter, OwnedHqlExpr * extraFilter)
 {
     IHqlExpression * dataset = expr->queryChild(0);
     if (canOptimizeTransfer)
@@ -1095,7 +1095,7 @@ bool KeyedJoinInfo::processFilter()
     return monitors->isKeyed();
 }
 
-void KeyedJoinInfo::splitFilter(IHqlExpression * filter, OwnedHqlExpr & keyTarget)
+void KeyedJoinInfo::splitFilter(IHqlExpression * filter, SharedHqlExpr & keyTarget)
 {
     if (!filter) return;
     if (filter->getOperator() == no_and)

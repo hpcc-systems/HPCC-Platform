@@ -144,8 +144,8 @@ public:
 
     void appendFilter(IHqlExpression * expr)                { keyed.appendPostFilter(expr); }
     void buildSegments(BuildCtx & ctx, const char * listName, bool _ignoreUnkeyed);
-    void extractFilters(IHqlExpression * filter, OwnedHqlExpr & extraFilter);
-    void extractFilters(HqlExprArray & exprs, OwnedHqlExpr & extraFilter);
+    void extractFilters(IHqlExpression * filter, SharedHqlExpr & extraFilter);
+    void extractFilters(HqlExprArray & exprs, SharedHqlExpr & extraFilter);
     void extractFiltersFromFilterDs(IHqlExpression * expr);
     void extractAllFilters(IHqlExpression * filter);
     IHqlExpression * queryExtraFilter()                     { return keyed.postFilter; }
@@ -202,8 +202,8 @@ protected:
     bool okToKey(IHqlExpression * select, KeyedKind keyedKind);
     IHqlExpression * queryKeyableSelector(IHqlExpression * expr);
     IHqlExpression * querySimpleJoinValue(IHqlExpression * field);
-    void extractCompareInformation(BuildCtx & ctx, IHqlExpression * expr, OwnedHqlExpr & compare, OwnedHqlExpr & normalized, IHqlExpression * expandedSelector, bool isTranslated);
-    void extractCompareInformation(BuildCtx & ctx, IHqlExpression * lhs, IHqlExpression * value, OwnedHqlExpr & compare, OwnedHqlExpr & normalized, IHqlExpression * expandedSelector, bool isTranslated);
+    void extractCompareInformation(BuildCtx & ctx, IHqlExpression * expr, SharedHqlExpr & compare, SharedHqlExpr & normalized, IHqlExpression * expandedSelector, bool isTranslated);
+    void extractCompareInformation(BuildCtx & ctx, IHqlExpression * lhs, IHqlExpression * value, SharedHqlExpr & compare, SharedHqlExpr & normalized, IHqlExpression * expandedSelector, bool isTranslated);
     IHqlExpression * unwindConjunction(HqlExprArray & matches, IHqlExpression * expr);
 
 protected:

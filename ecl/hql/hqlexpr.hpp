@@ -1177,6 +1177,7 @@ interface IHqlNamedAnnotation : public IHqlAnnotation
 
 
 typedef Linked<IHqlExpression> HqlExprAttr;
+typedef Shared<IHqlExpression> SharedHqlExpr;
 typedef Linked<IHqlExpression> LinkedHqlExpr;
 typedef Owned<IHqlExpression>  OwnedHqlExpr;
 
@@ -1734,7 +1735,7 @@ extern HQL_API ITypeInfo * getTypedefType(IHqlExpression * expr);
 
 extern HQL_API ITypeInfo * getPromotedECLType(ITypeInfo * lType, ITypeInfo * rType);
 extern HQL_API ITypeInfo * getPromotedECLCompareType(ITypeInfo * lType, ITypeInfo * rType);
-extern HQL_API void extendAdd(OwnedHqlExpr & value, IHqlExpression * expr);
+extern HQL_API void extendAdd(SharedHqlExpr & value, IHqlExpression * expr);
 inline bool isOmitted(IHqlExpression * actual) { return !actual || actual->getOperator() == no_omitted; }
 
 extern HQL_API IFileContents * createFileContentsFromText(unsigned len, const char * text, ISourcePath * sourcePath);

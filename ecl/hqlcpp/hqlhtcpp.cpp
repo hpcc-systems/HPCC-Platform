@@ -231,7 +231,7 @@ static IHqlExpression * createResultName(IHqlExpression * name)
 
 //---------------------------------------------------------------------------
 
-void extractAtmostArgs(IHqlExpression * atmost, OwnedHqlExpr & atmostCond, OwnedHqlExpr & atmostLimit)
+void extractAtmostArgs(IHqlExpression * atmost, SharedHqlExpr & atmostCond, SharedHqlExpr & atmostLimit)
 {
     atmostLimit.set(queryZero());
     if (atmost)
@@ -270,7 +270,7 @@ static bool matchesAtmostCondition(IHqlExpression * cond, HqlExprArray & atConds
     return true;
 }
 
-void HqlCppTranslator::splitFuzzyCondition(IHqlExpression * condition, IHqlExpression * atmostCond, OwnedHqlExpr & fuzzy, OwnedHqlExpr & hard)
+void HqlCppTranslator::splitFuzzyCondition(IHqlExpression * condition, IHqlExpression * atmostCond, SharedHqlExpr & fuzzy, SharedHqlExpr & hard)
 {
     if (atmostCond)
     {
@@ -9636,7 +9636,7 @@ static void createOutputIndexTransform(HqlExprArray & assigns, IHqlExpression * 
 }
 
 
-void HqlCppTranslator::doBuildIndexOutputTransform(BuildCtx & ctx, IHqlExpression * record, OwnedHqlExpr & rawRecord)
+void HqlCppTranslator::doBuildIndexOutputTransform(BuildCtx & ctx, IHqlExpression * record, SharedHqlExpr & rawRecord)
 {
     OwnedHqlExpr srcDataset = createDataset(no_anon, LINK(record));
 
@@ -12657,7 +12657,7 @@ IHqlExpression * NextTransformCreator::transform(IHqlExpression * expr)
 
 //------------------------------------------------------------------------------------------------
 
-void HqlCppTranslator::processUserAggregateTransform(IHqlExpression * expr, IHqlExpression * transform, OwnedHqlExpr & firstTransform, OwnedHqlExpr & nextTransform)
+void HqlCppTranslator::processUserAggregateTransform(IHqlExpression * expr, IHqlExpression * transform, SharedHqlExpr & firstTransform, SharedHqlExpr & nextTransform)
 {
     if (isKnownTransform(transform))
     {
