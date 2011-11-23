@@ -341,7 +341,7 @@ function xmlhttpChange()
          var msg = "Problem occurred in response:\n ";
          msg += "Status Code: " + xmlhttp.status+"\n";
          msg += "Messsage: "+xmlhttp.statusText + "\n";
-         msg += "Response: see Response Boby";
+         msg += "Response: see Response Body";
          alert(msg);         
     }
   }
