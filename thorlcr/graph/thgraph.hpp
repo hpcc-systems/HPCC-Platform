@@ -938,6 +938,8 @@ public:
     void onStart(size32_t _parentExtractSz, const byte *_parentExtract) { parentExtractSz = _parentExtractSz; parentExtract = _parentExtract; }
     bool receiveMsg(CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER);
     void cancelReceiveMsg(const rank_t rank, const mptag_t mpTag);
+    bool firstNode() { return 1 == container.queryJob().queryMyRank(); }
+    bool lastNode() { return container.queryJob().querySlaves() == container.queryJob().queryMyRank(); }
 
 
     virtual void setInput(unsigned index, CActivityBase *inputActivity, unsigned inputOutIdx) { }

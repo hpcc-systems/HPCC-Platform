@@ -142,7 +142,7 @@ public:
         else
         {
             data.read(buildTlk);
-            if (1 == container.queryJob().queryMyRank())
+            if (firstNode())
             {
                 if (buildTlk)
                     tlkDesc.setown(deserializePartFileDescriptor(data));
@@ -466,7 +466,7 @@ public:
                     NodeInfoArray tlkRows;
 
                     CMessageBuffer msg;
-                    if (1 == container.queryJob().queryMyRank())
+                    if (firstNode())
                     {
                         if (processed & THORDATALINK_COUNT_MASK)
                         {
@@ -485,7 +485,7 @@ public:
                         container.queryJob().queryJobComm().send(msg, 1, mpTag);
                     }
 
-                    if (1 == container.queryJob().queryMyRank())
+                    if (firstNode())
                     {
                         ActPrintLog("INDEXWRITE: Waiting on tlk to complete");
 
@@ -534,7 +534,7 @@ public:
                         }
                     }
                 }
-                else if (!isLocal && 1 == container.queryJob().queryMyRank())
+                else if (!isLocal && firstNode())
                 {
                     // if !buildTlk - then copy provided index's tlk.
                     unsigned l;
@@ -595,7 +595,7 @@ public:
             return;
         rowcount_t _processed = processed & THORDATALINK_COUNT_MASK;
         mb.append(_processed);
-        if (!singlePartKey || 1 == container.queryJob().queryMyRank())
+        if (!singlePartKey || firstNode())
         {
             StringBuffer partFname;
             getPartFilename(*partDesc, 0, partFname);
@@ -608,7 +608,7 @@ public:
             ifile->getTime(&createTime, &modifiedTime, &accessedTime);
             modifiedTime.serialize(mb);
             mb.append(partCrc);
-            if (!singlePartKey && 1 == container.queryJob().queryMyRank() && buildTlk)
+            if (!singlePartKey && firstNode() && buildTlk)
             {
                 mb.append(tlkCrc);
                 StringBuffer path;

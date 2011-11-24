@@ -55,7 +55,7 @@ public:
 
         StringBuffer xmlOutput;
         CommonXmlWriter xmlWriter(helper->getXmlFlags());
-        if (!dlfn.isExternal() || container.queryJob().queryMyRank() == 1) // if external, 1 header,footer
+        if (!dlfn.isExternal() || firstNode()) // if external, 1 header,footer
         {
             const char * header = helper->queryHeader();
             if (header)
@@ -79,7 +79,7 @@ public:
                 fileCRC.tally(xmlWriter.length(), xmlWriter.str());
             processed++;
         }
-        if (!dlfn.isExternal() || container.queryJob().queryMyRank() == container.queryJob().querySlaves()) // if external, 1 header,footer
+        if (!dlfn.isExternal() || lastNode()) // if external, 1 header,footer
         {
             const char * footer = helper->queryFooter();
             if (footer)

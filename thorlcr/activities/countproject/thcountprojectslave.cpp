@@ -127,7 +127,7 @@ private:
     void sendCount(rowcount_t _count)
     {
         // either called by onInputFinished(signaled by nextRow/stop) or by nextRow/stop itself
-        if (container.queryJob().queryMyRank() == container.queryJob().querySlaves()) // don't send if last node
+        if (lastNode())
             return;
         CMessageBuffer msg;
         msg.append(_count);
@@ -135,7 +135,7 @@ private:
     }
     rowcount_t getPrevCount()
     {
-        if (container.queryJob().queryMyRank() > 1)
+        if (!firstNode())
         {
             CMessageBuffer msg;
             rowcount_t _count;
@@ -193,7 +193,7 @@ public:
     {
         CSlaveActivity::abort();
         prevRecCountSem.signal();
-        if (container.queryJob().queryMyRank() > 1)
+        if (!firstNode())
             cancelReceiveMsg(container.queryJob().queryMyRank()-1, mpTag);
     }
     CATCH_NEXTROW()

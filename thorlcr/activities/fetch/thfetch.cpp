@@ -41,12 +41,10 @@ public:
         if (!container.queryLocalOrGrouped())
             mpTag = container.queryJob().allocateMPTag();
     }
-
     ~CFetchActivityMaster()
     {
         if (endpoints) free(endpoints);
     }
-
     virtual void init()
     {
         IHThorFetchArg *helper = (IHThorFetchArg *)queryHelper();
@@ -76,7 +74,6 @@ public:
             mapping->serializeFileOffsetMap(offsetMapMb);
         }
     }
-
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
         if (fetchFile)

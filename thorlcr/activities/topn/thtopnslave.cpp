@@ -215,7 +215,7 @@ public:
                     out = createFirstNReadSeqVar(out, topNLimit);
                     indent += 2;
                 }
-                if (container.queryJob().queryMyRank() > 1)
+                if (!firstNode())
                 {
                     rowServer.setown(createRowServer(this, out, container.queryJob().queryJobComm(), mpTag));
                     eos = true;
@@ -319,7 +319,7 @@ public:
         }
         else
         {
-            if (!global || 1 == container.queryJob().queryMyRank())
+            if (!global || firstNode())
             {
                 OwnedConstThorRow row = out->nextRow();
                 if (row)

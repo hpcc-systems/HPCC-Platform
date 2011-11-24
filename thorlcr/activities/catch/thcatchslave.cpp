@@ -251,7 +251,7 @@ public:
                     barrier->cancel();
                     barrier.clear();
                 }
-                if ((TAKcreaterowcatch == container.getKind()) && (container.queryLocalOrGrouped() || 1 == container.queryJob().queryMyRank()))
+                if ((TAKcreaterowcatch == container.getKind()) && (container.queryLocalOrGrouped() || firstNode()))
                 {
                     Linked<IEngineRowAllocator> allocator = queryRowAllocator();
                     RtlDynamicRowBuilder row(allocator);

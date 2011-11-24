@@ -62,7 +62,7 @@ public:
     {
         if (nextPut) return;
         nextPut = true;
-        if (global && container.queryJob().queryMyRank()!=container.queryJob().querySlaves()) // is not last
+        if (global && !lastNode())
         {
             CMessageBuffer msg;
             msg.append(count);
@@ -137,7 +137,7 @@ public:
                 break;
             
             if (!prev) {
-                if (!global || (1==container.queryJob().queryMyRank())) {
+                if (!global || firstNode()) {
                     // construct first row
                     RtlDynamicRowBuilder r(queryRowAllocator());
                     size32_t sz = helper->createDefault(r);
@@ -222,7 +222,7 @@ public:
             if (eof || abortSoon)
                 break;
             if (!left) {
-                if (!global || (1==container.queryJob().queryMyRank())) {
+                if (!global || firstNode()) {
                     // construct first row
                     RtlDynamicRowBuilder r(rightRowAllocator);  
                     size32_t sz = helper->createInitialRight(r);  
@@ -303,7 +303,7 @@ public:
     void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
-        eof = !container.queryLocalOrGrouped() && (container.queryJob().queryMyRank()>1);
+        eof = !container.queryLocalOrGrouped() && !firstNode();
         count = 0;
         dataLinkStart("CHILDITERATOR", container.queryId());
     }
@@ -431,7 +431,7 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
         dataLinkStart("LINKEDRAWITERATOR", container.queryId());
-        dohere = container.queryLocalOrGrouped() || (1 == container.queryJob().queryMyRank());
+        dohere = container.queryLocalOrGrouped() || firstNode();
     }
     void stop()
     {
@@ -491,7 +491,7 @@ public:
     virtual void start()
     {
         isLocal = container.queryOwnerId() && container.queryOwner().isLocalOnly();
-        eof = isLocal ? false : (container.queryJob().queryMyRank()>1);
+        eof = isLocal ? false : !firstNode();
         if (!eof)
             rows.setown(helper->createInput());
         dataLinkStart("STREAMEDITERATOR", container.queryId());

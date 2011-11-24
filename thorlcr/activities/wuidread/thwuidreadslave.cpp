@@ -58,7 +58,7 @@ public:
         dataLinkStart("WUIDREAD", container.queryId());
 
         eogPending = false;
-        if (container.queryLocal() || 1 == container.queryJob().queryMyRank())
+        if (container.queryLocal() || firstNode())
         {
             CMessageBuffer reqMsg;
             reqMsg.setReplyTag(replyTag);
@@ -98,7 +98,7 @@ public:
     {
         initMetaInfo(info);
         info.isSource = true;
-        if (1 == container.queryJob().queryMyRank())
+        if (firstNode())
             info.unknownRowsOutput = true;
         else
         {

@@ -33,7 +33,7 @@ class CSelectNthSlaveActivity : public CSlaveActivity, public CThorDataLink, imp
     {
         // in n<0 before start of dataset (so output blank row)
         // n==0 means output nothing and return 0 (get returns eos)
-        if (isLocal || (1 == container.queryJob().queryMyRank()))
+        if (isLocal || firstNode())
         {
             N = (rowcount_t)helper->getRowToSelect();
             if (0==N)
@@ -46,7 +46,7 @@ class CSelectNthSlaveActivity : public CSlaveActivity, public CThorDataLink, imp
                 return;
             msg.read(N);
             msg.read(seenNth);
-            if (!seenNth && container.queryJob().queryMyRank() == container.queryJob().querySlaves())
+            if (!seenNth && lastNode())
                 createDefaultIfFail = true;
         }
         startN = N;
@@ -54,7 +54,7 @@ class CSelectNthSlaveActivity : public CSlaveActivity, public CThorDataLink, imp
     }
     void sendN()
     {
-        if (isLocal || container.queryJob().queryMyRank() == container.queryJob().querySlaves()) // don't send if local or last node
+        if (isLocal || lastNode())
             return;
         CMessageBuffer msg;
         msg.append(N);
@@ -68,7 +68,7 @@ public:
     CSelectNthSlaveActivity(CGraphElementBase *_container, bool _isLocal) : CSlaveActivity(_container), CThorDataLink(this)
     {
         isLocal = _isLocal;
-        createDefaultIfFail = isLocal || (container.queryJob().queryMyRank() == container.queryJob().querySlaves());
+        createDefaultIfFail = isLocal || lastNode();
     }
     ~CSelectNthSlaveActivity()
     {
@@ -131,7 +131,7 @@ public:
     virtual void abort()
     {
         CSlaveActivity::abort();
-        if (1 != container.queryJob().queryMyRank())
+        if (!firstNode())
             cancelReceiveMsg(RANK_ALL, mpTag);
     }
     CATCH_NEXTROW()
