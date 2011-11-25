@@ -302,9 +302,17 @@ class CThrottler
     Semaphore &sem;
     bool got;
 public:
-    CThrottler(Semaphore &_sem)
-        : sem(_sem)
+    CThrottler(Semaphore &_sem) : sem(_sem), got(false)
     {
+        take();
+    }
+    ~CThrottler()
+    {
+        release();
+    }
+    bool take()
+    {
+        assertex(!got);
         got = false;
         loop {
             if (sem.wait(5000)) {
@@ -316,17 +324,36 @@ public:
             if (getLatestCPUUsage()<75) 
                 break;
         }
+        return got;
     }
-
-    ~CThrottler()
+    bool release()
     {
         if (got)
+        {
+            got = false;
             sem.signal();
+            return true;
+        }
+        return false;
     }
 };
 
-#define THROTTLE(throttlesem)   CThrottler throttle(throttlesem);
-
+// temporarily release a throttler slot
+class CThrottleReleaseBlock
+{
+    CThrottler &throttler;
+    bool had;
+public:
+    CThrottleReleaseBlock(CThrottler &_throttler) : throttler(_throttler)
+    {
+        had = throttler.release();
+    }
+    ~CThrottleReleaseBlock()
+    {
+        if (had)
+            throttler.take();
+    }
+};
 
 //---------------------------------------------------------------------------
 
@@ -770,7 +797,7 @@ static Semaphore                 treeCopySem;
 
 #define DEBUGSAMEIP false
 
-static void treeCopyFile(RemoteFilename &srcfn, RemoteFilename &dstfn, const char *net, const char *mask, IpAddress &ip, bool usetmp)
+static void treeCopyFile(RemoteFilename &srcfn, RemoteFilename &dstfn, const char *net, const char *mask, IpAddress &ip, bool usetmp, CThrottler *throttler)
 {
     unsigned start = msTick();
     Owned<IFile> dstfile = createIFile(dstfn);
@@ -880,7 +907,13 @@ static void treeCopyFile(RemoteFilename &srcfn, RemoteFilename &dstfn, const cha
             treeCopyWaiting++; // note this isn't precise - just indication
             {
                 CriticalUnblock unblock(treeCopyCrit);
-                treeCopySem.wait(TREECOPYPOLLTIME); 
+                if (throttler)
+                {
+                    CThrottleReleaseBlock block(*throttler);
+                    treeCopySem.wait(TREECOPYPOLLTIME);
+                }
+                else
+                    treeCopySem.wait(TREECOPYPOLLTIME);
             }
             treeCopyWaiting--;
             if ((msTick()-start)/10*1000!=lastmin) {
@@ -2882,6 +2915,7 @@ public:
 
 #define MAPCOMMAND(c,p) case c: { ret =  this->p(msg, reply) ; break; }
 #define MAPCOMMANDCLIENT(c,p,client) case c: { ret = this->p(msg, reply, client); break; }
+#define MAPCOMMANDCLIENTTHROTTLER(c,p,client,throttler) case c: { ret = this->p(msg, reply, client, throttler); break; }
 
 static unsigned ClientCount = 0;
 static unsigned MaxClientCount = 0;
@@ -3073,9 +3107,9 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer, imple
 
         void processCommand()
         {
-            THROTTLE(parent->throttleSem());
+            CThrottler throttler(parent->throttleSem());
             MemoryBuffer reply;
-            parent->dispatchCommand(buf, initSendBuffer(reply),this);
+            parent->dispatchCommand(buf, initSendBuffer(reply), this, &throttler);
             buf.clear();
             sendBuffer(socket, reply);
         }
@@ -3998,7 +4032,7 @@ public:
         return true;
     }
 
-    bool cmdTreeCopy(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client,bool usetmp=false)
+    bool cmdTreeCopy(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client, CThrottler *throttler, bool usetmp=false)
     {
         IMPERSONATE_USER(client);
         RemoteFilename src;
@@ -4010,7 +4044,7 @@ public:
         msg.read(net).read(mask);
         try {
             IpAddress ip;
-            treeCopyFile(src,dst,net,mask,ip,usetmp);
+            treeCopyFile(src,dst,net,mask,ip,usetmp,throttler);
             unsigned status = 0;
             reply.append((unsigned)RFEnoerror).append((unsigned)status);
             ip.ipserialize(reply);
@@ -4025,9 +4059,9 @@ public:
         return true;
     }
 
-    bool cmdTreeCopyTmp(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
+    bool cmdTreeCopyTmp(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client, CThrottler *throttler)
     {
-        return cmdTreeCopy(msg, reply, client,true);
+        return cmdTreeCopy(msg, reply, client, throttler, true);
     }
 
 
@@ -4191,7 +4225,7 @@ public:
         return false;
     }
 
-    bool dispatchCommand(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler *client)
+    bool dispatchCommand(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler *client, CThrottler *throttler)
     {
         RemoteFileCommandType cmd;
         msg.read(cmd);
@@ -4230,8 +4264,8 @@ public:
             MAPCOMMAND(RFCfirewall, cmdFirewall);
             MAPCOMMANDCLIENT(RFCunlock, cmdUnlock, *client);
             MAPCOMMANDCLIENT(RFCcopysection, cmdCopySection, *client);
-            MAPCOMMANDCLIENT(RFCtreecopy, cmdTreeCopy, *client);
-            MAPCOMMANDCLIENT(RFCtreecopytmp, cmdTreeCopyTmp, *client);
+            MAPCOMMANDCLIENTTHROTTLER(RFCtreecopy, cmdTreeCopy, *client, throttler);
+            MAPCOMMANDCLIENTTHROTTLER(RFCtreecopytmp, cmdTreeCopyTmp, *client, throttler);
 
         default:
             ret = cmdUnknown(msg,reply,cmd);
@@ -4333,7 +4367,7 @@ public:
             msg.writeDirect(msg.getPos()-sizeof(RemoteFileCommandType),sizeof(RemoteFileCommandType),&typ);
         }
         MemoryBuffer reply;
-        dispatchCommand(msg, initSendBuffer(reply),NULL);
+        dispatchCommand(msg, initSendBuffer(reply), NULL, NULL);
         sendBuffer(socket, reply);
     }
 
