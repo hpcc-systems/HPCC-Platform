@@ -193,7 +193,7 @@ public:
         if (first) 
         {
             first = false;
-            if (!container.queryLocalOrGrouped() || firstNode())
+            if (container.queryLocalOrGrouped() || firstNode())
                 memset(tallies, 0, sizeof(unsigned)*numSets);
             else
                 getTallies();

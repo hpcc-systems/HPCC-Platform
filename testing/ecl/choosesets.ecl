@@ -35,16 +35,17 @@ zperson := dataset([
         {'Liz','Zappa',12}
         ], zpr);
 
+sortedzperson := sort(zperson, surname, age);
 
-x := choosesets(zperson, surname='Halliday'=>2,forename='Liz'=>3,1,EXCLUSIVE);
+x := choosesets(sortedzperson, surname='Halliday'=>2,forename='Liz'=>3,1,EXCLUSIVE);
 output(x);
 
-y := choosesets(zperson, surname='Halliday'=>2,forename='Liz'=>3,1);
+y := choosesets(sortedzperson, surname='Halliday'=>2,forename='Liz'=>3,1);
 output(y);
 
-x1 := choosesets(zperson, surname='Halliday'=>2,forename='Liz'=>3,1,ENTH);
+x1 := choosesets(sortedzperson, surname='Halliday'=>2,forename='Liz'=>3,1,ENTH);
 output(x1);
 
-y1 := choosesets(zperson, surname='Halliday'=>2,forename='Liz'=>3,LAST);
+y1 := choosesets(sortedzperson, surname='Halliday'=>2,forename='Liz'=>3,LAST);
 output(y1);
 
