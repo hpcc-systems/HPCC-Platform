@@ -5862,11 +5862,18 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
         cur = body;
     }
 
+    if (isCompoundSource(expr))
+    {
+        OwnedHqlExpr mapped = normalizeAnyDatasetAliases(expr);
+        if (mapped != expr)
+            return buildActivity(ctx, mapped, isRoot);
+    }
 
     ABoundActivity * result;
     try
     {
-        switch (expr->getOperator())
+        node_operator op = expr->getOperator();
+        switch (op)
         {
             case no_merge:
                 result = doBuildActivityMerge(ctx, expr);
@@ -6125,8 +6132,16 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
             case no_thisnode:
             case no_forcegraph:
             case no_keyed:
-            case no_dataset_alias:
                 result = buildCachedActivity(ctx, expr->queryChild(0));
+                break;
+            case no_dataset_alias:
+                if (!expr->hasProperty(_normalized_Atom))
+                {
+                    OwnedHqlExpr uniqueChild = normalizeDatasetAlias(expr);
+                    result = buildCachedActivity(ctx, uniqueChild);
+                }
+                else
+                    result = buildCachedActivity(ctx, expr->queryChild(0));
                 break;
             case no_alias_scope:
             case no_alias:
@@ -6311,7 +6326,7 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                 }
                 else
                 {
-                    UNIMPLEMENTED_XY("Activity", getOpString(expr->getOperator()));
+                    UNIMPLEMENTED_XY("Activity", getOpString(op));
                 }
         }
     }
@@ -6335,8 +6350,6 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
 
 ABoundActivity * HqlCppTranslator::buildCachedActivity(BuildCtx & ctx, IHqlExpression * expr, bool isRoot)
 {
-//  if (isRoot && curActivityId > 400)
-//      return NULL;
     switch (expr->getOperator())
     {
     case no_split:
@@ -17585,6 +17598,7 @@ static bool needsRealThor(IHqlExpression *expr, unsigned flags)
     case no_compound_fetch:
     case no_addfiles:
     case no_nonempty:
+    case no_dataset_alias:
         //i.e. go through children...
         break;
     case no_compound:

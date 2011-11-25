@@ -262,6 +262,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
     case no_alias_scope:
     case no_serialize:
     case no_deserialize:
+    case no_dataset_alias:
         return getInlineFlags(ctx, expr->queryChild(0));
     case no_forcegraph:
         return 0;

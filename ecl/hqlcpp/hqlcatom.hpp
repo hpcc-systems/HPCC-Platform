@@ -416,7 +416,6 @@ extern _ATOM newWorkUnitReadArgAtom;
 extern _ATOM newWorkUnitWriteArgAtom;
 extern _ATOM _noAccess_Atom;
 extern _ATOM _noReplicate_Atom;
-extern _ATOM _normalized_Atom;
 extern _ATOM noSetAtom;
 extern _ATOM _noVirtual_Atom;
 extern _ATOM numResultsAtom;

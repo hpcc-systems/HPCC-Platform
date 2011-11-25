@@ -526,10 +526,34 @@ public:
     using NewHqlTransformer::setSelectorMapping;
 };
 
+class HQL_API HqlMapDatasetTransformer : public NewHqlTransformer
+{
+public:
+    HqlMapDatasetTransformer();
+
+    virtual IHqlExpression * createTransformed(IHqlExpression * expr)
+    {
+        IHqlExpression * body = expr->queryBody(true);
+        if (expr == body)
+        {
+            OwnedHqlExpr transformed = NewHqlTransformer::createTransformed(expr);
+            updateOrphanedSelectors(transformed, expr);
+            return transformed.getClear();
+        }
+        OwnedHqlExpr transformed = transform(body);
+        return expr->cloneAnnotation(transformed);
+    }
+
+    using NewHqlTransformer::setMapping;
+    using NewHqlTransformer::setSelectorMapping;
+};
+
 class HQL_API HqlMapSelectorTransformer : public HqlMapTransformer
 {
 public:
     HqlMapSelectorTransformer(IHqlExpression * oldValue, IHqlExpression * newValue);
+
+    virtual IHqlExpression * createTransformed(IHqlExpression * expr);
 
 protected:
     OwnedHqlExpr oldSelector;
@@ -672,6 +696,7 @@ public:
 
 
 extern HQL_API IHqlExpression * replaceExpression(IHqlExpression * expr, IHqlExpression * original, IHqlExpression * replacement);
+extern HQL_API IHqlExpression * replaceDataset(IHqlExpression * expr, IHqlExpression * original, IHqlExpression * replacement);
 
 
 //------------------------------------------------------------------------

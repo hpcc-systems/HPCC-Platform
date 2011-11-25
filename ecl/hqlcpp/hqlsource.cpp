@@ -196,6 +196,7 @@ bool isSimpleSource(IHqlExpression * expr)
         case no_sectioninput:
         case no_nofold:
         case no_nohoist:
+        case no_dataset_alias:
             break;
         default:
             return false;
@@ -950,6 +951,7 @@ void SourceBuilder::analyse(IHqlExpression * expr)
     case no_sectioninput:
     case no_nofold:
     case no_nohoist:
+    case no_dataset_alias:
         break;
     case no_preload:
         isPreloaded = true;
@@ -5902,6 +5904,7 @@ void MonitorExtractor::extractAllFilters(IHqlExpression * dataset)
         case no_stepped:
         case no_grouped:
         case no_alias_scope:
+        case no_dataset_alias:
             break;
         default:
             UNIMPLEMENTED;
@@ -7200,4 +7203,3 @@ ABoundActivity * HqlCppTranslator::doBuildActivityFetch(BuildCtx & ctx, IHqlExpr
     throwError1(HQLERR_FetchNotSupportMode, getOpString(kind));
     return NULL;
 }
-

@@ -46,7 +46,6 @@ extern IHqlExpression * addMemberSelector(IHqlExpression * expr, IHqlExpression 
 extern IHqlExpression * addExpressionModifier(IHqlExpression * expr, typemod_t modifier, IInterface * extra=NULL);
 extern void expandFieldNames(StringBuffer & out, IHqlExpression * record, const char * sep, IHqlExpression * formatFunc);
 extern IHqlExpression * ensurePositiveOrZeroInt64(IHqlExpression * expr);
-extern IHqlExpression * normalizeDatasetAlias(IHqlExpression * expr);
 
 extern void getOutputLibraryName(SCMStringBuffer & libraryName, IConstWorkUnit * wu);
 extern bool canCreateTemporary(IHqlExpression * expr);

@@ -36,4 +36,7 @@ books_2 := table(books);
 
 //people with a book worth more than the rest of their books.
 //Iterate books twice, and ensure that the two cursors are separately accessed.
-output(sqHousePersonBookDs.persons, { exists(books(price > sum(books_2(id != books.id), price))); });
+validBooks := nofold(books(max(id*7,99) != 0));
+validBooks2 := table(validBooks);
+
+output(sqHousePersonBookDs.persons, { exists(validBooks(price > sum(validBooks2(id != books.id), price))); });

@@ -823,6 +823,59 @@ protected:
 
 //---------------------------------------------------------------------------
 
+class SharedTableInfo : public CInterface
+{
+public:
+    SharedTableInfo(IHqlExpression * _dataset, unsigned _depth) : dataset(_dataset), depth(_depth) {}
+
+    IHqlExpression * dataset;
+    unsigned depth;
+    OwnedHqlExpr uid;   // if (depth > 0)
+};
+
+class ImplicitAliasTransformInfo : public NewTransformInfo
+{
+public:
+    ImplicitAliasTransformInfo(IHqlExpression * _expr) : NewTransformInfo(_expr) { containsAmbiguity = false; }
+
+    void add(SharedTableInfo * table);
+    void addAmbiguity(SharedTableInfo * table);
+    void inherit(const ImplicitAliasTransformInfo * other);
+    void merge(SharedTableInfo * table);
+    SharedTableInfo * uses(IHqlExpression * tableBody) const;
+
+public:
+    CIArrayOf<SharedTableInfo> sharedTables;
+    Owned<SharedTableInfo> shared;
+    bool                containsAmbiguity;
+};
+
+
+class ImplicitAliasTransformer : public NewHqlTransformer
+{
+public:
+    ImplicitAliasTransformer();
+
+    void process(HqlExprArray & exprs);
+
+    inline bool hasAmbiguity() const { return seenAmbiguity; }
+
+protected:
+    virtual void analyseExpr(IHqlExpression * expr);
+    virtual ANewTransformInfo * createTransformInfo(IHqlExpression * expr);
+    virtual IHqlExpression * createTransformed(IHqlExpression * expr);
+
+    inline ImplicitAliasTransformInfo * queryExtra(IHqlExpression * expr)  { return (ImplicitAliasTransformInfo *)queryTransformExtra(expr); }
+    SharedTableInfo * createAmbiguityInfo(IHqlExpression * dataset, unsigned depth);
+
+protected:
+    CIArrayOf<SharedTableInfo> ambiguousTables;
+    bool seenAmbiguity;
+    bool seenShared;
+};
+
+//---------------------------------------------------------------------------
+
 class ForceLocalTransformInfo : public NewTransformInfo
 {
     friend class ForceLocalTransformer;
@@ -878,6 +931,8 @@ protected:
 protected:
     bool implicitLinkedChildRows;
 };
+
+//---------------------------------------------------------------------------
 
 class HqlScopeTaggerInfo : public MergingTransformInfo
 {

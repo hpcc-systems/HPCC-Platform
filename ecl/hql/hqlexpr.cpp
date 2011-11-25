@@ -68,8 +68,8 @@
 //#define DEBUG_SCOPE
 //#define CHECK_RECORD_CONSITENCY
 //#define PARANOID
-//#define SEARCH_NAME1   "vCP4"
-//#define SEARCH_NAME2   "vIJ"
+//#define SEARCH_NAME1   "vQ8"
+//#define SEARCH_NAME2   "v19"
 //#define SEARCH_IEXPR 0x03289048
 //#define CHECK_SELSEQ_CONSISTENCY
 //#define GATHER_COMMON_STATS
@@ -1397,7 +1397,6 @@ const char *getOpString(node_operator op)
     case no_commonspill: return "no_commonspill";
     case no_forcegraph: return "GRAPH";
     case no_sectioninput: return "no_sectioninput";
-    case no_updatestate: return "UPDATE";
     case no_related: return "no_related";
     case no_definesideeffect: return "no_definessideeffect";
     case no_executewhen: return "WHEN";
@@ -1416,7 +1415,7 @@ const char *getOpString(node_operator op)
     case no_complex: return ",";
     case no_assign_addfiles: return "+=";
     case no_debug_option_value: return "__DEBUG__";
-    case no_dataset_alias: return "ALIAS";
+    case no_dataset_alias: return "TABLE";
 
     case no_unused1: case no_unused2: case no_unused3: case no_unused4: case no_unused5: case no_unused6:
     case no_unused13: case no_unused14: case no_unused15: case no_unused17: case no_unused18: case no_unused19:
@@ -1784,7 +1783,6 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_newusertable:
     case no_usertable:
     case no_alias_project:
-    case no_alias_scope:
     case no_cachealias:
     case no_choosen:
     case no_choosesets:
@@ -1809,15 +1807,8 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_compound_selectnew:
     case no_compound_inline:
     case no_metaactivity:
-    case no_split:
-    case no_spill:
-    case no_readspill:
-    case no_commonspill:
-    case no_writespill:
     case no_throughaggregate:
     case no_countcompare:
-    case no_limit:
-    case no_catchds:
     case no_fieldmap:
     case no_countfile:
     case NO_AGGREGATE:
@@ -1832,52 +1823,50 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_compound_fetch:
     case no_topn:
     case no_distributer:
-    case no_preload:
     case no_createset:
-    case no_activerow:
-    case no_newrow:
-    case no_keyedlimit:
     case no_keypatch:
-    case no_returnresult:
-    case no_setgraphresult:
-    case no_setgraphloopresult:
     case no_assert_ds:
-    case no_spillgraphresult:
     case no_assertsorted:
     case no_assertgrouped:
     case no_assertdistributed:
-    case no_deserialize:
-    case no_serialize:
+    case no_extractresult:
+        return childdataset_dataset;
+    case no_keyedlimit:
+    case no_preload:
+    case no_limit:
+    case no_catchds:
     case no_forcegraph:
     case no_owned_ds:
     case no_dataset_alias:
-        return childdataset_dataset;
-    case no_executewhen:
-        //second argument is independent of the other arguments
+    case no_split:
+    case no_spill:
+    case no_activerow:
+    case no_alias_scope:
+    case no_executewhen:  //second argument is independent of the other arguments
+    case no_selectnth:
+    case no_readspill:
+    case no_commonspill:
+    case no_writespill:
+    case no_newrow:
+    case no_returnresult:
+    case no_setgraphresult:
+    case no_setgraphloopresult:
+    case no_spillgraphresult:
         return childdataset_dataset_noscope;
-    case no_newxmlparse:
-    case no_newparse:
-    case no_soapcall_ds:
-    case no_soapaction_ds:
-    case no_newsoapcall_ds:
-    case no_newsoapaction_ds:
-        return childdataset_datasetleft;
-    case no_keyeddistribute:
-        return childdataset_leftright;
-    case no_extractresult:
-        return childdataset_dataset;
     case no_setresult:
     case no_sizeof:
     case no_offsetof:
     case no_nameof:
     case no_blob2id:
     case no_subgraph:
+    case no_deserialize:
+    case no_serialize:
+        if (expr->queryChild(0)->isDataset())
+            return childdataset_dataset_noscope;
+        return childdataset_none;
+    case no_pipe:
         if (expr->queryChild(0)->isDataset())
             return childdataset_dataset;
-        return childdataset_none;
-    case no_updatestate:
-        if (expr->queryChild(0)->isDataset())
-            return childdataset_addfiles;
         return childdataset_none;
     case no_cloned:
     case no_colon:
@@ -1886,7 +1875,6 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_nohoist:
     case no_section:
     case no_thor:
-    case no_pipe:
     case no_catch:
     case no_forcelocal:
     case no_nothor:
@@ -1897,16 +1885,26 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_sectioninput:
     case no_outofline:
         if (expr->isDataset())
-            return childdataset_dataset;
+            return childdataset_dataset_noscope;
         return childdataset_none;
+    case no_preservemeta:
+        //Only has a single dataset - but fields are referenced via active selector, so use the many option
+        return childdataset_many;
+    case no_newxmlparse:
+    case no_newparse:
+    case no_soapcall_ds:
+    case no_soapaction_ds:
+    case no_newsoapcall_ds:
+    case no_newsoapaction_ds:
+        return childdataset_datasetleft;
+    case no_keyeddistribute:
+        return childdataset_leftright;
     case no_select:
         if (expr->hasProperty(newAtom) && expr->isDataset())
             return childdataset_dataset;
         return childdataset_none;
-    case no_selectnth:
-        return childdataset_dataset_noscope;
     case no_sub:
-        return expr->isDataset() ? childdataset_addfiles : childdataset_none;
+        return expr->isDataset() ? childdataset_many_noscope : childdataset_none;
     case no_if:
         return expr->isDataset() ? childdataset_if : childdataset_none;
     case no_map:
@@ -1919,13 +1917,14 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
         return childdataset_left;
     case no_merge:
     case no_regroup:
-    case no_datasetlist:
-    case no_nonempty:
-    case no_preservemeta:
     case no_cogroup:
-        return childdataset_merge;              //NB: sorted() attribute on merge uses no_activetable as the selector, not the left dataset
+        return childdataset_many;              //NB: sorted() attribute on merge uses no_activetable as the selector, not the left dataset
+    case no_nonempty:
+    case no_datasetlist:
     case no_addfiles:
-        return childdataset_addfiles;
+    case no_keydiff:
+    case no_related:
+        return childdataset_many_noscope;   // two arbitrary inputs
     case no_hqlproject:
     case no_projectrow:
     case no_loop:
@@ -1933,9 +1932,6 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_filtergroup:
     case no_normalizegroup:
         return childdataset_left;
-    case no_keydiff:
-    case no_related:
-        return childdataset_addfiles;   // two arbitrary inputs
     case no_denormalize:
     case no_denormalizegroup:
     case no_fetch:
@@ -2183,10 +2179,6 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
         if (dataset->queryChild(0)->isDataset())
             return 1;
         return 0;
-    case no_updatestate:
-        if (dataset->queryChild(0)->isDataset())
-            return 2;
-        return 0;
     case no_select:
         if (dataset->hasProperty(newAtom) && dataset->isDataset())
             return 1;
@@ -2259,10 +2251,10 @@ unsigned getNumChildTables(IHqlExpression * dataset)
         if (dataset->getOperator() != no_aggregate)
             assertex(num==2); 
         break;
-    case childdataset_addfiles:
+    case childdataset_many_noscope:
         assertex(num==2); 
         break;
-    case childdataset_merge:
+    case childdataset_many:
         break;
     case childdataset_if:
     case childdataset_case:
@@ -3076,7 +3068,6 @@ void CHqlExpression::initFlagsBeforeOperands()
     case no_impure:
     case no_outputscalar:
     case no_ensureresult:
-    case no_updatestate:
     case no_definesideeffect:
     case no_callsideeffect:
         infoFlags2 &= ~(HEF2constant);
@@ -3112,6 +3103,10 @@ void CHqlExpression::initFlagsBeforeOperands()
         break;
     case no_alias:
         infoFlags |= HEFcontainsAlias|HEFcontainsAliasLocally;
+        break;
+    case no_dataset_alias:
+        if (!queryProperty(_normalized_Atom))
+            infoFlags |= HEFcontainsDatasetAliasLocally;
         break;
     case no_activetable:
     case no_activerow:
@@ -3263,7 +3258,7 @@ void CHqlExpression::updateFlagsAfterOperands()
         if (queryChild(0) && (queryChild(0)->getOperator() == no_null))
             infoFlags2 |= HEF2constant;
         // don't percolate aliases beyond their subqueries at the moment.
-        infoFlags &= ~(HEFcontainsAliasLocally|HEFthrowscalar);
+        infoFlags &= ~(HEFcontainsAliasLocally|HEFthrowscalar|HEFcontainsDatasetAliasLocally);
         //a dataset fail, now becomes a scalar fail
         if (infoFlags & HEFthrowds)
             infoFlags = (infoFlags &~HEFthrowds)|HEFthrowscalar;
@@ -3300,7 +3295,7 @@ void CHqlExpression::updateFlagsAfterOperands()
         }
         else
         {
-            infoFlags &= ~(HEFcontextDependentException|HEFcontainsActiveDataset|HEFcontainsAliasLocally|HEFthrowscalar);       // don't percolate aliases beyond their subqueries at the moment.
+            infoFlags &= ~(HEFcontextDependentException|HEFcontainsActiveDataset|HEFcontainsAliasLocally|HEFcontainsDatasetAliasLocally|HEFthrowscalar);       // don't percolate aliases beyond their subqueries at the moment.
             infoFlags |= (queryChild(0)->getInfoFlags() & (HEFcontextDependentException|HEFcontainsActiveDataset));
             if (infoFlags & HEFthrowds)
                 infoFlags = (infoFlags &~HEFthrowds)|HEFthrowscalar;
@@ -4580,7 +4575,7 @@ void CHqlExpression::cacheTablesProcessChildScope()
     switch (getChildDatasetType(this))
     {
     case childdataset_none: 
-    case childdataset_addfiles:
+    case childdataset_many_noscope:
     case childdataset_if:
     case childdataset_case:
     case childdataset_map:
@@ -4588,7 +4583,7 @@ void CHqlExpression::cacheTablesProcessChildScope()
         cacheChildrenTablesUsed(0, max);
         //None of these have any scoped arguments, so no need to remove them
         break;
-    case childdataset_merge:
+    case childdataset_many:
         {
             //can now have sorted() attribute which is dependent on the no_activetable element.
             unsigned firstAttr = getNumChildTables(this);
@@ -5553,7 +5548,10 @@ IHqlExpression * queryRoot(IHqlExpression * expr)
 
 IHqlExpression * queryTable(IHqlExpression * dataset)
 {
-    return queryExpression(dataset->queryDataset()->queryTable());
+    IHqlDataset * ds = dataset->queryDataset();
+    if (!ds)
+        return NULL;
+    return queryExpression(ds->queryTable());
 }
 
 
@@ -8614,7 +8612,7 @@ CHqlSequence::CHqlSequence(node_operator _op, ITypeInfo * _type, _ATOM _name, un
 
 CHqlSequence *CHqlSequence::makeSequence(node_operator _op, ITypeInfo * _type, _ATOM _name, unsigned __int64 _seq) 
 {
-    if (!_type) _type = makeVoidType();
+    if (!_type) _type = makeNullType();
     return new CHqlSequence(_op, _type, _name, _seq);
 }
 
