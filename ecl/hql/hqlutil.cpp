@@ -4137,7 +4137,7 @@ public:
     virtual void analyseExpr(IHqlExpression * expr);
     virtual IHqlExpression * createTransformed(IHqlExpression * expr);
 
-    bool split(OwnedHqlExpr & dataset, OwnedHqlExpr & attribute, IHqlExpression * expr);
+    bool split(SharedHqlExpr & dataset, SharedHqlExpr & attribute, IHqlExpression * expr);
 
 protected:
     void doAnalyseSelect(IHqlExpression * expr);
@@ -4260,7 +4260,7 @@ IHqlExpression * SplitDatasetAttributeTransformer::doTransformSelect(IHqlExpress
 
 
 
-bool SplitDatasetAttributeTransformer::split(OwnedHqlExpr & dataset, OwnedHqlExpr & attribute, IHqlExpression * expr)
+bool SplitDatasetAttributeTransformer::split(SharedHqlExpr & dataset, SharedHqlExpr & attribute, IHqlExpression * expr)
 {
     analyseExpr(expr);
 
@@ -4354,7 +4354,7 @@ bool SplitDatasetAttributeTransformer::split(OwnedHqlExpr & dataset, OwnedHqlExp
     return true;
 }
 
-static bool splitDatasetAttribute(OwnedHqlExpr & dataset, OwnedHqlExpr & attribute, IHqlExpression * expr)
+static bool splitDatasetAttribute(SharedHqlExpr & dataset, SharedHqlExpr & attribute, IHqlExpression * expr)
 {
 #if 0
     //The following code works.  However I think it has the side-effect of modifying expressions so that they are no longer
@@ -4451,7 +4451,7 @@ static bool splitDatasetAttribute(OwnedHqlExpr & dataset, OwnedHqlExpr & attribu
 }
 
 
-static bool splitSetResultValue(OwnedHqlExpr & dataset, OwnedHqlExpr & attribute, IHqlExpression * value)
+static bool splitSetResultValue(SharedHqlExpr & dataset, SharedHqlExpr & attribute, IHqlExpression * value)
 {
     if (value->isDataset())
         return false;
@@ -6707,7 +6707,7 @@ void extractXmlName(StringBuffer & name, StringBuffer * itemName, StringBuffer *
 }
 
 
-void extractXmlName(OwnedHqlExpr & name, OwnedHqlExpr * itemName, OwnedHqlExpr * valueName, IHqlExpression * field, const char * defaultItemName, bool reading)
+void extractXmlName(SharedHqlExpr & name, OwnedHqlExpr * itemName, OwnedHqlExpr * valueName, IHqlExpression * field, const char * defaultItemName, bool reading)
 {
     StringBuffer nameText, itemNameText, valueNameText;
 

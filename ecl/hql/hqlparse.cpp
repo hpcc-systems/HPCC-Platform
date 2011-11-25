@@ -1563,7 +1563,7 @@ void HqlLex::doPreprocessorLookup(const YYSTYPE & errpos, bool stringify, int ex
 
 
 //Read the text of a parameter, but also have a good guess at whether it is defined.
-bool HqlLex::getDefinedParameter(StringBuffer &curParam, YYSTYPE & returnToken, const char* for_what, OwnedHqlExpr & resolved)
+bool HqlLex::getDefinedParameter(StringBuffer &curParam, YYSTYPE & returnToken, const char* for_what, SharedHqlExpr & resolved)
 {
     enum { StateStart, StateDot, StateSelectId, StateFailed } state = StateStart;
     unsigned parenDepth = 1;

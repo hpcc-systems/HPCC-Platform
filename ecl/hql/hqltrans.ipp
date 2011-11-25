@@ -466,7 +466,7 @@ protected:
     virtual IHqlExpression * queryAlreadyTransformedSelector(IHqlExpression * expr);
     virtual IHqlExpression * transformSelector(IHqlExpression * expr);
 
-    inline void updateOrphanedSelectors(OwnedHqlExpr & transformed, IHqlExpression * expr)
+    inline void updateOrphanedSelectors(SharedHqlExpr & transformed, IHqlExpression * expr)
     {
         if (expr != transformed)
             transformed.setown(doUpdateOrphanedSelectors(expr, transformed));
@@ -765,7 +765,7 @@ public:
 
     inline IHqlExpression * getValue(IHqlExpression * key)
     {
-        OwnedHqlExpr * match = map.getValue(key);
+        LinkedHqlExpr * match = map.getValue(key);
         if (match)
             return match->get();
         return NULL;

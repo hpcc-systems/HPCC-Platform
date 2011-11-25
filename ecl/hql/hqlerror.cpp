@@ -271,7 +271,7 @@ protected:
 
 //---------------------------------------------------------------------------------------------------------------------
 
-void checkEclVersionCompatible(Owned<IErrorReceiver> & errors, const char * eclVersion)
+void checkEclVersionCompatible(Shared<IErrorReceiver> & errors, const char * eclVersion)
 {
     if (eclVersion)
     {

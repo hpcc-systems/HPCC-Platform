@@ -112,7 +112,7 @@ public:
     inline bool needToTransform()                                   { return seenCandidate || containsUnknownIndependentContents; }
 
 protected:
-    void createHoisted(IHqlExpression * expr, OwnedHqlExpr & setResultStmt, OwnedHqlExpr & getResult, bool addWrapper);
+    void createHoisted(IHqlExpression * expr, SharedHqlExpr & setResultStmt, SharedHqlExpr & getResult, bool addWrapper);
     virtual ANewTransformInfo * createTransformInfo(IHqlExpression * expr) { return CREATE_NEWTRANSFORMINFO(ThorScalarInfo, expr); }
     virtual IHqlExpression * queryAlreadyTransformed(IHqlExpression * expr);
     virtual IHqlExpression * queryAlreadyTransformedSelector(IHqlExpression * expr);
