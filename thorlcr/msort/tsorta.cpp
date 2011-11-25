@@ -197,8 +197,6 @@ bool VarElemArray::isNull(unsigned idx)
 }
 
 
-#define TRANSFERBLOCKSIZE 0x100000  // 1MB
-
 class CThorRowSortedLoader : public CSimpleInterface, implements IThorRowSortedLoader
 {
     IArrayOf<IRowStream> instrms;
