@@ -318,19 +318,20 @@ public:
             if (!te)
             {
                 Owned<IThorException> e2 = MakeActivityException(&activity, e, "Exception running child graphs");
+                e->Release();
                 te = e2.getClear();
             }
-            te->setActivityId(activity.queryActivityId());
-            te->setGraphId(graph->queryGraphId());
+            else if (!te->queryActivityId())
+                setExceptionActivityInfo(activity.queryContainer(), te);
             try { graph->abort(te); }
-            catch (IException *e)
+            catch (IException *abortE)
             {
-                Owned<IThorException> e2 = MakeActivityException(&activity, e, "Exception whilst aborting graph");
-                e->Release();
+                Owned<IThorException> e2 = MakeActivityException(&activity, abortE, "Exception whilst aborting graph");
+                abortE->Release();
                 EXCLOG(e2, NULL);
             }
             graph->queryJob().fireException(te);
-            throw;
+            throw te;
         }
     }
     virtual CGraphBase *queryGraph() { return graph; }
@@ -616,100 +617,118 @@ bool CGraphElementBase::executeDependencies(size32_t parentExtractSz, const byte
 
 bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies, bool shortCircuit, bool async)
 {
-    bool _shortCircuit = shortCircuit;
-    Owned<IThorGraphDependencyIterator> deps = getDependsIterator();
-    bool depsDone = true;
-    ForEach(*deps)
+    try
     {
-        CGraphDependency &dep = deps->query();
-        if (0 == dep.controlId && NotFound == owner->dependentSubGraphs.find(*dep.graph))
+        bool _shortCircuit = shortCircuit;
+        Owned<IThorGraphDependencyIterator> deps = getDependsIterator();
+        bool depsDone = true;
+        ForEach(*deps)
         {
-            owner->dependentSubGraphs.append(*dep.graph);
-            if (!dep.graph->isComplete())
-                depsDone = false;
+            CGraphDependency &dep = deps->query();
+            if (0 == dep.controlId && NotFound == owner->dependentSubGraphs.find(*dep.graph))
+            {
+                owner->dependentSubGraphs.append(*dep.graph);
+                if (!dep.graph->isComplete())
+                    depsDone = false;
+            }
         }
-    }
-    if (depsDone) _shortCircuit = false;
-    if (!depsDone && checkDependencies)
-    {
-        if (!executeDependencies(parentExtractSz, parentExtract, 0, async))
-            return false;
-    }
-    whichBranch = (unsigned)-1;
-    isEof = false;
-    alreadyUpdated = false;
-    switch (getKind())
-    {
-        case TAKindexwrite:
-        case TAKdiskwrite:
-        case TAKcsvwrite:
-        case TAKxmlwrite:
-            if (_shortCircuit) return true;
-            onCreate();
-            alreadyUpdated = checkUpdate();
-            if (alreadyUpdated)
+        if (depsDone) _shortCircuit = false;
+        if (!depsDone && checkDependencies)
+        {
+            if (!executeDependencies(parentExtractSz, parentExtract, 0, async))
                 return false;
-            break;
-        case TAKchildif:
-            owner->ifs.append(*this);
-            // fall through
-        case TAKif:
-        {
-            if (_shortCircuit) return true;
-            onCreate();
-            onStart(parentExtractSz, parentExtract);
-            IHThorIfArg *helper = (IHThorIfArg *)baseHelper.get();
-            whichBranch = helper->getCondition() ? 0 : 1;       // True argument preceeds false...
-            if (inputs.queryItem(whichBranch))
-            {
-                if (!whichBranchBitSet->testSet(whichBranch)) // if not set, new
-                    newWhichBranch = true;
-                return inputs.item(whichBranch)->activity->prepareContext(parentExtractSz, parentExtract, checkDependencies, false, async);
-            }
-            return true;
         }
-        case TAKcase:
+        whichBranch = (unsigned)-1;
+        isEof = false;
+        alreadyUpdated = false;
+        switch (getKind())
         {
-            if (_shortCircuit) return true;
-            onCreate();
-            onStart(parentExtractSz, parentExtract);
-            IHThorCaseArg *helper = (IHThorCaseArg *)baseHelper.get();
-            whichBranch = helper->getBranch();
-            if (inputs.queryItem(whichBranch))
-                return inputs.item(whichBranch)->activity->prepareContext(parentExtractSz, parentExtract, checkDependencies, false, async);
-            return true;
-        }
-        case TAKfilter:
-        case TAKfiltergroup:
-        case TAKfilterproject:
-        {
-            if (_shortCircuit) return true;
-            onCreate();
-            onStart(parentExtractSz, parentExtract);
-            switch (getKind())
+            case TAKindexwrite:
+            case TAKdiskwrite:
+            case TAKcsvwrite:
+            case TAKxmlwrite:
+                if (_shortCircuit) return true;
+                onCreate();
+                alreadyUpdated = checkUpdate();
+                if (alreadyUpdated)
+                    return false;
+                break;
+            case TAKchildif:
+                owner->ifs.append(*this);
+                // fall through
+            case TAKif:
             {
-                case TAKfilter:
-                    isEof = !((IHThorFilterArg *)baseHelper.get())->canMatchAny();
-                    break;
-                case TAKfiltergroup:
-                    isEof = !((IHThorFilterGroupArg *)baseHelper.get())->canMatchAny();
-                    break;
-                case TAKfilterproject:
-                    isEof = !((IHThorFilterProjectArg *)baseHelper.get())->canMatchAny();
-                    break;
-            }
-            if (isEof)
+                if (_shortCircuit) return true;
+                onCreate();
+                onStart(parentExtractSz, parentExtract);
+                IHThorIfArg *helper = (IHThorIfArg *)baseHelper.get();
+                whichBranch = helper->getCondition() ? 0 : 1;       // True argument preceeds false...
+                if (inputs.queryItem(whichBranch))
+                {
+                    if (!whichBranchBitSet->testSet(whichBranch)) // if not set, new
+                        newWhichBranch = true;
+                    return inputs.item(whichBranch)->activity->prepareContext(parentExtractSz, parentExtract, checkDependencies, false, async);
+                }
                 return true;
-            break;
+            }
+            case TAKcase:
+            {
+                if (_shortCircuit) return true;
+                onCreate();
+                onStart(parentExtractSz, parentExtract);
+                IHThorCaseArg *helper = (IHThorCaseArg *)baseHelper.get();
+                whichBranch = helper->getBranch();
+                if (inputs.queryItem(whichBranch))
+                    return inputs.item(whichBranch)->activity->prepareContext(parentExtractSz, parentExtract, checkDependencies, false, async);
+                return true;
+            }
+            case TAKfilter:
+            case TAKfiltergroup:
+            case TAKfilterproject:
+            {
+                if (_shortCircuit) return true;
+                onCreate();
+                onStart(parentExtractSz, parentExtract);
+                switch (getKind())
+                {
+                    case TAKfilter:
+                        isEof = !((IHThorFilterArg *)baseHelper.get())->canMatchAny();
+                        break;
+                    case TAKfiltergroup:
+                        isEof = !((IHThorFilterGroupArg *)baseHelper.get())->canMatchAny();
+                        break;
+                    case TAKfilterproject:
+                        isEof = !((IHThorFilterProjectArg *)baseHelper.get())->canMatchAny();
+                        break;
+                }
+                if (isEof)
+                    return true;
+                break;
+            }
         }
+        ForEachItemIn(i, inputs)
+        {
+            CGraphElementBase *input = inputs.item(i)->activity;
+            if (!input->prepareContext(parentExtractSz, parentExtract, checkDependencies, shortCircuit, async))
+                return false;
+        }
+        return true;
     }
-    ForEachItemIn(i, inputs)
+    catch (IException *_e)
     {
-        CGraphElementBase *input = inputs.item(i)->activity;
-        if (!input->prepareContext(parentExtractSz, parentExtract, checkDependencies, shortCircuit, async))
-            return false;
+        IThorException *e = QUERYINTERFACE(_e, IThorException);
+        if (e)
+        {
+            if (!e->queryActivityId())
+                setExceptionActivityInfo(*this, e);
+        }
+        else
+        {
+            e = MakeActivityException(this, _e);
+            _e->Release();
+        }
+        throw e;
     }
-    return true;
 }
 
 void CGraphElementBase::preStart(size32_t parentExtractSz, const byte *parentExtract)
@@ -1233,13 +1252,13 @@ void CGraphBase::join()
 void CGraphBase::doExecute(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies)
 {
     if (isComplete()) return;
-    if (aborted) throw MakeThorException(0, "subgraph aborted");
+    if (aborted) throw MakeGraphException(this, 0, "subgraph aborted");
     if (!prepare(parentExtractSz, parentExtract, checkDependencies, false, false))
     {
         setComplete();
         return;
     }
-    if (aborted) throw MakeThorException(0, "subgraph aborted");
+    if (aborted) throw MakeGraphException(this, 0, "subgraph aborted");
     Owned<IException> exception;
     try
     {
@@ -1266,7 +1285,7 @@ void CGraphBase::doExecute(size32_t parentExtractSz, const byte *parentExtract, 
         if (exception && !queryOwner())
         {
             StringBuffer str;
-            Owned<IThorException> e = MakeThorException(exception->errorCode(), "%s", exception->errorMessage(str).str());
+            Owned<IThorException> e = MakeGraphException(this, exception->errorCode(), "%s", exception->errorMessage(str).str());
             e->setGraphId(graphId);
             e->setAction(tea_abort);
             fireException(e);
@@ -1522,17 +1541,19 @@ bool CGraphBase::wait(unsigned timeout)
     unsigned remaining = timeout;
     class CWaitException
     {
+        CGraphBase *graph;
         Owned<IException> exception;
     public:
+        CWaitException(CGraphBase *_graph) : graph(_graph) { }
         IException *get() { return exception; }
         void set(IException *e) { if (!exception) exception.setown(e); }
         void throwException()
         {
             if (exception)
                 throw exception.getClear();
-            throw MakeThorException(0, "Timed out waiting for graph to end");
+            throw MakeGraphException(graph, 0, "Timed out waiting for graph to end");
         }
-    } waitException;
+    } waitException(this);
     Owned<IThorActivityIterator> iter = getTraverseIterator();
     ForEach (*iter)
     {
@@ -1802,7 +1823,7 @@ void CGraphBase::executeChild(size32_t parentExtractSz, const byte *parentExtrac
     {
         StringBuffer str("Global acts = ");
         getGlobals(*this, str);
-        throw MakeThorException(0, "Global child graph? : %s", str.str());
+        throw MakeGraphException(this, 0, "Global child graph? : %s", str.str());
     }
     doExecuteChild(parentExtractSz, parentExtract);
 }

@@ -122,14 +122,13 @@ IRowStream *createSequentialPartHandler(CPartHandler *partHandler, IArrayOf<IPar
             if (e) \
             { \
                 if (!e->queryActivityId()) \
-                { \
-                    e->setGraphId(container.queryOwner().queryGraphId()); \
-                    e->setActivityKind(container.getKind()); \
-                    e->setActivityId(container.queryId()); \
-                } \
+                    setExceptionActivityInfo(container, e); \
             } \
             else \
+            {  \
                 e = MakeActivityException(this, _e); \
+                _e->Release(); \
+            }  \
             if (!e->queryNotified()) \
             { \
                 fireException(e); \
