@@ -10785,7 +10785,23 @@ public:
     virtual void setFileProperties(IFileDescriptor *desc) const
     {
         CRoxieServerDiskWriteActivity::setFileProperties(desc);
-        desc->queryProperties().setProp("@format","utf8n");
+        IPropertyTree &props = desc->queryProperties();
+        props.setProp("@format","utf8n");
+
+        ICsvParameters *csvParameters = csvHelper.queryCsvParameters();
+        StringBuffer separator;
+        const char *s = csvParameters->querySeparator(0);
+        while (*s)
+        {
+            if (',' == *s)
+                separator.append("\\,");
+            else
+                separator.append(*s);
+            ++s;
+        }
+        props.setProp("@csvSeparate", separator.str());
+        props.setProp("@csvQuote", csvParameters->queryQuote(0));
+        props.setProp("@csvTerminate", csvParameters->queryTerminator(0));
     }
 
     virtual bool isOutputTransformed() const { return true; }
