@@ -79,6 +79,8 @@ public:
     virtual void abort(IException *e);
 // IExceptionHandler
     virtual bool fireException(IException *e);
+// IThorChildGraph impl.
+    virtual IEclGraphResults *evaluate(unsigned _parentExtractSz, const byte *parentExtract);
 };
 
 class CSlaveMessageHandler : public CInterface, implements IThreaded

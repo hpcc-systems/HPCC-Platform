@@ -278,6 +278,7 @@ extern graph_decl IThorException *MakeActivityException(CGraphElementBase *activ
 extern graph_decl IThorException *MakeActivityException(CGraphElementBase *activity, IException *e, const char *xtra=NULL, ...) __attribute__((format(printf, 3, 4)));
 extern graph_decl IThorException *MakeActivityWarning(CGraphElementBase *activity, int code, const char *_format, ...) __attribute__((format(printf, 3, 4)));
 extern graph_decl IThorException *MakeActivityWarning(CGraphElementBase *activity, IException *e, const char *format, ...) __attribute__((format(printf, 3, 4)));
+extern graph_decl IThorException *MakeGraphException(CGraphBase *graph, int code, const char *format, ...);
 extern graph_decl IThorException *MakeThorException(int code, const char *format, ...) __attribute__((format(printf, 2, 3)));
 extern graph_decl IThorException *MakeThorException(IException *e);
 extern graph_decl IThorException *MakeThorAudienceException(LogMsgAudience audience, int code, const char *format, ...) __attribute__((format(printf, 3, 4)));

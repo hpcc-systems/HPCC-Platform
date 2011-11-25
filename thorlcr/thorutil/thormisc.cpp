@@ -526,6 +526,16 @@ IThorException *ThorWrapException(IException *e, const char *format, ...)
     return te;
 }
 
+IThorException *MakeGraphException(CGraphBase *graph, int code, const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    IThorException *e = _MakeThorException(MSGAUD_user, code, format, args);
+    e->setGraphId(graph->queryGraphId());
+    va_end(args);
+    return e;
+}
+
 StringBuffer &getLogDir(const char *prefix, const char *logdir, StringBuffer &logname) 
 {
     if (logdir && *logdir !='\0' && recursiveCreateDirectory(logdir))
