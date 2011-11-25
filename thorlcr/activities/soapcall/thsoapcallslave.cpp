@@ -37,7 +37,7 @@ public:
         const char *authToken;
         data.read(authToken);
         appendOutputLinked(this);
-        if (container.queryLocalOrGrouped() || (1 == container.queryJob().queryMyRank()))
+        if (container.queryLocalOrGrouped() || firstNode())
             soaphelper.setown(createSoapCallHelper(this, queryRowAllocator(), authToken, SCrow, NULL, queryDummyContextLogger(),NULL));
     }
     // IThorDataLink methods
@@ -200,7 +200,7 @@ public:
     {
         const char *authToken;
         data.read(authToken);
-        if (container.queryLocalOrGrouped() || (1 == container.queryJob().queryMyRank()))
+        if (container.queryLocalOrGrouped() || firstNode())
             soaphelper.setown(createSoapCallHelper(this, NULL, authToken, SCrow, NULL, queryDummyContextLogger(),NULL));
     }
 

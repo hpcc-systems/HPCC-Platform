@@ -279,7 +279,7 @@ void CDiskReadSlaveActivityBase::serializeStats(MemoryBuffer &mb)
 
 void CDiskWriteSlaveActivityBase::open()
 {
-    if (dlfn.isExternal() && (container.queryJob().queryMyRank() > 1))
+    if (dlfn.isExternal() && !firstNode())
     {
         input.setown(createDataLinkSmartBuffer(this, inputs.item(0), PROCESS_SMART_BUFFER_SIZE, isSmartBufferSpillNeeded(this), grouped, RCUNBOUND, NULL, false, &container.queryJob().queryIDiskUsage()));
         startInput(input);
@@ -313,8 +313,8 @@ void CDiskWriteSlaveActivityBase::open()
     if (query && compress)
         UNIMPLEMENTED;
 
-    bool direct = query || (external && (container.queryJob().queryMyRank() > 1));
-    bool rename = !external || (!query && (container.queryJob().queryMyRank() == container.queryJob().querySlaves()));
+    bool direct = query || (external && !firstNode());
+    bool rename = !external || (!query && lastNode());
     Owned<IFileIO> iFileIO = createMultipleWrite(this, *partDesc, exclsz, compress, extend||(external&&!query), ecomp, this, direct, rename, &abortSoon, (external&&!query) ? &tempExternalName : NULL);
 
     if (compress)
@@ -371,7 +371,7 @@ void CDiskWriteSlaveActivityBase::close()
             outraw->flush();
             outraw.clear();
         }
-        if (!rfsQueryParallel && dlfn.isExternal() && (container.queryJob().queryMyRank() != container.queryJob().querySlaves()))
+        if (!rfsQueryParallel && dlfn.isExternal() && !lastNode())
         {
             rowcount_t rows = processed & THORDATALINK_COUNT_MASK;
             ActPrintLog("External write done, signalling next (row count = %"RCPF"d)", rows);
@@ -441,7 +441,7 @@ void CDiskWriteSlaveActivityBase::init(MemoryBuffer &data, MemoryBuffer &slaveDa
 void CDiskWriteSlaveActivityBase::abort()
 {
     ProcessSlaveActivity::abort();
-    if (!rfsQueryParallel && dlfn.isExternal() && (container.queryJob().queryMyRank() > 1))
+    if (!rfsQueryParallel && dlfn.isExternal() && !firstNode())
         cancelReceiveMsg(container.queryJob().queryMyRank()-1, mpTag);
 }
 

@@ -701,7 +701,7 @@ public:
     virtual void abort()
     {
         CDiskReadSlaveActivityRecord::abort();
-        if (!container.queryLocalOrGrouped() && (1 == container.queryJob().queryMyRank()))
+        if (!container.queryLocalOrGrouped() && firstNode())
             aggregator.cancelGetResult();
     }
 
@@ -759,7 +759,7 @@ public:
         else
         {
             aggregator.sendResult(ret.get());
-            if (1 == container.queryJob().queryMyRank())
+            if (firstNode())
             {
                 ret.setown(aggregator.getResult());
                 if (ret)
@@ -812,7 +812,7 @@ public:
     virtual void abort()
     {
         CDiskReadSlaveActivityRecord::abort();
-        if (!container.queryLocalOrGrouped() && (1 == container.queryJob().queryMyRank()))
+        if (!container.queryLocalOrGrouped() && firstNode())
             cancelReceiveMsg(0, mpTag);
     }
 
@@ -851,7 +851,7 @@ public:
         if (totalCountKnown)
         {
             totalCount = preknownTotalCount;
-            if (!container.queryLocalOrGrouped() && (1 != container.queryJob().queryMyRank()))
+            if (!container.queryLocalOrGrouped() && !firstNode())
                 return NULL;
         }
         else
@@ -876,7 +876,7 @@ public:
             if (!container.queryLocalOrGrouped())
             {
                 sendPartialCount(*this, (rowcount_t)totalCount);
-                if (1 != container.queryJob().queryMyRank())
+                if (!firstNode())
                     return NULL;
                 totalCount = getFinalCount(*this);
             }
