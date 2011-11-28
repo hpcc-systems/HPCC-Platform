@@ -28,8 +28,6 @@
 #include "thactivityutil.ipp"
 //#define TRACE_UNIQUE
 
-#define TRANSFERBLOCKSIZE 0x10000
-
 #include "jsort.hpp"
 #include "thactivityutil.ipp"
 
