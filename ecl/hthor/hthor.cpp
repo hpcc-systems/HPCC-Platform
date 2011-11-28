@@ -845,6 +845,20 @@ void CHThorCsvWriteActivity::execute()
 void CHThorCsvWriteActivity::setFormat(IFileDescriptor * desc)
 {
     // MORE - should call parent's setFormat too?
+    ICsvParameters * csvInfo = helper.queryCsvParameters();
+    StringBuffer separator;
+    const char *s = csvInfo->querySeparator(0);
+    while (*s)
+    {
+        if (',' == *s)
+            separator.append("\\,");
+        else
+            separator.append(*s);
+        ++s;
+    }
+    desc->queryProperties().setProp("@csvSeparate", separator.str());
+    desc->queryProperties().setProp("@csvQuote", csvInfo->queryQuote(0));
+    desc->queryProperties().setProp("@csvTerminate", csvInfo->queryTerminator(0));
     desc->queryProperties().setProp("@format","utf8n");
 }
 

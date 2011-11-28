@@ -58,16 +58,28 @@ class CsvWriteActivityMaster : public CWriteMasterBase
 {
 public:
     CsvWriteActivityMaster(CMasterGraphElement *info) : CWriteMasterBase(info) {}
-    void init()
-    {
-        CWriteMasterBase::init();
-        IPropertyTree &props = fileDesc->queryProperties();
-        props.setPropBool("@csv", true);
-    }
     void done()
     {
-        fileDesc->queryProperties().setProp("@format", "utf8n");
-        CWriteMasterBase::done();
+        IPropertyTree &props = fileDesc->queryProperties();
+        props.setPropBool("@csv", true);
+        props.setProp("@format", "utf8n");
+        IHThorCsvWriteArg *helper=(IHThorCsvWriteArg *)queryHelper();
+        ICsvParameters *csvParameters = helper->queryCsvParameters();
+        StringBuffer separator;
+        const char *s = csvParameters->querySeparator(0);
+        while (*s)
+        {
+            if (',' == *s)
+                separator.append("\\,");
+            else
+                separator.append(*s);
+            ++s;
+        }
+        props.setProp("@csvSeparate", separator.str());
+        props.setProp("@csvQuote", csvParameters->queryQuote(0));
+        props.setProp("@csvTerminate", csvParameters->queryTerminator(0));
+
+        CWriteMasterBase::done(); // will publish
     }
 };
 
