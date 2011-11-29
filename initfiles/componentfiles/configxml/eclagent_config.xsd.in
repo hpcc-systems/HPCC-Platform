@@ -175,6 +175,14 @@
       </xs:annotation>
     </xs:attribute>
 
+    <xs:attribute name="defaultMemoryLimitMB" type="nonNegativeInteger" use="optional" default="300">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Default memory limit in MB for eclagent</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+
     <xs:attribute name="pluginDirectory" type="absolutePath" use="optional" default="${PLUGINS_PATH}/">
       <xs:annotation>
         <xs:appinfo>

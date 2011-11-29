@@ -481,6 +481,7 @@
                    build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
                    buildSet="eclagent"
                    daliServers="mydali"
+                   defaultMemoryLimitMB="300"
                    description="EclAgent process"
                    name="myeclagent"
                    pluginDirectory="${PLUGINS_PATH}"
