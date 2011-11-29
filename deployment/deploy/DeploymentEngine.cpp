@@ -142,7 +142,7 @@ int CDeploymentEngine::getInstallFileCount()
         StringBuffer s;
         for (CInstallFileList::const_iterator it=files.begin(); it!=files.end(); ++it)
         {
-            const StlLinked<CInstallFile>& f = *it;
+            const Linked<CInstallFile>& f = *it;
             if (!isMethodTrackable(f->getMethod().c_str()) || startsWith(f->getMethod().c_str(),"xsl"))
                 s.append(f->getMethod().c_str()).append(": ").append(f->getSrcPath().c_str())
                 .append(" --> ").append(f->getDestPath().c_str()).newline();
@@ -159,7 +159,7 @@ int CDeploymentEngine::getInstallFileCount()
     int count = 0, xslcount = 0, total = 0;
     for (CInstallFileList::const_iterator it=files.begin(); it!=files.end(); ++it)
     {
-      const StlLinked<CInstallFile>& f = *it;
+      const Linked<CInstallFile>& f = *it;
       const char* method = f->getMethod().c_str();
       if (strieq(method,"copy"))
         count++;
@@ -208,7 +208,7 @@ offset_t CDeploymentEngine::getInstallFileSize()
 
     for (CInstallFileList::const_iterator it=files.begin(); it!=files.end(); ++it)
     {
-      const StlLinked<CInstallFile>& f = *it;
+      const Linked<CInstallFile>& f = *it;
       const char* method = f->getMethod().c_str();
       if (strieq(method,"copy"))
         fileSize += f->getSrcSize();
@@ -2348,7 +2348,7 @@ void CDeploymentEngine::addDeploymentFile(StringBuffer &ret, const char *in, IXs
     if (len > 5)
         pInstallFile->setParams(tokens.item(5));
     
-    s_dynamicFileList.push_back(StlLinkedFilePtr(pInstallFile.get()));
+    s_dynamicFileList.push_back(LinkedFilePtr(pInstallFile.get()));
 }
 
 
@@ -2595,7 +2595,7 @@ void CDeploymentEngine::siteCertificate(IPropertyTree& process, const char *inst
         
         //add this file copy operation to our todo list
         Owned<CInstallFile> pInstallFile = new CInstallFile("copy", tempfile, pszCertFile);
-        s_dynamicFileList.push_back(StlLinkedFilePtr(pInstallFile.get()));
+        s_dynamicFileList.push_back(LinkedFilePtr(pInstallFile.get()));
         
         //Now handle private key ------------------------------
         
@@ -2612,7 +2612,7 @@ void CDeploymentEngine::siteCertificate(IPropertyTree& process, const char *inst
         
         //add this file copy operation to our todo list
         Owned<CInstallFile> pInstallFile2 = new CInstallFile("copy", tempfile, pszPrivFile);
-        s_dynamicFileList.push_back(StlLinkedFilePtr(pInstallFile2.get()));
+        s_dynamicFileList.push_back(LinkedFilePtr(pInstallFile2.get()));
     }
 }
 

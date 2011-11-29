@@ -41,21 +41,19 @@ template <class X> inline void Release(X * ptr) { if (ptr) ptr->Release(); }
 
 #define QUERYINTERFACE(ptr, TYPE)   (dynamic_cast<TYPE *>(ptr))
 
-//The constructors for this assume that the source pointer has already been linked
-template <class CLASS> class Owned
+//This base class implements a shared pointer based on a link count held in the object.
+//The two derived classes Owned and Linked should be used as the concrete types to construct a shared object
+//from a pointer.
+template <class CLASS> class Shared
 {
 public:
-    inline Owned()                              { ptr = NULL; }
-    inline Owned(CLASS * _ptr)                  { ptr = _ptr; }
-    inline Owned(const Owned<CLASS> & other)    { ptr = other.getLink(); }
-    inline ~Owned()                             { ::Release(ptr); }
-    
-private: 
-    inline void operator = (CLASS * _ptr)                { set(_ptr);  }
-    inline void operator = (const Owned<CLASS> & other) { set(other.get());  }
-    inline void setown(const Owned<CLASS> &other) {  }
+    inline Shared()                              { ptr = NULL; }
+    inline Shared(CLASS * _ptr, bool owned)      { ptr = _ptr; if (!owned && _ptr) _ptr->Link(); }
+    inline Shared(const Shared<CLASS> & other)   { ptr = other.getLink(); }
+    inline ~Shared()                             { ::Release(ptr); }
 
-public:
+    inline Shared<CLASS> & operator = (const Shared<CLASS> & other) { set(other.get()); return *this;  }
+
     inline CLASS * operator -> () const         { return ptr; } 
     inline operator CLASS *() const             { return ptr; } 
 
@@ -63,35 +61,49 @@ public:
     inline CLASS * get() const                  { return ptr; }
     inline CLASS * getClear()                   { CLASS * temp = ptr; ptr = NULL; return temp; }
     inline CLASS * getLink() const              { if (ptr) ptr->Link(); return ptr; }
-    inline void set(CLASS * _ptr)               { CLASS * temp = ptr; ::Link(_ptr); ptr = _ptr; ::Release(temp); }
+    inline void set(CLASS * _ptr)
+    {
+        CLASS * temp = ptr;
+        if (temp != _ptr)
+        {
+            ::Link(_ptr);
+            ptr = _ptr;
+            ::Release(temp);
+        }
+    }
+    inline void set(const Shared<CLASS> &other) { set(other.get()); }
     inline void setown(CLASS * _ptr)            { CLASS * temp = ptr; ptr = _ptr; ::Release(temp); }
-    inline void set(const Owned<CLASS> &other)  { set(other.get()); }
     
+protected:
+    inline Shared(CLASS * _ptr)                  { ptr = _ptr; } // deliberately protected
+
+private:
+    inline void setown(const Shared<CLASS> &other); // illegal - going to cause a -ve leak
+
 private:
     CLASS * ptr;
 };
 
 
-// Manages a scoped reference to an IInterface that HAS NOT already been linked.  
-// Therefore it calls Link() in the constructor.               
-template <class CLASS> class Linked : public Owned<CLASS>
+//An Owned Shared object takes ownership of the pointer that is passed in the constructor.
+template <class CLASS> class Owned : public Shared<CLASS>
+{
+public:
+    inline Owned()                              { }
+    inline Owned(CLASS * _ptr) : Shared<CLASS>(_ptr)   { }
+
+private:
+    inline Owned(const Shared<CLASS> & other); // Almost certainly a bug
+};
+
+
+//A Linked Shared object takes does not take ownership of the pointer that is passed in the constructor.
+template <class CLASS> class Linked : public Shared<CLASS>
 {
 public:
     inline Linked()                         { }
-    inline Linked(CLASS * _ptr) : Owned<CLASS>(LINK(_ptr)) { }
-    inline Linked(const Owned<CLASS> & other) : Owned<CLASS>(other) { }
-    inline Linked(const Linked<CLASS> & other) : Owned<CLASS>(other) { }
-};
-
-//As Linked<X> but also implements assignment operator, so can be used in stl containers.
-template <class CLASS> class StlLinked : public Owned<CLASS>
-{
-public:
-    inline StlLinked() {}
-    inline StlLinked(CLASS* c) : Owned<CLASS>(LINK(c)) {}
-    inline StlLinked(const StlLinked<CLASS> & c) : Owned<CLASS>(c) {}
-    inline void operator = (CLASS * c) { set(c); }
-    inline void operator = (const StlLinked<CLASS> & other) { set(other.get()); }
+    inline Linked(CLASS * _ptr) : Shared<CLASS>(LINK(_ptr)) { }
+    inline Linked(const Shared<CLASS> & other) : Shared<CLASS>(other) { }
 };
 
 // IStringVal manages returning of arbitrary null-terminated string data between systems that may not share heap managers
@@ -145,7 +157,6 @@ typedef Linked<IInterface> LinkedIInterface;
 
 template <class X> inline X * LINK(X * ptr)     { if (ptr) ptr->Link(); return ptr; }
 template <class X> inline X & OLINK(X & obj)        { obj.Link(); return obj; }
-template <class X> inline X * LINK(const Owned<X> &ptr) { return ptr.getLink(); }
-template <class X> inline X * LINK(const Linked<X> &ptr)    { return ptr.getLink(); }
+template <class X> inline X * LINK(const Shared<X> &ptr) { return ptr.getLink(); }
 
 #endif

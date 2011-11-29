@@ -170,17 +170,17 @@ extern HQL_API IHqlExpression * queryUncastExpr(IHqlExpression * expr);
 extern HQL_API bool areConstant(const HqlExprArray & args);
 
 
-inline void extendConditionOwn(OwnedHqlExpr & cond, node_operator op, IHqlExpression * r)
+inline void extendConditionOwn(SharedHqlExpr & cond, node_operator op, IHqlExpression * r)
 {
     cond.setown(extendConditionOwn(op, cond.getClear(), r));
 }
 
-inline void extendAndCondition(OwnedHqlExpr & cond, IHqlExpression * r)
+inline void extendAndCondition(SharedHqlExpr & cond, IHqlExpression * r)
 {
     cond.setown(extendConditionOwn(no_and, cond.getClear(), LINK(r)));
 }
 
-inline void extendOrCondition(OwnedHqlExpr & cond, IHqlExpression * r)
+inline void extendOrCondition(SharedHqlExpr & cond, IHqlExpression * r)
 {
     cond.setown(extendConditionOwn(no_or, cond.getClear(), LINK(r)));
 }
@@ -609,7 +609,7 @@ extern HQL_API bool createMangledFunctionName(StringBuffer & name, IHqlExpressio
 extern HQL_API bool createMangledFunctionName(StringBuffer & mangled, IHqlExpression * funcdef, CompilerType compiler);
 
 extern HQL_API void extractXmlName(StringBuffer & name, StringBuffer * itemName, StringBuffer * valueName, IHqlExpression * field, const char * defaultItemName, bool reading);
-extern HQL_API void extractXmlName(OwnedHqlExpr & name, OwnedHqlExpr * itemName, OwnedHqlExpr * valueName, IHqlExpression * field, const char * defaultItemName, bool reading);
+extern HQL_API void extractXmlName(SharedHqlExpr & name, OwnedHqlExpr * itemName, OwnedHqlExpr * valueName, IHqlExpression * field, const char * defaultItemName, bool reading);
 extern HQL_API void getRecordXmlSchema(StringBuffer & result, IHqlExpression * record, bool useXPath);
 
 extern HQL_API IHqlExpression * querySimplifyInExpr(IHqlExpression * expr);

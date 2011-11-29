@@ -1134,7 +1134,7 @@ IHqlExpression * CTreeOptimizer::queryPromotedFilter(IHqlExpression * expr, node
 
 
 
-bool CTreeOptimizer::extractSingleFieldTempTable(IHqlExpression * expr, OwnedHqlExpr & retField, OwnedHqlExpr & retValues)
+bool CTreeOptimizer::extractSingleFieldTempTable(IHqlExpression * expr, SharedHqlExpr & retField, SharedHqlExpr & retValues)
 {
     IHqlExpression * record = expr->queryRecord();
     IHqlExpression * field = NULL;

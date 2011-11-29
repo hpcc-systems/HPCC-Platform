@@ -546,7 +546,7 @@ void HqltHql::childrenToECL(IHqlExpression *expr, StringBuffer &s, bool inType, 
     }
 }
 
-void splitPayload(OwnedHqlExpr & keyed, OwnedHqlExpr & payload, IHqlExpression * expr, unsigned payloadFields)
+void splitPayload(SharedHqlExpr & keyed, SharedHqlExpr & payload, IHqlExpression * expr, unsigned payloadFields)
 {
     unsigned numFields = 0;
     ForEachChild(i, expr)

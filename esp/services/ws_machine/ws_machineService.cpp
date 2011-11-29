@@ -1608,8 +1608,8 @@ void Cws_machineEx::enumerateRunningProcesses(CMachineInfoThreadParam* pParam,
                                                              IArrayOf<IEspProcessInfo>& runningProcesses,
                                                              bool bLinuxInstance,
                                                              bool bFilterProcesses,
-                                                             map<string, StlLinked<IEspSWRunInfo> >* processMap,
-                                                             map<int, StlLinked<IEspSWRunInfo> >& pidMap,
+                                                             map<string, Linked<IEspSWRunInfo> >* processMap,
+                                                             map<int, Linked<IEspSWRunInfo> >& pidMap,
                                                              set<string>* pRequiredProcesses)
 {
     const bool bThorMasterOrSlave = !strncmp(pParam->m_sProcessType, "Thor", 4);
@@ -1686,11 +1686,11 @@ void Cws_machineEx::enumerateRunningProcesses(CMachineInfoThreadParam* pParam,
         if ((bLinuxInstance && (!bFilterProcesses || *pszName != '[')) ||
              (!bLinuxInstance && *pszName != '['))
       {
-         map<string, StlLinked<IEspSWRunInfo> >::iterator it;
+         map<string, Linked<IEspSWRunInfo> >::iterator it;
             if (processMap)
                 it = processMap->find(pszName);
 
-            StlLinked<IEspSWRunInfo> lptr;
+            Linked<IEspSWRunInfo> lptr;
          if ( !processMap || it == processMap->end()) //not in the set
          {
               Owned<IEspSWRunInfo> info = static_cast<IEspSWRunInfo*>(new CSWRunInfo(""));
@@ -1699,16 +1699,16 @@ void Cws_machineEx::enumerateRunningProcesses(CMachineInfoThreadParam* pParam,
                 lptr = info.get();
 
                 if (processMap)
-                    processMap->insert(pair<string, StlLinked<IEspSWRunInfo> >(pszName, lptr));
+                    processMap->insert(pair<string, Linked<IEspSWRunInfo> >(pszName, lptr));
          }
          else
          {
-                const StlLinked<IEspSWRunInfo>& linkedPtr = (*it).second;
+                const Linked<IEspSWRunInfo>& linkedPtr = (*it).second;
               lptr = linkedPtr;
             lptr->setInstances( lptr->getInstances() + 1);
          }
 
-            pidMap.insert(pair<int, StlLinked<IEspSWRunInfo> >(pid, lptr));
+            pidMap.insert(pair<int, Linked<IEspSWRunInfo> >(pid, lptr));
       }
     }
 }
@@ -1788,8 +1788,8 @@ void Cws_machineEx::doGetSWRunInfo(IEspContext& context, CMachineInfoThreadParam
                                    bool bMonitorDaliFileServer,
                                    const StringArray& additionalProcesses)
 {
-    map<string, StlLinked<IEspSWRunInfo> > processMap; //save only one description of each process
-   map<int, StlLinked<IEspSWRunInfo> > pidMap;
+    map<string, Linked<IEspSWRunInfo> > processMap; //save only one description of each process
+   map<int, Linked<IEspSWRunInfo> > pidMap;
     bool bLinuxInstance = pParam->m_operatingSystem == OS_Linux;
     bool bAddColumn = false;
 
@@ -1846,8 +1846,8 @@ void Cws_machineEx::doGetSWRunInfo(IEspContext& context, CMachineInfoThreadParam
                                             bFilterProcesses, &processMap, pidMap, NULL);
         }
 
-      map<string, StlLinked<IEspSWRunInfo> >::const_iterator it;
-      map<string, StlLinked<IEspSWRunInfo> >::const_iterator iEnd = processMap.end();
+      map<string, Linked<IEspSWRunInfo> >::const_iterator it;
+      map<string, Linked<IEspSWRunInfo> >::const_iterator iEnd = processMap.end();
 
         if (!m_useDefaultHPCCInit)
         {

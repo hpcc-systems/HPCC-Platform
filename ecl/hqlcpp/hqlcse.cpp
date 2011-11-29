@@ -1133,7 +1133,7 @@ IHqlExpression * spotScalarCSE(IHqlExpression * expr, IHqlExpression * limit)
 }
 
 
-void spotScalarCSE(OwnedHqlExpr & expr, OwnedHqlExpr & associated, IHqlExpression * limit, IHqlExpression * invariantSelector)
+void spotScalarCSE(SharedHqlExpr & expr, SharedHqlExpr & associated, IHqlExpression * limit, IHqlExpression * invariantSelector)
 {
     CseSpotter spotter;
     spotter.analyse(expr, 0);

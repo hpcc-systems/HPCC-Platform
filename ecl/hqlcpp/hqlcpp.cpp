@@ -6687,7 +6687,7 @@ void HqlCppTranslator::doBuildAssignChoose(BuildCtx & ctx, const CHqlBoundTarget
 //-- compare (no_eq,no_ne,no_lt,no_gt,no_le,no_ge) --
 
 //Are the arguments scalar?  If so return the scalar arguments.
-static bool getIsScalarCompare(IHqlExpression * expr, OwnedHqlExpr & left, OwnedHqlExpr & right)
+static bool getIsScalarCompare(IHqlExpression * expr, SharedHqlExpr & left, SharedHqlExpr & right)
 {
     left.set(expr->queryChild(0));
     right.set(expr->queryChild(1));
@@ -7747,7 +7747,7 @@ void HqlCppTranslator::expandSimpleOrder(IHqlExpression * left, IHqlExpression *
 }
 
 
-void HqlCppTranslator::expandOrder(IHqlExpression * expr, HqlExprArray & leftValues, HqlExprArray & rightValues, OwnedHqlExpr & defaultValue)
+void HqlCppTranslator::expandOrder(IHqlExpression * expr, HqlExprArray & leftValues, HqlExprArray & rightValues, SharedHqlExpr & defaultValue)
 {
     OwnedHqlExpr left = normalizeListCasts(expr->queryChild(0));
     OwnedHqlExpr right = normalizeListCasts(expr->queryChild(1));

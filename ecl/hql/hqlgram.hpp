@@ -476,7 +476,7 @@ public:
     _ATOM ensureCommonLocale(attribute &a, attribute &b);
     void ensureUnicodeLocale(attribute & a, char const * locale);
     void ensureType(attribute &atr, ITypeInfo * type);
-    void inheritRecordMaxLength(IHqlExpression * dataset, OwnedHqlExpr & record);
+    void inheritRecordMaxLength(IHqlExpression * dataset, SharedHqlExpr & record);
 
     void normalizeExpression(attribute & expr);
     void normalizeExpression(attribute & expr, type_t expectedType, bool isConstant);
@@ -589,7 +589,7 @@ public:
     void checkAssignedNormalizeTransform(IHqlExpression * record, const attribute &errpos);
     void doCheckAssignedNormalizeTransform(HqlExprArray * assigns, IHqlExpression* select, IHqlExpression* targetSelect, IHqlExpression * cur, const attribute& errpos, bool & modified);
 
-    bool checkValidBaseModule(const attribute & attr, OwnedHqlExpr & expr);
+    bool checkValidBaseModule(const attribute & attr, SharedHqlExpr & expr);
     IHqlExpression * implementInterfaceFromModule(attribute & iAttr, attribute & mAttr, IHqlExpression * flags);
     IHqlExpression * implementInterfaceFromModule(const attribute & modpos, const attribute & ipos, IHqlExpression * implementModule, IHqlExpression * projectInterface, IHqlExpression * flags);
 
@@ -950,12 +950,12 @@ protected:
     IHqlExpression *queryCurrentTransformRecord();
     IHqlExpression* queryFieldMap(IHqlExpression* expr);
     IHqlExpression* bindFieldMap(IHqlExpression*, IHqlExpression*);
-    void applyPayloadAttribute(const attribute & errpos, IHqlExpression * record, OwnedHqlExpr & extra);
-    void extractRecordFromExtra(OwnedHqlExpr & record, OwnedHqlExpr & extra);
+    void applyPayloadAttribute(const attribute & errpos, IHqlExpression * record, SharedHqlExpr & extra);
+    void extractRecordFromExtra(SharedHqlExpr & record, SharedHqlExpr & extra);
     void transferOptions(attribute & filenameAttr, attribute & optionsAttr);
-    IHqlExpression * extractTransformFromExtra(OwnedHqlExpr & extra);
+    IHqlExpression * extractTransformFromExtra(SharedHqlExpr & extra);
     void expandPayload(HqlExprArray & fields, IHqlExpression * payload, IHqlSimpleScope * scope, ITypeInfo * & lastFieldType, const attribute & errpos);
-    void modifyIndexPayloadRecord(OwnedHqlExpr & record, OwnedHqlExpr & payload, OwnedHqlExpr & extra, const attribute & errpos);
+    void modifyIndexPayloadRecord(SharedHqlExpr & record, SharedHqlExpr & payload, SharedHqlExpr & extra, const attribute & errpos);
 
     bool haveAssignedToChildren(IHqlExpression * select);
     void checkPattern(attribute & pattern, bool isCompound);
@@ -1129,7 +1129,7 @@ class HqlLex
         void declareUniqueName(const char* name, const char * pattern);
         void checkNextLoop(const YYSTYPE & errpos, bool first,int startLine,int startCol);
 
-        bool getDefinedParameter(StringBuffer &curParam, YYSTYPE & returnToken, const char* for_what, OwnedHqlExpr & resolved);
+        bool getDefinedParameter(StringBuffer &curParam, YYSTYPE & returnToken, const char* for_what, SharedHqlExpr & resolved);
 
         bool checkUnicodeLiteral(char const * str, unsigned length, unsigned & ep, StringBuffer & msg);
 
