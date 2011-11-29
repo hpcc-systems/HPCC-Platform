@@ -319,7 +319,7 @@ protected:
     };
 };
 
-//typedef WaitQueue<StlLinked<ServiceTask> > ConnectQueueType;
+//typedef WaitQueue<Linked<ServiceTask> > ConnectQueueType;
 
 
 struct RemoteCommand: public CInterface, implements IRemoteCommand

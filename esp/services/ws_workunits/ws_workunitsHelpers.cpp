@@ -1697,7 +1697,7 @@ StringBuffer& WsWuSearch::createWuidFromDate(const char* timestamp,StringBuffer&
 struct CompareData
 {
     CompareData(const char* _filter): filter(_filter) {}
-    bool operator()(const StlLinked<DataCacheElement>& e) const
+    bool operator()(const Linked<DataCacheElement>& e) const
     {
         return stricmp(e->m_filter.c_str(),filter)==0;
     }
@@ -1719,7 +1719,7 @@ DataCacheElement* DataCache::lookup(IEspContext &context, const char* filter, un
     timeNow.adjustTime(-timeout);
     while (true)
     {
-        std::list<StlLinked<DataCacheElement> >::iterator list_iter = cache.begin();
+        std::list<Linked<DataCacheElement> >::iterator list_iter = cache.begin();
         if (list_iter == cache.end())
             break;
 
@@ -1734,7 +1734,7 @@ DataCacheElement* DataCache::lookup(IEspContext &context, const char* filter, un
         return NULL;
 
     //Check whether we have the data cache for this cluster. If yes, get the version
-    std::list<StlLinked<DataCacheElement> >::iterator it = std::find_if(cache.begin(),cache.end(),CompareData(filter));
+    std::list<Linked<DataCacheElement> >::iterator it = std::find_if(cache.begin(),cache.end(),CompareData(filter));
     if(it!=cache.end())
     {
         return it->getLink();
@@ -1764,7 +1764,7 @@ void DataCache::add(const char* filter, const char* data, const char* name, cons
 struct CompareArchivedWUs
 {
     CompareArchivedWUs(const char* _filter): filter(_filter) {}
-    bool operator()(const StlLinked<ArchivedWuCacheElement>& e) const
+    bool operator()(const Linked<ArchivedWuCacheElement>& e) const
     {
         return stricmp(e->m_filter.c_str(),filter)==0;
     }
@@ -1786,7 +1786,7 @@ ArchivedWuCacheElement* ArchivedWuCache::lookup(IEspContext &context, const char
     timeNow.adjustTime(-timeout);
     while (true)
     {
-        std::list<StlLinked<ArchivedWuCacheElement> >::iterator list_iter = cache.begin();
+        std::list<Linked<ArchivedWuCacheElement> >::iterator list_iter = cache.begin();
         if (list_iter == cache.end())
             break;
 
@@ -1801,7 +1801,7 @@ ArchivedWuCacheElement* ArchivedWuCache::lookup(IEspContext &context, const char
         return NULL;
 
     //Check whether we have the data cache for this cluster. If yes, get the version
-    std::list<StlLinked<ArchivedWuCacheElement> >::iterator it = std::find_if(cache.begin(),cache.end(),CompareArchivedWUs(filter));
+    std::list<Linked<ArchivedWuCacheElement> >::iterator it = std::find_if(cache.begin(),cache.end(),CompareArchivedWUs(filter));
     if(it!=cache.end())
         return it->getLink();
 

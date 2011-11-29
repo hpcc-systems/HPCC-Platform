@@ -12188,7 +12188,7 @@ static IHqlExpression * doAttachWorkflowOwn(IHqlExpression * value, IHqlExpressi
 }
 
 
-void processSectionPseudoWorkflow(OwnedHqlExpr & expr, IHqlExpression * workflow, const HqlExprCopyArray * allActiveParameters)
+void processSectionPseudoWorkflow(SharedHqlExpr & expr, IHqlExpression * workflow, const HqlExprCopyArray * allActiveParameters)
 {
     //Section attributes are implemented by adding a sectionAnnotation to all datasets within a section that aren't 
     //included in the list of active parameters, or the datasets provided as parameters to the section
@@ -12214,7 +12214,7 @@ void processSectionPseudoWorkflow(OwnedHqlExpr & expr, IHqlExpression * workflow
 }
 
 
-static IHqlExpression * processPseudoWorkflow(OwnedHqlExpr & expr, HqlExprArray & meta, IHqlExpression * workflow, const HqlExprCopyArray * allActiveParameters)
+static IHqlExpression * processPseudoWorkflow(SharedHqlExpr & expr, HqlExprArray & meta, IHqlExpression * workflow, const HqlExprCopyArray * allActiveParameters)
 {
     switch (workflow->getOperator())
     {
@@ -14841,7 +14841,7 @@ ITypeInfo * getTypedefType(IHqlExpression * expr)
     return makeOriginalModifier(expr->getType(), LINK(expr)); 
 }
 
-void extendAdd(OwnedHqlExpr & value, IHqlExpression * expr)
+void extendAdd(SharedHqlExpr & value, IHqlExpression * expr)
 {
     if (value)
         value.setown(createValue(no_add, value->getType(), LINK(value), LINK(expr)));

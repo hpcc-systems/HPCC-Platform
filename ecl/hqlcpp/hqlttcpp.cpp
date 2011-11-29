@@ -132,18 +132,18 @@ public:
     void extractGlobal(IHqlExpression * expr, bool isRoxie);
     void extractStoredInfo(IHqlExpression * expr, IHqlExpression * originalValue, bool isRoxie);
     void checkFew(HqlCppTranslator & translator, IHqlExpression * value);
-    void splitGlobalDefinition(ITypeInfo * type, IHqlExpression * value, IConstWorkUnit * wu, OwnedHqlExpr & setOutput, OwnedHqlExpr * getOutput, bool isRoxie);
+    void splitGlobalDefinition(ITypeInfo * type, IHqlExpression * value, IConstWorkUnit * wu, SharedHqlExpr & setOutput, OwnedHqlExpr * getOutput, bool isRoxie);
     IHqlExpression * getStoredKey();
     void preventDiskSpill() { few = true; }
     IHqlExpression * queryCluster() const { return cluster; }
 
 protected:
-    void doSplitGlobalDefinition(ITypeInfo * type, IHqlExpression * value, IConstWorkUnit * wu, OwnedHqlExpr & setOutput, OwnedHqlExpr * getOutput, bool isRoxie);
+    void doSplitGlobalDefinition(ITypeInfo * type, IHqlExpression * value, IConstWorkUnit * wu, SharedHqlExpr & setOutput, OwnedHqlExpr * getOutput, bool isRoxie);
     IHqlExpression * createSetValue(IHqlExpression * value, IHqlExpression * aliasName);
-    void createSmallOutput(IHqlExpression * value, OwnedHqlExpr & setOutput);
+    void createSmallOutput(IHqlExpression * value, SharedHqlExpr & setOutput);
     IHqlExpression * queryAlias(IHqlExpression * value);
     IHqlExpression * queryFilename(IHqlExpression * value, IConstWorkUnit * wu, bool isRoxie);
-    void splitSmallDataset(IHqlExpression * value, OwnedHqlExpr & setOutput, OwnedHqlExpr * getOutput);
+    void splitSmallDataset(IHqlExpression * value, SharedHqlExpr & setOutput, OwnedHqlExpr * getOutput);
     void setCluster(IHqlExpression * expr);
 
 public:
@@ -1040,7 +1040,7 @@ void ThorScalarTransformer::doAnalyseExpr(IHqlExpression * expr)
 }
 
 
-void ThorScalarTransformer::createHoisted(IHqlExpression * expr, OwnedHqlExpr & setResultStmt, OwnedHqlExpr & getResult, bool addWrapper)
+void ThorScalarTransformer::createHoisted(IHqlExpression * expr, SharedHqlExpr & setResultStmt, SharedHqlExpr & getResult, bool addWrapper)
 {
     IHqlExpression * value = expr;
     HqlExprArray actions;
@@ -1216,7 +1216,7 @@ void SequenceNumberAllocator::nextSequence(HqlExprArray & args, IHqlExpression *
         *duplicate = false;
     if (name)
     {
-        OwnedHqlExpr * matched = namedMap.getValue(name);
+        SharedHqlExpr * matched = namedMap.getValue(name);
         if (matched)
         {
             StringBuffer nameText;
@@ -4639,12 +4639,12 @@ void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, IHqlExpressio
 }
 
 
-void GlobalAttributeInfo::splitGlobalDefinition(ITypeInfo * type, IHqlExpression * value, IConstWorkUnit * wu, OwnedHqlExpr & setOutput, OwnedHqlExpr * getOutput, bool isRoxie)
+void GlobalAttributeInfo::splitGlobalDefinition(ITypeInfo * type, IHqlExpression * value, IConstWorkUnit * wu, SharedHqlExpr & setOutput, OwnedHqlExpr * getOutput, bool isRoxie)
 {
     doSplitGlobalDefinition(type, value, wu, setOutput, getOutput, isRoxie);
 }
 
-void GlobalAttributeInfo::doSplitGlobalDefinition(ITypeInfo * type, IHqlExpression * value, IConstWorkUnit * wu, OwnedHqlExpr & setOutput, OwnedHqlExpr * getOutput, bool isRoxie)
+void GlobalAttributeInfo::doSplitGlobalDefinition(ITypeInfo * type, IHqlExpression * value, IConstWorkUnit * wu, SharedHqlExpr & setOutput, OwnedHqlExpr * getOutput, bool isRoxie)
 {
     OwnedHqlExpr targetName;
     if (storedName)
@@ -4791,7 +4791,7 @@ void GlobalAttributeInfo::doSplitGlobalDefinition(ITypeInfo * type, IHqlExpressi
     }
 }
 
-void GlobalAttributeInfo::createSmallOutput(IHqlExpression * value, OwnedHqlExpr & setOutput)
+void GlobalAttributeInfo::createSmallOutput(IHqlExpression * value, SharedHqlExpr & setOutput)
 {
     if (value->getOperator() == no_temptable)
     {
@@ -4837,7 +4837,7 @@ void GlobalAttributeInfo::checkFew(HqlCppTranslator & translator, IHqlExpression
 }
 
 
-void GlobalAttributeInfo::splitSmallDataset(IHqlExpression * value, OwnedHqlExpr & setOutput, OwnedHqlExpr * getOutput)
+void GlobalAttributeInfo::splitSmallDataset(IHqlExpression * value, SharedHqlExpr & setOutput, OwnedHqlExpr * getOutput)
 {
     createSmallOutput(value, setOutput);
 
@@ -8066,7 +8066,7 @@ void NestedSelectorNormalizer::analyseExpr(IHqlExpression * expr)
     }
 }
 
-static IHqlExpression * splitSelector(IHqlExpression * expr, OwnedHqlExpr & oldDataset)
+static IHqlExpression * splitSelector(IHqlExpression * expr, SharedHqlExpr & oldDataset)
 {
     assertex(expr->getOperator() == no_select);
     IHqlExpression * ds = expr->queryChild(0);
@@ -9473,7 +9473,7 @@ public:
             {
                 OwnedHqlExpr attr = createLocationAttr(location->querySourcePath(), location->getStartLine(), location->getStartColumn(), 0);
                 Linked<LocationInfo> info;
-                Owned<LocationInfo> * match = map.getValue(attr);
+                Shared<LocationInfo> * match = map.getValue(attr);
                 if (match)
                     info.set(*match);
                 else

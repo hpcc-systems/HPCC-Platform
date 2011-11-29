@@ -171,7 +171,7 @@ interface IHqlCppDatasetCursor : public IInterface
     virtual void buildCount(BuildCtx & ctx, CHqlBoundExpr & tgt) = 0;
     virtual void buildExists(BuildCtx & ctx, CHqlBoundExpr & tgt) = 0;
     virtual BoundRow * buildIterateLoop(BuildCtx & ctx, bool needToBreak) = 0;
-    virtual void buildIterateClass(BuildCtx & ctx, OwnedHqlExpr & iter, OwnedHqlExpr & row) = 0;
+    virtual void buildIterateClass(BuildCtx & ctx, SharedHqlExpr & iter, SharedHqlExpr & row) = 0;
     virtual BoundRow * buildSelect(BuildCtx & ctx, IHqlExpression * indexExpr) = 0;
     virtual void buildIterateMembers(BuildCtx & declarectx, BuildCtx & initctx) = 0;
 };
@@ -1485,7 +1485,7 @@ public:
     void doBuildAggregateProcessTransform(BuildCtx & ctx, BoundRow * selfRow, IHqlExpression * expr, IHqlExpression * alreadyDoneExpr);
 
 
-    void processUserAggregateTransform(IHqlExpression * expr, IHqlExpression * transform, OwnedHqlExpr & firstTransform, OwnedHqlExpr & nextTransform);
+    void processUserAggregateTransform(IHqlExpression * expr, IHqlExpression * transform, SharedHqlExpr & firstTransform, SharedHqlExpr & nextTransform);
     void doBuildUserAggregateFuncs(BuildCtx & ctx, IHqlExpression * expr, bool & requiresOrderedMerge);
     void doBuildUserAggregateProcessTransform(BuildCtx & ctx, BoundRow * selfRow, IHqlExpression * expr, IHqlExpression * transform, IHqlExpression * alreadyDoneExpr);
     void doBuildUserMergeAggregateFunc(BuildCtx & ctx, IHqlExpression * expr, IHqlExpression * mergeTransform);
@@ -1573,7 +1573,7 @@ public:
     IHqlExpression * doCompare(BuildCtx & ctx, IHqlExpression *sortList, const DatasetReference & dataset);
     void doCompareLeftRight(BuildCtx & ctx, const char * funcname, const DatasetReference & datasetLeft, const DatasetReference & datasetRight, HqlExprArray & left, HqlExprArray & right);
     void buildSlidingMatchFunction(BuildCtx & ctx, HqlExprArray & leftEq, HqlExprArray & rightEq, HqlExprArray & slidingMatches, const char * funcname, unsigned childIndex, const DatasetReference & datasetL, const DatasetReference & datasetR);
-    void doBuildIndexOutputTransform(BuildCtx & ctx, IHqlExpression * record, OwnedHqlExpr & rawRecord);
+    void doBuildIndexOutputTransform(BuildCtx & ctx, IHqlExpression * record, SharedHqlExpr & rawRecord);
 
     void buildKeyedJoinExtra(ActivityInstance & instance, IHqlExpression * expr, KeyedJoinInfo * joinKey);
     void buildKeyJoinIndexReadHelper(ActivityInstance & instance, IHqlExpression * expr, KeyedJoinInfo * joinKey);
@@ -1621,7 +1621,7 @@ public:
     bool insideRemoteGraph(BuildCtx & ctx);
     bool isCurrentActiveGraph(BuildCtx & ctx, IHqlExpression * graphTag);
 
-    void buildXmlReadChildrenIterator(BuildCtx & subctx, const char * iterTag, IHqlExpression * rowName, OwnedHqlExpr & subRowExpr);
+    void buildXmlReadChildrenIterator(BuildCtx & subctx, const char * iterTag, IHqlExpression * rowName, SharedHqlExpr & subRowExpr);
     void buildXmlReadTransform(IHqlExpression * dataset, StringBuffer & className, bool & usesContents);
     void doBuildXmlReadMember(ActivityInstance & instance, IHqlExpression * expr, const char * functionName, bool & usesContents);
 
@@ -1689,7 +1689,7 @@ protected:
     void doBuildAssignCompare(BuildCtx & ctx, EvaluateCompareInfo & target, HqlExprArray & leftValues, HqlExprArray & rightValues, bool isFirst, bool isOuter);
     void expandRowOrder(IHqlExpression * selector, IHqlExpression * record, HqlExprArray & values, bool isRow);
     void expandSimpleOrder(IHqlExpression * left, IHqlExpression * right, HqlExprArray & leftValues, HqlExprArray & rightValues);
-    void expandOrder(IHqlExpression * expr, HqlExprArray & leftValues, HqlExprArray & rightValues, OwnedHqlExpr & defaultValue);
+    void expandOrder(IHqlExpression * expr, HqlExprArray & leftValues, HqlExprArray & rightValues, SharedHqlExpr & defaultValue);
     void optimizeOrderValues(HqlExprArray & leftValues, HqlExprArray & rightValues, bool isEqualityCompare);
     IHqlExpression * querySimpleOrderSelector(IHqlExpression * expr);
 
@@ -1702,7 +1702,7 @@ protected:
     IHqlExpression * normalizeGlobalIfCondition(BuildCtx & ctx, IHqlExpression * expr);
     void substituteClusterSize(HqlExprArray & exprs);
     void throwCannotCast(ITypeInfo * from, ITypeInfo * to);
-    void splitFuzzyCondition(IHqlExpression * condition, IHqlExpression * atmostCond, OwnedHqlExpr & fuzzy, OwnedHqlExpr & hard);
+    void splitFuzzyCondition(IHqlExpression * condition, IHqlExpression * atmostCond, SharedHqlExpr & fuzzy, SharedHqlExpr & hard);
 
     void ensureSerialized(BuildCtx & ctx, const CHqlBoundTarget & variable);
 

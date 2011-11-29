@@ -214,7 +214,7 @@ protected:
 
 
 IHqlExpression * spotScalarCSE(IHqlExpression * expr, IHqlExpression * limit = NULL);
-void spotScalarCSE(OwnedHqlExpr & expr, OwnedHqlExpr & associated, IHqlExpression * limit, IHqlExpression * invariantSelector);
+void spotScalarCSE(SharedHqlExpr & expr, SharedHqlExpr & associated, IHqlExpression * limit, IHqlExpression * invariantSelector);
 void spotScalarCSE(HqlExprArray & exprs, HqlExprArray & associated, IHqlExpression * limit, IHqlExpression * invariantSelector);
 
 //---------------------------------------------------------------------------

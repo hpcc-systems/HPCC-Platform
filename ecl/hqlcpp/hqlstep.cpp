@@ -79,7 +79,7 @@ protected:
     bool extractCondition(HqlExprArray & args, IHqlExpression * searchField);
     bool extractComparison(IHqlExpression * lhs, IHqlExpression * rhs, IHqlExpression * searchField, bool isEqual = false);
     bool isLeftRightInvariant(IHqlExpression * expr);
-    IHqlExpression * simplifyArgument(IHqlExpression * expr, OwnedHqlExpr & delta, bool invert);
+    IHqlExpression * simplifyArgument(IHqlExpression * expr, SharedHqlExpr & delta, bool invert);
 
 protected:
     HqlExprArray equalities;
@@ -193,7 +193,7 @@ bool SteppingCondition::isLeftRightInvariant(IHqlExpression * expr)
 }
 
 
-void adjustValue(OwnedHqlExpr & total, IHqlExpression * value, bool invert)
+void adjustValue(SharedHqlExpr & total, IHqlExpression * value, bool invert)
 {
     if (total)
         total.setown(adjustBoundIntegerValues(total, value, invert));
@@ -204,7 +204,7 @@ void adjustValue(OwnedHqlExpr & total, IHqlExpression * value, bool invert)
 }
 
 
-IHqlExpression * SteppingCondition::simplifyArgument(IHqlExpression * expr, OwnedHqlExpr & delta, bool invert)
+IHqlExpression * SteppingCondition::simplifyArgument(IHqlExpression * expr, SharedHqlExpr & delta, bool invert)
 {
     loop
     {

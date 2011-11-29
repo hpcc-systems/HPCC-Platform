@@ -2908,7 +2908,7 @@ IHqlExpression * queryPropertyChild(ITypeInfo * type, _ATOM search, unsigned idx
 
 // Functions for extracting and preserving attribute information on types and fields.
 
-void cloneFieldModifier(Owned<ITypeInfo> & type, ITypeInfo * donorType, _ATOM attr)
+void cloneFieldModifier(Shared<ITypeInfo> & type, ITypeInfo * donorType, _ATOM attr)
 {
     IHqlExpression * match = queryProperty(donorType, attr);
     if (!match)

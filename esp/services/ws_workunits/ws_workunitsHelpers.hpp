@@ -244,7 +244,7 @@ struct DataCache: public CInterface, implements IInterface
     void add(const char* filter, const char* data, const char* name, const char* localName, const char* wuid,
     const char* resultName, unsigned seq,   __int64 start, unsigned count, __int64 requested, __int64 total);
 
-    std::list<StlLinked<DataCacheElement> > cache;
+    std::list<Linked<DataCacheElement> > cache;
     CriticalSection crit;
     size32_t cacheSize;
 };
@@ -285,7 +285,7 @@ struct ArchivedWuCache: public CInterface, implements IInterface
 
     void add(const char* filter, const char* sashaUpdatedWhen, bool hasNextPage, IArrayOf<IEspECLWorkunit>& wus);
 
-    std::list<StlLinked<ArchivedWuCacheElement> > cache;
+    std::list<Linked<ArchivedWuCacheElement> > cache;
     CriticalSection crit;
     size32_t cacheSize;
 };

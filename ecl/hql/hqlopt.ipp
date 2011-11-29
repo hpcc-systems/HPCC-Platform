@@ -115,7 +115,7 @@ protected:
     void recursiveDecChildUsage(IHqlExpression * expr);
     IHqlExpression * inheritUsage(IHqlExpression * newExpr, IHqlExpression * oldExpr);
 
-    bool extractSingleFieldTempTable(IHqlExpression * expr, OwnedHqlExpr & retField, OwnedHqlExpr & retValues);
+    bool extractSingleFieldTempTable(IHqlExpression * expr, SharedHqlExpr & retField, SharedHqlExpr & retValues);
 
     IHqlExpression * optimizeAggregateCompound(IHqlExpression * transformed);
     IHqlExpression * optimizeAggregateUnsharedDataset(IHqlExpression * expr, bool isSimpleCount);
