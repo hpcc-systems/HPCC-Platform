@@ -215,6 +215,14 @@ bool storePointerInArray(ITypeInfo * type)
     return type->isReference() && isTypePassedByAddress(type); 
 }
 
+//Convert no_dataset_alias(expr, uid) to expr'
+IHqlExpression * normalizeDatasetAlias(IHqlExpression * expr)
+{
+    IHqlExpression * uid = expr->queryProperty(_uid_Atom);
+    assertex(uid);
+    return appendOwnedOperand(expr->queryChild(0), LINK(uid));
+}
+
 //---------------------------------------------------------------------------
 
 bool isSelectSortedTop(IHqlExpression * selectExpr)

@@ -52,10 +52,10 @@ static IHqlExpression * optimizedReplaceSelector(IHqlExpression * expr, IHqlExpr
         {
             IHqlExpression * lhs = expr->queryChild(0);
             IHqlExpression * field = expr->queryChild(1);
-            IHqlExpression * newLhs;
+            OwnedHqlExpr newLhs;
             if (expr->hasProperty(newAtom))
             {
-                newLhs = optimizedReplaceSelector(lhs, oldDataset, newDataset);
+                newLhs.setown(optimizedReplaceSelector(lhs, oldDataset, newDataset));
             }
             else
             {
@@ -70,11 +70,11 @@ static IHqlExpression * optimizedReplaceSelector(IHqlExpression * expr, IHqlExpr
                     return createSelectExpr(LINK(newDataset->queryNormalizedSelector()), LINK(field));
                 }
                 else
-                    newLhs = optimizedReplaceSelector(lhs, oldDataset, newDataset);
+                    newLhs.setown(optimizedReplaceSelector(lhs, oldDataset, newDataset));
             }
 
             if (newLhs)
-                return createSelectExpr(newLhs, LINK(field), LINK(expr->queryChild(2)));
+                return replaceChild(expr, 0, newLhs);
             return NULL;
         }
     case no_implicitcast:

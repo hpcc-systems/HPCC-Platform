@@ -1140,8 +1140,16 @@ IHqlExpression * replaceChild(IHqlExpression * expr, unsigned childIndex, IHqlEx
     if (oldChild == newChild)
         return LINK(expr);
     HqlExprArray args;
-    unwindChildren(args, expr);
-    args.replace(*LINK(newChild), childIndex);
+    if (childIndex == 0)
+    {
+        args.append(*LINK(newChild));
+        unwindChildren(args, expr, 1);
+    }
+    else
+    {
+        unwindChildren(args, expr);
+        args.replace(*LINK(newChild), childIndex);
+    }
     return expr->clone(args);
 }
 

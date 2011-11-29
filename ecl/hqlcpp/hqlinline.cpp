@@ -101,6 +101,8 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
                 return RETevaluate;
             return RETevaluate|RETiterate;
         }
+    case no_dataset_alias:
+        return getInlineFlags(ctx, expr->queryChild(0));
     }
 
     if (isGrouped(expr))
@@ -579,6 +581,7 @@ GraphLocalisation queryActivityLocalisation(IHqlExpression * expr)
     case no_serialize:
     case no_actionlist:
     case no_definesideeffect:
+    case no_dataset_alias:
         return GraphNoAccess;               // Will never access any data values from anywhere
     case no_hqlproject:
     case no_newusertable:

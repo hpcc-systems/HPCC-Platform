@@ -1586,6 +1586,8 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
         if (getProjectExprKind(expr->queryChild(0)) == CompoundableActivity)
             return CompoundableActivity;
         return PassThroughActivity;
+    case no_dataset_alias:
+        return PassThroughActivity;
     }
 
     ITypeInfo * type = expr->queryType();
