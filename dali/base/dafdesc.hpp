@@ -233,7 +233,7 @@ interface ISuperFileDescriptor: extends IFileDescriptor
     // extension of IFileDescriptor for superfiles providing some part->file mapping
     virtual bool mapSubPart(unsigned superpartnum, unsigned &subfile, unsigned &subpartnum)=0;
     virtual void setSubMapping(UnsignedArray &subcounts, bool interleaved)=0;
-
+    virtual unsigned querySubFiles() = 0;
 };
 
 
