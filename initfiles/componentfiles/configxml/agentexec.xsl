@@ -73,6 +73,10 @@
         </xsl:call-template>
       </xsl:attribute>
 
+      <xsl:attribute name="defaultMemoryLimitMB">
+        <xsl:value-of select="@defaultMemoryLimitMB"/>
+      </xsl:attribute>
+
       <xsl:attribute name="logDir">
         <xsl:call-template name="makeAbsolutePath">
           <xsl:with-param name="path" select="@logDir"/>
