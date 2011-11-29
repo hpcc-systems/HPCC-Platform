@@ -1901,7 +1901,12 @@ public:
 
     void setSubMapping(UnsignedArray &_subcounts, bool _interleaved)
     {
-        assertex(!"setSubMapping called from CFileDescriptor!");
+        UNIMPLEMENTED_X("setSubMapping called from CFileDescriptor!");
+    }
+
+    unsigned querySubFiles()
+    {
+        UNIMPLEMENTED_X("querySubFiles called from CFileDescriptor!");
     }
 };
 
@@ -1929,8 +1934,6 @@ public:
     {
         delete subfilecounts;
     }
-
-
 
     ISuperFileDescriptor *querySuperFileDescriptor()
     {
@@ -1976,7 +1979,6 @@ public:
             }
         }
         return false;
-
     }
 
     void setSubMapping(UnsignedArray &_subcounts, bool _interleaved)
@@ -1996,6 +1998,13 @@ public:
         }
     }
 
+    unsigned querySubFiles()
+    {
+        if (!subfilecounts)  // its a file!
+            return 1;
+        return subfilecounts->ordinality();
+    }
+
     void serializeSub(MemoryBuffer &mb)
     {
         if (subfilecounts) {
@@ -2008,7 +2017,6 @@ public:
             mb.append((unsigned)0);
         mb.append(interleaved);
     }
-
 };
 
 

@@ -26,22 +26,34 @@
 
 class CCsvReadActivityMaster : public CDiskReadMasterBase
 {
+    IHThorCsvReadArg *helper;
+    unsigned headerLines;
 public:
     CCsvReadActivityMaster(CMasterGraphElement *info) : CDiskReadMasterBase(info)
     {
+        helper = (IHThorCsvReadArg *)queryHelper();
+        headerLines = helper->queryCsvParameters()->queryHeaderLen();
+        if (headerLines)
+            mpTag = container.queryJob().allocateMPTag();
     }
     void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
         CDiskReadMasterBase::serializeSlaveData(dst, slave);
         if (mapping && mapping->queryMapWidth(slave)>=1)
         {
-            IHThorCsvReadArg *helper = (IHThorCsvReadArg *)queryHelper();
             if (fileDesc->queryProperties().hasProp("@csvQuote")) dst.append(true).append(fileDesc->queryProperties().queryProp("@csvQuote"));
             else dst.append(false);
             if (fileDesc->queryProperties().hasProp("@csvSeparate")) dst.append(true).append(fileDesc->queryProperties().queryProp("@csvSeparate"));
             else dst.append(false);
             if (fileDesc->queryProperties().hasProp("@csvTerminate")) dst.append(true).append(fileDesc->queryProperties().queryProp("@csvTerminate"));
             else dst.append(false);
+        }
+        if (headerLines)
+        {
+            dst.append((int)mpTag);
+            ISuperFileDescriptor *superFDesc = fileDesc->querySuperFileDescriptor();
+            unsigned subFiles = superFDesc ? superFDesc->querySubFiles() : 1;
+            dst.append(subFiles);
         }
     }
 };
