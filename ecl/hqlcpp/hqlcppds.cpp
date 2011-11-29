@@ -1838,6 +1838,12 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
     node_operator op = expr->getOperator();
     switch (op)
     {
+    case no_dataset_alias:
+        {
+            OwnedHqlExpr uniqueChild = normalizeDatasetAlias(expr);
+            doBuildDataset(ctx, uniqueChild, tgt, format);
+            return;
+        }
     case no_alias:
         doBuildExprAlias(ctx, expr, &tgt);
         return;
@@ -3112,6 +3118,12 @@ BoundRow * HqlCppTranslator::buildDatasetIterate(BuildCtx & ctx, IHqlExpression 
 
     switch (expr->getOperator())
     {
+    case no_dataset_alias:
+        {
+            OwnedHqlExpr uniqueChild = normalizeDatasetAlias(expr);
+            BoundRow * childCursor = buildDatasetIterate(ctx, uniqueChild, needToBreak);
+            return rebindTableCursor(ctx, expr, childCursor, no_none, NULL);
+        }
     case no_null:
         buildFilter(ctx, queryBoolExpr(false));
         return NULL;

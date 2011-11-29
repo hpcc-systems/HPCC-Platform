@@ -5417,6 +5417,7 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
     case no_callsideeffect:
     case no_outofline:
     case no_owned_ds:
+    case no_dataset_alias:
         exprMapping.set(gatherConstants(expr->queryChild(0)));
         break;
     case no_normalizegroup:

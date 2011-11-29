@@ -5993,9 +5993,6 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
             case no_compound_selectnew:
                 result = doBuildActivityCompoundSelectNew(ctx, expr);
                 break;
-            case no_keyed:
-                result = buildCachedActivity(ctx, expr->queryChild(0));
-                break;
             case no_denormalize:
             case no_denormalizegroup:
                 result = doBuildActivityDenormalize(ctx, expr);
@@ -6127,6 +6124,8 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
             case no_globalscope:
             case no_thisnode:
             case no_forcegraph:
+            case no_keyed:
+            case no_dataset_alias:
                 result = buildCachedActivity(ctx, expr->queryChild(0));
                 break;
             case no_alias_scope:
@@ -7341,178 +7340,6 @@ class CHqlBoundTargetItem : public CInterface
 public:
     CHqlBoundTarget     value;
 };
-
-static HqlTransformerInfo filterExtractorInfo("FilterExtractor");
-class FilterExtractor : public NewHqlTransformer
-{
-public:
-    FilterExtractor(HqlCppTranslator & _translator, BuildCtx & _classctx, BuildCtx & _ctx, IHqlExpression * _rootTable) 
-        : NewHqlTransformer(filterExtractorInfo), translator(_translator), classctx(_classctx), ctx(_ctx) { rootTable.set(_rootTable->queryNormalizedSelector()); }
-
-    void assignCursors(IHqlExpression * helper);
-    IHqlExpression * buildExtractLookupFields(IHqlExpression * expr);
-    IHqlExpression * createTransformed(IHqlExpression * expr);
-
-protected:
-    struct AssignPairs
-    {
-        HqlExprArray from;
-        CIArrayOf<CHqlBoundTargetItem> to;
-    };
-
-    void addTable(IHqlExpression * expr);
-    IHqlExpression * extractExpr(IHqlExpression * expr, AssignPairs & assigns);
-    IHqlExpression * querySelectorTable(IHqlExpression * expr);
-
-
-public:
-    HqlCppTranslator & translator;
-    BuildCtx & classctx;
-    BuildCtx & ctx;
-    CIArray tables;
-    AssignPairs  ctxAssign;
-    HqlExprArray ctxAssignDirectFrom;
-    HqlExprArray ctxAssignDirectTo;
-    AssignPairs  extractAssign;
-    HqlExprAttr rootTable;
-};
-
-void FilterExtractor::addTable(IHqlExpression * table)
-{
-    if (table == rootTable)
-        return;
-
-    BoundRow * cursor;
-    if (table)
-        cursor = static_cast<BoundRow *>(ctx.queryAssociation(table, AssocCursor, NULL));
-    else
-        cursor = (BoundRow *)ctx.queryFirstAssociation(AssocCursor);
-
-    assertex(cursor);
-    if (tables.find(*cursor) == NotFound)
-    {
-        StringBuffer newCursorName;
-        translator.getUniqueId(newCursorName.append("cur"));
-        BoundRow * newCursor = translator.bindTableCursor(classctx, cursor->queryDataset(), newCursorName, cursor->querySide(), cursor->querySelSeq());
-
-        IHqlExpression * oldVar = cursor->queryBound();
-        IHqlExpression * newVar = newCursor->queryBound();
-        ctxAssignDirectFrom.append(*LINK(oldVar));
-        ctxAssignDirectTo.append(*LINK(newVar));
-        tables.append(*LINK(cursor));
-
-        StringBuffer s;
-        s.append("const unsigned char * ").append(newCursorName).append(";");
-        classctx.addQuoted(s);
-    }
-}
-
-IHqlExpression * FilterExtractor::extractExpr(IHqlExpression * expr, AssignPairs & assigns)
-{
-    unsigned match = assigns.from.find(*expr);
-    if (match == NotFound)
-    {
-        CHqlBoundTargetItem & target = * new CHqlBoundTargetItem;
-        translator.createTempFor(classctx, expr, target.value);
-        assigns.from.append(*LINK(expr));
-        assigns.to.append(target);
-        translator.ensureSerialized(classctx, target.value);
-        match = assigns.to.ordinality()-1;
-    }
-
-    return assigns.to.item(match).value.getTranslatedExpr();
-}
-
-IHqlExpression * FilterExtractor::querySelectorTable(IHqlExpression * expr)
-{
-    loop
-    {
-        switch (expr->getOperator())
-        {
-        case no_select:
-            expr = expr->queryChild(0);
-            break;
-        case no_left:
-        case no_right:
-        case no_self:
-        case no_top:
-        case no_activetable:
-            return expr;
-        default:
-            if (expr->isDataset() || expr->isDatarow())
-                return expr->queryNormalizedSelector();
-            return NULL;
-        }
-    }
-}
-
-IHqlExpression * FilterExtractor::createTransformed(IHqlExpression * expr)
-{
-    switch (expr->getOperator())
-    {
-    case no_field:
-        return LINK(expr);
-    case no_select:
-        {
-            assertex(!expr->hasProperty(newAtom));
-
-            if (querySelectorTable(expr) == rootTable)
-                return LINK(expr);
-
-            addTable(querySelectorTable(expr));
-            return extractExpr(expr, extractAssign);
-        }
-    case no_counter:
-        return extractExpr(expr, ctxAssign);
-    }
-    return NewHqlTransformer::createTransformed(expr);
-}
-
-
-IHqlExpression * FilterExtractor::buildExtractLookupFields(IHqlExpression * expr)
-{
-    if (expr->getOperator() != no_filter)
-        return LINK(expr);
-
-    HqlExprArray args;
-    ForEachChild(idx, expr)
-    {
-        IHqlExpression * cur = expr->queryChild(idx);
-        if (idx == 0)
-            args.append(*LINK(cur));
-        else
-            args.append(*createTransformed(cur));
-    }
-
-    if ((ctxAssign.from.ordinality() == 0) && (ctxAssignDirectFrom.ordinality() == 0))
-        return LINK(expr);
-
-    //virtual void extractLookupFields() {}
-    BuildCtx funcctx(classctx);
-    funcctx.addQuotedCompound("virtual void extractLookupFields()");
-    ForEachItemIn(idx2, extractAssign.from)
-        translator.buildExprAssign(funcctx, extractAssign.to.item(idx2).value, &extractAssign.from.item(idx2));
-    return expr->clone(args);
-}
-
-
-void FilterExtractor::assignCursors(IHqlExpression * helper)
-{
-    ForEachItemIn(idx1, ctxAssignDirectFrom)
-    {
-        OwnedHqlExpr target = createSelectExpr(LINK(helper), LINK(&ctxAssignDirectTo.item(idx1)), createAttribute(internalAtom));
-        ctx.addAssign(target, &ctxAssignDirectFrom.item(idx1));
-    }
-    ForEachItemIn(idx2, ctxAssign.from)
-    {
-        CHqlBoundTarget target;
-        target.set(ctxAssign.to.item(idx2).value);
-        if (target.length)      target.length.setown(createSelectExpr(LINK(helper), LINK(target.length), createAttribute(internalAtom)));
-        if (target.expr)        target.expr.setown(createSelectExpr(LINK(helper), LINK(target.expr), createAttribute(internalAtom)));
-        translator.buildExprAssign(ctx, target, &ctxAssign.from.item(idx2));
-    }
-}
-
 
 void HqlCppTranslator::doBuildExprCountFile(BuildCtx & ctx, IHqlExpression * _expr, CHqlBoundExpr & tgt)
 {
@@ -11028,10 +10855,7 @@ void HqlCppTranslator::generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx,
         funcctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
 
         OwnedHqlExpr groupOrder = createValueSafe(no_sortlist, makeSortListType(NULL), sorts);
-        OwnedHqlExpr diff = doCompare(funcctx, groupOrder, dataset);
-
-        funcctx.setNextDestructor();
-        funcctx.addReturn(diff);
+        buildReturnOrder(funcctx, groupOrder, dataset);
 
         endNestedClass();
     }
@@ -15132,22 +14956,6 @@ IHqlExpression * HqlCppTranslator::createOrderFromSortList(const DatasetReferenc
     return createValue(no_order, LINK(signedType), createValue(no_sortlist, makeSortListType(NULL), leftList), createValue(no_sortlist, makeSortListType(NULL), rightList));
 }
 
-
-IHqlExpression * HqlCppTranslator::doCompare(BuildCtx & ctx, IHqlExpression *sortList, const DatasetReference & dataset)
-{
-    OwnedHqlExpr selSeq = createDummySelectorSequence();
-    OwnedHqlExpr leftSelect = dataset.getSelector(no_left, selSeq);
-    OwnedHqlExpr rightSelect = dataset.getSelector(no_right, selSeq);
-    OwnedHqlExpr order = createOrderFromSortList(dataset, sortList, leftSelect, rightSelect);
-    
-    bindTableCursor(ctx, dataset.queryDataset(), "left", no_left, selSeq);
-    bindTableCursor(ctx, dataset.queryDataset(), "right", no_right, selSeq);
-
-    CHqlBoundExpr bound;
-    buildCachedExpr(ctx, order, bound);
-
-    return bound.expr.getClear();
-}
 
 void HqlCppTranslator::buildReturnOrder(BuildCtx & ctx, IHqlExpression *sortList, const DatasetReference & dataset)
 {

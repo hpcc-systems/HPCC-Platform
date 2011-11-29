@@ -1405,11 +1405,12 @@ const char *getOpString(node_operator op)
     case no_complex: return ",";
     case no_assign_addfiles: return "+=";
     case no_debug_option_value: return "__DEBUG__";
+    case no_dataset_alias: return "ALIAS";
 
     case no_unused1: case no_unused2: case no_unused3: case no_unused4: case no_unused5: case no_unused6:
     case no_unused13: case no_unused14: case no_unused15: case no_unused17: case no_unused18: case no_unused19:
     case no_unused20: case no_unused21: case no_unused22: case no_unused23: case no_unused24: case no_unused25: case no_unused26: case no_unused27: case no_unused28: case no_unused29:
-    case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38: case no_unused39:
+    case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
     case no_unused50: case no_unused52:
         return "unused";
@@ -1838,6 +1839,7 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_serialize:
     case no_forcegraph:
     case no_owned_ds:
+    case no_dataset_alias:
         return childdataset_dataset;
     case no_executewhen:
         //second argument is independent of the other arguments
@@ -2109,6 +2111,7 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_executewhen:
     case no_normalizegroup:
     case no_owned_ds:
+    case no_dataset_alias:
         return 1;
     case no_childdataset:
     case no_left:
@@ -2468,6 +2471,7 @@ bool definesColumnList(IHqlExpression * dataset)
     case no_fromxml:
     case no_normalizegroup:
     case no_cogroup:
+    case no_dataset_alias:
         return true;
     case no_select:
     case no_field:
@@ -4888,34 +4892,51 @@ void CHqlExpression::gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyAr
     }
 }
 
+IHqlExpression * CHqlExpression::calcNormalizedSelector() const
+{
+    IHqlExpression * left = &operands.item(0);
+    IHqlExpression * normalizedLeft = left->queryNormalizedSelector();
+    if ((normalizedLeft != left) || ((operands.ordinality() > 2) && hasProperty(newAtom)))
+    {
+        HqlExprArray args;
+        appendArray(args, operands);
+        args.replace(*LINK(normalizedLeft), 0);
+        removeProperty(args, newAtom);
+        return createSelectExpr(args);
+    }
+    return NULL;
+}
 
 //==============================================================================================================
 
-inline ITypeInfo * getSelectType(IHqlExpression * left, IHqlExpression * right)
-{
-    return right->getType();
-}
-
 CHqlSelectExpression::CHqlSelectExpression(IHqlExpression * left, IHqlExpression * right, IHqlExpression * attr)
-: CHqlExpression(no_select, getSelectType(left, right), left, right, attr, NULL)
+: CHqlExpression(no_select, right->getType(), left, right, attr, NULL)
 {
-    IHqlExpression * normalizedLeft = left->queryNormalizedSelector();
 #ifdef _DEBUG
     assertex(!isDataset());
     assertex(left->getOperator() != no_activerow);
 //  if ((left->getOperator() == no_select) && left->isDatarow())
 //      assertex(left->hasProperty(newAtom) == hasProperty(newAtom));
 #endif
-    if (normalizedLeft != left)
-        normalized.setown(createSelectExpr(LINK(normalizedLeft), LINK(right)));
+    normalized.setown(calcNormalizedSelector());
+}
+
+CHqlSelectExpression::CHqlSelectExpression(HqlExprArray & _ownedOperands)
+: CHqlExpression(no_select, _ownedOperands.item(1).getType(), _ownedOperands)
+{
+    IHqlExpression * left = &operands.item(0);
+#ifdef _DEBUG
+    assertex(!isDataset());
+    assertex(left->getOperator() != no_activerow);
+//  if ((left->getOperator() == no_select) && left->isDatarow())
+//      assertex(left->hasProperty(newAtom) == hasProperty(newAtom));
+#endif
+    normalized.setown(calcNormalizedSelector());
 }
 
 IHqlExpression * CHqlSelectExpression::clone(HqlExprArray &newkids)
 {
-    if (newkids.ordinality() == 2)
-        return createSelectExpr(&OLINK(newkids.item(0)), &OLINK(newkids.item(1)), NULL);
-    assertex(newkids.ordinality() == 3);
-    return createSelectExpr(&OLINK(newkids.item(0)), &OLINK(newkids.item(1)), &OLINK(newkids.item(2)));
+    return createSelectExpr(newkids);
 }
 
 IHqlExpression * CHqlSelectExpression::queryNormalizedSelector(bool skipIndex)
@@ -5079,17 +5100,9 @@ CHqlRow::CHqlRow(node_operator op, ITypeInfo * type, HqlExprArray & _ownedOperan
     case no_select: 
         if (!hasProperty(newAtom))
         {
-            IHqlExpression * dataset = queryChild(0);
-            IHqlExpression * normalizedDataset = dataset->queryNormalizedSelector();
-            if (dataset != normalizedDataset)
-            {
-                HqlExprArray args;
-                args.append(*LINK(normalizedDataset));
-                args.append(*LINK(queryChild(1)));
-                normalized.setown(createRow(op, args));
-            }
-            break;
+            normalized.setown(calcNormalizedSelector());
         }
+        break;
     }
 
     switch (op)
@@ -5460,14 +5473,8 @@ void CHqlDataset::cacheParent()
     case no_select:
         {
             rootTable = this;
+            normalized.setown(calcNormalizedSelector());
             IHqlExpression * ds = queryChild(0);
-            IHqlExpression * normalizedLeft = ds->queryNormalizedSelector();
-
-            //Normalized form of select does not include any new attributes - since in scope
-            //I think this is best - since at point expression is evaluated, all parent tables should be in scope
-            if (normalizedLeft != ds || queryChild(2))
-                normalized.setown(createInScopeSelectExpr(LINK(normalizedLeft), LINK(queryChild(1))));
-
             container = LINK(queryDatasetCursor(ds)->queryNormalizedSelector(false));
 #ifdef _DEBUG
             assertex(!hasProperty(newAtom) || !isAlwaysActiveRow(ds));
@@ -10955,6 +10962,7 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
     case no_select:
     case no_fieldmap:
     case no_owned_ds:
+    case no_dataset_alias:
         type.set(datasetType);
         break;
     case no_serialize:
@@ -11470,23 +11478,20 @@ extern IHqlExpression *createDatasetFromRow(IHqlExpression * ownedRow)
 }
 
 
-extern IHqlExpression * createSelectExpr(IHqlExpression * _lhs, IHqlExpression * rhs, IHqlExpression * attr)
+inline IHqlExpression * normalizeSelectLhs(IHqlExpression * lhs, bool & isNew)
 {
-    OwnedHqlExpr lhs = _lhs;
-    bool done = false;
-    do
+    loop
     {
         switch (lhs->getOperator())
         {
         case no_newrow:
-            assertex(!attr);
-            attr = LINK(newSelectAttrExpr);
-            lhs.set(lhs->queryChild(0));
+            assertex(!isNew);
+            isNew = true;
+            lhs = lhs->queryChild(0);
             break;  // round the loop again
         case no_activerow:
-            ::Release(attr);
-            attr = NULL;
-            lhs.set(lhs->queryChild(0));
+            isNew = false;
+            lhs = lhs->queryChild(0);
             break;  // round the loop again
         case no_left:
         case no_right:
@@ -11494,50 +11499,76 @@ extern IHqlExpression * createSelectExpr(IHqlExpression * _lhs, IHqlExpression *
         case no_activetable:
         case no_self:
         case no_selfref:
-            if (attr)
-            {
-                attr->Release();
-                attr = NULL;
-            }
-            done = true;
-            break;
+            isNew = false;
+            return lhs;
         case no_select:
-            if (attr && isAlwaysActiveRow(lhs))
-            {
-                attr->Release();
-                attr = NULL;
-            }
-            done = true;
-            break;
+            if (isNew && isAlwaysActiveRow(lhs))
+                isNew = false;
+            return lhs;
         default:
-            done = true;
-            break;
+            return lhs;
         }
-    } while (!done);
+    }
+}
 
+inline void checkRhsSelect(IHqlExpression * rhs)
+{
 #ifdef _DEBUG
     node_operator rhsOp = rhs->getOperator();
-    assertex(rhsOp == no_field || rhsOp == no_ifblock || rhsOp == no_indirect || attr && attr->queryName() == internalAtom);
+    assertex(rhsOp == no_field || rhsOp == no_ifblock || rhsOp == no_indirect);
 #endif
+}
+
+extern IHqlExpression * createSelectExpr(IHqlExpression * _lhs, IHqlExpression * rhs, bool _isNew)
+{
+    OwnedHqlExpr lhs = _lhs;
+    bool isNew = _isNew;
+    IHqlExpression * normalLhs = normalizeSelectLhs(lhs, isNew);
+    IHqlExpression * newAttr = isNew ? newSelectAttrExpr : NULL;
+
+    checkRhsSelect(rhs);
+
     type_t t = rhs->queryType()->getTypeCode();
     if (t == type_table || t == type_groupedtable)
-        return createDataset(no_select, lhs.getClear(), createComma(rhs, attr));
+        return createDataset(no_select, LINK(normalLhs), createComma(rhs, LINK(newAttr)));
     if (t == type_row)
-        return createRow(no_select, lhs.getClear(), createComma(rhs, attr));
+        return createRow(no_select, LINK(normalLhs), createComma(rhs, LINK(newAttr)));
 
-    IHqlExpression * ret = new CHqlSelectExpression(lhs.getClear(), rhs, attr);
+    IHqlExpression * ret = new CHqlSelectExpression(LINK(normalLhs), rhs, LINK(newAttr));
     return ret->closeExpr();
 }
 
-extern IHqlExpression * createInScopeSelectExpr(IHqlExpression * lhs, IHqlExpression * rhs)
+extern IHqlExpression * createSelectExpr(HqlExprArray & args)
 {
-#ifdef _DEBUG
-    assertex(rhs->isDataset());
-#endif
-    HqlExprArray args;
-    args.append(*lhs);
-    args.append(*rhs);
-    return createDataset(no_select, args);
+    IHqlExpression * lhs = &args.item(0);
+    bool isNew = false;
+    for (unsigned i=2; i < args.ordinality(); i++)
+    {
+        if (args.item(i).queryName() == newAtom)
+        {
+            isNew = true;
+            args.remove(i);
+            break;
+        }
+    }
+
+    IHqlExpression * normalLhs = normalizeSelectLhs(lhs, isNew);
+    if (lhs != normalLhs)
+        args.replace(*LINK(normalLhs), 0);
+    if (isNew)
+        args.append(*LINK(newSelectAttrExpr));
+
+    IHqlExpression * rhs = &args.item(1);
+    checkRhsSelect(rhs);
+
+    type_t t = rhs->queryType()->getTypeCode();
+    if (t == type_table || t == type_groupedtable)
+        return createDataset(no_select, args);
+    if (t == type_row)
+        return createRow(no_select, args);
+
+    IHqlExpression * ret = new CHqlSelectExpression(args);
+    return ret->closeExpr();
 }
 
 IHqlExpression * ensureDataset(IHqlExpression * expr)
@@ -11571,20 +11602,6 @@ extern bool isAlwaysActiveRow(IHqlExpression * expr)
         return isAlwaysActiveRow(expr->queryChild(0));
     }
     return false;
-}
-
-extern IHqlExpression * createNewSelectExpr(IHqlExpression * lhs, IHqlExpression * rhs)
-{
-    switch (lhs->getOperator())
-    {
-    case no_left:
-    case no_right:
-    case no_top:
-    case no_activetable:
-        //Minor special cases
-        return createSelectExpr(lhs, rhs, NULL);
-    }
-    return createSelectExpr(lhs, rhs, LINK(newSelectAttrExpr));
 }
 
 IHqlExpression * ensureActiveRow(IHqlExpression * expr)
@@ -13236,13 +13253,13 @@ IHqlExpression * replaceSelectorDataset(IHqlExpression * expr, IHqlExpression * 
 {
     assertex(expr->getOperator() == no_select);
     IHqlExpression * ds = expr->queryChild(0);
-    IHqlExpression * newSelector;
     if ((ds->getOperator() == no_select) && !ds->isDataset())
-        newSelector = replaceSelectorDataset(ds, newDataset);
+    {
+        OwnedHqlExpr newSelector = replaceSelectorDataset(ds, newDataset);
+        return replaceChild(expr, 0, newSelector);
+    }
     else
-        newSelector = LINK(newDataset);
-    //Call createSelectExpr instead of clone() so that no_newrow/no_activerow are handled correctly
-    return createSelectExpr(newSelector, LINK(expr->queryChild(1)), LINK(expr->queryChild(2)));
+        return replaceChild(expr, 0, newDataset);
 }
 
 IHqlExpression * querySkipDatasetMeta(IHqlExpression * dataset)
