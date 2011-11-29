@@ -3984,6 +3984,9 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
     CDistributedFilePartArray partscache;
     FileClusterInfoArray clusterscache; 
 
+    /**
+     * Adds a sub-file to a super-file within a transaction.
+     */
     class cAddSubFileAction: public CDFAction
     {
         StringAttr parentlname;
@@ -4035,10 +4038,8 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
             if (!sub)
                 throw MakeStringException(-1,"addSubFile(2): File %s cannot be found to add",subfile.get());
             CDistributedSuperFile *sf = QUERYINTERFACE(parent.get(),CDistributedSuperFile);                 
-            if (sf) {
-                CPauseTransaction pausetrans(transaction);
+            if (sf)
                 sf->doAddSubFile(LINK(sub),before,other,transaction);
-            }
         }
         void unlock(bool commit,bool rollback)
         {
@@ -4051,6 +4052,145 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
             parent.clear();
         }
         
+    };
+
+    /**
+     * Removes a sub-file of a super-file within a transaction.
+     */
+    class cRemoveSubFileAction: public CDFAction
+    {
+        StringAttr parentlname;
+        Owned<IDistributedSuperFile> parent;
+        Owned<IDistributedFile> sub;
+        StringAttr subfile;
+        bool remsub;
+        bool remphys;
+    public:
+        cRemoveSubFileAction(IDistributedFileTransaction *_transaction,const char *_parentlname,const char *_subfile,bool _remsub, bool _remphys)
+            : CDFAction(_transaction), parentlname(_parentlname), subfile(_subfile)
+        {
+            remsub = _remsub;
+            remphys = _remphys;
+        }
+        virtual ~cRemoveSubFileAction() {}
+        bool lock()
+        {
+            parent.setown(transaction->lookupSuperFile(parentlname,true));
+            if (!parent)
+                throw MakeStringException(-1,"removeSubFile: SuperFile %s cannot be found",parentlname.get());
+            if (!subfile.isEmpty()) {
+                try {
+                    sub.setown(transaction->lookupFile(subfile,SDS_SUB_LOCK_TIMEOUT));
+                }
+                catch (IDFS_Exception *e) {
+                    if (e->errorCode()!=DFSERR_LookupConnectionTimout)
+                        throw;
+                    return false;
+                }
+                if (!parent->querySubFileNamed(subfile))
+                    WARNLOG("addSubFile: File %s is not a subfile of %s", subfile.get(),parent->queryLogicalName());
+            }
+            if (parent->lockTransaction(SDS_SUB_LOCK_TIMEOUT))
+                if (!sub || sub->lockTransaction(SDS_SUB_LOCK_TIMEOUT))
+                    return true;
+            parent.clear();
+            sub.clear();
+            return false;
+        }
+        void run()
+        {
+            CDistributedSuperFile *sf = QUERYINTERFACE(parent.get(),CDistributedSuperFile);
+            if (sf)
+                sf->doRemoveSubFile(subfile.get(),remsub,remphys,transaction,true);
+        }
+        void unlock(bool commit,bool rollback)
+        {
+            if (sub)
+                sub->unlockTransaction(commit,rollback);
+            parent->unlockTransaction(commit,rollback);
+            parent.clear();
+            sub.clear();
+        }
+    };
+
+    /**
+     * Swaps sub-files between two super-files within a transaction.
+     */
+    class cSwapFileAction: public CDFAction
+    {
+        Linked<IDistributedSuperFile> parent;
+        Linked<IDistributedSuperFile> file;
+        StringAttr parentlname;
+        StringAttr filelname;
+    public:
+        cSwapFileAction(IDistributedFileTransaction *_transaction,const char *_parentlname,const char *_filelname)
+            : CDFAction(_transaction), parentlname(_parentlname), filelname(_filelname)
+        {
+        }
+        virtual ~cSwapFileAction() {}
+        bool lock()
+        {
+            parent.setown(transaction->lookupSuperFile(parentlname));
+            if (!parent)
+                throw MakeStringException(-1,"swapSuperFile: SuperFile %s cannot be found",parentlname.get());
+            file.setown(transaction->lookupSuperFile(filelname));
+            if (!file) {
+                parent.clear();
+                throw MakeStringException(-1,"swapSuperFile: SuperFile %s cannot be found",filelname.get());
+            }
+            if (parent->lockTransaction(SDS_SUB_LOCK_TIMEOUT)) {
+                if (file->lockTransaction(SDS_SUB_LOCK_TIMEOUT))
+                    return true;
+                parent->unlockTransaction(false,true);
+            }
+            parent.clear();
+            file.clear();
+            return false;
+        }
+        void run()
+        {
+            CDistributedSuperFile *sf = QUERYINTERFACE(parent.get(),CDistributedSuperFile);
+            if (sf)
+                sf->doSwapSuperFile(file,transaction);
+        }
+        void unlock(bool commit,bool rollback)
+        {
+            file->unlockTransaction(commit,rollback);
+            parent->unlockTransaction(commit,rollback);
+            parent.clear();
+            file.clear();
+        }
+    };
+
+    /**
+     * SubFile Iterator, used only to list sub-files of a super-file.
+     */
+    class cSubFileIterator: public CDistributedFileIteratorBase< IDistributedFileIterator, IArrayOf<IDistributedFile> >
+    {
+    public:
+        cSubFileIterator(IArrayOf<IDistributedFile> &_subfiles, bool supersub)
+        {
+            ForEachItemIn(i,_subfiles) {
+                IDistributedSuperFile* super = supersub?_subfiles.item(i).querySuperFile():NULL;
+                if (super) {
+                    Owned<IDistributedFileIterator> iter = super->getSubFileIterator(true);
+                    ForEach(*iter)
+                        list.append(iter->get());
+                }
+                else
+                    list.append(*LINK(&_subfiles.item(i)));
+            }
+        }
+
+        StringBuffer & getName(StringBuffer &name)
+        {
+            return list.item(index).getLogicalName(name);
+        }
+
+        IDistributedFile & query()
+        {
+            return list.item(index);
+        }
     };
 
     void checkModify(const char *title) 
@@ -4261,37 +4401,6 @@ protected:
             }
         }
     }
-
-    /**
-     * SubFile Iterator, used only to list sub-files of a super-file.
-     */
-    class cSubFileIterator: public CDistributedFileIteratorBase< IDistributedFileIterator, IArrayOf<IDistributedFile> >
-    {
-    public:
-        cSubFileIterator(IArrayOf<IDistributedFile> &_subfiles, bool supersub) 
-        {
-            ForEachItemIn(i,_subfiles) {
-                IDistributedSuperFile* super = supersub?_subfiles.item(i).querySuperFile():NULL;
-                if (super) {
-                    Owned<IDistributedFileIterator> iter = super->getSubFileIterator(true);
-                    ForEach(*iter) 
-                        list.append(iter->get());
-                }
-                else
-                    list.append(*LINK(&_subfiles.item(i)));
-            }
-        }
-        
-        StringBuffer & getName(StringBuffer &name)
-        {
-            return list.item(index).getLogicalName(name);
-        }
-        
-        IDistributedFile & query()
-        {
-            return list.item(index);
-        }
-    };
 
     void linkSubFile(unsigned pos,IDistributedFileTransaction *transaction)
     {
@@ -4929,86 +5038,6 @@ public:
         return new cSubFileIterator(subfiles,supersub);
     }
 
-    void doAddSubFile(IDistributedFile *_sub,bool before,const char *other,IDistributedFileTransaction *transaction) // takes ownership of sub
-    {
-        Owned<IDistributedFile> sub = _sub;
-        if (strcmp(sub->queryLogicalName(),queryLogicalName())==0)
-            throw MakeStringException(-1,"addSubFile: Cannot add file %s to itself", queryLogicalName());
-        if (subfiles.ordinality())
-            checkFormatAttr(sub,transaction,"addSubFile");
-        if (findSubFile(sub->queryLogicalName())!=NotFound) 
-            throw MakeStringException(-1,"addSubFile: File %s is already a subfile of %s", sub->queryLogicalName(),queryLogicalName());
-
-        unsigned pos;
-        if (other&&*other) {
-            pos = findSubFileOrd(other);
-            if (pos==NotFound)
-                pos = findSubFile(other);
-            if (pos==NotFound)
-                pos = before?0:subfiles.ordinality();
-            else if (!before&&(pos<subfiles.ordinality()))
-                pos++;
-        }
-        else
-            pos = before?0:subfiles.ordinality();
-        unsigned cmppos = (pos==0)?1:0;
-        addItem(pos,sub.getClear());     // remove if failure TBD?
-        setModified();
-        updateFileAttrs();
-        linkSubFile(pos, transaction);
-    }
-
-    void addSubFile(const char * subfile,
-                    bool before=false,              // if true before other 
-                    const char *other=NULL,     // in NULL add at end (before=false) or start(before=true)
-                    bool addcontents=false,
-                    IDistributedFileTransaction *transaction=NULL
-                   )
-    {
-        CriticalBlock block (sect);
-        if (!subfile||!*subfile)
-            return;
-        checkModify("addSubFile");
-        partscache.kill();
-        if (addcontents) {
-            StringArray subs;
-            Owned<IDistributedSuperFile> sfile = parent->lookupSuperFile(subfile,udesc,transaction);  // Timeout TBD?    
-            if (sfile) {
-                Owned<IDistributedFileIterator> iter = sfile->getSubFileIterator(true);
-                ForEach(*iter)
-                    subs.append(iter->query().queryLogicalName());
-            }
-            sfile.clear();
-            ForEachItemIn(i,subs) {
-                addSubFile(subs.item(i),before,other,false,transaction);
-            }
-            return;
-            
-        }
-        if (transaction&&transaction->active()) {
-            cAddSubFileAction *action = new cAddSubFileAction(transaction,queryLogicalName(),subfile,before,other,addcontents);
-            // action is now owned by transaction so don't unlink or delete!
-            return;
-        }
-        Owned<IDistributedFile> sub = transaction ? transaction->lookupFile(subfile) : parent->lookup(subfile,udesc,false,NULL,defaultTimeout);
-        if (!sub)
-            throw MakeStringException(-1,"addSubFile(3): File %s cannot be found to add",subfile);
-        bool lockreleased;
-        lockProperties(lockreleased,defaultTimeout); 
-        // need to reload subfiles if changed
-        try {
-            if (lockreleased)
-                loadSubFiles(true,transaction,1000*60*10); 
-            doAddSubFile(sub.getClear(),before,other,transaction);
-        }
-        catch (IException *) {
-            unlockProperties();
-            throw;
-        }
-        unlockProperties();
-        updateParentFileAttrs(transaction);
-    }
-
     void updateFileAttrs()
     {
         if (subfiles.ordinality()==0) {
@@ -5066,101 +5095,42 @@ public:
         }
     }
 
-    virtual bool removeSubFile(const char *subfile,         // if NULL removes all
-                                bool remsub,                // if true removes subfiles from DFS 
-                                bool remphys,               // if true removes physical parts of sub file
-                                bool remcontents,
-                                IDistributedFileTransaction *transaction,
-                                bool delayed)
+private:
+    void doAddSubFile(IDistributedFile *_sub,bool before,const char *other,IDistributedFileTransaction *transaction) // takes ownership of sub
     {
-        CriticalBlock block (sect);
-        if (subfile&&!*subfile)
-            return false;
-        checkModify("removeSubFile");
-        partscache.kill();
-        if (remcontents) {
-            CDfsLogicalFileName logicalname;    
-            logicalname.set(subfile);
-            IDistributedFile *sub = querySubFileNamed(logicalname.get(),false);
-            if (!sub)
-                return false;
-            IDistributedSuperFile *sfile = sub->querySuperFile();
-            if (sfile) {
-                Owned<IDistributedFileIterator> iter = sfile->getSubFileIterator(true);
-                bool ret = true;
-                StringArray toremove;
-                ForEach(*iter) 
-                    toremove.append(iter->query().queryLogicalName());
-                iter.clear();
-                Owned<CWrappedTransaction> wrappedtrans = new CWrappedTransaction(transaction,this,udesc);
-                ForEachItemIn(i,toremove)
-                    if (!sfile->removeSubFile(toremove.item(i),remsub,remphys,false,wrappedtrans,delayed))
-                        ret = false;
-                wrappedtrans->clearOwner();
-                if (!ret||!remsub)
-                    return ret;
-            }
+        Owned<IDistributedFile> sub = _sub;
+        if (strcmp(sub->queryLogicalName(),queryLogicalName())==0)
+            throw MakeStringException(-1,"addSubFile: Cannot add file %s to itself", queryLogicalName());
+        if (subfiles.ordinality())
+            checkFormatAttr(sub,transaction,"addSubFile");
+        if (findSubFile(sub->queryLogicalName())!=NotFound)
+            throw MakeStringException(-1,"addSubFile: File %s is already a subfile of %s", sub->queryLogicalName(),queryLogicalName());
+
+        unsigned pos;
+        if (other&&*other) {
+            pos = findSubFileOrd(other);
+            if (pos==NotFound)
+                pos = findSubFile(other);
+            if (pos==NotFound)
+                pos = before?0:subfiles.ordinality();
+            else if (!before&&(pos<subfiles.ordinality()))
+                pos++;
         }
-        if (transaction&&transaction->active()) {
-            class cRemoveSubFileAction: public CDFAction
-            {
-                StringAttr parentlname;
-                Owned<IDistributedSuperFile> parent;
-                Owned<IDistributedFile> sub;
-                StringAttr subfile;
-                bool remsub;
-                bool remphys;
-                bool remcontents;
-            public:
-                cRemoveSubFileAction(IDistributedFileTransaction *_transaction,const char *_parentlname,const char *_subfile,bool _remsub, bool _remphys, bool _remcontents)
-                    : CDFAction(_transaction), parentlname(_parentlname), subfile(_subfile)
-                {
-                    remsub = _remsub;
-                    remphys = _remphys;
-                    remcontents = _remcontents;
-                }
-                virtual ~cRemoveSubFileAction() {}
-                bool lock()
-                {
-                    parent.setown(transaction->lookupSuperFile(parentlname,true));
-                    if (!parent)
-                        throw MakeStringException(-1,"removeSubFile: SuperFile %s cannot be found",parentlname.get());
-                    if (!subfile.isEmpty()) {
-                        try {
-                            sub.setown(transaction->lookupFile(subfile,SDS_SUB_LOCK_TIMEOUT));
-                        }
-                        catch (IDFS_Exception *e) {
-                            if (e->errorCode()!=DFSERR_LookupConnectionTimout)
-                                throw;
-                            return false;
-                        }
-                        if (!parent->querySubFileNamed(subfile))
-                            WARNLOG("addSubFile: File %s is not a subfile of %s", subfile.get(),parent->queryLogicalName());
-                    }
-                    if (parent->lockTransaction(SDS_SUB_LOCK_TIMEOUT))
-                        if (!sub || sub->lockTransaction(SDS_SUB_LOCK_TIMEOUT))
-                            return true;
-                    parent.clear();
-                    sub.clear();
-                    return false;
-                }
-                void run()
-                {
-                    CPauseTransaction pausetrans(transaction);
-                    parent->removeSubFile(subfile,remsub,remphys,remcontents,transaction,true); 
-                }
-                void unlock(bool commit,bool rollback)
-                {
-                    if (sub)
-                        sub->unlockTransaction(commit,rollback);
-                    parent->unlockTransaction(commit,rollback); 
-                    parent.clear();
-                    sub.clear();
-                }
-            } *action = new cRemoveSubFileAction(transaction,queryLogicalName(),subfile,remsub,remphys,remcontents);
-            // action is now owned by transaction so don't unlink or delete!
-            return true; 
-        }
+        else
+            pos = before?0:subfiles.ordinality();
+        unsigned cmppos = (pos==0)?1:0;
+        addItem(pos,sub.getClear());     // remove if failure TBD?
+        setModified();
+        updateFileAttrs();
+        linkSubFile(pos, transaction);
+    }
+
+    bool doRemoveSubFile(const char *subfile,
+                         bool remsub,                // if true removes subfiles from DFS
+                         bool remphys,               // if true removes physical parts of sub file
+                         IDistributedFileTransaction *transaction,
+                         bool delayed)
+    {
         // have to be quite careful here
         StringAttrArray subnames;
         unsigned pos;
@@ -5239,62 +5209,9 @@ public:
         return true;
     }
 
-    virtual bool swapSuperFile( IDistributedSuperFile *_file,
-                                IDistributedFileTransaction *transaction)
+    bool doSwapSuperFile(IDistributedSuperFile *_file,
+                                 IDistributedFileTransaction *transaction)
     {
-        CriticalBlock block (sect);
-        if (!_file)
-            return false;
-        checkModify("swapSuperFile");
-        partscache.kill();
-        if (transaction&&transaction->active()) {
-            class cSwapFileAction: public CDFAction
-            {
-                Linked<IDistributedSuperFile> parent;
-                Linked<IDistributedSuperFile> file;
-                StringAttr parentlname;
-                StringAttr filelname;
-            public:
-                cSwapFileAction(IDistributedFileTransaction *_transaction,const char *_parentlname,const char *_filelname)
-                    : CDFAction(_transaction), parentlname(_parentlname), filelname(_filelname)
-                {
-                }
-                virtual ~cSwapFileAction() {}
-                bool lock()
-                {
-                    parent.setown(transaction->lookupSuperFile(parentlname));
-                    if (!parent)
-                        throw MakeStringException(-1,"swapSuperFile: SuperFile %s cannot be found",parentlname.get());
-                    file.setown(transaction->lookupSuperFile(filelname));
-                    if (!file) {
-                        parent.clear();
-                        throw MakeStringException(-1,"swapSuperFile: SuperFile %s cannot be found",filelname.get());
-                    }
-                    if (parent->lockTransaction(SDS_SUB_LOCK_TIMEOUT)) {
-                        if (file->lockTransaction(SDS_SUB_LOCK_TIMEOUT)) 
-                            return true;
-                        parent->unlockTransaction(false,true);
-                    }
-                    parent.clear();
-                    file.clear();
-                    return false;
-                }
-                void run()
-                {
-                    CPauseTransaction pausetrans(transaction);
-                    parent->swapSuperFile(file,transaction);
-                }
-                void unlock(bool commit,bool rollback)
-                {
-                    file->unlockTransaction(commit,rollback);
-                    parent->unlockTransaction(commit,rollback); 
-                    parent.clear();
-                    file.clear();
-                }
-            } *action = new cSwapFileAction(transaction,queryLogicalName(),_file->queryLogicalName());
-            // action is now owned by transaction so don't unlink or delete!
-            return true; 
-        }
         CDistributedSuperFile *file = QUERYINTERFACE(_file,CDistributedSuperFile);
         if (!file)
             return false;
@@ -5355,6 +5272,120 @@ public:
         updateParentFileAttrs(transaction);
         return true;
     }
+
+public:
+    void addSubFile(const char * subfile,
+                    bool before=false,              // if true before other
+                    const char *other=NULL,     // in NULL add at end (before=false) or start(before=true)
+                    bool addcontents=false,
+                    IDistributedFileTransaction *transaction=NULL
+                   )
+    {
+        CriticalBlock block (sect);
+        if (!subfile||!*subfile)
+            return;
+        checkModify("addSubFile");
+        partscache.kill();
+        if (addcontents) {
+            StringArray subs;
+            Owned<IDistributedSuperFile> sfile = parent->lookupSuperFile(subfile,udesc,transaction);  // Timeout TBD?
+            if (sfile) {
+                Owned<IDistributedFileIterator> iter = sfile->getSubFileIterator(true);
+                ForEach(*iter)
+                    subs.append(iter->query().queryLogicalName());
+            }
+            sfile.clear();
+            ForEachItemIn(i,subs) {
+                addSubFile(subs.item(i),before,other,false,transaction);
+            }
+            return;
+
+        }
+        if (transaction&&transaction->active()) {
+            cAddSubFileAction *action = new cAddSubFileAction(transaction,queryLogicalName(),subfile,before,other,addcontents);
+            // action is now owned by transaction so don't unlink or delete!
+            return;
+        }
+        Owned<IDistributedFile> sub = transaction ? transaction->lookupFile(subfile) : parent->lookup(subfile,udesc,false,NULL,defaultTimeout);
+        if (!sub)
+            throw MakeStringException(-1,"addSubFile(3): File %s cannot be found to add",subfile);
+        bool lockreleased;
+        lockProperties(lockreleased,defaultTimeout);
+        // need to reload subfiles if changed
+        try {
+            if (lockreleased)
+                loadSubFiles(true,transaction,1000*60*10);
+            doAddSubFile(sub.getClear(),before,other,transaction);
+        }
+        catch (IException *) {
+            unlockProperties();
+            throw;
+        }
+        unlockProperties();
+        updateParentFileAttrs(transaction);
+    }
+
+    virtual bool removeSubFile(const char *subfile,         // if NULL removes all
+                                bool remsub,                // if true removes subfiles from DFS
+                                bool remphys,               // if true removes physical parts of sub file
+                                bool remcontents,
+                                IDistributedFileTransaction *transaction,
+                                bool delayed)
+    {
+        CriticalBlock block (sect);
+        if (subfile&&!*subfile)
+            return false;
+        checkModify("removeSubFile");
+        partscache.kill();
+        if (remcontents) {
+            CDfsLogicalFileName logicalname;
+            logicalname.set(subfile);
+            IDistributedFile *sub = querySubFileNamed(logicalname.get(),false);
+            if (!sub)
+                return false;
+            IDistributedSuperFile *sfile = sub->querySuperFile();
+            if (sfile) {
+                Owned<IDistributedFileIterator> iter = sfile->getSubFileIterator(true);
+                bool ret = true;
+                StringArray toremove;
+                ForEach(*iter)
+                    toremove.append(iter->query().queryLogicalName());
+                iter.clear();
+                Owned<CWrappedTransaction> wrappedtrans = new CWrappedTransaction(transaction,this,udesc);
+                ForEachItemIn(i,toremove)
+                    if (!sfile->removeSubFile(toremove.item(i),remsub,remphys,false,wrappedtrans,delayed))
+                        ret = false;
+                wrappedtrans->clearOwner();
+                if (!ret||!remsub)
+                    return ret;
+            }
+        }
+        if (transaction&&transaction->active()) {
+            cRemoveSubFileAction *action = new cRemoveSubFileAction(transaction,queryLogicalName(),subfile,remsub,remphys);
+            // action is now owned by transaction so don't unlink or delete!
+            return true;
+        }
+
+        return doRemoveSubFile(subfile,remsub,remphys,transaction,delayed);
+    }
+
+    virtual bool swapSuperFile( IDistributedSuperFile *_file,
+                                IDistributedFileTransaction *transaction)
+    {
+        CriticalBlock block (sect);
+        if (!_file)
+            return false;
+        checkModify("swapSuperFile");
+        partscache.kill();
+        if (transaction&&transaction->active()) {
+            cSwapFileAction *action = new cSwapFileAction(transaction,queryLogicalName(),_file->queryLogicalName());
+            // action is now owned by transaction so don't unlink or delete!
+            return true;
+        }
+
+        return doSwapSuperFile(_file, transaction);
+    }
+
 
 
 
