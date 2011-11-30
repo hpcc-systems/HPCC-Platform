@@ -148,19 +148,9 @@ private:
 
 void openLogFile()
 {
-    StringBuffer logname;
-    if (!getConfigurationDirectory(globals->queryPropTree("Directories"),"log","eclscheduler",globals->queryProp("@name"),logname))
-    {
-        if (!globals->getProp("@logDir", logname))
-        {
-            WARNLOG("No logfile directory specified - logs will be written locally");
-            logname.clear().append(".");
-        }
-    }
-    addPathSepChar(logname).append("eclscheduler");
-    StringBuffer aliasLogName(logname);
-    aliasLogName.append(".log");
-    queryLogMsgManager()->addMonitorOwn( getRollingFileLogMsgHandler(logname.str(), ".log", MSGFIELD_STANDARD, false, true, NULL, aliasLogName.str()), getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, DefaultDetail));
+    Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(globals, "eclscheduler");
+    lf->setMsgFields(MSGFIELD_STANDARD);
+    lf->beginLogging();
 }
 
 //=========================================================================================

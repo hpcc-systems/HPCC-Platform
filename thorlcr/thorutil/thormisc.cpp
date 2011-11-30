@@ -536,25 +536,6 @@ IThorException *MakeGraphException(CGraphBase *graph, int code, const char *form
     return e;
 }
 
-StringBuffer &getLogDir(const char *prefix, const char *logdir, StringBuffer &logname) 
-{
-    if (logdir && *logdir !='\0' && recursiveCreateDirectory(logdir))
-        logname.append(logdir);
-    else
-    {
-        LOG(MCwarning, thorJob, "Missing or invalid log directory - using current working directory");
-        char cwd[1024];
-        GetCurrentDirectory(1024, cwd);
-        logname.append(cwd);
-    }
-
-    if (logname.length() && logname.charAt(logname.length()-1) != PATHSEPCHAR)
-        logname.append(PATHSEPCHAR);
-    logname.append(prefix);
-    logname.append(".log");
-    return logname;
-}
-
 #if 0
 void SetLogName(const char *prefix, const char *logdir, const char *thorname, bool master) 
 {

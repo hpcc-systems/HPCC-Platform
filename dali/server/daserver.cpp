@@ -167,36 +167,16 @@ int main(int argc, char* argv[])
         removeSentinelFile(sentinelFile);
 	
         OwnedIFile confIFile = createIFile(DALICONF);
-        StringBuffer logName;
-        StringBuffer auditDir;
         if (confIFile->exists())
-        {
             serverConfig.setown(createPTreeFromXMLFile(DALICONF));
-            if (getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"log","dali",serverConfig->queryProp("@name"),logName)) {
-                addPathSepChar(auditDir.append(logName)).append("audit");
-                addPathSepChar(logName).append("server");
-            }
-            else if (serverConfig->getProp("@log_dir", logName))
-            {
-                serverConfig->getProp("@auditlog_dir", auditDir);
-            }
-            if (logName.length()) {
-                _mkdir(logName.str());
-                addPathSepChar(logName);
-            }
-        }
-        if (auditDir.length()==0)
-            auditDir.append("AuditLogs");
-        _mkdir(auditDir.str());
-        addPathSepChar(auditDir);
-        StringBuffer auditLogName(auditDir);
-        auditLogName.append("DaAudit");
-        logName.append("DaServer");
-        StringBuffer aliasLogName(logName);
-        aliasLogName.append(".log");
 
-        fileMsgHandler = getRollingFileLogMsgHandler(logName.str(), ".log", MSGFIELD_STANDARD, false, true, NULL, aliasLogName.str());
-        queryLogMsgManager()->addMonitorOwn(fileMsgHandler, getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail));
+        {
+            Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(serverConfig, "dali");
+            lf->setLogDirSubdir("server");//add to tail of config log dir
+            lf->setName("DaServer");//override default filename
+            lf->setMsgFields(MSGFIELD_STANDARD);
+            lf->beginLogging();
+        }
 
         DBGLOG("Build %s", BUILD_TAG);
 
@@ -387,8 +367,18 @@ int main(int argc, char* argv[])
         epa.kill();
 
 // Audit logging
-        ILogMsgHandler *msgh = getRollingFileLogMsgHandler(auditLogName, ".log", MSGFIELD_timeDate | MSGFIELD_code, false, true, NULL);
-        queryLogMsgManager()->addMonitorOwn(msgh, getCategoryLogMsgFilter(MSGAUD_audit, MSGCLS_all, TopDetail, false));
+        StringBuffer auditDir;
+        {
+            Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(serverConfig, "dali");
+            lf->setLogDirSubdir("audit");//add to tail of config log dir
+            lf->setName("DaAudit");//override default filename
+            lf->createAliasFile(false);
+            lf->setMsgFields(MSGFIELD_timeDate | MSGFIELD_code);
+            lf->setMsgAudiences(MSGAUD_audit);
+            lf->setMaxDetail(TopDetail);
+            lf->beginLogging();
+            auditDir.set(lf->queryLogDir());
+        }
 
 // SNMP logging     
         bool enableSNMP = serverConfig->getPropBool("SDS/@enableSNMP");

@@ -313,32 +313,17 @@ int main(int argc, const char* argv[])
 
     StringBuffer logname;
     StringBuffer logdir;
-    if (!getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"log","sasha",serverConfig->queryProp("@name"),logdir))
-        serverConfig->getProp("@logDir", logdir);
-    if (logdir.length() && recursiveCreateDirectory(logdir.str()))
-        logname.append(logdir);
-    else
+    if (!stop)
     {
-        char cwd[1024];
-        GetCurrentDirectory(1024, cwd);
-        logname.append(cwd);
+        Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(serverConfig, "sasha");
+        lf->setName("saserver");//override default filename
+        if (coalescer)
+            lf->setPostfix("coalesce");
+        lf->setMsgFields(MSGFIELD_STANDARD);
+        lf->setMaxDetail(TopDetail);
+        lf->beginLogging();
     }
-    addPathSepChar(logname);
-
-    if (coalescer) {
-        logname.append("saserver.coalesce");
-        addFileTimestamp(logname, true);
-        logname.append(".log");
-        appendLogFile(logname.str(),0,false);
-    }
-    else if (!stop) {
-        logname.append("saserver");
-        StringBuffer aliaslogname(logname);
-        aliaslogname.append(".log");
-        fileMsgHandler = getRollingFileLogMsgHandler(logname.str(), ".log", MSGFIELD_STANDARD, false, true, NULL, aliaslogname.str());
-        queryLogMsgManager()->addMonitorOwn(fileMsgHandler, getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail));
-        DBGLOG("Build %s", BUILD_TAG);
-    }
+    DBGLOG("Build %s", BUILD_TAG);
 
     bool enableSNMP = false;
 

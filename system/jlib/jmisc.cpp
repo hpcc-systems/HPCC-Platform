@@ -201,6 +201,7 @@ jlib_decl ILogIntercept* interceptLog(ILogIntercept *intercept)
 
 ILogMsgHandler * theLegacyLogMsgHandler;
 
+//DEPRECATED!  Use jlog "CComponentLogFileCreator"
 jlib_decl void openLogFile(const char *filename, unsigned detail, bool enterQueueMode)
 {
     if(enterQueueMode)
@@ -214,6 +215,7 @@ jlib_decl void openLogFile(const char *filename, unsigned detail, bool enterQueu
     queryLogMsgManager()->addMonitorOwn(theLegacyLogMsgHandler, filter);
 }
 
+//DEPRECATED!  Use jlog "CComponentLogFileCreator"
 jlib_decl void appendLogFile(const char *filename, unsigned detail, bool enterQueueMode)
 {
     if(enterQueueMode)
@@ -263,11 +265,11 @@ StringBuffer &addFileTimestamp(StringBuffer &fname, bool daily)
 #ifdef _WIN32
     struct tm *ltNow;
     ltNow = localtime(&tNow);
-    strftime(timeStamp, 32, daily ? ".%m_%d_%y" : ".%m_%d_%y_%H_%M_%S", ltNow);
+    strftime(timeStamp, 32, daily ? ".%Y_%m_%d" : ".%Y_%m_%d_%H_%M_%S", ltNow);
 #else
     struct tm ltNow;
     localtime_r(&tNow, &ltNow);
-    strftime(timeStamp, 32, daily ? ".%m_%d_%y" : ".%m_%d_%y_%H_%M_%S", &ltNow);
+    strftime(timeStamp, 32, daily ? ".%Y_%m_%d" : ".%Y_%m_%d_%H_%M_%S", &ltNow);
 #endif
     return fname.append(timeStamp);
 }
