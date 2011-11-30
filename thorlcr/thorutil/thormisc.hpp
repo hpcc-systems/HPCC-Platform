@@ -286,8 +286,6 @@ extern graph_decl IThorException *MakeThorOperatorException(int code, const char
 extern graph_decl IThorException *MakeThorFatal(IException *e, int code, const char *format, ...) __attribute__((format(printf, 3, 4)));
 extern graph_decl IThorException *ThorWrapException(IException *e, const char *msg, ...) __attribute__((format(printf, 2, 3)));
 extern graph_decl void setExceptionActivityInfo(CGraphElementBase &container, IThorException *e);
-//extern graph_decl void SetLogName(const char *prefix, const char *logdir, const char *thorname, bool master); 
-extern graph_decl StringBuffer &getLogDir(const char *prefix, const char *logdir, StringBuffer &ret); 
 
 extern graph_decl void GetTempName(StringBuffer &name, const char *prefix=NULL,bool altdisk=false);
 extern graph_decl void SetTempDir(const char *name,bool clear);

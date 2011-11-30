@@ -141,23 +141,9 @@ int main(int argc, const char *argv[])
     if (!stop) {
         sentinelFile.setown(createSentinelTarget());
         removeSentinelFile(sentinelFile);
-
-        StringBuffer logname;
-        StringBuffer logdir;
-        if (!getConfigurationDirectory(globals->queryPropTree("Directories"),"log","dfuserver",globals->queryProp("@name"),logdir))
-            globals->getProp("@LOG_DIR", logdir);
-        if (logdir.length() && recursiveCreateDirectory(logdir.str()))
-            logname.append(logdir);
-        else
-            appendCurrentDirectory(logname, true);
-
-        if (logname.length() && logname.charAt(logname.length()-1) != PATHSEPCHAR)
-            logname.append(PATHSEPCHAR);
-        logname.append("dfuserver");
-        StringBuffer aliasLogName(logname);
-        aliasLogName.append(".log");
-        fileMsgHandler = getRollingFileLogMsgHandler(logname.str(), ".log", MSGFIELD_STANDARD, false, true, NULL, aliasLogName.str());
-        queryLogMsgManager()->addMonitorOwn(fileMsgHandler, getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, 1000));
+        Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(globals, "dfuserver");
+        lf->setMaxDetail(1000);
+        lf->beginLogging();
     }
     StringBuffer ftslogdir;
     if (getConfigurationDirectory(globals->queryPropTree("Directories"),"log","ftslave",globals->queryProp("@name"),ftslogdir)) // NB instance deliberately dfuserver's
