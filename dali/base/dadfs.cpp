@@ -224,24 +224,6 @@ RemoteFilename &constructPartFilename(IGroup *grp,unsigned partno,unsigned partm
     return rfn;
 }
 
-class CPauseTransaction
-{
-    IDistributedFileTransaction *transaction;
-    bool active;
-public:
-    CPauseTransaction(IDistributedFileTransaction *_transaction)
-    {
-        transaction = _transaction;
-        active = transaction?transaction->setActive(false):false;
-    }
-    ~CPauseTransaction()
-    {
-        if (active)
-            transaction->setActive(true);
-    }
-};
-
-
 inline void LOGPTREE(const char *title,IPropertyTree *pt)
 {
     StringBuffer buf;
