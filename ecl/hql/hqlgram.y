@@ -7482,8 +7482,6 @@ simpleDataSet
                             bool isLocal = queryPropertyInList(localAtom, $5.queryExpr()) != NULL;
                             parser->checkMergeInputSorted($3, isLocal);
                             OwnedHqlExpr ds = $3.getExpr();
-                            if (isGrouped(ds))
-                                parser->reportWarning(WRN_GROUPINGIGNORED, $3.pos, "MERGE applied to a grouped dataset - was this intended?");
 
                             HqlExprArray args, orderedArgs;
                             args.append(*LINK(ds));
