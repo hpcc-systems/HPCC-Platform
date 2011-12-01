@@ -1575,7 +1575,6 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.foldOptimized,"foldOptimized", false),
         DebugOption(options.globalFold,"globalFold", true),
         DebugOption(options.globalOptimize,"globalOptimize", false),
-        DebugOption(options.optimizeThorCounts,"optimizeThorCounts", true),
         DebugOption(options.applyInstantEclTransformations,"applyInstantEclTransformations", false),        // testing option
         DebugOption(options.calculateComplexity,"calculateComplexity", false),
         DebugOption(options.generateLogicalGraph,"generateLogicalGraph", false),
@@ -1626,7 +1625,6 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.optimizeDiskSource,"optimizeDiskSource", true),
         DebugOption(options.optimizeIndexSource,"optimizeIndexSource", true),
         DebugOption(options.optimizeChildSource,"optimizeChildSource", false),
-        DebugOption(options.createCountFile,"countFile", true),
         DebugOption(options.reportLocations,"reportLocations", true),
         DebugOption(options.debugGeneratedCpp,"debugGeneratedCpp", false),
         DebugOption(options.addFilesnamesToGraph,"addFilesnamesToGraph", true),
@@ -2773,9 +2771,6 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
     {
     case no_counter:
         doBuildExprCounter(ctx, expr, tgt);
-        return;
-    case no_countfile:
-        doBuildExprCountFile(ctx, expr, tgt);
         return;
     case no_evaluate:
         doBuildExprEvaluate(ctx, expr, tgt);

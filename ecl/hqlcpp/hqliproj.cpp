@@ -980,12 +980,6 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
                 {
                     switch (op)
                     {
-                    case no_countfile:
-                        //MORE: Is this the best way to handle this?
-                        allowActivity = false;
-                        Parent::analyseExpr(expr);
-                        allowActivity = true;
-                        return;
                     case NO_AGGREGATE:
                     case no_call:
                     case no_externalcall:
@@ -1202,7 +1196,6 @@ void ImplicitProjectTransformer::gatherFieldsUsed(IHqlExpression * expr, Implici
     /*
     The following can be handled using the default mechanism because we're not tracking newtables.
     case NO_AGGREGATE:
-    case no_countfile:
     case no_createset:
     */
     case no_table:
@@ -1572,7 +1565,6 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_assignall:
         return NonActivity;
     case NO_AGGREGATE:
-//  case no_countfile:
     case no_createset:
         return SimpleActivity;
     case no_call:

@@ -4381,7 +4381,6 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
             }
             break;
         }
-    case no_countfile:
     case no_within:
     case no_sum:
         {

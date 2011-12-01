@@ -38,6 +38,7 @@ extern HQL_API bool maxRecordSizeCanBeDerived(IHqlExpression * record);
 extern HQL_API bool reducesRowSize(IHqlExpression * expr);
 extern HQL_API bool increasesRowSize(IHqlExpression * expr);
 extern HQL_API bool isVariableSizeRecord(IHqlExpression * record);
+inline bool isFixedSizeRecord(IHqlExpression * record) { return !isVariableSizeRecord(record); }
 
 extern HQL_API bool recordRequiresDestructor(IHqlExpression * expr);
 extern HQL_API bool recordRequiresSerialization(IHqlExpression * expr);

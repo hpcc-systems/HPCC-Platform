@@ -2817,11 +2817,6 @@ const char * HqltHql::getEclOpString(node_operator op)
         return "DISKREAD";
     case no_compound_indexread:
         return "INDEXREAD";
-    case no_countfile:
-        if (expandProcessed)
-            return ::getOpString(op);
-        else
-            return "COUNT";
     case no_keyedlimit:
         if (expandProcessed)
             return "KEYEDLIMIT";
