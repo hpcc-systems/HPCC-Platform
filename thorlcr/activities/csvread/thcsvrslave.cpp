@@ -388,6 +388,7 @@ public:
     virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
+        CDiskReadSlaveActivityBase::start();
         if (headerLines)
         {
             bool noSend = container.queryLocal() || lastNode();

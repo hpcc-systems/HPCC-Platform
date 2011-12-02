@@ -203,7 +203,7 @@ CDiskReadSlaveActivityBase::CDiskReadSlaveActivityBase(CGraphElementBase *_conta
 {
     helper = (IHThorDiskReadBaseArg *)queryHelper();
     crcCheckCompressed = 0 != container.queryJob().getWorkUnitValueInt("crcCheckCompressed", 0);
-    gotMeta = false;
+    markStart = gotMeta = false;
     checkFileCrc = !globals->getPropBool("Debug/@fileCrcDisabled");
 }
 
@@ -244,9 +244,14 @@ const char *CDiskReadSlaveActivityBase::queryLogicalFilename(unsigned index)
     return subfileLogicalFilenames.item(index);
 }
 
+void CDiskReadSlaveActivityBase::start()
+{
+    markStart = true;
+}
+
 void CDiskReadSlaveActivityBase::kill()
 {
-    if (!abortSoon && 0 != (helper->getFlags() & TDXtemporary) && !container.queryJob().queryUseCheckpoints())
+    if (markStart && !abortSoon && 0 != (helper->getFlags() & TDXtemporary) && !container.queryJob().queryUseCheckpoints())
     {
         if (1 == partDescs.ordinality() && !partDescs.item(0).queryOwner().queryProperties().getPropBool("@pausefile"))
         {
@@ -258,6 +263,7 @@ void CDiskReadSlaveActivityBase::kill()
             container.queryTempHandler()->deregisterFile(locationName.str());
         }
     }
+    markStart = false;
     CSlaveActivity::kill();
 }
 
