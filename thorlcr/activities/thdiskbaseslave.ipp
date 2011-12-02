@@ -81,7 +81,7 @@ protected:
     StringArray subfileLogicalFilenames;
     IArrayOf<IPartDescriptor> partDescs;
     IHThorDiskReadBaseArg *helper;
-    bool checkFileCrc, gotMeta, crcCheckCompressed;
+    bool checkFileCrc, gotMeta, crcCheckCompressed, markStart;
     ThorDataLinkMetaInfo cachedMetaInfo;
     Owned<CDiskPartHandlerBase> partHandler;
     Owned<IExpander> eexp;
@@ -91,6 +91,7 @@ public:
     const char *queryLogicalFilename(unsigned index);
     rowcount_t getHandlerProgress() { return partHandler.get()?partHandler->getProgress():0; }
     IRowInterfaces * queryDiskRowInterfaces();
+    void start();
 
     
 // IThorSlaveActivity
