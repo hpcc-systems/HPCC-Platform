@@ -39,8 +39,60 @@ public:
         input = NULL;
         hadElement = false;
     }
+    const void *getResult(const void *firstRow)
+    {
+        IHThorAggregateArg *helper = (IHThorAggregateArg *)baseHelper.get();
+        unsigned numPartialResults = container.queryJob().querySlaves();
+        if (1 == numPartialResults)
+            return firstRow;
 
-    void sendResult(const void *row, IOutputRowSerializer *serializer)
+        CThorRowArray partialResults;
+        partialResults.reserve(numPartialResults);
+        partialResults.setRow(0, firstRow);
+        --numPartialResults;
+
+        size32_t sz;
+        while (numPartialResults--)
+        {
+            CMessageBuffer msg;
+            rank_t sender;
+            if (!receiveMsg(msg, RANK_ALL, mpTag, &sender))
+                return NULL;
+            if (abortSoon)
+                return NULL;
+            msg.read(sz);
+            if (sz)
+            {
+                assertex(NULL == partialResults.item(sender-1));
+                CThorStreamDeserializerSource mds(sz, msg.readDirect(sz));
+                RtlDynamicRowBuilder rowBuilder(queryRowAllocator());
+                size32_t sz = queryRowDeserializer()->deserialize(rowBuilder, mds);
+                partialResults.setRow(sender-1, rowBuilder.finalizeRowClear(sz));
+            }
+        }
+        RtlDynamicRowBuilder rowBuilder(queryRowAllocator(), false);
+        bool first = true;
+        numPartialResults = container.queryJob().querySlaves();
+        unsigned p=0;
+        for (;p<numPartialResults; p++)
+        {
+            const void *row = partialResults.item(p);
+            if (row)
+            {
+                if (first)
+                {
+                    first = false;
+                    sz = cloneRow(rowBuilder, partialResults.item(p), queryRowMetaData());
+                }
+                else
+                    sz = helper->mergeAggregate(rowBuilder, row);
+            }
+        }
+        if (first)
+            sz = helper->clearAggregate(rowBuilder);
+        return rowBuilder.finalizeRowClear(sz);
+    }
+    void sendResult(const void *row, IOutputRowSerializer *serializer, rank_t dst)
     {
         CMessageBuffer mb;
         size32_t start = mb.length();
@@ -52,21 +104,19 @@ public:
             sz = mb.length()-start-sizeof(size32_t);
             mb.writeDirect(start,sizeof(size32_t),&sz);
         }
-        container.queryJob().queryJobComm().send(mb, 0, masterMpTag);
+        container.queryJob().queryJobComm().send(mb, dst, mpTag);
     }
-
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        masterMpTag = container.queryJob().deserializeMPTag(data);
+        if (!container.queryLocal())
+            mpTag = container.queryJob().deserializeMPTag(data);
     }
-
     virtual void doStopInput()
     {
         stopInput(input);
     }
 
 protected:
-    mptag_t masterMpTag;
     bool hadElement;
     IThorDataLink *input;
 };
@@ -87,36 +137,14 @@ public:
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         AggregateSlaveBase::init(data, slaveData);
-
         appendOutputLinked(this);
         helper = (IHThorAggregateArg *)queryHelper();
-
-        if (1 == container.queryJob().queryMyRank())
-        {
-            mpTag = createReplyTag();
-            slaveData.append((int &)mpTag);
-        }
     }
     void abort()
     {
         AggregateSlaveBase::abort();
         if (1 == container.queryJob().queryMyRank())
-            cancelReceiveMsg(0, mpTag);
-    }
-    const void * getResult()
-    {
-        CMessageBuffer mb;
-        if (receiveMsg(mb, 0, mpTag)) {
-            size32_t sz;
-            mb.read(sz);
-            if (sz) {
-                CThorStreamDeserializerSource ds(sz,mb.readDirect(sz));
-                RtlDynamicRowBuilder rowBuilder(queryRowAllocator());
-                size32_t sz = queryRowDeserializer()->deserialize(rowBuilder,ds);
-                return rowBuilder.finalizeRowClear(sz);
-            }
-        }
-        return NULL;
+            cancelReceiveMsg(1, mpTag);
     }
     void start()
     {
@@ -160,13 +188,13 @@ public:
         }
         inputStopped = true;
         doStopInput();
-        OwnedConstThorRow result(resultcr.finalizeRowClear(sz));
-        sendResult(result.get(),queryRowSerializer()); // send partial result
-
-        if (container.queryJob().queryMyRank()>1)
-            return NULL; 
-
-        OwnedConstThorRow ret = getResult();
+        if (1 != container.queryJob().queryMyRank())
+        {
+            OwnedConstThorRow result(resultcr.finalizeRowClear(sz));
+            sendResult(result.get(),queryRowSerializer(), 1); // send partial result
+            return NULL;
+        }
+        OwnedConstThorRow ret = getResult(resultcr.finalizeRowClear(sz));
         if (ret)
         {
             dataLinkIncrement();
@@ -202,11 +230,6 @@ public:
     {
         partResultSize = 0;
     }
-
-    ~ThroughAggregateSlaveActivity()
-    {
-    }
-
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         AggregateSlaveBase::init(data, slaveData);
@@ -214,7 +237,6 @@ public:
         appendOutputLinked(this);
         helper = (IHThorThroughAggregateArg *)queryHelper();
     }
-
     void readRest()
     {
         loop {
@@ -223,7 +245,6 @@ public:
                 break;
         }
     }
-
     void process(const void *r)
     {
         if (hadElement)
@@ -234,14 +255,20 @@ public:
             hadElement = true;
         }
     }
-
     void doStopInput()
     {
         if (inputStopped) 
             return;
         inputStopped = true;
         OwnedConstThorRow partrow = partResult.finalizeRowClear(partResultSize);
-        sendResult(partrow.get(),aggrowif->queryRowSerializer());
+
+        if (1 != container.queryJob().queryMyRank())
+            sendResult(partrow.get(), aggrowif->queryRowSerializer(), 1);
+        else
+        {
+            OwnedConstThorRow ret = getResult(partrow.getClear());
+            sendResult(ret, aggrowif->queryRowSerializer(), 0); // send to master
+        }
         AggregateSlaveBase::doStopInput();
         dataLinkStop();
     }
@@ -268,7 +295,6 @@ public:
         //GH: Shouldn't there be something like the following - in all activities with a member, otherwise the allocator may have gone??
         partResult.clear();
     }
-
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities, NULL);
@@ -281,9 +307,7 @@ public:
         dataLinkIncrement();
         return row.getClear();
     }
-
     bool isGrouped() { return false; }
-
     void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
         inputs.item(0)->getMetaInfo(info);
@@ -293,11 +317,14 @@ public:
 
 CActivityBase *createAggregateSlave(CGraphElementBase *container)
 {
+    //NB: only used if global, createGroupAggregateSlave used if child,local or grouped
     return new AggregateSlaveActivity(container);
 }
 
 CActivityBase *createThroughAggregateSlave(CGraphElementBase *container)
 {
+    if (container->queryOwner().queryOwner() && !container->queryOwner().isGlobal())
+        throwUnexpected();
     return new ThroughAggregateSlaveActivity(container);
 }
 
