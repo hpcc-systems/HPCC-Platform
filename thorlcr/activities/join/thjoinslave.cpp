@@ -346,14 +346,14 @@ public:
     void stopInput1()
     {
         if (!in1stopped) {
-            stopInput(input1);
+            stopInput(input1, "(L)");
             in1stopped = true;
         }
     }
     void stopInput2()
     {
         if (!in2stopped) {
-            stopInput(input2);
+            stopInput(input2, "(R)");
             in2stopped = true;
         }
     }
