@@ -10391,7 +10391,7 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
                 break;
             case no_aggregate:
                 selector.setown(createSelector(no_left, dataset, queryProperty(_selectorSequence_Atom, parms)));
-                if (!hasProperty(mergeAtom, parms))
+                if (!hasProperty(mergeTransformAtom, parms))
                     mapping = &parms.item(2);
                 if (parms.isItem(3))
                     grouping = &parms.item(3);
@@ -13751,7 +13751,7 @@ extern HQL_API bool hasUnknownTransform(IHqlExpression * expr)
     switch (expr->getOperator())
     {
     case no_aggregate:
-        if (expr->hasProperty(mergeAtom))
+        if (expr->hasProperty(mergeTransformAtom))
             return true;
         break;
     case no_inlinetable:

@@ -8543,7 +8543,7 @@ simpleDataSet
                         {
                             $$.setExpr(parser->processUserAggregate($1, $3, $5, $7, &$10, NULL, $12, $14), $1);
                         }
-    | AGGREGATE '(' startLeftSeqFilter ',' startRightRowsRecordUpdateSeq ',' transform beginList ',' transform ',' optSortList ')' endRowsGroup endLeftRightFilter endSelectorSequence
+    | AGGREGATE '(' startLeftSeqFilter ',' startRightRowsRecordUpdateSeq ',' transform beginList ',' transform ',' sortList ')' endRowsGroup endLeftRightFilter endSelectorSequence
                         {
                             $$.setExpr(parser->processUserAggregate($1, $3, $5, $7, &$10, &$12, $14, $16), $1);
                         }

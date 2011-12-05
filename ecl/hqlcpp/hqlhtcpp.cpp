@@ -12759,7 +12759,7 @@ void HqlCppTranslator::processUserAggregateTransform(IHqlExpression * expr, IHql
 
 IHqlExpression * HqlCppTranslator::getUserAggregateMergeTransform(IHqlExpression * expr, bool & requiresOrderedMerge)
 {
-    IHqlExpression * mergeTransform = queryPropertyChild(expr, mergeAtom, 0);
+    IHqlExpression * mergeTransform = queryPropertyChild(expr, mergeTransformAtom, 0);
     if (mergeTransform)
     {
         requiresOrderedMerge = true;
