@@ -161,7 +161,7 @@ void CSlaveActivity::startInput(IThorDataLink *itdl, const char *extra)
 
 void CSlaveActivity::stopInput(IThorDataLink *itdl, const char *extra)
 {
-    StringBuffer s("Stopping input for ");
+    StringBuffer s("Stopping input for");
     if (extra)
         s.append(" ").append(extra);
     ActPrintLog("%s", s.str());
