@@ -56,7 +56,7 @@ public:
     unsigned ordinality();
     void transfer(VarElemArray &from);
     bool equal(ICompare *icmp,VarElemArray &to);
-    void sort(ICompare *icmp);
+    void sort(ICompare *icmp,unsigned maxcores);
     int compare(ICompare *icmp,unsigned i,unsigned j);
     int compare(ICompare *icmp,unsigned i,VarElemArray &other,unsigned j);
     bool isNull(unsigned idx);
@@ -83,7 +83,8 @@ interface IThorRowSortedLoader: extends IInterface
         bool &abort, 
         bool &isempty,
         const char *tracename,
-        bool isstable
+        bool isstable,
+        unsigned maxcores
     )=0;
     virtual bool hasOverflowed()=0;
     virtual rowcount_t numRows()=0;

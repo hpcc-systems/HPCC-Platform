@@ -112,7 +112,7 @@ public:
                     eof = true;
                     return NULL;
                 }
-                group.sort(*icompare,!unstable);   
+                group.sort(*icompare,!unstable,maxCores);
             }
             catch (IOutOfMemException *e)
             {
@@ -187,7 +187,7 @@ public:
         input = inputs.item(0);
         startInput(input);
         bool isempty;
-        out.setown(iloader->load(input,queryRowInterfaces(input), icompare,false,abortSoon,isempty,"LOCALSORT",!unstable));
+        out.setown(iloader->load(input,queryRowInterfaces(input), icompare,false,abortSoon,isempty,"LOCALSORT",!unstable,maxCores));
     }
     void stop()
     {

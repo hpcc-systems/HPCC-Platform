@@ -2293,6 +2293,7 @@ void CJobBase::init()
 
     // global setting default on, can be overridden by #option
     timeActivities = 0 != getWorkUnitValueInt("timeActivities", globals->getPropBool("@timeActivities", true));
+    maxActivityCores = (unsigned)getWorkUnitValueInt("maxActivityCores", globals->getPropInt("@maxActivityCores", 0)); // NB: 0 means system decides
     pausing = false;
     resumed = false;
     setLCRrowCRCchecking(0 != getWorkUnitValueInt("THOR_ROWCRC", globals->getPropBool("@THOR_ROWCRC", 
@@ -2526,6 +2527,8 @@ CActivityBase::CActivityBase(CGraphElementBase *_container) : container(*_contai
     baseHelper.set(container.queryHelper());
     parentExtractSz = 0;
     parentExtract = NULL;
+    // NB: maxCores, currently only used to control # cores used by sorts
+    maxCores = container.queryXGMML().getPropInt("hint[@name=\"max_cores\"]/@value", container.queryJob().queryMaxDefaultActivityCores());
 }
 
 CActivityBase::~CActivityBase()

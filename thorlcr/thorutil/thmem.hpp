@@ -350,7 +350,7 @@ public:
         return sz>maxtotal;
     }
 
-    void sort(ICompare & compare, bool stable)
+    void sort(ICompare & compare, bool stable, unsigned maxcores)
     {
         unsigned n = ordinality();
         if (n>1) {
@@ -359,14 +359,14 @@ public:
                 MemoryAttr tmp;
                 void ** ptrs = (void **)tmp.allocate(n*sizeof(void *));
                 memcpy(ptrs,res,n*sizeof(void **));
-                parqsortvecstable(ptrs, n, compare, (void ***)res); // use res for index
+                parqsortvecstable(ptrs, n, compare, (void ***)res, maxcores); // use res for index
                 while (n--) {
                     *res = **((byte ***)res);
                     res++;
                 }
             }
             else 
-                parqsortvec((void **)res, n, compare);
+                parqsortvec((void **)res, n, compare, maxcores);
         }
     }
 
