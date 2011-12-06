@@ -485,20 +485,12 @@ public:
 void openLogFile()
 {
     StringBuffer logname;
-    if (!envGetConfigurationDirectory("log","eclccserver",globals->queryProp("@name"),logname))
-    {
-        if (!globals->getProp("@logDir", logname))
-        {
-            WARNLOG("No logfile directory specified - logs will be written locally");
-            logname.clear().append(".");
-        }
-    }
-    addPathSepChar(logname).append("eclccserver");
-    StringBuffer aliasLogName(logname);
-    aliasLogName.append(".log");
-    queryLogMsgManager()->addMonitorOwn( getRollingFileLogMsgHandler(logname.str(), ".log", MSGFIELD_STANDARD, false, true, NULL, aliasLogName.str()), getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, DefaultDetail));
+    envGetConfigurationDirectory("log","eclccserver",globals->queryProp("@name"),logname);
+    Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(logname.str(), "eclccserver");
+    lf->setMsgFields(MSGFIELD_STANDARD);
+    lf->beginLogging();
     if (traceLevel)
-        DBGLOG("Logging to %s", aliasLogName.str());
+        PROGLOG("Logging to %s", lf->queryAliasFileSpec());
 }
 
 //=========================================================================================

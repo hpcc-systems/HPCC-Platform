@@ -195,18 +195,22 @@ public:
 #endif
 
 
-void startSlaveLog(const char *dir)
+void startSlaveLog()
 {
-    StringBuffer prefix("THORSLAVE.");
+    StringBuffer fileName("thorslave.");
     SocketEndpoint ep;
     ep.setLocalHost(0);
-    ep.getUrlStr(prefix);
-    prefix.append("_").append(getMachinePortBase());
-    StringBuffer logname;
-    getLogDir(prefix.str(), dir, logname); 
-    openLogFile(logname.toCharArray());
+    ep.getUrlStr(fileName);
+    fileName.append("_").append(getMachinePortBase());
+
+    Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(globals, "thor");
+    lf->createAliasFile(false);
+    lf->setName(fileName.str());//override default filename
+    lf->beginLogging();
+
     StringBuffer url;
-    createUNCFilename(logname.str(), url);
+    createUNCFilename(lf->queryAliasFileSpec(), url);//use alias name
+
     LOG(MCdebugProgress, thorJob, "Opened log file %s", url.toCharArray());
     LOG(MCdebugProgress, thorJob, "Build %s", BUILD_TAG);
     globals->setProp("@logURL", url.str());
@@ -269,22 +273,7 @@ int main( int argc, char *argv[]  )
 
         setMachinePortBase(slfEp.port);
         slfEp.port = getMachinePortBase();
-
-        const char *confLogDir = globals->queryProp("@logDir");
-        StringBuffer logDir;
-        if (getConfigurationDirectory(globals->queryPropTree("Directories"),"log","thor",globals->queryProp("@name"),logDir))
-        {
-            if (confLogDir && *confLogDir)
-            {
-                StringBuffer confLogTail;
-                splitFilename(confLogDir, NULL, NULL, &confLogTail, &confLogTail);
-                addPathSepChar(logDir);
-                logDir.append(confLogTail);
-            }
-        }
-        else
-            logDir.append(confLogDir);
-        startSlaveLog(logDir);
+        startSlaveLog();
 
 #define ISDALICLIENT // JCSMORE plugins *can* access dali - though I think we should probably prohibit somehow.
 #ifdef ISDALICLIENT

@@ -55,7 +55,7 @@ void CEclAgentExecutionServer::start(StringBuffer & codeDir)
     StringBuffer propertyFile = codeDirectory;
     addPathSepChar(propertyFile);
     propertyFile.append("agentexec.xml");
-    
+
     Owned<IPropertyTree> properties;
     try
     {
@@ -68,19 +68,13 @@ void CEclAgentExecutionServer::start(StringBuffer & codeDir)
         throwUnexpected();
     }
 
-    // get the logfile specification
-    properties->getProp("@logDir", logDir.clear());
-    if (!logDir.length())
     {
-        WARNLOG("logDir not specified in properties file - assuming code dir\n");
-        logDir.append(codeDir); //default to code dir
-        addPathSepChar(logDir);
-        logDir.append("logs");      //default folder name
+        //Build logfile from component properties settings
+        Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(properties, "eclagent");
+        lf->createAliasFile(false);
+        lf->beginLogging();
+        PROGLOG("Logging to %s",lf->queryLogFileSpec());
     }
-    recursiveCreateDirectory(logDir.str());
-
-    addPathSepChar(logDir);
-    rebuildLogfileName();
 
     //get name of workunit job queue
     StringBuffer sb;
@@ -152,7 +146,6 @@ int CEclAgentExecutionServer::run()
             Owned<IJobQueueItem> item = queue->dequeue(WAIT_FOREVER);
             if (item.get())
             {
-                rebuildLogfileName();//rebuild in case date rollover
                 StringAttr wuid;
                 wuid.set(item->queryWUID());
                 PROGLOG("AgentExec: Dequeued workunit request '%s'", wuid.get());
@@ -244,16 +237,6 @@ int CEclAgentExecutionServer::executeWorkunit(const char * wuid)
     }
 
     return success && runcode == 0;
-}
-
-//---------------------------------------------------------------------------------
-
-void CEclAgentExecutionServer::rebuildLogfileName()
-{
-    logfilespec.clear().append(logDir).append("eclagent");
-    addFileTimestamp(logfilespec, true);
-    logfilespec.append(".log");
-    appendLogFile(logfilespec.str(), 0,0);
 }
 
 //---------------------------------------------------------------------------------

@@ -330,12 +330,12 @@ int main(int argc,char **argv)
     Thread::setDefaultStackSize(0x10000);   // 64K stack (also set in windows DSP)
 #endif
 
-    StringBuffer logname;
+    StringBuffer logDir;
 #ifdef _WIN32
-    logname.append("c:\\");
+    logDir.append("c:\\");
 #else
     if (checkDirExists("/c$"))
-        logname.append("/c$/");
+        logDir.append("/c$/");
 #endif
 
     Owned<IFile> sentinelFile = createSentinelTarget();
@@ -375,8 +375,8 @@ int main(int argc,char **argv)
         }
         else if ((argc>i+1)&&(stricmp(argv[i],"-L")==0)) { 
             i++;
-            logname.clear().append(argv[i++]);
-            addPathSepChar(logname);
+            logDir.clear().append(argv[i++]);
+            addPathSepChar(logDir);
         }
         else if (stricmp(argv[i],"-LOCAL")==0) { 
             i++;
@@ -533,9 +533,13 @@ int main(int argc,char **argv)
             return ret;
 #endif
     }
-    logname.append("DAFILESRV");
-    ILogMsgHandler * fileMsgHandler = getRollingFileLogMsgHandler(logname.str(), ".log", MSGFIELD_STANDARD, false, true, NULL);
-    queryLogMsgManager()->addMonitorOwn(fileMsgHandler, getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail));
+    {
+        Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(logDir.str(), "DAFILESRV");
+        lf->setMsgFields(MSGFIELD_STANDARD);
+        lf->createAliasFile(false);
+        lf->setMaxDetail(TopDetail);
+        lf->beginLogging();
+    }
     const char * verstring = remoteServerVersionString();
     StringBuffer eps;
     if (listenep.isNull())
