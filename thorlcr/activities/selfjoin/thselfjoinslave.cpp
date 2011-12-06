@@ -67,7 +67,7 @@ private:
 #endif
         iloader.setown(createThorRowSortedLoader(rows));
         bool isempty;
-        IRowStream *rs = iloader->load(input,::queryRowInterfaces(input), compare, false, abortSoon, isempty, "SELFJOIN", !isUnstable());
+        IRowStream *rs = iloader->load(input,::queryRowInterfaces(input), compare, false, abortSoon, isempty, "SELFJOIN", !isUnstable(),maxCores);
         stopInput(input);
         input = NULL;
         return rs;

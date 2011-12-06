@@ -33,6 +33,7 @@
 #include "thbuf.hpp"
 #include "thcrc.hpp"
 #include "thmem.hpp"
+#include "thgraph.hpp"
 
 #define _TRACE
 
@@ -725,7 +726,7 @@ public:
         Owned<IRowStream> overflowstream;
         try {
             bool isempty;
-            overflowstream.setown(sortedloader->load(in,rowif,nosort?NULL:icompare,false,abort,isempty,"SORT",isstable));
+            overflowstream.setown(sortedloader->load(in,rowif,nosort?NULL:icompare,false,abort,isempty,"SORT",isstable,activity->queryMaxCores()));
             ActPrintLog(activity, "Local run sort(s) done");
         }
         catch (IException *e) {
@@ -1124,7 +1125,7 @@ public:
 #ifdef  _FULL_TRACE
             PROGLOG("MiniSort got %d rows %"I64F"d bytes",rowArray.ordinality(),(__int64)(rowArray.totalSize()));
 #endif
-            rowArray.sort(*icompare,isstable);
+            rowArray.sort(*icompare,isstable,activity->queryMaxCores());
             UnsignedArray points; 
             rowArray.partition(*icompare,numnodes,points);
 #ifdef  _FULL_TRACE
