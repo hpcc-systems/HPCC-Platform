@@ -440,6 +440,7 @@ public:
     virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
+        CDiskReadSlaveActivityRecord::start();
         out = createSequentialPartHandler(partHandler, partDescs, grouped); // **
         dataLinkStart("DISKREAD", container.queryId());
     }
@@ -595,6 +596,7 @@ public:
     virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
+        CDiskReadSlaveActivityRecord::start();
         out = createSequentialPartHandler(partHandler, partDescs, false);
         dataLinkStart("DISKNORMALIZE", container.queryId());
     }
@@ -718,6 +720,7 @@ public:
     virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
+        CDiskReadSlaveActivityRecord::start();
         eoi = false;
         dataLinkStart("DISKAGGREGATE", container.queryId());
     }
@@ -827,6 +830,7 @@ public:
     virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
+        CDiskReadSlaveActivityRecord::start();
         eoi = false;
         if (!helper->canMatchAny())
         {
@@ -940,6 +944,7 @@ public:
     virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
+        CDiskReadSlaveActivityRecord::start();
         gathered = eoi = false;
         localAggTable.setown(new CThorRowAggregator(*this, *helper, *helper, queryLargeMemSize()/10, container.queryOwnerId()==0));
         localAggTable->start(queryRowAllocator());
