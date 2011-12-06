@@ -2301,8 +2301,9 @@ void HqlGram::addField(const attribute &errpos, _ATOM name, ITypeInfo *_type, IH
     if ((fieldType->getSize() != UNKNOWN_LENGTH) && (fieldType->getSize() > MAX_SENSIBLE_FIELD_LENGTH))
         reportError(ERR_BAD_FIELD_SIZE, errpos, "Field %s is too large", name->str());
 
-    IHqlExpression *newField = createField(name, fieldType.getClear(), value, attrs);
-    addToActiveRecord(newField);
+    OwnedHqlExpr newField = createField(name, fieldType.getClear(), value, attrs);
+    OwnedHqlExpr annotated = createLocationAnnotation(newField, errpos.pos);
+    addToActiveRecord(LINK(newField));
 }
 
 void HqlGram::addDatasetField(const attribute &errpos, _ATOM name, IHqlExpression * record, IHqlExpression *value, IHqlExpression * attrs)
@@ -11010,6 +11011,41 @@ extern HQL_API IHqlExpression * parseQuery(IHqlScope *scope, IFileContents * con
         E->Release();
     }
     return NULL;
+}
+
+
+extern HQL_API void parseModule(IHqlScope *scope, IFileContents * contents, HqlLookupContext & ctx, IXmlScope *xmlScope, bool loadImplicit)
+{
+    assertex(scope);
+    try
+    {
+        ctx.noteBeginModule(scope, contents);
+
+        HqlGram parser(scope, scope, contents, ctx, xmlScope, false, loadImplicit);
+        parser.getLexer()->set_yyLineNo(1);
+        parser.getLexer()->set_yyColumn(1);
+        OwnedHqlExpr ret = parser.yyParse(false, true);
+        ctx.noteEndModule();
+    }
+    catch (IException *E)
+    {
+        if (ctx.errs)
+        {
+            ISourcePath * sourcePath = contents->querySourcePath();
+            if (E->errorCode()==0)
+            {
+                StringBuffer s;
+                ctx.errs->reportError(ERR_INTERNALEXCEPTION, E->errorMessage(s).toCharArray(), sourcePath->str(), 0, 0, 1);
+            }
+            else
+            {
+                StringBuffer s("Internal error: ");
+                E->errorMessage(s);
+                ctx.errs->reportError(ERR_INTERNALEXCEPTION, s.toCharArray(), sourcePath->str(), 0, 0, 1);
+            }
+        }
+        E->Release();
+    }
 }
 
 

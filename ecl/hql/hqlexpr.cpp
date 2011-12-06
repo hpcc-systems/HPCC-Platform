@@ -619,22 +619,28 @@ void HqlParseContext::setGatherMeta(const MetaOptions & options)
 }
 
 
+static void setDefinitionText(IPropertyTree * target, const char * prop, IFileContents * contents)
+{
+    StringBuffer sillyTempBuffer;
+    getFileContentText(sillyTempBuffer, contents);  // We can't rely on IFileContents->getText() being null terminated..
+    target->setProp(prop, sillyTempBuffer);
+
+    ISourcePath * sourcePath = contents->querySourcePath();
+    target->setProp("@sourcePath", sourcePath->str());
+}
+
 void HqlParseContext::noteBeginAttribute(IHqlScope * scope, IFileContents * contents, _ATOM name)
 {
     if (queryArchive())
     {
         const char * moduleName = scope->queryFullName();
-        ISourcePath * sourcePath = contents->querySourcePath();
 
         IPropertyTree * module = queryEnsureArchiveModule(moduleName, scope);
         IPropertyTree * attr = queryArchiveAttribute(module, name->str());
         if (!attr)
             attr = createArchiveAttribute(module, name->str());
 
-        StringBuffer sillyTempBuffer;
-        getFileContentText(sillyTempBuffer, contents);  // We can't rely on IFileContents->getText() being null terminated..
-        attr->setProp("", sillyTempBuffer);
-        attr->setProp("@sourcePath", sourcePath->str());
+        setDefinitionText(attr, "", contents);
     }
 
     if (checkBeginMeta())
@@ -664,12 +670,7 @@ void HqlParseContext::noteBeginQuery(IHqlScope * scope, IFileContents * contents
         if (moduleName && *moduleName)
         {
             IPropertyTree * module = queryEnsureArchiveModule(moduleName, scope);
-            ISourcePath * sourcePath = contents->querySourcePath();
-
-            StringBuffer sillyTempBuffer;
-            getFileContentText(sillyTempBuffer, contents);
-            module->setProp("Text", sillyTempBuffer.str());
-            module->setProp("@sourcePath", sourcePath->str());
+            setDefinitionText(module, "Text", contents);
         }
     }
 
@@ -683,6 +684,28 @@ void HqlParseContext::noteBeginQuery(IHqlScope * scope, IFileContents * contents
     }
 }
 
+void HqlParseContext::noteBeginModule(IHqlScope * scope, IFileContents * contents)
+{
+    if (queryArchive())
+    {
+        const char * moduleName = scope->queryFullName();
+        if (moduleName && *moduleName)
+        {
+            IPropertyTree * module = queryEnsureArchiveModule(moduleName, scope);
+            setDefinitionText(module, "Text", contents);
+        }
+    }
+
+    if (checkBeginMeta())
+    {
+        ISourcePath * sourcePath = contents->querySourcePath();
+
+        IPropertyTree * attr = metaTree->addPropTree("Source", createPTree("Source"));
+        attr->setProp("@sourcePath", sourcePath->str());
+        metaState.nesting.append(attr);
+    }
+}
+
 void HqlParseContext::noteEndAttribute()
 {
     if (checkEndMeta())
@@ -690,6 +713,12 @@ void HqlParseContext::noteEndAttribute()
 }
 
 void HqlParseContext::noteEndQuery()
+{
+    if (checkEndMeta())
+        finishMeta();
+}
+
+void HqlParseContext::noteEndModule()
 {
     if (checkEndMeta())
         finishMeta();
@@ -806,6 +835,12 @@ void HqlLookupContext::noteBeginAttribute(IHqlScope * scope, IFileContents * con
 void HqlLookupContext::noteBeginQuery(IHqlScope * scope, IFileContents * contents)
 {
     parseCtx.noteBeginQuery(scope, contents);
+}
+
+
+void HqlLookupContext::noteBeginModule(IHqlScope * scope, IFileContents * contents)
+{
+    parseCtx.noteBeginModule(scope, contents);
 }
 
 
@@ -7088,8 +7123,7 @@ void CHqlRemoteScope::doParseScopeText(HqlLookupContext & ctx)
 {
     loadedAllSymbols = true;
     bool loadImplicit = true;
-    OwnedHqlExpr query = parseQuery(queryScope(), text, ctx, NULL, loadImplicit);
-    //assertex(!query);
+    parseModule(queryScope(), text, ctx, NULL, loadImplicit);
 }
 
 IHqlExpression *CHqlRemoteScope::clone(HqlExprArray &newkids)

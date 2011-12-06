@@ -58,7 +58,7 @@ void setFullNameProp(IPropertyTree * tree, const char * prop, IHqlExpression * e
         setFullNameProp(tree, prop, expr->queryFullModuleName()->str(), expr->queryName()->str());
 }
 
-int compareSymbolsByPosition(IInterface * * pleft, IInterface * * pright)
+static int compareSymbolsByPosition(IInterface * * pleft, IInterface * * pright)
 {
     IHqlExpression * left = static_cast<IHqlExpression *>(*pleft);
     IHqlExpression * right = static_cast<IHqlExpression *>(*pright);
@@ -75,6 +75,45 @@ static void setNonZeroPropInt(IPropertyTree * tree, const char * path, int value
     if (value)
         tree->setPropInt(path, value);
 }
+
+static void expandRecordSymbolsMeta(IPropertyTree * metaTree, IHqlExpression * record)
+{
+    ForEachChild(i, record)
+    {
+        IHqlExpression * cur = record->queryChild(i);
+        switch (cur->getOperator())
+        {
+        case no_record:
+            //MORE: If this is a public symbol it should be expanded, otherwise it will be elsewhere.
+            expandRecordSymbolsMeta(metaTree, cur);
+            break;
+        case no_field:
+            {
+                IPropertyTree * field = metaTree->addPropTree("Field", createPTree("Field"));
+                field->setProp("@name", cur->queryName()->str());
+                StringBuffer ecltype;
+                cur->queryType()->getECLType(ecltype);
+                field->setProp("@type", ecltype);
+                break;
+            }
+        case no_ifblock:
+            {
+                IPropertyTree * block = metaTree->addPropTree("IfBlock", createPTree("IfBlock"));
+                expandRecordSymbolsMeta(block, cur->queryChild(1));
+                break;
+            }
+        case no_attr:
+        case no_attr_link:
+        case no_attr_expr:
+            {
+                IPropertyTree * attr = metaTree->addPropTree("Attr", createPTree("Attr"));
+                attr->setProp("@name", cur->queryName()->str());
+                break;
+            }
+        }
+    }
+}
+
 
 void expandSymbolMeta(IPropertyTree * metaTree, IHqlExpression * expr)
 {
@@ -110,6 +149,11 @@ void expandSymbolMeta(IPropertyTree * metaTree, IHqlExpression * expr)
         if (expr->isScope() && !isImport(expr))
         {
             expandScopeSymbolsMeta(def, expr->queryScope());
+        }
+        else if (expr->isRecord())
+        {
+            def->setProp("@type", "record");
+            expandRecordSymbolsMeta(def, expr);
         }
     }
 }

@@ -887,8 +887,10 @@ public:
 
     void addForwardReference(IHqlScope * owner, IHasUnlinkedOwnerReference * child);
     void noteBeginAttribute(IHqlScope * scope, IFileContents * contents, _ATOM name);
+    void noteBeginModule(IHqlScope * scope, IFileContents * contents);
     void noteBeginQuery(IHqlScope * scope, IFileContents * contents);
     void noteEndAttribute();
+    void noteEndModule();
     void noteEndQuery();
     void noteFinishedParse(IHqlScope * scope);
     IPropertyTree * queryEnsureArchiveModule(const char * name, IHqlScope * scope);
@@ -947,8 +949,10 @@ public:
 
     void createDependencyEntry(IHqlScope * scope, _ATOM name);
     void noteBeginAttribute(IHqlScope * scope, IFileContents * contents, _ATOM name);
+    void noteBeginModule(IHqlScope * scope, IFileContents * contents);
     void noteBeginQuery(IHqlScope * scope, IFileContents * contents);
     inline void noteEndAttribute() { parseCtx.noteEndAttribute(); }
+    inline void noteEndModule() { parseCtx.noteEndAttribute(); }
     inline void noteEndQuery() { parseCtx.noteEndQuery(); }
     inline void noteFinishedParse(IHqlScope * scope) { parseCtx.noteFinishedParse(scope); }
     void noteExternalLookup(IHqlScope * parentScope, IHqlExpression * expr);
@@ -1363,6 +1367,7 @@ extern HQL_API IHqlExpression * normalizeListCasts(IHqlExpression * expr);
 extern HQL_API IHqlExpression * simplifyFixedLengthList(IHqlExpression * expr);
 extern HQL_API IHqlExpression * getCastExpr(IHqlExpression * expr, ITypeInfo * type);
 
+extern HQL_API void parseModule(IHqlScope *scope, IFileContents * contents, HqlLookupContext & ctx, IXmlScope *xmlScope, bool loadImplicit);
 extern HQL_API IHqlExpression *parseQuery(IHqlScope *scope, IFileContents * contents, 
                                           HqlLookupContext & ctx, IXmlScope *xmlScope, bool loadImplicit);
 extern HQL_API IHqlExpression *parseQuery(const char *in, IErrorReceiver * errs);
