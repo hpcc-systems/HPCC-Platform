@@ -8711,8 +8711,7 @@ void HqlGram::defineSymbolInScope(IHqlScope * scope, DefineIdSt * defineid, IHql
     if (doc)
         expr = createJavadocAnnotation(expr, LINK(doc));
 
-    Owned<IFileContents> contents = createFileContentsSubset(lexObject->query_FileContents(), lastpos, semiColonPos+1-lastpos);
-    scope->defineSymbol(defineid->id, moduleName, expr, (defineid->scope & EXPORT_FLAG) != 0, (defineid->scope & SHARED_FLAG) != 0, symbolFlags, contents, idattr.pos.lineno, idattr.pos.column, idattr.pos.position, assignPos+2-lastpos, semiColonPos+1-lastpos);
+    scope->defineSymbol(defineid->id, moduleName, expr, (defineid->scope & EXPORT_FLAG) != 0, (defineid->scope & SHARED_FLAG) != 0, symbolFlags, lexObject->query_FileContents(), idattr.pos.lineno, idattr.pos.column, idattr.pos.position, assignPos+2, semiColonPos+1);
 }
 
 

@@ -6219,7 +6219,7 @@ IHqlExpression * CHqlNamedSymbol::cloneSymbol(_ATOM optname, IHqlExpression * op
 
 IFileContents * CHqlNamedSymbol::getBodyContents()
 {
-    return createFileContentsSubset(text, bodypos, text->length()-bodypos);
+    return createFileContentsSubset(text, bodypos, endpos-bodypos);
 }
 
 IFileContents * CHqlNamedSymbol::queryDefinitionText() const
