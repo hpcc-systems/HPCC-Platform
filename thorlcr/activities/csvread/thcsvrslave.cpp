@@ -236,6 +236,7 @@ public:
     virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
+        CDiskReadSlaveActivityBase::start();
         out.setown(createSequentialPartHandler(partHandler, partDescs, false));
         dataLinkStart("CCsvReadSlaveActivity", container.queryId());
     }
