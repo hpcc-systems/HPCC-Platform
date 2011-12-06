@@ -41,7 +41,7 @@
 
 //---------------------------------------------------------------------------
 
-static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityId, unsigned subgraphId, unsigned graphId, ThorActivityKind kind, bool isLocal, bool isGrouped, IHThorArg & arg, IPropertyTree * node)
+static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityId, unsigned subgraphId, unsigned graphId, ThorActivityKind kind, bool isLocal, bool isGrouped, IHThorArg & arg, IPropertyTree * node, EclGraphElement * graphElement)
 {
     switch (kind)
     {
@@ -201,12 +201,13 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
         return createRowResultActivity(agent, activityId, subgraphId, (IHThorRowResultArg &)arg, kind);
     case TAKdatasetresult:          
         return createDatasetResultActivity(agent, activityId, subgraphId, (IHThorDatasetResultArg &)arg, kind);
+    case TAKwhen_dataset:
+    case TAKwhen_action:
+        return createWhenActionActivity(agent, activityId, subgraphId, (IHThorWhenActionArg &)arg, kind, graphElement);
     case TAKsequential:
     case TAKparallel:
     case TAKemptyaction:
     case TAKifaction:
-    case TAKwhen_dataset:
-    case TAKwhen_action:
         return createDummyActivity(agent, activityId, subgraphId, arg, kind);
     case TAKhashdedup:
         return createHashDedupActivity(agent, activityId, subgraphId, (IHThorHashDedupArg &)arg, kind);
@@ -447,7 +448,7 @@ void EclGraphElement::createActivity(IAgentContext & agent, EclSubGraph * owner)
         else
         {
             arg.setown(createHelper(agent, owner));
-            activity.setown(::createActivity(agent, id, subgraph->id, resultsGraph ? resultsGraph->id : 0, TAKnull, false, false, *arg, node));
+            activity.setown(::createActivity(agent, id, subgraph->id, resultsGraph ? resultsGraph->id : 0, TAKnull, false, false, *arg, node, this));
         }
         break;
     case TAKlibrarycall:
@@ -465,7 +466,7 @@ void EclGraphElement::createActivity(IAgentContext & agent, EclSubGraph * owner)
                 }
             }
             arg.setown(createHelper(agent, owner));
-            activity.setown(::createActivity(agent, id, subgraph->id, resultsGraph ? resultsGraph->id : 0, kind, isLocal, isGrouped, *arg, node));
+            activity.setown(::createActivity(agent, id, subgraph->id, resultsGraph ? resultsGraph->id : 0, kind, isLocal, isGrouped, *arg, node, this));
 
             ForEachItemIn(i2, branches)
             {

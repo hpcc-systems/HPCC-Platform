@@ -43,6 +43,7 @@
 #include "thorxmlwrite.hpp"
 #include "jsmartsock.hpp"
 #include "thorstep.hpp"
+#include "eclagent.ipp"
 
 #define EMPTY_LOOP_LIMIT 1000
 
@@ -5907,6 +5908,35 @@ const void *CHThorDummyActivity::nextInGroup()
 
 //=====================================================================================================
 
+CHThorWhenActionActivity::CHThorWhenActionActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, ThorActivityKind _kind, EclGraphElement * _graphElement)
+                         : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), graphElement(_graphElement)
+{
+}
+
+void CHThorWhenActionActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    graphElement->executeDependentActions(agent, NULL, WhenParallelId);
+}
+
+void CHThorWhenActionActivity::execute()
+{
+    graphElement->executeDependentActions(agent, NULL, 1);
+}
+
+const void * CHThorWhenActionActivity::nextInGroup()
+{
+    return input->nextInGroup();
+}
+
+void CHThorWhenActionActivity::done()
+{
+    graphElement->executeDependentActions(agent, NULL, WhenSuccessId);
+    CHThorSimpleActivityBase::done();
+}
+
+//=====================================================================================================
+
 CHThorMultiInputActivity::CHThorMultiInputActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind)
 {
 }
@@ -9621,6 +9651,7 @@ extern HTHOR_API IHThorActivity *createDummyActivity(IAgentContext &_agent, unsi
     return new CHThorDummyActivity(_agent, _activityId, _subgraphId, arg, kind);
 }
 
+MAKEFACTORY_EXTRA(WhenAction,EclGraphElement *)
 MAKEFACTORY_EXTRA(LibraryCall, IPropertyTree *)
 MAKEFACTORY(ChildNormalize)
 MAKEFACTORY(ChildAggregate)

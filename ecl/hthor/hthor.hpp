@@ -38,7 +38,7 @@
 void HTHOR_API setHThorRowManager(roxiemem::IRowManager * manager); // do not call after the first use (unless you have thought very very hard about this)
 
 class PointerArray;
-
+class EclGraphElement;
 
 inline const void * nextUngrouped(ISimpleInputBase * input)
 {
@@ -159,6 +159,7 @@ extern HTHOR_API IHThorActivity *createChildIteratorActivity(IAgentContext &, un
 extern HTHOR_API IHThorActivity *createRowResultActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorRowResultArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createDatasetResultActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorDatasetResultArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createDummyActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &arg, ThorActivityKind kind);
+extern HTHOR_API IHThorActivity *createWhenActionActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &arg, ThorActivityKind kind, EclGraphElement * _graphElement);
 extern HTHOR_API IHThorActivity *createChildNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChildNormalizeArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createChildAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChildAggregateArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createChildGroupAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChildGroupAggregateArg &arg, ThorActivityKind kind);

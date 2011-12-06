@@ -1674,6 +1674,17 @@ public:
     virtual void execute();
 };
 
+class CHThorWhenActionActivity : public CHThorSimpleActivityBase
+{
+    EclGraphElement * graphElement;
+public:
+    CHThorWhenActionActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, ThorActivityKind _kind, EclGraphElement * _graphElement);
+
+    virtual void execute();
+    virtual const void *nextInGroup();
+    virtual void ready();
+    virtual void done();
+};
 
 class CHThorDummyActivity : public CHThorSimpleActivityBase
 {
