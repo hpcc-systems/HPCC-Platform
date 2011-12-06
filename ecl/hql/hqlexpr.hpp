@@ -891,7 +891,6 @@ public:
     void noteEndAttribute();
     void noteEndQuery();
     void noteFinishedParse(IHqlScope * scope);
-    inline void noteImport(IHqlExpression * expr, _ATOM name, int position) { if (metaState.gatherNow) addImport(expr, name, position); }
     IPropertyTree * queryEnsureArchiveModule(const char * name, IHqlScope * scope);
 
     void setGatherMeta(const MetaOptions & options);
@@ -912,7 +911,6 @@ public:
     bool ignoreUnknownImport;
 
 private:
-    void addImport(IHqlExpression * expr, _ATOM name, int position);
     bool checkBeginMeta();
     bool checkEndMeta();
     void finishMeta();
@@ -954,7 +952,6 @@ public:
     inline void noteEndQuery() { parseCtx.noteEndQuery(); }
     inline void noteFinishedParse(IHqlScope * scope) { parseCtx.noteFinishedParse(scope); }
     void noteExternalLookup(IHqlScope * parentScope, IHqlExpression * expr);
-    inline void noteImport(IHqlExpression * expr, _ATOM name, int position) { parseCtx.noteImport(expr, name, position); }
 
     inline IEclRepository * queryRepository() const { return parseCtx.eclRepository; }
     inline bool queryExpandCallsWhenBound() const { return parseCtx.expandCallsWhenBound; }
@@ -1173,6 +1170,9 @@ interface IHqlNamedAnnotation : public IHqlAnnotation
     virtual int getStartLine() const = 0;
     virtual int getStartColumn() const = 0;
     virtual void setRepositoryFlags(unsigned _flags) = 0;  // To preserve flags like ob_locked, ob_sandbox, etc.
+    virtual int getStartPos() const = 0;
+    virtual int getBodyPos() const = 0;
+    virtual int getEndPos() const = 0;
 };
 
 

@@ -601,33 +601,9 @@ void getFileContentText(StringBuffer & result, IFileContents * contents)
 
 //---------------------------------------------------------------------------------------------------------------------
 
-void setFullNameProp(IPropertyTree * tree, const char * prop, const char * module, const char * def)
-{
-    if (module && *module)
-    {
-        StringBuffer s;
-        s.append(module).append('.').append(def);
-        tree->setProp(prop, s.str());
-    }
-    else
-        tree->setProp(prop, def);
-}
-
 void HqlParseContext::addForwardReference(IHqlScope * owner, IHasUnlinkedOwnerReference * child)
 {
     forwardLinks.append(*new ForwardScopeItem(owner, child));
-}
-
-void HqlParseContext::addImport(IHqlExpression * expr, _ATOM name, int position)
-{
-    IPropertyTree * import = metaState.nesting.tos()->addPropTree("Import", createPTree("Import"));
-    import->setProp("@name", name->str());
-    import->setPropInt("@start", position);
-    IHqlScope * scope = expr->queryScope();
-    if (scope)
-        import->setProp("@ref", scope->queryFullName());
-    else
-        setFullNameProp(import, "@ref", expr->queryFullModuleName()->str(), expr->queryName()->str());
 }
 
 IPropertyTree * HqlParseContext::queryEnsureArchiveModule(const char * name, IHqlScope * scope)
@@ -6189,16 +6165,20 @@ IHqlExpression * CHqlSimpleSymbol::cloneSymbol(_ATOM optname, IHqlExpression * o
 CHqlNamedSymbol::CHqlNamedSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, bool _exported, bool _shared, unsigned _symbolFlags)
 : CHqlSymbolAnnotation(_name, _module, _expr, NULL, combineSymbolFlags(_symbolFlags, _exported, _shared))
 {
-    bodystart = 0;
+    startpos = 0;
+    bodypos = 0;
+    endpos = 0;
     startLine = 0;
     startColumn = 0;
 }
 
-CHqlNamedSymbol::CHqlNamedSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _symbolFlags, IFileContents *_text, int _bodystart, int _startLine, int _startColumn)
+CHqlNamedSymbol::CHqlNamedSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _symbolFlags, IFileContents *_text, int _startLine, int _startColumn, int _startpos, int _bodypos, int _endpos)
 : CHqlSymbolAnnotation(_name, _module, _expr, _funcdef, combineSymbolFlags(_symbolFlags, _exported, _shared))
 {
     text.set(_text);
-    bodystart = _bodystart;
+    startpos = _startpos;
+    bodypos = _bodypos;
+    endpos = _endpos;
     startLine = _startLine;
     startColumn = _startColumn;
 }
@@ -6210,9 +6190,9 @@ CHqlNamedSymbol *CHqlNamedSymbol::makeSymbol(_ATOM _name, _ATOM _module, IHqlExp
 }
 
 
-CHqlNamedSymbol *CHqlNamedSymbol::makeSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _flags, IFileContents *_text, int _bodystart, int _startLine, int _startColumn)
+CHqlNamedSymbol *CHqlNamedSymbol::makeSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _flags, IFileContents *_text, int _startLine, int _startColumn, int _startpos, int _bodypos, int _endpos)
 {
-    CHqlNamedSymbol *e = new CHqlNamedSymbol(_name, _module, _expr, _funcdef, _exported, _shared, _flags, _text, _bodystart, _startLine, _startColumn);
+    CHqlNamedSymbol *e = new CHqlNamedSymbol(_name, _module, _expr, _funcdef, _exported, _shared, _flags, _text, _startLine, _startColumn, _startpos, _bodypos, _endpos);
     return (CHqlNamedSymbol *) e->closeExpr();
 }
 
@@ -6229,7 +6209,7 @@ IHqlExpression * CHqlNamedSymbol::cloneSymbol(_ATOM optname, IHqlExpression * op
             return LINK(this);
     }
 
-    CHqlNamedSymbol * e = new CHqlNamedSymbol(newname, module, LINK(newbody), LINK(newfuncdef), isExported(), isShared(), symbolFlags, text, bodystart, startLine, startColumn);
+    CHqlNamedSymbol * e = new CHqlNamedSymbol(newname, module, LINK(newbody), LINK(newfuncdef), isExported(), isShared(), symbolFlags, text, startLine, startColumn, startpos, bodypos, endpos);
     //NB: do not all doAppendOpeand() because the parameters to a named symbol do not change it's attributes - e.g., whether pure.
     e->operands.ensure(newoperands->ordinality());
     ForEachItemIn(idx, *newoperands)
@@ -6239,7 +6219,7 @@ IHqlExpression * CHqlNamedSymbol::cloneSymbol(_ATOM optname, IHqlExpression * op
 
 IFileContents * CHqlNamedSymbol::getBodyContents()
 {
-    return createFileContentsSubset(text, bodystart, text->length()-bodystart);
+    return createFileContentsSubset(text, bodypos, text->length()-bodypos);
 }
 
 IFileContents * CHqlNamedSymbol::queryDefinitionText() const
@@ -9341,7 +9321,7 @@ IHqlExpression * createSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression *exp
 {
     return CHqlNamedSymbol::makeSymbol(_name, moduleName, expr, funcdef,
                              exported, shared, symbolFlags,
-                             fc, _bodypos, lineno, column);
+                             fc, lineno, column, _startpos, _bodypos, _endpos);
 }
 
 

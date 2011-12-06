@@ -429,6 +429,9 @@ public:
     virtual IHqlExpression * cloneSymbol(_ATOM optname, IHqlExpression * optnewbody, IHqlExpression * optnewfuncdef, HqlExprArray * optargs);
     virtual int getStartLine() const { return 0; }
     virtual int getStartColumn() const { return 0; }
+    virtual int getStartPos() const { return 0; }
+    virtual int getBodyPos() const { return 0; }
+    virtual int getEndPos() const { return 0; }
 
 protected:
     CHqlSimpleSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, unsigned _obFlags);
@@ -438,7 +441,7 @@ class HQL_API CHqlNamedSymbol: public CHqlSymbolAnnotation
 {
 public:
     static CHqlNamedSymbol *makeSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, bool _exported, bool _shared, unsigned _flags);
-    static CHqlNamedSymbol *makeSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _flags, IFileContents *_text, int _bodystart, int lineno, int column);
+    static CHqlNamedSymbol *makeSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _flags, IFileContents *_text, int lineno, int column, int _startpos, int _bodypos, int _endpos);
 
     virtual ISourcePath * querySourcePath() const;
     
@@ -446,6 +449,9 @@ public:
     virtual IFileContents * queryDefinitionText() const;
     virtual int  getStartLine() const { return startLine; }
     virtual int  getStartColumn() const { return startColumn; }
+    virtual int getStartPos() const { return startpos; }
+    virtual int getBodyPos() const { return bodypos; }
+    virtual int getEndPos() const { return endpos; }
 
 //interface IHqlNamedAnnotation
     virtual IFileContents * getBodyContents();
@@ -453,11 +459,13 @@ public:
 
 protected:
     CHqlNamedSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, bool _exported, bool _shared, unsigned _obFlags);
-    CHqlNamedSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _flags, IFileContents *_text, int _bodystart, int _startLine, int _startColumn);
+    CHqlNamedSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _flags, IFileContents *_text, int _startLine, int _startColumn, int _startpos, int _bodypos, int _endpos);
 
 protected:
     Linked<IFileContents> text;
-    int bodystart;
+    int startpos;
+    int bodypos;
+    int endpos;
     int startLine;
     unsigned short startColumn;
 };
