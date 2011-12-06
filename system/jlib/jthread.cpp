@@ -1784,8 +1784,8 @@ public:
 
             unsigned argc;
             char **argv=splitargs(prog,argc);
-            if (dir.get())
-                chdir(dir);
+            if (dir.get() && chdir(dir))
+                _exit(START_FAILURE);    // must be _exit!!
             execvp(argv[0],argv);
             _exit(START_FAILURE);    // must be _exit!!     
         }
