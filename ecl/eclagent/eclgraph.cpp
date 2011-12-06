@@ -592,6 +592,14 @@ bool EclGraphElement::prepare(IAgentContext & agent, const byte * parentExtract,
                     return branches.item(whichBranch).prepare(agent, parentExtract, checkDependencies);
                 return true;
             }
+        case TAKwhen_action:
+            {
+                ForEachItemIn(i, dependentOn)
+                {
+                    dependentOn.item(i).execute(parentExtract);
+                }
+                break;
+            }
         case TAKfilter:
         case TAKfiltergroup:
         case TAKfilterproject:

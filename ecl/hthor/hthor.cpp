@@ -165,9 +165,7 @@ void CHThorActivityBase::setInput(unsigned index, IHThorInput *_input)
 
 IHThorInput *CHThorActivityBase::queryOutput(unsigned index)
 {
-    agent.fail(255, "internal logic error: CHThorActivityBase::queryOutput");
-    // never returns....
-    return NULL;
+    return this;
 }
 
 void CHThorActivityBase::ready()
