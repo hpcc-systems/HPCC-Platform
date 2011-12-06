@@ -791,6 +791,7 @@ protected:
     Owned<IPropertyTree> xgmml;
     Owned<IGraphTempHandler> tmpHandler;
     bool timeActivities;
+    unsigned maxActivityCores;
     class CThorPluginCtx : public SimplePluginCtx
     {
     public:
@@ -881,6 +882,7 @@ public:
     ICommunicator &queryJobComm() const { return *jobComm; }
     IGroup &queryJobGroup() const { return *jobGroup; }
     const bool &queryTimeActivities() const { return timeActivities; }
+    unsigned queryMaxDefaultActivityCores() const { return maxActivityCores; }
     IGroup &querySlaveGroup() const { return *slaveGroup; }
     const rank_t &queryMyRank() const { return myrank; }
     mptag_t allocateMPTag();
@@ -925,6 +927,7 @@ protected:
     size32_t parentExtractSz;
     const byte *parentExtract;
     bool receiving, cancelledReceive;
+    unsigned maxCores; // NB: only used by acts that sort at the moment
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -940,6 +943,7 @@ public:
     void cancelReceiveMsg(const rank_t rank, const mptag_t mpTag);
     bool firstNode() { return 1 == container.queryJob().queryMyRank(); }
     bool lastNode() { return container.queryJob().querySlaves() == container.queryJob().queryMyRank(); }
+    unsigned queryMaxCores() const { return maxCores; }
 
 
     virtual void setInput(unsigned index, CActivityBase *inputActivity, unsigned inputOutIdx) { }

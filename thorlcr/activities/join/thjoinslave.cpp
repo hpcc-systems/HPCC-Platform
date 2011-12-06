@@ -446,7 +446,7 @@ public:
                 abortSoon,
                 isemptylhs,
                 tmpStr.append(activityName).append("(L)").str(),
-                true));
+                true,maxCores));
             stopInput1();
         }
         if (isemptylhs&&((helper->getJoinFlags()&JFrightouter)==0)) {
@@ -472,7 +472,7 @@ public:
                 abortSoon,
                 isemptyrhs,
                 tmpStr.append(activityName).append("(R)").str(),
-                true));
+                true,maxCores));
             stopInput2();
         }
     }

@@ -671,7 +671,7 @@ public:
         unsigned numsamples = sample.ordinality();
         size32_t ts=sample.totalSize();
         estrecsize = numsamples?(ts/numsamples):100;
-        sample.sort(icompare);
+        sample.sort(icompare,activity->queryMaxCores());
         VarElemArray mid(rowif,keyserializer);
         if (numsamples) { // could shuffle up empty nodes here
             for (unsigned i=0;i<numsplits;i++) {
@@ -1280,7 +1280,7 @@ public:
                     }
                     if (!partitioninfo->splitkeys.checksorted(icompare)) {
                         ActPrintLog(activity, "ERROR: Split keys out of order!");
-                        partitioninfo->splitkeys.sort(icompare);
+                        partitioninfo->splitkeys.sort(icompare,activity->queryMaxCores());
                     }
                 }
                 timer.stop("Calculating split map");

@@ -2280,7 +2280,7 @@ public:
         Owned<IRowStream> reader = distributor->connect(inL,ihashL,icompareL);
         loaderL.setown(createThorRowSortedLoader(rows));
         bool isemptylhs;
-        strmL.setown(loaderL->load(reader,queryRowInterfaces(inL),icompareL,true,abortSoon,isemptylhs,"HASHJOIN(L)",true));
+        strmL.setown(loaderL->load(reader,queryRowInterfaces(inL),icompareL,true,abortSoon,isemptylhs,"HASHJOIN(L)",true,maxCores));
         reader.clear();
         stopInputL();
         distributor->disconnect(false);
@@ -2293,7 +2293,7 @@ public:
         distributor.setown(createHashDistributor(this, container.queryJob().queryJobComm(), mptag2, queryRowInterfaces(inR), abortSoon,false, this));
         reader.setown(distributor->connect(inR,ihashR,icompareR));
         bool isemptyrhs;
-        strmR.setown(loaderR->load(reader,queryRowInterfaces(inR),icompareR,false,abortSoon,isemptyrhs,"HASHJOIN(R)",true));
+        strmR.setown(loaderR->load(reader,queryRowInterfaces(inR),icompareR,false,abortSoon,isemptyrhs,"HASHJOIN(R)",true,maxCores));
         reader.clear();
         stopInputR();
         distributor->disconnect(false);

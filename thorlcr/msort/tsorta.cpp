@@ -83,9 +83,9 @@ bool VarElemArray::checksorted(ICompare *icmp)
 }
 
 
-void VarElemArray::sort(ICompare *icmp)
+void VarElemArray::sort(ICompare *icmp,unsigned maxcores)
 {
-    rows.sort(*icmp,true);
+    rows.sort(*icmp,true,maxcores);
 }
 
 size32_t VarElemArray::totalSize()
@@ -233,7 +233,7 @@ public:
         bool &abort, 
         bool &isempty,
         const char *tracename,
-        bool isstable)
+        bool isstable, unsigned maxcores)
     {
         overflowcount = 0;
         unsigned nrecs;
@@ -255,7 +255,7 @@ public:
             PROGLOG("rows loaded overflowed = %s",hasoverflowed?"true":"false");
 #endif
             if (nrecs&&icompare)
-                rows.sort(*icompare,isstable);
+                rows.sort(*icompare,isstable,maxcores);
             numrows += nrecs;
             totalsize += rows.totalSize();
             if (!hasoverflowed&&!alldisk) 
