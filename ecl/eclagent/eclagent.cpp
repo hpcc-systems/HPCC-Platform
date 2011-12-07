@@ -69,6 +69,7 @@ static const char XMLHEADER[] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 
 //#define DEFAULT_REALTHOR_HOST "localhost"
 #define PERSIST_LOCK_TIMEOUT 10000
+#define LOCAL_DALI_TIMEOUT 1000 // milliseconds
 
 #define ABORT_CHECK_INTERVAL 30     // seconds
 #define ABORT_DEADMAN_INTERVAL (60*5)  // seconds
@@ -3176,8 +3177,18 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
 
     SCMStringBuffer wuid;
     StringBuffer daliServers;
-    if (!globals->getProp("DALISERVERS", daliServers))
-        daliServers.append(agentTopology->queryProp("@daliServers"));
+    unsigned daliTimeout = MP_WAIT_FOREVER;
+    if (!globals->getProp("DALISERVERS", daliServers)) {
+        const char *defaultDali = agentTopology->queryProp("@daliServers");
+        if (defaultDali)
+            daliServers.append(defaultDali);
+        else {
+            daliServers.append("."); // localhost
+            // Reduce timeout, to fail as soon as possible if we got it wrong
+            daliTimeout = LOCAL_DALI_TIMEOUT;
+            PrintLog("WARNING: Could not find DALI servers string, assuming localhost");
+        }
+    }
 
 #ifdef LEAK_FILE
     enableMemLeakChecking(true);
@@ -3205,7 +3216,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
             {
                 MTIME_SECTION(timer, "SDS_Initialize");
                 Owned<IGroup> serverGroup = createIGroup(daliServers.str(), DALI_SERVER_PORT);
-                initClientProcess(serverGroup, DCR_EclAgent, 0, NULL, NULL, MP_WAIT_FOREVER, false);
+                initClientProcess(serverGroup, DCR_EclAgent, 0, NULL, NULL, daliTimeout, false);
             }
 #ifdef MONITOR_ECLAGENT_STATUS  
             serverstatus = new CSDSServerStatus("ECLagent");
