@@ -2302,7 +2302,7 @@ void HqlGram::addField(const attribute &errpos, _ATOM name, ITypeInfo *_type, IH
         reportError(ERR_BAD_FIELD_SIZE, errpos, "Field %s is too large", name->str());
 
     OwnedHqlExpr newField = createField(name, fieldType.getClear(), value, attrs);
-    OwnedHqlExpr annotated = createLocationAnnotation(newField, errpos.pos);
+    OwnedHqlExpr annotated = createLocationAnnotation(LINK(newField), errpos.pos);
     addToActiveRecord(LINK(newField));
 }
 
