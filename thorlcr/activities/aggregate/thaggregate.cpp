@@ -27,101 +27,23 @@
 
 class CAggregateMasterBase : public CMasterActivity
 {
-    mptag_t replyTag;
 public:
     CAggregateMasterBase(CMasterGraphElement * info) : CMasterActivity(info)
     {
-        replyTag = TAG_NULL;
-    }
-    void init()
-    {
-        replyTag = createReplyTag();
+        mpTag = container.queryJob().allocateMPTag();
     }
     void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
-        dst.append(replyTag);
-    }
-    const void *getResult(IRowInterfaces &rowIf)
-    {
-        IHThorAggregateArg *helper = (IHThorAggregateArg *)queryHelper();
-        unsigned numPartialResults = container.queryJob().querySlaves();
-
-        CThorRowArray partialResults;
-        partialResults.reserve(numPartialResults);
-
-        size32_t sz;
-        while (numPartialResults--)
-        {
-            CMessageBuffer msg;
-            rank_t sender;
-            if (!receiveMsg(msg, RANK_ALL, replyTag, &sender))
-                return NULL;
-            if (abortSoon) 
-                return NULL;
-            msg.read(sz);
-            if (sz)
-            {
-                assertex(NULL == partialResults.item(sender-1));
-                CThorStreamDeserializerSource mds(sz, msg.readDirect(sz));
-                RtlDynamicRowBuilder rowBuilder(rowIf.queryRowAllocator());
-                size32_t sz = rowIf.queryRowDeserializer()->deserialize(rowBuilder, mds);
-                partialResults.setRow(sender-1, rowBuilder.finalizeRowClear(sz));
-            }
-        }
-
-        RtlDynamicRowBuilder result(rowIf.queryRowAllocator(), false);
-        bool first = true;
-        numPartialResults = container.queryJob().querySlaves();
-        unsigned p=0;
-        for (;p<numPartialResults; p++)
-        {
-            const void *row = partialResults.item(p);
-            if (row)
-            {
-                if (first)
-                {
-                    first = false;
-                    sz = cloneRow(result, partialResults.item(p), rowIf.queryRowMetaData());
-                }
-                else
-                    sz = helper->mergeAggregate(result, row);
-            }
-        }
-        if (first)
-            sz = helper->clearAggregate(result);
-        return result.finalizeRowClear(sz);
-    }
-    void abort()
-    {
-        CMasterActivity::abort();
-        cancelReceiveMsg(RANK_ALL, replyTag);
+        dst.append((int)mpTag);
     }
 };
+
 
 class CAggregateMaster : public CAggregateMasterBase
 {
 public:
     CAggregateMaster(CMasterGraphElement * info) : CAggregateMasterBase(info) { }
-
-    void process()
-    {
-        mptag_t slaveTag = container.queryJob().deserializeMPTag(queryInitializationData(0));
-        CMessageBuffer msg;
-        size32_t sz = 0;
-        msg.append(sz);
-        OwnedConstThorRow result = getResult(*this);
-        if (result)
-        {
-            CMemoryRowSerializer ms(msg);
-            queryRowSerializer()->serialize(ms, (const byte *)result.get());
-            sz = msg.length()-sizeof(sz);
-            msg.writeDirect(0, sizeof(sz), &sz);
-        }
-        if (!container.queryJob().queryJobComm().send(msg, 1, slaveTag, 5000))
-            throw MakeThorException(0, "Failed to give result to slave");
-    }
 };
-
 
 CActivityBase *createAggregateActivityMaster(CMasterGraphElement *container)
 {
@@ -135,13 +57,32 @@ CActivityBase *createAggregateActivityMaster(CMasterGraphElement *container)
 class CThroughAggregateMaster : public CAggregateMasterBase
 {
 public:
-    CThroughAggregateMaster(CMasterGraphElement *info) : CAggregateMasterBase(info) { }
+    CThroughAggregateMaster(CMasterGraphElement *info) : CAggregateMasterBase(info)
+    {
+    }
+    void abort()
+    {
+        CMasterActivity::abort();
+        cancelReceiveMsg(1, mpTag);
+    }
     void process()
     {
-        IHThorThroughAggregateArg *helper = (IHThorThroughAggregateArg *)queryHelper();
-        Owned<IRowInterfaces> aggRowIf = createRowInterfaces(helper->queryAggregateRecordSize(), queryActivityId(), queryCodeContext());
-        OwnedConstThorRow result = getResult(*aggRowIf);
-        helper->sendResult(result.get());
+        CMessageBuffer msg;
+        if (receiveMsg(msg, 1, mpTag, NULL))
+        {
+            size32_t sz;
+            msg.read(sz);
+            if (sz)
+            {
+                IHThorThroughAggregateArg *helper = (IHThorThroughAggregateArg *)queryHelper();
+                Owned<IRowInterfaces> aggRowIf = createRowInterfaces(helper->queryAggregateRecordSize(), queryActivityId(), queryCodeContext());
+                CThorStreamDeserializerSource mds(sz, msg.readDirect(sz));
+                RtlDynamicRowBuilder rowBuilder(aggRowIf->queryRowAllocator());
+                size32_t sz = aggRowIf->queryRowDeserializer()->deserialize(rowBuilder, mds);
+                OwnedConstThorRow result = rowBuilder.finalizeRowClear(sz);
+                helper->sendResult(result);
+            }
+        }
     }
 };
 
