@@ -2470,7 +2470,7 @@ public:
         return new CDistributedSuperFileIterator(parent,root,udesc,_transaction);
     }
 
-    virtual void checkFormatAttr(IDistributedFile *sub, IDistributedFileTransaction *, const char* exprefix="")
+    virtual void checkFormatAttr(IDistributedFile *sub, const char* exprefix="")
     {
         // check file has same (or similar) format
         IPropertyTree &superProp = queryProperties();
@@ -4394,7 +4394,7 @@ protected:
         parent->linkSuperOwner(subfiles.item(pos),queryLogicalName(),false,transaction);
     }
 
-    void checkSubFormatAttr(IDistributedFile *sub, IDistributedFileTransaction *_transaction, const char* exprefix="")
+    void checkSubFormatAttr(IDistributedFile *sub, const char* exprefix="")
     {
         // empty super files now pass
         ForEachItemIn(i,subfiles) {
@@ -4402,19 +4402,19 @@ protected:
             if (super) {
                 CDistributedSuperFile *cdsuper = QUERYINTERFACE(super,CDistributedSuperFile);
                 if (cdsuper)
-                    cdsuper->checkSubFormatAttr(sub,_transaction,exprefix);
+                    cdsuper->checkSubFormatAttr(sub,exprefix);
                 return;
             }
             CDistributedFile *cdfile = QUERYINTERFACE(&subfiles.item(0),CDistributedFile);
             if (cdfile)
-                cdfile->checkFormatAttr(sub,_transaction,exprefix);        // any file will do
+                cdfile->checkFormatAttr(sub,exprefix);        // any file will do
         }
     }
 
-    void checkFormatAttr(IDistributedFile *sub, IDistributedFileTransaction *_transaction, const char* exprefix="")
+    void checkFormatAttr(IDistributedFile *sub, const char* exprefix="")
     {
         // only check sub files not siblings, which is excessive (format checking is really only debug aid)
-        checkSubFormatAttr(sub,_transaction,exprefix);
+        checkSubFormatAttr(sub,exprefix);
     }
 
 
@@ -5084,7 +5084,7 @@ private:
         if (strcmp(sub->queryLogicalName(),queryLogicalName())==0)
             throw MakeStringException(-1,"addSubFile: Cannot add file %s to itself", queryLogicalName());
         if (subfiles.ordinality())
-            checkFormatAttr(sub,transaction,"addSubFile");
+            checkFormatAttr(sub,"addSubFile");
         if (findSubFile(sub->queryLogicalName())!=NotFound)
             throw MakeStringException(-1,"addSubFile: File %s is already a subfile of %s", sub->queryLogicalName(),queryLogicalName());
 
