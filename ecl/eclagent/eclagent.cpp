@@ -3065,8 +3065,8 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
         lf->setCreateAliasFile(false);
         lf->setMsgFields(MSGFIELD_timeDate | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code);
         lf->beginLogging();
+        PROGLOG("Logging to %s", lf->queryLogFileSpec());
         logfilespec.set(lf->queryLogFileSpec());
-        PROGLOG("Logging to %s", logfilespec);
     }
     else
     {
