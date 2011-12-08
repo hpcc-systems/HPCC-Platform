@@ -668,7 +668,8 @@ int main(int argc, char* argv[])
     try {
         StringBuffer cmd;
         splitFilename(argv[0], NULL, NULL, &cmd, NULL);
-        openLogFile(cmd.toLowerCase().append(".log").str());
+        StringBuffer lf;
+        openLogFile(lf, cmd.toLowerCase().append(".log").str());
         if (argc<2) {
             usage();
             return 1;

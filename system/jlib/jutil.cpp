@@ -2236,25 +2236,20 @@ StringBuffer & fillConfigurationDirectoryEntry(const char *dir,const char *name,
 
 IPropertyTree *getHPCCenvironment(const char *confloc)
 {
-    
-    if (!confloc)
+    StringBuffer configFileSpec(confloc);
+    if (!configFileSpec.length())
 #ifdef _WIN32 
         return NULL;
 #else
-    {
-        StringBuffer EnvConfPath(CONFIG_DIR);
-        EnvConfPath.append(PATHSEPSTR).append("environment.conf");
-
-        confloc = EnvConfPath.str();
-    }
+        configFileSpec.set(CONFIG_DIR).append(PATHSEPSTR).append("environment.conf");
 #endif  
-    Owned<IProperties> props = createProperties(confloc);
+    Owned<IProperties> props = createProperties(configFileSpec.str());
     if (props) {
         StringBuffer envfile;
         if (props->getProp("environment",envfile)&&envfile.length()) {
             if (!isAbsolutePath(envfile.str())) {
                 StringBuffer tail(envfile);
-                splitDirTail(confloc,envfile.clear());
+                splitDirTail(configFileSpec.str(),envfile.clear());
                 addPathSepChar(envfile).append(tail);
             }
             Owned<IFile> file = createIFile(envfile.str());

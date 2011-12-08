@@ -575,8 +575,9 @@ void SetLogName(const char *prefix, const char *logdir, const char *thorname, bo
     logname.append(timeStamp);
 #endif
     logname.append(".log");
-    openLogFile(logname.toCharArray());
-    PrintLog("Opened log file %s", logname.toCharArray());
+    StringBuffer lf;
+    openLogFile(lf, logname.toCharArray());
+    PrintLog("Opened log file %s", lf.str());
     PrintLog("Build %s", BUILD_TAG);
 }
 #endif

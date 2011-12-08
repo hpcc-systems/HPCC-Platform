@@ -3062,8 +3062,8 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     if (!standAloneExe)
     {
         Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(agentTopology, "eclagent");
-        lf->setCreateAliasFile(false);
         lf->setMsgFields(MSGFIELD_timeDate | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code);
+        lf->setCreateAliasFile(false);
         lf->beginLogging();
         PROGLOG("Logging to %s", lf->queryLogFileSpec());
         logfilespec.set(lf->queryLogFileSpec());
@@ -3072,14 +3072,8 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     {
         StringBuffer exeName;
         splitFilename(argv[0], NULL, NULL, &exeName, NULL);
-
-        Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(".", exeName.toLowerCase());//log to "cwd/exename.log"
-        lf->setLocal(true);
-        lf->setRolling(false);
-        lf->setMsgFields(MSGFIELD_timeDate | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code);
-        lf->beginLogging();
-        PROGLOG("Logging to %s", lf->queryLogFileSpec());
-        logfilespec.set(lf->queryLogFileSpec());
+        openLogFile(logfilespec, exeName.toLowerCase());
+        PROGLOG("Logging to %s", logfilespec.str());
     }
 
     if (wuXML && wuXML->length())

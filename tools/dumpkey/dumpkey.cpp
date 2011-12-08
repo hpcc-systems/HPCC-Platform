@@ -88,7 +88,8 @@ int main(int argc, const char **argv)
     {
         StringBuffer logname("dumpkey.");
         logname.append(GetCachedHostName()).append(".");
-        openLogFile(logname.append("log").str());
+        StringBuffer lf;
+        openLogFile(lf, logname.append("log").str());
         
         Owned <IKeyIndex> index;
         const char * keyName = globals->queryProp("keyfile");

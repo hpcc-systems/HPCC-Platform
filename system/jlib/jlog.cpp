@@ -967,7 +967,7 @@ void RollingFileLogMsgHandler::doRollover(bool daily, const char *forceName) con
     }
     recursiveCreateDirectoryForFile(filename.str());
     handle = fopen(filename.str(), append ? "a" : "w");
-    if (handle && alias)
+    if (handle && alias && alias.length())
     {
         fclose(handle);
         handle = 0;
@@ -2603,12 +2603,12 @@ private:
     StringBuffer name;
     StringBuffer postfix;
     StringBuffer extension;
+    StringBuffer fullFileSpec;
 
     bool         createAlias;
     StringBuffer aliasName;
 
     StringBuffer logDirSubdir;
-    StringBuffer logFileSpec;
 
     bool         rolling;
 
@@ -2655,76 +2655,98 @@ public:
 
     CComponentLogFileCreator(const char *_logDir, const char *_component) : logDir(_logDir), component(_component)
     {
-        if (!component)
-            throw MakeStringException(3000,"CComponentLogFileCreator:Missing Component Name"); // 3000: internal error
         setDefaults();
     }
 
+    CComponentLogFileCreator(const char *_component) : component(_component)
+    {
+        setDefaults();
+        if (!getConfigurationDirectory(NULL, "log", _component, _component, logDir))
+        {
+            appendCurrentDirectory(logDir,false);
+        }
+    }
 
     //set methods
-    void setExtension(const char * _ext)     { extension.set(_ext); }   //default ".log"
-    void setPrefix(const char * _prefix)     { prefix.set(_prefix); }   //default NULL
-    void setName(const char * _name)         { name.set(_name); }       //default is component name
-    void setPostfix(const char * _postfix)   { postfix.set(_postfix); } //default NULL
-    void setCreateAliasFile(bool _create)    { createAlias = _create; } //controls creation of alias file
-    void setAliasName(const char * _aliasName)   { aliasName.set(_aliasName); }//specify fn without extension
-    void setLogDirSubdir(const char * _subdir)   { logDirSubdir.set(_subdir); }//to be appended to config log dir
-    void setRolling(const bool _rolls)       { rolling = _rolls; }      //daily rollover
+    void setExtension(const char * _ext)     { extension.set(_ext); }
+    void setPrefix(const char * _prefix)     { prefix.set(_prefix); }
+    void setName(const char * _name)         { name.set(_name); }
+    void setCompleteFilespec(const char * _fs){ fullFileSpec.set(_fs); }
+    void setPostfix(const char * _postfix)   { postfix.set(_postfix); }
+    void setCreateAliasFile(bool _create)    { createAlias = _create; }
+    void setAliasName(const char * _aliasName)   { aliasName.set(_aliasName); }
+    void setLogDirSubdir(const char * _subdir)   { logDirSubdir.set(_subdir); }
+    void setRolling(const bool _rolls)       { rolling = _rolls; }
 
     //ILogMsgHandler fields
-    void setAppend(const bool _append)       { append = _append; }      //append to existing file with same name
-    void setFlushes(const bool _flushes)     { flushes = _flushes; }    //automatic flush
-    void setMsgFields(const unsigned _fields){ msgFields = _fields; }   //fields/columns to be included in log
+    void setAppend(const bool _append)       { append = _append; }
+    void setFlushes(const bool _flushes)     { flushes = _flushes; }
+    void setMsgFields(const unsigned _fields){ msgFields = _fields; }
 
     //ILogMsgFilter fields
-    void setMsgAudiences(const unsigned _audiences){ msgAudiences = _audiences; }  //log audience
-    void setMsgClasses(const unsigned _classes)    { msgClasses = _classes; }      //message class
-    void setMaxDetail(const LogMsgDetail _maxDetail)  { maxDetail = _maxDetail; }  //message detail
+    void setMsgAudiences(const unsigned _audiences){ msgAudiences = _audiences; }
+    void setMsgClasses(const unsigned _classes)    { msgClasses = _classes; }
+    void setMaxDetail(const LogMsgDetail _maxDetail)  { maxDetail = _maxDetail; }
     void setLocal(const bool _local)               { local = _local; }
 
     //query methods (not valid until logging started)
-    const char * queryLogDir()          { return logDir.str(); }         //location of log files
-    const char * queryLogFileSpec()     { return expandedLogSpec.str(); }//full filespec of log file
-    const char * queryAliasFileSpec()   { return aliasFileSpec.str(); }  //logfile alias
+    const char * queryLogDir()          { return logDir.str(); }
+    const char * queryLogFileSpec()     { return expandedLogSpec.str(); }
+    const char * queryAliasFileSpec()   { return aliasFileSpec.str(); }
 
-    bool beginLogging()
+    ILogMsgHandler * beginLogging()
     {
         //build directory path
-        if (!logDir.length())
+        StringBuffer logFileSpec;
+        if (!fullFileSpec.length())//user specify complete logfile specification?
         {
-            logDir.append(".").append(PATHSEPSTR).append("logs");
-            WARNLOG("No logfile directory specified - logs will be written locally to %s", logDir.str());
+            if (!logDir.length())
+            {
+                appendCurrentDirectory(logDir,false).append(PATHSEPSTR).append("logs");
+                WARNLOG("No logfile directory specified - logs will be written locally to %s", logDir.str());
+            }
+
+            makeAbsolutePath(logDir);
+
+            //build log file name (without date string or extension)
+            StringBuffer logFileName;
+            if (prefix.length())
+                logFileName.append(prefix).append(".");
+            logFileName.append(name);
+            if (postfix.length())
+                logFileName.append(".").append(postfix);
+
+            //build log file spec
+            if (logDirSubdir.length())
+                logDir.append(PATHSEPCHAR).append(logDirSubdir);//user specified subfolder
+            logFileSpec.append(logDir).append(PATHSEPCHAR).append(logFileName);
+
+            //build alias file spec
+            if (createAlias)
+            {
+                if (aliasName.length()==0)
+                    aliasName.set(logFileName);
+                aliasFileSpec.append(logDir).append(PATHSEPCHAR).append(aliasName).append(extension);
+            }
         }
-
-        //build log file name (without date string or extension)
-        StringBuffer logFileName;
-        if (prefix.length())
-            logFileName.append(prefix).append(".");
-        logFileName.append(name);
-        if (postfix.length())
-            logFileName.append(".").append(postfix);
-
-        //build log file spec
-        if (logDirSubdir.length())
-            logDir.append(PATHSEPCHAR).append(logDirSubdir);//user specified subfolder
-        logFileSpec.append(logDir).append(PATHSEPCHAR).append(logFileName);
-
-        //build alias file spec
-        if (createAlias)
-        {
-            if (aliasName.length()==0)
-                aliasName.set(logFileName);
-            aliasFileSpec.append(logDir).append(PATHSEPCHAR).append(aliasName).append(extension);
-        }
+        else
+            makeAbsolutePath(fullFileSpec);
 
         ILogMsgHandler * lmh;
         if (rolling)
             lmh = getRollingFileLogMsgHandler(logFileSpec.str(), extension, msgFields, append, flushes, NULL, aliasFileSpec.str(), true);
         else
-            lmh = getFileLogMsgHandler(logFileSpec.append(extension).str(), NULL, msgFields, false);
+        {
+            StringBuffer lfs;
+            if (fullFileSpec.length())
+                lfs.set(fullFileSpec);
+            else
+                lfs.set(logFileSpec.append(extension).str());
+            lmh = getFileLogMsgHandler(lfs.str(), NULL, msgFields, false);
+        }
         lmh->getLogName(expandedLogSpec);
         queryLogMsgManager()->addMonitorOwn( lmh, getCategoryLogMsgFilter(msgAudiences, msgClasses, maxDetail, local));
-        return true;
+        return lmh;
     }
 };
 
@@ -2736,4 +2758,9 @@ IComponentLogFileCreator * createComponentLogFileCreator(IPropertyTree * _proper
 IComponentLogFileCreator * createComponentLogFileCreator(const char *_logDir, const char *_component)
 {
     return new CComponentLogFileCreator(_logDir, _component);
+}
+
+IComponentLogFileCreator * createComponentLogFileCreator(const char *_component)
+{
+    return new CComponentLogFileCreator(_component);
 }
