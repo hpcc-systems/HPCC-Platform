@@ -2865,11 +2865,11 @@ public:
     void reloadClusters()
     {
         // called from CClustersLockedSection
-        if (!CDistributedFileBase::conn)
+        if (!CDistributedFileBase<IDistributedFile>::conn)
             return;
-        assertex(CDistributedFileBase::proplockcount==0); // cannot reload clusters if properties locked
-        CDistributedFileBase::conn->reload(); // should only be cluster changes but a bit dangerous
-        IPropertyTree *t = CDistributedFileBase::conn->queryRoot();  // NB not CDistributedFileBase::queryRoot();
+        assertex(CDistributedFileBase<IDistributedFile>::proplockcount==0); // cannot reload clusters if properties locked
+        CDistributedFileBase<IDistributedFile>::conn->reload(); // should only be cluster changes but a bit dangerous
+        IPropertyTree *t = CDistributedFileBase<IDistributedFile>::conn->queryRoot();  // NB not CDistributedFileBase<IDistributedFile>::queryRoot();
 
         if (!t)
             return;
@@ -2881,14 +2881,14 @@ public:
     {
         // called from CClustersLockedSection
         IPropertyTree *t;
-        if (CDistributedFileBase::conn)
-            t = CDistributedFileBase::conn->queryRoot();
+        if (CDistributedFileBase<IDistributedFile>::conn)
+            t = CDistributedFileBase<IDistributedFile>::conn->queryRoot();
         else
-            t = CDistributedFileBase::queryRoot(); //cache
+            t = CDistributedFileBase<IDistributedFile>::queryRoot(); //cache
         if (!t)
             return;
         IPropertyTree *pt;
-        IPropertyTree *tc = CDistributedFileBase::queryRoot(); //cache
+        IPropertyTree *tc = CDistributedFileBase<IDistributedFile>::queryRoot(); //cache
         IPropertyTree *t0 = t;
         StringBuffer grplist;
         // the following is complicated by fact there is a cache of the file branch
@@ -2922,15 +2922,15 @@ public:
                 break;
             t = tc; // now fix cache
         }
-        if (CDistributedFileBase::conn)
-            CDistributedFileBase::conn->commit(); // should only be cluster changes but a bit dangerous
+        if (CDistributedFileBase<IDistributedFile>::conn)
+            CDistributedFileBase<IDistributedFile>::conn->commit(); // should only be cluster changes but a bit dangerous
     }
 
     void addCluster(const char *clustername,ClusterPartDiskMapSpec &mspec)
     {
         if (!clustername&&!*clustername)
             return;
-        CClustersLockedSection cls(CDistributedFileBase::logicalName);
+        CClustersLockedSection cls(CDistributedFileBase<IDistributedFile>::logicalName);
         reloadClusters();
         if (findCluster(clustername)!=NotFound) {
             if (findCluster(clustername)!=NotFound) {
@@ -2951,7 +2951,7 @@ public:
 
     void removeCluster(const char *clustername)
     {
-        CClustersLockedSection cls(CDistributedFileBase::logicalName);
+        CClustersLockedSection cls(CDistributedFileBase<IDistributedFile>::logicalName);
         reloadClusters();
         unsigned i = findCluster(clustername);
         if (i!=NotFound) {
@@ -2964,7 +2964,7 @@ public:
 
     void setPreferredClusters(const char *clusterlist)
     {
-        clusters.setPreferred(clusterlist,CDistributedFileBase::logicalName);
+        clusters.setPreferred(clusterlist,CDistributedFileBase<IDistributedFile>::logicalName);
     }
 
 
@@ -3022,7 +3022,7 @@ public:
 
     void updatePartDiskMapping(const char *clustername,const ClusterPartDiskMapSpec &spec)
     {
-        CClustersLockedSection cls(CDistributedFileBase::logicalName);
+        CClustersLockedSection cls(CDistributedFileBase<IDistributedFile>::logicalName);
         reloadClusters();
         unsigned i = findCluster(clustername);
         if (i!=NotFound) {
