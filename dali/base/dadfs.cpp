@@ -1344,7 +1344,7 @@ public:
         if (owner&&(strcmp(lfn,owner->queryLogicalName())==0))
             return LINK(owner);
         if (chain)
-            chain-> lookupFile(lfn,timeout);
+            return chain->lookupFile(lfn,timeout);
         return queryDistributedFileDirectory().lookup(lfn,udesc,false,NULL,timeout);
     }
     IDistributedSuperFile *lookupSuperFile(const char *slfn,bool fixmissing=false,unsigned timeout=INFINITE)
