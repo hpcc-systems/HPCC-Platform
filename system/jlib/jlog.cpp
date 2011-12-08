@@ -893,12 +893,12 @@ void FileLogMsgHandlerXML::addToPTree(IPropertyTree * tree) const
 
 // FileLogMsgHandler
 
-RollingFileLogMsgHandler::RollingFileLogMsgHandler(const char * _filebase, const char * _fileextn, unsigned _fields, bool _append, bool _flushes, const char *initialName, const char *_alias) : messageFields(_fields), filebase(_filebase), fileextn(_fileextn), append(_append), flushes(_flushes), handle(0), alias(_alias)
+RollingFileLogMsgHandler::RollingFileLogMsgHandler(const char * _filebase, const char * _fileextn, unsigned _fields, bool _append, bool _flushes, const char *initialName, const char *_alias, bool daily) : messageFields(_fields), filebase(_filebase), fileextn(_fileextn), append(_append), flushes(_flushes), handle(0), alias(_alias)
 {
     time_t tNow;
     time(&tNow);
     localtime_r(&tNow, &startTime);
-    doRollover(false, initialName);
+    doRollover(daily, initialName);
 }
 
 RollingFileLogMsgHandler::~RollingFileLogMsgHandler()
@@ -2057,9 +2057,9 @@ ILogMsgHandler * getFileLogMsgHandler(const char * filename, const char * header
     return new FileLogMsgHandlerTable(filename, headertext, fields, append, flushes);
 }
 
-ILogMsgHandler * getRollingFileLogMsgHandler(const char * filebase, const char * fileextn, unsigned fields, bool append, bool flushes, const char *initialName, const char *alias)
+ILogMsgHandler * getRollingFileLogMsgHandler(const char * filebase, const char * fileextn, unsigned fields, bool append, bool flushes, const char *initialName, const char *alias, bool daily)
 {
-    return new RollingFileLogMsgHandler(filebase, fileextn, fields, append, flushes, initialName, alias);
+    return new RollingFileLogMsgHandler(filebase, fileextn, fields, append, flushes, initialName, alias, daily);
 }
 
 ILogMsgHandler * getBinLogMsgHandler(const char * filename, bool append)
@@ -2589,4 +2589,151 @@ extern jlib_decl void AuditSystemAccess(const char *userid, bool success, char c
     VStringBuffer s("User %s: ", userid);
     SYSLOG((success) ? AUDIT_TYPE_ACCESS_SUCCESS : AUDIT_TYPE_ACCESS_FAILURE, s.valist_appendf(msg, args).str());
     va_end(args);
+}
+
+//--------------------------------------------------------------
+
+class jlib_decl CComponentLogFileCreator : implements IComponentLogFileCreator, public CInterface
+{
+private:
+    StringBuffer component;
+
+    //filename parts
+    StringBuffer prefix;
+    StringBuffer name;
+    StringBuffer postfix;
+    StringBuffer extension;
+
+    bool         createAlias;
+    StringBuffer aliasName;
+
+    StringBuffer logDirSubdir;
+    StringBuffer logFileSpec;
+
+    bool         rolling;
+
+    //ILogMsgHandler fields
+    bool         append;
+    bool         flushes;
+    unsigned     msgFields;
+
+    //ILogMsgFilter fields
+    unsigned     msgAudiences;
+    unsigned     msgClasses;
+    LogMsgDetail maxDetail;
+    bool         local;
+
+    //available after logging started
+    StringBuffer logDir;        //access via queryLogDir()
+    StringBuffer aliasFileSpec; //access via queryLogDir()
+    StringBuffer expandedLogSpec;//access via queryLogFileSpec()
+
+private:
+    void setDefaults()
+    {
+        rolling = true;
+        append = true;
+        flushes = true;
+        msgFields = MSGFIELD_STANDARD;
+        msgAudiences = MSGAUD_all;
+        msgClasses = MSGCLS_all;
+        maxDetail = DefaultDetail;
+        name.set(component);//logfile defaults to component name. Change via setName(), setPrefix() and setPostfix()
+        extension.set(".log");
+        local = false;
+        createAlias = true;
+    }
+
+public:
+    IMPLEMENT_IINTERFACE;
+    CComponentLogFileCreator(IPropertyTree * _properties, const char *_component) : component(_component)
+    {
+        setDefaults();
+        if (!getConfigurationDirectory(_properties->queryPropTree("Directories"), "log", _component, _properties->queryProp("@name"), logDir))
+            _properties->getProp("@logDir", logDir);
+    }
+
+    CComponentLogFileCreator(const char *_logDir, const char *_component) : logDir(_logDir), component(_component)
+    {
+        if (!component)
+            throw MakeStringException(3000,"CComponentLogFileCreator:Missing Component Name"); // 3000: internal error
+        setDefaults();
+    }
+
+
+    //set methods
+    void setExtension(const char * _ext)     { extension.set(_ext); }   //default ".log"
+    void setPrefix(const char * _prefix)     { prefix.set(_prefix); }   //default NULL
+    void setName(const char * _name)         { name.set(_name); }       //default is component name
+    void setPostfix(const char * _postfix)   { postfix.set(_postfix); } //default NULL
+    void setCreateAliasFile(bool _create)    { createAlias = _create; } //controls creation of alias file
+    void setAliasName(const char * _aliasName)   { aliasName.set(_aliasName); }//specify fn without extension
+    void setLogDirSubdir(const char * _subdir)   { logDirSubdir.set(_subdir); }//to be appended to config log dir
+    void setRolling(const bool _rolls)       { rolling = _rolls; }      //daily rollover
+
+    //ILogMsgHandler fields
+    void setAppend(const bool _append)       { append = _append; }      //append to existing file with same name
+    void setFlushes(const bool _flushes)     { flushes = _flushes; }    //automatic flush
+    void setMsgFields(const unsigned _fields){ msgFields = _fields; }   //fields/columns to be included in log
+
+    //ILogMsgFilter fields
+    void setMsgAudiences(const unsigned _audiences){ msgAudiences = _audiences; }  //log audience
+    void setMsgClasses(const unsigned _classes)    { msgClasses = _classes; }      //message class
+    void setMaxDetail(const LogMsgDetail _maxDetail)  { maxDetail = _maxDetail; }  //message detail
+    void setLocal(const bool _local)               { local = _local; }
+
+    //query methods (not valid until logging started)
+    const char * queryLogDir()          { return logDir.str(); }         //location of log files
+    const char * queryLogFileSpec()     { return expandedLogSpec.str(); }//full filespec of log file
+    const char * queryAliasFileSpec()   { return aliasFileSpec.str(); }  //logfile alias
+
+    bool beginLogging()
+    {
+        //build directory path
+        if (!logDir.length())
+        {
+            logDir.append(".").append(PATHSEPSTR).append("logs");
+            WARNLOG("No logfile directory specified - logs will be written locally to %s", logDir.str());
+        }
+
+        //build log file name (without date string or extension)
+        StringBuffer logFileName;
+        if (prefix.length())
+            logFileName.append(prefix).append(".");
+        logFileName.append(name);
+        if (postfix.length())
+            logFileName.append(".").append(postfix);
+
+        //build log file spec
+        if (logDirSubdir.length())
+            logDir.append(PATHSEPCHAR).append(logDirSubdir);//user specified subfolder
+        logFileSpec.append(logDir).append(PATHSEPCHAR).append(logFileName);
+
+        //build alias file spec
+        if (createAlias)
+        {
+            if (aliasName.length()==0)
+                aliasName.set(logFileName);
+            aliasFileSpec.append(logDir).append(PATHSEPCHAR).append(aliasName).append(extension);
+        }
+
+        ILogMsgHandler * lmh;
+        if (rolling)
+            lmh = getRollingFileLogMsgHandler(logFileSpec.str(), extension, msgFields, append, flushes, NULL, aliasFileSpec.str(), true);
+        else
+            lmh = getFileLogMsgHandler(logFileSpec.append(extension).str(), NULL, msgFields, false);
+        lmh->getLogName(expandedLogSpec);
+        queryLogMsgManager()->addMonitorOwn( lmh, getCategoryLogMsgFilter(msgAudiences, msgClasses, maxDetail, local));
+        return true;
+    }
+};
+
+IComponentLogFileCreator * createComponentLogFileCreator(IPropertyTree * _properties, const char *_component)
+{
+    return new CComponentLogFileCreator(_properties, _component);
+}
+
+IComponentLogFileCreator * createComponentLogFileCreator(const char *_logDir, const char *_component)
+{
+    return new CComponentLogFileCreator(_logDir, _component);
 }

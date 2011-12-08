@@ -35,7 +35,6 @@ public:
 private:
     int run();
     int executeWorkunit(const char * wuid);
-    void rebuildLogfileName();
 
     //attributes
     bool started;
