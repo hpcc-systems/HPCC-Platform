@@ -587,7 +587,7 @@ private:
 class RollingFileLogMsgHandler : public CInterface, implements ILogMsgHandler
 {
 public:
-    RollingFileLogMsgHandler(const char * _filebase, const char * _fileextn, unsigned _fields = MSGFIELD_all, bool _append = false, bool _flushes = true, const char *initialName = NULL, const char *alias = NULL);
+    RollingFileLogMsgHandler(const char * _filebase, const char * _fileextn, unsigned _fields = MSGFIELD_all, bool _append = false, bool _flushes = true, const char *initialName = NULL, const char *alias = NULL, bool daily = false);
     virtual ~RollingFileLogMsgHandler();
     IMPLEMENT_IINTERFACE;
     void                      handleMessage(const LogMsg & msg) const

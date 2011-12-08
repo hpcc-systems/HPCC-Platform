@@ -195,21 +195,32 @@ int work_main(CEspConfig& config, CEspServer& server)
 }
 
 
-void openEspLogFile(const char* logdir, IPropertyTree* globals)
+void openEspLogFile(IPropertyTree* envpt, IPropertyTree* procpt)
 {
-    StringBuffer logbase;
-    StringBuffer alias;
-    if(logdir && *logdir)
+    StringBuffer logdir;
+    if(procpt->hasProp("@name"))
     {
-        logbase.append(logdir);
-        alias.append(logdir);
+        StringBuffer espNameStr;
+        procpt->getProp("@name", espNameStr);
+        if (!getConfigurationDirectory(envpt->queryPropTree("Software/Directories"), "log", "esp", espNameStr.str(), logdir))
+        {
+            logdir.clear();
+        }
     }
-    logbase.append("esp_main");
-    alias.append("esp.log");
-    queryLogMsgManager()->addMonitorOwn(getRollingFileLogMsgHandler(logbase.str(), ".log", MSGFIELD_STANDARD, false, true, NULL, alias.str()), getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, DefaultDetail));
-    if (globals->getPropBool("@enableSysLog", false))
+    if(logdir.length() == 0)
+    {
+        if(procpt->hasProp("@logDir"))
+            procpt->getProp("@logDir", logdir);
+    }
+
+
+    Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(logdir.str(), "esp");
+    lf->setName("esp_main");//override default filename
+    lf->setAliasName("esp");
+    lf->beginLogging();
+
+    if (procpt->getPropBool("@enableSysLog", false))
         UseSysLogForOperatorMessages();
-    DBGLOG("Esp starting %s", BUILD_TAG);
 }   
 
 static void usage()
@@ -302,38 +313,15 @@ int init_main(int argc, char* argv[])
         else
             throw MakeStringException(-1, "Failed to load config file %s", cfgfile);
 
-        StringBuffer logdir;
-        if(procpt->hasProp("@name"))
-        {
-            StringBuffer espNameStr;
-            procpt->getProp("@name", espNameStr);
-            if (!getConfigurationDirectory(envpt->queryPropTree("Software/Directories"), "log", "esp", espNameStr.str(), logdir))
-            {
-                logdir.clear();
-            }
-        }
-
         const char* build_ver = BUILD_TAG;
         setBuildVersion(build_ver);
 
         const char* build_level = BUILD_LEVEL;
         setBuildLevel(build_level);
 
-        if(logdir.length() == 0)
-        {
-            if(procpt->hasProp("@logDir"))
-                procpt->getProp("@logDir", logdir);
-        }
-        if(logdir.length() == 0)
-            logdir.append(".");
-        if(stricmp(logdir.str(), ".") != 0)
-        {
-            recursiveCreateDirectory(logdir.str());
-        }
-        if(logdir.charAt(logdir.length() - 1) != PATHSEPCHAR)
-            logdir.append(PATHSEPCHAR);
-        
-        openEspLogFile(logdir.str(), procpt.get());
+        openEspLogFile(envpt.get(), procpt.get());
+
+        DBGLOG("Esp starting %s", BUILD_TAG);
 
         StringBuffer componentfilesDir;
         if(procpt->hasProp("@componentfilesDir"))

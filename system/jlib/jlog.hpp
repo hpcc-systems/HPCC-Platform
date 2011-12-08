@@ -216,7 +216,7 @@ typedef enum
     MSGFIELD_all         = 0xFFFFFF
 } LogMsgField;
 
-#define MSGFIELD_STANDARD MSGFIELD_timeDate | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code | MSGFIELD_quote | MSGFIELD_prefix
+#define MSGFIELD_STANDARD LogMsgField(MSGFIELD_timeDate | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code | MSGFIELD_quote | MSGFIELD_prefix)
 
 inline const char * LogMsgFieldToString(LogMsgField field)
 {
@@ -648,7 +648,7 @@ extern jlib_decl ILogMsgFilter * getSwitchLogMsgFilterOwn(ILogMsgFilter * switch
 
 extern jlib_decl ILogMsgHandler * getHandleLogMsgHandler(FILE * handle = stderr, unsigned fields = MSGFIELD_all, bool writeXML = false);
 extern jlib_decl ILogMsgHandler * getFileLogMsgHandler(const char * filename, const char * headertext = 0, unsigned fields = MSGFIELD_all, bool writeXML = true, bool append = false, bool flushes = true);
-extern jlib_decl ILogMsgHandler * getRollingFileLogMsgHandler(const char * filebase, const char * fileextn, unsigned fields = MSGFIELD_all, bool append = false, bool flushes = true, const char *initialName = NULL, const char *alias = NULL);
+extern jlib_decl ILogMsgHandler * getRollingFileLogMsgHandler(const char * filebase, const char * fileextn, unsigned fields = MSGFIELD_all, bool append = false, bool flushes = true, const char *initialName = NULL, const char *alias = NULL, bool daily = false);
 extern jlib_decl ILogMsgHandler * getBinLogMsgHandler(const char * filename, bool append = false);
 
 // Function to install switch filter into a monitor, switch some messages to new filter whilst leaving rest to previous filter
@@ -1000,5 +1000,41 @@ interface IContextLogger : extends IInterface
 };
 
 extern jlib_decl const IContextLogger &queryDummyContextLogger();
+
+//---------------------------------------------------------------------------
+
+interface IComponentLogFileCreator : extends IInterface
+{
+    //set methods
+    virtual void setExtension(const char * _ext) = 0;       //log filename extension (eg ".log")
+    virtual void setPrefix(const char * _prefix) = 0;       //filename prefix (eg "master")
+    virtual void setName(const char * _name) = 0;           //log filename, overrides default of component name (without extension)
+    virtual void setPostfix(const char * _postfix) = 0;     //filename postfix (eg "coalesce")
+    virtual void setCreateAliasFile(bool _create) = 0;      //controls creation of hardlink alias file
+    virtual void setAliasName(const char * _aliasName) = 0; //alias file name, overrides default of component name
+    virtual void setLogDirSubdir(const char * _subdir) = 0; //subdir be appended to config log dir (eg "server" or "audit")
+    virtual void setRolling(const bool _rolls) = 0;         //daily rollover to new file
+
+    //ILogMsgHandler fields
+    virtual void setAppend(const bool _append) = 0;         //append to existing logfile
+    virtual void setFlushes(const bool _flushes) = 0;       //automatically flush
+    virtual void setMsgFields(const unsigned _fields) = 0;  //fields/columns to be included in log
+
+    //ILogMsgFilter fields
+    virtual void setMsgAudiences(const unsigned _audiences) = 0;    //log audience
+    virtual void setMsgClasses(const unsigned _classes) = 0;        //message class
+    virtual void setMaxDetail(const LogMsgDetail _maxDetail) = 0;   //message detail
+    virtual void setLocal(const bool _local) = 0;                   //local logging
+
+    //query methods (not valid until logging started)
+    virtual const char * queryLogDir() = 0;         //Location of component logfile
+    virtual const char * queryLogFileSpec() = 0;    //Full log filespec
+    virtual const char * queryAliasFileSpec() = 0;  //Full alias filespec, if created
+
+    virtual bool beginLogging() = 0;    //begin logging to specified file(s)
+};
+
+extern jlib_decl IComponentLogFileCreator * createComponentLogFileCreator(IPropertyTree * _properties, const char *_component);
+extern jlib_decl IComponentLogFileCreator * createComponentLogFileCreator(const char *_logDir, const char *_component);
 
 #endif

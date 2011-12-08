@@ -530,80 +530,35 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 
         IPropertyTree *directoryTree = topology->queryPropTree("Directories");
         if (directoryTree)
-        {
-            getConfigurationDirectory(directoryTree,"log","roxie", roxieName, logDirectory);
             getConfigurationDirectory(directoryTree,"query","roxie", roxieName, queryDirectory);
-        }
-        // get the log directory
-        if (!logDirectory.length())
-        {
-            topology->getProp("@logDir", logDirectory);
-            if (!logDirectory.length())
-                logDirectory.append(codeDirectory).append("logs");
-        }
-        addNonEmptyPathSepChar(logDirectory);
 
-        StringBuffer initialFileName;
-        if (globals->getPropBool("stdlog", traceLevel != 0) || topology->getPropBool("@forceStdLog", false))
-            queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_thread | MSGFIELD_prefix);
-        else
-            removeLog();
+        //Logging stuff
         if (globals->hasProp("logfile"))
         {
-            initialFileName.appendf("%sroxie.",logDirectory.str());
-            StringBuffer log;
-            globals->getProp("logfile", log);
-            // If it's in the form mm_dd_yyyy_hh_mm_ss, and we have rolled over, then use rolled-over form
-            unsigned year,month,day,hour,min,sec;
-            if (sscanf(log.str(), "%2u_%2u_%4u_%2u_%2u_%2u", &month, &day, &year, &hour, &min, &sec)==6)
-            {
-                time_t tNow;
-                time(&tNow);
-                struct tm ltNow;
-                localtime_r(&tNow, &ltNow);
-                ltNow.tm_mon = ltNow.tm_mon +1;  // localtime returns month (0 - 11 : 0 = January) */
-                ltNow.tm_year += 1900; // localtime returns  Year less 1900 */
-                if(ltNow.tm_mday != day || ltNow.tm_mon != month || ltNow.tm_year != year)
-                {
-                    addFileTimestamp(log.clear(), true); // this call adds a '.' at the beginning
-                }
-            }
-            else
-                DBGLOG("no date match");
-
-            initialFileName.appendf("%s.log", (log[0] !='.') ? log.str() : (log.str()+1)); // make sure 'log' does not start with a '.'
-
-            // build the base log file name using the logDir setting in the topology file
-            if (!recursiveCreateDirectory(logDirectory))
-                throw MakeStringException(ROXIE_FILE_ERROR, "Unable to create directory %s", logDirectory.str());
-            StringBuffer logBaseName(logDirectory.str());
-            logBaseName.append("roxie");
-
-            // set the alias name
-            StringBuffer logAliasName(logBaseName.str());
-            logAliasName.append(".log");
-
+            Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(topology, "roxie");
+            if (globals->getPropBool("stdlog", traceLevel != 0) || topology->getPropBool("@forceStdLog", false))
+                lf->setMsgFields(MSGFIELD_time | MSGFIELD_thread | MSGFIELD_prefix);
+            lf->setMaxDetail(TopDetail);
+            lf->beginLogging();
+            logDirectory.set(lf->queryLogDir());
 #ifdef _DEBUG
-            useLogQueue = topology->getPropBool("@useLogQueue", false);
+            unsigned useLogQueue = topology->getPropBool("@useLogQueue", false);
 #else
-            useLogQueue = topology->getPropBool("@useLogQueue", true);
+            unsigned useLogQueue = topology->getPropBool("@useLogQueue", true);
 #endif
-            logQueueLen = topology->getPropInt("@logQueueLen", 512);
-            logQueueDrop = topology->getPropInt("@logQueueDrop", 32);
-
-            ILogMsgFilter * filter = getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail, false);
-            logFileHandler = getRollingFileLogMsgHandler(logBaseName.str(), ".log", MSGFIELD_STANDARD, true, true, initialFileName.length() ? initialFileName.str() : NULL, logAliasName.str());
-            queryLogMsgManager()->addMonitorOwn(logFileHandler, filter);
             if (useLogQueue)
             {
+                unsigned logQueueLen = topology->getPropInt("@logQueueLen", 512);
+                unsigned logQueueDrop = topology->getPropInt("@logQueueDrop", 32);
                 queryLogMsgManager()->enterQueueingMode();
                 queryLogMsgManager()->setQueueDroppingLimit(logQueueLen, logQueueDrop);
             }
             if (globals->getPropBool("enableSysLog",true))
                 UseSysLogForOperatorMessages();
         }
+
         roxieMetrics.setown(createRoxieMetricsManager());
- 
+
         Owned<IPropertyTreeIterator> userMetrics = topology->getElements("./UserMetric");
         ForEach(*userMetrics)
         {

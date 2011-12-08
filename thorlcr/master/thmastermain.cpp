@@ -489,23 +489,14 @@ int main( int argc, char *argv[]  )
     Owned<IPerfMonHook> perfmonhook;
 
     try {
-        const char *confLogDir = globals->queryProp("@logDir");
-        StringBuffer logName, logDir;
-        if (getConfigurationDirectory(globals->queryPropTree("Directories"),"log","thor",globals->queryProp("@name"),logDir))
         {
-            if (confLogDir && *confLogDir)
-            {
-                StringBuffer confLogTail;
-                splitFilename(confLogDir, NULL, NULL, &confLogTail, &confLogTail);
-                addPathSepChar(logDir);
-                logDir.append(confLogTail);
-            }
+            Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(globals, "thor");
+            lf->setName("thormaster");//override default filename
+            lf->setCreateAliasFile(false);
+            lf->setMsgFields(MSGFIELD_timeDate | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code);
+            lf->beginLogging();
+            createUNCFilename(lf->queryAliasFileSpec(), logUrl, false);
         }
-        else
-            logDir.append(confLogDir);
-        getLogDir("THORMASTER", logDir, logName);
-        openLogFile(logName.toCharArray());
-        createUNCFilename(logName.str(), logUrl, false);
         LOG(MCdebugProgress, thorJob, "Opened log file %s", logUrl.toCharArray());
         LOG(MCdebugProgress, thorJob, "Build %s", BUILD_TAG);
         globals->setProp("@logURL", logUrl.str());

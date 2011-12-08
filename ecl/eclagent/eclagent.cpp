@@ -3057,29 +3057,29 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     else
         agentTopology.setown(createPTree("AGENTEXEC"));
 
+    //Build log file specification
     StringBuffer logfilespec;
-    if (!globals->getProp("LOGFILE", logfilespec) && !standAloneExe)
+    if (!standAloneExe)
     {
-        if (!getConfigurationDirectory(agentTopology->queryPropTree("Directories"),"log","eclagent",agentTopology->queryProp("@name"),logfilespec))
-            agentTopology->getProp("@logDir", logfilespec);
-        if (!logfilespec.length())
-        {
-            logfilespec.append(".");
-        }
-        recursiveCreateDirectory(logfilespec.str());
-        addPathSepChar(logfilespec);
-        logfilespec.append("eclagent");
-        addFileTimestamp(logfilespec, true);
-        logfilespec.append(".log");
+        Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(agentTopology, "eclagent");
+        lf->setCreateAliasFile(false);
+        lf->setMsgFields(MSGFIELD_timeDate | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code);
+        lf->beginLogging();
+        logfilespec.set(lf->queryLogFileSpec());
+        PROGLOG("Logging to %s", logfilespec);
     }
-    else if (standAloneExe)
+    else
     {
         StringBuffer exeName;
         splitFilename(argv[0], NULL, NULL, &exeName, NULL);
 
-        logfilespec.clear().append(".");
-        addPathSepChar(logfilespec);
-        logfilespec.append(exeName).append(".log");
+        Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(".", exeName.toLowerCase());//log to "cwd/exename.log"
+        lf->setLocal(true);
+        lf->setRolling(false);
+        lf->setMsgFields(MSGFIELD_timeDate | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code);
+        lf->beginLogging();
+        PROGLOG("Logging to %s", lf->queryLogFileSpec());
+        logfilespec.set(lf->queryLogFileSpec());
     }
 
     if (wuXML && wuXML->length())
@@ -3127,8 +3127,6 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     traceLevel = agentTopology->getPropInt("@traceLevel", traceLevel);
     traceLevel = globals->getPropInt("TRACELEVEL", traceLevel);
 
-    if (logfilespec.length())
-        appendLogFile(logfilespec.str());
     if (traceLevel)
     {
         printStart(argc, argv);
