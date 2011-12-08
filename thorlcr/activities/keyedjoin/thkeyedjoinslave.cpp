@@ -987,7 +987,8 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                 threaded.join();
                 if (stopPending) // stop groups in progress
                 {
-                    requestProcessor->stop();
+                    if (aborted) // don't stop request processor unless aborting, other nodes may depend on it's reply.
+                        requestProcessor->stop();
                     resultProcessor->stop();
                 }
             }
