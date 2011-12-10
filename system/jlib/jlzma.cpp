@@ -22,30 +22,11 @@
 
 #include "jlzma.hpp"
 
-#ifdef _WIN32
-extern "C" {
-#endif
 #include "Types.h"
 #include "LzFind.h"
 #include "LzHash.h"
 #include "LzmaEnc.h"
 #include "LzmaDec.h"
-#ifdef _WIN32
-}
-#endif
-
-#ifdef _WIN32 // Kludge to avoid using library (too many VS6 .dsws out there!)
-extern "C" {
-#endif
-#include "LzFind.c"
-#include "LzmaEnc.c"
-#undef kNumFullDistances
-#define kLiteralNextStates decLiteralNextStates
-#include "LzmaDec.c"
-#ifdef _WIN32
-}
-#endif
-
 
 static void *SzAlloc(void *, size_t size)
 { 
