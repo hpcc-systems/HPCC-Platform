@@ -5421,7 +5421,7 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
         }
     case no_aggregate:
         {
-            if (expr->hasProperty(mergeAtom))
+            if (expr->hasProperty(mergeTransformAtom))
                 break;
             IHqlExpression * transform = queryNewColumnProvider(expr);
             exprMapping.setown(HqlConstantPercolator::extractConstantMapping(transform));

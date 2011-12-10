@@ -3096,7 +3096,7 @@ IHqlExpression * ThorHqlTransformer::normalizeMergeAggregate(IHqlExpression * ex
     //If locally distributed then don't do anything
     OwnedHqlExpr noMerge = removeProperty(expr, mergeAtom);
     if (!translator.targetThor() || expr->hasProperty(localAtom) || isPartitionedForGroup(dataset, groupBy, true))
-        return removeProperty(expr, mergeAtom);
+        return noMerge.getClear();
 
     //Convert the aggregation (so no covariance/ave and other computed fields)
     OwnedHqlExpr normalized = normalizeTableToAggregate(noMerge, true);

@@ -905,7 +905,7 @@ IHqlExpression * HqlGram::processUserAggregate(const attribute & mainPos, attrib
     if (grouping)
         args.append(*LINK(grouping));
     if (merge)
-        args.append(*createExprAttribute(mergeAtom, merge.getClear()));
+        args.append(*createExprAttribute(mergeTransformAtom, merge.getClear()));
     if (attrs)
         attrs->unwindList(args, no_comma);
     args.append(*LINK(rowsid));
@@ -3695,7 +3695,7 @@ void HqlGram::checkAggregateRecords(IHqlExpression * expr, IHqlExpression * reco
     if (containsIfBlock(record))
         reportError(ERR_NO_IFBLOCKS, errpos, "IFBLOCKS not supported in the aggregate target record");
 
-    IHqlExpression * mergeTransform = queryPropertyChild(expr, mergeAtom, 0);
+    IHqlExpression * mergeTransform = queryPropertyChild(expr, mergeTransformAtom, 0);
     if (mergeTransform)
     {
         if (!recordTypesMatch(mergeTransform, expr))
