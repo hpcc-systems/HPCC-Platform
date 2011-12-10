@@ -24,7 +24,7 @@
 #include "jdebug.hpp"
 #include "jlzw.hpp"
 #include "eclrtl.hpp"
-#ifndef _WIN32
+#ifdef _USE_BINUTILS
 #include "bfd.h"
 #endif
 
@@ -203,7 +203,7 @@ bool HelperDll::getResource(size32_t & len, const void * & data, const char * ty
 #endif
 }
 
-#ifndef _WIN32
+#ifdef _USE_BINUTILS
 struct SecScanParam
 {
     MemoryBuffer &result;
@@ -245,7 +245,7 @@ extern bool getResourceFromFile(const char *filename, MemoryBuffer &data, const 
     data.append(len, rdata);
     FreeLibrary(dllHandle);
     return true;
-#else
+#elif defined (_USE_BINUTILS)
     bfd_init ();
     bfd *file = bfd_openr(filename, NULL);
     if (file)
@@ -258,6 +258,8 @@ extern bool getResourceFromFile(const char *filename, MemoryBuffer &data, const 
         bfd_close (file);
    }
    return data.length() != 0;
+#else
+   UNIMPLEMENTED;
 #endif
 }
 
