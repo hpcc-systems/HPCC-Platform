@@ -8594,10 +8594,10 @@ mergeDataSetItem
                             $$.setExpr(createAttribute(dedupAtom));
                             $$.setPosition($1);
                         }
-    | SORTED '(' heterogeneous_expr_list ')'
+    | SORTED '(' startSortOrder heterogeneous_expr_list ')' endSortOrder
                         {
                             HqlExprArray args;
-                            $3.unwindCommaList(args);
+                            $4.unwindCommaList(args);
                             $$.setExpr(createExprAttribute(sortedAtom, args));
                             $$.setPosition($1);
                         }
@@ -9595,10 +9595,10 @@ mergeJoinFlag
                             $$.setExpr(createAttribute(assertAtom));
                             $$.setPosition($1);
                         }
-    | SORTED '(' heterogeneous_expr_list ')'
+    | SORTED '(' startSortOrder heterogeneous_expr_list ')' endSortOrder
                         {
                             HqlExprArray args;
-                            $3.unwindCommaList(args);
+                            $4.unwindCommaList(args);
                             $$.setExpr(createExprAttribute(sortedAtom, args));
                             $$.setPosition($1);
                         }
@@ -9812,6 +9812,17 @@ endSORT
 
 endGROUP
     : ')'               {   parser->popTopScope(); $$.clear(); }
+    ;
+
+startSortOrder
+    :                   {
+                            parser->sortDepth++;
+                            $$.clear();
+                        }
+    ;
+
+endSortOrder
+    :                   {   parser->sortDepth--; $$.clear(); }
     ;
 
 startTopFilter
