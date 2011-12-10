@@ -30,7 +30,7 @@ void CInterface::beforeDispose()
 
 //===========================================================================
 
-#if !defined(_WIN32) && !defined(__linux__)
+#if !defined(_WIN32) && !defined(__GNUC__)
 
 static CriticalSection *ICrit;
 
@@ -47,7 +47,7 @@ MODULE_EXIT()
 bool poor_atomic_dec_and_test(atomic_t * v)
 {
     ICrit->enter();
-    bool ret = (++(*v) == 0);
+    bool ret = (--(*v) == 0);
     ICrit->leave();
     return ret;
 }
@@ -55,7 +55,7 @@ bool poor_atomic_dec_and_test(atomic_t * v)
 bool poor_atomic_inc_and_test(atomic_t * v)
 {
     ICrit->enter();
-    bool ret = (--(*v) == 0);
+    bool ret = (++(*v) == 0);
     ICrit->leave();
     return ret;
 }
