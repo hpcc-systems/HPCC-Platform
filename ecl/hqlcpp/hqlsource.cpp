@@ -1716,7 +1716,7 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
     StringBuffer graphLabel;
     graphLabel.append(getActivityText(activityKind));
 
-    if (activityKind == TAKdiskread)
+    if ((activityKind == TAKdiskread) || (activityKind == TAKcsvread) || (activityKind == TAKxmlread))
     {
         graphLabel.clear();
         if (expr != tableExpr)
@@ -1756,7 +1756,7 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
         if ((translator.getTargetClusterType() == RoxieCluster) && isSpill)
             graphLabel.append("Read");
         else
-            graphLabel.append("Disk Read");
+            graphLabel.append(getActivityText(activityKind));
     }
     if (isExplicitExists())
     {
