@@ -22,6 +22,7 @@
 #include "hqlutil.hpp"
 #include "hqlfold.hpp"
 #include "hqlthql.hpp"
+#include "hqlerror.hpp"
 #include "hqlerrors.hpp"
 
 #include "hqlexpr.ipp"          // Not needed, but without it I don't see the symbols in the debugger.
@@ -2500,6 +2501,18 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             case no_compound_selectnew:
             case no_compound_inline:
                 return swapNodeWithChild(transformed);
+            }
+            break;
+        }
+    case no_temptable:
+        {
+            if (child->getOperator() == no_list)
+            {
+                ECLlocation dummyLocation(0, 0, 0, NULL);
+                ThrowingErrorReceiver errorReporter;
+                OwnedHqlExpr inlineTable = convertTempTableToInlineTable(&errorReporter, dummyLocation, transformed);
+                if (transformed != inlineTable)
+                    return inlineTable.getClear();
             }
             break;
         }

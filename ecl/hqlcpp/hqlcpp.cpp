@@ -6043,13 +6043,30 @@ void HqlCppTranslator::doBuildAssignCast(BuildCtx & ctx, const CHqlBoundTarget &
                 return;
             }
             
-            bool useTemp = requiresTemp(ctx, left, false) && (left->getOperator() != no_concat) && (left->getOperator() != no_createset);
-            if (useTemp && isStringType(targetType) && (left->getOperator() == no_substring) && target.isFixedSize())
+            node_operator leftOp = left->getOperator();
+            bool useTemp = requiresTemp(ctx, left, false) && (leftOp != no_concat) && (leftOp != no_createset);
+            if (useTemp && target.isFixedSize())
             {
-                //don't do this if the target type is unicode at the moment
-                Owned<ITypeInfo> stretchedType = getStretchedType(targetType->getStringLen(), exprType);
-                if (isSameBasicType(stretchedType, targetType->queryPromotedType()))
-                    useTemp = false;
+                bool ignoreStretched = false;
+                switch (leftOp)
+                {
+                case no_case:
+                case no_map:
+                    //MORE: If the length of the bulk of the branches match then it is worth ignoring.
+                    //would be worthwhile if isStringType(targetType) || isUnicodeType(targetType);
+                    break;
+                case no_substring:
+                    //don't do this if the target type is unicode at the moment
+                    ignoreStretched = isStringType(targetType);
+                    break;
+                }
+
+                if (ignoreStretched)
+                {
+                    Owned<ITypeInfo> stretchedType = getStretchedType(targetType->getStringLen(), exprType);
+                    if (isSameBasicType(stretchedType, targetType->queryPromotedType()))
+                        useTemp = false;
+                }
             }
 
             if (useTemp)
