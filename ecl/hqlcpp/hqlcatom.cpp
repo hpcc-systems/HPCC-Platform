@@ -720,7 +720,7 @@ _ATOM xmlReadMarkerAtom;
 #define MAKESYSATOM(x)  _##x##_Atom = createSystemAtom("$_" #x "_")
 #define MAKEID(x)   x##IdAtom = createIdentifierAtom(#x)
 
-MODULE_INIT(INIT_PRIORITY_HQLATOM)
+MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
 {
     MAKEATOM(activeActivityMarker);
     MAKEATOM(activeMatchText);

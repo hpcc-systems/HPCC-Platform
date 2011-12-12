@@ -696,7 +696,7 @@ class DropLogMsg;
 
 // Implementation of logging manager
 
-class CLogMsgManager : public CInterface, implements ILogMsgManager
+class CLogMsgManager : public ILogMsgManager, public CInterface
 {
 private:
     class MsgProcessor : public Thread

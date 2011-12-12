@@ -78,7 +78,7 @@ public:
 
 // =========================== CTemplateContext =========================================
 
-class CTemplateContext : public CInterface, implements ITemplateContext
+class CTemplateContext : implements ITemplateContext, public CInterface
 {
     IXmlScope* m_xmlScope;
     int m_startLine,m_startCol;
