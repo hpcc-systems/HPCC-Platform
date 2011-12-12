@@ -205,6 +205,7 @@ extern HQL_API _ATOM maxCountAtom;
 extern HQL_API _ATOM maxLengthAtom;
 extern HQL_API _ATOM maxSizeAtom;
 extern HQL_API _ATOM mergeAtom;
+extern HQL_API _ATOM mergeTransformAtom;
 extern HQL_API _ATOM _metadata_Atom;
 extern HQL_API _ATOM methodAtom;
 extern HQL_API _ATOM minAtom;

@@ -1539,7 +1539,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_normalizegroup:
         return FixedInputActivity;
     case no_aggregate:
-        if (expr->hasProperty(mergeAtom))
+        if (expr->hasProperty(mergeTransformAtom))
             return FixedInputActivity;
         return FixedInputActivity;  //MORE:TransformRecordActivity
     case no_fromxml:                // A bit bit like a source activity, no transform..., but has an input
