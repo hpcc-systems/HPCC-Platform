@@ -32,13 +32,9 @@ set ( SRCS
         LzmaEnc.c
 )
 
-# CSRCS = \ 
-# LzFind.c \ 
-# LzmaDec.c \ 
-# LzmaInc.c 
-# COBJS = \ 
 ADD_DEFINITIONS( -D_LIB )
 
+SET_SOURCE_FILES_PROPERTIES( ${SRCS} PROPERTIES LANGUAGE CXX )
 HPCC_ADD_LIBRARY( lzma STATIC ${SRCS} )
 install ( TARGETS lzma DESTINATION ${OSSDIR}/lib )
 

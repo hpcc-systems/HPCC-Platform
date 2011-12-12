@@ -58,7 +58,7 @@ typedef volatile long atomic_t;
 #endif      
 
 
-#elif defined(__linux__) 
+#elif defined(__GNUC__)
 
 typedef struct { volatile int counter; } atomic_t;
 #define ATOMIC_INIT(i)          { (i) }

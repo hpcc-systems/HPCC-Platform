@@ -24,7 +24,7 @@
 #include "jexcept.hpp"
 #include "hqlcerrors.hpp"
 #include "thorplugin.hpp"
-#ifndef _WIN32
+#ifdef _USE_BINUTILS
 #include "bfd.h"
 #endif
 
@@ -371,7 +371,7 @@ void ResourceManager::flush(const char *filename, bool flushText, bool target64b
             putbytes(h, "\x00\x00\x00",4-(totalbytes & 3));
     }
     _close(h);
-#else
+#elif defined(_USE_BINUTILS)
     asymbol **syms = NULL;
     bfd *file = NULL;
     StringArray names;  // need to make sure that the strings we use in symbol table have appropriate lifetime 
@@ -438,6 +438,8 @@ void ResourceManager::flush(const char *filename, bool flushText, bool target64b
             bfd_close_all_done(file); // allow bfd to clean up memory
         throwError1(HQLERR_ResourceCreateFailed, msg.str());
     }
+#else
+    UNIMPLEMENTED;
 #endif
     if (flushText)
         flushAsText(filename);

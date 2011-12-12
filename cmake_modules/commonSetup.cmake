@@ -40,16 +40,15 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   cmake_policy ( SET CMP0011 NEW )
 
-  # For options that we don't presently support setting to off, we have a SET() below rather than an option...
-
+  option(USE_BINUTILS "Enable use of binutils to embed workunit info into dhard objects" ON)
   option(USE_CPPUNIT "Enable unit tests (requires cppunit)" OFF)
-  set (USE_OPENLDAP 1)     # option(USE_OPENLDAP "Enable OpenLDAP support (requires OpenLDAP)" ON)
-  set (USE_ICU 1)          # option(USE_ICU "Enable unicode support (requires ICU)" ON)
-  set (USE_XALAN 1)        # option(USE_XALAN "Configure use of xalan" ON)
-  set (USE_XERCES 1)       # option(USE_XERCES "Configure use of xerces" ON)
+  option(USE_OPENLDAP "Enable OpenLDAP support (requires OpenLDAP)" ON)
+  option(USE_ICU "Enable unicode support (requires ICU)" ON)
+  option(USE_XALAN "Configure use of xalan" ON)
+  option(USE_XERCES "Configure use of xerces" ON)
   option(USE_BOOST_REGEX "Configure use of boost regex" ON)
   option(Boost_USE_STATIC_LIBS "Use boost_regex static library for RPM BUILD" OFF)
-  set (USE_OPENSSL 1)      # option(USE_OPENSSL "Configure use of OpenSSL" ON)
+  option(USE_OPENSSL "Configure use of OpenSSL" ON)
   option(USE_ZLIB "Configure use of zlib" ON)
   option(USE_NATIVE_LIBRARIES "Search standard OS locations for thirdparty libraries" ON)
   option(USE_GIT_DESCRIBE "Use git describe to generate build tag" ON)
@@ -116,7 +115,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     set ( LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/libs" )
     if (${CMAKE_COMPILER_IS_GNUCXX})
       SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frtti -fPIC -fmessage-length=0 -Wformat -Wformat-security -Wformat-nonliteral -pthread")
-      SET (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-export-dynamic")
+      SET (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -rdynamic")
       SET (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g -fno-default-inline -fno-inline-functions")
     endif ()
     # All of these are defined in platform.h too, but need to be defned before any system header is included
@@ -222,10 +221,12 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   # External library setup - some can be optionally selected based on USE_xxx flags, some are required
 
-  IF (NOT WIN32)
+  IF (USE_BINUTILS AND NOT WIN32)
     find_package(BINUTILS)
-    IF (NOT BINUTILS_FOUND)
-      message(FATAL_ERROR "BINUTILS package not found")
+    IF (BINUTILS_FOUND)
+      add_definitions (-D_USE_BINUTILS)
+    ELSE()
+      message(FATAL_ERROR "BINUTILS requested but package not found")
     ENDIF()
   ENDIF()
 
