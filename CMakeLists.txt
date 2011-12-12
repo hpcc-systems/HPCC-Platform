@@ -305,6 +305,5 @@ endif()
 ## Below are the non-compile based install scripts required for
 ## the hpcc platform.
 ###
-
 Install ( FILES ${HPCC_SOURCE_DIR}/${LICENSE_FILE} DESTINATION ${OSSDIR} COMPONENT Runtime )
 include (CPack)
