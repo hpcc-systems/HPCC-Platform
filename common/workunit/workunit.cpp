@@ -8935,10 +8935,22 @@ extern WORKUNIT_API IPropertyTree * getPackageSetRegistry(const char * wsEclId, 
     return conn->getRoot();
 }
 
+const char *cleanName(StringBuffer &cleanQueryName)
+{
+    int len = cleanQueryName.length();
+    for (int i = 0; i < len; i++)
+    {
+        const char ch = cleanQueryName[i];
+        if (ch == ' ' || ch == '\\' || ch == '/')
+            cleanQueryName.setCharAt(i, '_');
+    }
+    return cleanQueryName.str();
+}
+
 void addQueryToQuerySet(IWorkUnit *workunit, const char *querySetName, const char *queryName, IPropertyTree *packageInfo, WUQueryActivationOptions activateOption, StringBuffer &newQueryId)
 {
     StringBuffer cleanQueryName(queryName);
-    cleanQueryName.replace(' ', '_');
+    cleanName(cleanQueryName);
 
     SCMStringBuffer dllName;
     Owned<IConstWUQuery> q = workunit->getQuery();
