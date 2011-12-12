@@ -201,6 +201,7 @@ _ATOM maxCountAtom;
 _ATOM maxLengthAtom;
 _ATOM maxSizeAtom;
 _ATOM mergeAtom;
+_ATOM mergeTransformAtom;
 _ATOM _metadata_Atom;
 _ATOM methodAtom;
 _ATOM minAtom;
@@ -576,6 +577,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(maxLength);
     MAKEATOM(maxSize);
     MAKEATOM(merge);
+    MAKEATOM(mergeTransform);
     MAKESYSATOM(metadata);
     MAKEATOM(method);
     MAKEATOM(min);
