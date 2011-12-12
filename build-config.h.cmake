@@ -85,3 +85,11 @@
 #ifndef BUILD_LEVEL
     #cmakedefine BUILD_LEVEL "${BUILD_LEVEL}"
 #endif
+
+#ifndef USE_XML_LIB
+    #cmakedefine USE_XML_LIB "${USE_XML_LIB}"
+#endif
+
+#ifndef USE_XSLT_LIB
+    #cmakedefine USE_XSLT_LIB "${USE_XSLT_LIB}"
+#endif
