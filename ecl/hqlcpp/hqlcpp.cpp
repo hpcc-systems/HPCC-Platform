@@ -6118,8 +6118,8 @@ void HqlCppTranslator::doBuildAssignCast(BuildCtx & ctx, const CHqlBoundTarget &
                 {
                 case no_case:
                 case no_map:
-                    //MORE: If the bulk of the branches match then it is worth ignoring.
-                    //ignoreStretched = isStringType(targetType) || isUnicodeType(targetType);
+                    //MORE: If the length of the bulk of the branches match then it is worth ignoring.
+                    //would be worthwhile if isStringType(targetType) || isUnicodeType(targetType);
                     break;
                 case no_substring:
                     //don't do this if the target type is unicode at the moment
