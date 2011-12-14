@@ -68,7 +68,7 @@ bool JavaHashTableOf<ELEMENT>::onNotify(INotification & notify)
     if (notify.getAction() == NotifyOnDispose)
     {
         ELEMENT * mapping = (ELEMENT *)(notify.querySource());
-        ret = removeExact(mapping);
+        ret = this->removeExact(mapping);
         assertex(ret);
     }
     return ret;

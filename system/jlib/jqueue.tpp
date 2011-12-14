@@ -506,7 +506,7 @@ public:
         unsigned start=0;
         while (!SELF::stopped) {
             BASE *ret;
-            if (get(ret,false)) {
+            if (this->get(ret,false)) {
                 owner->notify(ret);
                 if (SELF::deqwaiting) {
                     SELF::deqwaitsem.signal(SELF::deqwaiting);
@@ -514,7 +514,7 @@ public:
                 }
                 return ret;
             }
-            if (!qwait(SELF::enqwaitsem,SELF::enqwaiting,timeout,start))
+            if (!this->qwait(SELF::enqwaitsem,SELF::enqwaiting,timeout,start))
                 break;
         }
         return NULL;
@@ -524,7 +524,7 @@ public:
     {
         CriticalBlock b(SELF::crit);
         BASE *ret=NULL;
-        if (get(ret,false)) {
+        if (this->get(ret,false)) {
             owner->notify(ret);
             if(SELF::deqwaiting)
             {

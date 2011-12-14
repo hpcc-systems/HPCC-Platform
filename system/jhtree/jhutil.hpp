@@ -132,7 +132,7 @@ public:
     void setCacheLimit(unsigned _cacheMax)
     {
         if (SELF::table.count() > _cacheMax)
-            clear(_cacheMax - SELF::table.count());
+            this->clear(_cacheMax - SELF::table.count());
         cacheMax = _cacheMax;
     }
     virtual void makeSpace()
