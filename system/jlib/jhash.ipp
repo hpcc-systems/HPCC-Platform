@@ -269,7 +269,7 @@ class MapBetween : extends MapOf<KEY, MAPPING>
     bool        setValue(KEYINIT k, VALINIT v)
     {
        MAPPING * map = new MAPPING(k, v);
-       return replaceOwn(*map);
+       return this->replaceOwn(*map);
     }
 };
 
@@ -296,7 +296,7 @@ class MapStringTo : extends StringMapOf<MAPPING>
     bool        setValue(const char *k, VALINIT v)
     {
        MAPPING * map = new MAPPING(k, v);
-       return replaceOwn(*map);
+       return this->replaceOwn(*map);
     }
 };
 
