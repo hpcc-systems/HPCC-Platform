@@ -52,7 +52,7 @@ public:
     inline Shared(const Shared<CLASS> & other)   { ptr = other.getLink(); }
     inline ~Shared()                             { ::Release(ptr); }
 
-    inline Shared<CLASS> & operator = (const Shared<CLASS> & other) { set(other.get()); return *this;  }
+    inline Shared<CLASS> & operator = (const Shared<CLASS> & other) { this->set(other.get()); return *this;  }
 
     inline CLASS * operator -> () const         { return ptr; } 
     inline operator CLASS *() const             { return ptr; } 
@@ -71,7 +71,7 @@ public:
             ::Release(temp);
         }
     }
-    inline void set(const Shared<CLASS> &other) { set(other.get()); }
+    inline void set(const Shared<CLASS> &other) { this->set(other.get()); }
     inline void setown(CLASS * _ptr)            { CLASS * temp = ptr; ptr = _ptr; ::Release(temp); }
     
 protected:
@@ -93,7 +93,7 @@ public:
     inline Owned()                              { }
     inline Owned(CLASS * _ptr) : Shared<CLASS>(_ptr)   { }
 
-    inline Shared<CLASS> & operator = (const Shared<CLASS> & other) { set(other.get()); return *this;  }
+    inline Shared<CLASS> & operator = (const Shared<CLASS> & other) { this->set(other.get()); return *this;  }
 
 private:
     inline Owned(const Shared<CLASS> & other); // Almost certainly a bug
@@ -109,7 +109,7 @@ public:
     inline Linked(CLASS * _ptr) : Shared<CLASS>(LINK(_ptr)) { }
     inline Linked(const Shared<CLASS> & other) : Shared<CLASS>(other) { }
 
-    inline Shared<CLASS> & operator = (const Shared<CLASS> & other) { set(other.get()); return *this;  }
+    inline Shared<CLASS> & operator = (const Shared<CLASS> & other) { this->set(other.get()); return *this;  }
 
 private:
     inline Linked<CLASS> & operator = (const CLASS * other);
