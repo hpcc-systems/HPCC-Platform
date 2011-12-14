@@ -1700,14 +1700,13 @@ IHqlExpression *HqlLex::parseECL(StringBuffer &curParam, IXmlScope *xmlScope, in
 #ifdef TIMING_DEBUG
     MTIME_SECTION(timer, "HqlLex::parseConstExpression");
 #endif
-    //  Use a ECL reserved word as the scope name to avoid name conflicts with these defined localscope.
+    //  Use an ECL reserved word as the scope name to avoid name conflicts with these defined localscope.
     Owned<IHqlScope> scope = new CHqlMultiParentScope(sharedAtom,yyParser->queryPrimaryScope(false),yyParser->queryPrimaryScope(true),yyParser->parseScope.get(),NULL); 
-//  scope->defineSymbol(yyParser->globalScope->queryName(), NULL, LINK(queryExpression(yyParser->globalScope)), false, false, ob_module);
 
     HqlGramCtx parentContext(yyParser->lookupCtx);
     yyParser->saveContext(parentContext, false);
     Owned<IFileContents> contents = createFileContentsFromText(curParam, querySourcePath());
-    HqlGram parser(parentContext, scope, contents, xmlScope); 
+    HqlGram parser(parentContext, scope, contents, xmlScope, true);
     parser.getLexer()->set_yyLineNo(startLine);
     parser.getLexer()->set_yyColumn(startCol);
     return parser.yyParse(false, false);

@@ -273,6 +273,7 @@ void HqlGram::gatherActiveParameters(HqlExprCopyArray & target)
 HqlGram::HqlGram(IHqlScope * _globalScope, IHqlScope * _containerScope, IFileContents * _text, HqlLookupContext & _ctx, IXmlScope *xmlScope, bool _hasFieldMap, bool loadImplicit)
 : lookupCtx(_ctx)
 {
+    parseConstantText = false;
     init(_globalScope, _containerScope);
     fieldMapUsed = _hasFieldMap;
     if (!lookupCtx.functionCache)
@@ -293,7 +294,7 @@ HqlGram::HqlGram(IHqlScope * _globalScope, IHqlScope * _containerScope, IFileCon
     }
 }
 
-HqlGram::HqlGram(HqlGramCtx & parent, IHqlScope * _containerScope, IFileContents * _text, IXmlScope *xmlScope)
+HqlGram::HqlGram(HqlGramCtx & parent, IHqlScope * _containerScope, IFileContents * _text, IXmlScope *xmlScope, bool _parseConstantText)
 : lookupCtx(parent.lookupCtx)
 {
     //This is used for parsing a constant expression inside the preprocessor
@@ -315,6 +316,7 @@ HqlGram::HqlGram(HqlGramCtx & parent, IHqlScope * _containerScope, IFileContents
     //Clone parseScope
     lexObject = new HqlLex(this, _text, xmlScope, NULL);
     forceResult = true;
+    parseConstantText = _parseConstantText;
 }
 
 void HqlGram::saveContext(HqlGramCtx & ctx, bool cloneScopes)
@@ -2299,8 +2301,9 @@ void HqlGram::addField(const attribute &errpos, _ATOM name, ITypeInfo *_type, IH
     if ((fieldType->getSize() != UNKNOWN_LENGTH) && (fieldType->getSize() > MAX_SENSIBLE_FIELD_LENGTH))
         reportError(ERR_BAD_FIELD_SIZE, errpos, "Field %s is too large", name->str());
 
-    IHqlExpression *newField = createField(name, fieldType.getClear(), value, attrs);
-    addToActiveRecord(newField);
+    OwnedHqlExpr newField = createField(name, fieldType.getClear(), value, attrs);
+    OwnedHqlExpr annotated = createLocationAnnotation(LINK(newField), errpos.pos);
+    addToActiveRecord(LINK(newField));
 }
 
 void HqlGram::addDatasetField(const attribute &errpos, _ATOM name, IHqlExpression * record, IHqlExpression *value, IHqlExpression * attrs)
@@ -8709,8 +8712,7 @@ void HqlGram::defineSymbolInScope(IHqlScope * scope, DefineIdSt * defineid, IHql
     if (doc)
         expr = createJavadocAnnotation(expr, LINK(doc));
 
-    Owned<IFileContents> contents = createFileContentsSubset(lexObject->query_FileContents(), lastpos, semiColonPos+1-lastpos);
-    scope->defineSymbol(defineid->id, moduleName, expr, (defineid->scope & EXPORT_FLAG) != 0, (defineid->scope & SHARED_FLAG) != 0, symbolFlags, contents, idattr.pos.lineno, idattr.pos.column, 0, assignPos+2-lastpos, semiColonPos+1-lastpos);
+    scope->defineSymbol(defineid->id, moduleName, expr, (defineid->scope & EXPORT_FLAG) != 0, (defineid->scope & SHARED_FLAG) != 0, symbolFlags, lexObject->query_FileContents(), idattr.pos.lineno, idattr.pos.column, idattr.pos.position, assignPos+2, semiColonPos+1);
 }
 
 
@@ -9737,8 +9739,7 @@ void HqlGram::defineImport(const attribute & errpos, IHqlExpression * imported, 
         reportWarning(ERR_ID_REDEFINE, errpos.pos, "import hides previously defined identifier");
     }
 
-    parseScope->defineSymbol(newName, NULL, LINK(imported), false, false, ob_import);
-    lookupCtx.noteImport(imported, newName, errpos.pos.position);
+    parseScope->defineSymbol(newName, NULL, LINK(imported), false, false, ob_import, NULL, errpos.pos.lineno, errpos.pos.column, errpos.pos.position, 0, errpos.pos.position);
 }
 
 
@@ -11013,6 +11014,41 @@ extern HQL_API IHqlExpression * parseQuery(IHqlScope *scope, IFileContents * con
 }
 
 
+extern HQL_API void parseModule(IHqlScope *scope, IFileContents * contents, HqlLookupContext & ctx, IXmlScope *xmlScope, bool loadImplicit)
+{
+    assertex(scope);
+    try
+    {
+        ctx.noteBeginModule(scope, contents);
+
+        HqlGram parser(scope, scope, contents, ctx, xmlScope, false, loadImplicit);
+        parser.getLexer()->set_yyLineNo(1);
+        parser.getLexer()->set_yyColumn(1);
+        OwnedHqlExpr ret = parser.yyParse(false, true);
+        ctx.noteEndModule();
+    }
+    catch (IException *E)
+    {
+        if (ctx.errs)
+        {
+            ISourcePath * sourcePath = contents->querySourcePath();
+            if (E->errorCode()==0)
+            {
+                StringBuffer s;
+                ctx.errs->reportError(ERR_INTERNALEXCEPTION, E->errorMessage(s).toCharArray(), sourcePath->str(), 0, 0, 1);
+            }
+            else
+            {
+                StringBuffer s("Internal error: ");
+                E->errorMessage(s);
+                ctx.errs->reportError(ERR_INTERNALEXCEPTION, s.toCharArray(), sourcePath->str(), 0, 0, 1);
+            }
+        }
+        E->Release();
+    }
+}
+
+
 extern HQL_API IHqlExpression * parseQuery(const char * text, IErrorReceiver * errs)
 {
     Owned<IHqlScope> scope = createScope();
@@ -11026,7 +11062,7 @@ bool parseForwardModuleMember(HqlGramCtx & _parent, IHqlScope *scope, IHqlExpres
 {
     //The attribute will be added to the current scope as a side-effect of parsing the attribute.
     IFileContents * contents = forwardSymbol->queryDefinitionText();
-    HqlGram parser(_parent, scope, contents, NULL); 
+    HqlGram parser(_parent, scope, contents, NULL, false);
     parser.setExpectedAttribute(forwardSymbol->queryName());
     parser.setAssociateWarnings(true);
     parser.getLexer()->set_yyLineNo(forwardSymbol->getStartLine());
@@ -11156,7 +11192,8 @@ IHqlExpression *HqlGram::doParse()
         return NULL;
 
     lookupCtx.noteFinishedParse(defineScopes.tos().privateScope);
-    lookupCtx.noteFinishedParse(parseScope);
+    if (!parseConstantText)
+        lookupCtx.noteFinishedParse(parseScope);
     if (parsingTemplateAttribute)
     {
         if (parseResults.ordinality() == 0)
