@@ -1723,10 +1723,10 @@ public:
     IJobQueueItem *find(const char *wuid)
     {
         if (!qdata)
-            return false;
+            return NULL;
         sQueueData *qd = qdata->next?findQD(wuid):qdata;
         if (!qd)
-            return false;
+            return NULL;
         return find(*qd,wuid);
     }
 

@@ -1099,7 +1099,7 @@ const void * CMergeJoinProcessor::nextInputRowGE(const void * seek, unsigned num
     }
 
     if (!findCandidates(seek, numFields))
-        return false;
+        return NULL;
     return nextInputRow();
 }
 

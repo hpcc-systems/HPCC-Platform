@@ -609,7 +609,7 @@ const void * VariableRowBlock::fetchRow(__int64 offset, size32_t & len)
     size32_t rowOffset = (size32_t)(offset - startOffset);
     unsigned pos = rowIndex.find(rowOffset);
     if (pos == NotFound)
-        return false;
+        return NULL;
     len = rowIndex.item(pos+1)-rowOffset;
     return buffer.toByteArray() + rowOffset;
 }

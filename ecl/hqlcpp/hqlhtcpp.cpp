@@ -12313,14 +12313,14 @@ IHqlExpression * MergeTransformCreator::transformAssign(IHqlExpression * expr)
         {
             IHqlExpression * list = rhs->queryChild(0);
             if (list->getOperator() != no_list)
-                return false;
+                return NULL;
             unwindChildren(args, list);
             break;
         }
     default:
         //ok, if it is only assigned once.
         if (exprReferencesDataset(rhs, right))
-            return false;
+            return NULL;
         //need to preserve the value if at a variable offset...  Should be stripped if unnecessary
         OwnedHqlExpr newRhs = createSelectExpr(LINK(mergeLeft), LINK(field));
         return createAssign(LINK(lhs), newRhs.getClear());

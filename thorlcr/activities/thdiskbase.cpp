@@ -365,7 +365,7 @@ const void *getAggregate(CActivityBase &activity, unsigned partialResults, IRowI
     {
         CMessageBuffer mb;
         rank_t sender;
-        if (!activity.receiveMsg(mb, RANK_ALL, mpTag, &sender)) return false;
+        if (!activity.receiveMsg(mb, RANK_ALL, mpTag, &sender)) return NULL;
         if (activity.queryAbortSoon()) return 0;
         if (mb.length())
         {
