@@ -79,6 +79,7 @@ protected:
 
 private:
     inline void setown(const Shared<CLASS> &other); // illegal - going to cause a -ve leak
+    inline Shared<CLASS> & operator = (const CLASS * other);
 
 private:
     CLASS * ptr;
@@ -92,8 +93,11 @@ public:
     inline Owned()                              { }
     inline Owned(CLASS * _ptr) : Shared<CLASS>(_ptr)   { }
 
+    inline Shared<CLASS> & operator = (const Shared<CLASS> & other) { set(other.get()); return *this;  }
+
 private:
     inline Owned(const Shared<CLASS> & other); // Almost certainly a bug
+    inline Owned<CLASS> & operator = (const CLASS * other);
 };
 
 
@@ -104,6 +108,11 @@ public:
     inline Linked()                         { }
     inline Linked(CLASS * _ptr) : Shared<CLASS>(LINK(_ptr)) { }
     inline Linked(const Shared<CLASS> & other) : Shared<CLASS>(other) { }
+
+    inline Shared<CLASS> & operator = (const Shared<CLASS> & other) { set(other.get()); return *this;  }
+
+private:
+    inline Linked<CLASS> & operator = (const CLASS * other);
 };
 
 // IStringVal manages returning of arbitrary null-terminated string data between systems that may not share heap managers
