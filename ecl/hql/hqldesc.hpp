@@ -21,5 +21,9 @@
 
 void expandScopeSymbolsMeta(IPropertyTree * meta, IHqlScope * scope);
 
+extern void getFullName(StringBuffer & name, IHqlExpression * expr);
+extern void setFullNameProp(IPropertyTree * tree, const char * prop, const char * module, const char * def);
+extern void setFullNameProp(IPropertyTree * tree, const char * prop, IHqlExpression * expr);
+
 
 #endif

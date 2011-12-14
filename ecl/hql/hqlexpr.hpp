@@ -887,11 +887,12 @@ public:
 
     void addForwardReference(IHqlScope * owner, IHasUnlinkedOwnerReference * child);
     void noteBeginAttribute(IHqlScope * scope, IFileContents * contents, _ATOM name);
+    void noteBeginModule(IHqlScope * scope, IFileContents * contents);
     void noteBeginQuery(IHqlScope * scope, IFileContents * contents);
     void noteEndAttribute();
+    void noteEndModule();
     void noteEndQuery();
     void noteFinishedParse(IHqlScope * scope);
-    inline void noteImport(IHqlExpression * expr, _ATOM name, int position) { if (metaState.gatherNow) addImport(expr, name, position); }
     IPropertyTree * queryEnsureArchiveModule(const char * name, IHqlScope * scope);
 
     void setGatherMeta(const MetaOptions & options);
@@ -912,7 +913,6 @@ public:
     bool ignoreUnknownImport;
 
 private:
-    void addImport(IHqlExpression * expr, _ATOM name, int position);
     bool checkBeginMeta();
     bool checkEndMeta();
     void finishMeta();
@@ -949,12 +949,13 @@ public:
 
     void createDependencyEntry(IHqlScope * scope, _ATOM name);
     void noteBeginAttribute(IHqlScope * scope, IFileContents * contents, _ATOM name);
+    void noteBeginModule(IHqlScope * scope, IFileContents * contents);
     void noteBeginQuery(IHqlScope * scope, IFileContents * contents);
     inline void noteEndAttribute() { parseCtx.noteEndAttribute(); }
+    inline void noteEndModule() { parseCtx.noteEndAttribute(); }
     inline void noteEndQuery() { parseCtx.noteEndQuery(); }
     inline void noteFinishedParse(IHqlScope * scope) { parseCtx.noteFinishedParse(scope); }
     void noteExternalLookup(IHqlScope * parentScope, IHqlExpression * expr);
-    inline void noteImport(IHqlExpression * expr, _ATOM name, int position) { parseCtx.noteImport(expr, name, position); }
 
     inline IEclRepository * queryRepository() const { return parseCtx.eclRepository; }
     inline bool queryExpandCallsWhenBound() const { return parseCtx.expandCallsWhenBound; }
@@ -1173,6 +1174,9 @@ interface IHqlNamedAnnotation : public IHqlAnnotation
     virtual int getStartLine() const = 0;
     virtual int getStartColumn() const = 0;
     virtual void setRepositoryFlags(unsigned _flags) = 0;  // To preserve flags like ob_locked, ob_sandbox, etc.
+    virtual int getStartPos() const = 0;
+    virtual int getBodyPos() const = 0;
+    virtual int getEndPos() const = 0;
 };
 
 
@@ -1363,6 +1367,7 @@ extern HQL_API IHqlExpression * normalizeListCasts(IHqlExpression * expr);
 extern HQL_API IHqlExpression * simplifyFixedLengthList(IHqlExpression * expr);
 extern HQL_API IHqlExpression * getCastExpr(IHqlExpression * expr, ITypeInfo * type);
 
+extern HQL_API void parseModule(IHqlScope *scope, IFileContents * contents, HqlLookupContext & ctx, IXmlScope *xmlScope, bool loadImplicit);
 extern HQL_API IHqlExpression *parseQuery(IHqlScope *scope, IFileContents * contents, 
                                           HqlLookupContext & ctx, IXmlScope *xmlScope, bool loadImplicit);
 extern HQL_API IHqlExpression *parseQuery(const char *in, IErrorReceiver * errs);

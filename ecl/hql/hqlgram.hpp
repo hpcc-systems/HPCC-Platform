@@ -374,7 +374,7 @@ class HqlGram : public CInterface, implements IErrorReceiver
     friend int eclyyparse(HqlGram * parser);
 
 public:
-    HqlGram(HqlGramCtx &parent, IHqlScope * containerScope, IFileContents * text, IXmlScope *xmlScope);
+    HqlGram(HqlGramCtx &parent, IHqlScope * containerScope, IFileContents * text, IXmlScope *xmlScope, bool _parseConstantText);
     HqlGram(IHqlScope * _globalScope, IHqlScope * _containerScope, IFileContents * text, HqlLookupContext & _ctx, IXmlScope *xmlScope, bool _hasFieldMap, bool loadImplicit);
     virtual ~HqlGram();
     IMPLEMENT_IINTERFACE
@@ -811,6 +811,7 @@ protected:
     bool associateWarnings;
     bool legacyEclSemantics;
     bool isQuery;
+    bool parseConstantText;
     unsigned m_maxErrorsAllowed;
 
     IECLErrorArray pendingWarnings;

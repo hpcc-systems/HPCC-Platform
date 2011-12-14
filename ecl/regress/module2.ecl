@@ -25,8 +25,8 @@ customerNames := module
     integer2        age := 25;
                 END;
 
-    output('customer file used by user <x>');
-    export File := dataset('x',Layout,FLAT);
+    o := output('customer file used by user <x>');
+    export File := WHEN(dataset('x',Layout,FLAT), o);
 end;
 
 
