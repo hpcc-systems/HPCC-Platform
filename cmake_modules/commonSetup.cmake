@@ -62,7 +62,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   endif()
   if ( USE_XALAN )
       set(USE_XERCES ON)
-  endif
+  endif()
   
   option(PORTALURL "Set url to hpccsystems portal download page")
 
