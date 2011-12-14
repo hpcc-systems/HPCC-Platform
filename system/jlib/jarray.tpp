@@ -64,7 +64,7 @@ aindex_t BaseArrayOf<MEMBER, PARAM>::bAdd(MEMBER & newItem, CompareFunc cf, bool
    SELF::_space();
 
    MEMBER * head= (MEMBER *)SELF::_head;
-   match = (MEMBER *)_doBAdd(&newItem, sizeof(MEMBER), (StdCompare)cf, isNew);
+   match = (MEMBER *) this->_doBAdd(&newItem, sizeof(MEMBER), (StdCompare)cf, isNew);
    if (!isNew)
       SELF::used--;
    return (aindex_t)(match - head);
@@ -77,7 +77,7 @@ aindex_t BaseArrayOf<MEMBER, PARAM>::bSearch(const MEMBER & key, CompareFunc cf)
    MEMBER * head= (MEMBER *)SELF::_head;
    MEMBER * match;
 
-   match = (MEMBER *)_doBSearch(&key, sizeof(MEMBER), (StdCompare)cf);
+   match = (MEMBER *) this->_doBSearch(&key, sizeof(MEMBER), (StdCompare)cf);
 
    if (match)
       return (aindex_t)(match - (MEMBER *)head);
@@ -122,6 +122,13 @@ void BaseArrayOf<MEMBER, PARAM>::sort(CompareFunc cf)
  *                            Master CopyArrays                         *
  ************************************************************************/
 
+#ifdef __clang__
+template <class MEMBER, class PARAM>
+PARAM CopyArrayOf<MEMBER, PARAM>::item(aindex_t pos) const
+{
+   assertex(SELF::isItem(pos)); return Array__Member2Param(((MEMBER *)AllocatorOf<sizeof(MEMBER)>::_head)[pos]);
+}
+#endif
 
 template <class MEMBER, class PARAM>
 void CopyArrayOf<MEMBER, PARAM>::replace(PARAM it, aindex_t pos)
@@ -325,6 +332,14 @@ bool OwningArrayOf<MEMBER, PARAM>::zap(PARAM sought, bool nodel)
 /************************************************************************
  *                            Master Ref Array                          *
  ************************************************************************/
+
+#ifdef __clang__
+template <class MEMBER, class PARAM>
+PARAM ArrayOf<MEMBER, PARAM>::item(aindex_t pos) const
+{
+   assertex(SELF::isItem(pos)); return Array__Member2Param(((MEMBER *)AllocatorOf<sizeof(MEMBER)>::_head)[pos]);
+}
+#endif
 
 template <class MEMBER, class PARAM>
 PARAM ArrayOf<MEMBER, PARAM>::popGet()
