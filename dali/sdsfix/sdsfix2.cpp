@@ -320,7 +320,7 @@ void checkExternals(unsigned argc, char **args)
     while (a<argc)
     {
         const char *arg = args[a];
-        if (arg && '-' == *arg || '+' == *arg)
+        if (arg && ('-' == *arg || '+' == *arg))
         {
             bool onOff = ('+' == *arg);
             switch (arg[1])

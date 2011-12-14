@@ -1789,7 +1789,7 @@ class CXMLParse : public CInterface, implements IXMLParse
             {
                 if (!stackInfo.keptForQualifier)
                 {
-                    if (0 == xpath.queryDepth() && 0 == level || level == xpath.queryDepth()-1) // qualified and now back to right level
+                    if ((0 == xpath.queryDepth() && 0 == level) || level == xpath.queryDepth()-1)
                     {
                         unsigned topQ = xpath.queryHighestQualifier();
                         unsigned noHigherQualifiers = -1 == topQ || topQ >= level;
@@ -1879,7 +1879,7 @@ class CXMLParse : public CInterface, implements IXMLParse
                 stack.pop();
 
             // Track last level kept
-            if (lastMatchKeptNode || keep && matched)
+            if (lastMatchKeptNode || (keep && matched))
             {
                 assertex(nodeMade);
                 lastMatchKeptLevel = level;

@@ -968,9 +968,6 @@ bool shouldFileContentBeShown(IEspContext &context, const char * logicalName)
     StringBuffer username;
     context.getUserID(username);
 
-    if(username.length() < 0)
-        return true; //??TBD
-
     Owned<IUserDescriptor> userdesc(createUserDescriptor());
     userdesc->set(username.str(), context.queryPassword());
 
@@ -1635,7 +1632,7 @@ WsWuSearch::WsWuSearch(IEspContext& context,const char* owner,const char* state,
         xpath.append("[@submitID=?~\"").append(owner).append("\"]");
     if(jobname && *jobname)
         xpath.append("[@jobName=?~\"*").append(jobname).append("*\"]");
-    if(appname && *appname || appkey && *appkey || appvalue && *appvalue)
+    if((appname && *appname) || (appkey && *appkey) || (appvalue && *appvalue))
     {
         xpath.append("[Application/").append(appname && *appname ? appname : "*");
         xpath.append("/").append(appkey && *appkey ? appkey : "*");

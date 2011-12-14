@@ -880,7 +880,7 @@ class CSharedWriteAheadBase : public CSimpleInterface, implements ISharedSmartBu
 
     inline bool isEof(rowcount_t rowsRead)
     {
-        return stopped || writeAtEof && rowsWritten == rowsRead;
+        return stopped || (writeAtEof && rowsWritten == rowsRead);
     }
     inline void signalReaders()
     {

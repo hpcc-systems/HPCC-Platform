@@ -1244,7 +1244,7 @@ static void matchServerTree(CClientRemoteTree *local, IPropertyTree &matchTree, 
     Owned<IPropertyTreeIterator> matchIter = matchTree.getElements("*");
     if (matchIter->first())
     {
-        if (!local || local->hasChildren() && NULL == local->queryChildren())
+        if (!local || (local->hasChildren() && NULL == local->queryChildren()))
         {
             if (local)
             {
@@ -1267,7 +1267,7 @@ static void matchServerTree(CClientRemoteTree *local, IPropertyTree &matchTree, 
     }
     else
     {
-        if (!local || local->hasChildren() && NULL == local->queryChildren())
+        if (!local || (local->hasChildren() && NULL == local->queryChildren()))
         {
             if (local)
             {
