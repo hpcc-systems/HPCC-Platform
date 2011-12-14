@@ -96,7 +96,7 @@ public:
         {   
             resource = new CSecurityResource(name);
             m_rlist.append(*resource);
-            m_rmap[name] = resource;
+            m_rmap[name].set(resource);
         }
         return resource;
     }
@@ -114,7 +114,7 @@ public:
         if(r == NULL)
         {
             m_rlist.append(*resource);
-            m_rmap[name] = resource;
+            m_rmap[name].set(resource);
         }
         else
             resource->Release();

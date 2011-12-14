@@ -1696,7 +1696,7 @@ void Cws_machineEx::enumerateRunningProcesses(CMachineInfoThreadParam* pParam,
               Owned<IEspSWRunInfo> info = static_cast<IEspSWRunInfo*>(new CSWRunInfo(""));
               info->setName(pszName);
             info->setInstances(1);
-                lptr = info.get();
+                lptr = info;
 
                 if (processMap)
                     processMap->insert(pair<string, Linked<IEspSWRunInfo> >(pszName, lptr));
