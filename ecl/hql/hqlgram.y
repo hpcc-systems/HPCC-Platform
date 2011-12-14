@@ -7153,11 +7153,11 @@ simpleDataSet
                             $$.setExpr(createDataset(no_distributed, $3.getExpr(), createAttribute(unknownAtom)));
                             $$.setPosition($1);
                         }
-    | PARTITION '(' startTopFilter startSORT beginList sortList endSORT
+    | PARTITION '(' startTopFilter ',' startSortOrder beginList sortList ')' endSortOrder endTopFilter
                         {
                             HqlExprArray sortItems;
                             parser->endList(sortItems);
-                            OwnedHqlExpr fields = parser->processSortList($6, no_distribute, NULL, sortItems, NULL, NULL);
+                            OwnedHqlExpr fields = parser->processSortList($7, no_distribute, NULL, sortItems, NULL, NULL);
                             HqlExprArray args;
                             unwindChildren(args, fields);
                             OwnedHqlExpr value = createValue(no_sortpartition, LINK(parser->defaultIntegralType), args);
@@ -8079,7 +8079,7 @@ simpleDataSet
                             $$.setExpr(createDataset(no_sample, $3.getExpr(), createComma($5.getExpr(), $7.getExpr())));
                             $$.setPosition($1);
                         }
-    | TOPN '(' startTopFilter ',' expression startSORT beginList sortListOptCurleys endSORT
+    | TOPN '(' startTopFilter ',' expression ',' startSortOrder beginList sortListOptCurleys ')' endSortOrder endTopFilter
                         {
                             HqlExprArray sortItems;
                             parser->endList(sortItems);
@@ -8087,7 +8087,7 @@ simpleDataSet
                             IHqlExpression* dataset = $3.queryExpr();
                             IHqlExpression *input = $3.getExpr();
                             OwnedHqlExpr attrs;
-                            IHqlExpression *sortOrder = parser->processSortList($8, no_topn, dataset, sortItems, NULL, &attrs);
+                            IHqlExpression *sortOrder = parser->processSortList($9, no_topn, dataset, sortItems, NULL, &attrs);
                             if (!sortOrder)
                             {
                                 parser->reportError(ERR_SORT_EMPTYLIST, $1, "The list to be sorted on is empty");
@@ -8097,7 +8097,7 @@ simpleDataSet
                             {
                                 IHqlExpression * best = queryPropertyInList(bestAtom, attrs);
                                 if (best)
-                                    parser->checkMaxCompatible(sortOrder, best, $8);
+                                    parser->checkMaxCompatible(sortOrder, best, $9);
                                 bool isLocal = (queryPropertyInList(localAtom, attrs)!=NULL);
                                 parser->checkDistribution($3, input, isLocal, false);
                                 attrs.setown(createComma(sortOrder, $5.getExpr(), LINK(attrs)));
@@ -8105,23 +8105,23 @@ simpleDataSet
                             }
                             $$.setPosition($1);
                         }
-    | SORT '(' startTopFilter startSORT beginList sortListOptCurleys endSORT
+    | SORT '(' startSortOrder startTopFilter ',' beginList sortListOptCurleys ')' endSortOrder endTopFilter
                         {
                             HqlExprArray sortItems;
                             parser->endList(sortItems);
-                            $$.setExpr(parser->createSortExpr(no_sort, $3, $6, sortItems));
+                            $$.setExpr(parser->createSortExpr(no_sort, $4, $7, sortItems));
                             $$.setPosition($1);
                         }
-    | SORTED '(' startTopFilter startSORT beginList sortListOptCurleys endSORT
+    | SORTED '(' startSortOrder startTopFilter ',' beginList sortListOptCurleys ')' endSortOrder endTopFilter
                         {
                             HqlExprArray sortItems;
                             parser->endList(sortItems);
-                            $$.setExpr(parser->createSortExpr(no_sorted, $3, $6, sortItems));
+                            $$.setExpr(parser->createSortExpr(no_sorted, $4, $7, sortItems));
                             $$.setPosition($1);
                         }
-    | SORTED '(' dataSet ')'
+    | SORTED '(' startSortOrder dataSet ')' endSortOrder
                         {
-                            OwnedHqlExpr dataset = $3.getExpr();
+                            OwnedHqlExpr dataset = $4.getExpr();
                             if (!isKey(dataset))
                                 parser->reportError(ERR_EXPECTED_INDEX, $1, "SORTED(dataset) with no order, can only be used on INDEXes");
 
@@ -9789,21 +9789,10 @@ xmlParseFlag
                         }
     ;
 
-startSORT
-    : ','               {
-                            parser->sortDepth++;
-                            $$.clear();
-                        }
-    ;
-
 startGROUP
     : ','               {
                             $$.clear();
                         }
-    ;
-
-endSORT
-    : ')'               {   parser->popTopScope(); parser->sortDepth--; $$.clear(); }
     ;
 
 endGROUP
@@ -10480,6 +10469,8 @@ sortItem
                         }
     | dataRow
     | '-' dataRow       {
+                            //This is an example of a semantic check that should really take place one everything is
+                            //parsed.  The beingSortOrder productions are a pain, and not strictly correct.
                             if (parser->sortDepth == 0)
                                 parser->normalizeExpression($2, type_numeric, false);
 
