@@ -1204,7 +1204,9 @@ public:
         try {
             while (actions.ordinality()) {  
                 try {
-                    // slightly strange code
+                    // we don't want to unlock what hasn't been locked
+                    // if an exception was thrown while locking, but we
+                    // do want to pop them all
                     Owned<CDFAction> action = &actions.popGet();
                     if (actions.ordinality()<nlocked)
                         action->unlock(false,true);
