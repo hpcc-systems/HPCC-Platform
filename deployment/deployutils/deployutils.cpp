@@ -2623,6 +2623,7 @@ bool checkComponentReferences(const IPropertyTree* pEnv, IPropertyTree* pNode, c
     xpathArray.append("*");
     attribs.append("@mySql");
     attribs.append("@MySql");
+    attribs.append("@MySQL");
     attribs.append("@database");
   }
   else if (!strcmp(szProcess, XML_TAG_PLUGINPROCESS))
