@@ -985,7 +985,7 @@ public:
             return DFUstate_unknown;
         }
         StringBuffer logname;
-        if (fileMsgHandler->getLogName(logname)) 
+        if (fileMsgHandler && fileMsgHandler->getLogName(logname))
             wu->setDebugValue("dfulog", logname.str(), true);
         IConstDFUfileSpec *source = wu->querySource();
         IConstDFUfileSpec *destination = wu->queryDestination();
