@@ -123,7 +123,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       SET (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g -fno-default-inline -fno-inline-functions")
     endif ()
     if (CMAKE_COMPILER_IS_CLANGXX)
-      SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=logical-op-parentheses -Werror=bool-conversions -Werror=return-type -Werror=comment")
+      SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=logical-op-parentheses -Werror=bool-conversions -Werror=return-type -Werror=comment -Werror=bitwise-op-parentheses")
     endif()
     # All of these are defined in platform.h too, but need to be defned before any system header is included
     ADD_DEFINITIONS (-D_LARGEFILE_SOURCE=1 -D_LARGEFILE64_SOURCE=1 -D_FILE_OFFSET_BITS=64 -D__USE_LARGEFILE64=1 -D__USE_FILE_OFFSET64=1)
