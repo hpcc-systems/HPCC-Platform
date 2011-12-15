@@ -67,7 +67,6 @@ The following debug options are currently supported by the code generator:
 "foldAssign"             true   - should transforms be constant folded?
 "foldGraph"              false  - fold expressions at the graph level if optimizeGraph is set.
 "foldOptimized"          false  - fold expressions when internal optimizer called.
-"optimizeThorCounts"     true   - convert count(diskfile) into optimized version.
 "peephole"               true   - peephole optimize memcpy/memsets etc.
 "spotCSE"                true   - Look for common sub-expressions in transforms/filters?
 "spotTopN"               true   - Convert choosen(sort()) into a topN activity.

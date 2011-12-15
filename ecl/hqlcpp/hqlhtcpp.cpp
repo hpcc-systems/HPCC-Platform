@@ -466,7 +466,6 @@ public:
 
         switch (op)
         {
-        case no_countfile:
         case no_createset:
             //not really good enough - need to prevent anything within these from being hoisted.
             return;
@@ -1850,49 +1849,44 @@ ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ct
     //count index and count disk need to be swapped to the new (much simpler) mechanism
     //until then, they need to be special cased.
     activityLocalisation = GraphNoAccess;
-    if (kind != TAKcountdisk)
+    containerActivity = translator.queryCurrentActivity(ctx);
+    parentEvalContext.set(translator.queryEvalContext(ctx));
+    parentExtract.set(static_cast<ParentExtract*>(ctx.queryFirstAssociation(AssocExtract)));
+
+    if (parentExtract)
     {
-        containerActivity = translator.queryCurrentActivity(ctx);
-        parentEvalContext.set(translator.queryEvalContext(ctx));
-        parentExtract.set(static_cast<ParentExtract*>(ctx.queryFirstAssociation(AssocExtract)));
+        GraphLocalisation localisation = parentExtract->queryLocalisation();
+        activityLocalisation = translator.isAlwaysCoLocal() ? GraphCoLocal : queryActivityLocalisation(dataset);
 
-        if (parentExtract)
-        {
-            GraphLocalisation localisation = parentExtract->queryLocalisation();
-            activityLocalisation = translator.isAlwaysCoLocal() ? GraphCoLocal : queryActivityLocalisation(dataset);
-
-            if (translator.targetThor() && !translator.insideChildQuery(ctx))
-                executedRemotely = true;
-            else
-                executedRemotely = ((activityLocalisation == GraphNonLocal) || (localisation == GraphRemote));
-
-            isCoLocal = containerActivity && !executedRemotely && (localisation != GraphNonLocal) && (activityLocalisation != GraphNoAccess);    // if we supported GraphNonCoLocal the last test would not be needed
-
-            //if top level activity within a query library then need to force access to the parent extract
-            if (!containerActivity && translator.insideLibrary())
-            {
-                //there should be no colocal activity (container = null)
-                if (activityLocalisation != GraphNoAccess)
-                    activityLocalisation = GraphNonLocal;
-            }
-            if (activityLocalisation == GraphNoAccess)
-                parentExtract.clear();
-
-            if (isCoLocal)
-                colocalMember.setown(createVariable("colocal", makeVoidType()));
-        }
+        if (translator.targetThor() && !translator.insideChildQuery(ctx))
+            executedRemotely = true;
         else
+            executedRemotely = ((activityLocalisation == GraphNonLocal) || (localisation == GraphRemote));
+
+        isCoLocal = containerActivity && !executedRemotely && (localisation != GraphNonLocal) && (activityLocalisation != GraphNoAccess);    // if we supported GraphNonCoLocal the last test would not be needed
+
+        //if top level activity within a query library then need to force access to the parent extract
+        if (!containerActivity && translator.insideLibrary())
         {
-            if (executedRemotely)
-            {
-                GraphLocalisation localisation = queryActivityLocalisation(dataset);
-                if ((kind == TAKsimpleaction) || (localisation == GraphNoAccess))
-                    executedRemotely = false;
-            }
+            //there should be no colocal activity (container = null)
+            if (activityLocalisation != GraphNoAccess)
+                activityLocalisation = GraphNonLocal;
         }
+        if (activityLocalisation == GraphNoAccess)
+            parentExtract.clear();
+
+        if (isCoLocal)
+            colocalMember.setown(createVariable("colocal", makeVoidType()));
     }
     else
-        executedRemotely = !translator.isAlwaysCoLocal();
+    {
+        if (executedRemotely)
+        {
+            GraphLocalisation localisation = queryActivityLocalisation(dataset);
+            if ((kind == TAKsimpleaction) || (localisation == GraphNoAccess))
+                executedRemotely = false;
+        }
+    }
 
     if (!parentExtract && (translator.getTargetClusterType() == RoxieCluster))
         executedRemotely = isNonLocal(dataset);
@@ -2292,9 +2286,6 @@ void ActivityInstance::buildPrefix()
         containerActivity->noteChildActivityLocation(sourceFileSequence);
 
     classctx.set(helperAtom);
-    //Count index functions are referenced from the calling helper => they need to be defined earlier.
-    if (kind == TAKcountdisk)
-        classctx.setNextPriority(BuildCtx::EarlyPrio);
     classGroupStmt = classctx.addGroupPass(sourceFileSequence);
 
     classctx.associate(*this);
@@ -2371,8 +2362,6 @@ void ActivityInstance::buildPrefix()
     //  if (!isMember)
     //      classGroupStmt->setIncomplete(true);
 
-        if (translator.queryOptions().spanMultipleCpp && (kind == TAKcountdisk))
-            moveDefinitionToHeader();
     }
     else
     {
@@ -7343,90 +7332,6 @@ void HqlCppTranslator::doBuildEvalOnce(BuildCtx & ctx, const CHqlBoundTarget * t
     }
     else if (bound)
         bound->set(result);
-}
-
-
-//---------------------------------------------------------------------------
-
-class CHqlBoundTargetItem : public CInterface
-{
-public:
-    CHqlBoundTarget     value;
-};
-
-void HqlCppTranslator::doBuildExprCountFile(BuildCtx & ctx, IHqlExpression * _expr, CHqlBoundExpr & tgt)
-{
-    //NB: This is currently only applied to fixed width unfiltered files
-    LinkedHqlExpr expr = _expr;
-    bool needToCreateGraph = !graph;
-    if (needToCreateGraph)
-    {
-        beginGraph(ctx);
-        expr.setown(spotTableInvariantChildren(expr));
-    }
-
-    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKcountdisk, expr, "CountFile");
-    buildActivityFramework(instance);
-
-    buildInstancePrefix(instance);
-
-    IHqlExpression * dataset = expr->queryChild(0);
-    IHqlExpression * filename = dataset->queryChild(0);
-    noteResultAccessed(ctx, queryPropertyChild(dataset, sequenceAtom, 0), filename);
-
-    VirtualFieldsInfo info;
-    info.gatherVirtualFields(dataset->queryRecord(), dataset->hasProperty(_noVirtual_Atom), true);
-    OwnedHqlExpr physicalRecord = info.createPhysicalRecord();
-    assertex(isFixedRecordSize(physicalRecord));
-    OwnedHqlExpr physicalDataset = createDataset(no_anon, LINK(physicalRecord));
-
-    //virtual const char * getIndexFileName() = 0;
-    buildFilenameFunction(*instance, instance->startctx, "getFileName", filename, hasDynamicFilename(dataset));
-
-    //virtual IOutputMetaData * queryIndexRecordSize() = 0; //Excluding fpos and sequence
-    buildMetaMember(instance->classctx, physicalDataset, "queryRecordSize");
-
-    StringBuffer flags;
-    if (dataset->hasProperty(optAtom)) flags.append("|TDRoptional");
-    if (!filename->isConstant()) flags.append("|TDXvarfilename");
-    if (hasDynamicFilename(dataset)) flags.append("|TDXdynamicfilename");
-    if (dataset->hasProperty(_spill_Atom)) flags.append("|TDXtemporary");
-    if (dataset->hasProperty(jobTempAtom)) flags.append("|TDXjobtemp");
-    if (dataset->hasProperty(groupedAtom)) flags.append("|TDXgrouped");
-    if (dataset->hasProperty(__compressed__Atom)) flags.append("|TDXcompress");
-    if (dataset->hasProperty(_workflowPersist_Atom)) flags.append("|TDXupdateaccessed");
-
-    if (flags.length())
-        doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
-
-    Owned<ABoundActivity> bound = instance->getBoundActivity();
-    addFileDependency(filename, bound);
-
-    buildInstanceSuffix(instance);
-
-    if (targetRoxie())
-        instance->addAttributeBool("_isOpt", dataset->hasProperty(optAtom));
-
-    //**** The following code should be commoned up.  with the code above.  Probably not 
-    //**** worth doing until generalized remote child datasets come along
-    Owned<IWUActivity> activity = wu()->updateActivity(instance->activityId);
-    activity->setKind(TAKcountdisk);
-    activity->setHelper(instance->factoryName);
-
-    // Create the helper, assign any cursors, and then call the count activity.
-    StringBuffer s,name;
-    getUniqueId(name.append("help"));
-    ctx.addQuoted(s.append(instance->className).append(" & ").append(name).append(" = * new ").append(instance->className).append(";"));
-    OwnedHqlExpr helper = createQuoted(name.str(), makeBoolType());
-
-    // Now call the count function - takes ownership of the helper.
-    HqlExprArray args;
-    args.append(*createConstant((__int64)instance->activityId));
-    args.append(*LINK(helper));
-    OwnedHqlExpr call = bindFunctionCall(countRoxieDiskFileAtom, args);
-    buildExpr(ctx, call, tgt);
-    if (needToCreateGraph)
-        endGraph();
 }
 
 
@@ -17671,7 +17576,6 @@ static bool needsRealThor(IHqlExpression *expr, unsigned flags)
             switch (child0->getOperator())
             {
             case no_externalcall:
-            case no_countfile:
             case no_constant:
             case no_all:
                 return false;
@@ -17866,10 +17770,6 @@ o extractWorkflow(exprs)
 
 --- The following aim to work out where each part of the query will be executed, and gather all parts that will be executed in the same place 
 --- together so increase likely hood for cses and reduce connections to the query engines.
-
-o optimizeThorCounts
-  - A first go at transforming count(table) to a no_countdisk
-  !!This should be deleted/changed once we have aggregate source activities
 
 o migrateExprToNaturalLevel [NewScopeMigrateTransformer]
   - Ensure expressions are evaluated at the best level - e.g., counts moved to most appropriate level.

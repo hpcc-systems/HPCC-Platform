@@ -662,7 +662,6 @@ IHqlExpression * HqlThorBoundaryTransformer::createTransformed(IHqlExpression * 
     case no_getresult:
     case no_left:
     case no_right:
-    case no_countfile:
         return LINK(expr);
     case no_sizeof:
     case no_offsetof:
@@ -811,7 +810,6 @@ YesNoOption HqlThorBoundaryTransformer::calcNormalizeThor(IHqlExpression * expr)
     case no_all:
     case no_self:
     case no_activerow:
-    case no_countfile:          // could evaluate either place
         return OptionMaybe;
     case no_evaluate:
         throwUnexpected();
@@ -1528,7 +1526,6 @@ IHqlExpression * evalNormalizeAggregateExpr(IHqlExpression * selector, IHqlExpre
         throwUnexpectedOp(expr->getOperator());
 
     case no_count:
-    case no_countfile:
     case no_sum:
     case no_max:
     case no_min:
@@ -3483,8 +3480,6 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
     case no_record:
     case no_attr:
     case no_attr_expr:
-        break;
-    case no_countfile:
         break;
     case no_keyedlimit:
     case no_compound_diskread:
@@ -7006,7 +7001,6 @@ void NewScopeMigrateTransformer::analyseExpr(IHqlExpression * expr)
     case no_createset:
     case NO_ACTION_REQUIRES_GRAPH:
     case no_extractresult:
-    case no_countfile:
     case no_distributer:
     case no_within:
     case no_notwithin:
@@ -7543,121 +7537,6 @@ void removeTrivialGraphs(WorkflowArray & workflow)
     }
 }
 
-
-//---------------------------------------------------------------------------
-
-//Living on borrowed time.  Don't allow count index activity on filters that we can't cope with
-//really the count index activity should be removed asap
-static bool isOkFilter(IHqlExpression * expr)
-{
-    switch (expr->getOperator())
-    {
-    case no_select:
-        return !expr->hasProperty(newAtom);
-    case no_record:
-    case no_constant:
-        return true;
-    case no_createset:
-        return isIndependentOfScope(expr);
-    }
-    ForEachChild(i, expr)
-    {
-        if (!isOkFilter(expr->queryChild(i)))
-            return false;
-    }
-    return true;
-}
-
-static bool isFilteredIndex(IHqlExpression * expr)
-{
-    loop
-    {
-        switch (expr->getOperator())
-        {
-        case no_filter:
-            {
-                ForEachChild(i, expr)
-                {
-                    if (i && !isOkFilter(expr->queryChild(i)))
-                        return false;
-                }
-                break;
-            }
-        case no_distributed:
-        case no_preservemeta:
-        case no_sorted:
-        case no_stepped:
-        case no_grouped:
-        case no_dataset_alias:
-            break;
-        case no_keyindex:
-        case no_newkeyindex:
-            return true;
-        default:
-            return false;
-        }
-        expr = expr->queryChild(0);
-    }
-}
-
-static HqlTransformerInfo thorCountTransformerInfo("ThorCountTransformer");
-ThorCountTransformer::ThorCountTransformer(HqlCppTranslator & _translator, bool _countDiskFuncOk)
-: NewHqlTransformer(thorCountTransformerInfo), translator(_translator)
-{
-    countDiskFuncOk = _countDiskFuncOk && translator.allowCountFile();
-}
-
-IHqlExpression * ThorCountTransformer::createTransformed(IHqlExpression * expr)
-{
-    switch (expr->getOperator())
-    {
-    case no_constant:
-    case no_field:
-        return LINK(expr);
-    case no_select:
-        {
-            OwnedHqlExpr aggregate = convertToSimpleAggregate(expr);
-            if (aggregate && aggregate->getOperator() == no_count)
-            {
-                OwnedHqlExpr transformed = transform(aggregate);
-                if (transformed->getOperator() != no_count)
-                    return transformed.getClear();
-            }
-            break;
-        }
-    case no_count:
-        {
-            IHqlExpression * ds = expr->queryChild(0);
-            if (ds->getOperator() == no_preservemeta)
-                ds = ds->queryChild(0);
-            if (ds->getOperator()==no_table && ds->numChildren()>=3)
-            {
-                if (queryTableMode(ds) == no_flat)
-                {
-                    OwnedHqlExpr record = getSerializedForm(ds->queryRecord());
-                    if (countDiskFuncOk && !isVariableSizeRecord(record) && ds->queryChild(0)->isConstant())
-                    {
-#if 0
-                        OwnedHqlExpr transformed = NewHqlTransformer::createTransformed(expr);
-                        HqlExprArray children;
-                        unwindChildren(children, transformed);
-                        OwnedHqlExpr ret = createValue(no_countfile, transformed->getType(), children);
-                        return createValue(no_evalonce, ret->getType(), LINK(ret));
-#else
-                        OwnedHqlExpr ret = createValue(no_countfile, expr->getType(), LINK(ds));
-                        return createValue(no_evalonce, ret->getType(), LINK(ret));
-#endif
-                    }
-                }
-            }
-        }
-        break;
-    }
-
-    return NewHqlTransformer::createTransformed(expr);
-}
-
-
 //==============================================================================================================
 
 class FilterCloner
@@ -8110,7 +7989,6 @@ IHqlExpression * NestedSelectorNormalizer::createTransformed(IHqlExpression * ex
         {
         case NO_AGGREGATE:
         case no_joined:
-        case no_countfile:
         case no_buildindex:
         case no_apply:
         case no_distribution:
@@ -8986,7 +8864,6 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
     case no_select:
         return transformSelect(expr);
     case NO_AGGREGATE:
-    case no_countfile:
     case no_createset:
         {
             beginTableScope();
@@ -11929,26 +11806,6 @@ void HqlCppTranslator::substituteClusterSize(HqlExprArray & exprs)
     replaceArray(exprs, transformed);
 }
 
-void HqlCppTranslator::optimizeThorCounts(HqlExprArray & exprs)
-{
-    if (allowCountFile())
-    {
-        ThorCountTransformer countTransformer(*this, true);
-        HqlExprArray transformed;
-        ForEachItemIn(idx, exprs)
-        {
-            IHqlExpression & cur = exprs.item(idx);
-            ITypeInfo * type = cur.queryType();
-            if (type && (type->isScalar() || type->getTypeCode()==type_void))
-                transformed.append(*countTransformer.transformRoot(&cur));
-            else
-                transformed.append(OLINK(cur));
-        }
-        replaceArray(exprs, transformed);
-        traceExpressions("optimize", exprs);
-    }
-}
-
 IHqlExpression * HqlCppTranslator::separateLibraries(IHqlExpression * query, HqlExprArray & internalLibraries)
 {
     HqlExprArray exprs;
@@ -12095,18 +11952,6 @@ bool HqlCppTranslator::transformGraphForGeneration(IHqlExpression * query, Workf
         DEBUG_TIMER("EclServer: optimize nested conditional", msTick()-time);
         traceExpressions("nested", workflow);
         checkNormalized(workflow);
-    }
-
-    checkNormalized(workflow);
-    // Do this later so that counts of persistent results are optimized.
-    if (options.optimizeThorCounts)
-    {
-        unsigned startTime = msTick();
-        ForEachItemIn(idx, workflow)
-        {
-            optimizeThorCounts(workflow.item(idx).queryExprs());
-        }
-        DEBUG_TIMER("EclServer: tree transform: optimize thor counts", msTick()-startTime);
     }
 
     checkNormalized(workflow);
