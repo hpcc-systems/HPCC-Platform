@@ -2740,14 +2740,17 @@ IDFSredirection *createDFSredirection() // only called by dadfs.cpp
     return new CDFSredirection();
 }
 
-void safeChangeModeWrite(IRemoteConnection *conn,const char *name,bool &lockreleased, unsigned timeoutms)
+void safeChangeModeWrite(IRemoteConnection *conn,const char *name,bool &reload, unsigned timeoutms)
 {
     unsigned start = msTick();
     unsigned count = 0;
-    lockreleased = false;
+    // if the lock was lost (changed to NONE), means someone else changed it
+    // so the caller might want to refresh its cache (of sub-files, for ex.)
+    reload = false;
 #ifdef TEST_DEADLOCK_RELEASE
-    conn->changeMode(RTM_NONE); // thats the kludge
-    lockreleased = true;
+    // release the lock so that other threads can try and lock it
+    conn->changeMode(RTM_NONE);
+    reload = true; // always reload
 #endif
     unsigned steptime = 1000*60*5;
     if ((timeoutms!=INFINITE)&&(steptime>timeoutms/2))
@@ -2757,7 +2760,8 @@ void safeChangeModeWrite(IRemoteConnection *conn,const char *name,bool &lockrele
             if ((timeoutms!=INFINITE)&&(steptime>timeoutms))
                 steptime = timeoutms;
             conn->changeMode(RTM_LOCK_WRITE,steptime,true);
-            if (lockreleased) {
+            // lock was lost at least once, refresh connection
+            if (reload) {
                 conn->reload();
                 PROGLOG("safeChangeModeWrite - re-obtained lock for %s",name);
             }
@@ -2783,10 +2787,11 @@ void safeChangeModeWrite(IRemoteConnection *conn,const char *name,bool &lockrele
             else
                 throw;
         }
-        if (!lockreleased) {
+        // temporarily release the lock, we don't need to warn twice, do we?
+        if (!reload) {
             WARNLOG("safeChangeModeWrite - temporarily releasing lock on %s to avoid deadlock",name);
-            conn->changeMode(RTM_NONE); // thats the kludge
-            lockreleased = true;
+            conn->changeMode(RTM_NONE);
+            reload = true;
         }
         unsigned pause = 1000*(30+getRandom()%60);
         if (timeoutms!=INFINITE) 

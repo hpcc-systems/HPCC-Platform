@@ -2229,15 +2229,15 @@ public:
 
     IPropertyTree &lockProperties(unsigned timeoutms)
     {
-        bool lockreleased;
-        return lockProperties(lockreleased,timeoutms);
+        bool reload;
+        return lockProperties(reload,timeoutms);
     }
 
-    IPropertyTree & lockProperties(bool &lockreleased,unsigned timeoutms)
+    IPropertyTree & lockProperties(bool &reload,unsigned timeoutms)
     {
         if (timeoutms==INFINITE)
             timeoutms = defaultTimeout;
-        lockreleased = false;
+        reload = false;
         // this is a bit of a kludge for non-transactional superfile operations and other dining philosopher problems
         if (proplockcount++==0) {
             attr.clear();
@@ -2247,7 +2247,7 @@ public:
                 PROGLOG("lockProperties: pre safeChangeModeWrite(%x)",(unsigned)(memsize_t)conn.get());
 #endif
                 try {
-                    safeChangeModeWrite(conn,queryLogicalName(),lockreleased,timeoutms);
+                    safeChangeModeWrite(conn,queryLogicalName(),reload,timeoutms);
                 }
                 catch(IException *)
                 {
@@ -5145,9 +5145,9 @@ private:
         else {
             pos = subfiles.ordinality();
             if (pos) {
-                bool lockreleased;
-                lockProperties(lockreleased,defaultTimeout); 
-                if (lockreleased)
+                bool reload;
+                lockProperties(reload,defaultTimeout);
+                if (reload)
                     loadSubFiles(true,transaction,1000*60*10); 
                 pos = subfiles.ordinality();
                 if (pos) {
@@ -5293,11 +5293,11 @@ public:
         Owned<IDistributedFile> sub = transaction ? transaction->lookupFile(subfile) : parent->lookup(subfile,udesc,false,NULL,defaultTimeout);
         if (!sub)
             throw MakeStringException(-1,"addSubFile(3): File %s cannot be found to add",subfile);
-        bool lockreleased;
-        lockProperties(lockreleased,defaultTimeout);
+        bool reload;
+        lockProperties(reload,defaultTimeout);
         // need to reload subfiles if changed
         try {
-            if (lockreleased)
+            if (reload)
                 loadSubFiles(true,transaction,1000*60*10);
             doAddSubFile(sub.getClear(),before,other,transaction);
         }
