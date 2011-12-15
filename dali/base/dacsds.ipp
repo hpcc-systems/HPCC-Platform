@@ -347,7 +347,7 @@ public:
     virtual bool getPropBin(const char *xpath, MemoryBuffer &ret) const;
     virtual void localizeElements(const char *xpath, bool allTail=false);
     virtual IPropertyTree *queryBranch(const char *xpath) const;
-    virtual bool hasChildren() const { return children && children->count() || !children && 0 != (serverTreeInfo & STI_HaveChildren); }
+    virtual bool hasChildren() const { return (children && children->count()) || (!children && 0 != (serverTreeInfo & STI_HaveChildren)); }
 
 // ITrackChanges
     virtual ChangeInfo *queryChanges();

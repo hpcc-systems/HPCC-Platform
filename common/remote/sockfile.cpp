@@ -4506,8 +4506,8 @@ public:
     {
         if (msTick()-clientcounttick>1000*60*60) {
             CriticalBlock block(ClientCountSect);
-            if ((ClientCount!=0)||(MaxClientCount!=0)&&TF_TRACE_CLIENT_STATS)
-                PROGLOG("Client count = %d, max = %d",ClientCount,MaxClientCount);
+            if (TF_TRACE_CLIENT_STATS && (ClientCount || MaxClientCount))
+                PROGLOG("Client count = %d, max = %d", ClientCount, MaxClientCount);
             clientcounttick = msTick();
             MaxClientCount = ClientCount;
             if (closedclients) {

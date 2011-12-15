@@ -219,7 +219,7 @@ public:
         }
         if (!container.queryLocalOrGrouped() && !lastNode())
             sendTallies();
-        return false;       
+        return NULL;
     }
     void getMetaInfo(ThorDataLinkMetaInfo &info)
     {

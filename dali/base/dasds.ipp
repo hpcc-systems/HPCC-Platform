@@ -625,7 +625,7 @@ public:
                 out.append('[').append(childPositions.item(p-1)).append(']');
         }
         out.append(currentChild->queryName());
-        out.append('[').append(childPositions.tos()).append(']');
+        return out.append('[').append(childPositions.tos()).append(']');
     }
 
     virtual IPropertyTree *queryChild(IPropertyTree *parent, const char *path)

@@ -3033,7 +3033,7 @@ void EspMessageInfo::write_esp_ipp()
         outs("};\n\n");
 
         // array
-        /*
+#if 0
         //outf("MAKEValueArray(C%s,  %sArray);\n\n", name_, name_);
         outf("inline C%s Array__Member2Param(C%s &src)              { return src; }\n", name_, name_);
         outf("inline void Array__Assign(C%s & dest, C%s const & src){ dest = src; }\n", name_, name_);
@@ -3043,7 +3043,7 @@ void EspMessageInfo::write_esp_ipp()
         outf("MAKEArrayOf(C%s, C%s, %sArray)\n\n", name_,name_,name_);      
         //outf("class %sArray : public ArrayOf<C%s, C%s> {};\n\n",name_,name_,name_);
         outs("\n");
-        */
+#endif
 
         return;
     }

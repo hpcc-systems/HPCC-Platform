@@ -53,7 +53,7 @@ public:
 
     MCPacketHeader *header;
     void *queryData() { return pktData; }
-    MCPacketHeader *detachPacket() { (MCPacketHeader *) mb.detach(); }
+    MCPacketHeader *detachPacket() { return (MCPacketHeader *) mb.detach(); }
 
 private:
     void *pktData;

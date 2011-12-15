@@ -251,7 +251,7 @@ public:
             query = tree->queryPropTree(xpath.str());
 
             if (!query)
-                return false;
+                return NULL;
 
             querySetWuId.set(query->queryProp("@wuid"));
         }

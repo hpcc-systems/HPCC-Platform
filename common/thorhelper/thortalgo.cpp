@@ -647,7 +647,7 @@ GrammarSymbol * LRProduction::reduce(GrammarSymbol * * symbols, const byte * red
     FeatureValue resultFeatures;
     //check whether guard conditions are met.
     if (!mergeFeatures(resultFeatures, &feature, symbols))
-        return false;
+        return NULL;
 
     //Is the user 
     if (!validator.isValid(numSymbols, symbols, reducePtr, state))

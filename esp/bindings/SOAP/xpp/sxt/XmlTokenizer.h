@@ -340,8 +340,7 @@ namespace sxt {
             posEnd = pos;
             //if(paramPC && pcStart != pcEnd)
             //  pc[pcEnd++] = ch;
-            if(paramPC && pcStart != pcEnd
-              || (paramPC && NORMALIZE_LINE_BREAKS && ch == '\r') 
+            if(paramPC && (pcStart != pcEnd || (NORMALIZE_LINE_BREAKS && ch == '\r'))
             ) {
               //XXX
               if(NORMALIZE_LINE_BREAKS && ch == '\r') 
@@ -639,8 +638,7 @@ namespace sxt {
             posEnd = pos;
             //if(paramPC && pcStart != pcEnd)
             //  pc[pcEnd++] = ch;
-            if(paramPC && pcStart != pcEnd
-              || (paramPC && NORMALIZE_LINE_BREAKS && ch == '\r')   // ---- (P)
+            if(paramPC && (pcStart != pcEnd || (NORMALIZE_LINE_BREAKS && ch == '\r'))
             ) {
               //XXX
               if(NORMALIZE_LINE_BREAKS && ch == '\r') 

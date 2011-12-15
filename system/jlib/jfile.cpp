@@ -1562,7 +1562,7 @@ IFileIO *_createIFileIO(const void *buffer, unsigned sz, bool readOnly)
             Owned<IFileIO> fileio = file->open(IFOread);
             offset_t ret=0;
             while (len) {
-                size32_t toread = ((len>=buffsize)||(len<0))?buffsize:(size32_t)len;
+                size32_t toread = (len>=buffsize)?buffsize:(size32_t)len;
                 size32_t read = fileio->read(pos,toread,buffer);
                 if (read<buffsize) 
                     mb.setLength(mb.length()+read-buffsize);
@@ -1710,7 +1710,7 @@ offset_t CFileIO::appendFile(IFile *file,offset_t pos,offset_t len)
     offset_t ret=0;
     offset_t outp = size();
     while (len) {
-        size32_t toread = ((len>=buffsize)||(len<0))?buffsize:(size32_t)len;
+        size32_t toread = (len>=buffsize) ? buffsize : (size32_t)len;
         size32_t read = fileio->read(pos,toread,buffer);
         if (read==0)
             break;
@@ -3787,79 +3787,6 @@ size32_t DirectBufferIO::write(offset_t pos, size32_t len, const void * data)
     }
     memcpy(buffer+pos, data, len);
     return len;
-}
-
-
-//---------------------------------------------------------------------------
-
-size32_t StringBufferIO::read(offset_t pos, size32_t len, void * data)
-{
-    unsigned strLen = buffer.length();
-    if (pos + len > strLen)
-    {
-        if (pos > strLen)
-            pos = strLen;
-        len = (size32_t)(strLen - pos);
-    }
-    buffer.getChars((size32_t)pos, (size32_t)(pos+len), (char *)data);
-    return len;
-}
-
-offset_t StringBufferIO::size()
-{
-    return buffer.length();
-}
-
-size32_t StringBufferIO::write(offset_t pos, size32_t len, const void * data)
-{
-    unsigned strLen = buffer.length();
-    buffer.ensureCapacity((size32_t)(pos+len));
-    memcpy((byte *)buffer.toCharArray() + pos, data, len);
-    return len;
-}
-
-void StringBufferIO::setSize(offset_t size)
-{
-    if (size > buffer.length())
-        buffer.ensureCapacity((size32_t)size);
-    else
-        buffer.setLength((size32_t)size);
-}
-
-//---------------------------------------------------------------------------
-
-size32_t MemoryBufferIO::read(offset_t pos, size32_t len, void * data)
-{
-    unsigned strLen = buffer.length();
-    if (pos + len > strLen)
-    {
-        if (pos > strLen)
-            pos = strLen;
-        len = (size32_t)(strLen - pos);
-    }
-    memcpy(data, buffer.toByteArray() + pos, len);
-    return len;
-}
-
-offset_t MemoryBufferIO::size()
-{
-    return buffer.length();
-}
-
-size32_t MemoryBufferIO::write(offset_t pos, size32_t len, const void * data)
-{
-    unsigned strLen = buffer.length();
-    buffer.ensureCapacity((size32_t)(pos+len));
-    memcpy((byte *)buffer.toByteArray() + pos, data, len);
-    return len;
-}
-
-void MemoryBufferIO::setSize(offset_t size)
-{
-    if (size > buffer.length())
-        buffer.ensureCapacity((size32_t)size);
-    else
-        buffer.setLength((size32_t)size);
 }
 
 //---------------------------------------------------------------------------

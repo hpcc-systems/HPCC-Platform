@@ -1316,25 +1316,21 @@ void TomitaParser::reset()
     iter.invalidate();
 }
 
-/*
- * To be done to finish multi parser
+#if 0
+To be done to finish multi parser
  a) Save reductions on separate stack if >1 token at same position
  b) Use two states for the single token case, and swap between to avoid copy.
 
-/******************
-* Implementing a multiple lex parser:
-* 
-* 1) Parser maintain an ordered list of current start positions.
+Implementing a multiple lex parser:
+
+ 1) Parser maintain an ordered list of current start positions.
      active[position-firstPosition] - use pointers into an array of states;  States are cached on a list.
-* 2) lex from the first position in the list
-* 3) pass end position to parser - selects where new nodes get placed.
-* 4) Reductions have to be placed on to a separate list for each token, since dependant.
-* 4) Parser has associative array on position[x].  
-*    Items are processed from position x to position y
-***/
+ 2) lex from the first position in the list
+ 3) pass end position to parser - selects where new nodes get placed.
+ 4) Reductions have to be placed on to a separate list for each token, since dependant.
+ 4) Parser has associative array on position[x].
+    Items are processed from position x to position y
 
-
-/*
 Notes:
 
 Caching: 
@@ -1344,8 +1340,6 @@ Caching:
 Local ambiguity packing:
   When shifting a value, if it gets commoned up, and one of the common branches shifts the same symbol, and the preceeding state for that branch is the same, then common up that node.
 
-  */
-#if 0
 ToDo:
 
 * Do some more planning re:

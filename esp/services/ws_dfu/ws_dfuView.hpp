@@ -238,7 +238,7 @@ private:
 
         Owned<IProperties> props(createProperties(out.str()));
 
-        props->getPropInt("id");
+        return props->getPropInt("id");
     }
 
 

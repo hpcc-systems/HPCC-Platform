@@ -405,7 +405,7 @@ public:
 static IPropertyTree *getWorkUnitBranch(ICodeContext *ctx,const char *wuid,const char *branch)
 {
     if (!wuid||!*wuid)
-        return false;
+        return NULL;
     StringBuffer _wuid(wuid);
     wuid = _wuid.toUpperCase().str();
     StringBuffer query;

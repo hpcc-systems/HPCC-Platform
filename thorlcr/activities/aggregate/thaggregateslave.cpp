@@ -299,7 +299,7 @@ public:
     {
         ActivityTimer t(totalCycles, timeActivities, NULL);
         if (inputStopped)
-            return false;
+            return NULL;
         OwnedConstThorRow row = input->ungroupedNextRow();
         if (!row)
             return NULL;

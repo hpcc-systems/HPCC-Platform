@@ -95,7 +95,7 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
         const void *nextRow()
         {
             if (eoi || activity.abortSoon)
-                return false;
+                return NULL;
 
             try
             {
