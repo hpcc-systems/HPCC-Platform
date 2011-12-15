@@ -270,8 +270,8 @@ unsigned activityHidesSelectorGetNumNonHidden(IHqlExpression * expr, IHqlExpress
     switch (getChildDatasetType(expr))
     {
     case childdataset_none:
-    case childdataset_addfiles:
-    case childdataset_merge:
+    case childdataset_many_noscope:
+    case childdataset_many:
     case childdataset_map:
     case childdataset_dataset_noscope:
     case childdataset_if:
@@ -1071,6 +1071,8 @@ ANewTransformInfo::ANewTransformInfo(IHqlExpression * _original)
     original = _original;
     lastPass = (byte) -1;
     flags = 0;
+    spareByte1 = 0;
+    spareByte2 = 0;
 }
 
 
@@ -1926,15 +1928,43 @@ IHqlExpression * HqlMapTransformer::queryMapping(IHqlExpression * oldValue)
     return queryTransformed(oldValue);
 }
 
+static HqlTransformerInfo hqlMapDatasetTransformerInfo("HqlMapDatasetTransformer");
+HqlMapDatasetTransformer::HqlMapDatasetTransformer() : NewHqlTransformer(hqlMapDatasetTransformerInfo)
+{
+}
+
+
 IHqlExpression * replaceExpression(IHqlExpression * expr, IHqlExpression * original, IHqlExpression * replacement)
 {
     if (expr == original)
         return LINK(replacement);
+
+    //if dataset that doesn't define columns is replaced with an expression that does then you need to remap any
+    //specially update selectors in nested expressions.
+    if (original->isDataset())
+    {
+        IHqlExpression * table = queryTable(original);
+        if (!definesColumnList(original) && definesColumnList(replacement))
+        {
+            HqlMapDatasetTransformer simpleTransformer;
+            simpleTransformer.setMapping(original, replacement);
+            return simpleTransformer.transformRoot(expr);
+        }
+    }
     HqlMapTransformer simpleTransformer;
     simpleTransformer.setMapping(original, replacement);
     return simpleTransformer.transformRoot(expr);
 }
 
+//---------------------------------------------------------------------------
+
+IHqlExpression * replaceDataset(IHqlExpression * expr, IHqlExpression * original, IHqlExpression * replacement)
+{
+    return replaceExpression(expr, original, replacement);
+}
+
+
+//---------------------------------------------------------------------------
 
 HqlMapSelectorTransformer::HqlMapSelectorTransformer(IHqlExpression * oldDataset, IHqlExpression * newDataset)
 {
@@ -1957,6 +1987,66 @@ HqlMapSelectorTransformer::HqlMapSelectorTransformer(IHqlExpression * oldDataset
     }
     setSelectorMapping(oldDataset, newSelector);
 }
+
+IHqlExpression * HqlMapSelectorTransformer::createTransformed(IHqlExpression * expr)
+{
+    switch (getChildDatasetType(expr))
+    {
+    case childdataset_none:
+    case childdataset_many_noscope:
+    case childdataset_many:
+    case childdataset_map:
+    case childdataset_dataset_noscope:
+    case childdataset_if:
+    case childdataset_case:
+    case childdataset_evaluate:
+    case childdataset_left:
+    case childdataset_leftright:
+    case childdataset_same_left_right:
+    case childdataset_nway_left_right:
+        return HqlMapTransformer::createTransformed(expr);
+    case childdataset_dataset:
+    case childdataset_datasetleft:
+    case childdataset_top_left_right:
+        break;
+    default:
+        UNIMPLEMENTED;
+    }
+
+    //If this expression is a child dataset with a filter on the same dataset that is being replaced,
+    //then ensure the selectors aren't replaced in this operator's arguments.
+    IHqlExpression * dataset = expr->queryChild(0);
+    IHqlExpression * walker = dataset;
+    loop
+    {
+        IHqlExpression * table = queryTable(walker);
+        if (table)
+        {
+            if (table->queryNormalizedSelector() == oldSelector)
+                break;
+            if (table->getOperator() == no_select)
+            {
+                bool isNew;
+                walker = querySelectorDataset(table, isNew);
+                if (isNew)
+                    continue;
+            }
+        }
+
+        return HqlMapTransformer::createTransformed(expr);
+    }
+
+    OwnedHqlExpr transformedDataset = transform(dataset);
+    //optimization to avoid the clone
+    if (dataset == transformedDataset)
+        return LINK(expr);
+
+    HqlExprArray args;
+    args.append(*transformedDataset.getClear());
+    unwindChildren(args, expr, 1);
+    return expr->clone(args);
+}
+
 
 
 static HqlTransformerInfo hqlScopedMapSelectorTransformerInfo("HqlScopedMapSelectorTransformer");
@@ -2679,7 +2769,7 @@ IHqlExpression * MergingHqlTransformer::createTransformed(IHqlExpression * expr)
             }
             return LINK(expr);
         }
-    case childdataset_merge:
+    case childdataset_many:
         {
             unsigned firstAttr = getNumChildTables(expr);
             IHqlExpression * arg0 = expr->queryChild(0);
@@ -3048,7 +3138,6 @@ void ScopedTransformer::analyseChildren(IHqlExpression * expr)
     case no_sizeof:
     case no_offsetof:
     case no_nameof:
-    case no_updatestate:
         if (!expr->queryChild(0)->isDataset())
         {
             NewHqlTransformer::analyseChildren(expr);
@@ -3308,7 +3397,7 @@ void ScopedTransformer::analyseChildren(IHqlExpression * expr)
             switch (getChildDatasetType(expr))
             {
             case childdataset_none:
-            case childdataset_addfiles:
+            case childdataset_many_noscope:
             case childdataset_map:
             case childdataset_dataset_noscope:
                 {
@@ -3316,7 +3405,7 @@ void ScopedTransformer::analyseChildren(IHqlExpression * expr)
                     NewHqlTransformer::analyseChildren(expr);
                     return;
                 }
-            case childdataset_merge:
+            case childdataset_many:
                 {
                     first = getNumChildTables(expr);
                     for (idx = 0; idx < first; idx++)
@@ -3433,10 +3522,6 @@ IHqlExpression * ScopedTransformer::createTransformed(IHqlExpression * expr)
 //      if (!expr->queryChild(0)->isDataset())
             return NewHqlTransformer::createTransformed(expr);
         throwUnexpected();
-    case no_updatestate:
-        if (!expr->queryChild(0)->isDataset())
-            return NewHqlTransformer::createTransformed(expr);
-        //fallthrough
     case NO_AGGREGATE:
     case no_joined:
     case no_countfile:
@@ -3713,13 +3798,13 @@ IHqlExpression * ScopedTransformer::createTransformed(IHqlExpression * expr)
             switch (getChildDatasetType(expr))
             {
             case childdataset_none:
-            case childdataset_addfiles:
+            case childdataset_many_noscope:
             case childdataset_map:
             case childdataset_dataset_noscope:
                 {
                     return NewHqlTransformer::createTransformed(expr);
                 }
-            case childdataset_merge:
+            case childdataset_many:
                 {
                     first = getNumChildTables(expr);
                     IHqlExpression * dataset = expr->queryChild(0);

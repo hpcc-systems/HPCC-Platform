@@ -538,7 +538,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_notify:
     case no_setgraphresult:
     case no_extractresult:
-    case no_updatestate:
+    case no_unused81:
     case no_definesideeffect:
 
 // Scopes etc.
@@ -1918,6 +1918,7 @@ bool isTrivialDataset(IHqlExpression * expr)
         case no_distributed:
         case no_grouped:
         case no_preservemeta:
+        case no_dataset_alias:
         case no_filter:
             expr = expr->queryChild(0);
             break;

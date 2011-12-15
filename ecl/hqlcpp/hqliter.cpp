@@ -100,6 +100,7 @@ bool canBuildSequenceInline(IHqlExpression * expr)
         case no_compound_selectnew:
         case no_compound_inline:
         case no_alias_scope:
+        case no_dataset_alias:
             expr = expr->queryChild(0);
             break;
         default:

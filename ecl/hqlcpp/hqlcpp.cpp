@@ -1671,6 +1671,9 @@ void HqlCppTranslator::cacheOptions()
         // The following works 99% of the time, but disabled due to potential problems with the ambiguity of LEFT
         //possibly causing filters on nested records to be incorrectly removed.
         DebugOption(options.optimizeNestedConditional,"optimizeNestedConditional", false),
+        DebugOption(options.createImplicitAliases,"createImplicitAliases", false),
+        DebugOption(options.combineSiblingGraphs,"combineSiblingGraphs", true),
+        DebugOption(options.optimizeSharedGraphInputs,"optimizeSharedGraphInputs", true),
     };
 
     //get options values from workunit

@@ -4909,14 +4909,14 @@ IHqlExpression * CExprFolderTransformer::percolateConstants(IHqlExpression * exp
             {
             case childdataset_none: 
             case childdataset_nway_left_right:
-            case childdataset_addfiles:
-            case childdataset_merge:
+            case childdataset_many_noscope:
+            case childdataset_many:
             case childdataset_if:
             case childdataset_case:
             case childdataset_map:
             case childdataset_evaluate:
-            case childdataset_dataset_noscope: 
                 break;
+            case childdataset_dataset_noscope:
             case childdataset_dataset:
                 updated.setown(percolateConstants(updated, child, no_none));
                 break;
@@ -5553,6 +5553,8 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
         break;
 
     default:
+        if (expr->isAction())
+            break;
         DBGLOG("Missing entry: %s", getOpString(expr->getOperator()));
         if (expr->isDatarow())
         {

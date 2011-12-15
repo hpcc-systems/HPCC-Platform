@@ -218,6 +218,7 @@ _ATOM noCaseAtom;
 _ATOM _noHoist_Atom;
 _ATOM noLocalAtom;
 _ATOM noOverwriteAtom;
+_ATOM _normalized_Atom;
 _ATOM noRootAtom;
 _ATOM noScanAtom;
 _ATOM noSortAtom;
@@ -594,6 +595,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKESYSATOM(noHoist);
     MAKEATOM(noLocal);
     MAKEATOM(noOverwrite);
+    MAKESYSATOM(normalized);
     MAKEATOM(noRoot);
     MAKEATOM(noScan);
     MAKEATOM(noSort);
