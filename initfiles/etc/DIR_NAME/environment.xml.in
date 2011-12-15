@@ -960,6 +960,17 @@
                          service="ecldirect"/>
    </Properties>
   </EspService>
+  <FTSlaveProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+                  buildSet="ftslave"
+                  description="FTSlave process"
+                  name="myftslave"
+                  version="1">
+   <Instance computer="localhost"
+             directory="${RUNTIME_PATH}/myftslave"
+             name="s1"
+             netAddress="."
+             program="${EXEC_PATH}/ftslave"/>
+  </FTSlaveProcess>
   <PluginProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
                  buildSet="plugins_auditlib"
                  description="plugin process"
