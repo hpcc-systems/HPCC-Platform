@@ -74,6 +74,13 @@ IHqlExpression * createFilterCondition(const HqlExprArray & conds)
 }
 
 
+IHqlExpression * createFilterCondition(const HqlExprArray & conds, IHqlExpression * oldDataset, IHqlExpression * newDataset)
+{
+    OwnedHqlExpr mapped = createFilterCondition(conds);
+    return replaceSelector(mapped, oldDataset->queryNormalizedSelector(), newDataset->queryNormalizedSelector());
+}
+
+
 bool optimizeFilterConditions(HqlExprArray & conds)
 {
     ForEachItemInRev(i, conds)
@@ -682,20 +689,41 @@ IHqlExpression * CTreeOptimizer::optimizeAggregateDataset(IHqlExpression * trans
     return transformed->clone(children);
 }
 
+static IHqlExpression * skipMetaAliases(IHqlExpression * expr)
+{
+    loop
+    {
+        switch (expr->getOperator())
+        {
+        case no_dataset_alias:
+            break;
+        default:
+            return expr;
+        }
+        expr = expr->queryChild(0);
+    }
+}
 
 IHqlExpression * CTreeOptimizer::optimizeDatasetIf(IHqlExpression * transformed)
 {
     //if(cond, ds(filt1), ds(filt2)) => ds(if(cond,filt1,filt2))
     HqlExprArray leftFilter, rightFilter;
-    IHqlExpression * left = extractFilterDs(leftFilter, transformed->queryChild(1));
-    IHqlExpression * right = extractFilterDs(rightFilter, transformed->queryChild(2));
+    IHqlExpression * unfilteredLeft = extractFilterDs(leftFilter, transformed->queryChild(1));
+    IHqlExpression * unfilteredRight = extractFilterDs(rightFilter, transformed->queryChild(2));
+    IHqlExpression * left = skipMetaAliases(unfilteredLeft);
+    IHqlExpression * right = skipMetaAliases(unfilteredRight);
     if (left->queryBody() == right->queryBody())
     {
+        //If one (or both) or the datasets are aliases then ensure that one of the of the
+        //aliases is used in the replacement.
+        IHqlExpression * baseDataset = unfilteredLeft;
+        if (right->queryNormalizedSelector() != unfilteredRight->queryNormalizedSelector())
+            baseDataset = unfilteredRight;
+
         HqlExprArray args;
-        args.append(*LINK(left));
-//                  intersectConditions(args, leftFilter, rightFilter);
-        OwnedHqlExpr leftCond = createFilterCondition(leftFilter);
-        OwnedHqlExpr rightCond = createFilterCondition(rightFilter);
+        args.append(*LINK(baseDataset));
+        OwnedHqlExpr leftCond = createFilterCondition(leftFilter, unfilteredLeft, baseDataset);
+        OwnedHqlExpr rightCond = createFilterCondition(rightFilter, unfilteredRight, baseDataset);
         if (leftCond == rightCond)
         {
             args.append(*leftCond.getClear());
@@ -712,7 +740,10 @@ IHqlExpression * CTreeOptimizer::optimizeDatasetIf(IHqlExpression * transformed)
 
         //NOTE: left and right never walk over any shared nodes, so don't need to decrement usage for 
         //child(1), child(2) or intermediate nodes to left/right, since not referenced any more.
-        noteUnused(right);      // dataset is now used one less time
+        if (baseDataset == left)
+            noteUnused(right);      // dataset is now used one less time
+        else
+            noteUnused(left);
         return transformed->cloneAllAnnotations(ret);
     }
     return LINK(transformed);
@@ -1721,8 +1752,8 @@ bool CTreeOptimizer::childrenAreShared(IHqlExpression * expr)
         case childdataset_map:
         case childdataset_nway_left_right:
             return true;    // stop any folding of these...
-        case childdataset_addfiles:
-        case childdataset_merge:
+        case childdataset_many_noscope:
+        case childdataset_many:
             {
                 ForEachChild(i, expr)
                 {
@@ -2033,8 +2064,8 @@ void CTreeOptimizer::recursiveDecChildUsage(IHqlExpression * expr)
     case childdataset_map:
     case childdataset_nway_left_right:
         break;  // who knows?
-    case childdataset_addfiles:
-    case childdataset_merge:
+    case childdataset_many_noscope:
+    case childdataset_many:
         {
             ForEachChild(i, expr)
                 recursiveDecUsage(expr->queryChild(i));

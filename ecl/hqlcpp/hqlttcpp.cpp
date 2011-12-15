@@ -97,6 +97,7 @@ static bool isWorthHoisting(IHqlExpression * expr, bool asSubQuery)
         case no_nohoist:
         case no_section:
         case no_sectioninput:
+        case no_dataset_alias:
             expr = expr->queryChild(0);
             break;
         case no_fail:
@@ -3869,6 +3870,7 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
     case no_stepped:
     case no_section:
     case no_sectioninput:
+    case no_dataset_alias:
         {
             IHqlExpression * dataset = expr->queryChild(0);
             extra->inherit(*queryBodyExtra(dataset));
@@ -7586,6 +7588,7 @@ static bool isFilteredIndex(IHqlExpression * expr)
         case no_sorted:
         case no_stepped:
         case no_grouped:
+        case no_dataset_alias:
             break;
         case no_keyindex:
         case no_newkeyindex:
@@ -7984,8 +7987,8 @@ inline void getDatasetRange(IHqlExpression * expr, unsigned & first, unsigned & 
     first = 0;
     switch (getChildDatasetType(expr))
     {
-    case childdataset_addfiles:
-    case childdataset_merge:
+    case childdataset_many_noscope:
+    case childdataset_many:
         max = expr->numChildren();
         break;
     case childdataset_if:
@@ -8221,8 +8224,8 @@ void LeftRightSelectorNormalizer::analyseExpr(IHqlExpression * expr)
         switch (getChildDatasetType(expr))
         {
         case childdataset_none:
-        case childdataset_addfiles:
-        case childdataset_merge:
+        case childdataset_many_noscope:
+        case childdataset_many:
         case childdataset_map:
         case childdataset_dataset_noscope:
         case childdataset_if:
@@ -8514,6 +8517,7 @@ IHqlExpression * HqlLinkedChildRowTransformer::createTransformedBody(IHqlExpress
 }
 
 //---------------------------------------------------------------------------
+
 HqlScopeTaggerInfo::HqlScopeTaggerInfo(IHqlExpression * _expr) : MergingTransformInfo(_expr)
 {
     if (!onlyTransformOnce() && isIndependentOfScope(_expr))
@@ -9086,8 +9090,225 @@ void HqlScopeTagger::reportError(const char * msg, bool warning)
 }
 
 
+//---------------------------------------------------------------------------------------------------------------------
 
-//---------------------------------------------------------------------------
+SharedTableInfo * ImplicitAliasTransformInfo::uses(IHqlExpression * tableBody) const
+{
+   ForEachItemIn(i, sharedTables)
+   {
+        SharedTableInfo & cur = sharedTables.item(i);
+        if (cur.dataset == tableBody)
+            return &cur;
+   }
+   return NULL;
+}
+
+void ImplicitAliasTransformInfo::add(SharedTableInfo * table)
+{
+    sharedTables.append(*LINK(table));
+}
+
+void ImplicitAliasTransformInfo::addAmbiguity(SharedTableInfo * table)
+{
+    containsAmbiguity = true;
+    merge(table);
+}
+
+void ImplicitAliasTransformInfo::merge(SharedTableInfo * table)
+{
+    ForEachItemIn(i, sharedTables)
+    {
+        SharedTableInfo & cur = sharedTables.item(i);
+        if (cur.dataset == table->dataset)
+        {
+            if (cur.depth < table->depth)
+                sharedTables.replace(*LINK(table), i);
+            return;
+        }
+    }
+    add(table);
+}
+
+void ImplicitAliasTransformInfo::inherit(const ImplicitAliasTransformInfo * other)
+{
+    ForEachItemIn(i, other->sharedTables)
+        merge(&other->sharedTables.item(i));
+}
+
+
+static HqlTransformerInfo implicitAliasTransformerInfo("ImplicitAliasTransformer");
+ImplicitAliasTransformer::ImplicitAliasTransformer() : NewHqlTransformer(implicitAliasTransformerInfo)
+{
+    seenShared = true;
+    seenAmbiguity = false;
+}
+
+
+void ImplicitAliasTransformer::analyseExpr(IHqlExpression * _expr)
+{
+    IHqlExpression * body = _expr->queryBody();
+    if (alreadyVisited(body))
+    {
+        if ((pass == 0) && body->isDataset())
+        {
+            switch (body->getOperator())
+            {
+            case no_rows:
+                break;
+            default:
+                seenShared = true;
+                queryExtra(body)->shared.setown(new SharedTableInfo(body, 0));
+                break;
+            }
+        }
+        return;
+    }
+
+    NewHqlTransformer::analyseExpr(body);
+    if (pass == 0)
+        return;
+
+    ImplicitAliasTransformInfo * extra = queryExtra(body);
+    if (extra->shared)
+        extra->add(extra->shared);
+
+    switch (body->getOperator())
+    {
+    case no_activerow:
+    case no_filepos:
+    case no_file_logicalname:
+    case no_offsetof:
+    case no_joined:
+    case no_colon:
+    case no_globalscope:
+    case no_attr:
+        return;
+    case no_select:
+        {
+            bool isNew;
+            IHqlExpression * ds = querySelectorDataset(body, isNew);
+            if (isNew)
+            {
+                ImplicitAliasTransformInfo * dsExtra = queryExtra(ds->queryBody());
+                extra->inherit(dsExtra);
+            }
+            return;
+        }
+    }
+
+    IHqlExpression * dataset = NULL;
+    switch (getChildDatasetType(body))
+    {
+    case childdataset_none:
+    case childdataset_many_noscope:
+    case childdataset_many:
+    case childdataset_map:
+    case childdataset_dataset_noscope:
+    case childdataset_if:
+    case childdataset_case:
+    case childdataset_evaluate:
+    case childdataset_left:
+    case childdataset_leftright:
+    case childdataset_same_left_right:
+    case childdataset_nway_left_right:
+        break;
+    case childdataset_dataset:
+    case childdataset_datasetleft:
+    case childdataset_top_left_right:
+        dataset = body->queryChild(0)->queryBody();
+        break;
+    default:
+        UNIMPLEMENTED;
+    }
+
+    ForEachChild(i, body)
+    {
+        IHqlExpression * cur = body->queryChild(i);
+        ImplicitAliasTransformInfo * childExtra = queryExtra(cur->queryBody());
+        //If this is one of the arguments to an operation which has an active top dataset,
+        //check to see if any of the contained expressions reference this item
+        if (dataset && (i != 0))
+        {
+            SharedTableInfo * match = childExtra->uses(dataset);
+            if (match)
+            {
+                seenAmbiguity = true;
+                SharedTableInfo * nested = createAmbiguityInfo(match->dataset, match->depth+1);
+                extra->addAmbiguity(nested);
+            }
+//            dbglogExpr(_expr);
+//            DBGLOG("Implicit nested table ambiguity spotted in expression");
+        }
+        extra->inherit(childExtra);
+    }
+}
+
+SharedTableInfo * ImplicitAliasTransformer::createAmbiguityInfo(IHqlExpression * dataset, unsigned depth)
+{
+    ForEachItemIn(i, ambiguousTables)
+    {
+        SharedTableInfo & cur = ambiguousTables.item(i);
+        if ((cur.dataset == dataset) && (depth == cur.depth))
+            return &cur;
+    }
+    ambiguousTables.append(*new SharedTableInfo(dataset, depth));
+    return &ambiguousTables.tos();
+}
+
+
+ANewTransformInfo * ImplicitAliasTransformer::createTransformInfo(IHqlExpression * expr)
+{
+    return CREATE_NEWTRANSFORMINFO(ImplicitAliasTransformInfo, expr);
+}
+
+IHqlExpression * ImplicitAliasTransformer::createTransformed(IHqlExpression * expr)
+{
+    IHqlExpression * body = expr->queryBody();
+    if (expr != body)
+    {
+        OwnedHqlExpr newBody = transform(body);
+        return expr->cloneAllAnnotations(newBody);
+    }
+
+    OwnedHqlExpr transformed = NewHqlTransformer::createTransformed(expr);
+    updateOrphanedSelectors(transformed, expr);
+
+    ImplicitAliasTransformInfo * extra = queryExtra(body);
+    if (!extra->containsAmbiguity)
+        return transformed.getClear();
+
+    SharedTableInfo * match = extra->uses(body->queryChild(0)->queryBody());
+    assertex(match && match->depth != 0);
+    if (!match->uid)
+        match->uid.setown(createUniqueId());
+
+    OwnedHqlExpr aliased;
+    IHqlExpression * dataset = transformed->queryChild(0)->queryBody();
+    IHqlExpression * uid = match->uid;
+    aliased.setown(createDataset(no_dataset_alias, LINK(dataset), LINK(uid)));
+
+    //Replace dataset with an aliased variety, and remap all the selectors
+    HqlExprArray args;
+    args.append(*LINK(aliased));
+    replaceSelectors(args, transformed, 1, dataset->queryNormalizedSelector(), aliased->queryNormalizedSelector());
+    return transformed->clone(args);
+}
+
+void ImplicitAliasTransformer::process(HqlExprArray & exprs)
+{
+    analyseArray(exprs, 0);
+    if (!seenShared)
+        return;
+    analyseArray(exprs, 1);
+    if (hasAmbiguity())
+    {
+//        DBGLOG("Implicit nested dataset ambiguity spotted in expression");
+        HqlExprArray transformed;
+        transformRoot(exprs, transformed);
+        replaceArray(exprs, transformed);
+    }
+}
+//---------------------------------------------------------------------------------------------------------------------
 
 /*
   Common up expressions so that all references to the same expression have identical symbols, annotations.
@@ -11332,25 +11553,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
         }
 
     case no_call:
-        {
-            LinkedHqlExpr call = expr;
-#if 0
-            IHqlExpression * funcDef = expr->queryFunctionDefinition();
-            OwnedHqlExpr newFuncDef = normalizeRecord(translator, funcDef);
-            if (funcDef != newFuncDef)
-            {
-                HqlExprArray children;
-                transformChildren(expr, children);
-                call.setown(createReboundFunction(newFuncDef, children));
-            }
-#endif
-
-            if (options.ensureRecordsHaveSymbols)
-                if (call->queryRecord())
-                    return transformCall(call);
-            break;
-//          return call.getClear();
-        }
+        return transformCall(expr);
     case no_externalcall:
         //Yuk.... Because we ensure that all records have a name, we need to make sure that external functions that return records
         //also have there return value normalized - otherwise (jtolbert2.xhql) you can create an ambiguity
@@ -11849,6 +12052,18 @@ bool HqlCppTranslator::transformGraphForGeneration(IHqlExpression * query, Workf
     traceExpressions("workflow", workflow);
     checkNormalized(workflow);
     DEBUG_TIMER("EclServer: tree transform: stored results", msTick()-time4);
+
+    if (queryOptions().createImplicitAliases)
+    {
+        unsigned time = msTick();
+        ForEachItemIn(i, workflow)
+        {
+            ImplicitAliasTransformer normalizer;
+            normalizer.process(workflow.item(i).queryExprs());
+        }
+        DEBUG_TIMERX(queryTimeReporter(), "EclServer: tree transform: implicit alias", msTick()-time);
+        //traceExpressions("after implicit alias", workflow);
+    }
 
     if (outputLibrary && workflow.ordinality() > 1)
     {

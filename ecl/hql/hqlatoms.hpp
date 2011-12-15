@@ -222,6 +222,7 @@ extern HQL_API _ATOM noCaseAtom;
 extern HQL_API _ATOM _noHoist_Atom;
 extern HQL_API _ATOM noLocalAtom;
 extern HQL_API _ATOM noOverwriteAtom;
+extern HQL_API _ATOM _normalized_Atom;
 extern HQL_API _ATOM noRootAtom;
 extern HQL_API _ATOM noScanAtom;
 extern HQL_API _ATOM noSortAtom;

@@ -597,6 +597,13 @@ IReferenceSelector * HqlCppTranslator::buildActiveRow(BuildCtx & ctx, IHqlExpres
 
 void HqlCppTranslator::doBuildExprAggregate(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt)
 {
+    OwnedHqlExpr normalized = normalizeAnyDatasetAliases(expr);
+    if (expr != normalized)
+    {
+        buildExpr(ctx, normalized, tgt);
+        return;
+    }
+
     node_operator op = expr->getOperator();
     ITypeInfo * type = expr->queryType();
     ITypeInfo * tempType = op == no_count ? unsignedType : type;
@@ -765,8 +772,9 @@ static bool isNullValueMinimumValue(ITypeInfo * type)
     return false;
 }
 
-void HqlCppTranslator::doBuildAssignAggregate(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr)
+void HqlCppTranslator::doBuildAssignAggregate(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * _expr)
 {
+    OwnedHqlExpr expr = normalizeAnyDatasetAliases(_expr);
     if (assignAggregateDirect(target, expr))
     {
         IHqlExpression * dataset = expr->queryChild(0);
@@ -1835,15 +1843,28 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
     if (expr->isPure() && ctx.getMatchExpr(expr, tgt))
         return;
 
+/*
+    OwnedHqlExpr transformed = normalizeAnyDatasetAliases(expr);
+    if (transformed && (transformed != expr))
+    {
+        doBuildDataset(ctx, transformed, tgt, format);
+        ctx.associateExpr(expr, tgt);
+        return;
+    }
+*/
+
     node_operator op = expr->getOperator();
     switch (op)
     {
     case no_dataset_alias:
+        if (!expr->hasProperty(_normalized_Atom))
         {
             OwnedHqlExpr uniqueChild = normalizeDatasetAlias(expr);
             doBuildDataset(ctx, uniqueChild, tgt, format);
-            return;
         }
+        else
+            doBuildDataset(ctx, expr->queryChild(0), tgt, format);
+        return;
     case no_alias:
         doBuildExprAlias(ctx, expr, &tgt);
         return;
@@ -3119,9 +3140,18 @@ BoundRow * HqlCppTranslator::buildDatasetIterate(BuildCtx & ctx, IHqlExpression 
     switch (expr->getOperator())
     {
     case no_dataset_alias:
+        if (!expr->hasProperty(_normalized_Atom))
         {
             OwnedHqlExpr uniqueChild = normalizeDatasetAlias(expr);
             BoundRow * childCursor = buildDatasetIterate(ctx, uniqueChild, needToBreak);
+            return rebindTableCursor(ctx, expr, childCursor, no_none, NULL);
+        }
+        else
+        {
+            throwUnexpected();
+            //The following would only be triggered for a splitter (not yet generated), and that would require
+            //disambiguation when that was built.
+            BoundRow * childCursor = buildDatasetIterate(ctx, expr->queryChild(0), needToBreak);
             return rebindTableCursor(ctx, expr, childCursor, no_none, NULL);
         }
     case no_null:
@@ -3891,6 +3921,7 @@ IHqlExpression * HqlCppTranslator::ensureIteratedRowIsLive(BuildCtx & initctx, B
         case no_compound_childnormalize:
         case no_compound_selectnew:
         case no_compound_childread:
+        case no_dataset_alias:
             ds = ds->queryChild(0);
             break;
         case no_select:
@@ -3958,7 +3989,7 @@ IHqlExpression * HqlCppTranslator::ensureIteratedRowIsLive(BuildCtx & initctx, B
 
 IReferenceSelector * HqlCppTranslator::buildDatasetIndexViaIterator(BuildCtx & ctx, IHqlExpression * expr)
 {
-    IHqlExpression * dataset = querySkipDatasetMeta(expr->queryChild(0));
+    OwnedHqlExpr dataset = normalizeAnyDatasetAliases(querySkipDatasetMeta(expr->queryChild(0)));
     IHqlExpression * index = expr->queryChild(1);
     IHqlExpression * childDataset = dataset;
     switch (dataset->getOperator())
@@ -4064,7 +4095,7 @@ IReferenceSelector * HqlCppTranslator::buildDatasetIndex(BuildCtx & ctx, IHqlExp
         return buildNewRow(ctx, optimized);
 #endif
 
-    IHqlExpression * dataset = expr->queryChild(0);
+    OwnedHqlExpr dataset = normalizeAnyDatasetAliases(expr->queryChild(0));
 
     //Special cases:
     //i) selecting row [1] from something that only has a single row
@@ -4093,7 +4124,7 @@ IReferenceSelector * HqlCppTranslator::buildDatasetIndex(BuildCtx & ctx, IHqlExp
     {
         //MORE? Following doesn't work for implicit normalize which iterates multiple levels
         bool specialCase = false;
-        dataset = querySkipDatasetMeta(dataset);
+        dataset.set(querySkipDatasetMeta(dataset));
         
         switch (dataset->getOperator())
         {

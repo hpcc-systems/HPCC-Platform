@@ -416,7 +416,6 @@ _ATOM newWorkUnitReadArgAtom;
 _ATOM newWorkUnitWriteArgAtom;
 _ATOM _noAccess_Atom;
 _ATOM _noReplicate_Atom;
-_ATOM _normalized_Atom;
 _ATOM noSetAtom;
 _ATOM _noVirtual_Atom;
 _ATOM numResultsAtom;
@@ -1119,7 +1118,6 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEATOM(newWorkUnitWriteArg);
     MAKESYSATOM(noAccess);
     MAKESYSATOM(noReplicate);
-    MAKESYSATOM(normalized);
     MAKEATOM(noSet);
     MAKESYSATOM(noVirtual);
     MAKEATOM(numResults);

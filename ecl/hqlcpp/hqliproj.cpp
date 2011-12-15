@@ -326,6 +326,7 @@ static node_operator queryCompoundOp(IHqlExpression * expr)
         return no_compound_diskread;
     case no_newkeyindex:
         return no_compound_indexread;
+    case no_dataset_alias:
     case no_preservemeta:
         return queryCompoundOp(expr->queryChild(0));
     }
@@ -625,8 +626,8 @@ void ComplexImplicitProjectInfo::trace()
     switch (childDatasetType)
     {
     case childdataset_none: 
-    case childdataset_addfiles:
-    case childdataset_merge:
+    case childdataset_many_noscope:
+    case childdataset_many:
     case childdataset_if:
     case childdataset_case:
     case childdataset_map:
@@ -1225,7 +1226,7 @@ void ImplicitProjectTransformer::gatherFieldsUsed(IHqlExpression * expr, Implici
             switch (getChildDatasetType(expr))
             {
             case childdataset_none: 
-            case childdataset_addfiles:
+            case childdataset_many_noscope:
             case childdataset_if:
             case childdataset_case:
             case childdataset_map:
@@ -1233,7 +1234,7 @@ void ImplicitProjectTransformer::gatherFieldsUsed(IHqlExpression * expr, Implici
                 inheritActiveFields(expr, extra, 0, max);
                 //None of these have any scoped arguments, so no need to remove them
                 break;
-            case childdataset_merge:
+            case childdataset_many:
                 {
                     unsigned firstAttr = getNumChildTables(expr);
                     inheritActiveFields(expr, extra, firstAttr, max);
@@ -1583,10 +1584,9 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_writespill:
         return ActionSinkActivity;
     case no_preservemeta:
+    case no_dataset_alias:
         if (getProjectExprKind(expr->queryChild(0)) == CompoundableActivity)
             return CompoundableActivity;
-        return PassThroughActivity;
-    case no_dataset_alias:
         return PassThroughActivity;
     }
 
@@ -2643,8 +2643,8 @@ IHqlExpression * ImplicitProjectTransformer::updateSelectors(IHqlExpression * ne
     switch (getChildDatasetType(newExpr))
     {
     case childdataset_none: 
-    case childdataset_addfiles:
-    case childdataset_merge:
+    case childdataset_many_noscope:
+    case childdataset_many:
     case childdataset_if:
     case childdataset_case:
     case childdataset_map:

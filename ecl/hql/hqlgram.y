@@ -7776,6 +7776,10 @@ simpleDataSet
                             $$.setExpr(createDataset(no_newusertable, $3.getExpr(), createComma(LINK(tform->queryRecord()), ensureTransformType(tform, no_newtransform))));
                             $$.setPosition($1);
                         }
+    | TABLE '(' startTopFilter ')' endTopFilter
+                        {
+                            $$.setExpr(createDataset(no_dataset_alias, $3.getExpr(), ::createUniqueId()), $1);
+                        }
     | FETCH '(' startLeftSeqFilter ',' startRightFilterUpdateSeq ',' expression ',' transform optCommonAttrs ')' endRightFilter endLeftFilter endSelectorSequence
                         {
                             parser->normalizeExpression($7, type_int, false);
@@ -8014,20 +8018,20 @@ simpleDataSet
                             $$.setExpr(createDataset(no_workunit_dataset, $8.getExpr(), arg));
                             $$.setPosition($1);
                         }
-    | ENTH '(' startTopFilter ',' expression optCommonAttrs ')' endTopFilter
+    | ENTH '(' dataSet ',' expression optCommonAttrs ')'
                         {
                             parser->normalizeExpression($5, type_numeric, false);
                             $$.setExpr(createDataset(no_enth, $3.getExpr(), createComma($5.getExpr(), $6.getExpr())));
                             $$.setPosition($1);
                         }
-    | ENTH '(' startTopFilter ',' expression ',' expression optCommonAttrs ')' endTopFilter
+    | ENTH '(' dataSet ',' expression ',' expression optCommonAttrs ')'
                         {
                             parser->normalizeExpression($5, type_numeric, false);
                             parser->normalizeExpression($7, type_numeric, false);
                             $$.setExpr(createDataset(no_enth, $3.getExpr(), createComma($5.getExpr(), $7.getExpr(), $8.getExpr())));
                             $$.setPosition($1);
                         }
-    | ENTH '(' startTopFilter ',' expression ',' expression ',' expression optCommonAttrs ')' endTopFilter
+    | ENTH '(' dataSet ',' expression ',' expression ',' expression optCommonAttrs ')'
                         {
                             parser->normalizeExpression($5, type_numeric, false);
                             parser->normalizeExpression($7, type_numeric, false);
@@ -8064,7 +8068,7 @@ simpleDataSet
                             $$.setExpr(createDataset(no_pipe, $3.getExpr(), createComma($5.getExpr(), $7.getExpr(), LINK(attrs))));
                             $$.setPosition($1);
                         }
-    | PRELOAD '(' startTopFilter optConstExpression ')' endTopFilter
+    | PRELOAD '(' dataSet optConstExpression ')'
                         {
                             $$.setExpr(createDataset(no_preload, $3.getExpr(), $4.getExpr()));
                             $$.setPosition($1);

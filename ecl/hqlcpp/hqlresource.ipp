@@ -63,6 +63,8 @@ public:
     bool     expandSingleConstRow;
     bool     createSpillAsDataset;
     bool     useLinkedRawIterator;
+    bool     optimizeSharedInputs;
+    bool     combineSiblings;
 
     IHqlExpression * graphIdExpr;
     unsigned nextResult;
@@ -154,14 +156,21 @@ public:
     bool hasSameConditions(ResourceGraphInfo & other);
     bool isDependentOn(ResourceGraphInfo & other, bool allowDirect);
     bool isVeryCheap();
+    bool mergeInSibling(ResourceGraphInfo & other, const CResources & limit);
     bool mergeInSource(ResourceGraphInfo & other, const CResources & limit, bool isConditionalLink);
     void removeResources(const CResources & value);
     void replaceReferences(ResourceGraphInfo * oldGraph, ResourceGraphInfo * newGraph);
+
+    bool isSharedInput(IHqlExpression * expr);
+    void addSharedInput(IHqlExpression * expr, IHqlExpression * mapped);
+    IHqlExpression * queryMappedSharedInput(IHqlExpression * expr);
 
 protected:
     void display();
     void expandDependants(ResourceGraphArray & indirectSources);
     void gatherDependants(bool recalculate);
+    void mergeGraph(ResourceGraphInfo & other, bool isConditionalLink, bool mergeConditions);
+
 public:
     OwnedHqlExpr createdGraph;
     CResourceOptions * options;
@@ -170,6 +179,9 @@ public:
     GraphLinkArray sinks;
     ResourceGraphArray indirectSources;
     HqlExprArray conditions;
+    HqlExprArray sharedInputs;
+    HqlExprArray unbalancedExternalSources;
+    HqlExprArray balancedExternalSources;
     CResources resources;
     unsigned depth;
     bool beenResourced;
@@ -350,10 +362,15 @@ protected:
     bool queryMergeGraphLink(ResourceGraphLink & link);
     void mergeSubGraphs();
     void mergeSubGraphs(unsigned pass);
+    void mergeSiblings();
 
 //Pass 6b
     void spotUnbalancedSplitters(IHqlExpression * expr, unsigned whichSource, IHqlExpression * path, ResourceGraphInfo * graph);
     void spotUnbalancedSplitters(HqlExprArray & exprs);
+
+//Pass 6c
+    void spotSharedInputs(IHqlExpression * expr, ResourceGraphInfo * graph);
+    void spotSharedInputs();
 
 //Pass 7
     bool optimizeAggregate(IHqlExpression * expr);
@@ -378,6 +395,7 @@ protected:
     void doCheckRecursion(ResourceGraphInfo * graph, PointerArray & visited);
     void checkRecursion(ResourceGraphInfo * graph, PointerArray & visited);
     void checkRecursion(ResourceGraphInfo * graph);
+    unsigned getMaxDepth() const;
 
 protected:
     Owned<IConstWorkUnit> wu;

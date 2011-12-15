@@ -700,6 +700,9 @@ struct HqlCppOptions
     bool                standAloneExe;
     bool                enableCompoundCsvRead;
     bool                optimizeNestedConditional;
+    bool                createImplicitAliases;
+    bool                combineSiblingGraphs;
+    bool                optimizeSharedGraphInputs;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class

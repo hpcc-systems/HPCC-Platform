@@ -119,7 +119,7 @@ enum
 // generally applicable start from the top down
     HEFunbound                  = 0x00000010,
     HEFinternalVirtual          = 0x00000020,
-    HEF____unused1____          = 0x00000040,
+    HEFcontainsDatasetAliasLocally= 0x00000040,
     HEF____unused2____          = 0x00000080,
     HEF____unused3____          = 0x00000100,
     HEFfunctionOfGroupAggregate = 0x00000200,
@@ -165,7 +165,7 @@ enum
                                    HEFonFailDependent|HEFcontainsActiveDataset|HEFcontainsActiveNonSelector|HEFcontainsDataset|
                                    HEFtranslated|HEFgraphDependent|HEFcontainsNlpText|HEFcontainsXmlText|HEFtransformDependent|
                                    HEFcontainsSkip|HEFcontainsCounter|HEFassertkeyed|HEFcontextDependentException|HEFcontainsAlias|HEFcontainsAliasLocally|
-                                   HEFinternalVirtual|HEFcontainsThisNode),
+                                   HEFinternalVirtual|HEFcontainsThisNode|HEFcontainsDatasetAliasLocally),
 
     HEFcontextDependentNoThrow  = (HEFcontextDependent & ~(HEFthrowscalar|HEFthrowds|HEFoldthrows)),
     HEFcontextDependentDataset  = (HEFcontextDependent & ~(HEFthrowscalar)),
@@ -720,7 +720,7 @@ enum _node_operator {
         no_sectioninput,
         no_forcegraph,
         no_eventextra,
-        no_updatestate,
+    no_unused81,
         no_related,
         no_executewhen,
         no_definesideeffect,
@@ -1631,6 +1631,7 @@ inline bool containsNonActiveDataset(IHqlExpression * expr) { return (expr->getI
 inline bool containsAnyDataset(IHqlExpression * expr)   { return (expr->getInfoFlags() & (HEFcontainsDataset|HEFcontainsActiveDataset)) != 0; }
 inline bool containsAlias(IHqlExpression * expr)        { return (expr->getInfoFlags() & HEFcontainsAlias) != 0; }
 inline bool containsAliasLocally(IHqlExpression * expr) { return (expr->getInfoFlags() & HEFcontainsAliasLocally) != 0; }
+inline bool containsDatasetAliasLocally(IHqlExpression * expr) { return (expr->getInfoFlags() & HEFcontainsDatasetAliasLocally) != 0; }
 inline bool containsNonGlobalAlias(IHqlExpression * expr)   
                                                         { return (expr->getInfoFlags2() & HEF2containsNonGlobalAlias) != 0; }
 inline bool containsAssertKeyed(IHqlExpression * expr)  { return (expr->getInfoFlags() & HEFassertkeyed) != 0; }
@@ -1678,12 +1679,22 @@ extern HQL_API unsigned queryCurrentTransformDepth();                   // debug
 extern HQL_API bool isExternalFunction(IHqlExpression * funcdef);
 
 typedef enum { 
-    childdataset_none, childdataset_dataset, childdataset_left, childdataset_leftright, childdataset_same_left_right, 
-    childdataset_top_left_right,
+    childdataset_none,
+    childdataset_dataset_noscope, // single dataset but this operation doesn't use any fields from it.
+    childdataset_dataset,  // single dataset, fields are referenced by <dataset>.field
+    childdataset_datasetleft,  // single dataset, fields are referenced by <dataset>|LEFT.field
+    childdataset_left,  // single dataset, fields are referenced by LEFT.field
+    childdataset_leftright,   // two datasets, fields are referenced by LEFT|RIGHT.field
+    childdataset_same_left_right,  // single dataset, fields are referenced by LEFT|RIGHT.field
+    childdataset_top_left_right,  // single dataset, fields are referenced by <dataset>|LEFT|RIGHT.field
+    childdataset_many_noscope, // multiple input files, no reference to any fields.
+    childdataset_many,  // multiple input files, fields reference by <active>.field
+    childdataset_nway_left_right, // set of files for first parameter, fields accessed via LEFT and RIGHT
     //weird exceptions
-    childdataset_addfiles, childdataset_evaluate, childdataset_if, childdataset_case, childdataset_map, childdataset_merge,
-    childdataset_dataset_noscope, childdataset_datasetleft,
-    childdataset_nway_left_right,
+    childdataset_evaluate, // EVALUATE
+    childdataset_if, // IF - second and third are datasets
+    childdataset_case, // CASE
+    childdataset_map, // MAP
     childdataset_max
 } childDatasetType;
 extern HQL_API childDatasetType getChildDatasetType(IHqlExpression * expr);

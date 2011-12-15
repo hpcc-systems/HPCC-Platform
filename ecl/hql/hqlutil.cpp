@@ -1711,7 +1711,6 @@ bool isSinkActivity(IHqlExpression * expr)
     case no_setresult:
     case no_setgraphresult:
     case no_setgraphloopresult:
-    case no_updatestate:
     case no_definesideeffect:
     //case no_callsideeffect:       //??
         return true;
@@ -4011,7 +4010,6 @@ bool hasActiveTopDataset(IHqlExpression * expr)
 {
     switch (getChildDatasetType(expr))
     {
-    case childdataset_merge:
     case childdataset_dataset:
     case childdataset_datasetleft:
     case childdataset_top_left_right:
@@ -7440,4 +7438,157 @@ IHqlExpression * replaceParameters(IHqlExpression * body, IHqlExpression * oldPa
     }
 
     return simpleTransformer.transformRoot(body);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
+/*
+Aliases are nasty...they can occur in two different situations
+i) The user specifies TABLE(x) to create an alias
+ii) The scope checking spots that an alias is being implicitly created.
+
+1) exists(join(ds, ds, left.id*3=right.id));
+ds_1 := table(ds);
+ds(exists(ds_1(ds_1.id=ds.id*3)));
+
+a) ds is a table
+b) ds is a filtered table.
+c) ds is an implicitly normalized dataset (ds.child);
+d) ds is a projected table
+e) ds is a filtered projected table.
+
+2) ds(exists(join(child, child, left.id*3=right.id)));
+child_1 = table(ds.child);
+ds(exists(child(exists(child1(child_1.id = child.id*3)));
+
+a) ds is a table
+b) ds is a filtered table.
+c) ds is an implicitly normalized dataset (ds.child);
+d) ds is a projected table
+e) ds is a filtered projected table.
+
+When either of these occurs a no_dataset_alias node is added to the tree with a unique id.  We don't want to modify
+any of the input datasets - because we want them to stay common as long as possible - otherwise code like
+ds(field in ds(filter))  would cause ds to become split in two - and it should mean the same thing.
+
+For implicit aliases they will be added around the dataset that is ambiguous.
+- It would be simpler to add them around the table that is ambiguous (Table is a dataset that defines a column list)
+  but that means that sort, filters etc. aren't commoned up.
+- When the code is actually generated the base table is modified - which ensures no ambiguous expressions are
+  actually present when generating.
+
+E.g,
+x := ds(a <> 0);
+x(b in set(x(c <> 0), b))
+becomes
+x := ds(a <> 0);
+x' = table(x);
+x'(b in set(x(c <> 0), b))
+
+To avoid that the aliases is not added around a dataset that has already been aliased in the dataset that uses it.
+
+When the expression comes to be generated/evaluated, the underlying table of the dataset expression is modified to
+include a unique id.  The root table doesn't need to be modified because no selectors for that can be in scope.
+
+*/
+
+IHqlExpression * queryTableOrSplitter(IHqlExpression * expr)
+{
+    loop
+    {
+        node_operator op = expr->getOperator();
+        if (op == no_compound)
+            expr = expr->queryChild(1);
+        else if (definesColumnList(expr))
+            return expr;
+        else if (op == no_split)
+            return expr;
+        else
+            expr = expr->queryChild(0);
+    }
+}
+
+//Convert no_dataset_alias(expr, uid) to expr'
+IHqlExpression * normalizeDatasetAlias(IHqlExpression * expr)
+{
+    IHqlExpression * uid = expr->queryProperty(_uid_Atom);
+    assertex(uid);
+    IHqlExpression * dataset = expr->queryChild(0);
+    IHqlExpression * table = queryTableOrSplitter(dataset);
+
+    //If the alias is based on a splitter then we need to ensure the splitter expression stays the same - otherwise
+    //if won't be commoned up.  So add a alias with a _normalized_Atom to ensure everything followed that will be
+    //unique.  Otherwise add a unique id onto the underlying table to ensure unique expressions.
+    OwnedHqlExpr newTable;
+    node_operator tableOp = table->getOperator();
+    if ((tableOp == no_split) || (tableOp == no_rows))
+        newTable.setown(createDataset(no_dataset_alias, LINK(table), createComma(createUniqueId(), createAttribute(_normalized_Atom))));
+    else
+        newTable.setown(appendOwnedOperand(table, LINK(uid)));
+    return replaceDataset(dataset, table, newTable);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
+//This should only be called on source activities, and on inline datasets.
+IHqlExpression * normalizeAnyDatasetAliases(IHqlExpression * expr)
+{
+    //It is useful to also be able to call this on no_sum(aliased-dataset)
+    if (!containsDatasetAliasLocally(expr) && !expr->isAggregate())
+        return LINK(expr);
+
+    node_operator op = expr->getOperator();
+    IHqlExpression * selector = NULL;
+    switch (getChildDatasetType(expr))
+    {
+    case childdataset_none:
+        if ((op == no_select) && isNewSelector(expr))
+            break;
+        return LINK(expr);
+    case childdataset_dataset:
+    case childdataset_dataset_noscope:
+    case childdataset_datasetleft:
+    case childdataset_top_left_right:
+        selector = expr->queryChild(0)->queryNormalizedSelector();
+        break;
+    case childdataset_left:
+    case childdataset_leftright:
+    case childdataset_many:
+    case childdataset_many_noscope:
+        break;
+    default:
+        return LINK(expr);
+        throwUnexpected();
+    }
+
+    bool same = true;
+    HqlExprArray args;
+    unsigned max = getNumChildTables(expr);
+    for (unsigned i=0; i < max; i++)
+    {
+        IHqlExpression * dataset = expr->queryChild(i);
+        OwnedHqlExpr newDataset = normalizeAnyDatasetAliases(dataset);
+        if (dataset != newDataset)
+            same = false;
+        args.append(*newDataset.getClear());
+    }
+
+    OwnedHqlExpr transformed;
+    if (same)
+        transformed.set(expr);
+    else
+    {
+        if (selector)
+        {
+            assertex(max == 1);
+            replaceSelectors(args, expr, max, selector, args.item(0).queryNormalizedSelector());
+        }
+        else
+            unwindChildren(args, expr, max);
+        transformed.setown(expr->clone(args));
+    }
+
+    if ((op == no_dataset_alias) && !transformed->hasProperty(_normalized_Atom))
+        return normalizeDatasetAlias(transformed);
+    return transformed.getClear();
 }
