@@ -2226,7 +2226,6 @@ protected:
                 break;
             }
         case no_sizeof:
-        case no_countfile:
         case no_allnodes:
         case no_nohoist:
             return;

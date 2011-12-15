@@ -559,7 +559,6 @@ struct HqlCppOptions
     bool                evaluateCoLocalRowInvariantInExtract;
     bool                allowInlineSpill;
     bool                spanMultipleCpp;
-    bool                createCountFile;
     bool                optimizeGlobalProjects;
     bool                optimizeResourcedProjects;
     byte                notifyOptimizedProjects;
@@ -626,7 +625,6 @@ struct HqlCppOptions
     bool                foldOptimized;
     bool                globalFold;
     bool                globalOptimize;
-    bool                optimizeThorCounts;
     bool                applyInstantEclTransformations;
     bool                calculateComplexity;
     bool                generateLogicalGraph;
@@ -1003,7 +1001,6 @@ public:
     void noteXpathUsed(const char * xpath);
     void noteXpathUsed(IHqlExpression * expr);
 
-    bool allowCountFile() { return options.createCountFile; }
     HqlCppOptions const & queryOptions() const { return options; }
     ITimeReporter * queryTimeReporter() const { return timeReporter; }
 
@@ -1238,7 +1235,6 @@ public:
     void doBuildExprCompare(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprCompareElement(BuildCtx & ctx, node_operator comp_op, IHqlExpression * lhs, IHqlExpression * rhs, CHqlBoundExpr & tgt);
     void doBuildExprCount(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
-    void doBuildExprCountFile(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprCounter(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprCppBody(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr * tgt);
     void doBuildExprDivide(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
@@ -1758,7 +1754,6 @@ protected:
     void processEmbeddedLibraries(HqlExprArray & exprs, HqlExprArray & internalLibraries, bool isLibrary);
     void pickBestEngine(WorkflowArray & array);
     void pickBestEngine(HqlExprArray & exprs);
-    void optimizeThorCounts(HqlExprArray & exprs);
     IHqlExpression * separateLibraries(IHqlExpression * query, HqlExprArray & internalLibraries);
 
     void doBuildSerialize(BuildCtx & ctx, _ATOM name, IHqlExpression * length, CHqlBoundExpr & bound, const char * bufferName);

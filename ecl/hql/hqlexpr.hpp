@@ -582,7 +582,7 @@ enum _node_operator {
         no_temprow,
         no_activerow,                   // no_activerow(dataset) - used to disambiguate rows that are in scope.
         no_catch,
-        no_countfile,
+    no_unused80,
         no_reference,
         no_callback,                    // only used by code generator to backpatch the source
         no_keyedlimit,
