@@ -1547,11 +1547,17 @@ bool callExternalProgram(const char *progname, const StringBuffer &input, String
         size32_t count=input.length();
         for(;count>0;)
         {
-            size32_t w=pipe1.Write(data,count);
-            if(w<0 && errno!=EINTR)
-                throw MakeStringException(-1,"Pipe write failed: %d",errno); 
-            data+=w;
-            count-=w;
+            ssize_t w=pipe1.Write(data,count);
+            if(w<0)
+            {
+                if (errno!=EINTR)
+                    throw MakeStringException(-1,"Pipe write failed: %d",errno);
+            }
+            else
+            {
+                data+=w;
+                count-=w;
+            }
         }
         pipe1.CloseWrite();
 

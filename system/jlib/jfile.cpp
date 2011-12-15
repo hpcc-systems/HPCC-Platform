@@ -1562,7 +1562,7 @@ IFileIO *_createIFileIO(const void *buffer, unsigned sz, bool readOnly)
             Owned<IFileIO> fileio = file->open(IFOread);
             offset_t ret=0;
             while (len) {
-                size32_t toread = ((len>=buffsize)||(len<0))?buffsize:(size32_t)len;
+                size32_t toread = (len>=buffsize)?buffsize:(size32_t)len;
                 size32_t read = fileio->read(pos,toread,buffer);
                 if (read<buffsize) 
                     mb.setLength(mb.length()+read-buffsize);
@@ -1710,7 +1710,7 @@ offset_t CFileIO::appendFile(IFile *file,offset_t pos,offset_t len)
     offset_t ret=0;
     offset_t outp = size();
     while (len) {
-        size32_t toread = ((len>=buffsize)||(len<0))?buffsize:(size32_t)len;
+        size32_t toread = (len>=buffsize) ? buffsize : (size32_t)len;
         size32_t read = fileio->read(pos,toread,buffer);
         if (read==0)
             break;
