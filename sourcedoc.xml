@@ -193,9 +193,96 @@
                 Ubuntu). If the operating system is not one of the above, or is not recognized,
                 make package will create a tarball.
             </para>
+            <para>
+                The package installation does not start the service on the machine, so if you
+                want to give it a go or test it (see below), make sure to start the service manually
+                and wait until all services are up (mainly wait for EclWatch to come up on port 8010).
+            </para>
         </sect1>
         <sect1>
-            <title>Debugging a system</title>
+            <title>Testing the system</title>
+            <para>
+                After compiling, installing the package and starting the services, you can test
+                the HPCC platform on a single-node setup.
+            </para>
+            <sect2>
+                <title>Unit Tests</title>
+                <para>
+                    Some components have their own unit-tests. Once you have compiled (no need to
+                    start the services), you can already run them. Supposing you build a Debug
+                    version, from the build directory you can run:
+                    <programlisting>./Debug/bin/roxie -selftest</programlisting>
+                    and
+                    <programlisting>./Debug/bin/eclagent -selftest</programlisting>
+                </para>
+                <para>
+                    You can also run the Dali regression self-tests:
+                    <programlisting>./Debug/bin/daregress localhost</programlisting>
+                </para>
+            </sect2>
+            <sect2>
+                <title>Regression Tests</title>
+                <para>
+                    After the initial batch of unit-tests, which are quick and show only the most
+                    basic errors in the system, you can run the more complete regressions' test.
+                    These tests are located in the source directory 'testing/ecl' and you'll need
+                    the HPCC platform up and running to execute them.
+                </para>
+                <para>
+                    Step 1: Configure your regression suites. This only need to be done once.
+                    <programlisting>./runregress -ini=environment.xml</programlisting>
+                    The file 'environment.xml' is normally located in your '/etc/HPCCPlatform'
+                    directory and contains information on how your cluster is set-up, so the
+                    regression engine can reach it. You should see a new file, 'regress.ini'.
+                    Edit it to accommodate to your preferred setup.
+                </para>
+                    Note: There is a current issue with Roxie tests, so you should comment out
+                    the 'roxie' from 'setup_clusters'. That will leave you about 650 tests to run.
+                </para>
+                <para>
+                    Note 2: There is another issue with eclplus having to live in the current
+                    testing directory. For now, you have to copy or symlink 'eclplus' into that
+                    directory. You can get it from your build directory.
+                </para>
+                <para>
+                    Step 2: Create test files. You'll need some files created as part of the
+                    tests. You should also need this to be run once, too, unless you have cleaned
+                    the files for any reason.
+                    <programlisting>./runregress -setup</programlisting>
+                    There is no reason for this to fail, you should get all queries executed
+                    successfully.
+                </para>
+                <para>
+                    Step 3: Run the regression tests. This takes about 5-10 minutes on a machine
+                    with multiple CPUs/cores. There is an optimum value on the number of parallel
+                    queries, not necessarily more is faster. Start with 50 and work your way up
+                    and down to a better number for your machine.
+                    <programlisting>./runregress -pq 50 hthor_suite</programlisting>
+                    If some of the queries gets locked, CTRL+C them won't help. You need to abort
+                    them from the EclWatch interface, or restart the service.
+                </para>
+                <para>
+                    If, after it finishes, you want to see the report again, just run:
+                    <programlisting>./runregress -n -report Summary hthor_suite</programlisting>
+                </para>
+                <para>
+                    If you want to re-run a simgle test, just run:
+                    <programlisting>./runregress -n -query anytest.ecl hthor_suite</programlisting>
+                </para>
+                <para>
+                    All test results and their expected files are in the suite's directory (like
+                    hthor_suite), on 'out' and 'key' respectively.
+                </para>
+            </sect2>
+            <sect2>
+                <title>Compiler Tests</title>
+                <para>
+                    TODO: Describe compiler tests at 'ecl/regress'.
+                </para>
+            </sect2>
+        </sect1>
+        <sect1>
+            <title>Debugging the system</title>
             <para>
                 On linux systems, the makefile generated by cmake will build a specific
                 version (debug or release) of the system depending on the options selected 
@@ -234,9 +321,46 @@
         <sect1>
             <title>C++ coding conventions</title>
             <para>
-                For the most part out coding style conventions match those described at 
-                http://geosoft.no/development/cppstyle.html, with a few exceptions or extensions as 
-                noted below.
+                Unlike most software projects around, HPCC has some very specific
+                constraints that makes most basic design decisions difficult, and often
+                the results are odd to developers getting acquainted with its code base.
+                For example, when HPCC was initially developed, most common-place
+                libraries we have today (like STL and Boost) weren't available or stable
+                enough at the time.
+            </para>
+            <para>
+                Also, at the beginning, both C++ and Java were being considered as
+                the language of choice, but development started with C++. So a C++
+                library that copied most behaviour of the Java standard library (At the
+                time, Java 1.4) was created (see jlib below) to make the transition, if
+                ever taken, easier. The transition never happened, but the decisions
+                were taken and the whole platform is designed on those terms.
+            </para>
+            <para>
+                Most importantly, the performance constraints in HPCC can make
+                no-brainer decisions look impossible in HPCC. One example is the use of
+                traditional smart pointers implementations (such as boost::shared_ptr or
+                C++'s auto_ptr), that can lead to up to 20% performance hit if used
+                instead of our internal shared pointer implementation.
+            </para>
+            <para>
+                The last important point to consider is that some
+                libraries/systems were designed to replace older ones but haven't got
+                replaced yet. There is a slow movement to deprecate old systems in
+                favour of consolidating a few ones as the elected official ways to use
+                HPCC (Thor, Roxie) but old systems still could be used for years in
+                tests or legacy sub-systems.
+            </para>
+            <para>
+                In a nutshell, expect re-implementation of well-known containers
+                and algorithms, expect duplicated functionality of sub-systems and
+                expect to be required to use less-friendly libraries for the sake of
+                performance, stability and longevity.
+            </para>
+            <para>
+                For the most part out coding style conventions match those
+                described at http://geosoft.no/development/cppstyle.html, with a few
+                exceptions or extensions as noted below.
             </para>
             <sect2>
                 <title>Source files</title>
@@ -255,21 +379,186 @@
                 </para>
             </sect2>
             <sect2>
+                <title>Java-style</title>
+                <para>
+                    We adopted a Java-like inheritance model, with macro
+                    substitution for the basic Java keywords. This changes nothing on the
+                    code, but make it clearer for the reader on what's the recipient of
+                    the inheritance doing with it's base.
+                </para>
+                <para>
+                    <itemizedlist>
+                        <listitem>
+                            <para>
+                                interface (struct): declares an interface (pure virtual class)
+                            </para>
+                        </listitem>
+
+                        <listitem>
+                            <para>
+                                extends (public): One interface extending another, both are pure virtual
+                            </para>
+                        </listitem>
+
+                        <listitem>
+                            <para>
+                                implements (public): Concrete class implementing an interface
+                            </para>
+                        </listitem>
+                    </itemizedlist>
+                </para>
+                <para>
+                    There is no semantic check, which makes it difficult to enforce
+                    such scheme, which has led to code not using it intermixed with code
+                    using it. You should use it when possible, most importantly on code
+                    that already uses it.
+                </para>
+                <para>
+                    We also tend to write methods inline, which matches well with
+                    C++ Templates requirements. We, however, do not enforce the
+                    one-class-per-file rule.
+                </para>
+                <para>
+                    See chapter 3.2 for more information on our implementation of
+                    interfaces.
+                </para>
+            </sect2>
+            <sect2>
                 <title>Identifiers</title>
                 <para>
-                    We generally follow the java conventions for identifier naming and formatting.
+                    Class and interface names are in CamelCase with a leading
+                    capital letter. Interface names should be prefixed capital I followed
+                    by another capital. Class names may be prefixed with a C if there is a
+                    corresponding I-prefixed interface name, but need not be
+                    otherwise.
                 </para>
-                
                 <para>
-                    Class and interface names are in CamelCase with a leading capital letter. 
-                    Interface names should be prefixed capital I followed by another capital.
-                    Class names may be prefixed with a C if there is a corresponding I-prefixed
-                    interface name, but need not be otherwise.
+                    Variables, function and method names, and parameters use
+                    camelCase starting with a lower case letter. Parameters may be
+                    prefixed with underscore, normally when overwritten by local
+                    variables.
                 </para>
-
+                <para>Example:</para>
                 <para>
-                    Variables, function and method names, and parameters use camelCase starting with a
-                    lower case letter. Parameters may be prefixed with underscore.
+                  <programlisting>    class MySQLSuperClass {
+        void mySQLFunctionIsCool(int _haslocalcopy, bool enablewrite) {
+        bool haslocalcopy = false;
+            if (enablewrite)
+                haslocalcopy = _haslocalcopy;
+        }
+    };
+                  </programlisting>
+                </para>
+            </sect2>
+            <sect2>
+                <title>Pointers</title>
+                <para>
+                    Use real pointers when you can, and smart pointers when you have
+                    to. Take extra care on understanding the needs of your pointers and
+                    their scope. Most programs can afford a few dangling pointers, but a
+                    high-performance clustering platform cannot.
+                </para>
+                <para>
+                    Most importantly, use common sense and a lot of thought. Here
+                    are a few guidelines:
+                </para>
+                <para>
+                    <itemizedlist>
+                        <listitem>
+                            <para>
+                                Use real pointers for return values, parameter passing
+                            </para>
+                        </listitem>
+                        <listitem>
+                          <para>
+                              For local variables use real pointers if their lifetime is
+                              guaranteed to be longer than the function (and no exception
+                              is thrown from functions you call), shared pointers otherwise.
+                          </para>
+                        </listitem>
+                        <listitem>
+                            <para>
+                                Use Shared pointers for member variables - unless there is
+                                a strong guarantee the object has a longer lifetime.
+                            </para>
+                        </listitem>
+                        <listitem>
+                            <para>
+                                Create Shared&lt;&gt; with either:
+                            </para>
+                            <itemizedlist>
+                                <listitem>
+                                    <para>
+                                        Owned&lt;&gt;: if your new pointer will own the
+                                        pointer alone (transfer)
+                                    </para>
+                                </listitem>
+                                <listitem>
+                                    <para>
+                                        Linked&lt;&gt;: if you still want to share the
+                                        ownership (shared)
+                                    </para>
+                                </listitem>
+                            </itemizedlist>
+                        </listitem>
+                        <listitem>
+                            <para>
+                                Consider whether your code is critical and use
+                                link/release when necessary
+                            </para>
+                        </listitem>
+                    </itemizedlist>
+                </para>
+                <para>
+                    Warning: Direct manipulation of the ownership might
+                    cause Shared&lt;&gt; pointers to lose the pointers, so subsequent
+                    calls to it (like o2-&gt;doIt() after o3 gets ownership) *will* cause
+                    segmentation faults.
+                  </para>
+                <para>
+                    Refer to chapter 5.3 for more information on our smart pointer
+                    implementation, Shared&lt;&gt;.
+                </para>
+                <para>
+                    Methods that return Shared&lt;&gt; pointers, or that use them,
+                    should have a common naming standard.
+                </para>
+                <para>
+                    <itemizedlist>
+                        <listitem>
+                            <para>
+                                Foo * queryFoo(): does not return a linked pointer since
+                                lifetime is guaranteed for a set period. Caller should link if it
+                                needs to retain it for longer.
+                            </para>
+                        </listitem>
+                    </itemizedlist>
+                    <itemizedlist>
+                        <listitem>
+                            <para>
+                                Foo * getFoo(): returned values is linked - should be
+                                assigned to an owned, or returned directly.
+                            </para>
+                        </listitem>
+                    </itemizedlist>
+                    <itemizedlist>
+                        <listitem>
+                            <para>
+                                void setFoo(Foo * x): generally parameters to functions are
+                                assumed to not be linked, the callee needs to link them if they
+                                are retained.
+                            </para>
+                        </listitem>
+                    </itemizedlist>
+                    <itemizedlist>
+                        <listitem>
+                            <para>
+                                void setownFoo(Foo * ownedX): Some functions do take
+                                pointers that are linked - where you are implicitly transferring
+                                ownership.
+                            </para>
+                        </listitem>
+                    </itemizedlist>
                 </para>
             </sect2>
             <sect2>
@@ -338,8 +627,112 @@
                 abstract class with no data members and all functions pure virtual can be used
                 in the same way.
             </para>
+            <para>
+                Interfaces are pure virtual classes. They are similar concepts to
+                Java's interfaces and should be used on public APIs. If you need common
+                code, use policies (see below).
+            </para>
+            <para>
+                An interface's name must start with an 'I' and the base class for
+                its concrete implementations should start with a 'C' and have the same
+                name, ex:
+            </para>
+            <programlisting>    CFoo : implements IFoo { };</programlisting>
+            <para>
+                When an interface has multiple implementations, try to stay as
+                close as possible from this rule. Ex:
+            </para>
+            <programlisting>    CFooCool : implements IFoo { };
+    CFooWarm : implements IFoo { };
+    CFooALot : implements IFoo { };
+            </programlisting>
+            <para>
+                Or, for partial implementation, use something like this:
+            </para>
+            <programlisting>    CFoo : implements IFoo { };
+    CFooCool : public CFoo { };
+    CFooWarm : public CFoo { };
+            </programlisting>
+            <para>
+                Extend current interfaces only on a 'is-a' approach, not to
+                aggregate functionality. Avoid pollution of public interfaces by having
+                only the public methods on the most-base interface in the header, and
+                internal implementation in the source file. Prefer pImpl idiom
+                (pointer-to-implementation) for functionality-only requirements and
+                policy based design for interface requirements.
+            </para>
+            <para>
+                Example 1: You want to decouple part of the implementation from
+                your class, and this part does not implements the interface your
+                contract requires.
+            </para>
+            <programlisting>    interface IFoo {
+        virtual void foo()=0;
+    };
+    class CFoo : implements IFoo {
+        MyImpl *pImpl;
+    public:
+        void foo() { pImpl-&gt;doSomething(); }
+    };
+            </programlisting>
+            <para>
+                Example2: You want to implement the common part of one (or more)
+                interface(s) in a range of sub-classes.
+            </para>
+            <programlisting>    interface ICommon {
+        virtual void common()=0;
+    };
+    interface IFoo : extends ICommon {
+        virtual void foo()=0;
+    };
+    interface IBar : extends ICommon {
+        virtual void bar()=0;
+    };
+
+    template &lt;class IFACE&gt;
+    class Base : implements IFACE {
+        void common() { ... };
+    }; // Still virtual
+
+    class CFoo : Base&lt;IFoo&gt; {
+        void foo() { 1+1; };
+    };
+    class CBar : Base&lt;IBar&gt; {
+        void bar() { 2+2; };
+    };
+            </programlisting>
         </sect1>
-        <sect1><title>Reference counted objects</title><para/></sect1>
+        <sect1>
+            <title>Reference counted objects</title>
+            <para>
+                Shared&lt;&gt; is an in-house smart pointer implementation. It's
+                close to boost's intrusive_ptr. It has two derived implementations:
+                Linked and Owned, which are used to control whether the pointer is
+                linked when a shared pointer is created from a real pointer or not,
+                respectively. Ex:
+            </para>
+            <programlisting>    Owned&lt;Foo&gt; = new Foo; // Owns the pointers
+    Linked&lt;Foo&gt; = myFooParmeter; // Shared ownership
+            </programlisting>
+            <para>
+                Shared&lt;&gt; is thread-safe and uses atomic reference count
+                handled by each object (rather than by the smart pointer itself, like
+                boost's shared_ptr).
+            </para>
+            <para>
+                This means that, to use Shared&lt;&gt;, your class must implement
+                the IInterface interface, most commonly by extending the CInterface
+                class (and using the IMPLEMENT_IINTERFACE macro in the public section of
+                your class declaration).
+            </para>
+            <para>
+                This interface controls how you Link() and Release() the pointer.
+                This is necessary because in some inner parts of HPCC, the use of a
+                "really smart" smart pointer would add too many links and releases (on
+                temporaries, local variables, members, etc) that could add to a
+                significant performance hit.
+            </para>
+        </sect1>
         <sect1><title>STL</title><para/></sect1>
     </chapter>
 
