@@ -8776,8 +8776,9 @@ IPropertyTree * resolveQueryAlias(IPropertyTree * queryRegistry, const char * al
 {
     StringBuffer xpath;
     unsigned cnt = 0;
-
-    const char * search = alias;
+    StringBuffer lcAlias(alias);
+    lcAlias.toLowerCase();
+    const char * search = lcAlias.str();
     loop
     {
         xpath.clear().append("Alias[@name=\"").append(search).append("\"]/@id");
@@ -8787,7 +8788,7 @@ IPropertyTree * resolveQueryAlias(IPropertyTree * queryRegistry, const char * al
         //Check for too many alias indirections.
         if (cnt++ > 10)
             return NULL;
-        search = queryId;
+        search = lcAlias.clear().append(queryId).toLowerCase().str();
     }
 
     xpath.clear().append("Query[@id=\"").append(search).append("\"]");
