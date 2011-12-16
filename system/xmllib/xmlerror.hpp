@@ -27,6 +27,7 @@
 #define XMLERR_InvalidXml                               5601
 #define XMLERR_InvalidXsd                               5602
 #define XMLERR_XsdValidationFailed                      5603
+#define XMLERR_MissingDependency                        5604
 
 
 

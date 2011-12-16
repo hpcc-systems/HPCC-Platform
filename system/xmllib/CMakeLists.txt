@@ -27,24 +27,29 @@ project( xmllib )
 if ( USE_XALAN )
     set(LIB_INCLUDE_DIR ${XALAN_INCLUDE_DIR} ${XERCES_INCLUDE_DIR})
     set(LIB_LIBRARIES ${XALAN_LIBRARIES} ${XERCES_LIBRARIES})
-    set(LIB_SOURCE
+    set (SRCS
+        xsdparser.cpp
+        xslcache.cpp
         xalan_processor.cpp
         xerces_validator.cpp
     )
-else()
+elseif (USE_LIBXSLT)
     set(LIB_INCLUDE_DIR ${LIBXSLT_INCLUDE_DIR} ${LIBEXSLT_INCLUDE_DIR} ${LIBXML2_INCLUDE_DIR})
     set(LIB_LIBRARIES ${LIBXSLT_LIBRARIES} ${LIBEXLST_LIBRARIES} ${LIBXML2_LIBRARIES})
-    set(LIB_SOURCE
+    set (SRCS
+        xsdparser.cpp
+        xslcache.cpp
         libxslt_processor.cpp
         libxml_validator.cpp
     )
+else()
+    set (SRCS
+        xsdparser.cpp
+        xslcache.cpp
+        xmllib_unsupported.cpp
+    )
 endif()
 
-set (    SRCS 
-         xsdparser.cpp
-         xslcache.cpp
-         ${LIB_SOURCE}
-    )
 
 include_directories (
          ./../../common/deftype
@@ -62,4 +67,3 @@ target_link_libraries ( xmllib
          ${LIB_LIBRARIES}
          jlib
     )
-
