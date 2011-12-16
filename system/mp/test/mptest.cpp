@@ -505,7 +505,8 @@ int main(int argc, char* argv[])
 #endif
     try {
         EnableSEHtoExceptionMapping();
-        openLogFile("c:\\mptest.log");
+        StringBuffer lf;
+        openLogFile(lf, "c:\\mptest.log");
         PrintLog("MPTEST Starting");
 
 #ifndef MYMACHINES

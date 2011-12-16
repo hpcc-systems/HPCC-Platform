@@ -1014,6 +1014,7 @@ interface IComponentLogFileCreator : extends IInterface
     virtual void setAliasName(const char * _aliasName) = 0; //alias file name, overrides default of component name
     virtual void setLogDirSubdir(const char * _subdir) = 0; //subdir be appended to config log dir (eg "server" or "audit")
     virtual void setRolling(const bool _rolls) = 0;         //daily rollover to new file
+    virtual void setCompleteFilespec(const char * _fs) = 0; //Full filespec (path/fn.ext), overrides everything else
 
     //ILogMsgHandler fields
     virtual void setAppend(const bool _append) = 0;         //append to existing logfile
@@ -1031,10 +1032,10 @@ interface IComponentLogFileCreator : extends IInterface
     virtual const char * queryLogFileSpec() = 0;    //Full log filespec
     virtual const char * queryAliasFileSpec() = 0;  //Full alias filespec, if created
 
-    virtual bool beginLogging() = 0;    //begin logging to specified file(s)
+    virtual ILogMsgHandler * beginLogging() = 0;    //begin logging to specified file(s)
 };
 
 extern jlib_decl IComponentLogFileCreator * createComponentLogFileCreator(IPropertyTree * _properties, const char *_component);
 extern jlib_decl IComponentLogFileCreator * createComponentLogFileCreator(const char *_logDir, const char *_component);
-
+extern jlib_decl IComponentLogFileCreator * createComponentLogFileCreator(const char *_component);
 #endif

@@ -53,16 +53,11 @@ int main( int argc, char *argv[] )
     try  {
         StringBuffer logname;
         splitFilename(argv[0], NULL, NULL, &logname, NULL);
-        StringBuffer logdir;
-        if (getConfigurationDirectory(NULL,"log","frunssh",logname.str(),logdir)) {
-            recursiveCreateDirectory(logdir.str());
-            StringBuffer tmp(logname);
-            addPathSepChar(logname.clear().append(logdir)).append(tmp);
-        }
-        addFileTimestamp(logname, true);
-        logname.append(".log");
-        appendLogFile(logname.str(),0,false);
-        queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_prefix);
+
+        Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator("frunssh");
+        lf->setCreateAliasFile(false);
+        lf->setMsgFields(MSGFIELD_prefix);
+        lf->beginLogging();
 
         Owned<IFRunSSH> runssh = createFRunSSH();
         runssh->init(argc,argv);

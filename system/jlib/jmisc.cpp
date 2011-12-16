@@ -199,34 +199,20 @@ jlib_decl ILogIntercept* interceptLog(ILogIntercept *intercept)
     return old;
 }
 
-ILogMsgHandler * theLegacyLogMsgHandler;
-
-//DEPRECATED!  Use jlog "CComponentLogFileCreator"
-jlib_decl void openLogFile(const char *filename, unsigned detail, bool enterQueueMode)
+jlib_decl void openLogFile(StringBuffer & resolvedFS, const char *filename, unsigned detail, bool enterQueueMode, bool append)
 {
     if(enterQueueMode)
         queryLogMsgManager()->enterQueueingMode();
-    if (!detail)
-        detail = DefaultDetail;
-    if(theLegacyLogMsgHandler)
-        queryLogMsgManager()->removeMonitor(theLegacyLogMsgHandler);
-    theLegacyLogMsgHandler = getFileLogMsgHandler(filename, 0, MSGFIELD_PRINTLOG, false, false, true);
-    ILogMsgFilter * filter = getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, detail, false);
-    queryLogMsgManager()->addMonitorOwn(theLegacyLogMsgHandler, filter);
-}
-
-//DEPRECATED!  Use jlog "CComponentLogFileCreator"
-jlib_decl void appendLogFile(const char *filename, unsigned detail, bool enterQueueMode)
-{
-    if(enterQueueMode)
-        queryLogMsgManager()->enterQueueingMode();
-    if (!detail)
-        detail = DefaultDetail;
-    if(theLegacyLogMsgHandler)
-        queryLogMsgManager()->removeMonitor(theLegacyLogMsgHandler);
-    theLegacyLogMsgHandler = getFileLogMsgHandler(filename, 0, MSGFIELD_PRINTLOG, false, true, true);
-    ILogMsgFilter * filter = getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, detail, false);
-    queryLogMsgManager()->addMonitorOwn(theLegacyLogMsgHandler, filter);
+    Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(".", 0);
+    lf->setCreateAliasFile(false);
+    lf->setLocal(true);
+    lf->setRolling(false);
+    lf->setAppend(append);
+    lf->setCompleteFilespec(filename);//user specified log filespec
+    lf->setMaxDetail(detail ? detail : DefaultDetail);
+    lf->setMsgFields(MSGFIELD_timeDate | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code);
+    lf->beginLogging();
+    resolvedFS.set(lf->queryLogFileSpec());
 }
 
 jlib_decl void PrintLogDirect(const char *msg)
@@ -249,11 +235,6 @@ jlib_decl void SPrintLog(const char *fmt, ...)
     va_start(args, fmt);
     VALOG(MClegacy, unknownJob, fmt, args);
     va_end(args);
-}
-
-ILogMsgHandler * queryLegacyLogMsgHandler()
-{
-    return theLegacyLogMsgHandler;
 }
 
 StringBuffer &addFileTimestamp(StringBuffer &fname, bool daily)
