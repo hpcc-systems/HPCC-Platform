@@ -812,7 +812,7 @@ friend class CGraphElementBase;
 
 interface IGraphExecutor : extends IInterface
 {
-    virtual void add(CGraphBase *subGraph, IGraphCallback &callback, size32_t parentExtractSz, const byte *parentExtract) = 0;
+    virtual void add(CGraphBase *subGraph, IGraphCallback &callback, bool checkDependencies, size32_t parentExtractSz, const byte *parentExtract) = 0;
     virtual IThreadPool &queryGraphPool() = 0 ;
     virtual void wait() = 0;
 };
@@ -884,7 +884,7 @@ public:
     virtual IGraphTempHandler *createTempHandler() = 0;
     virtual CGraphBase *createGraph() = 0;
     void joinGraph(CGraphBase &graph);
-    void startGraph(CGraphBase &graph, IGraphCallback &callback, size32_t parentExtractSize, const byte *parentExtract);
+    void startGraph(CGraphBase &graph, IGraphCallback &callback, bool checkDependencies, size32_t parentExtractSize, const byte *parentExtract);
 
     void addDependencies(IPropertyTree *xgmml, bool failIfMissing=true);
     void addSubGraph(CGraphBase &graph)
