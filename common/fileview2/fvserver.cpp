@@ -56,7 +56,7 @@ bool myAbortHandler()
 int main(int argc, const char *argv[])
 {
     InitModuleObjects();
-    if (argc < 4 || argv[1][0]=='/' && argv[1][1]=='?')
+    if (argc < 4)
     {
         printf("fvserver <dali-server> <queue> <cluster>");
         return 1;

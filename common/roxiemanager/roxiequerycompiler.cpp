@@ -303,7 +303,7 @@ public:
                     status.s.appendf("Unknown error: Could not compile query - make sure eclserver is running - workunit status = %s", state.str());
                 }
             }
-            return false;
+            return NULL;
         }
     }
 

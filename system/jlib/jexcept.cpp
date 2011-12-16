@@ -1083,9 +1083,12 @@ void *EnableSEHtranslation()
 {
 #ifdef NOSEH
     return NULL;
-#endif
+#else
 #ifdef _WIN32
     return _set_se_translator( CSEHException::Translate );
+#else
+    UNIMPLEMENTED;
+#endif
 #endif
 }
 

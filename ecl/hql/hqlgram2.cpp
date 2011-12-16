@@ -5801,7 +5801,7 @@ IHqlScope * HqlGram::queryTemplateContext()
         if (scope)
             return scope;
     }
-    return false;
+    return NULL;
 }
 
 

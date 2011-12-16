@@ -1477,7 +1477,7 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
 
     IArrayOf<IEspECLWorkunit> results;
 
-    unsigned begin = 0;
+    int begin = 0;
     unsigned int count = 100;
     int pagesize = 100;
     if (version > 1.01)

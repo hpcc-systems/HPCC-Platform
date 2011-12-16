@@ -266,7 +266,7 @@ const void * CRHDualCache::cOut::nextInGroup()
 {
     CRHRollingCacheElem *e;
     if (stopped || !parent->get(pos,e))
-        return false;   //no more data
+        return NULL;   //no more data
     LinkRoxieRow(e->row);
     pos++;
     return e->row;
@@ -559,7 +559,7 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
                 char *str;
 
                 // capture authentication token
-                if (str = strstr(header, "Authorization: Basic "))
+                if ((str = strstr(header, "Authorization: Basic ")) != NULL)
                 {
                     char *authToken = str + strlen("Authorization: Basic ");
                     str = strchr(authToken, '\r');

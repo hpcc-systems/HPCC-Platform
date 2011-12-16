@@ -231,7 +231,7 @@ public:
 
 template<typename T1,typename T2> inline __int64 makeint64(T1 high, T2 low)
 {
-    return (__int64)high<<32 | (__int64)low & (__int64)0xffffffff;
+    return (__int64)high<<32 | ((__int64)low & (__int64)0xffffffff);
 }
 
 inline __int32 high(__int64 n)

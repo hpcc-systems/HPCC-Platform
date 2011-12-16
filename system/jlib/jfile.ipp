@@ -244,35 +244,4 @@ public:
     virtual size32_t write(offset_t pos, size32_t len, const void * data);
 };
 
-class jlib_decl StringBufferIO : public CInterface, implements IFileIO
-{
-public:
-    StringBufferIO(StringBuffer & _buffer) : buffer(buffer) {}
-
-    virtual size32_t read(offset_t pos, size32_t len, void * data);
-    virtual offset_t size();
-    virtual size32_t write(offset_t pos, size32_t len, const void * data);
-    virtual void setSize(offset_t size);
-
-protected:
-    StringBuffer & buffer;
-};
-
-class jlib_decl MemoryBufferIO : public CInterface, implements IFileIO
-{
-public:
-    MemoryBufferIO (MemoryBuffer & _buffer) : buffer(buffer) {}
-
-    virtual size32_t read(offset_t pos, size32_t len, void * data);
-    virtual offset_t size();
-    virtual size32_t write(offset_t pos, size32_t len, const void * data);
-    virtual void setSize(offset_t size);
-
-protected:
-    MemoryBuffer & buffer;
-};
-
-
-
-
 #endif

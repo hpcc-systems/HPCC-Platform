@@ -1566,38 +1566,38 @@ static void writeUtf8(unsigned c, StringBuffer &out)
         out.append((char)c);
     else if (c < 0x800)
     {
-        out.append((char)(0xC0 | c>>6));
-        out.append((char)(0x80 | c & 0x3F));
+        out.append((char)(0xC0 | (c>>6)));
+        out.append((char)(0x80 | (c & 0x3F)));
     }
     else if (c < 0x10000)
     {
-        out.append((char) (0xE0 | c>>12));
-        out.append((char) (0x80 | c>>6 & 0x3F));
-        out.append((char) (0x80 | c & 0x3F));
+        out.append((char) (0xE0 | (c>>12)));
+        out.append((char) (0x80 | (c>>6 & 0x3F)));
+        out.append((char) (0x80 | (c & 0x3F)));
     }
     else if (c < 0x200000)
     {
-        out.append((char) (0xF0 | c>>18));
-        out.append((char) (0x80 | c>>12 & 0x3F));
-        out.append((char) (0x80 | c>>6 & 0x3F));
-        out.append((char) (0x80 | c & 0x3F));
+        out.append((char) (0xF0 | (c>>18)));
+        out.append((char) (0x80 | (c>>12 & 0x3F)));
+        out.append((char) (0x80 | (c>>6 & 0x3F)));
+        out.append((char) (0x80 | (c & 0x3F)));
     }
     else if (c < 0x4000000)
     {
-        out.append((char) (0xF8 | c>>24));
-        out.append((char) (0x80 | c>>18 & 0x3F));
-        out.append((char) (0x80 | c>>12 & 0x3F));
-        out.append((char) (0x80 | c>>6 & 0x3F));
-        out.append((char) (0x80 | c & 0x3F));
+        out.append((char) (0xF8 | (c>>24)));
+        out.append((char) (0x80 | (c>>18 & 0x3F)));
+        out.append((char) (0x80 | (c>>12 & 0x3F)));
+        out.append((char) (0x80 | (c>>6 & 0x3F)));
+        out.append((char) (0x80 | (c & 0x3F)));
     }
     else if (c < 0x80000000)
     {
-        out.append((char) (0xFC | c>>30));
-        out.append((char) (0x80 | c>>24 & 0x3F));
-        out.append((char) (0x80 | c>>18 & 0x3F));
-        out.append((char) (0x80 | c>>12 & 0x3F));
-        out.append((char) (0x80 | c>>6 & 0x3F));
-        out.append((char) (0x80 | c & 0x3F));
+        out.append((char) (0xFC | (c>>30)));
+        out.append((char) (0x80 | (c>>24 & 0x3F)));
+        out.append((char) (0x80 | (c>>18 & 0x3F)));
+        out.append((char) (0x80 | (c>>12 & 0x3F)));
+        out.append((char) (0x80 | (c>>6 & 0x3F)));
+        out.append((char) (0x80 | (c & 0x3F)));
     }
     else
         assertex(false);

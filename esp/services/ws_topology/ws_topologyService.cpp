@@ -374,8 +374,7 @@ bool CWsTopologyEx::onTpLogFile(IEspContext &context,IEspTpLogFileRequest  &req,
                 resp.setPageFrom(readLogReq.pageFrom);
             if (readLogReq.pageTo > 0)
                 resp.setPageTo(readLogReq.pageTo);
-            if (readLogReq.prevPage >= 0)
-                resp.setPrevPage(readLogReq.prevPage);
+            resp.setPrevPage(readLogReq.prevPage);
             if (readLogReq.nextPage > 0)
                 resp.setNextPage(readLogReq.nextPage);
 

@@ -1569,15 +1569,15 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
           if (bEspServiceChanged)
           {
             IPropertyTree* pChild;
-            while (pChild = pComp->queryPropTree("Authenticate[1]"))
+            while ((pChild = pComp->queryPropTree("Authenticate[1]")) != NULL)
               if (pChild)
                 pComp->removeTree( pChild );
 
-            while (pChild = pComp->queryPropTree("AuthenticateFeature[1]"))
+            while ((pChild = pComp->queryPropTree("AuthenticateFeature[1]")) != NULL)
               if (pChild)
                 pComp->removeTree( pChild );
 
-            while (pChild = pComp->queryPropTree("AuthenticateSetting[1]"))
+            while ((pChild = pComp->queryPropTree("AuthenticateSetting[1]")) != NULL)
               if (pChild)
                 pComp->removeTree( pChild );
           }
@@ -2360,7 +2360,7 @@ bool CWsDeployFileInfo::rollbackEnvironmentForCloud(IEspContext &context, IEspRo
         {
             const char* newEnvId = req.getId();
 
-            if (newEnvId || *newEnvId && !strcmp(newEnvId, m_cloudEnvId.str()))
+            if (newEnvId && *newEnvId && !strcmp(newEnvId, m_cloudEnvId.str()))
             {
                 StringBuffer sbBackup;
                 Owned<IFile> pFile = createIFile(m_cloudEnvBkupFileName.str());
@@ -4999,7 +4999,7 @@ void CWsDeployFileInfo::addDeployableComponentAndInstances(IPropertyTree* pEnvRo
         IPropertyTree* pInstance = &iInst->query();
         const char* instType = pInstance->queryName();
 
-        if (instType && !strcmp(instType, XML_TAG_INSTANCE) || !strcmp(instType, XML_TAG_ROXIE_SERVER))
+        if (instType && (!strcmp(instType, XML_TAG_INSTANCE) || !strcmp(instType, XML_TAG_ROXIE_SERVER)))
         {
           const char* instName = pInstance->queryProp(XML_ATTR_NAME);
           const char* computer = pInstance->queryProp(XML_ATTR_COMPUTER);
@@ -5583,7 +5583,7 @@ CCloudTask* createCloudTask(CCloudActionHandler* pHandler, EnvAction eA, const c
 
 bool CWsDeployFileInfo::updateEnvironment(const char* xml)
 {
-  if (!xml || xml && !*xml)
+  if (!xml || !*xml)
     return false;
 
   Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
