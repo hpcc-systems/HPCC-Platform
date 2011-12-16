@@ -19,7 +19,7 @@
 -->
 
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xml:space="default">
-    <xsl:output method="xml" indent="yes" omit-xml-declaration="no"/>
+    <xsl:output method="xml" indent="yes" omit-xml-declaration="no" encoding="UTF-8"/>
     <xsl:param name="process" select="'esp'"/>
     <xsl:param name="instance" select="'s1'"/>
     <xsl:param name="isLinuxInstance" select="0"/>

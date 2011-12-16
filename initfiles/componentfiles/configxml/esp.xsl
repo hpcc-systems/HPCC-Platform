@@ -20,9 +20,9 @@
 
 <?xml-stylesheet type="text/xsl" href="C:\Development\deployment\xmlenv\esp.xsl"?>
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xml:space="default"
-    xmlns:seisint="http://seisint.com" xmlns:xalan="http://xml.apache.org/xalan" exclude-result-prefixes="xalan seisint">
+    xmlns:seisint="http://seisint.com" xmlns:exslt="http://exslt.org/common" exclude-result-prefixes="seisint exslt">
    
-    <xsl:output method="xml" indent="yes" omit-xml-declaration="no"/>
+    <xsl:output method="xml" indent="yes" omit-xml-declaration="no" encoding="UTF-8"/>
     <!--xsl:template match="text()"/-->
     <xsl:param name="process" select="'esp'"/>
     <xsl:param name="instance" select="'2wd20'"/>
@@ -177,7 +177,7 @@
                     <xsl:with-param name="filesList" select="$serviceFilesList"/>
                 </xsl:call-template>
             </xsl:variable>
-            <xsl:apply-templates select="xalan:nodeset($importedServiceDefinitionFiles)" mode="processImportedServiceDefinitions"/>
+            <xsl:apply-templates select="exslt:node-set($importedServiceDefinitionFiles)" mode="processImportedServiceDefinitions"/>
             <xsl:apply-templates select="node()"/>
         </xsl:copy>
     </xsl:template>
@@ -207,7 +207,7 @@
     
     <xsl:template name="getServiceDefinition">
         <xsl:param name="serviceFileName"/>
-        <xsl:variable name="serviceFile" select="document(concat('file:///', $serviceFileName))"/>
+        <xsl:variable name="serviceFile" select="document(concat('file:///', translate($serviceFileName, '\', '/')))"/>
         <xsl:if test="not($serviceFile)">
             <xsl:message terminate="yes">ESP service definition file <xsl:value-of select="$serviceFileName"/> not found!</xsl:message>
         </xsl:if>
@@ -420,7 +420,7 @@
               <xsl:if test="position() != last()">, </xsl:if>
            </xsl:for-each>
         </xsl:attribute>
-       <xsl:apply-templates/>
+       <xsl:apply-templates select="@*|node()"/>
     </xsl:template>
 
     

@@ -18,11 +18,10 @@
 ################################################################################
 -->
 
-<?xmlspysamplexml c:\development\deployment\xmlenv\test.xml?>
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xml:space="default" 
-xmlns:xalan="http://xml.apache.org/xalan" xmlns:seisint="http://seisint.com" exclude-result-prefixes="xalan seisint">
+xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-result-prefixes="seisint set">
 <!--xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xml:space="default"-->
-    <xsl:output method="xml" indent="yes" omit-xml-declaration="no"/>
+    <xsl:output method="xml" indent="yes" omit-xml-declaration="no" encoding="UTF-8"/>
     <xsl:param name="process" select="'esp'"/>
     <xsl:param name="instance" select="'rmoondhra'"/>
     <xsl:param name="outputFilePath" select="'c:\development\deployment\xmlenv\dummy.xml'"/>
@@ -267,17 +266,19 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
                     <xsl:with-param name="path" select="translate($outputFilePath, '/$', '\:')"/>
                 </xsl:call-template>
             </xsl:variable>
-            <xsl:variable name="pluginsFilePath" select="concat('file:///', $outputPath, $espServiceName, '_plugins.xml')"/>
+          <xsl:variable name="outputPath1" select="translate($outputPath, '\','/')"/>
+            
+            <xsl:variable name="pluginsFilePath" select="concat('file:///', $outputPath1, $espServiceName, '_plugins.xml')"/>
             <xsl:variable name="pluginsRoot" select="document($pluginsFilePath)"/>
             <xsl:if test="not($pluginsRoot)">
                 <xsl:message terminate="yes">The plugins file '<xsl:value-of select="$pluginsFilePath"/>' was either not generated or failed to open!</xsl:message>
             </xsl:if>
             <xsl:variable name="pluginsNodes" select="$pluginsRoot/Plugins/Plugin/@destName"/>
-            <xsl:if test="not(function-available('xalan:distinct'))">
+            <xsl:if test="not(function-available('set:distinct'))">
                 <xsl:message terminate="yes">This XSL transformation can only be run by Apache's Xalan processor!</xsl:message>
             </xsl:if>
             <Plugins>
-                <xsl:attribute name="path"><xsl:for-each select="xalan:distinct($pluginsNodes)"><xsl:if test="../@type != 'lib'"><xsl:choose><xsl:when test="$isLinuxInstance"><xsl:value-of select="translate(../@destPath, '\', '/')"/><xsl:value-of select="translate(., '\', '/')"/><xsl:text disable-output-escaping="yes">:</xsl:text></xsl:when><xsl:otherwise><xsl:value-of select="../@destPath"/><!--already has \ --><xsl:value-of select="."/><xsl:text disable-output-escaping="yes">;</xsl:text></xsl:otherwise></xsl:choose></xsl:if></xsl:for-each></xsl:attribute>
+                <xsl:attribute name="path"><xsl:for-each select="set:distinct($pluginsNodes)"><xsl:if test="../@type != 'lib'"><xsl:choose><xsl:when test="$isLinuxInstance"><xsl:value-of select="translate(../@destPath, '\', '/')"/><xsl:value-of select="translate(., '\', '/')"/><xsl:text disable-output-escaping="yes">:</xsl:text></xsl:when><xsl:otherwise><xsl:value-of select="../@destPath"/><!--already has \ --><xsl:value-of select="."/><xsl:text disable-output-escaping="yes">;</xsl:text></xsl:otherwise></xsl:choose></xsl:if></xsl:for-each></xsl:attribute>
             </Plugins>
 
         </EspService>

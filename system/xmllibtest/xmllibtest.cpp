@@ -16,11 +16,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-#include "xslprocessor.hpp"
-#include "xmlvalidator.hpp"
-#include "jlib.hpp"
+#include "jliball.hpp"
+
 #include <stdio.h>
 #include <time.h>
+
+#include "xslprocessor.hpp"
+#include "xmlvalidator.hpp"
 
 //--------------------------------------------------------------------------------
 #define SEISINT_NAMESPACE "http://seisint.com"
@@ -311,7 +313,7 @@ void doTransform()
             //transform->setXslSource(xslbuf.str(), xslbuf.length());
             //transform->setXmlSource(xmlbuf.str(), xmlbuf.length());
             transform->setXmlSource(gArgv[1]);
-            transform->setXslSource(gArgv[2]);
+            transform->loadXslFromFile(gArgv[2]);
             try 
             {
                 if (gStreamingBySocket)
@@ -347,7 +349,7 @@ void doTransform()
             
             transform->setExternalFunction(SEISINT_NAMESPACE, externalFunction2.get(), true);
             transform->setXmlSource(gArgv[1]);
-            transform->setXslSource(gArgv[2]);
+            transform->loadXslFromFile(gArgv[2]);
             transform->setResultTarget(gArgv[3]);
             
             try 
@@ -391,9 +393,9 @@ void doTransform()
         {
             Owned<IXslTransform> transform = processor->createXslTransform();
             transform->setXmlSource(theInputDocument, strlen(theInputDocument));
-            transform->setIncludeHandler(new CIncludeHandler);          
+            transform->setIncludeHandler(new CIncludeHandler);
             // Attention - the callback getXsl is called everytime the following function is called -
-            transform->setXslSource(theStylesheet, strlen(theStylesheet));
+            transform->setXslSource(theStylesheet, strlen(theStylesheet), "foobartest", ".");
             
             StringBuffer buf;
             
@@ -465,7 +467,7 @@ void doXmlValidation()
         v->validate();
     } catch (IMultiException* me) {
         IArrayOf<IException> &es = me->getArray();
-        for (int i=0; i<es.ordinality(); i++)
+        for (aindex_t i=0; i<es.ordinality(); i++)
         {
             StringBuffer msg;
             IException& e = es.item(i);

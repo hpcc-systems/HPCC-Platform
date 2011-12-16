@@ -19,7 +19,7 @@
 -->
 
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xml:space="default">
-  <xsl:output method="xml" indent="yes" omit-xml-declaration="no"/>
+  <xsl:output method="xml" indent="yes" omit-xml-declaration="no" encoding="UTF-8"/>
   <xsl:template match="text()"/>
   <xsl:param name="process" select="'dali'"/>
   <xsl:param name="isLinuxInstance" select="0"/>
@@ -106,14 +106,12 @@
         <xsl:attribute name="caseInsensitive">0</xsl:attribute>
         <xsl:attribute name="enableSysLog">
           <xsl:call-template name="outputBool">
-            <xsl:with-param name="val" select="@enableSysLog">
-            </xsl:with-param>
+            <xsl:with-param name="val" select="@enableSysLog"/>
           </xsl:call-template>
         </xsl:attribute>
         <xsl:attribute name="enableSNMP">
           <xsl:call-template name="outputBool">
-            <xsl:with-param name="val" select="@enableSNMP">
-            </xsl:with-param>
+            <xsl:with-param name="val" select="@enableSNMP"/>
           </xsl:call-template>
         </xsl:attribute>
         <xsl:attribute name="snmpSendWarnings">

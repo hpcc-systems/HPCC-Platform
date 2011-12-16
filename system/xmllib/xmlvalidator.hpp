@@ -49,7 +49,7 @@ interface XMLLIB_API IXmlDomParser : public IInterface
 };
 
 
-extern "C" XMLLIB_API IXmlDomParser* getXmlDomParser();
+XMLLIB_API IXmlDomParser* getXmlDomParser();
 
 
 #endif

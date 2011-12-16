@@ -248,7 +248,7 @@
           <tbody>
             <tr>
               <td align="left">
-                <xsl:text>&nbsp;&nbsp;[Workunit: </xsl:text>
+                <xsl:text disable-output-escaping="yes">&nbsp;&nbsp;[Workunit: </xsl:text>
                 <xsl:choose>
                   <xsl:when test="number(BatchWU)">
                     <a href="javascript:go('/WsBatchWorkunits/BatchWUInfo?Wuid={Wuid}')">
@@ -261,7 +261,7 @@
                     </a>
                   </xsl:otherwise>
                 </xsl:choose>
-                <xsl:text>]&nbsp;&nbsp;</xsl:text>
+                <xsl:text disable-output-escaping="yes">]&nbsp;&nbsp;</xsl:text>
                 <span id="state">
                 </span>
                 <span>&nbsp;<b>Graph:</b>&nbsp;

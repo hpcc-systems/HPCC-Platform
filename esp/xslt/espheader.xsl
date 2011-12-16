@@ -135,9 +135,9 @@
                     <a href="relogin_?action=ok" onclick="return go('relogin_?action=ok'); return false;">
                       <img border="0" src="files_/img/relogin.png" width="13" height="15">
                         <xsl:attribute name="title">
-                          <xsl:text>You are logged in as '</xsl:text>
+                          <xsl:text disable-output-escaping="yes">You are logged in as '</xsl:text>
                           <xsl:value-of select="LoginId"/>
-                          <xsl:text>'. Click here to log in as a different user.</xsl:text>
+                          <xsl:text disable-output-escaping="yes">'. Click here to log in as a different user.</xsl:text>
                         </xsl:attribute>
                       </img>
                     </a>

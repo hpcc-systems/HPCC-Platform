@@ -1128,9 +1128,9 @@
                             </xsl:when>
                             <xsl:otherwise>
                                 <xsl:attribute name="onmouseover">
-                                    <xsl:text>EnterContent('ToolTip', null, '</xsl:text>
+                                    <xsl:text disable-output-escaping="yes">EnterContent('ToolTip', null, '</xsl:text>
                                     <xsl:value-of select="$targetNode/text()"/>
-                                    <xsl:text>', true; Activate();</xsl:text>
+                                    <xsl:text disable-output-escaping="yes">', true; Activate();</xsl:text>
                                 </xsl:attribute>
                                 <xsl:attribute name="onmouseout">deActivate()</xsl:attribute>
                                 <xsl:value-of select="substring(string($targetNode), 1, 4)"/>
@@ -1158,7 +1158,7 @@
                     <xsl:otherwise>&nbsp;</xsl:otherwise>
                 </xsl:choose>
                 <xsl:if test="@span">
-                    <xsl:text disable-output-escaping="yes">&lt;/span&gt;</xsl:text>
+                    <xsl:text>&lt;/span&gt;</xsl:text>
                 </xsl:if>
             </xsl:if><!--$isStatic-->
         </xsl:if>
@@ -1381,7 +1381,7 @@
                     </xsl:choose>
                     <xsl:value-of select="concat('(this, ', $apos, $tableId, $apos, ', ', $schemaNode/@column, ');')"/>
                     <xsl:if test="$columnHeader"> <!--ms column > 0 -->
-                        <xsl:text>; this.style.display='none';</xsl:text>
+                        <xsl:text disable-output-escaping="yes">; this.style.display='none';</xsl:text>
                     </xsl:if>
                 </xsl:if>
                 <xsl:variable name="handlerAttrib" 

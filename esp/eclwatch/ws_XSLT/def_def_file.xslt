@@ -52,7 +52,7 @@ fields:
         <xsl:when test="@type='string'">char</xsl:when>
         <xsl:otherwise>byte</xsl:otherwise>
     </xsl:choose><xsl:text> </xsl:text>
-    <xsl:value-of select="@name"/><xsl:text>&#013;&#010;</xsl:text>
+    <xsl:value-of select="@name"/><xsl:text disable-output-escaping="yes">&#013;&#010;</xsl:text>
     <xsl:if test="Field">
     <xsl:apply-templates select="Field">
             <xsl:with-param name="indent" select="concat($indent, '    ')"/>

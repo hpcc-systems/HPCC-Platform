@@ -47,6 +47,9 @@
 #define WUWEB_ERROR_START       5500
 #define WUWEB_ERROR_END         5599
 
+#define XSLT_ERROR_START       5600
+#define XSLT_ERROR_END         5699
+
 #define REMOTE_ERROR_START      8000    // dafilesrv etc - see common/remote/remoteerr.hpp
 #define REMOTE_ERROR_END        8099
 

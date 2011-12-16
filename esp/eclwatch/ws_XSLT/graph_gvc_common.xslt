@@ -44,7 +44,7 @@
                 <div style="width:24px;height:24px;">
                   <span name="loadingMsg" id="loadingMsg" style="display:none; visibility:hidden;float:left;">
                     <img src="/esp/files/yui/build/assets/skins/sam/wait.gif" />
-                    <xsl:text>&#160;</xsl:text>
+                    <xsl:text disable-output-escaping="yes">&#160;</xsl:text>
                   </span>
                 </div>
               </td>
@@ -103,15 +103,15 @@
             </span>
           </p>
           <span name="findNodeBlock" id="findNodeBlock" style="display:none; visibility:hidden">
-            <xsl:text>Find:&#160;</xsl:text>
+            <xsl:text disable-output-escaping="yes">Find:&#160;</xsl:text>
             <input type="text" name="findgvcId" id="findgvcId" class="input" onkeypress="return checkFindEnter('findgvcId')"></input>
-            <xsl:text>&#160;</xsl:text>
+            <xsl:text disable-output-escaping="yes">&#160;</xsl:text>
             <input type="button" class="button" name="findBtn" id="findBtn"
             onclick="findGraphVertex(document.getElementById('findgvcId').value)" value="Find"></input>
-            <xsl:text>&#160;</xsl:text>
+            <xsl:text disable-output-escaping="yes">&#160;</xsl:text>
             <input type="button" class="button" name="findIdBtn" id="findIdBtn"
             onclick="selectVertex(document.getElementById('findgvcId').value)" value="Find Id"></input>
-            <xsl:text>&#160;</xsl:text>
+            <xsl:text disable-output-escaping="yes">&#160;</xsl:text>
             <input type="button" name="resetFindBtn" id="resetFindBtn" title="Clear Find Results" onclick="resetFind()" value="Clear"></input>
           </span>
 

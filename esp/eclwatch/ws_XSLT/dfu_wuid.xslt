@@ -301,7 +301,7 @@
         <xsl:variable name="href0">
           <xsl:text>/esp/iframe?esp_iframe_title=DFU Workunit XML - </xsl:text>
           <xsl:value-of select="$wuid"/>
-          <xsl:text>&amp;inner=/FileSpray/DFUWUFile%3fWuid%3d</xsl:text>
+          <xsl:text disable-output-escaping="yes">&amp;inner=/FileSpray/DFUWUFile%3fWuid%3d</xsl:text>
           <xsl:value-of select="$wuid"/>
         </xsl:variable>
                 <xsl:choose>

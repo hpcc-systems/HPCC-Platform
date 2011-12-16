@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-#include "xslprocessor.ipp"
+#include "xalan_processor.ipp"
 #include "jencrypt.hpp"
 #include "jexcept.hpp"
 #include "xalanc/XPath/XObjectFactory.hpp"
@@ -206,7 +206,7 @@ XObjectPtr CExternalFunction::execute( XPathExecutionContext&   executionContext
     sbInput.ensureCapacity(arg.length()+1);
 
     size32_t len = arg.length();
-    for (int i=0; i < len; i++)
+    for (size32_t i=0; i < len; i++)
         sbInput.append( (char) arg[i]);
 
     StringBuffer sbOutput;
@@ -686,4 +686,3 @@ void CXslTransform::message(StringBuffer& out, const char* in, IXslTransform* pT
     CXslTransform* pTrans = dynamic_cast<CXslTransform*>(pTransform);
     pTrans->m_sMessages.append(in).append('\n');
 }
-

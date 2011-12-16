@@ -187,13 +187,13 @@
                     <tbody>
                         <tr>
                             <th align="left">
-                                <xsl:text>Graph '</xsl:text>
+                                <xsl:text disable-output-escaping="yes">Graph '</xsl:text>
                                 <xsl:value-of select="Name"/>
                                 <xsl:if test="$gid and string($gid) != ''">
-                                    <xsl:text>' -- GID '</xsl:text>
+                                    <xsl:text disable-output-escaping="yes">' -- GID '</xsl:text>
                                     <xsl:value-of select="GID"/>
                                 </xsl:if>
-                                <xsl:text>' [Workunit: </xsl:text>
+                                <xsl:text disable-output-escaping="yes">' [Workunit: </xsl:text>
                                 <xsl:choose>
                                     <xsl:when test="number(BatchWU)">
                                         <a href="javascript:go('/WsBatchWorkunits/BatchWUInfo?Wuid={Wuid}')">
@@ -206,7 +206,7 @@
                                         </a>
                                     </xsl:otherwise>
                                 </xsl:choose>
-                                <xsl:text>]</xsl:text>
+                                <xsl:text disable-output-escaping="yes">]</xsl:text>
                             </th>
                         </tr>
                     </tbody>
@@ -232,12 +232,12 @@
                     <tr>
                         <th align="left">
                             <span id="findNodeBlock" style="display:none; visibility:hidden">
-                                <xsl:text>Find Node Id:&nbsp;</xsl:text>
+                                <xsl:text disable-output-escaping="yes">Find Node Id:&nbsp;</xsl:text>
                                 <input type="text" id='findId' size="8"></input>
-                                <xsl:text>&nbsp;</xsl:text>
+                                <xsl:text disable-output-escaping="yes">&nbsp;</xsl:text>
                                 <input type="button" id='findBtn' 
                                 onclick="findGraphNode  (document.getElementById('findId').value)" value="Find"></input>
-                                <xsl:text>&nbsp;</xsl:text>
+                                <xsl:text disable-output-escaping="yes">&nbsp;</xsl:text>
                                 <input type="button" id='resetFindBtn' disabled="true"
                                 onclick="resetFindGraphNode()" value="Reset Find"></input>
                             </span>

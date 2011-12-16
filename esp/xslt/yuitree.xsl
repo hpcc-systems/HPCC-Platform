@@ -96,7 +96,7 @@
       </div>
 
       <script type="text/javascript">
-        <xsl:text><![CDATA[
+        <xsl:text disable-output-escaping="yes"><![CDATA[
 
       var tree, currentIconMode;
 

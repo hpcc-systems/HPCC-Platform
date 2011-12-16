@@ -432,9 +432,9 @@
               <td/>
               <td>
                 <xsl:variable name="href0">
-                  <xsl:text>/esp/iframe?esp_iframe_title=Configuration file for </xsl:text>
+                  <xsl:text disable-output-escaping="yes">/esp/iframe?esp_iframe_title=Configuration file for </xsl:text>
                   <xsl:value-of select="concat($type2, ' cluster - ', Name)"/>
-                  <xsl:text>&amp;inner=/WsTopology/TpGetComponentFile%3fFileType%3dcfg%26CompType%3d</xsl:text>
+                  <xsl:text disable-output-escaping="yes">&amp;inner=/WsTopology/TpGetComponentFile%3fFileType%3dcfg%26CompType%3d</xsl:text>
                   <xsl:value-of select="concat($type2, 'Cluster%26CompName%3d', Name, '%26Directory%3d', $absolutePath, '%26OsType%3d', OS)"/>
                 </xsl:variable>
                 <img onclick="getConfigXML('{$href0}')" border="0" src="&filePathEntity;/img/config.png" alt="View configuration file..." width="14" height="14"/>
@@ -621,45 +621,45 @@
                           </xsl:variable>
                           <a style="padding-right:2">
                             <xsl:variable name="url">
-                              <xsl:text>/WsTopology/TpGetComponentFile%3fNetAddress%3d</xsl:text>
+                              <xsl:text disable-output-escaping="yes">/WsTopology/TpGetComponentFile%3fNetAddress%3d</xsl:text>
                               <xsl:value-of select="Netaddress"/>
-                              <xsl:text>%26FileType%3dlog%26CompType%3d</xsl:text>
+                              <xsl:text disable-output-escaping="yes">%26FileType%3dlog%26CompType%3d</xsl:text>
                               <xsl:value-of select="$compType"/>
-                              <xsl:text>%26OsType%3d</xsl:text>
+                              <xsl:text disable-output-escaping="yes">%26OsType%3d</xsl:text>
                               <xsl:value-of select="OS"/>
-                              <xsl:text>%26Directory%3d</xsl:text>
+                              <xsl:text disable-output-escaping="yes">%26Directory%3d</xsl:text>
                             </xsl:variable>
                             <xsl:variable name="pageCaption">
                               <xsl:variable name="captionLen" select="string-length($caption)-1"/>
                               <!--xsl:text>&amp;esp_iframe_title=Log file for </xsl:text-->
-                              <xsl:text>esp_iframe_title=Log file for </xsl:text>
+                              <xsl:text disable-output-escaping="yes">esp_iframe_title=Log file for </xsl:text>
                               <xsl:value-of select="substring($caption, 1, $captionLen)"/>
-                              <xsl:text> '</xsl:text>
+                              <xsl:text disable-output-escaping="yes"> '</xsl:text>
                               <xsl:value-of select="../../Name"/>
-                              <xsl:text>'</xsl:text>
+                              <xsl:text disable-output-escaping="yes">'</xsl:text>
                             </xsl:variable>
                             <xsl:attribute name="href">
                               <xsl:if test="$compType!='EclAgentProcess'">
-                                <xsl:text>/esp/iframe?</xsl:text>
+                                <xsl:text disable-output-escaping="yes">/esp/iframe?</xsl:text>
                                 <xsl:value-of select="$pageCaption"/>
-                                <xsl:text>&amp;inner=</xsl:text>
+                                <xsl:text disable-output-escaping="yes">&amp;inner=</xsl:text>
                                 <xsl:value-of select="$url"/>
                                 <xsl:value-of select="$logPath"/>
                               </xsl:if>
                             </xsl:attribute>
                             <xsl:if test="$compType='EclAgentProcess'">
                               <xsl:attribute name="onclick">
-                                <xsl:text>return popup('</xsl:text>
+                                <xsl:text disable-output-escaping="yes">return popup('</xsl:text>
                                 <xsl:value-of select="Netaddress"/>
-                                <xsl:text>', '</xsl:text>
+                                <xsl:text disable-output-escaping="yes">', '</xsl:text>
                                 <xsl:value-of select="translate($logPath, '\', '/')"/>
-                                <xsl:text>', '</xsl:text>
+                                <xsl:text disable-output-escaping="yes">', '</xsl:text>
                                 <xsl:value-of select="$url"/>
-                                <xsl:text>', "</xsl:text>
+                                <xsl:text disable-output-escaping="yes">', "</xsl:text>
                                 <xsl:value-of select="$pageCaption"/>
-                                <xsl:text>", </xsl:text>
+                                <xsl:text disable-output-escaping="yes">", </xsl:text>
                                 <xsl:value-of select="OS"/>
-                                <xsl:text>);</xsl:text>
+                                <xsl:text disable-output-escaping="yes">);</xsl:text>
                               </xsl:attribute>
                             </xsl:if>
                             <img border="0" src="&filePathEntity;/img/base.gif" alt="View log file" width="19" height="16"/>
@@ -671,18 +671,18 @@
                           <xsl:when test="$compType!='' and ($compType!='EclAgentProcess' or OS=0)">
                             <xsl:variable name="captionLen" select="string-length($caption)-1"/>
                             <xsl:variable name="href0">
-                              <xsl:text>/esp/iframe?esp_iframe_title=Configuration file for </xsl:text>
+                              <xsl:text disable-output-escaping="yes">/esp/iframe?esp_iframe_title=Configuration file for </xsl:text>
                               <xsl:value-of select="substring($caption, 1, $captionLen)"/>
-                              <xsl:text> - </xsl:text>
+                              <xsl:text disable-output-escaping="yes"> - </xsl:text>
                               <xsl:value-of select="../../Name"/>
-                              <xsl:text></xsl:text>
-                              <xsl:text>&amp;inner=/WsTopology/TpGetComponentFile%3fNetAddress%3d</xsl:text>
+                              <xsl:text disable-output-escaping="yes"></xsl:text>
+                              <xsl:text disable-output-escaping="yes">&amp;inner=/WsTopology/TpGetComponentFile%3fNetAddress%3d</xsl:text>
                               <xsl:value-of select="Netaddress"/>
-                              <xsl:text>%26FileType%3dcfg%26Directory%3d</xsl:text>
+                              <xsl:text disable-output-escaping="yes">%26FileType%3dcfg%26Directory%3d</xsl:text>
                               <xsl:value-of select="$absolutePath"/>
-                              <xsl:text>%26CompType%3d</xsl:text>
+                              <xsl:text disable-output-escaping="yes">%26CompType%3d</xsl:text>
                               <xsl:value-of select="$compType"/>
-                              <xsl:text>%26OsType%3d</xsl:text>
+                              <xsl:text disable-output-escaping="yes">%26OsType%3d</xsl:text>
                               <xsl:value-of select="OS"/>
                             </xsl:variable>
                             <img onclick="getConfigXML('{$href0}')" border="0" src="/esp/files_/img/config.png" alt="View deployed configuration file" width="14" height="14"/>
@@ -766,17 +766,17 @@
                           <a>
                             <xsl:attribute name="href">
                               <xsl:variable name="captionLen" select="string-length($caption)-1"/>
-                              <xsl:text>/esp/iframe?esp_iframe_title=Configuration file for </xsl:text>
+                              <xsl:text disable-output-escaping="yes">/esp/iframe?esp_iframe_title=Configuration file for </xsl:text>
                               <xsl:value-of select="substring($caption, 1, $captionLen)"/>
-                              <xsl:text> '</xsl:text>
+                              <xsl:text disable-output-escaping="yes"> '</xsl:text>
                               <xsl:value-of select="../../Name"/>
-                              <xsl:text>'</xsl:text>
-                              <xsl:text>&amp;inner=/WsTopology/TpGetComponentFile%3fNetAddress%3d</xsl:text>
+                              <xsl:text disable-output-escaping="yes">'</xsl:text>
+                              <xsl:text disable-output-escaping="yes">&amp;inner=/WsTopology/TpGetComponentFile%3fNetAddress%3d</xsl:text>
                               <xsl:value-of select="Netaddress"/>
-                              <xsl:text>%26FileType%3dcfg%26Directory%3d</xsl:text>
+                              <xsl:text disable-output-escaping="yes">%26FileType%3dcfg%26Directory%3d</xsl:text>
                               <xsl:value-of select="$absolutePath"/>
-                              <xsl:text>%26CompType%3dAgentExecProcess</xsl:text>
-                              <xsl:text>%26OsType%3d</xsl:text>
+                              <xsl:text disable-output-escaping="yes">%26CompType%3dAgentExecProcess</xsl:text>
+                              <xsl:text disable-output-escaping="yes">%26OsType%3d</xsl:text>
                               <xsl:value-of select="OS"/>
                             </xsl:attribute>
                             <img border="0" src="/esp/files_/img/config.png" alt="View deployed configuration file" width="14" height="14"/>
@@ -866,29 +866,29 @@
       <td>
         <a style="padding-right:2" href="">
           <xsl:variable name="url">
-            <xsl:text>/WsTopology/TpGetComponentFile%3fFileType%3dlog%26NetAddress%3d</xsl:text>
+            <xsl:text disable-output-escaping="yes">/WsTopology/TpGetComponentFile%3fFileType%3dlog%26NetAddress%3d</xsl:text>
             <xsl:value-of select="concat(Netaddress, '%26CompType%3d', Type, '%26OsType%3d', OS, '%26Directory%3d')"/>
           </xsl:variable>
           <xsl:variable name="pageCaption">
-            <xsl:text>esp_iframe_title=Log file for </xsl:text>
+            <xsl:text disable-output-escaping="yes">esp_iframe_title=Log file for </xsl:text>
             <xsl:value-of select="concat($displayType, ' [', Netaddress, '] of ')"/>
             <!--xsl:variable name="clusterType" select="$clusterType"/-->
-            <xsl:text> cluster '</xsl:text>
+            <xsl:text disable-output-escaping="yes"> cluster '</xsl:text>
             <xsl:value-of select="$clusterName"/>
-            <xsl:text>'</xsl:text>
+            <xsl:text disable-output-escaping="yes">'</xsl:text>
           </xsl:variable>
           <xsl:attribute name="onclick">
-            <xsl:text>return popup('</xsl:text>
+            <xsl:text disable-output-escaping="yes">return popup('</xsl:text>
             <xsl:value-of select="Netaddress"/>
-            <xsl:text>', '</xsl:text>
+            <xsl:text disable-output-escaping="yes">', '</xsl:text>
             <xsl:value-of select="translate(../../LogDirectory, '\', '/')"/>
-            <xsl:text>', '</xsl:text>
+            <xsl:text disable-output-escaping="yes">', '</xsl:text>
             <xsl:value-of select="$url"/>
-            <xsl:text>', "</xsl:text>
+            <xsl:text disable-output-escaping="yes">', "</xsl:text>
             <xsl:value-of select="$pageCaption"/>
-            <xsl:text>",</xsl:text>
+            <xsl:text disable-output-escaping="yes">",</xsl:text>
             <xsl:value-of select="OS"/>
-            <xsl:text>);</xsl:text>
+            <xsl:text disable-output-escaping="yes">);</xsl:text>
           </xsl:attribute>
           <img border="0" src="/esp/files_/img/base.gif" alt="View log file..." width="19" height="16"/>
         </a>
