@@ -3532,6 +3532,10 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
         if (expr->queryChild(0)->numChildren() == 0)
             return replaceWithNull(expr);
         break;
+    case no_dataset_from_transform:
+        if (isZero(expr->queryChild(0)))
+            return replaceWithNull(expr);
+        break;
     case no_temptable:
         {
             IHqlExpression * values = expr->queryChild(0);
@@ -5336,6 +5340,7 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
     case no_nwayjoin:
     case no_projectrow:
     case no_createrow:
+    case no_dataset_from_transform:
         {
             IHqlExpression * transform = queryNewColumnProvider(expr);
             exprMapping.setown(HqlConstantPercolator::extractConstantMapping(transform));
