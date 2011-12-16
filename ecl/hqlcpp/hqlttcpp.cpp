@@ -11267,8 +11267,8 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
         {
             HqlExprArray children;
             bool same = transformChildren(expr, children);
-            IHqlExpression * denom = expr->queryChild(2);
-            if (!denom || (denom->isAttribute() && !expr->queryProperty(localAtom)))
+            IHqlExpression * denom = queryRealChild(expr, 2);
+            if (!denom && !expr->queryProperty(localAtom))
             {
                 children.add(*createValue(no_count, LINK(defaultIntegralType), LINK(&children.item(0))), 2);
                 same = false;
