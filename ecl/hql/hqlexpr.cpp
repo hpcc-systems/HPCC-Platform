@@ -14862,6 +14862,12 @@ IHqlExpression * createUniqueSelectorSequence()
 }
 
 
+IHqlExpression * createSelectorSequence(unsigned __int64 seq)
+{
+    return createSequence(no_attr, NULL, _selectorSequence_Atom, seq);
+}
+
+
 static UniqueSequenceCounter rowsidSequence;
 IHqlExpression * createUniqueRowsId()
 {

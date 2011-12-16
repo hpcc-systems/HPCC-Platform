@@ -854,6 +854,8 @@ public:
 public:
     CIArrayOf<SharedTableInfo> sharedTables;
     Owned<SharedTableInfo> shared;
+    OwnedHqlExpr        rawLeft;
+    OwnedHqlExpr        rawRight;
     bool                containsAmbiguity;
 };
 
@@ -878,6 +880,51 @@ protected:
 protected:
     CIArrayOf<SharedTableInfo> ambiguousTables;
     bool seenAmbiguity;
+    bool seenShared;
+};
+
+//---------------------------------------------------------------------------
+
+class LeftRightTransformInfo : public NewTransformInfo
+{
+public:
+    LeftRightTransformInfo(IHqlExpression * _expr) : NewTransformInfo(_expr) { containsAmbiguity = false; }
+
+    void add(SharedTableInfo * table);
+    void addAmbiguity(SharedTableInfo * table);
+    void inherit(const LeftRightTransformInfo * other);
+    void merge(SharedTableInfo * table);
+    bool noteUsed(IHqlExpression * seq);
+    SharedTableInfo * uses(IHqlExpression * tableBody) const;
+
+public:
+    CIArrayOf<SharedTableInfo> sharedTables;
+    Owned<SharedTableInfo> shared;
+    HqlExprCopyArray    seqs;
+    OwnedHqlExpr        rawLeft;
+    OwnedHqlExpr        rawRight;
+    bool                containsAmbiguity;
+};
+
+
+class LeftRightTransformer : public NewHqlTransformer
+{
+public:
+    LeftRightTransformer();
+
+    void process(HqlExprArray & exprs);
+
+protected:
+    virtual void analyseExpr(IHqlExpression * expr);
+    virtual ANewTransformInfo * createTransformInfo(IHqlExpression * expr);
+    virtual IHqlExpression * createTransformed(IHqlExpression * expr);
+
+    inline LeftRightTransformInfo * queryExtra(IHqlExpression * expr)  { return (LeftRightTransformInfo *)queryTransformExtra(expr); }
+    SharedTableInfo * createAmbiguityInfo(IHqlExpression * dataset, unsigned depth);
+    void incUsage(IHqlExpression * expr, IHqlExpression * seq);
+
+protected:
+    CIArrayOf<SharedTableInfo> ambiguousTables;
     bool seenShared;
 };
 

@@ -1984,23 +1984,27 @@ IHqlExpression * replaceDataset(IHqlExpression * expr, IHqlExpression * original
 
 //---------------------------------------------------------------------------
 
-HqlMapSelectorTransformer::HqlMapSelectorTransformer(IHqlExpression * oldDataset, IHqlExpression * newDataset)
+HqlMapSelectorTransformer::HqlMapSelectorTransformer(IHqlExpression * oldDataset, IHqlExpression * newValue)
 {
     oldSelector.set(oldDataset);
-    IHqlExpression * newSelector = newDataset;
+    LinkedHqlExpr newSelector = newValue;
+    LinkedHqlExpr newDataset = newValue;
     if (newDataset->getOperator() == no_newrow)
-        newDataset = newDataset->queryChild(0);
+        newDataset.set(newDataset->queryChild(0));
+    else if (newDataset->isDataset())
+        newDataset.setown(ensureActiveRow(newDataset));
 
     node_operator op = oldDataset->getOperator();
 #ifndef ENSURE_SELSEQ_UID
     assertex(op != no_left && op != no_right);
 #endif
-    if (oldDataset->isDatarow() || op == no_activetable || op == no_self || op == no_selfref)
+    if (oldDataset->isDatarow() || (op == no_activetable) || (op == no_selfref))
     {
         setMappingOnly(oldDataset, newDataset);
     }
     else
     {
+        assertex(op != no_self);
         setMappingOnly(oldDataset, oldDataset);         // Don't change any new references to the dataset
     }
     setSelectorMapping(oldDataset, newSelector);

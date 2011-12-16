@@ -1492,6 +1492,7 @@ extern HQL_API IHqlExpression * createCounter();
 extern HQL_API IHqlExpression * createSelectorSequence();
 extern HQL_API IHqlExpression * createSequenceExpr();
 extern HQL_API IHqlExpression * createUniqueSelectorSequence();
+extern HQL_API IHqlExpression * createSelectorSequence(unsigned __int64 seq);
 extern HQL_API IHqlExpression * createDummySelectorSequence();
 extern HQL_API IHqlExpression * expandBetween(IHqlExpression * expr);
 extern HQL_API bool isAlwaysActiveRow(IHqlExpression * expr);

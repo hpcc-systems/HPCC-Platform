@@ -3449,6 +3449,14 @@ bool debugFindFirstDifference(IHqlExpression * left, IHqlExpression * right)
     return foundDifference();//something else
 }
 
+void debugTrackDifference(IHqlExpression * expr)
+{
+    static IHqlExpression * prev;
+    if (prev && prev != expr)
+        debugFindFirstDifference(prev, expr);
+    prev = expr;
+}
+
 //------------------------------------------------------------------------------------------------
 
 static IHqlExpression * expandConditions(IHqlExpression * expr, DependenciesUsed & dependencies, HqlExprArray & conds, HqlExprArray & values)
