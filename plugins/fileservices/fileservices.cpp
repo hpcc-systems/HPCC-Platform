@@ -1033,11 +1033,11 @@ static void CheckNotInTransaction(ICodeContext *ctx, const char *fn)
 
 FILESERVICES_API void FILESERVICES_CALL fsCreateSuperFile(ICodeContext *ctx, const char *lsuperfn, bool sequentialparts, bool ifdoesnotexist)
 {
+    IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
     StringBuffer lsfn;
     constructLogicalName(ctx, lsuperfn, lsfn);
-    Owned<IDistributedSuperFile> file = queryDistributedFileDirectory().createSuperFile(lsfn,!sequentialparts,ifdoesnotexist,udesc);
-    CheckNotInTransaction(ctx,"CreateSuperFile");
+    Owned<IDistributedSuperFile> file = queryDistributedFileDirectory().createSuperFile(lsfn,!sequentialparts,ifdoesnotexist,udesc,transaction);
     StringBuffer s("CreateSuperFile ('");
     s.append(lsfn).append("') done");
     AuditMessage(ctx,"CreateSuperFile",lsfn.str());
