@@ -165,12 +165,14 @@ class CDFAction ;
 /**
  * File operations can be included in a transaction to ensure that multiple
  * updates are handled atomically. This is the interface to a transaction
- * instance.
+ * instance. Auto-commit state when transaction is not active (ie. you
+ * don't want the actions to be executed on commit).
  */
 interface IDistributedFileTransaction: extends IInterface
 {
     virtual void start()=0;
     virtual void commit()=0;
+    virtual void autoCommit()=0; // if transaction not active, commit straight away
     virtual void rollback()=0;
     virtual bool active()=0;
     virtual bool setActive(bool on)=0; // returns old value (used internally)
@@ -179,6 +181,7 @@ interface IDistributedFileTransaction: extends IInterface
     virtual IUserDescriptor *queryUser()=0;
     virtual bool addDelayedDelete(const char *lfn,bool remphys,IUserDescriptor *user)=0; // used internally to delay deletes untill commit 
     virtual void addAction(CDFAction *action)=0; // internal
+    virtual void addSuperFile(IDistributedSuperFile *sfile)=0; // TODO: avoid this being necessary
     virtual void clearFiles()=0; // internal
     virtual IDistributedFileTransaction *baseTransaction()=0;
 };
@@ -419,7 +422,7 @@ interface IDistributedFileDirectory: extends IInterface
     virtual IPropertyTree *getFileTree(const char *lname,const INode *foreigndali=NULL,IUserDescriptor *user=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT, bool expandnodes=true) =0;
     virtual IFileDescriptor *getFileDescriptor(const char *lname,const INode *foreigndali=NULL,IUserDescriptor *user=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) =0;
 
-    virtual IDistributedSuperFile *createSuperFile(const char *logicalname,bool interleaved,bool ifdoesnotexist=false,IUserDescriptor *user=NULL) = 0;
+    virtual IDistributedSuperFile *createSuperFile(const char *logicalname,bool interleaved,bool ifdoesnotexist=false,IUserDescriptor *user=NULL,IDistributedFileTransaction *transaction=NULL) = 0;
     virtual IDistributedSuperFile *lookupSuperFile(const char *logicalname,IUserDescriptor *user=NULL,
                                                     IDistributedFileTransaction *transaction=NULL, // transaction only used for looking up sub files
                                                     bool fixmissing=false,  // used when removing
