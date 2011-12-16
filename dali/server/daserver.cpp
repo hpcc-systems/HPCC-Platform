@@ -69,12 +69,10 @@ MODULE_EXIT()
     delete stopServerCrit;
 }
 
-ILogMsgHandler * fileMsgHandler;
-
 #define DEFAULT_PERF_REPORT_DELAY 60
 #define DEFAULT_MOUNT_POINT "/mnt/dalimirror/"
 
-void setMsgLevel(unsigned level)
+void setMsgLevel(ILogMsgHandler * fileMsgHandler, unsigned level)
 {
     ILogMsgFilter *filter = getSwitchLogMsgFilterOwn(getComponentLogMsgFilter(3), getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, level, true), getDefaultLogMsgFilter());
     queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
@@ -170,11 +168,12 @@ int main(int argc, char* argv[])
         if (confIFile->exists())
             serverConfig.setown(createPTreeFromXMLFile(DALICONF));
 
+        ILogMsgHandler * fileMsgHandler;
         {
             Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(serverConfig, "dali");
             lf->setLogDirSubdir("server");//add to tail of config log dir
             lf->setName("DaServer");//override default filename
-            lf->beginLogging();
+            fileMsgHandler = lf->beginLogging();
         }
 
         DBGLOG("Build %s", BUILD_TAG);
@@ -356,7 +355,7 @@ int main(int argc, char* argv[])
         }
         unsigned short myport = epa.item(myrank).port;
         startMPServer(myport,true);
-        setMsgLevel(serverConfig->getPropInt("SDS/@msgLevel", 100));
+        setMsgLevel(fileMsgHandler, serverConfig->getPropInt("SDS/@msgLevel", 100));
         startLogMsgChildReceiver(); 
         startLogMsgParentReceiver();
 

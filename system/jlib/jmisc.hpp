@@ -58,9 +58,9 @@ public:
 };
 jlib_decl ILogIntercept* interceptLog(ILogIntercept *intercept); // for custom tracing
 
-jlib_decl void openLogFile(const char *filename, unsigned detail = 0, bool enterQueueMode = true);
-jlib_decl void appendLogFile(const char *filename, unsigned detail = 0, bool enterQueueMode = true);
-jlib_decl ILogMsgHandler * queryLegacyLogMsgHandler();
+//Use openLogFile() to create/append a simple, local component logfile, providing a filename(or filespec).
+//Typically used to create a non rolling, local logfile in cwd, using default logfile contents
+jlib_decl void openLogFile(StringBuffer & resolvedFS, const char *filename, unsigned detail = 0, bool enterQueueMode = true, bool append = false);
 
 #ifndef DISABLE_PRINTLOG
 jlib_decl void PrintLogDirect(const char *msg);

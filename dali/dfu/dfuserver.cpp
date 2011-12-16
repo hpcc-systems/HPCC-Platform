@@ -143,7 +143,7 @@ int main(int argc, const char *argv[])
         removeSentinelFile(sentinelFile);
         Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(globals, "dfuserver");
         lf->setMaxDetail(1000);
-        lf->beginLogging();
+        fileMsgHandler = lf->beginLogging();
     }
     StringBuffer ftslogdir;
     if (getConfigurationDirectory(globals->queryPropTree("Directories"),"log","ftslave",globals->queryProp("@name"),ftslogdir)) // NB instance deliberately dfuserver's

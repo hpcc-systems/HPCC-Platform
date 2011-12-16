@@ -495,7 +495,7 @@ int main( int argc, char *argv[]  )
             lf->setCreateAliasFile(false);
             lf->setMsgFields(MSGFIELD_timeDate | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code);
             lf->beginLogging();
-            createUNCFilename(lf->queryAliasFileSpec(), logUrl, false);
+            createUNCFilename(lf->queryLogFileSpec(), logUrl, false);
         }
         LOG(MCdebugProgress, thorJob, "Opened log file %s", logUrl.toCharArray());
         LOG(MCdebugProgress, thorJob, "Build %s", BUILD_TAG);

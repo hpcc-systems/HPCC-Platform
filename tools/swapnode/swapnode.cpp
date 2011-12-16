@@ -1180,7 +1180,8 @@ int main(int argc,char** argv)
             splitFilename(argv[0], NULL, NULL, &logname, NULL);
             addFileTimestamp(logname, true);
             logname.append(".log");
-            appendLogFile(logname.str(),0,false);
+            StringBuffer lf;
+            openLogFile(lf, logname.str(),0,false,true);
             queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_prefix);
             if (options&&options->getPropBool("@enableSysLog",true))
                 UseSysLogForOperatorMessages();

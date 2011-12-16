@@ -210,7 +210,7 @@ void startSlaveLog()
     lf->beginLogging();
 
     StringBuffer url;
-    createUNCFilename(lf->queryAliasFileSpec(), url);//use alias name
+    createUNCFilename(lf->queryLogFileSpec(), url);
 
     LOG(MCdebugProgress, thorJob, "Opened log file %s", url.toCharArray());
     LOG(MCdebugProgress, thorJob, "Build %s", BUILD_TAG);

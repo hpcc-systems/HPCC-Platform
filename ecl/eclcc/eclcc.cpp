@@ -376,9 +376,10 @@ void EclCC::loadOptions()
     {
         if (optLogfile.length())
         {
-            openLogFile(optLogfile, optLogDetail, false);
+            StringBuffer lf;
+            openLogFile(lf, optLogfile, optLogDetail, false);
             if (logVerbose)
-                fprintf(stdout, "Logging to '%s'\n",optLogfile.get());
+                fprintf(stdout, "Logging to '%s'\n",lf.str());
         }
     }
 
