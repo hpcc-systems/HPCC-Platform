@@ -529,7 +529,6 @@ SCMenum WUINFOType
     WURESULTS
 };
 
-
 ESPrequest WUInfoRequest
 {
     string Wuid;
@@ -1062,9 +1061,19 @@ ESPStruct QuerySetAlias
     string Name;
 };
 
+ESPenum WUQuerySetFilterType : string
+{
+    ALL("All"),
+    ID("Id"),
+    NAME("Name"),
+    ALIAS("Alias")
+};
+
 ESPrequest WUQuerySetDetailsRequest
 {
     string  QuerySetName;
+    string  Filter;
+    ESPenum WUQuerySetFilterType FilterType("All");
 };
 
 ESPresponse [exceptions_inline] WUQuerySetDetailsResponse
