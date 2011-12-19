@@ -96,27 +96,27 @@
 
   function getRequestFormHtml()
   {
-<xsl:text><![CDATA[    var html =  get_]]></xsl:text>
+<xsl:text disable-output-escaping="yes"><![CDATA[    var html =  get_]]></xsl:text>
                     <xsl:value-of select="translate($requestElement, '.', '_')"/>
-                    <xsl:text><![CDATA[_Item();
+                    <xsl:text disable-output-escaping="yes"><![CDATA[_Item();
     return html.replace(new RegExp('\\$\\$\\.', 'g'), '');]]>
   }</xsl:text>
   function get_Array_Input(parentId,typeName,itemName) {
     var newId = parentId + "." + itemName; 
     <![CDATA[ return "<span id='$C."+parentId+"'>"]]><xsl:if test="$useTableBorder">
-                        <xsl:text><![CDATA[+ "<table id='"+newId+"' class='struct'> </table>"]]></xsl:text>
+                        <xsl:text disable-output-escaping="yes"><![CDATA[+ "<table id='"+newId+"' class='struct'> </table>"]]></xsl:text>
                     </xsl:if>
                     <xsl:if test="not($useTableBorder)">
-                        <xsl:text><![CDATA[ + "<table id='"+newId+"'> </table></hr>"]]></xsl:text>
+                        <xsl:text disable-output-escaping="yes"><![CDATA[ + "<table id='"+newId+"'> </table></hr>"]]></xsl:text>
                     </xsl:if>
-                    <xsl:text><![CDATA[
+                    <xsl:text disable-output-escaping="yes"><![CDATA[
        + "<input type='hidden' id='"+newId+"_ItemCt' name='"+newId+".itemcount' value='0' />"
           + "&nbsp;<input type='button' id='"+newId+"_AddBtn' onclick='appendRow(\""+newId+"\",\""+itemName+"\",get_"+typeName+"_Item)' value='Add' /> "
           + "<input type='button' id='"+newId+"_RvBtn' onclick='removeRow(\""+newId+"\",-1)' value='Delete' disabled='true' />" ]]></xsl:text>
                     <xsl:if test="not($useTableBorder)">
-                        <xsl:text><![CDATA[ + "</hr>"]]></xsl:text>
+                        <xsl:text disable-output-escaping="yes"><![CDATA[ + "</hr>"]]></xsl:text>
                     </xsl:if>
-                    <xsl:text><![CDATA[ + "</span>"; ]]>
+                    <xsl:text disable-output-escaping="yes"><![CDATA[ + "</span>"; ]]>
   }</xsl:text>
                     <xsl:if test="not($useTextareaForStringArray)">
   function get_XsdArray_Item(parentId,itemName) {
@@ -452,17 +452,17 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
                  </xsl:call-template>
                </xsl:variable>
                  <xsl:if test="$value">
-                   <xsl:text><![CDATA[<option value=']]></xsl:text>
+                   <xsl:text disable-output-escaping="yes"><![CDATA[<option value=']]></xsl:text>
                    <xsl:value-of select="$value"/>
-                   <xsl:text><![CDATA['" + ((selVal=="]]></xsl:text>
+                   <xsl:text disable-output-escaping="yes"><![CDATA['" + ((selVal=="]]></xsl:text>
                    <xsl:value-of select="$value"/>
-                <xsl:text><![CDATA[")?" selected='1'":"") + ">]]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[")?" selected='1'":"") + ">]]></xsl:text>
                    <xsl:value-of select="$value"/>
                    <xsl:if test="$desc != '' ">
-                       <xsl:text> - </xsl:text>
+                       <xsl:text disable-output-escaping="yes"> - </xsl:text>
                        <xsl:value-of select="$desc"/>
                    </xsl:if>
-                   <xsl:text><![CDATA[</option>]]></xsl:text>
+                   <xsl:text disable-output-escaping="yes"><![CDATA[</option>]]></xsl:text>
                </xsl:if>
             </xsl:variable> 
             <xsl:variable name="rest">
@@ -566,13 +566,13 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
             </xsl:when>
             <xsl:when test="starts-with($type, 'tns:ArrayOf')">
                 <xsl:variable name="stype" select="substring($type,12)"/>
-                <xsl:text><![CDATA["+get_Array_Input("]]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA["+get_Array_Input("]]></xsl:text>
                 <xsl:value-of select="$fieldId"/>
-                <xsl:text><![CDATA[","]]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[","]]></xsl:text>
                 <xsl:value-of select="$stype"/>
-                <xsl:text><![CDATA[","]]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[","]]></xsl:text>
                 <xsl:value-of select="$stype"/>
-                <xsl:text><![CDATA[")+"]]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[")+"]]></xsl:text>
             </xsl:when>
             <xsl:when test=" starts-with($type, 'tns:Esp') and substring($type, string-length($type)-4) = 'Array' and $useTextareaForStringArray">
                 <xsl:variable name="xsdType">
@@ -596,26 +596,26 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
                         <xsl:otherwise>5</xsl:otherwise>
                     </xsl:choose>
                 </xsl:variable>
-                <xsl:text><![CDATA[<textarea name=']]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[<textarea name=']]></xsl:text>
                 <xsl:value-of select="$fieldId"/>
-                <xsl:text><![CDATA[' id=']]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[' id=']]></xsl:text>
                 <xsl:value-of select="$fieldId"/>
-                <xsl:text><![CDATA[' cols=']]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[' cols=']]></xsl:text>
                 <xsl:value-of select="$inputCols"/>
-                <xsl:text><![CDATA[' rows=']]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[' rows=']]></xsl:text>
                 <xsl:value-of select="$inputRows"/>
-                <xsl:text><![CDATA[' >]]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[' >]]></xsl:text>
                 <xsl:if test="$set_ctrl_value">
                     <xsl:choose>
                         <xsl:when test="$xsdType = 'string'">
-                            <xsl:text>esp string array value 1\nesp string array value 2</xsl:text>
+                            <xsl:text disable-output-escaping="yes">esp string array value 1\nesp string array value 2</xsl:text>
                         </xsl:when>
                         <xsl:when test="$xsdType = 'int'">1234\n3456</xsl:when>
                         <xsl:otherwise>Unknown type: <xsl:value-of select="$xsdType"/>
                         </xsl:otherwise>
                     </xsl:choose>
                 </xsl:if>
-                <xsl:text><![CDATA[</textarea>]]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[</textarea>]]></xsl:text>
             </xsl:when>
             <xsl:when test="$cpxType/xsd:sequence">
                 <xsl:variable name="ems" select="$cpxType/xsd:sequence/xsd:element"/>
@@ -635,7 +635,7 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
                             <xsl:when test="starts-with($stype,'xsd:') or starts-with($stype,'xs:')">
                                 <!-- TODO: should we use Add/Delete too? -->
                                 <xsl:variable name="xsdType" select="substring-after($stype,':')"/>
-                                <!--<xsl:text><xsl:value-of select="$xsdType"/></xsl:text>-->
+                                <!--<xsl:text disable-output-escaping="yes"><xsl:value-of select="$xsdType"/></xsl:text>-->
                                 <xsl:if test="$useTextareaForStringArray">
                                     <xsl:variable name="formNode" select="$ems[1]/xsd:annotation/xsd:appinfo/form"/>
                                     <xsl:variable name="inputCols">
@@ -655,35 +655,35 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
                                             <xsl:otherwise>5</xsl:otherwise>
                                         </xsl:choose>
                                     </xsl:variable>
-                                    <xsl:text><![CDATA[<textarea name=']]></xsl:text>
+                                    <xsl:text disable-output-escaping="yes"><![CDATA[<textarea name=']]></xsl:text>
                                     <xsl:value-of select="$fieldId"/>
-                                    <xsl:text><![CDATA[' id=']]></xsl:text>
+                                    <xsl:text disable-output-escaping="yes"><![CDATA[' id=']]></xsl:text>
                                     <xsl:value-of select="$fieldId"/>
-                                    <xsl:text><![CDATA[' cols=']]></xsl:text>
+                                    <xsl:text disable-output-escaping="yes"><![CDATA[' cols=']]></xsl:text>
                                     <xsl:value-of select="$inputCols"/>
-                                    <xsl:text><![CDATA[' rows=']]></xsl:text>
+                                    <xsl:text disable-output-escaping="yes"><![CDATA[' rows=']]></xsl:text>
                                     <xsl:value-of select="$inputRows"/>
-                                    <xsl:text><![CDATA[' >]]></xsl:text>
+                                    <xsl:text disable-output-escaping="yes"><![CDATA[' >]]></xsl:text>
                                     <xsl:if test="$set_ctrl_value">
                                         <xsl:choose>
                                             <xsl:when test="$xsdType='string'">
-                                                <xsl:text>esp string array value 1\nesp string array value 2</xsl:text>
+                                                <xsl:text disable-output-escaping="yes">esp string array value 1\nesp string array value 2</xsl:text>
                                             </xsl:when>
                                             <xsl:otherwise>1234\n5678</xsl:otherwise>
                                         </xsl:choose>
                                     </xsl:if>
-                                    <xsl:text><![CDATA[</textarea>]]></xsl:text>
+                                    <xsl:text disable-output-escaping="yes"><![CDATA[</textarea>]]></xsl:text>
                                 </xsl:if>
                                 <xsl:if test="not($useTextareaForStringArray)">
                                     <!-- new way  -->
-                                    <xsl:text><![CDATA["+get_Array_Input("]]></xsl:text>
-                                    <!-- <xsl:value-of select="$fieldId"/>   <xsl:text><![CDATA[","EspStringArray","]]></xsl:text> -->
+                                    <xsl:text disable-output-escaping="yes"><![CDATA["+get_Array_Input("]]></xsl:text>
+                                    <!-- <xsl:value-of select="$fieldId"/>   <xsl:text disable-output-escaping="yes"><![CDATA[","EspStringArray","]]></xsl:text> -->
                                     <xsl:value-of select="$fieldId"/>
-                                    <xsl:text><![CDATA[","]]></xsl:text>
+                                    <xsl:text disable-output-escaping="yes"><![CDATA[","]]></xsl:text>
                                     <xsl:value-of select="'XsdArray'"/>
-                                    <xsl:text><![CDATA[","]]></xsl:text>
+                                    <xsl:text disable-output-escaping="yes"><![CDATA[","]]></xsl:text>
                                     <xsl:value-of select="translate($ems[1]/@name, '.', '_')"/>
-                                    <xsl:text><![CDATA[")+"]]></xsl:text>
+                                    <xsl:text disable-output-escaping="yes"><![CDATA[")+"]]></xsl:text>
                                 </xsl:if>
                             </xsl:when>
                         </xsl:choose>
@@ -734,11 +734,11 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
                         </xsl:call-template>
                     </xsl:when>
                     <xsl:when test="$schemaRoot/xsd:simpleType[@name=$bareType]/xsd:restriction/xsd:enumeration">
-                        <xsl:text>" + get_</xsl:text><xsl:value-of select="$bareType"/><xsl:text>_Enum("</xsl:text>
+                        <xsl:text disable-output-escaping="yes">" + get_</xsl:text><xsl:value-of select="$bareType"/><xsl:text disable-output-escaping="yes">_Enum("</xsl:text>
                         <xsl:value-of select="$fieldId"/>
-                        <xsl:text>","</xsl:text>
+                        <xsl:text disable-output-escaping="yes">","</xsl:text>
                         <xsl:value-of select="$node/@default"/>
-                        <xsl:text>") + "</xsl:text>
+                        <xsl:text disable-output-escaping="yes">") + "</xsl:text>
                     </xsl:when>
                     <xsl:when test="$schemaRoot/xsd:simpleType[@name=$bareType]/xsd:restriction">
                         <xsl:variable name="restrict" select="$schemaRoot/xsd:simpleType[@name=$bareType]/xsd:restriction"/>
@@ -839,78 +839,78 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
         </xsl:variable>
         <!-- output the html that render the input for the $fieldId -->
         <!-- collapse/expand image -->
-        <xsl:text><![CDATA[<td]]></xsl:text>
-        <xsl:text><![CDATA[>]]></xsl:text>
+        <xsl:text disable-output-escaping="yes"><![CDATA[<td]]></xsl:text>
+        <xsl:text disable-output-escaping="yes"><![CDATA[>]]></xsl:text>
         
         <xsl:if test="$collapsable">
-            <xsl:text><![CDATA[<img id='$I.]]></xsl:text>
+            <xsl:text disable-output-escaping="yes"><![CDATA[<img id='$I.]]></xsl:text>
             <xsl:value-of select="$fieldId"/>
             <xsl:if test="$collapsed">
-                <xsl:text><![CDATA[' src='/esp/files/img/form_plus.gif' onclick='hideIt(\"]]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[' src='/esp/files/img/form_plus.gif' onclick='hideIt(\"]]></xsl:text>
             </xsl:if>
             <xsl:if test="not($collapsed)">
-                <xsl:text><![CDATA[' src='/esp/files/img/form_minus.gif' onclick='hideIt(\"]]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[' src='/esp/files/img/form_minus.gif' onclick='hideIt(\"]]></xsl:text>
               </xsl:if>
             <xsl:value-of select="$fieldId"/>
-            <xsl:text><![CDATA[\")' alt='+'/>]]></xsl:text>
+            <xsl:text disable-output-escaping="yes"><![CDATA[\")' alt='+'/>]]></xsl:text>
         </xsl:if>
-        <xsl:text><![CDATA[</td>]]></xsl:text>
+        <xsl:text disable-output-escaping="yes"><![CDATA[</td>]]></xsl:text>
         
         <!-- label -->
         <xsl:choose>
             <xsl:when test="$collapsable">
-                <xsl:text><![CDATA[<td><span]]></xsl:text>                                       
-                                <xsl:text><![CDATA[ id='$L.]]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[<td><span]]></xsl:text>                                       
+                                <xsl:text disable-output-escaping="yes"><![CDATA[ id='$L.]]></xsl:text>
                                 <xsl:value-of select="$fieldId"/>
-                                <xsl:text><![CDATA['> <b>]]></xsl:text>
+                                <xsl:text disable-output-escaping="yes"><![CDATA['> <b>]]></xsl:text>
                 <xsl:value-of select="$fieldName"/>
-                <xsl:text><![CDATA[</b>]]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[</b>]]></xsl:text>
                 <xsl:value-of select="$ctrlId"/>
                 <xsl:choose>
                     <xsl:when test="$isBool">
-                        <xsl:text><![CDATA[?]]></xsl:text>
+                        <xsl:text disable-output-escaping="yes"><![CDATA[?]]></xsl:text>
                     </xsl:when>
                     <xsl:otherwise>
-                        <xsl:text><![CDATA[:]]></xsl:text>
+                        <xsl:text disable-output-escaping="yes"><![CDATA[:]]></xsl:text>
                     </xsl:otherwise>
                 </xsl:choose>
                 <xsl:value-of select="$ui"/>
-                <xsl:text><![CDATA[</td><td>]]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[</td><td>]]></xsl:text>
             </xsl:when>
             <xsl:otherwise>
-                <xsl:text><![CDATA[<td><span id='$L.]]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[<td><span id='$L.]]></xsl:text>
                 <xsl:value-of select="$fieldId"/>
-                <xsl:text><![CDATA['><b>]]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA['><b>]]></xsl:text>
                 <xsl:if test="$isAttr"><![CDATA[<i>@]]></xsl:if>
                 <xsl:value-of select="$fieldName"/>
                 <xsl:if test="$isAttr"><![CDATA[</i>]]></xsl:if>
-                <xsl:text><![CDATA[</b></span>]]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[</b></span>]]></xsl:text>
                 <xsl:value-of select="$ctrlId"/>
                 <xsl:choose>
                     <xsl:when test="$isBool">
-                        <xsl:text><![CDATA[?]]></xsl:text>
+                        <xsl:text disable-output-escaping="yes"><![CDATA[?]]></xsl:text>
                     </xsl:when>
                     <xsl:otherwise>
-                        <xsl:text><![CDATA[:]]></xsl:text>
+                        <xsl:text disable-output-escaping="yes"><![CDATA[:]]></xsl:text>
                     </xsl:otherwise>
                 </xsl:choose>
-                <xsl:text><![CDATA[</td><td>]]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[</td><td>]]></xsl:text>
             </xsl:otherwise>
         </xsl:choose>               
         <!-- more -->
         <xsl:if test="$collapsable">
-              <xsl:text><![CDATA[<span id='$M.]]></xsl:text>
+              <xsl:text disable-output-escaping="yes"><![CDATA[<span id='$M.]]></xsl:text>
               <xsl:value-of select="$fieldId"/>
                         <xsl:if test="not($collapsed)">
-                <xsl:text><![CDATA[' style='display:none]]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[' style='display:none]]></xsl:text>
             </xsl:if>
-            <xsl:text><![CDATA['><img src='/esp/files/img/form_more.gif' onclick='onMore(\"]]></xsl:text>
+            <xsl:text disable-output-escaping="yes"><![CDATA['><img src='/esp/files/img/form_more.gif' onclick='onMore(\"]]></xsl:text>
             <xsl:value-of select="$fieldId"/>
-                               <xsl:text><![CDATA[\")' alt='More'/></span>]]></xsl:text>
+                               <xsl:text disable-output-escaping="yes"><![CDATA[\")' alt='More'/></span>]]></xsl:text>
         </xsl:if>
         <!-- control -->
         <xsl:value-of select="$inputCtrlHtml"/>
-        <xsl:text><![CDATA[</td>]]></xsl:text>
+        <xsl:text disable-output-escaping="yes"><![CDATA[</td>]]></xsl:text>
     </xsl:template>
     
     <xsl:template name="GenEspStructHtmlBare">
@@ -947,21 +947,21 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
         <xsl:param name="parentId"/>
         <xsl:param name="collapsed"/>       
         <!-- control -->
-        <xsl:text><![CDATA[<span id='$C.]]></xsl:text>
+        <xsl:text disable-output-escaping="yes"><![CDATA[<span id='$C.]]></xsl:text>
         <xsl:value-of select="$parentId"/>
         <xsl:if test="$collapsed">
-            <xsl:text><![CDATA[' style='display:none]]></xsl:text>
+            <xsl:text disable-output-escaping="yes"><![CDATA[' style='display:none]]></xsl:text>
         </xsl:if>
-        <xsl:text><![CDATA['><table]]></xsl:text>
+        <xsl:text disable-output-escaping="yes"><![CDATA['><table]]></xsl:text>
         <xsl:if test="$useTableBorder">
-            <xsl:text><![CDATA[ class='struct'> ]]></xsl:text>          
+            <xsl:text disable-output-escaping="yes"><![CDATA[ class='struct'> ]]></xsl:text>          
             <xsl:value-of select="$core"/>
-            <xsl:text><![CDATA[</table> </span>]]></xsl:text>
+            <xsl:text disable-output-escaping="yes"><![CDATA[</table> </span>]]></xsl:text>
         </xsl:if>
         <xsl:if test="not($useTableBorder)">
-            <xsl:text><![CDATA[> <tr> <td colspan='3'> <hr/> </td> </tr>]]></xsl:text>
+            <xsl:text disable-output-escaping="yes"><![CDATA[> <tr> <td colspan='3'> <hr/> </td> </tr>]]></xsl:text>
             <xsl:value-of select="$core"/>
-            <xsl:text><![CDATA[<tr> <td colspan='3'> <hr/> </td> </tr> </table> </span>]]></xsl:text>
+            <xsl:text disable-output-escaping="yes"><![CDATA[<tr> <td colspan='3'> <hr/> </td> </tr> </table> </span>]]></xsl:text>
         </xsl:if>       
     </xsl:template>
       <xsl:template name="GenEspStructHtmlTable">
@@ -975,15 +975,15 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
         </xsl:if>       
         <xsl:variable name="core">
             <xsl:if test="$simpleContent">          
-                <xsl:text><![CDATA[<tr><td colspan='3'><b>*</b>]]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[<tr><td colspan='3'><b>*</b>]]></xsl:text>
                 <xsl:if test="$show_ctrl_name">
                     <xsl:value-of select="concat(' {', $parentId, '}')"/>
                 </xsl:if>
-                    <xsl:text><![CDATA[<input type='text' size='50' id=']]></xsl:text>
+                    <xsl:text disable-output-escaping="yes"><![CDATA[<input type='text' size='50' id=']]></xsl:text>
                     <xsl:value-of select="$parentId"/>
-                    <xsl:text><![CDATA[' name=']]></xsl:text>
+                    <xsl:text disable-output-escaping="yes"><![CDATA[' name=']]></xsl:text>
                     <xsl:value-of select="$parentId"/>
-                    <xsl:text><![CDATA['/></td></tr>]]></xsl:text>                  
+                    <xsl:text disable-output-escaping="yes"><![CDATA['/></td></tr>]]></xsl:text>                  
             </xsl:if>
             <xsl:call-template name="GenEspStructHtmlBare">
                 <xsl:with-param name="parentId" select="$parentId"/>
@@ -1008,9 +1008,9 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
             <xsl:value-of select="concat('GenEspEnumHtmlTable(type=', $type,  ',parentId=', $parentId, ',collapsed=', $collapsed, ')&lt;br/&gt;')"/>
         </xsl:if>       
         <xsl:variable name="core">
-            <xsl:text><![CDATA[<tr><td>"+ get_]]></xsl:text>
+            <xsl:text disable-output-escaping="yes"><![CDATA[<tr><td>"+ get_]]></xsl:text>
             <xsl:value-of select="translate($type, '.', '_')"/>
-            <xsl:text><![CDATA[_Enum('$$','') + "</td></tr>]]></xsl:text>
+            <xsl:text disable-output-escaping="yes"><![CDATA[_Enum('$$','') + "</td></tr>]]></xsl:text>
         </xsl:variable>     
              <xsl:call-template name="ConstructHtmlTable">
                   <xsl:with-param name="core" select="$core"/>
@@ -1050,15 +1050,15 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
                 <xsl:choose>
                     <!-- use text area for string type -->
                     <xsl:when test="number($inputRows)">
-                        <xsl:text><![CDATA[<textarea rows=']]></xsl:text>
+                        <xsl:text disable-output-escaping="yes"><![CDATA[<textarea rows=']]></xsl:text>
                         <xsl:value-of select="$inputRows"/>
-                        <xsl:text><![CDATA[' cols=']]></xsl:text>
+                        <xsl:text disable-output-escaping="yes"><![CDATA[' cols=']]></xsl:text>
                         <xsl:value-of select="$inputCols"/>
-                        <xsl:text><![CDATA[' name=']]></xsl:text>
+                        <xsl:text disable-output-escaping="yes"><![CDATA[' name=']]></xsl:text>
                         <xsl:value-of select="$fieldId"/>
-                        <xsl:text><![CDATA[' id=']]></xsl:text>
+                        <xsl:text disable-output-escaping="yes"><![CDATA[' id=']]></xsl:text>
                         <xsl:value-of select="$fieldId"/>
-                        <xsl:text><![CDATA['>]]></xsl:text>
+                        <xsl:text disable-output-escaping="yes"><![CDATA['>]]></xsl:text>
                         <xsl:choose>
                             <xsl:when test="not($noDefaultValue) and $value">
                                 <xsl:value-of select="$value"/>
@@ -1067,7 +1067,7 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
                                 <xsl:value-of select="$fieldId"/>
                             </xsl:when>
                         </xsl:choose>
-                        <xsl:text><![CDATA[</textarea>]]></xsl:text>
+                        <xsl:text disable-output-escaping="yes"><![CDATA[</textarea>]]></xsl:text>
                     </xsl:when>
                     <!-- use input for string type -->
                     <!-- -->
@@ -1078,25 +1078,25 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
                                 <xsl:otherwise>text</xsl:otherwise>
                             </xsl:choose>
                         </xsl:variable>
-                        <xsl:text><![CDATA[<input type=']]></xsl:text>
+                        <xsl:text disable-output-escaping="yes"><![CDATA[<input type=']]></xsl:text>
                         <xsl:value-of select="$inputType"/>
-                        <xsl:text><![CDATA[' name=']]></xsl:text>
+                        <xsl:text disable-output-escaping="yes"><![CDATA[' name=']]></xsl:text>
                         <xsl:value-of select="$fieldId"/>
-                        <xsl:text><![CDATA[' id=']]></xsl:text>
+                        <xsl:text disable-output-escaping="yes"><![CDATA[' id=']]></xsl:text>
                         <xsl:value-of select="$fieldId"/>
                         <xsl:choose>
                             <xsl:when test="$value and not($noDefaultValue)">
-                                <xsl:text><![CDATA[' value=']]></xsl:text>
+                                <xsl:text disable-output-escaping="yes"><![CDATA[' value=']]></xsl:text>
                                 <xsl:value-of select="$value"/>
                             </xsl:when>
                             <xsl:when test="$set_ctrl_value">
-                                <xsl:text><![CDATA[' value=']]></xsl:text>
+                                <xsl:text disable-output-escaping="yes"><![CDATA[' value=']]></xsl:text>
                                 <xsl:value-of select="$fieldId"/>
                             </xsl:when>
                         </xsl:choose>
-                        <xsl:text><![CDATA[' size=']]></xsl:text>
+                        <xsl:text disable-output-escaping="yes"><![CDATA[' size=']]></xsl:text>
                         <xsl:value-of select="$inputCols"/>
-                        <xsl:text><![CDATA[' ></input>]]></xsl:text>
+                        <xsl:text disable-output-escaping="yes"><![CDATA[' ></input>]]></xsl:text>
                     </xsl:otherwise>
                     <!-- -->
                 </xsl:choose>
@@ -1111,22 +1111,22 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
                         <xsl:otherwise>20</xsl:otherwise>
                     </xsl:choose>
                 </xsl:variable>
-                <xsl:text><![CDATA[<input type='text' name=']]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[<input type='text' name=']]></xsl:text>
                 <xsl:value-of select="$fieldId"/>
-                <xsl:text><![CDATA[' id=']]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[' id=']]></xsl:text>
                 <xsl:value-of select="$fieldId"/>
                 <xsl:choose>
                     <xsl:when test="not($noDefaultValue) and $value">
-                        <xsl:text><![CDATA[' value=']]></xsl:text>
+                        <xsl:text disable-output-escaping="yes"><![CDATA[' value=']]></xsl:text>
                         <xsl:value-of select="$value"/>
                     </xsl:when>
                     <xsl:when test="$set_ctrl_value">
-                        <xsl:text><![CDATA[' value='12]]></xsl:text>
+                        <xsl:text disable-output-escaping="yes"><![CDATA[' value='12]]></xsl:text>
                     </xsl:when>
                 </xsl:choose>
-                <xsl:text><![CDATA[' size=']]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[' size=']]></xsl:text>
                 <xsl:value-of select="$inputCols"/>
-                <xsl:text><![CDATA[' ></input>]]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[' ></input>]]></xsl:text>
             </xsl:when>
             <!-- boolean -->
             <xsl:when test="$typeName='boolean'">
@@ -1137,27 +1137,27 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
              </xsl:choose>
             </xsl:variable>
             <!-- use checkbox -->
-                <xsl:text><![CDATA[<input type='checkbox' id=']]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[<input type='checkbox' id=']]></xsl:text>
                 <xsl:value-of select="$fieldId"/>
-                <xsl:text><![CDATA[' name=']]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[' name=']]></xsl:text>
                 <xsl:value-of select="$fieldId"/>
                 <xsl:if test="$checked='1'">
-                    <xsl:text><![CDATA[' checked='1]]></xsl:text>
+                    <xsl:text disable-output-escaping="yes"><![CDATA[' checked='1]]></xsl:text>
                 </xsl:if>
-                <xsl:text><![CDATA['/>]]></xsl:text>                
+                <xsl:text disable-output-escaping="yes"><![CDATA['/>]]></xsl:text>                
             </xsl:when>
             <!-- other native schema types: treat as string -->
             <xsl:otherwise>
                 <!--  <xsl:value-of select="concat('WARNING[2]: Unhandled XSD type:', $typeName, ', id=',$fieldId)" /> -->
-                <xsl:text><![CDATA[<input type='text' name=']]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[<input type='text' name=']]></xsl:text>
                 <xsl:value-of select="$fieldId"/>
-                <xsl:text><![CDATA[' id=']]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[' id=']]></xsl:text>
                 <xsl:value-of select="$fieldId"/>
                 <xsl:if test="$set_ctrl_value">
-                    <xsl:text><![CDATA[' value=']]></xsl:text>
+                    <xsl:text disable-output-escaping="yes"><![CDATA[' value=']]></xsl:text>
                     <xsl:value-of select="$fieldId"/>
                 </xsl:if>
-                <xsl:text><![CDATA[' size='50' ></input>]]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[' size='50' ></input>]]></xsl:text>
             </xsl:otherwise>
         </xsl:choose>
     </xsl:template>

@@ -139,6 +139,7 @@ class CConfigEngCallback: public CInterface, implements IDeploymentCallback
         StringBuffer errMsg(szMessage);
         String str(errMsg.trim());
 
+#ifdef USE_XALAN
         if (str.lastIndexOf('[') > 0)
         {
           errMsg.clear();
@@ -160,6 +161,7 @@ class CConfigEngCallback: public CInterface, implements IDeploymentCallback
             delete sub1;
           }
         }
+#endif
 
         sb.append(errMsg).append("\n");
         m_sbExMsg.append(sb);

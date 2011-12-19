@@ -102,7 +102,7 @@
       </div>
 
       <script type="text/javascript">
-        <xsl:text><![CDATA[
+        <xsl:text disable-output-escaping="yes"><![CDATA[
       var tree, currentIconMode;
       var treeSelections;
       var lastTreeNode;
@@ -250,15 +250,15 @@
       ]]></xsl:text>
 <xsl:choose>
     <xsl:when test="$configtype='doxie'">
-            <xsl:text>var fullurl = "/" + pathval +"/" + queryval + "?form";
+            <xsl:text disable-output-escaping="yes">var fullurl = "/" + pathval +"/" + queryval + "?form";
             </xsl:text>
     </xsl:when>
     <xsl:otherwise>
-            <xsl:text>var fullurl = "/WsEcl2/tabview/query/" + pathval + "/" + queryval;
+            <xsl:text disable-output-escaping="yes">var fullurl = "/WsEcl2/tabview/query/" + pathval + "/" + queryval;
             </xsl:text>
     </xsl:otherwise>
 </xsl:choose>
-        <xsl:text><![CDATA[
+        <xsl:text disable-output-escaping="yes"><![CDATA[
             
             gomain(fullurl);
         }

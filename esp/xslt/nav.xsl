@@ -80,23 +80,23 @@
             <td width="160" class="espnavfolder">
                 <img border="0" src="files/img/menudown.png">
                     <xsl:attribute name="onclick">
-                        <xsl:text>submenu=document.getElementById('</xsl:text>
+                        <xsl:text disable-output-escaping="yes">submenu=document.getElementById('</xsl:text>
                         <xsl:value-of select="@name"/>')
-                        <xsl:text>;if (submenu.style.display=='none') {submenu.style.display=''; src='files/img/menudown.png'} else {submenu.style.display='none'; src='files/img/menuup.png';}</xsl:text>
+                        <xsl:text disable-output-escaping="yes">;if (submenu.style.display=='none') {submenu.style.display=''; src='files/img/menudown.png'} else {submenu.style.display='none'; src='files/img/menuup.png';}</xsl:text>
                     </xsl:attribute>
                 </img>
                     <b>
                         <xsl:value-of select="@name"/>
                     </b>
                     <xsl:if test="@showSchemaLinks">
-                      <xsl:text>&nbsp;</xsl:text>
+                      <xsl:text disable-output-escaping="yes">&nbsp;</xsl:text>
                       <a target="main">
                        <xsl:attribute name="href">
                           <xsl:value-of select="concat('../', @name, '?wsdl', @urlParams)"/>
                        </xsl:attribute>
                        <img src="files_/img/wsdl.gif" alt="WSDL" border="0"></img>
                       </a>
-                      <xsl:text>&nbsp;</xsl:text>
+                      <xsl:text disable-output-escaping="yes">&nbsp;</xsl:text>
                        <a target="main">
                        <xsl:attribute name="href">
                           <xsl:value-of select="concat('../', @name, '?xsd', @urlParams)"/>

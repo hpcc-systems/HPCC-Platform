@@ -22,22 +22,41 @@
 #    Cmake Input File for xmllib
 #####################################################
 
-project( xmllib ) 
+project( xmllib )
 
-set (    SRCS 
-         xmlvalidator.cpp 
-         xsdparser.cpp 
-         xslcache.cpp 
-         xslprocessor.cpp 
+if ( USE_XALAN )
+    set(LIB_INCLUDE_DIR ${XALAN_INCLUDE_DIR} ${XERCES_INCLUDE_DIR})
+    set(LIB_LIBRARIES ${XALAN_LIBRARIES} ${XERCES_LIBRARIES})
+    set (SRCS
+        xsdparser.cpp
+        xslcache.cpp
+        xalan_processor.cpp
+        xerces_validator.cpp
     )
+elseif (USE_LIBXSLT)
+    set(LIB_INCLUDE_DIR ${LIBXSLT_INCLUDE_DIR} ${LIBEXSLT_INCLUDE_DIR} ${LIBXML2_INCLUDE_DIR})
+    set(LIB_LIBRARIES ${LIBXSLT_LIBRARIES} ${LIBEXLST_LIBRARIES} ${LIBXML2_LIBRARIES})
+    set (SRCS
+        xsdparser.cpp
+        xslcache.cpp
+        libxslt_processor.cpp
+        libxml_validator.cpp
+    )
+else()
+    set (SRCS
+        xsdparser.cpp
+        xslcache.cpp
+        xmllib_unsupported.cpp
+    )
+endif()
 
-include_directories ( 
-         ./../../common/deftype 
-         ./../../system/include 
-         ./../../system/jlib 
-         ./../../ecl/hql 
-         ${XALAN_INCLUDE_DIR} 
-         ${XERCES_INCLUDE_DIR}
+
+include_directories (
+         ./../../common/deftype
+         ./../../system/include
+         ./../../system/jlib
+         ./../../ecl/hql
+         ${LIB_INCLUDE_DIR}
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DXMLLIB_EXPORTS )
@@ -45,9 +64,6 @@ ADD_DEFINITIONS( -D_USRDLL -DXMLLIB_EXPORTS )
 HPCC_ADD_LIBRARY( xmllib SHARED ${SRCS} )
 install ( TARGETS xmllib DESTINATION ${OSSDIR}/lib )
 target_link_libraries ( xmllib
-         ${XALAN_LIBRARIES} 
-         ${XERCES_LIBRARIES}
+         ${LIB_LIBRARIES}
          jlib
     )
-
-

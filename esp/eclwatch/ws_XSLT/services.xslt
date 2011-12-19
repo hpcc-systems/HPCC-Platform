@@ -463,13 +463,6 @@
                                                 </xsl:variable>
                                                 <a style="padding-right:2">
                                                     <xsl:variable name="url">
-                                                        <!--xsl:text>/esp/iframe/WsTopology/TpGetComponentFile?NetAddress=</xsl:text>
-                                                        <xsl:value-of select="Netaddress"/>
-                                                        <xsl:text>&amp;FileType=log&amp;CompType=</xsl:text>
-                                                        <xsl:value-of select="$compType"/>
-                                                        <xsl:text>&amp;OsType=</xsl:text>
-                                                        <xsl:value-of select="OS"/>
-                                                        <xsl:text>&amp;Directory=</xsl:text-->
                                                         <xsl:text>/WsTopology/TpGetComponentFile%3fNetAddress%3d</xsl:text>
                                                         <xsl:value-of select="Netaddress"/>
                                                         <xsl:text>%26FileType%3dlog%26CompType%3d</xsl:text>
@@ -480,36 +473,32 @@
                                                     </xsl:variable>
                                                     <xsl:variable name="pageCaption">
                                                         <xsl:variable name="captionLen" select="string-length($caption)-1"/>
-                                                        <!--xsl:text>&amp;esp_iframe_title=Log file for </xsl:text-->
                                                         <xsl:text>esp_iframe_title=Log file for </xsl:text>
                                                         <xsl:value-of select="substring($caption, 1, $captionLen)"/>
-                                                        <xsl:text> '</xsl:text>
+                                                        <xsl:text disable-output-escaping="yes"> '</xsl:text>
                                                         <xsl:value-of select="../../Name"/>
-                                                        <xsl:text>'</xsl:text>
+                                                        <xsl:text disable-output-escaping="yes">'</xsl:text>
                                                     </xsl:variable>
                                                     <xsl:attribute name="href">
                                                         <xsl:if test="$compType!='EclAgentProcess'">
-                                                            <!--xsl:value-of select="$url"/>
-                                                            <xsl:value-of select="$logPath"/>
-                                                            <xsl:value-of select="$pageCaption"/-->
                                                             <xsl:text>/esp/iframe?</xsl:text>
                                                             <xsl:value-of select="$pageCaption"/>
-                                                            <xsl:text>&amp;inner=</xsl:text>
+                                                            <xsl:text disable-output-escaping="yes">&amp;inner=</xsl:text>
                                                             <xsl:value-of select="$url"/>
                                                             <xsl:value-of select="$logPath"/>
                                                         </xsl:if>
                                                     </xsl:attribute>
                                                     <xsl:if test="$compType='EclAgentProcess'">
                                                         <xsl:attribute name="onclick">
-                                                            <xsl:text>return popup('</xsl:text>
+                                                            <xsl:text disable-output-escaping="yes">return popup('</xsl:text>
                                                             <xsl:value-of select="Netaddress"/>
-                                                            <xsl:text>', '</xsl:text>
+                                                            <xsl:text disable-output-escaping="yes">', '</xsl:text>
                                                             <xsl:value-of select="translate($logPath, '\', '/')"/>
-                                                            <xsl:text>', '</xsl:text>
+                                                            <xsl:text disable-output-escaping="yes">', '</xsl:text>
                                                             <xsl:value-of select="$url"/>
-                                                            <xsl:text>', "</xsl:text>
+                                                            <xsl:text disable-output-escaping="yes">', "</xsl:text>
                                                             <xsl:value-of select="$pageCaption"/>
-                                                            <xsl:text>", </xsl:text>
+                                                            <xsl:text disable-output-escaping="yes">", </xsl:text>
                                                             <xsl:value-of select="OS"/>
                                                             <xsl:text>);</xsl:text>
                                                         </xsl:attribute>
@@ -523,12 +512,12 @@
                                                 <xsl:when test="$compType!='' and ($compType!='EclAgentProcess' or OS=0)">
                           <xsl:variable name="captionLen" select="string-length($caption)-1"/>
                           <xsl:variable name="href0">
-                              <xsl:text>/esp/iframe?esp_iframe_title=Configuration file for </xsl:text>
+                              <xsl:text disable-output-escaping="yes">/esp/iframe?esp_iframe_title=Configuration file for </xsl:text>
                               <xsl:value-of select="substring($caption, 1, $captionLen)"/>
                               <xsl:text> - </xsl:text>
                               <xsl:value-of select="../../Name"/>
                               <xsl:text></xsl:text>
-                              <xsl:text>&amp;inner=/WsTopology/TpGetComponentFile%3fNetAddress%3d</xsl:text>
+                              <xsl:text disable-output-escaping="yes">&amp;inner=/WsTopology/TpGetComponentFile%3fNetAddress%3d</xsl:text>
                               <xsl:value-of select="Netaddress"/>
                               <xsl:text>%26FileType%3dcfg%26Directory%3d</xsl:text>
                               <xsl:value-of select="$absolutePath"/>
@@ -673,12 +662,12 @@
                           <a>
                             <xsl:attribute name="href">
                               <xsl:variable name="captionLen" select="string-length($caption)-1"/>
-                              <xsl:text>/esp/iframe?esp_iframe_title=Configuration file for </xsl:text>
+                              <xsl:text disable-output-escaping="yes">/esp/iframe?esp_iframe_title=Configuration file for </xsl:text>
                               <xsl:value-of select="substring($caption, 1, $captionLen)"/>
-                              <xsl:text> '</xsl:text>
+                              <xsl:text disable-output-escaping="yes"> '</xsl:text>
                               <xsl:value-of select="../../Name"/>
-                              <xsl:text>'</xsl:text>
-                              <xsl:text>&amp;inner=/WsTopology/TpGetComponentFile%3fNetAddress%3d</xsl:text>
+                              <xsl:text disable-output-escaping="yes">'</xsl:text>
+                              <xsl:text disable-output-escaping="yes">&amp;inner=/WsTopology/TpGetComponentFile%3fNetAddress%3d</xsl:text>
                               <xsl:value-of select="Netaddress"/>
                               <xsl:text>%26FileType%3dcfg%26Directory%3d</xsl:text>
                               <xsl:value-of select="$absolutePath"/>

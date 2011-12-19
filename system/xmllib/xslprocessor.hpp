@@ -24,6 +24,7 @@
 
 class StringBuffer;
 
+#define SEISINT_XSLTEXT_NAMESPACE "http://seisint.com"
 
 interface XMLLIB_API IIncludeHandler : public IInterface
 {
@@ -124,8 +125,6 @@ interface XMLLIB_API IXslProcessor : public IInterface
     virtual int getCacheTimeout() = 0;
 };
 
-extern "C" XMLLIB_API IXslProcessor* getXslProcessor();
-extern "C" XMLLIB_API IXslProcessor* getXslProcessor2();
-
+XMLLIB_API IXslProcessor* getXslProcessor();
 
 #endif

@@ -167,7 +167,7 @@
             </xsl:if>
             o_tree.o_root.expand(true);
         }
-        <xsl:text><![CDATA[ 
+        <xsl:text disable-output-escaping="yes"><![CDATA[
        function onItemSelected(tree)
        {
         return true;
@@ -245,7 +245,7 @@
 
 <xsl:template match="Menu">o_tree.add_custom_menu('<xsl:value-of select="@name"/>', [<xsl:apply-templates select="MenuItem"/>]);</xsl:template>
 
-<xsl:template match="MenuItem"><xsl:if test="position()!=1">,<xsl:text>
+<xsl:template match="MenuItem"><xsl:if test="position()!=1">,<xsl:text disable-output-escaping="yes">
    </xsl:text></xsl:if>['<xsl:value-of select="@name"/>', '<xsl:value-of select="@action"/>', '<xsl:value-of select="@tooltip"/>']</xsl:template>
 
 <xsl:template match="DynamicFolder|Folder|Link">

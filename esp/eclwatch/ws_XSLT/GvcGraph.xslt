@@ -290,7 +290,7 @@
                 <tr id="urlinput" style="display:none; visibility:none;" colspan="2">
                   <td>
                     Url:<input id="RequestId" class="input" type="text" style="width: 300px" value="" onkeypress="return checkFindEnter('RequestId')" />
-                    <xsl:text>&#160;</xsl:text>
+                    <xsl:text disable-output-escaping="yes">&#160;</xsl:text>
 
                     <SELECT name="QueryList" id="QueryList" class="select" style="display:none; visibility:hidden;" onChange="SelectRoxieQuery();">
                     </SELECT>

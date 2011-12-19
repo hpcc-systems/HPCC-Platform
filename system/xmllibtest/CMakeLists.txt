@@ -1,9 +1,7 @@
 ################################################################################
 #    Copyright (C) 2011 HPCC Systems.
 #
-#    This program is free software: you can redistribute it and/or All rights
-#    reserved. This program is NOT PRESENTLY free software: you can NOT
-#    redistribute
+#    All rights reserved. This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Affero General Public License as
 #    published by the Free Software Foundation, either version 3 of the
 #    License, or (at your option) any later version.
@@ -16,12 +14,38 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
-add_subdirectory (hrpc)
-add_subdirectory (include)
-add_subdirectory (jhtree)
-add_subdirectory (jlib)
-add_subdirectory (lzma)
-add_subdirectory (mp)
-add_subdirectory (security)
-add_subdirectory (xmllib)
-add_subdirectory (xmllibtest)
+
+
+# Component: xmllibtest
+#####################################################
+# Description:
+# ------------
+#    Cmake Input File for xmllibtest
+#####################################################
+
+
+project( xmllibtest )
+
+include(${HPCC_SOURCE_DIR}/esp/scm/smcscm.cmake)
+
+set (    SRCS
+         xmllibtest.cpp
+    )
+
+include_directories (
+         ${CMAKE_BINARY_DIR}
+         ${CMAKE_BINARY_DIR}/oss
+         ./../xmllib
+         ./../jlib
+         ./../include
+    )
+
+ADD_DEFINITIONS( -D_CONSOLE )
+
+add_executable ( xmllibtest ${SRCS} )
+add_dependencies ( xmllibtest xmllib )
+install ( TARGETS xmllibtest DESTINATION ${OSSDIR}/bin )
+target_link_libraries ( xmllibtest
+        jlib
+        xmllib
+    )

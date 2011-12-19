@@ -35,7 +35,7 @@
         </script>
         <script type="text/javascript">
           var enable_SNMP = '<xsl:value-of select="$enableSNMP"/>';
-          <xsl:text>
+          <xsl:text disable-output-escaping="yes">
             <![CDATA[
               function onLoad()
               {
@@ -215,9 +215,9 @@
       </td>
       <td width="45" nowrap="true">
         <xsl:variable name="href0">
-          <xsl:text>/esp/iframe?esp_iframe_title=Configuration file for </xsl:text>
+          <xsl:text disable-output-escaping="yes">/esp/iframe?esp_iframe_title=Configuration file for </xsl:text>
           <xsl:value-of select="concat($type2, ' cluster - ', Name)"/>
-          <xsl:text>&amp;inner=/WsTopology/TpGetComponentFile%3fFileType%3dcfg%26CompType%3d</xsl:text>
+          <xsl:text disable-output-escaping="yes">&amp;inner=/WsTopology/TpGetComponentFile%3fFileType%3dcfg%26CompType%3d</xsl:text>
           <xsl:value-of select="concat($type2, 'Cluster%26CompName%3d', Name, '%26Directory%3d', $absolutePath, '%26OsType%3d', OS)"/>
         </xsl:variable>
         <img onclick="getConfigXML('{$href0}')" border="0" src="/esp/files_/img/config.png" alt="View configuration file..." width="14" height="14"/>

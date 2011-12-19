@@ -19,9 +19,8 @@
 -->
 
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xml:space="default"
- xmlns:seisint="http://seisint.com" exclude-result-prefixes="seisint" 
- xmlns:xalan="http://xml.apache.org/xalan">
-    <xsl:output method="xml" indent="yes" omit-xml-declaration="no"/>
+ xmlns:seisint="http://seisint.com" exclude-result-prefixes="seisint">
+    <xsl:output method="xml" indent="yes" omit-xml-declaration="no" encoding="UTF-8"/>
     <xsl:template match="text()"/>
     <xsl:param name="process" select="'unknown'"/>
     <xsl:param name="isLinuxInstance" select="0"/>
