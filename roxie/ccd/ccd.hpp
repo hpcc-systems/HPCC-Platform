@@ -423,7 +423,6 @@ extern unsigned defaultFetchPreload;
 extern unsigned defaultFullKeyedJoinPreload;
 extern unsigned defaultKeyedJoinPreload;
 extern unsigned defaultPrefetchProjectPreload;
-extern ILogMsgHandler * logFileHandler;
 
 extern StringBuffer logDirectory;
 extern StringBuffer pluginDirectory;

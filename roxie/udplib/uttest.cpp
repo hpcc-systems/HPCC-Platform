@@ -599,9 +599,17 @@ int main(int argc, char * argv[] )
         usage();
     strdup("Make sure leak checking is working");
     queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_thread | MSGFIELD_prefix);
-    ILogMsgFilter * filter = getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail, false);
-    ILogMsgHandler * logFileHandler = getFileLogMsgHandler("UDPTRANSPORT.LOG", NULL, MSGFIELD_STANDARD, false, false, true);
-    queryLogMsgManager()->addMonitorOwn(logFileHandler, filter);
+
+    {
+        Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator("UDPTRANSPORT");
+        lf->setCreateAliasFile(false);
+        lf->setRolling(false);
+        lf->setAppend(false);
+        lf->setMaxDetail(TopDetail);
+        lf->setMsgFields(MSGFIELD_STANDARD);
+        lf->beginLogging();
+    }
+
     StringBuffer cmdline;
     int c;
     for (c = 0; c < argc; c++) {

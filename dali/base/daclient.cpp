@@ -38,7 +38,6 @@ extern void stopClientProcess();
 static bool restoreSEH=false;
 static bool daliClientIsActive = false;
 static INode * daliClientLoggingParent = 0;
-static ILogMsgHandler * fileMsgHandler = 0;
 
 static IArrayOf<IDaliClientShutdown> shutdownHooks;
 MODULE_INIT(INIT_PRIORITY_STANDARD)
