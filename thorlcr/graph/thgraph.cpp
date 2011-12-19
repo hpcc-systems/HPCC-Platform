@@ -1232,15 +1232,17 @@ void CGraphBase::execute(size32_t _parentExtractSz, const byte *parentExtract, b
     parentExtractSz = _parentExtractSz;
     if (isComplete())
         return;
-    if (!prepare(parentExtractSz, parentExtract, checkDependencies, async?true:false, async))
-    {
-        setComplete();
-        return;
-    }
     if (async)
-        queryJob().startGraph(*this, queryJob(), parentExtractSz, parentExtract); // may block if enough running
+        queryJob().startGraph(*this, queryJob(), checkDependencies, parentExtractSz, parentExtract); // may block if enough running
     else
+    {
+        if (!prepare(parentExtractSz, parentExtract, checkDependencies, async, async))
+        {
+            setComplete();
+            return;
+        }
         executeSubGraph(parentExtractSz, parentExtract);
+    }
 }
 
 void CGraphBase::join()
@@ -2144,7 +2146,7 @@ public:
         sem.signal();
     }
 // IGraphExecutor
-    virtual void add(CGraphBase *subGraph, IGraphCallback &callback, size32_t parentExtractSz, const byte *parentExtract)
+    virtual void add(CGraphBase *subGraph, IGraphCallback &callback, bool checkDependencies, size32_t parentExtractSz, const byte *parentExtract)
     {
         CriticalBlock b(crit);
         if (job.queryPausing())
@@ -2157,6 +2159,13 @@ public:
                 return; // already queued;
         }
         seen.append(subGraph->queryGraphId());
+
+        if (!subGraph->prepare(parentExtractSz, parentExtract, checkDependencies, true, true))
+        {
+            subGraph->setComplete();
+            return;
+        }
+
         if (subGraph->dependentSubGraphs.ordinality())
         {
             bool dependenciesDone = true;
@@ -2192,21 +2201,23 @@ public:
 
     virtual void wait()
     {
-        if (0 == seen.ordinality())
-            return;
         loop
         {
-            if (sem.wait(MEDIUMTIMEOUT))
+            CriticalBlock b(crit);
+            if (stopped || job.queryAborted() || job.queryPausing())
+                break;
+            if (0 == stack.ordinality() && 0 == toRun.ordinality() && 0 == running.ordinality())
+                break;
+            if (job.queryPausing())
+                break; // pending graphs will re-run on resubmission
+
+            bool signalled;
             {
-                CriticalBlock b(crit);
-                if (stopped || job.queryAborted() || job.queryPausing()) break;
-                if (0 == stack.ordinality() && 0 == toRun.ordinality())
-                {
-                    if (running.ordinality())
-                        continue;
-                    break;
-                }
-                if (job.queryPausing()) return; // pending graphs will re-run on resubmission
+                CriticalUnblock b(crit);
+                signalled = sem.wait(MEDIUMTIMEOUT);
+            }
+            if (signalled)
+            {
                 bool added = false;
                 if (running.ordinality() < limit)
                 {
@@ -2231,31 +2242,28 @@ public:
                 PROGLOG("Waiting on executing graphs to complete.");
             StringBuffer str("Currently running graphId = ");
 
-            CriticalBlock b(crit);
+            if (running.ordinality())
             {
-                if (running.ordinality())
+                ForEachItemIn(r, running)
                 {
-                    ForEachItemIn(r, running)
-                    {
-                        CGraphExecutorGraphInfo &graphInfo = running.item(r);
-                        str.append(graphInfo.subGraph->queryGraphId());
-                        if (r != running.ordinality()-1)
-                            str.append(", ");
-                    }
-                    PROGLOG("%s", str.str());
+                    CGraphExecutorGraphInfo &graphInfo = running.item(r);
+                    str.append(graphInfo.subGraph->queryGraphId());
+                    if (r != running.ordinality()-1)
+                        str.append(", ");
                 }
-                if (stack.ordinality())
+                PROGLOG("%s", str.str());
+            }
+            if (stack.ordinality())
+            {
+                str.clear().append("Queued in stack graphId = ");
+                ForEachItemIn(s, stack)
                 {
-                    str.clear().append("Queued in stack graphId = ");
-                    ForEachItemIn(s, stack)
-                    {
-                        CGraphExecutorGraphInfo &graphInfo = stack.item(s);
-                        str.append(graphInfo.subGraph->queryGraphId());
-                        if (s != stack.ordinality()-1)
-                            str.append(", ");
-                    }
-                    PROGLOG("%s", str.str());
+                    CGraphExecutorGraphInfo &graphInfo = stack.item(s);
+                    str.append(graphInfo.subGraph->queryGraphId());
+                    if (s != stack.ordinality()-1)
+                        str.append(", ");
                 }
+                PROGLOG("%s", str.str());
             }
         }
     }
@@ -2424,9 +2432,9 @@ void CJobBase::addDependencies(IPropertyTree *xgmml, bool failIfMissing)
     }
 }
 
-void CJobBase::startGraph(CGraphBase &graph, IGraphCallback &callback, size32_t parentExtractSize, const byte *parentExtract)
+void CJobBase::startGraph(CGraphBase &graph, IGraphCallback &callback, bool checkDependencies, size32_t parentExtractSize, const byte *parentExtract)
 {
-    graphExecutor->add(&graph, callback, parentExtractSize, parentExtract);
+    graphExecutor->add(&graph, callback, checkDependencies, parentExtractSize, parentExtract);
 }
 
 void CJobBase::joinGraph(CGraphBase &graph)
