@@ -886,8 +886,19 @@ static const char *parseCronItem(const char *s,UnsignedArray &a,unsigned first,u
                             if (isdigit(*s)) 
                                 s = getnum(s,inc,1,last);
                         }
-                        for (;n<=n2;n+=inc)
-                            a.bAdd(n,cmpval,added);
+                        if (n <= n2)
+                        {
+                            for (; n<=n2; n+=inc)
+                                a.bAdd(n,cmpval,added);
+                        }
+                        else
+                        {
+                            unsigned idx;
+                            for (idx=n; idx<=last; idx+=inc)
+                                a.bAdd(idx,cmpval,added);
+                            for (idx-=(last-first+1); idx<=n2; idx+=inc)
+                                a.bAdd(idx,cmpval,added);
+                        }
                     }
                     else
                         a.bAdd(n,cmpval,added);
