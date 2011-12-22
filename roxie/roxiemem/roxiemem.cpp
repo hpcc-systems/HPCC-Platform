@@ -27,6 +27,7 @@
 namespace roxiemem {
 
 #define USE_MADVISE_ON_FREE     // avoid linux swapping 'freed' pages to disk
+#define VARIABLE_CHUNKS
 
 unsigned memTraceLevel = 1;
 size32_t memTraceSizeLimit = 0;
@@ -1005,6 +1006,9 @@ class CChunkingRowManager : public CInterface, implements IRowManager
     bool isUltraCheckingHeap;
     Owned<IActivityMemoryUsageMap> usageMap;
     const IRowAllocatorCache *allocatorCache;
+#ifdef VARIABLE_CHUNKS
+    UnsignedArray chunkLengths;
+#endif
 
     void checkLimit(unsigned numRequested)
     {
@@ -1051,6 +1055,15 @@ public:
         isCheckingHeap = false;
         isUltraCheckingHeap = false;
 #endif
+#ifdef VARIABLE_CHUNKS
+        chunkLengths.append(32);
+        chunkLengths.append(64);
+        chunkLengths.append(128);
+        chunkLengths.append(256);
+        chunkLengths.append(512);
+        chunkLengths.append(1024);
+        chunkLengths.append(2048);
+#endif
         if (memTraceLevel >= 2)
             logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager c-tor memLimit=%u pageLimit=%u rowMgr=%p", _memLimit, pageLimit, this);
     }
@@ -1095,6 +1108,34 @@ public:
             dfinger = next;
         }
         logctx.Release();
+    }
+
+    static int compareUnsigned(unsigned *a, unsigned *b)
+    {
+        return (int) (*b - *a);
+    }
+
+    virtual void setChunkSizes(const UnsignedArray &sizes)
+    {
+#ifdef VARIABLE_CHUNKS
+        chunkLengths.kill();
+        ForEachItemIn(idx, sizes)
+        {
+            unsigned size = sizes.item(idx);
+            size += sizeof(atomic_t) + sizeof(unsigned);
+#ifdef CHECKING_HEAP
+            if (isCheckingHeap)
+                size += sizeof(unsigned); // for the magic number
+#endif
+            if (size <= FixedSizeHeaplet::maxHeapSize(isCheckingHeap)/20)
+            {
+                bool wasNew;
+                aindex_t added = chunkLengths.bAdd(size, compareUnsigned, wasNew);
+                if (!wasNew)
+                    chunkLengths.remove(added);  // Why is there no bAddUnique ?
+            }
+        }
+#endif
     }
 
     virtual void reportLeaks()
@@ -1202,37 +1243,65 @@ public:
             if (isCheckingHeap) 
                 size += sizeof(unsigned); // for the magic number
 #endif
-            if (size<=32)
-                size=32;
-            else if (size<=64)
-                size=64;
-            else if (size<=128)
-                size=128;
-            else if (size<=256)
-                size=256;
-            else if (size<=512)
-                size=512;
-            else if (size<=1024)
-                size=1024;
-            else if (size<=2048)
-                size=2048;
-            else if (size <= FixedSizeHeaplet::maxHeapSize(isCheckingHeap)/20)
-                size = (((size-1) / 4096)+1) * 4096;
+#ifdef VARIABLE_CHUNKS
+            // search the chunkLengths array to find the first one >= size
+            int a = 0;
+            int b = chunkLengths.length();
+            if (b)
+            {
+                // Classic binchop ...
+                while (a<b)
+                {
+                    int i = (a+b)/2;
+                    size32_t cl = chunkLengths.item(i);
+                    if (cl==size)
+                        return cl;  // good chance of an exact match since we tune the sizes to what we expect
+                    else if (cl < size)
+                        a = i+1;
+                    else
+                        b = i;
+                }
+                if (a < chunkLengths.length())
+                {
+                    size32_t cl = chunkLengths.item(a);
+                    assert(cl >= size);
+                    return cl;
+                }
+            }
+            else
+#endif
+            {
+                if (size<=32)
+                    return 32;
+                else if (size<=64)
+                    return 64;
+                else if (size<=128)
+                    return 128;
+                else if (size<=256)
+                    return 256;
+                else if (size<=512)
+                    return 512;
+                else if (size<=1024)
+                    return 1024;
+                else if (size<=2048)
+                    return 2048;
+            }
+            if (size <= FixedSizeHeaplet::maxHeapSize(isCheckingHeap)/20)
+                return (((size-1) / 4096)+1) * 4096;
             else
             {
-                // Round up to nearest whole fraction of vailable heap space
+                // Round up to nearest whole fraction of available heap space
                 unsigned frac = FixedSizeHeaplet::dataAreaSize()/size;
                 unsigned usesize = FixedSizeHeaplet::dataAreaSize()/frac;
-                size = usesize;
+                return usesize;
             }
         }
         else
         {
             // roundup of larger values is used to decide whether worth shrinking or not...
             unsigned numPages = ((size + HugeHeaplet::dataOffset() - 1) / HEAP_ALIGNMENT_SIZE) + 1;
-            size = (numPages*HEAP_ALIGNMENT_SIZE) - HugeHeaplet::dataOffset();
+            return (numPages*HEAP_ALIGNMENT_SIZE) - HugeHeaplet::dataOffset();
         }
-        return size;
     }
 
     virtual unsigned maxSimpleBlock()
@@ -1739,6 +1808,7 @@ public:
 class RoxieMemTests : public CppUnit::TestFixture  
 {
     CPPUNIT_TEST_SUITE( RoxieMemTests );
+        CPPUNIT_TEST(testBuckets);
         CPPUNIT_TEST(testHuge);
         CPPUNIT_TEST(testAll);
         CPPUNIT_TEST(testDatamanager);
@@ -2025,6 +2095,23 @@ protected:
         Owned<IRowManager> rm5 = createRowManager(0, NULL, logctx, NULL);
         rm5->allocate(4000);
         rm5.clear();
+    }
+
+    void testBuckets()
+    {
+        Owned<IRowManager> rm1 = createRowManager(0, NULL, logctx, NULL);
+        UnsignedArray chunkSizes;
+        chunkSizes.append(10);
+        chunkSizes.append(20);
+        chunkSizes.append(30);
+        rm1->setChunkSizes(chunkSizes);
+        void *ptrs[50];
+        for (int i = 0; i < 50; i++)
+            ptrs[i] = rm1->allocate(i);
+        ASSERT(rm1->pages()==4);
+        for (int i = 0; i < 50; i++)
+            ReleaseRoxieRow(ptrs[i]);
+        ASSERT(rm1->pages()==0);
     }
 
     void testFixed()
