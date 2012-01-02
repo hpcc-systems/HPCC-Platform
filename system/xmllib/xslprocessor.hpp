@@ -125,6 +125,6 @@ interface XMLLIB_API IXslProcessor : public IInterface
     virtual int getCacheTimeout() = 0;
 };
 
-XMLLIB_API IXslProcessor* getXslProcessor();
+extern "C" XMLLIB_API IXslProcessor* getXslProcessor();
 
 #endif
