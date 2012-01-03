@@ -99,6 +99,12 @@ inline const char * nullText(const char * text)
     return "(null)";
 }
 
+inline const char * ensureText(const char * text)
+{
+    if (text) return text;
+    return "";
+}
+
 static const char * getResultText(StringBuffer & s, const char * stepname, unsigned sequence)
 {
     switch ((int)sequence)
@@ -1328,8 +1334,8 @@ void EclAgent::logFileAccess(IDistributedFile * file, char const * component, ch
         ",FileAccess,%s,%s,%s,%s,%s,%s,%s",
         component,
         type,
-        cluster,
-        userid.get(),
+        ensureText(cluster),
+        ensureText(userid.get()),
         file->queryLogicalName(),
         wuid.get(),
         activeGraph ? activeGraph->queryGraphName() : "");
