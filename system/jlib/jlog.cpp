@@ -2649,7 +2649,7 @@ public:
     CComponentLogFileCreator(IPropertyTree * _properties, const char *_component) : component(_component)
     {
         setDefaults();
-        if (!getConfigurationDirectory(_properties->queryPropTree("Directories"), "log", _component, _properties->queryProp("@name"), logDir))
+        if (_properties && !getConfigurationDirectory(_properties->queryPropTree("Directories"), "log", _component, _properties->queryProp("@name"), logDir))
             _properties->getProp("@logDir", logDir);
     }
 
