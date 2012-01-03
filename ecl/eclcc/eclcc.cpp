@@ -1043,6 +1043,8 @@ void EclCC::processReference(EclCompileInstance & instance, const char * queryAt
     const char * outputFilename = instance.outputFilename;
 
     instance.wu.setown(createLocalWorkUnit());
+    if (optArchive)
+        instance.archive.setown(createAttributeArchive());
 
     Owned<IEclRepository> searchRepository = createCompoundRepositoryF(pluginsRepository.get(), libraryRepository.get(), includeRepository.get(), NULL);
     processSingleQuery(instance, searchRepository, NULL, queryAttributePath);
