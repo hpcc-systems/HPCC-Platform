@@ -1566,6 +1566,7 @@ class CDataBufferManager : public CInterface, implements IDataBufferManager
                 // 2. finger->crit is about to get released back to the pool and it's important that it is not locked at the time!
                 if (atomic_read(&finger->okToFree) == 1)
                 {
+                    assert(atomic_read(&finger->count) == 0);
                     DataBufferBottom *goer = finger;
                     finger = finger->nextBottom;
                     unlink(goer);
@@ -1573,6 +1574,9 @@ class CDataBufferManager : public CInterface, implements IDataBufferManager
                         DBGLOG("RoxieMemMgr: DataBufferBottom::allocate() freeing DataBuffers Page - addr=%p", goer);
                     goer->~DataBufferBottom(); 
                     subfree_aligned(goer, 1);
+#ifdef _DEBUG
+                    memset(goer, 0xcc, HEAP_ALIGNMENT_SIZE);
+#endif
                     atomic_dec(&dataBufferPages);
                 }
                 else
@@ -1647,34 +1651,9 @@ public:
                     nextAddr = NULL;
                 }
             }
-            // see if a previous block that is waiting to be freed has any on its free chain
-            DataBufferBottom *finger = freeChain;
-            if (finger)
-            {
-                loop
-                {
-                    CriticalBlock c(finger->crit);
-                    if (finger->freeChain)
-                    {
-                        atomic_set(&finger->okToFree, 0);
-                        HeapletBase::link(finger); // Link once for the reference we save in curBlock
-                                                   // Release (to dec ref count) when no more free blocks in the page
-                        curBlock = (char *) finger;
-                        nextAddr = curBlock + HEAP_ALIGNMENT_SIZE;
-                        atomic_inc(&dataBuffersActive);
-                        HeapletBase::link(finger); // and once for the value we are about to return
-                        DataBufferBase *x = finger->freeChain;
-                        finger->freeChain = x->next;
-                        x->next = NULL;
-                        if (memTraceLevel >= 4)
-                            DBGLOG("RoxieMemMgr: CDataBufferManager::allocate() reallocated DataBuffer - addr=%p", x);
-                        return ::new(x) DataBuffer();
-                    }
-                    finger = finger->nextBottom;
-                    if (finger==freeChain)
-                        break;
-                }
-            }
+            // Don't be tempted to try to use a previous block that is waiting to be
+            // freed. You will get obscure race conditions with the setting of the free indicator.
+            // It's also VERY unlikely to ever happen so not worth the extra test and complexity.
             curBlock = nextAddr = (char *) suballoc_aligned(1);
             atomic_inc(&dataBufferPages);
             assertex(curBlock);
@@ -1723,11 +1702,11 @@ void DataBufferBottom::addToFreeChain(DataBufferBase * buffer)
 void DataBufferBottom::released()
 {
     // Not really safe to free here as owner may be in the middle of allocating from it
-    // instead, give owner a hint that it's worth thinking about freeing this page next time it is safe
-    // As soon as I set the "ok to free me" flag I may get freed, and owner may get overwritten. So don't set until I have a copy.
-    CDataBufferManager *lowner = ((volatile DataBufferBottom *)this)->owner; // watch for compilers that are too clever
+    // instead, give owner a hint that it's worth thinking about freeing some pages next time it is safe
+    // Even this requires care to make sure that even though my link is zero, I remain unfreed long enough to
+    // have a valid pointer to my owner - hence the okToFree flag
+    atomic_set(&owner->freePending, 1);
     atomic_set(&okToFree, 1);
-    atomic_set(&lowner->freePending, 1);
 }
 
 void DataBufferBottom::noteReleased(const void *ptr) { throwUnexpected(); }
