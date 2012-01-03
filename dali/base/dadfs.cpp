@@ -990,12 +990,61 @@ class CDFAction: public CInterface
 {
 protected:
     Linked<IDistributedFileTransaction> transaction;
+    IArrayOf<IDistributedFile> lockedFiles;
+protected:
+    enum ActionState {
+        NONE,    // still not committed nor rolled back
+        SUCCESS, // committing
+        FAILURE  // rolling back
+    } state;
+    void addFile(IDistributedFile& file) {
+        // derived's prepare must call this before locking
+        lockedFiles.append(file);
+    }
+    bool lock() {
+        // Files most have been acquired already by derived's class prepare
+        ForEachItemIn(i,lockedFiles) {
+            if (!lockedFiles.item(i).lockTransaction(SDS_SUB_LOCK_TIMEOUT))
+                return false;
+        }
+        return true;
+    }
+    void unlock() {
+        bool commit = (state == SUCCESS);
+        bool rollback = (state == FAILURE);
+        ForEachItemIn(i,lockedFiles) {
+            // TODO: Pass ActionState instead
+            lockedFiles.item(i).unlockTransaction(commit, rollback);
+        }
+        lockedFiles.kill();
+    }
 public:
-    CDFAction(IDistributedFileTransaction *transaction);
+    CDFAction(IDistributedFileTransaction *_transaction) : state(NONE)
+    {
+        assertex(_transaction);
+        transaction.set(_transaction->baseTransaction()); // smacks of overkill
+        transaction->addAction(this);
+        transaction->clearFiles();  // clean slate on open files (this is a bit arcane)
+    }
     virtual ~CDFAction() {}
-    virtual bool lock()=0;
-    virtual void run()=0;
-    virtual void unlock(bool commit,bool rollback)=0;
+    virtual bool prepare()=0;  // should call lock
+    virtual void run()=0; // must override this
+    // If some lock fails, call this
+    virtual void retry()
+    {
+        state = NONE;
+        unlock();
+    }
+    virtual void commit()
+    {
+        state = SUCCESS;
+        unlock();
+    }
+    virtual void rollback()
+    {
+        state = FAILURE;
+        unlock();
+    }
 };
 
 static void setUserDescriptor(Linked<IUserDescriptor> &udesc,IUserDescriptor *user)
@@ -1173,14 +1222,14 @@ public:
         try {
             loop {
                 ForEachItemIn(i0,actions) 
-                    if (actions.item(i0).lock())
+                    if (actions.item(i0).prepare())
                         nlocked++;
                     else
                         break;
                 if (nlocked==actions.ordinality())
                     break;
                 while (nlocked) // unlock for retry
-                    actions.item(--nlocked).unlock(false,false);
+                    actions.item(--nlocked).retry();
                 // This could be dangerous now that superfiles are in transactions
                 dflist.kill();
                 PROGLOG("CDistributedFileTransaction: Transaction pausing");
@@ -1196,7 +1245,7 @@ public:
                     actions.item(i).run();
                 while (actions.ordinality()) {  // if we get here everything should work!
                     Owned<CDFAction> action = &actions.popGet();
-                    action->unlock(true,false);
+                    action->commit();
                 }
                 dflist.kill();
                 isactive = false;
@@ -1215,7 +1264,7 @@ public:
                     // do want to pop them all
                     Owned<CDFAction> action = &actions.popGet();
                     if (actions.ordinality()<nlocked)
-                        action->unlock(false,true);
+                        action->rollback();
                 }
                 catch (IException *e) {
                     if (rete)
@@ -4013,7 +4062,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
             addcontents = _addcontents;
         }
         virtual ~cAddSubFileAction() {}
-        bool lock()
+        bool prepare()
         {
             parent.setown(transaction->lookupSuperFile(parentlname));   
             if (!parent)
@@ -4035,11 +4084,13 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                 // will pick up as error later if it is
 //                  throw MakeStringException(-1,"addSubFile: File %s is already a subfile of %s", subfile.get(),parent->queryLogicalName());
             }
-            if (parent->lockTransaction(SDS_SUB_LOCK_TIMEOUT))
-                if (sub->lockTransaction(SDS_SUB_LOCK_TIMEOUT))
-                    return true;
-            sub.clear();
-            parent.clear();
+            // Try to lock all files
+            lockedFiles.append(*LINK(parent));
+            lockedFiles.append(*LINK(sub));
+            if (lock())
+                return true;
+            else
+                unlock();
             return false;
         }
         void run()
@@ -4050,17 +4101,14 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
             if (sf)
                 sf->doAddSubFile(LINK(sub),before,other,transaction);
         }
-        void unlock(bool commit,bool rollback)
+        void commit()
         {
-            sub->unlockTransaction(commit,rollback);
-            parent->unlockTransaction(commit,rollback);
+            state = SUCCESS;
             CDistributedSuperFile *sf = QUERYINTERFACE(parent.get(),CDistributedSuperFile);                 
-            if (sf&&commit)
+            if (sf)
                 sf->updateParentFileAttrs(transaction);
-            sub.clear();
-            parent.clear();
+            unlock();
         }
-        
     };
 
     /**
@@ -4082,7 +4130,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
             remphys = _remphys;
         }
         virtual ~cRemoveSubFileAction() {}
-        bool lock()
+        bool prepare()
         {
             parent.setown(transaction->lookupSuperFile(parentlname,true));
             if (!parent)
@@ -4099,11 +4147,13 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                 if (!parent->querySubFileNamed(subfile))
                     WARNLOG("addSubFile: File %s is not a subfile of %s", subfile.get(),parent->queryLogicalName());
             }
-            if (parent->lockTransaction(SDS_SUB_LOCK_TIMEOUT))
-                if (!sub || sub->lockTransaction(SDS_SUB_LOCK_TIMEOUT))
-                    return true;
-            parent.clear();
-            sub.clear();
+            // Try to lock all files
+            lockedFiles.append(*LINK(parent));
+            lockedFiles.append(*LINK(sub));
+            if (lock())
+                return true;
+            else
+                unlock();
             return false;
         }
         void run()
@@ -4111,14 +4161,6 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
             CDistributedSuperFile *sf = QUERYINTERFACE(parent.get(),CDistributedSuperFile);
             if (sf)
                 sf->doRemoveSubFile(subfile.get(),remsub,remphys,transaction,true);
-        }
-        void unlock(bool commit,bool rollback)
-        {
-            if (sub)
-                sub->unlockTransaction(commit,rollback);
-            parent->unlockTransaction(commit,rollback);
-            parent.clear();
-            sub.clear();
         }
     };
 
@@ -4137,7 +4179,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
         {
         }
         virtual ~cSwapFileAction() {}
-        bool lock()
+        bool prepare()
         {
             parent.setown(transaction->lookupSuperFile(parentlname));
             if (!parent)
@@ -4147,13 +4189,13 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                 parent.clear();
                 throw MakeStringException(-1,"swapSuperFile: SuperFile %s cannot be found",filelname.get());
             }
-            if (parent->lockTransaction(SDS_SUB_LOCK_TIMEOUT)) {
-                if (file->lockTransaction(SDS_SUB_LOCK_TIMEOUT))
-                    return true;
-                parent->unlockTransaction(false,true);
-            }
-            parent.clear();
-            file.clear();
+            // Try to lock all files
+            lockedFiles.append(*LINK(parent));
+            lockedFiles.append(*LINK(file));
+            if (lock())
+                return true;
+            else
+                unlock();
             return false;
         }
         void run()
@@ -4161,13 +4203,6 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
             CDistributedSuperFile *sf = QUERYINTERFACE(parent.get(),CDistributedSuperFile);
             if (sf)
                 sf->doSwapSuperFile(file,transaction);
-        }
-        void unlock(bool commit,bool rollback)
-        {
-            file->unlockTransaction(commit,rollback);
-            parent->unlockTransaction(commit,rollback);
-            parent.clear();
-            file.clear();
         }
     };
 
@@ -6662,7 +6697,6 @@ class cCreateSuperFileAction: public CDFAction
     Owned<IDistributedSuperFile> super;
     IUserDescriptor *user;
     IPropertyTree *root;
-    bool ifdoesnotexist;
     bool created;
 public:
     cCreateSuperFileAction(IDistributedFileTransaction *_transaction,
@@ -6687,10 +6721,11 @@ public:
         transaction->addSuperFile(LINK(super));
     }
     virtual ~cCreateSuperFileAction() {}
-    bool lock()
+    bool prepare()
     {
-        // Attache the file to DFS
-        parent->addEntry(logicalname,root,true,false);
+        // Attach the file to DFS, if wasn't there already
+        if (created)
+            parent->addEntry(logicalname,root,true,false);
         // FIXME: This will introduce a window (until commit) that
         // the file is accessible. Use super->attach/detach instead.
         return true;
@@ -6699,13 +6734,23 @@ public:
     {
         // Do nothing, file is already created
     }
-    void unlock(bool commit, bool rollback)
+    void retry()
     {
+        state = NONE;
         // on retry, we need to remove the file so next lock doesn't fail
-        if (created && !commit)
+        if (created)
             parent->removeEntry(logicalname.get(), user);
     }
-
+    void commit()
+    {
+        state = SUCCESS;
+    }
+    void rollback()
+    {
+        state = FAILURE;
+        if (created)
+            parent->removeEntry(logicalname.get(), user);
+    }
 };
 
 IDistributedSuperFile *CDistributedFileDirectory::createSuperFile(const char *_logicalname, bool _interleaved,bool ifdoesnotexist,IUserDescriptor *user,IDistributedFileTransaction *transaction)
@@ -8825,15 +8870,6 @@ IDaliServer *createDaliDFSServer()
     assertex(!daliDFSServer); // initialization problem
     daliDFSServer = new CDaliDFSServer();
     return daliDFSServer;
-}
-
-CDFAction::CDFAction(IDistributedFileTransaction *_transaction)
-{
-    assertex(_transaction);
-    transaction.set(_transaction->baseTransaction()); // smacks of overkill
-    transaction->addAction(this);
-    transaction->clearFiles();  // clean slate on open files (this is a bit arcane)
-
 }
 
 IDistributedFileTransaction *createDistributedFileTransaction(IUserDescriptor *user)
