@@ -243,10 +243,14 @@ unsigned jlib_decl getLatestCPUUsage();
 __int64 jlib_decl getTotalMem();
 unsigned jlib_decl setAllocHook(bool on);  // bwd compat returns unsigned
 
-#ifdef __linux__
-#define USE_JLIB_ALLOC_HOOK extern void jlib_decl jlib_init_hook(); void (*__malloc_initialize_hook) (void) = jlib_init_hook;       
+#if defined(__GLIBC) && !defined(_DEBUG)
+ #if __GLIBC_PREREQ(2, 14)
+  #define USE_JLIB_ALLOC_HOOK extern void jlib_decl jlib_init_hook(); void (* volatile __malloc_initialize_hook) (void) = jlib_init_hook;
+ #else
+  #define USE_JLIB_ALLOC_HOOK extern void jlib_decl jlib_init_hook(); void (* __malloc_initialize_hook) (void) = jlib_init_hook;
+ #endif
 #else
-#define USE_JLIB_ALLOC_HOOK
+ #define USE_JLIB_ALLOC_HOOK
 #endif
 
 extern jlib_decl void getHardwareInfo(HardwareInfo &hdwInfo, const char *primDiskPath, const char *secDiskPath = NULL);

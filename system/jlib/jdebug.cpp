@@ -48,7 +48,7 @@
 
 //===========================================================================
 #ifdef _DEBUG
-//#define _USE_MALLOC_HOOK  
+// #define _USE_MALLOC_HOOK  // Only enable if you need it - slow!
 #else
 #undef _USE_MALLOC_HOOK // don't define for release - not threadsafe
 #endif
@@ -3058,6 +3058,8 @@ void jlib_decl jlib_init_hook()
 {
 }
 
+#endif
+
 class UserMetricMsgHandler : public CInterface, implements ILogMsgHandler, implements IUserMetric
 {
     mutable unsigned __int64 counter;
@@ -3107,7 +3109,3 @@ jlib_decl IUserMetric *createUserMetric(const char *name, const char *matchStrin
 {
     return new UserMetricMsgHandler(name, matchString);
 }
-
-#endif
-
-
