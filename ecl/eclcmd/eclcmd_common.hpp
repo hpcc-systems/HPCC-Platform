@@ -60,6 +60,14 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_QUERYSET "--queryset"
 #define ECLOPT_VERSION "--version"
 
+#define ECLOPT_LIB_PATH_S "-L"
+#define ECLOPT_IMP_PATH_S "-I"
+#define ECLOPT_MANIFEST "--manifest"
+#define ECLOPT_MANIFEST_DASH "-manifest"
+
+#define ECLOPT_VERBOSE "--verbose"
+#define ECLOPT_VERBOSE_S "-v"
+
 bool extractEclCmdOption(StringBuffer & option, IProperties * globals, const char * envName, const char * propertyName, const char * defaultPrefix, const char * defaultSuffix);
 bool extractEclCmdOption(StringAttr & option, IProperties * globals, const char * envName, const char * propertyName, const char * defaultPrefix, const char * defaultSuffix);
 bool extractEclCmdOption(bool & option, IProperties * globals, const char * envName, const char * propertyName, bool defval);
@@ -110,7 +118,7 @@ class EclCmdCommon : public CInterface, implements IEclCommand
 {
 public:
     IMPLEMENT_IINTERFACE;
-    EclCmdCommon()
+    EclCmdCommon() : optVerbose(false)
     {
     }
     virtual eclCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter, bool finalAttempt=false);
@@ -119,6 +127,7 @@ public:
     virtual void usage()
     {
         fprintf(stdout,
+            "      --verbose, -v        output additional tracing information\n"
             "      --server=<ip>        ip of server running ecl services (eclwatch)\n"
             "      --port=<port>        ecl services port\n"
             "      --username=<name>    username for accessing ecl services\n"
@@ -130,6 +139,33 @@ public:
     StringAttr optPort;
     StringAttr optUsername;
     StringAttr optPassword;
+    bool optVerbose;
+};
+
+class EclCmdWithEclTarget : public EclCmdCommon
+{
+public:
+    EclCmdWithEclTarget()
+    {
+    }
+    virtual eclCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter, bool finalAttempt=false);
+    virtual bool finalizeOptions(IProperties *globals);
+
+    virtual void usage()
+    {
+        EclCmdCommon::usage();
+        fprintf(stdout,
+            "   eclcc options:\n"
+            "      -Ipath               Add path to locations to search for ecl imports\n"
+            "      -Lpath               Add path to locations to search for system libraries\n"
+            "      -manifest            Specify path to manifest file\n"
+        );
+    }
+public:
+    EclObjectParameter optObj;
+    StringBuffer optLibPath;
+    StringBuffer optImpPath;
+    StringAttr optManifest;
 };
 
 #endif

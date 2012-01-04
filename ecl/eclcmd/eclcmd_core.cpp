@@ -22,6 +22,7 @@
 #include "jargv.hpp"
 #include "build-config.h"
 
+#include "workunit.hpp"
 #include "ws_workunits.hpp"
 #include "eclcmd_common.hpp"
 #include "eclcmd_core.hpp"
@@ -39,12 +40,135 @@ void outputMultiExceptions(const IMultiException &me)
     fprintf(stderr, "\n");
 }
 
-bool doDeploy(IClientWsWorkunits *client, EclObjectParameter &optObj, const char *cluster, const char *name, StringBuffer *wuid)
+class ConvertEclParameterToArchive
+{
+public:
+    ConvertEclParameterToArchive(EclCmdWithEclTarget &_cmd) : cmd(_cmd)
+    {
+    }
+
+    void appendOptPath(StringBuffer &cmdLine, const char opt, const char *path)
+    {
+        if (!path || !*path)
+            return;
+        if (*path==';')
+            path++;
+        cmdLine.append(" -").append(opt).append(path);
+    }
+
+    void buildCmd(StringBuffer &cmdLine)
+    {
+        cmdLine.set("eclcc -E");
+        appendOptPath(cmdLine, 'I', cmd.optImpPath.str());
+        appendOptPath(cmdLine, 'L', cmd.optLibPath.str());
+        if (cmd.optManifest.length())
+            cmdLine.append(" -manifest ").append(cmd.optManifest.get());
+        if (streq(cmd.optObj.value.sget(), "stdin"))
+            cmdLine.append(" - ");
+        else
+            cmdLine.append(" ").append(cmd.optObj.value.get());
+    }
+
+    bool eclcc(StringBuffer &out)
+    {
+        StringBuffer cmdLine;
+        buildCmd(cmdLine);
+
+        Owned<IPipeProcess> pipe = createPipeProcess();
+        bool hasInput = streq(cmd.optObj.value.sget(), "stdin");
+        pipe->run(cmd.optVerbose ? "EXEC" : NULL, cmdLine.str(), NULL, hasInput, true, true);
+
+        StringBuffer errors;
+        Owned<EclCmdErrorReader> errorReader = new EclCmdErrorReader(pipe, errors);
+        errorReader->start();
+
+        if (pipe->hasInput())
+        {
+            pipe->write(cmd.optObj.mb.length(), cmd.optObj.mb.toByteArray());
+            pipe->closeInput();
+        }
+        if (pipe->hasOutput())
+        {
+           byte buf[4096];
+           loop
+           {
+                size32_t read = pipe->read(sizeof(buf),buf);
+                if (!read)
+                    break;
+                out.append(read, (const char *) buf);
+            }
+        }
+        int retcode = pipe->wait();
+        errorReader->join();
+
+        if (errors.length())
+            fprintf(stderr, "%s\n", errors.str());
+
+        return (retcode == 0);
+    }
+
+    bool process()
+    {
+        if (cmd.optObj.type!=eclObjSource || cmd.optObj.value.isEmpty())
+            return false;
+
+        StringBuffer output;
+        if (eclcc(output) && output.length() && isArchiveQuery(output.str()))
+        {
+            cmd.optObj.type = eclObjArchive;
+            cmd.optObj.mb.clear().append(output.str());
+            return true;
+        }
+        fprintf(stderr,"\nError creating archive\n");
+        return false;
+    }
+
+private:
+    EclCmdWithEclTarget &cmd;
+
+    class EclCmdErrorReader : public Thread
+    {
+    public:
+        EclCmdErrorReader(IPipeProcess *_pipe, StringBuffer &_errs)
+            : Thread("EclToArchive::ErrorReader"), pipe(_pipe), errs(_errs)
+        {
+        }
+
+        virtual int run()
+        {
+           byte buf[4096];
+           loop
+           {
+                size32_t read = pipe->readError(sizeof(buf), buf);
+                if (!read)
+                    break;
+                errs.append(read, (const char *) buf);
+            }
+            return 0;
+        }
+    private:
+        IPipeProcess *pipe;
+        StringBuffer &errs;
+    };
+};
+
+
+
+bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *cluster, const char *name, StringBuffer *wuid)
 {
     StringBuffer s;
-    fprintf(stdout, "\nDeploying %s\n", optObj.getDescription(s).str());
+    if (cmd.optVerbose)
+        fprintf(stdout, "\nDeploying %s\n", cmd.optObj.getDescription(s).str());
+
+    if (cmd.optObj.type==eclObjSource)
+    {
+        ConvertEclParameterToArchive conversion(cmd);
+        if (!conversion.process())
+            return false;
+    }
+
     Owned<IClientWUDeployWorkunitRequest> req = client->createWUDeployWorkunitRequest();
-    switch (optObj.type)
+    switch (cmd.optObj.type)
     {
         case eclObjArchive:
             req->setObjType("archive");
@@ -52,8 +176,13 @@ bool doDeploy(IClientWsWorkunits *client, EclObjectParameter &optObj, const char
         case eclObjSharedObject:
             req->setObjType("shared_object");
             break;
+        case eclObjSource:
+        {
+            fprintf(stderr, "Failed to create archive from ECL Text\n");
+            return false;
+        }
         default:
-            fprintf(stdout, "Can only deploy shared objects and ECL archives\n");
+            fprintf(stderr, "Cannot deploy %s\n", cmd.optObj.queryTypeName());
             return false;
     }
 
@@ -61,8 +190,8 @@ bool doDeploy(IClientWsWorkunits *client, EclObjectParameter &optObj, const char
         req->setName(name);
     if (cluster && *cluster)
         req->setCluster(cluster);
-    req->setFileName(optObj.value.sget());
-    req->setObject(optObj.mb);
+    req->setObject(cmd.optObj.mb);
+    req->setFileName(cmd.optObj.value.sget());
     Owned<IClientWUDeployWorkunitResponse> resp = client->WUDeployWorkunit(req);
     if (resp->getExceptions().ordinality())
         outputMultiExceptions(resp->getExceptions());
@@ -71,17 +200,25 @@ bool doDeploy(IClientWsWorkunits *client, EclObjectParameter &optObj, const char
     {
         if (wuid)
             wuid->append(w);
-        fprintf(stdout, "Deployed\nwuid: %s\nstate: %s\n", w, resp->getWorkunit().getState());
-        return true;
+        fprintf(stdout, "\n");
+        if (cmd.optVerbose)
+            fprintf(stdout, "Deployed\n   wuid: ");
+        fprintf(stdout, "%s\n", w);
+        const char *state = resp->getWorkunit().getState();
+        if (cmd.optVerbose)
+            fprintf(stdout, "   state: %s\n", state);
+        return streq(resp->getWorkunit().getState(), state);
     }
     return false;
 }
 
-class EclCmdDeploy : public EclCmdCommon
+
+class EclCmdDeploy : public EclCmdWithEclTarget
 {
 public:
-    EclCmdDeploy() : optObj(eclObjSource | eclObjArchive | eclObjSharedObject)
+    EclCmdDeploy()
     {
+        optObj.accept = eclObjWuid | eclObjArchive | eclObjSharedObject;
     }
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
     {
@@ -94,47 +231,27 @@ public:
         for (; !iter.done(); iter.next())
         {
             const char *arg = iter.query();
-            if (streq(arg, "-"))
-            {
-                optObj.set("stdin");
-                continue;
-            }
-            if (*arg!='-')
-            {
-                if (optObj.value.length())
-                {
-                    fprintf(stderr, "\nmultiple targets (%s and %s) not currently supported\n", optObj.value.sget(), arg);
-                    return false;
-                }
-                optObj.set(arg);
-                continue;
-            }
             if (iter.matchOption(optCluster, ECLOPT_CLUSTER))
                 continue;
             if (iter.matchOption(optName, ECLOPT_NAME))
                 continue;
-            if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
+            if (EclCmdWithEclTarget::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
         }
         return true;
     }
     virtual bool finalizeOptions(IProperties *globals)
     {
-        if (!EclCmdCommon::finalizeOptions(globals))
+        if (!EclCmdWithEclTarget::finalizeOptions(globals))
             return false;
         if (optObj.value.isEmpty())
         {
-            fprintf(stderr, "\nNo target Archive or DLL specified for deployment\n");
+            fprintf(stderr, "\nNo ECL Source, Archive, or DLL specified for deployment\n");
             return false;
         }
         if (optObj.type==eclObjTypeUnknown)
         {
             fprintf(stderr, "\nCan't determine content type of argument %s\n", optObj.value.sget());
-            return false;
-        }
-        if (optObj.type==eclObjSource)
-        {
-            fprintf(stderr, "\nDirect deployment of ECL source is not yet supported\n");
             return false;
         }
         if (optObj.type==eclObjWuid)
@@ -143,9 +260,9 @@ public:
             fprintf(stderr, "\nWUID (%s) cannot be the target for deployment\n", optObj.getDescription(s).str());
             return false;
         }
-        if (optObj.type==eclObjArchive && optCluster.isEmpty())
+        if ((optObj.type==eclObjSource || optObj.type==eclObjArchive) && optCluster.isEmpty())
         {
-            fprintf(stderr, "\nCluster must be specified when deploying an ECL Archive\n");
+            fprintf(stderr, "\nCluster must be specified when deploying from ECL Source or Archive\n");
             return false;
         }
         return true;
@@ -157,14 +274,16 @@ public:
         client->addServiceUrl(url.str());
         if (optUsername.length())
             client->setUsernameToken(optUsername.get(), optPassword.sget(), NULL);
-        return doDeploy(client, optObj, optCluster.get(), optName.get(), NULL) ? 0 : 1;
+        return doDeploy(*this, client, optCluster.get(), optName.get(), NULL) ? 0 : 1;
     }
     virtual void usage()
     {
         fprintf(stdout,"\nUsage:\n\n"
+            "ecl deploy --cluster=<cluster> --name=<name> <ecl_file|->\n"
             "ecl deploy --cluster=<cluster> --name=<name> <archive|->\n"
             "ecl deploy [--cluster=<cluster>] [--name=<name>] <so|dll|->\n\n"
             "      -                    specifies object should be read from stdin\n"
+            "      <ecl_file|->         ecl text file to deploy\n"
             "      <archive|->          ecl archive to deploy\n"
             "      <so|dll|->           workunit dll or shared object to deploy\n"
             "   Options:\n"
@@ -172,19 +291,19 @@ public:
             "      --cluster=<cluster>  cluster to associate workunit with\n"
             "      --name=<name>        workunit job name\n"
         );
-        EclCmdCommon::usage();
+        EclCmdWithEclTarget::usage();
     }
 private:
-    EclObjectParameter optObj;
     StringAttr optCluster;
     StringAttr optName;
 };
 
-class EclCmdPublish : public EclCmdCommon
+class EclCmdPublish : public EclCmdWithEclTarget
 {
 public:
-    EclCmdPublish() : optActivate(false), activateSet(false), optObj(eclObjWuid | eclObjArchive | eclObjSharedObject)
+    EclCmdPublish() : optActivate(false), activateSet(false)
     {
+        optObj.accept = eclObjWuid | eclObjArchive | eclObjSharedObject;
     }
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
     {
@@ -196,22 +315,6 @@ public:
 
         for (; !iter.done(); iter.next())
         {
-            const char *arg = iter.query();
-            if (streq(arg, "-"))
-            {
-                optObj.set("stdin");
-                continue;
-            }
-            if (*arg!='-')
-            {
-                if (optObj.value.length())
-                {
-                    fprintf(stderr, "\nmultiple targets (%s and %s) not currently supported\n", optObj.value.sget(), arg);
-                    return false;
-                }
-                optObj.set(arg);
-                continue;
-            }
             if (iter.matchOption(optObj.value, ECLOPT_WUID))
                 continue;
             if (iter.matchOption(optName, ECLOPT_NAME))
@@ -223,20 +326,20 @@ public:
                 activateSet=true;
                 continue;
             }
-            if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
+            if (EclCmdWithEclTarget::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
         }
         return true;
     }
     virtual bool finalizeOptions(IProperties *globals)
     {
-        if (!EclCmdCommon::finalizeOptions(globals))
+        if (!EclCmdWithEclTarget::finalizeOptions(globals))
             return false;
         if (!activateSet)
             extractEclCmdOption(optActivate, globals, ECLOPT_ACTIVATE_ENV, ECLOPT_ACTIVATE_INI, false);
         if (optObj.value.isEmpty())
         {
-            fprintf(stderr, "\nMust specify a WUID, Archive, or shared object to publish\n");
+            fprintf(stderr, "\nMust specify a WUID, ECL File, Archive, or shared object to publish\n");
             return false;
         }
         if (optObj.type==eclObjTypeUnknown)
@@ -244,21 +347,16 @@ public:
             fprintf(stderr, "\nCan't determine content type of argument %s\n", optObj.value.sget());
             return false;
         }
-        if (optObj.type==eclObjSource)
-        {
-            fprintf(stderr, "\nPublishing ECL source directly is not yet supported\n");
-            return false;
-        }
-        if (optObj.type==eclObjArchive)
+        if (optObj.type==eclObjArchive || optObj.type==eclObjSource)
         {
             if (optCluster.isEmpty())
             {
-                fprintf(stderr, "\nCluster must be specified when publishing an ECL Archive\n");
+                fprintf(stderr, "\nCluster must be specified when publishing ECL Text or Archive\n");
                 return false;
             }
             if (optName.isEmpty())
             {
-                fprintf(stderr, "\nQuery name must be specified when publishing an ECL Archive\n");
+                fprintf(stderr, "\nQuery name must be specified when publishing an ECL Text or Archive\n");
                 return false;
             }
         }
@@ -275,11 +373,12 @@ public:
         StringBuffer wuid;
         if (optObj.type==eclObjWuid)
             wuid.set(optObj.value.get());
-        else if (!doDeploy(client, optObj, optCluster.get(), optName.get(), &wuid))
+        else if (!doDeploy(*this, client, optCluster.get(), optName.get(), &wuid))
             return 1;
 
         StringBuffer descr;
-        fprintf(stdout, "\nPublishing %s\n", wuid.str());
+        if (optVerbose)
+            fprintf(stdout, "\nPublishing %s\n", wuid.str());
 
         Owned<IClientWUPublishWorkunitRequest> req = client->createWUPublishWorkunitRequest();
         req->setWuid(wuid.str());
@@ -294,7 +393,10 @@ public:
             outputMultiExceptions(resp->getExceptions());
         const char *id = resp->getQueryId();
         if (id && *id)
-            fprintf(stdout, "\nPublished\nQuerySet: %s\nQueryName: %s\nQueryId: %s\n", resp->getQuerySet(), resp->getQueryName(), resp->getQueryId());
+        {
+            const char *qs = resp->getQuerySet();
+            fprintf(stdout, "\n%s/%s\n", qs ? qs : "", resp->getQueryId());
+        }
 
         return 0;
     }
@@ -304,9 +406,11 @@ public:
             "ecl publish [--cluster=<cluster>] [--name=<name>] [--activate] <wuid>\n"
             "ecl publish [--cluster=<cluster>] [--name=<name>] [--activate] <so|dll|->\n"
             "ecl publish --cluster=<cluster> --name=<name> [--activate] <archive|->\n\n"
+            "ecl publish --cluster=<cluster> --name=<name> [--activate] <ecl_file|->\n\n"
             "      -                    specifies object should be read from stdin\n"
             "      <wuid>               workunit to publish\n"
             "      <archive|->          archive to publish\n"
+            "      <ecl_file|->         ECL text file to publish\n"
             "      <so|dll|->           workunit dll or shared object to publish\n"
             "   Options:\n"
             "      --cluster=<cluster>  cluster to publish workunit to\n"
@@ -314,11 +418,10 @@ public:
             "      --name=<name>        query name to use for published workunit\n"
             "      --activate           activates query when published\n"
         );
-        EclCmdCommon::usage();
+        EclCmdWithEclTarget::usage();
     }
 private:
     StringAttr optCluster;
-    EclObjectParameter optObj;
     StringAttr optName;
     bool optActivate;
     bool activateSet;
