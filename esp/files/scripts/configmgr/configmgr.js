@@ -68,8 +68,12 @@ var formatterDispatcher = function(elCell, oRecord, oColumn, oData) {
     default:
       YAHOO.widget.DataTable.formatText.call(this, elCell, oRecord, oColumn, oData);
       break;
-
   }
+
+  var notInEnv = oRecord.getData('_not_in_env');
+
+  if (notInEnv === 1)
+    YAHOO.util.Dom.addClass(elCell, 'not_in_env');
 };
 
 function createSubTable(rows, tabDivName, index, name) {
@@ -419,14 +423,18 @@ function createTable(rows, tabDivName, index, compName) {
       myDataTable.subscribe("cellMouseoverEvent", function(oArgs) {
         var target = oArgs.target;
         var record = this.getRecord(target);
-        var txt;
+        var txt = "";
+
+        if (record.getData('_not_in_env') === 1)
+          txt += "This default optional value is not present in the environment. Use context menu to write to environment.<br>";
+
         //firefox has option to control status bar msg writing that is off by default. 
         //need to doc this to let the user enable the setting.
         if (record.getData('_key')) {
           if (cS[record.getData('_key')].tip)
-            txt = cS[record.getData('_key')].tip;
+            txt += cS[record.getData('_key')].tip;
           else if (cS[record.getData('_key') + tabDivName].tip)
-            txt = cS[record.getData('_key') + tabDivName].tip;
+            txt += cS[record.getData('_key') + tabDivName].tip;
 
           if (cS[record.getData('_key')].defaultValue)
             txt += "<br>Default value = '" + cS[record.getData('_key')].defaultValue + "'";
@@ -440,7 +448,7 @@ function createTable(rows, tabDivName, index, compName) {
           if (tmp.length > 1)
             tmp1 = tmp[1].split("::");
           if (cS[cols.keys[target.cellIndex].key + tmp1[0]].tip)
-            txt = cS[cols.keys[target.cellIndex].key + tmp1[0]].tip;
+            txt += cS[cols.keys[target.cellIndex].key + tmp1[0]].tip;
 
           if (cS[cols.keys[target.cellIndex].key + tmp1[0]].defaultValue)
             txt += "<br>Default value = '" + cS[cols.keys[target.cellIndex].key + tmp1[0]].defaultValue + "'";
@@ -965,6 +973,10 @@ function handleConfigCellClickEvent(oArgs, caller, isComplex) {
             }
 
             callback(true, newValue);
+
+            if (record.getData("_not_in_env") === 1)
+              removeExtraClassFromCell(caller, record, column, "not_in_env");
+
             if (compName === "topology") {
               //refresh for topology to refresh the left hand side values
               top.document.navDT.clickCurrentSelOrName(top.document.navDT);
@@ -3054,7 +3066,8 @@ function onContextMenuBeforeShowRegular(p_sType, p_aArgs) {
                                 { text: "Add", onclick: { fn: onMenuItemClickGenericAddDelete} },
                                 { text: "Delete", onclick: { fn: onMenuItemClickGenericAddDelete} }
                                 ],
-      "ResetToDefault":         [ {text: "Reset to default", onclick: {fn: onMenuItemClickResetToDefault} }]
+      "ResetToDefault":         [ {text: "Reset to default", onclick: {fn: onMenuItemClickResetToDefault} }],
+      "WriteToEnvironment":     [ {text: "Write to environment", onclick: {fn: onMenuItemClickResetToDefault} }]
      };
   }
 
@@ -3099,21 +3112,25 @@ function onContextMenuBeforeShowRegular(p_sType, p_aArgs) {
     }
     this.clearContent();
     
-    this.addItems(aMenuItems);
+    if (aMenuItems)
+      this.addItems(aMenuItems);
         
     if (parentName === "RoxieFarmProcess" || parentName === "RoxieServerProcess" || parentName === "RoxieSlave")
       this.addItems(oContextMenuItems["Delete"], 2);
     else if (parentName === "GenericAddDelete" && recSet.getLength() === 0) {
       this.getItem(1).cfg.setProperty("disabled", true);
     }
-    
+
+    if( record && record.getData('_not_in_env') === 1 && record.getData(column.key + '_ctrlType') !== 0)
+      this.addItems(oContextMenuItems["WriteToEnvironment"]);
+
     if( record && record.getData(column.key + '_ctrlType') !== 0 ) {
         var defaultValue=dt.getDefault(oTarget, record);
         if( defaultValue !== '' && typeof(defaultValue) !== 'undefined' && defaultValue !== record.getData('value') )
            this.addItems(oContextMenuItems["ResetToDefault"]);
       }
-     
-      if (top.document.forms['treeForm'].isLocked.value === 'false') {
+
+    if (top.document.forms['treeForm'].isLocked.value === 'false') {
         var groups = this.getItemGroups();
         for (iGroup = 0; iGroup < groups.length; iGroup++) {
           if (typeof (groups[iGroup]) !== 'undefined')
@@ -3469,8 +3486,10 @@ function onMenuItemClickResetToDefault(p_sType, p_aArgs, p_oValue)
   var bldSet = top.document.navDT.getRecord(top.document.navDT.getSelectedRows()[0]).getData('BuildSet');
   var newValue = dt.getDefault(oTarget, record);
   var meta = record.getData(column.key + '_extra');
+  var menuItemName = this.cfg.getProperty("text");
+  var flag = (menuItemName === 'Write to environment');
   
-  if( newValue !== oldValue) {
+  if (flag || newValue !== oldValue) {
      var form = top.window.document.forms['treeForm'];
      top.document.startWait(document);
      var attrName = getAttrName(dt, column, record, false); // = record.getData('name');
@@ -3552,6 +3571,10 @@ function onMenuItemClickResetToDefault(p_sType, p_aArgs, p_oValue)
               }
 
               dt.updateCell(record, column, newValue);
+
+              if (flag)
+                removeExtraClassFromCell(dt, record, column, "not_in_env");
+
               if (compName === "topology") {
                 //refresh for topology to refresh the left hand side values
                 top.document.navDT.clickCurrentSelOrName(top.document.navDT);
@@ -3601,4 +3624,15 @@ function onMenuItemClickResetToDefault(p_sType, p_aArgs, p_oValue)
       },
       top.document.navDT.getFileName(true) + 'XmlArgs=' + xmlArgs);
   }
+}
+
+function removeExtraClassFromCell(dt, record, column, classes)
+{
+  var Dom = YAHOO.util.Dom;
+  var elCell = dt.getTdEl({record:record, column:column});
+  var divEl = Dom.getChildren(elCell);
+  Dom.removeClass(divEl[0], classes);
+  var elPrevCell = dt.getPreviousTdEl(elCell);
+  divEl = Dom.getChildren(elPrevCell);
+  Dom.removeClass(divEl[0], classes);
 }

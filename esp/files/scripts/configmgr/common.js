@@ -342,3 +342,12 @@ function addUniqueToArray(arr, itm) {
     if (flag)
       arr[arr.length] = itm;
 }
+
+function isNotInEnv(notInEnvList, name)
+{
+  var tmp = ';@' + name + ';';
+  if (notInEnvList.indexOf(tmp) !== -1)
+    return true;
+  else
+    return false;
+}
