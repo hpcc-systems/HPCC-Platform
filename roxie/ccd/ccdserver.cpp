@@ -67,6 +67,7 @@ namespace ccdserver_hqlhelper
 #include "roxiehelper.hpp"
 #include "roxielmj.hpp"
 #include "thorplugin.hpp"
+#include "keybuild.hpp"
 
 #define MAX_HTTP_HEADERSIZE 8000
 #define MIN_PAYLOAD_SIZE 800
@@ -10650,7 +10651,7 @@ public:
         uncompressedBytesWritten = 0;
     }
 
-    virtual void onExecute() 
+    virtual void onExecute()
     {
         loop
         {
@@ -10917,6 +10918,349 @@ public:
 IRoxieServerActivityFactory *createRoxieServerDiskWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
 {
     return new CRoxieServerDiskWriteActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _isRoot);
+}
+
+class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, implements IRoxiePublishCallback
+{
+    IHThorIndexWriteArg &helper;
+    bool isVariable;
+    bool overwrite;
+    Owned<ClusterWriteHandler> clusterHandler;
+    Owned<IRoxieWriteHandler> writer;
+    unsigned __int64 reccount;
+    unsigned int fileCrc;
+    StringBuffer filename;
+
+    void updateWorkUnitResult()
+    {
+        if(filename.length()) //this is required as long as temp files don't get a name which can be stored in the WU and automatically deleted by the WU
+        {
+            WorkunitUpdate wu = ctx->updateWorkUnit();
+            if (wu)
+            {
+                if (!(helper.getFlags() & TDXtemporary) && helper.getSequence() >= 0)
+                {
+                    Owned<IWUResult> result = wu->updateResultBySequence(helper.getSequence());
+                    if (result)
+                    {
+                        result->setResultTotalRowCount(reccount);
+                        result->setResultStatus(ResultStatusCalculated);
+                        result->setResultLogicalName(filename.str());
+                    }
+                }
+                if(clusterHandler)
+                    clusterHandler->finish(writer->queryFile());
+            }
+            CTXLOG("Created roxie index file %s", filename.str());
+        }
+    }
+
+    virtual void resolve()
+    {
+        StringArray clusters;
+        unsigned clusterIdx = 0;
+        while(true)
+        {
+            char const * cluster = helper.queryCluster(clusterIdx);
+            if(!cluster)
+                break;
+            clusters.append(cluster);
+            clusterIdx++;
+        }
+
+        if (roxieName.length())
+            clusters.append(roxieName.str());
+        else
+            clusters.append(".");
+        writer.setown(ctx->createLFN(helper.getFileName(), overwrite, false, clusters)); // MORE - if there's a workunit, use if for scope.
+        filename.set(writer->queryFile()->queryFilename());
+        if (writer->queryFile()->exists())
+        {
+            if (overwrite)
+            {
+                CTXLOG("Removing existing %s from DFS",filename.str());
+                writer->queryFile()->remove();
+            }
+            else
+                throw MakeStringException(99, "Cannot write index file %s, file already exists (missing OVERWRITE attribute?)", filename.str());
+        }
+    }
+
+    void buildUserMetadata(Owned<IPropertyTree> & metadata)
+    {
+        size32_t nameLen;
+        char * nameBuff;
+        size32_t valueLen;
+        char * valueBuff;
+        unsigned idx = 0;
+        while(helper.getIndexMeta(nameLen, nameBuff, valueLen, valueBuff, idx++))
+        {
+            StringBuffer name(nameLen, nameBuff);
+            StringBuffer value(valueLen, valueBuff);
+            if(*nameBuff == '_' && strcmp(name, "_nodeSize") != 0)
+                throw MakeStringException(0, "Invalid name %s in user metadata for index %s (names beginning with underscore are reserved)", name.str(), helper.getFileName());
+            if(!validateXMLTag(name.str()))
+                throw MakeStringException(0, "Invalid name %s in user metadata for index %s (not legal XML element name)", name.str(), helper.getFileName());
+            if(!metadata)
+                metadata.setown(createPTree("metadata"));
+            metadata->setProp(name.str(), value.str());
+        }
+    }
+
+    void buildLayoutMetadata(Owned<IPropertyTree> & metadata)
+    {
+        if(!metadata)
+            metadata.setown(createPTree("metadata"));
+        metadata->setProp("_record_ECL", helper.queryRecordECL());
+
+        void * layoutMetaBuff;
+        size32_t layoutMetaSize;
+        if(helper.getIndexLayout(layoutMetaSize, layoutMetaBuff))
+        {
+            metadata->setPropBin("_record_layout", layoutMetaSize, layoutMetaBuff);
+            rtlFree(layoutMetaBuff);
+        }
+    }
+
+public:
+    CRoxieServerIndexWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerInternalSinkActivity(_factory, _probeManager, 0), helper(static_cast<IHThorIndexWriteArg &>(basehelper))
+    {
+        overwrite = ((helper.getFlags() & TIWoverwrite) != 0);
+        isVariable = helper.queryDiskRecordSize()->isVariableSize();
+        reccount = 0;
+    }
+
+    ~CRoxieServerIndexWriteActivity()
+    {
+    }
+
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    {
+        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        resolve();
+    }
+
+    virtual void onExecute()
+    {
+        size32_t maxDiskRecordSize = isVariable ? 4096 : helper.queryDiskRecordSize()->getFixedSize();
+        char *rowBuffer = (char *) alloca(maxDiskRecordSize);//allocate from stack
+        memset(rowBuffer, 0, maxDiskRecordSize);
+        unsigned __int64 fileSize = 0;
+        fileCrc = -1;
+        if (helper.getDatasetName())
+        {
+            Owned<const IResolvedFile> dsFileInfo = resolveLFN(helper.getFileName(), false);
+            if (dsFileInfo)
+            {
+                fileSize = dsFileInfo->getFileSize();
+            }
+        }
+
+        {
+            Owned<IFileIO> io;
+            try
+            {
+                io.setown(writer->queryFile()->open(IFOcreate));
+            }
+            catch(IException * e)
+            {
+                e->Release();
+                clearKeyStoreCache(false);
+                io.setown(writer->queryFile()->open(IFOcreate));
+            }
+            if(!io)
+                throw MakeStringException(errno, "Failed to create file %s for writing", filename.str());
+
+            Owned<IFileIOStream> out = createIOStream(io);
+            unsigned flags = COL_PREFIX | HTREE_FULLSORT_KEY;
+            if (helper.getFlags() & TIWrowcompress)
+                flags |= HTREE_COMPRESSED_KEY|HTREE_QUICK_COMPRESSED_KEY;
+            else if (!(helper.getFlags() & TIWnolzwcompress))
+                flags |= HTREE_COMPRESSED_KEY;
+            if (isVariable)
+                flags |= HTREE_VARSIZE;
+            Owned<IPropertyTree> metadata;
+            buildUserMetadata(metadata);
+            buildLayoutMetadata(metadata);
+            unsigned nodeSize = metadata ? metadata->getPropInt("_nodeSize", NODESIZE) : NODESIZE;
+            Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, maxDiskRecordSize, fileSize, nodeSize, helper.getKeyedSize(), 0);
+            class BcWrapper : implements IBlobCreator
+            {
+                IKeyBuilder *builder;
+            public:
+                BcWrapper(IKeyBuilder *_builder) : builder(_builder) {}
+                virtual unsigned __int64 createBlob(size32_t size, const void * ptr)
+                {
+                    return builder->createBlob(size, (const char *) ptr);
+                }
+            } bc(builder);
+
+            // Loop thru the results
+            loop
+            {
+                OwnedConstRoxieRow nextrec(input->nextInGroup());
+                if (!nextrec)
+                {
+                    nextrec.setown(input->nextInGroup());
+                    if (!nextrec)
+                        break;
+                }
+                try
+                {
+                    unsigned __int64 fpos;
+                    RtlStaticRowBuilder rowBuilder(rowBuffer, maxDiskRecordSize);
+                    size32_t thisSize = helper.transform(rowBuilder, nextrec, &bc, fpos);
+                    builder->processKeyData(rowBuffer, fpos, thisSize);
+                }
+                catch(IException * e)
+                {
+                    throw makeWrappedException(e);
+                }
+                reccount++;
+            }
+            if(metadata)
+                builder->finish(metadata,&fileCrc);
+            else
+                builder->finish(&fileCrc);
+        }
+    }
+
+    virtual void stop(bool aborting)
+    {
+        if (writer)
+        {
+            if (!aborting)
+                updateWorkUnitResult();
+            writer->finish(!aborting, this);
+            writer.clear();
+        }
+        CRoxieServerActivity::stop(aborting);
+    }
+
+    virtual void reset()
+    {
+        CRoxieServerActivity::reset();
+        writer.clear();
+    }
+
+    //interface IRoxiePublishCallback
+
+    virtual void setFileProperties(IFileDescriptor *desc) const
+    {
+        IPropertyTree &partProps = desc->queryPart(0)->queryProperties(); //properties of the first file part.
+        IPropertyTree &fileProps = desc->queryProperties(); // properties of the logical file
+        // Now publish to name services
+        StringBuffer dir,base;
+        offset_t indexFileSize = writer->queryFile()->size();
+        if(clusterHandler)
+            clusterHandler->splitPhysicalFilename(dir, base);
+        else
+            splitFilename(filename.str(), &dir, &dir, &base, &base);
+
+        desc->setDefaultDir(dir.str());
+
+        //properties of the first file part.
+        Owned<IPropertyTree> attrs;
+        if(clusterHandler)
+            attrs.setown(createPTree("Part"));  // clusterHandler is going to set attributes
+        else
+        {
+            // add cluster
+            StringBuffer mygroupname;
+            desc->setNumParts(1);
+            desc->setPartMask(base.str());
+            attrs.set(&desc->queryPart(0)->queryProperties());
+        }
+        attrs->setPropInt64("@size", indexFileSize);
+
+        CDateTime createTime, modifiedTime, accessedTime;
+        writer->queryFile()->getTime(&createTime, &modifiedTime, &accessedTime);
+        // round file time down to nearest sec. Nanosec accurancy is not preserved elsewhere and can lead to mismatch later.
+        unsigned hour, min, sec, nanosec;
+        modifiedTime.getTime(hour, min, sec, nanosec);
+        modifiedTime.setTime(hour, min, sec, 0);
+        StringBuffer timestr;
+        modifiedTime.getString(timestr);
+        if(timestr.length())
+            attrs->setProp("@modified", timestr.str());
+
+        if(clusterHandler)
+            clusterHandler->setDescriptorParts(desc, base.str(), attrs);
+
+        // properties of the logical file
+        IPropertyTree & properties = desc->queryProperties();
+        properties.setProp("@kind", "key");
+        properties.setPropInt64("@size", indexFileSize);
+        properties.setPropInt64("@recordCount", reccount);
+        SCMStringBuffer info;
+        WorkunitUpdate workUnit = ctx->updateWorkUnit();
+        properties.setProp("@owner", workUnit->getUser(info).str());
+        info.clear();
+        properties.setProp("@workunit", workUnit->getWuid(info).str());
+        info.clear();
+        properties.setProp("@job", workUnit->getJobName(info).str());
+        char const * rececl = helper.queryRecordECL();
+        if(rececl && *rececl)
+            properties.setProp("ECL", rececl);
+
+        setExpiryTime(properties, helper.getExpiryDays());
+        if (helper.getFlags() & TIWupdate)
+        {
+            unsigned eclCRC;
+            unsigned __int64 totalCRC;
+            helper.getUpdateCRCs(eclCRC, totalCRC);
+            properties.setPropInt("@eclCRC", eclCRC);
+            properties.setPropInt64("@totalCRC", totalCRC);
+        }
+
+        properties.setPropInt("@fileCrc", fileCrc);
+        properties.setPropInt("@formatCrc", helper.getFormatCrc());
+        void * layoutMetaBuff;
+        size32_t layoutMetaSize;
+        if(helper.getIndexLayout(layoutMetaSize, layoutMetaBuff))
+        {
+            properties.setPropBin("_record_layout", layoutMetaSize, layoutMetaBuff);
+            rtlFree(layoutMetaBuff);
+        }
+    }
+
+    IUserDescriptor *queryUserDescriptor() const
+    {
+        IConstWorkUnit *workUnit = ctx->queryWorkUnit();
+        if (workUnit)
+            return workUnit->queryUserDescriptor();
+        else
+            return NULL;
+    }
+};
+
+//=================================================================================
+
+class CRoxieServerIndexWriteActivityFactory : public CRoxieServerMultiOutputFactory
+{
+public:
+    CRoxieServerIndexWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
+        : CRoxieServerMultiOutputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    {
+        setNumOutputs(0);
+    }
+
+    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    {
+        return new CRoxieServerIndexWriteActivity(this, _probeManager);
+    }
+
+    virtual bool isSink() const
+    {
+        return true;
+    }
+
+};
+
+IRoxieServerActivityFactory *createRoxieServerIndexWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
+{
+    return new CRoxieServerIndexWriteActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _isRoot);
 }
 
 //=================================================================================
