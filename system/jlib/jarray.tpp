@@ -85,7 +85,7 @@ aindex_t BaseArrayOf<MEMBER, PARAM>::bSearch(const MEMBER & key, CompareFunc cf)
 }
 
 template <class MEMBER, class PARAM>
-MEMBER *BaseArrayOf<MEMBER, PARAM>::getArray(aindex_t pos)
+MEMBER *BaseArrayOf<MEMBER, PARAM>::getArray(aindex_t pos) const
 {
    MEMBER * head= (MEMBER *)SELF::_head;
    assertex(pos <= SELF::used);

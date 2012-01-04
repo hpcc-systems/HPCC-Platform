@@ -114,7 +114,6 @@ NlpMatchPath::NlpMatchPath(const UnsignedArray & _ids, const UnsignedArray & _in
         ids.append(_ids.item(idx));
         indices.append(_indices.item(idx));
     }
-    init();
 }
 
 
@@ -130,82 +129,11 @@ NlpMatchPath::NlpMatchPath(MemoryBuffer & in)
         ids.append(id);
         indices.append(index);
     }
-    init();
 }
 
 NlpMatchPath::~NlpMatchPath()
 {
-    delete [] searchIndices;
 }
-
-void NlpMatchPath::init()
-{
-    maxDepth = ids.ordinality();
-    searchIndices = new unsigned[maxDepth];
-}
-
-
-IMatchWalker * NlpMatchPath::findInChildren(IMatchWalker * top, regexid_t id)
-{
-    for (unsigned i = 0;; i++)
-    {
-        Owned<IMatchWalker> child = top->getChild(i);
-        if (!child)
-            return NULL;
-        IMatchWalker * ret = find(child, id);
-        if (ret)
-            return ret;
-    }
-    return NULL;
-}
-
-IMatchWalker * NlpMatchPath::find(IMatchWalker * top, regexid_t id)
-{
-    unsigned savedSearchDepth = maxSearchDepth;
-    if (top->queryID() == id)
-    {
-        unsigned thisLevelIndex = searchIndices[pathIndex];
-        if ((thisLevelIndex == UNKNOWN_INSTANCE) || (thisLevelIndex == 1))
-        {
-            pathIndex++;
-            if (pathIndex == ids.ordinality())
-            {
-                maxSearchDepth = pathIndex;
-                return LINK(top);
-            }
-
-            if (thisLevelIndex == 1)
-                maxSearchDepth = pathIndex;
-            return findInChildren(top, ids.item(pathIndex));
-        }
-        else
-            searchIndices[pathIndex]--;
-    }
-    else
-    {
-        Owned<IMatchWalker> ret = findInChildren(top, id);
-        //return if matched another level - may have failed to match, or matched completely
-        if (savedSearchDepth != maxSearchDepth)
-            return ret.getClear();
-    }
-    return NULL;
-}
-
-IMatchedElement * NlpMatchPath::getMatch(IMatchWalker * top)
-{
-    CriticalBlock procedure(cs);
-
-    //MORE: We could allocate searchIndices on the stack and pass as a parameter
-    memcpy(searchIndices, indices.getArray(), sizeof(*searchIndices)*maxDepth);
-    pathIndex = 0;
-    maxSearchDepth = 0;
-    Owned<IMatchWalker> state = find(top, ids.item(0));
-    if (!state)
-        return NULL;
-    return new MatchWalker2MatchedElement(state);
-}
-
-
 
 void NlpMatchPath::serialize(MemoryBuffer & out) const
 {
@@ -261,20 +189,6 @@ CMatchedResults::CMatchedResults(CMatchedResultInfo * _def)
 CMatchedResults::~CMatchedResults()
 {
     kill();
-}
-
-//MORE: Implement one that works directly on grammar symbols
-void CMatchedResults::extractResults(IMatchWalker * top, const byte * _in, const byte * _rootResult)
-{
-    in = _in;
-    rootResult = _rootResult;
-    notMatched.ptr = in;
-    ForEachItemIn(idx, def->matchResults)
-    {
-        ::Release(matched[idx]);
-        matched[idx] = def->matchResults.item(idx).getMatch(top);
-        if (!matched[idx]) matched[idx] = LINK(&notMatched);
-    }
 }
 
 bool CMatchedResults::getMatched(unsigned idx)              

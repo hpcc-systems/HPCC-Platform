@@ -70,6 +70,8 @@ public:
     inline _ATOM queryName()                              { return name; }
     inline regexid_t queryID()                            { return id; }
 
+    inline void reset(_ATOM _name, regexid_t _id) { next = NULL; firstChild = NULL; name = _name; id = _id; }
+
 public:
     const byte * start;
     const byte * end;

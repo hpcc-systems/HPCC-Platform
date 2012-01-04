@@ -59,6 +59,13 @@ public:
 
 #define UNKNOWN_INSTANCE    ((unsigned)-1)
 
+class NlpMatchSearchInstance
+{
+public:
+    unsigned lastExactMatchDepth;
+    unsigned nextIndex;
+};
+
 class THORHELPER_API NlpMatchPath : public CInterface
 {
 public:
@@ -68,21 +75,25 @@ public:
 
     void serialize(MemoryBuffer & buffer) const;
 
-    IMatchedElement * getMatch(IMatchWalker * top);
+    inline unsigned numItems() const { return ids.ordinality(); }
+    inline unsigned getId(unsigned i) const { return ids.item(i); }
+    inline unsigned getIndex(unsigned i) const { return indices.item(i); }
+    inline bool matchAny(unsigned i) const { return indices.item(i) == UNKNOWN_INSTANCE; }
+
+    inline unsigned nextExactMatchIndex(unsigned from) const
+    {
+        for (unsigned i=from; i < indices.ordinality(); i++)
+        {
+            unsigned cur = indices.item(i);
+            if (cur != UNKNOWN_INSTANCE)
+                return cur;
+        }
+        return 0;
+    }
 
 protected:
-    void init();
-    IMatchWalker * find(IMatchWalker * top, regexid_t id);
-    IMatchWalker * findInChildren(IMatchWalker * top, regexid_t id);
-    
-protected:
-    unsigned maxDepth;
-    unsigned pathIndex;
-    unsigned maxSearchDepth;
-    unsigned * searchIndices;
     UnsignedArray ids;
     UnsignedArray indices;
-    CriticalSection cs;
 };
 
 
@@ -156,7 +167,6 @@ public:
     ~CMatchedResults();
     IMPLEMENT_IINTERFACE
     
-    void extractResults(IMatchWalker * top, const byte * _in, const byte * _rootResult = NULL);
     void kill();
 
     //IMatchedResults

@@ -45,65 +45,63 @@ void TomitaStateInformation::set(const TomitaStateInformation & other)
 
 //---------------------------------------------------------------------------
 
-GrammarSymbol * TomitaMatchPath::findInChildren(GrammarSymbol * top, regexid_t id)
+GrammarSymbol * TomitaMatchSearchInstance::findInChildren(GrammarSymbol * top, const TomitaMatchPath & path, unsigned depth)
 {
+    unsigned prevExactMatchDepth = lastExactMatchDepth;
     for (unsigned i = 0;; i++)
     {
         GrammarSymbol * child = top->queryChild(i);
         if (!child)
             return NULL;
-        GrammarSymbol * ret = find(child, id);
-        if (ret)
+        GrammarSymbol * ret = find(child, path, depth);
+        if (prevExactMatchDepth != lastExactMatchDepth)
             return ret;
     }
     return NULL;
 }
 
-GrammarSymbol * TomitaMatchPath::find(GrammarSymbol * top, regexid_t id)
+GrammarSymbol * TomitaMatchSearchInstance::find(GrammarSymbol * top, const TomitaMatchPath & path, unsigned depth)
 {
-    unsigned savedSearchDepth = maxSearchDepth;
     if (top->isPacked())
         top = top->queryPacked(choices->getInstance(top));
 
+    regexid_t id = path.getId(depth);
     if (top->getId() == id)
     {
-        unsigned thisLevelIndex = searchIndices[pathIndex];
-        if ((thisLevelIndex == UNKNOWN_INSTANCE) || (thisLevelIndex == 1))
+        bool matchAny = path.matchAny(depth);
+        if (matchAny || (nextIndex == 1))
         {
-            pathIndex++;
-            if (pathIndex == ids.ordinality())
+            if (depth+1 == path.numItems())
             {
-                maxSearchDepth = pathIndex;
+                lastExactMatchDepth = depth+1;
                 return top;
             }
 
-            if (thisLevelIndex == 1)
-                maxSearchDepth = pathIndex;
-            return findInChildren(top, ids.item(pathIndex));
+            if (!matchAny)
+            {
+                lastExactMatchDepth = depth+1;
+                nextIndex = path.nextExactMatchIndex(depth+1);
+            }
+
+            return findInChildren(top, path, depth+1);
         }
         else
-            searchIndices[pathIndex]--;
+        {
+            nextIndex--;
+            return NULL;
+        }
     }
     else
-    {
-        GrammarSymbol * ret = findInChildren(top, id);
-        //return if matched another level - may have failed to match, or matched completely
-        if (savedSearchDepth != maxSearchDepth)
-            return ret;
-    }
-    return NULL;
+        return findInChildren(top, path, depth);
 }
 
-IMatchedElement * TomitaMatchPath::getMatch(GrammarSymbol * top, PackedSymbolChoice & choice)
+IMatchedElement * TomitaMatchPath::getMatch(GrammarSymbol * top, PackedSymbolChoice & choice) const
 {
-    CriticalBlock procedure(cs);
-
-    //MORE: We could allocate searchIndices on the stack and pass as a parameter
-    memcpy(searchIndices, indices.getArray(), sizeof(*searchIndices)*maxDepth);
-    pathIndex = 0;
-    maxSearchDepth = 0;
-    choices = &choice;
-    GrammarSymbol * state = find(top, ids.item(0));
+    TomitaMatchSearchInstance search;
+    search.lastExactMatchDepth = 0;
+    search.nextIndex = nextExactMatchIndex(0);
+    search.choices = &choice;
+    GrammarSymbol * state = search.find(top, *this, 0);
     if (!state)
         return NULL;
     return LINK(state);
