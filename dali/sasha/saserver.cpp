@@ -51,7 +51,6 @@ extern void LDStest();
 
 Owned<IPropertyTree> serverConfig;
 static IArrayOf<ISashaServer> servers;
-static ILogMsgHandler * fileMsgHandler=NULL;
 static CSDSServerStatus * SashaServerStatus=NULL;
 static atomic_t StopSuspendCount = ATOMIC_INIT(0);
 static bool stopped = false;
@@ -61,15 +60,6 @@ const char *sashaProgramName;
 
 CSuspendAutoStop::CSuspendAutoStop() { atomic_inc(&StopSuspendCount); }
 CSuspendAutoStop::~CSuspendAutoStop() { atomic_dec(&StopSuspendCount); }
-
-void setMsgLevel(unsigned level)
-{
-    if (!fileMsgHandler)
-        return;
-    ILogMsgFilter *filter = getSwitchLogMsgFilterOwn(getComponentLogMsgFilter(3), getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, level, true), getDefaultLogMsgFilter());
-    queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
-    queryLogMsgManager()->changeMonitorFilterOwn(fileMsgHandler, filter);
-}
 
 static void AddServers()
 {

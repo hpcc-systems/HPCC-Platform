@@ -37,7 +37,5 @@ interface IDFUengine: extends IInterface
 IDFUengine *createDFUengine();
 void stopDFUserver(const char *qname);
 
-extern ILogMsgHandler * fileMsgHandler;
-
 #endif
 

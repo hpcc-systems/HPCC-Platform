@@ -48,13 +48,16 @@ int main(int argc, char* argv[])
     InitModuleObjects();
     EnableSEHtoExceptionMapping();
     setNodeCaching(true);
-    StringBuffer logName("dfuxref");
-    StringBuffer aliasLogName(logName);
-    aliasLogName.append(".log");
 
-    ILogMsgHandler *fileMsgHandler = getRollingFileLogMsgHandler(logName.str(), ".log", MSGFIELD_STANDARD, false, true, NULL, aliasLogName.str());
-    queryLogMsgManager()->addMonitorOwn(fileMsgHandler, getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail));
+    {
+        Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator("dfuxref");
+        lf->setAppend(false);
+        lf->setMaxDetail(TopDetail);
+        lf->setMsgFields(MSGFIELD_STANDARD);
+        lf->beginLogging();
+    }
     queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_prefix);
+
     StringBuffer cmdline;
     unsigned i;
     for (i=0;i<(unsigned)argc;i++)
