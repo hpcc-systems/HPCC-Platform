@@ -223,10 +223,10 @@ const char *EclObjectParameter::queryTypeName()
 
 StringBuffer &EclObjectParameter::getDescription(StringBuffer &s)
 {
-    return s.append(queryTypeName()).append(' ');
+    s.append(queryTypeName()).append(' ');
     if (streq(value.sget(), "stdin"))
         s.append("from ");
-    s.append(value.get());
+    return s.append(value.get());
 }
 
 eclCmdOptionMatchIndicator EclCmdCommon::matchCommandLineOption(ArgvIterator &iter, bool finalAttempt)
