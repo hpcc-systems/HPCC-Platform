@@ -131,7 +131,11 @@ public:
     virtual void newAttribute(const char *name, const char *value)
     {
         if (datasetLevel && !streq(name, "@xmlns"))
-            buffer.append(' ').append(name+1).append("=\"").append(value).append('\"');
+        {
+            buffer.append(' ').append(name+1).append("=\"");
+            encodeUtf8XML(value, buffer);
+            buffer.append('\"');
+        }
     }
     virtual void beginNodeContent(const char *tag)
     {
@@ -147,7 +151,7 @@ public:
                 if (binary)
                     JBASE64_Encode(value, length, buffer);
                 else
-                    buffer.append((const char *)value);
+                    encodeUtf8XML((const char *)value, buffer);
             }
             buffer.append("</").append(tag).append('>');
             if (streq("Dataset", tag) || streq("Exception", tag))
