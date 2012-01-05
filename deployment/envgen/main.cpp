@@ -42,6 +42,11 @@ void usage()
   puts("          Allowed formats are ");
   puts("          X.X.X.X;");
   puts("          X.X.X.X-XXX;");
+  puts("   -supportnodes <number of support nodes>: Number of nodes to be used");
+  puts("           for non-Thor and non-Roxie components. If not specified or ");
+  puts("           specified as 0, thor and roxie nodes may overlap with support");
+  puts("           nodes. If an invalid value is provided, support nodes are ");
+  puts("           treated to be 0");
   puts("   -roxienodes <number of roxie nodes>: Number of nodes to be generated ");
   puts("          for roxie. If not specified or specified as 0, no roxie nodes");
   puts("          are generated");
@@ -70,7 +75,7 @@ int main(int argc, char** argv)
   const char* out_envname = NULL;
   const char* in_ipfilename;
   StringBuffer ipAddrs;
-  int roxieNodes=0, thorNodes=0, slavesPerNode=1;
+  int roxieNodes=0, thorNodes=0, slavesPerNode=1, supportNodes=0;
   bool roxieOnDemand = true;
   MapStringTo<StringBuffer> dirMap;
 
@@ -90,6 +95,11 @@ int main(int argc, char** argv)
     {
       i++;
       out_envname = argv[i++];
+    }
+    else if (stricmp(argv[i], "-supportnodes") == 0)
+    {
+      i++;
+      supportNodes = atoi(argv[i++]);
     }
     else if (stricmp(argv[i], "-roxienodes") == 0)
     {
@@ -173,7 +183,7 @@ int main(int argc, char** argv)
     const char* pServiceName = "WsDeploy_wsdeploy_esp";
     Owned<IPropertyTree> pCfg = createPTreeFromXMLFile(ENVGEN_PATH_TO_ESP_CONFIG);
 
-    optionsXml.appendf("<XmlArgs roxieNodes=\"%d\" thorNodes=\"%d\" slavesPerNode=\"%d\" roxieOnDemand=\"%s\" ipList=\"%s\"/>", roxieNodes,
+    optionsXml.appendf("<XmlArgs supportNodes=\"%d\" roxieNodes=\"%d\" thorNodes=\"%d\" slavesPerNode=\"%d\" roxieOnDemand=\"%s\" ipList=\"%s\"/>", supportNodes, roxieNodes,
       thorNodes, slavesPerNode, roxieOnDemand?"true":"false", ipAddrs.str());
 
     buildEnvFromWizard(optionsXml, pServiceName, pCfg, envXml, &dirMap);
