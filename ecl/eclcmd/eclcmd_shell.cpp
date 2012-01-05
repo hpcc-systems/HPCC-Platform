@@ -192,8 +192,11 @@ void EclCMDShell::usage()
     fprintf(stdout,"\nUsage:\n"
         "    ecl [--version] <command> [<args>]\n\n"
            "Commonly used commands:\n"
-           "   deploy    create an HPCC workunit from a local archive or shared object\n"
-           "   publish   add an HPCC workunit to a query set\n"
+           "   deploy      create an HPCC workunit from a local ecl file, archive,\n"
+           "               or shared object\n"
+           "   publish     add an HPCC workunit to a query set\n"
+           "   activate    activate a published query\n"
+           "   deactivate  deactivate the given query alias name\n"
            "\nRun 'ecl help <command>' for more information on a specific command\n\n"
     );
 }
