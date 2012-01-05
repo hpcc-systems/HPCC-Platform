@@ -1038,15 +1038,19 @@ int main(int argc, char *_argv[])
     Owned<IProperties> prop = createProperties("dafuse.ini",true);
     if (!parseParams(argc,argv,prop))
         return 1;
-    StringBuffer logName;
-    StringBuffer aliasLogName;
-    if (!prop->getProp("LOGFILE", logName)) {
-        logName.append("dafuse");
-        aliasLogName.append("dafuse.log");
+
+    {
+        StringBuffer logName;
+        if (!prop->getProp("LOGFILE", logName))
+            logName.set(dafuse);
+
+        Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(logName.str());
+        lf->setMsgFields(MSGFIELD_STANDARD);
+        lf->setAppend(false);
+        ls->setMaxDetail(TopDetail);
+        lf->beginLogging();
     }
 
-    ILogMsgHandler *fileMsgHandler = getRollingFileLogMsgHandler(logName.str(), ".log", MSGFIELD_STANDARD, false, true, NULL, aliasLogName.length()?aliasLogName.str():NULL);
-    queryLogMsgManager()->addMonitorOwn(fileMsgHandler, getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail));
     StringBuffer daliServer;
     if (!prop->getProp("DALISERVER", daliServer)) {
         ERRLOG("DALISERVER setting not found in dafuse.ini");

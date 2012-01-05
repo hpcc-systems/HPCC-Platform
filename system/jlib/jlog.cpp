@@ -891,7 +891,7 @@ void FileLogMsgHandlerXML::addToPTree(IPropertyTree * tree) const
     tree->addPropTree("handler", handlerTree);
 }
 
-// FileLogMsgHandler
+// RollingFileLogMsgHandler
 
 RollingFileLogMsgHandler::RollingFileLogMsgHandler(const char * _filebase, const char * _fileextn, unsigned _fields, bool _append, bool _flushes, const char *initialName, const char *_alias, bool daily) : messageFields(_fields), filebase(_filebase), fileextn(_fileextn), append(_append), flushes(_flushes), handle(0), alias(_alias)
 {
@@ -2690,9 +2690,9 @@ public:
     void setLocal(const bool _local)               { local = _local; }
 
     //query methods (not valid until logging started)
-    const char * queryLogDir()          { return logDir.str(); }
-    const char * queryLogFileSpec()     { return expandedLogSpec.str(); }
-    const char * queryAliasFileSpec()   { return aliasFileSpec.str(); }
+    const char * queryLogDir() const        { return logDir.str(); }
+    const char * queryLogFileSpec() const   { return expandedLogSpec.str(); }
+    const char * queryAliasFileSpec() const { return aliasFileSpec.str(); }
 
     ILogMsgHandler * beginLogging()
     {

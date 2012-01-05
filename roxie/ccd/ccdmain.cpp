@@ -127,7 +127,6 @@ unsigned defaultFullKeyedJoinPreload = 0;
 unsigned defaultKeyedJoinPreload = 0;
 unsigned dafilesrvLookupTimeout = 10000;
 
-ILogMsgHandler * logFileHandler;
 unsigned logQueueLen;
 unsigned logQueueDrop;
 bool useLogQueue;

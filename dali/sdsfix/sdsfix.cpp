@@ -5869,15 +5869,15 @@ int main(int argc, char* argv[])
     }
     bool done = false;
     try {
-
-        //testSetPath();
-        StringBuffer logName("sdsfix");
-        if (myport)
-            logName.append('_').append(myport);
-        StringBuffer aliasLogName(logName);
-        aliasLogName.append(".log");
-        ILogMsgHandler *fileMsgHandler = getRollingFileLogMsgHandler(logName.str(), ".log", MSGFIELD_STANDARD, false, true, NULL, aliasLogName.str());
-        queryLogMsgManager()->addMonitorOwn(fileMsgHandler, getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail));
+        {
+            StringBuffer logName("sdsfix");
+            if (myport)
+                logName.append('_').append(myport);
+            Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator("sdsfix");
+            lf->setName(logName.str());//override default filename
+            lf->setMaxDetail(TopDetail);
+            lf->beginLogging();
+        }
         queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_prefix);
 
         if ((argc==2) && (stricmp(argv[1],"coalesce")==0))

@@ -2127,7 +2127,7 @@ int main(int argc, char* argv[])
         usage(argv[0]);
         return -1;
     }
-    Owned<ILogMsgHandler> fileMsgHandler;
+
     try {
         StringBuffer logname;
         StringBuffer aliasname;

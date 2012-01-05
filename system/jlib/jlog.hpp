@@ -1005,7 +1005,7 @@ extern jlib_decl const IContextLogger &queryDummyContextLogger();
 
 interface IComponentLogFileCreator : extends IInterface
 {
-    //set methods
+    //IComponentLogFileCreator set methods
     virtual void setExtension(const char * _ext) = 0;       //log filename extension (eg ".log")
     virtual void setPrefix(const char * _prefix) = 0;       //filename prefix (eg "master")
     virtual void setName(const char * _name) = 0;           //log filename, overrides default of component name (without extension)
@@ -1028,9 +1028,9 @@ interface IComponentLogFileCreator : extends IInterface
     virtual void setLocal(const bool _local) = 0;                   //local logging
 
     //query methods (not valid until logging started)
-    virtual const char * queryLogDir() = 0;         //Location of component logfile
-    virtual const char * queryLogFileSpec() = 0;    //Full log filespec
-    virtual const char * queryAliasFileSpec() = 0;  //Full alias filespec, if created
+    virtual const char * queryLogDir() const = 0;           //Location of component logfile
+    virtual const char * queryLogFileSpec() const = 0;      //Full log filespec
+    virtual const char * queryAliasFileSpec() const = 0;    //Full alias filespec, if created
 
     virtual ILogMsgHandler * beginLogging() = 0;    //begin logging to specified file(s)
 };
