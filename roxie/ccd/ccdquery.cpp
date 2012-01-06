@@ -287,6 +287,8 @@ protected:
         case TAKxmlwrite:
         case TAKmemoryspillwrite:
             return createRoxieServerDiskWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, isRootAction(node));
+        case TAKindexwrite:
+            return createRoxieServerIndexWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, isRootAction(node));
         case TAKenth:
             return createRoxieServerEnthActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKfetch:
@@ -540,7 +542,6 @@ protected:
 
         // These are not required in Roxie for the time being - code generator should trap them
         case TAKdistribution:
-        case TAKindexwrite:
         case TAKchilddataset:
 
         default:

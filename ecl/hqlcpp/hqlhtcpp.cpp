@@ -9547,9 +9547,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
     IHqlExpression * record = dataset->queryRecord();
     IHqlDataset * baseTable = dataset->queryDataset()->queryRootTable();
 
-    if (targetRoxie() && options.checkRoxieRestrictions)
-        throwError1(HQLERR_NotSupportInRoxie, "BUILDINDEX");
-
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKindexwrite, expr, "IndexWrite");
     buildActivityFramework(instance, isRoot);
