@@ -1865,6 +1865,8 @@ IJobQueue *createJobQueue(const char *name)
 extern bool WORKUNIT_API runWorkUnit(const char *wuid, const char *cluster)
 {
     Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster);
+    if (!clusterInfo.get())
+        return false;
     SCMStringBuffer agentQueue;
     clusterInfo->getAgentQueue(agentQueue);
     if (!agentQueue.length())
