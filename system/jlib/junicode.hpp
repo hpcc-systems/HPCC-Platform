@@ -78,5 +78,16 @@ extern jlib_decl UTF32 readUtf8Character(unsigned len, const byte * & cur);
 extern jlib_decl size32_t readUtf8Size(const void * _data);
 extern jlib_decl UTF32 readUtf8Char(const void * _data);
 
+typedef MemoryBuffer & (*utfReplacementFunc)(MemoryBuffer & target, UTF32 match, UtfReader::UtfFormat type, const void * source, int len, bool start);
+extern jlib_decl bool replaceUtf(utfReplacementFunc func, MemoryBuffer & target, UtfReader::UtfFormat type, unsigned sourceLength, const void * source);
+extern jlib_decl bool appendUtfXmlName(MemoryBuffer & target, UtfReader::UtfFormat type, unsigned sourceLength, const void * source);
+
+inline StringBuffer &appendUtf8XmlName(StringBuffer & target, unsigned sourceLength, const void * source)
+{
+    MemoryBuffer mb;
+    appendUtfXmlName(mb, UtfReader::Utf8, sourceLength, source);
+    return target.append(mb.length(), mb.toByteArray());
+}
+
 
 #endif
