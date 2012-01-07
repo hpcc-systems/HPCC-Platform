@@ -70,6 +70,8 @@
             <style type="text/css">
               /* custom styles for this example */
               .yui-skin-sam .yui-dt-liner { white-space:nowrap; }
+
+              .not_in_env  { color: #FF0000;}
             </style>
 
             <style type="text/css">
@@ -498,6 +500,7 @@
               <xsl:otherwise>
                 createRowArraysForComp('<xsl:value-of select="$Component"/>', rows);
                 var cN = '<xsl:value-of select="@name"/>';
+                var notInEnv = '<xsl:value-of select="@_notInEnv"/>';
                 var aS;
                 var tN;
                 <xsl:for-each select="@*">
@@ -525,6 +528,8 @@
                           i.value_onChange = aS.onChange;
                           i.value_onChangeMsg = aS.onChangeMsg;
                           i.params = "pcType=<xsl:value-of select="$Component"/>::pcName=" + cN;
+                          if (isNotInEnv(notInEnv, "<xsl:value-of select="name()"/>"))
+                            i._not_in_env = 1;
                           rows[tN][rows[tN].length] = i;
                         }
                       }
