@@ -121,7 +121,7 @@ public:
     aindex_t bAdd(MEMBER & newItem, CompareFunc, bool & isNew);
     aindex_t bSearch(const MEMBER & key, CompareFunc) const;
     aindex_t find(PARAM) const;
-    MEMBER *getArray(aindex_t = 0);
+    MEMBER *getArray(aindex_t = 0) const;
     void sort(CompareFunc);
     void swap(aindex_t pos1, aindex_t pos2);
 };
