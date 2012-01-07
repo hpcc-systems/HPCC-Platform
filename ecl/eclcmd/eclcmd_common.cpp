@@ -117,6 +117,7 @@ bool EclObjectParameter::isPEContent()
     unsigned long PESectStart = *((unsigned long *)(buffer + PE_OFFSET_LOCATION_IN_DOS_SECTION));
     if (mb.length()<PESectStart+3)
         return false;
+
     if (memcmp("PE", buffer + PESectStart, 2)!=0)
         return false;
     return true;
@@ -143,8 +144,10 @@ eclObjParameterType EclObjectParameter::finalizeContentType()
     else if (accept & eclObjSourceOrArchive)
     {
         ensureUtf8Content();
+        size32_t len = mb.length();
         mb.append((byte)0);
         type = isArchiveQuery(mb.toByteArray()) ? eclObjArchive : eclObjSource;
+        mb.setLength(len);
     }
     else
         mb.setLength(0);
@@ -208,19 +211,22 @@ const char *EclObjectParameter::queryTypeName()
     case eclObjWuid:
         return "WUID";
     case eclObjSource:
-        return "ECL File";
+        return "ECL Text";
     case eclObjArchive:
         return "ECL Archive";
     case eclObjSharedObject:
         return "ECL Shared Object";
     default:
-        return "Unknown";
+        return "Unknown Type";
     }
 }
 
 StringBuffer &EclObjectParameter::getDescription(StringBuffer &s)
 {
-    return s.append(queryTypeName()).append(' ').append(value.get());
+    s.append(queryTypeName()).append(' ');
+    if (streq(value.sget(), "stdin"))
+        s.append("from ");
+    return s.append(value.get());
 }
 
 eclCmdOptionMatchIndicator EclCmdCommon::matchCommandLineOption(ArgvIterator &iter, bool finalAttempt)
@@ -239,6 +245,9 @@ eclCmdOptionMatchIndicator EclCmdCommon::matchCommandLineOption(ArgvIterator &it
         return EclCmdOptionMatch;
     if (iter.matchOption(optPassword, ECLOPT_PASSWORD))
         return EclCmdOptionMatch;
+    if (iter.matchFlag(optVerbose, ECLOPT_VERBOSE) || iter.matchFlag(optVerbose, ECLOPT_VERBOSE_S))
+        return EclCmdOptionMatch;
+
     StringAttr tempArg;
     if (iter.matchOption(tempArg, "-brk"))
     {
@@ -263,4 +272,36 @@ bool EclCmdCommon::finalizeOptions(IProperties *globals)
     extractEclCmdOption(optUsername, globals, ECLOPT_USERNAME_ENV, ECLOPT_USERNAME_INI, NULL, NULL);
     extractEclCmdOption(optPassword, globals, ECLOPT_PASSWORD_ENV, ECLOPT_PASSWORD_INI, NULL, NULL);
     return true;
+}
+
+eclCmdOptionMatchIndicator EclCmdWithEclTarget::matchCommandLineOption(ArgvIterator &iter, bool finalAttempt)
+{
+    const char *arg = iter.query();
+    if (streq(arg, "-"))
+    {
+        optObj.set("stdin");
+        return EclCmdOptionMatch;
+    }
+    if (*arg!='-')
+    {
+        if (optObj.value.length())
+        {
+            fprintf(stderr, "\nmultiple targets (%s and %s) not currently supported\n", optObj.value.sget(), arg);
+            return EclCmdOptionCompletion;
+        }
+        optObj.set(arg);
+        return EclCmdOptionMatch;
+    }
+    if (iter.matchPathFlag(optLibPath, ECLOPT_LIB_PATH_S))
+        return EclCmdOptionMatch;
+    if (iter.matchPathFlag(optImpPath, ECLOPT_IMP_PATH_S))
+        return EclCmdOptionMatch;
+    if (iter.matchOption(optManifest, ECLOPT_MANIFEST) || iter.matchOption(optManifest, ECLOPT_MANIFEST_DASH))
+        return EclCmdOptionMatch;
+    return EclCmdCommon::matchCommandLineOption(iter, finalAttempt);
+}
+
+bool EclCmdWithEclTarget::finalizeOptions(IProperties *globals)
+{
+    return EclCmdCommon::finalizeOptions(globals);
 }
