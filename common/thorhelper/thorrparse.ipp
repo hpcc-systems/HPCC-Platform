@@ -30,17 +30,20 @@
 //#define TRACE_REGEX
 #endif
 
+
+class RegexMatchSearchInstance : public NlpMatchSearchInstance
+{
+public:
+    MatchState * find(MatchState * top, const NlpMatchPath & path, unsigned depth);
+};
+
 class THORHELPER_API RegexMatchPath : public NlpMatchPath
 {
 public:
     RegexMatchPath(MemoryBuffer & in) : NlpMatchPath(in) {}
     RegexMatchPath(const UnsignedArray & _ids, const UnsignedArray & _indices) : NlpMatchPath(_ids, _indices) {}
 
-    IMatchedElement * getMatch(MatchState * top, bool removeTrailingSeparator);
-
-protected:
-    void init();
-    MatchState * find(MatchState * top, regexid_t id);
+    IMatchedElement * getMatch(MatchState * top, bool removeTrailingSeparator) const;
 };
 
 class THORHELPER_API CRegexMatchedResultInfo : public CMatchedResultInfo
@@ -112,7 +115,7 @@ public:
         MatchSaveState saved;
         RegexMatchStateSave * matched;
         RegexPattern * nextPattern;
-        ConstPointerArray * matches;
+        unsigned prevPotentialMatches;
         RegexRepeatInstance * repeatInstance;
         const byte * limit;
     } extra;
@@ -130,12 +133,16 @@ MAKECopyArrayOf(ActiveStage, ActiveStage &, ActiveStageArray);
 
 class RegexState;
 // Used to represent a single match in the regular expression tree.  Also 
-class THORHELPER_API RegexMatchState : public MatchState
+class THORHELPER_API RegexMatchState : public CInterface, public MatchState
 {
 public:
     RegexMatchState() : MatchState() { }
     RegexMatchState(_ATOM _name, regexid_t _id) : MatchState(_name, _id) { }
     RegexMatchState(RegexNamed * owner) : MatchState(owner->queryName(), owner->queryID()) {}
+    IMPLEMENT_IINTERFACE
+
+    using MatchState::reset;
+    void reset(RegexNamed * owner) { MatchState::reset(owner->queryName(), owner->queryID()); }
 };
 
 class THORHELPER_API RegexMatchStateSave : public RegexMatchState
@@ -150,11 +157,29 @@ public:
 };
 
 struct RegexMatchInfo;
+class RegexStateCache
+{
+public:
+    RegexMatchState * createState(RegexNamed * def);
+    RegexMatchStateSave * createStateSave(RegexNamed * def);
+    RegexMatchStateSave * createStateSave(_ATOM _name, regexid_t _id);
+    void destroyState(RegexMatchState * state);
+    void destroyStateSave(RegexMatchStateSave * state);
+
+    CIArrayOf<RegexMatchState> matchStates;
+    CIArrayOf<RegexMatchStateSave> matchStateSaves;
+    ConstPointerArray potentialMatches;
+};
+
 class RegexState : public NlpState
 {
 public:
-    RegexState(unsigned _implementation, INlpHelper * _helper, INlpMatchedAction * _action, NlpInputFormat _inputFormat, size32_t _len, const void * _text) : NlpState(_action, _inputFormat, _len, _text) { implementation = _implementation; numMatched = 0; curActiveStage = NotFound; helper = _helper; }
-    RegexState(const RegexState & _state, INlpMatchedAction * _action, size32_t _len, const void * _text) : NlpState(_action, _state.inputFormat, _len, _text) 
+    RegexState(RegexStateCache & _cache, unsigned _implementation, INlpHelper * _helper, INlpMatchedAction * _action, NlpInputFormat _inputFormat, size32_t _len, const void * _text)
+    : NlpState(_action, _inputFormat, _len, _text), cache(_cache)
+    { implementation = _implementation; numMatched = 0; curActiveStage = NotFound; helper = _helper; }
+
+    RegexState(const RegexState & _state, INlpMatchedAction * _action, size32_t _len, const void * _text)
+    : NlpState(_action, _state.inputFormat, _len, _text), cache(_state.cache)
     { 
         implementation = _state.implementation; numMatched = 0; curActiveStage = NotFound; helper = _state.helper;
     }
@@ -168,6 +193,7 @@ protected:
     inline ActiveStage & topStage()                         { return stages.item(curActiveStage); }
 
 public:
+    RegexStateCache & cache;
     RegexPatternCopyArray stack;
     IMatchedAction * processor;
     const byte * nextScanPosition;
@@ -1121,6 +1147,7 @@ public:
     RegexAlgorithm * algo;
     RegexMatches results;
     CRegexMatchedResults matched;
+    RegexStateCache cache;
     unsigned charWidth;
 };
 

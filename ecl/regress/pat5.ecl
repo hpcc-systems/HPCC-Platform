@@ -39,6 +39,7 @@ infile := dataset([
 
 results :=
     record
+        '\'' + MATCHTEXT(noun/patWord[2]) + '\'';
         '\'' + MATCHTEXT(patWord[1]) + '\'';
         '\'' + MATCHTEXT(patWord[2]) + '\'';
         '\'' + MATCHTEXT(patWord[3]) + '\'';
@@ -46,7 +47,6 @@ results :=
         '\'' + MATCHTEXT(noun[2]) + '\'';
         '\'' + MATCHTEXT(noun[3]) + '\'';
         '\'' + MATCHTEXT(noun/patWord[1]) + '\'';
-        '\'' + MATCHTEXT(noun/patWord[2]) + '\'';
         '\'' + MATCHTEXT(noun/patWord[3]) + '\'';
         '\'' + MATCHTEXT(noun[1]/patWord[1]) + '\'';
         '\'' + MATCHTEXT(noun[1]/patWord[2]) + '\'';

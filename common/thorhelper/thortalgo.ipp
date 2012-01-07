@@ -62,20 +62,25 @@ public:
     NlpInputFormat inputFormat;
 };
 
+class TomitaMatchPath;
+class TomitaMatchSearchInstance : public NlpMatchSearchInstance
+{
+public:
+    TomitaMatchSearchInstance() { choices = NULL; }
+
+    GrammarSymbol * find(GrammarSymbol * top, const TomitaMatchPath & path, unsigned depth);
+    GrammarSymbol * findInChildren(GrammarSymbol * top, const TomitaMatchPath & path, unsigned depth);
+
+    PackedSymbolChoice * choices;
+};
+
 class THORHELPER_API TomitaMatchPath : public NlpMatchPath
 {
 public:
-    TomitaMatchPath(MemoryBuffer & in) : NlpMatchPath(in) { choices = NULL; }
-    TomitaMatchPath(const UnsignedArray & _ids, const UnsignedArray & _indices) : NlpMatchPath(_ids, _indices) { choices = NULL; }
+    TomitaMatchPath(MemoryBuffer & in) : NlpMatchPath(in) { }
+    TomitaMatchPath(const UnsignedArray & _ids, const UnsignedArray & _indices) : NlpMatchPath(_ids, _indices) { }
 
-    IMatchedElement * getMatch(GrammarSymbol * top, PackedSymbolChoice & choice);
-
-protected:
-    GrammarSymbol * find(GrammarSymbol * top, regexid_t id);
-    GrammarSymbol * findInChildren(GrammarSymbol * top, regexid_t id);
-    
-protected:
-    PackedSymbolChoice * choices;
+    IMatchedElement * getMatch(GrammarSymbol * top, PackedSymbolChoice & choice) const;
 };
 
 

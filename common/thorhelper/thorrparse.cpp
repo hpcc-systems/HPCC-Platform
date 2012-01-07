@@ -237,40 +237,47 @@ static void removeTrailingSeparator(MatchState & matched)
         matched.end = child->start;
 }
 
-MatchState * RegexMatchPath::find(MatchState * top, regexid_t id)
+MatchState * RegexMatchSearchInstance::find(MatchState * top, const NlpMatchPath & path, unsigned depth)
 {
-    unsigned savedSearchDepth = maxSearchDepth;
+    regexid_t id = path.getId(depth);
     do
     {
         if (top->queryID() == id)
         {
-            unsigned thisLevelIndex = searchIndices[pathIndex];
-            if ((thisLevelIndex == UNKNOWN_INSTANCE) || (thisLevelIndex == 1))
+            bool matchAny = path.matchAny(depth);
+            if (matchAny || (nextIndex == 1))
             {
-
-                pathIndex++;
-                if (pathIndex == ids.ordinality())
+                if (depth+1 == path.numItems())
                 {
-                    maxSearchDepth = pathIndex;
+                    lastExactMatchDepth = depth+1;
                     return top;
                 }
 
-                if (thisLevelIndex == 1)
-                    maxSearchDepth = pathIndex;
+                if (!matchAny)
+                {
+                    lastExactMatchDepth = depth+1;
+                    nextIndex = path.nextExactMatchIndex(depth+1);
+                }
+
+                MatchState * ret = NULL;
+                unsigned prevExactMatchDepth = lastExactMatchDepth;
                 if (top->firstChild)
-                    return find(top->firstChild, ids.item(pathIndex));
-                return NULL;
+                    ret = find(top->firstChild, path, depth+1);
+                //If must match a child, or one of children had a required match then we have a result
+                if (!matchAny || (prevExactMatchDepth != lastExactMatchDepth))
+                    return ret;
             }
             else
-                searchIndices[pathIndex]--;
+                nextIndex--;
         }
         else
         {
             if (top->firstChild)
             {
-                MatchState * ret = find(top->firstChild, id);
+                unsigned prevExactMatchDepth = lastExactMatchDepth;
+                MatchState * ret = find(top->firstChild, path, depth);
                 //return if matched another level - may have failed to match, or matched completely
-                if (savedSearchDepth != maxSearchDepth)
+                if (prevExactMatchDepth != lastExactMatchDepth)
                     return ret;
             }
         }
@@ -279,14 +286,12 @@ MatchState * RegexMatchPath::find(MatchState * top, regexid_t id)
     return NULL;
 }
 
-IMatchedElement * RegexMatchPath::getMatch(MatchState * top, bool removeTrailingSep)
+IMatchedElement * RegexMatchPath::getMatch(MatchState * top, bool removeTrailingSep) const
 {
-    CriticalBlock procedure(cs);
-    //MORE: We could allocate searchIndices on the stack and pass as a parameter
-    memcpy(searchIndices, indices.getArray(), sizeof(*searchIndices)*maxDepth);
-    pathIndex = 0;
-    maxSearchDepth = 0;
-    MatchState * state = find(top, ids.item(0));
+    RegexMatchSearchInstance search;
+    search.lastExactMatchDepth = 0;
+    search.nextIndex = nextExactMatchIndex(0);
+    MatchState * state = search.find(top, *this, 0);
     if (!state)
         return NULL;
     if (removeTrailingSep)
@@ -454,7 +459,8 @@ void RegexPattern::cleanupBeginMatch(ActiveStage & stage, RegexState & state)
     DBGLOG("%*s[%p]Pop Begin Match", patternDepth, "", stage.pattern);
 #endif
     state.popMatch(stage.extra.matched->save);
-    delete stage.extra.matched;
+    state.cache.destroyStateSave(stage.extra.matched);
+    stage.extra.matched = NULL;
 }
 
 RegexMatchAction RegexPattern::pushStageEndMatch(RegexState & state)
@@ -1669,7 +1675,7 @@ RegexMatchAction RegexBeginCheckPattern::match(RegexState & state)
 
 RegexMatchAction RegexBeginCheckPattern::beginMatch(RegexState & state)
 {
-    RegexMatchStateSave * matched = new RegexMatchStateSave(NULL, 0);
+    RegexMatchStateSave * matched = state.cache.createStateSave(NULL, 0);
     pushStageBeginMatch(state, matched);
     return RegexMatchContinue;
 }
@@ -1978,9 +1984,9 @@ RegexMatchAction RegexNamedPattern::match(RegexState & state)
     return def->match(state, &end, matched);
 #else
     //Allocate on the heap to make a stack fault less likely
-    RegexMatchState * matched = new RegexMatchState(def);
+    RegexMatchState * matched = state.cache.createState(def);
     RegexMatchAction ret = def->match(state, &end, *matched);
-    delete matched;
+    state.cache.destroyState(matched);
     return ret;
 #endif
 }
@@ -2057,7 +2063,7 @@ void RegexNamedPattern::RegexEndNamedPattern::killStage(ActiveStage & stage, Reg
 
 RegexMatchAction RegexNamedPattern::beginMatch(RegexState & state)
 {
-    RegexMatchStateSave * matched = new RegexMatchStateSave(def);
+    RegexMatchStateSave * matched = state.cache.createStateSave(def);
     ActiveStage & stage = pushStageBeginMatch(state, matched);
     stage.setState(RSfinished);                 // so children don't get processed.
     state.namedStack.append(end);
@@ -2089,7 +2095,7 @@ RegexMatchAction RegexBeginSeparatorPattern::match(RegexState & state)
 
 RegexMatchAction RegexBeginSeparatorPattern::beginMatch(RegexState & state)
 {
-    RegexMatchStateSave * matched = new RegexMatchStateSave(separatorTagAtom, 0);
+    RegexMatchStateSave * matched = state.cache.createStateSave(separatorTagAtom, 0);
     pushStageBeginMatch(state, matched);
     return RegexMatchContinue;
 }
@@ -2566,11 +2572,12 @@ RegexMatchAction RegexAsciiDfaPattern::match(RegexState & state)
     }
     else
     {
-        ConstPointerArray matches;
+        ConstPointerArray & potentialMatches = state.cache.potentialMatches;
+        unsigned prevPotentialMatches = potentialMatches.ordinality();
         loop
         {
             if (states[activeState].accepts())
-                matches.append(cur);
+                potentialMatches.append(cur);
             if (cur == end)
                 break;
             byte next = *cur++;
@@ -2583,13 +2590,15 @@ RegexMatchAction RegexAsciiDfaPattern::match(RegexState & state)
                 break;
         }
 
-        while (matches.ordinality())
+        while (potentialMatches.ordinality() > prevPotentialMatches)
         {
-            state.cur = (const byte *)matches.tos();
-            matches.pop();
+            state.cur = (const byte *)potentialMatches.pop();
             RegexMatchAction ret = matchNext(state);
             if (ret != RegexMatchBacktrack)
+            {
+                potentialMatches.trunc(prevPotentialMatches);
                 return ret;
+            }
         }
         return RegexMatchBacktrack;
     }
@@ -2618,10 +2627,11 @@ void RegexAsciiDfaPattern::toXMLattr(StringBuffer & out, RegexXmlState & state)
         out.append(" token");
 }
 
-
 void RegexAsciiDfaPattern::killStage(ActiveStage & stage, RegexState & state)
 {
-    delete stage.extra.matches;
+    ConstPointerArray & potentialMatches = state.cache.potentialMatches;
+    unsigned prevPotentialMatches = stage.extra.prevPotentialMatches;
+    potentialMatches.trunc(prevPotentialMatches);
 }
 
 RegexMatchAction RegexAsciiDfaPattern::beginMatch(RegexState & state)
@@ -2632,8 +2642,8 @@ RegexMatchAction RegexAsciiDfaPattern::beginMatch(RegexState & state)
     const AsciiDfaState * states = dfa.queryStates();
     unsigned * transitions = dfa.queryTransitions();
     const byte * best = NULL;
-    ConstPointerArray * matches = NULL;
-
+    ConstPointerArray & potentialMatches = state.cache.potentialMatches;
+    const unsigned prevPotentialMatches = potentialMatches.ordinality();
     loop
     {
         if (states[activeState].accepts())
@@ -2642,12 +2652,9 @@ RegexMatchAction RegexAsciiDfaPattern::beginMatch(RegexState & state)
                 best = cur;
             else
             {
-                if (!matches)
-                {
-                    matches = new ConstPointerArray;
-                    matches->append(best);
-                }
-                matches->append(cur);
+                if (prevPotentialMatches == potentialMatches.ordinality())
+                    potentialMatches.append(best);
+                potentialMatches.append(cur);
             }
         }
         if (cur == end)
@@ -2666,10 +2673,12 @@ RegexMatchAction RegexAsciiDfaPattern::beginMatch(RegexState & state)
         return RegexMatchBacktrack;
 
     ActiveStage & stage = pushStage(state);
-    stage.extra.matches = matches;
+    stage.extra.prevPotentialMatches = prevPotentialMatches;
     if (matchesToken)
         stage.flags |= RFbeginToken; 
-    if (!matches)
+
+    //Only a single match, therefore no need to backtrack.
+    if (prevPotentialMatches == potentialMatches.ordinality())
     {
         stage.followPosition = best;
         stage.setMatched();
@@ -2683,14 +2692,16 @@ RegexMatchAction RegexAsciiDfaPattern::beginMatch(RegexState & state)
 
 RegexMatchAction RegexAsciiDfaPattern::nextAction(ActiveStage & stage, RegexState & state)
 {
+    ConstPointerArray & potentialMatches = state.cache.potentialMatches;
+    unsigned prevPotentialMatches = stage.extra.prevPotentialMatches;
+    assertex(prevPotentialMatches <= potentialMatches.ordinality());
     switch (stage.getState())
     {
     case RSretry:
         {
-            ConstPointerArray * matches = stage.extra.matches;
-            if (matches && matches->ordinality())
+            if (prevPotentialMatches < potentialMatches.ordinality())
             {
-                stage.followPosition = (const byte *)matches->pop();
+                stage.followPosition = (const byte *)potentialMatches.pop();
                 stage.setMatched();
                 return RegexMatchContinue;
             }
@@ -3108,6 +3119,54 @@ RegexPattern * deserializeRegex(MemoryBuffer & in)
 
 //---------------------------------------------------------------------------
 
+RegexMatchState * RegexStateCache::createState(RegexNamed * def)
+{
+    if (matchStates.ordinality())
+    {
+        RegexMatchState * ret = &matchStates.popGet();
+        ret->reset(def);
+        return ret;
+    }
+
+    return new RegexMatchState(def);
+}
+
+void RegexStateCache::destroyState(RegexMatchState * state)
+{
+    matchStates.append(*state);
+}
+
+
+RegexMatchStateSave * RegexStateCache::createStateSave(RegexNamed * def)
+{
+    if (matchStateSaves.ordinality())
+    {
+        RegexMatchStateSave * ret = &matchStateSaves.popGet();
+        ret->reset(def);
+        return ret;
+    }
+
+    return new RegexMatchStateSave(def);
+}
+
+RegexMatchStateSave * RegexStateCache::createStateSave(_ATOM _name, regexid_t _id)
+{
+    if (matchStateSaves.ordinality())
+    {
+        RegexMatchStateSave * ret = &matchStateSaves.popGet();
+        ret->reset(_name, _id);
+        return ret;
+    }
+
+    return new RegexMatchStateSave(_name, _id);
+}
+
+void RegexStateCache::destroyStateSave(RegexMatchStateSave * state)
+{
+    matchStateSaves.append(*state);
+}
+
+
 void RegexState::processPattern(RegexPattern * grammar)
 {
     if (implementation == NLPAregexStack)
@@ -3331,7 +3390,7 @@ bool RegexParser::performMatch(IMatchedAction & action, const void * row, unsign
         const byte * endData = start + len;
         const byte * end = endData - algo->minPatternLength;
 
-        RegexState state(algo->kind, helper, this, algo->inputFormat, len, start);
+        RegexState state(cache, algo->kind, helper, this, algo->inputFormat, len, start);
         state.row = row;
         state.processor = &action;
         state.best = NULL;
