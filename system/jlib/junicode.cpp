@@ -470,6 +470,18 @@ MemoryBuffer & appendUtf32be(MemoryBuffer & out, UTF32 value)
     return out.append(writeUtf32be(temp, sizeof(temp), value), temp);
 }
 
+MemoryBuffer & appendUtf(MemoryBuffer & out, UtfReader::UtfFormat targetType, UTF32 value)
+{
+    switch (targetType)
+    {
+    case UtfReader::Utf8:    appendUtf8(out, value); break;
+    case UtfReader::Utf16le: appendUtf16le(out, value); break;
+    case UtfReader::Utf16be: appendUtf16be(out, value); break;
+    case UtfReader::Utf32le: appendUtf32le(out, value); break;
+    case UtfReader::Utf32be: appendUtf32be(out, value); break;
+    }
+    return out;
+}
 
 /* ---------------------------------------------------------------------
 
@@ -506,14 +518,7 @@ bool convertUtf(MemoryBuffer & target, UtfReader::UtfFormat targetType, unsigned
             target.setLength(originalLength);
             return false;
         }
-        switch (targetType)
-        {
-        case UtfReader::Utf8:    appendUtf8(target, next); break;
-        case UtfReader::Utf16le: appendUtf16le(target, next); break;
-        case UtfReader::Utf16be: appendUtf16be(target, next); break;
-        case UtfReader::Utf32le: appendUtf32le(target, next); break;
-        case UtfReader::Utf32be: appendUtf32be(target, next); break;
-        }
+        appendUtf(target, targetType, next);
     }
 }
 
@@ -622,3 +627,84 @@ void addUtfActionList(StringMatcher & matcher, const char * text, unsigned actio
     }
 }
 
+extern jlib_decl bool replaceUtf(utfReplacementFunc func, MemoryBuffer & target, UtfReader::UtfFormat type, unsigned sourceLength, const void * source)
+{
+    UtfReader input(type, false);
+    input.set(sourceLength, source);
+    unsigned originalLength = target.length();
+    loop
+    {
+        const byte * cur = input.cur;
+        UTF32 next = input.next();
+        if (next == sourceExhausted)
+            return true;
+        if (next == sourceIllegal)
+        {
+            target.setLength(originalLength);
+            return false;
+        }
+        func(target, next, type, cur, input.cur-cur, cur==source);
+    }
+}
+
+struct utf32ValidXmlCharRange
+{
+    UTF32 min;
+    UTF32 max;
+    bool start;
+};
+
+utf32ValidXmlCharRange utf32ValidXmlCharRanges[] = {
+    {'0', '9', false},
+    {'A', 'Z', true},
+    {'a', 'z', true},
+    {0xC0, 0xD6, true},
+    {0xD8, 0xF6, true},
+    {0xF8, 0x2FF, true},
+    {0x300, 0x36F, false},
+    {0x370, 0x37D, true},
+    {0x37F, 0x1FFF, true},
+    {0x200C, 0x200D, true},
+    {0x203F, 0x2040, false},
+    {0x2070, 0x218F, true},
+    {0x2C00, 0x2FEF, true},
+    {0x3001, 0xD7FF, true},
+    {0xF900, 0xFDCF, true},
+    {0xFDF0, 0xFFFD, true},
+    {0x10000, 0xEFFFF, true},
+    {0, 0, false}
+};
+
+inline bool replaceBelowRange(UTF32 match, UTF32 replace, int id, MemoryBuffer & target, UtfReader::UtfFormat type, const void * source, int len, bool start)
+{
+    utf32ValidXmlCharRange &r = utf32ValidXmlCharRanges[id];
+    if (r.min==0)
+        return true;
+    if (match>r.max)
+        return false;
+    if (match<r.min)
+    {
+        appendUtf(target, type, replace);
+        return true;
+    }
+    if (!r.start && start)
+        appendUtf(target, type, replace);
+    else
+        target.append(len, source); //src and target are same, no need to reconvert
+    return true;
+}
+
+MemoryBuffer & utfXmlNameReplacementFunc(MemoryBuffer & target, UTF32 match, UtfReader::UtfFormat type, const void * source, int len, bool start)
+{
+    if (match==':' || match=='_' || (!start && (match=='-' || match=='.' || match==0xB7)))
+        return target.append(len, source);
+
+    for (int i=0; !replaceBelowRange(match, '_', i, target, type, source, len, start); i++);
+
+    return target;
+}
+
+extern jlib_decl bool appendUtfXmlName(MemoryBuffer & target, UtfReader::UtfFormat type, unsigned sourceLength, const void * source)
+{
+    return replaceUtf(utfXmlNameReplacementFunc, target, type, sourceLength, source);
+}
