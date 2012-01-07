@@ -25,6 +25,7 @@
 #include "jptree.hpp"
 #include "jtime.ipp"
 #include "jencrypt.hpp"
+#include "junicode.hpp"
 #include "eclrtl.hpp"
 #include "deftype.hpp"
 #include <time.h>
@@ -8618,7 +8619,6 @@ extern WORKUNIT_API void addExceptionToWorkunit(IWorkUnit * wu, WUExceptionSever
     }
 }
 
-#define UTF8_BOM    "\357\273\277"
 
 extern WORKUNIT_API bool isArchiveQuery(const char * text)
 {
@@ -8938,8 +8938,8 @@ extern WORKUNIT_API IPropertyTree * getPackageSetRegistry(const char * wsEclId, 
 
 void addQueryToQuerySet(IWorkUnit *workunit, const char *querySetName, const char *queryName, IPropertyTree *packageInfo, WUQueryActivationOptions activateOption, StringBuffer &newQueryId)
 {
-    StringBuffer cleanQueryName(queryName);
-    cleanQueryName.replace(' ', '_');
+    StringBuffer cleanQueryName;
+    appendUtf8XmlName(cleanQueryName, strlen(queryName), queryName);
 
     SCMStringBuffer dllName;
     Owned<IConstWUQuery> q = workunit->getQuery();
