@@ -3018,7 +3018,18 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
           const char* attrName = iAttr->queryName();
 
           if (!pSrcTree->hasProp(attrName))
+          {
             pSrcTree->addProp(attrName, iAttr->queryValue());
+
+            const char* prop = "@_notInEnv";
+            StringBuffer sbVal;
+
+            if (pSrcTree->hasProp(prop))
+              sbVal.append(pSrcTree->queryProp(prop));
+
+            pSrcTree->setProp(prop, sbVal.append(";").append(attrName).append(";").str());
+
+          }
         }
 
           //Add subelements that occur only once
@@ -3038,7 +3049,17 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
               const char* attrName = iAttrElem->queryName();
 
               if (!pSrcElem->hasProp(attrName))
+              {
                 pSrcElem->addProp(attrName, iAttrElem->queryValue());
+
+                const char* prop = "@_notInEnv";
+                StringBuffer sbVal;
+
+                if (pSrcElem->hasProp(prop))
+                  sbVal.append(pSrcElem->queryProp(prop));
+
+                pSrcElem->setProp(prop, sbVal.append(";").append(attrName).append(";").str());
+              }
             }
 
             Owned<IPropertyTreeIterator> iterSubElems = pElem->getElements("*");
