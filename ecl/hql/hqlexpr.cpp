@@ -317,7 +317,7 @@ bool HqlExprArray::containsBody(IHqlExpression & expr)
     return false;
 }
 
-IHqlExpression * queryProperty(_ATOM prop, HqlExprArray & exprs)
+IHqlExpression * queryProperty(_ATOM prop, const HqlExprArray & exprs)
 {
     ForEachItemIn(idx, exprs)
     {
@@ -10092,7 +10092,67 @@ static void checkConsistent(IHqlExpression* e)
         e1.setown(replaceSelector(e, NULL, querySelfReference()));
     }
 }
-    
+
+class JoinEqualityMapper
+{
+public:
+    inline JoinEqualityMapper(const HqlExprArray & params)
+    {
+        left = &params.item(0);
+        right = &params.item(1);
+        selSeq = ::queryProperty(_selectorSequence_Atom, params);
+    }
+
+    inline bool isMatch(IHqlExpression * expr, node_operator op, IHqlExpression * side)
+    {
+        return (expr->getOperator() == op) &&
+            (expr->queryRecord()->queryBody() == side->queryRecord()->queryBody()) &&
+            (expr->queryChild(1) == selSeq);
+    }
+    inline bool isLeft(IHqlExpression * expr) { return isMatch(expr, no_left, left); }
+    inline bool isRight(IHqlExpression * expr) { return isMatch(expr, no_right, right); }
+
+    IHqlExpression * mapEqualities(IHqlExpression * expr, IHqlExpression * cond)
+    {
+        if (cond->getOperator() == no_assertkeyed)
+            cond = cond->queryChild(0);
+
+        if (cond->getOperator() == no_and)
+        {
+            OwnedHqlExpr mapped = mapEqualities(expr, cond->queryChild(0));
+            return mapEqualities(mapped, cond->queryChild(1));
+        }
+        else if (cond->getOperator() == no_eq)
+        {
+            IHqlExpression * lhs = cond->queryChild(0);
+            IHqlExpression * rhs = cond->queryChild(1);
+            if (lhs->queryType() == rhs->queryType())
+            {
+                IHqlExpression * leftSelect = queryDatasetCursor(lhs);
+                IHqlExpression * rightSelect = queryDatasetCursor(rhs);
+                if (isLeft(leftSelect) && isRight(rightSelect))
+                    return replaceExpression(expr, rhs, lhs);
+                if (isRight(leftSelect) && isLeft(rightSelect))
+                    return replaceExpression(expr, lhs, rhs);
+            }
+        }
+        return LINK(expr);
+    }
+protected:
+    IHqlExpression * left;
+    IHqlExpression * right;
+    IHqlExpression * selSeq;
+};
+
+// If there is a join equality LEFT.x = RIGHT.x, and the transform contains a reference to RIGHT.x
+// substitute LEFT.x instead.
+// The modified transform is typically used for mapping the sort/grouping information
+// which means that information about sort orders are more likely to be preserved (for keyed joins).
+static IHqlExpression * mapJoinEqualitiesInTranform(const HqlExprArray & params, IHqlExpression * transform)
+{
+    JoinEqualityMapper mapper(params);
+    return mapper.mapEqualities(transform, &params.item(2));
+}
 
 //NOTE: The type information - e.g., distribution, grouping, sorting cannot include the dataset of the primary file
 //because for a no_newusertable etc. that would result in a circular reference.
@@ -10344,8 +10404,17 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
                     if (!preservesOrder)
                         type.setown(getTypeRemoveAllSortOrders(type));
 
+                    LinkedHqlExpr mapTransform = transform;
+                    //For all equality conditions, map RIGHT.x ->LEFT.x if the types match
+                    if (!createDefaultRight && ((op == no_join) || (op == no_selfjoin)))
+                    {
+                        //Only bother to modify the transform if something useful is going to be mapped in
+                        //the meta information - otherwise this can be expensive for no gain.
+                        if (hasUsefulMetaInformation(type))
+                            mapTransform.setown(mapJoinEqualitiesInTranform(parms, transform));
+                    }
                     TableProjectMapper mapper;
-                    mapper.setMapping(transform, leftSelect);
+                    mapper.setMapping(mapTransform, leftSelect);
                     type.setown(getTypeProject(type, transform->queryRecord(), mapper));
                 }
                 else
