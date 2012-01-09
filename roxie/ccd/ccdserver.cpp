@@ -10920,10 +10920,11 @@ IRoxieServerActivityFactory *createRoxieServerDiskWriteActivityFactory(unsigned 
     return new CRoxieServerDiskWriteActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _isRoot);
 }
 
+//=================================================================================
+
 class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, implements IRoxiePublishCallback
 {
     IHThorIndexWriteArg &helper;
-    bool isVariable;
     bool overwrite;
     Owned<ClusterWriteHandler> clusterHandler;
     Owned<IRoxieWriteHandler> writer;
@@ -11027,7 +11028,6 @@ public:
         : CRoxieServerInternalSinkActivity(_factory, _probeManager, 0), helper(static_cast<IHThorIndexWriteArg &>(basehelper))
     {
         overwrite = ((helper.getFlags() & TIWoverwrite) != 0);
-        isVariable = helper.queryDiskRecordSize()->isVariableSize();
         reccount = 0;
     }
 
@@ -11043,9 +11043,19 @@ public:
 
     virtual void onExecute()
     {
-        size32_t maxDiskRecordSize = isVariable ? 4096 : helper.queryDiskRecordSize()->getFixedSize();
-        char *rowBuffer = (char *) alloca(maxDiskRecordSize);//allocate from stack
-        memset(rowBuffer, 0, maxDiskRecordSize);
+        bool isVariable = helper.queryDiskRecordSize()->isVariableSize();
+        size32_t maxDiskRecordSize;
+        if (isVariable)
+            maxDiskRecordSize = 0x8000;
+        else
+        {
+            maxDiskRecordSize = helper.queryDiskRecordSize()->getFixedSize();
+            if (maxDiskRecordSize > 0x8000)
+                throw MakeStringException(99, "Index minimum record length (%d) exceeds 32k internal limit", maxDiskRecordSize);
+
+        }
+        OwnedMalloc<char> rowBuffer(maxDiskRecordSize, true);
+
         unsigned __int64 fileSize = 0;
         fileCrc = -1;
         if (helper.getDatasetName())

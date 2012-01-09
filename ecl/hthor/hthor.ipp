@@ -505,7 +505,6 @@ class CHThorIndexWriteActivity : public CHThorActivityBase
     Owned<IFile> file;
     bool incomplete;
     offset_t sizeLimit;
-    size32_t maxDiskRecordSize;
 
     void close();
     void buildUserMetadata(Owned<IPropertyTree> & metadata);
