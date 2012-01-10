@@ -60,6 +60,14 @@ void usage()
   puts("          If category already exists, the directory value is updated. Otherwise");
   puts("          a new category is created.");
   puts("          For example, \"-o log=/var/logs/[NAME]/mylogs/[INST] -o run=/var/run/[NAME]/myrun/[INST]\"");
+  puts("   -override <buildset,xpath,value>: overrides all component properties with the");
+  puts("          given xpath for the given buildset with the provided value. If the xpath is");
+  puts("          not already present, it is added to any of the components");
+  puts("          There can be multiple of the -override options. For example, to override the dropzone");
+  puts("          directory and to set eclwatch's enableSystemUseRewrite to true, the following options");
+  puts("          can be provided.");
+  puts("          \"-override DropZone,@directory,/mnt/disk1/mydropzone ");
+  puts("          -override espsmc,@enableSystemUseRewrite,true\"");
   puts("   -help: print out this usage.");
 }
 
@@ -73,6 +81,7 @@ int main(int argc, char** argv)
   int roxieNodes=0, thorNodes=0, slavesPerNode=1;
   bool roxieOnDemand = true;
   MapStringTo<StringBuffer> dirMap;
+  StringArray overrides;
 
   int i = 1;
   bool writeToFiles = false;
@@ -141,6 +150,11 @@ int main(int argc, char** argv)
         return 1;
       }
     }
+    else if(stricmp(argv[i], "-override") == 0)
+    {
+      i++;
+      overrides.append(argv[i++]);
+    }
     else
     {
       fprintf(stderr, "Error: unknown command line parameter: %s\n", argv[i]);
@@ -177,8 +191,51 @@ int main(int argc, char** argv)
       thorNodes, slavesPerNode, roxieOnDemand?"true":"false", ipAddrs.str());
 
     buildEnvFromWizard(optionsXml, pServiceName, pCfg, envXml, &dirMap);
+
     if(envXml.length())
     {
+      if (overrides.length())
+      {
+        Owned<IPropertyTree> pEnvTree = createPTreeFromXMLString(envXml.str());
+
+        for(unsigned i = 0; i < overrides.ordinality() ; i++)
+        {
+          StringArray sbarr;
+          DelimToStringArray(overrides.item(i), sbarr, ",");
+
+          if (sbarr.length() != 3)
+          {
+            fprintf(stderr, "\nWarning: unable to override %s as override option needs 3 valid values to override.\n", overrides.item(i));
+            continue;
+          }
+
+          const char* buildset = sbarr.item(0);
+          bool flag = false;
+
+          if (buildset && *buildset)
+          {
+            StringBuffer xpath(XML_TAG_SOFTWARE"/");
+            xpath.appendf("*["XML_ATTR_BUILDSET"='%s']", buildset);
+            Owned<IPropertyTreeIterator> iter = pEnvTree->getElements(xpath.str());
+
+            ForEach (*iter)
+            {
+              flag = true;
+              IPropertyTree* pComp = &iter->query();
+              const char* prop = sbarr.item(1);
+
+              if (prop && *prop)
+                pComp->setProp(prop, sbarr.item(2));
+            }
+          }
+
+          if (!buildset || !*buildset || !flag)
+            fprintf(stderr, "\nWarning: unable to find components of buildset '%s' for override option '%s'.\n", buildset?buildset:"", overrides.item(i));
+        }
+
+        toXML(pEnvTree, envXml.clear());
+      }
+
       StringBuffer env;
       StringBuffer thisip;
       queryHostIP().getIpText(thisip);
