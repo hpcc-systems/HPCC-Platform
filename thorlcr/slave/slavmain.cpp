@@ -275,7 +275,7 @@ public:
 
                         job->addSubGraph(*LINK(subGraph));
                         job->addDependencies(job->queryXGMML(), false);
-                        job->startGraph(*((CSlaveGraph *)subGraph.get()), *job, 0, NULL); // handoff to job to manage graph asynchronously from this msg
+                        job->startGraph(*((CSlaveGraph *)subGraph.get()), *job, true, 0, NULL); // handoff to job to manage graph asynchronously from this msg
 
                         msg.clear();
                         msg.append(false);
