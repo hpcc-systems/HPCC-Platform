@@ -846,7 +846,7 @@ public:
         activityId = _activityId;
     }
 
-    virtual size32_t _capacity() const { return ((hugeSize + HEAP_ALIGNMENT_SIZE - 1) / HEAP_ALIGNMENT_SIZE) - offsetof(HugeHeaplet, data); }
+    virtual size32_t _capacity() const { return ((hugeSize + dataOffset() + HEAP_ALIGNMENT_SIZE - 1) & HEAP_ALIGNMENT_MASK) - dataOffset(); }
 
     virtual unsigned sizeInPages() 
     {
@@ -1318,7 +1318,7 @@ public:
         assertex(!HeapletBase::isShared(original));
         assertex(newsize >= oldsize);
         capacity = HeapletBase::capacity(original);
-        if (newsize==oldsize || newsize <= capacity)
+        if (newsize <= capacity)
             return original;
         else
         {
