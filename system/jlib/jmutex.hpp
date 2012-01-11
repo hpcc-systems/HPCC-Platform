@@ -384,22 +384,19 @@ class jlib_decl NonReentrantSpinLock
 public:
     inline NonReentrantSpinLock()       
     {
-        __sync_synchronize();
         owner.tid = 0;
         atomic_set(&value, 0); 
     }
     inline void enter()       
     { 
-        __sync_synchronize();
         ThreadId self = GetCurrentThreadId(); 
         assertex(self!=owner.tid); // check for reentrancy
-        while (atomic_xchg(1,&value))
+        while (!atomic_cas(&value,1,0))
             ThreadYield();
         owner.tid = self;
     }
     inline void leave()
     { 
-        __sync_synchronize();
         assertex(GetCurrentThreadId()==owner.tid); // check for spurious leave
         owner.tid = 0;
         atomic_set(&value, 0); 
@@ -414,18 +411,15 @@ class jlib_decl  NonReentrantSpinLock
 public:
     inline NonReentrantSpinLock()       
     {   
-        __sync_synchronize();
         atomic_set(&value, 0); 
     }
     inline void enter()       
     { 
-        __sync_synchronize();
-        while (atomic_xchg(1,&value))
+        while (!atomic_cas(&value,1,0))
             ThreadYield();
     }
     inline void leave()
     { 
-        __sync_synchronize();
         atomic_set(&value, 0); 
     }
 };
