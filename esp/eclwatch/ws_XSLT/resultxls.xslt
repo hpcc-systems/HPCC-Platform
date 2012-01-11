@@ -21,8 +21,8 @@
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
     xmlns:xs="http://www.w3.org/2001/XMLSchema"
-    xmlns:xalan="http://xml.apache.org/xalan"
-    exclude-result-prefixes="xalan"
+    xmlns:exsl="http://exslt.org/common"
+    exclude-result-prefixes="exsl"
     >
     <xsl:output method="html"/>
     <xsl:param name="attribute"/>
@@ -64,7 +64,7 @@
         </xsl:variable>
 
         <xsl:variable name="height">
-            <xsl:for-each select="xalan:nodeset($headers)/*/@height">
+            <xsl:for-each select="exsl:node-set($headers)/*/@height">
                 <xsl:sort data-type="number" order="descending"/>
                 <xsl:if test="position() = 1">
                     <xsl:value-of select="."/>
@@ -73,7 +73,7 @@
         </xsl:variable>
 
         <xsl:call-template name="show-header">
-            <xsl:with-param name="headers" select="xalan:nodeset($headers)" />
+            <xsl:with-param name="headers" select="exsl:node-set($headers)" />
             <xsl:with-param name="height" select="$height"/>
         </xsl:call-template>
 

@@ -349,7 +349,7 @@
             <!--xsl:choose>
                <xsl:when test="$order!=''">
                   <xsl:apply-templates select="MachineInfoEx">
-                     <xsl:sort select="xalan:evaluate($order)"/>
+                     <xsl:sort select="dyn:evaluate($order)"/>
                   </xsl:apply-templates>
                </xsl:when>
                <xsl:otherwise>

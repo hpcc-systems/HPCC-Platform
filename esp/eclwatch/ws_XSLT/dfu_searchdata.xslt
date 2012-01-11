@@ -20,9 +20,7 @@
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns:xs="http://www.w3.org/2001/XMLSchema"
-  xmlns:xalan="http://xml.apache.org/xalan"
-  xmlns:msxsl="urn:schemas-microsoft-com:xslt"
-  exclude-result-prefixes="xalan">
+  xmlns:msxsl="urn:schemas-microsoft-com:xslt">
 
   <xsl:param name="showColumns" select="/DFUSearchDataResponse/ShowColumns"/>
     <xsl:param name="oldFile" select="/DFUSearchDataResponse/LogicalName"/>

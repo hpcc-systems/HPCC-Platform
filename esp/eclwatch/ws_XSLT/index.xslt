@@ -17,9 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -->
 
-<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
-                              xmlns:xalan="http://xml.apache.org/xalan"
-                              >
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
     <xsl:output method="html"/>
     <xsl:variable name="chaturl0" select="ActivityResponse/ChatURL"/>
     <xsl:template match="ActivityResponse">
