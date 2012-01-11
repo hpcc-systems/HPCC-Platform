@@ -1199,6 +1199,12 @@ public:
         checkOpen();
         return iFileIO->write(pos, len, data);
     }
+    virtual void flush()
+    {
+        CriticalBlock b(crit);
+        if (iFileIO)
+            iFileIO->flush();
+    }
     virtual offset_t appendFile(IFile *file,offset_t pos=0,offset_t len=(offset_t)-1)
     {
         CriticalBlock b(crit);

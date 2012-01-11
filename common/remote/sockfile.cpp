@@ -2290,6 +2290,10 @@ public:
         return got;
     }
 
+    virtual void flush()
+    {
+    }
+
     const void *doRead(offset_t pos, size32_t len, MemoryBuffer &replyBuffer, size32_t &got, void *dstbuf)
     {
         unsigned tries=0;

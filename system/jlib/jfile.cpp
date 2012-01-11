@@ -1545,7 +1545,7 @@ IFileIO *_createIFileIO(const void *buffer, unsigned sz, bool readOnly)
             memcpy((byte *)buffer+pos, data, len);
             return len;
         }
-
+        virtual void flush() {}
         virtual void setSize(offset_t size)
         {
             if (size > mb.length())
@@ -1697,7 +1697,6 @@ extern jlib_decl IFileIO *createIFileIO(HANDLE handle)
     return new CFileIO(handle,IFSHfull);
 }
 
-
 offset_t CFileIO::appendFile(IFile *file,offset_t pos,offset_t len)
 {
     if (!file)
@@ -1740,6 +1739,12 @@ CFileIO::~CFileIO()
 {
     if (file != NULLFILE) CloseHandle(file);
     file = NULLFILE;
+}
+
+void CFileIO::flush()
+{
+    if (!FlushFileBuffers(file))
+        throw MakeOsException(GetLastError(),"CFileIO::flush");
 }
 
 offset_t CFileIO::size()
@@ -1813,9 +1818,16 @@ CFileIO::~CFileIO()
     if (file != NULLFILE) {
         close(file);
         file=NULLFILE;
-
     }
 }
+
+void CFileIO::flush()
+{
+    CriticalBlock procedure(cs);
+    if (fdatasync(file) != 0)
+        throw MakeOsException(DISK_FULL_EXCEPTION_CODE,"CFileIO::flush");
+}
+
 
 offset_t CFileIO::size()
 {
@@ -1893,6 +1905,25 @@ size32_t CFileRangeIO::write(offset_t pos, size32_t len, const void * data)
 }
 
 //--------------------------------------------------------------------------
+
+void CFileAsyncIO::flush()
+{
+    //This could wait until all pending results are done.
+    loop
+    {
+        Owned<IFileAsyncResult> next;
+        {
+            CriticalBlock block(cs);
+            if (results.ordinality())
+                next.set(&results.tos());
+        }
+        if (!next)
+            return;
+
+        size32_t value;
+        next->getResult(value, true);
+    }
+}
 
 offset_t CFileAsyncIO::appendFile(IFile *file,offset_t pos,offset_t len)
 {
@@ -6100,6 +6131,12 @@ public:
         CriticalBlock block(sect);
         Owned<IFileIO> io = open();
         return io->write(pos,len,data);
+    }
+    virtual void flush()
+    {
+        CriticalBlock block(sect);
+        if (cachedio)
+            cachedio->flush();
     }
     offset_t appendFile(IFile *file,offset_t pos,offset_t len)
     {

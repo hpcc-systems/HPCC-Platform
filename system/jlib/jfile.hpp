@@ -164,6 +164,7 @@ interface IFileIO : public IInterface
     virtual size32_t write(offset_t pos, size32_t len, const void * data) = 0;
     virtual offset_t appendFile(IFile *file,offset_t pos=0,offset_t len=(offset_t)-1) =0;
     virtual void setSize(offset_t size) = 0;
+    virtual void flush() = 0;
 };
 
 interface IFileIOCache : extends IInterface
