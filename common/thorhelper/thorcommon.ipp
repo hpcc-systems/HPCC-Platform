@@ -87,10 +87,7 @@ public:
         {
             fixedSize = _meta->getFixedSize();
             minSize = _meta->getMinRecordSize();
-            if (fixedSize)
-                initialSize = fixedSize;
-            else
-                initialSize = minSize;
+            initialSize = minSize;
             metaFlags = meta->getMetaFlags();
         }
         else
