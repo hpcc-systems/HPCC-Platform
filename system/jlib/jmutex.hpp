@@ -297,12 +297,14 @@ public:
 class jlib_decl  SpinLock
 {
     atomic_t value;
+    unsigned nesting;
     struct { volatile ThreadId tid; } owner;
     inline SpinLock(SpinLock & value) { assert(false); } // dummy to prevent inadvetant use as block
 public:
     inline SpinLock()       
     {   
         owner.tid = 0;
+        nesting = 0;
         atomic_set(&value, 0); 
     }
 #ifdef _DEBUG
@@ -328,7 +330,7 @@ public:
 #ifdef _DEBUG
             assertex(atomic_read(&value));
 #endif      
-            atomic_inc(&value); 
+            nesting++;
             return;
         }
         while (!atomic_cas(&value,1,0)) 
@@ -337,13 +339,13 @@ public:
     }
     inline void leave()
     { 
-        int v = atomic_read(&value); 
-#ifdef _DEBUG
-        assertex(v);
-#endif      
-        if (!--v)
+        if (nesting == 0)
+        {
             owner.tid = 0;
-        atomic_set(&value, v); 
+            atomic_set(&value, 0);
+        }
+        else
+            nesting--;
     }
 };
 
