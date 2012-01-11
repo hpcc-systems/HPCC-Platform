@@ -764,7 +764,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
 
             gatherWarnings(ctx.errs, qquery);
 
-            if (qquery && !syntaxChecking)
+            if (qquery && !syntaxChecking && !optGenerateMeta)
                 qquery.setown(convertAttributeToQuery(qquery, ctx));
 
             if (instance.wu->getDebugValueBool("addTimingToWorkunit", true))

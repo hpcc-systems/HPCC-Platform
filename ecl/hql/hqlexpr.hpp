@@ -893,6 +893,7 @@ public:
     void noteEndModule();
     void noteEndQuery();
     void noteFinishedParse(IHqlScope * scope);
+    void notePrivateSymbols(IHqlScope * scope);
     IPropertyTree * queryEnsureArchiveModule(const char * name, IHqlScope * scope);
 
     void setGatherMeta(const MetaOptions & options);
@@ -956,6 +957,7 @@ public:
     inline void noteEndQuery() { parseCtx.noteEndQuery(); }
     inline void noteFinishedParse(IHqlScope * scope) { parseCtx.noteFinishedParse(scope); }
     void noteExternalLookup(IHqlScope * parentScope, IHqlExpression * expr);
+    inline void notePrivateSymbols(IHqlScope * scope) { parseCtx.notePrivateSymbols(scope); }
 
     inline IEclRepository * queryRepository() const { return parseCtx.eclRepository; }
     inline bool queryExpandCallsWhenBound() const { return parseCtx.expandCallsWhenBound; }
