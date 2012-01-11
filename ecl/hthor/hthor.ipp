@@ -95,8 +95,10 @@ public:
         if (!rowset)
             rowset = createRowset(newRowCount);
         else
-            rowset = (byte * *)rowManager.resizeRow(rowset, (newRowCount-1) * sizeof(void *), newRowCount * sizeof(void *), allocatorId | ACTIVITY_FLAG_ISREGISTERED);
-
+        {
+            size32_t capacity;
+            rowset = (byte * *)rowManager.resizeRow(rowset, (newRowCount-1) * sizeof(void *), newRowCount * sizeof(void *), allocatorId | ACTIVITY_FLAG_ISREGISTERED, capacity);
+        }
         rowset[newRowCount-1] = (byte *)row;
         return rowset;
     }
@@ -106,8 +108,10 @@ public:
         if (!rowset)
             rowset = createRowset(newRowCount);
         else
-            rowset = (byte * *)rowManager.resizeRow(rowset, oldRowCount * sizeof(void *), newRowCount * sizeof(void *), allocatorId | ACTIVITY_FLAG_ISREGISTERED);
-
+        {
+            size32_t capacity;
+            rowset = (byte * *)rowManager.resizeRow(rowset, oldRowCount * sizeof(void *), newRowCount * sizeof(void *), allocatorId | ACTIVITY_FLAG_ISREGISTERED, capacity);
+        }
         //New rows (if any) aren't cleared....
         return rowset;
     }
@@ -147,8 +151,9 @@ public:
 
     virtual void * resizeRow(size32_t newSize, void * row, size32_t & size)
     {
-        void * ret = rowManager.resizeRow(row, size, newSize, allocatorId | ACTIVITY_FLAG_ISREGISTERED);
-        size = newSize;
+        size32_t capacity;
+        void * ret = rowManager.resizeRow(row, size, newSize, allocatorId | ACTIVITY_FLAG_ISREGISTERED, capacity);
+        size = capacity;
         return ret;
     }
 
