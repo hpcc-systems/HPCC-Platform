@@ -971,8 +971,6 @@ CHThorIndexWriteActivity::CHThorIndexWriteActivity(IAgentContext &_agent, unsign
     }
     clusterHandler.setown(createClusterWriteHandler(agent, &helper, NULL, lfn, filename, false));
     sizeLimit = agent.queryWorkUnit()->getDebugValueInt64("hthorDiskWriteSizeLimit", defaultHThorDiskWriteSizeLimit);
-    bool isVariable = helper.queryDiskRecordSize()->isVariableSize();
-    maxDiskRecordSize = isVariable ? 4096 : helper.queryDiskRecordSize()->getFixedSize();
 }
 
 CHThorIndexWriteActivity::~CHThorIndexWriteActivity()
@@ -986,11 +984,19 @@ CHThorIndexWriteActivity::~CHThorIndexWriteActivity()
 
 void CHThorIndexWriteActivity::execute()
 {
+    size32_t maxDiskRecordSize;
+    if (helper.queryDiskRecordSize()->isVariableSize())
+        maxDiskRecordSize = 0x8000;
+    else
+    {
+        maxDiskRecordSize = helper.queryDiskRecordSize()->getFixedSize();
+        if (maxDiskRecordSize > 0x8000)
+            throw MakeStringException(99, "Index minimum record length (%d) exceeds 32K internal limit", maxDiskRecordSize);
+    }
+    OwnedMalloc<char> rowBuffer(maxDiskRecordSize, true);
 
     // Loop thru the results
     unsigned __int64 reccount = 0;
-    char *rowBuffer = (char *) alloca(maxDiskRecordSize);
-    memset(rowBuffer, 0, maxDiskRecordSize);
     unsigned __int64 fileSize = 0;
     if (helper.getDatasetName())
     {
