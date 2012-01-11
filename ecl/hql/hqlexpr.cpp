@@ -730,6 +730,14 @@ void HqlParseContext::noteFinishedParse(IHqlScope * scope)
         expandScopeSymbolsMeta(metaState.nesting.tos(), scope);
 }
 
+
+void HqlParseContext::notePrivateSymbols(IHqlScope * scope)
+{
+    if (metaState.gatherNow)
+        expandScopeSymbolsMeta(metaState.nesting.tos(), scope);
+}
+
+
 bool HqlParseContext::checkBeginMeta()
 {
     if (!metaTree)
