@@ -498,10 +498,10 @@ public:
 
     void noteReleased(const void *ptr) { throwUnexpected(); }
     bool _isShared(const void *ptr) const { throwUnexpected(); }
+    size32_t _capacity() const { throwUnexpected(); }
     void _setDestructorFlag(const void *ptr) { throwUnexpected(); }
     void noteLinked(const void *ptr) { throwUnexpected(); }
 
-    virtual size32_t recordSize() { throwUnexpected(); }
     virtual void released() 
     {
         throwUnexpected();
@@ -605,7 +605,6 @@ public:
         blocks = NULL;
     }
 
-    virtual size32_t recordSize() { return fixedSize; }
     virtual size32_t sizeInPages() { return 1; }
 
     virtual bool _isShared(const void *_ptr) const
@@ -619,6 +618,16 @@ public:
         }
         else
             throwUnexpected();
+    }
+
+    virtual size32_t _capacity() const
+    {
+        size32_t capacity = fixedSize - sizeof(atomic_t) - sizeof(unsigned);
+#ifdef CHECKING_HEAP
+        if (flags & EXTRA_DEBUG_INFO)
+            capacity -= sizeof(unsigned);
+#endif
+        return capacity;
     }
 
     virtual void _setDestructorFlag(const void *_ptr)
@@ -837,7 +846,7 @@ public:
         activityId = _activityId;
     }
 
-    virtual size32_t recordSize() { return hugeSize; }
+    virtual size32_t _capacity() const { return ((hugeSize + HEAP_ALIGNMENT_SIZE - 1) / HEAP_ALIGNMENT_SIZE) - offsetof(HugeHeaplet, data); }
 
     virtual unsigned sizeInPages() 
     {
@@ -1164,8 +1173,8 @@ public:
             if (finger->queryCount()==1)
             {
                 if (memTraceLevel >= 3) 
-                    logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::pages() freeing Heaplet linked in active list - addr=%p pages=%u recordSize=%u rowMgr=%p",
-                            finger, finger->sizeInPages(), finger->recordSize(), this);
+                    logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::pages() freeing Heaplet linked in active list - addr=%p pages=%u capacity=%u rowMgr=%p",
+                            finger, finger->sizeInPages(), finger->_capacity(), this);
                 finger->prev->next = next;
                 next->prev = finger->prev;
                 delete finger;
@@ -1303,18 +1312,20 @@ public:
             logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::setMemoryLimit new memlimit=%"I64F"u pageLimit=%u rowMgr=%p", (unsigned __int64) bytes, pageLimit, this);
     }
 
-    virtual void *resizeRow(void * original, unsigned oldsize, unsigned newsize, unsigned activityId)
+    virtual void *resizeRow(void * original, size32_t oldsize, size32_t newsize, unsigned activityId, size32_t &capacity)
     {
         assertex(newsize);
         assertex(!HeapletBase::isShared(original));
-        if (newsize==oldsize || roundup(newsize) == roundup(oldsize))
+        assertex(newsize >= oldsize);
+        capacity = HeapletBase::capacity(original);
+        if (newsize==oldsize || newsize <= capacity)
             return original;
         else
         {
             void *ret = allocate(newsize, activityId);
-            unsigned copysize = (oldsize > newsize) ? newsize : oldsize;
-            memcpy(ret, original, copysize);
+            memcpy(ret, original, oldsize);
             HeapletBase::release(original);
+            capacity = HeapletBase::capacity(ret);
             return ret;
         }
     }
@@ -1449,6 +1460,7 @@ bool DataBuffer::attachToRowMgr(IRowManager *rowMgr)
 
 void DataBuffer::noteReleased(const void *ptr) { throwUnexpected(); }
 bool DataBuffer::_isShared(const void *ptr) const { throwUnexpected(); }
+size32_t DataBuffer::_capacity() const { throwUnexpected(); }
 void DataBuffer::_setDestructorFlag(const void *ptr) { throwUnexpected(); }
 void DataBuffer::noteLinked(const void *ptr) { throwUnexpected(); }
 
@@ -1663,6 +1675,7 @@ void DataBufferBottom::released()
 
 void DataBufferBottom::noteReleased(const void *ptr) { throwUnexpected(); }
 bool DataBufferBottom::_isShared(const void *ptr) const { throwUnexpected(); }
+size32_t DataBufferBottom::_capacity() const { throwUnexpected(); }
 void DataBufferBottom::_setDestructorFlag(const void *ptr) { throwUnexpected(); }
 void DataBufferBottom::noteLinked(const void *ptr) { throwUnexpected(); }
 
