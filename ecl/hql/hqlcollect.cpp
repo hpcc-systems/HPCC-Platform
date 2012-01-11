@@ -190,8 +190,8 @@ public:
 class FileSystemEclCollection : public CEclSourceCollection
 {
 public:
-    FileSystemEclCollection(IErrorReceiver * _errs, unsigned _trace)
-        : root(NULL, NULL), errs(_errs), trace(_trace)
+    FileSystemEclCollection(unsigned _trace)
+        : root(NULL, NULL), trace(_trace)
     {
     }
 
@@ -200,10 +200,9 @@ public:
     virtual IEclSourceIterator * getContained(IEclSource * optParent);
     virtual void checkCacheValid();
 
-    void processFilePath(const char * sourceSearchPath, bool allowPlugins);
+    void processFilePath(IErrorReceiver * errs, const char * sourceSearchPath, bool allowPlugins);
 
 public:
-    Linked<IErrorReceiver> errs;
     FileSystemDirectory root;
     unsigned trace;
 };
@@ -428,7 +427,7 @@ IEclSourceIterator * FileSystemEclCollection::getContained(IEclSource * optParen
     return parent->getContained();
 }
 
-void FileSystemEclCollection::processFilePath(const char * sourceSearchPath, bool allowPlugins)
+void FileSystemEclCollection::processFilePath(IErrorReceiver * errs, const char * sourceSearchPath, bool allowPlugins)
 {
     if (!sourceSearchPath)
         return;
@@ -488,8 +487,8 @@ void FileSystemEclCollection::checkCacheValid()
 
 extern HQL_API IEclSourceCollection * createFileSystemEclCollection(IErrorReceiver *errs, const char * path, unsigned flags, unsigned trace)
 {
-    Owned<FileSystemEclCollection> collection = new FileSystemEclCollection(errs, trace);
-    collection->processFilePath(path, (flags & ESFallowplugins) != 0);
+    Owned<FileSystemEclCollection> collection = new FileSystemEclCollection(trace);
+    collection->processFilePath(errs, path, (flags & ESFallowplugins) != 0);
     return collection.getClear();
 }
 
