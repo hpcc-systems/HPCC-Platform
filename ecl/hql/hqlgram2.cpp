@@ -8637,6 +8637,9 @@ void HqlGram::doDefineSymbol(DefineIdSt * defineid, IHqlExpression * _expr, IHql
             if (scopeExpr->getOperator() == no_virtualscope)
                 checkDerivedCompatible(name, scopeExpr, expr, isParametered, activeScope.activeParameters, idattr);
 
+            if (expectedAttribute && !insideNestedScope())
+                lookupCtx.notePrivateSymbols(activeScope.privateScope);
+
             //static int i = 0;
             //PrintLog("Kill private scope: %d at %s:%d because of %s", ++i, filename->str(), idattr.lineno, current_id->str());
             activeScope.newPrivateScope();
