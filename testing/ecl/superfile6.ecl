@@ -24,9 +24,13 @@ string fsuper := '~t6::superfile';
 string fsub := '~t6::subfile';
 ds := DATASET ([{'aaa'}, {'bbb'}, {'ccc'}, {'ddd'}], {string name});
 
+conditionalDelete(string lfn) := FUNCTION
+        RETURN IF(FileServices.FileExists(lfn), FileServices.DeleteLogicalFile(lfn));
+END;
+
 sequential (
   FileServices.DeleteSuperFile (fsuper),
-  FileServices.DeleteLogicalFile (fsub),
+  conditionalDelete (fsub),
   output(FileServices.SuperFileExists (fsuper)),
   output(FileServices.FileExists (fsub)),
 
