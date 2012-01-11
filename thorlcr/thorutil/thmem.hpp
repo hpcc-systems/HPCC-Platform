@@ -222,6 +222,7 @@ class graph_decl CThorRowArray
     bool keepsize;
     bool sizing;
     bool raiseexceptions;
+    memsize_t minRemaining;
 
     void adjSize(const void *row, bool inc);
 
@@ -235,12 +236,14 @@ public:
         sizing = false;
         raiseexceptions = false;
         memsize_t tmp = ((unsigned __int64)ThorRowMemoryAvailable())*7/8;   // don't fill up completely
+
         if (tmp>0xffffffff)
             maxtotal = 0xffffffff;
         else
             maxtotal = (unsigned)tmp;
         if (maxtotal<0x100000)
             maxtotal = 0x100000;
+        minRemaining = maxtotal/8;
     }
 
 
@@ -340,14 +343,27 @@ public:
         memsize_t sz = totalMem();
 #ifdef _DEBUG
         assertex(sizing&&!raiseexceptions);
+#endif
         if (sz>maxtotal) {
+#ifdef _DEBUG
             PROGLOG("CThorRowArray isFull(totalsize=%"I64F"u,ptrbuf.length()=%u,ptrbuf.capacity()=%u,overhead=%u,maxtotal=%"I64F"u",
                      (unsigned __int64) totalsize,ptrbuf.length(),ptrbuf.capacity(),overhead,(unsigned __int64) maxtotal);
+#endif
             return true;
         }
-        return false;
+        else {
+            // maxtotal is estimate of how much this rowarray is using, but allocator may still be short of available memory.
+            memsize_t asz = ThorRowMemoryAvailable();
+            if (asz < minRemaining) {
+#ifdef _DEBUG
+                StringBuffer msg("CThorRowArray isFull(), ThorMemoryManager remaining() : ");
+                PROGLOG("%s", msg.append(asz));
 #endif
-        return sz>maxtotal;
+                return true;
+            }
+            else
+                return false;
+        }
     }
 
     void sort(ICompare & compare, bool stable)
