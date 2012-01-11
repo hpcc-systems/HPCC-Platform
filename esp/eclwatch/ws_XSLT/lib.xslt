@@ -2,8 +2,6 @@
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
     xmlns:xs="http://www.w3.org/2001/XMLSchema"
-    xmlns:xalan="http://xml.apache.org/xalan"
-    exclude-result-prefixes="xalan"
     >
 
 <!--

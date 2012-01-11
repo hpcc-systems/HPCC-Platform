@@ -559,7 +559,7 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
                 </xsl:if>
                 <xsl:variable name="pluginsNodes" select="$pluginsRoot/Plugins/Plugin/@destName"/>
                 <xsl:if test="not(function-available('set:distinct'))">
-                    <xsl:message terminate="yes">This XSL transformation can only be run by Apache's Xalan processor!</xsl:message>
+                    <xsl:message terminate="yes">This XSL transformation can only be run by an XSLT processor supporting exslt sets!</xsl:message>
                 </xsl:if>
                 <Plugins>
                     <xsl:attribute name="path"><xsl:value-of select="$eclServerNode/@pluginsPath"/></xsl:attribute>

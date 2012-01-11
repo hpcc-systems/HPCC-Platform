@@ -20,10 +20,10 @@
 <xsl:stylesheet version="1.0" 
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-    xmlns:xs="http://www.w3.org/2001/XMLSchema" 
-    xmlns:xalan="http://xml.apache.org/xalan" 
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:exsl="http://exslt.org/common"
     xmlns:msxsl="urn:schemas-microsoft-com:xslt" 
-    exclude-result-prefixes="xalan">
+    exclude-result-prefixes="exsl">
     
     <xsl:param name="showCount" select="1"/>
     <xsl:param name="showHeader" select="1"/>
@@ -81,9 +81,9 @@
                             </xsl:call-template>
                         </xsl:variable>
                         <xsl:choose>
-                            <xsl:when test="function-available('xalan:nodeset')">
+                            <xsl:when test="function-available('exsl:node-set')">
                                 <xsl:call-template name="show-row">
-                                    <xsl:with-param name="nodes" select="xalan:nodeset($nodes)"/>
+                                    <xsl:with-param name="nodes" select="exsl:node-set($nodes)"/>
                                     <xsl:with-param name="level" select="1"/>
                                 </xsl:call-template>
                             </xsl:when>
@@ -131,9 +131,9 @@
         </colgroup>
         <thead>
             <xsl:choose>
-                <xsl:when test="function-available('xalan:nodeset')">
+                <xsl:when test="function-available('exsl:node-set')">
                     <xsl:call-template name="show-header">
-                        <xsl:with-param name="headers" select="xalan:nodeset($headers)"/>
+                        <xsl:with-param name="headers" select="exsl:node-set($headers)"/>
                         <xsl:with-param name="showCount" select="$showCount"/>
                     </xsl:call-template>
                 </xsl:when>
@@ -298,9 +298,9 @@
             </xsl:variable>
             <xsl:variable name="newLevel">
                 <xsl:choose>
-                    <xsl:when test="function-available('xalan:nodeset')">
+                    <xsl:when test="function-available('exsl:node-set')">
                         <xsl:call-template name="getMaxLevel">
-                            <xsl:with-param name="nodes" select="xalan:nodeset($nodes)"/>
+                            <xsl:with-param name="nodes" select="exsl:node-set($nodes)"/>
                             <xsl:with-param name="level" select="$level"/>
                         </xsl:call-template>
                     </xsl:when>
@@ -332,8 +332,8 @@
                     </data>
                 </xsl:if>
                 <xsl:choose>
-                    <xsl:when test="function-available('xalan:nodeset')">
-                        <xsl:copy-of select="xalan:nodeset($nodes)/*"/>
+                    <xsl:when test="function-available('exsl:node-set')">
+                        <xsl:copy-of select="exsl:node-set($nodes)/*"/>
                     </xsl:when>
                     <xsl:when test="function-available('msxsl:node-set')">
                         <xsl:copy-of select="msxsl:node-set($nodes)/*"/>
