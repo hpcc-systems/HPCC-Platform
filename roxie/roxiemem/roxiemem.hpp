@@ -87,6 +87,7 @@ protected:
     virtual void released() = 0;
     virtual void noteReleased(const void *ptr) = 0;
     virtual bool _isShared(const void *ptr) const = 0;
+    virtual size32_t _capacity() const = 0;
     virtual void _setDestructorFlag(const void *ptr) = 0;
     virtual void noteLinked(const void *ptr) = 0;
 
@@ -124,6 +125,16 @@ public:
             return atomic_read(&h->count)!= 2; // The heaplet itself has a usage count of 1
         }
         // isShared(NULL) or isShared on an object that shares a link-count is an error
+        throwUnexpected();
+    }
+
+    static size32_t capacity(const void *ptr)
+    {
+        if (ptr)
+        {
+            HeapletBase *h = findBase(ptr);
+            return h->_capacity();
+        }
         throwUnexpected();
     }
 
@@ -214,6 +225,7 @@ private:
     virtual void released();
     virtual void noteReleased(const void *ptr);
     virtual bool _isShared(const void *ptr) const;
+    virtual size32_t _capacity() const;
     virtual void _setDestructorFlag(const void *ptr);
     virtual void noteLinked(const void *ptr);
 protected:
@@ -244,6 +256,7 @@ private:
     virtual void released();
     virtual void noteReleased(const void *ptr);
     virtual bool _isShared(const void *ptr) const;
+    virtual size32_t _capacity() const;
     virtual void _setDestructorFlag(const void *ptr);
     virtual void noteLinked(const void *ptr);
 public:
@@ -335,7 +348,7 @@ interface IRowManager : extends IInterface
 {
     virtual void *allocate(size32_t size, unsigned activityId=0) = 0;
     virtual void *clone(size32_t size, const void *source, unsigned activityId=0) = 0;
-    virtual void *resizeRow(void * original, unsigned oldsize, unsigned newsize, unsigned activityId=0) = 0;
+    virtual void *resizeRow(void * original, size32_t oldsize, size32_t newsize, unsigned activityId, size32_t &capacity) = 0;
     virtual void *finalizeRow(void *final, unsigned originalSize, unsigned finalSize, unsigned activityId) = 0;
     virtual void setMemoryLimit(memsize_t size) = 0;
     virtual unsigned allocated() = 0;
