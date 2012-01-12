@@ -50,6 +50,7 @@ extern HQL_API ITypeInfo * getTypeUnknownDistribution(ITypeInfo * prev);
 extern HQL_API ITypeInfo * getTypeRemoveDistribution(ITypeInfo * prev);
 extern HQL_API ITypeInfo * getTypeRemoveActiveSort(ITypeInfo * prev);
 extern HQL_API ITypeInfo * getTypeRemoveAllSortOrders(ITypeInfo * prev);
+extern HQL_API bool hasUsefulMetaInformation(ITypeInfo * prev);
 
 //---------------------------------------------------------------------------------------------
 
