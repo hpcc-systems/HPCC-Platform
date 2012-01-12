@@ -10146,15 +10146,6 @@ protected:
     IHqlExpression * selSeq;
 };
 
-// If there is a join equality LEFT.x = RIGHT.x, and the transform contains a reference to RIGHT.x
-// substitute LEFT.x instead.
-// The modified transform is typically used for mapping the sort/grouping information
-// which means that information about sort orders are more likely to be preserved (for keyed joins).
-static IHqlExpression * mapJoinEqualitiesInTranform(const HqlExprArray & params, IHqlExpression * transform)
-{
-    JoinEqualityMapper mapper(params);
-    return mapper.mapEqualities(transform, &params.item(2));
-}
 
 //NOTE: The type information - e.g., distribution, grouping, sorting cannot include the dataset of the primary file
 //because for a no_newusertable etc. that would result in a circular reference.
@@ -10407,13 +10398,19 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
                         type.setown(getTypeRemoveAllSortOrders(type));
 
                     LinkedHqlExpr mapTransform = transform;
-                    //For all equality conditions, map RIGHT.x ->LEFT.x if the types match
+                    // If there is a join equality LEFT.x = RIGHT.x, and the transform contains a reference to RIGHT.x
+                    // substitute LEFT.x instead.
+                    // The modified transform is used for mapping the sort/grouping information
+                    // which means that information about sort orders are more likely to be preserved (for keyed joins).
                     if (!createDefaultRight && ((op == no_join) || (op == no_selfjoin)))
                     {
                         //Only bother to modify the transform if something useful is going to be mapped in
                         //the meta information - otherwise this can be expensive for no gain.
                         if (hasUsefulMetaInformation(type))
-                            mapTransform.setown(mapJoinEqualitiesInTranform(parms, transform));
+                        {
+                            JoinEqualityMapper mapper(parms);
+                            mapTransform.setown(mapper.mapEqualities(transform, &parms.item(2)));
+                        }
                     }
                     TableProjectMapper mapper;
                     mapper.setMapping(mapTransform, leftSelect);
