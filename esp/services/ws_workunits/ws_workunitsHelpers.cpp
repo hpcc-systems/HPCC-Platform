@@ -880,15 +880,18 @@ bool WsWuInfo::getClusterInfo(IEspECLWorkunit &info, unsigned flags)
             throw MakeStringException(ECLWATCH_CANNOT_CONNECT_DALI,"Cannot connect to DALI server.");
 
         Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName.str());
-        ClusterType platform = clusterInfo->getPlatform();
-        if (isThorCluster(platform))
-        {
-            clusterTypeFlag=1;
-            if (version > 1.29)
-                info.setThorLCR(ThorLCRCluster == platform);
+        if (clusterInfo.get())
+        {//Set thor flag or roxie flag in order to display some options for thor or roxie
+            ClusterType platform = clusterInfo->getPlatform();
+            if (isThorCluster(platform))
+            {
+                clusterTypeFlag=1;
+                if (version > 1.29)
+                    info.setThorLCR(ThorLCRCluster == platform);
+            }
+            else if (RoxieCluster == platform)
+                clusterTypeFlag=2;
         }
-        else if (RoxieCluster == platform)
-            clusterTypeFlag=2;
         info.setClusterFlag(clusterTypeFlag);
     }
     return true;
