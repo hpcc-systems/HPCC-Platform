@@ -93,13 +93,13 @@ public:
   void setWizardIPList(const StringArray ipArray);
   void setWizardRules();
   CInstDetails* getServerIPMap(const char* compName, const char* buildSetName,const IPropertyTree* pEnvTree, unsigned numOfNode = 1);
-  void applyOverlappingRules(const char* compName, const char* buildSetName);
+  void applyOverlappingRules(const char* compName, const char* buildSetName, unsigned startpos);
   count_t getNumOfInstForIP(StringBuffer ip);
   void generateSoftwareTree(IPropertyTree* pTree);
   void addInstanceToTree(IPropertyTree* pTree, StringBuffer attrName, const char* processName, const char* buildSetName, const char* instName);
   void getDefaultsForWizard(IPropertyTree* pTree);
   void addRoxieThorClusterToEnv(IPropertyTree* pNewEnvTree, CInstDetails* pInstDetails, const char* buildSetName, bool genRoxieOnDemand = false);
-  unsigned getCntForAlreadyAssignedIPS();
+  unsigned getCntForAlreadyAssignedIPS(const char* buildsetName);
   void addToCompIPMap(const char* buildSetName, const char* value, const char* compName);
   void getEspBindingInformation(IPropertyTree* pNewEnvTree);
   StringBuffer& getDbUser() { return m_dbuser;}
@@ -119,6 +119,7 @@ public:
 
 private:
   void addComponentToSoftware(IPropertyTree* pNewEnvTree, IPropertyTree* pBuildSet);
+  StringArray& getIpAddrMap(const char* buildsetName);
 
 private:
   typedef StringArray* StringArrayPtr;
@@ -133,6 +134,7 @@ private:
    MapStringToStringArray m_compForTopology; 
    GenOptional m_genOptForAllComps;
    MapStringToStringArray m_invalidServerCombo;
+   unsigned m_supportNodes;
    unsigned m_roxieNodes;
    unsigned m_thorNodes;
    unsigned m_thorSlavesPerNode;
@@ -141,6 +143,7 @@ private:
    bool m_roxieOnDemand;
    
    StringArray m_ipaddress;
+   StringArray m_ipaddressSupport;
    MapStringToMyClass<CInstDetails> m_compIpMap; 
    Owned<IPropertyTree> m_pXml;
    IPropertyTree* m_cfg;
