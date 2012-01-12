@@ -865,7 +865,7 @@ int CWsEclBinding::getWsEclLinks(IEspContext &context, CHttpRequest* request, CH
         ForEach (*input_xsds)
         {
             xml.append("<dataset>");
-            xml.append("<name>").append(input_xsds->query().queryProp("@name")).append("</name>");
+            xml.append("<name>").append(input_xsds->query().queryProp("@sname")).append("</name>");
             xml.append("</dataset>");
         }
         xml.append("</input_datasets>");
@@ -874,7 +874,7 @@ int CWsEclBinding::getWsEclLinks(IEspContext &context, CHttpRequest* request, CH
         ForEach (*result_xsds)
         {
             xml.append("<dataset>");
-            xml.append("<name>").append(result_xsds->query().queryProp("@name")).append("</name>");
+            xml.append("<name>").append(result_xsds->query().queryProp("@sname")).append("</name>");
             xml.append("</dataset>");
         }
         xml.append("</result_datasets>");
@@ -981,7 +981,7 @@ void CWsEclBinding::appendSchemaNamespaces(IPropertyTree *namespaces, IEspContex
             int count=1;
             ForEach (*result_xsds)
             {
-                const char *resultname = result_xsds->query().queryProp("@name");
+                const char *resultname = result_xsds->query().queryProp("@sname");
                 StringBuffer urn("urn:hpccsystems:ecl:");
                 appendNamespaceSpecificString(urn, wsinfo.queryname.get()).append(":result:");
                 appendNamespaceSpecificString(urn, resultname);
@@ -2280,9 +2280,9 @@ int CWsEclBinding::getWsEclDefinition(CHttpRequest* request, CHttpResponse* resp
                 appendNamespaceSpecificString(urn, resname.str());
 
                 if (!stricmp(scope.str(), "input"))
-                    xpath.appendf("Input[@name='%s']/xs:schema", resname.str());
+                    xpath.appendf("Input[@sname='%s']/xs:schema", resname.str());
                 else if (!stricmp(scope.str(), "result"))
-                    xpath.appendf("Result[@name='%s']/xs:schema",resname.str());
+                    xpath.appendf("Result[@sname='%s']/xs:schema",resname.str());
                 if (xpath.length())
                     selected_xsd.setown(xsds_tree->getPropTree(xpath.str()));
                 if (selected_xsd)
