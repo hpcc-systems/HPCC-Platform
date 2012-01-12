@@ -848,11 +848,44 @@ class CSuperAllocator: public CInterface, implements IAllocator
 
 #endif
 
+    memsize_t freeListMemRemaining(bool trace)
+    {
+        memsize_t sz = 0;
+        unsigned num = 0;
+        size32_t max = 0;
+        size32_t min = (size32_t)-1;
+        FreeListPtr  CurNode = LastFreeEnt;
+        do {
+            sz += CurNode->Size;
+            if (CurNode->Size > max) max = CurNode->Size;
+            if (CurNode->Size < min) min = CurNode->Size;
+            num++;
+            CurNode = CurNode->Next;
+        }
+        while (CurNode != LastFreeEnt);
+        if (trace)
+        {
+            size32_t avg = (size32_t) (sz / num);
+            StringBuffer report("FreeMem");
+            report.newline();
+            report.append("total free     : ").append(sz).newline();
+            report.append("free ptr count : ").append(num).newline();
+            report.append("largest        : ").append(max).newline();
+            report.append("smallest       : ").append(min).newline();
+            report.append("average        : ").append(avg).newline();
+            PROGLOG("%s", report.str());
+        }
+        return sz;
+    }
     void * OsAllocMem(size32_t sz)
     {
         ASSERTEX(sz==OSPAGEROUND(sz));
         if (OsTotal+sz>OsMax)
+        {
+            PrintStackReport();
+            DBGLOG("Free list mem = %"I64F"d", freeListMemRemaining(true));
             throw new CAllocatorOutOfMemException(e_out_of_memory,sz,OsTotal);
+        }
 
 #ifdef _WIN32
         void * ret = VirtualAlloc(NULL, sz, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
@@ -861,6 +894,8 @@ class CSuperAllocator: public CInterface, implements IAllocator
         void * ret =  mmap(NULL,sz,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_NORESERVE|MAP_ANONYMOUS,-1,0);
         if (ret == (void *)MAP_FAILED) {
 #endif
+            PrintStackReport();
+            DBGLOG("Free list mem = %"I64F"d", freeListMemRemaining(true));
             throw new CAllocatorOutOfMemException(e_out_of_memory,sz,OsTotal);
             return NULL;
         }
@@ -1589,6 +1624,13 @@ public:
         return OsMax;
     }
 
+    memsize_t totalRemaining()
+    {
+        SpinBlock block(lock);
+        if (OsTotal<OsMax) // JCS, don't see how OsTotal could be > OsMax, but code elsewhere implied it could
+            return OsMax-OsTotal;
+        return 0;
+    }
 
     void walkBlock(IWalkMem &walker,const byte * BlockPtr, size32_t OSBlockSize)
     {
@@ -1842,6 +1884,10 @@ public:
     virtual memsize_t totalMax()
     {
         return allocator.totalMax();
+    }
+    virtual memsize_t totalRemaining()
+    {
+        return allocator.totalRemaining();
     }
     virtual void checkPtrValid(const void * ptr)
     {

@@ -1186,6 +1186,7 @@ size32_t CThorRowAllocatorCache::subSize(unsigned cacheId, const void *row) cons
         }
         virtual void visitRowset(size32_t count, byte * * rows)
         {
+            size += thorRowMemoryFootprint(rows);
             while (count--) {
                 size += thorRowMemoryFootprint(*rows);
                 rows++;

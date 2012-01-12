@@ -31,6 +31,7 @@ interface IAllocator: extends IInterface
     virtual size32_t usableSize(const void *)=0;  
     virtual memsize_t totalAllocated()=0;   // amount allocated from OS
     virtual memsize_t totalMax()=0;         // total that can be allocated from OS
+    virtual memsize_t totalRemaining()=0;   // maximum remaining
     virtual void checkPtrValid(const void * ptr)=0;   // for debugging only
     virtual void logMemLeaks(bool logdata)=0; 
     virtual void * allocMem2(size32_t sz, size32_t &usablesz)=0;               // returns size actually allocated 
