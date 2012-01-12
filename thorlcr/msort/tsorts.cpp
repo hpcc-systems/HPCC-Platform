@@ -720,7 +720,7 @@ public:
         icompare = _icompare;
         icollate = _icollate?_icollate:_icompare;
         icollateupper = _icollateupper?_icollateupper:icollate;
-        
+
         Linked<IThorRowSortedLoader> sortedloader;
         sortedloader.setown(createThorRowSortedLoader(rowArray));
         Owned<IRowStream> overflowstream;
