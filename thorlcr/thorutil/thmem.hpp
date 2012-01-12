@@ -357,7 +357,7 @@ public:
             if (asz < minRemaining) {
 #ifdef _DEBUG
                 StringBuffer msg("CThorRowArray isFull(), ThorMemoryManager remaining() : ");
-                PROGLOG("%s", msg.append(asz));
+                PROGLOG("%s", msg.append((unsigned __int64) asz).str());
 #endif
                 return true;
             }
