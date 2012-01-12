@@ -6,7 +6,7 @@
 #include "wujobq.hpp"
 #include "fileview.hpp"
 #include "ws_ecl_service.hpp"
-#include "wswuinfo.hpp"
+#include "ws_ecl_wuinfo.hpp"
 #include "xsdparser.hpp"
 #include "httpclient.hpp"
 #include "xpp/XmlPullParser.h"
@@ -811,7 +811,7 @@ void buildSampleDataset(StringBuffer &xml, IPropertyTree *xsdtree, const char *s
 
 }
 
-void CWsEclBinding::buildSampleResponseXml(StringBuffer& msg, IEspContext &context, CHttpRequest* request, WsWuInfo &wsinfo)
+void CWsEclBinding::buildSampleResponseXml(StringBuffer& msg, IEspContext &context, CHttpRequest* request, WsEclWuInfo &wsinfo)
 {
     StringBuffer element;
     element.append(wsinfo.queryname.sget()).append("Response");
@@ -843,7 +843,7 @@ void CWsEclBinding::buildSampleResponseXml(StringBuffer& msg, IEspContext &conte
 }
 
 
-int CWsEclBinding::getWsEclLinks(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsWuInfo &wsinfo)
+int CWsEclBinding::getWsEclLinks(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo)
 {
     StringBuffer xml;
     xml.append("<links>");
@@ -909,7 +909,7 @@ int CWsEclBinding::getWsEcl2TabView(CHttpRequest* request, CHttpResponse* respon
     StringBuffer qid;
     splitLookupInfo(request->queryParameters(), thepath, wuid, qs, qid);
 
-    WsWuInfo wsinfo(wuid.str(), qs.str(), qid.str(), context->queryUserId(), context->queryPassword());
+    WsEclWuInfo wsinfo(wuid.str(), qs.str(), qid.str(), context->queryUserId(), context->queryPassword());
 
     StringBuffer xml;
     xml.append("<tabview>");
@@ -959,13 +959,13 @@ int CWsEclBinding::getWsEcl2TabView(CHttpRequest* request, CHttpResponse* respon
 
 void CWsEclBinding::appendSchemaNamespaces(IPropertyTree *namespaces, IEspContext &ctx, CHttpRequest* req, const char *service, const char *method)
 {
-    WsWuInfo *wsinfo = (WsWuInfo *) ctx.getBindingValue();
+    WsEclWuInfo *wsinfo = (WsEclWuInfo *) ctx.getBindingValue();
     if (wsinfo)
         appendSchemaNamespaces(namespaces, ctx, req, *wsinfo);
 }
 
 
-void CWsEclBinding::appendSchemaNamespaces(IPropertyTree *namespaces, IEspContext &ctx, CHttpRequest* req, WsWuInfo &wsinfo)
+void CWsEclBinding::appendSchemaNamespaces(IPropertyTree *namespaces, IEspContext &ctx, CHttpRequest* req, WsEclWuInfo &wsinfo)
 {
     IProperties *parms = ctx.queryRequestParameters();
         StringBuffer xsds;
@@ -1157,7 +1157,7 @@ void appendEclInputXsds(StringBuffer &content, IPropertyTree *xsd, BoolHash &add
     }
 }
 
-void CWsEclBinding::SOAPSectionToXsd(WsWuInfo &wsinfo, const char *parmXml, StringBuffer &schema, bool isRequest, IPropertyTree *xsdtree)
+void CWsEclBinding::SOAPSectionToXsd(WsEclWuInfo &wsinfo, const char *parmXml, StringBuffer &schema, bool isRequest, IPropertyTree *xsdtree)
 {
     Owned<IPropertyTree> tree = createPTreeFromXMLString(parmXml, ipt_none, (XmlReaderOptions)(xr_ignoreWhiteSpace|xr_noRoot));
 
@@ -1199,13 +1199,13 @@ void CWsEclBinding::SOAPSectionToXsd(WsWuInfo &wsinfo, const char *parmXml, Stri
 
 int CWsEclBinding::getXsdDefinition(IEspContext &context, CHttpRequest *request, StringBuffer &content, const char *service, const char *method, bool mda)
 {
-    WsWuInfo *wsinfo = (WsWuInfo *) context.getBindingValue();
+    WsEclWuInfo *wsinfo = (WsEclWuInfo *) context.getBindingValue();
     if (wsinfo)
         getXsdDefinition(context, request, content, *wsinfo);
     return 0;
 }
 
-int CWsEclBinding::getXsdDefinition(IEspContext &context, CHttpRequest *request, StringBuffer &content, WsWuInfo &wsinfo)
+int CWsEclBinding::getXsdDefinition(IEspContext &context, CHttpRequest *request, StringBuffer &content, WsEclWuInfo &wsinfo)
 {
     IProperties *httpparms=request->queryParameters();
 
@@ -1300,7 +1300,7 @@ int CWsEclBinding::getXsdDefinition(IEspContext &context, CHttpRequest *request,
 }
 
 
-bool CWsEclBinding::getSchema(StringBuffer& schema, IEspContext &ctx, CHttpRequest* req, WsWuInfo &wsinfo)
+bool CWsEclBinding::getSchema(StringBuffer& schema, IEspContext &ctx, CHttpRequest* req, WsEclWuInfo &wsinfo)
 {
     Owned<IPropertyTree> namespaces = createPTree();
     appendSchemaNamespaces(namespaces, ctx, req, wsinfo);
@@ -1350,7 +1350,7 @@ bool CWsEclBinding::getSchema(StringBuffer& schema, IEspContext &ctx, CHttpReque
     return true;
 }
 
-int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsWuInfo &wsinfo)
+int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo)
 {
     IProperties *parms = request->queryParameters();
 
@@ -1469,7 +1469,7 @@ void buildParametersXml(IPropertyTree *parmtree, IProperties *parms)
 }
 
 
-void CWsEclBinding::getWsEcl2XmlRequest(StringBuffer& soapmsg, IEspContext &context, CHttpRequest* request, WsWuInfo &wsinfo, const char *xmltype, const char *ns, unsigned flags)
+void CWsEclBinding::getWsEcl2XmlRequest(StringBuffer& soapmsg, IEspContext &context, CHttpRequest* request, WsEclWuInfo &wsinfo, const char *xmltype, const char *ns, unsigned flags)
 {
     Owned<IPropertyTree> parmtree = createPTree();
     IProperties *parms = context.queryRequestParameters();
@@ -1495,7 +1495,7 @@ void CWsEclBinding::getWsEcl2XmlRequest(StringBuffer& soapmsg, IEspContext &cont
     }
 }
 
-void CWsEclBinding::getWsEclJsonRequest(StringBuffer& jsonmsg, IEspContext &context, CHttpRequest* request, WsWuInfo &wsinfo, const char *xmltype, const char *ns, unsigned flags)
+void CWsEclBinding::getWsEclJsonRequest(StringBuffer& jsonmsg, IEspContext &context, CHttpRequest* request, WsEclWuInfo &wsinfo, const char *xmltype, const char *ns, unsigned flags)
 {
     Owned<IPropertyTree> parmtree = createPTree();
     IProperties *parms = context.queryRequestParameters();
@@ -1522,7 +1522,7 @@ void CWsEclBinding::getWsEclJsonRequest(StringBuffer& jsonmsg, IEspContext &cont
     }
 }
 
-void CWsEclBinding::getWsEclJsonResponse(StringBuffer& jsonmsg, IEspContext &context, CHttpRequest *request, const char *xml, WsWuInfo &wsinfo)
+void CWsEclBinding::getWsEclJsonResponse(StringBuffer& jsonmsg, IEspContext &context, CHttpRequest *request, const char *xml, WsEclWuInfo &wsinfo)
 {
     Owned<IPropertyTree> parmtree = createPTreeFromXMLString(xml, ipt_none, (XmlReaderOptions)(xr_ignoreWhiteSpace|xr_ignoreNameSpaces));
 
@@ -1584,7 +1584,7 @@ void CWsEclBinding::getWsEclJsonResponse(StringBuffer& jsonmsg, IEspContext &con
 }
 
 
-void CWsEclBinding::getSoapMessage(StringBuffer& soapmsg, IEspContext &context, CHttpRequest* request, WsWuInfo &wsinfo, unsigned flags)
+void CWsEclBinding::getSoapMessage(StringBuffer& soapmsg, IEspContext &context, CHttpRequest* request, WsEclWuInfo &wsinfo, unsigned flags)
 {
     soapmsg.append(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
@@ -1600,13 +1600,13 @@ void CWsEclBinding::getSoapMessage(StringBuffer& soapmsg, IEspContext &context, 
     soapmsg.append("</soap:Body></soap:Envelope>");
 }
 
-int CWsEclBinding::getXmlTestForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *formtype, WsWuInfo &wsinfo)
+int CWsEclBinding::getXmlTestForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *formtype, WsEclWuInfo &wsinfo)
 {
     getXmlTestForm(context, request, response, wsinfo, formtype);
     return 0;
 };
 
-int CWsEclBinding::getXmlTestForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsWuInfo &wsinfo, const char *formtype)
+int CWsEclBinding::getXmlTestForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo, const char *formtype)
 {
     IProperties *parms = context.queryRequestParameters();
 
@@ -1670,7 +1670,7 @@ int CWsEclBinding::getXmlTestForm(IEspContext &context, CHttpRequest* request, C
     return 0;
 }
 
-int CWsEclBinding::getJsonTestForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsWuInfo &wsinfo, const char *formtype)
+int CWsEclBinding::getJsonTestForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo, const char *formtype)
 {
     IProperties *parms = context.queryRequestParameters();
 
@@ -1721,7 +1721,7 @@ int CWsEclBinding::getJsonTestForm(IEspContext &context, CHttpRequest* request, 
     return 0;
 }
 
-int CWsEclBinding::onGetSoapBuilder(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsWuInfo &wsinfo)
+int CWsEclBinding::onGetSoapBuilder(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo)
 {
     return getXmlTestForm(context, request, response, wsinfo, "soap");
 }
@@ -1738,7 +1738,7 @@ int CWsEclBinding::getWsEcl2Form(CHttpRequest* request, CHttpResponse* response,
     StringBuffer qs;
     StringBuffer qid;
     splitLookupInfo(request->queryParameters(), thepath, wuid, qs, qid);
-    WsWuInfo wsinfo(wuid.str(), qs.str(), qid.str(), context->queryUserId(), context->queryPassword());
+    WsEclWuInfo wsinfo(wuid.str(), qs.str(), qid.str(), context->queryUserId(), context->queryPassword());
 
     if (strieq(formtype.str(), "ecl"))
         return getGenForm(*context, request, response, wsinfo);
@@ -1814,7 +1814,7 @@ void CWsEclBinding::addParameterToWorkunit(IWorkUnit * workunit, IConstWUResult 
 }
 
 
-int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsWuInfo &wsinfo, const char *xml, StringBuffer &out, const char *viewname, const char *xsltname)
+int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinfo, const char *xml, StringBuffer &out, const char *viewname, const char *xsltname)
 {
     Owned <IWorkUnitFactory> factory = getSecWorkUnitFactory(*context.querySecManager(), *context.queryUser());
     Owned <IWorkUnit> workunit = factory->createWorkUnit(NULL, "wsecl", context.queryUserId());
@@ -2020,7 +2020,7 @@ static const char * getResultsXmlBody(const char * xmlin, StringBuffer &results)
     return results.str();
 }
 
-int CWsEclBinding::onSubmitQueryOutputXML(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsWuInfo &wsinfo)
+int CWsEclBinding::onSubmitQueryOutputXML(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo)
 {
     StringBuffer soapmsg;
 
@@ -2075,7 +2075,7 @@ int CWsEclBinding::onSubmitQueryOutputXML(IEspContext &context, CHttpRequest* re
     return 0;
 }
 
-int CWsEclBinding::onSubmitQueryOutputView(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsWuInfo &wsinfo)
+int CWsEclBinding::onSubmitQueryOutputView(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo)
 {
     StringBuffer soapmsg;
 
@@ -2132,7 +2132,7 @@ int CWsEclBinding::onSubmitQueryOutputView(IEspContext &context, CHttpRequest* r
 
 int CWsEclBinding::getWsdlMessages(IEspContext &context, CHttpRequest *request, StringBuffer &content, const char *service, const char *method, bool mda)
 {
-    WsWuInfo *wsinfo = (WsWuInfo *) context.getBindingValue();
+    WsEclWuInfo *wsinfo = (WsEclWuInfo *) context.getBindingValue();
     if (wsinfo)
     {
         content.appendf("<message name=\"%sSoapIn\">", wsinfo->queryname.sget());
@@ -2149,7 +2149,7 @@ int CWsEclBinding::getWsdlMessages(IEspContext &context, CHttpRequest *request, 
 
 int CWsEclBinding::getWsdlPorts(IEspContext &context, CHttpRequest *request, StringBuffer &content, const char *service, const char *method, bool mda)
 {
-    WsWuInfo *wsinfo = (WsWuInfo *) context.getBindingValue();
+    WsEclWuInfo *wsinfo = (WsEclWuInfo *) context.getBindingValue();
     if (wsinfo)
     {
         content.appendf("<portType name=\"%sServiceSoap\">", wsinfo->qsetname.sget());
@@ -2164,7 +2164,7 @@ int CWsEclBinding::getWsdlPorts(IEspContext &context, CHttpRequest *request, Str
 
 int CWsEclBinding::getWsdlBindings(IEspContext &context, CHttpRequest *request, StringBuffer &content, const char *service, const char *method, bool mda)
 {
-    WsWuInfo *wsinfo = (WsWuInfo *) context.getBindingValue();
+    WsEclWuInfo *wsinfo = (WsEclWuInfo *) context.getBindingValue();
     if (wsinfo)
     {
         content.appendf("<binding name=\"%sServiceSoap\" type=\"tns:%sServiceSoap\">", wsinfo->qsetname.sget(), wsinfo->qsetname.sget());
@@ -2184,7 +2184,7 @@ int CWsEclBinding::getWsdlBindings(IEspContext &context, CHttpRequest *request, 
 }
 
 
-int CWsEclBinding::onGetWsdl(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsWuInfo &wsinfo)
+int CWsEclBinding::onGetWsdl(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo)
 {
     context.setBindingValue(&wsinfo);
     EspHttpBinding::onGetWsdl(context, request, response, wsinfo.qsetname.sget(), wsinfo.queryname.sget());
@@ -2192,7 +2192,7 @@ int CWsEclBinding::onGetWsdl(IEspContext &context, CHttpRequest* request, CHttpR
     return 0;
 }
 
-int CWsEclBinding::onGetXsd(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsWuInfo &wsinfo)
+int CWsEclBinding::onGetXsd(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo)
 {
     context.setBindingValue(&wsinfo);
     EspHttpBinding::onGetXsd(context, request, response, wsinfo.qsetname.sget(), wsinfo.queryname.sget());
@@ -2211,7 +2211,7 @@ int CWsEclBinding::getWsEclDefinition(CHttpRequest* request, CHttpResponse* resp
     StringBuffer qs;
     StringBuffer qid;
     splitLookupInfo(parms, thepath, wuid, qs, qid);
-    WsWuInfo wsinfo(wuid.str(), qs.str(), qid.str(), context->queryUserId(), context->queryPassword());
+    WsEclWuInfo wsinfo(wuid.str(), qs.str(), qid.str(), context->queryUserId(), context->queryPassword());
 
     StringBuffer scope; //main, input, result, etc.
     nextPathNode(thepath, scope);
@@ -2325,7 +2325,7 @@ int CWsEclBinding::getWsEclExample(CHttpRequest* request, CHttpResponse* respons
     StringBuffer qs;
     StringBuffer qid;
     splitLookupInfo(parms, thepath, wuid, qs, qid);
-    WsWuInfo wsinfo(wuid.str(), qs.str(), qid.str(), context->queryUserId(), context->queryPassword());
+    WsEclWuInfo wsinfo(wuid.str(), qs.str(), qid.str(), context->queryUserId(), context->queryPassword());
 
     context->setBindingValue(&wsinfo);
     if (!stricmp(exampletype.str(), "request"))
@@ -2410,7 +2410,7 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
             StringBuffer qid;
 
             splitLookupInfo(parms, thepath, wuid, qs, qid);
-            WsWuInfo wsinfo(wuid.str(), qs.str(), qid.str(), context->queryUserId(), context->queryPassword());
+            WsEclWuInfo wsinfo(wuid.str(), qs.str(), qid.str(), context->queryUserId(), context->queryPassword());
 
             return onSubmitQueryOutputXML(*context, request, response, wsinfo);
         }
@@ -2421,7 +2421,7 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
             StringBuffer qid;
 
             splitLookupInfo(parms, thepath, wuid, qs, qid);
-            WsWuInfo wsinfo(wuid.str(), qs.str(), qid.str(), context->queryUserId(), context->queryPassword());
+            WsEclWuInfo wsinfo(wuid.str(), qs.str(), qid.str(), context->queryUserId(), context->queryPassword());
 
             return onSubmitQueryOutputView(*context, request, response, wsinfo);
         }
@@ -2440,7 +2440,7 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
             StringBuffer qid;
 
             splitLookupInfo(parms, thepath, wuid, qs, qid);
-            WsWuInfo wsinfo(wuid.str(), qs.str(), qid.str(), context->queryUserId(), context->queryPassword());
+            WsEclWuInfo wsinfo(wuid.str(), qs.str(), qid.str(), context->queryUserId(), context->queryPassword());
             return getWsEclLinks(*context, request, response, wsinfo);
         }
     }
@@ -2636,7 +2636,7 @@ void CWsEclBinding::handleHttpPost(CHttpRequest *request, CHttpResponse *respons
             nextPathNode(thepath, queryname);
         }
 
-        WsWuInfo wsinfo(wuid.str(), queryset.str(), queryname.str(), ctx->queryUserId(), ctx->queryPassword());
+        WsEclWuInfo wsinfo(wuid.str(), queryset.str(), queryname.str(), ctx->queryUserId(), ctx->queryPassword());
 
         StringBuffer content(request->queryContent());
         StringBuffer jsonresp;
@@ -2743,7 +2743,7 @@ int CWsEclBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* respo
         nextPathNode(thepath, queryname);
     }
 
-    WsWuInfo wsinfo(wuid.str(), queryset.str(), queryname.str(), ctx->queryUserId(), ctx->queryPassword());
+    WsEclWuInfo wsinfo(wuid.str(), queryset.str(), queryname.str(), ctx->queryUserId(), ctx->queryPassword());
 
     StringBuffer content(request->queryContent());
     StringBuffer soapresp;

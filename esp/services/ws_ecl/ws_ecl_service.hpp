@@ -27,7 +27,7 @@
 #include "esp.hpp"
 #include "SOAP/Platform/soapbind.hpp"
 
-#include "wswuinfo.hpp"
+#include "ws_ecl_wuinfo.hpp"
 
 typedef enum wsEclTypes_
 {
@@ -148,39 +148,39 @@ public:
     void xsltTransform(const char* xml, unsigned int len, const char* xslFileName, IProperties *params, StringBuffer& ret);
 
     int getWsEcl2TabView(CHttpRequest* request, CHttpResponse* response, const char *thepath);
-    int getGenForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsWuInfo &wsinfo);
+    int getGenForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo);
     int getWsEcl2Form(CHttpRequest* request, CHttpResponse* response, const char *thepath);
 
     bool isValidServiceName(IEspContext &context, const char *name){return true;}
     bool qualifyServiceName(IEspContext &context, const char *servname, const char *methname, StringBuffer &servQName, StringBuffer *methQName){servQName.clear().append(servname); if (methQName) methQName->clear().append(methname); return true;}
 
-    int getXsdDefinition(IEspContext &context, CHttpRequest *request, StringBuffer &content, WsWuInfo &wsinfo);
-    bool getSchema(StringBuffer& schema, IEspContext &ctx, CHttpRequest* req, WsWuInfo &wsinfo) ;
-    void appendSchemaNamespaces(IPropertyTree *namespaces, IEspContext &ctx, CHttpRequest* req, WsWuInfo &wsinfo);
+    int getXsdDefinition(IEspContext &context, CHttpRequest *request, StringBuffer &content, WsEclWuInfo &wsinfo);
+    bool getSchema(StringBuffer& schema, IEspContext &ctx, CHttpRequest* req, WsEclWuInfo &wsinfo) ;
+    void appendSchemaNamespaces(IPropertyTree *namespaces, IEspContext &ctx, CHttpRequest* req, WsEclWuInfo &wsinfo);
     void appendSchemaNamespaces(IPropertyTree *namespaces, IEspContext &ctx, CHttpRequest* req, const char *service, const char *method);
 
-    void SOAPSectionToXsd(WsWuInfo &wsinfo, const char *parmXml, StringBuffer &schema, bool isRequest=true, IPropertyTree *xsdtree=NULL);
-    int getXmlTestForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *formtype, WsWuInfo &wsinfo);
-    int getXmlTestForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsWuInfo &wsinfo, const char *formtype);
+    void SOAPSectionToXsd(WsEclWuInfo &wsinfo, const char *parmXml, StringBuffer &schema, bool isRequest=true, IPropertyTree *xsdtree=NULL);
+    int getXmlTestForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *formtype, WsEclWuInfo &wsinfo);
+    int getXmlTestForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo, const char *formtype);
 
-    void getWsEcl2XmlRequest(StringBuffer& soapmsg, IEspContext &context, CHttpRequest* request, WsWuInfo &wsinfo, const char *xmltype, const char *ns, unsigned flags);
-    void buildSampleResponseXml(StringBuffer& msg, IEspContext &context, CHttpRequest* request, WsWuInfo &wsinfo);
-    void getSoapMessage(StringBuffer& soapmsg, IEspContext &context, CHttpRequest* request, WsWuInfo &wsinfo, unsigned flags);
-    int onGetSoapBuilder(IEspContext &context, CHttpRequest* request, CHttpResponse* response,  WsWuInfo &wsinfo);
-    int onSubmitQueryOutputXML(IEspContext &context, CHttpRequest* request, CHttpResponse* response,    WsWuInfo &wsinfo);
-    int onSubmitQueryOutputView(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsWuInfo &wsinfo);
+    void getWsEcl2XmlRequest(StringBuffer& soapmsg, IEspContext &context, CHttpRequest* request, WsEclWuInfo &wsinfo, const char *xmltype, const char *ns, unsigned flags);
+    void buildSampleResponseXml(StringBuffer& msg, IEspContext &context, CHttpRequest* request, WsEclWuInfo &wsinfo);
+    void getSoapMessage(StringBuffer& soapmsg, IEspContext &context, CHttpRequest* request, WsEclWuInfo &wsinfo, unsigned flags);
+    int onGetSoapBuilder(IEspContext &context, CHttpRequest* request, CHttpResponse* response,  WsEclWuInfo &wsinfo);
+    int onSubmitQueryOutputXML(IEspContext &context, CHttpRequest* request, CHttpResponse* response,    WsEclWuInfo &wsinfo);
+    int onSubmitQueryOutputView(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo);
 
-    int submitWsEclWorkunit(IEspContext & context, WsWuInfo &wsinfo, const char *xml, StringBuffer &out, const char *viewname=NULL, const char *xsltname=NULL);
+    int submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinfo, const char *xml, StringBuffer &out, const char *viewname=NULL, const char *xsltname=NULL);
 
     void addParameterToWorkunit(IWorkUnit * workunit, IConstWUResult &vardef, IResultSetMetaData &metadef, const char *varname, IPropertyTree *valtree);
     
     void handleHttpPost(CHttpRequest *request, CHttpResponse *response);
     int HandleSoapRequest(CHttpRequest* request, CHttpResponse* response);
-    int getWsEclLinks(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsWuInfo &wsinfo);
+    int getWsEclLinks(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo);
     int getWsEclDefinition(CHttpRequest* request, CHttpResponse* response, const char *thepath);
 
-    int onGetWsdl(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsWuInfo &wsinfo);
-    int onGetXsd(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsWuInfo &wsinfo);
+    int onGetWsdl(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo);
+    int onGetXsd(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo);
 
     int getXsdDefinition(IEspContext &context, CHttpRequest *request, StringBuffer &content, const char *service, const char *method, bool mda);
 
@@ -191,9 +191,9 @@ public:
     int getWsEclExample(CHttpRequest* request, CHttpResponse* response, const char *thepath);
 
 
-    int getJsonTestForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsWuInfo &wsinfo, const char *formtype);
-    void getWsEclJsonRequest(StringBuffer& soapmsg, IEspContext &context, CHttpRequest* request, WsWuInfo &wsinfo, const char *xmltype, const char *ns, unsigned flags);
-    void getWsEclJsonResponse(StringBuffer& jsonmsg, IEspContext &context, CHttpRequest *request, const char *xml, WsWuInfo &wsinfo);
+    int getJsonTestForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo, const char *formtype);
+    void getWsEclJsonRequest(StringBuffer& soapmsg, IEspContext &context, CHttpRequest* request, WsEclWuInfo &wsinfo, const char *xmltype, const char *ns, unsigned flags);
+    void getWsEclJsonResponse(StringBuffer& jsonmsg, IEspContext &context, CHttpRequest *request, const char *xml, WsEclWuInfo &wsinfo);
     
     int onRelogin(IEspContext &context, CHttpRequest* request, CHttpResponse* response);
 

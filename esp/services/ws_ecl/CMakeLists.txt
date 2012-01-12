@@ -30,7 +30,7 @@ set (    SRCS
          ws_ecl_service.cpp 
          ws_ecl_json.cpp
          JSON_parser.c
-         wswuinfo.cpp 
+         ws_ecl_wuinfo.cpp 
     )
 
 include_directories ( 
