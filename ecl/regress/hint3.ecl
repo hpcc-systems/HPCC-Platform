@@ -28,5 +28,5 @@ integer2        age := 25;
 namesTable := dataset('names', namesRecord, thor);
 
 s1 := sort(namesTable, surname, forename);
-j1 := join(s1, s1, left.surname = right.surname and left.forename = right.forename, hint(spill));
-output(sort(j1, age));
+j1 := join(s1, s1, left.surname = right.surname and left.forename = right.forename, hint(spill),hint(output(few)));
+output(sort(j1, age, hint(output(10..20))));
