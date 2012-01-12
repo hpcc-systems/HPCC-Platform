@@ -22,7 +22,7 @@
 #include "workunit.hpp"
 #include "wuwebview.hpp"
 
-class WsWuInfo : public CInterface
+class WsEclWuInfo : public CInterface
 {
 public:
     Owned<IConstWorkUnit> wu;
@@ -39,7 +39,7 @@ public:
 public:
     IMPLEMENT_IINTERFACE;
 
-    WsWuInfo(const char *wuid, const char *qset, const char *qname, const char *user, const char *pw);
+    WsEclWuInfo(const char *wuid, const char *qset, const char *qname, const char *user, const char *pw);
 
     IPropertyTreeIterator *getInputSchemas();
     IPropertyTreeIterator *getResultSchemas();
