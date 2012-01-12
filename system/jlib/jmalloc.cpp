@@ -868,7 +868,7 @@ class CSuperAllocator: public CInterface, implements IAllocator
             size32_t avg = (size32_t) (sz / num);
             StringBuffer report("FreeMem");
             report.newline();
-            report.append("total free     : ").append(sz).newline();
+            report.append("total free     : ").append((unsigned __int64)sz).newline();
             report.append("free ptr count : ").append(num).newline();
             report.append("largest        : ").append(max).newline();
             report.append("smallest       : ").append(min).newline();
@@ -883,7 +883,7 @@ class CSuperAllocator: public CInterface, implements IAllocator
         if (OsTotal+sz>OsMax)
         {
             PrintStackReport();
-            DBGLOG("Free list mem = %"I64F"d", freeListMemRemaining(true));
+            DBGLOG("Free list mem = %"I64F"d", (unsigned __int64)freeListMemRemaining(true));
             throw new CAllocatorOutOfMemException(e_out_of_memory,sz,OsTotal);
         }
 
@@ -895,7 +895,7 @@ class CSuperAllocator: public CInterface, implements IAllocator
         if (ret == (void *)MAP_FAILED) {
 #endif
             PrintStackReport();
-            DBGLOG("Free list mem = %"I64F"d", freeListMemRemaining(true));
+            DBGLOG("Free list mem = %"I64F"d", (unsigned __int64)freeListMemRemaining(true));
             throw new CAllocatorOutOfMemException(e_out_of_memory,sz,OsTotal);
             return NULL;
         }
