@@ -217,11 +217,7 @@ public:
 
     virtual memsize_t remaining()
     {   
-        memsize_t a = allocator->totalAllocated();
-        memsize_t t = allocator->totalMax();
-        if (a<t)
-            return t-a;
-        return 0;
+        return allocator->totalRemaining();
     }
 
     virtual void reportLeaks()
