@@ -38,7 +38,8 @@
 CWizardInputs::CWizardInputs(const char* xmlArg,const char *service, 
                              IPropertyTree * cfg, 
                              MapStringTo<StringBuffer>* dirMap): m_service(service), 
-                             m_cfg(cfg), m_overrideDirs(dirMap), m_roxieOnDemand(true)
+                             m_cfg(cfg), m_overrideDirs(dirMap), m_roxieOnDemand(true),
+                             m_supportNodes(0)
 {
   m_pXml.setown(createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>"));
 }
@@ -74,6 +75,24 @@ void CWizardInputs::setEnvironment()
   StringBuffer xpath;
   if(m_pXml->hasProp("@ipList"))
     formIPList(m_pXml->queryProp("@ipList"), m_ipaddress);
+
+  if(m_pXml->hasProp("@supportNodes"))
+  {
+    m_supportNodes = atoi(m_pXml->queryProp("@supportNodes"));
+
+    if (m_supportNodes)
+    {
+      if (m_ipaddress.length() > 0 && m_ipaddress.length() > m_supportNodes)
+      {
+        for(unsigned i = 0; i < m_supportNodes; i++)
+          m_ipaddressSupport.append(m_ipaddress.item(i));
+
+        m_ipaddress.removen(0, m_supportNodes);
+      }
+      else
+        m_supportNodes = 0;
+    }
+  }
 
   if(m_pXml->hasProp("@roxieNodes"))
     m_roxieNodes = atoi(m_pXml->queryProp("@roxieNodes"));
@@ -175,7 +194,6 @@ void CWizardInputs::setWizardRules()
                    serverCompArr = new StringArray();
                    serverCompArr->append(x == 0 ? eachpair.item(1): eachpair.item(0));
                    m_invalidServerCombo.setValue(eachpair.item(x),serverCompArr);
-                   serverCompArr->kill();
                  }
                }
              }
@@ -246,7 +264,8 @@ CInstDetails* CWizardInputs::getServerIPMap(const char* compName, const char* bu
     if(m_compOnAllNodes.find(buildSetName) != NotFound)
       return instDetails;
     
-    if(m_ipaddress.ordinality() == 1)
+    if (m_ipaddress.ordinality() + m_supportNodes == 1 ||
+        (m_supportNodes == 1 && strcmp(buildSetName, "roxie") && strcmp(buildSetName, "thor" )))
     {
       instDetails = new CInstDetails(compName, m_ipaddress.item(0));
       m_compIpMap.setValue(buildSetName,instDetails);
@@ -256,14 +275,14 @@ CInstDetails* CWizardInputs::getServerIPMap(const char* compName, const char* bu
     {
       for(unsigned x = 0; x < numOfNodes ; x++)
       {
-        unsigned numOfIPSAlreadyTaken = getCntForAlreadyAssignedIPS();
-        if( numOfIPSAlreadyTaken < m_ipaddress.ordinality())
+        unsigned numOfIPSAlreadyTaken = getCntForAlreadyAssignedIPS(buildSetName);
+        if( numOfIPSAlreadyTaken < getIpAddrMap(buildSetName).ordinality())
         {
-          addToCompIPMap(buildSetName, m_ipaddress.item(numOfIPSAlreadyTaken), compName);
+          addToCompIPMap(buildSetName, getIpAddrMap(buildSetName).item(numOfIPSAlreadyTaken), compName);
         }
         else
         {
-          applyOverlappingRules(compName, buildSetName);
+          applyOverlappingRules(compName, buildSetName, numOfIPSAlreadyTaken);
         }
       }
  
@@ -282,7 +301,7 @@ CInstDetails* CWizardInputs::getServerIPMap(const char* compName, const char* bu
   return NULL;
 }
 
-void CWizardInputs::applyOverlappingRules(const char* compName,const char* buildSetName)
+void CWizardInputs::applyOverlappingRules(const char* compName,const char* buildSetName, unsigned startpos)
 {
   StringArray dontAssign , ignoredForOverlap;
   bool assignedIP = false;
@@ -313,23 +332,26 @@ void CWizardInputs::applyOverlappingRules(const char* compName,const char* build
     ForEachItemIn(i, ipArr)
       dontAssign.append(ipArr.item(i));
   }
-  
-  for(unsigned ii = 0; ii < m_ipaddress.ordinality() ; ii++)
+
+  unsigned pos = startpos % getIpAddrMap(buildSetName).ordinality();
+
+  for (unsigned j=pos; j < pos + getIpAddrMap(buildSetName).ordinality(); j++)
   {
-    count_t ipAssignedCount = 0;
-    ipAssignedCount = getNumOfInstForIP(m_ipaddress.item(ii));
+    unsigned ii = (j >= getIpAddrMap(buildSetName).ordinality()) ? 0 : j;
+    count_t ipAssignedCount = getNumOfInstForIP(getIpAddrMap(buildSetName).item(ii));
+
     if(dontAssign.ordinality() > 0)
     {
-      if( dontAssign.find(m_ipaddress.item(ii)) == NotFound)
+      if( dontAssign.find(getIpAddrMap(buildSetName).item(ii)) == NotFound)
       {
         if(ipAssignedCount >= m_maxCompOnNode )
         {
-          ignoredForOverlap.append(m_ipaddress.item(ii));
+          ignoredForOverlap.append(getIpAddrMap(buildSetName).item(ii));
         }
         else
         {
           assignedIP = true;
-          addToCompIPMap(buildSetName, m_ipaddress.item(ii), compName);
+          addToCompIPMap(buildSetName, getIpAddrMap(buildSetName).item(ii), compName);
           break;
         }
       }
@@ -338,12 +360,12 @@ void CWizardInputs::applyOverlappingRules(const char* compName,const char* build
     {
       if(ipAssignedCount >= m_maxCompOnNode )
       {
-        ignoredForOverlap.append(m_ipaddress.item(ii));
+        ignoredForOverlap.append(getIpAddrMap(buildSetName).item(ii));
       } 
       else
       {
         assignedIP = true;
-        addToCompIPMap(buildSetName, m_ipaddress.item(ii), compName);
+        addToCompIPMap(buildSetName, getIpAddrMap(buildSetName).item(ii), compName);
         break;
       }
     }
@@ -443,15 +465,27 @@ IPropertyTree* CWizardInputs::createEnvironment()
   pCompTree->setProp(xpath.str(), "linuxmachine"); 
   xpath.clear().append(XML_TAG_COMPUTERTYPE).append("/").append(XML_ATTR_OPSYS);    
   pCompTree->setProp(xpath.str(), "linux"); 
-  for(unsigned i = 0; i < m_ipaddress.ordinality(); i++)
-  { 
+
+  for(unsigned i = 0; i < m_ipaddressSupport.ordinality(); i++)
+  {
     IPropertyTree* pComputer = pCompTree->addPropTree(XML_TAG_COMPUTER,createPTree());
     name.clear().appendf("node%03d", (i + 1));
     pComputer->addProp(XML_ATTR_COMPUTERTYPE, "linuxmachine");
     pComputer->addProp(XML_ATTR_DOMAIN, "localdomain");
     pComputer->addProp(XML_ATTR_NAME, name.str());
+    pComputer->addProp(XML_ATTR_NETADDRESS, m_ipaddressSupport.item(i));
+  }
+
+  for(unsigned i = 0; i < m_ipaddress.ordinality(); i++)
+  { 
+    IPropertyTree* pComputer = pCompTree->addPropTree(XML_TAG_COMPUTER,createPTree());
+    name.clear().appendf("node%03d", (m_ipaddressSupport.ordinality() + i + 1));
+    pComputer->addProp(XML_ATTR_COMPUTERTYPE, "linuxmachine");
+    pComputer->addProp(XML_ATTR_DOMAIN, "localdomain");
+    pComputer->addProp(XML_ATTR_NAME, name.str());
     pComputer->addProp(XML_ATTR_NETADDRESS, m_ipaddress.item(i));
   }
+
   pNewEnvTree->addPropTree(XML_TAG_HARDWARE, createPTreeFromIPT(pCompTree));
   //Before we generate software tree check for dependencies of component for do_not_generate ,roxie, thor
   checkForDependencies();
@@ -682,13 +716,42 @@ void CWizardInputs::addToCompIPMap(const char* buildSetName, const char* value, 
   }
 }
 
-unsigned CWizardInputs::getCntForAlreadyAssignedIPS()
+unsigned CWizardInputs::getCntForAlreadyAssignedIPS(const char* buildSetName)
 {
    unsigned cnt = 0;
+   CInstDetails* pInstRoxie = NULL, *pInstThor = NULL;
+
+   if (!strcmp(buildSetName, "roxie") || !strcmp(buildSetName, "thor" ))
+   {
+     if (m_compIpMap.find("roxie") != NULL)
+     {
+       CInstDetails* pInst = m_compIpMap.getValue("roxie");
+       cnt += pInst->getIpAssigned().length();
+     }
+
+     if (m_compIpMap.find("thor") != NULL)
+     {
+       CInstDetails* pInst = m_compIpMap.getValue("thor");
+       cnt += pInst->getIpAssigned().length();
+     }
+
+     return cnt;
+   }
+   else
+   {
+     if (m_compIpMap.find("roxie") != NULL)
+       pInstRoxie = m_compIpMap.getValue("roxie");
+
+     if (m_compIpMap.find("thor") != NULL)
+       pInstThor = m_compIpMap.getValue("thor");
+   }
+
    HashIterator ips(m_compIpMap);
    ForEach(ips)
    {
      CInstDetails* comp = m_compIpMap.mapToValue(&ips.query());
+     if (pInstRoxie == comp || pInstThor == comp)
+       continue;
      StringArray& ipArray = comp->getIpAssigned();
      cnt += ipArray.length();
    }
@@ -1065,9 +1128,16 @@ void CWizardInputs::addComponentToSoftware(IPropertyTree* pNewEnvTree, IProperty
     {
       if (m_compOnAllNodes.find(buildSetName) != NotFound)
       {
-        for (unsigned i = 0; i < m_ipaddress.ordinality(); i++)
+        for (unsigned i = 0; i < m_ipaddressSupport.ordinality(); i++)
         {
           sbl.clear().appendf("s").append(i+1);
+          assignedIP.clear().append(m_ipaddressSupport.item(i));
+          addInstanceToTree(pNewEnvTree, assignedIP, processName, buildSetName,sbl.str());
+        }
+
+        for (unsigned i = 0; i < m_ipaddress.ordinality(); i++)
+        {
+          sbl.clear().appendf("s").append(m_ipaddressSupport.ordinality() + i+1);
           assignedIP.clear().append(m_ipaddress.item(i));
           addInstanceToTree(pNewEnvTree, assignedIP, processName, buildSetName,sbl.str());
         }
@@ -1109,4 +1179,17 @@ void CWizardInputs::addComponentToSoftware(IPropertyTree* pNewEnvTree, IProperty
       }
     }
   }
+}
+
+StringArray& CWizardInputs::getIpAddrMap(const char* buildSetName)
+{
+  if (m_supportNodes == 0)
+    return m_ipaddress;
+  else
+  {
+    if (!strcmp(buildSetName, "roxie") || !strcmp(buildSetName, "thor" ))
+      return m_ipaddress;
+  }
+
+  return m_ipaddressSupport;
 }
