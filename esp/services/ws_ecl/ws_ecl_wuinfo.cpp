@@ -1,8 +1,8 @@
 #include "jliball.hpp"
-#include "wswuinfo.hpp"
+#include "ws_ecl_wuinfo.hpp"
 #include "fileview.hpp"
 
-WsWuInfo::WsWuInfo(const char *wuid_, const char *qset, const char *qname, const char *user, const char *pw) :
+WsEclWuInfo::WsEclWuInfo(const char *wuid_, const char *qset, const char *qname, const char *user, const char *pw) :
     wuid(wuid_), qsetname(qset), queryname(qname), username(user), password(pw)
 {
     Owned<IWorkUnitFactory> wf = getWorkUnitFactory();
@@ -53,7 +53,7 @@ WsWuInfo::WsWuInfo(const char *wuid_, const char *qset, const char *qname, const
         throw MakeStringException(-1, "Workunit not specified");
 }
 
-bool WsWuInfo::getWsResource(const char *name, StringBuffer &out)
+bool WsEclWuInfo::getWsResource(const char *name, StringBuffer &out)
 {
     if (strieq(name, "SOAP"))
     {
@@ -127,7 +127,7 @@ bool WsWuInfo::getWsResource(const char *name, StringBuffer &out)
     return true;
 }
 
-IPropertyTree *WsWuInfo::queryParamInfo()
+IPropertyTree *WsEclWuInfo::queryParamInfo()
 {
     if (!paraminfo)
     {
@@ -139,7 +139,7 @@ IPropertyTree *WsWuInfo::queryParamInfo()
 }
 
 
-void WsWuInfo::addOutputSchemas(StringBuffer &schemas, IConstWUResultIterator *results, const char *tag)
+void WsEclWuInfo::addOutputSchemas(StringBuffer &schemas, IConstWUResultIterator *results, const char *tag)
 {
     ForEach(*results)
     {
@@ -154,7 +154,7 @@ void WsWuInfo::addOutputSchemas(StringBuffer &schemas, IConstWUResultIterator *r
     }
 }
 
-void WsWuInfo::addInputSchemas(StringBuffer &schemas, IConstWUResultIterator *results, const char *tag)
+void WsEclWuInfo::addInputSchemas(StringBuffer &schemas, IConstWUResultIterator *results, const char *tag)
 {
     ForEach(*results)
     {
@@ -173,7 +173,7 @@ void WsWuInfo::addInputSchemas(StringBuffer &schemas, IConstWUResultIterator *re
     }
 }
 
-void WsWuInfo::getSchemaFromResult(StringBuffer &schema, IConstWUResult &res)
+void WsEclWuInfo::getSchemaFromResult(StringBuffer &schema, IConstWUResult &res)
 {
 //  if (!res.isResultScalar())
 //  {
@@ -188,20 +188,20 @@ void WsWuInfo::getSchemaFromResult(StringBuffer &schema, IConstWUResult &res)
 //  }
 }
 
-void WsWuInfo::getInputSchema(StringBuffer &schema, const char *name)
+void WsEclWuInfo::getInputSchema(StringBuffer &schema, const char *name)
 {
     Owned<IConstWUResult> res =  wu->getResultByName(name);
     getSchemaFromResult(schema, *res);
 }
 
-void WsWuInfo::getOutputSchema(StringBuffer &schema, const char *name)
+void WsEclWuInfo::getOutputSchema(StringBuffer &schema, const char *name)
 {
     Owned<IConstWUResult> res =  wu->getResultByName(name);
     getSchemaFromResult(schema, *res);
 }
 
 
-void WsWuInfo::updateSchemaCache()
+void WsEclWuInfo::updateSchemaCache()
 {
     if (!schemacache.length())
     {
@@ -217,13 +217,13 @@ void WsWuInfo::updateSchemaCache()
     }
 }
 
-void WsWuInfo::getSchemas(StringBuffer &schemas)
+void WsEclWuInfo::getSchemas(StringBuffer &schemas)
 {
     updateSchemaCache();
     schemas.append(schemacache);
 }
 
-IPropertyTreeIterator *WsWuInfo::getInputSchemas()
+IPropertyTreeIterator *WsEclWuInfo::getInputSchemas()
 {
     if (!xsds)
     {
@@ -235,7 +235,7 @@ IPropertyTreeIterator *WsWuInfo::getInputSchemas()
     return (xsds) ? xsds->getElements("Input") : NULL;
 }
 
-IPropertyTreeIterator *WsWuInfo::getResultSchemas()
+IPropertyTreeIterator *WsEclWuInfo::getResultSchemas()
 {
     if (!xsds)
     {
