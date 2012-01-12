@@ -10103,15 +10103,6 @@ public:
         selSeq = ::queryProperty(_selectorSequence_Atom, params);
     }
 
-    inline bool isMatch(IHqlExpression * expr, node_operator op, IHqlExpression * side)
-    {
-        return (expr->getOperator() == op) &&
-            (expr->queryRecord()->queryBody() == side->queryRecord()->queryBody()) &&
-            (expr->queryChild(1) == selSeq);
-    }
-    inline bool isLeft(IHqlExpression * expr) { return isMatch(expr, no_left, left); }
-    inline bool isRight(IHqlExpression * expr) { return isMatch(expr, no_right, right); }
-
     IHqlExpression * mapEqualities(IHqlExpression * expr, IHqlExpression * cond)
     {
         if (cond->getOperator() == no_assertkeyed)
@@ -10138,6 +10129,17 @@ public:
         }
         return LINK(expr);
     }
+
+protected:
+    inline bool isMatch(IHqlExpression * expr, node_operator op, IHqlExpression * side)
+    {
+        return (expr->getOperator() == op) &&
+            (expr->queryRecord()->queryBody() == side->queryRecord()->queryBody()) &&
+            (expr->queryChild(1) == selSeq);
+    }
+    inline bool isLeft(IHqlExpression * expr) { return isMatch(expr, no_left, left); }
+    inline bool isRight(IHqlExpression * expr) { return isMatch(expr, no_right, right); }
+
 protected:
     IHqlExpression * left;
     IHqlExpression * right;
