@@ -1428,7 +1428,7 @@ extern HQL_API IHqlExpression *doInstantEclTransformations(IHqlExpression *qquer
 
 extern HQL_API unsigned getExpressionCRC(IHqlExpression * expr);
 extern HQL_API IHqlExpression * queryPropertyInList(_ATOM search, IHqlExpression * cur);
-extern HQL_API IHqlExpression * queryProperty(_ATOM search, HqlExprArray & exprs);
+extern HQL_API IHqlExpression * queryProperty(_ATOM search, const HqlExprArray & exprs);
 extern HQL_API IHqlExpression * queryAnnotation(IHqlExpression * expr, annotate_kind search);       // return first match
 extern HQL_API IHqlNamedAnnotation * queryNameAnnotation(IHqlExpression * expr);
 

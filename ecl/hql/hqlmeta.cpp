@@ -1326,3 +1326,17 @@ IHqlExpression * preserveTableInfo(IHqlExpression * newTable, IHqlExpression * o
     OwnedHqlExpr preserved = createPreserveTableInfo(newTable, original, loseDistribution, persistName);
     return optimizePreserveMeta(preserved);
 }
+
+bool hasUsefulMetaInformation(ITypeInfo * prev)
+{
+    IHqlExpression * distribution = queryDistribution(prev);
+    IHqlExpression * globalOrder = queryGlobalSortOrder(prev);
+    IHqlExpression * localOrder = queryLocalUngroupedSortOrder(prev);
+    IHqlExpression * grouping = queryGrouping(prev);
+    IHqlExpression * groupOrder = static_cast<IHqlExpression *>(prev->queryGroupSortInfo());
+    return (distribution && containsActiveDataset(distribution)) ||
+           (globalOrder && containsActiveDataset(globalOrder)) ||
+           (localOrder && containsActiveDataset(localOrder)) ||
+           (grouping && containsActiveDataset(grouping)) ||
+           (groupOrder && containsActiveDataset(groupOrder));
+}
