@@ -19,11 +19,7 @@
 
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
   <xsl:include href="graph_gvc_common.xslt" />
-  <xsl:output
-  method="html"
-  version="4.0"
-  encoding="iso-8859-1" indent="yes"
-  omit-xml-declaration="yes"/>
+  <xsl:output method="html"/>
   <xsl:template match="GVCAjaxGraphResponse">
     <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
       <head>
