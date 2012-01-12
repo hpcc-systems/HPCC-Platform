@@ -2137,7 +2137,7 @@ public:
             fileType = sub->fileType;
         ForEachItemIn(idx, sub->subFiles)
         {
-            addFile(sub->subNames.item(idx), sub->subFiles.item(idx));
+            addFile(sub->subNames.item(idx), LINK(sub->subFiles.item(idx)));
         }
     }
     virtual void addSubFile(IFileDescriptor *_sub)
