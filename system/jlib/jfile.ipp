@@ -107,6 +107,7 @@ public:
     virtual void setSize(offset_t size);
     virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len);
     virtual void flush();
+    virtual void close();
 
     bool create(const char * filename, bool replace);
     bool open(const char * filename);
@@ -136,6 +137,7 @@ public:
     virtual void setSize(offset_t size) { UNIMPLEMENTED; }
     virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len) { UNIMPLEMENTED; return 0; }
     virtual void flush() { io->flush(); }
+    virtual void close() { io->close(); }
 
 protected:
     Linked<IFileIO>     io;
@@ -157,6 +159,7 @@ public:
     virtual size32_t write(offset_t pos, size32_t len, const void * data);
     virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len);
     virtual void flush();
+    virtual void close();
 
     virtual void setSize(offset_t size);
     virtual IFileAsyncResult *readAsync(offset_t pos, size32_t len, void * data);

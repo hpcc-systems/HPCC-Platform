@@ -1546,6 +1546,7 @@ IFileIO *_createIFileIO(const void *buffer, unsigned sz, bool readOnly)
             return len;
         }
         virtual void flush() {}
+        virtual void close() {}
         virtual void setSize(offset_t size)
         {
             if (size > mb.length())
@@ -1737,7 +1738,26 @@ CFileIO::CFileIO(HANDLE handle, IFSHmode _sharemode)
 
 CFileIO::~CFileIO()
 {
-    if (file != NULLFILE) CloseHandle(file);
+    try
+    {
+        //note this will not call the virtual close() if anyone ever derived from this class.
+        //the clean fix is to move this code to beforeDispose()
+        close();
+    }
+    catch (IException * e)
+    {
+        EXCLOG(e, "CFileIO::~CFileIO");
+        e->Release();
+    }
+}
+
+void CFileIO::close()
+{
+    if (file != NULLFILE)
+    {
+        if (!CloseHandle(file))
+            throw MakeOsException(GetLastError(),"CFileIO::close");
+    }
     file = NULLFILE;
 }
 
@@ -1815,8 +1835,22 @@ CFileIO::CFileIO(HANDLE handle, IFSHmode _sharemode)
 
 CFileIO::~CFileIO()
 {
+    try
+    {
+        close();
+    }
+    catch (IException * e)
+    {
+        EXCLOG(e, "CFileIO::~CFileIO");
+        e->Release();
+    }
+}
+
+void CFileIO::close()
+{
     if (file != NULLFILE) {
-        close(file);
+        if (::close(file) < 0)
+            throw MakeErrnoException(errno,"CFileIO::close");
         file=NULLFILE;
     }
 }
@@ -1906,22 +1940,26 @@ size32_t CFileRangeIO::write(offset_t pos, size32_t len, const void * data)
 
 //--------------------------------------------------------------------------
 
+CFileAsyncIO::~CFileAsyncIO()
+{
+    try
+    {
+        close();
+    }
+    catch (IException * e)
+    {
+        EXCLOG(e, "CFileAsyncIO::~CFileAsyncIO");
+        e->Release();
+    }
+}
+
 void CFileAsyncIO::flush()
 {
-    //This could wait until all pending results are done.
-    loop
-    {
-        Owned<IFileAsyncResult> next;
-        {
-            CriticalBlock block(cs);
-            if (results.ordinality())
-                next.set(&results.tos());
-        }
-        if (!next)
-            return;
-
-        size32_t value;
-        next->getResult(value, true);
+    // wait for all outstanding results
+    CriticalBlock block(cs);
+    ForEachItemInRev(i,results) {
+        size32_t dummy;
+        results.item(i).getResult(dummy,true);
     }
 }
 
@@ -1999,15 +2037,15 @@ CFileAsyncIO::CFileAsyncIO(HANDLE handle, IFSHmode _sharemode)
     sharemode = _sharemode;
 }
 
-CFileAsyncIO::~CFileAsyncIO()
+void CFileAsyncIO::close()
 {
-    CriticalBlock block(cs);
-    ForEachItemInRev(i,results) {
-        size32_t dummy;
-        results.item(i).getResult(dummy,true);
-    }
+    flush();
     // wait for all outstanding results
-    if (file != NULLFILE) CloseHandle(file);
+    if (file != NULLFILE)
+    {
+        if (!CloseHandle(file))
+            throw MakeOsException(GetLastError(),"CFileAsyncIO::close");
+    }
     file = NULLFILE;
 }
 
@@ -2169,11 +2207,12 @@ CFileAsyncIO::CFileAsyncIO(HANDLE handle, IFSHmode _sharemode)
 }
 
 
-CFileAsyncIO::~CFileAsyncIO()
+void CFileAsyncIO::close()
 {
     if (file != NULLFILE) {
         aio_cancel(file,NULL);
-        _lclose(file);
+        if (_lclose(file) < 0)
+            throw MakeErrnoException(errno, "CFileAsyncIO::close");
     }
     file=NULLFILE;
 }
@@ -6137,6 +6176,15 @@ public:
         CriticalBlock block(sect);
         if (cachedio)
             cachedio->flush();
+    }
+    virtual void close()
+    {
+        CriticalBlock block(sect);
+        if (cachedio)
+        {
+            cachedio->close();
+            cachedio.clear();
+        }
     }
     offset_t appendFile(IFile *file,offset_t pos,offset_t len)
     {

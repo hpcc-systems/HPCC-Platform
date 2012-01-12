@@ -1172,12 +1172,6 @@ public:
         iFileIO.clear();
     }
 
-    void close()
-    {
-        CriticalBlock b(crit);
-        iFileIO.clear();
-    }
-
     const char *queryFindString() const { return filename.get(); } // for string HT
 
 // IFileIO impl.
@@ -1204,6 +1198,13 @@ public:
         CriticalBlock b(crit);
         if (iFileIO)
             iFileIO->flush();
+    }
+    virtual void close()
+    {
+        CriticalBlock b(crit);
+        if (iFileIO)
+            iFileIO->close();
+        iFileIO.clear();
     }
     virtual offset_t appendFile(IFile *file,offset_t pos=0,offset_t len=(offset_t)-1)
     {

@@ -71,6 +71,7 @@ public:
     virtual size32_t write(offset_t pos, size32_t len, const void * data) { THROWNOTOPEN; }
     virtual void setSize(offset_t size) { UNIMPLEMENTED; }
     virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len) { UNIMPLEMENTED; return 0; }
+    virtual void close() { }
 } failure;
 
 class CLazyFileIO : public CInterface, implements ILazyFileIO, implements IDelayedFile

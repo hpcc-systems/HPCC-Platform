@@ -825,6 +825,7 @@ public:
     virtual offset_t appendFile(IFile *file,offset_t pos=0,offset_t len=-1) { return primaryio->appendFile(file, pos, len); }
     virtual void setSize(offset_t size) { primaryio->setSize(size); }
     virtual void flush() { primaryio->flush(); }
+    virtual void close() { primaryio->close(); }
 };
 
 IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc, unsigned recordSize, bool &compress, bool extend, ICompressor *ecomp, ICopyFileProgress *iProgress, bool direct, bool renameToPrimary, bool *aborted, StringBuffer *_outLocationName)
