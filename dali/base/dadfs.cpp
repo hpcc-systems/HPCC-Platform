@@ -2239,12 +2239,18 @@ public:
         }
     }
 
-    IPropertyTree &queryProperties()
+    void reloadProperties()
     {
         CriticalBlock block (sect);
-        if (attr) 
-            return *attr;
-        loadAttr();
+        if (!attr)
+            loadAttr();
+    }
+
+    IPropertyTree &queryProperties()
+    {
+        // a bit redundant, but avoids unnecessary locking
+        if (!attr)
+            reloadProperties();
         return *attr;
     }
 
@@ -2366,7 +2372,7 @@ public:
                     ret = false;
                 }
             }
-            queryProperties(); // reloads attr
+            reloadProperties();
         }
         return ret;
     }
@@ -2787,7 +2793,7 @@ public:
             }
         }
         // This is a new property tree, no concurrent access, just reload
-        queryProperties();
+        reloadProperties();
         shrinkFileTree(root);
         if (totalsize!=(offset_t)-1)
             attr->setPropInt64("@size", totalsize);
