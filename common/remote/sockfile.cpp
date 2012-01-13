@@ -2195,24 +2195,11 @@ public:
         disconnectonexit = false;
     }
 
-
     ~CRemoteFileIO()
     {
         if (handle) {
             try {
-                MemoryBuffer sendBuffer;
-                initSendBuffer(sendBuffer);
-                sendBuffer.append((RemoteFileCommandType)RFCcloseIO).append(handle);
-                parent->sendRemoteCommand(sendBuffer,false);
-            }
-            catch (IDAFS_Exception *e) {
-                if ((e->errorCode()!=RFSERR_InvalidFileIOHandle)&&(e->errorCode()!=RFSERR_NullFileIOHandle)) { // ignore already disconnected
-                    StringBuffer s;
-                    e->errorMessage(s);
-                    WARNLOG("CRemoteFileIO close file: %s",s.str());
-                }
-                e->Release();
-                
+                close();
             }
             catch (IException *e) {
                 StringBuffer s;
@@ -2223,7 +2210,24 @@ public:
         }
         if (disconnectonexit)
             parent->disconnect();
-        handle = 0;
+    }
+
+    void close()
+    {
+        if (handle) {
+            try {
+                MemoryBuffer sendBuffer;
+                initSendBuffer(sendBuffer);
+                sendBuffer.append((RemoteFileCommandType)RFCcloseIO).append(handle);
+                parent->sendRemoteCommand(sendBuffer,false);
+            }
+            catch (IDAFS_Exception *e) {
+                if ((e->errorCode()!=RFSERR_InvalidFileIOHandle)&&(e->errorCode()!=RFSERR_NullFileIOHandle))
+                    throw;
+                e->Release();
+            }
+            handle = 0;
+        }
     }
 
     bool open(IFOmode _mode,compatIFSHmode _compatmode) 
@@ -2288,6 +2292,10 @@ public:
         if (b!=data)
             memcpy(data,b,got);
         return got;
+    }
+
+    virtual void flush()
+    {
     }
 
     const void *doRead(offset_t pos, size32_t len, MemoryBuffer &replyBuffer, size32_t &got, void *dstbuf)

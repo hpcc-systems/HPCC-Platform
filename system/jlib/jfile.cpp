@@ -1545,7 +1545,8 @@ IFileIO *_createIFileIO(const void *buffer, unsigned sz, bool readOnly)
             memcpy((byte *)buffer+pos, data, len);
             return len;
         }
-
+        virtual void flush() {}
+        virtual void close() {}
         virtual void setSize(offset_t size)
         {
             if (size > mb.length())
@@ -1697,7 +1698,6 @@ extern jlib_decl IFileIO *createIFileIO(HANDLE handle)
     return new CFileIO(handle,IFSHfull);
 }
 
-
 offset_t CFileIO::appendFile(IFile *file,offset_t pos,offset_t len)
 {
     if (!file)
@@ -1738,8 +1738,33 @@ CFileIO::CFileIO(HANDLE handle, IFSHmode _sharemode)
 
 CFileIO::~CFileIO()
 {
-    if (file != NULLFILE) CloseHandle(file);
+    try
+    {
+        //note this will not call the virtual close() if anyone ever derived from this class.
+        //the clean fix is to move this code to beforeDispose()
+        close();
+    }
+    catch (IException * e)
+    {
+        EXCLOG(e, "CFileIO::~CFileIO");
+        e->Release();
+    }
+}
+
+void CFileIO::close()
+{
+    if (file != NULLFILE)
+    {
+        if (!CloseHandle(file))
+            throw MakeOsException(GetLastError(),"CFileIO::close");
+    }
     file = NULLFILE;
+}
+
+void CFileIO::flush()
+{
+    if (!FlushFileBuffers(file))
+        throw MakeOsException(GetLastError(),"CFileIO::flush");
 }
 
 offset_t CFileIO::size()
@@ -1810,12 +1835,33 @@ CFileIO::CFileIO(HANDLE handle, IFSHmode _sharemode)
 
 CFileIO::~CFileIO()
 {
-    if (file != NULLFILE) {
-        close(file);
-        file=NULLFILE;
-
+    try
+    {
+        close();
+    }
+    catch (IException * e)
+    {
+        EXCLOG(e, "CFileIO::~CFileIO");
+        e->Release();
     }
 }
+
+void CFileIO::close()
+{
+    if (file != NULLFILE) {
+        if (::close(file) < 0)
+            throw MakeErrnoException(errno,"CFileIO::close");
+        file=NULLFILE;
+    }
+}
+
+void CFileIO::flush()
+{
+    CriticalBlock procedure(cs);
+    if (fdatasync(file) != 0)
+        throw MakeOsException(DISK_FULL_EXCEPTION_CODE,"CFileIO::flush");
+}
+
 
 offset_t CFileIO::size()
 {
@@ -1894,6 +1940,29 @@ size32_t CFileRangeIO::write(offset_t pos, size32_t len, const void * data)
 
 //--------------------------------------------------------------------------
 
+CFileAsyncIO::~CFileAsyncIO()
+{
+    try
+    {
+        close();
+    }
+    catch (IException * e)
+    {
+        EXCLOG(e, "CFileAsyncIO::~CFileAsyncIO");
+        e->Release();
+    }
+}
+
+void CFileAsyncIO::flush()
+{
+    // wait for all outstanding results
+    CriticalBlock block(cs);
+    ForEachItemInRev(i,results) {
+        size32_t dummy;
+        results.item(i).getResult(dummy,true);
+    }
+}
+
 offset_t CFileAsyncIO::appendFile(IFile *file,offset_t pos,offset_t len)
 {
     // will implemented if needed
@@ -1968,15 +2037,15 @@ CFileAsyncIO::CFileAsyncIO(HANDLE handle, IFSHmode _sharemode)
     sharemode = _sharemode;
 }
 
-CFileAsyncIO::~CFileAsyncIO()
+void CFileAsyncIO::close()
 {
-    CriticalBlock block(cs);
-    ForEachItemInRev(i,results) {
-        size32_t dummy;
-        results.item(i).getResult(dummy,true);
-    }
+    flush();
     // wait for all outstanding results
-    if (file != NULLFILE) CloseHandle(file);
+    if (file != NULLFILE)
+    {
+        if (!CloseHandle(file))
+            throw MakeOsException(GetLastError(),"CFileAsyncIO::close");
+    }
     file = NULLFILE;
 }
 
@@ -2138,11 +2207,12 @@ CFileAsyncIO::CFileAsyncIO(HANDLE handle, IFSHmode _sharemode)
 }
 
 
-CFileAsyncIO::~CFileAsyncIO()
+void CFileAsyncIO::close()
 {
     if (file != NULLFILE) {
         aio_cancel(file,NULL);
-        _lclose(file);
+        if (_lclose(file) < 0)
+            throw MakeErrnoException(errno, "CFileAsyncIO::close");
     }
     file=NULLFILE;
 }
@@ -6100,6 +6170,21 @@ public:
         CriticalBlock block(sect);
         Owned<IFileIO> io = open();
         return io->write(pos,len,data);
+    }
+    virtual void flush()
+    {
+        CriticalBlock block(sect);
+        if (cachedio)
+            cachedio->flush();
+    }
+    virtual void close()
+    {
+        CriticalBlock block(sect);
+        if (cachedio)
+        {
+            cachedio->close();
+            cachedio.clear();
+        }
     }
     offset_t appendFile(IFile *file,offset_t pos,offset_t len)
     {
