@@ -632,7 +632,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         blindLogging = topology->getPropBool("@blindLogging", false);
         if (!blindLogging)
             logExcessiveSeeks = true;
-        linuxYield = topology->getPropBool("@linuxYield", true);
+        linuxYield = topology->getPropBool("@linuxYield", false);
         traceSmartStepping = topology->getPropBool("@traceSmartStepping", false);
         useMemoryMappedIndexes = topology->getPropBool("@useMemoryMappedIndexes", false);
         traceJHtreeAllocations = topology->getPropBool("@traceJHtreeAllocations", false);

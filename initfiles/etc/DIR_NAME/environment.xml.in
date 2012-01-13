@@ -1063,7 +1063,7 @@
                 keyedJoinStable="true"
                 lazyOpen="true"
                 leafCacheMem="50"
-                linuxYield="true"
+                linuxYield="false"
                 localFilesExpire="-1"
                 localSlave="true"
                 logFullQueries="false"
