@@ -33,12 +33,39 @@ class WuExpandedResultBuffer : public CInterface, implements IPTreeNotifyEvent
 public:
     IMPLEMENT_IINTERFACE;
 
-    WuExpandedResultBuffer(const char *queryname) : name(queryname), datasetLevel(0), finalized(false)
+    WuExpandedResultBuffer(const char *queryname, unsigned _flags=0) :
+        name(queryname), datasetLevel(0), finalized(false), flags(_flags), hasXmlns(false)
     {
-        buffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?><");
-        if (queryname)
-            buffer.append(queryname);
-        buffer.append("Response><Results><Result>");
+        if (flags & (WWV_INCL_NAMESPACES | WWV_INCL_GENERATED_NAMESPACES))
+        {
+            StringBuffer lower(name);
+            ns.append("urn:hpccsystems:ecl:").append(lower.toLowerCase());
+        }
+
+        if (!(flags & WWV_OMIT_XML_DECLARATION))
+            buffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        if (flags & WWV_USE_DISPLAY_XSLT)
+            buffer.append("<?xml-stylesheet type=\"text/xsl\" href=\"/esp/xslt/xmlformatter.xsl\"?>");
+        if (flags & WWV_ADD_SOAP)
+            buffer.append(
+                "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope\""
+                  " xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding\">"
+                    " <soap:Body>"
+            );
+        if (flags & WWV_ADD_RESPONSE_TAG)
+        {
+            buffer.append('<');
+            if (queryname)
+                buffer.append(queryname);
+            buffer.append("Response");
+            if (flags & WWV_INCL_NAMESPACES && ns.length())
+                buffer.append(" xmlns=\"").append(ns.str()).append('\"');
+            buffer.append('>');
+        }
+        if (flags & WWV_ADD_RESULTS_TAG)
+            buffer.append("<Results>");
+        if (!(flags & WWV_OMIT_RESULT_TAG))
+            buffer.append("<Result>");
     }
 
     void appendResults(IConstWorkUnit *wu, const char *username, const char *pw)
@@ -71,6 +98,8 @@ public:
 
     void appendSchemaResource(IPropertyTree &res, ILoadedDllEntry &loadedDll)
     {
+        if (flags & WWV_OMIT_SCHEMAS)
+            return;
         if (res.getPropInt("@seq", -1)>=0 && res.hasProp("@id"))
         {
             int id = res.getPropInt("@id");
@@ -83,7 +112,11 @@ public:
                 {
                     StringBuffer decompressed;
                     decompressResource(len, data, decompressed);
+                    if (flags & WWV_CDATA_SCHEMAS)
+                        buffer.append("<![CDATA[");
                     buffer.append(decompressed.str());
+                    if (flags & WWV_CDATA_SCHEMAS)
+                        buffer.append("]]>");
                 }
                 else
                     buffer.append(len, (const char *)data);
@@ -130,8 +163,17 @@ public:
 
     virtual void newAttribute(const char *name, const char *value)
     {
-        if (datasetLevel && !streq(name, "@xmlns"))
+        if (datasetLevel)
         {
+            if (streq(name, "@xmlns"))
+            {
+                if (!(flags & WWV_INCL_NAMESPACES))
+                    return;
+                if (datasetLevel==1)
+                    hasXmlns=true;
+            }
+            if (datasetLevel==1 && streq(name, "@name"))
+                dsname.set(value).toLowerCase().replace(' ', '_');;
             buffer.append(' ').append(name+1).append("=\"");
             encodeUtf8XML(value, buffer);
             buffer.append('\"');
@@ -139,6 +181,17 @@ public:
     }
     virtual void beginNodeContent(const char *tag)
     {
+        if (datasetLevel==1 && streq("Dataset", tag))
+        {
+            if (!hasXmlns && dsname.length() && (flags & WWV_INCL_GENERATED_NAMESPACES))
+            {
+                StringBuffer s(ns);
+                s.append(":result:").append(dsname.str());
+                buffer.append(" xmlns=\"").append(s).append('\"');
+            }
+            dsname.clear();
+            hasXmlns=false;
+        }
         if (datasetLevel)
             buffer.append('>');
     }
@@ -162,7 +215,14 @@ public:
     {
         if (!finalized)
         {
-            buffer.appendf("</Result></Results></%sResponse>", name.sget());
+            if (!(flags & WWV_OMIT_RESULT_TAG))
+                buffer.append("</Result>");
+            if (flags & WWV_ADD_RESULTS_TAG)
+                buffer.append("</Results>");
+            if (flags & WWV_ADD_RESPONSE_TAG)
+                buffer.appendf("</%sResponse>", name.sget());
+            if (flags & WWV_ADD_SOAP)
+                buffer.append("</soap:Body></soap:Envelope>");
             finalized=true;
         }
         return buffer;
@@ -182,7 +242,11 @@ public:
 public:
     StringBuffer buffer;
     StringAttr name;
+    StringBuffer dsname;
+    StringBuffer ns;
+    bool hasXmlns;
     bool finalized;
+    unsigned flags;
 private:
     int datasetLevel;
 };
@@ -216,6 +280,8 @@ public:
     virtual void renderResults(const char *viewName, const char *xml, StringBuffer &html);
     virtual void renderResults(const char *viewName, StringBuffer &html);
     virtual void renderSingleResult(const char *viewName, const char *resultname, StringBuffer &html);
+    virtual void expandResults(const char *xml, StringBuffer &out, unsigned flags);
+    virtual void expandResults(StringBuffer &out, unsigned flags);
     virtual void applyResultsXSLT(const char *filename, const char *xml, StringBuffer &out);
     virtual void applyResultsXSLT(const char *filename, StringBuffer &out);
     virtual StringBuffer &aggregateResources(const char *type, StringBuffer &content);
@@ -417,28 +483,45 @@ void WuWebView::renderExpandedResults(const char *viewName, WuExpandedResultBuff
 
 void WuWebView::renderResults(const char *viewName, const char *xml, StringBuffer &out)
 {
-    WuExpandedResultBuffer buffer(name.str());
+    WuExpandedResultBuffer buffer(name.str(), WWV_ADD_RESPONSE_TAG | WWV_ADD_RESULTS_TAG);
     buffer.appendDatasetsFromXML(xml);
     renderExpandedResults(viewName, buffer, out);
 }
 
 void WuWebView::renderResults(const char *viewName, StringBuffer &out)
 {
-    WuExpandedResultBuffer buffer(name.str());
+    WuExpandedResultBuffer buffer(name.str(), WWV_ADD_RESPONSE_TAG | WWV_ADD_RESULTS_TAG);
     buffer.appendResults(wu, username.get(), pw.get());
     renderExpandedResults(viewName, buffer, out);
 }
 
 void WuWebView::renderSingleResult(const char *viewName, const char *resultname, StringBuffer &out)
 {
-    WuExpandedResultBuffer buffer(name.str());
+    WuExpandedResultBuffer buffer(name.str(), WWV_ADD_RESPONSE_TAG | WWV_ADD_RESULTS_TAG);
     buffer.appendSingleResult(wu, resultname, username.get(), pw.get());
     renderExpandedResults(viewName, buffer, out);
 }
 
+void WuWebView::expandResults(const char *xml, StringBuffer &out, unsigned flags)
+{
+    WuExpandedResultBuffer expander(name.str(), flags);
+    expander.appendDatasetsFromXML(xml);
+    if (loadedDll)
+        expander.appendManifestSchemas(*ensureManifest(), *loadedDll);
+    expander.finalize();
+    out.append(expander.buffer);
+}
+
+void WuWebView::expandResults(StringBuffer &out, unsigned flags)
+{
+    SCMStringBuffer xml;
+    getFullWorkUnitResultsXML(username.get(), pw.get(), wu, xml, false, ExceptionSeverityInformation);
+    expandResults(xml.str(), out, flags);
+}
+
 void WuWebView::applyResultsXSLT(const char *filename, const char *xml, StringBuffer &out)
 {
-    WuExpandedResultBuffer buffer(name.str());
+    WuExpandedResultBuffer buffer(name.str(), WWV_ADD_RESPONSE_TAG | WWV_ADD_RESULTS_TAG);
     buffer.appendDatasetsFromXML(xml);
     if (loadedDll)
         buffer.appendManifestSchemas(*ensureManifest(), *loadedDll);
