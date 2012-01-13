@@ -2259,12 +2259,16 @@ public:
         return lockProperties(reload,timeoutms);
     }
 
+    // FIXME: This method is NOT locking the properties for exclusive access, just setting it
+    // to write mode on the first call. If concurrent access occur, there will be conflicts
+    // MORE: Shouldn't we return boolean and use queryProperties() outside of this method?
     IPropertyTree & lockProperties(bool &reload,unsigned timeoutms)
     {
         if (timeoutms==INFINITE)
             timeoutms = defaultTimeout;
         reload = false;
         // this is a bit of a kludge for non-transactional superfile operations and other dining philosopher problems
+        CriticalBlock block (sect);
         if (proplockcount++==0) {
             attr.clear();
             if (conn) {
@@ -2288,16 +2292,15 @@ public:
                 dfCheckRoot("lockProperties",root,conn);
             }
         }
-        CriticalBlock block (sect);
-        if (attr) 
-            return *attr;
-        loadAttr();
-        return *attr;
+        return queryProperties();
     }
 
+    // FIXME: This method is NOT unlocking the properties for exclusive access, just setting it
+    // to read mode on the last call. If concurrent access occur, there will be conflicts
     void unlockProperties()
     {
         savePartsAttr();
+        CriticalBlock block (sect);
         if (--proplockcount==0) {
             attr.clear();
             if (conn) {
@@ -2314,6 +2317,9 @@ public:
         }
     }
 
+    // FIXME: This is a hack. All calls to lockProperties should be followed
+    // by a subsequent unlockProperties. REMOVE this method and fix the problems
+    // where they're broken.
     void clearLockedProperties()
     {
         // assumes committed
@@ -2323,6 +2329,9 @@ public:
         }
     }
 
+    // FIXME: This code is too similar to lockProperties to exist. If lockcount is not
+    // zero, we should fail here, since the exact number of unlockProperties should
+    // have been called, and fix the problem where it's broken.
     bool lockTransaction(unsigned timeout)
     {
         if (timeout==INFINITE)
@@ -2362,6 +2371,10 @@ public:
         return ret;
     }
 
+    // FIXME: This code is broken. It should not access lockProperties' members,
+    // it should not accept commit and rollback at the same time.
+    // TODO: Use ActionState instead of boolean flags for commit/rollback.
+    // TODO: Create retry/commit/rollback and make unlock private.
     virtual void unlockTransaction(bool _commit,bool _rollback)
     {
         if (transactionnest==0) {
@@ -2773,14 +2786,14 @@ public:
                 }
             }
         }
-        lockProperties(defaultTimeout);         // only needed to load attr (no lock)
+        // This is a new property tree, no concurrent access, just reload
+        queryProperties();
         shrinkFileTree(root);
         if (totalsize!=(offset_t)-1)
             attr->setPropInt64("@size", totalsize);
         if (useableCheckSum)
             attr->setPropInt64("@checkSum", checkSum);
         setModified();
-        unlockProperties();
 #ifdef EXTRA_LOGGING
         LOGPTREE("CDistributedFile.b root.2",root);
 #endif
