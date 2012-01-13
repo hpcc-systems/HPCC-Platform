@@ -1112,7 +1112,7 @@ public:
 
     static int compareUnsigned(unsigned *a, unsigned *b)
     {
-        return (int) (*b - *a);
+        return (int) (*a - *b);
     }
 
     virtual void setChunkSizes(const UnsignedArray &sizes)
