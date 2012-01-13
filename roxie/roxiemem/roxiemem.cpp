@@ -1316,10 +1316,18 @@ public:
     {
         assertex(newsize);
         assertex(!HeapletBase::isShared(original));
-        assertex(newsize >= oldsize);
         capacity = HeapletBase::capacity(original);
         if (newsize <= capacity)
-            return original;
+        {
+            if (newsize >= oldsize || roundup(newsize) == roundup(oldsize))
+                return original;
+
+            void *ret = allocate(newsize, activityId);
+            memcpy(ret, original, newsize);
+            HeapletBase::release(original);
+            capacity = HeapletBase::capacity(ret);
+            return ret;
+        }
         else
         {
             void *ret = allocate(newsize, activityId);
