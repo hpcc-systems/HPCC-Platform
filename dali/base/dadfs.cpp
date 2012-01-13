@@ -988,6 +988,7 @@ public:
 // === Transactions
 class CDFAction: public CInterface
 {
+    unsigned locked;
 protected:
     Linked<IDistributedFileTransaction> transaction;
     IArrayOf<IDistributedFile> lockedFiles;
@@ -1006,20 +1007,21 @@ protected:
         ForEachItemIn(i,lockedFiles) {
             if (!lockedFiles.item(i).lockTransaction(SDS_SUB_LOCK_TIMEOUT))
                 return false;
+            locked++;
         }
         return true;
     }
     void unlock() {
+        // TODO: Pass ActionState instead
         bool commit = (state == SUCCESS);
         bool rollback = (state == FAILURE);
-        ForEachItemIn(i,lockedFiles) {
-            // TODO: Pass ActionState instead
+        for(unsigned i=0; i<locked; i++)
             lockedFiles.item(i).unlockTransaction(commit, rollback);
-        }
+        locked = 0;
         lockedFiles.kill();
     }
 public:
-    CDFAction(IDistributedFileTransaction *_transaction) : state(NONE)
+    CDFAction(IDistributedFileTransaction *_transaction) : locked(0), state(NONE)
     {
         assertex(_transaction);
         transaction.set(_transaction->baseTransaction()); // smacks of overkill
@@ -4103,11 +4105,10 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
         }
         void commit()
         {
-            state = SUCCESS;
             CDistributedSuperFile *sf = QUERYINTERFACE(parent.get(),CDistributedSuperFile);                 
             if (sf)
                 sf->updateParentFileAttrs(transaction);
-            unlock();
+            CDFAction::commit();
         }
     };
 
@@ -4149,7 +4150,8 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
             }
             // Try to lock all files
             lockedFiles.append(*LINK(parent));
-            lockedFiles.append(*LINK(sub));
+            if (sub)
+                lockedFiles.append(*LINK(sub));
             if (lock())
                 return true;
             else
@@ -6736,20 +6738,17 @@ public:
     }
     void retry()
     {
-        state = NONE;
         // on retry, we need to remove the file so next lock doesn't fail
         if (created)
             parent->removeEntry(logicalname.get(), user);
-    }
-    void commit()
-    {
-        state = SUCCESS;
+        CDFAction::retry();
     }
     void rollback()
     {
         state = FAILURE;
         if (created)
             parent->removeEntry(logicalname.get(), user);
+        CDFAction::rollback();
     }
 };
 
