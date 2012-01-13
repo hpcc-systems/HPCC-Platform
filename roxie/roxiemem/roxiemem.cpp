@@ -28,6 +28,7 @@ namespace roxiemem {
 
 #define USE_MADVISE_ON_FREE     // avoid linux swapping 'freed' pages to disk
 #define VARIABLE_CHUNKS
+#define TIMEOUT_CHECK_FREQUENCY_MILLISECONDS 10
 
 unsigned memTraceLevel = 1;
 size32_t memTraceSizeLimit = 0;
@@ -1018,6 +1019,8 @@ class CChunkingRowManager : public CInterface, implements IRowManager
 #ifdef VARIABLE_CHUNKS
     UnsignedArray chunkLengths;
 #endif
+    unsigned __int64 cyclesChecked;       // When we last checked timelimit
+    unsigned __int64 cyclesCheckInterval; // How often we need to check timelimit
 
     void checkLimit(unsigned numRequested)
     {
@@ -1075,6 +1078,16 @@ public:
 #endif
         if (memTraceLevel >= 2)
             logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager c-tor memLimit=%u pageLimit=%u rowMgr=%p", _memLimit, pageLimit, this);
+        if (timeLimit)
+        {
+            cyclesChecked = get_cycles_now();
+            cyclesCheckInterval = nanosec_to_cycle(1000000 * TIMEOUT_CHECK_FREQUENCY_MILLISECONDS); // Could perhaps ask timelimit object what a suitable frequency is..
+        }
+        else
+        {
+            cyclesChecked = 0;
+            cyclesCheckInterval = 0;
+        }
     }
 
     ~CChunkingRowManager()
@@ -1326,7 +1339,14 @@ public:
             PrintStackReport();
         }
         if (timeLimit)
-            timeLimit->checkAbort(); // MORE - maybe not every time I am called?
+        {
+            unsigned __int64 cyclesNow = get_cycles_now();
+            if (cyclesNow - cyclesChecked >= cyclesCheckInterval)
+            {
+                timeLimit->checkAbort();
+                cyclesChecked = cyclesNow;  // No need to lock - worst that can happen is we call too often which is harmless
+            }
+        }
         CriticalBlock b(crit);
         if (isUltraCheckingHeap)
             checkHeap();
