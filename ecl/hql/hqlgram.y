@@ -2775,12 +2775,12 @@ hintList
     ;
 
 hintItem
-    : UNKNOWN_ID
+    : hintName
                         {
                             $$.setExpr(createExprAttribute($1.getName()));
                             $$.setPosition($1);
                         }
-    | UNKNOWN_ID '(' beginList hintExprList ')'
+    | hintName '(' beginList hintExprList ')'
                         {
                             HqlExprArray args;
                             parser->endList(args);
@@ -2789,6 +2789,10 @@ hintItem
                         }
     ;
 
+hintName
+    : UNKNOWN_ID
+    | OUTPUT            {   $$.setName(outputAtom); }
+    ;
 
 hintExprList
     : hintExpr
@@ -2823,6 +2827,10 @@ hintExpr
     | expression DOTDOT {
                             parser->normalizeExpression($1);
                             $$.setExpr(createValue(no_rangefrom, makeNullType(), $1.getExpr()));
+                        }
+    | UNKNOWN_ID
+                        {
+                            $$.setExpr(createAttribute($1.getName()), $1);
                         }
     ;
 

@@ -80,7 +80,6 @@
 //#define _SR6_
 
 #define MAX_CSV_RECORD_SIZE     4096
-#define MIN_HEADER_SIZE 225  // Stolen from Hozed sources
 
 #define ECLRTL_LIB          "eclrtl"
 
@@ -2018,6 +2017,9 @@ static void expandHintValue(StringBuffer & s, IHqlExpression * expr)
             s.append("]");
             break;
         }
+    case no_attr:
+        s.append(expr->queryName());
+        break;
     default:
         s.append("?");
         break;

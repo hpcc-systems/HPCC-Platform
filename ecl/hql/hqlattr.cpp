@@ -2123,6 +2123,7 @@ public:
     void applyChoosen(__int64 limit, bool isLocal);
     void combineAlternatives(const HqlRowCountInfo & other);
     void combineBoth(const HqlRowCountInfo & other);
+    bool extractHint(IHqlExpression * hint);
     void limitMin(__int64 value);
     void setEstimate(__int64 n);
     void scaleFixed(__int64 scale);
@@ -2223,6 +2224,45 @@ void HqlRowCountInfo::combineBoth(const HqlRowCountInfo & other)
         magnitude = other.magnitude;
 }
 
+bool HqlRowCountInfo::extractHint(IHqlExpression * hint)
+{
+    IHqlExpression * arg = hint->queryChild(0);
+    if (!arg)
+        return false;
+    switch (arg->getOperator())
+    {
+    case no_constant:
+        setN(getIntValue(arg));
+        return true;
+    case no_rangeto:
+        setRange(0, getIntValue(arg->queryChild(0)));
+        return true;
+    case no_range:
+        setRange(getIntValue(arg->queryChild(0)), getIntValue(arg->queryChild(1)));
+        return true;
+    case no_attr:
+        {
+            _ATOM name = arg->queryName();
+            RowCountMagnitude magnitude = RCMnone;
+            if (name == tinyAtom)
+                magnitude = RCMtiny;
+            else if (name == groupAtom)
+                magnitude = RCMgroup;
+            else if (name == fewAtom)
+                magnitude = RCMfew;
+            else if (name == memoryAtom)
+                magnitude = RCMmemory;
+            if (magnitude != RCMnone)
+            {
+                setUnknown(magnitude);
+                return true;
+            }
+            break;
+        }
+    }
+    return false;
+}
+
 void HqlRowCountInfo::getText(StringBuffer & text) const
 {
     min->queryValue()->generateECL(text);
@@ -2305,6 +2345,10 @@ void retrieveRowInformation(HqlRowCountInfo & info, IHqlExpression * expr)
 IHqlExpression * calcRowInformation(IHqlExpression * expr)
 {
     HqlRowCountInfo info;
+    IHqlExpression * hint = queryHint(expr, outputAtom);
+    if (hint && info.extractHint(hint))
+        return info.createRecordCountAttr();
+
     IHqlExpression * ds = expr->queryChild(0);
     node_operator op  = expr->getOperator();
     switch (op)
@@ -2822,7 +2866,7 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
 }
 
 static IHqlExpression * evaluateAttrRecordCount(IHqlExpression * expr) 
-{ 
+{
     IHqlExpression * info = calcRowInformation(expr);
     return meta.addAttributeOwn(expr, info);
 }
