@@ -2256,8 +2256,6 @@ unsigned getNumChildTables(IHqlExpression * dataset)
             assertex(num==2); 
         break;
     case childdataset_many_noscope:
-        assertex(num==2); 
-        break;
     case childdataset_many:
         break;
     case childdataset_if:
