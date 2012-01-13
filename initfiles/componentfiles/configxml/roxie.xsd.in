@@ -1214,10 +1214,10 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="linuxYield" type="xs:boolean" use="optional" default="true">
+    <xs:attribute name="linuxYield" type="xs:boolean" use="optional" default="false">
       <xs:annotation>
         <xs:appinfo>
-          <tooltip>option to yield in some tight loops.</tooltip>
+          <tooltip>Yield to scheduler in some tight loops. May help latency on uniprocessor machines</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
