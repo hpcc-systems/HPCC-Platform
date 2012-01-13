@@ -67,9 +67,11 @@ public:
     IMPLEMENT_IINTERFACE;
     virtual size32_t read(offset_t pos, size32_t len, void * data) { THROWNOTOPEN; }
     virtual offset_t size() { THROWNOTOPEN; }
+    virtual void flush() { THROWNOTOPEN; }
     virtual size32_t write(offset_t pos, size32_t len, const void * data) { THROWNOTOPEN; }
     virtual void setSize(offset_t size) { UNIMPLEMENTED; }
     virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len) { UNIMPLEMENTED; return 0; }
+    virtual void close() { }
 } failure;
 
 class CLazyFileIO : public CInterface, implements ILazyFileIO, implements IDelayedFile
@@ -334,6 +336,13 @@ public:
             if (tries == MAX_READ_RETRIES)
                 throw MakeStringException(ROXIE_FILE_ERROR, "Failed to read length %d offset %"I64F"x file %s after %d attempts", len, pos, sources.item(currentIdx).queryFilename(), tries);
         }
+    }
+
+    virtual void flush()
+    {
+        CriticalBlock b(crit);
+        if (current.get() != &failure)
+            current->flush();
     }
 
     virtual offset_t size() 
