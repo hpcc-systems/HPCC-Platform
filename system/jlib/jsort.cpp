@@ -41,8 +41,7 @@ static bool sortParallel(unsigned &numcpus)
 {
     static unsigned numCPUs = 0;
     if (numCPUs==0) {
-        unsigned CPUSpeed;
-        getCpuInfo(numCPUs, CPUSpeed);
+        numCPUs = getAffinityCpus();
     }
     if ((numcpus==0)||(numcpus>numCPUs))
         numcpus = numCPUs;

@@ -816,6 +816,30 @@ void getCpuInfo(unsigned &numCPUs, unsigned &CPUSpeed)
 
 }
 
+unsigned getAffinityCpus()
+{
+    unsigned numCpus = 0;
+    DWORD ProcessAffinityMask, SystemAffinityMask;
+    if (GetProcessAffinityMask(GetCurrentProcess(), &ProcessAffinityMask, &SystemAffinityMask))
+    {
+        unsigned i = 0;
+        unsigned s = sizeof(ProcessAffinityMask)*8;
+        for(i=0; i < s; i++)
+        {
+            if (ProcessAffinityMask & (1 << i))
+                ++numCpus;
+        }
+    }
+    else // fall back to legacy num system cpus
+    {
+        Owned<IException> e = MakeOsException(GetLastError(), "Failed to get affinity");
+        EXCLOG(e, NULL);
+        unsigned cpuSpeed;
+        getCpuInfo(numCpus, cpuSpeed);
+        return numCpus;
+    }
+    return numCpus;
+}
 
 #else // linux
 
@@ -850,6 +874,22 @@ void getCpuInfo(unsigned &numCPUs, unsigned &CPUSpeed)
         bufptr = strchr(bufptr, '\n');
     }
     close(cpufd);
+}
+
+unsigned getAffinityCpus()
+{
+    cpu_set_t cpuset;
+    int err = pthread_getaffinity_np(GetCurrentThreadId(), sizeof(cpu_set_t), &cpuset);
+    if (0 == err)
+        return CPU_COUNT(&cpuset);
+    else
+    {
+        Owned<IException> e = MakeErrnoException(errno, "Failed to get affinity");
+        EXCLOG(e, NULL);
+        unsigned numCPUs, CPUSpeed;
+        getCpuInfo(numCPUs, CPUSpeed);
+        return numCPUs;
+    }
 }
 
 static void getMemUsage(unsigned &inuse,unsigned &active,unsigned &total,unsigned &swaptotal,unsigned &swapinuse) 

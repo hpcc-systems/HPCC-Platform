@@ -1940,9 +1940,7 @@ IJoinHelper *createJoinHelper(IHThorJoinArg *helper, const char *activityName, a
     IJoinHelper *jhelper = new CJoinHelper(helper,activityName,TAKjoin,activityId,allocator);
     if (!parallelmatch||helper->getKeepLimit()||((helper->getJoinFlags()&JFslidingmatch)!=0)) // currently don't support betweenjoin or keep and multicore
         return jhelper;
-    unsigned numthreads;
-    unsigned CPUSpeed;
-    getCpuInfo(numthreads, CPUSpeed);
+    unsigned numthreads = getAffinityCpus();
     if (unsortedoutput)
         return new CMultiCoreUnorderedJoinHelper(numthreads,jhelper,helper,allocator,TAKjoin);
     return new CMultiCoreJoinHelper(numthreads,jhelper,helper,allocator,TAKjoin);
@@ -1960,9 +1958,7 @@ IJoinHelper *createSelfJoinHelper(IHThorJoinArg *helper, const char *activityNam
     IJoinHelper *jhelper = new SelfJoinHelper(helper,activityName,activityId,allocator);
     if (!parallelmatch||helper->getKeepLimit()||((helper->getJoinFlags()&JFslidingmatch)!=0)) // currently don't support betweenjoin or keep and multicore
         return jhelper;
-    unsigned numthreads;
-    unsigned CPUSpeed;
-    getCpuInfo(numthreads, CPUSpeed);
+    unsigned numthreads = getAffinityCpus();
     if (unsortedoutput)
         return new CMultiCoreUnorderedJoinHelper(numthreads,jhelper,helper,allocator,TAKselfjoin);
     return new CMultiCoreJoinHelper(numthreads,jhelper,helper,allocator,TAKselfjoin);
