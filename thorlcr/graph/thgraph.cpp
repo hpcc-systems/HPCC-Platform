@@ -2218,7 +2218,7 @@ public:
         else
         {
             CriticalBlock b(crit);
-            if (NotFound != seen.find(subGraph->queryGraphId()))
+            if (seen.contains(subGraph->queryGraphId()))
                 return; // already queued;
             seen.append(subGraph->queryGraphId());
         }
@@ -2242,8 +2242,8 @@ public:
             if (dependenciesDone)
                 subGraph->dependentSubGraphs.kill(); // none to track anymore
         }
-        CriticalBlock b(crit);
         Owned<CGraphExecutorGraphInfo> graphInfo = new CGraphExecutorGraphInfo(*this, subGraph, callback, parentExtract, parentExtractSz);
+        CriticalBlock b(crit);
         if (0 == subGraph->dependentSubGraphs.ordinality())
         {
             if (running.ordinality()<limit)
