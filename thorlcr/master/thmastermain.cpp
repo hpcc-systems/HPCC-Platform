@@ -645,12 +645,13 @@ int main( int argc, char *argv[]  )
             // should prob. error here
         }
         unsigned gmemSizeMaster = globals->getPropInt("@masterMemorySize", gmemSize); // in MB
+        bool gmemAllowHugePages = globals->getPropBool("@heapUseHugePages", false);
 
         // if @masterMemorySize and @globalMemorySize unspecified gmemSize will be default based on h/w
         globals->setPropInt("@masterMemorySize", gmemSizeMaster);
 
         PROGLOG("Global memory size = %d MB", gmemSizeMaster);
-        roxiemem::setTotalMemoryLimit(((memsize_t)gmemSizeMaster) * 0x100000, 0, NULL);
+        roxiemem::setTotalMemoryLimit(gmemAllowHugePages, ((memsize_t)gmemSizeMaster) * 0x100000, 0, NULL);
 
         const char * overrideBaseDirectory = globals->queryProp("@thorDataDirectory");
         const char * overrideReplicateDirectory = globals->queryProp("@thorReplicateDirectory");

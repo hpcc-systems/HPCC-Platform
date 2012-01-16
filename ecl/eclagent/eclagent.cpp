@@ -2024,7 +2024,8 @@ void EclAgent::runProcess(IEclProcess *process)
     }
 #endif
     memsize_t memLimitBytes = (memsize_t)memLimitMB * 1024 * 1024;
-    roxiemem::setTotalMemoryLimit(memLimitBytes, 0, NULL);
+    bool allowHugePages = globals->getPropBool("heapUseHugePages", false);
+    roxiemem::setTotalMemoryLimit(allowHugePages, memLimitBytes, 0, NULL);
 
     if (debugContext)
         debugContext->checkBreakpoint(DebugStateReady, NULL, NULL);
