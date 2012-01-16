@@ -29,6 +29,7 @@ namespace roxiemem {
 #define USE_MADVISE_ON_FREE     // avoid linux swapping 'freed' pages to disk
 #define VARIABLE_CHUNKS
 #define TIMEOUT_CHECK_FREQUENCY_MILLISECONDS 10
+#define SUPPORT_HUGE_PAGES
 
 unsigned memTraceLevel = 1;
 size32_t memTraceSizeLimit = 0;
@@ -55,6 +56,7 @@ unsigned maxLeakReport = 4;
 #endif
 
 static char *heapBase;
+static bool usingHugePages;
 static unsigned *heapBitmap;
 static unsigned heapBitmapSize;
 static unsigned heapLWM;
@@ -93,12 +95,26 @@ void initializeHeap(unsigned pages)
         }
     }
 #else
-    int ret;
-    if ((ret = posix_memalign((void **) &heapBase, HEAP_ALIGNMENT_SIZE, memsize)) != 0) {
-        DBGLOG("RoxieMemMgr: posix_memalign (alignment=%"I64F"u, size=%"I64F"u) failed - ret=%d", 
-                (unsigned __int64) HEAP_ALIGNMENT_SIZE, (unsigned __int64) memsize, ret);
-        HEAPERROR("RoxieMemMgr: Unable to create heap");
+#ifdef SUPPORT_HUGE_PAGES
+    heapBase = (char *)mmap(NULL, memsize, (PROT_READ | PROT_WRITE), (MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB), 0, 0);
+    if (heapBase)
+    {
+        usingHugePages = true;
+        assertex(((memsize_t)heapBase & (HEAP_ALIGNMENT_SIZE-1)) == 0);
     }
+    else
+    {
+        usingHugePages = false;
+#endif
+        int ret;
+        if ((ret = posix_memalign((void **) &heapBase, HEAP_ALIGNMENT_SIZE, memsize)) != 0) {
+            DBGLOG("RoxieMemMgr: posix_memalign (alignment=%"I64F"u, size=%"I64F"u) failed - ret=%d", 
+                    (unsigned __int64) HEAP_ALIGNMENT_SIZE, (unsigned __int64) memsize, ret);
+            HEAPERROR("RoxieMemMgr: Unable to create heap");
+        }
+#ifdef SUPPORT_HUGE_PAGES
+    }
+#endif
 #endif
     heapBitmap = new unsigned [heapBitmapSize];
     memset(heapBitmap, 0xff, heapBitmapSize*sizeof(unsigned));
@@ -119,7 +135,14 @@ extern void releaseRoxieHeap()
 #ifdef _WIN32
         VirtualFree(heapBase, 0, MEM_RELEASE);
 #else
-        free(heapBase);
+        if (usingHugePages)
+        {
+            memsize_t memsize = memsize_t(heapBitmapSize) * UNSIGNED_BITS * HEAP_ALIGNMENT_SIZE;
+            munmap(heapBase, memsize);
+            usingHugePages = false;
+        }
+        else
+            free(heapBase);
 #endif
         heapBase = NULL;
     }
