@@ -2043,8 +2043,9 @@ class CGraphExecutor : public CInterface, implements IGraphExecutor
     UnsignedArray seen;
     bool stopped;
     unsigned limit;
+    unsigned waitOnRunning;
     CriticalSection crit;
-    Semaphore sem;
+    Semaphore sem, runningSem;
     Owned<IThreadPool> graphPool;
 
     class CGraphExecutorFactory : public CInterface, implements IThreadFactory
@@ -2096,12 +2097,24 @@ class CGraphExecutor : public CInterface, implements IGraphExecutor
             return new CGraphExecutorThread();
         }
     } *factory;
+
+    CGraphExecutorGraphInfo *findRunning(graph_id gid)
+    {
+        ForEachItemIn(r, running)
+        {
+            CGraphExecutorGraphInfo *graphInfo = &running.item(r);
+            if (gid == graphInfo->subGraph->queryGraphId())
+                return graphInfo;
+        }
+        return NULL;
+    }
 public:
     IMPLEMENT_IINTERFACE;
 
     CGraphExecutor(CJobBase &_job) : job(_job)
     {
         limit = (unsigned)job.getWorkUnitValueInt("concurrentSubGraphs", globals->getPropInt("@concurrentSubGraphs", 1));
+        waitOnRunning = 0;
         stopped = false;
         factory = new CGraphExecutorFactory(*this);
         graphPool.setown(createThreadPool("CGraphExecutor pool", factory, &job, limit));
@@ -2116,6 +2129,11 @@ public:
     {
         CriticalBlock b(crit);
         running.zap(doneGraphInfo);
+        if (waitOnRunning)
+        {
+            runningSem.signal(waitOnRunning);
+            waitOnRunning = 0;
+        }
 
         if (e || job.queryAborted())
         {
@@ -2176,24 +2194,38 @@ public:
 // IGraphExecutor
     virtual void add(CGraphBase *subGraph, IGraphCallback &callback, bool checkDependencies, size32_t parentExtractSz, const byte *parentExtract)
     {
-        CriticalBlock b(crit);
-        if (job.queryPausing())
-            return;
-        if (subGraph->isComplete())
-            return;
-        ForEachItemIn(s, seen)
-        {
-            if (subGraph->queryGraphId() == seen.item(s))
-                return; // already queued;
+        bool alreadyRunning;
+        { CriticalBlock b(crit);
+            if (job.queryPausing())
+                return;
+            if (subGraph->isComplete())
+                return;
+            alreadyRunning = NULL != findRunning(subGraph->queryGraphId());
+            if (alreadyRunning)
+                ++waitOnRunning;
         }
-        seen.append(subGraph->queryGraphId());
-
+        if (alreadyRunning)
+        {
+            loop
+            {
+                PROGLOG("Waiting on subgraph %"GIDPF"d", subGraph->queryGraphId());
+                if (runningSem.wait(MEDIUMTIMEOUT) || job.queryAborted() || job.queryPausing())
+                    break;
+            }
+            return;
+        }
+        else
+        {
+            CriticalBlock b(crit);
+            if (NotFound != seen.find(subGraph->queryGraphId()))
+                return; // already queued;
+            seen.append(subGraph->queryGraphId());
+        }
         if (!subGraph->prepare(parentExtractSz, parentExtract, checkDependencies, true, true))
         {
             subGraph->setComplete();
             return;
         }
-
         if (subGraph->dependentSubGraphs.ordinality())
         {
             bool dependenciesDone = true;
@@ -2209,6 +2241,7 @@ public:
             if (dependenciesDone)
                 subGraph->dependentSubGraphs.kill(); // none to track anymore
         }
+        CriticalBlock b(crit);
         Owned<CGraphExecutorGraphInfo> graphInfo = new CGraphExecutorGraphInfo(*this, subGraph, callback, parentExtract, parentExtractSz);
         if (0 == subGraph->dependentSubGraphs.ordinality())
         {
