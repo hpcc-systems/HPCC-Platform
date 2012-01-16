@@ -2195,7 +2195,8 @@ public:
     virtual void add(CGraphBase *subGraph, IGraphCallback &callback, bool checkDependencies, size32_t parentExtractSz, const byte *parentExtract)
     {
         bool alreadyRunning;
-        { CriticalBlock b(crit);
+        {
+            CriticalBlock b(crit);
             if (job.queryPausing())
                 return;
             if (subGraph->isComplete())
