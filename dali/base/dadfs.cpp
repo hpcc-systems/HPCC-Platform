@@ -2265,8 +2265,7 @@ public:
         return lockProperties(reload,timeoutms);
     }
 
-    // FIXME: This method is NOT locking the properties for exclusive access, just setting it
-    // to write mode on the first call. If concurrent access occur, there will be conflicts
+    // WARN: This method allows multiple access from the same instance to the same properties.
     // MORE: Shouldn't we return boolean and use queryProperties() outside of this method?
     IPropertyTree & lockProperties(bool &reload,unsigned timeoutms)
     {
@@ -2274,7 +2273,7 @@ public:
             timeoutms = defaultTimeout;
         reload = false;
         // this is a bit of a kludge for non-transactional superfile operations and other dining philosopher problems
-        CriticalBlock block (sect);
+        // WARN: This is not thread-safe
         if (proplockcount++==0) {
             attr.clear();
             if (conn) {
@@ -2306,7 +2305,7 @@ public:
     void unlockProperties()
     {
         savePartsAttr();
-        CriticalBlock block (sect);
+        // WARN: This is not thread-safe
         if (--proplockcount==0) {
             attr.clear();
             if (conn) {
