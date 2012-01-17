@@ -3078,7 +3078,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     {
         StringBuffer exeName;
         splitFilename(argv[0], NULL, NULL, &exeName, NULL);
-        openLogFile(logfilespec, exeName.toLowerCase());
+        openLogFile(logfilespec, exeName.append(".log"));
         PROGLOG("Logging to %s", logfilespec.str());
     }
 
