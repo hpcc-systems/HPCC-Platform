@@ -338,10 +338,13 @@ public:
         owner.tid = self;
     }
     inline void leave()
-    { 
+    {
+        //It is safe to access nesting - since this thread is the only one that can access
+        //it, so no need for a synchronized access
         if (nesting == 0)
         {
             owner.tid = 0;
+            compiler_memory_barrier();
             atomic_set(&value, 0);
         }
         else
@@ -399,11 +402,13 @@ public:
     { 
         assertex(GetCurrentThreadId()==owner.tid); // check for spurious leave
         owner.tid = 0;
+        compiler_memory_barrier();
         atomic_set(&value, 0); 
     }
 };
 
 #else
+
 class jlib_decl  NonReentrantSpinLock
 {
     atomic_t value;
@@ -420,6 +425,7 @@ public:
     }
     inline void leave()
     { 
+        compiler_memory_barrier();
         atomic_set(&value, 0); 
     }
 };
@@ -763,12 +769,17 @@ public:
     {
         if (needlock) {
             sect.enter();
+            //prevent compiler from moving any code before the critical section
+            compiler_memory_barrier();
             return true;
         }
+        //Prevent the value of the protected object from being evaluated before the condition
+        compiler_memory_barrier();
         return false;
     }
     inline void unlock()
     {
+        compiler_memory_barrier();
         needlock = false;
         sect.leave();
     }
