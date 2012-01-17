@@ -2791,14 +2791,14 @@ public:
                 }
             }
         }
-        // This is a new property tree, no concurrent access, just reload
-        reloadProperties();
+        lockProperties(defaultTimeout);         // only needed to load attr (no lock)
         shrinkFileTree(root);
         if (totalsize!=(offset_t)-1)
             attr->setPropInt64("@size", totalsize);
         if (useableCheckSum)
             attr->setPropInt64("@checkSum", checkSum);
         setModified();
+        unlockProperties();
 #ifdef EXTRA_LOGGING
         LOGPTREE("CDistributedFile.b root.2",root);
 #endif
