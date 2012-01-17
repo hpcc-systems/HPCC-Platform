@@ -339,7 +339,7 @@ public:
             // NOTE - if daliHelper is not NULL but isAlive returned false, then we have an overlapping connect with a final disconnect
             // In this case the beforeDispose will have taken care NOT to disconnect, isConnected will remain set, and the connect() will be a no-op.
             daliHelper = new CRoxieDaliHelper();
-            if (!topology->getPropBool("@lockDali", false))
+            if (topology && !topology->getPropBool("@lockDali", false))
                 daliHelper->connect();
             return daliHelper;
         }
