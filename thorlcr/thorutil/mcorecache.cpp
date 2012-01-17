@@ -327,8 +327,7 @@ IMultiCoreCache *createMultiCoreCache(IMultiCoreRowIntercept &wrapped, IRecordSi
 {
     static unsigned numCPUs = 0;
     if (numCPUs==0) {
-        unsigned CPUSpeed;
-        getCpuInfo(numCPUs, CPUSpeed);
+        numCPUs = getAffinityCpus();
     }
     if (numCPUs<=1)
         return new CPassThroughMultiCoreCache(wrapped,recsize);
