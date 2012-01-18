@@ -110,7 +110,7 @@ EXPORT STRING Filter(STRING src, STRING filter) := lib_stringlib.StringLib.Strin
  * @see                 Std.Str.SubstituteExcluded
  */
 
-EXPORT STRING SubstituteIncluded(STRING src, STRING filter, STRING replace_char) :=
+EXPORT STRING SubstituteIncluded(STRING src, STRING filter, STRING1 replace_char) :=
   lib_stringlib.StringLib.StringSubstituteOut(src, filter, replace_char);
 
 /**
@@ -124,7 +124,7 @@ EXPORT STRING SubstituteIncluded(STRING src, STRING filter, STRING replace_char)
  * @see                 Std.Str.SubstituteIncluded
  */
 
-EXPORT STRING SubstituteExcluded(STRING src, STRING filter, STRING replace_char) :=
+EXPORT STRING SubstituteExcluded(STRING src, STRING filter, STRING1 replace_char) :=
   lib_stringlib.StringLib.StringSubstitute(src, filter, replace_char);
 
 /**

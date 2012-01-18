@@ -10,7 +10,7 @@ EXPORT TestSubstituteExcluded := MODULE
     EXPORT Test01 := ASSERT(Str.SubstituteExcluded(' ABCDEF FEDCBA ', 'A', '$')+'X' = '$A$$$$$$$$$$$A$X', CONST);
     EXPORT Test02 := ASSERT(Str.SubstituteExcluded(' ABCDEF FEDCBA ', 'AA', 'Z')+'X' = 'ZAZZZZZZZZZZZAZX', CONST);
     EXPORT Test03 := ASSERT(Str.SubstituteExcluded(' ABCDEF FEDCBA ', 'AA', 'ZZ')+'X' = 'ZAZZZZZZZZZZZAZX', CONST);
-    EXPORT Test04 := ASSERT(Str.SubstituteExcluded(' ABCDEF FEDCBA ', 'AA', '')+'X' = ' ABCDEF FEDCBA X', CONST);
+    EXPORT Test04 := ASSERT(Str.SubstituteExcluded(' ABCDEF FEDCBA ', 'AA', '')+'X' = ' A           A X', CONST);
     EXPORT Test05 := ASSERT(Str.SubstituteExcluded(' ABCDEF FEDCBA ', 'A ', '$')+'X' = ' A$$$$$ $$$$$A X', CONST);
     EXPORT Test06 := ASSERT(Str.SubstituteExcluded('', 'A ', '$')+'X' = 'X', CONST);
     EXPORT Test07 := ASSERT(Str.SubstituteExcluded(' ABCDEF FEDCBA ', '', '$')+'X' = '$$$$$$$$$$$$$$$X', CONST);
