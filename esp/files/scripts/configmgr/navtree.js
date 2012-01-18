@@ -3990,35 +3990,47 @@ populateNumberOfNode();
 
 function populateNumberOfNode(){
   var numberIPs = ipCount();
-  var defaultNodes =(parseInt(numberIPs) - 2 );
+  var defaultNodes = parseInt(numberIPs);
   
   if( parseInt(defaultNodes) <= 1){
-    document.getElementById('node4RoxieServ').value = "0";
     document.getElementById('node4Thor').value = "1";
+    document.getElementById('node4Support').value = "1";
   }
   else{
-    var node = (parseInt(defaultNodes) % 2 ) ;
-    if ( parseInt(node) !== 0 )
-      node = parseInt(defaultNodes) - 1 ;
-    else
-      node = defaultNodes ;
-    document.getElementById('node4RoxieServ').value = "0";
-    document.getElementById('node4Thor').value = node;
-   }    
+    var supportNodes = 7;
+
+    if ( defaultNodes > 1 && defaultNodes <= 10 )
+      supportNodes = 1;
+    else if ( defaultNodes > 10 && defaultNodes <= 20 )
+      supportNodes = 2;
+    else if ( defaultNodes > 20 && defaultNodes <= 50 )
+      supportNodes = 3;
+    else if ( defaultNodes > 50 && defaultNodes <= 100 )
+      supportNodes = 4;
+
+    document.getElementById('node4Support').value = supportNodes;
+    document.getElementById('node4Thor').value = defaultNodes - supportNodes == 1?1:defaultNodes - supportNodes - 1;
+  }
+
+  document.getElementById('node4RoxieServ').value = "0";
 }   
 
 function validateNumNodesDialog() {
-  if (!(isInteger(document.getElementById('node4Thor').value)) || !(isInteger(document.getElementById('node4RoxieServ').value)) || !(isInteger(document.getElementById('slavesPerNode').value)))
+  if (!(isInteger(document.getElementById('node4Thor').value)) ||
+      !(isInteger(document.getElementById('node4RoxieServ').value)) ||
+      !(isInteger(document.getElementById('slavesPerNode').value)) ||
+      !(isInteger(document.getElementById('node4Support').value)))
   {
     alert("Only Numeric entries allowed for number of nodes");
   }
   else
   {
     var numberIPs = parseInt(ipCount());
-    var roxieNodes = parseInt(document.getElementById('node4RoxieServ').value)
-    var thorNodes = parseInt(document.getElementById('node4Thor').value)
+    var roxieNodes = parseInt(document.getElementById('node4RoxieServ').value);
+    var thorNodes = parseInt(document.getElementById('node4Thor').value);
+    var supportNodes = parseInt(document.getElementById('node4Support').value);
 
-    if (roxieNodes <= numberIPs && thorNodes <= numberIPs) {
+    if (roxieNodes <= numberIPs && thorNodes <= numberIPs && supportNodes <= numberIPs) {
       if (thorNodes == numberIPs && numberIPs > 10) {
         if (!confirm("As the number of Thor slave nodes requested is equal to the number \
 of ip addresses given, there will be an overlap of Thor master node and a Thor \
@@ -4026,11 +4038,15 @@ slave node. This is not recommended in an environment with more than \
 10 nodes.\n\nDo you want to continue?"))
           return;
       }
+      else if (supportNodes == numberIPs && thorNodes + roxieNodes > 0){
+        alert("Number of support nodes cannot be equal to the number of IPs provided as nodes are required for thor/roxie.");
+        return;
+      }
 
       submitInformation();
     }
     else{
-      alert("Number of nodes should be less then number of IPs provided");
+      alert("Number of nodes should be less then number of IPs provided.");
     }   
   }
 }
@@ -4078,6 +4094,7 @@ function submitInformation() {
   //Before submitting collect all the information in XML format
   var roxieSrvNode = document.getElementById('node4RoxieServ').value ;
   var thorNode = document.getElementById('node4Thor').value ;
+  var supportNodes = document.getElementById('node4Support').value ;
   var iplist = document.getElementById('ipListText').value;
   var slavesPerNode = document.getElementById('slavesPerNode').value;
   var roxieOnDemand = document.getElementById('roxieOnDemand').checked;
@@ -4086,6 +4103,7 @@ function submitInformation() {
   xmlStr += "\" password=\"";
   xmlStr += "\" roxieNodes=\"" + roxieSrvNode;
   xmlStr += "\" thorNodes=\"" + thorNode;
+  xmlStr += "\" supportNodes=\"" + supportNodes;
   xmlStr += "\" slavesPerNode=\"" + slavesPerNode;
   xmlStr += "\" roxieOnDemand=\"" + roxieOnDemand;
   xmlStr += "\" ipList=\"" + iplist;

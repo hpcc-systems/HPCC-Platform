@@ -391,6 +391,13 @@ body {
        background-position: -20px -60px; 
        background-color: transparent; 
      } 
+
+     @-moz-document url-prefix() {
+     .ff-only-align {
+        height: 38%;
+       }
+     }
+
     </style>
 </head>
 
@@ -535,34 +542,46 @@ You need to have Javascript enabled in order to use ConfigMgr. Please enable Jav
                 <table border="0" cellpadding="0" cellspacing="0" height="222px">
                   <tr>
                     <td>
-                      <label><br>Number of nodes for Roxie cluster<br>&nbsp;&nbsp;</label>
+                      <label>Number of support nodes&nbsp;&nbsp;</label>
                     </td>
                     <td>
+                      <div class="ff-only-align"/>
+                      <input id="node4Support" type="textbox" name="node4Support" style="width:33px" value="1" />&nbsp;
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <label>Number of nodes for Roxie cluster&nbsp;&nbsp;</label>
+                    </td>
+                    <td>
+                      <div class="ff-only-align"/>
                       <input id="node4RoxieServ" type="textbox" name="node4RoxieServ" style="width:33px"
                         value="1" />&nbsp;
                     </td>
                   </tr>
                   <tr>
                     <td>
-                      <label><br>Number of slave nodes for Thor cluster<br></label>
-                      <label style="font-weight:bold;font-weight:800">( A master node will be automatically added to the cluster )<br><br>
+                      <label>Number of slave nodes for Thor cluster</label><br/>
+                      <label style="font-weight:bold;font-weight:800">( A master node will be automatically added to the cluster )
                       </label>
                     </td>
                     <td>
+                      <div class="ff-only-align"/>
                       <input id="node4Thor" type="textbox" name="node4Thor" style="width: 33px" value="1" />&nbsp;
                     </td>
                     </tr>
                     <tr>
                      <td>
-                        <label id="slavePerNodelabel" onmouseover="showTooltipForButtons(event)"><br>Number of Thor slaves per node (default 1)<br></label><br>
+                       <label id="slavePerNodelabel" onmouseover="showTooltipForButtons(event)">Number of Thor slaves per node (default 1)</label>
                      </td>
                      <td>
+                       <div class="ff-only-align"/>
                        <input id="slavesPerNode" type="textbox" name="slavesPerNode" style="width: 33px" value="1" onmouseover="showTooltipForButtons(event)"/>&nbsp;
                      </td>
                   </tr>
                   <tr>
                      <td>
-                        <label id="roxieOnDemandLabel" onmouseover="showTooltipForButtons(event)"><br>Enable Roxie on demand<br></label><br>
+                        <label id="roxieOnDemandLabel" onmouseover="showTooltipForButtons(event)">Enable Roxie on demand</label>
                      </td>
                      <td>
                        <input id="roxieOnDemand" type="checkbox" name="roxieOnDemand" value="true" checked onmouseover="showTooltipForButtons(event)"/>&nbsp;
