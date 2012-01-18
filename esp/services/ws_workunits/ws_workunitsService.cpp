@@ -902,6 +902,111 @@ bool CWsWorkunitsEx::onWUSubmit(IEspContext &context, IEspWUSubmitRequest &req, 
     return true;
 }
 
+bool CWsWorkunitsEx::onWURun(IEspContext &context, IEspWURunRequest &req, IEspWURunResponse &resp)
+{
+    try
+    {
+        SCMStringBuffer wuid;
+        wuid.set(req.getWuid());
+
+        bool cloneWorkunit=req.getCloneWorkunit();
+        if (!wuid.length() && notEmpty(req.getQuerySet()) && notEmpty(req.getQuery()))
+        {
+            cloneWorkunit=true;
+            Owned<IPropertyTree> qstree = getQueryRegistry(req.getQuerySet(), true);
+            if (qstree)
+            {
+                IPropertyTree *query = NULL;
+                VStringBuffer xpath("Alias[@name=\"%s\"]", req.getQuery());
+                IPropertyTree *alias = qstree->queryPropTree(xpath.str());
+                if (alias)
+                {
+                    const char *quid = alias->queryProp("@id");
+                    if (!quid)
+                        throw MakeStringException(-1, "Alias %s/%s has no Query defined", req.getQuerySet(), req.getQuery());
+                    xpath.clear().appendf("Query[@id='%s']", quid);
+                    query = qstree->queryPropTree(xpath.str());
+                    if (!query)
+                        throw MakeStringException(-1, "Alias %s/%s refers to a non existing query %s", req.getQuerySet(), req.getQuery(), quid);
+                }
+                else
+                {
+                    xpath.clear().appendf("Query[@id=\"%s\"]", req.getQuery());
+                    query = qstree->queryPropTree(xpath.str());
+                }
+                if (query)
+                {
+                    if (query->getPropBool("@suspended"))
+                        throw MakeStringException(-1, "Query %s/%s is currently suspended", req.getQuerySet(), req.getQuery());
+
+                    wuid.set(query->queryProp("@wuid"));
+                }
+                else
+                    throw MakeStringException(-1, "Query %s/%s not found", req.getQuerySet(), req.getQuery());
+            }
+            else
+                throw MakeStringException(-1, "QuerySet %s not found", req.getQuerySet());
+        }
+
+        if (!wuid.length())
+            throw MakeStringException(ECLWATCH_MISSING_PARAMS,"Workunit or Query required");
+
+        ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Write);
+
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+        if(cloneWorkunit)
+        {
+            Owned<IConstWorkUnit> src(factory->openWorkUnit(wuid.str(), false));
+            NewWsWorkunit wu(factory, context);
+            wu->getWuid(wuid);
+            queryExtendedWU(wu)->copyWorkUnit(src);
+
+            SCMStringBuffer token;
+            wu->setSecurityToken(createToken(wuid.str(), context.queryUserId(), context.queryPassword(), token).str());
+        }
+
+        Owned<IConstWorkUnit> cw(factory->openWorkUnit(wuid.str(), false));
+        if (!cw)
+            throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT,"Cannot open workunit %s.", wuid.str());
+
+        if (notEmpty(req.getInput()))
+        {
+            Owned<IWuWebView> web = createWuWebView(*cw, NULL, getCFD(), true);
+            web->addInputsFromXml(req.getInput());
+        }
+
+        submitWsWorkunit(context, cw, req.getCluster(), NULL, 0, false, true);
+        cw.clear();
+
+        int timeToWait = req.getWait();
+        if (timeToWait != 0)
+            waitForWorkUnitToComplete(wuid.str(), timeToWait);
+
+
+        cw.set(factory->openWorkUnit(wuid.str(), false));
+        if (!cw)
+            throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT,"Cannot open workunit %s.", wuid.str());
+
+        SCMStringBuffer stateDesc;
+        resp.setState(cw->getStateDesc(stateDesc).str());
+        resp.setWuid(wuid.str());
+
+        if (cw->getState()==WUStateCompleted)
+        {
+            SCMStringBuffer result;
+            getFullWorkUnitResultsXML(context.queryUserId(), context.queryPassword(), cw.get(), result, false, ExceptionSeverityInformation);
+            resp.setResults(result.str());
+        }
+
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+
 bool CWsWorkunitsEx::onWUWaitCompiled(IEspContext &context, IEspWUWaitRequest &req, IEspWUWaitResponse &resp)
 {
     try

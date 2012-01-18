@@ -53,6 +53,12 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_ACTIVATE_INI "activateDefault"
 #define ECLOPT_ACTIVATE_ENV NULL
 
+#define ECLOPT_WAIT "--wait"
+#define ECLOPT_WAIT_INI "waitTimeout"
+#define ECLOPT_WAIT_ENV "ECL_WAIT_TIMEOUT"
+
+#define ECLOPT_INPUT "--input"
+
 #define ECLOPT_WUID "--wuid"
 #define ECLOPT_CLUSTER "--cluster"
 #define ECLOPT_NAME "--name"
@@ -79,7 +85,8 @@ enum eclObjParameterType
     eclObjSource = 0x01,
     eclObjArchive = 0x02,
     eclObjSharedObject = 0x04,
-    eclObjWuid = 0x08
+    eclObjWuid = 0x08,
+    eclObjQuery = 0x10
 };
 
 #define eclObjSourceOrArchive (eclObjSource|eclObjArchive)
@@ -103,6 +110,7 @@ public:
 public:
     eclObjParameterType type;
     StringAttr value;
+    StringAttr query;
     MemoryBuffer mb;
     unsigned accept;
 };
