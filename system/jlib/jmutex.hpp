@@ -297,7 +297,7 @@ public:
 class jlib_decl  SpinLock
 {
     atomic_t value;
-    unsigned nesting;
+    unsigned nesting;           // not volatile since it is only accessed by one thread at a time
     struct { volatile ThreadId tid; } owner;
     inline SpinLock(SpinLock & value) { assert(false); } // dummy to prevent inadvetant use as block
 public:
@@ -338,10 +338,15 @@ public:
         owner.tid = self;
     }
     inline void leave()
-    { 
+    {
+        //It is safe to access nesting - since this thread is the only one that can access
+        //it, so no need for a synchronized access
         if (nesting == 0)
         {
             owner.tid = 0;
+            //Ensure that no code that precedes the setting of value gets moved after it
+            //(unlikely since code is conditional and owner.tid is also volatile)
+            compiler_memory_barrier();
             atomic_set(&value, 0);
         }
         else
@@ -399,11 +404,14 @@ public:
     { 
         assertex(GetCurrentThreadId()==owner.tid); // check for spurious leave
         owner.tid = 0;
+        //Ensure that no code that precedes the leave() gets moved after value is cleared
+        compiler_memory_barrier();
         atomic_set(&value, 0); 
     }
 };
 
 #else
+
 class jlib_decl  NonReentrantSpinLock
 {
     atomic_t value;
@@ -420,6 +428,8 @@ public:
     }
     inline void leave()
     { 
+        //Ensure that no code that precedes the leave() gets moved after value is cleared
+        compiler_memory_barrier();
         atomic_set(&value, 0); 
     }
 };
@@ -763,12 +773,18 @@ public:
     {
         if (needlock) {
             sect.enter();
+            //prevent compiler from moving any code before the critical section (unlikely)
+            compiler_memory_barrier();
             return true;
         }
+        //Prevent the value of the protected object from being evaluated before the condition
+        compiler_memory_barrier();
         return false;
     }
     inline void unlock()
     {
+        //Ensure that no code that precedes unlock() gets moved to after needlock being cleared.
+        compiler_memory_barrier();
         needlock = false;
         sect.leave();
     }

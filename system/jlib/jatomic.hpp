@@ -23,6 +23,8 @@
 
 #ifdef _WIN32
 
+#include <intrin.h>
+
 extern "C"
 {
    LONG  __cdecl _InterlockedIncrement(LONG volatile *Addend);
@@ -55,8 +57,10 @@ typedef volatile long atomic_t;
 #else
 #define atomic_cas(v,newvalue,expectedvalue)    (InterlockedCompareExchange(v,newvalue,expectedvalue)==expectedvalue)
 #define atomic_cas_ptr(v, newvalue,expectedvalue)       (InterlockedCompareExchangePointer(v,newvalue,expectedvalue)==expectedvalue)
-#endif      
+#endif
 
+//Used to prevent a compiler reordering volatile and non-volatile loads/stores
+#define compiler_memory_barrier()           _ReadWriteBarrier()
 
 #elif defined(__GNUC__)
 
@@ -128,6 +132,8 @@ static __inline__ bool atomic_cas_ptr(void **v,void *newvalue, void *expectedval
     return __sync_bool_compare_and_swap((memsize_t *)v, (memsize_t)expectedvalue, (memsize_t)newvalue);
 }
 
+#define compiler_memory_barrier() asm volatile("": : :"memory")
+
 #else // other unix
 
 //Truely awful implementations of atomic operations...
@@ -140,6 +146,7 @@ int jlib_decl poor_atomic_add_exchange(atomic_t * v, int i);
 bool jlib_decl poor_atomic_cas(atomic_t * v, int newvalue, int expectedvalue);
 void jlib_decl *poor_atomic_xchg_ptr(void *p, void **v);
 bool   jlib_decl poor_atomic_cas_ptr(void ** v, void *newvalue, void *expectedvalue);
+void jlib_decl poor_compiler_memory_barrier();
 
 #define ATOMIC_INIT(i)                  (i)
 #define atomic_inc(v)                   (void)poor_atomic_inc_and_test(v)
@@ -154,6 +161,7 @@ bool   jlib_decl poor_atomic_cas_ptr(void ** v, void *newvalue, void *expectedva
 #define atomic_cas(v,newvalue,expectedvalue)    poor_atomic_cas(v,newvalue,expectedvalue)
 #define atomic_xchg_ptr(p, v)               poor_atomic_xchg_ptr(p, v)
 #define atomic_cas_ptr(v,newvalue,expectedvalue)    poor_atomic_cas_ptr(v,newvalue,expectedvalue)
+#define compiler_memory_barrier()       poor_compiler_memory_barrier()
 
 #endif
 
