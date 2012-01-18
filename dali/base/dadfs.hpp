@@ -217,7 +217,8 @@ interface IDistributedFile: extends IInterface
     virtual void attach(const char *logicalname,IDistributedFileTransaction *transaction=NULL,IUserDescriptor *user=NULL) = 0;                          // attach to name in DFS
     virtual void detach(IDistributedFileTransaction *transaction=NULL) = 0;                                                 // no longer attached to name in DFS
 
-    virtual IPropertyTree &queryProperties() = 0;                               // DFile properties
+    virtual IPropertyTree &queryProperties() = 0;                               // DFile properties (can call reload)
+    virtual void reloadProperties() = 0;                                       // DFile properties
 
     virtual IPropertyTree &lockProperties(unsigned timeoutms=INFINITE) = 0;     // must be called before updating
     virtual void unlockProperties() = 0;                                        // must be called after updating

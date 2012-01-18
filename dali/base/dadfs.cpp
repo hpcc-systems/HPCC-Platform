@@ -2239,12 +2239,18 @@ public:
         }
     }
 
-    IPropertyTree &queryProperties()
+    void reloadProperties()
     {
         CriticalBlock block (sect);
-        if (attr) 
-            return *attr;
-        loadAttr();
+        if (!attr)
+            loadAttr();
+    }
+
+    IPropertyTree &queryProperties()
+    {
+        // a bit redundant, but avoids unnecessary locking
+        if (!attr)
+            reloadProperties();
         return *attr;
     }
 
@@ -2259,12 +2265,15 @@ public:
         return lockProperties(reload,timeoutms);
     }
 
+    // WARN: This method allows multiple access from the same instance to the same properties.
+    // MORE: Shouldn't we return boolean and use queryProperties() outside of this method?
     IPropertyTree & lockProperties(bool &reload,unsigned timeoutms)
     {
         if (timeoutms==INFINITE)
             timeoutms = defaultTimeout;
         reload = false;
         // this is a bit of a kludge for non-transactional superfile operations and other dining philosopher problems
+        // WARN: This is not thread-safe
         if (proplockcount++==0) {
             attr.clear();
             if (conn) {
@@ -2288,16 +2297,15 @@ public:
                 dfCheckRoot("lockProperties",root,conn);
             }
         }
-        CriticalBlock block (sect);
-        if (attr) 
-            return *attr;
-        loadAttr();
-        return *attr;
+        return queryProperties();
     }
 
+    // FIXME: This method is NOT unlocking the properties for exclusive access, just setting it
+    // to read mode on the last call. If concurrent access occur, there will be conflicts
     void unlockProperties()
     {
         savePartsAttr();
+        // WARN: This is not thread-safe
         if (--proplockcount==0) {
             attr.clear();
             if (conn) {
@@ -2314,6 +2322,9 @@ public:
         }
     }
 
+    // FIXME: This is a hack. All calls to lockProperties should be followed
+    // by a subsequent unlockProperties. REMOVE this method and fix the problems
+    // where they're broken.
     void clearLockedProperties()
     {
         // assumes committed
@@ -2323,6 +2334,9 @@ public:
         }
     }
 
+    // FIXME: This code is too similar to lockProperties to exist. If lockcount is not
+    // zero, we should fail here, since the exact number of unlockProperties should
+    // have been called, and fix the problem where it's broken.
     bool lockTransaction(unsigned timeout)
     {
         if (timeout==INFINITE)
@@ -2357,11 +2371,15 @@ public:
                     ret = false;
                 }
             }
-            queryProperties(); // reloads attr
+            reloadProperties();
         }
         return ret;
     }
 
+    // FIXME: This code is broken. It should not access lockProperties' members,
+    // it should not accept commit and rollback at the same time.
+    // TODO: Use ActionState instead of boolean flags for commit/rollback.
+    // TODO: Create retry/commit/rollback and make unlock private.
     virtual void unlockTransaction(bool _commit,bool _rollback)
     {
         if (transactionnest==0) {
