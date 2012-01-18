@@ -19,6 +19,7 @@
 #include "jlib.hpp"
 #include "jexcept.hpp"
 #include "jptree.hpp"
+#include "junicode.hpp"
 #include "workunit.hpp"
 #include "dllserver.hpp"
 #include "thorplugin.hpp"
@@ -96,16 +97,16 @@ public:
         buffer.append(value);
     }
 
-    void appendSchemaResource(IPropertyTree &res, ILoadedDllEntry &loadedDll)
+    void appendSchemaResource(IPropertyTree &res, ILoadedDllEntry *dll)
     {
-        if (flags & WWV_OMIT_SCHEMAS)
+        if (!dll || (flags & WWV_OMIT_SCHEMAS))
             return;
         if (res.getPropInt("@seq", -1)>=0 && res.hasProp("@id"))
         {
             int id = res.getPropInt("@id");
             size32_t len = 0;
             const void *data = NULL;
-            if (loadedDll.getResource(len, data, "RESULT_XSD", (unsigned) id) && len>0)
+            if (dll->getResource(len, data, "RESULT_XSD", (unsigned) id) && len>0)
             {
                 buffer.append("<XmlSchema name=\"").append(res.queryProp("@name")).append("\">");
                 if (res.getPropBool("@compressed"))
@@ -125,21 +126,25 @@ public:
         }
     }
 
-    void appendManifestSchemas(IPropertyTree &manifest, ILoadedDllEntry &loadedDll)
+    void appendManifestSchemas(IPropertyTree &manifest, ILoadedDllEntry *dll)
     {
         assertex(!finalized);
+        if (!dll)
+            return;
         Owned<IPropertyTreeIterator> iter = manifest.getElements("Resource[@type='RESULT_XSD']");
         ForEach(*iter)
-            appendSchemaResource(iter->query(), loadedDll);
+            appendSchemaResource(iter->query(), dll);
     }
 
-    void appendManifestResultSchema(IPropertyTree &manifest, const char *resultname, ILoadedDllEntry &loadedDll)
+    void appendManifestResultSchema(IPropertyTree &manifest, const char *resultname, ILoadedDllEntry *dll)
     {
         assertex(!finalized);
+        if (!dll)
+            return;
         VStringBuffer xpath("Resource[@name='%s'][@type='RESULT_XSD']", resultname);
         IPropertyTree *res=manifest.queryPropTree(xpath.str());
         if (res)
-            appendSchemaResource(*res, loadedDll);
+            appendSchemaResource(*res, dll);
     }
 
     void appendXML(IPropertyTree *xml, const char *tag=NULL)
@@ -258,22 +263,24 @@ class WuWebView : public CInterface,
 public:
     IMPLEMENT_IINTERFACE;
 
-    WuWebView(IConstWorkUnit &wu, const char *queryname, const char *wdir, bool mapEspDir) :
-        manifestIncludePathsSet(false), dir(wdir), mapEspDirectories(mapEspDir)
+    WuWebView(IConstWorkUnit &wu, const char *queryname, const char *wdir, bool mapEspDir, bool delay=true) :
+        manifestIncludePathsSet(false), dir(wdir), mapEspDirectories(mapEspDir), delayedDll(delay)
     {
         name.set(queryname);
-        load(wu);
+        setWorkunit(wu);
     }
 
-    WuWebView(const char *wuid, const char *queryname, const char *wdir, bool mapEspDir) :
-        manifestIncludePathsSet(false), dir(wdir), mapEspDirectories(mapEspDir)
+    WuWebView(const char *wuid, const char *queryname, const char *wdir, bool mapEspDir, bool delay=true) :
+        manifestIncludePathsSet(false), dir(wdir), mapEspDirectories(mapEspDir), delayedDll(delay)
     {
         name.set(queryname);
-        load(wuid);
+        setWorkunit(wuid);
     }
 
-    void load(IConstWorkUnit &wu);
-    void load(const char *wuid);
+    void setWorkunit(IConstWorkUnit &wu);
+    void setWorkunit(const char *wuid);
+    ILoadedDllEntry *loadDll(bool force=false);
+
     IPropertyTree *ensureManifest();
 
     virtual void getResultViewNames(StringArray &names);
@@ -296,10 +303,16 @@ public:
     void calculateResourceIncludePaths();
     virtual bool getInclude(const char *includename, MemoryBuffer &includebuf, bool &pathOnly);
 
+    void addVariableFromPTree(IWorkUnit *w, IConstWUResult &vardef, IResultSetMetaData &metadef, const char *varname, IPropertyTree *valtree);
+    void addInputsFromPTree(IPropertyTree *pt);
+    void addInputsFromXml(const char *xml);
+
+
 protected:
     SCMStringBuffer dllname;
-    Owned<IConstWorkUnit> wu;
-    Owned<ILoadedDllEntry> loadedDll;
+    Owned<IConstWorkUnit> cw;
+    Owned<ILoadedDllEntry> dll;
+    bool delayedDll;
     Owned<IPropertyTree> manifest;
     SCMStringBuffer name;
     bool mapEspDirectories;
@@ -314,7 +327,7 @@ IPropertyTree *WuWebView::ensureManifest()
     if (!manifest)
     {
         StringBuffer xml;
-        manifest.setown((loadedDll && getEmbeddedManifestXML(loadedDll, xml)) ? createPTreeFromXMLString(xml.str()) : createPTree());
+        manifest.setown((loadDll() && getEmbeddedManifestXML(dll, xml)) ? createPTreeFromXMLString(xml.str()) : createPTree());
     }
     return manifest.get();
 }
@@ -395,14 +408,14 @@ void WuWebView::getResultViewNames(StringArray &names)
 
 void WuWebView::getResource(IPropertyTree *res, StringBuffer &content)
 {
-    if (!loadedDll)
+    if (!loadDll())
         return;
     if (res->hasProp("@id"))
     {
         int id = res->getPropInt("@id");
         size32_t len = 0;
         const void *data = NULL;
-        if (loadedDll->getResource(len, data, res->queryProp("@type"), (unsigned) id) && len>0)
+        if (dll->getResource(len, data, res->queryProp("@type"), (unsigned) id) && len>0)
         {
             if (res->getPropBool("@compressed"))
             {
@@ -453,8 +466,7 @@ void WuWebView::renderExpandedResults(const char *viewName, WuExpandedResultBuff
     if (!view)
         throw MakeStringException(WUWEBERR_ViewResourceNotFound, "Result view %s not found", viewName);
     expanded.appendXML(view, "view");
-    if (loadedDll)
-        expanded.appendManifestSchemas(*mf, *loadedDll);
+    expanded.appendManifestSchemas(*mf, loadDll());
     expanded.finalize();
     const char *type=view->queryProp("@type");
     if (!type)
@@ -491,14 +503,14 @@ void WuWebView::renderResults(const char *viewName, const char *xml, StringBuffe
 void WuWebView::renderResults(const char *viewName, StringBuffer &out)
 {
     WuExpandedResultBuffer buffer(name.str(), WWV_ADD_RESPONSE_TAG | WWV_ADD_RESULTS_TAG);
-    buffer.appendResults(wu, username.get(), pw.get());
+    buffer.appendResults(cw, username.get(), pw.get());
     renderExpandedResults(viewName, buffer, out);
 }
 
 void WuWebView::renderSingleResult(const char *viewName, const char *resultname, StringBuffer &out)
 {
     WuExpandedResultBuffer buffer(name.str(), WWV_ADD_RESPONSE_TAG | WWV_ADD_RESULTS_TAG);
-    buffer.appendSingleResult(wu, resultname, username.get(), pw.get());
+    buffer.appendSingleResult(cw, resultname, username.get(), pw.get());
     renderExpandedResults(viewName, buffer, out);
 }
 
@@ -506,8 +518,7 @@ void WuWebView::expandResults(const char *xml, StringBuffer &out, unsigned flags
 {
     WuExpandedResultBuffer expander(name.str(), flags);
     expander.appendDatasetsFromXML(xml);
-    if (loadedDll)
-        expander.appendManifestSchemas(*ensureManifest(), *loadedDll);
+    expander.appendManifestSchemas(*ensureManifest(), loadDll());
     expander.finalize();
     out.append(expander.buffer);
 }
@@ -515,7 +526,7 @@ void WuWebView::expandResults(const char *xml, StringBuffer &out, unsigned flags
 void WuWebView::expandResults(StringBuffer &out, unsigned flags)
 {
     SCMStringBuffer xml;
-    getFullWorkUnitResultsXML(username.get(), pw.get(), wu, xml, false, ExceptionSeverityInformation);
+    getFullWorkUnitResultsXML(username.get(), pw.get(), cw, xml, false, ExceptionSeverityInformation);
     expandResults(xml.str(), out, flags);
 }
 
@@ -523,8 +534,7 @@ void WuWebView::applyResultsXSLT(const char *filename, const char *xml, StringBu
 {
     WuExpandedResultBuffer buffer(name.str(), WWV_ADD_RESPONSE_TAG | WWV_ADD_RESULTS_TAG);
     buffer.appendDatasetsFromXML(xml);
-    if (loadedDll)
-        buffer.appendManifestSchemas(*ensureManifest(), *loadedDll);
+    buffer.appendManifestSchemas(*ensureManifest(), loadDll());
 
     Owned<IXslTransform> t = getXslProcessor()->createXslTransform();
     t->setIncludeHandler(this);
@@ -540,37 +550,144 @@ void WuWebView::applyResultsXSLT(const char *filename, const char *xml, StringBu
 void WuWebView::applyResultsXSLT(const char *filename, StringBuffer &out)
 {
     SCMStringBuffer xml;
-    getFullWorkUnitResultsXML(username.get(), pw.get(), wu, xml, false, ExceptionSeverityInformation);
+    getFullWorkUnitResultsXML(username.get(), pw.get(), cw, xml, false, ExceptionSeverityInformation);
     applyResultsXSLT(filename, xml.str(), out);
 }
 
-void WuWebView::load(IConstWorkUnit &cwu)
+ILoadedDllEntry *WuWebView::loadDll(bool force)
 {
-    wu.set(&cwu);
+    if (!dll && (force || delayedDll))
+    {
+        try
+        {
+            dll.setown(queryDllServer().loadDll(dllname.str(), DllLocationAnywhere));
+        }
+        catch(...)
+        {
+            DBGLOG("Failed to load %s", dllname.str());
+        }
+        delayedDll=false;
+    }
+    return dll.get();
+}
+void WuWebView::setWorkunit(IConstWorkUnit &_cw)
+{
+    cw.set(&_cw);
     if (!name.length())
     {
-        wu->getJobName(name);
+        cw->getJobName(name);
         name.s.replace(' ','_');
     }
-    Owned<IConstWUQuery> q = wu->getQuery();
+    Owned<IConstWUQuery> q = cw->getQuery();
     q->getQueryDllName(dllname);
-    try
-    {
-        loadedDll.setown(queryDllServer().loadDll(dllname.str(), DllLocationAnywhere));
-    }
-    catch(...)
-    {
-        DBGLOG("Failed to load %s", dllname.str());
-    }
+    if (!delayedDll)
+        loadDll(true);
 }
 
-void WuWebView::load(const char *wuid)
+void WuWebView::setWorkunit(const char *wuid)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
     Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid, false);
     if (!wu)
         throw MakeStringException(WUWEBERR_WorkUnitNotFound, "Workunit not found %s", wuid);
-    load(*wu);
+    setWorkunit(*wu);
+}
+
+void WuWebView::addVariableFromPTree(IWorkUnit *w, IConstWUResult &vardef, IResultSetMetaData &metadef, const char *varname, IPropertyTree *valtree)
+{
+    if (!varname || !*varname)
+        return;
+
+    Owned<IWUResult> var = w->updateVariableByName(varname);
+    if (!vardef.isResultScalar())
+    {
+        StringBuffer ds;
+        if (valtree->hasChildren())
+            toXML(valtree, ds);
+        else
+        {
+            const char *val = valtree->queryProp(NULL);
+            if (val)
+                decodeXML(val, ds);
+        }
+        if (ds.length())
+            var->setResultRaw(ds.length(), ds.str(), ResultFormatXml);
+    }
+    else
+    {
+        const char *val = valtree->queryProp(NULL);
+        if (val && *val)
+        {
+            switch (metadef.getColumnDisplayType(0))
+            {
+                case TypeBoolean:
+                    var->setResultBool(strieq(val, "1") || strieq(val, "true") || strieq(val, "on"));
+                    break;
+                case TypeInteger:
+                    var->setResultInt(_atoi64(val));
+                    break;
+                case TypeUnsignedInteger:
+                    var->setResultInt(_atoi64(val));
+                    break;
+                case TypeReal:
+                    var->setResultReal(atof(val));
+                    break;
+                case TypeSet:
+                case TypeDataset:
+                case TypeData:
+                    var->setResultRaw(strlen(val), val, ResultFormatRaw);
+                    break;
+                case TypeUnicode: {
+                    MemoryBuffer target;
+                    convertUtf(target, UtfReader::Utf16le, strlen(val), val, UtfReader::Utf8);
+                    var->setResultUnicode(target.toByteArray(), (target.length()>1) ? target.length()/2 : 0);
+                    }
+                    break;
+                case TypeString:
+                case TypeUnknown:
+                default:
+                    var->setResultString(val, strlen(val));
+                    break;
+                    break;
+            }
+
+            var->setResultStatus(ResultStatusSupplied);
+        }
+    }
+}
+
+void WuWebView::addInputsFromPTree(IPropertyTree *pt)
+{
+    IPropertyTree *start = pt;
+    if (start->hasProp("Envelope"))
+        start=start->queryPropTree("Envelope");
+    if (start->hasProp("Body"))
+        start=start->queryPropTree("Body/*[1]");
+
+    Owned<IResultSetFactory> resultSetFactory(getResultSetFactory(username.get(), pw.get()));
+    Owned<IPropertyTreeIterator> it = start->getElements("*");
+
+    WorkunitUpdate wu(&cw->lock());
+
+    ForEach(*it)
+    {
+        IPropertyTree &eclparm=it->query();
+        const char *varname = eclparm.queryName();
+
+        IConstWUResult *vardef = wu->getVariableByName(varname);
+        if (vardef)
+        {
+            Owned<IResultSetMetaData> metadef = resultSetFactory->createResultSetMeta(vardef);
+            if (metadef)
+                addVariableFromPTree(wu.get(), *vardef, *metadef, varname, &eclparm);
+        }
+    }
+}
+
+void WuWebView::addInputsFromXml(const char *xml)
+{
+    Owned<IPropertyTree> pt = createPTreeFromXMLString(xml, ipt_none, (XmlReaderOptions)(xr_ignoreWhiteSpace|xr_ignoreNameSpaces));
+    addInputsFromPTree(pt.get());
 }
 
 extern WUWEBVIEW_API IWuWebView *createWuWebView(IConstWorkUnit &wu, const char *queryname, const char *dir, bool mapEspDirectories)
