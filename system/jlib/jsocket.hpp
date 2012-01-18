@@ -90,8 +90,6 @@ public:
     bool isHost() const;                                // is primary host NIC ip
     bool isLoopBack() const;                            // is loopback (localhost: 127.0.0.1 or ::1)
     bool isLocal() const;                               // matches local interface 
-    bool isLinkLocal() const;
-    bool isSiteLocal() const; // depreciated
     bool isIp4() const;
     StringBuffer &getIpText(StringBuffer & out) const;
     void ipserialize(MemoryBuffer & out) const;         
