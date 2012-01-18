@@ -60,7 +60,7 @@ typedef volatile long atomic_t;
 #endif
 
 //Used to prevent a compiler reordering volatile and non-volatile loads/stores
-#define compiler_memory_barrier()           { _ReadWriteBarrier(); }
+#define compiler_memory_barrier()           _ReadWriteBarrier()
 
 #elif defined(__GNUC__)
 
@@ -146,7 +146,7 @@ int jlib_decl poor_atomic_add_exchange(atomic_t * v, int i);
 bool jlib_decl poor_atomic_cas(atomic_t * v, int newvalue, int expectedvalue);
 void jlib_decl *poor_atomic_xchg_ptr(void *p, void **v);
 bool   jlib_decl poor_atomic_cas_ptr(void ** v, void *newvalue, void *expectedvalue);
-bool jlib_decl poor_compiler_memory_barrier();
+void jlib_decl poor_compiler_memory_barrier();
 
 #define ATOMIC_INIT(i)                  (i)
 #define atomic_inc(v)                   (void)poor_atomic_inc_and_test(v)
@@ -161,7 +161,7 @@ bool jlib_decl poor_compiler_memory_barrier();
 #define atomic_cas(v,newvalue,expectedvalue)    poor_atomic_cas(v,newvalue,expectedvalue)
 #define atomic_xchg_ptr(p, v)               poor_atomic_xchg_ptr(p, v)
 #define atomic_cas_ptr(v,newvalue,expectedvalue)    poor_atomic_cas_ptr(v,newvalue,expectedvalue)
-#define compiler_memory_barrier()       {}
+#define compiler_memory_barrier()       poor_compiler_memory_barrier()
 
 #endif
 

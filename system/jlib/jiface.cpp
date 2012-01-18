@@ -121,7 +121,7 @@ bool poor_atomic_cas_ptr(void ** v, void * newvalue, void * expectedvalue)
 }
 
 //Hopefully the function call will be enough to stop the compiler reordering any operations
-bool poor_compiler_memory_barrier()
+void poor_compiler_memory_barrier()
 {
 }
 
