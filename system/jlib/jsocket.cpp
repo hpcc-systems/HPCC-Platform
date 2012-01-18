@@ -2667,7 +2667,7 @@ bool IpAddress::isLoopBack() const
 {
     if (::isIp4(netaddr)&&((netaddr[3] & 0x000000ff)==0x000007f))
         return true;
-    return (netaddr[3]==0)&&(netaddr[2]==0)&&(netaddr[1]==0)&&(netaddr[0]==1);
+    return (netaddr[3]==0x1000000)&&(netaddr[2]==0)&&(netaddr[1]==0)&&(netaddr[0]==0);
 }
 
 bool IpAddress::isLocal() const 
@@ -2677,30 +2677,6 @@ bool IpAddress::isLocal() const
     IpAddress ip(*this);
     return isInterfaceIp(ip, NULL);
 }
-
-
-bool IpAddress::isLinkLocal() const
-{
-    return (netaddr[0]&&0x3ff==0x3fa)&&(netaddr[2]==0);
-}
-
-
-bool IpAddress::isSiteLocal() const // depreciated
-{
-    if (::isIp4(netaddr)) {
-        switch (netaddr[3]&0xff) {
-        case 10:
-            return true;
-        case 192:
-            return ((netaddr[3]&0xff00)==0xc000);
-        case 172:
-            return ((netaddr[3]&0x0f00)==0x0100);
-        }
-        return false;
-    }
-    return (netaddr[0]&&0x3ff==0x3fb)&&(netaddr[2]==0);
-}
-
 
 bool IpAddress::ipequals(const IpAddress & other) const
 {
@@ -2712,7 +2688,6 @@ int  IpAddress::ipcompare(const IpAddress & other) const
 {
     return memcmp(&netaddr, &other.netaddr, sizeof(netaddr));
 }
-
 
 unsigned IpAddress::iphash(unsigned prev) const
 {
@@ -2963,7 +2938,7 @@ void IpAddress::ipdeserialize(MemoryBuffer & in)
     if (pfx!=IPV6_SERIALIZE_PREFIX) {
         netaddr[0] = 0;
         netaddr[1] = 0;
-        netaddr[2] = (pfx>0x1000000)?0xffff0000:0;  // catch null and loopback
+        netaddr[2] = (pfx == 0 || pfx == 0x1000000) ? 0 : 0xffff0000; // catch null and loopback
         netaddr[3] = pfx;
     }
     else 
@@ -3072,7 +3047,7 @@ void IpAddress::setNetAddress(size32_t sz,const void *src)
     }
     else if (!IP4only&&(sz==sizeof(netaddr))) { // IPv6
         memcpy(&netaddr,src,sz);
-        if ((netaddr[2]==0)&&(netaddr[3]>0x1000000)&&(netaddr[0]==0)&&(netaddr[1]==0))
+        if ((netaddr[2]==0)&&(netaddr[3]!=0)&&(netaddr[3]!=0x1000000)&&(netaddr[0]==0)&&(netaddr[1]==0))
             netaddr[2]=0xffff0000;  // use this form only
     }
     else
