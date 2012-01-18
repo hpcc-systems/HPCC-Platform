@@ -404,7 +404,7 @@ private:
 
 IScheduleReader * getScheduleReader(char const * serverName, char const * eventName)
 {
-    if(eventName)
+    if(eventName && *eventName)
         return new CBranchScheduleReader(serverName, eventName, false, NULL);
     else
         return new CRootScheduleReader(serverName, false, NULL);
@@ -412,7 +412,7 @@ IScheduleReader * getScheduleReader(char const * serverName, char const * eventN
 
 IScheduleReader * getSubscribingScheduleReader(char const * serverName, IScheduleSubscriber * subscriber, char const * eventName)
 {
-    if(eventName)
+    if(eventName && *eventName)
         return new CBranchScheduleReader(serverName, eventName, true, subscriber);
     else
         return new CRootScheduleReader(serverName, true, subscriber);

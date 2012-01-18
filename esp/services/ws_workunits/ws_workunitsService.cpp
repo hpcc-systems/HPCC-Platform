@@ -392,6 +392,7 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
     wuActionTable.setValue("unprotect", ActionProtect);
     wuActionTable.setValue("restore", ActionRestore);
     wuActionTable.setValue("reschedule", ActionEventSchedule);
+    wuActionTable.setValue("deschedule", ActionEventDeschedule);
     wuActionTable.setValue("settofailed", ActionChangeState);
 
     awusCacheMinutes = AWUS_CACHE_MIN_DEFAULT;
@@ -2511,8 +2512,6 @@ bool CWsWorkunitsEx::onWUShowScheduled(IEspContext &context, IEspWUShowScheduled
         const char *eventName = req.getEventName();
 
         IArrayOf<IEspScheduledWU> results;
-        if(notEmpty(clusterName))
-            getScheduledWUs(context, clusterName, eventName, results);
         if(notEmpty(req.getPushEventName()))
             resp.setPushEventName(req.getPushEventName());
         if(notEmpty(req.getPushEventText()))
@@ -2535,9 +2534,12 @@ bool CWsWorkunitsEx::onWUShowScheduled(IEspContext &context, IEspWUShowScheduled
                 continue;
 
             if(isEmpty(clusterName))
-                getScheduledWUs(context, clusterName, eventName, results);
+                getScheduledWUs(context, iclusterName, eventName, results);
             else if (strieq(clusterName, iclusterName))
+            {
+                getScheduledWUs(context, clusterName, eventName, results);
                 resp.setClusterSelected(i+1);
+            }
 
             Owned<IEspServerInfo> server = createServerInfo("");
             server->setName(iclusterName);
