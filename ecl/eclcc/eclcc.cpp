@@ -172,6 +172,7 @@ public:
         logVerbose = false;
         optArchive = false;
         optGenerateMeta = false;
+        optGenerateDepend = false;
         optIncludeMeta = false;
         optLegacy = false;
         optShared = false;
@@ -196,11 +197,14 @@ public:
     void processBatchedFile(IFile & file, bool multiThreaded);
 
 protected:
+    void addFilenameDependency(StringBuffer & target, EclCompileInstance & instance, const char * filename);
     void applyDebugOptions(IWorkUnit * wu);
     bool checkWithinRepository(StringBuffer & attributePath, const char * sourcePathname);
+    IFileIO * createArchiveOutputFile(EclCompileInstance & instance);
     ICppCompiler * createCompiler(const char * coreName);
     void generateOutput(EclCompileInstance & instance);
     void instantECL(EclCompileInstance & instance, IWorkUnit *wu, IHqlExpression * query, const char * queryFullName, IErrorReceiver *errs, const char * outputFile);
+    bool isWithinPath(const char * sourcePathname, const char * searchPath);
     void getComplexity(IWorkUnit *wu, IHqlExpression * query, IErrorReceiver *errs);
     void outputXmlToOutputFile(EclCompileInstance & instance, IPropertyTree * xml);
     void processSingleQuery(EclCompileInstance & instance, IEclRepository * dataServer,
@@ -251,6 +255,7 @@ protected:
     bool logVerbose;
     bool optArchive;
     bool optGenerateMeta;
+    bool optGenerateDepend;
     bool optIncludeMeta;
     bool optWorkUnit;
     bool optNoCompile;
@@ -658,6 +663,19 @@ static bool findFilenameInSearchPath(StringBuffer & attributePath, const char * 
     }
 }
 
+bool EclCC::isWithinPath(const char * sourcePathname, const char * searchPath)
+{
+    if (!sourcePathname)
+        return false;
+
+    StringBuffer expandedSourceName;
+    makeAbsolutePath(sourcePathname, expandedSourceName);
+
+    StringBuffer attributePath;
+    return findFilenameInSearchPath(attributePath, searchPath, expandedSourceName);
+}
+
+
 bool EclCC::checkWithinRepository(StringBuffer & attributePath, const char * sourcePathname)
 {
     if (!sourcePathname)
@@ -916,7 +934,7 @@ void EclCC::processFile(EclCompileInstance & instance)
     Owned<ISourcePath> sourcePath = createSourcePath(curFilename);
     Owned<IFileContents> queryText = createFileContentsFromFile(curFilename, sourcePath);
     const char * queryTxt = queryText->getText();
-    if (optArchive)
+    if (optArchive || optGenerateDepend)
         instance.archive.setown(createAttributeArchive());
     
     instance.wu.setown(createLocalWorkUnit());
@@ -993,7 +1011,7 @@ void EclCC::processFile(EclCompileInstance & instance)
 }
 
 
-void EclCC::outputXmlToOutputFile(EclCompileInstance & instance, IPropertyTree * xml)
+IFileIO * EclCC::createArchiveOutputFile(EclCompileInstance & instance)
 {
     StringBuffer archiveName;
     if (instance.outputFilename && !streq(instance.outputFilename, "-"))
@@ -1003,10 +1021,39 @@ void EclCC::outputXmlToOutputFile(EclCompileInstance & instance, IPropertyTree *
 
     //Work around windows problem writing 64K to stdout if not redirected/piped
     OwnedIFile ifile = createIFile(archiveName);
-    OwnedIFileIO ifileio = ifile->open(IFOcreate);
-    Owned<IIOStream> stream = createIOStream(ifileio.get());
-    Owned<IIOStream> buffered = createBufferedIOStream(stream,0x8000);
-    saveXML(*buffered, xml);
+    return ifile->open(IFOcreate);
+}
+
+void EclCC::outputXmlToOutputFile(EclCompileInstance & instance, IPropertyTree * xml)
+{
+    OwnedIFileIO ifileio = createArchiveOutputFile(instance);
+    if (ifileio)
+    {
+        //Work around windows problem writing 64K to stdout if not redirected/piped
+        Owned<IIOStream> stream = createIOStream(ifileio.get());
+        Owned<IIOStream> buffered = createBufferedIOStream(stream,0x8000);
+        saveXML(*buffered, xml);
+    }
+}
+
+
+void EclCC::addFilenameDependency(StringBuffer & target, EclCompileInstance & instance, const char * filename)
+{
+    if (!filename)
+        return;
+
+    //Ignore plugins and standard library components
+    if (isWithinPath(filename, pluginsPath) || isWithinPath(filename, eclLibraryPath))
+        return;
+
+    //Don't include the input file in the dependencies.
+    if (instance.inputFile)
+    {
+        const char * sourceFilename = instance.inputFile->queryFilename();
+        if (sourceFilename && streq(sourceFilename, filename))
+            return;
+    }
+    target.append(filename).newline();
 }
 
 
@@ -1015,10 +1062,38 @@ void EclCC::generateOutput(EclCompileInstance & instance)
     const char * outputFilename = instance.outputFilename;
     if (instance.archive)
     {
-        if (optManifestFilename)
-            addManifestResourcesToArchive(instance.archive, optManifestFilename);
+        if (optGenerateDepend)
+        {
+            //Walk the archive, and output all filenames that aren't
+            //a)in a plugin b) in std.lib c) the original source file.
+            StringBuffer filenames;
+            Owned<IPropertyTreeIterator> modIter = instance.archive->getElements("Module");
+            ForEach(*modIter)
+            {
+                IPropertyTree * module = &modIter->query();
+                if (module->hasProp("@plugin"))
+                    continue;
+                addFilenameDependency(filenames, instance, module->queryProp("@sourcePath"));
 
-        outputXmlToOutputFile(instance, instance.archive);
+                Owned<IPropertyTreeIterator> defIter = module->getElements("Attribute");
+                ForEach(*defIter)
+                {
+                    IPropertyTree * definition = &defIter->query();
+                    addFilenameDependency(filenames, instance, definition->queryProp("@sourcePath"));
+                }
+            }
+
+            OwnedIFileIO ifileio = createArchiveOutputFile(instance);
+            if (ifileio)
+                ifileio->write(0, filenames.length(), filenames.str());
+        }
+        else
+        {
+            if (optManifestFilename)
+                addManifestResourcesToArchive(instance.archive, optManifestFilename);
+
+            outputXmlToOutputFile(instance, instance.archive);
+        }
     }
 
     if (optGenerateMeta && instance.generatedMeta)
@@ -1043,7 +1118,7 @@ void EclCC::processReference(EclCompileInstance & instance, const char * queryAt
     const char * outputFilename = instance.outputFilename;
 
     instance.wu.setown(createLocalWorkUnit());
-    if (optArchive)
+    if (optArchive || optGenerateDepend)
         instance.archive.setown(createAttributeArchive());
 
     Owned<IEclRepository> searchRepository = createCompoundRepositoryF(pluginsRepository.get(), libraryRepository.get(), includeRepository.get(), NULL);
@@ -1208,6 +1283,9 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchFlag(optGenerateMeta, "-M"))
         {
         }
+        else if (iter.matchFlag(optGenerateDepend, "-Md"))
+        {
+        }
         else if (iter.matchFlag(optOutputFilename, "-o"))
         {
         }
@@ -1301,7 +1379,7 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
             processArgvFilename(inputFiles, arg);
     }
     // Option post processing follows:
-    if (optArchive || optWorkUnit || optGenerateMeta)
+    if (optArchive || optWorkUnit || optGenerateMeta || optGenerateDepend)
         optNoCompile = true;
 
     if (inputFiles.ordinality() == 0)
