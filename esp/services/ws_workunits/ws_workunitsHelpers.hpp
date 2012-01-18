@@ -172,6 +172,7 @@ public:
     void getWorkunitDll(MemoryBuffer& buf);
     void getWorkunitXml(const char* plainText, MemoryBuffer& buf);
     void getWorkunitCpp(const char* cppname, const char* description, const char* ipAddress, MemoryBuffer& buf);
+    void getEventScheduleFlag(IEspECLWorkunit &info);
 
 public:
     IEspContext &context;

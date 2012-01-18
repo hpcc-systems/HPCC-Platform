@@ -750,6 +750,38 @@ void WsWuInfo::getRoxieCluster(IEspECLWorkunit &info, unsigned flags)
     }
 }
 
+void WsWuInfo::getEventScheduleFlag(IEspECLWorkunit &info)
+{
+    info.setEventSchedule(0);
+    if (info.getState() && !stricmp(info.getState(), "wait"))
+    {
+        info.setEventSchedule(2); //Can deschedule
+    }
+    else
+    {
+        Owned<IConstWorkflowItemIterator> it = cw->getWorkflowItems();
+        if (it)
+        {
+            ForEach(*it)
+            {
+                IConstWorkflowItem *r = it->query();
+                if (!r)
+                    continue;
+
+                IWorkflowEvent *wfevent = r->getScheduleEvent();
+                if (!wfevent)
+                    continue;
+
+                if (!r->hasScheduleCount() || (r->queryScheduleCountRemaining() > 0))
+                {
+                    info.setEventSchedule(1); //Can reschedule
+                    break;
+                }
+            }
+        }
+    }
+}
+
 void WsWuInfo::getCommon(IEspECLWorkunit &info, unsigned flags)
 {
     SCMStringBuffer s;
@@ -773,6 +805,8 @@ void WsWuInfo::getCommon(IEspECLWorkunit &info, unsigned flags)
 
     if (cw->isPausing())
         info.setIsPausing(true);
+
+    getEventScheduleFlag(info);
 
     if (version > 1.27)
     {
