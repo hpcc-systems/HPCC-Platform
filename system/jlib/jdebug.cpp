@@ -823,11 +823,11 @@ unsigned getAffinityCpus()
     if (GetProcessAffinityMask(GetCurrentProcess(), &ProcessAffinityMask, &SystemAffinityMask))
     {
         unsigned i = 0;
-        unsigned s = sizeof(ProcessAffinityMask)*8;
-        for(i=0; i < s; i++)
+        while (ProcessAffinityMask)
         {
-            if (ProcessAffinityMask & (1 << i))
+            if (ProcessAffinityMask & 1)
                 ++numCpus;
+            ProcessAffinityMask >>=1;
         }
     }
     else // fall back to legacy num system cpus
@@ -881,14 +881,19 @@ unsigned getAffinityCpus()
     cpu_set_t cpuset;
     int err = pthread_getaffinity_np(GetCurrentThreadId(), sizeof(cpu_set_t), &cpuset);
     if (0 == err)
-        return CPU_COUNT(&cpuset);
-    else
     {
-        Owned<IException> e = MakeErrnoException(errno, "Failed to get affinity");
-        EXCLOG(e, NULL);
-        unsigned numCPUs, CPUSpeed;
-        getCpuInfo(numCPUs, CPUSpeed);
-        return numCPUs;
+#if __GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 6)
+        return CPU_COUNT(&cpuset);
+#else
+        unsigned numCpus = 0;
+        unsigned setSize = CPU_SETSIZE;
+        while (setSize--)
+        {
+            if (CPU_ISSET(setSize, &cpuset))
+                ++numCpus;
+        }
+        return numCpus;
+#endif /* GLIBC */
     }
 }
 
