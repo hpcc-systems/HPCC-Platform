@@ -1139,8 +1139,12 @@ FILESERVICES_API void FILESERVICES_CALL fslAddSuperFile(ICodeContext *ctx, const
         fsCreateSuperFile(ctx,lsuperfn,false,false);
         lookupSuperFile(ctx, lsuperfn, file,transaction, true, lsfn, false, false);
     }
+    // Never add super file to itself
     StringBuffer lfn;
     constructLogicalName(ctx, _lfn, lfn);
+    if (stricmp(file->queryLogicalName(), lfn.str()) == 0) {
+        throw MakeStringException(0, "AddSuperFile: Adding super file %s to itself!", file->queryLogicalName());
+    }
     if  (strict||addcontents) {
         Owned<IDistributedSuperFile> subfile;
         subfile.setown(transaction->lookupSuperFile(lfn.str()));
