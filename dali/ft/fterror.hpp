@@ -81,6 +81,7 @@
 #define DFTERR_ReplicateSameFormat              8194
 #define DFTERR_PartitioningZeroSizedRowLink     8195
 #define DFTERR_CopyAborted                      8196
+#define DFTERR_WrongComputer                    8197
 
 
 //---- Text for all errors (make it easy to internationalise) ---------------------------
@@ -135,7 +136,9 @@
 #define DFTERR_OutputOffsetMismatch_Text        "INTERNAL: Output offset does not match expected (%"I64F"d expected %"I64F"d) at %s of block %d"
 #define DFTERR_NoSolarisDir_Text                "Directory not yet supported for solaris"
 #define DFTERR_NoSolarisCopy_Text               "Copy not yet supported for solaris"
-#define DFTERR_ReplicateSameFormat_Text         "INTERNAL: Replciate cannot convert formats"
+#define DFTERR_ReplicateSameFormat_Text         "INTERNAL: Replicate cannot convert formats"
 #define DFTERR_PartitioningZeroSizedRowLink_Text        "Zero sized row link in source file at %"I64F"d - cannot partition"
 #define DFTERR_CopyAborted_Text                 "Copy failed - User Abort"
+#define DFTERR_WrongComputer_Text               "INTERNAL: Command send to wrong computer.  Expected %s got %s"
+
 #endif
