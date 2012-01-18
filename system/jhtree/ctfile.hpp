@@ -73,7 +73,7 @@ struct __declspec(novtable) jhtree_decl KeyHdr
     unsigned char   flalgn; /* file alignment           66x */
     unsigned char   flpntr; /* file pointer size            67x */
     unsigned short  clstyp; /* flag for file type           68x */
-    short   length; /* key length               6ax */
+    unsigned short  length; /* key length               6ax */
     short   nmem;   /* number of members            6cx */
     short   kmem;   /* member number            6ex */
     __int64 lanchr; /* left most leaf anchor        70x */
