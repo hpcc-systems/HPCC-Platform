@@ -1814,7 +1814,7 @@ void CWsEclBinding::addParameterToWorkunit(IWorkUnit * workunit, IConstWUResult 
 }
 
 
-int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinfo, const char *xml, StringBuffer &out, const char *viewname, const char *xsltname)
+int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinfo, const char *xml, StringBuffer &out, unsigned flags, const char *viewname, const char *xsltname)
 {
     Owned <IWorkUnitFactory> factory = getSecWorkUnitFactory(*context.querySecManager(), *context.queryUser());
     Owned <IWorkUnit> workunit = factory->createWorkUnit(NULL, "wsecl", context.queryUserId());
@@ -1868,24 +1868,18 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
     int wutimeout = 300000;
     if (waitForWorkUnitToComplete(wuid.str(), wutimeout))
     {
+        Owned<IWuWebView> web = createWuWebView(wuid.str(), wsinfo.queryname.get(), getCFD(), true);
+        if (!web)
+        {
+            DBGLOG("WS-ECL failed to create WuWebView for workunit %s", wuid.str());
+            return 0;
+        }
         if (viewname)
-        {
-            Owned<IWuWebView> web = createWuWebView(wuid.str(), wsinfo.queryname.get(), getCFD(), true);
             web->renderResults(viewname, out);
-        }
         else if (xsltname)
-        {
-            Owned<IWuWebView> web = createWuWebView(wuid.str(), wsinfo.queryname.get(), getCFD(), true);
-            if (web)
-                web->applyResultsXSLT(xsltname, out);
-        }
+            web->applyResultsXSLT(xsltname, out);
         else
-        {
-            Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
-            StringBufferAdaptor result(out);
-            getFullWorkUnitResultsXML(context.queryUserId(), context.queryPassword(), cw.get(), result, false, ExceptionSeverityInformation);
-            cw.clear();
-        }
+            web->expandResults(out, flags);
     }
     else
     {
@@ -1981,46 +1975,7 @@ bool xppGotoTag(XmlPullParser &xppx, const char *tagname, StartTag &stag)
     return false;
 }
 
-static const char * getResultsXmlBody(const char * xmlin, StringBuffer &results)
-{
-    StartTag stag;
-
-    int pos = 0;
-    auto_ptr<XmlPullParser> xpp(new XmlPullParser());
-
-    xpp->setSupportNamespaces(true);
-    xpp->setInput(xmlin, strlen(xmlin));
-
-    xppGotoTag(*xpp, "Result", stag);
-
-    int level = 1;
-    int type = XmlPullParser::END_TAG;
-    do  
-    {
-        type = xpp->next();
-        switch(type) 
-        {
-            case XmlPullParser::START_TAG:
-            {
-                xpp->readStartTag(stag);
-                ++level;
-                xppToXmlString(*xpp, stag, results);
-                break;
-            }
-            case XmlPullParser::END_TAG:
-                --level;
-            break;
-            case XmlPullParser::END_DOCUMENT:
-                level=0;
-            break;
-        }
-    }
-    while (level > 0);
-    
-    return results.str();
-}
-
-int CWsEclBinding::onSubmitQueryOutputXML(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo)
+int CWsEclBinding::onSubmitQueryOutputXML(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo, const char *format)
 {
     StringBuffer soapmsg;
 
@@ -2032,13 +1987,14 @@ int CWsEclBinding::onSubmitQueryOutputXML(IEspContext &context, CHttpRequest* re
     StringBuffer status;
     StringBuffer output;
 
-    output.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-    if (context.queryRequestParameters()->hasProp("display"))
-        output.append("<?xml-stylesheet type=\"text/xsl\" href=\"/esp/xslt/xmlformatter.xsl\"?>");
-
     SCMStringBuffer clustertype;
     wsinfo.wu->getDebugValue("targetclustertype", clustertype);
 
+    unsigned xmlflags = WWV_ADD_RESPONSE_TAG | WWV_INCL_NAMESPACES | WWV_INCL_GENERATED_NAMESPACES;
+    if (context.queryRequestParameters()->hasProp("display"))
+        xmlflags |= WWV_USE_DISPLAY_XSLT;
+    if (!format || !streq(format, "expanded"))
+        xmlflags |= WWV_OMIT_SCHEMAS;
     if (strieq(clustertype.str(), "roxie"))
     {
         const char *addr = wsecl->roxies->queryProp(wsinfo.qsetname.sget());
@@ -2056,15 +2012,14 @@ int CWsEclBinding::onSubmitQueryOutputXML(IEspContext &context, CHttpRequest* re
 
         StringBuffer roxieresp;
         httpclient->sendRequest("POST", "text/xml", soapmsg, roxieresp, status);
-        output.appendf("<%sResponse><Result>", wsinfo.queryname.sget());
-        getResultsXmlBody(roxieresp.str(), output);
-        output.appendf("</Result></%sResponse>", wsinfo.queryname.sget());
+
+        Owned<IWuWebView> web = createWuWebView(*wsinfo.wu, NULL, getCFD(), true);
+        if (web.get())
+            web->expandResults(roxieresp.str(), output, xmlflags);
     }
     else
     {
-        output.appendf("<%sResponse>", wsinfo.queryname.sget());
-        submitWsEclWorkunit(context, wsinfo, soapmsg.str(), output);
-        output.appendf("</%sResponse>", wsinfo.queryname.sget());
+        submitWsEclWorkunit(context, wsinfo, soapmsg.str(), output, xmlflags);
     }
 
     response->setContent(output.str());
@@ -2118,7 +2073,7 @@ int CWsEclBinding::onSubmitQueryOutputView(IEspContext &context, CHttpRequest* r
     }
     else
     {
-        submitWsEclWorkunit(context, wsinfo, soapmsg.str(), html, view, xsltfile.str());
+        submitWsEclWorkunit(context, wsinfo, soapmsg.str(), html, 0, view, xsltfile.str());
     }
 
     response->setContent(html.str());
@@ -2410,9 +2365,12 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
             StringBuffer qid;
 
             splitLookupInfo(parms, thepath, wuid, qs, qid);
-            WsEclWuInfo wsinfo(wuid.str(), qs.str(), qid.str(), context->queryUserId(), context->queryPassword());
 
-            return onSubmitQueryOutputXML(*context, request, response, wsinfo);
+            StringBuffer format;
+            nextPathNode(thepath, format);
+
+            WsEclWuInfo wsinfo(wuid.str(), qs.str(), qid.str(), context->queryUserId(), context->queryPassword());
+            return onSubmitQueryOutputXML(*context, request, response, wsinfo, format.str());
         }
         else if (!stricmp(methodName.str(), "xslt"))
         {
@@ -2493,107 +2451,6 @@ void checkForXmlResponseName(StartTag &starttag, StringBuffer &respname, int &so
 }
 
 
-//using namespace xpp;
-void cleanupWsEclSoapResponse(StringBuffer &roxiesoap, StringBuffer &corrected)
-{
-    XmlPullParser xpp;
-    xpp.setSupportNamespaces(true);
-    xpp.setInput(roxiesoap.str(), roxiesoap.length());
-
-    StartTag starttag;
-    EndTag endtag;
-
-    BoolHash addedNs;
-    int nscount=0;
-    bool decl_def_ns=false;
-    int soaplevel=0;
-    StringBuffer respname;
-
-    int xpptype = 0;
-    while (xpptype!=XmlPullParser::START_TAG && xpptype!=XmlPullParser::END_DOCUMENT)
-        xpptype = xpp.next();
-
-    int level=1;
-    while (level>0 && xpptype!=XmlPullParser::END_DOCUMENT)
-    {
-        switch (xpptype)
-        {
-            case XmlPullParser::START_TAG:
-            {
-                level++;
-                StringBuffer dsname;
-                xpp.readStartTag(starttag);
-
-                checkForXmlResponseName(starttag, respname, soaplevel);
-
-                corrected.appendf("<%s", starttag.getQName());
-                if (!decl_def_ns && !stricmp(starttag.getQName(), starttag.getLocalName()))
-                {
-                    const char *uri = starttag.getUri();
-                    if (uri && *uri)
-                        corrected.appendf(" xmlns=\"%s\"", uri);
-                    decl_def_ns=true;
-                }
-
-                if (xpp.getNsCount()>nscount)
-                {
-                    map< string, const SXT_CHAR* >::iterator nsit;
-                    for ( nsit=xpp.getNsBegin(); nsit != xpp.getNsEnd(); nsit++ )
-                    {
-                        if (!addedNs.getValue((*nsit).first.c_str()))
-                        {
-                            addedNs.setValue((*nsit).first.c_str(), true);
-                            if (stricmp((*nsit).first.c_str(), "xml")) //xml should not be defined
-                                corrected.appendf(" xmlns:%s=\"%s\"", (*nsit).first.c_str(), (*nsit).second);
-                        }
-                    }
-                    nscount=xpp.getNsCount();
-                }
-
-                if (!stricmp(starttag.getLocalName(), "Dataset"))
-                {
-                    StringBuffer dsname(starttag.getValue("name"));
-                    dsname.replace(' ', '_');
-                    if (respname.length() && dsname)
-                    {
-                        corrected.append(" xmlns=\"urn:hpccsystems:ecl:");
-                        appendNamespaceSpecificString(corrected, respname.str());
-                        corrected.append(":result:");
-                        appendNamespaceSpecificString(corrected, dsname.str());
-                        corrected.append('\"');
-                    }
-                }
-
-                for (int attnbr=0; attnbr<starttag.getLength(); attnbr++)
-                {
-                    corrected.append(' ').append(starttag.getRawName(attnbr)).append("=\"");
-                    encodeUtf8XML(starttag.getValue(attnbr), corrected);
-                    corrected.append('\"');
-                }
-                corrected.append('>');
-                break;
-            }
-            case XmlPullParser::END_TAG:
-            {
-                level--;
-                xpp.readEndTag(endtag);
-                corrected.appendf("</%s>", endtag.getQName());
-                break;
-            }
-            case XmlPullParser::CONTENT:
-            {
-                encodeUtf8XML(xpp.readContent(), corrected);
-                break;
-            }
-            case XmlPullParser::END_DOCUMENT:
-            default:
-                break;
-        }
-
-        xpptype = xpp.next();
-    }
-}
-
 void createPTreeFromJsonString(const char *json, bool caseInsensitive, StringBuffer &xml, const char *tail);
 
 
@@ -2656,6 +2513,15 @@ void CWsEclBinding::handleHttpPost(CHttpRequest *request, CHttpResponse *respons
 
     SCMStringBuffer clustertype;
     wsinfo.wu->getDebugValue("targetclustertype", clustertype);
+
+    unsigned xmlflags = WWV_ADD_SOAP | WWV_ADD_RESULTS_TAG | WWV_ADD_RESPONSE_TAG | WWV_INCL_NAMESPACES | WWV_INCL_GENERATED_NAMESPACES;
+    if (ctx->queryRequestParameters()->hasProp("display"))
+        xmlflags |= WWV_USE_DISPLAY_XSLT;
+    if (streq(action.str(), "expanded"))
+        xmlflags |= WWV_CDATA_SCHEMAS;
+    else
+        xmlflags |= WWV_OMIT_SCHEMAS;
+
     if (strieq(clustertype.str(), "roxie"))
     {
         const char *addr = wsecl->roxies->queryProp(wsinfo.qsetname.sget());
@@ -2673,24 +2539,13 @@ void CWsEclBinding::handleHttpPost(CHttpRequest *request, CHttpResponse *respons
 
         StringBuffer output;
         httpclient->sendRequest("POST", "text/xml", soapfromjson, output, status);
-        soapresp.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-        cleanupWsEclSoapResponse(output, soapresp);
+        Owned<IWuWebView> web = createWuWebView(*wsinfo.wu, NULL, getCFD(), true);
+        if (web.get())
+            web->expandResults(soapresp.str(), output, xmlflags);
     }
     else
     {
-        soapresp.append(
-            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-            "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope\""
-              " xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding\">"
-                " <soap:Body>"
-            );
-
-        StringBuffer ns;
-        ns.append("xmlns=\"urn:hpccsystems:ecl:").appendLower(wsinfo.queryname.length(), wsinfo.queryname.sget()).append('\"');
-        soapresp.appendf("<%sResponse %s><Results>", wsinfo.queryname.sget(), ns.str());
-        submitWsEclWorkunit(*ctx, wsinfo, soapfromjson.str(), soapresp);
-        soapresp.appendf("</Results></%sResponse>", wsinfo.queryname.sget());
-        soapresp.append("</soap:Body></soap:Envelope>");
+        submitWsEclWorkunit(*ctx, wsinfo, soapfromjson.str(), soapresp, xmlflags);
     }
 
     DBGLOG("HandleSoapRequest response: %s", soapresp.str());
@@ -2751,6 +2606,15 @@ int CWsEclBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* respo
 
     SCMStringBuffer clustertype;
     wsinfo.wu->getDebugValue("targetclustertype", clustertype);
+
+    unsigned xmlflags = WWV_ADD_SOAP | WWV_ADD_RESULTS_TAG | WWV_ADD_RESPONSE_TAG | WWV_INCL_NAMESPACES | WWV_INCL_GENERATED_NAMESPACES;
+    if (ctx->queryRequestParameters()->hasProp("display"))
+        xmlflags |= WWV_USE_DISPLAY_XSLT;
+    if (streq(action.str(), "expanded"))
+        xmlflags |= WWV_CDATA_SCHEMAS;
+    else
+        xmlflags |= WWV_OMIT_SCHEMAS;
+
     if (strieq(clustertype.str(), "roxie"))
     {
         const char *addr = wsecl->roxies->queryProp(wsinfo.qsetname.sget());
@@ -2768,25 +2632,12 @@ int CWsEclBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* respo
 
         StringBuffer output;
         httpclient->sendRequest("POST", "text/xml", content, output, status);
-        soapresp.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-        cleanupWsEclSoapResponse(output, soapresp);
+        Owned<IWuWebView> web = createWuWebView(*wsinfo.wu, NULL, getCFD(), true);
+        if (web.get())
+            web->expandResults(soapresp.str(), output, xmlflags);
     }
     else
-    {
-        soapresp.append(
-            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-            "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope\""
-              " xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding\">"
-                " <soap:Body>"
-            );
-
-        StringBuffer ns;
-        ns.append("xmlns=\"urn:hpccsystems:ecl:").appendLower(wsinfo.queryname.length(), wsinfo.queryname.sget()).append('\"');
-        soapresp.appendf("<%sResponse %s><Results>", wsinfo.queryname.sget(), ns.str());
-        submitWsEclWorkunit(*ctx, wsinfo, content.str(), soapresp);
-        soapresp.appendf("</Results></%sResponse>", wsinfo.queryname.sget());
-        soapresp.append("</soap:Body></soap:Envelope>");
-    }
+        submitWsEclWorkunit(*ctx, wsinfo, content.str(), soapresp, xmlflags);
 
     DBGLOG("HandleSoapRequest response: %s", soapresp.str());
 
