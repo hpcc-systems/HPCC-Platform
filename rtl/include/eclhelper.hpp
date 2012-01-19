@@ -636,6 +636,7 @@ interface ICsvToRowTransformer : public IInterface
 
 
 
+// Activity index: Class name = s/TAK(.*)/IHThor$1Arg/, with $1 using camel case
 enum ThorActivityKind
 {   
     //This list cannot be reordered - unless all workunits are invalidated...

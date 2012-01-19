@@ -30,12 +30,16 @@
 syntax="syntax: $0 [-t target_dir] [-c compare_dir] [-i include_dir] [-e eclcc binary] -n [parallel processes] [-r (no run, just compare)]"
 
 ## Create Makefile (git doesn't like tabs)
-echo "FILES=\$(shell echo *.ecl)" > Makefile
-echo "LOGS=\$(FILES:%.ecl=\$(target_dir)/%.log)" >> Makefile
+echo "FILES=\$(shell echo *.ecl*)" > Makefile
+echo "LOGS_=\$(FILES:%.ecl=\$(target_dir)/%.log)" >> Makefile
+echo "LOGS=\$(LOGS_:%.eclxml=\$(target_dir)/%.log)" >> Makefile
 echo >> Makefile
 echo "all: \$(LOGS)" >> Makefile
 echo >> Makefile
 echo "\$(target_dir)/%.log: %.ecl" >> Makefile
+echo -e "\t\$(eclcc) \$(flags) $^" >> Makefile
+echo >> Makefile
+echo "\$(target_dir)/%.log: %.eclxml" >> Makefile
 echo -e "\t\$(eclcc) \$(flags) $^" >> Makefile
 
 ## Default arguments
@@ -44,7 +48,7 @@ compare_dir=
 include_dir=
 compare_only=0
 eclcc=`which eclcc`
-np=10
+np=`grep -c processor /proc/cpuinfo`
 
 ## Get cmd line options (overrite default args)
 if [[ $* != '' ]]; then
@@ -97,9 +101,16 @@ if [[ $compare_dir ]]; then
         echo " ++ No target dir to compare"
         exit 1
     fi
-    echo "* Comparing to Golden Standard"
+    echo "* Comparing to $compare_dir"
     echo
-    diff -I $compare_dir -I $target_dir -I '\d* ms' -q $compare_dir $target_dir
+    if [[ $compare_only = 0 ]]; then
+        quick=-q
+    fi
+    diff -I $compare_dir \
+         -I $target_dir \
+         -I '\d* ms' \
+         -I 'at \/.*\(\d*\)$' \
+         $quick $compare_dir $target_dir
 fi
 
 # Confirmation
