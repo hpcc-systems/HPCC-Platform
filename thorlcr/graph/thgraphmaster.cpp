@@ -1507,6 +1507,7 @@ bool CJobMaster::go()
 
     Owned<IConstWUGraphProgress> graphProgress = getGraphProgress();
     bool allDone = true;
+    unsigned concurrentSubGraphs = (unsigned)getWorkUnitValueInt("concurrentSubGraphs", globals->getPropInt("@concurrentSubGraphs", 1));
     try
     {
         ClearTempDirs();
@@ -1530,7 +1531,7 @@ bool CJobMaster::go()
             if (aborted) break;
             CMasterGraph &graph = toRun.item(g);
             if (graph.isSink())
-                graph.execute(0, NULL, true, true);
+                graph.execute(0, NULL, true, concurrentSubGraphs>1);
             if (queryPausing()) break;
         }
         graphExecutor->wait();
