@@ -46,6 +46,7 @@ const char * EclDefinition =
 "  string StringSubstituteOut(const string src, const string _within, const string _newchar) : c, pure,entrypoint='slStringSubsOut'; \n"
 "  string StringSubstitute(const string src, const string _within, const string _newchar) : c, pure,entrypoint='slStringSubs'; \n"
 "  string StringRepad(const string src, unsigned4 size) : c, pure,entrypoint='slStringRepad'; \n"
+"  string StringTranslate(const string src, const string _within, const string _mapping) : c, pure,entrypoint='slStringTranslate'; \n"
 "  unsigned integer4 StringFind(const string src, const string tofind, unsigned4 instance ) : c, pure,entrypoint='slStringFind'; \n"
 "  unsigned integer4 StringUnboundedUnsafeFind(const string src, const string tofind ) : c, pure,entrypoint='slStringFind2'; \n"
 "  unsigned integer4 StringFindCount(const string src, const string tofind) : c, pure,entrypoint='slStringFindCount'; \n"
@@ -645,6 +646,31 @@ STRINGLIB_API void STRINGLIB_CALL slStringSubs(unsigned & tgtLen, char * & tgt, 
         memcpy(tgt, src, srcLen);
     }
 
+    tgtLen = srcLen;
+}
+
+STRINGLIB_API void STRINGLIB_CALL slStringTranslate(unsigned & tgtLen, char * & tgt, unsigned srcLen, const char * src, unsigned hitLen, const char * hit, unsigned mappingLen, const char * mapping)
+{
+    char mapped[256];
+    for (unsigned i=0; i < sizeof(mapped); i++)
+        mapped[i] = i;
+    if (hitLen == mappingLen)
+    {
+        for (unsigned j = 0; j < hitLen; j++ )
+        {
+            unsigned char c = ((unsigned char *)hit)[j];
+            mapped[c] = mapping[j];
+        }
+    }
+
+    char * ret = (char *)CTXMALLOC(parentCtx, srcLen);
+    for ( unsigned i = 0; i < srcLen; i++ )
+    {
+        unsigned char c = ((unsigned char *)src)[i];
+        ret[i] = mapped[c];
+    }
+
+    tgt = ret;
     tgtLen = srcLen;
 }
 
