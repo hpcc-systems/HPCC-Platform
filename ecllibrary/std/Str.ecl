@@ -107,7 +107,7 @@ EXPORT STRING Filter(STRING src, STRING filter) := lib_stringlib.StringLib.Strin
  * @param src           The string that is being tested.
  * @param filter        The string containing the set of characters to be included.
  * @param replace_char  The character to be substituted into the result.
- * @see                 Std.Str.SubstituteExcluded
+ * @see                 Std.Str.Translate, Std.Str.SubstituteExcluded
  */
 
 EXPORT STRING SubstituteIncluded(STRING src, STRING filter, STRING replace_char) :=
@@ -126,6 +126,20 @@ EXPORT STRING SubstituteIncluded(STRING src, STRING filter, STRING replace_char)
 
 EXPORT STRING SubstituteExcluded(STRING src, STRING filter, STRING replace_char) :=
   lib_stringlib.StringLib.StringSubstitute(src, filter, replace_char);
+
+/**
+ * Returns the source string with the all characters that match characters in the search string replaced
+ * with the character at the corresponding position in the replacement string.
+ *
+ * @param src           The string that is being tested.
+ * @param search        The string containing the set of characters to be included.
+ * @param replacement   The string containing the characters to act as replacements.
+ * @see                 Std.Str.SubstituteIncluded
+ */
+
+//MORE: Would be more efficient to create a mapping object, and pass that to the replacement function.
+EXPORT STRING Translate(STRING src, STRING search, STRING replacement) :=
+  lib_stringlib.StringLib.StringTranslate(src, search, replacement);
 
 /**
  * Returns the argument string with all upper case characters converted to lower case.
