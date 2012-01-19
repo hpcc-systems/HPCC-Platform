@@ -160,9 +160,14 @@ public:
         PtrElem *ret = (PtrElem *)fsallocator.alloc();
         ret->setNext(NULL);
         const void *row = in.nextRow();
-        if (!row) {
-            fsallocator.dealloc(ret);
-            return NULL;
+        if (!row)
+        {
+            row = in.nextRow();
+            if (!row)
+            {
+                fsallocator.dealloc(ret);
+                return NULL;
+            }
         }
         ret->setRow(row);
         return ret;
