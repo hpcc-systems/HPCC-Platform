@@ -286,7 +286,14 @@ eclCmdOptionMatchIndicator EclCmdWithEclTarget::matchCommandLineOption(ArgvItera
     {
         if (optObj.value.length())
         {
-            fprintf(stderr, "\nmultiple targets (%s and %s) not currently supported\n", optObj.value.sget(), arg);
+            if (optObj.type==eclObjTypeUnknown && (optObj.accept & eclObjQuery) && !optObj.query.length())
+            {
+                optObj.type=eclObjQuery;
+                optObj.query.set(arg);
+                return EclCmdOptionMatch;
+            }
+
+            fprintf(stderr, "\nunrecognized argument %s\n", arg);
             return EclCmdOptionCompletion;
         }
         optObj.set(arg);

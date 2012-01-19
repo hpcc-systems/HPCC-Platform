@@ -51,6 +51,8 @@ interface IWuWebView : extends IInterface
     virtual StringBuffer &aggregateResources(const char *type, StringBuffer &content)=0;
     virtual void expandResults(const char *xml, StringBuffer &out, unsigned flags)=0;
     virtual void expandResults(StringBuffer &out, unsigned flags)=0;
+    virtual void addInputsFromPTree(IPropertyTree *pt)=0;
+    virtual void addInputsFromXml(const char *xml)=0;
 };
 
 extern WUWEBVIEW_API IWuWebView *createWuWebView(IConstWorkUnit &wu, const char *queryname, const char*dir, bool mapEspDir);
