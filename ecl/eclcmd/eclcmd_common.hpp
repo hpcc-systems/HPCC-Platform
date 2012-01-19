@@ -176,4 +176,22 @@ public:
     StringAttr optManifest;
 };
 
+class EclCmdWithQueryTarget : public EclCmdCommon
+{
+public:
+    EclCmdWithQueryTarget()
+    {
+    }
+    virtual eclCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter, bool finalAttempt=false);
+    virtual bool finalizeOptions(IProperties *globals);
+    virtual bool parseCommandLineOptions(ArgvIterator &iter);
+
+    virtual void usage()
+    {
+        EclCmdCommon::usage();
+    }
+public:
+    StringAttr optQuerySet;
+    StringAttr optQuery;
+};
 #endif

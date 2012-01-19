@@ -312,3 +312,70 @@ bool EclCmdWithEclTarget::finalizeOptions(IProperties *globals)
 {
     return EclCmdCommon::finalizeOptions(globals);
 }
+
+eclCmdOptionMatchIndicator EclCmdWithQueryTarget::matchCommandLineOption(ArgvIterator &iter, bool finalAttempt)
+{
+    const char *arg = iter.query();
+    if (*arg!='-')
+    {
+        if (!optQuerySet.length())
+            optQuerySet.set(arg);
+        else if (!optQuery.length())
+            optQuery.set(arg);
+        else
+        {
+            fprintf(stderr, "\nunrecognized argument %s\n", arg);
+            return EclCmdOptionCompletion;
+        }
+        return EclCmdOptionMatch;
+    }
+    StringAttr optTemp; //backward compatible with --queryset option
+    if (iter.matchOption(optTemp, ECLOPT_QUERYSET))
+    {
+        if (!optQuerySet.length())
+            optQuerySet.set(optTemp.get());
+        else if (streq(optQuerySet.get(), optTemp.get()))
+            return EclCmdOptionMatch;
+        else if (optQuery.isEmpty())
+        {
+            optQuery.set(optQuerySet.get());
+            optQuerySet.set(optTemp.get());
+            return EclCmdOptionMatch;
+        }
+        fprintf(stderr, "\nunrecognized argument %s\n", optQuery.sget());
+            return EclCmdOptionCompletion;
+    }
+    return EclCmdCommon::matchCommandLineOption(iter, true);
+}
+
+bool EclCmdWithQueryTarget::finalizeOptions(IProperties *globals)
+{
+    if (optQuerySet.isEmpty())
+    {
+        fprintf(stderr, "\nError: queryset parameter required\n");
+        return false;
+    }
+    if (optQuery.isEmpty())
+    {
+        fprintf(stderr, "\nError: query parameter required\n");
+        return false;
+    }
+
+    return EclCmdCommon::finalizeOptions(globals);
+}
+
+bool EclCmdWithQueryTarget::parseCommandLineOptions(ArgvIterator &iter)
+{
+    if (iter.done())
+    {
+        usage();
+        return false;
+    }
+
+    for (; !iter.done(); iter.next())
+    {
+        if (EclCmdWithQueryTarget::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
+            return false;
+    }
+    return true;
+}
