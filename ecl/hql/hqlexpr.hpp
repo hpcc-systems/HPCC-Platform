@@ -352,7 +352,7 @@ enum _node_operator {
     no_unused22,
     no_unused23,
     no_unused24,
-    no_unused1,   
+        no_dataset_from_transform,
     no_unused2,
         no_unknown,
     no_unused3,

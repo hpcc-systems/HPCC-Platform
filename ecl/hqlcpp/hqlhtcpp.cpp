@@ -5961,6 +5961,9 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
             case no_compound_inline:
                 result = doBuildActivityChildDataset(ctx, expr->queryChild(0));
                 break;
+            case no_dataset_from_transform:
+                result = doBuildActivityCountTransform(ctx, expr);
+                break;
             case no_table:
                 result = doBuildActivityTable(ctx, expr);
                 break;
@@ -15916,6 +15919,42 @@ ABoundActivity * HqlCppTranslator::doBuildActivityInlineTable(BuildCtx & ctx, IH
     doBuildUnsignedFunction(instance->startctx, "numRows", rowsExpr);
 
     if (!values->isConstant())
+        doBuildBoolFunction(instance->startctx, "isConstant", false);
+
+    buildInstanceSuffix(instance);
+
+    return instance->getBoundActivity();
+}
+
+//---------------------------------------------------------------------------
+
+ABoundActivity * HqlCppTranslator::doBuildActivityCountTransform(BuildCtx & ctx, IHqlExpression * expr)
+{
+    IHqlExpression * count = expr->queryChild(0);
+    IHqlExpression * transform = queryNewColumnProvider(expr);
+    IHqlExpression * counter = queryPropertyChild(expr, _countProject_Atom, 0);
+
+    // Overriding IHThorTempTableArg
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKtemptable, expr,"TempTable");
+    buildActivityFramework(instance);
+    buildInstancePrefix(instance);
+
+    // size32_t getRow()
+    BuildCtx funcctx(instance->startctx);
+    funcctx.addQuotedCompound("virtual size32_t getRow(ARowBuilder & crSelf, unsigned row)");
+    ensureRowAllocated(funcctx, "crSelf");
+    BoundRow * selfCursor = bindSelf(funcctx, instance->dataset, "crSelf");
+    IHqlExpression * self = selfCursor->querySelector();
+    associateCounter(funcctx, counter, "row");
+    // FIXME: this should be fixed in the engine
+    funcctx.addQuoted("if (row == numRows()) return 0;");
+    buildTransformBody(funcctx, transform, NULL, NULL, instance->dataset, self);
+
+    // unsigned numRows() - count is guaranteed by lexer
+    doBuildUnsignedFunction(instance->startctx, "numRows", count);
+
+    // bool isConstant() - default is true
+    if (!isConstantTransform(transform))
         doBuildBoolFunction(instance->startctx, "isConstant", false);
 
     buildInstanceSuffix(instance);

@@ -1,4 +1,3 @@
-//##############################################################################
 //
 //    Copyright (C) 2011 HPCC Systems.
 //
@@ -6280,7 +6279,7 @@ beginCounterScope
     :                       
                         { 
                             parser->counterStack.append(* new OwnedHqlExprItem); 
-                            $$.clear(); 
+                            $$.clear();
                         }
     ;
 
@@ -7887,14 +7886,17 @@ simpleDataSet
                             $$.setExpr(dataset.getClear());
                             $$.setPosition($1);
                         }
-    | DATASET '(' thorFilenameOrList ',' dsRecordDef ',' mode optDsOptions dsEnd
+    | DATASET '(' thorFilenameOrList ',' beginCounterScope dsRecordDef endCounterScope ',' mode optDsOptions dsEnd
                         {
-                            parser->warnIfRecordPacked($5);
-                            parser->transferOptions($3, $8);
+                            OwnedHqlExpr counter = $7.queryExpr();
+                            if (counter)
+                                parser->reportError(ERR_ILL_HERE,$6,"Not expecting COUNTER for DATASET");
+                            parser->warnIfRecordPacked($6);
+                            parser->transferOptions($3, $10);
                             parser->normalizeExpression($3, type_string, false);
 
-                            OwnedHqlExpr mode = $7.getExpr();
-                            OwnedHqlExpr options = $8.getExpr();
+                            OwnedHqlExpr mode = $9.getExpr();
+                            OwnedHqlExpr options = $10.getExpr();
                             OwnedHqlExpr filename = $3.getExpr();
                             if (mode->getOperator() == no_comma)
                             {
@@ -7912,18 +7914,21 @@ simpleDataSet
                                 filename.setown(createValue(no_assertconstant, filename->getType(), LINK(filename->queryChild(0))));
                                 options.setown(createComma(options.getClear(), createAttribute(localUploadAtom)));
                             }
-                            IHqlExpression * dataset = createNewDataset(filename.getClear(), $5.getExpr(), mode.getClear(), NULL, NULL, options.getClear());
-                            parser->checkValidRecordMode(dataset, $4, $7);
+                            IHqlExpression * dataset = createNewDataset(filename.getClear(), $6.getExpr(), mode.getClear(), NULL, NULL, options.getClear());
+                            parser->checkValidRecordMode(dataset, $4, $9);
                             $$.setExpr(dataset);
                             $$.setPosition($1);
                         }
-    | DATASET '(' thorFilenameOrList ',' simpleType optDsOptions dsEnd
+    | DATASET '(' thorFilenameOrList ',' beginCounterScope simpleType endCounterScope optDsOptions dsEnd
                         {
-                            parser->transferOptions($3, $6);
+                            OwnedHqlExpr counter = $7.queryExpr();
+                            if (counter)
+                                parser->reportError(ERR_ILL_HERE,$6,"Not expecting COUNTER for DATASET");
+                            parser->transferOptions($3, $8);
                             parser->normalizeExpression($3, type_string, false);
 
-                            OwnedHqlExpr options = $6.getExpr();
-                            OwnedITypeInfo type = $5.getType();
+                            OwnedHqlExpr options = $8.getExpr();
+                            OwnedITypeInfo type = $6.getType();
                             OwnedHqlExpr filename = $3.getExpr();
                             OwnedHqlExpr option;
                             switch (type->getTypeCode())
@@ -7953,7 +7958,7 @@ simpleDataSet
                                 options.setown(createComma(options.getClear(), createAttribute(localUploadAtom)));
                             }
                             IHqlExpression * dataset = createNewDataset(filename.getClear(), record.getClear(), mode.getClear(), NULL, NULL, options.getClear());
-                            parser->checkValidRecordMode(dataset, $4, $7);
+                            parser->checkValidRecordMode(dataset, $4, $9);
                             $$.setExpr(dataset, $1);
                         }
     | DATASET '(' dataSet ',' thorFilenameOrList ',' mode optDsOptions dsEnd
@@ -7989,12 +7994,15 @@ simpleDataSet
                             $$.setExpr(createDataset(no_inlinetable, createValue(no_transformlist, makeNullType(), values), LINK(record)));
                             $$.setPosition($1);
                         }
-    | DATASET '(' thorFilenameOrList ',' recordDef ')'
+    | DATASET '(' thorFilenameOrList ',' beginCounterScope recordDef endCounterScope ')'
                         {
                             //NB: $3 is required to be a list, but uses thorfilename production to work around a s/r error
+                            OwnedHqlExpr counter = $7.queryExpr();
+                            if (counter)
+                                parser->reportError(ERR_ILL_HERE,$6,"Not expecting COUNTER for DATASET");
                             parser->normalizeExpression($3, type_set, false);
 
-                            $$.setExpr(parser->createDatasetFromList($3, $5), $1);
+                            $$.setExpr(parser->createDatasetFromList($3, $6), $1);
                         }
     | DATASET '(' WORKUNIT '(' expression ',' expression ')' ',' recordDef ')'
                         {
@@ -8024,6 +8032,16 @@ simpleDataSet
                             else
                                 arg = createAttribute(sequenceAtom, arg);
                             $$.setExpr(createDataset(no_workunit_dataset, $8.getExpr(), arg));
+                            $$.setPosition($1);
+                        }
+    | DATASET '(' thorFilenameOrList ',' beginCounterScope transform endCounterScope ')'
+                        {
+                            // TODO: use DISTRIBUTED flag
+                            parser->normalizeExpression($3, type_int, false);
+                            IHqlExpression * counter = $7.getExpr();
+                            if (counter)
+                                counter = createAttribute(_countProject_Atom, counter);
+                            $$.setExpr(createDataset(no_dataset_from_transform, $3.getExpr(), createComma($6.getExpr(), counter)));
                             $$.setPosition($1);
                         }
     | ENTH '(' dataSet ',' expression optCommonAttrs ')'

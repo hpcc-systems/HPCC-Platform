@@ -1075,6 +1075,7 @@ const char *getOpString(node_operator op)
     case no_transformebcdic: return "EBCDIC";
     case no_transformascii: return "ASCII";
     case no_hqlproject: return "PROJECT";
+    case no_dataset_from_transform: return "DATASET";
     case no_newtransform: return "NEWTRANSFORM";
     case no_transform: return "TRANSFORM";
     case no_attr: return "no_attr";
@@ -1424,7 +1425,7 @@ const char *getOpString(node_operator op)
     case no_debug_option_value: return "__DEBUG__";
     case no_dataset_alias: return "TABLE";
 
-    case no_unused1: case no_unused2: case no_unused3: case no_unused4: case no_unused5: case no_unused6:
+    case no_unused2: case no_unused3: case no_unused4: case no_unused5: case no_unused6:
     case no_unused13: case no_unused14: case no_unused15: case no_unused17: case no_unused18: case no_unused19:
     case no_unused20: case no_unused21: case no_unused22: case no_unused23: case no_unused24: case no_unused25: case no_unused26: case no_unused27: case no_unused28: case no_unused29:
     case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
@@ -1772,6 +1773,7 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_definesideeffect:
     case no_callsideeffect:
     case no_fromxml:
+    case no_dataset_from_transform:
         return childdataset_none;
     case no_group:
     case no_grouped:
@@ -2167,6 +2169,7 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_definesideeffect:
     case no_callsideeffect:
     case no_fromxml:
+    case no_dataset_from_transform:
         return 0;
     case no_delayedselect:
     case no_libraryselect:
@@ -2477,6 +2480,7 @@ bool definesColumnList(IHqlExpression * dataset)
     case no_normalizegroup:
     case no_cogroup:
     case no_dataset_alias:
+    case no_dataset_from_transform:
         return true;
     case no_select:
     case no_field:
@@ -2574,6 +2578,7 @@ IHqlExpression * queryNewColumnProvider(IHqlExpression * expr)
     case no_transformebcdic:
     case no_transformascii:
     case no_hqlproject:
+    case no_dataset_from_transform:
     case no_keyindex:
     case no_projectrow:
     case no_iterate:
@@ -10321,6 +10326,7 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
         assertex(parms.ordinality()>1);     // should have a count or a length
         break;
     case no_inlinetable:
+    case no_dataset_from_transform:
     case no_xmlproject:
     case no_temptable:
     case no_id2blob:

@@ -605,8 +605,9 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_bound_type:
     case no_mix:
     case no_persist_check:
+    case no_dataset_from_transform:
 
-    case no_unused1: case no_unused2: case no_unused3: case no_unused4: case no_unused5: case no_unused6:
+    case no_unused2: case no_unused3: case no_unused4: case no_unused5: case no_unused6:
     case no_unused13: case no_unused14: case no_unused15: case no_unused17: case no_unused18: case no_unused19:
     case no_unused20: case no_unused21: case no_unused22: case no_unused23: case no_unused24: case no_unused25: case no_unused26: case no_unused27: case no_unused28: case no_unused29:
     case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
@@ -2596,6 +2597,16 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
                     minValue++;
             }
             info.setRange(minValue, maxValue);
+            break;
+        }
+    case no_dataset_from_transform:
+        {
+            // only if the count is a constant value
+            IHqlExpression * count = expr->queryChild(0);
+            IValue * value = count->queryValue();
+            if (value)
+                info.setN(value->getIntValue());
+            // leave it be, if it's a constant expression or a variable
             break;
         }
     case no_null:
