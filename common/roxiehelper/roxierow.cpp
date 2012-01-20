@@ -63,19 +63,6 @@ public:
         return doReallocRows(rowset, oldRowCount, newRowCount);
     }
 
-    inline byte * * doReallocRows(byte * * rowset, unsigned oldRowCount, unsigned newRowCount)
-    {
-        if (!rowset)
-            return createRowset(newRowCount);
-
-        //This would be more efficient if previous capacity was stored by the caller - or if capacity() is more efficient
-        if (newRowCount * sizeof(void *) <= RoxieRowCapacity(rowset))
-            return rowset;
-
-        size32_t capacity;
-        return (byte * *)rowManager.resizeRow(rowset, oldRowCount * sizeof(void *), newRowCount * sizeof(void *), allocatorId | ACTIVITY_FLAG_ISREGISTERED, capacity);
-    }
-
     virtual void releaseRow(const void * row)
     {
         ReleaseRoxieRow(row);
@@ -107,6 +94,21 @@ public:
     {
         return meta.createRowDeserializer(ctx, activityId);
     }
+
+protected:
+    inline byte * * doReallocRows(byte * * rowset, unsigned oldRowCount, unsigned newRowCount)
+    {
+        if (!rowset)
+            return createRowset(newRowCount);
+
+        //This would be more efficient if previous capacity was stored by the caller - or if capacity() is more efficient
+        if (newRowCount * sizeof(void *) <= RoxieRowCapacity(rowset))
+            return rowset;
+
+        size32_t capacity;
+        return (byte * *)rowManager.resizeRow(rowset, oldRowCount * sizeof(void *), newRowCount * sizeof(void *), allocatorId | ACTIVITY_FLAG_ISREGISTERED, capacity);
+    }
+
 protected:
     roxiemem::IRowManager & rowManager;
     const CachedOutputMetaData meta;
@@ -170,7 +172,7 @@ public:
 
     virtual void * createRow(size32_t & allocatedSize)
     {
-        allocatedSize = meta.getInitialSize();
+        allocatedSize = meta.getFixedSize();
         return heap->allocate();
     }
 

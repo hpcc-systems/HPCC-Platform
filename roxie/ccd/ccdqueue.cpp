@@ -34,9 +34,7 @@
 #include <cppunit/extensions/HelperMacros.h>
 #endif
 
-#ifdef _DEBUG
-#define allocate(a, x) allocate(a, __LINE__)
-#endif
+#define MESSAGE_UNPACKER_ID 1
 
 CriticalSection ibytiCrit; // CAUTION - not safe to use spinlocks as real-time thread accesses
 CriticalSection queueCrit;
@@ -2233,7 +2231,7 @@ public:
         assertex(pos + length <= datalen);
         void * cur = ((char *) data) + pos;
         pos += length;
-        void * ret = rowManager->allocate(length, 0);
+        void * ret = rowManager->allocate(length, MESSAGE_UNPACKER_ID);
         memcpy(ret, cur, length);
         //No need for finalize since only contains plain data.
         return ret;

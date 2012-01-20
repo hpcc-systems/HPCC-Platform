@@ -1027,7 +1027,7 @@ public:
     virtual void *finalizeRow(void *final);
 
 protected:
-    Linked<CChunkingRowManager> rowManager;
+    CChunkingRowManager * rowManager;       // Lifetime of rowManager is guaranteed to be longer
     size32_t fixedSize;
     unsigned activityId;
     RoxieHeapFlags flags;
@@ -1050,7 +1050,7 @@ public:
     virtual void *finalizeRow(void *final, size32_t originalSize, size32_t finalSize);
 
 protected:
-    Linked<CChunkingRowManager> rowManager;
+    CChunkingRowManager * rowManager;       // Lifetime of rowManager is guaranteed to be longer
     unsigned activityId;
     RoxieHeapFlags flags;
 };

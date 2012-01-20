@@ -487,6 +487,7 @@ byte * * RtlLinkedDatasetBuilder::linkrows()
 void RtlLinkedDatasetBuilder::expand(size32_t required)
 {
     assertex(required < choosenLimit);
+    //MORE: Next factoring change this so it passes this logic over to the row allocator
     size32_t newMax = max ? max : 4;
     while (newMax < required)
     {
