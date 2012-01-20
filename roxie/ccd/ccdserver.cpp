@@ -31294,6 +31294,8 @@ private:
         E->errorMessage(error);
         logctx.CTXLOG("EXCEPTION: %s", error.str());
         addWuException(wu, E);
+        WorkunitUpdate w(&wu->lock());
+        w->setState(WUStateFailed);
     }
 
     StringAttr wuid;
