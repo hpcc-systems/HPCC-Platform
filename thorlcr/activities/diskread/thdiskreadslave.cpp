@@ -368,7 +368,6 @@ public:
         helper = (IHThorDiskReadArg *)queryHelper();
         unsorted = 0 != (TDRunsorted & helper->getFlags());
         grouped = 0 != (TDXgrouped & helper->getFlags());
-        if (isFixedDiskWidth && grouped) diskRowMinSz++;
         needTransform = segMonitors.length() || helper->needTransform();
         out = NULL;
         countSent = false;
@@ -396,6 +395,7 @@ public:
             if (dfsGrouped != grouped) // NB: will already have warned in master->wuid.
                 ActPrintLog("Dfsgrouping vs codegen grouping differ, DFS grouping takes precedence. DfsGrouping=%s", dfsGrouped?"true":"false");
             grouped = dfsGrouped;
+            if (isFixedDiskWidth && grouped) diskRowMinSz++;
         }
         if (grouped)
         {
