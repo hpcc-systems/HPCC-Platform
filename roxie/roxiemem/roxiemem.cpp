@@ -1014,6 +1014,8 @@ public:
 
 //================================================================================
 //
+class CChunkingRowManager;
+
 class CRoxieFixedRowHeap : implements IFixedRowHeap, public CInterface
 {
 public:
