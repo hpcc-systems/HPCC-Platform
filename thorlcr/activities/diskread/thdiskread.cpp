@@ -48,16 +48,16 @@ public:
                 size32_t rSz = fileDesc->queryProperties().getPropInt("@recordSize");
                 if (isGrouped)
                     rSz--; // eog byte not to be included in this test.
-                if (rSz != recordSize-> getMinRecordSize())
+                if (rSz != recordSize->getMinRecordSize())
                     throw MakeThorException(TE_RecordSizeMismatch, "Published record size %d for file %s, does not match coded record size %d", rSz, helper->getFileName(), recordSize->getMinRecordSize());
             }
             if (!fileDesc->isCompressed() && (TDXcompress & helper->getFlags()))
             {
                 size32_t rSz = recordSize->getMinRecordSize();
-                if(codeGenGrouped) rSz++;
+                if (isGrouped) rSz++;
                 if (rSz >= MIN_ROWCOMPRESS_RECSIZE)
                 {
-                    Owned<IException> e = MakeActivityWarning(&container, TE_CompressionMismatch, "Ignoring compression attribute on file '%s', which is not published as compressed", helper->getFileName());
+                    Owned<IException> e = MakeActivityWarning(&container, TE_CompressionMismatch, "Ignoring compression attribute on file '%s', which is not published as compressed in DFS", helper->getFileName());
                     container.queryJob().fireException(e);
                 }
             }
