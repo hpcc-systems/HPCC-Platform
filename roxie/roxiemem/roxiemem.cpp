@@ -24,6 +24,10 @@
 #include <sys/mman.h>
 #endif
 
+#ifdef _DEBUG
+#define _CLEAR_ALLOCATED_ROW
+#endif
+
 namespace roxiemem {
 
 #define USE_MADVISE_ON_FREE     // avoid linux swapping 'freed' pages to disk
@@ -725,6 +729,15 @@ public:
                 ret += sizeof(unsigned);
                 atomic_set((atomic_t *) ret, 1);
                 ret += sizeof(atomic_t);
+#ifdef _CLEAR_ALLOCATED_ROW
+                //MORE: This should be in the header, or a member of the class
+#ifdef CHECKING_HEAP
+                const unsigned chunkOverhead = sizeof(atomic_t) + sizeof(unsigned) + sizeof(unsigned);
+#else
+                const unsigned chunkOverhead = sizeof(atomic_t) + sizeof(unsigned);
+#endif
+                memset(ret, 0xcc, size-chunkOverhead);
+#endif
                 return ret;
             }
         }
@@ -897,6 +910,9 @@ public:
     {
         atomic_inc(&count);
         assertex(size == hugeSize);
+#ifdef _CLEAR_ALLOCATED_ROW
+        memset(&data, 0xcc, size);
+#endif
         return &data;
     }
 
@@ -1000,6 +1016,9 @@ public:
 //
 class CChunkingRowManager : public CInterface, implements IRowManager
 {
+    friend class CRoxieFixedRowHeap;
+    friend class CRoxieVariableRowHeap;
+
     BigHeapletBase active;
     CriticalSection crit;
     unsigned pageLimit;
@@ -1427,7 +1446,7 @@ public:
         }
     }
 
-    virtual void *finalizeRow(void * original, unsigned initialSize, unsigned finalSize, unsigned activityId)
+    virtual void *finalizeRow(void * original, size32_t initialSize, size32_t finalSize, unsigned activityId)
     {
         assertex(finalSize);
         if (isCheckingHeap)
@@ -1514,6 +1533,86 @@ public:
             logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::noteDataBuffReleased dataBuffs=%u dataBuffPages=%u possibleGoers=%u dataBuff=%p rowMgr=%p", 
                     dataBuffs, dataBuffPages, possibleGoers, dataBuff, this);
     }
+
+    virtual IFixedRowHeap * createFixedRowHeap(size32_t fixedSize, unsigned activityId, RoxieHeapFlags flags)
+    {
+        //Although the activityId is passed here, there is nothing to stop multiple RowHeaps sharing the same ChunkAllocator
+        return NULL;
+    }
+
+    virtual IVariableRowHeap * createVariableRowHeap(unsigned activityId, RoxieHeapFlags flags)
+    {
+        //Although the activityId is passed here, there is nothing to stop multiple RowHeaps sharing the same ChunkAllocator
+        return NULL;
+    }
+};
+
+class CRoxieFixedRowHeap : implements IFixedRowHeap, public CInterface
+{
+public:
+    CRoxieFixedRowHeap(CChunkingRowManager * _rowManager, size32_t _fixedSize, unsigned _activityId, RoxieHeapFlags _flags)
+        : rowManager(_rowManager), fixedSize(_fixedSize), activityId(_activityId), flags(_flags)
+    {
+    }
+    IMPLEMENT_IINTERFACE
+
+    virtual void *allocate()
+    {
+        return rowManager->allocate(fixedSize, activityId);
+    }
+
+    virtual void *finalizeRow(void *final)
+    {
+        //MORE: Checking heap checks for not shared.
+        if (flags & RHFhasdestructor)
+            HeapletBase::setDestructorFlag(final);
+        return final;
+    }
+
+protected:
+    Linked<CChunkingRowManager> rowManager;
+    size32_t fixedSize;
+    unsigned activityId;
+    RoxieHeapFlags flags;
+};
+
+
+class CRoxieVariableRowHeap : implements IFixedRowHeap, public CInterface
+{
+public:
+    CRoxieVariableRowHeap(CChunkingRowManager * _rowManager, unsigned _activityId, RoxieHeapFlags _flags)
+        : rowManager(_rowManager), activityId(_activityId), flags(_flags)
+    {
+    }
+    IMPLEMENT_IINTERFACE
+
+    virtual void *allocate(size32_t size, size32_t & capacity)
+    {
+        void * ret = rowManager->allocate(fixedSize, activityId);
+        capacity = RoxieRowCapacity(ret);
+        return ret;
+    }
+
+    virtual void *resizeRow(void * original, size32_t oldsize, size32_t newsize, size32_t &capacity)
+    {
+        return rowManager->resizeRow(original, oldsize, newsize, activityId, capacity);
+    }
+
+    virtual void *finalizeRow(void *final, size32_t originalSize, size32_t finalSize)
+    {
+        return rowManager->finalizeRow(final, originalSize, finalSize, activityId);
+        //If never shrink the following should be sufficient.
+        //MORE: Checking heap checks for not shared.
+        if (flags & RHFhasdestructor)
+            HeapletBase::setDestructorFlag(final);
+        return final;
+    }
+
+protected:
+    Linked<CChunkingRowManager> rowManager;
+    size32_t fixedSize;
+    unsigned activityId;
+    RoxieHeapFlags flags;
 };
 
 

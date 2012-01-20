@@ -31,10 +31,6 @@
 #include "ccddali.hpp"
 #include "thorcommon.ipp"
 
-#ifdef _DEBUG
-#define _CLEAR_ALLOCATED_ROW
-#endif
-
 interface IFilePartMap : public IInterface
 {
     virtual bool IsShared() const = 0;

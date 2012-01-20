@@ -42,10 +42,6 @@
 #include "rtlds_imp.hpp"
 #include "rtlread_imp.hpp"
 
-#ifdef _DEBUG                   
-#define _CLEAR_ALLOCATED_ROW    
-#endif                          
-
 roxiemem::IRowManager * queryRowManager();
 #define releaseHThorRow(row) ReleaseRoxieRow(row)
 #define linkHThorRow(row) LinkRoxieRow(row)
@@ -116,24 +112,16 @@ public:
         return rowset;
     }
 
-//interface IEngineAnyRowAllocator
     virtual void * createRow()
     {
         const size32_t allocSize = meta.getInitialSize();
-        void *ret = rowManager.allocate(allocSize, allocatorId | ACTIVITY_FLAG_ISREGISTERED);
-#ifdef _CLEAR_ALLOCATED_ROW
-        memset(ret, 0xcc, allocSize); 
-#endif
-        return ret;
+        return rowManager.allocate(allocSize, allocatorId | ACTIVITY_FLAG_ISREGISTERED);
     }
 
     virtual void * createRow(size32_t & allocatedSize)
     {
         const size32_t allocSize = meta.getInitialSize();
         void *ret = rowManager.allocate(allocSize, allocatorId | ACTIVITY_FLAG_ISREGISTERED);
-#ifdef _CLEAR_ALLOCATED_ROW
-        memset(ret, 0xcc, allocSize); 
-#endif
         allocatedSize = allocSize;
         return ret;
     }

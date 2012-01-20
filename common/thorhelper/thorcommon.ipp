@@ -124,8 +124,8 @@ public:
             meta->destruct(self);
     }
 
-    IOutputRowSerializer * createRowSerializer(ICodeContext * ctx, unsigned activityId);
-    IOutputRowDeserializer * createRowDeserializer(ICodeContext * ctx, unsigned activityId);
+    IOutputRowSerializer * createRowSerializer(ICodeContext * ctx, unsigned activityId) const;
+    IOutputRowDeserializer * createRowDeserializer(ICodeContext * ctx, unsigned activityId) const;
 
     inline IOutputMetaData * querySerializedMeta() const
     {
@@ -665,7 +665,7 @@ protected:
 class THORHELPER_API CSimpleVariableRowSerializer : public CInterface, implements IOutputRowSerializer
 {
 public:
-    CSimpleVariableRowSerializer(CachedOutputMetaData * _meta) : meta(_meta) {}
+    CSimpleVariableRowSerializer(const CachedOutputMetaData * _meta) : meta(_meta) {}
     IMPLEMENT_IINTERFACE
 
     virtual void serialize(IRowSerializerTarget & out, const byte * self)
@@ -674,7 +674,7 @@ public:
     }
 
 protected:
-    CachedOutputMetaData * meta;        // assume lifetime is shorter than this meta
+    const CachedOutputMetaData * meta;        // assume lifetime is shorter than this meta
 };
 
 //This should never be created in practice - need to use a streamer. Pseudocode below for illustration purposes only

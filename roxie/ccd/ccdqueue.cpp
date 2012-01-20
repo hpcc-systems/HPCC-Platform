@@ -2232,9 +2232,12 @@ public:
         if (pos==datalen)
             return NULL;
         assertex(pos + length <= datalen);
-        void *ret = ((char *) data) + pos;
+        void * cur = ((char *) data) + pos;
         pos += length;
-        return rowManager->clone(length, ret);
+        void * ret = rowManager->allocate(length, 0);
+        memcpy(ret, cur, length);
+        //No need for finalize since only contains plain data.
+        return ret;
     }
 };
 

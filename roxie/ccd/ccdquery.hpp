@@ -31,10 +31,6 @@
 #include "ccddali.hpp"
 #include "thorcommon.ipp"
 
-#ifdef _DEBUG
-#define _CLEAR_ALLOCATED_ROW
-#endif
-
 class TranslatorArray : public CInterface, implements IInterface
 {
     PointerIArrayOf<IRecordLayoutTranslator> a;
@@ -210,10 +206,10 @@ public:
 };
 
 
-class RoxieEngineRowAllocator : public CInterface, implements IEngineRowAllocator
+class RoxieEngineRowAllocatorBase : public CInterface, implements IEngineRowAllocator
 {
 public:
-    RoxieEngineRowAllocator(roxiemem::IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId)
+    RoxieEngineRowAllocatorBase(roxiemem::IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId)
         : rowManager(_rowManager), meta(_meta) 
     {
         activityId = _activityId;
@@ -242,50 +238,27 @@ public:
 
     virtual byte * * appendRowOwn(byte * * rowset, unsigned newRowCount, void * row)
     {
-        if (!rowset)
-            rowset = createRowset(newRowCount);
-        else
-        {
-            size32_t capacity;
-            rowset = (byte * *)rowManager.resizeRow(rowset, (newRowCount-1) * sizeof(void *), newRowCount * sizeof(void *), allocatorId | ACTIVITY_FLAG_ISREGISTERED, capacity);
-        }
-        rowset[newRowCount-1] = (byte *)row;
-        return rowset;
+        byte * * expanded = doReallocRows(rowset, newRowCount-1, newRowCount);
+        expanded[newRowCount-1] = (byte *)row;
+        return expanded;
     }
 
     virtual byte * * reallocRows(byte * * rowset, unsigned oldRowCount, unsigned newRowCount)
     {
-        if (!rowset)
-            rowset = createRowset(newRowCount);
-        else
-        {
-            size32_t capacity;
-            rowset = (byte * *)rowManager.resizeRow(rowset, oldRowCount * sizeof(void *), newRowCount * sizeof(void *), allocatorId | ACTIVITY_FLAG_ISREGISTERED, capacity);
-        }
         //New rows (if any) aren't cleared....
-        return rowset;
+        return doReallocRows(rowset, oldRowCount, newRowCount);
     }
 
-//interface IEngineAnyRowAllocator
-    virtual void * createRow()
+    inline byte * * doReallocRows(byte * * rowset, unsigned oldRowCount, unsigned newRowCount)
     {
-        size32_t allocSize = meta.getInitialSize();
-        void *ret = rowManager.allocate(allocSize, allocatorId | ACTIVITY_FLAG_ISREGISTERED);
-#ifdef _CLEAR_ALLOCATED_ROW
-        memset(ret, 0xcc, allocSize); 
-#endif
-        return ret;
-    }
+        if (!rowset)
+            return createRowset(newRowCount);
 
-    virtual void * createRow(size32_t & allocatedSize)
-    {
-        const size32_t allocSize = meta.getInitialSize();
-        void *ret = rowManager.allocate(allocSize, allocatorId | ACTIVITY_FLAG_ISREGISTERED);
-#ifdef _CLEAR_ALLOCATED_ROW
-        memset(ret, 0xcc, allocSize); 
-#endif
-        allocatedSize = allocSize;
-        return ret;
+        if (newRowCount * sizeof(void *) <= RoxieRowCapacity(rowset))
+            return rowset;
+
+        size32_t capacity;
+        return (byte * *)rowManager.resizeRow(rowset, oldRowCount * sizeof(void *), newRowCount * sizeof(void *), allocatorId | ACTIVITY_FLAG_ISREGISTERED, capacity);
     }
 
     virtual void releaseRow(const void * row)
@@ -297,21 +270,6 @@ public:
     {
         LinkRoxieRow(row);
         return const_cast<void *>(row);
-    }
-
-    virtual void * resizeRow(size32_t newSize, void * row, size32_t & size)
-    {
-        size32_t capacity;
-        void * ret = rowManager.resizeRow(row, size, newSize, allocatorId | ACTIVITY_FLAG_ISREGISTERED, capacity);
-        size = capacity;
-        return ret;
-    }
-
-    virtual void * finalizeRow(size32_t finalSize, void * row, size32_t oldSize)
-    {
-        unsigned id = allocatorId | ACTIVITY_FLAG_ISREGISTERED;
-        if (meta.needsDestruct()) id |= ACTIVITY_FLAG_NEEDSDESTRUCTOR;
-        return rowManager.finalizeRow(row, oldSize, finalSize, id);
     }
 
     virtual IOutputMetaData * queryOutputMeta()
@@ -336,9 +294,128 @@ public:
     }
 protected:
     roxiemem::IRowManager & rowManager;
-    CachedOutputMetaData meta;
+    const CachedOutputMetaData meta;
     unsigned activityId;
     unsigned allocatorId;
+};
+
+//General purpose row allocator here for reference - should be removed once spcialised versions are created
+class RoxieEngineRowAllocator : public RoxieEngineRowAllocatorBase
+{
+public:
+    RoxieEngineRowAllocator(roxiemem::IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId)
+        : RoxieEngineRowAllocatorBase(_rowManager, _meta, _activityId, _allocatorId)
+    {
+    }
+
+    virtual void * createRow()
+    {
+        size32_t allocSize = meta.getInitialSize();
+        return rowManager.allocate(allocSize, allocatorId | ACTIVITY_FLAG_ISREGISTERED);
+    }
+
+    virtual void * createRow(size32_t & allocatedSize)
+    {
+        const size32_t allocSize = meta.getInitialSize();
+        void *ret = rowManager.allocate(allocSize, allocatorId | ACTIVITY_FLAG_ISREGISTERED);
+        //more: allocate could return the allocated size, but that would penalise the fixed row case
+        allocatedSize = RoxieRowCapacity(ret);
+        return ret;
+    }
+
+    virtual void * resizeRow(size32_t newSize, void * row, size32_t & size)
+    {
+        return rowManager.resizeRow(row, size, newSize, allocatorId | ACTIVITY_FLAG_ISREGISTERED, size);
+    }
+
+    virtual void * finalizeRow(size32_t finalSize, void * row, size32_t oldSize)
+    {
+        unsigned id = allocatorId | ACTIVITY_FLAG_ISREGISTERED;
+        if (meta.needsDestruct()) id |= ACTIVITY_FLAG_NEEDSDESTRUCTOR;
+        return rowManager.finalizeRow(row, oldSize, finalSize, id);
+    }
+};
+
+class RoxieEngineFixedRowAllocator : public RoxieEngineRowAllocatorBase
+{
+public:
+    RoxieEngineFixedRowAllocator(roxiemem::IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId, bool packed)
+        : RoxieEngineRowAllocatorBase(_rowManager, _meta, _activityId, _allocatorId)
+    {
+        unsigned flags = packed ? roxiemem::RHFpacked : roxiemem::RHFnone;
+        if (meta.needsDestruct())
+            flags |= roxiemem::RHFhasdestructor;
+        heap.setown(rowManager.createFixedRowHeap(meta.getFixedSize(), activityId | ACTIVITY_FLAG_ISREGISTERED, (roxiemem::RoxieHeapFlags)flags));
+    }
+
+    virtual void * createRow()
+    {
+        return heap->allocate();
+    }
+
+    virtual void * createRow(size32_t & allocatedSize)
+    {
+        allocatedSize = meta.getInitialSize();
+        return heap->allocate();
+    }
+
+    virtual void * resizeRow(size32_t newSize, void * row, size32_t & size)
+    {
+        throwUnexpected();
+        return NULL;
+    }
+
+    virtual void * finalizeRow(size32_t finalSize, void * row, size32_t oldSize)
+    {
+        if (!meta.needsDestruct())
+            return row;
+        return heap->finalizeRow(row);
+    }
+
+protected:
+    Owned<roxiemem::IFixedRowHeap> heap;
+};
+
+class RoxieEngineVariableRowAllocator : public RoxieEngineRowAllocatorBase
+{
+public:
+    RoxieEngineVariableRowAllocator(roxiemem::IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId, bool _packed)
+        : RoxieEngineRowAllocatorBase(_rowManager, _meta, _activityId, _allocatorId), packed(_packed)
+    {
+        unsigned flags = packed ? roxiemem::RHFpacked : roxiemem::RHFnone;
+        if (meta.needsDestruct())
+            flags |= roxiemem::RHFhasdestructor;
+        heap.setown(rowManager.createVariableRowHeap(activityId | ACTIVITY_FLAG_ISREGISTERED, (roxiemem::RoxieHeapFlags)flags));
+    }
+
+    virtual void * createRow()
+    {
+        size32_t allocSize = meta.getInitialSize();
+        size32_t capacity;
+        return heap->allocate(allocSize, capacity);
+    }
+
+    virtual void * createRow(size32_t & allocatedSize)
+    {
+        const size32_t allocSize = meta.getInitialSize();
+        return heap->allocate(allocSize, allocatedSize);
+    }
+
+    virtual void * resizeRow(size32_t newSize, void * row, size32_t & size)
+    {
+        return heap->resizeRow(row, size, newSize, size);
+    }
+
+    virtual void * finalizeRow(size32_t finalSize, void * row, size32_t oldSize)
+    {
+        if (!meta.needsDestruct() && !packed)
+            return row;
+        return heap->finalizeRow(row, oldSize, finalSize);
+    }
+
+protected:
+    Owned<roxiemem::IVariableRowHeap> heap;
+    bool packed;    // may not be needed - depends on implementation
 };
 
 interface IQueryDll : public IInterface

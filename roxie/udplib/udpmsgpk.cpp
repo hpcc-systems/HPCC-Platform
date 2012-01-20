@@ -358,7 +358,7 @@ public:
                 LinkRoxieRow(res);
                 return res;
             }   
-            char *currResLoc = (char*)rowMgr->allocate(length);
+            char *currResLoc = (char*)rowMgr->allocate(length, 0);
             res = currResLoc;
             while (length && dataBuff) 
             {
