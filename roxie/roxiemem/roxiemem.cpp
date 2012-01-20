@@ -2155,7 +2155,7 @@ protected:
     void testHuge()
     {
         Owned<IRowManager> rm1 = createRowManager(0, NULL, logctx, NULL);
-        ReleaseRoxieRow(rm1->allocate(1800000));
+        ReleaseRoxieRow(rm1->allocate(1800000, 0));
         ASSERT(rm1->pages()==0);
         ASSERT(rm1->getMemoryUsage()==2);
     }
@@ -2180,16 +2180,16 @@ protected:
     void testRelease()
     {
         Owned<IRowManager> rm1 = createRowManager(0, NULL, logctx, NULL);
-        ReleaseRoxieRow(rm1->allocate(1000));
+        ReleaseRoxieRow(rm1->allocate(1000, 0));
         ASSERT(rm1->pages()==0);
         ASSERT(rm1->getMemoryUsage()==1);
 
-        void *r1 = rm1->allocate(1000);
-        void *r2 = rm1->allocate(1000);
+        void *r1 = rm1->allocate(1000, 0);
+        void *r2 = rm1->allocate(1000, 0);
         ReleaseRoxieRow(r1);
-        r1 = rm1->allocate(1000);
+        r1 = rm1->allocate(1000, 0);
         ReleaseRoxieRow(r2);
-        r2 = rm1->allocate(1000);
+        r2 = rm1->allocate(1000, 0);
         ReleaseRoxieRow(r1);
         ReleaseRoxieRow(r2);
         ASSERT(rm1->pages()==0);
@@ -2197,16 +2197,16 @@ protected:
 
 
         Owned<IRowManager> rm2 = createRowManager(0, NULL, logctx, NULL);
-        ReleaseRoxieRow(rm2->allocate(4000000));
+        ReleaseRoxieRow(rm2->allocate(4000000, 0));
         ASSERT(rm2->pages()==0);
         ASSERT(rm2->getMemoryUsage()==4);
 
-        r1 = rm2->allocate(4000000);
-        r2 = rm2->allocate(4000000);
+        r1 = rm2->allocate(4000000, 0);
+        r2 = rm2->allocate(4000000, 0);
         ReleaseRoxieRow(r1);
-        r1 = rm2->allocate(4000000);
+        r1 = rm2->allocate(4000000, 0);
         ReleaseRoxieRow(r2);
-        r2 = rm2->allocate(4000000);
+        r2 = rm2->allocate(4000000, 0);
         ReleaseRoxieRow(r1);
         ReleaseRoxieRow(r2);
         ASSERT(rm2->pages()==0);
@@ -2215,17 +2215,17 @@ protected:
         for (unsigned d = 0; d < 50; d++)
         {
             Owned<IRowManager> rm3 = createRowManager(0, NULL, logctx, NULL);
-            ReleaseRoxieRow(rm3->allocate(HEAP_ALIGNMENT_SIZE - d + 10));
+            ReleaseRoxieRow(rm3->allocate(HEAP_ALIGNMENT_SIZE - d + 10, 0));
             ASSERT(rm3->pages()==0);
         }
 
         // test leak reporting does not crash....
         Owned<IRowManager> rm4 = createRowManager(0, NULL, logctx, NULL);
-        rm4->allocate(4000000);
+        rm4->allocate(4000000, 0);
         rm4.clear();
 
         Owned<IRowManager> rm5 = createRowManager(0, NULL, logctx, NULL);
-        rm5->allocate(4000);
+        rm5->allocate(4000, 0);
         rm5.clear();
     }
 
@@ -2239,7 +2239,7 @@ protected:
         rm1->setChunkSizes(chunkSizes);
         void *ptrs[50];
         for (int i = 0; i < 50; i++)
-            ptrs[i] = rm1->allocate(i);
+            ptrs[i] = rm1->allocate(i, 0);
         ASSERT(rm1->pages()==4);
         for (int i = 0; i < 50; i++)
             ReleaseRoxieRow(ptrs[i]);
@@ -2254,9 +2254,9 @@ protected:
         unsigned i;
         for (i = 0; i < 10000; i++)
         {
-            ptrs[i*2] = rm1->allocate(100);
+            ptrs[i*2] = rm1->allocate(100, 0);
             ASSERT(ptrs[i*2] != NULL);
-            ptrs[i*2 + 1] = rm2->allocate(1000);
+            ptrs[i*2 + 1] = rm2->allocate(1000, 0);
             ASSERT(ptrs[i*2+1] != NULL);
         }
         qsort(ptrs, 20000, sizeof(void *), mc4);
@@ -2272,20 +2272,20 @@ protected:
 
         // test some likely boundary error cases....
         for (i = 1; i < 10000; i++)
-            ReleaseRoxieRow(rm1->allocate(i));
+            ReleaseRoxieRow(rm1->allocate(i, 0));
         for (i = HEAP_ALIGNMENT_SIZE-100; i <= HEAP_ALIGNMENT_SIZE+100; i++)
-            ReleaseRoxieRow(rm1->allocate(i));
+            ReleaseRoxieRow(rm1->allocate(i, 0));
         for (i = HEAP_ALIGNMENT_SIZE*2-100; i <= HEAP_ALIGNMENT_SIZE*2+100; i++)
-            ReleaseRoxieRow(rm1->allocate(i));
-        ptrs[0] = rm1->allocate(10000000);
-        ptrs[1] = rm1->allocate(1000);
-        ptrs[2] = rm1->allocate(10000000);
-        ptrs[3] = rm2->allocate(10000000);
-        ptrs[4] = rm2->allocate(1000);
-        ptrs[5] = rm2->allocate(10000000);
-        ptrs[6] = rm2->allocate(10000000);
-        ptrs[7] = rm2->allocate(10000000);
-        ptrs[8] = rm2->allocate(10000000);
+            ReleaseRoxieRow(rm1->allocate(i, 0));
+        ptrs[0] = rm1->allocate(10000000, 0);
+        ptrs[1] = rm1->allocate(1000, 0);
+        ptrs[2] = rm1->allocate(10000000, 0);
+        ptrs[3] = rm2->allocate(10000000, 0);
+        ptrs[4] = rm2->allocate(1000, 0);
+        ptrs[5] = rm2->allocate(10000000, 0);
+        ptrs[6] = rm2->allocate(10000000, 0);
+        ptrs[7] = rm2->allocate(10000000, 0);
+        ptrs[8] = rm2->allocate(10000000, 0);
         ASSERT(rm1->allocated()+rm2->allocated()==10);
         qsort(ptrs, 6, sizeof(void *), mc4);
         for (i = 1; i < 6; i++)
@@ -2303,9 +2303,9 @@ protected:
         unsigned i;
         for (i = 0; i < 10000; i++)
         {
-            ptrs[i*2] = rm1->allocate(100);
+            ptrs[i*2] = rm1->allocate(100, 0);
             ASSERT(ptrs[i*2] != NULL);
-            ptrs[i*2 + 1] = rm1->allocate(1000);
+            ptrs[i*2 + 1] = rm1->allocate(1000, 0);
             ASSERT(ptrs[i*2+1] != NULL);
         }
         qsort(ptrs, 20000, sizeof(void *), mc4);
@@ -2327,7 +2327,7 @@ protected:
             unsigned i = 0;
             loop
             {
-                ASSERT(rm1->allocate(i++) != NULL);
+                ASSERT(rm1->allocate(i++, 0) != NULL);
             }
         }
         catch (IException *E)
@@ -2345,21 +2345,21 @@ protected:
         unsigned i;
         for (i = 0; i < 1000; i++)
         {
-            void *v1 = rm1->allocate(1000);
+            void *v1 = rm1->allocate(1000, 0);
             ReleaseRoxieRow(v1);
         }
         for (i = 0; i < 1000; i++)
         {
-            void *v1 = rm1->allocate(1000);
-            void *v2 = rm1->allocate(1000);
-            void *v3 = rm1->allocate(1000);
-            void *v4 = rm1->allocate(1000);
-            void *v5 = rm1->allocate(1000);
-            void *v6 = rm1->allocate(1000);
-            void *v7 = rm1->allocate(1000);
-            void *v8 = rm1->allocate(1000);
-            void *v9 = rm1->allocate(1000);
-            void *v10 = rm1->allocate(1000);
+            void *v1 = rm1->allocate(1000, 0);
+            void *v2 = rm1->allocate(1000, 0);
+            void *v3 = rm1->allocate(1000, 0);
+            void *v4 = rm1->allocate(1000, 0);
+            void *v5 = rm1->allocate(1000, 0);
+            void *v6 = rm1->allocate(1000, 0);
+            void *v7 = rm1->allocate(1000, 0);
+            void *v8 = rm1->allocate(1000, 0);
+            void *v9 = rm1->allocate(1000, 0);
+            void *v10 = rm1->allocate(1000, 0);
             ReleaseRoxieRow(v10);
             ReleaseRoxieRow(v9);
             ReleaseRoxieRow(v8);
@@ -2373,16 +2373,16 @@ protected:
         }
         for (i = 0; i < 1000; i++)
         {
-            void *v1 = rm1->allocate(1000);
-            void *v2 = rm1->allocate(1000);
-            void *v3 = rm1->allocate(1000);
-            void *v4 = rm1->allocate(1000);
-            void *v5 = rm1->allocate(1000);
-            void *v6 = rm1->allocate(1000);
-            void *v7 = rm1->allocate(1000);
-            void *v8 = rm1->allocate(1000);
-            void *v9 = rm1->allocate(1000);
-            void *v10 = rm1->allocate(1000);
+            void *v1 = rm1->allocate(1000, 0);
+            void *v2 = rm1->allocate(1000, 0);
+            void *v3 = rm1->allocate(1000, 0);
+            void *v4 = rm1->allocate(1000, 0);
+            void *v5 = rm1->allocate(1000, 0);
+            void *v6 = rm1->allocate(1000, 0);
+            void *v7 = rm1->allocate(1000, 0);
+            void *v8 = rm1->allocate(1000, 0);
+            void *v9 = rm1->allocate(1000, 0);
+            void *v10 = rm1->allocate(1000, 0);
             ReleaseRoxieRow(v1);
             ReleaseRoxieRow(v2);
             ReleaseRoxieRow(v3);
@@ -2396,16 +2396,16 @@ protected:
         }
         for (i = 0; i < 1000; i++)
         {
-            void *v1 = rm1->allocate(1000);
-            void *v2 = rm1->allocate(1000);
-            void *v3 = rm1->allocate(1000);
-            void *v4 = rm1->allocate(1000);
-            void *v5 = rm1->allocate(1000);
-            void *v6 = rm1->allocate(1000);
-            void *v7 = rm1->allocate(1000);
-            void *v8 = rm1->allocate(1000);
-            void *v9 = rm1->allocate(1000);
-            void *v10 = rm1->allocate(1000);
+            void *v1 = rm1->allocate(1000, 0);
+            void *v2 = rm1->allocate(1000, 0);
+            void *v3 = rm1->allocate(1000, 0);
+            void *v4 = rm1->allocate(1000, 0);
+            void *v5 = rm1->allocate(1000, 0);
+            void *v6 = rm1->allocate(1000, 0);
+            void *v7 = rm1->allocate(1000, 0);
+            void *v8 = rm1->allocate(1000, 0);
+            void *v9 = rm1->allocate(1000, 0);
+            void *v10 = rm1->allocate(1000, 0);
             ReleaseRoxieRow(v1);
             ReleaseRoxieRow(v3);
             ReleaseRoxieRow(v5);
