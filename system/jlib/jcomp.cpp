@@ -453,8 +453,7 @@ bool CppCompiler::compileFile(IThreadPool * pool, const char * filename, Semapho
     }
     else
     {
-        if (targetDir.get())
-            cmdline.append(" -o ").append("\"").append(targetDir).append(filename).append('.').append(OBJECT_FILE_EXT[targetCompiler]).append("\"");
+        cmdline.append(" -o ").append("\"").append(targetDir).append(filename).append('.').append(OBJECT_FILE_EXT[targetCompiler]).append("\"");
     }
     
     StringBuffer expanded;
