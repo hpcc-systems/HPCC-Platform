@@ -550,14 +550,11 @@ public:
 
         StringBuffer respwuid(resp->getWuid());
         if (optVerbose && respwuid.length() && !streq(wuid.str(), respwuid.str()))
-            fprintf(stderr, "As %s\n", resp->getWuid());
+            fprintf(stdout, "As %s\n", respwuid.str());
         if (!streq(resp->getState(), "completed"))
-        {
-            fprintf(stderr, "%s\n", resp->getState());
-            return 1;
-        }
+            fprintf(stderr, "%s %s\n", respwuid.str(), resp->getState());
         if (resp->getResults())
-            fprintf(stdout, "%s", resp->getResults());
+            fprintf(stdout, "%s\n", resp->getResults());
 
         return 0;
     }
