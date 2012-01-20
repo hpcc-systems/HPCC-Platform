@@ -34,11 +34,6 @@
 #include <cppunit/extensions/HelperMacros.h>
 #endif
 
-#ifdef _DEBUG
-#define allocate(a) allocate(a, __LINE__)
-#define clone(a,b) clone(a, b, __LINE__)
-#endif
-
 CriticalSection ibytiCrit; // CAUTION - not safe to use spinlocks as real-time thread accesses
 CriticalSection queueCrit;
 unsigned channels[MAX_CLUSTER_SIZE];
@@ -2232,9 +2227,12 @@ public:
         if (pos==datalen)
             return NULL;
         assertex(pos + length <= datalen);
-        void *ret = ((char *) data) + pos;
+        void * cur = ((char *) data) + pos;
         pos += length;
-        return rowManager->clone(length, ret);
+        void * ret = rowManager->allocate(length, 0);
+        memcpy(ret, cur, length);
+        //No need for finalize since only contains plain data.
+        return ret;
     }
 };
 

@@ -133,6 +133,8 @@ public:
         if (ptr)
         {
             HeapletBase *h = findBase(ptr);
+            //MORE: If capacity was always the size stored in the first word of the block this could be non virtual
+            //and the whole function could be inline.
             return h->_capacity();
         }
         throwUnexpected();
@@ -143,6 +145,7 @@ public:
         if (ptr)
         {
             HeapletBase *h = findBase(ptr);
+            //MORE: Should this test be debug only?
             if (h->flags & NOTE_RELEASES)
                 h->_setDestructorFlag(ptr);
             else
@@ -268,6 +271,7 @@ public:
 #define ReleaseRoxieRow(row) roxiemem::HeapletBase::release(row)
 #define ReleaseClearRoxieRow(row) roxiemem::HeapletBase::releaseClear(row)
 #define LinkRoxieRow(row) roxiemem::HeapletBase::link(row)
+#define RoxieRowCapacity(row)  roxiemem::HeapletBase::capacity(row)
 
 class OwnedRoxieRow;
 class OwnedConstRoxieRow
@@ -343,13 +347,32 @@ private:
 
 
 
+interface IFixedRowHeap : extends IInterface
+{
+    virtual void *allocate() = 0;
+    virtual void *finalizeRow(void *final) = 0;
+};
+
+interface IVariableRowHeap : extends IInterface
+{
+    virtual void *allocate(size32_t size, size32_t & capacity) = 0;
+    virtual void *resizeRow(void * original, size32_t oldsize, size32_t newsize, size32_t &capacity) = 0;
+    virtual void *finalizeRow(void *final, size32_t originalSize, size32_t finalSize) = 0;
+};
+
+enum RoxieHeapFlags
+{
+    RHFnone             = 0x0000,
+    RHFpacked           = 0x0001,
+    RHFhasdestructor    = 0x0002,
+};
+
 // Variable size aggregated link-counted Roxie (etc) row manager
 interface IRowManager : extends IInterface
 {
-    virtual void *allocate(size32_t size, unsigned activityId=0) = 0;
-    virtual void *clone(size32_t size, const void *source, unsigned activityId=0) = 0;
+    virtual void *allocate(size32_t size, unsigned activityId) = 0;
     virtual void *resizeRow(void * original, size32_t oldsize, size32_t newsize, unsigned activityId, size32_t &capacity) = 0;
-    virtual void *finalizeRow(void *final, unsigned originalSize, unsigned finalSize, unsigned activityId) = 0;
+    virtual void *finalizeRow(void *final, size32_t originalSize, size32_t finalSize, unsigned activityId) = 0;
     virtual void setMemoryLimit(memsize_t size) = 0;
     virtual unsigned allocated() = 0;
     virtual unsigned pages() = 0;
@@ -361,6 +384,9 @@ interface IRowManager : extends IInterface
     virtual void reportLeaks() = 0;
     virtual unsigned maxSimpleBlock() = 0;
     virtual void checkHeap() = 0;
+    virtual IFixedRowHeap * createFixedRowHeap(size32_t fixedSize, unsigned activityId, RoxieHeapFlags flags) = 0;
+    virtual IVariableRowHeap * createVariableRowHeap(unsigned activityId, RoxieHeapFlags flags) = 0;            // should this be passed the initial size?
+
     // Set the chunk sizes to use. Note that these sizes are before adjusting for per-row overhead
     virtual void setChunkSizes(const UnsignedArray &) = 0;
 };

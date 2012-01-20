@@ -272,13 +272,17 @@ byte * RtlDynamicRowBuilder::ensureCapacity(size32_t required, const char * fiel
     {
         if (!self)
             create();
-        void * next = rowAllocator->resizeRow(required, self, maxLength);
-        if (!next)
+
+        if (required > maxLength)
         {
-            rtlReportFieldOverflow(required, maxLength, fieldName);
-            return NULL;
-        }   
-        self = static_cast<byte *>(next);
+            void * next = rowAllocator->resizeRow(required, self, maxLength);
+            if (!next)
+            {
+                rtlReportFieldOverflow(required, maxLength, fieldName);
+                return NULL;
+            }
+            self = static_cast<byte *>(next);
+        }
     }
     return self;
 }
@@ -483,6 +487,7 @@ byte * * RtlLinkedDatasetBuilder::linkrows()
 void RtlLinkedDatasetBuilder::expand(size32_t required)
 {
     assertex(required < choosenLimit);
+    //MORE: Next factoring change this so it passes this logic over to the row allocator
     size32_t newMax = max ? max : 4;
     while (newMax < required)
     {

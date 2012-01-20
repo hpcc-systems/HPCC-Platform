@@ -30,10 +30,7 @@
 #include "thorcommon.hpp"
 #include "ccddali.hpp"
 #include "thorcommon.ipp"
-
-#ifdef _DEBUG
-#define _CLEAR_ALLOCATED_ROW
-#endif
+#include "roxierow.hpp"
 
 class TranslatorArray : public CInterface, implements IInterface
 {
@@ -209,137 +206,6 @@ public:
 
 };
 
-
-class RoxieEngineRowAllocator : public CInterface, implements IEngineRowAllocator
-{
-public:
-    RoxieEngineRowAllocator(roxiemem::IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId)
-        : rowManager(_rowManager), meta(_meta) 
-    {
-        activityId = _activityId;
-        allocatorId = _allocatorId;
-    }
-
-    IMPLEMENT_IINTERFACE
-
-//interface IEngineRowsetAllocator
-    virtual byte * * createRowset(unsigned count)
-    {
-        if (count == 0)
-            return NULL;
-        return (byte **) rowManager.allocate(count * sizeof(void *), allocatorId | ACTIVITY_FLAG_ISREGISTERED);
-    }
-
-    virtual void releaseRowset(unsigned count, byte * * rowset)
-    {
-        rtlReleaseRowset(count, rowset);
-    }
-
-    virtual byte * * linkRowset(byte * * rowset)
-    {
-        return rtlLinkRowset(rowset);
-    }
-
-    virtual byte * * appendRowOwn(byte * * rowset, unsigned newRowCount, void * row)
-    {
-        if (!rowset)
-            rowset = createRowset(newRowCount);
-        else
-        {
-            size32_t capacity;
-            rowset = (byte * *)rowManager.resizeRow(rowset, (newRowCount-1) * sizeof(void *), newRowCount * sizeof(void *), allocatorId | ACTIVITY_FLAG_ISREGISTERED, capacity);
-        }
-        rowset[newRowCount-1] = (byte *)row;
-        return rowset;
-    }
-
-    virtual byte * * reallocRows(byte * * rowset, unsigned oldRowCount, unsigned newRowCount)
-    {
-        if (!rowset)
-            rowset = createRowset(newRowCount);
-        else
-        {
-            size32_t capacity;
-            rowset = (byte * *)rowManager.resizeRow(rowset, oldRowCount * sizeof(void *), newRowCount * sizeof(void *), allocatorId | ACTIVITY_FLAG_ISREGISTERED, capacity);
-        }
-        //New rows (if any) aren't cleared....
-        return rowset;
-    }
-
-//interface IEngineAnyRowAllocator
-    virtual void * createRow()
-    {
-        size32_t allocSize = meta.getInitialSize();
-        void *ret = rowManager.allocate(allocSize, allocatorId | ACTIVITY_FLAG_ISREGISTERED);
-#ifdef _CLEAR_ALLOCATED_ROW
-        memset(ret, 0xcc, allocSize); 
-#endif
-        return ret;
-    }
-
-    virtual void * createRow(size32_t & allocatedSize)
-    {
-        const size32_t allocSize = meta.getInitialSize();
-        void *ret = rowManager.allocate(allocSize, allocatorId | ACTIVITY_FLAG_ISREGISTERED);
-#ifdef _CLEAR_ALLOCATED_ROW
-        memset(ret, 0xcc, allocSize); 
-#endif
-        allocatedSize = allocSize;
-        return ret;
-    }
-
-    virtual void releaseRow(const void * row)
-    {
-        ReleaseRoxieRow(row);
-    }
-
-    virtual void * linkRow(const void * row)
-    {
-        LinkRoxieRow(row);
-        return const_cast<void *>(row);
-    }
-
-    virtual void * resizeRow(size32_t newSize, void * row, size32_t & size)
-    {
-        size32_t capacity;
-        void * ret = rowManager.resizeRow(row, size, newSize, allocatorId | ACTIVITY_FLAG_ISREGISTERED, capacity);
-        size = capacity;
-        return ret;
-    }
-
-    virtual void * finalizeRow(size32_t finalSize, void * row, size32_t oldSize)
-    {
-        unsigned id = allocatorId | ACTIVITY_FLAG_ISREGISTERED;
-        if (meta.needsDestruct()) id |= ACTIVITY_FLAG_NEEDSDESTRUCTOR;
-        return rowManager.finalizeRow(row, oldSize, finalSize, id);
-    }
-
-    virtual IOutputMetaData * queryOutputMeta()
-    {
-        return meta.queryOriginal();
-    }
-    virtual unsigned queryActivityId()
-    {
-        return activityId;
-    }
-    virtual StringBuffer &getId(StringBuffer &idStr)
-    {
-        return idStr.append(activityId); // MORE - may want more context info in here
-    }
-    virtual IOutputRowSerializer *createRowSerializer(ICodeContext *ctx)
-    {
-        return meta.createRowSerializer(ctx, activityId);
-    }
-    virtual IOutputRowDeserializer *createRowDeserializer(ICodeContext *ctx)
-    {
-        return meta.createRowDeserializer(ctx, activityId);
-    }
-protected:
-    roxiemem::IRowManager & rowManager;
-    CachedOutputMetaData meta;
-    unsigned activityId;
-    unsigned allocatorId;
-};
 
 interface IQueryDll : public IInterface
 {

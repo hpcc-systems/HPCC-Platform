@@ -26,6 +26,7 @@
 #include "jlzw.hpp"
 #include "jisem.hpp"
 #include "roxiedebug.hpp"
+#include "roxierow.hpp"
 #include "eclhelper.hpp"
 #include "workunit.hpp"
 #include "jfile.hpp"
@@ -9720,7 +9721,7 @@ IHThorException * makeHThorException(ThorActivityKind kind, unsigned activityId,
 
 extern HTHOR_API IEngineRowAllocator * createHThorRowAllocator(IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId)
 {
-    return new HThorEngineRowAllocator(_rowManager, _meta, _activityId, _allocatorId);  
+    return createRoxieRowAllocator(_rowManager, _meta, _activityId, _allocatorId, false);
 }
 
 static class RowCallbackHook : implements IRtlRowCallback
