@@ -960,6 +960,7 @@ public:
 // IRowStream
     virtual void stop()
     {
+        partHandler.clear();
         dataLinkStop();
     }
     CATCH_NEXTROW()
