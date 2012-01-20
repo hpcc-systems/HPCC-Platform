@@ -453,7 +453,10 @@ void CChildLimitedDatasetColumnInfo::gatherSize(SizeStruct & target)
             fixedSize = (unsigned)getIntValue(countField) * fixedChildSize;
         }
 
-        target.addFixed(fixedSize);
+        if (isConditional())
+            addVariableSize(fixedSize, target);
+        else
+            target.addFixed(fixedSize);
     }
     else
     {
@@ -649,7 +652,11 @@ void CChildLinkedDatasetColumnInfo::buildColumnExpr(HqlCppTranslator & translato
 
 void CChildLinkedDatasetColumnInfo::gatherSize(SizeStruct & target)
 {
-    target.addFixed(sizeof(size32_t) + sizeof(byte * *));
+    unsigned thisSize = sizeof(size32_t) + sizeof(byte * *);
+    if (isConditional())
+        addVariableSize(thisSize, target);      // the size is used for ensure if condition is true
+    else
+        target.addFixed(thisSize);
 }
 
 
