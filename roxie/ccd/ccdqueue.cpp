@@ -35,8 +35,7 @@
 #endif
 
 #ifdef _DEBUG
-#define allocate(a) allocate(a, __LINE__)
-#define clone(a,b) clone(a, b, __LINE__)
+#define allocate(a, x) allocate(a, __LINE__)
 #endif
 
 CriticalSection ibytiCrit; // CAUTION - not safe to use spinlocks as real-time thread accesses

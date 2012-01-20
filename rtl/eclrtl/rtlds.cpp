@@ -272,13 +272,17 @@ byte * RtlDynamicRowBuilder::ensureCapacity(size32_t required, const char * fiel
     {
         if (!self)
             create();
-        void * next = rowAllocator->resizeRow(required, self, maxLength);
-        if (!next)
+
+        if (required > maxLength)
         {
-            rtlReportFieldOverflow(required, maxLength, fieldName);
-            return NULL;
-        }   
-        self = static_cast<byte *>(next);
+            void * next = rowAllocator->resizeRow(required, self, maxLength);
+            if (!next)
+            {
+                rtlReportFieldOverflow(required, maxLength, fieldName);
+                return NULL;
+            }
+            self = static_cast<byte *>(next);
+        }
     }
     return self;
 }
