@@ -284,9 +284,10 @@ void CppCompiler::addLibrary(const char * libName)
         if(path.length())
         {
             addLibraryPath(path);
+            lname = tail.str();
             // HACK - make it work with plugins. This should be handled at caller end!
-            if (strncmp(tail.str(), "lib", 3) == 0)
-                lname = tail.str() + 3;
+            if (strncmp(lname, "lib", 3) == 0)
+                lname += 3;
         }
         quote = NULL;   //quoting lib names with gcc causes link error (lib not found)
     }
@@ -450,6 +451,11 @@ bool CppCompiler::compileFile(IThreadPool * pool, const char * filename, Semapho
             cmdline.append(" /Fo").append("\"").append(targetDir).append("\"");
         cmdline.append(" /Fd").append("\"").append(targetDir).append(createDLL ? SharedObjectPrefix : NULL).append(filename).append(".pdb").append("\"");//MORE: prefer create a single pdb file using coreName
     }
+    else
+    {
+        if (targetDir.get())
+            cmdline.append(" -o ").append("\"").append(targetDir).append(filename).append('.').append(OBJECT_FILE_EXT[targetCompiler]).append("\"");
+    }
     
     StringBuffer expanded;
     expandRootDirectory(expanded, cmdline);
@@ -527,14 +533,8 @@ void CppCompiler::expandRootDirectory(StringBuffer & expanded, StringBuffer & in
 
 StringBuffer & CppCompiler::getObjectName(StringBuffer & out, const char * filename)
 {
-#ifdef _WIN32
     out.append(targetDir);
     splitFilename(filename, NULL, NULL, &out, &out);
-#else
-    //MORE: Not sure where gcc puts the object files... current directory? Same as cpp file?
-    out.append(targetDir);
-    splitFilename(filename, NULL, NULL, &out, &out);
-#endif
     return out.append(".").append(OBJECT_FILE_EXT[targetCompiler]);
 }
 
