@@ -500,7 +500,7 @@ void CThorDemoRowSerializer::endNested(size32_t sizePos)
 
 
 
-IOutputRowSerializer * CachedOutputMetaData::createRowSerializer(ICodeContext * ctx, unsigned activityId)
+IOutputRowSerializer * CachedOutputMetaData::createRowSerializer(ICodeContext * ctx, unsigned activityId) const
 {
     if (metaFlags & (MDFhasserialize|MDFneedserialize))
         return meta->createRowSerializer(ctx, activityId);
@@ -510,7 +510,7 @@ IOutputRowSerializer * CachedOutputMetaData::createRowSerializer(ICodeContext * 
 }
 
 
-IOutputRowDeserializer * CachedOutputMetaData::createRowDeserializer(ICodeContext * ctx, unsigned activityId)
+IOutputRowDeserializer * CachedOutputMetaData::createRowDeserializer(ICodeContext * ctx, unsigned activityId) const
 {
     if (metaFlags & (MDFhasserialize|MDFneedserialize))
         return meta->createRowDeserializer(ctx, activityId);

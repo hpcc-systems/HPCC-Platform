@@ -66,6 +66,8 @@ namespace ccdserver_hqlhelper
 #include "nbcd.hpp"
 #include "roxiehelper.hpp"
 #include "roxielmj.hpp"
+#include "roxierow.hpp"
+
 #include "thorplugin.hpp"
 #include "keybuild.hpp"
 
@@ -28063,7 +28065,7 @@ public:
     {
         // MORE - may need to do some caching/commoning up here otherwise GRAPH in a child query may use too many
         SpinBlock b(allAllocatorsLock);
-        IEngineRowAllocator * ret = new RoxieEngineRowAllocator(*rowManager, meta, activityId, allAllocators.ordinality());
+        IEngineRowAllocator * ret = createRoxieRowAllocator(*rowManager, meta, activityId, allAllocators.ordinality(), false);
         LINK(ret);
         allAllocators.append(*ret);
         return ret;
