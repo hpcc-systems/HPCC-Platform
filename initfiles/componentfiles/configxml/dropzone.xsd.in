@@ -127,7 +127,7 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="directory" type="absolutePath" use="optional" default="${EXEC_PREFIX}/lib/${DIR_NAME}/dropzone">
+            <xs:attribute name="directory" type="absolutePath" use="optional" default="${EXEC_PREFIX}/lib/${DIR_NAME}/mydropzone">
                 <xs:annotation>
                     <xs:appinfo>
                         <tooltip>The directory where the drop zone is located.</tooltip>
