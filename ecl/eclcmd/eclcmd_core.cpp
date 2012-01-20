@@ -590,56 +590,13 @@ private:
     unsigned optWaitTime;
 };
 
-class EclCmdActivate : public EclCmdCommon
+class EclCmdActivate : public EclCmdWithQueryTarget
 {
 public:
     EclCmdActivate()
     {
     }
-    virtual bool parseCommandLineOptions(ArgvIterator &iter)
-    {
-        if (iter.done())
-        {
-            usage();
-            return false;
-        }
 
-        for (; !iter.done(); iter.next())
-        {
-            const char *arg = iter.query();
-            if (*arg!='-')
-            {
-                if (optQueryId.length())
-                {
-                    fprintf(stderr, "\nmultiple query ids (%s and %s) not supported\n", optQueryId.sget(), arg);
-                    return false;
-                }
-                optQueryId.set(arg);
-                continue;
-            }
-            if (iter.matchOption(optQuerySet, ECLOPT_QUERYSET))
-                continue;
-            if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
-                return false;
-        }
-        return true;
-    }
-    virtual bool finalizeOptions(IProperties *globals)
-    {
-        if (!EclCmdCommon::finalizeOptions(globals))
-            return false;
-        if (optQuerySet.isEmpty())
-        {
-            fprintf(stderr, "\nError: queryset parameter required\n");
-            return false;
-        }
-        if (optQueryId.isEmpty())
-        {
-            fprintf(stderr, "\nError: queryid parameter required\n");
-            return false;
-        }
-        return true;
-    }
     virtual int processCMD()
     {
         Owned<IClientWsWorkunits> client = createWsWorkunitsClient();
@@ -651,7 +608,7 @@ public:
         Owned<IClientWUQuerySetQueryActionRequest> req = client->createWUQuerysetQueryActionRequest();
         IArrayOf<IEspQuerySetQueryActionItem> queries;
         Owned<IEspQuerySetQueryActionItem> item = createQuerySetQueryActionItem();
-        item->setQueryId(optQueryId.get());
+        item->setQueryId(optQuery.get());
         queries.append(*item.getClear());
         req->setQueries(queries);
 
@@ -668,7 +625,7 @@ public:
         {
             IConstQuerySetQueryActionResult &item = results.item(0);
             if (item.getSuccess())
-                fprintf(stdout, "\nActivated %s/%s\n", optQuerySet.sget(), optQueryId.sget());
+                fprintf(stdout, "\nActivated %s/%s\n", optQuerySet.sget(), optQuery.sget());
             else if (item.getCode()|| item.getMessage())
                 fprintf(stderr, "Error (%d) %s\n", item.getCode(), item.getMessage());
         }
@@ -677,69 +634,76 @@ public:
     virtual void usage()
     {
         fprintf(stdout,"\nUsage:\n\n"
-            "ecl activate --queryset=<queryset> <queryid>\n"
+            "ecl activate <queryset> <query>\n"
             "   Options:\n"
-            "      <queryid>             queryid of query to activate\n"
-            "      --queryset=<queryset> name of queryset containing query to activate\n"
+            "      <queryset>            name of queryset containing query to activate\n"
+            "      <query>               query to activate\n"
         );
-        EclCmdCommon::usage();
+        EclCmdWithQueryTarget::usage();
     }
-private:
-    StringAttr optQuerySet;
-    StringAttr optQueryId;
 };
 
+class EclCmdUnPublish : public EclCmdWithQueryTarget
+{
+public:
+    EclCmdUnPublish()
+    {
+    }
 
-class EclCmdDeactivate : public EclCmdCommon
+    virtual int processCMD()
+    {
+        Owned<IClientWsWorkunits> client = createWsWorkunitsClient();
+        VStringBuffer url("http://%s:%s/WsWorkunits", optServer.sget(), optPort.sget());
+        client->addServiceUrl(url.str());
+        if (optUsername.length())
+            client->setUsernameToken(optUsername.get(), optPassword.sget(), NULL);
+
+        Owned<IClientWUQuerySetQueryActionRequest> req = client->createWUQuerysetQueryActionRequest();
+
+        req->setQuerySetName(optQuerySet.get());
+        req->setAction("Delete");
+
+        IArrayOf<IEspQuerySetQueryActionItem> queries;
+        Owned<IEspQuerySetQueryActionItem> item = createQuerySetQueryActionItem();
+        item->setQueryId(optQuery.get());
+        queries.append(*item.getClear());
+        req->setQueries(queries);
+
+        Owned<IClientWUQuerySetQueryActionResponse> resp = client->WUQuerysetQueryAction(req);
+        IArrayOf<IConstQuerySetQueryActionResult> &results = resp->getResults();
+        if (resp->getExceptions().ordinality())
+            outputMultiExceptions(resp->getExceptions());
+        else if (results.empty())
+            fprintf(stderr, "\nError Empty Result!\n");
+        else
+        {
+            IConstQuerySetQueryActionResult &item = results.item(0);
+            if (item.getSuccess())
+                fprintf(stdout, "\nUnpublished %s/%s\n", optQuerySet.sget(), optQuery.sget());
+            else if (item.getCode()|| item.getMessage())
+                fprintf(stderr, "Error (%d) %s\n", item.getCode(), item.getMessage());
+        }
+        return 0;
+    }
+    virtual void usage()
+    {
+        fprintf(stdout,"\nUsage:\n\n"
+            "ecl unpublish <queryset> <query>\n"
+            "   Options:\n"
+            "      <queryset>            name of queryset containing query to unpublish\n"
+            "      <query>               query to remove from query set\n"
+        );
+        EclCmdWithQueryTarget::usage();
+    }
+};
+
+class EclCmdDeactivate : public EclCmdWithQueryTarget
 {
 public:
     EclCmdDeactivate()
     {
     }
-    virtual bool parseCommandLineOptions(ArgvIterator &iter)
-    {
-        if (iter.done())
-        {
-            usage();
-            return false;
-        }
 
-        for (; !iter.done(); iter.next())
-        {
-            const char *arg = iter.query();
-            if (*arg!='-')
-            {
-                if (optAlias.length())
-                {
-                    fprintf(stderr, "\nmultiple aliases not supported\n");
-                    return false;
-                }
-                optAlias.set(arg);
-                continue;
-            }
-            if (iter.matchOption(optQuerySet, ECLOPT_QUERYSET))
-                continue;
-            if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
-                return false;
-        }
-        return true;
-    }
-    virtual bool finalizeOptions(IProperties *globals)
-    {
-        if (!EclCmdCommon::finalizeOptions(globals))
-            return false;
-        if (optQuerySet.isEmpty())
-        {
-            fprintf(stderr, "\nError: queryset parameter required\n");
-            return false;
-        }
-        if (optAlias.isEmpty())
-        {
-            fprintf(stderr, "\nError: alias parameter required\n");
-            return false;
-        }
-        return true;
-    }
     virtual int processCMD()
     {
         StringBuffer s;
@@ -752,7 +716,7 @@ public:
         Owned<IClientWUQuerySetAliasActionRequest> req = client->createWUQuerysetAliasActionRequest();
         IArrayOf<IEspQuerySetAliasActionItem> aliases;
         Owned<IEspQuerySetAliasActionItem> item = createQuerySetAliasActionItem();
-        item->setName(optAlias.get());
+        item->setName(optQuery.get());
         aliases.append(*item.getClear());
         req->setAliases(aliases);
 
@@ -769,7 +733,7 @@ public:
         {
             IConstQuerySetAliasActionResult &item = results.item(0);
             if (item.getSuccess())
-                fprintf(stdout, "Deactivated alias %s/%s\n", optQuerySet.sget(), optAlias.sget());
+                fprintf(stdout, "Deactivated alias %s/%s\n", optQuerySet.sget(), optQuery.sget());
             else if (item.getCode()|| item.getMessage())
                 fprintf(stderr, "Error (%d) %s\n", item.getCode(), item.getMessage());
         }
@@ -778,16 +742,13 @@ public:
     virtual void usage()
     {
         fprintf(stdout,"\nUsage:\n\n"
-            "ecl deactivate --queryset=<queryset> <alias>\n"
+            "ecl deactivate <queryset> <query>\n"
             "   Options:\n"
-            "      <alias>               alias to deactivate (delete)\n"
-            "      queryset=<queryset>   queryset containing alias to deactivate\n"
+            "      <queryset>            queryset containing alias to deactivate\n"
+            "      <query>               query to deactivate (delete)\n"
         );
-        EclCmdCommon::usage();
+        EclCmdWithQueryTarget::usage();
     }
-private:
-    StringAttr optQuerySet;
-    StringAttr optAlias;
 };
 
 //=========================================================================================
@@ -800,6 +761,8 @@ IEclCommand *createCoreEclCommand(const char *cmdname)
         return new EclCmdDeploy();
     if (strieq(cmdname, "publish"))
         return new EclCmdPublish();
+    if (strieq(cmdname, "unpublish"))
+        return new EclCmdUnPublish();
     if (strieq(cmdname, "run"))
         return new EclCmdRun();
     if (strieq(cmdname, "activate"))

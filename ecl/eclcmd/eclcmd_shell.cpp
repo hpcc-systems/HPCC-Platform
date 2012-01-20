@@ -194,6 +194,7 @@ void EclCMDShell::usage()
            "Commonly used commands:\n"
            "   deploy      create a workunit from an ecl file, archive, or dll\n"
            "   publish     add a workunit to a query set\n"
+           "   unpublish   remove a query from a query set\n"
            "   run         run the given ecl file, archive, dll, wuid, or query\n"
            "   activate    activate a published query\n"
            "   deactivate  deactivate the given query alias name\n"
