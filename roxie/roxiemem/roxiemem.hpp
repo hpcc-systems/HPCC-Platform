@@ -386,9 +386,6 @@ interface IRowManager : extends IInterface
     virtual void checkHeap() = 0;
     virtual IFixedRowHeap * createFixedRowHeap(size32_t fixedSize, unsigned activityId, RoxieHeapFlags flags) = 0;
     virtual IVariableRowHeap * createVariableRowHeap(unsigned activityId, RoxieHeapFlags flags) = 0;            // should this be passed the initial size?
-
-    // Set the chunk sizes to use. Note that these sizes are before adjusting for per-row overhead
-    virtual void setChunkSizes(const UnsignedArray &) = 0;
 };
 
 extern roxiemem_decl void setDataAlignmentSize(unsigned size);
