@@ -171,7 +171,7 @@ template <class C> class CopyMapStringToMyClass : public CopyMapStringToIInterfa
   public:
     CopyMapStringToMyClass() : CopyMapStringToIInterface() {};
     CopyMapStringToMyClass(bool _ignorecase) : CopyMapStringToIInterface(_ignorecase) {};
-    C * mapToValue(IMapping * _map) const
+    static inline C * mapToValue(IMapping * _map)
       {
       CopyMappingStringToIInterface * map = (CopyMappingStringToIInterface *)_map;
       IInterface ** x = &map->getValue();
@@ -226,7 +226,7 @@ template <class C> class MapStringToMyClass : public MapStringToIInterface
   public:
     MapStringToMyClass() : MapStringToIInterface() {};
     MapStringToMyClass(bool _ignorecase) : MapStringToIInterface(_ignorecase) {};
-    C * mapToValue(IMapping * _map) const
+    static inline C * mapToValue(IMapping * _map)
       {
       MappingStringToIInterface * map = (MappingStringToIInterface *)_map;
       IInterface ** x = &map->getValue();
@@ -267,7 +267,7 @@ class CopyMapXToMyClass : public CopyMapXToIInterface<KEY, KEYINIT>
 {
   public:
     CopyMapXToMyClass() : CopyMapXToIInterface<KEY, KEYINIT>() {};
-    C * mapToValue(IMapping * _map) const
+    static inline C * mapToValue(IMapping * _map)
       {
       MappingBetween<KEY, KEYINIT, IInterfacePtr, IInterfacePtr> * map = (MappingBetween<KEY, KEYINIT, IInterfacePtr, IInterfacePtr> *)_map;
       IInterface ** x = &map->getValue();
@@ -300,7 +300,7 @@ class MapXToMyClass : public MapXToIInterface<KEY, KEYINIT>
 {
   public:
     MapXToMyClass() : MapXToIInterface<KEY, KEYINIT>() {};
-    C * mapToValue(IMapping * _map) const
+    static inline C * mapToValue(IMapping * _map)
       {
       MappingXToIInterface<KEY, KEYINIT> * map = (MappingXToIInterface<KEY, KEYINIT> *)_map;
       IInterface ** x = &map->getValue();
@@ -318,7 +318,7 @@ class MapXToMyClassViaBase : public MapXToIInterface<KEY, KEYINIT>
 {
   public:
     MapXToMyClassViaBase () : MapXToIInterface<KEY, KEYINIT>() {};
-    C * mapToValue(IMapping * _map) const
+    static inline C * mapToValue(IMapping * _map)
       {
       MappingXToIInterface<KEY, KEYINIT> * map = (MappingXToIInterface<KEY, KEYINIT> *)_map;
       IInterface ** x = &map->getValue();
