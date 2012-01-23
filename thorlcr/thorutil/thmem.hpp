@@ -222,7 +222,6 @@ class graph_decl CThorRowArray
     bool keepsize;
     bool sizing;
     bool raiseexceptions;
-    memsize_t minRemaining;
 
     void adjSize(const void *row, bool inc);
 
@@ -243,7 +242,6 @@ public:
             maxtotal = (unsigned)tmp;
         if (maxtotal<0x100000)
             maxtotal = 0x100000;
-        minRemaining = maxtotal/8;
     }
 
 
@@ -351,19 +349,8 @@ public:
 #endif
             return true;
         }
-        else {
-            // maxtotal is estimate of how much this rowarray is using, but allocator may still be short of available memory.
-            memsize_t asz = ThorRowMemoryAvailable();
-            if (asz < minRemaining) {
-#ifdef _DEBUG
-                StringBuffer msg("CThorRowArray isFull(), ThorMemoryManager remaining() : ");
-                PROGLOG("%s", msg.append((unsigned __int64) asz).str());
-#endif
-                return true;
-            }
-            else
-                return false;
-        }
+        else
+            return false;
     }
 
     void sort(ICompare & compare, bool stable)
