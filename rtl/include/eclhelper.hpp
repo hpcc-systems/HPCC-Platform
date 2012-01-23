@@ -956,6 +956,9 @@ enum ActivityInterfaceEnum
     TAIexternal_1,
     TAIpipethrougharg_2,
     TAIpipewritearg_2,
+    TAItemptablearg_2,
+
+//Should remain as last of all meaningful tags, but before aliases
     TAImax,
 
 //Only aliases follow - for interfaces implemented via typedefs
@@ -998,6 +1001,7 @@ interface IHThorArg : public IInterface
 
 typedef IHThorArg * (*EclHelperFactory)();
 
+//flags for thor disk access
 enum 
 {
 //General disk access flags
@@ -1042,7 +1046,7 @@ enum
     TDWupdatecrc        = 0x80000,      // has format crc
 };
 
-
+//flags for thor index read
 enum
 {
     TIRsorted           = 0x00000001,
@@ -1078,6 +1082,13 @@ enum
     TIWnooverwrite      = 0x0200,
     TIWupdatecrc        = 0x0400,
     TIWhaswidth         = 0x0800,
+};
+
+//flags for thor dataset/temp tables
+enum
+{
+    TTFnoconstant        = 0x0001,      // default flags is zero
+    TTFdistributed       = 0x0002,
 };
 
 struct IHThorIndexWriteArg : public IHThorArg
@@ -1400,9 +1411,20 @@ struct IHThorTempTableArg : public IHThorArg
 {
     virtual size32_t getRow(ARowBuilder & rowBuilder, unsigned row) = 0;
     virtual unsigned numRows() = 0;
-    virtual bool isConstant()                           { return true; }
+    virtual bool isConstant()                           { return true; }    // deprecate in favour of getFlags
     virtual size32_t getRowSingle(ARowBuilder & rowBuilder) = 0;            // only valid for TAKtemprow, could be called directly
 };
+
+/*
+ * New Temp table that allows flags to be set and retrieved on one
+ * single method. Future-proof and should merge with the interface
+ * above in the next major release.
+ */
+struct IHThorTempTableExtraArg : public IHThorTempTableArg
+{
+    virtual unsigned getFlags() = 0;
+};
+
 
 struct IHThorSampleArg : public IHThorArg
 {

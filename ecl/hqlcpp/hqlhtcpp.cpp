@@ -15768,8 +15768,15 @@ ABoundActivity * HqlCppTranslator::doBuildActivityTempTable(BuildCtx & ctx, IHql
     }
 
     doBuildUnsignedFunction(instance->startctx, "numRows", rowsExpr);
+
+    // unsigned getFlags()
+    StringBuffer flags;
+    if (expr->hasProperty(distributedAtom))
+        flags.append("|TTFdistributed");
     if (!values->isConstant())
-        doBuildBoolFunction(instance->startctx, "isConstant", false);
+        flags.append("|TTFnoconstant");
+    if (flags.length())
+        doBuildUnsignedFunction(instance->startctx, "getFlags", flags.str()+1);
 
     buildInstanceSuffix(instance);
 
@@ -15910,8 +15917,14 @@ ABoundActivity * HqlCppTranslator::doBuildActivityInlineTable(BuildCtx & ctx, IH
     OwnedHqlExpr rowsExpr = getSizetConstant(maxRows);
     doBuildUnsignedFunction(instance->startctx, "numRows", rowsExpr);
 
+    // unsigned getFlags()
+    StringBuffer flags;
+    if (expr->hasProperty(distributedAtom))
+        flags.append("|TTFdistributed");
     if (!values->isConstant())
-        doBuildBoolFunction(instance->startctx, "isConstant", false);
+        flags.append("|TTFnoconstant");
+    if (flags.length())
+        doBuildUnsignedFunction(instance->startctx, "getFlags", flags.str()+1);
 
     buildInstanceSuffix(instance);
 
@@ -15945,9 +15958,14 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCountTransform(BuildCtx & ctx,
     // unsigned numRows() - count is guaranteed by lexer
     doBuildUnsignedFunction(instance->startctx, "numRows", count);
 
-    // bool isConstant() - default is true
+    // unsigned getFlags()
+    StringBuffer flags;
+    if (expr->hasProperty(distributedAtom))
+        flags.append("|TTFdistributed");
     if (!isConstantTransform(transform))
-        doBuildBoolFunction(instance->startctx, "isConstant", false);
+        flags.append("|TTFnoconstant");
+    if (flags.length())
+        doBuildUnsignedFunction(instance->startctx, "getFlags", flags.str()+1);
 
     buildInstanceSuffix(instance);
 
