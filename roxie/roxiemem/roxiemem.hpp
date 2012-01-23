@@ -102,6 +102,10 @@ protected:
     }
 
 public:
+    inline bool isAlive() const
+    {
+        return atomic_read(&count) < DEAD_PSEUDO_COUNT;        //only safe if Link() is called first
+    }
 
     static void release(const void *ptr)
     {
