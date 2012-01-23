@@ -43,6 +43,31 @@ Some thoughts on improving this memory manager:
    We might want to reposition them such that the actual row data was on a better alignment boundary.
    They don't really need to be 4 bytes either (though we'd need some new atomic-types if not)
    We could have an array of link-counts/activity ids at the start of the block...
+2. Fix the list per chunk size to be clean
+3. Use lockfree lists
+4. In 64bit with no memory space constraints, should I simplify?? Give each manager a slab of memory space whose size = limit.
+   Does that simplify? Not really sure it does (unless it allows me to use a third party suballocator?)
+5. If I double the size of a row can I keep it in the same chunk if the space ahead of me is free? Don't see why not...
+   In general allocating 2n blocks in the n size chunkmgr is fine, but need to be careful when freeing them that we add two onto free
+   chain. Allocating from hwm is just as efficient, but allocating from free chain less so. Does it lead to fragmentation?
+6. Use the knowledge that all chunk sizes are 8-byte aligned to reduce by a factor of 8 the size of a lookup table to retrieve the
+   allocator for a chunk size (but then again may not care if you move that lookup to the creation of the EngineRowAllocator
+7. Are any things like defaultRight or the row array for topn REALLY allocated once (and thus could use a singleton mgr) or are they
+   potentially actually per child query? I fear it is the latter...
+8. So what REALLY is the pattern of memory allocations in Roxie? Can I gather stats from anywhere? Do the current stats tell me
+   anything interesting?
+   - some things allocated directly (not via EngineRowAllocator) - typically not many of them, typically long lived
+   - some row sizes allocated a LOT - often short lived but not always
+   - Variable size rows common in roxie, fairly common in thor. But people will use fixed if speed gains are there...
+   - Child datasets ar a mixed blessing. They make more rows fixed size but also generate a need for variable-size blocks for
+     the rowsets themselves.
+   - Knowing the row sizes isn't likely to be a massive help to avoid fragmentation in thor. In Roxie fragmentation isn't issue anyway
+     and probably sticking to the powers-of-two will be smart
+   - If we somehow knew (when creating our engineRowAllocator) how long the row is likely to last, we could decide whether to
+     shrink as we finalize)
+   - OR (maybe this is equivalent) we could NEVER shrink as we finalize BUT do a clone when we want to hang on to a row. The clone
+     be a 'lazy shrink' of just rows which survived long enough to be worth considering shrinking, and would be able to do nothing
+     (avoid the call even?) in cases where there was no shrinking to be done...
 
 */
 //================================================================================
@@ -459,7 +484,6 @@ class BigHeapletBase : public HeapletBase
 
 protected:
     BigHeapletBase *next;
-    BigHeapletBase *prev;
     const IRowAllocatorCache *allocatorCache;
     
     inline unsigned getActivityId(unsigned rawId) const
@@ -470,29 +494,8 @@ protected:
 public:
     BigHeapletBase(const IRowAllocatorCache *_allocatorCache) : HeapletBase(HEAP_ALIGNMENT_MASK)
     {
-        next = this;
-        prev = this;
+        next = NULL;
         allocatorCache = _allocatorCache;
-    }
-
-    void moveToChainHead(BigHeapletBase &chain)
-    {
-        next->prev = prev;
-        prev->next = next;
-        next = chain.next;
-        prev = &chain;
-        chain.next->prev = this;
-        chain.next = this;
-    }
-
-    void moveToChainTail(BigHeapletBase &chain)
-    {
-        next->prev = prev;
-        prev->next = next;
-        next = &chain;
-        prev = chain.prev;
-        chain.prev->next = this;
-        chain.prev = this;
     }
 
     bool isPointer(void *ptr)
@@ -585,7 +588,7 @@ private:
         if (ptr)
         {
             ptrdiff_t diff = ptr - (char *) this;
-            assertex(diff < HEAP_ALIGNMENT_SIZE);
+            assert(diff < HEAP_ALIGNMENT_SIZE);
             return (unsigned) diff;
         }
         else
@@ -594,7 +597,7 @@ private:
 
     inline char * makeAbsolute(unsigned v)
     {
-        assertex(v < HEAP_ALIGNMENT_SIZE);
+        assert(v < HEAP_ALIGNMENT_SIZE);
         if (v)
             return ((char *) this) + v;
         else
@@ -901,8 +904,7 @@ public:
 
     virtual void *allocate(unsigned size, unsigned activityId)
     {
-        // We share a single list of active with the fixedSizeHeaplets, but we never want to respond to allcoation request from one..
-        return NULL;
+        throwUnexpected();
     }
 
     void *allocateHuge(unsigned size, unsigned activityId)
@@ -926,6 +928,10 @@ public:
         map->noteMemUsage(activityId, hugeSize);
     }
 
+    virtual void checkHeap() const
+    {
+        //MORE
+    }
 };
 
 //================================================================================
@@ -1064,8 +1070,9 @@ class CChunkingRowManager : public CInterface, implements IRowManager
     friend class CRoxieFixedRowHeap;
     friend class CRoxieVariableRowHeap;
 
-    BigHeapletBase active;
+    BigHeapletBase *active;
     CriticalSection crit;
+    BigHeapletBase *hugeActive;
     unsigned pageLimit;
     ITimeLimiter *timeLimit;
     unsigned peakPages;
@@ -1108,7 +1115,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CChunkingRowManager (unsigned _memLimit, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, bool _ignoreLeaks)
-        : logctx(_logctx), allocatorCache(_allocatorCache), active(NULL)
+        : logctx(_logctx), allocatorCache(_allocatorCache), active(NULL), hugeActive(NULL)
     {
         logctx.Link();
         pageLimit = _memLimit / HEAP_ALIGNMENT_SIZE;
@@ -1157,17 +1164,29 @@ public:
                 leaked = maxLeakReport;
         }
 
-        BigHeapletBase *finger = active.next;
-        while (finger != &active)
+        BigHeapletBase *finger = active;
+        while (finger)
         {
             if (memTraceLevel >= 3) 
-                logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager d-tor freeing Heaplet linked in active list - addr=%p pages=%u rowMgr=%p", 
-                        finger, finger->sizeInPages(), this);
+                logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager d-tor freeing heaplet linked in active list - addr=%p rowMgr=%p",
+                        finger, this);
             if (leaked && memTraceLevel >= 2)
                 finger->reportLeaks(leaked, logctx);
             BigHeapletBase *next = finger->next;
             delete finger;
             finger = next;
+        }
+        BigHeapletBase *hfinger = hugeActive;
+        while (hfinger)
+        {
+            if (memTraceLevel >= 2)
+                logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager d-tor freeing huge heaplet linked in active list - addr=%p pages=%u rowMgr=%p",
+                        hfinger, hfinger->sizeInPages(), this);
+            if (leaked && memTraceLevel >= 2)
+                finger->reportLeaks(leaked, logctx);
+            BigHeapletBase *next = hfinger->next;
+            delete hfinger;
+            hfinger = next;
         }
         DataBufferBase *dfinger = activeBuffs;
         while (dfinger)
@@ -1194,21 +1213,27 @@ public:
             if (leaked > maxLeakReport)
                 leaked = maxLeakReport;
         }
-
-        BigHeapletBase *finger = active.next;
-        while (leaked && finger != &active)
+        BigHeapletBase *finger = active;
+        while (leaked && finger)
         {
             if (leaked && memTraceLevel >= 1)
                 finger->reportLeaks(leaked, logctx);
             finger = finger->next;
+        }
+        BigHeapletBase *hfinger = active;
+        while (leaked && hfinger)
+        {
+            if (leaked && memTraceLevel >= 1)
+                hfinger->reportLeaks(leaked, logctx);
+            hfinger = hfinger->next;
         }
     }
 
     virtual void checkHeap()
     {
         CriticalBlock c1(crit);
-        BigHeapletBase *finger = active.next;
-        while (finger != &active)
+        BigHeapletBase *finger = active;
+        while (finger)
         {
             finger->checkHeap();
             finger = finger->next;
@@ -1230,12 +1255,18 @@ public:
     {
         CriticalBlock c1(crit);
         unsigned total = 0;
-        BigHeapletBase *finger = active.next;
-        while (finger != &active)
+        BigHeapletBase *finger = active;
+        while (finger)
         {
             total += finger->queryCount() - 1; // There is one refcount for the page itself on the active q
             assertex(finger != finger->next);
             finger = finger->next;
+        }
+        BigHeapletBase *hfinger = hugeActive;
+        while (hfinger)
+        {
+            total += hfinger->queryCount() - 1; // There is one refcount for the page itself on the active q
+            hfinger = hfinger->next;
         }
         return total;
     }
@@ -1244,22 +1275,52 @@ public:
     {
         CriticalBlock c1(crit);
         unsigned total = dataBuffPages;
-        BigHeapletBase *finger = active.next;
-        while (finger != &active)
+        BigHeapletBase *finger = active;
+        BigHeapletBase *prev = NULL;
+        while (finger)
         {
-            BigHeapletBase *next = finger->next; 
+            BigHeapletBase *next = finger->next;
             if (finger->queryCount()==1)
             {
                 if (memTraceLevel >= 3) 
                     logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::pages() freeing Heaplet linked in active list - addr=%p pages=%u capacity=%u rowMgr=%p",
                             finger, finger->sizeInPages(), finger->_capacity(), this);
-                finger->prev->next = next;
-                next->prev = finger->prev;
+                if (prev)
+                    prev->next = next;
+                else
+                    active = next;
                 delete finger;
             }
             else
+            {
                 total += finger->sizeInPages();
+                prev = finger;
+            }
             finger = next;
+        }
+        //MORE: Almost duplicated code like this should disappear after a bit more refactoring.
+        BigHeapletBase *hfinger = hugeActive;
+        BigHeapletBase *hprev = NULL;
+        while (hfinger)
+        {
+            BigHeapletBase *next = hfinger->next;
+            if (hfinger->queryCount()==1)
+            {
+                if (memTraceLevel >= 3)
+                    logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::pages() freeing huge heaplet linked in active list - addr=%p pages=%u capacity=%u rowMgr=%p",
+                            hfinger, hfinger->sizeInPages(), hfinger->_capacity(), this);
+                if (hprev)
+                    hprev->next = next;
+                else
+                    hugeActive = next;
+                delete hfinger;
+            }
+            else
+            {
+                total += hfinger->sizeInPages();
+                hprev = hfinger;
+            }
+            hfinger = next;
         }
         return total;
     }
@@ -1268,15 +1329,20 @@ public:
     {
         CriticalBlock c1(crit);
         usageMap.setown(new CActivityMemoryUsageMap);
-        BigHeapletBase *finger = active.next;
-        while (finger != &active)
+        BigHeapletBase *finger = active;
+        while (finger)
         {
-            BigHeapletBase *next = finger->next; 
             if (finger->queryCount()!=1)
-            {
                 finger->getPeakActivityUsage(usageMap);
-            }
-            finger = next;
+            finger = finger->next;
+        }
+
+        BigHeapletBase *hfinger = hugeActive;
+        while (hfinger)
+        {
+            if (hfinger->queryCount()!=1)
+                hfinger->getPeakActivityUsage(usageMap);
+            hfinger = hfinger->next;
         }
     }
 
@@ -1353,22 +1419,29 @@ public:
             if (memTraceLevel >= 2 || _size>= 10000000)
                 logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::allocate(size %u) allocated new HugeHeaplet size %u - addr=%p pages=%u pageLimit=%u peakPages=%u rowMgr=%p", 
                         _size, (unsigned) (numPages*HEAP_ALIGNMENT_SIZE), head, numPages, pageLimit, peakPages, this);
-            head->moveToChainTail(active);
+            head->next = hugeActive;
+            hugeActive = head;
             return head->allocateHuge(_size, activityId);
         }
         else
         {
             unsigned needSize = roundup(_size);
-            BigHeapletBase *finger = active.next;
-            while (finger != &active)
+            BigHeapletBase *finger = active;
+            BigHeapletBase *prev = NULL;
+            while (finger)
             {
                 void *ret = finger->allocate(needSize, activityId);
                 if (ret)
                 {
-                    if (finger != active.next)
-                        finger->moveToChainHead(active); // store active in LRU order
+                    if (prev)
+                    {
+                        prev->next = finger->next;
+                        finger->next = active;
+                        active = finger;
+                    }
                     return ret;
                 }
+                prev = finger;
                 finger = (FixedSizeHeaplet *) finger->next;
             }
             checkLimit(1); // MORE - could make this more efficient by not re-counting active
@@ -1376,7 +1449,8 @@ public:
             if (memTraceLevel >= 5 || (memTraceLevel >= 3 && needSize > 32000))
                 logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::allocate(size %u) allocated new FixedSizeHeaplet size %u - addr=%p pageLimit=%u peakPages=%u rowMgr=%p", 
                         _size, needSize, head, pageLimit, peakPages, this);
-            head->moveToChainHead(active);
+            head->next = active;
+            active = head;
             return head->allocate(needSize, activityId);
         }
     }
