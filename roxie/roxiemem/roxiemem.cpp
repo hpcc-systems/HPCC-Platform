@@ -1072,14 +1072,14 @@ class CChunkingRowManager : public CInterface, implements IRowManager
     friend class CRoxieVariableRowHeap;
 
     BigHeapletBase *active;
-    CriticalSection crit;
+    SpinLock crit;
     BigHeapletBase *hugeActive;
     unsigned pageLimit;
     ITimeLimiter *timeLimit;
     unsigned peakPages;
     unsigned dataBuffs;
     unsigned dataBuffPages;
-    unsigned possibleGoers;
+    atomic_t possibleGoers;
     DataBufferBase *activeBuffs;
     const IContextLogger &logctx;
     bool ignoreLeaks;
@@ -1123,7 +1123,7 @@ public:
         timeLimit = _tl;
         peakPages = 0;
         dataBuffs = 0;
-        possibleGoers = 0;
+        atomic_set(&possibleGoers, 0);
         activeBuffs = NULL;
         dataBuffPages = 0;
         ignoreLeaks = _ignoreLeaks;
@@ -1154,7 +1154,7 @@ public:
     {
         if (memTraceLevel >= 2)
             logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager d-tor pageLimit=%u peakPages=%u dataBuffs=%u dataBuffPages=%u possibleGoers=%u rowMgr=%p", 
-                    pageLimit, peakPages, dataBuffs, dataBuffPages, possibleGoers, this);
+                    pageLimit, peakPages, dataBuffs, dataBuffPages, atomic_read(&possibleGoers), this);
 
         unsigned leaked = ignoreLeaks ? 0 : allocated();
         if (leaked)
@@ -1232,7 +1232,7 @@ public:
 
     virtual void checkHeap()
     {
-        CriticalBlock c1(crit);
+        SpinBlock c1(crit);
         BigHeapletBase *finger = active;
         while (finger)
         {
@@ -1254,8 +1254,8 @@ public:
 
     virtual unsigned allocated()
     {
-        CriticalBlock c1(crit);
         unsigned total = 0;
+        SpinBlock c1(crit);
         BigHeapletBase *finger = active;
         while (finger)
         {
@@ -1274,8 +1274,8 @@ public:
 
     virtual unsigned pages()
     {
-        CriticalBlock c1(crit);
         unsigned total = dataBuffPages;
+        SpinBlock c1(crit);
         BigHeapletBase *finger = active;
         BigHeapletBase *prev = NULL;
         while (finger)
@@ -1328,7 +1328,7 @@ public:
 
     virtual void getPeakActivityUsage()
     {
-        CriticalBlock c1(crit);
+        SpinBlock c1(crit);
         usageMap.setown(new CActivityMemoryUsageMap);
         BigHeapletBase *finger = active;
         while (finger)
@@ -1409,11 +1409,11 @@ public:
                 cyclesChecked = cyclesNow;  // No need to lock - worst that can happen is we call too often which is harmless
             }
         }
-        CriticalBlock b(crit);
         if (isUltraCheckingHeap)
             checkHeap();
         if (_size > FixedSizeHeaplet::maxHeapSize(isCheckingHeap))
         {
+            SpinBlock b(crit);
             unsigned numPages = ((_size + HugeHeaplet::dataOffset() - 1) / HEAP_ALIGNMENT_SIZE) + 1;
             checkLimit(numPages);
             HugeHeaplet *head = new (_size) HugeHeaplet(allocatorCache, _size, activityId);
@@ -1427,6 +1427,7 @@ public:
         else
         {
             unsigned needSize = roundup(_size);
+            SpinBlock b(crit);
             BigHeapletBase *finger = active;
             BigHeapletBase *prev = NULL;
             while (finger)
@@ -1532,16 +1533,16 @@ public:
 
     virtual bool attachDataBuff(DataBuffer *dataBuff) 
     {
-        CriticalBlock b(crit);
+        SpinBlock b(crit);
         
         if (memTraceLevel >= 4)
             logctx.CTXLOG("RoxieMemMgr: attachDataBuff() attaching DataBuff to rowMgr - addr=%p dataBuffs=%u dataBuffPages=%u possibleGoers=%u rowMgr=%p", 
-                    dataBuff, dataBuffs, dataBuffPages, possibleGoers, this);
+                    dataBuff, dataBuffs, dataBuffPages, atomic_read(&possibleGoers), this);
 
         LINK(dataBuff);
         DataBufferBase *finger = activeBuffs;
         DataBufferBase *last = NULL;
-        while (finger && possibleGoers)
+        while (finger && atomic_read(&possibleGoers))
         {
             // MORE - if we get a load of data in and none out this can start to bog down... 
             DataBufferBase *next = finger->next;
@@ -1553,7 +1554,7 @@ public:
                 finger->next = NULL;
                 finger->Release();
                 dataBuffs--;
-                possibleGoers--;
+                atomic_dec(&possibleGoers);
                 if (last)
                     last->next = next;
                 else
@@ -1563,7 +1564,6 @@ public:
                 last = finger;
             finger = next;
         }
-        possibleGoers = 0;
         assert(dataBuff->next==NULL);
         dataBuff->next = activeBuffs;
         activeBuffs = dataBuff;
@@ -1578,11 +1578,10 @@ public:
     
     virtual void noteDataBuffReleased(DataBuffer *dataBuff)
     {
-        CriticalBlock b(crit);
-        possibleGoers++;
+        atomic_inc(&possibleGoers);
         if (memTraceLevel >= 4)
             logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::noteDataBuffReleased dataBuffs=%u dataBuffPages=%u possibleGoers=%u dataBuff=%p rowMgr=%p", 
-                    dataBuffs, dataBuffPages, possibleGoers, dataBuff, this);
+                    dataBuffs, dataBuffPages, atomic_read(&possibleGoers), dataBuff, this);
     }
 
     virtual IFixedRowHeap * createFixedRowHeap(size32_t fixedSize, unsigned activityId, RoxieHeapFlags flags)
