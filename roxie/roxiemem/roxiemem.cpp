@@ -555,7 +555,7 @@ class FixedSizeHeaplet : public BigHeapletBase
 {
 protected:
     mutable CriticalSection FSHcrit;
-    char *blocks;
+    unsigned r_blocks;  // the free chain as a relative pointer
     size32_t fixedSize; 
     size32_t freeBase;
     char data[1];  // n really
@@ -610,7 +610,7 @@ public:
         setFlag(isCheckingHeap ? NOTE_RELEASES|EXTRA_DEBUG_INFO : NOTE_RELEASES);
         fixedSize = size;
         freeBase = 0;
-        blocks = NULL;
+        r_blocks = 0;
     }
 
     virtual size32_t sizeInPages() { return 1; }
@@ -679,8 +679,9 @@ public:
                 else
 #endif        
                 {
-                    * (unsigned *) ptr = makeRelative(blocks);
-                    blocks = ptr;
+                    unsigned r_ptr = makeRelative(ptr);
+                    * (unsigned *) ptr = r_blocks;
+                    r_blocks = r_ptr;
                 }
             }
         }
@@ -701,10 +702,10 @@ public:
         {
             char *ret = NULL;
             CriticalBlock b(FSHcrit);
-            if (blocks)
+            if (r_blocks)
             {
-                ret = blocks;
-                blocks = makeAbsolute(*(unsigned *) ret);
+                ret = makeAbsolute(r_blocks);
+                r_blocks = *(unsigned *) ret;
             }
             else if (freeBase != (size32_t) -1)
             {
