@@ -6659,7 +6659,7 @@ simpleDataRow
                             else
                             {
                                 parser->reportError(ERR_RIGHT_ILL_HERE, $1, "RIGHT not legal here");
-                                $$.setExpr(createRow(no_null, queryNullRecord()), $1);
+                                $$.setExpr(createRow(no_null, LINK(queryNullRecord())), $1);
                             }
                         }
     | RIGHT_NN
@@ -6677,7 +6677,7 @@ simpleDataRow
                             else
                             {
                                 parser->reportError(ERR_RIGHT_ILL_HERE, $1, "RIGHT not legal here");
-                                $$.setExpr(createRow(no_null, queryNullRecord()), $1);
+                                $$.setExpr(createRow(no_null, LINK(queryNullRecord())), $1);
                             }
                         }
     | IF '(' booleanExpr ',' dataRow ',' dataRow ')'
