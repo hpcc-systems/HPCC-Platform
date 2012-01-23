@@ -2038,7 +2038,16 @@ void EclAgent::runProcess(IEclProcess *process)
     //Get memory limit. Workunit specified value takes precedence over config file
     int memLimitMB = globals->getPropInt("defaultMemoryLimitMB", DEFAULT_MEM_LIMIT);
     memLimitMB = queryWorkUnit()->getDebugValueInt("hthorMemoryLimit", memLimitMB);
-    roxiemem::setTotalMemoryLimit(memLimitMB * 1024 * 1024);
+#ifndef __64BIT__
+    if (memLimitMB > 4096)
+    {
+        StringBuffer errmsg;
+        errmsg.append("EclAgent (32 bit) specified memory limit (").append(memLimitMB).append("MB) greater than allowed limit (4096MB)");
+        fail(0, errmsg.str());
+    }
+#endif
+    memsize_t memLimitBytes = memLimitMB * 1024 * 1024;
+    roxiemem::setTotalMemoryLimit(memLimitBytes);
 
     if (debugContext)
         debugContext->checkBreakpoint(DebugStateReady, NULL, NULL);
