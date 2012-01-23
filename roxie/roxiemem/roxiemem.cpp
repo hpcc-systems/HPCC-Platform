@@ -550,14 +550,16 @@ public:
 //================================================================================
 // Fixed size (chunking) heaplet
 #define MAGIC_MARKER 0x01527873
+#define RBLOCKS_CAS_TAG        0x01000000           // must be less than HEAP_ALIGNMENT_SIZE
+#define RBLOCKS_OFFSET_MASK    (RBLOCKS_CAS_TAG-1)
+#define RBLOCKS_CAS_TAG_MASK   ~RBLOCKS_OFFSET_MASK
 
 class FixedSizeHeaplet : public BigHeapletBase
 {
 protected:
-    mutable CriticalSection FSHcrit;
-    unsigned r_blocks;  // the free chain as a relative pointer
+    atomic_t r_blocks;  // the free chain as a relative pointer
+    atomic_t freeBase;
     size32_t fixedSize; 
-    size32_t freeBase;
     char data[1];  // n really
 
 private:
@@ -609,8 +611,8 @@ public:
     {
         setFlag(isCheckingHeap ? NOTE_RELEASES|EXTRA_DEBUG_INFO : NOTE_RELEASES);
         fixedSize = size;
-        freeBase = 0;
-        r_blocks = 0;
+        atomic_set(&freeBase, 0);
+        atomic_set(&r_blocks, 0);
     }
 
     virtual size32_t sizeInPages() { return 1; }
@@ -667,7 +669,6 @@ public:
                 if (id & ACTIVITY_FLAG_NEEDSDESTRUCTOR)
                     allocatorCache->onDestroy(id & MAX_ACTIVITY_ID, ptr + sizeof(unsigned) + sizeof(atomic_t));
 
-                CriticalBlock b(FSHcrit);
 #ifdef CHECKING_HEAP
                 if (flags & EXTRA_DEBUG_INFO) 
                 {
@@ -680,8 +681,17 @@ public:
 #endif        
                 {
                     unsigned r_ptr = makeRelative(ptr);
-                    * (unsigned *) ptr = r_blocks;
-                    r_blocks = r_ptr;
+                    loop
+                    {
+                        //To prevent the ABA problem the top part of r_blocks stores an incrementing tag
+                        //which is incremented whenever something is added to the free list
+                        unsigned old_blocks = atomic_read(&r_blocks);
+                        * (unsigned *) ptr = (old_blocks & RBLOCKS_OFFSET_MASK);
+                        unsigned new_tag = ((old_blocks & RBLOCKS_CAS_TAG_MASK) + RBLOCKS_CAS_TAG);
+                        unsigned new_blocks = new_tag | r_ptr;
+                        if (atomic_cas(&r_blocks, new_blocks, old_blocks))
+                            break;
+                    }
                 }
             }
         }
@@ -698,53 +708,69 @@ public:
 
     virtual void *allocate(unsigned size, unsigned activityId)
     {
-        if (size == fixedSize)
+        if (size != fixedSize)
+            return NULL;
+
+        char *ret;
+        loop
         {
-            char *ret = NULL;
-            CriticalBlock b(FSHcrit);
-            if (r_blocks)
+            unsigned old_blocks = atomic_read(&r_blocks);
+            unsigned r_ret = (old_blocks & RBLOCKS_OFFSET_MASK);
+            if (r_ret)
             {
-                ret = makeAbsolute(r_blocks);
-                r_blocks = *(unsigned *) ret;
+                ret = makeAbsolute(r_ret);
+                //may have been allocated by another thread, but still legal to dereference
+                unsigned next = *(unsigned *)ret;
+
+                //Only need to update the ABA tag when pushing an item onto the list
+                //so use old tag to reduce likelihood of collision.
+                unsigned new_blocks = (old_blocks & RBLOCKS_CAS_TAG_MASK) | next;
+                if (atomic_cas(&r_blocks, new_blocks, old_blocks))
+                    break;
             }
-            else if (freeBase != (size32_t) -1)
+            else
             {
-                size32_t bytesFree = HEAP_ALIGNMENT_SIZE - offsetof(FixedSizeHeaplet,data) - freeBase;
-                if (bytesFree>=size)
+                unsigned curFreeBase = atomic_read(&freeBase);
+                if (curFreeBase == (unsigned)-1)
+                    return NULL;
+
+                size32_t bytesFree = (HEAP_ALIGNMENT_SIZE - offsetof(FixedSizeHeaplet,data)) - curFreeBase;
+                if (bytesFree >= size)
                 {
-                    ret = data + freeBase;
-                    freeBase += size;
+                    ret = data + curFreeBase;
+                    if (atomic_cas(&freeBase, curFreeBase + size, curFreeBase))
+                        break;
                 }
                 else
-                    freeBase = (size32_t) -1;
-            }
-            if (ret)
-            {
-                atomic_inc(&count);
-#ifdef CHECKING_HEAP
-                if (flags & EXTRA_DEBUG_INFO) 
                 {
-                    unsigned magic = MAGIC_MARKER;
-                    memcpy(ret + fixedSize - sizeof(unsigned), &magic, sizeof(magic));
+                    if (atomic_cas(&freeBase, (unsigned) -1, curFreeBase))
+                        return NULL;
                 }
-#endif
-                * (unsigned *) ret = (activityId & ACTIVITY_MASK) | ACTIVITY_MAGIC;
-                ret += sizeof(unsigned);
-                atomic_set((atomic_t *) ret, 1);
-                ret += sizeof(atomic_t);
-#ifdef _CLEAR_ALLOCATED_ROW
-                //MORE: This should be in the header, or a member of the class
-#ifdef CHECKING_HEAP
-                const unsigned chunkOverhead = sizeof(atomic_t) + sizeof(unsigned) + sizeof(unsigned);
-#else
-                const unsigned chunkOverhead = sizeof(atomic_t) + sizeof(unsigned);
-#endif
-                memset(ret, 0xcc, size-chunkOverhead);
-#endif
-                return ret;
             }
         }
-        return NULL;
+
+        atomic_inc(&count);
+#ifdef CHECKING_HEAP
+        if (flags & EXTRA_DEBUG_INFO)
+        {
+            unsigned magic = MAGIC_MARKER;
+            memcpy(ret + fixedSize - sizeof(unsigned), &magic, sizeof(magic));
+        }
+#endif
+        * (unsigned *) ret = (activityId & ACTIVITY_MASK) | ACTIVITY_MAGIC;
+        ret += sizeof(unsigned);
+        atomic_set((atomic_t *) ret, 1);
+        ret += sizeof(atomic_t);
+#ifdef _CLEAR_ALLOCATED_ROW
+        //MORE: This should be in the header, or a member of the class
+#ifdef CHECKING_HEAP
+        const unsigned chunkOverhead = sizeof(atomic_t) + sizeof(unsigned) + sizeof(unsigned);
+#else
+        const unsigned chunkOverhead = sizeof(atomic_t) + sizeof(unsigned);
+#endif
+        memset(ret, 0xcc, size-chunkOverhead);
+#endif
+        return ret;
     }
 
     inline static unsigned maxHeapSize(bool isChecking)
@@ -764,9 +790,9 @@ public:
 
     virtual void reportLeaks(unsigned &leaked, const IContextLogger &logctx) const 
     {
-        CriticalBlock b(FSHcrit);
+        //This function may not give correct results if called if there are concurrent allocations/releases
         unsigned base = 0;
-        unsigned limit = freeBase;
+        unsigned limit = atomic_read(&freeBase);
         if (limit==(unsigned)-1)
             limit = maxHeapSize((flags & EXTRA_DEBUG_INFO) != 0);
         while (leaked > 0 && base < limit)
@@ -792,9 +818,8 @@ public:
 
     virtual void checkHeap() const 
     {
-        CriticalBlock b(FSHcrit);
         unsigned base = 0;
-        unsigned limit = freeBase;
+        unsigned limit = atomic_read(&freeBase);
         if (limit==(unsigned)-1)
             limit = maxHeapSize((flags & EXTRA_DEBUG_INFO) != 0);
         while (base < limit)
@@ -803,6 +828,7 @@ public:
             unsigned count = atomic_read((atomic_t *) (block + sizeof(unsigned)));
             if (count != 0)
             {
+                //MORE: Potential race: could be freed while the pointer is being checked
                 checkPtr(block+sizeof(atomic_t)+sizeof(unsigned), "Check");
             }
             base += fixedSize;
@@ -811,9 +837,8 @@ public:
 
     virtual void getPeakActivityUsage(IActivityMemoryUsageMap *map) const 
     {
-        CriticalBlock b(FSHcrit);
         unsigned base = 0;
-        unsigned limit = freeBase;
+        unsigned limit = atomic_read(&freeBase);
         if (limit==(unsigned)-1)
             limit = maxHeapSize((flags & EXTRA_DEBUG_INFO) != 0);
         memsize_t running = 0;
@@ -824,15 +849,20 @@ public:
             if (atomic_read((atomic_t *) (block + sizeof(unsigned))) != 0)
             {
                 unsigned activityId = getActivityId(*(unsigned *) block);
-                if (activityId != lastId)
+                //Double check the count is still non zero - leaves a very small potential race condition
+                //unlikely to cause problems in practice
+                if (atomic_read((atomic_t *) (block + sizeof(unsigned))) != 0)
                 {
-                    if (lastId)
-                        map->noteMemUsage(lastId, running);
-                    lastId = activityId;
-                    running = fixedSize;
+                    if (activityId != lastId)
+                    {
+                        if (lastId)
+                            map->noteMemUsage(lastId, running);
+                        lastId = activityId;
+                        running = fixedSize;
+                    }
+                    else
+                        running += fixedSize;
                 }
-                else
-                    running += fixedSize;
             }
             base += fixedSize;
         }
