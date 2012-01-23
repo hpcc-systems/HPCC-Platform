@@ -991,13 +991,20 @@ bool CWsWorkunitsEx::onWURun(IEspContext &context, IEspWURunRequest &req, IEspWU
         resp.setState(cw->getStateDesc(stateDesc).str());
         resp.setWuid(wuid.str());
 
-        if (cw->getState()==WUStateCompleted)
+        switch (cw->getState())
         {
-            SCMStringBuffer result;
-            getFullWorkUnitResultsXML(context.queryUserId(), context.queryPassword(), cw.get(), result, false, ExceptionSeverityInformation);
-            resp.setResults(result.str());
+            case WUStateCompleted:
+            case WUStateFailed:
+            case WUStateUnknown:
+            {
+                SCMStringBuffer result;
+                getFullWorkUnitResultsXML(context.queryUserId(), context.queryPassword(), cw.get(), result, false, ExceptionSeverityInformation);
+                resp.setResults(result.str());
+                break;
+            }
+            default:
+                break;
         }
-
     }
     catch(IException* e)
     {
