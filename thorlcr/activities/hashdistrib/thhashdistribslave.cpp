@@ -1343,7 +1343,10 @@ public:
         assertex(!donerecv[i]);
         if (self==i) {
             if (stopping)
+            {
+                selfdone.signal();
                 return (unsigned)-1;
+            }
             if (hasbuf[i]) {
                 bufs[i].swapWith(msg);
                 cBuf *cb = diskcached[i];
@@ -1430,6 +1433,7 @@ public:
     }
     void startTX()
     {
+        stopping = false;
         delete txthread;
         txthread = new cTxThread(*this);
         txthread->start();
