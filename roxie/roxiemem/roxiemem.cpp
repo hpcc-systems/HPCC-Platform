@@ -478,10 +478,7 @@ static inline unsigned getRealActivityId(unsigned rawId, const IRowAllocatorCach
 
 class BigHeapletBase : public HeapletBase
 {
-    friend class CChunkingRowManager;
-    friend class CRowManager;
-    friend class HugeHeaplet;
-
+    friend class CChunkingHeap;
 protected:
     BigHeapletBase *next;
     const IRowAllocatorCache *allocatorCache;
@@ -1099,14 +1096,156 @@ protected:
 
 //================================================================================
 //
+//Responsible for allocating memory for a chain of chunked blocks
+class CChunkingHeap
+{
+public:
+    CChunkingHeap(CChunkingRowManager * _rowManager, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache)
+        : logctx(_logctx), rowManager(_rowManager), allocatorCache(_allocatorCache), active(NULL)
+    {
+    }
+
+    void destroy(unsigned &leaked)
+    {
+        BigHeapletBase *finger = active;
+        while (finger)
+        {
+            if (memTraceLevel >= 3)
+                logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager d-tor freeing heaplet linked in active list - addr=%p rowMgr=%p",
+                        finger, this);
+            if (leaked && memTraceLevel >= 2)
+                finger->reportLeaks(leaked, logctx);
+            BigHeapletBase *next = getNext(finger);
+            delete finger;
+            finger = next;
+        }
+        active = NULL;
+    }
+
+    void reportLeaks(unsigned &leaked) const
+    {
+        SpinBlock c1(crit);
+        BigHeapletBase *finger = active;
+        while (leaked && finger)
+        {
+            if (leaked && memTraceLevel >= 1)
+                finger->reportLeaks(leaked, logctx);
+            finger = getNext(finger);
+        }
+    }
+
+    void checkHeap()
+    {
+        SpinBlock c1(crit);
+        BigHeapletBase *finger = active;
+        while (finger)
+        {
+            finger->checkHeap();
+            finger = getNext(finger);
+        }
+    }
+
+    unsigned allocated()
+    {
+        unsigned total = 0;
+        SpinBlock c1(crit);
+        BigHeapletBase *finger = active;
+        while (finger)
+        {
+            total += finger->queryCount() - 1; // There is one refcount for the page itself on the active q
+            finger = getNext(finger);
+        }
+        return total;
+    }
+
+    unsigned pages()
+    {
+        unsigned total = 0;
+        SpinBlock c1(crit);
+        BigHeapletBase *finger = active;
+        BigHeapletBase *prev = NULL;
+        while (finger)
+        {
+            BigHeapletBase *next = getNext(finger);
+            if (finger->queryCount()==1)
+            {
+                if (memTraceLevel >= 3)
+                    logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::pages() freeing Heaplet linked in active list - addr=%p pages=%u capacity=%u rowMgr=%p",
+                            finger, finger->sizeInPages(), finger->_capacity(), this);
+                if (prev)
+                    setNext(prev, next);
+                else
+                    active = next;
+                delete finger;
+            }
+            else
+            {
+                total += finger->sizeInPages();
+                prev = finger;
+            }
+            finger = next;
+        }
+        return total;
+    }
+
+    void getPeakActivityUsage(IActivityMemoryUsageMap * usageMap)
+    {
+        SpinBlock c1(crit);
+        BigHeapletBase *finger = active;
+        while (finger)
+        {
+            if (finger->queryCount()!=1)
+                finger->getPeakActivityUsage(usageMap);
+            finger = getNext(finger);
+        }
+    }
+
+protected:
+    inline BigHeapletBase * getNext(const BigHeapletBase * ptr) const { return ptr->next; }
+    inline void setNext(BigHeapletBase * ptr, BigHeapletBase * next) const { ptr->next = next; }
+
+protected:
+    BigHeapletBase *active;
+    CChunkingRowManager * rowManager;
+    const IRowAllocatorCache *allocatorCache;
+    const IContextLogger & logctx;
+    mutable SpinLock crit;
+};
+
+class CHugeChunkingHeap : public CChunkingHeap
+{
+public:
+    CHugeChunkingHeap(CChunkingRowManager * _rowManager, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache)
+        : CChunkingHeap(_rowManager, _logctx, _allocatorCache)
+    {
+    }
+
+    void * doAllocate(unsigned _size, unsigned activityId);
+};
+
+class CNormalChunkingHeap : public CChunkingHeap
+{
+public:
+    CNormalChunkingHeap(CChunkingRowManager * _rowManager, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache)
+        : CChunkingHeap(_rowManager, _logctx, _allocatorCache)
+    {
+    }
+
+    void * doAllocate(size32_t chunkSize, unsigned activityId);
+};
+
+//================================================================================
+//
 class CChunkingRowManager : public CInterface, implements IRowManager
 {
     friend class CRoxieFixedRowHeap;
     friend class CRoxieVariableRowHeap;
+    friend class CHugeChunkingHeap;
+    friend class CNormalChunkingHeap;
 
-    BigHeapletBase *active;
     SpinLock crit;
-    BigHeapletBase *hugeActive;
+    CNormalChunkingHeap normalHeap;
+    CHugeChunkingHeap hugeHeap;
     unsigned pageLimit;
     ITimeLimiter *timeLimit;
     unsigned peakPages;
@@ -1124,22 +1263,6 @@ class CChunkingRowManager : public CInterface, implements IRowManager
     unsigned __int64 cyclesChecked;       // When we last checked timelimit
     unsigned __int64 cyclesCheckInterval; // How often we need to check timelimit
 
-    void checkLimit(unsigned numRequested)
-    {
-        unsigned pageCount = pages();
-        if (pageCount + numRequested > peakPages)
-        {
-            if (trackMemoryByActivity)
-                getPeakActivityUsage();
-            peakPages = pageCount + numRequested;
-        }
-        if (pageLimit && pageCount+numRequested > pageLimit)
-        {
-            logctx.CTXLOG("RoxieMemMgr: Memory limit exceeded - current %d, requested %d, limit %d", pageCount, numRequested, pageLimit);
-            throw MakeStringException(ROXIE_MEMORY_LIMIT_EXCEEDED, "memory limit exceeded");
-        }
-    }
-
     inline unsigned getActivityId(unsigned rawId) const
     {
         return getRealActivityId(rawId, allocatorCache);
@@ -1149,7 +1272,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CChunkingRowManager (unsigned _memLimit, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, bool _ignoreLeaks)
-        : logctx(_logctx), allocatorCache(_allocatorCache), active(NULL), hugeActive(NULL)
+        : logctx(_logctx), allocatorCache(_allocatorCache), normalHeap(this, _logctx, _allocatorCache), hugeHeap(this, _logctx, _allocatorCache)
     {
         logctx.Link();
         pageLimit = _memLimit / HEAP_ALIGNMENT_SIZE;
@@ -1198,30 +1321,9 @@ public:
                 leaked = maxLeakReport;
         }
 
-        BigHeapletBase *finger = active;
-        while (finger)
-        {
-            if (memTraceLevel >= 3) 
-                logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager d-tor freeing heaplet linked in active list - addr=%p rowMgr=%p",
-                        finger, this);
-            if (leaked && memTraceLevel >= 2)
-                finger->reportLeaks(leaked, logctx);
-            BigHeapletBase *next = finger->next;
-            delete finger;
-            finger = next;
-        }
-        BigHeapletBase *hfinger = hugeActive;
-        while (hfinger)
-        {
-            if (memTraceLevel >= 2)
-                logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager d-tor freeing huge heaplet linked in active list - addr=%p pages=%u rowMgr=%p",
-                        hfinger, hfinger->sizeInPages(), this);
-            if (leaked && memTraceLevel >= 2)
-                finger->reportLeaks(leaked, logctx);
-            BigHeapletBase *next = hfinger->next;
-            delete hfinger;
-            hfinger = next;
-        }
+        normalHeap.destroy(leaked);
+        hugeHeap.destroy(leaked);
+
         DataBufferBase *dfinger = activeBuffs;
         while (dfinger)
         {
@@ -1247,31 +1349,14 @@ public:
             if (leaked > maxLeakReport)
                 leaked = maxLeakReport;
         }
-        BigHeapletBase *finger = active;
-        while (leaked && finger)
-        {
-            if (leaked && memTraceLevel >= 1)
-                finger->reportLeaks(leaked, logctx);
-            finger = finger->next;
-        }
-        BigHeapletBase *hfinger = hugeActive;
-        while (leaked && hfinger)
-        {
-            if (leaked && memTraceLevel >= 1)
-                hfinger->reportLeaks(leaked, logctx);
-            hfinger = hfinger->next;
-        }
+
+        normalHeap.reportLeaks(leaked);
+        hugeHeap.reportLeaks(leaked);
     }
 
     virtual void checkHeap()
     {
-        SpinBlock c1(crit);
-        BigHeapletBase *finger = active;
-        while (finger)
-        {
-            finger->checkHeap();
-            finger = finger->next;
-        }
+        normalHeap.checkHeap();
     }
 
     virtual void setActivityTracking(bool val)
@@ -1288,74 +1373,16 @@ public:
     virtual unsigned allocated()
     {
         unsigned total = 0;
-        SpinBlock c1(crit);
-        BigHeapletBase *finger = active;
-        while (finger)
-        {
-            total += finger->queryCount() - 1; // There is one refcount for the page itself on the active q
-            assertex(finger != finger->next);
-            finger = finger->next;
-        }
-        BigHeapletBase *hfinger = hugeActive;
-        while (hfinger)
-        {
-            total += hfinger->queryCount() - 1; // There is one refcount for the page itself on the active q
-            hfinger = hfinger->next;
-        }
+        total += normalHeap.allocated();
+        total += hugeHeap.allocated();
         return total;
     }
 
     virtual unsigned pages()
     {
         unsigned total = dataBuffPages;
-        SpinBlock c1(crit);
-        BigHeapletBase *finger = active;
-        BigHeapletBase *prev = NULL;
-        while (finger)
-        {
-            BigHeapletBase *next = finger->next;
-            if (finger->queryCount()==1)
-            {
-                if (memTraceLevel >= 3) 
-                    logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::pages() freeing Heaplet linked in active list - addr=%p pages=%u capacity=%u rowMgr=%p",
-                            finger, finger->sizeInPages(), finger->_capacity(), this);
-                if (prev)
-                    prev->next = next;
-                else
-                    active = next;
-                delete finger;
-            }
-            else
-            {
-                total += finger->sizeInPages();
-                prev = finger;
-            }
-            finger = next;
-        }
-        //MORE: Almost duplicated code like this should disappear after a bit more refactoring.
-        BigHeapletBase *hfinger = hugeActive;
-        BigHeapletBase *hprev = NULL;
-        while (hfinger)
-        {
-            BigHeapletBase *next = hfinger->next;
-            if (hfinger->queryCount()==1)
-            {
-                if (memTraceLevel >= 3)
-                    logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::pages() freeing huge heaplet linked in active list - addr=%p pages=%u capacity=%u rowMgr=%p",
-                            hfinger, hfinger->sizeInPages(), hfinger->_capacity(), this);
-                if (hprev)
-                    hprev->next = next;
-                else
-                    hugeActive = next;
-                delete hfinger;
-            }
-            else
-            {
-                total += hfinger->sizeInPages();
-                hprev = hfinger;
-            }
-            hfinger = next;
-        }
+        total += normalHeap.pages();
+        total += hugeHeap.pages();
         return total;
     }
 
@@ -1363,21 +1390,8 @@ public:
     {
         SpinBlock c1(crit);
         usageMap.setown(new CActivityMemoryUsageMap);
-        BigHeapletBase *finger = active;
-        while (finger)
-        {
-            if (finger->queryCount()!=1)
-                finger->getPeakActivityUsage(usageMap);
-            finger = finger->next;
-        }
-
-        BigHeapletBase *hfinger = hugeActive;
-        while (hfinger)
-        {
-            if (hfinger->queryCount()!=1)
-                hfinger->getPeakActivityUsage(usageMap);
-            hfinger = hfinger->next;
-        }
+        normalHeap.getPeakActivityUsage(usageMap);
+        hugeHeap.getPeakActivityUsage(usageMap);
     }
 
     size32_t roundup(size32_t size) const
@@ -1446,55 +1460,13 @@ public:
             checkHeap();
         if (_size > FixedSizeHeaplet::maxHeapSize(isCheckingHeap))
         {
-            SpinBlock b(crit);
-            unsigned numPages = ((_size + HugeHeaplet::dataOffset() - 1) / HEAP_ALIGNMENT_SIZE) + 1;
-            checkLimit(numPages);
-            HugeHeaplet *head = new (_size) HugeHeaplet(allocatorCache, _size, activityId);
-            if (memTraceLevel >= 2 || _size>= 10000000)
-                logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::allocate(size %u) allocated new HugeHeaplet size %u - addr=%p pages=%u pageLimit=%u peakPages=%u rowMgr=%p", 
-                        _size, (unsigned) (numPages*HEAP_ALIGNMENT_SIZE), head, numPages, pageLimit, peakPages, this);
-            head->next = hugeActive;
-            hugeActive = head;
-            return head->allocateHuge(_size, activityId);
+            return hugeHeap.doAllocate(_size, activityId);
         }
         else
         {
             unsigned needSize = roundup(_size);
-            SpinBlock b(crit);
-            BigHeapletBase *finger = active;
-            BigHeapletBase *prev = NULL;
-            while (finger)
-            {
-                void *ret = finger->allocate(needSize, activityId);
-                if (ret)
-                {
-                    if (prev)
-                    {
-                        prev->next = finger->next;
-                        finger->next = active;
-                        active = finger;
-                    }
-                    return ret;
-                }
-                prev = finger;
-                finger = (FixedSizeHeaplet *) finger->next;
-            }
-            checkLimit(1); // MORE - could make this more efficient by not re-counting active
-            FixedSizeHeaplet *head = new FixedSizeHeaplet(allocatorCache, needSize, isCheckingHeap);
-            if (memTraceLevel >= 5 || (memTraceLevel >= 3 && needSize > 32000))
-                logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::allocate(size %u) allocated new FixedSizeHeaplet size %u - addr=%p pageLimit=%u peakPages=%u rowMgr=%p", 
-                        _size, needSize, head, pageLimit, peakPages, this);
-            head->next = active;
-            active = head;
-            return head->allocate(needSize, activityId);
+            return normalHeap.doAllocate(needSize, activityId);
         }
-    }
-
-    virtual void *clone(size32_t size, const void *source, unsigned activityId)
-    {
-        void *ret = allocate(size, activityId);
-        memcpy(ret, source, size);
-        return ret;
     }
 
     virtual void setMemoryLimit(memsize_t bytes)
@@ -1628,6 +1600,22 @@ public:
         //Although the activityId is passed here, there is nothing to stop multiple RowHeaps sharing the same ChunkAllocator
         return new CRoxieVariableRowHeap(this, activityId, flags);
     }
+
+    void checkLimit(unsigned numRequested)
+    {
+        unsigned pageCount = pages();
+        if (pageCount + numRequested > peakPages)
+        {
+            if (trackMemoryByActivity)
+                getPeakActivityUsage();
+            peakPages = pageCount + numRequested;
+        }
+        if (pageLimit && pageCount+numRequested > pageLimit)
+        {
+            logctx.CTXLOG("RoxieMemMgr: Memory limit exceeded - current %d, requested %d, limit %d", pageCount, numRequested, pageLimit);
+            throw MakeStringException(ROXIE_MEMORY_LIMIT_EXCEEDED, "memory limit exceeded");
+        }
+    }
 };
 
 
@@ -1664,6 +1652,56 @@ void * CRoxieVariableRowHeap::finalizeRow(void *final, size32_t originalSize, si
     if (flags & RHFhasdestructor)
         HeapletBase::setDestructorFlag(final);
     return final;
+}
+
+//================================================================================
+
+//MORE: Make this a nested class??
+void * CHugeChunkingHeap::doAllocate(unsigned _size, unsigned activityId)
+{
+    SpinBlock b(crit);
+    unsigned numPages = ((_size + HugeHeaplet::dataOffset() - 1) / HEAP_ALIGNMENT_SIZE) + 1;
+    rowManager->checkLimit(numPages);
+    HugeHeaplet *head = new (_size) HugeHeaplet(allocatorCache, _size, activityId);
+    if (memTraceLevel >= 2 || _size>= 10000000)
+        logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::allocate(size %u) allocated new HugeHeaplet size %u - addr=%p pages=%u pageLimit=%u peakPages=%u rowMgr=%p",
+                _size, (unsigned) (numPages*HEAP_ALIGNMENT_SIZE), head, numPages, rowManager->pageLimit, rowManager->peakPages, this);
+    setNext(head, active);
+    active = head;
+    return head->allocateHuge(_size, activityId);
+}
+
+void * CNormalChunkingHeap::doAllocate(size32_t chunkSize, unsigned activityId)
+{
+    SpinBlock b(crit);
+    BigHeapletBase *finger = active;
+    BigHeapletBase *prev = NULL;
+    while (finger)
+    {
+        void *ret = finger->allocate(chunkSize, activityId);
+        if (ret)
+        {
+            if (prev)
+            {
+                BigHeapletBase * next = getNext(finger);
+                setNext(prev, next);
+                setNext(finger, active);
+                active = finger;
+            }
+            return ret;
+        }
+        prev = finger;
+        finger = getNext(finger);
+    }
+    rowManager->checkLimit(1); // MORE - could make this more efficient by not re-counting active
+    FixedSizeHeaplet *head = new FixedSizeHeaplet(allocatorCache, chunkSize, rowManager->isCheckingHeap);
+    if (memTraceLevel >= 5 || (memTraceLevel >= 3 && chunkSize > 32000))
+        logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::allocate(size %u) allocated new FixedSizeHeaplet size %u - addr=%p pageLimit=%u peakPages=%u rowMgr=%p",
+                chunkSize, chunkSize, head, rowManager->pageLimit, rowManager->peakPages, this);
+    setNext(head, active);
+    active = head;
+    //Race if another thread allocates all the rows!
+    return head->allocate(chunkSize, activityId);
 }
 
 //================================================================================
