@@ -2046,7 +2046,7 @@ void EclAgent::runProcess(IEclProcess *process)
         fail(0, errmsg.str());
     }
 #endif
-    memsize_t memLimitBytes = memLimitMB * 1024 * 1024;
+    memsize_t memLimitBytes = (memsize_t)memLimitMB * 1024 * 1024;
     roxiemem::setTotalMemoryLimit(memLimitBytes);
 
     if (debugContext)
