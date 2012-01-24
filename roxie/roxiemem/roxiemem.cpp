@@ -2006,6 +2006,7 @@ class RoxieMemTests : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( RoxieMemTests );
         CPPUNIT_TEST(testHuge);
+        CPPUNIT_TEST(testHeapletCas);
         CPPUNIT_TEST(testCas);
         CPPUNIT_TEST(testAll);
         CPPUNIT_TEST(testDatamanager);
@@ -2466,54 +2467,114 @@ protected:
             ReleaseRoxieRow(v2);
         }
     }
-    class CasAllocatorThread : public Thread
+    enum { numCasThreads = 20, numCasIter = 500, numCasAlloc = 1000 };
+    class HeapletCasAllocatorThread : public Thread
     {
     public:
-        CasAllocatorThread(IRowManager * _rowManager, Semaphore & _sem) : Thread("CasAllocatorThread"), rowManager(_rowManager), sem(_sem)
+        HeapletCasAllocatorThread(FixedSizeHeaplet * _heaplet, Semaphore & _sem) : Thread("CasAllocatorThread"), heaplet(_heaplet), sem(_sem)
         {
         }
 
         int run()
         {
-            const unsigned numIter = 1000;
-            const unsigned numAlloc = 1000;
-            void * saved[numAlloc];
+            void * saved[numCasAlloc];
             sem.wait();
             //Allocate two rows and then release 1 trying to trigger potential ABA problems in the cas code.
-            for (unsigned i=0; i < numIter; i++)
+            for (unsigned i=0; i < numCasIter; i++)
             {
-                for (unsigned j=0; j < numAlloc; j++)
+                for (unsigned j=0; j < numCasAlloc; j++)
                 {
                     //Allocate 2 rows, and add first back on the list again
-                    void * alloc1 = rowManager->allocate(16, 0);
-                    saved[j] = rowManager->allocate(16, 0);
+                    void * alloc1 = heaplet->allocate(32, 0);
+                    void * alloc2 = heaplet->allocate(32, 0);
+                    *(unsigned*)alloc1 = 0xdddddddd;
+                    *(unsigned*)alloc2 = 0xdddddddd;
                     ReleaseRoxieRow(alloc1);
+                    saved[j] = alloc2;
                 }
-                for (unsigned j=0; j < numAlloc; j++)
+                for (unsigned j=0; j < numCasAlloc; j++)
                     ReleaseRoxieRow(saved[j]);
             }
             return 0;
         }
     protected:
-        IRowManager * rowManager;
+        FixedSizeHeaplet * heaplet;
+        Semaphore & sem;
+    };
+    void testHeapletCas()
+    {
+        FixedSizeHeaplet * heaplet = new FixedSizeHeaplet(NULL, 32, false);
+        Semaphore sem;
+        HeapletCasAllocatorThread * threads[numCasThreads];
+        for (unsigned i1 = 0; i1 < numCasThreads; i1++)
+            threads[i1] = new HeapletCasAllocatorThread(heaplet, sem);
+        for (unsigned i2 = 0; i2 < numCasThreads; i2++)
+            threads[i2]->start();
+
+        unsigned startTime = msTick();
+        sem.signal(numCasThreads);
+        for (unsigned i3 = 0; i3 < numCasThreads; i3++)
+            threads[i3]->join();
+        unsigned endTime = msTick();
+
+        for (unsigned i4 = 0; i4 < numCasThreads; i4++)
+            threads[i4]->Release();
+        delete heaplet;
+        DBGLOG("Time taken for heaplet cas = %d", endTime-startTime);
+    }
+    class CasAllocatorThread : public Thread
+    {
+    public:
+        CasAllocatorThread(IFixedRowHeap * _rowHeap, Semaphore & _sem) : Thread("CasAllocatorThread"), rowHeap(_rowHeap), sem(_sem)
+        {
+        }
+
+        int run()
+        {
+            void * saved[numCasAlloc];
+            sem.wait();
+            //Allocate two rows and then release 1 trying to trigger potential ABA problems in the cas code.
+            for (unsigned i=0; i < numCasIter; i++)
+            {
+                for (unsigned j=0; j < numCasAlloc; j++)
+                {
+                    //Allocate 2 rows, and add first back on the list again
+                    void * alloc1 = rowHeap->allocate();
+                    void * alloc2 = rowHeap->allocate();
+                    *(unsigned*)alloc1 = 0xdddddddd;
+                    *(unsigned*)alloc2 = 0xdddddddd;
+                    ReleaseRoxieRow(alloc1);
+                    saved[j] = alloc2;
+                }
+                for (unsigned j=0; j < numCasAlloc; j++)
+                    ReleaseRoxieRow(saved[j]);
+            }
+            return 0;
+        }
+    protected:
+        IFixedRowHeap * rowHeap;
         Semaphore & sem;
     };
     void testCas()
     {
         Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
-        rowManager->setMemoryLimit(2*1024*1024);
+        Owned<IFixedRowHeap> rowHeap = rowManager->createFixedRowHeap(8, 0, RHFnone);
         Semaphore sem;
-        const unsigned numThreads = 20;
-        CasAllocatorThread * threads[numThreads];
-        for (unsigned i1 = 0; i1 < numThreads; i1++)
-            threads[i1] = new CasAllocatorThread(rowManager, sem);
-        for (unsigned i2 = 0; i2 < numThreads; i2++)
+        CasAllocatorThread * threads[numCasThreads];
+        for (unsigned i1 = 0; i1 < numCasThreads; i1++)
+            threads[i1] = new CasAllocatorThread(rowHeap, sem);
+        for (unsigned i2 = 0; i2 < numCasThreads; i2++)
             threads[i2]->start();
-        sem.signal(numThreads);
-        for (unsigned i3 = 0; i3 < numThreads; i3++)
+
+        unsigned startTime = msTick();
+        sem.signal(numCasThreads);
+        for (unsigned i3 = 0; i3 < numCasThreads; i3++)
             threads[i3]->join();
-        for (unsigned i4 = 0; i4 < numThreads; i4++)
+        unsigned endTime = msTick();
+
+        for (unsigned i4 = 0; i4 < numCasThreads; i4++)
             threads[i4]->Release();
+        DBGLOG("Time taken for row allocator cas = %d", endTime-startTime);
     }
 };
 
