@@ -605,5 +605,6 @@ extern jlib_decl IFile * createSentinelTarget();
 extern jlib_decl void writeSentinelFile(IFile * file);
 extern jlib_decl void removeSentinelFile(IFile * file);
 extern jlib_decl StringBuffer & appendCurrentDirectory(StringBuffer & target, bool blankIfFails);
+extern jlib_decl StringBuffer &queryTempfilePath(StringBuffer & target, const char * component, IPropertyTree * pTree);
 
 #endif
