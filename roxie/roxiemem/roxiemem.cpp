@@ -584,23 +584,16 @@ private:
 
     inline unsigned makeRelative(const char *ptr)
     {
-        if (ptr)
-        {
-            ptrdiff_t diff = ptr - (char *) this;
-            assert(diff < HEAP_ALIGNMENT_SIZE);
-            return (unsigned) diff;
-        }
-        else
-            return 0;
+        assertex(ptr);
+        ptrdiff_t diff = ptr - (char *) this;
+        assert(diff < HEAP_ALIGNMENT_SIZE);
+        return (unsigned) diff;
     }
 
     inline char * makeAbsolute(unsigned v)
     {
-        assert(v < HEAP_ALIGNMENT_SIZE);
-        if (v)
-            return ((char *) this) + v;
-        else
-            return NULL;
+        assert(v && v < HEAP_ALIGNMENT_SIZE);
+        return ((char *) this) + v;
     }
 
 public:
@@ -731,22 +724,18 @@ public:
             else
             {
                 unsigned curFreeBase = atomic_read(&freeBase);
-                if (curFreeBase == (unsigned)-1)
-                    return NULL;
-
                 //There is no ABA issue on freeBase because it is never decremented (and no next chain with it)
                 size32_t bytesFree = (HEAP_ALIGNMENT_SIZE - offsetof(FixedSizeHeaplet,data)) - curFreeBase;
                 if (bytesFree >= size)
                 {
-                    ret = data + curFreeBase;
                     if (atomic_cas(&freeBase, curFreeBase + size, curFreeBase))
+                    {
+                        ret = data + curFreeBase;
                         break;
+                    }
                 }
                 else
-                {
-                    if (atomic_cas(&freeBase, (unsigned) -1, curFreeBase))
-                        return NULL;
-                }
+                    return NULL;
             }
         }
 
@@ -794,8 +783,6 @@ public:
         //This function may not give correct results if called if there are concurrent allocations/releases
         unsigned base = 0;
         unsigned limit = atomic_read(&freeBase);
-        if (limit==(unsigned)-1)
-            limit = maxHeapSize((flags & EXTRA_DEBUG_INFO) != 0);
         while (leaked > 0 && base < limit)
         {
             const char *block = data + base;
@@ -822,8 +809,6 @@ public:
         //This function may not give 100% accurate results if called if there are concurrent allocations/releases
         unsigned base = 0;
         unsigned limit = atomic_read(&freeBase);
-        if (limit==(unsigned)-1)
-            limit = maxHeapSize((flags & EXTRA_DEBUG_INFO) != 0);
         while (base < limit)
         {
             const char *block = data + base;
@@ -842,8 +827,6 @@ public:
         //This function may not give 100% accurate results if called if there are concurrent allocations/releases
         unsigned base = 0;
         unsigned limit = atomic_read(&freeBase);
-        if (limit==(unsigned)-1)
-            limit = maxHeapSize((flags & EXTRA_DEBUG_INFO) != 0);
         memsize_t running = 0;
         unsigned lastId = 0;
         while (base < limit)
@@ -1609,11 +1592,12 @@ public:
             if (trackMemoryByActivity)
                 getPeakActivityUsage();
             peakPages = pageCount + numRequested;
-        }
-        if (pageLimit && pageCount+numRequested > pageLimit)
-        {
-            logctx.CTXLOG("RoxieMemMgr: Memory limit exceeded - current %d, requested %d, limit %d", pageCount, numRequested, pageLimit);
-            throw MakeStringException(ROXIE_MEMORY_LIMIT_EXCEEDED, "memory limit exceeded");
+
+            if (pageLimit && peakPages > pageLimit)
+            {
+                logctx.CTXLOG("RoxieMemMgr: Memory limit exceeded - current %d, requested %d, limit %d", pageCount, numRequested, pageLimit);
+                throw MakeStringException(ROXIE_MEMORY_LIMIT_EXCEEDED, "memory limit exceeded");
+            }
         }
     }
 };
