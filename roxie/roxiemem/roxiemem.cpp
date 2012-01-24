@@ -822,7 +822,7 @@ public:
 
     virtual void checkHeap() const 
     {
-        //This function may not give correct results if called if there are concurrent allocations/releases
+        //This function may not give 100% accurate results if called if there are concurrent allocations/releases
         unsigned base = 0;
         unsigned limit = atomic_read(&freeBase);
         if (limit==(unsigned)-1)
@@ -842,7 +842,7 @@ public:
 
     virtual void getPeakActivityUsage(IActivityMemoryUsageMap *map) const 
     {
-        //This function may not give correct results if called if there are concurrent allocations/releases
+        //This function may not give 100% accurate results if called if there are concurrent allocations/releases
         unsigned base = 0;
         unsigned limit = atomic_read(&freeBase);
         if (limit==(unsigned)-1)
@@ -853,8 +853,8 @@ public:
         {
             const char *block = data + base;
             unsigned activityId = getActivityId(*(unsigned *) block);
-            //Double check the count is still non zero - leaves a very small potential race condition
-            //unlikely to cause problems in practice
+            //Potential race condition - a block could become allocated between these two lines.
+            //That may introduce invalid activityIds (from freed memory) in the memory tracing.
             if (atomic_read((atomic_t *) (block + sizeof(unsigned))) != 0)
             {
                 if (activityId != lastId)
