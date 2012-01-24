@@ -1046,24 +1046,24 @@
      <xsl:choose>
        <xsl:when test="number(ShowFileContent) and string-length(Link)">
           <td>
-            <a href="javascript:void(0);" onclick="download(document.getElementById('ECL_Result_{position()}'), '/WsWorkunits/WUResult?Wuid={$wuid}&amp;Sequence={Link}');return false;">
+            <a href="javascript:void(0);" onclick="getLink(document.getElementById('ECL_Result_{position()}'), '/WsWorkunits/WUResult?Wuid={$wuid}&amp;Sequence={Link}');return false;">
               <xsl:value-of select="Value"/>
             </a>
           </td>
           <xsl:variable name="resultname" select="Name"/>
           <xsl:for-each select="/WUInfoResponse/ResultViews/View">
             <td>
-              <a href="javascript:void(0);" onclick="download(document.getElementById('ECL_Result_{$position}'), '/WsWorkunits/WUResultView?Wuid={$wuid}&amp;ResultName={$resultname}&amp;ViewName={.}');return false;"><xsl:value-of select="."/></a>
+              <a href="javascript:void(0);" onclick="getLink(document.getElementById('ECL_Result_{$position}'), '/WsWorkunits/WUResultView?Wuid={$wuid}&amp;ResultName={$resultname}&amp;ViewName={.}');return false;"><xsl:value-of select="."/></a>
             </td>
           </xsl:for-each>
           <td>
-            <a href="javascript:void(0);" onclick="download(document.getElementById('ECL_Result_{position()}'), '/WsWorkunits/WUResultBin?Format=zip&amp;Wuid={$wuid}&amp;Sequence={Link}');return false;">.zip</a>
+            <a href="javascript:void(0);" onclick="getLink(document.getElementById('ECL_Result_{position()}'), '/WsWorkunits/WUResultBin?Format=zip&amp;Wuid={$wuid}&amp;Sequence={Link}');return false;">.zip</a>
           </td>
           <td>
-            <a href="javascript:void(0);" onclick="download(document.getElementById('ECL_Result_{position()}'), '/WsWorkunits/WUResultBin?Format=gzip&amp;Wuid={$wuid}&amp;Sequence={Link}');return false;">.gz</a>
+            <a href="javascript:void(0);" onclick="getLink(document.getElementById('ECL_Result_{position()}'), '/WsWorkunits/WUResultBin?Format=gzip&amp;Wuid={$wuid}&amp;Sequence={Link}');return false;">.gz</a>
           </td>
           <td>
-            <a href="javascript:void(0);" onclick="download(document.getElementById('ECL_Result_{position()}'), '/WsWorkunits/WUResultBin?Format=xls&amp;Wuid={$wuid}&amp;Sequence={Link}');return false;">.xls</a>
+            <a href="javascript:void(0);" onclick="getLink(document.getElementById('ECL_Result_{position()}'), '/WsWorkunits/WUResultBin?Format=xls&amp;Wuid={$wuid}&amp;Sequence={Link}');return false;">.xls</a>
           </td>
           <td>
             <xsl:if test="string-length(FileName)">
