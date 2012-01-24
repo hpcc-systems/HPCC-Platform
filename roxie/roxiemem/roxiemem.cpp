@@ -550,7 +550,7 @@ public:
 //================================================================================
 // Fixed size (chunking) heaplet
 #define MAGIC_MARKER 0x01527873
-#define RBLOCKS_CAS_TAG        0x01000000           // must be less than HEAP_ALIGNMENT_SIZE
+#define RBLOCKS_CAS_TAG        HEAP_ALIGNMENT_SIZE           // must be >= HEAP_ALIGNMENT_SIZE and power of 2
 #define RBLOCKS_OFFSET_MASK    (RBLOCKS_CAS_TAG-1)
 #define RBLOCKS_CAS_TAG_MASK   ~RBLOCKS_OFFSET_MASK
 
@@ -720,10 +720,13 @@ public:
             {
                 ret = makeAbsolute(r_ret);
                 //may have been allocated by another thread, but still legal to dereference
+                //the cas will fail if the contents are invalid.
                 unsigned next = *(unsigned *)ret;
 
-                //Only need to update the ABA tag when pushing an item onto the list
-                //so use old tag to reduce likelihood of collision.
+                //There is a potential ABA problem if other thread(s) allocate two or more items, and free the first
+                //item in the window before the following cas.  r_block would match, but next would be invalid.
+                //To avoid that a tag is stored in the top bits of r_blocks which is modified whenever an item is added
+                //onto the free list.  The offsets in the freelist do not need tags.
                 unsigned new_blocks = (old_blocks & RBLOCKS_CAS_TAG_MASK) | next;
                 if (atomic_cas(&r_blocks, new_blocks, old_blocks))
                     break;
@@ -734,6 +737,7 @@ public:
                 if (curFreeBase == (unsigned)-1)
                     return NULL;
 
+                //There is no ABA issue on freeBase because it is never decremented (and no next chain with it)
                 size32_t bytesFree = (HEAP_ALIGNMENT_SIZE - offsetof(FixedSizeHeaplet,data)) - curFreeBase;
                 if (bytesFree >= size)
                 {
@@ -818,6 +822,7 @@ public:
 
     virtual void checkHeap() const 
     {
+        //This function may not give correct results if called if there are concurrent allocations/releases
         unsigned base = 0;
         unsigned limit = atomic_read(&freeBase);
         if (limit==(unsigned)-1)
@@ -837,6 +842,7 @@ public:
 
     virtual void getPeakActivityUsage(IActivityMemoryUsageMap *map) const 
     {
+        //This function may not give correct results if called if there are concurrent allocations/releases
         unsigned base = 0;
         unsigned limit = atomic_read(&freeBase);
         if (limit==(unsigned)-1)
@@ -846,23 +852,20 @@ public:
         while (base < limit)
         {
             const char *block = data + base;
+            unsigned activityId = getActivityId(*(unsigned *) block);
+            //Double check the count is still non zero - leaves a very small potential race condition
+            //unlikely to cause problems in practice
             if (atomic_read((atomic_t *) (block + sizeof(unsigned))) != 0)
             {
-                unsigned activityId = getActivityId(*(unsigned *) block);
-                //Double check the count is still non zero - leaves a very small potential race condition
-                //unlikely to cause problems in practice
-                if (atomic_read((atomic_t *) (block + sizeof(unsigned))) != 0)
+                if (activityId != lastId)
                 {
-                    if (activityId != lastId)
-                    {
-                        if (lastId)
-                            map->noteMemUsage(lastId, running);
-                        lastId = activityId;
-                        running = fixedSize;
-                    }
-                    else
-                        running += fixedSize;
+                    if (lastId)
+                        map->noteMemUsage(lastId, running);
+                    lastId = activityId;
+                    running = fixedSize;
                 }
+                else
+                    running += fixedSize;
             }
             base += fixedSize;
         }
@@ -1251,7 +1254,7 @@ public:
                 finger->reportLeaks(leaked, logctx);
             finger = finger->next;
         }
-        BigHeapletBase *hfinger = active;
+        BigHeapletBase *hfinger = hugeActive;
         while (leaked && hfinger)
         {
             if (leaked && memTraceLevel >= 1)
@@ -2003,6 +2006,7 @@ class RoxieMemTests : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( RoxieMemTests );
         CPPUNIT_TEST(testHuge);
+        CPPUNIT_TEST(testCas);
         CPPUNIT_TEST(testAll);
         CPPUNIT_TEST(testDatamanager);
         CPPUNIT_TEST(testBitmap);
@@ -2461,6 +2465,55 @@ protected:
             ReleaseRoxieRow(v4);
             ReleaseRoxieRow(v2);
         }
+    }
+    class CasAllocatorThread : public Thread
+    {
+    public:
+        CasAllocatorThread(IRowManager * _rowManager, Semaphore & _sem) : Thread("CasAllocatorThread"), rowManager(_rowManager), sem(_sem)
+        {
+        }
+
+        int run()
+        {
+            const unsigned numIter = 1000;
+            const unsigned numAlloc = 1000;
+            void * saved[numAlloc];
+            sem.wait();
+            //Allocate two rows and then release 1 trying to trigger potential ABA problems in the cas code.
+            for (unsigned i=0; i < numIter; i++)
+            {
+                for (unsigned j=0; j < numAlloc; j++)
+                {
+                    //Allocate 2 rows, and add first back on the list again
+                    void * alloc1 = rowManager->allocate(16, 0);
+                    saved[j] = rowManager->allocate(16, 0);
+                    ReleaseRoxieRow(alloc1);
+                }
+                for (unsigned j=0; j < numAlloc; j++)
+                    ReleaseRoxieRow(saved[j]);
+            }
+            return 0;
+        }
+    protected:
+        IRowManager * rowManager;
+        Semaphore & sem;
+    };
+    void testCas()
+    {
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
+        rowManager->setMemoryLimit(2*1024*1024);
+        Semaphore sem;
+        const unsigned numThreads = 20;
+        CasAllocatorThread * threads[numThreads];
+        for (unsigned i1 = 0; i1 < numThreads; i1++)
+            threads[i1] = new CasAllocatorThread(rowManager, sem);
+        for (unsigned i2 = 0; i2 < numThreads; i2++)
+            threads[i2]->start();
+        sem.signal(numThreads);
+        for (unsigned i3 = 0; i3 < numThreads; i3++)
+            threads[i3]->join();
+        for (unsigned i4 = 0; i4 < numThreads; i4++)
+            threads[i4]->Release();
     }
 };
 
