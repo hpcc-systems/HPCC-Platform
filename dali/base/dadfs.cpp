@@ -116,18 +116,6 @@ static StringBuffer &normalizeFormat(StringBuffer &in)
     return in;
 }
 
-
-
-static IPropertyTree *getCreatePropTree(IPropertyTree *parent,const char * name)
-{  // creates if not existing
-    assertex(strchr(name,'/')==NULL);
-    IPropertyTree *t = parent->queryPropTree(name);
-    if (!t) {
-        t = parent->setPropTree(name,createPTree(name)); // takes ownership
-    }
-    return LINK(t);
-}
-
 static StringBuffer &getAttrQueryStr(StringBuffer &str,const char *sub,const char *key,const char *name)
 {
     assertex(key[0]=='@');
@@ -2233,7 +2221,6 @@ protected:
     CDfsLogicalFileName logicalName;
     CriticalSection sect;
     CDistributedFileDirectory *parent;
-    Owned<IPropertyTree> attr;    
     unsigned proplockcount;
     unsigned transactionnest;
     Linked<IUserDescriptor> udesc;
@@ -2251,7 +2238,6 @@ public:
 
     ~CDistributedFileBase<INTERFACE>()
     {
-        attr.clear();
         root.clear();
     }
 
@@ -2276,35 +2262,25 @@ public:
         return logicalName.get();
     }
 
-    void loadAttr()
-    {
-        if (proplockcount||!parent)
-            attr.setown(getCreatePropTree(root,"Attr"));
-        else {
-            IPropertyTree *t = root->queryPropTree("Attr");
-            if (t)
-                t->Link();
-            else
-                t = getEmptyAttr();
-            attr.setown(t);
-        }
-    }
-
-    void reloadProperties()
-    {
-        CriticalBlock block (sect);
-        if (!attr)
-            loadAttr();
-    }
-
     IPropertyTree &queryProperties()
     {
-        // a bit redundant, but avoids unnecessary locking
-        if (!attr)
-            reloadProperties();
-        return *attr;
+        IPropertyTree *t = root->queryPropTree("Attr");
+        if (!t)
+            t = root->setPropTree("Attr",createPTree("Attr")); // takes ownership
+        return *t;
     }
 
+protected:
+    IPropertyTree *resetFileAttr(IPropertyTree *prop=NULL)
+    {
+        if (prop)
+            return root->setPropTree("Attr", prop);
+
+        root->removeProp("Attr");
+        return NULL;
+    }
+
+public:
     bool isAnon() 
     { 
         return !logicalName.isSet(); 
@@ -2326,7 +2302,6 @@ public:
         // this is a bit of a kludge for non-transactional superfile operations and other dining philosopher problems
         // WARN: This is not thread-safe
         if (proplockcount++==0) {
-            attr.clear();
             if (conn) {
                 conn->rollback(); // changes chouldn't be done outside lock properties
 #ifdef TRACE_LOCKS
@@ -2358,7 +2333,6 @@ public:
         savePartsAttr();
         // WARN: This is not thread-safe
         if (--proplockcount==0) {
-            attr.clear();
             if (conn) {
 #ifdef TRACE_LOCKS
                 PROGLOG("unlockProperties: pre changeMode(%x)",(unsigned)(memsize_t)conn.get());
@@ -2400,7 +2374,6 @@ public:
             }
             else {
                 try {
-                    attr.clear();
 #ifdef TRACE_LOCKS
                     PROGLOG("lockTransaction: pre changeMode(%x)",(unsigned)(memsize_t)conn.get());
 #endif
@@ -2422,7 +2395,6 @@ public:
                     ret = false;
                 }
             }
-            reloadProperties();
         }
         return ret;
     }
@@ -2447,7 +2419,6 @@ public:
             if (_commit) 
                 conn->commit();
             if (conn&&(--proplockcount==0)) {
-                attr.clear();
 #ifdef TRACE_LOCKS
                 PROGLOG("unlockTransaction: pre changeMode(%x)",(unsigned)(memsize_t)conn.get());
 #endif
@@ -2845,9 +2816,9 @@ public:
         lockProperties(defaultTimeout);         // only needed to load attr (no lock)
         shrinkFileTree(root);
         if (totalsize!=(offset_t)-1)
-            attr->setPropInt64("@size", totalsize);
+            queryProperties().setPropInt64("@size", totalsize);
         if (useableCheckSum)
-            attr->setPropInt64("@checkSum", checkSum);
+            queryProperties().setPropInt64("@checkSum", checkSum);
         setModified();
         unlockProperties();
 #ifdef EXTRA_LOGGING
@@ -2897,7 +2868,6 @@ public:
                 partmask.set(mask);
             }
         }
-        attr.clear();
         if (!save)
             return;
         if (directory.isEmpty())
@@ -2910,9 +2880,9 @@ public:
             root->setProp("@partmask",partmask);
         IPropertyTree *t = &fdesc->queryProperties();
         if (isEmptyPTree(t))
-            root->removeProp("Attr");
+            resetFileAttr();
         else
-            root->setPropTree("Attr",createPTreeFromIPT(t));
+            resetFileAttr(createPTreeFromIPT(t));
     }
 
     void setClusters(IFileDescriptor *fdesc)
@@ -3310,7 +3280,6 @@ public:
         LOGPTREE("CDistributedFile::attach root.1",root);
 #endif
         parent->addEntry(logicalName,root.getClear(),false,false);
-        attr.clear();
         killParts();
         clusters.kill();
         CFileConnectLock fcl("CDistributedFile::attach",logicalName,DXB_File,false,false,defaultTimeout);
@@ -3339,7 +3308,6 @@ public:
         LOGPTREE("CDistributedFile::detach root.1",root);
 #endif
         root->serialize(mb);
-        attr.clear();
         conn.clear();
         root.setown(createPTree(mb));
         StringAttr lname(logicalName.get());
@@ -4327,8 +4295,7 @@ protected:
                             if (sub)
                                 sub->setPropInt("@num",j);
                             if (j==1) {
-                                root->setPropTree("Attr",createPTreeFromIPT(sub->queryPropTree("Attr")));
-                                attr.clear();
+                                resetFileAttr(createPTreeFromIPT(sub->queryPropTree("Attr")));
                             }
                             subtrees.subs[j-1] = sub;
                             subtrees.subs[j] = NULL;
@@ -4336,8 +4303,7 @@ protected:
                         subtrees.n--;
                         root->setPropInt("@numsubfiles",subtrees.n);
                         if ((i==0)&&(subtrees.n==0)) {
-                            attr.clear();
-                            root->setPropTree("Attr",getEmptyAttr());
+                            resetFileAttr(getEmptyAttr());
                         }
                         i--; // will get incremented by for
                         continue;
@@ -4373,8 +4339,7 @@ protected:
         sub->setPropInt("@num",pos+1);
         sub->setProp("@name",file->queryLogicalName());
         if (pos==0) {
-            attr.clear();
-            root->setPropTree("Attr",createPTreeFromIPT(&file->queryProperties()));
+            resetFileAttr(createPTreeFromIPT(&file->queryProperties()));
         }
         root->addPropTree("SubFile",sub);
         subfiles.add(*file.getClear(),pos);
@@ -4399,11 +4364,10 @@ protected:
         }
         subfiles.remove(pos);
         if (pos==0) {
-            attr.clear();
             if (subfiles.ordinality())
-                root->setPropTree("Attr",createPTreeFromIPT(&subfiles.item(0).queryProperties()));
+                resetFileAttr(createPTreeFromIPT(&subfiles.item(0).queryProperties()));
             else
-                root->setPropTree("Attr",getEmptyAttr());
+                resetFileAttr(getEmptyAttr());
         }
         root->setPropInt("@numsubfiles",subfiles.ordinality());
     }
@@ -4801,7 +4765,6 @@ public:
         logicalName.set(_logicalname);
         checkLogicalName(logicalName,user,true,true,false,"attach"); 
         parent->addEntry(logicalName,root.getClear(),true,false);
-        attr.clear();
         conn.clear();
         CFileConnectLock fcl("CDistributedSuperFile::attach",logicalName,DXB_SuperFile,false,false,defaultTimeout);
         conn.setown(fcl.detach());
@@ -4819,7 +4782,6 @@ public:
         MemoryBuffer mb;
         root->serialize(mb);
         root.clear();
-        attr.clear();
         conn.clear();
         root.setown(createPTree(mb));
         StringAttr lname(logicalName.get());
@@ -5108,7 +5070,7 @@ public:
             StringBuffer desc;
             root->getProp("Attr/@description",desc);
             root->removeProp("Attr");       // remove all other attributes if superfile empty
-            IPropertyTree *t=root->setPropTree("Attr",getEmptyAttr());
+            IPropertyTree *t=resetFileAttr(getEmptyAttr());
             if (desc.length())
                 t->setProp("@description",desc.str());
             return;
