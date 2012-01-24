@@ -1102,18 +1102,11 @@ int EspHttpBinding::onGetConfig(IEspContext &context, CHttpRequest* request, CHt
     if (m_viewConfig || (user && (user->getStatus()==SecUserStatus_Inhouse)))
     {
         ESPLOG(LogNormal, "Get config file: %s", m_configFile.get());
-        StringBuffer mimetype;
-        MemoryBuffer content;
-        httpContentFromFile(m_configFile, mimetype, content);
 
-        response->setContent(content.length(), content.toByteArray());
-
-        StringBuffer plainText;
-        request->getParameter("PlainText", plainText);
-        if ((plainText.length() > 0) && (!stricmp(plainText.str(), "yes")))
-            response->setContentType(HTTP_TYPE_TEXT_PLAIN);
-        else
-            response->setContentType("text/xml; charset=UTF-8");
+        StringBuffer content;
+        xmlContentFromFile(m_configFile, "/esp/xslt/xmlformatter.xsl", content);
+        response->setContent(content.str());
+        response->setContentType("text/xml; charset=UTF-8");
         response->setStatus(HTTP_STATUS_OK);
         response->send();
         return 0;
