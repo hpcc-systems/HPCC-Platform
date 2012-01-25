@@ -283,7 +283,7 @@
 
            var downloadWnds = new Array();
          
-           function download(ParentElement, Link)
+           function getLink(ParentElement, Link)
            {
               ParentElement.disabled = true;
               for(var i=0;i<downloadWnds.length;i++)
