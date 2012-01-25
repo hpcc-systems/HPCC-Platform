@@ -54,7 +54,6 @@
 //================================================================================
 // Roxie heap
 
-#define NOTE_RELEASES       1
 #define EXTRA_DEBUG_INFO    2
 
 namespace roxiemem {
@@ -120,9 +119,7 @@ public:
         if (ptr)
         {
             HeapletBase *h = findBase(ptr);
-            if (h->flags & NOTE_RELEASES)
-                return h->_isShared(ptr);
-            return atomic_read(&h->count)!= 2; // The heaplet itself has a usage count of 1
+            return h->_isShared(ptr);
         }
         // isShared(NULL) or isShared on an object that shares a link-count is an error
         throwUnexpected();
@@ -145,11 +142,7 @@ public:
         if (ptr)
         {
             HeapletBase *h = findBase(ptr);
-            //MORE: Should this test be debug only?
-            if (h->flags & NOTE_RELEASES)
-                h->_setDestructorFlag(ptr);
-            else
-                throwUnexpected();
+            h->_setDestructorFlag(ptr);
         }
     }
 
@@ -219,7 +212,7 @@ public:
 
     virtual void noteReleased(const void *ptr);
     virtual void noteLinked(const void *ptr);
-
+    virtual bool _isShared(const void *ptr) const;
 };
 
 
@@ -228,7 +221,6 @@ class roxiemem_decl DataBuffer : public DataBufferBase
     friend class CDataBufferManager;
 private:
     virtual void released();
-    virtual bool _isShared(const void *ptr) const;
     virtual size32_t _capacity() const;
     virtual void _setDestructorFlag(const void *ptr);
 protected:
@@ -257,7 +249,6 @@ private:
     CriticalSection crit;
 
     virtual void released();
-    virtual bool _isShared(const void *ptr) const;
     virtual size32_t _capacity() const;
     virtual void _setDestructorFlag(const void *ptr);
 public:

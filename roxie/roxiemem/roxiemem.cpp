@@ -476,17 +476,6 @@ static inline unsigned getRealActivityId(unsigned rawId, const IRowAllocatorCach
         return rawId & MAX_ACTIVITY_ID;
 }
 
-void DataBufferBase::noteReleased(const void *ptr)
-{
-    if (atomic_dec_and_test(&count))
-        released();
-}
-
-void DataBufferBase::noteLinked(const void *ptr)
-{
-    atomic_inc(&count);
-}
-
 class BigHeapletBase : public HeapletBase
 {
     friend class CChunkingHeap;
@@ -512,7 +501,6 @@ public:
         return h==this;
     }
 
-    bool _isShared(const void *ptr) const { throwUnexpected(); }
     size32_t _capacity() const { throwUnexpected(); }
 
     virtual size32_t sizeInPages() { throwUnexpected(); }
@@ -602,7 +590,7 @@ private:
 public:
     FixedSizeHeaplet(const IRowAllocatorCache *_allocatorCache, size32_t size, bool isCheckingHeap) : BigHeapletBase(_allocatorCache)
     {
-        setFlag(isCheckingHeap ? NOTE_RELEASES|EXTRA_DEBUG_INFO : NOTE_RELEASES);
+        setFlag(isCheckingHeap ? EXTRA_DEBUG_INFO : 0);
         fixedSize = size;
         atomic_set(&freeBase, 0);
         atomic_set(&r_blocks, 0);
@@ -612,15 +600,11 @@ public:
 
     virtual bool _isShared(const void *_ptr) const
     {
-        if (_ptr != this)
-        {
-            char *ptr = (char *) _ptr;
-            checkPtr(ptr, "isShared");
-            ptr -= sizeof(atomic_t);
-            return atomic_read((atomic_t *) ptr)!=1;
-        }
-        else
-            throwUnexpected();
+        assert(_ptr != this);
+        char *ptr = (char *) _ptr;
+        checkPtr(ptr, "isShared");
+        ptr -= sizeof(atomic_t);
+        return atomic_read((atomic_t *) ptr)!=1;
     }
 
     virtual size32_t _capacity() const
@@ -881,6 +865,11 @@ public:
     }
 
     virtual size32_t _capacity() const { return ((hugeSize + dataOffset() + HEAP_ALIGNMENT_SIZE - 1) & HEAP_ALIGNMENT_MASK) - dataOffset(); }
+
+    bool _isShared(const void *ptr) const
+    {
+        return atomic_read(&count) > 2; // The heaplet itself has a usage count of 1
+    }
 
     virtual unsigned sizeInPages() 
     {
@@ -1713,6 +1702,22 @@ void * CNormalChunkingHeap::doAllocate(size32_t chunkSize, unsigned activityId)
 //================================================================================
 // Buffer manager - blocked 
 
+void DataBufferBase::noteReleased(const void *ptr)
+{
+    if (atomic_dec_and_test(&count))
+        released();
+}
+
+void DataBufferBase::noteLinked(const void *ptr)
+{
+    atomic_inc(&count);
+}
+
+bool DataBufferBase::_isShared(const void *ptr) const
+{
+    return atomic_read(&count) > 2; // The heaplet itself has a usage count of 1
+}
+
 void DataBufferBase::Release()
 {
     if (atomic_read(&count)==2 && mgr)
@@ -1748,7 +1753,6 @@ bool DataBuffer::attachToRowMgr(IRowManager *rowMgr)
     }
 }
 
-bool DataBuffer::_isShared(const void *ptr) const { throwUnexpected(); }
 size32_t DataBuffer::_capacity() const { throwUnexpected(); }
 void DataBuffer::_setDestructorFlag(const void *ptr) { throwUnexpected(); }
 
@@ -1968,7 +1972,6 @@ void DataBufferBottom::released()
     }
 }
 
-bool DataBufferBottom::_isShared(const void *ptr) const { throwUnexpected(); }
 size32_t DataBufferBottom::_capacity() const { throwUnexpected(); }
 void DataBufferBottom::_setDestructorFlag(const void *ptr) { throwUnexpected(); }
 
