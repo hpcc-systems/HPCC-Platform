@@ -352,6 +352,8 @@ enum RoxieHeapFlags
     RHFnone             = 0x0000,
     RHFpacked           = 0x0001,
     RHFhasdestructor    = 0x0002,
+    RHFunique           = 0x0004,  // create a separate fixed size allocator
+    RHFoldfixed         = 0x0008,  // Don't create a special fixed size heap for this
 };
 
 // Variable size aggregated link-counted Roxie (etc) row manager
@@ -369,8 +371,8 @@ interface IRowManager : extends IInterface
     virtual void setActivityTracking(bool val) = 0;
     virtual void reportLeaks() = 0;
     virtual void checkHeap() = 0;
-    virtual IFixedRowHeap * createFixedRowHeap(size32_t fixedSize, unsigned activityId, RoxieHeapFlags flags) = 0;
-    virtual IVariableRowHeap * createVariableRowHeap(unsigned activityId, RoxieHeapFlags flags) = 0;            // should this be passed the initial size?
+    virtual IFixedRowHeap * createFixedRowHeap(size32_t fixedSize, unsigned activityId, unsigned roxieHeapFlags) = 0;
+    virtual IVariableRowHeap * createVariableRowHeap(unsigned activityId, unsigned roxieHeapFlags) = 0;            // should this be passed the initial size?
 };
 
 extern roxiemem_decl void setDataAlignmentSize(unsigned size);
