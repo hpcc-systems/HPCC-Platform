@@ -84,12 +84,11 @@ protected:
     {
     }
 
-    virtual void released() = 0;
-    virtual void noteReleased(const void *ptr);
+    virtual void noteReleased(const void *ptr) = 0;
     virtual bool _isShared(const void *ptr) const = 0;
     virtual size32_t _capacity() const = 0;
     virtual void _setDestructorFlag(const void *ptr) = 0;
-    virtual void noteLinked(const void *ptr);
+    virtual void noteLinked(const void *ptr) = 0;
 
     inline static HeapletBase *findBase(const void *ptr)
     {
@@ -203,6 +202,7 @@ class roxiemem_decl DataBufferBase : public HeapletBase
     friend class CChunkingRowManager;
     friend class DataBufferBottom;
 protected:
+    virtual void released() = 0;
     DataBufferBase *next;   // Used when chaining them together in rowMgr
     IRowManager *mgr;
     DataBufferBase() : HeapletBase(DATA_ALIGNMENT_MASK)
@@ -216,6 +216,9 @@ public:
         atomic_inc(&count); 
     }
     void Release();
+
+    virtual void noteReleased(const void *ptr);
+    virtual void noteLinked(const void *ptr);
 
 };
 

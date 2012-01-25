@@ -476,13 +476,13 @@ static inline unsigned getRealActivityId(unsigned rawId, const IRowAllocatorCach
         return rawId & MAX_ACTIVITY_ID;
 }
 
-void HeapletBase::noteReleased(const void *ptr)
+void DataBufferBase::noteReleased(const void *ptr)
 {
     if (atomic_dec_and_test(&count))
         released();
 }
 
-void HeapletBase::noteLinked(const void *ptr)
+void DataBufferBase::noteLinked(const void *ptr)
 {
     atomic_inc(&count);
 }
@@ -514,12 +514,6 @@ public:
 
     bool _isShared(const void *ptr) const { throwUnexpected(); }
     size32_t _capacity() const { throwUnexpected(); }
-    void _setDestructorFlag(const void *ptr) { throwUnexpected(); }
-
-    virtual void released() 
-    {
-        throwUnexpected();
-    }
 
     virtual size32_t sizeInPages() { throwUnexpected(); }
 
@@ -923,6 +917,25 @@ public:
     {
         unsigned sizeInPages = ((_hugeSize + offsetof(HugeHeaplet, data) + HEAP_ALIGNMENT_SIZE - 1) / HEAP_ALIGNMENT_SIZE);
         subfree_aligned(p, sizeInPages);
+    }
+
+    virtual void noteReleased(const void *ptr)
+    {
+        if (atomic_dec_and_test(&count))
+        {
+            if (activityId & ACTIVITY_FLAG_NEEDSDESTRUCTOR)
+                allocatorCache->onDestroy(activityId & MAX_ACTIVITY_ID, (void *)ptr);
+        }
+    }
+
+    virtual void _setDestructorFlag(const void *ptr)
+    {
+        activityId |= ACTIVITY_FLAG_NEEDSDESTRUCTOR;
+    }
+
+    virtual void noteLinked(const void *ptr)
+    {
+        atomic_inc(&count);
     }
 
     virtual void *allocate(unsigned size, unsigned activityId)
