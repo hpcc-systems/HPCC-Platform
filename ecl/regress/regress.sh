@@ -110,6 +110,8 @@ if [[ $compare_dir ]]; then
          -I $target_dir \
          -I '\d* ms' \
          -I 'at \/.*\(\d*\)$' \
+         -I '\d*s total time' \
+         -I 'hash=\"[0-9a-f]*"' \
          $quick $compare_dir $target_dir
 fi
 
