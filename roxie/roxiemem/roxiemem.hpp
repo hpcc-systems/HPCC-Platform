@@ -85,11 +85,11 @@ protected:
     }
 
     virtual void released() = 0;
-    virtual void noteReleased(const void *ptr) = 0;
+    virtual void noteReleased(const void *ptr);
     virtual bool _isShared(const void *ptr) const = 0;
     virtual size32_t _capacity() const = 0;
     virtual void _setDestructorFlag(const void *ptr) = 0;
-    virtual void noteLinked(const void *ptr) = 0;
+    virtual void noteLinked(const void *ptr);
 
     inline static HeapletBase *findBase(const void *ptr)
     {
@@ -112,10 +112,7 @@ public:
         if (ptr)
         {
             HeapletBase *h = findBase(ptr);
-            if (h->flags & NOTE_RELEASES)
-                h->noteReleased(ptr);
-            if (atomic_dec_and_test(&h->count))
-                h->released();
+            h->noteReleased(ptr);
         }
     }
 
@@ -178,9 +175,7 @@ public:
     static void link(const void *ptr)
     {
         HeapletBase *h = findBase(ptr);
-        if (h->flags & NOTE_RELEASES)
-            h->noteLinked(ptr);
-        atomic_inc(&h->count);
+        h->noteLinked(ptr);
     }
 
     inline unsigned queryCount() const
@@ -230,11 +225,9 @@ class roxiemem_decl DataBuffer : public DataBufferBase
     friend class CDataBufferManager;
 private:
     virtual void released();
-    virtual void noteReleased(const void *ptr);
     virtual bool _isShared(const void *ptr) const;
     virtual size32_t _capacity() const;
     virtual void _setDestructorFlag(const void *ptr);
-    virtual void noteLinked(const void *ptr);
 protected:
     DataBuffer()
     {
@@ -261,11 +254,9 @@ private:
     CriticalSection crit;
 
     virtual void released();
-    virtual void noteReleased(const void *ptr);
     virtual bool _isShared(const void *ptr) const;
     virtual size32_t _capacity() const;
     virtual void _setDestructorFlag(const void *ptr);
-    virtual void noteLinked(const void *ptr);
 public:
     DataBufferBottom(CDataBufferManager *_owner, DataBufferBottom *ownerFreeChain);
 

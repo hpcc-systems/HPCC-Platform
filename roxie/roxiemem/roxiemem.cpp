@@ -476,6 +476,17 @@ static inline unsigned getRealActivityId(unsigned rawId, const IRowAllocatorCach
         return rawId & MAX_ACTIVITY_ID;
 }
 
+void HeapletBase::noteReleased(const void *ptr)
+{
+    if (atomic_dec_and_test(&count))
+        released();
+}
+
+void HeapletBase::noteLinked(const void *ptr)
+{
+    atomic_inc(&count);
+}
+
 class BigHeapletBase : public HeapletBase
 {
     friend class CChunkingHeap;
@@ -501,11 +512,9 @@ public:
         return h==this;
     }
 
-    void noteReleased(const void *ptr) { throwUnexpected(); }
     bool _isShared(const void *ptr) const { throwUnexpected(); }
     size32_t _capacity() const { throwUnexpected(); }
     void _setDestructorFlag(const void *ptr) { throwUnexpected(); }
-    void noteLinked(const void *ptr) { throwUnexpected(); }
 
     virtual void released() 
     {
@@ -647,43 +656,43 @@ public:
 
     virtual void noteReleased(const void *_ptr)
     {
-        if (_ptr != this)
+        assert(_ptr != this);
+
+        char *ptr = (char *) _ptr;
+        checkPtr(ptr, "Release");
+        ptr -= sizeof(atomic_t);
+        if (atomic_dec_and_test((atomic_t *) ptr))
         {
-            char *ptr = (char *) _ptr;
-            checkPtr(ptr, "Release");
-            ptr -= sizeof(atomic_t);
-            if (atomic_dec_and_test((atomic_t *) ptr))
-            {
-                ptr -= sizeof(unsigned);
-                unsigned id = *(unsigned *) ptr;
-                if (id & ACTIVITY_FLAG_NEEDSDESTRUCTOR)
-                    allocatorCache->onDestroy(id & MAX_ACTIVITY_ID, ptr + sizeof(unsigned) + sizeof(atomic_t));
+            ptr -= sizeof(unsigned);
+            unsigned id = *(unsigned *) ptr;
+            if (id & ACTIVITY_FLAG_NEEDSDESTRUCTOR)
+                allocatorCache->onDestroy(id & MAX_ACTIVITY_ID, ptr + sizeof(unsigned) + sizeof(atomic_t));
 
 #ifdef CHECKING_HEAP
-                if (flags & EXTRA_DEBUG_INFO) 
-                {
-                    memset(ptr + sizeof(unsigned)+sizeof(atomic_t), 0xdd, fixedSize - sizeof(unsigned)-sizeof(atomic_t));
-                    * (unsigned *) (ptr + fixedSize - sizeof(unsigned)) = 0xdddddddd;
-                    * (unsigned *) ptr = (*(unsigned *) ptr) & ACTIVITY_MASK;
-                    // don't re-use when checking - makes tracking down faults harder               
-                }
-                else
+            if (flags & EXTRA_DEBUG_INFO)
+            {
+                memset(ptr + sizeof(unsigned)+sizeof(atomic_t), 0xdd, fixedSize - sizeof(unsigned)-sizeof(atomic_t));
+                * (unsigned *) ptr = (*(unsigned *) ptr) & ACTIVITY_MASK;
+                // don't re-use when checking - makes tracking down faults harder
+            }
+            else
 #endif        
+            {
+                unsigned r_ptr = makeRelative(ptr);
+                loop
                 {
-                    unsigned r_ptr = makeRelative(ptr);
-                    loop
-                    {
-                        //To prevent the ABA problem the top part of r_blocks stores an incrementing tag
-                        //which is incremented whenever something is added to the free list
-                        unsigned old_blocks = atomic_read(&r_blocks);
-                        * (unsigned *) ptr = (old_blocks & RBLOCKS_OFFSET_MASK);
-                        unsigned new_tag = ((old_blocks & RBLOCKS_CAS_TAG_MASK) + RBLOCKS_CAS_TAG);
-                        unsigned new_blocks = new_tag | r_ptr;
-                        if (atomic_cas(&r_blocks, new_blocks, old_blocks))
-                            break;
-                    }
+                    //To prevent the ABA problem the top part of r_blocks stores an incrementing tag
+                    //which is incremented whenever something is added to the free list
+                    unsigned old_blocks = atomic_read(&r_blocks);
+                    * (unsigned *) ptr = (old_blocks & RBLOCKS_OFFSET_MASK);
+                    unsigned new_tag = ((old_blocks & RBLOCKS_CAS_TAG_MASK) + RBLOCKS_CAS_TAG);
+                    unsigned new_blocks = new_tag | r_ptr;
+                    if (atomic_cas(&r_blocks, new_blocks, old_blocks))
+                        break;
                 }
             }
+
+            atomic_dec(&count);
         }
     }
 
@@ -1726,11 +1735,9 @@ bool DataBuffer::attachToRowMgr(IRowManager *rowMgr)
     }
 }
 
-void DataBuffer::noteReleased(const void *ptr) { throwUnexpected(); }
 bool DataBuffer::_isShared(const void *ptr) const { throwUnexpected(); }
 size32_t DataBuffer::_capacity() const { throwUnexpected(); }
 void DataBuffer::_setDestructorFlag(const void *ptr) { throwUnexpected(); }
-void DataBuffer::noteLinked(const void *ptr) { throwUnexpected(); }
 
 class CDataBufferManager : public CInterface, implements IDataBufferManager
 {
@@ -1948,11 +1955,9 @@ void DataBufferBottom::released()
     }
 }
 
-void DataBufferBottom::noteReleased(const void *ptr) { throwUnexpected(); }
 bool DataBufferBottom::_isShared(const void *ptr) const { throwUnexpected(); }
 size32_t DataBufferBottom::_capacity() const { throwUnexpected(); }
 void DataBufferBottom::_setDestructorFlag(const void *ptr) { throwUnexpected(); }
-void DataBufferBottom::noteLinked(const void *ptr) { throwUnexpected(); }
 
 
 //================================================================================
