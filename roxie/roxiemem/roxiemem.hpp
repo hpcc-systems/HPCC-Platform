@@ -67,6 +67,7 @@ interface IRowAllocatorCache
 
 struct roxiemem_decl HeapletBase
 {
+    friend class DataBufferBottom;
 protected:
     memsize_t mask;
     atomic_t count;
@@ -89,14 +90,14 @@ protected:
     virtual void _setDestructorFlag(const void *ptr) = 0;
     virtual void noteLinked(const void *ptr) = 0;
 
+    inline HeapletBase *realBase(const void *ptr) const
+    {
+        return (HeapletBase *) ((memsize_t) ptr & mask);
+    }
+
     inline static HeapletBase *findBase(const void *ptr)
     {
-        HeapletBase *h = (HeapletBase *) ((memsize_t) ptr & HEAP_ALIGNMENT_MASK);
-        if (h->mask != HEAP_ALIGNMENT_MASK)
-        {
-            h = (HeapletBase *) ((memsize_t) ptr & h->mask);
-        }
-        return h;
+        return (HeapletBase *) ((memsize_t) ptr & HEAP_ALIGNMENT_MASK);
     }
 
 public:
@@ -249,8 +250,12 @@ private:
     CriticalSection crit;
 
     virtual void released();
+    virtual void noteReleased(const void *ptr);
+    virtual bool _isShared(const void *ptr) const;
     virtual size32_t _capacity() const;
     virtual void _setDestructorFlag(const void *ptr);
+    virtual void noteLinked(const void *ptr);
+
 public:
     DataBufferBottom(CDataBufferManager *_owner, DataBufferBottom *ownerFreeChain);
 

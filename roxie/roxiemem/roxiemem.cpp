@@ -1972,6 +1972,33 @@ void DataBufferBottom::released()
     }
 }
 
+void DataBufferBottom::noteReleased(const void *ptr)
+{
+    HeapletBase * base = realBase(ptr);
+    if (base == this)
+        DataBufferBase::noteReleased(ptr);
+    else
+        base->noteReleased(ptr);
+}
+
+void DataBufferBottom::noteLinked(const void *ptr)
+{
+    HeapletBase * base = realBase(ptr);
+    if (base == this)
+        DataBufferBase::noteLinked(ptr);
+    else
+        base->noteLinked(ptr);
+}
+
+bool DataBufferBottom::_isShared(const void *ptr) const
+{
+    HeapletBase * base = realBase(ptr);
+    if (base == this)
+        return DataBufferBase::_isShared(ptr);
+    else
+        return base->_isShared(ptr);
+}
+
 size32_t DataBufferBottom::_capacity() const { throwUnexpected(); }
 void DataBufferBottom::_setDestructorFlag(const void *ptr) { throwUnexpected(); }
 
