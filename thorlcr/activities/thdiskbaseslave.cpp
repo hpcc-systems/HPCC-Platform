@@ -369,6 +369,7 @@ void CDiskWriteSlaveActivityBase::close()
         }
         else if (outraw) {
             outraw->flush();
+            uncompressedBytesWritten = outraw->tell();
             outraw.clear();
         }
         if (!rfsQueryParallel && dlfn.isExternal() && (container.queryJob().queryMyRank() != container.queryJob().querySlaves()))
