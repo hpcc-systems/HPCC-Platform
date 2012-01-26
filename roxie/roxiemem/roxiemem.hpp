@@ -177,9 +177,8 @@ class roxiemem_decl DataBufferBase : public HeapletBase
     friend class CChunkingRowManager;
     friend class DataBufferBottom;
 protected:
+    //Called when the last reference to this item is Released() - the object will be reused or freed later
     virtual void released() = 0;
-    DataBufferBase *next;   // Used when chaining them together in rowMgr
-    IRowManager *mgr;
     DataBufferBase()
     {
         next = NULL;
@@ -192,15 +191,22 @@ protected:
     inline DataBufferBase *realBase(const void *ptr) const { return realBase(ptr, DATA_ALIGNMENT_MASK); }
 
 public:
+    // Link and release are used to keep count of the references to the buffers.
     void Link() 
     { 
         atomic_inc(&count); 
     }
     void Release();
 
+    //These functions are called on rows allocated within the DataBuffers
+    //They are called on DataBuffferBottom which maps them to the correct DataBuffer using realBase()
     virtual void noteReleased(const void *ptr);
     virtual void noteLinked(const void *ptr);
     virtual bool _isShared(const void *ptr) const;
+
+protected:
+    DataBufferBase *next;   // Used when chaining them together in rowMgr
+    IRowManager *mgr;
 };
 
 
@@ -362,7 +368,6 @@ interface IRowManager : extends IInterface
     virtual void noteDataBuffReleased(DataBuffer *dataBuff) = 0 ;
     virtual void setActivityTracking(bool val) = 0;
     virtual void reportLeaks() = 0;
-    virtual unsigned maxSimpleBlock() = 0;
     virtual void checkHeap() = 0;
     virtual IFixedRowHeap * createFixedRowHeap(size32_t fixedSize, unsigned activityId, RoxieHeapFlags flags) = 0;
     virtual IVariableRowHeap * createVariableRowHeap(unsigned activityId, RoxieHeapFlags flags) = 0;            // should this be passed the initial size?

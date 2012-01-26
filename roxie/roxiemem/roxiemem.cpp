@@ -495,19 +495,11 @@ public:
         allocatorCache = _allocatorCache;
     }
 
-    bool isPointer(void *ptr)
-    {
-        HeapletBase *h = findBase(ptr);
-        return h==this;
-    }
+    virtual size32_t sizeInPages() = 0;
 
-    size32_t _capacity() const { throwUnexpected(); }
-
-    virtual size32_t sizeInPages() { throwUnexpected(); }
-
-    virtual void reportLeaks(unsigned &leaked, const IContextLogger &logctx) const { throwUnexpected(); }
-    virtual void checkHeap() const { throwUnexpected(); }
-    virtual void getPeakActivityUsage(IActivityMemoryUsageMap *map) const { throwUnexpected(); }
+    virtual void reportLeaks(unsigned &leaked, const IContextLogger &logctx) const = 0;
+    virtual void checkHeap() const = 0;
+    virtual void getPeakActivityUsage(IActivityMemoryUsageMap *map) const = 0;
 
 #ifdef _WIN32
 #ifdef new
@@ -528,10 +520,8 @@ public:
         subfree_aligned(p, 1);
     }
 
-    virtual void *allocate(unsigned size, unsigned activityId)
-    {
-        throwUnexpected();
-    }
+    //This could be made non virtual if all iteration loops used FixedSizeHeaplet
+    virtual void *allocate(size32_t size, unsigned activityId) = 0;
 };
 
 
@@ -656,7 +646,7 @@ public:
         atomic_inc((atomic_t *) ptr);
     }
 
-    virtual void *allocate(unsigned size, unsigned activityId)
+    virtual void *allocate(size32_t size, unsigned activityId)
     {
         if (size != fixedSize)
             return NULL;
@@ -710,12 +700,12 @@ public:
         return ret;
     }
 
-    inline static unsigned maxHeapSize()
+    inline static size32_t maxHeapSize()
     {
         return HEAP_ALIGNMENT_SIZE - (offsetof(FixedSizeHeaplet, data) + sizeof(atomic_t) + sizeof(unsigned));
     }
 
-    static inline unsigned dataAreaSize()
+    static inline size32_t dataAreaSize()
     {
         return HEAP_ALIGNMENT_SIZE - offsetof(FixedSizeHeaplet, data);
     }
@@ -878,7 +868,7 @@ public:
         atomic_inc(&count);
     }
 
-    virtual void *allocate(unsigned size, unsigned activityId)
+    virtual void *allocate(size32_t size, unsigned activityId)
     {
         throwUnexpected();
     }
@@ -1165,7 +1155,7 @@ public:
     {
     }
 
-    void * doAllocate(unsigned _size, unsigned activityId);
+    void * doAllocate(size32_t _size, unsigned activityId);
 };
 
 class CNormalChunkingHeap : public CChunkingHeap
@@ -1364,12 +1354,7 @@ public:
         }
     }
 
-    virtual unsigned maxSimpleBlock()
-    {
-        return FixedSizeHeaplet::maxHeapSize();
-    }
-
-    virtual void *allocate(unsigned _size, unsigned activityId)
+    virtual void *allocate(size32_t _size, unsigned activityId)
     {
         if (memTraceSizeLimit && _size > memTraceSizeLimit)
         {
@@ -1584,7 +1569,7 @@ void * CRoxieVariableRowHeap::finalizeRow(void *final, size32_t originalSize, si
 //================================================================================
 
 //MORE: Make this a nested class??
-void * CHugeChunkingHeap::doAllocate(unsigned _size, unsigned activityId)
+void * CHugeChunkingHeap::doAllocate(size32_t _size, unsigned activityId)
 {
     SpinBlock b(crit);
     unsigned numPages = ((_size + HugeHeaplet::dataOffset() - 1) / HEAP_ALIGNMENT_SIZE) + 1;
@@ -1636,6 +1621,7 @@ void * CNormalChunkingHeap::doAllocate(size32_t chunkSize, unsigned activityId)
 
 void DataBufferBase::noteReleased(const void *ptr)
 {
+    //The link counter is shared by all the rows that are contianed in this DataBuffer
     if (atomic_dec_and_test(&count))
         released();
 }
@@ -1647,7 +1633,9 @@ void DataBufferBase::noteLinked(const void *ptr)
 
 bool DataBufferBase::_isShared(const void *ptr) const
 {
-    return atomic_read(&count) > 2; // The heaplet itself has a usage count of 1
+    // Because the link counter is shared you cannot know if an individual pointer is shared
+    throwUnexpected();
+    return true;
 }
 
 void DataBufferBase::Release()
