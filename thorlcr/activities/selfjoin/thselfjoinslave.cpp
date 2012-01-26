@@ -155,8 +155,8 @@ public:
         input = inputs.item(0);
         startInput(input);
         dataLinkStart("SELFJOIN", container.queryId());
-        bool hintparallelmatch = container.queryXGMML().getPropInt("hint[@name=\"parallel_match\"]")!=0;
-        bool hintunsortedoutput = container.queryXGMML().getPropInt("hint[@name=\"unsorted_output\"]")!=0;
+        bool hintparallelmatch = container.queryXGMML().getPropInt("hint[@name=\"parallel_match\"]/@value")!=0;
+        bool hintunsortedoutput = container.queryXGMML().getPropInt("hint[@name=\"unsorted_output\"]/@value")!=0;
 
         if (helper->getJoinFlags()&JFlimitedprefixjoin) {
             CriticalBlock b(joinHelperCrit);

@@ -243,8 +243,8 @@ public:
         if (denorm)
             joinhelper.setown(createDenormalizeHelper(helperdn, activityName, container.getKind(), container.queryId(), queryRowAllocator()));
         else {
-            bool hintparallelmatch = container.queryXGMML().getPropInt("hint[@name=\"parallel_match\"]")!=0;
-            bool hintunsortedoutput = container.queryXGMML().getPropInt("hint[@name=\"unsorted_output\"]")!=0;
+            bool hintparallelmatch = container.queryXGMML().getPropInt("hint[@name=\"parallel_match\"]/@value")!=0;
+            bool hintunsortedoutput = container.queryXGMML().getPropInt("hint[@name=\"unsorted_output\"]/@value")!=0;
             joinhelper.setown(createJoinHelper(helperjn, activityName, container.queryId(), queryRowAllocator(),hintparallelmatch,hintunsortedoutput));
         }
     }
