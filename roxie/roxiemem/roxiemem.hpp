@@ -69,13 +69,11 @@ struct roxiemem_decl HeapletBase
 {
     friend class DataBufferBottom;
 protected:
-    memsize_t mask;
     atomic_t count;
     unsigned flags;
 
-    HeapletBase(memsize_t _mask)
+    HeapletBase()
     {
-        mask = _mask;
         atomic_set(&count,1);  // Starts off active
         flags = 0;
     }
@@ -89,11 +87,6 @@ protected:
     virtual size32_t _capacity() const = 0;
     virtual void _setDestructorFlag(const void *ptr) = 0;
     virtual void noteLinked(const void *ptr) = 0;
-
-    inline HeapletBase *realBase(const void *ptr) const
-    {
-        return (HeapletBase *) ((memsize_t) ptr & mask);
-    }
 
     inline static HeapletBase *findBase(const void *ptr)
     {
@@ -199,11 +192,17 @@ protected:
     virtual void released() = 0;
     DataBufferBase *next;   // Used when chaining them together in rowMgr
     IRowManager *mgr;
-    DataBufferBase() : HeapletBase(DATA_ALIGNMENT_MASK)
+    DataBufferBase()
     {
         next = NULL;
         mgr = NULL;
     }
+    inline DataBufferBase *realBase(const void *ptr, memsize_t mask) const
+    {
+        return (DataBufferBase *) ((memsize_t) ptr & mask);
+    }
+    inline DataBufferBase *realBase(const void *ptr) const { return realBase(ptr, DATA_ALIGNMENT_MASK); }
+
 public:
     void Link() 
     { 

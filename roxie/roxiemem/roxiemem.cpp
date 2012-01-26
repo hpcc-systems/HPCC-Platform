@@ -489,7 +489,7 @@ protected:
     }
 
 public:
-    BigHeapletBase(const IRowAllocatorCache *_allocatorCache) : HeapletBase(HEAP_ALIGNMENT_MASK)
+    BigHeapletBase(const IRowAllocatorCache *_allocatorCache)
     {
         next = NULL;
         allocatorCache = _allocatorCache;
