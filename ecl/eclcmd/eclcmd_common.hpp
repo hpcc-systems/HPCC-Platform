@@ -32,6 +32,7 @@ interface IEclCommand : extends IInterface
 typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 
 #define ECLOPT_SERVER "--server"
+#define ECLOPT_SERVER_S "-s"
 #define ECLOPT_SERVER_INI "eclWatchIP"
 #define ECLOPT_SERVER_ENV "ECL_WATCH_IP"
 #define ECLOPT_SERVER_DEFAULT "."
@@ -42,14 +43,17 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_PORT_DEFAULT "8010"
 
 #define ECLOPT_USERNAME "--username"
+#define ECLOPT_USERNAME_S "-u"
 #define ECLOPT_USERNAME_INI "eclUserName"
 #define ECLOPT_USERNAME_ENV "ECL_USER_NAME"
 
 #define ECLOPT_PASSWORD "--password"
+#define ECLOPT_PASSWORD_S "-pw"
 #define ECLOPT_PASSWORD_INI "eclPassword"
 #define ECLOPT_PASSWORD_ENV "ECL_PASSWORD"
 
 #define ECLOPT_ACTIVATE "--activate"
+#define ECLOPT_ACTIVATE_S "-A"
 #define ECLOPT_ACTIVATE_INI "activateDefault"
 #define ECLOPT_ACTIVATE_ENV NULL
 
@@ -58,12 +62,16 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_WAIT_ENV "ECL_WAIT_TIMEOUT"
 
 #define ECLOPT_INPUT "--input"
+#define ECLOPT_INPUT_S "-in"
 
 #define ECLOPT_WUID "--wuid"
+#define ECLOPT_WUID_S "-wu"
 #define ECLOPT_CLUSTER "--cluster"
+#define ECLOPT_CLUSTER_S "-cl"
 #define ECLOPT_NAME "--name"
-#define ECLOPT_ACTIVATE "--activate"
+#define ECLOPT_NAME_S "-n"
 #define ECLOPT_QUERYSET "--queryset"
+#define ECLOPT_QUERYSET_S "-qs"
 #define ECLOPT_VERSION "--version"
 
 #define ECLOPT_LIB_PATH_S "-L"
@@ -135,11 +143,11 @@ public:
     virtual void usage()
     {
         fprintf(stdout,
-            "      --verbose, -v        output additional tracing information\n"
-            "      --server=<ip>        ip of server running ecl services (eclwatch)\n"
-            "      --port=<port>        ecl services port\n"
-            "      --username=<name>    username for accessing ecl services\n"
-            "      --password=<pw>      password for accessing ecl services\n"
+            "   -v, --verbose          output additional tracing information\n"
+            "   -s, --server=<ip>      ip of server running ecl services (eclwatch)\n"
+            "   --port=<port>          ecl services port\n"
+            "   -u, --username=<name>  username for accessing ecl services\n"
+            "   -pw, --password=<pw>   password for accessing ecl services\n"
         );
     }
 public:
@@ -163,10 +171,10 @@ public:
     {
         EclCmdCommon::usage();
         fprintf(stdout,
-            "   eclcc options:\n"
-            "      -Ipath               Add path to locations to search for ecl imports\n"
-            "      -Lpath               Add path to locations to search for system libraries\n"
-            "      -manifest            Specify path to manifest file\n"
+            " eclcc options:\n"
+            "   -Ipath                 Add path to locations to search for ecl imports\n"
+            "   -Lpath                 Add path to locations to search for system libraries\n"
+            "   --manifest             Specify path to manifest file\n"
         );
     }
 public:
