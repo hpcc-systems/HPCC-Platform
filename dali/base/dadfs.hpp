@@ -133,7 +133,7 @@ interface IDistributedFilePart: implements IInterface
 
     virtual IPropertyTree &queryProperties() = 0;                               // part properties
 
-    virtual IPropertyTree &lockProperties(unsigned timeoutms=INFINITE) = 0;                             // must be called before updating
+    virtual bool lockProperties(unsigned timeoutms=INFINITE) = 0;               // must be called before updating
     virtual void unlockProperties() = 0;                                        // must be called after updating
 
     virtual bool isHost(unsigned copy=0) = 0;                                   // file is located on this machine
@@ -219,7 +219,7 @@ interface IDistributedFile: extends IInterface
 
     virtual IPropertyTree &queryProperties() = 0;                               // DFile attributes (TODO: rename to getFileAttr)
 
-    virtual IPropertyTree &lockProperties(unsigned timeoutms=INFINITE) = 0;     // must be called before updating properties (will discard uncommitted changes)
+    virtual bool lockProperties(unsigned timeoutms=INFINITE) = 0;               // must be called before updating properties (will discard uncommitted changes)
     virtual void unlockProperties() = 0;                                        // must be called after updating properties
 
     virtual bool getModificationTime(CDateTime &dt) = 0;                        // get date and time last modified (returns false if not set)

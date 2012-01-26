@@ -1723,7 +1723,8 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
     StringBuffer strDesc = df->queryProperties().queryProp("@description");
     if (description)
     {
-        df->lockProperties().setProp("@description",description); 
+        df->lockProperties();
+        df->queryProperties().setProp("@description",description);
         df->unlockProperties();
         strDesc = description;
     }
