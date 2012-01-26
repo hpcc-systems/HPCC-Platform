@@ -27526,6 +27526,8 @@ public:
 
         aborted = false;
         rowManager.setown(roxiemem::createRowManager(_memoryLimit, this, logctx, this, false));
+        //MORE: If checking heap required then should have
+        //rowManager.setown(createCheckingHeap(rowManager)) or something similar.
     }
 
     // interface IRoxieServerContext
@@ -28633,7 +28635,6 @@ public:
 
         // MORE some of these might be appropriate in wu case too?
         rowManager->setActivityTracking(context->getPropBool("_TraceMemory", false));
-        rowManager->setCheckingHeap(context->getPropInt("_CheckingHeap", defaultCheckingHeap));
         rowManager->setMemoryLimit((memsize_t) context->getPropInt64("_MemoryLimit", _factory->getMemoryLimit()));
         authToken.append(httpHelper.queryAuthToken());
         workflow.setown(_factory->createWorkflowMachine(false, logctx));

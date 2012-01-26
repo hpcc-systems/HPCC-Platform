@@ -33,10 +33,6 @@
  #define roxiemem_decl
 #endif
 
-#ifdef _DEBUG
-#define CHECKING_HEAP
-#endif
-
 #ifdef __64BIT__
 #define HEAP_ALIGNMENT_SIZE I64C(0x100000u)                     // 1 mb heaplets - may be too big?
 #else
@@ -54,8 +50,6 @@
 //================================================================================
 // Roxie heap
 
-#define EXTRA_DEBUG_INFO    2
-
 namespace roxiemem {
 
 interface IRowAllocatorCache
@@ -70,12 +64,10 @@ struct roxiemem_decl HeapletBase
     friend class DataBufferBottom;
 protected:
     atomic_t count;
-    unsigned flags;
 
     HeapletBase()
     {
         atomic_set(&count,1);  // Starts off active
-        flags = 0;
     }
 
     virtual ~HeapletBase()
@@ -169,10 +161,6 @@ public:
         return atomic_read(&count);
     }
 
-    inline void setFlag(unsigned flag)
-    {
-        flags |= flag;
-    }
 };
 
 extern roxiemem_decl unsigned DATA_ALIGNMENT_SIZE;  // Permissible values are 0x400 and 0x2000
@@ -373,7 +361,6 @@ interface IRowManager : extends IInterface
     virtual bool attachDataBuff(DataBuffer *dataBuff) = 0 ;
     virtual void noteDataBuffReleased(DataBuffer *dataBuff) = 0 ;
     virtual void setActivityTracking(bool val) = 0;
-    virtual void setCheckingHeap(int level) = 0;
     virtual void reportLeaks() = 0;
     virtual unsigned maxSimpleBlock() = 0;
     virtual void checkHeap() = 0;

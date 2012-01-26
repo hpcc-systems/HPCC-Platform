@@ -537,7 +537,6 @@ public:
 
 //================================================================================
 // Fixed size (chunking) heaplet
-#define MAGIC_MARKER 0x01527873
 #define RBLOCKS_CAS_TAG        HEAP_ALIGNMENT_SIZE           // must be >= HEAP_ALIGNMENT_SIZE and power of 2
 #define RBLOCKS_OFFSET_MASK    (RBLOCKS_CAS_TAG-1)
 #define RBLOCKS_CAS_TAG_MASK   ~RBLOCKS_OFFSET_MASK
@@ -555,15 +554,6 @@ private:
     inline void checkPtr(const char *ptr, const char *reason) const
     {
         const char *baseptr = ptr - sizeof(atomic_t) - sizeof(unsigned);
-#ifdef CHECKING_HEAP
-        if ((flags & EXTRA_DEBUG_INFO) && *(unsigned *) (baseptr + fixedSize - sizeof(unsigned)) != MAGIC_MARKER)
-        {
-            DBGLOG("%s: Corruption after end of block %p allocated by activity %d: %x", reason, ptr, getActivityId(* (unsigned *) baseptr), *(unsigned *) (baseptr + fixedSize - sizeof(unsigned)));
-            PrintStackReport();
-            PrintMemoryReport();
-            HEAPERROR("Corruption after end of block");
-        }
-#endif
         if (((*(unsigned *) baseptr) & ~ACTIVITY_MASK) != ACTIVITY_MAGIC)
         {
             DBGLOG("%s: Attempt to free invalid pointer %p %x", reason, ptr, *(unsigned *) baseptr);
@@ -575,7 +565,7 @@ private:
 
     inline unsigned makeRelative(const char *ptr)
     {
-        assertex(ptr);
+        assert(ptr);
         ptrdiff_t diff = ptr - (char *) this;
         assert(diff < HEAP_ALIGNMENT_SIZE);
         return (unsigned) diff;
@@ -588,9 +578,8 @@ private:
     }
 
 public:
-    FixedSizeHeaplet(const IRowAllocatorCache *_allocatorCache, size32_t size, bool isCheckingHeap) : BigHeapletBase(_allocatorCache)
+    FixedSizeHeaplet(const IRowAllocatorCache *_allocatorCache, size32_t size) : BigHeapletBase(_allocatorCache)
     {
-        setFlag(isCheckingHeap ? EXTRA_DEBUG_INFO : 0);
         fixedSize = size;
         atomic_set(&freeBase, 0);
         atomic_set(&r_blocks, 0);
@@ -609,12 +598,7 @@ public:
 
     virtual size32_t _capacity() const
     {
-        size32_t capacity = fixedSize - sizeof(atomic_t) - sizeof(unsigned);
-#ifdef CHECKING_HEAP
-        if (flags & EXTRA_DEBUG_INFO)
-            capacity -= sizeof(unsigned);
-#endif
-        return capacity;
+        return fixedSize - sizeof(atomic_t) - sizeof(unsigned);
     }
 
     virtual void _setDestructorFlag(const void *_ptr)
@@ -646,28 +630,17 @@ public:
             if (id & ACTIVITY_FLAG_NEEDSDESTRUCTOR)
                 allocatorCache->onDestroy(id & MAX_ACTIVITY_ID, ptr + sizeof(unsigned) + sizeof(atomic_t));
 
-#ifdef CHECKING_HEAP
-            if (flags & EXTRA_DEBUG_INFO)
+            unsigned r_ptr = makeRelative(ptr);
+            loop
             {
-                memset(ptr + sizeof(unsigned)+sizeof(atomic_t), 0xdd, fixedSize - sizeof(unsigned)-sizeof(atomic_t));
-                * (unsigned *) ptr = (*(unsigned *) ptr) & ACTIVITY_MASK;
-                // don't re-use when checking - makes tracking down faults harder
-            }
-            else
-#endif        
-            {
-                unsigned r_ptr = makeRelative(ptr);
-                loop
-                {
-                    //To prevent the ABA problem the top part of r_blocks stores an incrementing tag
-                    //which is incremented whenever something is added to the free list
-                    unsigned old_blocks = atomic_read(&r_blocks);
-                    * (unsigned *) ptr = (old_blocks & RBLOCKS_OFFSET_MASK);
-                    unsigned new_tag = ((old_blocks & RBLOCKS_CAS_TAG_MASK) + RBLOCKS_CAS_TAG);
-                    unsigned new_blocks = new_tag | r_ptr;
-                    if (atomic_cas(&r_blocks, new_blocks, old_blocks))
-                        break;
-                }
+                //To prevent the ABA problem the top part of r_blocks stores an incrementing tag
+                //which is incremented whenever something is added to the free list
+                unsigned old_blocks = atomic_read(&r_blocks);
+                * (unsigned *) ptr = (old_blocks & RBLOCKS_OFFSET_MASK);
+                unsigned new_tag = ((old_blocks & RBLOCKS_CAS_TAG_MASK) + RBLOCKS_CAS_TAG);
+                unsigned new_blocks = new_tag | r_ptr;
+                if (atomic_cas(&r_blocks, new_blocks, old_blocks))
+                    break;
             }
 
             atomic_dec(&count);
@@ -727,37 +700,19 @@ public:
         }
 
         atomic_inc(&count);
-#ifdef CHECKING_HEAP
-        if (flags & EXTRA_DEBUG_INFO)
-        {
-            unsigned magic = MAGIC_MARKER;
-            memcpy(ret + fixedSize - sizeof(unsigned), &magic, sizeof(magic));
-        }
-#endif
         * (unsigned *) ret = (activityId & ACTIVITY_MASK) | ACTIVITY_MAGIC;
         ret += sizeof(unsigned);
         atomic_set((atomic_t *) ret, 1);
         ret += sizeof(atomic_t);
 #ifdef _CLEAR_ALLOCATED_ROW
-        //MORE: This should be in the header, or a member of the class
-#ifdef CHECKING_HEAP
-        const unsigned chunkOverhead = sizeof(atomic_t) + sizeof(unsigned) + sizeof(unsigned);
-#else
-        const unsigned chunkOverhead = sizeof(atomic_t) + sizeof(unsigned);
-#endif
-        memset(ret, 0xcc, size-chunkOverhead);
+        memset(ret, 0xcc, size- (sizeof(atomic_t) + sizeof(unsigned)));
 #endif
         return ret;
     }
 
-    inline static unsigned maxHeapSize(bool isChecking)
+    inline static unsigned maxHeapSize()
     {
-#ifdef CHECKING_HEAP
-        if (isChecking) 
-            return HEAP_ALIGNMENT_SIZE - (offsetof(FixedSizeHeaplet, data) + sizeof(atomic_t) + sizeof(unsigned) + sizeof(unsigned));
-        else
-#endif
-            return HEAP_ALIGNMENT_SIZE - (offsetof(FixedSizeHeaplet, data) + sizeof(atomic_t) + sizeof(unsigned));
+        return HEAP_ALIGNMENT_SIZE - (offsetof(FixedSizeHeaplet, data) + sizeof(atomic_t) + sizeof(unsigned));
     }
 
     static inline unsigned dataAreaSize()
@@ -779,10 +734,6 @@ public:
                 unsigned activityId = *(unsigned *) block;
                 bool hasChildren = (activityId & ACTIVITY_FLAG_NEEDSDESTRUCTOR) != 0;
 
-#ifdef CHECKING_HEAP
-                if (flags & EXTRA_DEBUG_INFO) 
-                    memset((char *) block + sizeof(unsigned)+sizeof(atomic_t), 0xdd, fixedSize - sizeof(unsigned)-sizeof(atomic_t));
-#endif
                 block += sizeof(unsigned) + sizeof(atomic_t);
                 logctx.CTXLOG("Block size %u at %p %swas allocated by activity %u and not freed (%d)", fixedSize, block, hasChildren ? "(with children) " : "", getActivityId(activityId), count);
                 leaked--;
@@ -1250,8 +1201,6 @@ class CChunkingRowManager : public CInterface, implements IRowManager
     const IContextLogger &logctx;
     bool ignoreLeaks;
     bool trackMemoryByActivity;
-    bool isCheckingHeap;
-    bool isUltraCheckingHeap;
     Owned<IActivityMemoryUsageMap> usageMap;
     const IRowAllocatorCache *allocatorCache;
     unsigned __int64 cyclesChecked;       // When we last checked timelimit
@@ -1279,12 +1228,8 @@ public:
         ignoreLeaks = _ignoreLeaks;
 #ifdef _DEBUG
         trackMemoryByActivity = true; 
-        isCheckingHeap = true;
-        isUltraCheckingHeap = false;
 #else
         trackMemoryByActivity = false;
-        isCheckingHeap = false;
-        isUltraCheckingHeap = false;
 #endif
         if (memTraceLevel >= 2)
             logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager c-tor memLimit=%u pageLimit=%u rowMgr=%p", _memLimit, pageLimit, this);
@@ -1358,12 +1303,6 @@ public:
         trackMemoryByActivity = val;
     }
 
-    virtual void setCheckingHeap(int val)
-    {
-        isCheckingHeap = val > 0;
-        isUltraCheckingHeap = val > 1;
-    }
-
     virtual unsigned allocated()
     {
         unsigned total = 0;
@@ -1390,13 +1329,9 @@ public:
 
     size32_t roundup(size32_t size) const
     {
-        if (size <= FixedSizeHeaplet::maxHeapSize(isCheckingHeap))
+        if (size <= FixedSizeHeaplet::maxHeapSize())
         {
             size += sizeof(atomic_t) + sizeof(unsigned);
-#ifdef CHECKING_HEAP
-            if (isCheckingHeap) 
-                size += sizeof(unsigned); // for the magic number
-#endif
             if (size<=32)
                 return 32;
             else if (size<=64)
@@ -1411,7 +1346,7 @@ public:
                 return 1024;
             else if (size<=2048)
                 return 2048;
-            else if (size <= FixedSizeHeaplet::maxHeapSize(isCheckingHeap)/20)
+            else if (size <= FixedSizeHeaplet::maxHeapSize()/20)
                 return (((size-1) / 4096)+1) * 4096;
             else
             {
@@ -1431,7 +1366,7 @@ public:
 
     virtual unsigned maxSimpleBlock()
     {
-        return FixedSizeHeaplet::maxHeapSize(isCheckingHeap);
+        return FixedSizeHeaplet::maxHeapSize();
     }
 
     virtual void *allocate(unsigned _size, unsigned activityId)
@@ -1450,9 +1385,7 @@ public:
                 cyclesChecked = cyclesNow;  // No need to lock - worst that can happen is we call too often which is harmless
             }
         }
-        if (isUltraCheckingHeap)
-            checkHeap();
-        if (_size > FixedSizeHeaplet::maxHeapSize(isCheckingHeap))
+        if (_size > FixedSizeHeaplet::maxHeapSize())
         {
             return hugeHeap.doAllocate(_size, activityId);
         }
@@ -1499,12 +1432,11 @@ public:
 
     virtual void *finalizeRow(void * original, size32_t initialSize, size32_t finalSize, unsigned activityId)
     {
+#ifdef _DEBUG
         assertex(finalSize);
-        if (isCheckingHeap)
-        {
-            assertex(!HeapletBase::isShared(original));
-            assertex(finalSize<=initialSize);
-        }
+        assertex(!HeapletBase::isShared(original));
+        assertex(finalSize<=initialSize);
+#endif
         if (finalSize==initialSize || roundup(finalSize) == roundup(initialSize))
         {
             // MORE - if we were paranoid we could assert that supplied activityId matched the one stored with the row
@@ -1689,7 +1621,7 @@ void * CNormalChunkingHeap::doAllocate(size32_t chunkSize, unsigned activityId)
         finger = getNext(finger);
     }
     rowManager->checkLimit(1); // MORE - could make this more efficient by not re-counting active
-    FixedSizeHeaplet *head = new FixedSizeHeaplet(allocatorCache, chunkSize, rowManager->isCheckingHeap);
+    FixedSizeHeaplet *head = new FixedSizeHeaplet(allocatorCache, chunkSize);
     if (memTraceLevel >= 5 || (memTraceLevel >= 3 && chunkSize > 32000))
         logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::allocate(size %u) allocated new FixedSizeHeaplet size %u - addr=%p pageLimit=%u peakPages=%u rowMgr=%p",
                 chunkSize, chunkSize, head, rowManager->pageLimit, rowManager->peakPages, this);
@@ -2573,7 +2505,7 @@ protected:
     };
     void testHeapletCas()
     {
-        FixedSizeHeaplet * heaplet = new FixedSizeHeaplet(NULL, 32, false);
+        FixedSizeHeaplet * heaplet = new FixedSizeHeaplet(NULL, 32);
         Semaphore sem;
         HeapletCasAllocatorThread * threads[numCasThreads];
         for (unsigned i1 = 0; i1 < numCasThreads; i1++)
