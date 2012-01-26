@@ -31,20 +31,24 @@ class CLoopActivityMasterBase : public CMasterActivity
 protected:
     rtlRowBuilder extractBuilder;
     CGraphBase *loopGraph;
+    unsigned emptyIterations;
+    unsigned maxEmptyLoopIterations;
 
     bool sync(unsigned loopCounter)
     {
         unsigned loopEnds = 0;
         unsigned nodes = container.queryJob().querySlaves();
         unsigned n = nodes;
+        bool allEmptyIterations = true;
         CMessageBuffer msg;
         while (n--) // a barrier really
         {
             rank_t sender;
             if (!receiveMsg(msg, RANK_ALL, mpTag, &sender, LONGTIMEOUT))
                 return false;
-            unsigned slaveLoopCounterReq;
+            unsigned slaveLoopCounterReq, slaveEmptyIterations;
             msg.read(slaveLoopCounterReq);
+            msg.read(slaveEmptyIterations);
             if (0 == slaveLoopCounterReq) // signals end
             {
                 ++loopEnds;
@@ -53,13 +57,25 @@ protected:
             }
             else
                 assertex(slaveLoopCounterReq == loopCounter); // sanity check
+            if (0 == slaveEmptyIterations) // either 1st or has been reset, i.e. non-empty
+                allEmptyIterations = false;
         }
         assertex(loopEnds==0 || loopEnds==nodes); // Not sure possible in global graph, for some to finish and not others 
         bool final = loopEnds == nodes; // final
         msg.clear();
+        if (allEmptyIterations)
+            emptyIterations++;
+        else
+            emptyIterations = 0;
+        bool ok = emptyIterations <= maxEmptyLoopIterations;
+        msg.append(ok);
         n = nodes;
         while (n--) // a barrier really
             container.queryJob().queryJobComm().send(msg, n+1, mpTag, LONGTIMEOUT);
+
+        if (!ok)
+            throw MakeActivityException(this, 0, "Executed LOOP with empty input and output %u times", emptyIterations);
+
         return final;
     }
 public:
@@ -89,7 +105,13 @@ public:
         if (container.queryLocalOrGrouped())
             return false;
         bool global = !loopGraph->isLocalOnly();
+        maxEmptyLoopIterations = (unsigned)container.queryJob().getWorkUnitValueInt("@maxEmptyLoopIterations", 1000);
         return !global;
+    }
+    void process()
+    {
+        CMasterActivity::process();
+        emptyIterations = 0;
     }
     void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
@@ -111,6 +133,37 @@ public:
 
 class CLoopActivityMaster : public CLoopActivityMasterBase
 {
+    void checkEmpty()
+    {
+        // similar to sync, but continiously listens for messages from slaves
+        // slave only sends if above threashold, or if was at threshold and non empty
+        // this routine is here to spot when all are whirling around processing nothing for > threshold
+        Owned<IBitSet> emptyIterations = createBitSet();
+        unsigned loopEnds = 0;
+        unsigned nodes = container.queryJob().querySlaves();
+        unsigned n = nodes;
+        bool allEmptyIterations = true;
+        CMessageBuffer msg;
+        loop
+        {
+            rank_t sender;
+            if (!receiveMsg(msg, RANK_ALL, mpTag, &sender, LONGTIMEOUT))
+                return;
+            unsigned slaveLoopCounterReq, slaveEmptyIterations;
+            msg.read(slaveLoopCounterReq);
+            msg.read(slaveEmptyIterations);
+            if (0 == slaveLoopCounterReq) // signals end
+            {
+                ++loopEnds;
+                if (loopEnds == nodes)
+                    break; // all done
+            }
+            bool overLimit = slaveEmptyIterations > maxEmptyLoopIterations;
+            emptyIterations->set(sender-1, overLimit);
+            if (emptyIterations->scan(0, 0) >= nodes) // all empty
+                throw MakeActivityException(this, 0, "Executed LOOP with empty input and output > %maxEmptyLoopIterations times on all nodes", maxEmptyLoopIterations);
+        }
+    }
 public:
     CLoopActivityMaster(CMasterGraphElement *info) : CLoopActivityMasterBase(info)
     {
@@ -132,25 +185,26 @@ public:
     }
     void process()
     {
-        CMasterActivity::process();
+        CLoopActivityMasterBase::process();
         if (container.queryLocalOrGrouped())
             return;
 
         IHThorLoopArg *helper = (IHThorLoopArg *) queryHelper();
         bool global = !loopGraph->isLocalOnly();
-        if (!global)
-            return;
-
-        helper->createParentExtract(extractBuilder);
-
-        unsigned loopCounter = 1;
-        loop
+        if (global)
         {
-            if (sync(loopCounter))
-                break;
-            Owned<IRowStream> curInput = queryContainer().queryLoopGraph()->execute(*this, (helper->getFlags() & IHThorLoopArg::LFcounter)?loopCounter:0, (IRowWriterMultiReader *)NULL, 0, extractBuilder.size(), extractBuilder.getbytes());
-            ++loopCounter;
+            helper->createParentExtract(extractBuilder);
+            unsigned loopCounter = 1;
+            loop
+            {
+                if (sync(loopCounter))
+                    break;
+                Owned<IRowStream> curInput = queryContainer().queryLoopGraph()->execute(*this, (helper->getFlags() & IHThorLoopArg::LFcounter)?loopCounter:0, (IRowWriterMultiReader *)NULL, 0, extractBuilder.size(), extractBuilder.getbytes());
+                ++loopCounter;
+            }
         }
+        else
+            checkEmpty();
     }
 };
 
