@@ -79,6 +79,7 @@ public:
 public:
     StringAttr  name;
     StringAttr  xpath;
+    StringBuffer tagname;
     OwnedITypeInfo type;
     byte           flags;
 };
@@ -100,6 +101,10 @@ public:
     virtual bool supportsRandomSeek() const;
     virtual void serialize(MemoryBuffer & out) const;
     virtual unsigned queryFieldFlags(unsigned column) const;
+    virtual const char *queryXmlTag(unsigned column) const;
+    virtual const char *queryXmlTag() const;
+    virtual const IntArray &queryAttrList();
+
     virtual IFvDataSourceMetaData * queryChildMeta(unsigned column) const;
     virtual IFvDataSource * createChildDataSource(unsigned column, unsigned len, const void * data);
     virtual unsigned numKeyedColumns() const;
@@ -139,6 +144,11 @@ protected:
     bool isStoredFixedWidth;
     bool randomIsOk;
     byte numFieldsToIgnore;
+    IntArray attributes;
+    bool attrset;
+
+public:
+    StringBuffer tagname;
 };
 
 

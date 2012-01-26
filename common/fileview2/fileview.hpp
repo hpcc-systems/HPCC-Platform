@@ -157,6 +157,7 @@ interface IResultSetCursor : extends IInterface
     virtual IStringVal & getDisplayText(IStringVal & ret, int columnIndex) = 0;
     virtual IStringVal & getXml(IStringVal & ret, int columnIndex) = 0;
     virtual IStringVal & getXmlRow(IStringVal & ret) = 0;
+    virtual IStringVal & getXmlItem(IStringVal & ret) = 0;
     virtual __int64 getNumRows() const = 0;
 };
 

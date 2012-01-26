@@ -34,12 +34,48 @@
 
 #define MAX_RECORD_SIZE         4096
 
+inline void appendNextXpathName(StringBuffer &s, const char *xpath, const char *&next)
+{
+    while (*xpath && !strchr("*[/", *xpath))
+        s.append(*xpath++);
+    next = strchr(xpath, '/');
+}
+
+void splitXmlTagNamesFromXPath(const char *xpath, StringBuffer &inner, StringBuffer *outer=NULL)
+{
+    if (!xpath || !xpath)
+        return;
+
+    StringBuffer s1;
+    StringBuffer s2;
+
+    const char *next=xpath;
+    appendNextXpathName(s1, xpath, next);
+    if (outer && next)
+        appendNextXpathName(s2, ++next, next);
+    if (next) //xpath too deep
+        return;
+
+    if (!s2.length())
+        inner.swapWith(s1);
+    else
+    {
+        inner.swapWith(s2);
+        outer->swapWith(s1);
+    }
+    if (!inner.length())
+        inner.set("/");
+    if (outer && !outer->length())
+        outer->set("/");
+}
+
 DataSourceMetaItem::DataSourceMetaItem(unsigned _flags, const char * _name, const char * _xpath, ITypeInfo * _type)
 {
     flags = _flags;
     name.set(_name);
     type.set(_type);
     xpath.set(_xpath);
+    splitXmlTagNamesFromXPath(_xpath, tagname);
 }
 
 DataSourceMetaItem::DataSourceMetaItem(unsigned _flags, MemoryBuffer & in)
@@ -48,6 +84,7 @@ DataSourceMetaItem::DataSourceMetaItem(unsigned _flags, MemoryBuffer & in)
     in.read(name);
     in.read(xpath);
     type.setown(deserializeType(in));
+    splitXmlTagNamesFromXPath(xpath.get(), tagname);
 }
 
 
@@ -66,6 +103,9 @@ DataSourceDatasetItem::DataSourceDatasetItem(const char * _name, const char * _x
     type.setown(makeTableType(NULL, NULL, NULL, NULL));
     name.set(_name);
     xpath.set(_xpath);
+    splitXmlTagNamesFromXPath(_xpath, record.tagname, &tagname);
+    if (!record.tagname.length())
+        record.tagname.set("Row");
 }
 
 DataSourceDatasetItem::DataSourceDatasetItem(unsigned flags, MemoryBuffer & in) : DataSourceMetaItem(FVFFdataset, NULL, NULL, NULL), record(in)
@@ -83,14 +123,23 @@ void DataSourceDatasetItem::serialize(MemoryBuffer & out) const
 
 //---------------------------------------------------------------------------
 
-DataSourceSetItem::DataSourceSetItem(const char * _name, const char * _xpath, ITypeInfo * _type) : DataSourceMetaItem(FVFFset, _name, _xpath, _type)
+DataSourceSetItem::DataSourceSetItem(const char * _name, const char * _xpath, ITypeInfo * _type) : DataSourceMetaItem(FVFFset, _name, NULL, _type)
 {
     createChild();
+    xpath.set(_xpath);
+    StringBuffer attr;
+    splitXmlTagNamesFromXPath(_xpath, record.tagname, &tagname);
+    if (!record.tagname.length())
+        record.tagname.set("Item");
 }
 
 DataSourceSetItem::DataSourceSetItem(unsigned flags, MemoryBuffer & in) : DataSourceMetaItem(flags, in)
 {
     createChild();
+    StringBuffer attr;
+    splitXmlTagNamesFromXPath(xpath.get(), record.tagname, &tagname.clear());
+    if (!record.tagname.length())
+        record.tagname.set("Item");
 }
 
 void DataSourceSetItem::createChild()
@@ -160,10 +209,12 @@ void DataSourceMetaData::init()
     isStoredFixedWidth = false;
     randomIsOk = false;
     numFieldsToIgnore = 0;
+    attrset = false;
 }
 
 DataSourceMetaData::DataSourceMetaData(MemoryBuffer & buffer)
 {
+    attrset = false;
     numVirtualFields = 0;
     buffer.read(numFieldsToIgnore);
     buffer.read(randomIsOk);
@@ -390,6 +441,37 @@ const char * DataSourceMetaData::queryXPath(unsigned column) const
 {
     return fields.item(column).xpath;
 }
+
+const char * DataSourceMetaData::queryXmlTag(unsigned column) const
+{
+    DataSourceMetaItem &item = fields.item(column);
+    if (item.tagname.length())
+        return (*item.tagname.str()!='/') ? item.tagname.str() : NULL;
+    return item.name.get();
+}
+
+const char *DataSourceMetaData::queryXmlTag() const
+{
+    if (tagname.length())
+        return (*tagname.str()!='/') ? tagname.str() : NULL;
+    return "Row";
+}
+
+const IntArray &DataSourceMetaData::queryAttrList()
+{
+    if (!attrset)
+    {
+        ForEachItemIn(idx, fields)
+        {
+            DataSourceMetaItem &item = fields.item(idx);
+            if (*item.tagname.str()=='@')
+                attributes.append(idx);
+        }
+        attrset=true;
+    }
+    return attributes;
+}
+
 
 IFvDataSourceMetaData * DataSourceMetaData::queryChildMeta(unsigned column) const
 {
