@@ -1621,7 +1621,7 @@ void * CNormalChunkingHeap::doAllocate(size32_t chunkSize, unsigned activityId)
 
 void DataBufferBase::noteReleased(const void *ptr)
 {
-    //The link counter is shared by all the rows that are contianed in this DataBuffer
+    //The link counter is shared by all the rows that are contained in this DataBuffer
     if (atomic_dec_and_test(&count))
         released();
 }
