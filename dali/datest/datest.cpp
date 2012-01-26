@@ -76,7 +76,8 @@ static void addTestFile(const char *name,unsigned n)
         fileDesc->setPart(m,&group->queryNode(m), path.str(), pp);
     }
     Owned<IDistributedFile> dfile =  queryDistributedFileDirectory().createNew(fileDesc);
-    IPropertyTree &t = dfile->lockProperties();
+    dfile->lockProperties();
+    IPropertyTree &t = dfile->queryProperties();
     t.setProp("@owned","nigel");
     t.setPropInt("@recordSize",1);
     t.setProp("ECL","TESTECL();");

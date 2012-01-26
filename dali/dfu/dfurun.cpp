@@ -903,7 +903,8 @@ public:
                 sfile->addSubFile(subfiles.item(i));
             }
             if (newroxieprefix.length()) {
-                sfile->lockProperties().setProp("@roxiePrefix",newroxieprefix.str());
+                sfile->lockProperties();
+                sfile->queryProperties().setProp("@roxiePrefix",newroxieprefix.str());
                 sfile->unlockProperties();
             }
 

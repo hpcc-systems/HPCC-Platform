@@ -1928,8 +1928,8 @@ protected:
                     partsize = ifile->size();
                     if (partsize != -1)
                     {
-                        IPropertyTree &tree = part->lockProperties();
-                        tree.setPropInt64("@size", partsize);
+                        part->lockProperties();
+                        part->queryProperties().setPropInt64("@size", partsize);
                         part->unlockProperties();
                         break;
                     }

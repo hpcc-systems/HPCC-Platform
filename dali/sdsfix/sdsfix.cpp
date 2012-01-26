@@ -1191,7 +1191,8 @@ void fixDates()
                                             locked = true;
                                             PROGLOG("Modifying %s",lfname.str());
                                         }
-                                        part->lockProperties().setProp("@modified",ptimestr.str());
+                                        part->lockProperties();
+                                        part->queryProperties().setProp("@modified",ptimestr.str());
                                         part->unlockProperties();
                                     }
                                     else {
@@ -3653,7 +3654,8 @@ void fixCompSize(const char *lfn,IDistributedFile *file, unsigned trials=0)
         const char *s2 = prop.queryProp("@compressedSize");
         if (s1&&s2&&(strcmp(s1,s2)==0)) {
             if (!locked) {
-                flockprop = &file->lockProperties();
+                file->lockProperties();
+                flockprop = &file->queryProperties();
                 locked = true;
             }
             RemoteFilename rfn;
@@ -3679,8 +3681,8 @@ void fixCompSize(const char *lfn,IDistributedFile *file, unsigned trials=0)
             }
             __int64 sz = fio->size();
             total += sz;
-            IPropertyTree &lockprop = part->lockProperties();
-            lockprop.setPropInt64("@size",sz);
+            part->lockProperties();
+            part->queryProperties().setPropInt64("@size",sz);
             part->unlockProperties();
             //PROGLOG("Changing %s to %"I64F"d",s1,sz);
             trials = 9999;
@@ -4062,7 +4064,8 @@ void makeTestFile(const char *lname,const char *cluster, offset_t fsize, size32_
         }
         fileio.clear();
         tot += psize;
-        IPropertyTree &props = part.lockProperties();
+        part.lockProperties();
+        IPropertyTree &props = part.queryProperties();
         props.setPropInt64("@size",psize);
         props.setPropInt64("@fileCrc", (unsigned long)fileCRC.get());
         CDateTime createTime, modifiedTime, accessedTime;

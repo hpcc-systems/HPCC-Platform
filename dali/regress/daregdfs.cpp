@@ -586,7 +586,8 @@ void testDF1()
     fdesc->setPart(2,rfn,pt);
     dispFDesc(fdesc);
     Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
-    file->lockProperties().setProp("@testing","1");
+    file->lockProperties();
+    file->queryProperties().setProp("@testing","1");
     file->unlockProperties();
     file->attach("testing::propfile2");
 }
