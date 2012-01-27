@@ -232,9 +232,9 @@ public:
         for (; !iter.done(); iter.next())
         {
             const char *arg = iter.query();
-            if (iter.matchOption(optCluster, ECLOPT_CLUSTER))
+            if (iter.matchOption(optCluster, ECLOPT_CLUSTER)||iter.matchOption(optCluster, ECLOPT_CLUSTER_S))
                 continue;
-            if (iter.matchOption(optName, ECLOPT_NAME))
+            if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
                 continue;
             if (EclCmdWithEclTarget::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
@@ -280,17 +280,16 @@ public:
     virtual void usage()
     {
         fprintf(stdout,"\nUsage:\n\n"
-            "ecl deploy --cluster=<cluster> --name=<name> <ecl_file|->\n"
-            "ecl deploy --cluster=<cluster> --name=<name> <archive|->\n"
-            "ecl deploy [--cluster=<cluster>] [--name=<name>] <so|dll|->\n\n"
-            "      -                    specifies object should be read from stdin\n"
-            "      <ecl_file|->         ecl text file to deploy\n"
-            "      <archive|->          ecl archive to deploy\n"
-            "      <so|dll|->           workunit dll or shared object to deploy\n"
-            "   Options:\n"
-            "      --name=<name>        workunit job name\n"
-            "      --cluster=<cluster>  cluster to associate workunit with\n"
-            "      --name=<name>        workunit job name\n"
+            "ecl deploy --cluster=<val> --name=<val> <ecl_file|->\n"
+            "ecl deploy --cluster=<val> --name=<val> <archive|->\n"
+            "ecl deploy [--cluster=<val>] [--name=<val>] <so|dll|->\n\n"
+            "   -                      specifies object should be read from stdin\n"
+            "   <ecl_file|->           ecl text file to deploy\n"
+            "   <archive|->            ecl archive to deploy\n"
+            "   <so|dll|->             workunit dll or shared object to deploy\n"
+            " Options:\n"
+            "   -cl, --cluster=<val>   cluster to associate workunit with\n"
+            "   -n, --name=<val>       workunit job name\n"
         );
         EclCmdWithEclTarget::usage();
     }
@@ -316,13 +315,13 @@ public:
 
         for (; !iter.done(); iter.next())
         {
-            if (iter.matchOption(optObj.value, ECLOPT_WUID))
+            if (iter.matchOption(optObj.value, ECLOPT_WUID)||iter.matchOption(optObj.value, ECLOPT_WUID_S))
                 continue;
-            if (iter.matchOption(optName, ECLOPT_NAME))
+            if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
                 continue;
-            if (iter.matchOption(optCluster, ECLOPT_CLUSTER))
+            if (iter.matchOption(optCluster, ECLOPT_CLUSTER)||iter.matchOption(optCluster, ECLOPT_CLUSTER_S))
                 continue;
-            if (iter.matchFlag(optActivate, ECLOPT_ACTIVATE))
+            if (iter.matchFlag(optActivate, ECLOPT_ACTIVATE)||iter.matchFlag(optActivate, ECLOPT_ACTIVATE_S))
             {
                 activateSet=true;
                 continue;
@@ -404,20 +403,20 @@ public:
     virtual void usage()
     {
         fprintf(stdout,"\nUsage:\n\n"
-            "ecl publish [--cluster=<cluster>] [--name=<name>] [--activate] <wuid>\n"
-            "ecl publish [--cluster=<cluster>] [--name=<name>] [--activate] <so|dll|->\n"
-            "ecl publish --cluster=<cluster> --name=<name> [--activate] <archive|->\n\n"
-            "ecl publish --cluster=<cluster> --name=<name> [--activate] <ecl_file|->\n\n"
-            "      -                    specifies object should be read from stdin\n"
-            "      <wuid>               workunit to publish\n"
-            "      <archive|->          archive to publish\n"
-            "      <ecl_file|->         ECL text file to publish\n"
-            "      <so|dll|->           workunit dll or shared object to publish\n"
-            "   Options:\n"
-            "      --cluster=<cluster>  cluster to publish workunit to\n"
-            "                           (defaults to cluster defined inside workunit)\n"
-            "      --name=<name>        query name to use for published workunit\n"
-            "      --activate           activates query when published\n"
+            "ecl publish [--cluster=<val>] [--name=<val>] [--activate] <wuid>\n"
+            "ecl publish [--cluster=<val>] [--name=<val>] [--activate] <so|dll|->\n"
+            "ecl publish --cluster=<val> --name=<val> [--activate] <archive|->\n\n"
+            "ecl publish --cluster=<val> --name=<val> [--activate] <ecl_file|->\n\n"
+            "   -                      specifies object should be read from stdin\n"
+            "   <wuid>                 workunit to publish\n"
+            "   <archive|->            archive to publish\n"
+            "   <ecl_file|->           ECL text file to publish\n"
+            "   <so|dll|->             workunit dll or shared object to publish\n"
+            " Options:\n"
+            "   -cl, --cluster=<val>   cluster to publish workunit to\n"
+            "                          (defaults to cluster defined inside workunit)\n"
+            "   -n, --name=<val>       query name to use for published workunit\n"
+            "   -A, --activate         activates query when published\n"
         );
         EclCmdWithEclTarget::usage();
     }
@@ -445,13 +444,13 @@ public:
 
         for (; !iter.done(); iter.next())
         {
-            if (iter.matchOption(optObj.value, ECLOPT_WUID))
+            if (iter.matchOption(optObj.value, ECLOPT_WUID)||iter.matchOption(optObj.value, ECLOPT_WUID_S))
                 continue;
-            if (iter.matchOption(optName, ECLOPT_NAME))
+            if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
                 continue;
-            if (iter.matchOption(optCluster, ECLOPT_CLUSTER))
+            if (iter.matchOption(optCluster, ECLOPT_CLUSTER)||iter.matchOption(optCluster, ECLOPT_CLUSTER_S))
                 continue;
-            if (iter.matchOption(optInput, ECLOPT_INPUT))
+            if (iter.matchOption(optInput, ECLOPT_INPUT)||iter.matchOption(optInput, ECLOPT_INPUT_S))
                 continue;
             if (iter.matchOption(optWaitTime, ECLOPT_WAIT))
                 continue;
@@ -561,22 +560,22 @@ public:
     virtual void usage()
     {
         fprintf(stdout,"\nUsage:\n\n"
-            "ecl run [--cluster=<c>][--input=<file|xml>][--wait=<ms>] <wuid>\n"
+            "ecl run [--cluster=<val>][--input=<file|xml>][--wait=<ms>] <wuid>\n"
             "ecl run [--cluster=<c>][--input=<file|xml>][--wait=<ms>] <queryset> <query>\n"
             "ecl run [--cluster=<c>][--name=<nm>][--input=<file|xml>][--wait=<i>] <dll|->\n"
             "ecl run --cluster=<c> --name=<nm> [--input=<file|xml>][--wait=<i>] <archive|->\n"
             "ecl run --cluster=<c> --name=<nm> [--input=<file|xml>][--wait=<i>] <eclfile|->\n\n"
-            "      -                    specifies object should be read from stdin\n"
-            "      <wuid>               workunit to publish\n"
-            "      <archive|->          archive to publish\n"
-            "      <ecl_file|->         ECL text file to publish\n"
-            "      <so|dll|->           workunit dll or shared object to publish\n"
-            "   Options:\n"
-            "      --cluster=<cluster>  cluster to run job on\n"
-            "                           (defaults to cluster defined inside workunit)\n"
-            "      --name=<name>        job name\n"
-            "      --input=<file|xml>   file or xml content to use as query input\n"
-            "      --wait=<ms>          time to wait for completion\n"
+            "   -                      specifies object should be read from stdin\n"
+            "   <wuid>                 workunit to publish\n"
+            "   <archive|->            archive to publish\n"
+            "   <ecl_file|->           ECL text file to publish\n"
+            "   <so|dll|->             workunit dll or shared object to publish\n"
+            " Options:\n"
+            "   -cl, --cluster=<val>   cluster to run job on\n"
+            "                          (defaults to cluster defined inside workunit)\n"
+            "   -n, --name=<val>       job name\n"
+            "   -in,--input=<file|xml> file or xml content to use as query input\n"
+            "   --wait=<ms>            time to wait for completion\n"
         );
         EclCmdWithEclTarget::usage();
     }
@@ -632,9 +631,9 @@ public:
     {
         fprintf(stdout,"\nUsage:\n\n"
             "ecl activate <queryset> <query>\n"
-            "   Options:\n"
-            "      <queryset>            name of queryset containing query to activate\n"
-            "      <query>               query to activate\n"
+            " Options:\n"
+            "   <queryset>             name of queryset containing query to activate\n"
+            "   <query>                query to activate\n"
         );
         EclCmdWithQueryTarget::usage();
     }
@@ -686,9 +685,9 @@ public:
     {
         fprintf(stdout,"\nUsage:\n\n"
             "ecl unpublish <queryset> <query>\n"
-            "   Options:\n"
-            "      <queryset>            name of queryset containing query to unpublish\n"
-            "      <query>               query to remove from query set\n"
+            " Options:\n"
+            "   <queryset>             name of queryset containing query to unpublish\n"
+            "   <query>                query to remove from query set\n"
         );
         EclCmdWithQueryTarget::usage();
     }
@@ -740,9 +739,9 @@ public:
     {
         fprintf(stdout,"\nUsage:\n\n"
             "ecl deactivate <queryset> <query>\n"
-            "   Options:\n"
-            "      <queryset>            queryset containing alias to deactivate\n"
-            "      <query>               query to deactivate (delete)\n"
+            " Options:\n"
+            "   <queryset>             queryset containing alias to deactivate\n"
+            "   <query>                query to deactivate (delete)\n"
         );
         EclCmdWithQueryTarget::usage();
     }
