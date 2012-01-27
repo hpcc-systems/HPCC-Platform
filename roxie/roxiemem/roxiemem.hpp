@@ -33,10 +33,6 @@
  #define roxiemem_decl
 #endif
 
-#ifdef _DEBUG
-#define CHECKING_HEAP
-#endif
-
 #ifdef __64BIT__
 #define HEAP_ALIGNMENT_SIZE I64C(0x100000u)                     // 1 mb heaplets - may be too big?
 #else
@@ -54,9 +50,6 @@
 //================================================================================
 // Roxie heap
 
-#define NOTE_RELEASES       1
-#define EXTRA_DEBUG_INFO    2
-
 namespace roxiemem {
 
 interface IRowAllocatorCache
@@ -68,23 +61,19 @@ interface IRowAllocatorCache
 
 struct roxiemem_decl HeapletBase
 {
+    friend class DataBufferBottom;
 protected:
-    memsize_t mask;
     atomic_t count;
-    unsigned flags;
 
-    HeapletBase(memsize_t _mask)
+    HeapletBase()
     {
-        mask = _mask;
         atomic_set(&count,1);  // Starts off active
-        flags = 0;
     }
 
     virtual ~HeapletBase()
     {
     }
 
-    virtual void released() = 0;
     virtual void noteReleased(const void *ptr) = 0;
     virtual bool _isShared(const void *ptr) const = 0;
     virtual size32_t _capacity() const = 0;
@@ -93,12 +82,7 @@ protected:
 
     inline static HeapletBase *findBase(const void *ptr)
     {
-        HeapletBase *h = (HeapletBase *) ((memsize_t) ptr & HEAP_ALIGNMENT_MASK);
-        if (h->mask != HEAP_ALIGNMENT_MASK)
-        {
-            h = (HeapletBase *) ((memsize_t) ptr & h->mask);
-        }
-        return h;
+        return (HeapletBase *) ((memsize_t) ptr & HEAP_ALIGNMENT_MASK);
     }
 
 public:
@@ -112,10 +96,7 @@ public:
         if (ptr)
         {
             HeapletBase *h = findBase(ptr);
-            if (h->flags & NOTE_RELEASES)
-                h->noteReleased(ptr);
-            if (atomic_dec_and_test(&h->count))
-                h->released();
+            h->noteReleased(ptr);
         }
     }
 
@@ -124,9 +105,7 @@ public:
         if (ptr)
         {
             HeapletBase *h = findBase(ptr);
-            if (h->flags & NOTE_RELEASES)
-                return h->_isShared(ptr);
-            return atomic_read(&h->count)!= 2; // The heaplet itself has a usage count of 1
+            return h->_isShared(ptr);
         }
         // isShared(NULL) or isShared on an object that shares a link-count is an error
         throwUnexpected();
@@ -149,11 +128,7 @@ public:
         if (ptr)
         {
             HeapletBase *h = findBase(ptr);
-            //MORE: Should this test be debug only?
-            if (h->flags & NOTE_RELEASES)
-                h->_setDestructorFlag(ptr);
-            else
-                throwUnexpected();
+            h->_setDestructorFlag(ptr);
         }
     }
 
@@ -178,9 +153,7 @@ public:
     static void link(const void *ptr)
     {
         HeapletBase *h = findBase(ptr);
-        if (h->flags & NOTE_RELEASES)
-            h->noteLinked(ptr);
-        atomic_inc(&h->count);
+        h->noteLinked(ptr);
     }
 
     inline unsigned queryCount() const
@@ -188,10 +161,6 @@ public:
         return atomic_read(&count);
     }
 
-    inline void setFlag(unsigned flag)
-    {
-        flags |= flag;
-    }
 };
 
 extern roxiemem_decl unsigned DATA_ALIGNMENT_SIZE;  // Permissible values are 0x400 and 0x2000
@@ -208,20 +177,36 @@ class roxiemem_decl DataBufferBase : public HeapletBase
     friend class CChunkingRowManager;
     friend class DataBufferBottom;
 protected:
-    DataBufferBase *next;   // Used when chaining them together in rowMgr
-    IRowManager *mgr;
-    DataBufferBase() : HeapletBase(DATA_ALIGNMENT_MASK)
+    //Called when the last reference to this item is Released() - the object will be reused or freed later
+    virtual void released() = 0;
+    DataBufferBase()
     {
         next = NULL;
         mgr = NULL;
     }
+    inline DataBufferBase *realBase(const void *ptr, memsize_t mask) const
+    {
+        return (DataBufferBase *) ((memsize_t) ptr & mask);
+    }
+    inline DataBufferBase *realBase(const void *ptr) const { return realBase(ptr, DATA_ALIGNMENT_MASK); }
+
 public:
+    // Link and release are used to keep count of the references to the buffers.
     void Link() 
     { 
         atomic_inc(&count); 
     }
     void Release();
 
+    //These functions are called on rows allocated within the DataBuffers
+    //They are called on DataBuffferBottom which maps them to the correct DataBuffer using realBase()
+    virtual void noteReleased(const void *ptr);
+    virtual void noteLinked(const void *ptr);
+    virtual bool _isShared(const void *ptr) const;
+
+protected:
+    DataBufferBase *next;   // Used when chaining them together in rowMgr
+    IRowManager *mgr;
 };
 
 
@@ -230,11 +215,8 @@ class roxiemem_decl DataBuffer : public DataBufferBase
     friend class CDataBufferManager;
 private:
     virtual void released();
-    virtual void noteReleased(const void *ptr);
-    virtual bool _isShared(const void *ptr) const;
     virtual size32_t _capacity() const;
     virtual void _setDestructorFlag(const void *ptr);
-    virtual void noteLinked(const void *ptr);
 protected:
     DataBuffer()
     {
@@ -266,6 +248,7 @@ private:
     virtual size32_t _capacity() const;
     virtual void _setDestructorFlag(const void *ptr);
     virtual void noteLinked(const void *ptr);
+
 public:
     DataBufferBottom(CDataBufferManager *_owner, DataBufferBottom *ownerFreeChain);
 
@@ -384,9 +367,7 @@ interface IRowManager : extends IInterface
     virtual bool attachDataBuff(DataBuffer *dataBuff) = 0 ;
     virtual void noteDataBuffReleased(DataBuffer *dataBuff) = 0 ;
     virtual void setActivityTracking(bool val) = 0;
-    virtual void setCheckingHeap(int level) = 0;
     virtual void reportLeaks() = 0;
-    virtual unsigned maxSimpleBlock() = 0;
     virtual void checkHeap() = 0;
     virtual IFixedRowHeap * createFixedRowHeap(size32_t fixedSize, unsigned activityId, RoxieHeapFlags flags) = 0;
     virtual IVariableRowHeap * createVariableRowHeap(unsigned activityId, RoxieHeapFlags flags) = 0;            // should this be passed the initial size?
