@@ -489,7 +489,7 @@ sub _check_ini_file($)
             'type' => $type,
         );
         # Append suite to list
-        $clusters .= $name.' ';
+        $clusters .= $name.' ' unless ($type eq 'roxie');
 
         $ini->param(-block=>$name.'_suite', -value=> \%config);
     }
