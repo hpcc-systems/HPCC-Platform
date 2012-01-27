@@ -646,8 +646,7 @@ sub _check_cluster_values($)
         $self->error("Config does not provide value for type and is not setup_generate") unless($self->{type});
         $self->error("Config does not provide value for cluster and is not setup_generate") unless($self->{cluster});
     }
-    $self->error("Config does not provide value for owner") unless($self->{owner});
-    $self->_promptpw() unless($self->{password} || $self->{preview} || $self->{norun} || (($self->{type} eq 'roxie') && ($self->{deploy_roxie_queries} eq 'no')));
+    $self->_promptpw() unless($self->{password} || !$self->{owner} || $self->{preview} || $self->{norun} || (($self->{type} eq 'roxie') && ($self->{deploy_roxie_queries} eq 'no')));
 }
 
 sub _check_suite($)
