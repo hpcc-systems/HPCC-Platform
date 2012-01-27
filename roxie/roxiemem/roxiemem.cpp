@@ -1165,6 +1165,9 @@ public:
         }
     }
 
+    //Only called when rowManager is being destroyed
+    inline void clearRowManager() { rowManager = NULL; }
+
 protected:
     inline BigHeapletBase * getNext(const BigHeapletBase * ptr) const { return ptr->next; }
     inline void setNext(BigHeapletBase * ptr, BigHeapletBase * next) const { ptr->next = next; }
@@ -1334,8 +1337,10 @@ public:
         if (!ignoreLeaks)
             reportLeaks(2);
 
-        //Remove the fixed heaps now to ensure the noteReleasedHeap is handled cleanly
-        fixedHeaps.kill();
+        //Remove the fixed heaps now to ensure the noteReleasedHeap is handled cleanly.
+        ForEachItemIn(i, fixedHeaps)
+            fixedHeaps.item(i)->clearRowManager();
+
         DataBufferBase *dfinger = activeBuffs;
         while (dfinger)
         {
@@ -1816,7 +1821,8 @@ void * CFixedChunkingHeap::allocate(unsigned activityId)
 
 void CFixedChunkingHeap::beforeDispose()
 {
-    rowManager->noteReleasedHeap(this);
+    if (rowManager)
+        rowManager->noteReleasedHeap(this);
 }
 
 //================================================================================
@@ -2711,7 +2717,6 @@ protected:
     {
         for (unsigned i2 = 0; i2 < numCasThreads; i2++)
         {
-//            threads[i2]->setStackSize(0x100000);
             threads[i2]->start();
         }
 
@@ -2781,8 +2786,10 @@ protected:
     void testSharedFixedCas()
     {
         CountingRowAllocatorCache rowCache;
+        Owned<IFixedRowHeap> rowHeap;
         Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache);
-        Owned<IFixedRowHeap> rowHeap = rowManager->createFixedRowHeap(8, ACTIVITY_FLAG_ISREGISTERED|0, RHFhasdestructor);
+        //For this test the row heap is assign to a variable that will be destroyed after the manager, to ensure that works.
+        rowHeap.setown(rowManager->createFixedRowHeap(8, ACTIVITY_FLAG_ISREGISTERED|0, RHFhasdestructor));
         Semaphore sem;
         CasAllocatorThread * threads[numCasThreads];
         for (unsigned i1 = 0; i1 < numCasThreads; i1++)
