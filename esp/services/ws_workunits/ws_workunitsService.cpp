@@ -3255,6 +3255,12 @@ void deployArchive(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEsp
 
     if (notEmpty(req.getName()))
         wu->setJobName(req.getName());
+    else if (notEmpty(req.getFileName()))
+    {
+        StringBuffer name;
+        splitFilename(req.getFileName(), NULL, NULL, &name, NULL);
+        wu->setJobName(name.str());
+    }
 
     Owned<IWUQuery> query=wu->updateQuery();
     StringBuffer text(obj.length(), obj.toByteArray());
@@ -3327,8 +3333,6 @@ void deploySharedObject(IEspContext &context, IEspWUDeployWorkunitRequest & req,
         Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit();
         embeddedWU->loadXML(wuXML);
         queryExtendedWU(wu)->copyWorkUnit(embeddedWU);
-        //Owned<IWUQuery> query = workunit->updateQuery();
-        //query->setQueryText(eclQuery.s.str());
     }
 
     StringBuffer dllurl;
