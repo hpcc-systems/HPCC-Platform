@@ -237,13 +237,13 @@ eclCmdOptionMatchIndicator EclCmdCommon::matchCommandLineOption(ArgvIterator &it
         fprintf(stdout, "%s\n", BUILD_TAG);
         return EclCmdOptionCompletion;
     }
-    if (iter.matchOption(optServer, ECLOPT_SERVER))
+    if (iter.matchOption(optServer, ECLOPT_SERVER)||iter.matchOption(optServer, ECLOPT_SERVER_S))
         return EclCmdOptionMatch;
     if (iter.matchOption(optPort, ECLOPT_PORT))
         return EclCmdOptionMatch;
-    if (iter.matchOption(optUsername, ECLOPT_USERNAME))
+    if (iter.matchOption(optUsername, ECLOPT_USERNAME)||iter.matchOption(optUsername, ECLOPT_USERNAME_S))
         return EclCmdOptionMatch;
-    if (iter.matchOption(optPassword, ECLOPT_PASSWORD))
+    if (iter.matchOption(optPassword, ECLOPT_PASSWORD)||iter.matchOption(optPassword, ECLOPT_PASSWORD_S))
         return EclCmdOptionMatch;
     if (iter.matchFlag(optVerbose, ECLOPT_VERBOSE) || iter.matchFlag(optVerbose, ECLOPT_VERBOSE_S))
         return EclCmdOptionMatch;
@@ -330,7 +330,7 @@ eclCmdOptionMatchIndicator EclCmdWithQueryTarget::matchCommandLineOption(ArgvIte
         return EclCmdOptionMatch;
     }
     StringAttr optTemp; //backward compatible with --queryset option
-    if (iter.matchOption(optTemp, ECLOPT_QUERYSET))
+    if (iter.matchOption(optTemp, ECLOPT_QUERYSET)||iter.matchOption(optTemp, ECLOPT_QUERYSET_S))
     {
         if (!optQuerySet.length())
             optQuerySet.set(optTemp.get());
