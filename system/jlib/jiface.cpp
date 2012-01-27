@@ -44,10 +44,10 @@ MODULE_EXIT()
 //  delete ICrit;  - need to make sure this is deleted after anything that uses it
 }
 
-bool poor_atomic_dec_and_test(atomic_t * v)
+int poor_atomic_dec_and_read(atomic_t * v)
 {
     ICrit->enter();
-    bool ret = (--(*v) == 0);
+    int ret = --(*v);
     ICrit->leave();
     return ret;
 }
