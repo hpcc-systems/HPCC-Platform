@@ -71,7 +71,7 @@ use POSIX qw(localtime strftime);
 use XML::Simple;
 use Regress::Prepare qw();
 use Regress::EclPlus qw();
-use Regress::RoxieConfig qw();
+use Regress::EclPublish qw();
 use Regress::Execute qw();
 use Regress::ReportList qw();
 use Exporter;
@@ -189,7 +189,7 @@ sub run($)
     my $wuidfile = catfile($self->{suite}, 'wuids.csv');
     open($self->{wuidout}, '>', $wuidfile) or $self->error("Could not write $wuidfile: $!");
 
-    my $submit = ($self->{type} eq 'roxie') ? Regress::RoxieConfig->new($self) : Regress::EclPlus->new($self);
+    my $submit = ($self->{type} eq 'roxie') ? Regress::EclPublish->new($self) : Regress::EclPlus->new($self);
     my $seq = 0;
     foreach my $run (@{$self->{to_run}})
     {
@@ -384,7 +384,7 @@ sub log_write($$;$)
 
 =item $engine->executable_name($name);
 
-Takes the name of an executable expected to be in the regression suite directory and returns a path for it, appending '.exe' if we think we're on windows.
+Takes the name of an executable expected to be on the path and returns a path for it, appending '.exe' if we think we're on windows.
 
 =cut
 
@@ -392,7 +392,7 @@ sub executable_name($$)
 {
     my ($self, $base) = @_;
     $base .= '.exe' if($self->{iamwindows});
-    my $eclplus = catfile($self->{testdir}, $base);
+    return $base;
 }
 
 =pod
@@ -468,7 +468,7 @@ sub _check_ini_file($)
     # Variables not present in xsl or xml. How to get them?
     my $purge = 'move';
     my $fileloc = '';
-    my $roxieConfig;
+    my $eclPublish;
 
     # Format to INI
     my $ini = new Config::Simple(syntax=>'ini');
@@ -488,10 +488,8 @@ sub _check_ini_file($)
             'cluster' => $name,
             'type' => $type,
         );
-        # Config and server, only in Roxie
-        if ($name eq 'roxie') {
-            $config{roxieconfig} = $xml_sw->{EspProcess}->{EspBinding}->{$roxieConfig}->{service}
-                                    if defined $roxieConfig;
+        # roxieserver, only in Roxie
+        if ($type eq 'roxie') {
             my $xml_srv = $xml_sw->{RoxieCluster}->{RoxieServerProcess};
             if (defined $xml_srv->{computer}) {
                 $config{roxieserver} = $xml_srv->{computer}.':'.$xml_srv->{port};
@@ -506,7 +504,7 @@ sub _check_ini_file($)
             }
         }
         # Append suite to list
-        $clusters .= $name.' ';
+        $clusters .= $name.' ' unless ($type eq 'roxie');
 
         $ini->param(-block=>$name.'_suite', -value=> \%config);
     }
@@ -654,26 +652,18 @@ sub _check_cluster_values($)
     my ($self) = @_;
     $self->error("Cluster name $self->{cluster} contains illegal characters") if($self->{cluster} && ($self->{cluster} =~ /[^[:alnum:,-]_]/));
     $self->{setup_clusters} = $self->{cluster} unless($self->{setup_clusters});
-    if($self->{type} eq 'roxie')
+    if($self->{setup_generate})
     {
-        $self->error("Config does not provide value for setup_clusters for roxie tests") unless($self->{setup_clusters});
-        $self->error("Config does not supply required roxieconfig value") unless($self->{roxieconfig} || ($self->{deploy_roxie_queries} eq 'no'));
-        $self->error("Config does not supply required roxieserver value") unless($self->{roxieserver} || $self->{deploy_roxie_queries} eq 'run');
+        $self->error("Config does not provide value for setup_clusters and is setup_generate") unless($self->{setup_clusters});
     }
     else
     {
-        if($self->{setup_generate})
-        {
-            $self->error("Config does not provide value for setup_clusters and is setup_generate") unless($self->{setup_clusters});
-        }
-        else
-        {
-            $self->error("Config does not provide value for type and is not setup_generate") unless($self->{type});
-            $self->error("Config does not provide value for cluster and is not setup_generate") unless($self->{cluster});
-        }
+        $self->error("Config does not provide value for type and is not setup_generate") unless($self->{type});
+        $self->error("Config does not provide value for cluster and is not setup_generate") unless($self->{cluster});
     }
-    $self->error("Config does not provide value for owner") unless($self->{owner});
-    $self->_promptpw() unless($self->{password} || $self->{preview} || $self->{norun} || (($self->{type} eq 'roxie') && ($self->{deploy_roxie_queries} eq 'no')));
+    $self->_promptpw() unless($self->{password} || !$self->{owner} || $self->{preview} || $self->{norun} || (($self->{type} eq 'roxie') && ($self->{deploy_roxie_queries} eq 'no')));
+    $self->{owner} = '' unless $self->{owner};
+    $self->{password} = '' unless $self->{password};
 }
 
 sub _check_suite($)
