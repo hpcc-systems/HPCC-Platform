@@ -354,11 +354,6 @@ public:
                 fprintf(stderr, "\nCluster must be specified when publishing ECL Text or Archive\n");
                 return false;
             }
-            if (optName.isEmpty())
-            {
-                fprintf(stderr, "\nQuery name must be specified when publishing an ECL Text or Archive\n");
-                return false;
-            }
         }
         return true;
     }
@@ -477,12 +472,7 @@ public:
         {
             if (optCluster.isEmpty())
             {
-                fprintf(stderr, "\nCluster must be specified when publishing ECL Text or Archive\n");
-                return false;
-            }
-            if (optName.isEmpty())
-            {
-                fprintf(stderr, "\nQuery name must be specified when publishing an ECL Text or Archive\n");
+                fprintf(stderr, "\nCluster must be specified when running ECL Text or Archive\n");
                 return false;
             }
         }
