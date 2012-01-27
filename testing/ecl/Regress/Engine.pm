@@ -384,7 +384,7 @@ sub log_write($$;$)
 
 =item $engine->executable_name($name);
 
-Takes the name of an executable expected to be in the regression suite directory and returns a path for it, appending '.exe' if we think we're on windows.
+Takes the name of an executable expected to be on the path and returns a path for it, appending '.exe' if we think we're on windows.
 
 =cut
 
@@ -392,7 +392,7 @@ sub executable_name($$)
 {
     my ($self, $base) = @_;
     $base .= '.exe' if($self->{iamwindows});
-    my $eclplus = catfile($self->{testdir}, $base);
+    my $exename = $base;
 }
 
 =pod
