@@ -532,6 +532,9 @@ public:
 #define RBLOCKS_CAS_TAG        HEAP_ALIGNMENT_SIZE           // must be >= HEAP_ALIGNMENT_SIZE and power of 2
 #define RBLOCKS_OFFSET_MASK    (RBLOCKS_CAS_TAG-1)
 #define RBLOCKS_CAS_TAG_MASK   ~RBLOCKS_OFFSET_MASK
+#define ROWCOUNT_MASK            0x7fffffff
+#define ROWCOUNT_DESTRUCTOR_FLAG 0x80000000
+#define ROWCOUNT(x)              (x & ROWCOUNT_MASK)
 
 const unsigned chunkHeaderSize = sizeof(atomic_t) + sizeof(unsigned);
 
@@ -587,7 +590,7 @@ public:
         char *ptr = (char *) _ptr;
         checkPtr(ptr, "isShared");
         ptr -= sizeof(atomic_t);
-        return atomic_read((atomic_t *) ptr)!=1;
+        return ROWCOUNT(atomic_read((atomic_t *) ptr)) !=1;
     }
 
     virtual size32_t _capacity() const
@@ -601,10 +604,7 @@ public:
         {
             char *ptr = (char *) _ptr;
             ptr -= sizeof(atomic_t);
-            ptr -= sizeof(unsigned);
-            unsigned *id = (unsigned *) ptr;
-            assertex(*id & ACTIVITY_FLAG_ISREGISTERED);
-            *id |= ACTIVITY_FLAG_NEEDSDESTRUCTOR;
+            atomic_set((atomic_t *)ptr, 1|ROWCOUNT_DESTRUCTOR_FLAG);
         }
         else
             throwUnexpected();
@@ -617,12 +617,15 @@ public:
         char *ptr = (char *) _ptr;
         checkPtr(ptr, "Release");
         ptr -= sizeof(atomic_t);
-        if (atomic_dec_and_test((atomic_t *) ptr))
+        unsigned rowCount = atomic_dec_and_read((atomic_t *) ptr);
+        if (ROWCOUNT(rowCount) == 0)
         {
             ptr -= sizeof(unsigned);
-            unsigned id = *(unsigned *) ptr;
-            if (id & ACTIVITY_FLAG_NEEDSDESTRUCTOR)
+            if (rowCount & ROWCOUNT_DESTRUCTOR_FLAG)
+            {
+                unsigned id = *(unsigned *) ptr;
                 allocatorCache->onDestroy(id & MAX_ACTIVITY_ID, ptr + chunkHeaderSize);
+            }
 
             unsigned r_ptr = makeRelative(ptr);
             loop
@@ -722,11 +725,11 @@ public:
         while (leaked > 0 && base < limit)
         {
             const char *block = data + base;
-            unsigned count = atomic_read((atomic_t *) (block + sizeof(unsigned)));
-            if (count != 0)
+            unsigned rowCount = atomic_read((atomic_t *) (block + sizeof(unsigned)));
+            if (ROWCOUNT(rowCount) != 0)
             {
                 unsigned activityId = *(unsigned *) block;
-                bool hasChildren = (activityId & ACTIVITY_FLAG_NEEDSDESTRUCTOR) != 0;
+                bool hasChildren = (rowCount & ROWCOUNT_DESTRUCTOR_FLAG) != 0;
 
                 block += sizeof(unsigned) + sizeof(atomic_t);
                 logctx.CTXLOG("Block size %u at %p %swas allocated by activity %u and not freed (%d)", fixedSize, block, hasChildren ? "(with children) " : "", getActivityId(activityId), count);
@@ -744,8 +747,8 @@ public:
         while (base < limit)
         {
             const char *block = data + base;
-            unsigned count = atomic_read((atomic_t *) (block + sizeof(unsigned)));
-            if (count != 0)
+            unsigned rowCount = atomic_read((atomic_t *) (block + sizeof(unsigned)));
+            if (ROWCOUNT(rowCount) != 0)
             {
                 //MORE: Potential race: could be freed while the pointer is being checked
                 checkPtr(block+sizeof(atomic_t)+sizeof(unsigned), "Check");
@@ -767,7 +770,9 @@ public:
             unsigned activityId = getActivityId(*(unsigned *) block);
             //Potential race condition - a block could become allocated between these two lines.
             //That may introduce invalid activityIds (from freed memory) in the memory tracing.
-            if (atomic_read((atomic_t *) (block + sizeof(unsigned))) != 0)
+
+            unsigned rowCount = atomic_read((atomic_t *) (block + sizeof(unsigned)));
+            if (ROWCOUNT(rowCount) != 0)
             {
                 if (activityId != lastId)
                 {
