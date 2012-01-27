@@ -2724,6 +2724,7 @@ public:
                 }
                 else
                     DBGLOG("PING reply, garbled result");
+                ReleaseRoxieRow(answer);
             }
             else if (!anyActivity)
             {
