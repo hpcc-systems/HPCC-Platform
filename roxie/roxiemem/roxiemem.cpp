@@ -1002,6 +1002,14 @@ public:
     IMPLEMENT_IINTERFACE
 
     virtual void *finalizeRow(void *final);
+    virtual void beforeDispose();
+
+    //This should never be called while rows are being allocated since that implies the row manager is being killed
+    //too early.  => No need to protect with a critical section.
+    virtual void clearRowManager()
+    {
+        rowManager = NULL;
+    }
 
 protected:
     CChunkingRowManager * rowManager;       // Lifetime of rowManager is guaranteed to be longer
@@ -1034,6 +1042,12 @@ public:
     }
 
     virtual void *allocate();
+
+    virtual void clearRowManager()
+    {
+        heap.clear();
+        CRoxieFixedRowHeapBase::clearRowManager();
+    }
 
 protected:
     Owned<CFixedChunkingHeap> heap;
@@ -1211,8 +1225,6 @@ public:
     {
     }
 
-    virtual void beforeDispose();
-
     void * allocate(unsigned activityId);
 
     inline bool matches(size32_t searchSize, unsigned searchFlags) const
@@ -1235,8 +1247,6 @@ public:
         : CNormalChunkingHeap(_rowManager, _logctx, _allocatorCache), fixedSize(_fixedSize), flags(_flags & interestingFlags)
     {
     }
-
-    virtual void beforeDispose();
 
     void * allocate(unsigned activityId);
 
@@ -1279,7 +1289,8 @@ class CChunkingRowManager : public CInterface, implements IRowManager
     bool ignoreLeaks;
     bool trackMemoryByActivity;
     Owned<IActivityMemoryUsageMap> usageMap;
-    PointerArrayOf<CChunkingHeap> fixedHeaps;
+    CIArrayOf<CChunkingHeap> fixedHeaps;
+    CopyCIArrayOf<CRoxieFixedRowHeapBase> fixedRowHeaps;  // These are observed, NOT linked
     const IRowAllocatorCache *allocatorCache;
     unsigned __int64 cyclesChecked;       // When we last checked timelimit
     unsigned __int64 cyclesCheckInterval; // How often we need to check timelimit
@@ -1334,8 +1345,14 @@ public:
         if (!ignoreLeaks)
             reportLeaks(2);
 
-        //Remove the fixed heaps now to ensure the noteReleasedHeap is handled cleanly
-        fixedHeaps.kill();
+        //Ensure that the rowHeaps release any references to the fixed heaps, and no longer call back when they
+        //are destroyed
+        {
+            SpinBlock block(fixedCrit);
+            ForEachItemIn(i, fixedRowHeaps)
+                fixedRowHeaps.item(i).clearRowManager();
+        }
+
         DataBufferBase *dfinger = activeBuffs;
         while (dfinger)
         {
@@ -1365,8 +1382,8 @@ public:
         SpinBlock block(fixedCrit); //Spinblock needed if we can add/remove fixed heaps while allocations are occuring
         ForEachItemIn(i, fixedHeaps)
         {
-            CChunkingHeap * fixedHeap = fixedHeaps.item(i);
-            fixedHeap->checkHeap();
+            CChunkingHeap & fixedHeap = fixedHeaps.item(i);
+            fixedHeap.checkHeap();
         }
     }
 
@@ -1385,8 +1402,8 @@ public:
         SpinBlock block(fixedCrit); //Spinblock needed if we can add/remove fixed heaps while allocations are occuring
         ForEachItemIn(i, fixedHeaps)
         {
-            CChunkingHeap * fixedHeap = fixedHeaps.item(i);
-            total += fixedHeap->allocated();
+            CChunkingHeap & fixedHeap = fixedHeaps.item(i);
+            total += fixedHeap.allocated();
         }
 
         return total;
@@ -1400,10 +1417,21 @@ public:
         total += hugeHeap.pages();
 
         SpinBlock block(fixedCrit); //Spinblock needed if we can add/remove fixed heaps while allocations are occuring
-        ForEachItemIn(i, fixedHeaps)
+        unsigned numHeaps = fixedHeaps.ordinality();
+        unsigned i = 0;
+        while (i < numHeaps)
         {
-            CChunkingHeap * fixedHeap = fixedHeaps.item(i);
-            total += fixedHeap->pages();
+            CChunkingHeap & fixedHeap = fixedHeaps.item(i);
+            unsigned thisPages = fixedHeap.pages();
+            total += thisPages;
+            //if this heap has no pages, and no external references then it can be removed
+            if ((thisPages == 0) && !fixedHeap.IsShared())
+            {
+                fixedHeaps.remove(i);
+                numHeaps--;
+            }
+            else
+                i++;
         }
 
         return total;
@@ -1419,8 +1447,8 @@ public:
         SpinBlock block(fixedCrit); //Spinblock needed if we can add/remove fixed heaps while allocations are occuring
         ForEachItemIn(i, fixedHeaps)
         {
-            CChunkingHeap * fixedHeap = fixedHeaps.item(i);
-            fixedHeap->getPeakActivityUsage(map);
+            CChunkingHeap & fixedHeap = fixedHeaps.item(i);
+            fixedHeap.getPeakActivityUsage(map);
         }
 
         SpinBlock c1(crit);
@@ -1602,11 +1630,18 @@ public:
 
     virtual IFixedRowHeap * createFixedRowHeap(size32_t fixedSize, unsigned activityId, unsigned roxieHeapFlags)
     {
-        if ((roxieHeapFlags & RHFoldfixed) || (fixedSize > FixedSizeHeaplet::maxHeapSize()))
-            return new CRoxieFixedRowHeap(this, activityId, (RoxieHeapFlags)roxieHeapFlags, fixedSize);
+        CRoxieFixedRowHeapBase * rowHeap = doCreateFixedRowHeap(fixedSize, activityId, roxieHeapFlags);
 
-        CFixedChunkingHeap * heap = createFixedHeap(fixedSize, roxieHeapFlags);
-        return new CRoxieDirectFixedRowHeap(this, activityId, (RoxieHeapFlags)roxieHeapFlags, heap);
+        SpinBlock block(fixedCrit);
+        //The Row heaps are not linked by the row manager so it can determine when they are released.
+        fixedRowHeaps.append(*rowHeap);
+        return rowHeap;
+    }
+
+    void noteReleasedHeap(CRoxieFixedRowHeapBase * rowHeap)
+    {
+        SpinBlock block(fixedCrit);
+        fixedRowHeaps.zap(*rowHeap);
     }
 
     virtual IVariableRowHeap * createVariableRowHeap(unsigned activityId, unsigned roxieHeapFlags)
@@ -1633,6 +1668,15 @@ public:
     }
 
 protected:
+    CRoxieFixedRowHeapBase * doCreateFixedRowHeap(size32_t fixedSize, unsigned activityId, unsigned roxieHeapFlags)
+    {
+        if ((roxieHeapFlags & RHFoldfixed) || (fixedSize > FixedSizeHeaplet::maxHeapSize()))
+            return new CRoxieFixedRowHeap(this, activityId, (RoxieHeapFlags)roxieHeapFlags, fixedSize);
+
+        CFixedChunkingHeap * heap = createFixedHeap(fixedSize, roxieHeapFlags);
+        return new CRoxieDirectFixedRowHeap(this, activityId, (RoxieHeapFlags)roxieHeapFlags, heap);
+    }
+
     CFixedChunkingHeap * createFixedHeap(size32_t size, unsigned flags)
     {
         size32_t chunkSize;
@@ -1656,26 +1700,19 @@ protected:
             ForEachItemIn(i, fixedHeaps)
             {
                 //MORE: Needs to be a virtual function
-                CFixedChunkingHeap * heap = (CFixedChunkingHeap *)fixedHeaps.item(i);
-                if (heap->matches(chunkSize, flags))
+                CFixedChunkingHeap & heap = (CFixedChunkingHeap &)fixedHeaps.item(i);
+                if (heap.matches(chunkSize, flags))
                 {
-                    heap->Link();
-                    if (heap->isAlive())
-                        return heap;
+                    heap.Link();
+                    if (heap.isAlive())
+                        return &heap;
                 }
             }
         }
 
         CFixedChunkingHeap * heap = new CFixedChunkingHeap(this, logctx, allocatorCache, chunkSize, flags);
-        fixedHeaps.append(heap);
+        fixedHeaps.append(*LINK(heap));
         return heap;
-    }
-
-    void noteReleasedHeap(CFixedChunkingHeap * heap)
-    {
-        //heap might be one of the normal heaps allocated in the constructor, so the zap may fail
-        SpinBlock block(fixedCrit);
-        fixedHeaps.zap(heap);
     }
 
     void reportLeaks(unsigned level)
@@ -1695,14 +1732,20 @@ protected:
         SpinBlock block(fixedCrit); //Spinblock needed if we can add/remove fixed heaps while allocations are occuring
         ForEachItemIn(i, fixedHeaps)
         {
-            CChunkingHeap * fixedHeap = fixedHeaps.item(i);
             if (leaked == 0)
                 break;
-            fixedHeap->reportLeaks(leaked);
+            CChunkingHeap & fixedHeap = fixedHeaps.item(i);
+            fixedHeap.reportLeaks(leaked);
         }
     }
 };
 
+
+void CRoxieFixedRowHeapBase::beforeDispose()
+{
+    if (rowManager)
+        rowManager->noteReleasedHeap(this);
+}
 
 void * CRoxieFixedRowHeapBase::finalizeRow(void *final)
 {
@@ -1814,11 +1857,6 @@ void * CFixedChunkingHeap::allocate(unsigned activityId)
     return inlineDoAllocate(fixedSize, activityId);
 }
 
-
-void CFixedChunkingHeap::beforeDispose()
-{
-    rowManager->noteReleasedHeap(this);
-}
 
 //================================================================================
 // Buffer manager - blocked 
@@ -2712,7 +2750,6 @@ protected:
     {
         for (unsigned i2 = 0; i2 < numCasThreads; i2++)
         {
-//            threads[i2]->setStackSize(0x100000);
             threads[i2]->start();
         }
 
@@ -2782,8 +2819,10 @@ protected:
     void testSharedFixedCas()
     {
         CountingRowAllocatorCache rowCache;
+        Owned<IFixedRowHeap> rowHeap;
         Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache);
-        Owned<IFixedRowHeap> rowHeap = rowManager->createFixedRowHeap(8, ACTIVITY_FLAG_ISREGISTERED|0, RHFhasdestructor);
+        //For this test the row heap is assign to a variable that will be destroyed after the manager, to ensure that works.
+        rowHeap.setown(rowManager->createFixedRowHeap(8, ACTIVITY_FLAG_ISREGISTERED|0, RHFhasdestructor));
         Semaphore sem;
         CasAllocatorThread * threads[numCasThreads];
         for (unsigned i1 = 0; i1 < numCasThreads; i1++)
@@ -2888,9 +2927,28 @@ protected:
 
         DBGLOG("Time to calculate %u = %d", total, endTime-startTime);
     }
+    void testFixedRelease()
+    {
+        //Ensure that row heaps (and therefore row allocators) can be destroyed before and after the rowManager
+        //and that row heaps are cleaned up correctly when the row manager is destroyed.
+        CountingRowAllocatorCache rowCache;
+        Owned<IFixedRowHeap> savedRowHeap;
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache);
+        {
+            Owned<IFixedRowHeap> rowHeap = rowManager->createFixedRowHeap(8, ACTIVITY_FLAG_ISREGISTERED|0, RHFhasdestructor|RHFunique);
+            void * row = rowHeap->allocate();
+            ReleaseRoxieRow(row);
+        }
+        void * otherrow = rowManager->allocate(100, 0);
+        savedRowHeap.setown(rowManager->createFixedRowHeap(8, ACTIVITY_FLAG_ISREGISTERED|0, RHFhasdestructor|RHFunique));
+        void * leakedRow = savedRowHeap->allocate();
+        ReleaseRoxieRow(otherrow);
+        rowManager.clear();
+    }
 
     void testCas()
     {
+        testFixedRelease();
         timeRoundup();
         testVariableCas();
         testHeapletCas();
