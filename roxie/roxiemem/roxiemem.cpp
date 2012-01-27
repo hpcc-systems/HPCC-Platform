@@ -1400,8 +1400,9 @@ public:
         usageMap.setown(map.getClear());
     }
 
-    #define ROUNDED(a, b) (unsigned)(a * HEAP_ALIGNMENT_SIZE + b)
-    #define ROUNDEDSIZE(a) (a & ((size32_t)HEAP_ALIGNMENT_SIZE -1))
+    #define ROUNDED(heap, size) (unsigned)(heap * HEAP_ALIGNMENT_SIZE + size)
+    #define ROUNDEDSIZE(rounded) (rounded & ((size32_t)HEAP_ALIGNMENT_SIZE -1))
+    #define ROUNDEDHEAP(rounded) (rounded / (size32_t)HEAP_ALIGNMENT_SIZE)
     static size32_t roundup(size32_t size)
     {
         assertex(size <= FixedSizeHeaplet::maxHeapSize());
@@ -1462,7 +1463,7 @@ public:
             return hugeHeap.doAllocate(_size, activityId);
 
         size32_t rounded = roundup(_size);
-        size32_t whichHeap = rounded / (size32_t)HEAP_ALIGNMENT_SIZE;
+        size32_t whichHeap = ROUNDEDHEAP(rounded);
         size32_t size = ROUNDEDSIZE(rounded);
         CNormalChunkingHeap & normalHeap = normalHeaps.item(whichHeap);
         return normalHeap.doAllocate(size, activityId);
@@ -1736,38 +1737,37 @@ void * CHugeChunkingHeap::doAllocate(size32_t _size, unsigned activityId)
 //An inline function used to common up the allocation code for fixed and non fixed sizes.
 void * CNormalChunkingHeap::inlineDoAllocate(size32_t chunkSize, unsigned activityId)
 {
-    BigHeapletBase *prev = NULL;
+    //Only hold the spinblock while walking the list - so subsequent calls to checkLimit don't deadlock.
+    {
+        BigHeapletBase *prev = NULL;
+        SpinBlock b(crit);
+        BigHeapletBase *finger = active;
+        while (finger)
+        {
+            void *ret = finger->allocate(chunkSize, activityId);
+            if (ret)
+            {
+                if (prev)
+                {
+                    BigHeapletBase * next = getNext(finger);
+                    setNext(prev, next);
+                    setNext(finger, active);
+                    active = finger;
+                }
+                return ret;
+            }
+            prev = finger;
+            finger = getNext(finger);
+        }
+    }
+
+    rowManager->checkLimit(1);
+    FixedSizeHeaplet * head= new FixedSizeHeaplet(allocatorCache, chunkSize);
+    if (memTraceLevel >= 5 || (memTraceLevel >= 3 && chunkSize > 32000))
+        logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::allocate(size %u) allocated new FixedSizeHeaplet size %u - addr=%p pageLimit=%u peakPages=%u rowMgr=%p",
+                chunkSize, chunkSize, head, rowManager->pageLimit, rowManager->peakPages, this);
 
     SpinBlock b(crit);
-    BigHeapletBase *finger = active;
-    while (finger)
-    {
-        void *ret = finger->allocate(chunkSize, activityId);
-        if (ret)
-        {
-            if (prev)
-            {
-                BigHeapletBase * next = getNext(finger);
-                setNext(prev, next);
-                setNext(finger, active);
-                active = finger;
-            }
-            return ret;
-        }
-        prev = finger;
-        finger = getNext(finger);
-    }
-
-    FixedSizeHeaplet *head;
-    {
-        //Release the spin block so that checkLimit doesn't deadlock
-        SpinUnblock unblock(crit);
-        rowManager->checkLimit(1);
-        head = new FixedSizeHeaplet(allocatorCache, chunkSize);
-        if (memTraceLevel >= 5 || (memTraceLevel >= 3 && chunkSize > 32000))
-            logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::allocate(size %u) allocated new FixedSizeHeaplet size %u - addr=%p pageLimit=%u peakPages=%u rowMgr=%p",
-                    chunkSize, chunkSize, head, rowManager->pageLimit, rowManager->peakPages, this);
-    }
     setNext(head, active);
     active = head;
     //If no protecting spinblock there would be a race e.g., if another thread allocates all the rows!
@@ -2171,12 +2171,12 @@ public:
 class RoxieMemTests : public CppUnit::TestFixture  
 {
     CPPUNIT_TEST_SUITE( RoxieMemTests );
-//        CPPUNIT_TEST(testHuge);
+        CPPUNIT_TEST(testHuge);
         CPPUNIT_TEST(testCas);
-//        CPPUNIT_TEST(testAll);
-//        CPPUNIT_TEST(testDatamanager);
-//        CPPUNIT_TEST(testBitmap);
-//        CPPUNIT_TEST(testDatamanagerThreading);
+        CPPUNIT_TEST(testAll);
+        CPPUNIT_TEST(testDatamanager);
+        CPPUNIT_TEST(testBitmap);
+        CPPUNIT_TEST(testDatamanagerThreading);
     CPPUNIT_TEST_SUITE_END();
     const IContextLogger &logctx;
 
