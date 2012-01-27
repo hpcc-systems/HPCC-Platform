@@ -782,11 +782,13 @@
                                 </a>
                                 </xsl:when>
                                 <xsl:otherwise>
+                                    <b>
                                     <xsl:choose>
                                       <xsl:when test="$roxie!='0'">RoxieCluster - </xsl:when>
                                       <xsl:when test="$thor!='0'">ThorCluster - </xsl:when>
                                     </xsl:choose>
                                     <xsl:value-of select="$cluster"/>
+                                    </b>
                                 </xsl:otherwise>
                             </xsl:choose>
                         </td>
@@ -835,11 +837,13 @@
                                     </a>
                                 </xsl:when>
                                 <xsl:otherwise>
+                                    <b>
                                     <xsl:choose>
                                       <xsl:when test="$roxie!='0'">RoxieCluster - </xsl:when>
                                       <xsl:when test="$thor!='0'">ThorCluster - </xsl:when>
                                     </xsl:choose>
                                     <xsl:value-of select="$cluster"/>
+                                    </b>
                                 </xsl:otherwise>
                             </xsl:choose>
                         </td>
@@ -888,52 +892,54 @@
         <xsl:param name="workunits"/>
         <xsl:param name="cluster"/>
         <xsl:param name="queue"/>
-    <xsl:param name="server" select="''"/>
-    <xsl:param name="command" select="0"/>
-    <xsl:param name="thor" select="'0'"/>
-    <xsl:param name="roxie" select="'0'"/>
+        <xsl:param name="server" select="''"/>
+        <xsl:param name="command" select="0"/>
+        <xsl:param name="thor" select="'0'"/>
+        <xsl:param name="roxie" select="'0'"/>
 
         <xsl:variable name="active" select="$workunits[State='running']"/>
-        <tbody> 
-            <tr style="border:solid 2 black">
-                <xsl:choose>
-                    <xsl:when test="count($active)">
-                        <xsl:for-each select="$active">
-                            <xsl:if test="position() > 1">
-                                <xsl:text disable-output-escaping="yes">
-                                    <![CDATA[
-                                        </tr>
-                                        <tr>
-                                    ]]>
-                                </xsl:text>
+        <tbody>
+            <xsl:choose>
+                <xsl:when test="$workunits[1]">
+                    <tr style="border:solid 2 black">
+                            <xsl:if test="count($active)">
+                                <xsl:for-each select="$active">
+                                    <xsl:if test="position() > 1">
+                                        <xsl:text disable-output-escaping="yes">
+                                            <![CDATA[
+                                                </tr>
+                                                <tr>
+                                            ]]>
+                                        </xsl:text>
+                                    </xsl:if>
+                                    <xsl:apply-templates select=".">
+                                        <xsl:with-param name="cluster" select="$cluster"/>
+                                        <xsl:with-param name="queue" select="$queue"/>
+                                        <xsl:with-param name="command" select="$command"/>
+                                        <xsl:with-param name="thor" select="$thor"/>
+                                        <xsl:with-param name="roxie" select="$roxie"/>
+                                    </xsl:apply-templates>
+                                </xsl:for-each>
                             </xsl:if>
-                            <xsl:apply-templates select=".">
-                                <xsl:with-param name="cluster" select="$cluster"/>
-                                <xsl:with-param name="queue" select="$queue"/>
-                                <xsl:with-param name="command" select="$command"/>
-                <xsl:with-param name="thor" select="$thor"/>
-                <xsl:with-param name="roxie" select="$roxie"/>
-                            </xsl:apply-templates>
-                        </xsl:for-each>
-                    </xsl:when>
-                    <xsl:otherwise>
-                        <td colspan='4'/>
-                    </xsl:otherwise>            
-                </xsl:choose>
-            </tr>
+                    </tr>
 
-            <xsl:for-each select="$workunits[State!='running']">
-                <tr>
-                    <xsl:apply-templates select=".">
-                      <xsl:with-param name="server" select="$server"/>
-                      <xsl:with-param name="cluster" select="$cluster"/>
-                      <xsl:with-param name="queue" select="$queue"/>
-                      <xsl:with-param name="command" select="$command"/>
-                      <xsl:with-param name="thor" select="$thor"/>
-                      <xsl:with-param name="roxie" select="$roxie"/>
-                    </xsl:apply-templates>
-                </tr>
-            </xsl:for-each>
+                    <xsl:for-each select="$workunits[State!='running']">
+                        <tr>
+                            <xsl:apply-templates select=".">
+                              <xsl:with-param name="server" select="$server"/>
+                              <xsl:with-param name="cluster" select="$cluster"/>
+                              <xsl:with-param name="queue" select="$queue"/>
+                              <xsl:with-param name="command" select="$command"/>
+                              <xsl:with-param name="thor" select="$thor"/>
+                              <xsl:with-param name="roxie" select="$roxie"/>
+                            </xsl:apply-templates>
+                        </tr>
+                    </xsl:for-each>
+                </xsl:when>
+                <xsl:otherwise>
+                    <td width="1100" colspan='4'>No active workunit</td>
+                </xsl:otherwise>
+            </xsl:choose>
         </tbody> 
     </xsl:template>
 
