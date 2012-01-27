@@ -1204,7 +1204,7 @@ protected:
 
 class CFixedChunkingHeap : public CNormalChunkingHeap
 {
-    enum { interestingFlags = RHFunique };
+    enum { interestingFlags = RHFunique|RHFpacked };
 public:
     CFixedChunkingHeap(CChunkingRowManager * _rowManager, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, size32_t _fixedSize, unsigned _flags)
         : CNormalChunkingHeap(_rowManager, _logctx, _allocatorCache), fixedSize(_fixedSize), flags(_flags & interestingFlags)
@@ -1225,6 +1225,32 @@ public:
 protected:
     size32_t fixedSize;
     unsigned flags;
+};
+
+class CPackedChunkingHeap : public CNormalChunkingHeap
+{
+    enum { interestingFlags = RHFunique|RHFpacked };
+public:
+    CPackedChunkingHeap(CChunkingRowManager * _rowManager, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, size32_t _fixedSize, unsigned _flags)
+        : CNormalChunkingHeap(_rowManager, _logctx, _allocatorCache), fixedSize(_fixedSize), flags(_flags & interestingFlags)
+    {
+    }
+
+    virtual void beforeDispose();
+
+    void * allocate(unsigned activityId);
+
+    inline bool matches(size32_t searchSize, unsigned searchFlags) const
+    {
+        //Check the size matches, and any flags we are interested in.
+        return (searchSize == fixedSize) &&
+               (searchFlags & interestingFlags) == flags;
+    }
+
+protected:
+    size32_t fixedSize;
+    unsigned flags;
+    unsigned activityId;
 };
 
 //================================================================================
@@ -1253,7 +1279,7 @@ class CChunkingRowManager : public CInterface, implements IRowManager
     bool ignoreLeaks;
     bool trackMemoryByActivity;
     Owned<IActivityMemoryUsageMap> usageMap;
-    PointerArrayOf<CFixedChunkingHeap> fixedHeaps;
+    PointerArrayOf<CChunkingHeap> fixedHeaps;
     const IRowAllocatorCache *allocatorCache;
     unsigned __int64 cyclesChecked;       // When we last checked timelimit
     unsigned __int64 cyclesCheckInterval; // How often we need to check timelimit
@@ -1339,7 +1365,7 @@ public:
         SpinBlock block(fixedCrit); //Spinblock needed if we can add/remove fixed heaps while allocations are occuring
         ForEachItemIn(i, fixedHeaps)
         {
-            CFixedChunkingHeap * fixedHeap = fixedHeaps.item(i);
+            CChunkingHeap * fixedHeap = fixedHeaps.item(i);
             fixedHeap->checkHeap();
         }
     }
@@ -1359,7 +1385,7 @@ public:
         SpinBlock block(fixedCrit); //Spinblock needed if we can add/remove fixed heaps while allocations are occuring
         ForEachItemIn(i, fixedHeaps)
         {
-            CFixedChunkingHeap * fixedHeap = fixedHeaps.item(i);
+            CChunkingHeap * fixedHeap = fixedHeaps.item(i);
             total += fixedHeap->allocated();
         }
 
@@ -1376,7 +1402,7 @@ public:
         SpinBlock block(fixedCrit); //Spinblock needed if we can add/remove fixed heaps while allocations are occuring
         ForEachItemIn(i, fixedHeaps)
         {
-            CFixedChunkingHeap * fixedHeap = fixedHeaps.item(i);
+            CChunkingHeap * fixedHeap = fixedHeaps.item(i);
             total += fixedHeap->pages();
         }
 
@@ -1393,7 +1419,7 @@ public:
         SpinBlock block(fixedCrit); //Spinblock needed if we can add/remove fixed heaps while allocations are occuring
         ForEachItemIn(i, fixedHeaps)
         {
-            CFixedChunkingHeap * fixedHeap = fixedHeaps.item(i);
+            CChunkingHeap * fixedHeap = fixedHeaps.item(i);
             fixedHeap->getPeakActivityUsage(map);
         }
 
@@ -1629,7 +1655,8 @@ protected:
         {
             ForEachItemIn(i, fixedHeaps)
             {
-                CFixedChunkingHeap * heap = fixedHeaps.item(i);
+                //MORE: Needs to be a virtual function
+                CFixedChunkingHeap * heap = (CFixedChunkingHeap *)fixedHeaps.item(i);
                 if (heap->matches(chunkSize, flags))
                 {
                     heap->Link();
@@ -1668,7 +1695,7 @@ protected:
         SpinBlock block(fixedCrit); //Spinblock needed if we can add/remove fixed heaps while allocations are occuring
         ForEachItemIn(i, fixedHeaps)
         {
-            CFixedChunkingHeap * fixedHeap = fixedHeaps.item(i);
+            CChunkingHeap * fixedHeap = fixedHeaps.item(i);
             if (leaked == 0)
                 break;
             fixedHeap->reportLeaks(leaked);
