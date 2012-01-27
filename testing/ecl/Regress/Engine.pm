@@ -392,7 +392,7 @@ sub executable_name($$)
 {
     my ($self, $base) = @_;
     $base .= '.exe' if($self->{iamwindows});
-    my $exename = $base;
+    return $base;
 }
 
 =pod
@@ -488,6 +488,21 @@ sub _check_ini_file($)
             'cluster' => $name,
             'type' => $type,
         );
+        # roxieserver, only in Roxie
+        if ($type eq 'roxie') {
+            my $xml_srv = $xml_sw->{RoxieCluster}->{RoxieServerProcess};
+            if (defined $xml_srv->{computer}) {
+                $config{roxieserver} = $xml_srv->{computer}.':'.$xml_srv->{port};
+            } elsif (defined $xml_srv) {
+                for my $farm_k (keys %$xml_srv) {
+                    my $farm = $xml_srv->{$farm_k};
+                    if (defined $farm->{computer} && defined $farm->{port}) {
+                        $config{roxieserver} = $farm->{computer}.':'.$farm->{port};
+                        last;
+                    }
+                }
+            }
+        }
         # Append suite to list
         $clusters .= $name.' ' unless ($type eq 'roxie');
 
@@ -647,6 +662,8 @@ sub _check_cluster_values($)
         $self->error("Config does not provide value for cluster and is not setup_generate") unless($self->{cluster});
     }
     $self->_promptpw() unless($self->{password} || !$self->{owner} || $self->{preview} || $self->{norun} || (($self->{type} eq 'roxie') && ($self->{deploy_roxie_queries} eq 'no')));
+    $self->{owner} = '' unless $self->{owner};
+    $self->{password} = '' unless $self->{password};
 }
 
 sub _check_suite($)
