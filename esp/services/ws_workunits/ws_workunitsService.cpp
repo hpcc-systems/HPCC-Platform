@@ -3256,7 +3256,11 @@ void deployArchive(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEsp
     if (notEmpty(req.getName()))
         wu->setJobName(req.getName());
     else if (notEmpty(req.getFileName()))
-        wu->setJobName(req.getFileName());
+    {
+        StringBuffer name;
+        splitFilename(req.getFileName(), NULL, NULL, &name, NULL);
+        wu->setJobName(name.str());
+    }
 
     Owned<IWUQuery> query=wu->updateQuery();
     StringBuffer text(obj.length(), obj.toByteArray());
