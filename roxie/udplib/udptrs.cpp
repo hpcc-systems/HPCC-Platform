@@ -269,6 +269,10 @@ public:
                 }
                 retryData[slot] = buffer;
             }
+            else
+            {
+                ::Release(buffer);
+            }
         }
         return totalSent;
     }
