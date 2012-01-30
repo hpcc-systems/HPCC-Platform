@@ -814,7 +814,7 @@ static int dfsverify(const char *name,CDateTime *cutoff)
             return 0;
     }
 
-    IPropertyTree &fileprops = file->queryProperties();
+    IPropertyTree &fileprops = file->queryAttributes();
     bool blocked;
     bool rowcompressed = file->isCompressed(&blocked)&&!blocked;
     CFileList list;
@@ -1344,7 +1344,7 @@ static offset_t getCompressedSize(IDistributedFile *file)
 {  // this should be parallel!  TBD
     if (!file)
         return (offset_t)-1;
-    offset_t ret = (offset_t)file->queryProperties().getPropInt64("@compressedSize",-1);
+    offset_t ret = (offset_t)file->queryAttributes().getPropInt64("@compressedSize",-1);
     if (ret==(offset_t)-1) {
         try {
             ret = 0;

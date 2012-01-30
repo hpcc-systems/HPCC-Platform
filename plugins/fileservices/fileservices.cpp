@@ -1440,7 +1440,7 @@ FILESERVICES_API void FILESERVICES_CALL fsSetFileDescription(ICodeContext *ctx, 
     Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc);
     if (df) {
         df->lockProperties();
-        df->queryProperties().setProp("@description",value);
+        df->queryAttributes().setProp("@description",value);
         df->unlockProperties();
     }
     else
@@ -1456,7 +1456,7 @@ FILESERVICES_API char *  FILESERVICES_CALL fsGetFileDescription(ICodeContext *ct
     Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc);
     if (!df)
         throw MakeStringException(0, "GetFileDescription: Could not locate file %s", lfn.str());
-    const char * ret = df->queryProperties().queryProp("@description");
+    const char * ret = df->queryAttributes().queryProp("@description");
     if (ret)
         return CTXSTRDUP(parentCtx, ret);
     else
@@ -2070,7 +2070,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfGetLogicalFileAttribute(ICodeContex
             dt.getString(ret);
         }
         else if (strcmp(attrname,"protected")==0) {
-            IPropertyTree &attr = df->queryProperties();
+            IPropertyTree &attr = df->queryAttributes();
             Owned<IPropertyTreeIterator> piter = attr.getElements("Protect");
             ForEach(*piter) {
                 const char *name = piter->get().queryProp("@name");
@@ -2087,7 +2087,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfGetLogicalFileAttribute(ICodeContex
         else {
             StringBuffer xpath("@");
             xpath.append(attrname);
-            IPropertyTree &attr = df->queryProperties();
+            IPropertyTree &attr = df->queryAttributes();
             attr.getProp(xpath.str(),ret);
         }
     }

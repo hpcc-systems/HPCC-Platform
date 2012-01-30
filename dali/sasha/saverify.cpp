@@ -224,7 +224,7 @@ public:
         Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(name);
         if (!file)
             return;
-        IPropertyTree &fileprops = file->queryProperties();
+        IPropertyTree &fileprops = file->queryAttributes();
         bool blocked = false;
         if (file->isCompressed(&blocked)&&!blocked)
             return;
@@ -351,7 +351,7 @@ public:
                 dt.setNow();
                 file->lockProperties();
                 StringBuffer str;
-                file->queryProperties().setProp("@verified",dt.getString(str).str());
+                file->queryAttributes().setProp("@verified",dt.getString(str).str());
                 file->unlockProperties();
             }
             PROGLOG("VERIFY: file %s %s",name,afor.ok?"OK":"FAILED");

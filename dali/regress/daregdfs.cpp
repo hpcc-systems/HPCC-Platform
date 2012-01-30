@@ -137,7 +137,7 @@ void checkFilePart(IChecker *checker,IDistributedFilePart *part,bool blocked)
 #ifndef COMPAT
     checker->add("getPartDirectory",part->getPartDirectory(tmp.clear()).str());
 #endif
-    checker->add("queryProperties()",toXML(&part->queryProperties(),tmp.clear()).str());
+    checker->add("queryProperties()",toXML(&part->queryAttributes(),tmp.clear()).str());
     checker->add("isHost",part->isHost()?1:0);
     checker->add("getFileSize",part->getFileSize(false,false));
     CDateTime dt;
@@ -163,7 +163,7 @@ void checkFile(IChecker *checker,IDistributedFile *file)
     checker->add("queryDefaultDir",file->queryDefaultDir());
     if (np>1)
         checker->add("queryPartMask",file->queryPartMask());
-    checker->add("queryProperties()",toXML(&file->queryProperties(),tmp.clear()).str());
+    checker->add("queryProperties()",toXML(&file->queryAttributes(),tmp.clear()).str());
     CDateTime dt;
     if (file->getModificationTime(dt))
         dt.getString(tmp.clear());
@@ -587,7 +587,7 @@ void testDF1()
     dispFDesc(fdesc);
     Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
     file->lockProperties();
-    file->queryProperties().setProp("@testing","1");
+    file->queryAttributes().setProp("@testing","1");
     file->unlockProperties();
     file->attach("testing::propfile2");
 }

@@ -131,7 +131,7 @@ interface IDistributedFilePart: implements IInterface
     virtual StringBuffer &getPartName(StringBuffer &name) = 0;                          // Tail Name (e.g. "test.d00._1_of_3")
     virtual StringBuffer &getPartDirectory(StringBuffer &name,unsigned copy = 0) = 0;   // get filename info
 
-    virtual IPropertyTree &queryProperties() = 0;                               // part properties
+    virtual IPropertyTree &queryAttributes() = 0;                               // part attributes
 
     virtual bool lockProperties(unsigned timeoutms=INFINITE) = 0;               // must be called before updating
     virtual void unlockProperties() = 0;                                        // must be called after updating
@@ -191,6 +191,19 @@ interface IDistributedSuperFileIterator: extends IIteratorOf<IDistributedSuperFi
     virtual const char *queryName() = 0;
 };
 
+/*
+ * Objects of this type should lock the property tree on constructor,
+ * keep a reference to the Attr section and release the lock on destruction.
+ *
+ * Replaces previous lock/query/unlock Properties trio that cause much grief.
+ *
+ * Locks can be implemented on DFS connection, critical blocks or simple
+ * counters, depending on the usage.
+ */
+interface IPropertyLock {
+    virtual IPropertyTree &queryAttributes() = 0; // return attributes of locked properties
+};
+
 /**
  * A distributed file, composed of one or more DistributedFileParts.
  */
@@ -217,7 +230,7 @@ interface IDistributedFile: extends IInterface
     virtual void attach(const char *logicalname,IDistributedFileTransaction *transaction=NULL,IUserDescriptor *user=NULL) = 0;                          // attach to name in DFS
     virtual void detach(IDistributedFileTransaction *transaction=NULL) = 0;                                                 // no longer attached to name in DFS
 
-    virtual IPropertyTree &queryProperties() = 0;                               // DFile attributes (TODO: rename to getFileAttr)
+    virtual IPropertyTree &queryAttributes() = 0;                               // DFile attributes
 
     virtual bool lockProperties(unsigned timeoutms=INFINITE) = 0;               // must be called before updating properties (will discard uncommitted changes)
     virtual void unlockProperties() = 0;                                        // must be called after updating properties
@@ -626,11 +639,11 @@ extern da_decl IDFAttributesIterator *createSubFileFilter(IDFAttributesIterator 
 // Useful property query functions 
 
 inline bool isFileKey(IPropertyTree &pt) { const char *kind = pt.queryProp("@kind"); return kind&&strieq(kind,"key"); }
-inline bool isFileKey(IDistributedFile *f) { return isFileKey(f->queryProperties()); }
+inline bool isFileKey(IDistributedFile *f) { return isFileKey(f->queryAttributes()); }
 inline bool isFileKey(IFileDescriptor *f) { return isFileKey(f->queryProperties()); }
 
 inline bool isPartTLK(IPropertyTree &pt) { const char *kind = pt.queryProp("@kind"); return kind&&strieq(kind,"topLevelKey"); }
-inline bool isPartTLK(IDistributedFilePart *p) { return isPartTLK(p->queryProperties()); }
+inline bool isPartTLK(IDistributedFilePart *p) { return isPartTLK(p->queryAttributes()); }
 inline bool isPartTLK(IPartDescriptor *p) { return isPartTLK(p->queryProperties()); }
 
 extern da_decl void ensureFileScope(const CDfsLogicalFileName &dlfn, unsigned timeoutms=INFINITE);

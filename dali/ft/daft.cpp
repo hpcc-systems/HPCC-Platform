@@ -188,7 +188,7 @@ void CDistributedFileSystem::physicalCopy(IPropertyTree * source, const char * t
 offset_t CDistributedFileSystem::getSize(IDistributedFile * file, bool forceget, bool dontsetattr)
 {
     //MORE: Should this be done on multiple threads??? (NH: probably)
-    offset_t totalSize = forceget?-1:file->queryProperties().getPropInt64("@size",-1);
+    offset_t totalSize = forceget?-1:file->queryAttributes().getPropInt64("@size",-1);
     if (totalSize == -1) {
         unsigned numParts = file->numParts();
         totalSize = 0;
@@ -206,7 +206,7 @@ offset_t CDistributedFileSystem::getSize(IDistributedFile * file, bool forceget,
         if (((totalSize != -1)||forceget) && !dontsetattr) // note forceget && !dontsetattr will reset attr if can't work out size
         {
             file->lockProperties();
-            file->queryProperties().setPropInt64("@size", totalSize);
+            file->queryAttributes().setPropInt64("@size", totalSize);
             file->unlockProperties();
         }
     }
@@ -272,7 +272,7 @@ offset_t CDistributedFileSystem::getSize(IDistributedFilePart * part, bool force
         if (((size != (offset_t)-1)||forceget) && !dontsetattr) // note forceget && !dontsetattr will reset attr if can't work out size
         {
             part->lockProperties();
-            part->queryProperties().setPropInt64("@size", size);
+            part->queryAttributes().setPropInt64("@size", size);
             part->unlockProperties();
         }
     }

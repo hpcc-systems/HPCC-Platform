@@ -396,7 +396,7 @@ bool EclGraphElement::alreadyUpToDate(IAgentContext & agent)
         return (totalCRC <= pseudoCrc);
     }
 
-    IPropertyTree & cur = f->queryProperties();
+    IPropertyTree & cur = f->queryAttributes();
     if ((eclCRC != cur.getPropInt("@eclCRC")) || (totalCRC != cur.getPropInt64("@totalCRC")))
         return false;
     return true;

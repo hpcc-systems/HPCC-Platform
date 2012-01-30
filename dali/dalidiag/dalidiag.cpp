@@ -285,7 +285,7 @@ void partInfo(const char *name,unsigned copy)
             part.getFilename(fn,copy);
             StringBuffer buf;
             SocketEndpoint ep = fn.queryEndpoint();
-            printf("%3d %10"I64F"d %5s\n",partno,part.queryProperties().getPropInt64("@size", -1),fn.getRemotePath(buf).str());
+            printf("%3d %10"I64F"d %5s\n",partno,part.queryAttributes().getPropInt64("@size", -1),fn.getRemotePath(buf).str());
         }
     }
     else

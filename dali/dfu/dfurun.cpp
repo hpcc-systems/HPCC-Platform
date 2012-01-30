@@ -857,7 +857,7 @@ public:
             else {
                 if (ctx.superoptions->getIfModified()&&
                     (ftree->hasProp("Attr/@fileCrc")&&ftree->getPropInt64("Attr/@size")&&
-                    ((unsigned)ftree->getPropInt64("Attr/@fileCrc")==(unsigned)dfile->queryProperties().getPropInt64("@fileCrc"))&&
+                    ((unsigned)ftree->getPropInt64("Attr/@fileCrc")==(unsigned)dfile->queryAttributes().getPropInt64("@fileCrc"))&&
                     (ftree->getPropInt64("Attr/@size")==dfile->getFileSize(false,false)))) {
                     PROGLOG("File copy of %s not done as file unchanged",srclfn);
                     return;
@@ -904,7 +904,7 @@ public:
             }
             if (newroxieprefix.length()) {
                 sfile->lockProperties();
-                sfile->queryProperties().setProp("@roxiePrefix",newroxieprefix.str());
+                sfile->queryAttributes().setProp("@roxiePrefix",newroxieprefix.str());
                 sfile->unlockProperties();
             }
 
@@ -1140,7 +1140,7 @@ public:
                               (cmd==DFUcmd_move)||(cmd==DFUcmd_rename)||((cmd==DFUcmd_copy)&&multiclusterinsert)));
                         if (!srcFile) 
                             throw MakeStringException(-1,"Source file %s could not be found",tmp.str());
-                        oldRoxiePrefix.set(srcFile->queryProperties().queryProp("@roxiePrefix"));
+                        oldRoxiePrefix.set(srcFile->queryAttributes().queryProp("@roxiePrefix"));
                         iskey = isFileKey(srcFile);
                         if (destination->getWrap()||(iskey&&(cmd==DFUcmd_copy)))    // keys default wrap for copy
                             destination->setNumPartsOverride(srcFile->numParts());

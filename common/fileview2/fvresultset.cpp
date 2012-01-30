@@ -107,7 +107,7 @@ IFvDataSource * createFileDataSource(IDistributedFile * df, const char * logical
     if (df->isCompressed(&blocked) && !blocked)
         throwError1(FVERR_CompressedFile, logicalName);
 
-    IPropertyTree & properties = df->queryProperties();
+    IPropertyTree & properties = df->queryAttributes();
     const char * format = properties.queryProp("@format");
     if (format && (stricmp(format,"csv")==0 || memicmp(format, "utf", 3) == 0))
     {

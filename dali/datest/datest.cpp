@@ -77,7 +77,7 @@ static void addTestFile(const char *name,unsigned n)
     }
     Owned<IDistributedFile> dfile =  queryDistributedFileDirectory().createNew(fileDesc);
     dfile->lockProperties();
-    IPropertyTree &t = dfile->queryProperties();
+    IPropertyTree &t = dfile->queryAttributes();
     t.setProp("@owned","nigel");
     t.setPropInt("@recordSize",1);
     t.setProp("ECL","TESTECL();");
@@ -283,7 +283,7 @@ void Test_PartIter()
     Owned<IDistributedFilePartIterator> parts = file->getIterator();
     ForEach(*parts) {
         IDistributedFilePart & thisPart = parts->query(); 
-        IPropertyTree &partProps = thisPart.queryProperties();
+        IPropertyTree &partProps = thisPart.queryAttributes();
     }
     printf("time taken = %d\n",msTick()-start);
 }

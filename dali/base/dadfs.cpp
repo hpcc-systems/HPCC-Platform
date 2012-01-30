@@ -1853,6 +1853,7 @@ class CDistributedFilePart: public CInterface, implements IDistributedFilePart
     CriticalSection sect;
     StringAttr overridename;    // may or not be relative to directory
     bool            dirty;      // whether needs updating in tree 
+
 public:
 
     virtual void Link(void) const;
@@ -1861,7 +1862,7 @@ public:
     RemoteFilename &getFilename(RemoteFilename &ret,unsigned copy);
     void renameFile(IFile *file);
     unsigned getCRC();
-    IPropertyTree &queryProperties();
+    IPropertyTree &queryAttributes();
     bool lockProperties(unsigned timems);
     void unlockProperties();
     bool isHost(unsigned copy);
@@ -2242,7 +2243,7 @@ public:
 
     bool isCompressed(bool *blocked)
     {
-        return ::isCompressed(queryProperties(),blocked);
+        return ::isCompressed(queryAttributes(),blocked);
     }
 
     StringBuffer &getLogicalName(StringBuffer &lname)
@@ -2261,7 +2262,7 @@ public:
         return logicalName.get();
     }
 
-    IPropertyTree &queryProperties()
+    IPropertyTree &queryAttributes()
     {
         IPropertyTree *t = root->queryPropTree("Attr");
         if (!t)
@@ -2280,9 +2281,9 @@ protected:
     }
 
 public:
-    bool isAnon() 
-    { 
-        return !logicalName.isSet(); 
+    bool isAnon()
+    {
+        return !logicalName.isSet();
     }
 
     /*
@@ -2466,17 +2467,17 @@ public:
     virtual StringBuffer &getECL(StringBuffer &buf)
     {
         MemoryBuffer mb;
-        if (queryProperties().getPropBin("ECLbin",mb)) 
+        if (queryAttributes().getPropBin("ECLbin",mb))
             buf.deserialize(mb);
         else
-            queryProperties().getProp("ECL",buf);
+            queryAttributes().getProp("ECL",buf);
         return buf;
     }
 
     virtual void setECL(const char *ecl)
     {
         lockProperties(defaultTimeout);
-        IPropertyTree &p = queryProperties();
+        IPropertyTree &p = queryAttributes();
 #ifdef PACK_ECL
         p.removeProp("ECL");
         if (!ecl||!*ecl)
@@ -2515,7 +2516,7 @@ public:
             bool ret=false;
             if (conn) {
                 lockProperties(timems);
-                IPropertyTree &p = queryProperties();
+                IPropertyTree &p = queryAttributes();
                 CDateTime dt;
                 dt.setNow();
                 try {
@@ -2544,8 +2545,8 @@ public:
     virtual void checkFormatAttr(IDistributedFile *sub, const char* exprefix="")
     {
         // check file has same (or similar) format
-        IPropertyTree &superProp = queryProperties();
-        IPropertyTree &subProp = sub->queryProperties();
+        IPropertyTree &superProp = queryAttributes();
+        IPropertyTree &subProp = sub->queryAttributes();
         if (!exprefix)
             exprefix = "CheckFormatAttr";
 
@@ -2642,7 +2643,7 @@ public:
 
     virtual StringBuffer &getColumnMapping(StringBuffer &mapping)
     {
-        queryProperties().getProp("@columnMapping",mapping);
+        queryAttributes().getProp("@columnMapping",mapping);
         return mapping;
     }
 
@@ -2650,9 +2651,9 @@ public:
     {
         lockProperties(defaultTimeout);
         if (!mapping||!*mapping) 
-            queryProperties().removeProp("@columnMapping");
+            queryAttributes().removeProp("@columnMapping");
         else
-            queryProperties().setProp("@columnMapping",mapping);
+            queryAttributes().setProp("@columnMapping",mapping);
         unlockProperties();
     }
 
@@ -2818,9 +2819,9 @@ public:
         }
         shrinkFileTree(root);
         if (totalsize!=(offset_t)-1)
-            queryProperties().setPropInt64("@size", totalsize);
+            queryAttributes().setPropInt64("@size", totalsize);
         if (useableCheckSum)
-            queryProperties().setPropInt64("@checkSum", checkSum);
+            queryAttributes().setPropInt64("@checkSum", checkSum);
         setModified();
 #ifdef EXTRA_LOGGING
         LOGPTREE("CDistributedFile.b root.2",root);
@@ -3234,7 +3235,7 @@ public:
         attach(_logicalname,transaction,user);
         if (prevname.length()) {
             lockProperties(defaultTimeout);
-            IPropertyTree &pt = queryProperties();
+            IPropertyTree &pt = queryAttributes();
             StringBuffer list;
             if (pt.getProp("@renamedFrom",list)&&list.length())
                 list.append(',');
@@ -3406,7 +3407,7 @@ public:
                 }
             }
         } afor(this,width,port,grpfilter,mexcept,errcrit);
-        afor.islazy = queryProperties().getPropInt("@lazy")!=0;
+        afor.islazy = queryAttributes().getPropInt("@lazy")!=0;
         afor.For(width,10,false,true);
         if (cluster&&*cluster) 
             removeCluster(cluster);
@@ -3798,7 +3799,7 @@ public:
 
     __int64 getFileSize(bool allowphysical,bool forcephysical)
     {
-        __int64 ret = (__int64)(forcephysical?-1:queryProperties().getPropInt64("@size",-1));
+        __int64 ret = (__int64)(forcephysical?-1:queryAttributes().getPropInt64("@size",-1));
         if (ret==-1) {
             ret = 0;
             unsigned n = numParts();
@@ -3817,8 +3818,8 @@ public:
 
     bool getFileCheckSum(unsigned &checkSum)
     {
-        if (queryProperties().hasProp("@checkSum"))
-            checkSum = (unsigned)queryProperties().getPropInt64("@checkSum");
+        if (queryAttributes().hasProp("@checkSum"))
+            checkSum = (unsigned)queryAttributes().getPropInt64("@checkSum");
         else
         {
             checkSum = ~0;
@@ -3836,9 +3837,9 @@ public:
 
     virtual bool getFormatCrc(unsigned &crc)
     {
-        if (queryProperties().hasProp("@formatCrc")) {
+        if (queryAttributes().hasProp("@formatCrc")) {
             // NB pre record_layout CRCs are not valid
-            crc = (unsigned)queryProperties().getPropInt("@formatCrc");
+            crc = (unsigned)queryAttributes().getPropInt("@formatCrc");
             return true;
         }
         return false;
@@ -3846,13 +3847,13 @@ public:
 
     virtual bool getRecordLayout(MemoryBuffer &layout) 
     {
-        return queryProperties().getPropBin("_record_layout",layout);
+        return queryAttributes().getPropBin("_record_layout",layout);
     }
 
     virtual bool getRecordSize(size32_t &rsz)
     {
-        if (queryProperties().hasProp("@recordSize")) {
-            rsz = (size32_t)queryProperties().getPropInt("@recordSize");
+        if (queryAttributes().hasProp("@recordSize")) {
+            rsz = (size32_t)queryAttributes().getPropInt("@recordSize");
             return true;
         }
         return false;
@@ -3953,10 +3954,10 @@ public:
         else {
             lockProperties(defaultTimeout);
             if (dt.isNull())
-                queryProperties().removeProp("@accessed");
+                queryAttributes().removeProp("@accessed");
             else {
                 StringBuffer str;
-                queryProperties().setProp("@accessed",dt.getString(str).str());
+                queryAttributes().setProp("@accessed",dt.getString(str).str());
             }
             unlockProperties();
         }
@@ -4014,6 +4015,25 @@ struct SuperFileSubTreeCache
     ~SuperFileSubTreeCache()
     {
         free(subs);
+    }
+};
+
+class CPropertyLock : implements IPropertyLock {
+protected:
+    Linked<CDistributedFile> file;
+public:
+    CPropertyLock(CDistributedFile _file)
+        : file(file)
+    {
+        file->lockProperties(INFINITE);
+    }
+    ~CPropertyLock()
+    {
+        file->unlockProperties();
+    }
+    IPropertyTree &queryAttributes()
+    {
+        return file->queryAttributes();
     }
 };
 
@@ -4337,7 +4357,7 @@ protected:
         sub->setPropInt("@num",pos+1);
         sub->setProp("@name",file->queryLogicalName());
         if (pos==0) {
-            resetFileAttr(createPTreeFromIPT(&file->queryProperties()));
+            resetFileAttr(createPTreeFromIPT(&file->queryAttributes()));
         }
         root->addPropTree("SubFile",sub);
         subfiles.add(*file.getClear(),pos);
@@ -4363,7 +4383,7 @@ protected:
         subfiles.remove(pos);
         if (pos==0) {
             if (subfiles.ordinality())
-                resetFileAttr(createPTreeFromIPT(&subfiles.item(0).queryProperties()));
+                resetFileAttr(createPTreeFromIPT(&subfiles.item(0).queryAttributes()));
             else
                 resetFileAttr(getEmptyAttr());
         }
@@ -4552,7 +4572,7 @@ public:
         bool mixedwidth = false;
         Owned<IPropertyTree> at = getEmptyAttr();
         if (subfiles.ordinality()!=0) {
-            Owned<IAttributeIterator> ait = subfiles.item(0).queryProperties().getAttributes();
+            Owned<IAttributeIterator> ait = subfiles.item(0).queryAttributes().getAttributes();
             ForEach(*ait) {
                 const char *name = ait->queryName();
                 if ((stricmp(name,"@size")!=0)&&(stricmp(name,"@recordCount")!=0)) {
@@ -4561,7 +4581,7 @@ public:
                         continue;
                     bool ok = true;
                     for (unsigned i=1;i<subfiles.ordinality();i++) {
-                        const char *p = subfiles.item(i).queryProperties().queryProp(name);
+                        const char *p = subfiles.item(i).queryAttributes().queryProp(name);
                         if (!p||(strcmp(p,v)!=0)) {
                             ok = false;
                             break;
@@ -4615,7 +4635,7 @@ public:
             }
 
             RemoteFilename rfn;
-            fdesc->setPart(n,part.getFilename(rfn,copy),&part.queryProperties());
+            fdesc->setPart(n,part.getFilename(rfn,copy),&part.queryAttributes());
             n++;
         }
         ClusterPartDiskMapSpec mspec;
@@ -4830,7 +4850,7 @@ public:
 
     __int64 getFileSize(bool allowphysical,bool forcephysical)
     {
-        __int64 ret = (__int64)(forcephysical?-1:queryProperties().getPropInt64("@size",-1));
+        __int64 ret = (__int64)(forcephysical?-1:queryAttributes().getPropInt64("@size",-1));
         if (ret==-1) {
             ret = 0;
             ForEachItemIn(i,subfiles) {
@@ -4847,11 +4867,11 @@ public:
 
     __int64 getRecordCount()
     {
-        __int64 ret = queryProperties().getPropInt64("@recordCount",-1);
+        __int64 ret = queryAttributes().getPropInt64("@recordCount",-1);
         if (ret==-1) {
             ret = 0;
             ForEachItemIn(i,subfiles) {
-                __int64 rc = subfiles.item(i).queryProperties().getPropInt64("@recordCount",-1);
+                __int64 rc = subfiles.item(i).queryAttributes().getPropInt64("@recordCount",-1);
                 if (rc == -1) {
                     ret = rc;
                     break;
@@ -4864,8 +4884,8 @@ public:
 
     bool getFileCheckSum(unsigned &checkSum)
     {
-        if (queryProperties().hasProp("@checkSum"))
-            checkSum = (unsigned)queryProperties().getPropInt64("@checkSum");
+        if (queryAttributes().hasProp("@checkSum"))
+            checkSum = (unsigned)queryAttributes().getPropInt64("@checkSum");
         else
         {
             checkSum = ~0;
@@ -4955,8 +4975,8 @@ public:
 
     virtual bool getFormatCrc(unsigned &crc)
     {
-        if (queryProperties().hasProp("@formatCrc")) {
-            crc = (unsigned)queryProperties().getPropInt("@formatCrc");
+        if (queryAttributes().hasProp("@formatCrc")) {
+            crc = (unsigned)queryAttributes().getPropInt("@formatCrc");
             return true;
         }
         bool found = false;
@@ -4975,7 +4995,7 @@ public:
     virtual bool getRecordLayout(MemoryBuffer &layout)  
     {
         layout.clear();
-        if (queryProperties().getPropBin("_record_layout",layout)) 
+        if (queryAttributes().getPropBin("_record_layout",layout))
             return true;
         bool found = false;
         ForEachItemIn(i,subfiles) {
@@ -4994,8 +5014,8 @@ public:
 
     virtual bool getRecordSize(size32_t &rsz)
     {
-        if (queryProperties().hasProp("@recordSize")) {
-            rsz = (size32_t)queryProperties().getPropInt("@recordSize");
+        if (queryAttributes().hasProp("@recordSize")) {
+            rsz = (size32_t)queryAttributes().getPropInt("@recordSize");
             return true;
         }
         bool found = false;
@@ -5719,12 +5739,12 @@ bool CDistributedFilePart::isHost(unsigned copy)
 }
 
 
-IPropertyTree &CDistributedFilePart::queryProperties()
+IPropertyTree &CDistributedFilePart::queryAttributes()
 { 
     CriticalBlock block (sect);     // avoid nested blocks
     if (attr) 
         return *attr;
-    WARNLOG("CDistributedFilePart::queryProperties missing part attributes");
+    WARNLOG("CDistributedFilePart::queryAttributes missing part attributes");
     attr.setown(getEmptyAttr());
     return *attr;
 }
@@ -5746,7 +5766,7 @@ RemoteFilename &CDistributedFilePart::getFilename(RemoteFilename &ret,unsigned c
 
 bool CDistributedFilePart::getCrc(unsigned &crc)
 {
-    return getCrcFromPartProps(parent.queryProperties(),queryProperties(), crc);
+    return getCrcFromPartProps(parent.queryAttributes(),queryAttributes(), crc);
 }
 
 unsigned CDistributedFilePart::getPhysicalCrc()
@@ -5787,10 +5807,10 @@ void CDistributedFilePart::unlockProperties()
 
 offset_t CDistributedFilePart::getFileSize(bool allowphysical,bool forcephysical)
 {
-    offset_t ret = (offset_t)((forcephysical&&allowphysical)?-1:queryProperties().getPropInt64("@size", -1));
+    offset_t ret = (offset_t)((forcephysical&&allowphysical)?-1:queryAttributes().getPropInt64("@size", -1));
     if (allowphysical&&(ret==(offset_t)-1)) {
         StringBuffer firstname;
-        bool compressed = ::isCompressed(parent.queryProperties());
+        bool compressed = ::isCompressed(parent.queryAttributes());
         unsigned nc=parent.numCopies(partIndex);
         for (unsigned copy=0;copy<nc;copy++) {
             RemoteFilename rfn;
@@ -5826,7 +5846,7 @@ offset_t CDistributedFilePart::getFileSize(bool allowphysical,bool forcephysical
 offset_t CDistributedFilePart::getDiskSize()
 {
     // gets size on disk
-    if (!::isCompressed(parent.queryProperties()))
+    if (!::isCompressed(parent.queryAttributes()))
         return getFileSize(true,false);
     StringBuffer firstname;
     unsigned nc=parent.numCopies(partIndex);
@@ -5856,7 +5876,7 @@ offset_t CDistributedFilePart::getDiskSize()
 bool CDistributedFilePart::getModifiedTime(bool allowphysical,bool forcephysical, CDateTime &dt)
 {
     StringBuffer s;
-    if (!forcephysical&&queryProperties().getProp("@modified", s)) {
+    if (!forcephysical&&queryAttributes().getProp("@modified", s)) {
         dt.setString(s.str());
         if (!dt.isNull())
             return true;
@@ -9071,7 +9091,7 @@ bool CDistributedFileDirectory::filePhysicalVerify(const char *lfn,bool includec
                     if (nological) {
                         StringBuffer str;
                         part->lockProperties(defaultTimeout);
-                        part->queryProperties().setProp("@modified",dt2.getString(str).str());
+                        part->queryAttributes().setProp("@modified",dt2.getString(str).str());
                         part->unlockProperties();
                     }
                     else  {
@@ -9096,7 +9116,7 @@ bool CDistributedFileDirectory::filePhysicalVerify(const char *lfn,bool includec
                     if (sz1!=sz2) {
                         if (sz1==(offset_t)-1) {
                             part->lockProperties(defaultTimeout);
-                            part->queryProperties().setPropInt64("@size",sz2);
+                            part->queryAttributes().setPropInt64("@size",sz2);
                             part->unlockProperties();
                         }
                         else if (sz2!=(offset_t)-1) {
@@ -9118,7 +9138,7 @@ bool CDistributedFileDirectory::filePhysicalVerify(const char *lfn,bool includec
                     }
                     if (!part->getCrc(crc1)) {
                         part->lockProperties(defaultTimeout);
-                        part->queryProperties().setPropInt64("@fileCrc",(unsigned)crc2);
+                        part->queryAttributes().setPropInt64("@fileCrc",(unsigned)crc2);
                         part->unlockProperties();
                     }
                     else if (crc1!=crc2) {

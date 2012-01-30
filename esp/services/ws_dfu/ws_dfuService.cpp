@@ -1503,11 +1503,11 @@ void CWsDfuEx::getDefFile(IUserDescriptor* udesc, const char* FileName,StringBuf
     Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(FileName, udesc);
     if(!df)
         throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",FileName);
-    if(!df->queryProperties().hasProp("ECL"))
+    if(!df->queryAttributes().hasProp("ECL"))
         throw MakeStringException(ECLWATCH_MISSING_PARAMS,"No record definition for file %s.",FileName);
 
     StringBuffer text;
-    text.append(df->queryProperties().queryProp("ECL"));
+    text.append(df->queryAttributes().queryProp("ECL"));
     
     MultiErrorReceiver errs;
     OwnedHqlExpr record = parseQuery(text.str(), &errs);
@@ -1541,7 +1541,7 @@ bool CWsDfuEx::checkFileContent(IEspContext &context, IUserDescriptor* udesc, co
     if (!cluster || !stricmp(cluster, ""))
     {
         char *eclCluster = NULL;
-        const char* wuid = df->queryProperties().queryProp("@workunit");
+        const char* wuid = df->queryAttributes().queryProp("@workunit");
         if (wuid && *wuid)
         {
             try
@@ -1571,7 +1571,7 @@ bool CWsDfuEx::checkFileContent(IEspContext &context, IUserDescriptor* udesc, co
     if (df->isCompressed(&blocked) && !blocked)
         return false;
 
-    IPropertyTree & properties = df->queryProperties();
+    IPropertyTree & properties = df->queryAttributes();
     const char * format = properties.queryProp("@format");
     if (format && (stricmp(format,"csv")==0 || memicmp(format, "utf", 3) == 0))
     {
@@ -1710,7 +1710,7 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
             throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",name);
     }
 
-    offset_t size=queryDistributedFileSystem().getSize(df), recordSize=df->queryProperties().getPropInt64("@recordSize",0);
+    offset_t size=queryDistributedFileSystem().getSize(df), recordSize=df->queryAttributes().getPropInt64("@recordSize",0);
 
     CDateTime dt;
     df->getModificationTime(dt);
@@ -1720,11 +1720,11 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
     FileDetails.setDir(df->queryDefaultDir());
     FileDetails.setPathMask(df->queryPartMask());
 
-    StringBuffer strDesc = df->queryProperties().queryProp("@description");
+    StringBuffer strDesc = df->queryAttributes().queryProp("@description");
     if (description)
     {
         df->lockProperties();
-        df->queryProperties().setProp("@description",description);
+        df->queryAttributes().setProp("@description",description);
         df->unlockProperties();
         strDesc = description;
     }
@@ -1747,9 +1747,9 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
     FileDetails.setRecordSize(tmpstr.str());
 
     tmpstr.clear();
-    if (df->queryProperties().hasProp("@recordCount"))
+    if (df->queryAttributes().hasProp("@recordCount"))
     {
-        comma c3(df->queryProperties().getPropInt64("@recordCount"));
+        comma c3(df->queryAttributes().getPropInt64("@recordCount"));
         tmpstr<<c3;
     }
     else if (recordSize)
@@ -1759,8 +1759,8 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
     }
     FileDetails.setRecordCount(tmpstr.str());
 
-    FileDetails.setOwner(df->queryProperties().queryProp("@owner"));
-    FileDetails.setJobName(df->queryProperties().queryProp("@job"));
+    FileDetails.setOwner(df->queryAttributes().queryProp("@owner"));
+    FileDetails.setJobName(df->queryAttributes().queryProp("@job"));
 
     //#14280
     IDistributedSuperFile *sf = df->querySuperFile();
@@ -1785,7 +1785,7 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
     }
     //#14280
 
-    FileDetails.setWuid(df->queryProperties().queryProp("@workunit"));
+    FileDetails.setWuid(df->queryAttributes().queryProp("@workunit"));
 
     //#17430
     {
@@ -1812,22 +1812,22 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
    //new (optional) attribute on a logical file (@persistent) 
    //indicates the ESP page that shows the details of a file.  It indicates 
    //whether the file was created with a PERSIST() ecl attribute.
-    FileDetails.setPersistent(df->queryProperties().queryProp("@persistent"));
+    FileDetails.setPersistent(df->queryAttributes().queryProp("@persistent"));
 
    //@format - what format the file is (if not fixed with)
-    FileDetails.setFormat(df->queryProperties().queryProp("@format"));
+    FileDetails.setFormat(df->queryAttributes().queryProp("@format"));
 
    //@maxRecordSize - what the maximum length of records is
-    FileDetails.setMaxRecordSize(df->queryProperties().queryProp("@maxRecordSize"));
+    FileDetails.setMaxRecordSize(df->queryAttributes().queryProp("@maxRecordSize"));
 
    //@csvSeparate - separators between fields for a CSV/utf file
-    FileDetails.setCsvSeparate(df->queryProperties().queryProp("@csvSeparate"));
+    FileDetails.setCsvSeparate(df->queryAttributes().queryProp("@csvSeparate"));
 
    //@csvQuote - character used to quote fields for a csv/utf file.
-    FileDetails.setCsvQuote(df->queryProperties().queryProp("@csvQuote"));
+    FileDetails.setCsvQuote(df->queryAttributes().queryProp("@csvQuote"));
 
    //@csvTerminate - characters used to terminate a record in a csv.utf file
-    FileDetails.setCsvTerminate(df->queryProperties().queryProp("@csvTerminate"));
+    FileDetails.setCsvTerminate(df->queryAttributes().queryProp("@csvTerminate"));
 
   
     //Time and date of the file
@@ -1837,8 +1837,8 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
     dt.getTimeString(tmpstr);
     FileDetails.setModified(tmpstr.str());
 
-    if(df->queryProperties().hasProp("ECL"))
-        FileDetails.setEcl(df->queryProperties().queryProp("ECL"));
+    if(df->queryAttributes().hasProp("ECL"))
+        FileDetails.setEcl(df->queryAttributes().queryProp("ECL"));
 
     StringBuffer clusterStr;
     if ((!cluster || !*cluster) && clusters.ordinality())
@@ -1945,7 +1945,7 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
 
     if (version > 1.06)
     {
-        const char *wuid = df->queryProperties().queryProp("@workunit");
+        const char *wuid = df->queryAttributes().queryProp("@workunit");
         if (wuid && *wuid && (wuid[0]=='W'))
         {
             try
@@ -4106,7 +4106,7 @@ bool CWsDfuEx::onDFUBrowseData(IEspContext &context, IEspDFUBrowseDataRequest &r
             Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalNameStr.str(), userdesc);
             if(df)
             {
-                const char* wuid = df->queryProperties().queryProp("@workunit");
+                const char* wuid = df->queryAttributes().queryProp("@workunit");
                 if (wuid && *wuid)
                 {
                     CWUWrapper wu(wuid, context);
@@ -5115,7 +5115,7 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
                 }
             }
 
-            const char* wuid = df->queryProperties().queryProp("@workunit");
+            const char* wuid = df->queryAttributes().queryProp("@workunit");
             if (wuid && *wuid)
             {
                 CWUWrapper wu(wuid, context);

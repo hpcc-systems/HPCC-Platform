@@ -173,7 +173,7 @@ public:
             if (patchFile) {
                 __int64 fs = patchFile->getFileSize(true,false);
                 if (fs!=-1)
-                    patchFile->queryProperties().setPropInt64("@size",fs);
+                    patchFile->queryAttributes().setPropInt64("@size",fs);
             }
         }
         catch (IException *e) {
@@ -182,7 +182,7 @@ public:
         }
         // Add a new 'Patch' description to the secondary key.
         newIndexFile->lockProperties();
-        IPropertyTree &fileProps = newIndexFile->queryProperties();
+        IPropertyTree &fileProps = newIndexFile->queryAttributes();
         StringBuffer path("Patch[@name=\"");
         path.append(scopedName.str()).append("\"]");
         IPropertyTree *patch = fileProps.queryPropTree(path.str());
