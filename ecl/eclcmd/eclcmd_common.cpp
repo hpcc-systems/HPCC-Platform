@@ -305,11 +305,26 @@ eclCmdOptionMatchIndicator EclCmdWithEclTarget::matchCommandLineOption(ArgvItera
         return EclCmdOptionMatch;
     if (iter.matchOption(optManifest, ECLOPT_MANIFEST) || iter.matchOption(optManifest, ECLOPT_MANIFEST_DASH))
         return EclCmdOptionMatch;
+    if (iter.matchOption(optAttribute, ECLOPT_ATTRIBUTE) || iter.matchOption(optAttribute, ECLOPT_ATTRIBUTE_S))
+        return EclCmdOptionMatch;
+    if (iter.matchFlag(optNoArchive, ECLOPT_ECL_ONLY) || iter.matchFlag(optNoArchive, ECLOPT_ECL_ONLY_S))
+        return EclCmdOptionMatch;
+
     return EclCmdCommon::matchCommandLineOption(iter, finalAttempt);
 }
 
 bool EclCmdWithEclTarget::finalizeOptions(IProperties *globals)
 {
+    if (optObj.type == eclObjTypeUnknown && optAttribute.length())
+    {
+        optNoArchive = true;
+        optObj.type = eclObjSource;
+        optObj.value.set(optAttribute.get());
+        StringBuffer text(optAttribute.get());
+        text.append("();");
+        optObj.mb.append(text.str());
+    }
+
     return EclCmdCommon::finalizeOptions(globals);
 }
 
