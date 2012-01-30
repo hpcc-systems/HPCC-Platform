@@ -34,14 +34,14 @@
 
 #define MAX_RECORD_SIZE         4096
 
-inline void appendNextXpathName(StringBuffer &s, const char *xpath, const char *&next)
+inline void appendNextXpathName(StringBuffer &s, const char *&xpath)
 {
     while (*xpath && !strchr("*[/", *xpath))
         s.append(*xpath++);
-    next = strchr(xpath, '/');
+    xpath = strchr(xpath, '/');
 }
 
-void splitXmlTagNamesFromXPath(const char *xpath, StringBuffer &inner, StringBuffer *outer=NULL)
+void splitXmlTagNamesFromXPath(const char *xpath, StringAttr &inner, StringAttr *outer=NULL)
 {
     if (!xpath || !xpath)
         return;
@@ -49,24 +49,23 @@ void splitXmlTagNamesFromXPath(const char *xpath, StringBuffer &inner, StringBuf
     StringBuffer s1;
     StringBuffer s2;
 
-    const char *next=xpath;
-    appendNextXpathName(s1, xpath, next);
-    if (outer && next)
-        appendNextXpathName(s2, ++next, next);
-    if (next) //xpath too deep
+    appendNextXpathName(s1, xpath);
+    if (outer && xpath)
+        appendNextXpathName(s2, ++xpath);
+    if (xpath) //xpath too deep
         return;
 
     if (!s2.length())
-        inner.swapWith(s1);
+        inner.set(s1.str());
     else
     {
-        inner.swapWith(s2);
-        outer->swapWith(s1);
+        inner.set(s2.str());
+        outer->set(s1.str());
     }
-    if (!inner.length())
-        inner.set("/");
-    if (outer && !outer->length())
-        outer->set("/");
+    if (!inner.get())
+        inner.set("");
+    if (outer && !outer->get())
+        outer->set("");
 }
 
 DataSourceMetaItem::DataSourceMetaItem(unsigned _flags, const char * _name, const char * _xpath, ITypeInfo * _type)
@@ -136,8 +135,7 @@ DataSourceSetItem::DataSourceSetItem(const char * _name, const char * _xpath, IT
 DataSourceSetItem::DataSourceSetItem(unsigned flags, MemoryBuffer & in) : DataSourceMetaItem(flags, in)
 {
     createChild();
-    StringBuffer attr;
-    splitXmlTagNamesFromXPath(xpath.get(), record.tagname, &tagname.clear());
+    splitXmlTagNamesFromXPath(xpath.get(), record.tagname, &tagname);
     if (!record.tagname.length())
         record.tagname.set("Item");
 }
@@ -209,12 +207,12 @@ void DataSourceMetaData::init()
     isStoredFixedWidth = false;
     randomIsOk = false;
     numFieldsToIgnore = 0;
-    attrset = false;
+    gatheredAttributes = false;
 }
 
 DataSourceMetaData::DataSourceMetaData(MemoryBuffer & buffer)
 {
-    attrset = false;
+    gatheredAttributes = false;
     numVirtualFields = 0;
     buffer.read(numFieldsToIgnore);
     buffer.read(randomIsOk);
@@ -445,29 +443,25 @@ const char * DataSourceMetaData::queryXPath(unsigned column) const
 const char * DataSourceMetaData::queryXmlTag(unsigned column) const
 {
     DataSourceMetaItem &item = fields.item(column);
-    if (item.tagname.length())
-        return (*item.tagname.str()!='/') ? item.tagname.str() : NULL;
-    return item.name.get();
+    return (item.tagname.get()) ? item.tagname.get() : item.name.get();
 }
 
 const char *DataSourceMetaData::queryXmlTag() const
 {
-    if (tagname.length())
-        return (*tagname.str()!='/') ? tagname.str() : NULL;
-    return "Row";
+    return (tagname.get()) ? tagname.get() : "Row";
 }
 
 const IntArray &DataSourceMetaData::queryAttrList()
 {
-    if (!attrset)
+    if (!gatheredAttributes)
     {
         ForEachItemIn(idx, fields)
         {
             DataSourceMetaItem &item = fields.item(idx);
-            if (*item.tagname.str()=='@')
+            if (item.isXmlAttribute())
                 attributes.append(idx);
         }
-        attrset=true;
+        gatheredAttributes=true;
     }
     return attributes;
 }

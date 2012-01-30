@@ -75,11 +75,12 @@ public:
     DataSourceMetaItem(unsigned flags, MemoryBuffer & in);
     virtual void serialize(MemoryBuffer & out) const;
     virtual DataSourceMetaData * queryChildMeta() { return NULL; }
+    bool isXmlAttribute(){return (tagname.length() && *tagname.get()=='@');}
 
 public:
     StringAttr  name;
     StringAttr  xpath;
-    StringBuffer tagname;
+    StringAttr tagname;
     OwnedITypeInfo type;
     byte           flags;
 };
@@ -136,6 +137,7 @@ protected:
 
 protected:
     CIArrayOf<DataSourceMetaItem> fields;
+    IntArray attributes;
     unsigned keyedSize;
     unsigned storedFixedSize;
     unsigned maxRecordSize;
@@ -144,11 +146,10 @@ protected:
     bool isStoredFixedWidth;
     bool randomIsOk;
     byte numFieldsToIgnore;
-    IntArray attributes;
-    bool attrset;
+    bool gatheredAttributes;
 
 public:
-    StringBuffer tagname;
+    StringAttr tagname;
 };
 
 

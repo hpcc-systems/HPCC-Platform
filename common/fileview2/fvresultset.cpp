@@ -1522,12 +1522,10 @@ void CResultSetCursor::getXmlText(StringBuffer & out, int columnIndex, const cha
     case FVFFendif:
         return;
     case FVFFbeginrecord:
-        if (name && *name)
-            out.append("<").append(name).append(">");
+        appendXMLOpenTag(out, name);
         return;
     case FVFFendrecord:
-        if (name && *name)
-            out.append("</").append(name).append(">");
+        appendXMLCloseTag(out, name);
         return;
     }
 
@@ -1623,8 +1621,7 @@ void CResultSetCursor::getXmlText(StringBuffer & out, int columnIndex, const cha
     case type_table:
     case type_groupedtable:
         {
-            if (name && *name)
-                out.append("<").append(name).append(">");
+            appendXMLOpenTag(out, name);
             Owned<IResultSetCursor> childCursor = getChildren(columnIndex);
             
             ForEach(*childCursor)
@@ -1633,14 +1630,12 @@ void CResultSetCursor::getXmlText(StringBuffer & out, int columnIndex, const cha
                 childCursor->getXmlRow(adaptor);
             }
 
-            if (name && *name)
-                out.append("</").append(name).append(">");
+            appendXMLCloseTag(out, name);
             break;
         }
     case type_set:
         {
-            if (name && *name)
-                out.append("<").append(name).append(">");
+            appendXMLOpenTag(out, name);
             if (getIsAll(columnIndex))
                 outputXmlSetAll(out);
             else
@@ -1653,8 +1648,7 @@ void CResultSetCursor::getXmlText(StringBuffer & out, int columnIndex, const cha
                     childCursor->getXmlItem(adaptor);
                 }
             }
-            if (name && *name)
-                out.append("</").append(name).append(">");
+            appendXMLCloseTag(out, name);
             break;
         }
     default:
@@ -1803,11 +1797,13 @@ IStringVal & CResultSetCursor::getXmlRow(IStringVal &ret)
     StringBuffer temp;
     const char *rowtag = meta.meta->queryXmlTag();
     if (rowtag && *rowtag)
+    {
         temp.append('<').append(rowtag);
-    const IntArray &attributes = meta.meta->queryAttrList();
-    ForEachItemIn(ac, attributes)
-        getXmlAttrText(temp, attributes.item(ac));
-    temp.append('>');
+        const IntArray &attributes = meta.meta->queryAttrList();
+        ForEachItemIn(ac, attributes)
+            getXmlAttrText(temp, attributes.item(ac));
+        temp.append('>');
+    }
     unsigned numColumns = meta.getColumnCount();
     unsigned ignoreNesting = 0;
     for (unsigned col = 0; col < numColumns; col++)
@@ -1848,8 +1844,7 @@ IStringVal & CResultSetCursor::getXmlRow(IStringVal &ret)
         }
     }
     assertex(ignoreNesting == 0);
-    if (rowtag && *rowtag)
-        temp.append("</").append(rowtag).append('>');
+    appendXMLCloseTag(temp, rowtag);
     ret.set(temp.str());
     return ret;
 }
