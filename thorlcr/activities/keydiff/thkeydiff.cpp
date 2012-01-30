@@ -181,7 +181,8 @@ public:
             e->Release();
         }
         // Add a new 'Patch' description to the secondary key.
-        IPropertyTree &fileProps = newIndexFile->lockProperties();
+        newIndexFile->lockProperties();
+        IPropertyTree &fileProps = newIndexFile->queryProperties();
         StringBuffer path("Patch[@name=\"");
         path.append(scopedName.str()).append("\"]");
         IPropertyTree *patch = fileProps.queryPropTree(path.str());

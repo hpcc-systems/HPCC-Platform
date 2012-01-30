@@ -349,9 +349,9 @@ public:
             if (afor.ok) {
                 CDateTime dt;
                 dt.setNow();
-                IPropertyTree &pt = file->lockProperties();
+                file->lockProperties();
                 StringBuffer str;
-                pt.setProp("@verified",dt.getString(str).str());
+                file->queryProperties().setProp("@verified",dt.getString(str).str());
                 file->unlockProperties();
             }
             PROGLOG("VERIFY: file %s %s",name,afor.ok?"OK":"FAILED");

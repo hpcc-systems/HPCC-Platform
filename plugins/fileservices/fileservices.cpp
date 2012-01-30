@@ -1439,7 +1439,8 @@ FILESERVICES_API void FILESERVICES_CALL fsSetFileDescription(ICodeContext *ctx, 
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
     Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc);
     if (df) {
-        df->lockProperties().setProp("@description",value);
+        df->lockProperties();
+        df->queryProperties().setProp("@description",value);
         df->unlockProperties();
     }
     else

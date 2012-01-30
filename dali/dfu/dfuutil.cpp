@@ -636,7 +636,8 @@ public:
                 sfile->addSubFile(subfiles.item(i));
             }
             if (!nameprefix.isEmpty()) {
-                sfile->lockProperties().setProp("@roxiePrefix",nameprefix.get());
+                sfile->lockProperties();
+                sfile->queryProperties().setProp("@roxiePrefix",nameprefix.get());
                 sfile->unlockProperties();
             }
         }

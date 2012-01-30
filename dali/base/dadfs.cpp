@@ -980,7 +980,6 @@ class CDFAction: public CInterface
 protected:
     Linked<IDistributedFileTransaction> transaction;
     IArrayOf<IDistributedFile> lockedFiles;
-protected:
     enum ActionState {
         NONE,    // still not committed nor rolled back
         SUCCESS, // committing
@@ -1863,7 +1862,7 @@ public:
     void renameFile(IFile *file);
     unsigned getCRC();
     IPropertyTree &queryProperties();
-    IPropertyTree &lockProperties(unsigned timems);
+    bool lockProperties(unsigned timems);
     void unlockProperties();
     bool isHost(unsigned copy);
     offset_t getFileSize(bool allowphysical,bool forcephysical);
@@ -2286,21 +2285,19 @@ public:
         return !logicalName.isSet(); 
     }
 
-    IPropertyTree &lockProperties(unsigned timeoutms)
+    /*
+     *  Change connection to write-mode, allowing multiple writers only on the same instance.
+     *  Returns true if the lock was lost at least once before succeeding, hinting that some
+     *  resources might need reload (like sub-files list, etc).
+     *
+     *  WARN: This is not thread-safe
+     */
+    bool lockProperties(unsigned timeoutms)
     {
-        bool reload;
-        return lockProperties(reload,timeoutms);
-    }
-
-    // WARN: This method allows multiple access from the same instance to the same properties.
-    // MORE: Shouldn't we return boolean and use queryProperties() outside of this method?
-    IPropertyTree & lockProperties(bool &reload,unsigned timeoutms)
-    {
+        bool reload = false;
         if (timeoutms==INFINITE)
             timeoutms = defaultTimeout;
         reload = false;
-        // this is a bit of a kludge for non-transactional superfile operations and other dining philosopher problems
-        // WARN: This is not thread-safe
         if (proplockcount++==0) {
             if (conn) {
                 conn->rollback(); // changes chouldn't be done outside lock properties
@@ -2323,15 +2320,19 @@ public:
                 dfCheckRoot("lockProperties",root,conn);
             }
         }
-        return queryProperties();
+        return reload;
     }
 
-    // FIXME: This method is NOT unlocking the properties for exclusive access, just setting it
-    // to read mode on the last call. If concurrent access occur, there will be conflicts
+    /*
+     * Change connection back to read mode on the last unlock. There should never be
+     * an uneven number of locks/unlocks, since that will leave the connection with
+     * the DFS locked until the instance's destruction.
+     *
+     * WARN: This is not thread-safe
+     */
     void unlockProperties()
     {
         savePartsAttr();
-        // WARN: This is not thread-safe
         if (--proplockcount==0) {
             if (conn) {
 #ifdef TRACE_LOCKS
@@ -2474,7 +2475,8 @@ public:
 
     virtual void setECL(const char *ecl)
     {
-        IPropertyTree &p = lockProperties(defaultTimeout);
+        lockProperties(defaultTimeout);
+        IPropertyTree &p = queryProperties();
 #ifdef PACK_ECL
         p.removeProp("ECL");
         if (!ecl||!*ecl)
@@ -2512,7 +2514,8 @@ public:
         else {
             bool ret=false;
             if (conn) {
-                IPropertyTree &p = lockProperties(timems);
+                lockProperties(timems);
+                IPropertyTree &p = queryProperties();
                 CDateTime dt;
                 dt.setNow();
                 try {
@@ -2645,11 +2648,11 @@ public:
 
     virtual void setColumnMapping(const char *mapping)
     {
-        IPropertyTree &prop = lockProperties(defaultTimeout);
+        lockProperties(defaultTimeout);
         if (!mapping||!*mapping) 
-            prop.removeProp("@columnMapping");
+            queryProperties().removeProp("@columnMapping");
         else
-            prop.setProp("@columnMapping",mapping);
+            queryProperties().setProp("@columnMapping",mapping);
         unlockProperties();
     }
 
@@ -2813,14 +2816,12 @@ public:
                 }
             }
         }
-        lockProperties(defaultTimeout);         // only needed to load attr (no lock)
         shrinkFileTree(root);
         if (totalsize!=(offset_t)-1)
             queryProperties().setPropInt64("@size", totalsize);
         if (useableCheckSum)
             queryProperties().setPropInt64("@checkSum", checkSum);
         setModified();
-        unlockProperties();
 #ifdef EXTRA_LOGGING
         LOGPTREE("CDistributedFile.b root.2",root);
 #endif
@@ -3232,7 +3233,8 @@ public:
         }
         attach(_logicalname,transaction,user);
         if (prevname.length()) {
-            IPropertyTree &pt = lockProperties(defaultTimeout);
+            lockProperties(defaultTimeout);
+            IPropertyTree &pt = queryProperties();
             StringBuffer list;
             if (pt.getProp("@renamedFrom",list)&&list.length())
                 list.append(',');
@@ -3732,22 +3734,18 @@ public:
         afor2.For(width,10,false,true);
         if (afor2.ok) {
             // now rename directory and partmask
-                IPropertyTree &pt = lockProperties(defaultTimeout);
-                root->setProp("@directory",newdir.str());
-                root->setProp("@partmask",newmask.str());
-                partmask.set(newmask.str());
-                directory.set(newdir.str());
-                StringBuffer mask;
-                for (unsigned i=0;i<width;i++) {
-                    mask.appendf("Part[%d]/@name",i+1);
-                    //StringBuffer x;
-                    //pt.getProp(mask.str(),x);
-                    //pt.removeProp(mask.str());
-                    parts.item(i).clearOverrideName();  
-                }
-                savePartsAttr(false);
-                unlockProperties();
-
+            lockProperties(defaultTimeout);
+            root->setProp("@directory",newdir.str());
+            root->setProp("@partmask",newmask.str());
+            partmask.set(newmask.str());
+            directory.set(newdir.str());
+            StringBuffer mask;
+            for (unsigned i=0;i<width;i++) {
+                mask.appendf("Part[%d]/@name",i+1);
+                parts.item(i).clearOverrideName();
+            }
+            savePartsAttr(false);
+            unlockProperties();
         }
         else {
             // attempt recovery
@@ -3953,12 +3951,12 @@ public:
             parent->setFileAccessed(logicalName,dt);
         }
         else {
-            IPropertyTree &prop = lockProperties(defaultTimeout);
+            lockProperties(defaultTimeout);
             if (dt.isNull())
-                prop.removeProp("@accessed");
+                queryProperties().removeProp("@accessed");
             else {
                 StringBuffer str;
-                prop.setProp("@accessed",dt.getString(str).str());
+                queryProperties().setProp("@accessed",dt.getString(str).str());
             }
             unlockProperties();
         }
@@ -5187,9 +5185,7 @@ private:
         else {
             pos = subfiles.ordinality();
             if (pos) {
-                bool reload;
-                lockProperties(reload,defaultTimeout);
-                if (reload)
+                if (lockProperties(defaultTimeout))
                     loadSubFiles(true,transaction,1000*60*10); 
                 pos = subfiles.ordinality();
                 if (pos) {
@@ -5335,11 +5331,9 @@ public:
         Owned<IDistributedFile> sub = transaction ? transaction->lookupFile(subfile) : parent->lookup(subfile,udesc,false,NULL,defaultTimeout);
         if (!sub)
             throw MakeStringException(-1,"addSubFile(3): File %s cannot be found to add",subfile);
-        bool reload;
-        lockProperties(reload,defaultTimeout);
-        // need to reload subfiles if changed
         try {
-            if (reload)
+            // need to reload subfiles if changed
+            if (lockProperties(defaultTimeout))
                 loadSubFiles(true,transaction,1000*60*10);
             doAddSubFile(sub.getClear(),before,other,transaction);
         }
@@ -5780,16 +5774,10 @@ unsigned CDistributedFilePart::getPhysicalCrc()
     throw e;
 }
 
-IPropertyTree &CDistributedFilePart::lockProperties(unsigned timeoutms)
+bool CDistributedFilePart::lockProperties(unsigned timeoutms)
 {
-    parent.lockProperties(timeoutms);
     dirty = true;
-    CriticalBlock block (sect);     // avoid nested blocks
-    if (attr) 
-        return *attr;
-    WARNLOG("CDistributedFilePart::queryProperties missing part attributes");
-    attr.setown(getEmptyAttr());
-    return *attr;
+    return parent.lockProperties(timeoutms);
 }
 
 void CDistributedFilePart::unlockProperties()
@@ -9082,7 +9070,8 @@ bool CDistributedFileDirectory::filePhysicalVerify(const char *lfn,bool includec
                 if (!differs&&!includecrc) {
                     if (nological) {
                         StringBuffer str;
-                        part->lockProperties(defaultTimeout).setProp("@modified",dt2.getString(str).str());
+                        part->lockProperties(defaultTimeout);
+                        part->queryProperties().setProp("@modified",dt2.getString(str).str());
                         part->unlockProperties();
                     }
                     else  {
@@ -9106,7 +9095,8 @@ bool CDistributedFileDirectory::filePhysicalVerify(const char *lfn,bool includec
                     }
                     if (sz1!=sz2) {
                         if (sz1==(offset_t)-1) {
-                            part->lockProperties(defaultTimeout).setPropInt64("@size",sz2);
+                            part->lockProperties(defaultTimeout);
+                            part->queryProperties().setPropInt64("@size",sz2);
                             part->unlockProperties();
                         }
                         else if (sz2!=(offset_t)-1) {
@@ -9127,7 +9117,8 @@ bool CDistributedFileDirectory::filePhysicalVerify(const char *lfn,bool includec
                         crc2 = part->getPhysicalCrc();
                     }
                     if (!part->getCrc(crc1)) {
-                        part->lockProperties(defaultTimeout).setPropInt64("@fileCrc",(unsigned)crc2);
+                        part->lockProperties(defaultTimeout);
+                        part->queryProperties().setPropInt64("@fileCrc",(unsigned)crc2);
                         part->unlockProperties();
                     }
                     else if (crc1!=crc2) {
