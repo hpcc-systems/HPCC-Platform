@@ -310,6 +310,7 @@ ESPrequest [nil_remove] SprayVariable
     
     int sourceMaxRecordSize;
     int sourceFormat;
+    bool   NoSourceCsvSeparator(false);
     string sourceCsvSeparate;
     string sourceCsvTerminate;
     string sourceCsvQuote;

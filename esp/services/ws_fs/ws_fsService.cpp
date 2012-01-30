@@ -2004,8 +2004,13 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
         else
         {
             const char* cs = req.getSourceCsvSeparate();
-            if(cs == NULL || *cs == '\0')
+            if (req.getNoSourceCsvSeparator())
+            {
+                cs = "";
+            }
+            else if(cs == NULL || *cs == '\0')
                 cs = "\\,";
+
             const char* ct = req.getSourceCsvTerminate();
             if(ct == NULL || *ct == '\0')
                 ct = "\\n,\\r\\n";
