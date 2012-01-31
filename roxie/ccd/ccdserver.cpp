@@ -31489,7 +31489,8 @@ readAnother:
         StringContextLogger &logctx = *_logctx.get();
         try 
         {
-            if (strnicmp(rawText.str(), "<control:lock", 13)==0)
+            // Note - control queries have to be formatted without spaces..
+            if (strnicmp(rawText.str(), "<control:lock", 13)==0 && !isalpha(rawText.charAt(13)))
             {
                 if (logctx.queryTraceLevel() > 8)
                     logctx.CTXLOG("Got lock request %s", rawText.str());
@@ -31508,7 +31509,7 @@ readAnother:
                 rawText.clear();
                 goto readAnother;
             }
-            else if (strnicmp(rawText.str(), "<control:childlock", 18)==0)
+            else if (strnicmp(rawText.str(), "<control:childlock", 18)==0 && !isalpha(rawText.charAt(18)))
             {
                 if (logctx.queryTraceLevel() > 8)
                     logctx.CTXLOG("Got childlock request %s", rawText.str());
@@ -31537,7 +31538,7 @@ readAnother:
                 FlushingStringBuffer response(client, false, true, false, isHTTP, logctx);
                 response.startDataset("Control", NULL, (unsigned) -1);
 
-                if (strnicmp(rawText.str(), "<control:aclupdate", 18)==0)
+                if (strnicmp(rawText.str(), "<control:aclupdate", 18)==0 && !isalpha(rawText.charAt(18)))
                 {
                     queryXml.setown(createPTreeFromXMLString(rawText.str(), ipt_caseInsensitive, (XmlReaderOptions)(xr_ignoreWhiteSpace|xr_ignoreNameSpaces)));
                     IPropertyTree *aclTree = queryXml->queryPropTree("ACL");
@@ -31563,7 +31564,7 @@ readAnother:
 
                     }
                 }
-                else if (strnicmp(rawText.str(), "<control:queryaclinfo", 21)==0)
+                else if (strnicmp(rawText.str(), "<control:queryaclinfo", 21)==0 && !isalpha(rawText.charAt(21)))
                 {
                     StringBuffer info;
                     info.append("<Endpoint ep='");
