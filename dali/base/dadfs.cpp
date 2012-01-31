@@ -2296,27 +2296,37 @@ public:
     protected:
         CDistributedFileBase<INTERFACE> *file;
         bool reload;
+        bool unlocked;
     public:
         CPropertyLock(CDistributedFileBase<INTERFACE> *_file)
-            : file(_file), reload(false)
+            : file(_file), reload(false), unlocked(false)
         {
             reload = file->lockProperties(file->defaultTimeout);
         }
         ~CPropertyLock()
         {
-            file->unlockProperties(TAS_NONE);
+            if (!unlocked)
+                unlock();
         }
         void commit()
         {
             file->unlockProperties(TAS_SUCCESS);
+            unlocked = true;
         }
         void rollback()
         {
             file->unlockProperties(TAS_FAILURE);
+            unlocked = true;
         }
         void retry()
         {
             file->unlockProperties(TAS_RETRY);
+            unlocked = true;
+        }
+        void unlock()
+        {
+            file->unlockProperties(TAS_NONE);
+            unlocked = true;
         }
         IPropertyTree &queryAttributes()
         {
@@ -2428,7 +2438,7 @@ public:
 
     void setModificationTime(const CDateTime &dt)
     {
-        lockProperties(defaultTimeout);
+        CPropertyLock lock(this);
         if (dt.isNull())
             root->removeProp("@modified");
         else {
@@ -2436,7 +2446,6 @@ public:
             root->setProp("@modified",dt.getString(str).str());
         }
         root->removeProp("@verified");
-        unlockProperties();
     }
 
     void setModified()
@@ -2458,7 +2467,7 @@ public:
 
     virtual void setECL(const char *ecl)
     {
-        lockProperties(defaultTimeout);
+        CPropertyLock lock(this);
         IPropertyTree &p = queryAttributes();
 #ifdef PACK_ECL
         p.removeProp("ECL");
@@ -2473,7 +2482,6 @@ public:
 #else
         p.setProp("ECL",ecl);
 #endif
-        unlockProperties();
     }
 
 
@@ -2497,19 +2505,12 @@ public:
         else {
             bool ret=false;
             if (conn) {
-                lockProperties(timems);
+                CPropertyLock lock(this);
                 IPropertyTree &p = queryAttributes();
                 CDateTime dt;
                 dt.setNow();
-                try {
-                    if (setFileProtectTree(p,owner,protect))
-                        conn->commit();
-                }
-                catch (IException *) {
-                    unlockProperties();
-                    throw;
-                }
-                unlockProperties();
+                if (setFileProtectTree(p,owner,protect))
+                    conn->commit();
                 dfCheckRoot("setProtect.1",root,conn);
             }
             else 
@@ -2631,12 +2632,11 @@ public:
 
     virtual void setColumnMapping(const char *mapping)
     {
-        lockProperties(defaultTimeout);
+        CPropertyLock lock(this);
         if (!mapping||!*mapping) 
             queryAttributes().removeProp("@columnMapping");
         else
             queryAttributes().setProp("@columnMapping",mapping);
-        unlockProperties();
     }
 
     unsigned setDefaultTimeout(unsigned timems)
@@ -3216,13 +3216,12 @@ public:
         }
         attach(_logicalname,transaction,user);
         if (prevname.length()) {
-            lockProperties(defaultTimeout);
+            CPropertyLock lock(this);
             IPropertyTree &pt = queryAttributes();
             StringBuffer list;
             if (pt.getProp("@renamedFrom",list)&&list.length())
                 list.append(',');
             pt.setProp("@renamedFrom",list.append(prevname).str());
-            unlockProperties();
         }
         if (reliter.get()) {
             // add back any relationships with new name
@@ -3717,7 +3716,7 @@ public:
         afor2.For(width,10,false,true);
         if (afor2.ok) {
             // now rename directory and partmask
-            lockProperties(defaultTimeout);
+            CPropertyLock lock(this);
             root->setProp("@directory",newdir.str());
             root->setProp("@partmask",newmask.str());
             partmask.set(newmask.str());
@@ -3728,7 +3727,6 @@ public:
                 parts.item(i).clearOverrideName();
             }
             savePartsAttr(false);
-            unlockProperties();
         }
         else {
             // attempt recovery
@@ -3934,14 +3932,13 @@ public:
             parent->setFileAccessed(logicalName,dt);
         }
         else {
-            lockProperties(defaultTimeout);
+            CPropertyLock lock(this);
             if (dt.isNull())
                 queryAttributes().removeProp("@accessed");
             else {
                 StringBuffer str;
                 queryAttributes().setProp("@accessed",dt.getString(str).str());
             }
-            unlockProperties();
         }
     }
 
@@ -5093,10 +5090,11 @@ public:
                 queryDistributedFileDirectory().lookupSuperFile(pname.str(),udesc,NULL);
             CDistributedSuperFile *file = QUERYINTERFACE(psfile.get(),CDistributedSuperFile);
             if (file) {
-                file->lockProperties(defaultTimeout);
-                file->setModified();
-                file->updateFileAttrs();
-                file->unlockProperties();
+                {
+                    CPropertyLock lock(file);
+                    file->setModified();
+                    file->updateFileAttrs();
+                }
                 file->updateParentFileAttrs(transaction);
             }
         }
@@ -5148,27 +5146,29 @@ private:
                 pos = findSubFile(subfile);
             if (pos==NotFound)
                 return false;
-            lockProperties(defaultTimeout); 
-            // don't reload subfiles here
-            pos=findSubFileOrd(subfile);
-            if ((pos==NotFound)||(pos>=subfiles.ordinality()))
-                pos = findSubFile(subfile);
-            if (pos==NotFound) {
-                unlockProperties();
-                return false;
+            {
+                CPropertyLock lock(this);
+                // don't reload subfiles here
+                pos=findSubFileOrd(subfile);
+                if ((pos==NotFound)||(pos>=subfiles.ordinality()))
+                    pos = findSubFile(subfile);
+                if (pos==NotFound) {
+                    unlockProperties();
+                    return false;
+                }
+                unlinkSubFile(pos,transaction);
+                removeItem(pos,subname.clear());
+                subnames.append(* new StringAttrItem(subname.str()));
+                setModified();
+                updateFileAttrs();
             }
-            unlinkSubFile(pos,transaction);
-            removeItem(pos,subname.clear());
-            subnames.append(* new StringAttrItem(subname.str()));
-            setModified();
-            updateFileAttrs();
-            unlockProperties();
             updateParentFileAttrs(transaction);
         }
         else {
             pos = subfiles.ordinality();
             if (pos) {
-                if (lockProperties(defaultTimeout))
+                CPropertyLock lock(this);
+                if (lock.needsReload())
                     loadSubFiles(true,transaction,1000*60*10); 
                 pos = subfiles.ordinality();
                 if (pos) {
@@ -5180,12 +5180,9 @@ private:
                     } while (pos);
                     setModified();
                     updateFileAttrs();
-                    unlockProperties();
+                    lock.unlock();
                     updateParentFileAttrs(transaction);
                 }
-                else
-                    unlockProperties();
-
             }
         }
         if (remsub||remphys) {
@@ -5319,17 +5316,13 @@ public:
         Owned<IDistributedFile> sub = transaction ? transaction->lookupFile(subfile) : parent->lookup(subfile,udesc,false,NULL,defaultTimeout);
         if (!sub)
             throw MakeStringException(-1,"addSubFile(3): File %s cannot be found to add",subfile);
-        try {
+        {
             // need to reload subfiles if changed
-            if (lockProperties(defaultTimeout))
+            CPropertyLock lock(this);
+            if (lock.needsReload())
                 loadSubFiles(true,transaction,1000*60*10);
             doAddSubFile(sub.getClear(),before,other,transaction);
         }
-        catch (IException *) {
-            unlockProperties();
-            throw;
-        }
-        unlockProperties();
         updateParentFileAttrs(transaction);
     }
 
@@ -9058,6 +9051,7 @@ bool CDistributedFileDirectory::filePhysicalVerify(const char *lfn,bool includec
                 if (!differs&&!includecrc) {
                     if (nological) {
                         StringBuffer str;
+                        // TODO: Create CPropertyLock for parts
                         part->lockProperties(defaultTimeout);
                         part->queryAttributes().setProp("@modified",dt2.getString(str).str());
                         part->unlockProperties();
@@ -9083,6 +9077,7 @@ bool CDistributedFileDirectory::filePhysicalVerify(const char *lfn,bool includec
                     }
                     if (sz1!=sz2) {
                         if (sz1==(offset_t)-1) {
+                            // TODO: Create CPropertyLock for parts
                             part->lockProperties(defaultTimeout);
                             part->queryAttributes().setPropInt64("@size",sz2);
                             part->unlockProperties();
@@ -9105,6 +9100,7 @@ bool CDistributedFileDirectory::filePhysicalVerify(const char *lfn,bool includec
                         crc2 = part->getPhysicalCrc();
                     }
                     if (!part->getCrc(crc1)) {
+                        // TODO: Create CPropertyLock for parts
                         part->lockProperties(defaultTimeout);
                         part->queryAttributes().setPropInt64("@fileCrc",(unsigned)crc2);
                         part->unlockProperties();
