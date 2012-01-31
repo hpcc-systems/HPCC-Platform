@@ -110,6 +110,13 @@ enum GetFileClusterNamesType
 };
 
 
+enum TransActionState {
+    TAS_NONE,    // still working
+    TAS_RETRY,   // retry (din-phil problems)
+    TAS_SUCCESS, // committing
+    TAS_FAILURE  // rolling back
+};
+
 // ==DISTRIBUTED FILES===================================================================================================
 
 /**
@@ -134,7 +141,7 @@ interface IDistributedFilePart: implements IInterface
     virtual IPropertyTree &queryAttributes() = 0;                               // part attributes
 
     virtual bool lockProperties(unsigned timeoutms=INFINITE) = 0;               // must be called before updating
-    virtual void unlockProperties() = 0;                                        // must be called after updating
+    virtual void unlockProperties(TransActionState state=TAS_NONE) = 0;         // must be called after updating
 
     virtual bool isHost(unsigned copy=0) = 0;                                   // file is located on this machine
 
@@ -233,7 +240,7 @@ interface IDistributedFile: extends IInterface
     virtual IPropertyTree &queryAttributes() = 0;                               // DFile attributes
 
     virtual bool lockProperties(unsigned timeoutms=INFINITE) = 0;               // must be called before updating properties (will discard uncommitted changes)
-    virtual void unlockProperties() = 0;                                        // must be called after updating properties
+    virtual void unlockProperties(TransActionState state=TAS_NONE) = 0;         // must be called after updating properties
 
     virtual bool getModificationTime(CDateTime &dt) = 0;                        // get date and time last modified (returns false if not set)
     virtual void setModificationTime(const CDateTime &dt) = 0;                  // set date and time last modified
@@ -262,9 +269,6 @@ interface IDistributedFile: extends IInterface
     virtual bool isSubFile()=0;                                         // returns true if sub file of any SuperFile
     virtual IDistributedSuperFileIterator *getOwningSuperFiles(IDistributedFileTransaction *_transaction=NULL)=0;           // returns iterator for all parents
     virtual bool isCompressed(bool *blocked=NULL)=0;
-
-    virtual bool lockTransaction(unsigned timeout)=0;                           // internal use
-    virtual void unlockTransaction(bool _commit,bool _rollback)=0;              // internal use
 
     virtual StringBuffer &getClusterName(unsigned clusternum,StringBuffer &name) = 0;
     virtual unsigned getClusterNames(StringArray &clusters)=0;                  // returns ordinality

@@ -980,11 +980,7 @@ class CDFAction: public CInterface
 protected:
     Linked<IDistributedFileTransaction> transaction;
     IArrayOf<IDistributedFile> lockedFiles;
-    enum ActionState {
-        NONE,    // still not committed nor rolled back
-        SUCCESS, // committing
-        FAILURE  // rolling back
-    } state;
+    TransActionState state;
     void addFile(IDistributedFile& file) {
         // derived's prepare must call this before locking
         lockedFiles.append(file);
@@ -992,23 +988,29 @@ protected:
     bool lock() {
         // Files most have been acquired already by derived's class prepare
         ForEachItemIn(i,lockedFiles) {
-            if (!lockedFiles.item(i).lockTransaction(SDS_SUB_LOCK_TIMEOUT))
+            try {
+                lockedFiles.item(i).lockProperties(SDS_SUB_LOCK_TIMEOUT);
+            }
+            catch (ISDSException *e)
+            {
+                if (SDSExcpt_LockTimeout != e->errorCode())
+                    throw;
+                e->Release();
+                PROGLOG("CDFAction lock timed out on %s",lockedFiles.item(i).queryLogicalName());
                 return false;
+            }
             locked++;
         }
         return true;
     }
     void unlock() {
-        // TODO: Pass ActionState instead
-        bool commit = (state == SUCCESS);
-        bool rollback = (state == FAILURE);
         for(unsigned i=0; i<locked; i++)
-            lockedFiles.item(i).unlockTransaction(commit, rollback);
+            lockedFiles.item(i).unlockProperties(state);
         locked = 0;
         lockedFiles.kill();
     }
 public:
-    CDFAction(IDistributedFileTransaction *_transaction) : locked(0), state(NONE)
+    CDFAction(IDistributedFileTransaction *_transaction) : locked(0), state(TAS_NONE)
     {
         assertex(_transaction);
         transaction.set(_transaction->baseTransaction()); // smacks of overkill
@@ -1021,17 +1023,17 @@ public:
     // If some lock fails, call this
     virtual void retry()
     {
-        state = NONE;
+        state = TAS_RETRY;
         unlock();
     }
     virtual void commit()
     {
-        state = SUCCESS;
+        state = TAS_SUCCESS;
         unlock();
     }
     virtual void rollback()
     {
-        state = FAILURE;
+        state = TAS_FAILURE;
         unlock();
     }
 };
@@ -1864,7 +1866,7 @@ public:
     unsigned getCRC();
     IPropertyTree &queryAttributes();
     bool lockProperties(unsigned timems);
-    void unlockProperties();
+    void unlockProperties(TransActionState state);
     bool isHost(unsigned copy);
     offset_t getFileSize(bool allowphysical,bool forcephysical);
     offset_t getDiskSize();
@@ -2286,22 +2288,43 @@ public:
         return !logicalName.isSet();
     }
 
+    /*
+     * Context-based lock. Use this instead of locking the properties
+     * directly whenever possible.
+     */
     class CPropertyLock : implements IPropertyLock {
     protected:
         CDistributedFileBase<INTERFACE> *file;
+        bool reload;
     public:
         CPropertyLock(CDistributedFileBase<INTERFACE> *_file)
-            : file(_file)
+            : file(_file), reload(false)
         {
-            file->lockProperties(file->defaultTimeout);
+            reload = file->lockProperties(file->defaultTimeout);
         }
         ~CPropertyLock()
         {
-            file->unlockProperties();
+            file->unlockProperties(TAS_NONE);
+        }
+        void commit()
+        {
+            file->unlockProperties(TAS_SUCCESS);
+        }
+        void rollback()
+        {
+            file->unlockProperties(TAS_FAILURE);
+        }
+        void retry()
+        {
+            file->unlockProperties(TAS_RETRY);
         }
         IPropertyTree &queryAttributes()
         {
             return file->queryAttributes();
+        }
+        bool needsReload()
+        {
+            return reload;
         }
     };
 
@@ -2311,6 +2334,8 @@ public:
      *  resources might need reload (like sub-files list, etc).
      *
      *  WARN: This is not thread-safe
+     *
+     *  @deprecated : use CPropertyLock instead, when possible
      */
     bool lockProperties(unsigned timeoutms)
     {
@@ -2349,12 +2374,24 @@ public:
      * the DFS locked until the instance's destruction.
      *
      * WARN: This is not thread-safe
+     *
+     *  @deprecated : use CPropertyLock instead, when possible
      */
-    void unlockProperties()
+    void unlockProperties(TransActionState state=TAS_NONE)
     {
         savePartsAttr();
         if (--proplockcount==0) {
             if (conn) {
+                // Transactional logic, if any
+                switch(state) {
+                case TAS_SUCCESS:
+                    conn->commit(); break;
+                case TAS_FAILURE:
+                    conn->rollback(); break;
+                case TAS_RETRY:
+                    conn->changeMode(RTM_NONE,defaultTimeout,true); return;
+                // TAS_NONE, do nothing
+                }
 #ifdef TRACE_LOCKS
                 PROGLOG("unlockProperties: pre changeMode(%x)",(unsigned)(memsize_t)conn.get());
 #endif
@@ -2380,80 +2417,6 @@ public:
         }
     }
 
-    // FIXME: This code is too similar to lockProperties to exist. If lockcount is not
-    // zero, we should fail here, since the exact number of unlockProperties should
-    // have been called, and fix the problem where it's broken.
-    bool lockTransaction(unsigned timeout)
-    {
-        if (timeout==INFINITE)
-            WARNLOG("Infinite timeout on lockTransaction!");
-        bool ret=true;
-        if (conn&&(transactionnest++==0)) {
-            if (proplockcount) {
-                savePartsAttr();            
-                conn->commit();
-            }
-            else {
-                try {
-#ifdef TRACE_LOCKS
-                    PROGLOG("lockTransaction: pre changeMode(%x)",(unsigned)(memsize_t)conn.get());
-#endif
-                    conn->changeMode(RTM_LOCK_WRITE,timeout,true);
-#ifdef TRACE_LOCKS
-                    PROGLOG("lockTransaction: done changeMode(%x)",(unsigned)(memsize_t)conn.get());
-                    LogRemoteConn(conn);
-#endif
-                    proplockcount = 1;
-                    dfCheckRoot("lockTransaction",root,conn);
-                }
-                catch(ISDSException *e)
-                {
-                    if (SDSExcpt_LockTimeout != e->errorCode())
-                        throw;
-                    e->Release();
-                    PROGLOG("IDistributedFileBase %s lockTransaction, lock timed out",queryLogicalName());
-                    transactionnest = 0;
-                    ret = false;
-                }
-            }
-        }
-        return ret;
-    }
-
-    // FIXME: This code is broken. It should not access lockProperties' members,
-    // it should not accept commit and rollback at the same time.
-    // TODO: Use ActionState instead of boolean flags for commit/rollback.
-    // TODO: Create retry/commit/rollback and make unlock private.
-    virtual void unlockTransaction(bool _commit,bool _rollback)
-    {
-        if (transactionnest==0) {
-            if (!_commit&&!_rollback&&conn)
-                conn->changeMode(0,defaultTimeout,true);
-            return; 
-        }
-        if (_rollback) {
-            transactionnest = 1;
-            conn->rollback();
-        }
-        if (--transactionnest==0) {
-            savePartsAttr();            
-            if (_commit) 
-                conn->commit();
-            if (conn&&(--proplockcount==0)) {
-#ifdef TRACE_LOCKS
-                PROGLOG("unlockTransaction: pre changeMode(%x)",(unsigned)(memsize_t)conn.get());
-#endif
-                conn->changeMode(RTM_LOCK_READ,defaultTimeout,true);
-#ifdef TRACE_LOCKS
-                PROGLOG("unlockTransaction: post changeMode(%x)",(unsigned)(memsize_t)conn.get());
-                LogRemoteConn(conn);
-#endif
-                dfCheckRoot("unlockTransaction",root,conn);
-            }
-        }
-    }
-
-    
     bool getModificationTime(CDateTime &dt)
     {
         StringBuffer str;
@@ -5805,9 +5768,9 @@ bool CDistributedFilePart::lockProperties(unsigned timeoutms)
     return parent.lockProperties(timeoutms);
 }
 
-void CDistributedFilePart::unlockProperties()
+void CDistributedFilePart::unlockProperties(TransActionState state=TAS_NONE)
 {
-    parent.unlockProperties();
+    parent.unlockProperties(state);
 }
 
 offset_t CDistributedFilePart::getFileSize(bool allowphysical,bool forcephysical)
@@ -6738,7 +6701,7 @@ public:
     }
     void rollback()
     {
-        state = FAILURE;
+        state = TAS_FAILURE;
         if (created)
             parent->removeEntry(logicalname.get(), user);
         CDFAction::rollback();
