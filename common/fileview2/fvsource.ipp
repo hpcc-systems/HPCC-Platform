@@ -75,10 +75,12 @@ public:
     DataSourceMetaItem(unsigned flags, MemoryBuffer & in);
     virtual void serialize(MemoryBuffer & out) const;
     virtual DataSourceMetaData * queryChildMeta() { return NULL; }
+    bool isXmlAttribute() const { return (tagname.length() && *tagname.get()=='@'); }
 
 public:
     StringAttr  name;
     StringAttr  xpath;
+    StringAttr tagname;
     OwnedITypeInfo type;
     byte           flags;
 };
@@ -86,6 +88,7 @@ public:
 class DataSourceMetaData : public CInterface, implements IFvDataSourceMetaData, public IRecordSizeEx
 {
     friend class DataSourceSetItem;
+    friend class DataSourceDatasetItem;
 public:
     DataSourceMetaData(IHqlExpression * _record, byte _numFieldsToIgnore, bool _randomIsOk, bool _isGrouped, unsigned _keyedSize);
     DataSourceMetaData();           // for NULL implementation
@@ -100,6 +103,10 @@ public:
     virtual bool supportsRandomSeek() const;
     virtual void serialize(MemoryBuffer & out) const;
     virtual unsigned queryFieldFlags(unsigned column) const;
+    virtual const char *queryXmlTag(unsigned column) const;
+    virtual const char *queryXmlTag() const;
+    virtual const IntArray &queryAttrList();
+
     virtual IFvDataSourceMetaData * queryChildMeta(unsigned column) const;
     virtual IFvDataSource * createChildDataSource(unsigned column, unsigned len, const void * data);
     virtual unsigned numKeyedColumns() const;
@@ -131,6 +138,7 @@ protected:
 
 protected:
     CIArrayOf<DataSourceMetaItem> fields;
+    IntArray attributes;
     unsigned keyedSize;
     unsigned storedFixedSize;
     unsigned maxRecordSize;
@@ -139,6 +147,8 @@ protected:
     bool isStoredFixedWidth;
     bool randomIsOk;
     byte numFieldsToIgnore;
+    bool gatheredAttributes;
+    StringAttr tagname;
 };
 
 

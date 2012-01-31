@@ -1508,12 +1508,12 @@ IStringVal & CResultSetCursor::getDisplayText(IStringVal &ret, int columnIndex)
 }
 
 
-void CResultSetCursor::getXmlText(StringBuffer & out, int columnIndex)
+void CResultSetCursor::getXmlText(StringBuffer & out, int columnIndex, const char *tag)
 {
     if (!isValid())
         return;
 
-    const char * name = meta.meta->queryName(columnIndex);
+    const char * name = (tag) ? tag : meta.meta->queryXmlTag(columnIndex);
     CResultSetColumnInfo & column = meta.columns.item(columnIndex);
     unsigned flags = column.flag;
     switch (flags)
@@ -1522,10 +1522,10 @@ void CResultSetCursor::getXmlText(StringBuffer & out, int columnIndex)
     case FVFFendif:
         return;
     case FVFFbeginrecord:
-        out.append("<").append(name).append(">");
+        appendXMLOpenTag(out, name);
         return;
     case FVFFendrecord:
-        out.append("</").append(name).append(">");
+        appendXMLCloseTag(out, name);
         return;
     }
 
@@ -1621,7 +1621,7 @@ void CResultSetCursor::getXmlText(StringBuffer & out, int columnIndex)
     case type_table:
     case type_groupedtable:
         {
-            out.append("<").append(name).append(">");
+            appendXMLOpenTag(out, name);
             Owned<IResultSetCursor> childCursor = getChildren(columnIndex);
             
             ForEach(*childCursor)
@@ -1630,12 +1630,12 @@ void CResultSetCursor::getXmlText(StringBuffer & out, int columnIndex)
                 childCursor->getXmlRow(adaptor);
             }
 
-            out.append("</").append(name).append(">");
+            appendXMLCloseTag(out, name);
             break;
         }
     case type_set:
         {
-            out.append("<").append(name).append(">");
+            appendXMLOpenTag(out, name);
             if (getIsAll(columnIndex))
                 outputXmlSetAll(out);
             else
@@ -1644,16 +1644,131 @@ void CResultSetCursor::getXmlText(StringBuffer & out, int columnIndex)
                 
                 ForEach(*childCursor)
                 {
-                    out.append("<Item>");
                     StringBufferAdaptor adaptor(out);
-                    childCursor->getDisplayText(adaptor, 0);
-                    out.append("</Item>");
+                    childCursor->getXmlItem(adaptor);
                 }
             }
-
-            out.append("</").append(name).append(">");
+            appendXMLCloseTag(out, name);
             break;
         }
+    default:
+        UNIMPLEMENTED;
+    }
+    rtlFree(resultStr);
+}
+
+void CResultSetCursor::getXmlAttrText(StringBuffer & out, int columnIndex, const char *tag)
+{
+    if (!isValid())
+        return;
+
+    const char * name = (tag) ? tag : meta.meta->queryXmlTag(columnIndex);
+    if (name && *name=='@')
+        name++;
+    CResultSetColumnInfo & column = meta.columns.item(columnIndex);
+    unsigned flags = column.flag;
+    switch (flags)
+    {
+    case FVFFbeginif:
+    case FVFFendif:
+    case FVFFbeginrecord:
+    case FVFFendrecord:
+        return;
+    }
+
+    const byte * cur = getColumn(columnIndex);
+    unsigned resultLen;
+    char * resultStr = NULL;
+
+    ITypeInfo & type = *column.type;
+    unsigned size = type.getSize();
+    unsigned len = UNKNOWN_LENGTH;
+    switch (type.getTypeCode())
+    {
+    case type_boolean:
+        outputXmlAttrBool((*((byte *)cur)) != 0, name, out);
+        break;
+    case type_int:
+        {
+            __int64 value = getIntFromInt(type, cur, isMappedIndexField(columnIndex));
+            if (type.isSigned())
+                outputXmlAttrInt((__int64) value, name, out);
+            else
+                outputXmlAttrUInt((unsigned __int64) value, name, out);
+            break;
+        }
+    case type_swapint:
+        {
+            __int64 value = getIntFromSwapInt(type, cur, isMappedIndexField(columnIndex));
+            if (type.isSigned())
+                outputXmlAttrInt((__int64) value, name, out);
+            else
+                outputXmlAttrUInt((unsigned __int64) value, name, out);
+            break;
+        }
+    case type_packedint:
+        {
+            if (type.isSigned())
+                outputXmlAttrInt(rtlGetPackedSigned(cur), name, out);
+            else
+                outputXmlAttrUInt(rtlGetPackedUnsigned(cur), name, out);
+            break;
+        }
+    case type_decimal:
+        if (type.isSigned())
+            outputXmlAttrDecimal(cur, size, type.getPrecision(), name, out);
+        else
+            outputXmlAttrUDecimal(cur, size, type.getPrecision(), name, out);
+        break;
+    case type_real:
+        if (size == 4)
+            outputXmlAttrReal(*(float *)cur, name, out);
+        else
+            outputXmlAttrReal(*(double *)cur, name, out);
+        break;
+    case type_qstring:
+        len = getLength(type, cur);
+        rtlQStrToStrX(resultLen, resultStr, len, (const char *)cur);
+        outputXmlAttrString(resultLen, resultStr, name, out);
+        break;
+    case type_data:
+        len = getLength(type, cur);
+        outputXmlAttrData(len, cur, name, out);
+        break;
+    case type_string:
+        len = getLength(type, cur);
+        if (meta.isEBCDIC(columnIndex))
+        {
+            rtlStrToEStrX(resultLen, resultStr, len, (const char *)cur);
+            outputXmlAttrString(resultLen, resultStr, name, out);
+        }
+        else
+            outputXmlAttrString(len, (const char *)cur, name, out);
+        break;
+    case type_unicode:
+        len = getLength(type, cur);
+        outputXmlAttrUnicode(len, (UChar const *)cur, name, out);
+        break;
+    case type_varstring:
+        if (meta.isEBCDIC(columnIndex))
+        {
+            rtlStrToEStrX(resultLen, resultStr, strlen((const char *)cur), (const char *)cur);
+            outputXmlAttrString(resultLen, resultStr, name, out);
+        }
+        else
+            outputXmlAttrString(strlen((const char *)cur), (const char *)cur, name, out);
+        break;
+    case type_varunicode:
+        outputXmlAttrUnicode(rtlUnicodeStrlen((UChar const *)cur), (UChar const *)cur, name, out);
+        break;
+    case type_utf8:
+        len = getLength(type, cur);
+        outputXmlAttrUtf8(len, (const char *)cur, name, out);
+        break;
+    case type_table:
+    case type_groupedtable:
+    case type_set:
+        break;
     default:
         UNIMPLEMENTED;
     }
@@ -1668,16 +1783,35 @@ IStringVal & CResultSetCursor::getXml(IStringVal &ret, int columnIndex)
     return ret;
 }
 
+IStringVal & CResultSetCursor::getXmlItem(IStringVal & ret)
+{
+    StringBuffer temp;
+    getXmlText(temp, 0, meta.meta->queryXmlTag());
+    ret.set(temp.str());
+    return ret;
+}
+
 //More efficient than above...
 IStringVal & CResultSetCursor::getXmlRow(IStringVal &ret)
 {
     StringBuffer temp;
-    temp.append("<Row>");
+    const char *rowtag = meta.meta->queryXmlTag();
+    if (rowtag && *rowtag)
+    {
+        temp.append('<').append(rowtag);
+        const IntArray &attributes = meta.meta->queryAttrList();
+        ForEachItemIn(ac, attributes)
+            getXmlAttrText(temp, attributes.item(ac));
+        temp.append('>');
+    }
     unsigned numColumns = meta.getColumnCount();
     unsigned ignoreNesting = 0;
     for (unsigned col = 0; col < numColumns; col++)
     {
         unsigned flags = meta.columns.item(col).flag;
+        const char *tag = meta.meta->queryXmlTag(col);
+        if (tag && *tag=='@')
+            continue;
         switch (flags)
         {
         case FVFFbeginif:
@@ -1710,7 +1844,7 @@ IStringVal & CResultSetCursor::getXmlRow(IStringVal &ret)
         }
     }
     assertex(ignoreNesting == 0);
-    temp.append("</Row>");
+    appendXMLCloseTag(temp, rowtag);
     ret.set(temp.str());
     return ret;
 }
@@ -1956,6 +2090,10 @@ IStringVal & IndirectResultSetCursor::getXml(IStringVal & ret, int columnIndex)
 IStringVal & IndirectResultSetCursor::getXmlRow(IStringVal &ret)
 {
     return queryBase()->getXmlRow(ret);
+}
+IStringVal & IndirectResultSetCursor::getXmlItem(IStringVal &ret)
+{
+    return queryBase()->getXmlItem(ret);
 }
 void IndirectResultSetCursor::noteRelatedFileChanged()
 {
