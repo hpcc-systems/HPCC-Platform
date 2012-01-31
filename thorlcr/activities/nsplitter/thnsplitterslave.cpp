@@ -26,7 +26,16 @@
 interface ISharedSmartBuffer;
 class NSplitterSlaveActivity;
 
-class SplitterOutput : public CSimpleInterface, public CThorDataLink
+class CSplitterOutputBase : public CSimpleInterface, implements IRowStream
+{
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+    virtual void start() = 0;
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) = 0;
+};
+
+class CSplitterOutput : public CSplitterOutputBase
 {
     NSplitterSlaveActivity &activity;
     unsigned __int64 totalCycles;
@@ -34,28 +43,26 @@ class SplitterOutput : public CSimpleInterface, public CThorDataLink
     unsigned output;
     rowcount_t rec, max;
 
-    unsigned getId() { return output; } 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    SplitterOutput(NSplitterSlaveActivity &_activity, unsigned output);
+    CSplitterOutput(NSplitterSlaveActivity &_activity, unsigned output);
+
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info);
 
     void addCycles(unsigned __int64 elapsedCycles);
-// IThorDataLink
     virtual void start();
     virtual void stop();
     virtual const void *nextRow();
-    bool isGrouped();
-    void getMetaInfo(ThorDataLinkMetaInfo &info);
     unsigned __int64 queryTotalCycles() const;
 };
 
 #ifdef TIME_ACTIVITIES
 struct Timer : public ActivityTimer
 {
-    SplitterOutput &output;
+    CSplitterOutput &output;
     unsigned __int64 elapsedCycles;
-    inline Timer(SplitterOutput &_output, const bool &enabled) : ActivityTimer(elapsedCycles, enabled, NULL), output(_output) { }
+    inline Timer(CSplitterOutput &_output, const bool &enabled) : ActivityTimer(elapsedCycles, enabled, NULL), output(_output) { }
     inline ~Timer()
     {
         if (enabled)
@@ -66,7 +73,7 @@ struct Timer : public ActivityTimer
 //optimized away completely?
 struct Timer
 {
-    inline Timer(SplitterOutput &_output, const bool &enabled) { }
+    inline Timer(CSplitterOutput &_output, const bool &enabled) { }
 };
 #endif
 
@@ -80,12 +87,15 @@ class NSplitterSlaveActivity : public CSlaveActivity
 {
     bool spill;
     bool eofHit;
-    CriticalSection startCrit;
     bool inputsConfigured;
     CriticalSection startLock;
     unsigned nstopped;
     rowcount_t recsReady;
     SpinLock timingLock;
+    IThorDataLink *input;
+    bool grouped;
+    Owned<IException> startException, writeAheadException;
+    Owned<ISharedSmartBuffer> smartBuf;
 
     class CWriter : public CSimpleInterface, IThreaded
     {
@@ -148,37 +158,21 @@ class NSplitterSlaveActivity : public CSlaveActivity
             max = writerMax;
         }
     } writer;
-
-protected: friend class SplitterOutput;
-           friend class CWriter;
-
-    IThorDataLink *input;
-    bool grouped;
-    Owned<IException> startException, writeAheadException;
-    Owned<ISharedSmartBuffer> smartBuf;
-
-    class CNullInput : public CSimpleInterface, public CThorDataLink
+    class CNullInput : public CSplitterOutputBase
     {
-        NSplitterSlaveActivity &activity;
-
     public:
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-        CNullInput(NSplitterSlaveActivity &_activity) : CThorDataLink(&_activity), activity(_activity)
-        {
-        }
         virtual const void *nextRow() { throwUnexpected(); return NULL; }
         virtual void stop() { throwUnexpected(); }
         virtual void start() { throwUnexpected(); }
-        virtual bool isGrouped() { return false; }
         virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
         {
-            initMetaInfo(info);
             info.totalRowsMin=0;
             info.totalRowsMax=0;
         }
     };
-    class CInputWrapper : public CSimpleInterface, public CThorDataLink
+    class CInputWrapper : public CSplitterOutputBase
     {
         IThorDataLink *input;
         NSplitterSlaveActivity &activity;
@@ -186,41 +180,59 @@ protected: friend class SplitterOutput;
     public:
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-        CInputWrapper(NSplitterSlaveActivity &_activity, IThorDataLink *_input) : CThorDataLink(&_activity), activity(_activity), input(_input) { }
+        CInputWrapper(NSplitterSlaveActivity &_activity, IThorDataLink *_input) : activity(_activity), input(_input) { }
         virtual const void *nextRow() { return input->nextRow(); }
         virtual void stop() { input->stop(); }
-    // IThorDataLink impl.
         virtual void start()
         {
             input->start();
         }
-        virtual bool isGrouped() { return input->isGrouped(); }
-        virtual void getMetaInfo(ThorDataLinkMetaInfo &info) { input->getMetaInfo(info); }
+        virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+        {
+            input->getMetaInfo(info);
+        }
     };
 
     class CDelayedInput : public CSimpleInterface, public CThorDataLink
     {
-        Owned<IThorDataLink> input;
+        Owned<CSplitterOutputBase> input;
         NSplitterSlaveActivity &activity;
+        unsigned id;
 
     public:
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-        CDelayedInput(NSplitterSlaveActivity &_activity) : CThorDataLink(&_activity), activity(_activity) { }
-        void setInput(IThorDataLink *_input) 
+        CDelayedInput(NSplitterSlaveActivity &_activity) : CThorDataLink(&_activity), activity(_activity), id(0) { }
+        void setInput(CSplitterOutputBase *_input, unsigned _id=0)
         {
             input.setown(_input);
+            id = _id;
         }
-        virtual const void *nextRow() { return input->nextRow(); }
-        virtual void stop() { input->stop(); }
+        virtual const void *nextRow()
+        {
+            OwnedConstThorRow row = input->nextRow();
+            if (row)
+                dataLinkIncrement();
+            return row.getClear();
+        }
+        virtual void stop()
+        {
+            input->stop();
+            dataLinkStop();
+        }
     // IThorDataLink impl.
         virtual void start()
         {
             activity.ensureInputsConfigured();
             input->start();
+            dataLinkStart("SPLITTEROUTPUT", activity.queryContainer().queryId(), id);
         }
         virtual bool isGrouped() { return activity.inputs.item(0)->isGrouped(); }
-        virtual void getMetaInfo(ThorDataLinkMetaInfo &info) { activity.inputs.item(0)->getMetaInfo(info); }
+        virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+        {
+            initMetaInfo(info);
+            input->getMetaInfo(info);
+        }
     };
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
@@ -236,7 +248,7 @@ public:
     }
     void ensureInputsConfigured()
     {
-        CriticalBlock block(startCrit);
+        CriticalBlock block(startLock);
         if (inputsConfigured)
             return;
         inputsConfigured = true;
@@ -257,7 +269,7 @@ public:
                 if (o2 == o)
                     delayedInput->setInput(new CInputWrapper(*this, inputs.item(0)));
                 else
-                    delayedInput->setInput(new CNullInput(*this));
+                    delayedInput->setInput(new CNullInput());
             }
         }
         else
@@ -266,9 +278,9 @@ public:
             {
                 CDelayedInput *delayedInput = (CDelayedInput *)outputs.item(o);
                 if (NULL != container.connectedOutputs.queryItem(o))
-                    delayedInput->setInput(new SplitterOutput(*this, o));
+                    delayedInput->setInput(new CSplitterOutput(*this, o), o);
                 else
-                    delayedInput->setInput(new CNullInput(*this));
+                    delayedInput->setInput(new CNullInput());
             }
         }
     }
@@ -396,19 +408,21 @@ public:
             smartBuf->cancel();
     }
 friend class CInputWrapper;
+friend class CSplitterOutput;
+friend class CWriter;
 };
 
 //
-// SplitterOutput
+// CSplitterOutput
 //
-SplitterOutput::SplitterOutput(NSplitterSlaveActivity &_activity, unsigned _output) 
-   : CThorDataLink(&_activity), activity(_activity), output(_output)
+CSplitterOutput::CSplitterOutput(NSplitterSlaveActivity &_activity, unsigned _output)
+   : activity(_activity), output(_output)
 {
     rec = max = 0;
     totalCycles = 0;
 }
 
-void SplitterOutput::addCycles(unsigned __int64 elapsedCycles)
+void CSplitterOutput::addCycles(unsigned __int64 elapsedCycles)
 {
     totalCycles += elapsedCycles; // per output
     SpinBlock b(activity.timingLock);
@@ -416,50 +430,40 @@ void SplitterOutput::addCycles(unsigned __int64 elapsedCycles)
 }
 
 // IThorDataLink
-void SplitterOutput::start() 
+void CSplitterOutput::start()
 {
     Timer s(*this, activity.queryTimeActivities());
     rec = max = 0;
     activity.prepareInput(output);
     if (activity.startException)
         throw LINK(activity.startException);
-    dataLinkStart("SPLITTEROUTPUT", activity.queryContainer().queryId(), getId());
 }
 
-void SplitterOutput::stop() 
+void CSplitterOutput::stop()
 { 
     CriticalBlock block(activity.startLock);
     activity.smartBuf->queryOutput(output)->stop();
     activity.inputStopped();
-    dataLinkStop();
 }
 
-const void *SplitterOutput::nextRow()
+const void *CSplitterOutput::nextRow()
 {
     Timer t(*this, activity.queryTimeActivities());
     if (rec == max)
         activity.more(max);
-    OwnedConstThorRow row = activity.nextRow(output); // pass ptr to max if need more
-    if (row)
-        dataLinkIncrement();
+    const void *row = activity.nextRow(output); // pass ptr to max if need more
     ++rec;
-    return row.getClear();
+    return row;
 }
 
 
-bool SplitterOutput::isGrouped()
+void CSplitterOutput::getMetaInfo(ThorDataLinkMetaInfo &info)
 {
-    return activity.grouped;
-}
-
-void SplitterOutput::getMetaInfo(ThorDataLinkMetaInfo &info)
-{
-    initMetaInfo(info);
     info.canStall = !activity.spill;
-    calcMetaInfoSize(info,activity.inputs.item(0));
+    CThorDataLink::calcMetaInfoSize(info, activity.inputs.item(0));
 }
 
-unsigned __int64 SplitterOutput::queryTotalCycles() const
+unsigned __int64 CSplitterOutput::queryTotalCycles() const
 {
     return totalCycles;
 }
