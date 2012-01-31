@@ -980,7 +980,7 @@ class CDFAction: public CInterface
 protected:
     Linked<IDistributedFileTransaction> transaction;
     IArrayOf<IDistributedFile> lockedFiles;
-    TransActionState state;
+    DFTransactionState state;
     void addFile(IDistributedFile& file) {
         // derived's prepare must call this before locking
         lockedFiles.append(file);
@@ -1866,7 +1866,7 @@ public:
     unsigned getCRC();
     IPropertyTree &queryAttributes();
     bool lockProperties(unsigned timems);
-    void unlockProperties(TransActionState state);
+    void unlockProperties(DFTransactionState state);
     bool isHost(unsigned copy);
     offset_t getFileSize(bool allowphysical,bool forcephysical);
     offset_t getDiskSize();
@@ -2337,7 +2337,7 @@ public:
      *
      *  @deprecated : use DistributedFilePropertyLock instead, when possible
      */
-    void unlockProperties(TransActionState state=TAS_NONE)
+    void unlockProperties(DFTransactionState state=TAS_NONE)
     {
         savePartsAttr();
         if (--proplockcount==0) {
@@ -5713,7 +5713,7 @@ bool CDistributedFilePart::lockProperties(unsigned timeoutms)
 }
 
 // TODO: Create DistributedFilePropertyLock for parts
-void CDistributedFilePart::unlockProperties(TransActionState state=TAS_NONE)
+void CDistributedFilePart::unlockProperties(DFTransactionState state=TAS_NONE)
 {
     parent.unlockProperties(state);
 }

@@ -110,7 +110,7 @@ enum GetFileClusterNamesType
 };
 
 
-enum TransActionState {
+enum DFTransactionState {
     TAS_NONE,    // still working
     TAS_RETRY,   // retry (din-phil problems)
     TAS_SUCCESS, // committing
@@ -141,7 +141,7 @@ interface IDistributedFilePart: implements IInterface
     virtual IPropertyTree &queryAttributes() = 0;                               // part attributes
 
     virtual bool lockProperties(unsigned timeoutms=INFINITE) = 0;               // must be called before updating
-    virtual void unlockProperties(TransActionState state=TAS_NONE) = 0;         // must be called after updating
+    virtual void unlockProperties(DFTransactionState state=TAS_NONE) = 0;         // must be called after updating
 
     virtual bool isHost(unsigned copy=0) = 0;                                   // file is located on this machine
 
@@ -227,7 +227,7 @@ interface IDistributedFile: extends IInterface
     virtual IPropertyTree &queryAttributes() = 0;                               // DFile attributes
 
     virtual bool lockProperties(unsigned timeoutms=INFINITE) = 0;               // must be called before updating properties (will discard uncommitted changes)
-    virtual void unlockProperties(TransActionState state=TAS_NONE) = 0;         // must be called after updating properties
+    virtual void unlockProperties(DFTransactionState state=TAS_NONE) = 0;         // must be called after updating properties
 
     virtual bool getModificationTime(CDateTime &dt) = 0;                        // get date and time last modified (returns false if not set)
     virtual void setModificationTime(const CDateTime &dt) = 0;                  // set date and time last modified
