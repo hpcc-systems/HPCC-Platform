@@ -102,6 +102,63 @@ bool httpContentFromFile(const char *filepath, StringBuffer &mimetype, MemoryBuf
     return false;
 }
 
+bool xmlContentFromFile(const char *filepath, const char *stylesheet, StringBuffer &fileContents)
+{
+    StringBuffer strfile(filepath);
+
+    if (!checkFileExists(strfile.str()))
+        if (!checkFileExists(strfile.toUpperCase().str()))
+            if (!checkFileExists(strfile.toLowerCase().str()))
+                return false;
+
+    fileContents.loadFile(strfile.str());
+    if (stylesheet && *stylesheet)
+    {
+        StringBuffer stylesheetLine;
+        stylesheetLine.appendf("<?xml-stylesheet type=\"text/xsl\" href=\"%s\"?>\n", stylesheet);
+
+        unsigned fileSize = fileContents.length();
+        const char* ptr0 = fileContents.str();
+        char* ptr = (char*) ptr0;
+        while (*ptr)
+        {
+            if((ptr[0] == '<') && (ptr[1] != '!'))
+            {
+                if (ptr[1] != '?')
+                {
+                    fileContents.insert(ptr - ptr0, stylesheetLine);
+                    break;
+                }
+                else
+                {
+                    if ((strncmp(ptr, "<?xml-stylesheet ", 17)==0) || (strncmp(ptr, "<?xml-stylesheet?", 17)==0))
+                    {//Found the line to be replaced
+                        char* ptr1 = ptr + 17;
+                        while (*ptr1)
+                        {
+                            if (ptr1[0] == '>')
+                            {
+                                if (ptr1[1] != '\n')
+                                    fileContents.remove(ptr - ptr0, ptr1 - ptr + 1);
+                                else
+                                    fileContents.remove(ptr - ptr0, ptr1 - ptr + 2);
+
+                                fileContents.insert(ptr - ptr0, stylesheetLine);
+                                break;
+                            }
+                            ptr1++;
+                        }
+
+                        break;
+                    }
+                }
+            }
+            ptr++;
+        }
+    }
+    return true;
+}
+
 /***************************************************************************
                 CHttpMessage Implementation
 This class implements common functions shared by both CHttpRequest 
