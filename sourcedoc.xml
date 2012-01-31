@@ -277,7 +277,64 @@
             <sect2>
                 <title>Compiler Tests</title>
                 <para>
-                    TODO: Describe compiler tests at 'ecl/regress'.
+                    The ECLCC compiler tests rely on two distinct runs: a known good one and your
+                    test build. For normal development, you can safely assume that the OSS/master
+                    branch in github is good. For overnight testing, golden directories need to
+                    be maintained according to the test infrastructure. There are Bash (Linux)
+                    and Batch (Windows) scripts to run the regressions:
+                </para>
+                <para>
+                    The basic idea behind this tests is to compare the output files (logs and
+                    XML files) between runs. The log files should change slightly (the comparison
+                    should be good enough to filter most irrelevant differences), but the XML
+                    files should be identical if nothing has changed. You should only see
+                    differences in the XML where you have changed in the code, or new tests
+                    were added as part of your development.
+                </para>
+                <para>
+                    On Linux, there are two steps:
+                </para>
+                <para>
+                    Step 1: Check-out OSS/master, compile and run the regressions to populate
+                    the 'golden' directory:
+
+                    <programlisting>
+                        ./regress.sh -t golden -e buildDir/Debug/bin/eclcc
+                    </programlisting>
+
+                    This will run the regressions in parallel, using as many CPUs as you have,
+                    and using your just-compiled ECLCC, assuming you compiled for Debug version.
+                </para>
+                <para>
+                    Step 2: Make your changes (or check-out your branch), compile and run again,
+                    this time output to a new directory and compare to the 'golden' repo.
+
+                    <programlisting>
+                        ./regress.sh -t my_branch -c golden -e buildDir/Debug/bin/eclcc
+                    </programlisting>
+
+                    This will run the regressions in the same way, output to 'my_branch' dir
+                    and compare it to the golden version, highlighting the differences.
+
+                    NOTE: If you changed the headers that the compiled binaries will use, you
+                    must re-install the package (or provide -i option to the script to the new
+                    headers).
+                </para>
+                <para>
+                    Step 3: Step 2 only listed the differences, now you need to see what they are.
+                    For that, re-run the regressing script, with the no-run option (-r). You can omit
+                    the compiler, since the only thing we'll do is to compare verbosely.
+
+                    <programlisting>
+                        ./regress.sh -t my_branch -c golden -r
+                    </programlisting>
+
+                    This will show you all differences, using the same ignore filters as before,
+                    between your two branches. Once you're happy with the differences, commit and
+                    issue a pull-request.
+                </para>
+                <para>
+                    TODO: Describe compiler tests on Windows.
                 </para>
             </sect2>
         </sect1>
