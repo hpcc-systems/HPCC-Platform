@@ -2182,11 +2182,7 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
     if (graphEclText.length() == 0)
         toECL(dataset->queryBody(), graphEclText, false, true);
 
-    if (graphEclText.length() > MAX_GRAPH_ECL_LENGTH)
-    {
-        graphEclText.setLength(MAX_GRAPH_ECL_LENGTH);
-        graphEclText.append("...");
-    }
+    elideString(graphEclText, MAX_GRAPH_ECL_LENGTH);
     if (strcmp(graphEclText.str(), "<>") != 0)
         addAttribute("ecl", graphEclText.str());
 
@@ -15815,11 +15811,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCreateRow(BuildCtx & ctx, IHql
     if (valueText.length())
     {
         StringBuffer graphLabel;
-        if (valueText.length() > MAX_ROW_VALUE_TEXT_LEN)
-        {
-            valueText.setLength(MAX_ROW_VALUE_TEXT_LEN);
-            valueText.append("...");
-        }
+        elideString(valueText, MAX_ROW_VALUE_TEXT_LEN);
         graphLabel.append(getActivityText(instance->kind)).append("\n{").append(valueText).append("}");
         instance->graphLabel.set(graphLabel.str());
     }
