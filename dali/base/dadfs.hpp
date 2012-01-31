@@ -376,21 +376,7 @@ public:
         if (!unlocked)
             unlock();
     }
-    void commit()
-    {
-        file->unlockProperties(TAS_SUCCESS);
-        unlocked = true;
-    }
-    void rollback()
-    {
-        file->unlockProperties(TAS_FAILURE);
-        unlocked = true;
-    }
-    void retry()
-    {
-        file->unlockProperties(TAS_RETRY);
-        unlocked = true;
-    }
+    // MORE: Implement commit/rollback/retry as necessary
     void unlock()
     {
         file->unlockProperties(TAS_NONE);
