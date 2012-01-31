@@ -2555,7 +2555,7 @@ static const char *g1 =
                "<att name='helper' value='f2'/>"
               "</node>"
               "<node id='2a'>"
-              " <att name='_kind' value='496'>"
+              " <att name='_kind' value='1'>"   // TAKsubgraph
               "  <graph>"
               "   <node id='7696' label='Nested'>"
               "    <att name='seeks' value='15' type='sum'/>"
@@ -2613,7 +2613,7 @@ static const char *g2 =
                "<att name='helper' value='f2'/>"
               "</node>"
               "<node id='2a'>"
-              " <att name='_kind' value='496'>"
+              " <att name='_kind' value='1'>"   // TAKsubgraph
               "  <graph>"
               "   <node id='7696' label='Nested'>"
               "    <att name='seeks' value='25' type='sum'/>"
@@ -2665,7 +2665,7 @@ static const char *expected =
                "<att name='helper' value='f2'/>"
               "</node>"
               "<node id='2a'>"
-              " <att name='_kind' value='496'>"
+              " <att name='_kind' value='1'>"   // TAKsubgraph
               "  <graph>"
               "   <node id='7696' label='Nested'>"
               "    <att name='seeks' type='sum' value='40'/>"
