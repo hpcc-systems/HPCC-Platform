@@ -75,7 +75,7 @@ public:
     DataSourceMetaItem(unsigned flags, MemoryBuffer & in);
     virtual void serialize(MemoryBuffer & out) const;
     virtual DataSourceMetaData * queryChildMeta() { return NULL; }
-    bool isXmlAttribute(){return (tagname.length() && *tagname.get()=='@');}
+    bool isXmlAttribute() const { return (tagname.length() && *tagname.get()=='@'); }
 
 public:
     StringAttr  name;
@@ -88,6 +88,7 @@ public:
 class DataSourceMetaData : public CInterface, implements IFvDataSourceMetaData, public IRecordSizeEx
 {
     friend class DataSourceSetItem;
+    friend class DataSourceDatasetItem;
 public:
     DataSourceMetaData(IHqlExpression * _record, byte _numFieldsToIgnore, bool _randomIsOk, bool _isGrouped, unsigned _keyedSize);
     DataSourceMetaData();           // for NULL implementation
@@ -147,8 +148,6 @@ protected:
     bool randomIsOk;
     byte numFieldsToIgnore;
     bool gatheredAttributes;
-
-public:
     StringAttr tagname;
 };
 
