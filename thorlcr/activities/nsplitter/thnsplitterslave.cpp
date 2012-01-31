@@ -231,7 +231,10 @@ class NSplitterSlaveActivity : public CSlaveActivity
         virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
         {
             initMetaInfo(info);
-            input->getMetaInfo(info);
+            if (input)
+                input->getMetaInfo(info);
+            else
+                activity.inputs.item(0)->getMetaInfo(info);
         }
     };
 public:
