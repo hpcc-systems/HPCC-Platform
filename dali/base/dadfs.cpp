@@ -2286,6 +2286,25 @@ public:
         return !logicalName.isSet();
     }
 
+    class CPropertyLock : implements IPropertyLock {
+    protected:
+        CDistributedFileBase<INTERFACE> *file;
+    public:
+        CPropertyLock(CDistributedFileBase<INTERFACE> *_file)
+            : file(_file)
+        {
+            file->lockProperties(file->defaultTimeout);
+        }
+        ~CPropertyLock()
+        {
+            file->unlockProperties();
+        }
+        IPropertyTree &queryAttributes()
+        {
+            return file->queryAttributes();
+        }
+    };
+
     /*
      *  Change connection to write-mode, allowing multiple writers only on the same instance.
      *  Returns true if the lock was lost at least once before succeeding, hinting that some
@@ -4018,25 +4037,6 @@ struct SuperFileSubTreeCache
     }
 };
 
-class CPropertyLock : implements IPropertyLock {
-protected:
-    Linked<CDistributedFile> file;
-public:
-    CPropertyLock(CDistributedFile _file)
-        : file(file)
-    {
-        file->lockProperties(INFINITE);
-    }
-    ~CPropertyLock()
-    {
-        file->unlockProperties();
-    }
-    IPropertyTree &queryAttributes()
-    {
-        return file->queryAttributes();
-    }
-};
-
 class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
 {
     void checkNotForeign()
@@ -5251,6 +5251,8 @@ private:
         return true;
     }
 
+    // FIXME: Refactor this method to use transactions. This will remove the necessity
+    // of perverting the lockProperties order via CPropertyLock
     bool doSwapSuperFile(IDistributedSuperFile *_file,
                                  IDistributedFileTransaction *transaction)
     {
@@ -5261,6 +5263,9 @@ private:
         StringArray subnames1; // will be built reversed
         StringArray subnames2; // will be built reversed
         unsigned pos = subfiles.ordinality();
+        // We cannot control the property locking here with objects because
+        // the context of the subfiles spawns across lexical blocks, and
+        // creating a list of lock objects might be more confusing than it is.
         lockProperties(defaultTimeout);
         if (pos) {
             do {
@@ -8666,17 +8671,17 @@ void CDistributedFileDirectory::resolveForeignFiles(IPropertyTree *tree,const IN
 
 void CDistributedFileDirectory::linkSuperOwner(IDistributedFile &subfile,const char *superfile,bool link,IDistributedFileTransaction *transaction)
 {
-    subfile.lockProperties();
     IDistributedSuperFile *ssub = subfile.querySuperFile();
     if (ssub) {
         CDistributedSuperFile *cdsuper = QUERYINTERFACE(ssub,CDistributedSuperFile);
+        CDistributedFileBase<IDistributedSuperFile>::CPropertyLock lock(cdsuper);
         cdsuper->linkSuperOwner(superfile,link,transaction);
     }
     else {
         CDistributedFile *cdfile = QUERYINTERFACE(&subfile,CDistributedFile);
+        CDistributedFileBase<IDistributedFile>::CPropertyLock lock(cdfile);
         cdfile->linkSuperOwner(superfile,link,transaction);
     }
-    subfile.unlockProperties();
 }
 
 int CDistributedFileDirectory::getFilePermissions(const char *lname,IUserDescriptor *user,unsigned auditflags)
