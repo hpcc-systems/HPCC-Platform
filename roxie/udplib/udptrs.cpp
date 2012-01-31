@@ -210,14 +210,13 @@ public:
             DataBuffer *buffer = (DataBuffer *) toSend.item(idx);
             UdpPacketHeader *header = (UdpPacketHeader*) buffer->data;
             bool isRetry = (header->udpSequence != 0);
-            bool isPing = (header->ruid == RUID_PING);
             if (isRetry)
             {
                 if (checkTraceLevel(TRACE_RETRY_DATA, 1))
                     DBGLOG("UdpSender: Resending packet to destination node %u sequence %u", permit.destNodeIndex, header->udpSequence);
                 atomic_inc(&packetsRetried);
             }
-            else if (!isPing)
+            else
                 header->udpSequence = nextUdpSequence();
             unsigned length = header->length;
             if (bucket)
@@ -257,7 +256,7 @@ public:
             {
                 DBGLOG("UdpSender: write exception - unknown exception");
             }
-            if (!isRetry && !isPing && maxRetryData)
+            if (!isRetry && maxRetryData)
             {
                 unsigned slot = (retryDataIdx + retryDataCount) % maxRetryData;
                 if (retryDataCount < maxRetryData)
