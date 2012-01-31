@@ -1439,9 +1439,8 @@ FILESERVICES_API void FILESERVICES_CALL fsSetFileDescription(ICodeContext *ctx, 
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
     Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc);
     if (df) {
-        df->lockProperties();
-        df->queryAttributes().setProp("@description",value);
-        df->unlockProperties();
+        DistributedFilePropertyLock lock(df);
+        lock.queryAttributes().setProp("@description",value);
     }
     else
         throw MakeStringException(0, "SetFileDescription: Could not locate file %s", lfn.str());

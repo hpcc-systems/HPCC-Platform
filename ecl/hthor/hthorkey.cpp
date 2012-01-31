@@ -1928,6 +1928,7 @@ protected:
                     partsize = ifile->size();
                     if (partsize != -1)
                     {
+                        // TODO: Create DistributedFilePropertyLock for parts
                         part->lockProperties();
                         part->queryAttributes().setPropInt64("@size", partsize);
                         part->unlockProperties();

@@ -349,10 +349,9 @@ public:
             if (afor.ok) {
                 CDateTime dt;
                 dt.setNow();
-                file->lockProperties();
+                DistributedFilePropertyLock lock(file);
                 StringBuffer str;
-                file->queryAttributes().setProp("@verified",dt.getString(str).str());
-                file->unlockProperties();
+                lock.queryAttributes().setProp("@verified",dt.getString(str).str());
             }
             PROGLOG("VERIFY: file %s %s",name,afor.ok?"OK":"FAILED");
         }

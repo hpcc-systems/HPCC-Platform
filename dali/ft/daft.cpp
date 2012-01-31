@@ -205,9 +205,8 @@ offset_t CDistributedFileSystem::getSize(IDistributedFile * file, bool forceget,
         }
         if (((totalSize != -1)||forceget) && !dontsetattr) // note forceget && !dontsetattr will reset attr if can't work out size
         {
-            file->lockProperties();
-            file->queryAttributes().setPropInt64("@size", totalSize);
-            file->unlockProperties();
+            DistributedFilePropertyLock lock(file);
+            lock.queryAttributes().setPropInt64("@size", totalSize);
         }
     }
     //LOG(MCdebugInfo(1000), unknownJob, "DFS: getSize(%s)=%"I64F"d", file->queryLogicalName(), totalSize);
@@ -271,6 +270,7 @@ offset_t CDistributedFileSystem::getSize(IDistributedFilePart * part, bool force
         size = part->getFileSize(true,forceget);
         if (((size != (offset_t)-1)||forceget) && !dontsetattr) // note forceget && !dontsetattr will reset attr if can't work out size
         {
+            // TODO: Create DistributedFilePropertyLock for parts
             part->lockProperties();
             part->queryAttributes().setPropInt64("@size", size);
             part->unlockProperties();

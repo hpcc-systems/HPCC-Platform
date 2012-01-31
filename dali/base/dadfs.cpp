@@ -5705,12 +5705,14 @@ unsigned CDistributedFilePart::getPhysicalCrc()
     throw e;
 }
 
+// TODO: Create DistributedFilePropertyLock for parts
 bool CDistributedFilePart::lockProperties(unsigned timeoutms)
 {
     dirty = true;
     return parent.lockProperties(timeoutms);
 }
 
+// TODO: Create DistributedFilePropertyLock for parts
 void CDistributedFilePart::unlockProperties(TransActionState state=TAS_NONE)
 {
     parent.unlockProperties(state);

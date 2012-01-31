@@ -1723,9 +1723,8 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
     StringBuffer strDesc = df->queryAttributes().queryProp("@description");
     if (description)
     {
-        df->lockProperties();
-        df->queryAttributes().setProp("@description",description);
-        df->unlockProperties();
+        DistributedFilePropertyLock lock(df);
+        lock.queryAttributes().setProp("@description",description);
         strDesc = description;
     }
 

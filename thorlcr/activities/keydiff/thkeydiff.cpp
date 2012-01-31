@@ -181,8 +181,8 @@ public:
             e->Release();
         }
         // Add a new 'Patch' description to the secondary key.
-        newIndexFile->lockProperties();
-        IPropertyTree &fileProps = newIndexFile->queryAttributes();
+        DistributedFilePropertyLock lock(newIndexFile);
+        IPropertyTree &fileProps = lock.queryAttributes();
         StringBuffer path("Patch[@name=\"");
         path.append(scopedName.str()).append("\"]");
         IPropertyTree *patch = fileProps.queryPropTree(path.str());
@@ -196,8 +196,6 @@ public:
         index->setProp("@name", originalIndexFile->queryLogicalName());
         if (originalIndexFile->getFileCheckSum(checkSum))
             index->setPropInt64("@checkSum", checkSum);
-
-        newIndexFile->unlockProperties();
     }
     void preStart(size32_t parentExtractSz, const byte *parentExtract)
     {
