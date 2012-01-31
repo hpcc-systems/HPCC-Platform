@@ -154,18 +154,18 @@ private:
 
 
 
-bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *cluster, const char *name, StringBuffer *wuid, bool displayWuid=true)
+bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *cluster, const char *name, StringBuffer *wuid, bool noarchive, bool displayWuid=true)
 {
-    StringBuffer s;
-    if (cmd.optVerbose)
-        fprintf(stdout, "\nDeploying %s\n", cmd.optObj.getDescription(s).str());
-
-    if (cmd.optObj.type==eclObjSource)
+    if (!noarchive && cmd.optObj.type==eclObjSource)
     {
         ConvertEclParameterToArchive conversion(cmd);
         if (!conversion.process())
             return false;
     }
+
+    StringBuffer s;
+    if (cmd.optVerbose)
+        fprintf(stdout, "\nDeploying x%s\n", cmd.optObj.getDescription(s).str());
 
     Owned<IClientWUDeployWorkunitRequest> req = client->createWUDeployWorkunitRequest();
     switch (cmd.optObj.type)
@@ -178,8 +178,14 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
             break;
         case eclObjSource:
         {
-            fprintf(stderr, "Failed to create archive from ECL Text\n");
-            return false;
+            if (noarchive)
+                req->setObjType("ecl_text");
+            else
+            {
+                fprintf(stderr, "Failed to create archive from ECL Text\n");
+                return false;
+            }
+            break;
         }
         default:
             fprintf(stderr, "Cannot deploy %s\n", cmd.optObj.queryTypeName());
@@ -192,6 +198,7 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
         req->setCluster(cluster);
     req->setObject(cmd.optObj.mb);
     req->setFileName(cmd.optObj.value.sget());
+
     Owned<IClientWUDeployWorkunitResponse> resp = client->WUDeployWorkunit(req);
     if (resp->getExceptions().ordinality())
         outputMultiExceptions(resp->getExceptions());
@@ -275,7 +282,7 @@ public:
         client->addServiceUrl(url.str());
         if (optUsername.length())
             client->setUsernameToken(optUsername.get(), optPassword.sget(), NULL);
-        return doDeploy(*this, client, optCluster.get(), optName.get(), NULL) ? 0 : 1;
+        return doDeploy(*this, client, optCluster.get(), optName.get(), NULL, optNoArchive) ? 0 : 1;
     }
     virtual void usage()
     {
@@ -368,7 +375,7 @@ public:
         StringBuffer wuid;
         if (optObj.type==eclObjWuid)
             wuid.set(optObj.value.get());
-        else if (!doDeploy(*this, client, optCluster.get(), optName.get(), &wuid))
+        else if (!doDeploy(*this, client, optCluster.get(), optName.get(), &wuid, optNoArchive))
             return 1;
 
         StringBuffer descr;
@@ -458,15 +465,18 @@ public:
     {
         if (!EclCmdWithEclTarget::finalizeOptions(globals))
             return false;
-        if (optObj.value.isEmpty())
+        if (optAttribute.isEmpty())
         {
-            fprintf(stderr, "\nMust specify a Query, WUID, ECL File, Archive, or shared object to run\n");
-            return false;
-        }
-        if (optObj.type==eclObjTypeUnknown)
-        {
-            fprintf(stderr, "\nCan't determine content type of argument %s\n", optObj.value.sget());
-            return false;
+            if (optObj.value.isEmpty())
+            {
+                fprintf(stderr, "\nMust specify a Query, WUID, ECL File, Archive, or shared object to run\n");
+                return false;
+            }
+            if (optObj.type==eclObjTypeUnknown)
+            {
+                fprintf(stderr, "\nCan't determine content type of argument %s\n", optObj.value.sget());
+                return false;
+            }
         }
         if (optObj.type==eclObjArchive || optObj.type==eclObjSource)
         {
@@ -520,7 +530,7 @@ public:
         else
         {
             req->setCloneWorkunit(false);
-            if (!doDeploy(*this, client, optCluster.get(), optName.get(), &wuid, optVerbose))
+            if (!doDeploy(*this, client, optCluster.get(), optName.get(), &wuid, optNoArchive, optVerbose))
                 return 1;
             req->setWuid(wuid.str());
             if (optVerbose)

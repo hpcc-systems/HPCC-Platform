@@ -57,6 +57,11 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_ACTIVATE_INI "activateDefault"
 #define ECLOPT_ACTIVATE_ENV NULL
 
+#define ECLOPT_ATTRIBUTE "--attribute"
+#define ECLOPT_ATTRIBUTE_S "-at"
+#define ECLOPT_ECL_ONLY "--ecl-only"
+#define ECLOPT_ECL_ONLY_S "-EO"
+
 #define ECLOPT_WAIT "--wait"
 #define ECLOPT_WAIT_INI "waitTimeout"
 #define ECLOPT_WAIT_ENV "ECL_WAIT_TIMEOUT"
@@ -161,7 +166,7 @@ public:
 class EclCmdWithEclTarget : public EclCmdCommon
 {
 public:
-    EclCmdWithEclTarget()
+    EclCmdWithEclTarget() : optNoArchive(false)
     {
     }
     virtual eclCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter, bool finalAttempt=false);
@@ -171,6 +176,8 @@ public:
     {
         EclCmdCommon::usage();
         fprintf(stdout,
+            "   -at, --attribute       module.attribute in legacy code repository\n"
+            "   -EO, --ecl-only        send ecl text to hpcc without generating archive\n"
             " eclcc options:\n"
             "   -Ipath                 Add path to locations to search for ecl imports\n"
             "   -Lpath                 Add path to locations to search for system libraries\n"
@@ -182,6 +189,8 @@ public:
     StringBuffer optLibPath;
     StringBuffer optImpPath;
     StringAttr optManifest;
+    StringAttr optAttribute;
+    bool optNoArchive;
 };
 
 class EclCmdWithQueryTarget : public EclCmdCommon
