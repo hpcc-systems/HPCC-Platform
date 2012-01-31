@@ -198,19 +198,6 @@ interface IDistributedSuperFileIterator: extends IIteratorOf<IDistributedSuperFi
     virtual const char *queryName() = 0;
 };
 
-/*
- * Objects of this type should lock the property tree on constructor,
- * keep a reference to the Attr section and release the lock on destruction.
- *
- * Replaces previous lock/query/unlock Properties trio that cause much grief.
- *
- * Locks can be implemented on DFS connection, critical blocks or simple
- * counters, depending on the usage.
- */
-interface IPropertyLock {
-    virtual IPropertyTree &queryAttributes() = 0; // return attributes of locked properties
-};
-
 /**
  * A distributed file, composed of one or more DistributedFileParts.
  */
@@ -361,6 +348,62 @@ interface ISimpleSuperFileEnquiry: extends IInterface // lightweight local
     virtual bool getSubFileName(unsigned num, StringBuffer &name) const = 0;
     virtual unsigned findSubName(const char *subname) const = 0;
     virtual unsigned getContents(StringArray &contents) const = 0;
+};
+
+
+// ==DISTRIBUTED FILE PROPERTY LOCKS============================================================================
+/*
+ * Context-based file property locking mechanism. Allows early unlocking for special cases,
+ * stores the reload flag and allows you to query the 'Attr' section of the file property,
+ * which is the only part external consumers are allowed to change.
+ *
+ * Use this instead of locking/unlocking manually. Manual lock is deprecated and will
+ * disappear soon.
+ */
+class DistributedFilePropertyLock {
+protected:
+    IDistributedFile *file;
+    bool reload;
+    bool unlocked;
+public:
+    DistributedFilePropertyLock(IDistributedFile *_file)
+        : file(_file), reload(false), unlocked(false)
+    {
+        reload = file->lockProperties();
+    }
+    ~DistributedFilePropertyLock()
+    {
+        if (!unlocked)
+            unlock();
+    }
+    void commit()
+    {
+        file->unlockProperties(TAS_SUCCESS);
+        unlocked = true;
+    }
+    void rollback()
+    {
+        file->unlockProperties(TAS_FAILURE);
+        unlocked = true;
+    }
+    void retry()
+    {
+        file->unlockProperties(TAS_RETRY);
+        unlocked = true;
+    }
+    void unlock()
+    {
+        file->unlockProperties(TAS_NONE);
+        unlocked = true;
+    }
+    IPropertyTree &queryAttributes()
+    {
+        return file->queryAttributes();
+    }
+    bool needsReload()
+    {
+        return reload;
+    }
 };
 
 

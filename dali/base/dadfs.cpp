@@ -2289,63 +2289,13 @@ public:
     }
 
     /*
-     * Context-based lock. Use this instead of locking the properties
-     * directly whenever possible.
-     */
-    class CPropertyLock : implements IPropertyLock {
-    protected:
-        CDistributedFileBase<INTERFACE> *file;
-        bool reload;
-        bool unlocked;
-    public:
-        CPropertyLock(CDistributedFileBase<INTERFACE> *_file)
-            : file(_file), reload(false), unlocked(false)
-        {
-            reload = file->lockProperties(file->defaultTimeout);
-        }
-        ~CPropertyLock()
-        {
-            if (!unlocked)
-                unlock();
-        }
-        void commit()
-        {
-            file->unlockProperties(TAS_SUCCESS);
-            unlocked = true;
-        }
-        void rollback()
-        {
-            file->unlockProperties(TAS_FAILURE);
-            unlocked = true;
-        }
-        void retry()
-        {
-            file->unlockProperties(TAS_RETRY);
-            unlocked = true;
-        }
-        void unlock()
-        {
-            file->unlockProperties(TAS_NONE);
-            unlocked = true;
-        }
-        IPropertyTree &queryAttributes()
-        {
-            return file->queryAttributes();
-        }
-        bool needsReload()
-        {
-            return reload;
-        }
-    };
-
-    /*
      *  Change connection to write-mode, allowing multiple writers only on the same instance.
      *  Returns true if the lock was lost at least once before succeeding, hinting that some
      *  resources might need reload (like sub-files list, etc).
      *
      *  WARN: This is not thread-safe
      *
-     *  @deprecated : use CPropertyLock instead, when possible
+     *  @deprecated : use DistributedFilePropertyLock instead, when possible
      */
     bool lockProperties(unsigned timeoutms)
     {
@@ -2385,7 +2335,7 @@ public:
      *
      * WARN: This is not thread-safe
      *
-     *  @deprecated : use CPropertyLock instead, when possible
+     *  @deprecated : use DistributedFilePropertyLock instead, when possible
      */
     void unlockProperties(TransActionState state=TAS_NONE)
     {
@@ -2438,7 +2388,7 @@ public:
 
     void setModificationTime(const CDateTime &dt)
     {
-        CPropertyLock lock(this);
+        DistributedFilePropertyLock lock(this);
         if (dt.isNull())
             root->removeProp("@modified");
         else {
@@ -2467,7 +2417,7 @@ public:
 
     virtual void setECL(const char *ecl)
     {
-        CPropertyLock lock(this);
+        DistributedFilePropertyLock lock(this);
         IPropertyTree &p = queryAttributes();
 #ifdef PACK_ECL
         p.removeProp("ECL");
@@ -2505,7 +2455,7 @@ public:
         else {
             bool ret=false;
             if (conn) {
-                CPropertyLock lock(this);
+                DistributedFilePropertyLock lock(this);
                 IPropertyTree &p = queryAttributes();
                 CDateTime dt;
                 dt.setNow();
@@ -2632,7 +2582,7 @@ public:
 
     virtual void setColumnMapping(const char *mapping)
     {
-        CPropertyLock lock(this);
+        DistributedFilePropertyLock lock(this);
         if (!mapping||!*mapping) 
             queryAttributes().removeProp("@columnMapping");
         else
@@ -3216,7 +3166,7 @@ public:
         }
         attach(_logicalname,transaction,user);
         if (prevname.length()) {
-            CPropertyLock lock(this);
+            DistributedFilePropertyLock lock(this);
             IPropertyTree &pt = queryAttributes();
             StringBuffer list;
             if (pt.getProp("@renamedFrom",list)&&list.length())
@@ -3716,7 +3666,7 @@ public:
         afor2.For(width,10,false,true);
         if (afor2.ok) {
             // now rename directory and partmask
-            CPropertyLock lock(this);
+            DistributedFilePropertyLock lock(this);
             root->setProp("@directory",newdir.str());
             root->setProp("@partmask",newmask.str());
             partmask.set(newmask.str());
@@ -3932,7 +3882,7 @@ public:
             parent->setFileAccessed(logicalName,dt);
         }
         else {
-            CPropertyLock lock(this);
+            DistributedFilePropertyLock lock(this);
             if (dt.isNull())
                 queryAttributes().removeProp("@accessed");
             else {
@@ -5091,7 +5041,7 @@ public:
             CDistributedSuperFile *file = QUERYINTERFACE(psfile.get(),CDistributedSuperFile);
             if (file) {
                 {
-                    CPropertyLock lock(file);
+                    DistributedFilePropertyLock lock(file);
                     file->setModified();
                     file->updateFileAttrs();
                 }
@@ -5147,7 +5097,7 @@ private:
             if (pos==NotFound)
                 return false;
             {
-                CPropertyLock lock(this);
+                DistributedFilePropertyLock lock(this);
                 // don't reload subfiles here
                 pos=findSubFileOrd(subfile);
                 if ((pos==NotFound)||(pos>=subfiles.ordinality()))
@@ -5167,7 +5117,7 @@ private:
         else {
             pos = subfiles.ordinality();
             if (pos) {
-                CPropertyLock lock(this);
+                DistributedFilePropertyLock lock(this);
                 if (lock.needsReload())
                     loadSubFiles(true,transaction,1000*60*10); 
                 pos = subfiles.ordinality();
@@ -5212,7 +5162,7 @@ private:
     }
 
     // FIXME: Refactor this method to use transactions. This will remove the necessity
-    // of perverting the lockProperties order via CPropertyLock
+    // of perverting the lockProperties order via DistributedFilePropertyLock
     bool doSwapSuperFile(IDistributedSuperFile *_file,
                                  IDistributedFileTransaction *transaction)
     {
@@ -5318,7 +5268,7 @@ public:
             throw MakeStringException(-1,"addSubFile(3): File %s cannot be found to add",subfile);
         {
             // need to reload subfiles if changed
-            CPropertyLock lock(this);
+            DistributedFilePropertyLock lock(this);
             if (lock.needsReload())
                 loadSubFiles(true,transaction,1000*60*10);
             doAddSubFile(sub.getClear(),before,other,transaction);
@@ -8627,15 +8577,14 @@ void CDistributedFileDirectory::resolveForeignFiles(IPropertyTree *tree,const IN
 
 void CDistributedFileDirectory::linkSuperOwner(IDistributedFile &subfile,const char *superfile,bool link,IDistributedFileTransaction *transaction)
 {
+    DistributedFilePropertyLock lock(&subfile);
     IDistributedSuperFile *ssub = subfile.querySuperFile();
     if (ssub) {
         CDistributedSuperFile *cdsuper = QUERYINTERFACE(ssub,CDistributedSuperFile);
-        CDistributedFileBase<IDistributedSuperFile>::CPropertyLock lock(cdsuper);
         cdsuper->linkSuperOwner(superfile,link,transaction);
     }
     else {
         CDistributedFile *cdfile = QUERYINTERFACE(&subfile,CDistributedFile);
-        CDistributedFileBase<IDistributedFile>::CPropertyLock lock(cdfile);
         cdfile->linkSuperOwner(superfile,link,transaction);
     }
 }
@@ -9051,7 +9000,7 @@ bool CDistributedFileDirectory::filePhysicalVerify(const char *lfn,bool includec
                 if (!differs&&!includecrc) {
                     if (nological) {
                         StringBuffer str;
-                        // TODO: Create CPropertyLock for parts
+                        // TODO: Create DistributedFilePropertyLock for parts
                         part->lockProperties(defaultTimeout);
                         part->queryAttributes().setProp("@modified",dt2.getString(str).str());
                         part->unlockProperties();
@@ -9077,7 +9026,7 @@ bool CDistributedFileDirectory::filePhysicalVerify(const char *lfn,bool includec
                     }
                     if (sz1!=sz2) {
                         if (sz1==(offset_t)-1) {
-                            // TODO: Create CPropertyLock for parts
+                            // TODO: Create DistributedFilePropertyLock for parts
                             part->lockProperties(defaultTimeout);
                             part->queryAttributes().setPropInt64("@size",sz2);
                             part->unlockProperties();
@@ -9100,7 +9049,7 @@ bool CDistributedFileDirectory::filePhysicalVerify(const char *lfn,bool includec
                         crc2 = part->getPhysicalCrc();
                     }
                     if (!part->getCrc(crc1)) {
-                        // TODO: Create CPropertyLock for parts
+                        // TODO: Create DistributedFilePropertyLock for parts
                         part->lockProperties(defaultTimeout);
                         part->queryAttributes().setPropInt64("@fileCrc",(unsigned)crc2);
                         part->unlockProperties();
