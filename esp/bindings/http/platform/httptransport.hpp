@@ -97,6 +97,7 @@
 #endif
 
 bool httpContentFromFile(const char *filepath, StringBuffer &mimetype, MemoryBuffer &fileContents);
+bool xmlContentFromFile(const char *filepath, const char *stylesheet, StringBuffer &fileContents);
 
 
 #endif
