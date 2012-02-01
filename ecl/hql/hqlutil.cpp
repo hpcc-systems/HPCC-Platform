@@ -37,6 +37,7 @@
 #include "hqlattr.hpp"
 #include "hqlerror.hpp"
 #include "hqlexpr.ipp"
+#include "hqlrepository.hpp"
 
 #define SIZET_CACHE_SIZE    5001
 #define FIXEDATTR_CACHE_SIZE 1001
@@ -7343,22 +7344,38 @@ static IHqlExpression * transformAttributeToQuery(IHqlExpression * expr, HqlLook
 {
     if (expr->isMacro())
     {
-        if (!queryLegacyEclSemantics())
-            return NULL;
-        //Only expand macros if legacy semantics enabled
         IHqlExpression * macroBodyExpr;
         if (expr->getOperator() == no_funcdef)
         {
             if (expr->queryChild(1)->numChildren() != 0)
+            {
+                ctx.errs->reportError(HQLERR_CannotSubmitMacroX, "Cannot submit a MACRO with parameters()", NULL, 1, 0, 0);
                 return NULL;
+            }
             macroBodyExpr = expr->queryChild(0);
         }
         else
             macroBodyExpr = expr;
 
         IFileContents * macroContents = static_cast<IFileContents *>(macroBodyExpr->queryUnknownExtra());
+        size32_t len = macroContents->length();
+
+        //Strangely some macros still have the ENDMACRO on the end, and others don't.  This should be removed really.
+        StringBuffer macroText;
+        macroText.append(len, macroContents->getText());
+        if ((len >= 8) && strieq(macroText.str()+(len-8),"ENDMACRO"))
+            macroText.setLength(len-8);
+        //Now append a semi colon since that is how macros are normally called.
+        macroText.append(";");
+
+        //This might be cleaner if it was implemented by parsing the text myModule.myAttribute().
+        //It would make implementing default parameters easy.  However it could introduce other problems
+        //with implicitly importing myModule.
+        Owned<IFileContents> mappedContents = createFileContentsFromText(macroText.length(), macroText.str(), macroContents->querySourcePath());
         Owned<IHqlScope> scope = createPrivateScope();
-        return parseQuery(scope, macroContents, ctx, NULL, true);
+        if (queryLegacyEclSemantics())
+            importRootModulesToScope(scope, ctx);
+        return parseQuery(scope, mappedContents, ctx, NULL, true);
     }
 
     if (expr->isFunction())
