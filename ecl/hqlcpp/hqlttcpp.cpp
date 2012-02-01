@@ -8526,6 +8526,18 @@ static const char * getECL(IHqlExpression * expr, StringBuffer & s)
     return s.str();
 }
 
+void HqlScopeTagger::checkActiveRow(IHqlExpression * expr)
+{
+    if (!isDatasetActive(expr))
+    {
+        StringBuffer exprText;
+        getECL(expr, exprText);
+        elideString(exprText, 20);
+        VStringBuffer msg("ROW(%s) - dataset argument is not in scope.  Did you mean dataset[1]?", exprText.str());
+        reportError(msg);
+    }
+}
+
 void HqlScopeTagger::reportSelectorError(IHqlExpression * selector, IHqlExpression * expr)
 {
     ScopeInfo * scope = innerScope;
@@ -8641,6 +8653,7 @@ IHqlExpression * HqlScopeTagger::transformNewDataset(IHqlExpression * expr, bool
     case no_activerow:
         {
             IHqlExpression * arg0 = expr->queryChild(0);
+            checkActiveRow(arg0);
             OwnedHqlExpr transformedArg = transformSelector(arg0);
             return ensureActiveRow(transformedArg);
         }
@@ -8861,6 +8874,9 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
     case no_self:
     case no_top:
         return LINK(expr);
+    case no_activerow:
+        checkActiveRow(expr->queryChild(0));
+        break;
     case no_select:
         return transformSelect(expr);
     case NO_AGGREGATE:

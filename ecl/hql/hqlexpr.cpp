@@ -3506,9 +3506,6 @@ switch (op)
     case no_lt:
         assertex(type->getTypeCode() == type_boolean);
         break;
-    case no_alias:
-        assertex(queryChild(0)->getOperator() != no_alias);
-        break;
     case no_funcdef:
         {
             assertex(type->getTypeCode() == type_function && queryChild(1) && queryChild(1)->getOperator() == no_sortlist);
