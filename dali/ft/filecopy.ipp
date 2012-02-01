@@ -114,6 +114,7 @@ private:
 public:
     RemoteFilename          filename;
     RemoteFilename          mirrorFilename;
+    Linked<IPropertyTree>   properties;
     offset_t                offset;
     offset_t                size;               // expanded size
     offset_t                psize;              // physical (compressed) size
