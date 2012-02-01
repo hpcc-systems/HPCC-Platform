@@ -954,6 +954,7 @@ public:
 protected:
     void beginTableScope();
     void endTableScope(HqlExprArray & attrs, IHqlExpression * ds, IHqlExpression * newExpr);
+    void checkActiveRow(IHqlExpression * expr);
     IHqlExpression * transformSelect(IHqlExpression * expr);
 
     IHqlExpression * transformAmbiguous(IHqlExpression * expr, bool isActiveOk);

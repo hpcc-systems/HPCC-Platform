@@ -2092,3 +2092,13 @@ size32_t memcount(size32_t len, const char * str, char search)
     }
     return count;
 }
+
+StringBuffer & elideString(StringBuffer & s, unsigned maxLength)
+{
+    if (s.length() > maxLength)
+    {
+        s.setLength(maxLength);
+        s.append("...");
+    }
+    return s;
+}
