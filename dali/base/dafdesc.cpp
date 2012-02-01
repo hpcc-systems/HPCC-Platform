@@ -2132,7 +2132,7 @@ IFileDescriptor *createFileDescriptor(const char *lname,IGroup *grp,IPropertyTre
         res->setPart(i,rfn,NULL);
     }
     ClusterPartDiskMapSpec map; // use defaults
-    map.defaultCopies = 1;
+//    map.defaultCopies = 1; // WARN: removed due to gh-622
     res->endCluster(map);
     return res;
 }
