@@ -34,12 +34,47 @@
 
 #define MAX_RECORD_SIZE         4096
 
+inline void appendNextXpathName(StringBuffer &s, const char *&xpath)
+{
+    while (*xpath && !strchr("*[/", *xpath))
+        s.append(*xpath++);
+    xpath = strchr(xpath, '/');
+}
+
+void splitXmlTagNamesFromXPath(const char *xpath, StringAttr &inner, StringAttr *outer=NULL)
+{
+    if (!xpath || !xpath)
+        return;
+
+    StringBuffer s1;
+    StringBuffer s2;
+
+    appendNextXpathName(s1, xpath);
+    if (outer && xpath)
+        appendNextXpathName(s2, ++xpath);
+    if (xpath) //xpath too deep
+        return;
+
+    if (!s2.length())
+        inner.set(s1.str());
+    else
+    {
+        inner.set(s2.str());
+        outer->set(s1.str());
+    }
+    if (!inner.get())
+        inner.set("");
+    if (outer && !outer->get())
+        outer->set("");
+}
+
 DataSourceMetaItem::DataSourceMetaItem(unsigned _flags, const char * _name, const char * _xpath, ITypeInfo * _type)
 {
     flags = _flags;
     name.set(_name);
     type.set(_type);
     xpath.set(_xpath);
+    splitXmlTagNamesFromXPath(_xpath, tagname);
 }
 
 DataSourceMetaItem::DataSourceMetaItem(unsigned _flags, MemoryBuffer & in)
@@ -48,6 +83,7 @@ DataSourceMetaItem::DataSourceMetaItem(unsigned _flags, MemoryBuffer & in)
     in.read(name);
     in.read(xpath);
     type.setown(deserializeType(in));
+    splitXmlTagNamesFromXPath(xpath.get(), tagname);
 }
 
 
@@ -66,6 +102,9 @@ DataSourceDatasetItem::DataSourceDatasetItem(const char * _name, const char * _x
     type.setown(makeTableType(NULL, NULL, NULL, NULL));
     name.set(_name);
     xpath.set(_xpath);
+    splitXmlTagNamesFromXPath(_xpath, record.tagname, &tagname);
+    if (!record.tagname.length())
+        record.tagname.set("Row");
 }
 
 DataSourceDatasetItem::DataSourceDatasetItem(unsigned flags, MemoryBuffer & in) : DataSourceMetaItem(FVFFdataset, NULL, NULL, NULL), record(in)
@@ -83,14 +122,22 @@ void DataSourceDatasetItem::serialize(MemoryBuffer & out) const
 
 //---------------------------------------------------------------------------
 
-DataSourceSetItem::DataSourceSetItem(const char * _name, const char * _xpath, ITypeInfo * _type) : DataSourceMetaItem(FVFFset, _name, _xpath, _type)
+DataSourceSetItem::DataSourceSetItem(const char * _name, const char * _xpath, ITypeInfo * _type) : DataSourceMetaItem(FVFFset, _name, NULL, _type)
 {
     createChild();
+    xpath.set(_xpath);
+    StringBuffer attr;
+    splitXmlTagNamesFromXPath(_xpath, record.tagname, &tagname);
+    if (!record.tagname.length())
+        record.tagname.set("Item");
 }
 
 DataSourceSetItem::DataSourceSetItem(unsigned flags, MemoryBuffer & in) : DataSourceMetaItem(flags, in)
 {
     createChild();
+    splitXmlTagNamesFromXPath(xpath.get(), record.tagname, &tagname);
+    if (!record.tagname.length())
+        record.tagname.set("Item");
 }
 
 void DataSourceSetItem::createChild()
@@ -160,10 +207,12 @@ void DataSourceMetaData::init()
     isStoredFixedWidth = false;
     randomIsOk = false;
     numFieldsToIgnore = 0;
+    gatheredAttributes = false;
 }
 
 DataSourceMetaData::DataSourceMetaData(MemoryBuffer & buffer)
 {
+    gatheredAttributes = false;
     numVirtualFields = 0;
     buffer.read(numFieldsToIgnore);
     buffer.read(randomIsOk);
@@ -390,6 +439,33 @@ const char * DataSourceMetaData::queryXPath(unsigned column) const
 {
     return fields.item(column).xpath;
 }
+
+const char * DataSourceMetaData::queryXmlTag(unsigned column) const
+{
+    DataSourceMetaItem &item = fields.item(column);
+    return (item.tagname.get()) ? item.tagname.get() : item.name.get();
+}
+
+const char *DataSourceMetaData::queryXmlTag() const
+{
+    return (tagname.get()) ? tagname.get() : "Row";
+}
+
+const IntArray &DataSourceMetaData::queryAttrList()
+{
+    if (!gatheredAttributes)
+    {
+        ForEachItemIn(idx, fields)
+        {
+            DataSourceMetaItem &item = fields.item(idx);
+            if (item.isXmlAttribute())
+                attributes.append(idx);
+        }
+        gatheredAttributes=true;
+    }
+    return attributes;
+}
+
 
 IFvDataSourceMetaData * DataSourceMetaData::queryChildMeta(unsigned column) const
 {
