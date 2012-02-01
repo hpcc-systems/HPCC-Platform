@@ -3241,7 +3241,7 @@ int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* req
 }
 
 
-void deployArchive(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEspWUDeployWorkunitResponse & resp)
+void deployEclOrArchive(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEspWUDeployWorkunitResponse & resp)
 {
     const MemoryBuffer &obj = req.getObject();
 
@@ -3364,8 +3364,8 @@ bool CWsWorkunitsEx::onWUDeployWorkunit(IEspContext &context, IEspWUDeployWorkun
         if (!context.validateFeatureAccess(OWN_WU_ACCESS, SecAccess_Write, false))
             throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "Failed to create workunit. Permission denied.");
 
-        if (strieq(type, "archive"))
-            deployArchive(context, req, resp);
+        if (strieq(type, "archive")|| strieq(type, "ecl_text"))
+            deployEclOrArchive(context, req, resp);
         else if (strieq(type, "shared_object"))
             deploySharedObject(context, req, resp);
         else
