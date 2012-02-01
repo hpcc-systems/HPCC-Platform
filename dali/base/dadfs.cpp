@@ -2345,11 +2345,14 @@ public:
                 // Transactional logic, if any
                 switch(state) {
                 case TAS_SUCCESS:
-                    conn->commit(); break;
+                    conn->commit();
+                    break;
                 case TAS_FAILURE:
-                    conn->rollback(); break;
+                    conn->rollback();
+                    break;
                 case TAS_RETRY:
-                    conn->changeMode(RTM_NONE,defaultTimeout,true); return;
+                    conn->changeMode(RTM_NONE,defaultTimeout,true);
+                    return;
                 // TAS_NONE, do nothing
                 }
 #ifdef TRACE_LOCKS
@@ -5102,10 +5105,8 @@ private:
                 pos=findSubFileOrd(subfile);
                 if ((pos==NotFound)||(pos>=subfiles.ordinality()))
                     pos = findSubFile(subfile);
-                if (pos==NotFound) {
-                    unlockProperties();
+                if (pos==NotFound)
                     return false;
-                }
                 unlinkSubFile(pos,transaction);
                 removeItem(pos,subname.clear());
                 subnames.append(* new StringAttrItem(subname.str()));
