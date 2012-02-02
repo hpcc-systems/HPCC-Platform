@@ -26,6 +26,7 @@
 #include "ccdfile.hpp"
 #include "ccd.hpp"
 
+#include "jencrypt.hpp"
 #include "dllserver.hpp"
 #include "thorplugin.hpp"
 #include "workflow.hpp"
@@ -100,6 +101,7 @@ private:
     static bool isConnected;
     static CRoxieDaliHelper *daliHelper;  // Note - this does not own the helper
     static CriticalSection daliConnectionCrit; 
+    Owned<IUserDescriptor> userdesc;
 
     virtual void beforeDispose()
     {
@@ -180,6 +182,15 @@ public:
     IMPLEMENT_IINTERFACE;
     CRoxieDaliHelper()
     {
+        const char *roxieUser = topology->queryProp("@ldapUser");
+        const char *roxiePassword = topology->queryProp("@ldapPassword");
+        if (roxieUser && *roxieUser && roxiePassword && *roxiePassword)
+        {
+            StringBuffer password;
+            decrypt(password, roxiePassword);
+            userdesc.setown(createUserDescriptor());
+            userdesc->set(roxieUser, password.str());
+        }
     }
 
     static const char *getQuerySetPath(StringBuffer &buf, const char *id)
@@ -239,7 +250,7 @@ public:
         {
             CDfsLogicalFileName lfn;
             lfn.set(logicalName);
-            Owned<IDistributedFile> dfsFile = queryDistributedFileDirectory().lookup(lfn, NULL, writeAccess); // MORE - may need a user sometime!
+            Owned<IDistributedFile> dfsFile = queryDistributedFileDirectory().lookup(lfn, userdesc.get(), writeAccess); // MORE - may need a user sometime!
             if (dfsFile)
             {
                 IDistributedSuperFile *super = dfsFile->querySuperFile();
