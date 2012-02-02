@@ -43,7 +43,6 @@
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="remote/sourcedoc.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="rfs/sourcedoc.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="sasha/sourcedoc.xml"/>
-    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="sdsfix/sourcedoc.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="security/sourcedoc.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="server/sourcedoc.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="treeview/sourcedoc.xml"/>
