@@ -587,6 +587,21 @@
         </xs:restriction>
       </xs:simpleType>
     </xs:attribute>
+    <xs:attribute name="ldapUser" type="xs:string" use="optional" default="roxie">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Specifies the user name for LDAP file access checking.</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="ldapPassword" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:appinfo>
+          <viewType>password</viewType>
+          <tooltip>Specifies the password for LDAP file access checking.</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="localFilesExpire" type="xs:integer" use="optional" default="-1">
       <xs:annotation>
         <xs:appinfo>
