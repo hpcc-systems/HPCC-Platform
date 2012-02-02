@@ -28,6 +28,13 @@
 #define _CLEAR_ALLOCATED_ROW
 #endif
 
+//Use for asserts that are highly unlikely to occur, and would likely to be reproduced in debug mode.
+#ifdef _DEBUG
+#define dbgassertex(x) assertex(x)
+#else
+#define dbgassertex(x)
+#endif
+
 namespace roxiemem {
 
 #define USE_MADVISE_ON_FREE     // avoid linux swapping 'freed' pages to disk
@@ -77,9 +84,9 @@ Some thoughts on improving this memory manager:
 
 unsigned totalMemoryLimit = 0;   // in blocks
 #ifdef _DEBUG
-unsigned maxLeakReport = 20;
+const unsigned maxLeakReport = 20;
 #else
-unsigned maxLeakReport = 4;
+const unsigned maxLeakReport = 4;
 #endif
 
 static char *heapBase;
@@ -163,7 +170,7 @@ void memstats(unsigned &totalpg, unsigned &freepg, unsigned &maxblk)
     unsigned freePages = 0;
     unsigned maxBlock = 0;
     unsigned thisBlock = 0;
-#if 1 // Nigel's version (doubt that important but make a bit faster as want to call periodically in stats in Thor)
+
     for (unsigned i = 0; i < heapBitmapSize; i++)
     {
         unsigned t = heapBitmap[i];
@@ -176,10 +183,9 @@ void memstats(unsigned &totalpg, unsigned &freepg, unsigned &maxblk)
             }
             else 
             {
-                unsigned mask = 1;
                 do 
                 {
-                    if (t&mask) 
+                    if (t&1)
                     {
                         freePages++;
                         thisBlock++;
@@ -189,11 +195,9 @@ void memstats(unsigned &totalpg, unsigned &freepg, unsigned &maxblk)
                         if (thisBlock > maxBlock)
                             maxBlock = thisBlock;
                         thisBlock = 0;
-                        if (!t)
-                            break; // short circuit
                     }
-                    mask <<= 1;
-                } while (mask);
+                    t >>= 1;
+                } while (t);
             }
         }
         else if (thisBlock) 
@@ -206,25 +210,6 @@ void memstats(unsigned &totalpg, unsigned &freepg, unsigned &maxblk)
     if (thisBlock > maxBlock)
         maxBlock = thisBlock;
 
-#else // old version
-    for (unsigned i = 0; i < heapBitmapSize; i++)
-    {
-        unsigned mask = 1;
-        while (mask)
-        {
-            if (heapBitmap[i] & mask)
-            {
-                freePages++;
-                thisBlock++;
-                if (thisBlock > maxBlock)
-                    maxBlock = thisBlock;
-            }
-            else
-                thisBlock = 0;
-            mask <<= 1;
-        }
-    }
-#endif
     freepg = freePages;
     maxblk = maxBlock;
 }
@@ -323,7 +308,12 @@ StringBuffer &memmap(StringBuffer &stats)
 
 void *suballoc_aligned(size32_t pages)
 {
+    //MORE: Should we use cas and make this lock free?  It would avoid some contention between queries.
+    //It may be tricky because of the multiple page requirement.  That would need to remove as it found potential
+    //space, and replace if there was a problem.
+    //Would require a similar change in subfree_aligned etc.
     CriticalBlock b(heapBitCrit);
+    //MORE: Avoid calling time if never needed, or maybe use get_cycles_now()
     time_t now;
     time(&now);
     if ((statsLogFreq && (now - lastStatsLog) > statsLogFreq) || (memTraceLevel >= 2))
@@ -485,7 +475,7 @@ class BigHeapletBase : public HeapletBase
 protected:
     BigHeapletBase *next;
     const IRowAllocatorCache *allocatorCache;
-    unsigned chunkCapacity;
+    const unsigned chunkCapacity;
     
     inline unsigned getActivityId(unsigned rawId) const
     {
@@ -525,7 +515,6 @@ public:
         subfree_aligned(p, 1);
     }
 
-    //This could be made non virtual if all iteration loops used FixedSizeHeaplet
     virtual void *allocate(unsigned activityId) = 0;
 };
 
@@ -539,122 +528,66 @@ public:
 #define ROWCOUNT_DESTRUCTOR_FLAG 0x80000000
 #define ROWCOUNT(x)              (x & ROWCOUNT_MASK)
 
-const unsigned chunkHeaderSize = sizeof(atomic_t) + sizeof(unsigned);
+#define FIXEDSIZE_HEAPLET_DATA_AREA_SIZE (size32_t)(HEAP_ALIGNMENT_SIZE - offsetof(FixedSizeHeapletBase, data))
 
-class FixedSizeHeaplet : public BigHeapletBase
+class FixedSizeHeapletBase : public BigHeapletBase
 {
 protected:
     atomic_t r_blocks;  // the free chain as a relative pointer
     atomic_t freeBase;
-    size32_t chunkSize;
-    char data[1];  // n really
-
-private:
-
-    inline void checkPtr(const char *ptr, const char *reason) const
-    {
-        const char *baseptr = ptr - chunkHeaderSize;
-        if (((*(unsigned *) baseptr) & ~ACTIVITY_MASK) != ACTIVITY_MAGIC)
-        {
-            DBGLOG("%s: Attempt to free invalid pointer %p %x", reason, ptr, *(unsigned *) baseptr);
-            PrintStackReport();
-            PrintMemoryReport();
-            HEAPERROR("Attempt to free invalid pointer");
-        }
-    }
-
-    inline unsigned makeRelative(const char *ptr)
-    {
-        assert(ptr);
-        ptrdiff_t diff = ptr - (char *) this;
-        assert(diff < HEAP_ALIGNMENT_SIZE);
-        return (unsigned) diff;
-    }
-
-    inline char * makeAbsolute(unsigned v)
-    {
-        assert(v && v < HEAP_ALIGNMENT_SIZE);
-        return ((char *) this) + v;
-    }
+    const size32_t chunkSize;
+    unsigned sharedActivityId;
+    char data[1];
+    //NB: Derived classes should not contain any derived data.  The choice would be to put data[] into the derived
+    //classes, but that means it is hard to common up some of the code efficiently
 
 public:
-    FixedSizeHeaplet(const IRowAllocatorCache *_allocatorCache, size32_t size) : BigHeapletBase(_allocatorCache, size - chunkHeaderSize)
+    FixedSizeHeapletBase(const IRowAllocatorCache *_allocatorCache, size32_t _chunkSize, size32_t _chunkCapacity)
+        : BigHeapletBase(_allocatorCache, _chunkCapacity), chunkSize(_chunkSize)
     {
-        chunkSize = size;
+        sharedActivityId = 0;
         atomic_set(&freeBase, 0);
         atomic_set(&r_blocks, 0);
     }
 
     virtual size32_t sizeInPages() { return 1; }
 
-    virtual bool _isShared(const void *_ptr) const
-    {
-        assert(_ptr != this);
-        char *ptr = (char *) _ptr;
-        checkPtr(ptr, "isShared");
-        ptr -= sizeof(atomic_t);
-        return ROWCOUNT(atomic_read((atomic_t *) ptr)) !=1;
-    }
+    inline static size32_t dataAreaSize() { return FIXEDSIZE_HEAPLET_DATA_AREA_SIZE; }
 
     virtual void _setDestructorFlag(const void *_ptr)
     {
-        if (_ptr != this)
-        {
-            char *ptr = (char *) _ptr;
-            ptr -= sizeof(atomic_t);
-            atomic_set((atomic_t *)ptr, 1|ROWCOUNT_DESTRUCTOR_FLAG);
-        }
-        else
-            throwUnexpected();
+        dbgassertex(_ptr != this);
+        char *ptr = (char *) _ptr;
+        ptr -= sizeof(atomic_t);
+        atomic_set((atomic_t *)ptr, 1|ROWCOUNT_DESTRUCTOR_FLAG);
     }
 
-    virtual void noteReleased(const void *_ptr)
+    virtual void reportLeaks(unsigned &leaked, const IContextLogger &logctx) const
     {
-        assert(_ptr != this);
-
-        char *ptr = (char *) _ptr;
-        checkPtr(ptr, "Release");
-        ptr -= sizeof(atomic_t);
-        unsigned rowCount = atomic_dec_and_read((atomic_t *) ptr);
-        if (ROWCOUNT(rowCount) == 0)
+        //This function may not give correct results if called if there are concurrent allocations/releases
+        unsigned base = 0;
+        unsigned limit = atomic_read(&freeBase);
+        while (leaked > 0 && base < limit)
         {
-            ptr -= sizeof(unsigned);
-            if (rowCount & ROWCOUNT_DESTRUCTOR_FLAG)
+            const char *block = data + base;
+            const char *ptr = block + (chunkSize-chunkCapacity);  // assumes the overhead is all at the start
+            unsigned rowCount = atomic_read((atomic_t *) (ptr - sizeof(atomic_t)));
+            if (ROWCOUNT(rowCount) != 0)
             {
-                unsigned id = *(unsigned *) ptr;
-                allocatorCache->onDestroy(id & MAX_ACTIVITY_ID, ptr + chunkHeaderSize);
+                reportLeak(block, logctx);
+                leaked--;
             }
-
-            unsigned r_ptr = makeRelative(ptr);
-            loop
-            {
-                //To prevent the ABA problem the top part of r_blocks stores an incrementing tag
-                //which is incremented whenever something is added to the free list
-                unsigned old_blocks = atomic_read(&r_blocks);
-                * (unsigned *) ptr = (old_blocks & RBLOCKS_OFFSET_MASK);
-                unsigned new_tag = ((old_blocks & RBLOCKS_CAS_TAG_MASK) + RBLOCKS_CAS_TAG);
-                unsigned new_blocks = new_tag | r_ptr;
-                if (atomic_cas(&r_blocks, new_blocks, old_blocks))
-                    break;
-            }
-
-            atomic_dec(&count);
+            base += chunkSize;
         }
     }
 
-    virtual void noteLinked(const void *_ptr)
-    {
-        assertex(_ptr != this);
-        char *ptr = (char *) _ptr;
-        checkPtr(ptr, "Link");
-        ptr -= sizeof(atomic_t);
-        atomic_inc((atomic_t *) ptr);
-    }
+protected:
+    virtual void reportLeak(const char * block, const IContextLogger &logctx) const = 0;
 
-    virtual void *allocate(unsigned activityId)
+    inline char * allocateChunk()
     {
         char *ret;
-        size32_t size = chunkSize;
+        const size32_t size = chunkSize;
         loop
         {
             unsigned old_blocks = atomic_read(&r_blocks);
@@ -678,7 +611,7 @@ public:
             {
                 unsigned curFreeBase = atomic_read(&freeBase);
                 //There is no ABA issue on freeBase because it is never decremented (and no next chain with it)
-                size32_t bytesFree = (HEAP_ALIGNMENT_SIZE - offsetof(FixedSizeHeaplet,data)) - curFreeBase;
+                size32_t bytesFree = FIXEDSIZE_HEAPLET_DATA_AREA_SIZE - curFreeBase;
                 if (bytesFree >= size)
                 {
                     if (atomic_cas(&freeBase, curFreeBase + size, curFreeBase))
@@ -693,13 +626,115 @@ public:
         }
 
         atomic_inc(&count);
-        * (unsigned *) ret = (activityId & ACTIVITY_MASK) | ACTIVITY_MAGIC;
-        ret += sizeof(unsigned);
-        atomic_set((atomic_t *) ret, 1);
-        ret += sizeof(atomic_t);
+        return ret;
+    }
+
+    inline unsigned makeRelative(const char *ptr)
+    {
+        dbgassertex(ptr);
+        ptrdiff_t diff = ptr - (char *) this;
+        assert(diff < HEAP_ALIGNMENT_SIZE);
+        return (unsigned) diff;
+    }
+
+    inline char * makeAbsolute(unsigned v)
+    {
+        dbgassertex(v && v < HEAP_ALIGNMENT_SIZE);
+        return ((char *) this) + v;
+    }
+
+    inline bool inlineIsShared(const void *_ptr) const
+    {
+        dbgassertex(_ptr != this);
+        char *ptr = (char *) _ptr;
+        ptr -= sizeof(atomic_t);
+        return ROWCOUNT(atomic_read((atomic_t *) ptr)) !=1;
+    }
+
+    inline void inlineNoteLinked(const void *_ptr)
+    {
+        dbgassertex(_ptr != this);
+        char *ptr = (char *) _ptr;
+        ptr -= sizeof(atomic_t);
+        atomic_inc((atomic_t *) ptr);
+    }
+
+    inline void inlineReleasePointer(char * ptr)
+    {
+        unsigned r_ptr = makeRelative(ptr);
+        loop
+        {
+            //To prevent the ABA problem the top part of r_blocks stores an incrementing tag
+            //which is incremented whenever something is added to the free list
+            unsigned old_blocks = atomic_read(&r_blocks);
+            * (unsigned *) ptr = (old_blocks & RBLOCKS_OFFSET_MASK);
+            unsigned new_tag = ((old_blocks & RBLOCKS_CAS_TAG_MASK) + RBLOCKS_CAS_TAG);
+            unsigned new_blocks = new_tag | r_ptr;
+            if (atomic_cas(&r_blocks, new_blocks, old_blocks))
+                break;
+        }
+
+        atomic_dec(&count);
+    }
+};
+
+//================================================================================
+
+class FixedSizeHeaplet : public FixedSizeHeapletBase
+{
+public:
+    enum { chunkHeaderSize = sizeof(atomic_t) + sizeof(unsigned) };
+
+    FixedSizeHeaplet(const IRowAllocatorCache *_allocatorCache, size32_t size) : FixedSizeHeapletBase(_allocatorCache, size, size - chunkHeaderSize)
+    {
+    }
+
+    virtual bool _isShared(const void *_ptr) const
+    {
+        checkPtr(_ptr, "isShared");
+        return inlineIsShared(_ptr);
+    }
+
+    virtual void noteReleased(const void *_ptr)
+    {
+        dbgassertex(_ptr != this);
+
+        char *ptr = (char *) _ptr;
+        checkPtr(ptr, "Release");
+        ptr -= sizeof(atomic_t);
+        unsigned rowCount = atomic_dec_and_read((atomic_t *) ptr);
+        if (ROWCOUNT(rowCount) == 0)
+        {
+            ptr -= sizeof(unsigned);
+            if (rowCount & ROWCOUNT_DESTRUCTOR_FLAG)
+            {
+                unsigned id = *(unsigned *) ptr;
+                allocatorCache->onDestroy(id & MAX_ACTIVITY_ID, ptr + chunkHeaderSize);
+            }
+
+            inlineReleasePointer(ptr);
+        }
+    }
+
+    virtual void noteLinked(const void *_ptr)
+    {
+        checkPtr(_ptr, "Link");
+        inlineNoteLinked(_ptr);
+    }
+
+    virtual void *allocate(unsigned activityId)
+    {
+        char * ret = allocateChunk();
+        if (ret)
+        {
+            * (unsigned *) ret = (activityId & ACTIVITY_MASK) | ACTIVITY_MAGIC;
+            ret += sizeof(unsigned);
+            atomic_set((atomic_t *) ret, 1);
+            ret += sizeof(atomic_t);
 #ifdef _CLEAR_ALLOCATED_ROW
-        memset(ret, 0xcc, size-chunkHeaderSize);
+            memset(ret, 0xcc, chunkCapacity);
 #endif
+        }
         return ret;
     }
 
@@ -708,31 +743,14 @@ public:
         return HEAP_ALIGNMENT_SIZE - (offsetof(FixedSizeHeaplet, data) + chunkHeaderSize);
     }
 
-    static inline size32_t dataAreaSize()
+    virtual void reportLeak(const char * block, const IContextLogger &logctx) const
     {
-        return HEAP_ALIGNMENT_SIZE - offsetof(FixedSizeHeaplet, data);
-    }
+        unsigned activityId = *(unsigned *) block;
+        unsigned rowCount = atomic_read((atomic_t *) (block + sizeof(unsigned)));
+        bool hasChildren = (rowCount & ROWCOUNT_DESTRUCTOR_FLAG) != 0;
 
-    virtual void reportLeaks(unsigned &leaked, const IContextLogger &logctx) const 
-    {
-        //This function may not give correct results if called if there are concurrent allocations/releases
-        unsigned base = 0;
-        unsigned limit = atomic_read(&freeBase);
-        while (leaked > 0 && base < limit)
-        {
-            const char *block = data + base;
-            unsigned rowCount = atomic_read((atomic_t *) (block + sizeof(unsigned)));
-            if (ROWCOUNT(rowCount) != 0)
-            {
-                unsigned activityId = *(unsigned *) block;
-                bool hasChildren = (rowCount & ROWCOUNT_DESTRUCTOR_FLAG) != 0;
-
-                block += sizeof(unsigned) + sizeof(atomic_t);
-                logctx.CTXLOG("Block size %u at %p %swas allocated by activity %u and not freed (%d)", chunkSize, block, hasChildren ? "(with children) " : "", getActivityId(activityId), count);
-                leaked--;
-            }
-            base += chunkSize;
-        }
+        const char * ptr = block + chunkHeaderSize;
+        logctx.CTXLOG("Block size %u at %p %swas allocated by activity %u and not freed (%d)", chunkSize, ptr, hasChildren ? "(with children) " : "", getActivityId(activityId), ROWCOUNT(rowCount));
     }
 
     virtual void checkHeap() const 
@@ -766,7 +784,6 @@ public:
             unsigned activityId = getActivityId(*(unsigned *) block);
             //Potential race condition - a block could become allocated between these two lines.
             //That may introduce invalid activityIds (from freed memory) in the memory tracing.
-
             unsigned rowCount = atomic_read((atomic_t *) (block + sizeof(unsigned)));
             if (ROWCOUNT(rowCount) != 0)
             {
@@ -784,6 +801,104 @@ public:
         }
         if (lastId)
             map->noteMemUsage(lastId, running);
+    }
+
+private:
+    inline void checkPtr(const void * _ptr, const char *reason) const
+    {
+        const char * ptr = (const char *)_ptr;
+        const char *baseptr = ptr - chunkHeaderSize;
+        if (((*(unsigned *) baseptr) & ~ACTIVITY_MASK) != ACTIVITY_MAGIC)
+        {
+            DBGLOG("%s: Attempt to free invalid pointer %p %x", reason, ptr, *(unsigned *) baseptr);
+            PrintStackReport();
+            PrintMemoryReport();
+            HEAPERROR("Attempt to free invalid pointer");
+        }
+    }
+};
+
+//================================================================================
+
+class PackedFixedSizeHeaplet : public FixedSizeHeapletBase
+{
+public:
+    enum { chunkHeaderSize = sizeof(atomic_t) };
+
+    PackedFixedSizeHeaplet(const IRowAllocatorCache *_allocatorCache, size32_t size, unsigned _activityId)
+        : FixedSizeHeapletBase(_allocatorCache, size, size - chunkHeaderSize)
+    {
+        sharedActivityId = _activityId;
+    }
+
+    virtual bool _isShared(const void *_ptr) const
+    {
+        return inlineIsShared(_ptr);
+    }
+
+    virtual void noteReleased(const void *_ptr)
+    {
+        dbgassertex(_ptr != this);
+        char *ptr = (char *) _ptr;
+        ptr -= sizeof(atomic_t);
+        unsigned rowCount = atomic_dec_and_read((atomic_t *) ptr);
+        if (ROWCOUNT(rowCount) == 0)
+        {
+            if (rowCount & ROWCOUNT_DESTRUCTOR_FLAG)
+                allocatorCache->onDestroy(sharedActivityId & MAX_ACTIVITY_ID, ptr + chunkHeaderSize);
+
+            inlineReleasePointer(ptr);
+        }
+    }
+
+    virtual void noteLinked(const void *_ptr)
+    {
+        inlineNoteLinked(_ptr);
+    }
+
+    virtual void *allocate(unsigned activityId)
+    {
+        char * ret = allocateChunk();
+        if (ret)
+        {
+            atomic_set((atomic_t *) ret, 1);
+            ret += sizeof(atomic_t);
+#ifdef _CLEAR_ALLOCATED_ROW
+            memset(ret, 0xcc, chunkCapacity);
+#endif
+        }
+        return ret;
+    }
+
+    virtual void reportLeak(const char * block, const IContextLogger &logctx) const
+    {
+        unsigned rowCount = atomic_read((atomic_t *) block);
+        bool hasChildren = (rowCount & ROWCOUNT_DESTRUCTOR_FLAG) != 0;
+
+        const char * ptr = block + chunkHeaderSize;
+        logctx.CTXLOG("Block size %u at %p %swas allocated by activity %u and not freed (%d)", chunkSize, ptr, hasChildren ? "(with children) " : "", getActivityId(sharedActivityId), ROWCOUNT(rowCount));
+    }
+
+    virtual void checkHeap() const
+    {
+    }
+
+    virtual void getPeakActivityUsage(IActivityMemoryUsageMap *map) const
+    {
+        //This function may not give 100% accurate results if called if there are concurrent allocations/releases
+        unsigned base = 0;
+        unsigned limit = atomic_read(&freeBase);
+        memsize_t running = 0;
+        while (base < limit)
+        {
+            const char *block = data + base;
+            unsigned rowCount = atomic_read((atomic_t *)block);
+            if (ROWCOUNT(rowCount) != 0)
+                running += chunkSize;
+            base += chunkSize;
+        }
+        if (running)
+            map->noteMemUsage(sharedActivityId, running);
     }
 };
 
@@ -881,7 +996,7 @@ public:
     void *allocateHuge(unsigned size, unsigned activityId)
     {
         atomic_inc(&count);
-        assertex(size <= chunkCapacity);
+        dbgassertex(size <= chunkCapacity);
 #ifdef _CLEAR_ALLOCATED_ROW
         memset(&data, 0xcc, chunkCapacity);
 #endif
@@ -992,6 +1107,7 @@ public:
 //
 class CChunkingRowManager;
 class CFixedChunkingHeap;
+class CPackedChunkingHeap;
 
 class CRoxieFixedRowHeapBase : implements IFixedRowHeap, public CInterface
 {
@@ -1052,6 +1168,26 @@ public:
 
 protected:
     Owned<CFixedChunkingHeap> heap;
+};
+
+class CRoxieDirectPackedRowHeap : public CRoxieFixedRowHeapBase
+{
+public:
+    CRoxieDirectPackedRowHeap(CChunkingRowManager * _rowManager, unsigned _activityId, RoxieHeapFlags _flags, CPackedChunkingHeap * _heap)
+        : CRoxieFixedRowHeapBase(_rowManager, _activityId, _flags), heap(_heap)
+    {
+    }
+
+    virtual void *allocate();
+
+    virtual void clearRowManager()
+    {
+        heap.clear();
+        CRoxieFixedRowHeapBase::clearRowManager();
+    }
+
+protected:
+    Owned<CPackedChunkingHeap> heap;
 };
 
 //================================================================================
@@ -1220,7 +1356,7 @@ public:
 
 protected:
     inline void * inlineDoAllocate(unsigned activityId);
-    virtual BigHeapletBase * allocateHeaplet();
+    virtual BigHeapletBase * allocateHeaplet() = 0;
 
 protected:
     size32_t chunkSize;
@@ -1244,14 +1380,17 @@ public:
     }
 
 protected:
+    virtual BigHeapletBase * allocateHeaplet();
+
+protected:
     unsigned flags;
 };
 
 class CPackedChunkingHeap : public CNormalChunkingHeap
 {
 public:
-    CPackedChunkingHeap(CChunkingRowManager * _rowManager, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, size32_t _chunkSize, unsigned _flags)
-        : CNormalChunkingHeap(_rowManager, _logctx, _allocatorCache, _chunkSize), flags(_flags)
+    CPackedChunkingHeap(CChunkingRowManager * _rowManager, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, size32_t _chunkSize, unsigned _flags, unsigned _activityId)
+        : CNormalChunkingHeap(_rowManager, _logctx, _allocatorCache, _chunkSize), flags(_flags), activityId(_activityId)
     {
     }
 
@@ -1263,6 +1402,9 @@ public:
                (searchFlags == flags) &&
                (activityId == searchActivity);
     }
+
+protected:
+    virtual BigHeapletBase * allocateHeaplet();
 
 protected:
     unsigned flags;
@@ -1285,7 +1427,7 @@ class CChunkingRowManager : public CInterface, implements IRowManager
 
     SpinLock crit;
     SpinLock fixedCrit;
-    CIArrayOf<CNormalChunkingHeap> normalHeaps;
+    CIArrayOf<CFixedChunkingHeap> normalHeaps;
     CHugeChunkingHeap hugeHeap;
     unsigned pageLimit;
     ITimeLimiter *timeLimit;
@@ -1322,10 +1464,10 @@ public:
         while (prevSize < FixedSizeHeaplet::maxHeapSize())
         {
             size32_t rounded = roundup(prevSize+1);
-            assertex(ROUNDEDHEAP(rounded) == normalHeaps.ordinality());
+            dbgassertex(ROUNDEDHEAP(rounded) == normalHeaps.ordinality());
             size32_t thisSize = ROUNDEDSIZE(rounded);
-            normalHeaps.append(*new CNormalChunkingHeap(this, _logctx, _allocatorCache, thisSize));
-            prevSize = thisSize - chunkHeaderSize;
+            normalHeaps.append(*new CFixedChunkingHeap(this, _logctx, _allocatorCache, thisSize, 0));
+            prevSize = thisSize - FixedSizeHeaplet::chunkHeaderSize;
         }
         pageLimit = _memLimit / HEAP_ALIGNMENT_SIZE;
         timeLimit = _tl;
@@ -1475,8 +1617,9 @@ public:
 
     static size32_t roundup(size32_t size)
     {
-        assertex(size <= FixedSizeHeaplet::maxHeapSize());
-        size += chunkHeaderSize;
+        dbgassertex(size <= FixedSizeHeaplet::maxHeapSize());
+        size += FixedSizeHeaplet::chunkHeaderSize;
+        //MORE: A binary chop on sizes is likely to be better.
         if (size<=64)
         {
             if (size<=32)
@@ -1538,7 +1681,7 @@ public:
 
         size32_t rounded = roundup(_size);
         size32_t whichHeap = ROUNDEDHEAP(rounded);
-        CNormalChunkingHeap & normalHeap = normalHeaps.item(whichHeap);
+        CFixedChunkingHeap & normalHeap = normalHeaps.item(whichHeap);
         return normalHeap.doAllocate(activityId);
     }
 
@@ -1571,11 +1714,10 @@ public:
 
     virtual void *finalizeRow(void * original, size32_t initialSize, size32_t finalSize, unsigned activityId)
     {
-#ifdef _DEBUG
-        assertex(finalSize);
-        assertex(!HeapletBase::isShared(original));
-        assertex(finalSize<=initialSize);
-#endif
+        dbgassertex(finalSize);
+        dbgassertex(!HeapletBase::isShared(original));
+        dbgassertex(finalSize<=initialSize);
+
         // Finalize never shrinks
         // MORE - if we were paranoid we could assert that supplied activityId matched the one stored with the row
         if (activityId & ACTIVITY_FLAG_NEEDSDESTRUCTOR)
@@ -1691,47 +1833,74 @@ protected:
         if ((roxieHeapFlags & RHFoldfixed) || (fixedSize > FixedSizeHeaplet::maxHeapSize()))
             return new CRoxieFixedRowHeap(this, activityId, (RoxieHeapFlags)roxieHeapFlags, fixedSize);
 
-        CFixedChunkingHeap * heap = createFixedHeap(fixedSize, activityId, roxieHeapFlags);
-        return new CRoxieDirectFixedRowHeap(this, activityId, (RoxieHeapFlags)roxieHeapFlags, heap);
+        unsigned heapFlags = roxieHeapFlags & (RHFunique|RHFpacked);
+        if (heapFlags & RHFpacked)
+        {
+            CPackedChunkingHeap * heap = createPackedHeap(fixedSize, activityId, heapFlags);
+            return new CRoxieDirectPackedRowHeap(this, activityId, (RoxieHeapFlags)roxieHeapFlags, heap);
+        }
+        else
+        {
+            CFixedChunkingHeap * heap = createFixedHeap(fixedSize, activityId, heapFlags);
+            return new CRoxieDirectFixedRowHeap(this, activityId, (RoxieHeapFlags)roxieHeapFlags, heap);
+        }
+    }
+
+    CChunkingHeap * getExistingHeap(size32_t chunkSize, unsigned activityId, unsigned flags)
+    {
+        ForEachItemIn(i, fixedHeaps)
+        {
+            CChunkingHeap & heap = fixedHeaps.item(i);
+            if (heap.matches(chunkSize, activityId, flags))
+            {
+                heap.Link();
+                if (heap.isAlive())
+                {
+                    //Cast is safe because match will only succeed if it is not packed.
+                    return &heap;
+                }
+            }
+        }
+        return NULL;
     }
 
     CFixedChunkingHeap * createFixedHeap(size32_t size, unsigned activityId, unsigned flags)
     {
-        size32_t chunkSize;
-        if (flags & RHFpacked)
-        {
-            //Must be 4 byte aligned otherwise the atomic increments on the counts may not be atomic
-            //Should this have a larger granularity (e.g., sizeof(void * *) if size is above a threshold?
-            chunkSize = align_pow2(size, 4);
-            chunkSize += chunkHeaderSize;
-        }
-        else
-        {
-            size32_t rounded = roundup(size);
-            chunkSize = ROUNDEDSIZE(rounded);
-        }
+        dbgassertex(!(flags & RHFpacked));
+        size32_t rounded = roundup(size);
+        size32_t chunkSize = ROUNDEDSIZE(rounded);
 
         //Not time critical, so don't worry about the scope of the spinblock around the new
-        unsigned interestingFlags = flags & (RHFunique|RHFpacked);
         SpinBlock block(fixedCrit);
         if (!(flags & RHFunique))
         {
-            ForEachItemIn(i, fixedHeaps)
-            {
-                CChunkingHeap & heap = fixedHeaps.item(i);
-                if (heap.matches(chunkSize, activityId, interestingFlags))
-                {
-                    heap.Link();
-                    if (heap.isAlive())
-                    {
-                        //Cast is safe because match will only succeed if it is not packed.
-                        return static_cast<CFixedChunkingHeap *>(&heap);
-                    }
-                }
-            }
+            CChunkingHeap * match = getExistingHeap(chunkSize, activityId, flags);
+            if (match)
+                return static_cast<CFixedChunkingHeap *>(match);
         }
 
-        CFixedChunkingHeap * heap = new CFixedChunkingHeap(this, logctx, allocatorCache, chunkSize, interestingFlags);
+        CFixedChunkingHeap * heap = new CFixedChunkingHeap(this, logctx, allocatorCache, chunkSize, flags);
+        fixedHeaps.append(*LINK(heap));
+        return heap;
+    }
+
+    CPackedChunkingHeap * createPackedHeap(size32_t size, unsigned activityId, unsigned flags)
+    {
+        dbgassertex(flags & RHFpacked);
+        //Must be 4 byte aligned otherwise the atomic increments on the counts may not be atomic
+        //Should this have a larger granularity (e.g., sizeof(void * *) if size is above a threshold?
+        size32_t chunkSize = align_pow2(size, 4) + PackedFixedSizeHeaplet::chunkHeaderSize;
+
+        //Not time critical, so don't worry about the scope of the spinblock around the new
+        SpinBlock block(fixedCrit);
+        if (!(flags & RHFunique))
+        {
+            CChunkingHeap * match = getExistingHeap(chunkSize, activityId, flags);
+            if (match)
+                return static_cast<CPackedChunkingHeap *>(match);
+        }
+
+        CPackedChunkingHeap * heap = new CPackedChunkingHeap(this, logctx, allocatorCache, chunkSize, flags, activityId);
         fixedHeaps.append(*LINK(heap));
         return heap;
     }
@@ -1786,6 +1955,11 @@ void * CRoxieDirectFixedRowHeap::allocate()
     return heap->allocate(activityId);
 }
 
+void * CRoxieDirectPackedRowHeap::allocate()
+{
+    return heap->allocate();
+}
+
 
 void * CRoxieVariableRowHeap::allocate(size32_t size, size32_t & capacity)
 {
@@ -1813,7 +1987,7 @@ void * CRoxieVariableRowHeap::finalizeRow(void *final, size32_t originalSize, si
 //MORE: Make this a nested class??
 void * CHugeChunkingHeap::doAllocate(size32_t _size, unsigned activityId)
 {
-    unsigned numPages = ((_size + HugeHeaplet::dataOffset() - 1) / HEAP_ALIGNMENT_SIZE) + 1;
+    unsigned numPages = pages_pow2(_size + HugeHeaplet::dataOffset(), HEAP_ALIGNMENT_SIZE);
     rowManager->checkLimit(numPages);
     HugeHeaplet *head = new (_size) HugeHeaplet(allocatorCache, _size, activityId);
     if (memTraceLevel >= 2 || _size>= 10000000)
@@ -1872,14 +2046,28 @@ void * CNormalChunkingHeap::doAllocate(unsigned activityId)
     return inlineDoAllocate(activityId);
 }
 
-BigHeapletBase * CNormalChunkingHeap::allocateHeaplet()
+//================================================================================
+
+BigHeapletBase * CFixedChunkingHeap::allocateHeaplet()
 {
     return new FixedSizeHeaplet(allocatorCache, chunkSize);
 }
 
 void * CFixedChunkingHeap::allocate(unsigned activityId)
 {
-    rowManager->beforeAllocate(chunkSize-chunkHeaderSize, activityId);
+    rowManager->beforeAllocate(chunkSize-FixedSizeHeaplet::chunkHeaderSize, activityId);
+    return inlineDoAllocate(activityId);
+}
+
+
+BigHeapletBase * CPackedChunkingHeap::allocateHeaplet()
+{
+    return new PackedFixedSizeHeaplet(allocatorCache, chunkSize, activityId);
+}
+
+void * CPackedChunkingHeap::allocate()
+{
+    rowManager->beforeAllocate(chunkSize-PackedFixedSizeHeaplet::chunkHeaderSize, activityId);
     return inlineDoAllocate(activityId);
 }
 
@@ -2908,6 +3096,21 @@ protected:
         runCasTest("separate fixed allocator", sem, threads);
         ASSERT(atomic_read(&rowCache.counter) == 2 * numCasThreads * numCasIter * numCasAlloc);
     }
+    void testPackedCas()
+    {
+        CountingRowAllocatorCache rowCache;
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache);
+        Semaphore sem;
+        CasAllocatorThread * threads[numCasThreads];
+        for (unsigned i1 = 0; i1 < numCasThreads; i1++)
+        {
+            Owned<IFixedRowHeap> rowHeap = rowManager->createFixedRowHeap(8, ACTIVITY_FLAG_ISREGISTERED|0, RHFunique|RHFpacked|RHFhasdestructor);
+            threads[i1] = new FixedCasAllocatorThread(rowHeap, sem);
+        }
+
+        runCasTest("separate packed allocator", sem, threads);
+        ASSERT(atomic_read(&rowCache.counter) == 2 * numCasThreads * numCasIter * numCasAlloc);
+    }
     class GeneralCasAllocatorThread : public CasAllocatorThread
     {
     public:
@@ -3017,6 +3220,7 @@ protected:
         testOldFixedCas();
         testSharedFixedCas();
         testFixedCas();
+        testPackedCas();
         testGeneralCas();
     }
 };
