@@ -24,6 +24,9 @@
 #include "daclient.hpp"
 #include "workunit.hpp"
 #include "fileview.hpp"
+#include "wuwebview.hpp"
+#include "xsdparser.hpp"
+#include "xpp/XmlPullParser.h"
 
 void CEclDirectEx::init(IPropertyTree *cfg, const char *process, const char *service)
 {
@@ -129,6 +132,94 @@ bool CEclDirectEx::onRunEcl(IEspContext &context, IEspRunEclRequest & req, IEspR
     return true;
 }
 
+bool CEclDirectEx::onRunEclEx(IEspContext &context, IEspRunEclExRequest & req, IEspRunEclExResponse & resp)
+{
+    const char* eclText = req.getEclText();
+    if (!eclText || !*eclText)
+    {
+        resp.setResults("<Exception><Source>ESP</Source><Message>No Ecl code</Message></Exception>");
+        return true;
+    }
+
+    StringBuffer user, pw;
+    context.getUserID(user);
+    context.getPassword(pw);
+
+    Owned <IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+    Owned <IWorkUnit> workunit = factory->createWorkUnit(NULL, "ECL-Direct", (user.length()) ? user.str() : "user");
+    workunit->setUser((user.length()) ? user.str() : "user");
+
+    Owned<IWUQuery> query = workunit->updateQuery();
+    query->setQueryText(eclText);
+    query.clear();
+
+    const char* clustername = req.getCluster();
+    if (!clustername || *clustername==0 || !stricmp(clustername, "default"))
+        clustername = m_clustername.str();
+    workunit->setClusterName(clustername);
+
+    const char* snapshot = req.getSnapshot();
+    if (snapshot && *snapshot)
+        workunit->setSnapshot(snapshot);
+
+    if (req.getLimitResults())
+        workunit->setResultLimit(100);
+
+    // Execute it
+    SCMStringBuffer wuid;
+    workunit->getWuid(wuid);
+    workunit->setAction(WUActionRun);
+    workunit->setState(WUStateSubmitted);
+    workunit.clear();
+
+    if (context.querySecManager()!=NULL)
+        secSubmitWorkUnit(wuid.str(), *context.querySecManager(), *context.queryUser());
+    else
+        submitWorkUnit(wuid.str(), user.str(), pw.str());
+
+    if (!waitForWorkUnitToComplete(wuid.str(), m_def_timeout))
+    {
+        StringBuffer result;
+        result.appendf("<Exception><Source>ESP</Source><Message>Timed out waiting for job to complete: %s</Message></Exception>", wuid.str());
+        resp.setResults(result.str());
+        return true;
+    }
+
+    StringBuffer results;
+    const char* outputFormat = req.getOutputFormat();
+    Owned<IWuWebView> web = createWuWebView(wuid.str(), NULL, getCFD(), true);
+    if (!web)
+    {
+        results.appendf("<Exception><Source>ESP</Source><Message>Failed loading result workunit %s</Message></Exception>", wuid.str());
+    }
+    else if (!outputFormat || !streq(outputFormat, "TABLE"))
+    {
+        StringBuffer resultXML;
+        unsigned xmlflags = WWV_ADD_SOAP | WWV_ADD_RESULTS_TAG | WWV_ADD_RESPONSE_TAG | WWV_INCL_NAMESPACES | WWV_INCL_GENERATED_NAMESPACES | WWV_USE_DISPLAY_XSLT;
+        if (outputFormat && streq(outputFormat, "XML"))
+            xmlflags |= WWV_OMIT_SCHEMAS;
+        web->expandResults(results, xmlflags);
+    }
+    else
+    {
+        StringBuffer xsltfile(getCFD());
+        xsltfile.append("xslt/wsecl3_result.xslt");
+        web->applyResultsXSLT(xsltfile.str(), results);
+    }
+    resp.setResults(results.str());
+
+    try
+    {
+        if (m_deleteworkunits)
+            factory->deleteWorkUnit(wuid.str());
+    }
+    catch (...)
+    {
+    }
+
+    return true;
+}
+
 void CEclDirectSoapBindingEx::initFromEnv()
 {
     try
@@ -144,10 +235,13 @@ void CEclDirectSoapBindingEx::initFromEnv()
         {
             IPropertyTree &cluster = clusters->query();                 
             const char* name = cluster.queryProp("@name");
-            if (!name||!*name || cluster.hasProp("RoxieCluster[1]"))
+            if (!name||!*name)
                 continue;
             m_clusterNames.append(name);
         }
+
+        //m_useEclRepository is set to true if an Ecl repository can be used
+        m_useEclRepository = false;
     }
     catch (IException *e)
     {
@@ -161,6 +255,19 @@ void CEclDirectSoapBindingEx::initFromEnv()
 
 }
 
+void xsltTransform(const char* xml, const char* sheet, IProperties *params, StringBuffer& ret)
+{
+    StringBuffer xsl;
+    if(!checkFileExists(sheet))
+        throw MakeStringException(-1, "Could not find stylesheet %s.",sheet);
+    Owned<IXslProcessor> proc = getXslProcessor();
+    Owned<IXslTransform> trans = proc->createXslTransform();
+    trans->setXmlSource(xml, strlen(xml));
+    trans->loadXslFromFile(sheet);
+    trans->copyParameters(params);
+    trans->transform(ret);
+}
+
 int CEclDirectSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)
 {
     StringBuffer serviceQName;
@@ -172,125 +279,58 @@ int CEclDirectSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* reque
     }
     else
     {
-        StringBuffer page;
+        StringBuffer xml;
+        StringBuffer xslt;
 
-        page.append(
-            "<html>"
-                "<head>"
-                    "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />"
-                    "<title>ESP Service form</title>"
-                    "<script language=\"JavaScript\" src=\"files_/calendar_xs.js\"></script>"
-                    "<script language=\"JavaScript\" src=\"files_/hint.js\"></script>"
-                "</head>"
-                "<body>"
-                    "<p align=\"center\" />"
-                    "<table cellSpacing=\"0\" cellPadding=\"1\" width=\"90%\" bgColor=\"#4775FF\" border=\"0\">"
-                        "<tbody>"
-                            "<tr align=\"middle\" bgColor=\"#4775FF\">"
-                                "<td height=\"23\">"
-                                    "<p align=\"left\">"
-                                        "<font color=\"#efefef\">");
-                                page.appendf("<b>%s [Version %g]</b>", serviceQName.str(), context.getClientVersion());
-                                page.append("</font>"
-                                    "</p>"
-                                "</td>"
-                            "</tr>"
-                            "<tr bgColor=\"#CBE5FF\">"
-                                "<td height=\"3\">"
-                                    "<p align=\"left\">");
-                                            
-                                page.appendf("<b>&gt; %s</b>", methodQName.str());
-                                page.append("</p>"
-                                "</td>"
-                            "</tr>"
-                            "<TR bgColor=\"#666666\">"
-                                "<TABLE cellSpacing=\"0\" width=\"90%\" bgColor=\"#efefef\" border=\"0\">"
-                                    "<TBODY>"
-                                        "<TR>"
-                                            "<TD vAlign=\"center\" align=\"left\">"
-                                                "<p align=\"left\"><br/>");
-                                                getMethodDescription(context, serviceQName.str(), methodQName.str(), page);
-                                                page.append("</p>"
-                                            "</TD>"
-                                        "</TR>"
-                                    "</TBODY>"
-                                "</TABLE>"
-                            "</TR>"
-                            "<TR bgColor=\"#666666\">"
-                                "<TABLE cellSpacing=\"0\" width=\"90%\" bgColor=\"#efefef\" border=\"0\">"
-                                    "<TBODY>"
-                                        "<TR>"
-                                            "<TD vAlign=\"center\" align=\"left\">");
-                                                getMethodHtmlForm(context, request, serviceQName.str(), methodQName.str(), page, true);
-                                                page.append("</TD>"
-                                        "</TR>"
-                                    "</TBODY>"
-                                "</TABLE>"
-                            "</TR>"
-                        "</tbody>"
-                    "</table>"
-                    "<BR />"
-                "</body>"
-            "</html>");
-
-        response->setContent(page.str());
-        response->setContentType("text/html");
-    }
-    
-    response->send();
-
-    return 0;
-}
-
-int CEclDirectSoapBindingEx::getMethodHtmlForm(IEspContext &context, CHttpRequest* request, const char *serv, const char *method, StringBuffer &form, bool bIncludeFormTag)
-{
-    if (Utils::strcasecmp(method, "runecl")==0)
-    {
-        if (bIncludeFormTag)
-            form.append("<form method=\"POST\" action=\"/EclDirect/RunEcl\">");
-
-        form.append("<p align=\"left\">");
-        form.append("<b>ECL Text: </b><br/><textarea name=\"eclText\" rows=\"20\" cols=\"80\" ></textarea>");
-        form.append("<br/><input type=\"button\" value=\"options &gt;&gt;\" onclick=\"if (option_span.style.display=='block'){option_span.style.display='none';value='options &gt;&gt;';} else {option_span.style.display='block'; value='&lt;&lt; options';}\"/>");
+        xml.append("<RunEclEx>");
+        if (strieq(method, "runeclex"))
+        {
+            xml.append("<EclWatchRunEcl>");
+        }
+        else
+        {
+            xml.append("<RunEcl>");
+        }
         
-        form.append("<span id=\"option_span\" style=\"display:none\">");
-
-
-        form.append("<br/><b>Cluster: </b><br/>");
-        form.append("<select name=\"cluster\" >");
-        form.append("<option value=\"default\" selected=\"1\" /> default");
         ForEachItemIn(indC, m_clusterNames)
         {
             const char *cluster = m_clusterNames.item(indC);
-            form.appendf("<option value=\"%s\"/>%s", cluster, cluster);
+            if (cluster && *cluster)
+                appendXMLTag(xml, "Cluster", cluster);
         }
-        form.append("</select><br/>");
-        form.append("<br/><b>Repository Label (Legacy): </b><br/><input type=\"text\" name=\"snapshot\"/><br/>");
-            
-        form.append("<br/><input type=\"checkbox\" name=\"limitResults\" checked=\"1\" value=\"1\"/> Limit Result Count to 100.");
-        form.append("<br/><input type=\"checkbox\" name=\"rawxml_\" /> Output Xml?");
-        form.append("</span>");
-        
-        form.append("<br/><input type=\"submit\" value=\"Submit\" name=\"S1\" />");
-        form.append("</p>");
 
-        if (bIncludeFormTag)
-            form.append("</form>");
+        StringBuffer buf;
+        appendXMLTag(xml, "ServiceQName", serviceQName.str());
+        appendXMLTag(xml, "MethodQName",methodQName.str());
+        appendXMLTag(xml, "ClientVersion", buf.appendf("%g",context.getClientVersion()).str());
+        if (m_useEclRepository)
+            appendXMLTag(xml, "UseEclRepository", "Yes");
+
+        if (strieq(method, "runeclex"))
+        {
+            xml.append("</EclWatchRunEcl>");
+        }
+        else
+        {
+            xml.append("</RunEcl>");
+        }
+        xml.append("</RunEclEx>");
+
+        xslt.append(getCFD()).append("./smc_xslt/run_ecl.xslt");
+
+        if (xslt.length() && xml.length())
+        {
+            StringBuffer html;
+            xsltTransform(xml.str(), xslt.str(), NULL, html);
+            response->setContent(html.str());
+            response->setContentType(HTTP_TYPE_TEXT_HTML_UTF8);
+            response->send();
+        }
     }
-    else
-        return CEclDirectSoapBinding::getMethodHtmlForm(context, request, serv, method, form, bIncludeFormTag);
 
     return 0;
 }
 
-int CEclDirectSoapBindingEx::getMethodDescription(IEspContext &context, const char *serv, const char *method, StringBuffer &page)
-{
-    if (Utils::strcasecmp(method, "RunEcl")==0)
-    {
-        page.append("Submit ECL text for execution.");
-    }
-    return 0;
-}
 int CEclDirectSoapBindingEx::getMethodHelp(IEspContext &context, const char *serv, const char *method, StringBuffer &page)
 {
     return 0;
@@ -389,4 +429,80 @@ int CEclDirectSoapBindingEx::getWsdlBindings(IEspContext &context, StringBuffer 
     }
     content.append("</binding>");
     return 0;
+}
+
+int CEclDirectSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* response)
+{
+    try
+    {
+        Owned<IEspEclDirect> iserv = (IEspEclDirect*)getService();
+        if(iserv == NULL)
+        {
+            StringBuffer respStr;
+            respStr.append("Service not available");
+            response->setContent(respStr.str());
+            response->setContentType("text/html");
+            response->send();
+            return 0;
+        }
+
+        sub_service sstype = sub_serv_unknown;
+        StringBuffer path, pathEx, serviceName, methodName;
+        request->getPath(path);
+        request->getEspPathInfo(sstype, &pathEx, &serviceName, &methodName, false);
+
+        if((sstype != sub_serv_form) && !strnicmp(path.str(), "/EclDirect/RunEclEx", 19))
+        {
+            IEspContext& context = *request->queryContext();
+            Owned<CRunEclExRequest> esp_request = new CRunEclExRequest(&context, "EclDirectEx", request->queryParameters(), request->queryAttachments());
+            IEspRunEclExRequest& req= *esp_request.get();
+
+            CRunEclExResponse* resp = new CRunEclExResponse("EclDirect");
+            Owned<CSoapResponseBinding> esp_response;
+            esp_response.setown(resp);
+            iserv->onRunEclEx(*request->queryContext(), req, *resp);
+            if (esp_response.get())
+            {
+                const char *result = resp->getResults();
+                if (result && *result)
+                {
+                    const char* outputFormat = req.getOutputFormat();
+                    if (!outputFormat || streq(outputFormat, "XML") || streq(outputFormat, "EXTENDEDXML"))
+                    {
+                        response->setContentType("text/xml; charset=UTF-8");
+                    }
+                    else
+                    {
+                        response->setContentType("text/html; charset=utf-8");
+                    }
+                    response->setContent(result);
+                }
+                else
+                {
+                    response->setContent("No result in Ecl execution.");
+                    response->setContentType("text/html");
+                }
+            }
+            else
+            {
+                response->setContent("Failed in Ecl execution.");
+                response->setContentType("text/html");
+            }
+
+            response->setStatus(HTTP_STATUS_OK);
+            response->send();
+            return 0;
+        }
+    }
+    catch (IException *e)
+    {
+        StringBuffer msg;
+        ERRLOG("Exception processing HTTP Get request in EclDirect: (%d) -- %s", e->errorCode(), e->errorMessage(msg).str());
+    }
+    catch (...)
+    {
+        ERRLOG("Unknown Exception processing HTTP Get request in EclDirect");
+    }
+
+    return CEclDirectSoapBinding::onGet(request,response);
 }

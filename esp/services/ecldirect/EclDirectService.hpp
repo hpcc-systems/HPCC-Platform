@@ -37,6 +37,7 @@ public:
     virtual void init(IPropertyTree *cfg, const char *process, const char *service);
 
     bool onRunEcl(IEspContext &context, IEspRunEclRequest &req, IEspRunEclResponse &resp);
+    bool onRunEclEx(IEspContext &context, IEspRunEclExRequest &req, IEspRunEclExResponse &resp);
 };
 
 #endif //_ESPWIZ_EclDirect_HPP__

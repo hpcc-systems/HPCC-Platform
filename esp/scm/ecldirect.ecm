@@ -32,10 +32,26 @@ ESPresponse [http_encode(0)] RunEclResponse
     EspResultSet results;
 };
 
+ESPrequest RunEclExRequest
+{
+    string eclText;
+    string cluster;
+    string snapshot;
+    boolean limitResults;
+    string outputFormat;
+};
+
+
+ESPresponse [http_encode(0)] RunEclExResponse
+{
+    string results;
+};
+
 
 ESPservice EclDirect
 {
     ESPmethod RunEcl(RunEclRequest, RunEclResponse);
+    ESPmethod RunEclEx(RunEclExRequest, RunEclExResponse);
 };
 
 

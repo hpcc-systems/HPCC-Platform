@@ -31,6 +31,7 @@ class CEclDirectSoapBindingEx : public CEclDirectSoapBinding
 private:
     StringArray m_clusterNames;
     StringArray m_eclQueueNames;
+    bool        m_useEclRepository;
 
 public:
     CEclDirectSoapBindingEx()
@@ -43,18 +44,23 @@ public:
         initFromEnv();
     }
 
+    virtual void getNavigationData(IEspContext &context, IPropertyTree & data)
+    {
+        IPropertyTree *folder = ensureNavFolder(data, "ECL", "Run Ecl code and review Ecl workunits", NULL, false, 2);
+        ensureNavLink(*folder, "Run Ecl", "/EclDirect/RunEclEx?form_", "Submit ECL text for execution", NULL, NULL, 3);
+    }
+
     int onGetXForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method)
     {
         return onGetForm(context, request, response, service, method);
     }
 
+    virtual int onGet(CHttpRequest* request, CHttpResponse* response);
+
     void initFromEnv();
 
     int onGetForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method);
 
-    int getMethodHtmlForm(IEspContext &context, CHttpRequest* request, const char *serv, const char *method, StringBuffer &form, bool bIncludeFormTag);
-
-    virtual int getMethodDescription(IEspContext &context, const char *serv, const char *method, StringBuffer &page);
     virtual int getMethodHelp(IEspContext &context, const char *serv, const char *method, StringBuffer &page);
 
     //overide the default behavior when the basic service method url is accessed (http://host:port/EclDirect/RunEcl)
