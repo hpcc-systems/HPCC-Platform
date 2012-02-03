@@ -219,7 +219,11 @@ protected: friend class SplitterOutput;
             input->start();
         }
         virtual bool isGrouped() { return activity.inputs.item(0)->isGrouped(); }
-        virtual void getMetaInfo(ThorDataLinkMetaInfo &info) { activity.inputs.item(0)->getMetaInfo(info); }
+        virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+        {
+            activity.inputs.item(0)->getMetaInfo(info);
+            info.canStall = !activity.spill;
+        }
     };
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
