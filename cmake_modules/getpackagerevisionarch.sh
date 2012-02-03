@@ -52,6 +52,13 @@ if [ -e /etc/debian_version ]; then
             OUTPUT="lenny"
         fi
         ;;
+      6.*)
+        if [ ${NOARCH} -eq 0 ]; then
+            OUTPUT="squeeze_${ARCH2}"
+        else
+            OUTPUT="squeeze"
+        fi
+        ;;
       "sid")
         if [ ${NOARCH} -eq 0 ]; then
             OUTPUT="sid_${ARCH2}"
