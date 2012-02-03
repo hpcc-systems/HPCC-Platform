@@ -188,6 +188,13 @@ installFile "$binPath/testsocket" "/usr/bin/testsocket" 1 || exit 1
 installFile "$binPath/wuget" "/usr/bin/wuget" 1 || exit 1
 installFile "$configs/$environment" "$sourcedir/$environment" 0 "$sourcedir"
 
+# locate sub install files.
+if [ -d ${INSTALL_DIR}/etc/init.d/install ]; then
+    for subInstall in $(ls ${INSTALL_DIR}/etc/init.d/install); do
+        source ${INSTALL_DIR}/etc/init.d/install/${subInstall}
+    done
+fi
+
 if [ ! -d ${homePath}/.ssh ]; then
     mkdir -p ${homePath}/.ssh
 fi
