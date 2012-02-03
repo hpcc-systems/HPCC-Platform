@@ -235,6 +235,7 @@ class NSplitterSlaveActivity : public CSlaveActivity
                 input->getMetaInfo(info);
             else
                 activity.inputs.item(0)->getMetaInfo(info);
+            info.canStall = !activity.spill;
         }
     };
 public:
@@ -462,7 +463,6 @@ const void *CSplitterOutput::nextRow()
 
 void CSplitterOutput::getMetaInfo(ThorDataLinkMetaInfo &info)
 {
-    info.canStall = !activity.spill;
     CThorDataLink::calcMetaInfoSize(info, activity.inputs.item(0));
 }
 
