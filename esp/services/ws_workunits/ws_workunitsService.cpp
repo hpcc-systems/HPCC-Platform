@@ -71,7 +71,6 @@ public:
     }
 };
 
-
 void submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, const char* cluster, const char* snapshot, int maxruntime, bool compile, bool resetWorkflow)
 {
     ensureWsWorkunitAccess(context, *cw, SecAccess_Write);

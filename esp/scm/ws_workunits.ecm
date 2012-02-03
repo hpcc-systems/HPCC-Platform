@@ -1064,6 +1064,12 @@ ESPresponse [exceptions_inline] WUQuerysetsResponse
     ESParray<ESPstruct QuerySet> Querysets;
 };
 
+ESPStruct ClusterQueryState
+{
+    string Cluster;
+    bool Suspended;
+};
+
 ESPStruct QuerySetQuery
 {
     string Id;
@@ -1071,6 +1077,7 @@ ESPStruct QuerySetQuery
     string Wuid;
     string Dll;
     bool Suspended;
+    ESParray<ESPstruct ClusterQueryState> Clusters;
 };
 
 ESPStruct QuerySetAlias
@@ -1100,6 +1107,29 @@ ESPresponse [exceptions_inline] WUQuerySetDetailsResponse
     ESParray<ESPstruct QuerySetQuery> QuerysetQueries;
     ESParray<ESPstruct QuerySetAlias> QuerysetAliases;
 };
+
+ESPrequest WUMultiQuerySetDetailsRequest
+{
+    string  ClusterName;
+    string  QuerySetName;
+    string  Filter;
+    ESPenum WUQuerySetFilterType FilterType("All");
+};
+
+ESPstruct WUQuerySetDetail
+{
+    string  QuerySetName;
+    ESParray<ESPstruct QuerySetQuery> Queries;
+    ESParray<ESPstruct QuerySetAlias> Aliases;
+};
+
+
+ESPresponse [exceptions_inline] WUMultiQuerySetDetailsResponse
+{
+    string ClusterName;
+    ESParray<ESPstruct WUQuerySetDetail> Querysets;
+};
+
 
 ESPenum QuerySetQueryActionTypes : string
 {
@@ -1238,6 +1268,7 @@ ESPservice [
     ESPmethod [resp_xsl_default("/esp/xslt/WUPublishWorkunit.xslt")] WUPublishWorkunit(WUPublishWorkunitRequest, WUPublishWorkunitResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/WUQuerysets.xslt")] WUQuerysets(WUQuerysetsRequest, WUQuerysetsResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/WUQuerysetQueries.xslt")] WUQuerysetDetails(WUQuerySetDetailsRequest, WUQuerySetDetailsResponse);
+    ESPmethod WUMultiQuerysetDetails(WUMultiQuerySetDetailsRequest, WUMultiQuerySetDetailsResponse);
     ESPmethod WUQuerysetQueryAction(WUQuerySetQueryActionRequest, WUQuerySetQueryActionResponse);
     ESPmethod WUQuerysetAliasAction(WUQuerySetAliasActionRequest, WUQuerySetAliasActionResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/WUCopyLogicalFiles.xslt")] WUCopyLogicalFiles(WUCopyLogicalFilesRequest, WUCopyLogicalFilesResponse);

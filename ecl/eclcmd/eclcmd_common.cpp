@@ -27,6 +27,19 @@
 #include "ws_workunits.hpp"
 #include "eclcmd_common.hpp"
 
+void outputMultiExceptions(const IMultiException &me)
+{
+    fprintf(stderr, "\nException(s):\n");
+    aindex_t count = me.ordinality();
+    for (aindex_t i=0; i<count; i++)
+    {
+        IException& e = me.item(i);
+        StringBuffer msg;
+        fprintf(stderr, "%d: %s\n", e.errorCode(), e.errorMessage(msg).str());
+    }
+    fprintf(stderr, "\n");
+}
+
 bool extractEclCmdOption(StringBuffer & option, IProperties * globals, const char * envName, const char * propertyName, const char * defaultPrefix, const char * defaultSuffix)
 {
     if (option.length())        // check if already specified via a command line option

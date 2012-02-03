@@ -27,19 +27,6 @@
 #include "eclcmd_common.hpp"
 #include "eclcmd_core.hpp"
 
-void outputMultiExceptions(const IMultiException &me)
-{
-    fprintf(stderr, "\nException(s):\n");
-    aindex_t count = me.ordinality();
-    for (aindex_t i=0; i<count; i++)
-    {
-        IException& e = me.item(i);
-        StringBuffer msg;
-        fprintf(stderr, "%d: %s\n", e.errorCode(), e.errorMessage(msg).str());
-    }
-    fprintf(stderr, "\n");
-}
-
 class ConvertEclParameterToArchive
 {
 public:
