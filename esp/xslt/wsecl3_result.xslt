@@ -3,7 +3,7 @@
 
 ## Copyright (c) 2011 HPCC Systems.  All rights reserved.
 -->
-<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope">
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
     <xsl:output method="html"/>
     <xsl:param name="url" select="'unknown'"/>
     <xsl:param name="rowStart" select="0"/>
