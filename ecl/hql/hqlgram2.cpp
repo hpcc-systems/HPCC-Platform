@@ -838,7 +838,8 @@ IHqlExpression * HqlGram::convertToOutOfLineFunction(const ECLlocation & errpos,
 IHqlExpression * HqlGram::processCppBody(const attribute & errpos, IHqlExpression * cpp)
 {
     HqlExprArray args;
-    args.append(*LINK(cpp));
+    cpp->unwindList(args, no_comma);
+
     Linked<ITypeInfo> type = current_type;
     if (!type)
         type.setown(makeVoidType());
@@ -847,7 +848,7 @@ IHqlExpression * HqlGram::processCppBody(const attribute & errpos, IHqlExpressio
     OwnedHqlExpr result;
     if (record)
     {
-        args.append(*LINK(record));
+        args.add(*LINK(record),1);
         if (hasLinkCountedModifier(type))
             args.append(*getLinkCountedAttr());
         if (hasStreamedModifier(type))

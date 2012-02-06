@@ -1478,7 +1478,9 @@ FUNCTIONMACRO|MACRO {
                         lexer->yyPosition -= delta;
                         lexer->yyColumn -= delta;
                         OwnedHqlExpr cppText = createConstant(createStringValue(lexer->yyBuffer+startpos, len));
-                        returnToken.setExpr(createLocationAnnotation(cppText.getClear(), returnToken.pos));
+                        OwnedHqlExpr annotated = createLocationAnnotation(cppText.getClear(), returnToken.pos);
+                        OwnedHqlExpr options = extractCppBodyAttrs(len, lexer->yyBuffer+startpos);
+                        returnToken.setExpr(createComma(annotated.getClear(), options.getClear()));
                         return CPPBODY;
                     }
 <CPP>[^\n]+         { updatepos1; }

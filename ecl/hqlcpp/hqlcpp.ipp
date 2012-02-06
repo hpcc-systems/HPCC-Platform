@@ -1748,6 +1748,7 @@ protected:
     IHqlExpression * spotGlobalCSE(IHqlExpression * _expr);
     void spotGlobalCSE(HqlExprArray & exprs);
     IHqlExpression * extractGlobalCSE(IHqlExpression * expr);
+    void processCppBodyDirectives(IHqlExpression * expr);
 
 
     void markThorBoundaries(WorkflowArray & array);

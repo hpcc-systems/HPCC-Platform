@@ -7115,13 +7115,38 @@ void HqlCppTranslator::doBuildAssignToXml(BuildCtx & ctx, const CHqlBoundTarget 
 
 //---------------------------------------------------------------------------
 
+void HqlCppTranslator::processCppBodyDirectives(IHqlExpression * expr)
+{
+    ForEachChild(i, expr)
+    {
+        IHqlExpression * cur = expr->queryChild(i);
+        if (cur->isAttribute())
+        {
+            _ATOM name = cur->queryName();
+            if (name == linkAtom)
+            {
+                //MORE: Add code to add the argument to the linker options.
+            }
+            else if (name == libraryAtom)
+            {
+                StringBuffer libraryName;
+                getStringValue(libraryName, cur->queryChild(0));
+                if (libraryName.length())
+                    useLibrary(libraryName.str());
+            }
+        }
+    }
+}
+
 void HqlCppTranslator::doBuildExprCppBody(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr * tgt)
 {
     if (!allowEmbeddedCpp())
         throwError(HQLERR_EmbeddedCppNotAllowed);
 
+    processCppBodyDirectives(expr);
     StringBuffer text;
     expr->queryChild(0)->queryValue()->getStringValue(text);
+    text.setLength(cleanupEmbeddedCpp(text.length(), (char*)text.str()));
     OwnedHqlExpr quoted = createQuoted(text.str(), expr->getType());
 
     if (tgt)
@@ -11237,6 +11262,7 @@ void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * funcdef)
         if (!allowEmbeddedCpp())
             throwError(HQLERR_EmbeddedCppNotAllowed);
 
+        processCppBodyDirectives(bodyCode);
         IHqlExpression * location = queryLocation(bodyCode);
         const char * locationFilename = location ? location->querySourcePath()->str() : NULL;
         unsigned startLine = location ? location->getStartLine() : 0;
@@ -11246,7 +11272,7 @@ void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * funcdef)
 
         StringBuffer text;
         cppBody->queryValue()->getStringValue(text);
-        //remove /r so we don't end up with mixed format end of lines.
+        //remove #option, and remove /r so we don't end up with mixed format end of lines.
         text.setLength(cleanupEmbeddedCpp(text.length(), (char*)text.str()));
 
         const char * start = text.str();
