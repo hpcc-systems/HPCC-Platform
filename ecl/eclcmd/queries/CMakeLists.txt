@@ -3,11 +3,11 @@
 ##############################################################################
 
 
-# Component: ecl-query
+# Component: ecl-queries
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for ecl-query
+#    Cmake Input File for ecl-queries
 #####################################################
 
 
@@ -49,3 +49,5 @@ target_link_libraries ( ecl-queries
         esphttp
         workunit
     )
+
+install ( PROGRAMS ecl-queries.install DESTINATION ${OSSDIR}/etc/init.d/install COMPONENT Runtime )
