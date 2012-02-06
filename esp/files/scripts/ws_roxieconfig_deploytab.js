@@ -148,7 +148,7 @@ function loadPendingDeployments(ElementId, Resize) {
     createDeploymentDataTable(ElementId);
     dtDeploy.showTableMessage(dtDeploy.get("MSG_LOADING"), dtDeploy.CLASS_LOADING);
 
-    var postBody = '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding" xmlns="http://webservices.seisint.com/ws_roxieconfig"><soap:Body><RoxieWUQueryRequest><Cluster></Cluster><TargetClusterType>roxie</TargetClusterType><Owner/><Jobname/></RoxieWUQueryRequest></soap:Body></soap:Envelope>';
+    var postBody = '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns="http://webservices.seisint.com/ws_roxieconfig"><soap:Body><RoxieWUQueryRequest><Cluster></Cluster><TargetClusterType>roxie</TargetClusterType><Owner/><Jobname/></RoxieWUQueryRequest></soap:Body></soap:Envelope>';
     YAHOO.util.Connect.initHeader("SOAPAction", "/ws_roxieconfig/RoxieWUQuery?ver_=" + WS_ROXIECONFIG_VER);
     YAHOO.util.Connect.initHeader("Content-Type", "text/xml");
     YAHOO.util.Connect._use_default_post_header = false;
@@ -236,7 +236,7 @@ function deployWorkunit(Workunit, JobName, Activate) {
         }
     };
 
-    var postBody = '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding" xmlns="http://webservices.seisint.com/ws_roxieconfig"><soap:Body><RoxieDeployWorkunit><Wuid>' + Workunit + '</Wuid><QueryName>' + JobName + '</QueryName><Options><Activate>' + Activate + '</Activate><NotifyRoxie>' + notifyRoxie + '</NotifyRoxie></Options></RoxieDeployWorkunit></soap:Body></soap:Envelope>';
+    var postBody = '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns="http://webservices.seisint.com/ws_roxieconfig"><soap:Body><RoxieDeployWorkunit><Wuid>' + Workunit + '</Wuid><QueryName>' + JobName + '</QueryName><Options><Activate>' + Activate + '</Activate><NotifyRoxie>' + notifyRoxie + '</NotifyRoxie></Options></RoxieDeployWorkunit></soap:Body></soap:Envelope>';
     YAHOO.util.Connect.initHeader("SOAPAction", "/ws_roxieconfig/DeployWorkunit?ver_=" + WS_ROXIECONFIG_VER);
     YAHOO.util.Connect.initHeader("Content-Type", "text/xml");
     YAHOO.util.Connect._use_default_post_header = false;
