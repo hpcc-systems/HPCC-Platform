@@ -1568,17 +1568,17 @@ public:
         ClusterPartDiskMapSpec spec;
         switch(val) {
         case DFUcpdm_c_replicated_by_d:
-            spec.defaultCopies = 2;
+            spec.defaultCopies = DFD_DefaultCopies;
             break;
         case DFUcpdm_c_only:
-            spec.defaultCopies = 1;
+            spec.defaultCopies = DFD_NoCopies;
             break;
         case DFUcpdm_d_only:
-            spec.defaultCopies = 1;
+            spec.defaultCopies = DFD_NoCopies;
             spec.startDrv = 1;
             break;
         case DFUcpdm_c_then_d:
-            spec.defaultCopies = 1;
+            spec.defaultCopies = DFD_NoCopies;
             spec.flags = CPDMSF_wrapToNextDrv;
             break;
         }
