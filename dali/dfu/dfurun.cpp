@@ -1288,13 +1288,13 @@ public:
                         if (destination) {
                             if (destination->numClusters()==1) {
                                 destination->getClusterPartDiskMapSpec(0,mspec);  
-                                if (mspec.defaultCopies<DFD_DefaultCopies)
+                                if (!mspec.isReplicated())
                                     needrep = false;
                             }
                         }
                         else if (multifdesc) {
                             if (multifdesc->numClusters()==1) {
-                                if (multifdesc->queryPartDiskMapping(0).defaultCopies<DFD_DefaultCopies)
+                                if (!multifdesc->queryPartDiskMapping(0).isReplicated())
                                     needrep = false;
                             }
                         }
@@ -1475,7 +1475,7 @@ public:
                         if (destination) {
                             if (destination->numClusters()==1) {
                                 destination->getClusterPartDiskMapSpec(0,mspec); 
-                                if (mspec.defaultCopies<DFD_DefaultCopies)
+                                if (!mspec.isReplicated())
                                     needrep = false;
                             }
 #ifndef _DEBUG

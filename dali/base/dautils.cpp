@@ -1460,7 +1460,7 @@ void expandFileTree(IPropertyTree *file,bool expandnodes,const char *cluster)
             }
         }
         if (clusterinfo&&!file->hasProp("@replicated")) // legacy
-            file->setPropBool("@replicated",clusterinfo->queryPartDiskMapping().defaultCopies>DFD_NoCopies);
+            file->setPropBool("@replicated",clusterinfo->queryPartDiskMapping().isReplicated());
 
     }
 }
