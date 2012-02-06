@@ -86,6 +86,7 @@ public:
 
     ClusterPartDiskMapSpec & operator=(const ClusterPartDiskMapSpec &other);
 
+    bool isReplicated() const;
 };
 
 #define CPDMSF_wrapToNextDrv    (0x01)      // whether should wrap to next drv

@@ -274,6 +274,12 @@ void ClusterPartDiskMapSpec::ensureReplicate()
         defaultCopies = DFD_DefaultCopies;
 }
 
+bool ClusterPartDiskMapSpec::isReplicated() const
+{
+    // If defaultCopies is zero (deprecated/legacy), the default value for replicated is true
+    // Else, if it has any copy (>= 2), than it is replicated
+    return defaultCopies != DFD_NoCopies;
+}
 
 unsigned ClusterPartDiskMapSpec::numCopies(unsigned part,unsigned clusterwidth, unsigned filewidth)
 {
