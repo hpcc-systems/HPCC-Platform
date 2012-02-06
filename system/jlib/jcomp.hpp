@@ -55,7 +55,6 @@ public:
     virtual bool compile() = 0;
     virtual void setDebug(bool _debug) = 0;
     virtual void setDebugLibrary(bool _debug) = 0;
-    virtual void setLinkOptions(const char * option) = 0;
     virtual void setOnlyCompile(bool _onlyCompile) = 0;
     virtual void setCreateExe(bool _createExe) = 0;
     virtual void setOptimizeLevel(unsigned level) = 0;
