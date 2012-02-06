@@ -636,8 +636,8 @@ public:
                 sfile->addSubFile(subfiles.item(i));
             }
             if (!nameprefix.isEmpty()) {
-                sfile->lockProperties().setProp("@roxiePrefix",nameprefix.get());
-                sfile->unlockProperties();
+                DistributedFilePropertyLock lock(sfile);
+                lock.queryAttributes().setProp("@roxiePrefix",nameprefix.get());
             }
         }
         else {
@@ -916,7 +916,7 @@ public:
                 dfile->detach();
             else {
                 if (ftree->hasProp("Attr/@fileCrc")&&ftree->getPropInt64("Attr/@size")&&
-                    ((unsigned)ftree->getPropInt64("Attr/@fileCrc")==(unsigned)dfile->queryProperties().getPropInt64("@fileCrc"))&&
+                    ((unsigned)ftree->getPropInt64("Attr/@fileCrc")==(unsigned)dfile->queryAttributes().getPropInt64("@fileCrc"))&&
                     (ftree->getPropInt64("Attr/@size")==dfile->getFileSize(false,false))) {
                     PROGLOG("File copy of %s not done as file unchanged",srclfn);
                     return;

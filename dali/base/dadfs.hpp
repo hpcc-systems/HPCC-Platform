@@ -110,6 +110,13 @@ enum GetFileClusterNamesType
 };
 
 
+enum DFTransactionState {
+    TAS_NONE,    // still working
+    TAS_RETRY,   // retry (din-phil problems)
+    TAS_SUCCESS, // committing
+    TAS_FAILURE  // rolling back
+};
+
 // ==DISTRIBUTED FILES===================================================================================================
 
 /**
@@ -131,10 +138,10 @@ interface IDistributedFilePart: implements IInterface
     virtual StringBuffer &getPartName(StringBuffer &name) = 0;                          // Tail Name (e.g. "test.d00._1_of_3")
     virtual StringBuffer &getPartDirectory(StringBuffer &name,unsigned copy = 0) = 0;   // get filename info
 
-    virtual IPropertyTree &queryProperties() = 0;                               // part properties
+    virtual IPropertyTree &queryAttributes() = 0;                               // part attributes
 
-    virtual IPropertyTree &lockProperties(unsigned timeoutms=INFINITE) = 0;                             // must be called before updating
-    virtual void unlockProperties() = 0;                                        // must be called after updating
+    virtual bool lockProperties(unsigned timeoutms=INFINITE) = 0;               // must be called before updating
+    virtual void unlockProperties(DFTransactionState state=TAS_NONE) = 0;         // must be called after updating
 
     virtual bool isHost(unsigned copy=0) = 0;                                   // file is located on this machine
 
@@ -217,10 +224,10 @@ interface IDistributedFile: extends IInterface
     virtual void attach(const char *logicalname,IDistributedFileTransaction *transaction=NULL,IUserDescriptor *user=NULL) = 0;                          // attach to name in DFS
     virtual void detach(IDistributedFileTransaction *transaction=NULL) = 0;                                                 // no longer attached to name in DFS
 
-    virtual IPropertyTree &queryProperties() = 0;                               // DFile attributes (TODO: rename to getFileAttr)
+    virtual IPropertyTree &queryAttributes() = 0;                               // DFile attributes
 
-    virtual IPropertyTree &lockProperties(unsigned timeoutms=INFINITE) = 0;     // must be called before updating properties (will discard uncommitted changes)
-    virtual void unlockProperties() = 0;                                        // must be called after updating properties
+    virtual bool lockProperties(unsigned timeoutms=INFINITE) = 0;               // must be called before updating properties (will discard uncommitted changes)
+    virtual void unlockProperties(DFTransactionState state=TAS_NONE) = 0;         // must be called after updating properties
 
     virtual bool getModificationTime(CDateTime &dt) = 0;                        // get date and time last modified (returns false if not set)
     virtual void setModificationTime(const CDateTime &dt) = 0;                  // set date and time last modified
@@ -249,9 +256,6 @@ interface IDistributedFile: extends IInterface
     virtual bool isSubFile()=0;                                         // returns true if sub file of any SuperFile
     virtual IDistributedSuperFileIterator *getOwningSuperFiles(IDistributedFileTransaction *_transaction=NULL)=0;           // returns iterator for all parents
     virtual bool isCompressed(bool *blocked=NULL)=0;
-
-    virtual bool lockTransaction(unsigned timeout)=0;                           // internal use
-    virtual void unlockTransaction(bool _commit,bool _rollback)=0;              // internal use
 
     virtual StringBuffer &getClusterName(unsigned clusternum,StringBuffer &name) = 0;
     virtual unsigned getClusterNames(StringArray &clusters)=0;                  // returns ordinality
@@ -344,6 +348,48 @@ interface ISimpleSuperFileEnquiry: extends IInterface // lightweight local
     virtual bool getSubFileName(unsigned num, StringBuffer &name) const = 0;
     virtual unsigned findSubName(const char *subname) const = 0;
     virtual unsigned getContents(StringArray &contents) const = 0;
+};
+
+
+// ==DISTRIBUTED FILE PROPERTY LOCKS============================================================================
+/*
+ * Context-based file property locking mechanism. Allows early unlocking for special cases,
+ * stores the reload flag and allows you to query the 'Attr' section of the file property,
+ * which is the only part external consumers are allowed to change.
+ *
+ * Use this instead of locking/unlocking manually. Manual lock is deprecated and will
+ * disappear soon.
+ */
+class DistributedFilePropertyLock {
+protected:
+    IDistributedFile *file;
+    bool reload;
+    bool unlocked;
+public:
+    DistributedFilePropertyLock(IDistributedFile *_file)
+        : file(_file), reload(false), unlocked(false)
+    {
+        reload = file->lockProperties();
+    }
+    ~DistributedFilePropertyLock()
+    {
+        if (!unlocked)
+            unlock();
+    }
+    // MORE: Implement commit/rollback/retry as necessary
+    void unlock()
+    {
+        file->unlockProperties(TAS_NONE);
+        unlocked = true;
+    }
+    IPropertyTree &queryAttributes()
+    {
+        return file->queryAttributes();
+    }
+    bool needsReload()
+    {
+        return reload;
+    }
 };
 
 
@@ -626,11 +672,11 @@ extern da_decl IDFAttributesIterator *createSubFileFilter(IDFAttributesIterator 
 // Useful property query functions 
 
 inline bool isFileKey(IPropertyTree &pt) { const char *kind = pt.queryProp("@kind"); return kind&&strieq(kind,"key"); }
-inline bool isFileKey(IDistributedFile *f) { return isFileKey(f->queryProperties()); }
+inline bool isFileKey(IDistributedFile *f) { return isFileKey(f->queryAttributes()); }
 inline bool isFileKey(IFileDescriptor *f) { return isFileKey(f->queryProperties()); }
 
 inline bool isPartTLK(IPropertyTree &pt) { const char *kind = pt.queryProp("@kind"); return kind&&strieq(kind,"topLevelKey"); }
-inline bool isPartTLK(IDistributedFilePart *p) { return isPartTLK(p->queryProperties()); }
+inline bool isPartTLK(IDistributedFilePart *p) { return isPartTLK(p->queryAttributes()); }
 inline bool isPartTLK(IPartDescriptor *p) { return isPartTLK(p->queryProperties()); }
 
 extern da_decl void ensureFileScope(const CDfsLogicalFileName &dlfn, unsigned timeoutms=INFINITE);

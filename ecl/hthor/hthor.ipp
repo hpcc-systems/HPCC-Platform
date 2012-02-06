@@ -153,7 +153,7 @@ protected:
 
 static bool verifyFormatCrc(unsigned helperCrc, IDistributedFile * df, char const * super, bool isIndex, bool fail)
 {
-    IPropertyTree &props = df->queryProperties();
+    IPropertyTree &props = df->queryAttributes();
     if(props.hasProp("@formatCrc"))
     {
         unsigned dfsCrc = props.getPropInt("@formatCrc");

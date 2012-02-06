@@ -212,7 +212,7 @@ bool DirectDiskDataSource::init()
     if (!df)
         return false;
 
-    IPropertyTree & properties = df->queryProperties();
+    IPropertyTree & properties = df->queryAttributes();
     const char * kind = properties.queryProp("@kind");
     bool isGrouped =properties.getPropBool("@grouped");
     if (kind && (stricmp(kind, "key") == 0))
@@ -334,7 +334,7 @@ enum { NONE, TERMINATOR };
 
 void CsvRecordSize::init(IDistributedFile * df)
 {
-    IPropertyTree * props = &df->queryProperties();
+    IPropertyTree * props = &df->queryAttributes();
     UtfReader::UtfFormat utfType = getFormat(props->queryProp("@format"));
     switch (utfType)
     {
@@ -410,7 +410,7 @@ DirectCsvDiskDataSource::DirectCsvDiskDataSource(IDistributedFile * _df, const c
     returnedRecordSize.set(&recordSizer);
     transformedMeta.set(returnedMeta);
     addFileposition();
-    IPropertyTree & properties = df->queryProperties();
+    IPropertyTree & properties = df->queryAttributes();
     if (properties.hasProp("@recordCount"))
         totalRows = properties.getPropInt64("@recordCount");
 }

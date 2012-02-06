@@ -585,10 +585,10 @@ WUFileKind getDiskOutputKind(unsigned flags)
 
 void checkSuperFileOwnership(IDistributedFile &file)
 {
-    if (file.queryProperties().hasProp("SuperOwner"))
+    if (file.queryAttributes().hasProp("SuperOwner"))
     {
         StringBuffer owners;
-        Owned<IPropertyTreeIterator> iter = file.queryProperties().getElements("SuperOwner");
+        Owned<IPropertyTreeIterator> iter = file.queryAttributes().getElements("SuperOwner");
         if (iter->first())
         {
             loop
@@ -625,7 +625,7 @@ void checkFormatCrc(CActivityBase *activity, IDistributedFile *file, unsigned he
             else fileStr.append("File: ");
             fileStr.append(f->queryLogicalName());
             Owned<IThorException> e = MakeActivityException(activity, TE_FormatCrcMismatch, "%s: Layout does not match published layout. %s", kindStr.str(), fileStr.str());
-            if (index && !f->queryProperties().hasProp("_record_layout")) // Cannot verify if _true_ crc mismatch if soft layout missing anymore
+            if (index && !f->queryAttributes().hasProp("_record_layout")) // Cannot verify if _true_ crc mismatch if soft layout missing anymore
                 LOG(MCwarning, thorJob, e);
             else
             {

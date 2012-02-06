@@ -118,16 +118,16 @@ public:
             IDistributedFile *f = _f->querySuperFile();
             if (!f) f = _f;
             Owned<IDistributedFilePart> existingTlk = f->getPart(f->numParts()-1);
-            if (!existingTlk->queryProperties().hasProp("@kind") || 0 != stricmp("topLevelKey", existingTlk->queryProperties().queryProp("@kind")))
+            if (!existingTlk->queryAttributes().hasProp("@kind") || 0 != stricmp("topLevelKey", existingTlk->queryAttributes().queryProp("@kind")))
                 throw MakeActivityException(this, 0, "Cannot build new key '%s' based on non-distributed key '%s'", helper->getFileName(), helper->getDistributeIndexName());
             IPartDescriptor *tlkDesc = fileDesc->queryPart(fileDesc->numParts()-1);
             IPropertyTree &props = tlkDesc->queryProperties();
-            if (existingTlk->queryProperties().hasProp("@size"))
-                props.setPropInt64("@size", existingTlk->queryProperties().getPropInt64("@size"));
-            if (existingTlk->queryProperties().hasProp("@fileCrc"))
-                props.setPropInt64("@fileCrc", existingTlk->queryProperties().getPropInt64("@fileCrc"));
-            if (existingTlk->queryProperties().hasProp("@modified"))
-                props.setProp("@modified", existingTlk->queryProperties().queryProp("@modified"));
+            if (existingTlk->queryAttributes().hasProp("@size"))
+                props.setPropInt64("@size", existingTlk->queryAttributes().getPropInt64("@size"));
+            if (existingTlk->queryAttributes().hasProp("@fileCrc"))
+                props.setPropInt64("@fileCrc", existingTlk->queryAttributes().getPropInt64("@fileCrc"));
+            if (existingTlk->queryAttributes().hasProp("@modified"))
+                props.setProp("@modified", existingTlk->queryAttributes().queryProp("@modified"));
         }
         
         StringBuffer datasetName;
@@ -147,7 +147,7 @@ public:
 
             Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(datasetName.str(), container.queryJob().queryUserDescriptor());
             if (df)
-                fileSize = df->queryProperties().getPropInt64("@size", 0);
+                fileSize = df->queryAttributes().getPropInt64("@size", 0);
         }
 
         // Fill in some logical file properties here

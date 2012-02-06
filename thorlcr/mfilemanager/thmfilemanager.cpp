@@ -546,14 +546,14 @@ public:
             {
                 StringBuffer modTimeStr;
                 modTime.getString(modTimeStr);
-                file->queryProperties().setProp("@accessed", modTimeStr.str());
+                file->queryAttributes().setProp("@accessed", modTimeStr.str());
             }
         }
         if (publishedFile)
             publishedFile->set(file);
         __int64 fs = file->getFileSize(false,false);
         if (fs!=-1)
-            file->queryProperties().setPropInt64("@size",fs);
+            file->queryAttributes().setPropInt64("@size",fs);
         file->attach(scopedName.str(), NULL, job.queryUserDescriptor());
         unsigned c=0;
         for (; c<fileDesc.numClusters(); c++)
@@ -591,7 +591,7 @@ public:
         if (partno >= file->numParts())
             throw MakeThorException(TE_NoSuchPartForLogicalFile , "No such part number (%d) for logical file : %s", partno, scopedName.str());
         Owned<IDistributedFilePart> part = file->getPart(partno);
-        return part->queryProperties().getPropInt64("@offset");;
+        return part->queryAttributes().getPropInt64("@offset");;
     }
 
     void updateAccessTime(CJobBase &job, const char *logicalName)
