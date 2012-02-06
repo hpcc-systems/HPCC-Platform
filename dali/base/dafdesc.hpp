@@ -42,7 +42,11 @@ enum DFD_OS
     DFD_OSunix
 };
 
-
+enum DFD_Replicate
+{
+    DFD_NoCopies      = 1,
+    DFD_DefaultCopies = 2
+};
 
 // ==CLUSTER PART MAPPING ==============================================================================================
 
@@ -55,7 +59,7 @@ enum DFD_OS
 
 struct da_decl ClusterPartDiskMapSpec
 {
-    ClusterPartDiskMapSpec() { replicateOffset=1; defaultCopies=2; startDrv=0; maxDrvs=2; flags=0; interleave=0; repeatedPart=CPDMSRP_notRepeated; }
+    ClusterPartDiskMapSpec() { replicateOffset=1; defaultCopies=DFD_DefaultCopies; startDrv=0; maxDrvs=2; flags=0; interleave=0; repeatedPart=CPDMSRP_notRepeated; }
     int replicateOffset;    // offset to add to determine node
 public:
     byte defaultCopies;     // default number of copies (i.e. redundancy+1)
@@ -72,6 +76,7 @@ public:
     void setRepeatedCopies(unsigned partnum,bool onlyrepeats);
     void setDefaultBaseDir(const char *dir);
     void setDefaultReplicateDir(const char *dir);
+    void ensureReplicate();
     bool calcPartLocation (unsigned part, unsigned maxparts, unsigned copy, unsigned clusterWidth, unsigned &node, unsigned &drv);
     void toProp(IPropertyTree *tree);
     void fromProp(IPropertyTree *tree);
@@ -81,6 +86,7 @@ public:
 
     ClusterPartDiskMapSpec & operator=(const ClusterPartDiskMapSpec &other);
 
+    bool isReplicated() const;
 };
 
 #define CPDMSF_wrapToNextDrv    (0x01)      // whether should wrap to next drv
@@ -226,6 +232,7 @@ if endCluster is not called it will assume only one cluster and not replicated
 
     virtual StringBuffer &getClusterLabel(unsigned clusternum,StringBuffer &ret) = 0; // roxie label or node group name
 
+    virtual void ensureReplicate() = 0;                                             // make sure a file can be replicated
 };
 
 interface ISuperFileDescriptor: extends IFileDescriptor
