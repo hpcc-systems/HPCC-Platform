@@ -1861,7 +1861,7 @@ public:
                 addFile(dFile->queryLogicalName(), dFile->getFileDescriptor());
             bool tsSet = dFile->getModificationTime(fileTimeStamp);
             assertex(tsSet); // per Nigel, is always set
-            properties.set(&dFile->queryProperties());
+            properties.set(&dFile->queryAttributes());
         }
     }
     virtual void beforeDispose()
@@ -2295,7 +2295,7 @@ extern IResolvedFileCreator *createResolvedFile(const char *lfn)
 
 extern IResolvedFile *createResolvedFile(const char *lfn, IDistributedFile *dFile)
 {
-    const char *kind = dFile ? dFile->queryProperties().queryProp("@kind") : NULL;
+    const char *kind = dFile ? dFile->queryAttributes().queryProp("@kind") : NULL;
     return new CResolvedFile(lfn, dFile, kind && stricmp(kind, "key")==0 ? ROXIE_KEY : ROXIE_FILE);
 }
 

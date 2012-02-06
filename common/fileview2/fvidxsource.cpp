@@ -170,7 +170,7 @@ bool IndexDataSource::init()
     if (!tlk)
         return false;
 
-    IPropertyTree & properties = df->queryProperties();
+    IPropertyTree & properties = df->queryAttributes();
     //Need to assign the transformed record to meta
     if (!diskMeta)
         diskMeta.setown(new DataSourceMetaData(diskRecord, 0, true, false, tlk->keyedSize()));

@@ -1005,7 +1005,7 @@ void CHThorIndexWriteActivity::execute()
         if (ldFile )
         {
             IDistributedFile * dFile = ldFile->queryDistributedFile();
-            fileSize = dFile ? dFile->queryProperties().getPropInt64("@size", 0) : ldFile->getPartFileSize(0);//MORE: is local part correct?
+            fileSize = dFile ? dFile->queryAttributes().getPropInt64("@size", 0) : ldFile->getPartFileSize(0);//MORE: is local part correct?
         }
     }
     unsigned int fileCrc = -1;
@@ -7538,7 +7538,7 @@ void CHThorDiskReadBaseActivity::resolve()
             IDistributedFile *dFile = ldFile->queryDistributedFile();
             if (dFile)  //only makes sense for distributed (non local) files
             {
-                persistent = dFile->queryProperties().getPropBool("@persistent");
+                persistent = dFile->queryAttributes().getPropBool("@persistent");
                 dfsParts.setown(dFile->getIterator());
                 if((helper.getFlags() & (TDXtemporary | TDXjobtemp)) == 0)
                     agent.logFileAccess(dFile, "HThor", "READ");
@@ -8439,7 +8439,7 @@ void CHThorCsvReadActivity::gatherInfo(IFileDescriptor * fd)
     IDistributedFile * dFile = ldFile?ldFile->queryDistributedFile():NULL;
     if (dFile)  //only makes sense for distributed (non local) files
     {
-        IPropertyTree & options = dFile->queryProperties();
+        IPropertyTree & options = dFile->queryAttributes();
         quotes = options.queryProp("@csvQuote");
         separators = options.queryProp("@csvSeparate");
         terminators = options.queryProp("@csvTerminate");

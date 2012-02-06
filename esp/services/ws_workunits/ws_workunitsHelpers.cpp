@@ -139,7 +139,7 @@ StringBuffer &getWuidFromLogicalFileName(IEspContext &context, const char *logic
     Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, userdesc);
     if (!df)
         throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",logicalName);
-    return wuid.append(df->queryProperties().queryProp("@workunit"));
+    return wuid.append(df->queryAttributes().queryProp("@workunit"));
 }
 
 void formatDuration(StringBuffer &s, unsigned ms)
@@ -1016,7 +1016,7 @@ bool shouldFileContentBeShown(IEspContext &context, const char * logicalName)
     if (df->isCompressed(&blocked) && !blocked)
         return false;
 
-    IPropertyTree & properties = df->queryProperties();
+    IPropertyTree & properties = df->queryAttributes();
     const char * format = properties.queryProp("@format");
     if (format && (stricmp(format,"csv")==0 || memicmp(format, "utf", 3) == 0))
     {
@@ -1201,7 +1201,7 @@ void WsWuInfo::getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, un
                 userdesc->set(username.str(), context.queryPassword());
 
                 Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(filename.str(), userdesc);
-                if(df && df->queryProperties().hasProp("ECL"))
+                if(df && df->queryAttributes().hasProp("ECL"))
                     link.append(r.getResultSequence());
             }
             else

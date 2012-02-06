@@ -154,6 +154,6 @@ CActivityBase *createCsvWriteSlave(CGraphElementBase *container)
 #if 0
 void CsvWriteSlaveActivity::setFormat(IFileDescriptor * desc)
 {
-    desc->queryProperties().setProp("@format","csv");
+    desc->queryAttributes().setProp("@format","csv");
 }
 #endif
