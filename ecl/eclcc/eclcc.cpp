@@ -244,6 +244,7 @@ protected:
     IFileArray inputFiles;
     StringArray debugOptions;
     StringArray compileOptions;
+    StringArray linkOptions;
     StringArray libraryPaths;
 
     ClusterType optTargetClusterType;
@@ -437,6 +438,9 @@ ICppCompiler * EclCC::createCompiler(const char * coreName)
 
     ForEachItemIn(iComp, compileOptions)
         compiler->addCompileOption(compileOptions.item(iComp));
+
+    ForEachItemIn(iLink, linkOptions)
+        compiler->addLinkOption(linkOptions.item(iLink));
 
     ForEachItemIn(iLib, libraryPaths)
         compiler->addLibraryPath(libraryPaths.item(iLib));
@@ -1357,9 +1361,14 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
             expandCommaList(compileOptions, arg+4);
         }
-        else if (startsWith(arg, "-Wl,") || startsWith(arg, "-Wp,") || startsWith(arg, "-Wa,"))
+        else if (startsWith(arg, "-Wl,"))
         {
-            //Pass these straigh through to the gcc compiler
+            //Pass these straight through to the linker - with -Wl, prefix removed
+            linkOptions.append(arg+4);
+        }
+        else if (startsWith(arg, "-Wp,") || startsWith(arg, "-Wa,"))
+        {
+            //Pass these straight through to the gcc compiler
             compileOptions.append(arg);
         }
         else if (iter.matchFlag(optWorkUnit, "-wu"))
@@ -1417,6 +1426,7 @@ void EclCC::usage()
            "                  executable, or stdout)\n"
            "    -P <path>     Specify the path of the output files\n"
            "    -Wc,xx        Supply option for the c++ compiler\n"
+           "    -Wl,xx        Supply option for the linker\n"
            "    -save-cpps    Do not delete generated c++ files (implied if -g)\n"
            "    -save-temps   Do not delete intermediate files\n"
            "    -manifest     Specify path to manifest file listing resources to add\n"

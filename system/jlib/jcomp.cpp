@@ -442,7 +442,12 @@ bool CppCompiler::compileFile(IThreadPool * pool, const char * filename, Semapho
     cmdline.append(" ").append(sourceDir);
     cmdline.append(fullFileName);
     expandCompileOptions(cmdline);
-    cmdline.append(" ").append(libraryOptions);
+
+    if (useDebugLibrary)
+        cmdline.append(" ").append(LIBFLAG_DEBUG[targetCompiler]);
+    else
+        cmdline.append(" ").append(LIBFLAG_RELEASE[targetCompiler]);
+
     _addInclude(cmdline, stdIncludes);
     
     if (targetCompiler == Vs6CppCompiler)
@@ -484,7 +489,19 @@ void CppCompiler::expandCompileOptions(StringBuffer & target)
 bool CppCompiler::doLink()
 {
     StringBuffer cmdline;
-    cmdline.append(LINK_NAME[targetCompiler]).append(LINK_SEPARATOR[targetCompiler]).append(linkerOptions);
+    cmdline.append(LINK_NAME[targetCompiler]).append(LINK_SEPARATOR[targetCompiler]);
+
+    cmdline.append(" ");
+    if (targetDebug)
+        cmdline.append(createDLL ? DLL_LINK_OPTION_DEBUG[targetCompiler] : EXE_LINK_OPTION_DEBUG[targetCompiler]);
+    else
+        cmdline.append(createDLL ? DLL_LINK_OPTION_RELEASE[targetCompiler] : EXE_LINK_OPTION_RELEASE[targetCompiler]);
+    cmdline.append(" ");
+
+    if (createDLL)
+        cmdline.append(" ").append(LINK_OPTION_CORE[targetCompiler]);
+    cmdline.append(stdLibs);
+    cmdline.append(linkerOptions);
 
     ForEachItemIn(i0, allSources)
         cmdline.append(" ").append("\"").append(targetDir).append(allSources.item(i0)).append(".").append(OBJECT_FILE_EXT[targetCompiler]).append("\"");
@@ -562,42 +579,16 @@ void CppCompiler::removeTemporaries()
 void CppCompiler::setDebug(bool _debug)
 {
     targetDebug = _debug;
-    resetLinkOptions();
 }
-
-void CppCompiler::resetLinkOptions()
-{
-    if (targetDebug)
-    {
-        setLinkOptions(createDLL ? DLL_LINK_OPTION_DEBUG[targetCompiler] : EXE_LINK_OPTION_DEBUG[targetCompiler]);
-    }
-    else
-    {
-        setLinkOptions(createDLL ? DLL_LINK_OPTION_RELEASE[targetCompiler] : EXE_LINK_OPTION_RELEASE[targetCompiler]);
-    }
-}
-
 
 void CppCompiler::setDebugLibrary(bool debug)
 {
-    if (debug)
-        libraryOptions.set(LIBFLAG_DEBUG[targetCompiler]);
-    else
-        libraryOptions.set(LIBFLAG_RELEASE[targetCompiler]);
-}
-
-void CppCompiler::setLinkOptions(const char * option)
-{
-    linkerOptions.clear().append(" ").append(option).append(" ");
-    if (createDLL)
-        linkerOptions.append(" ").append(LINK_OPTION_CORE[targetCompiler]);
-    linkerOptions.append(stdLibs);
+    useDebugLibrary = debug;
 }
 
 void CppCompiler::setCreateExe(bool _createExe) 
 { 
     createDLL = !_createExe; 
-    resetLinkOptions();
 }
 
 
