@@ -37,7 +37,7 @@
 
 namespace roxiemem {
 
-//#define USE_MADVISE_ON_FREE     // avoid linux swapping 'freed' pages to disk
+#define USE_MADVISE_ON_FREE     // avoid linux swapping 'freed' pages to disk
 #define TIMEOUT_CHECK_FREQUENCY_MILLISECONDS 10
 
 unsigned memTraceLevel = 1;
@@ -93,6 +93,7 @@ static char *heapBase;
 static unsigned *heapBitmap;
 static unsigned heapBitmapSize;
 static unsigned heapLWM;
+static unsigned heapHWM;
 static bool heapExhausted = false;
 static unsigned __int64 lastStatsCycles;
 static unsigned __int64 statsCyclesInterval;
@@ -142,6 +143,7 @@ void initializeHeap(unsigned pages)
     heapBitmap = new unsigned [heapBitmapSize];
     memset(heapBitmap, 0xff, heapBitmapSize*sizeof(unsigned));
     heapLWM = 0;
+    heapHWM = heapBitmapSize;
 
     if (memTraceLevel)
         DBGLOG("RoxieMemMgr: %u Pages successfully allocated for the pool - memsize=%"I64F"u base=%p alignment=%"I64F"u bitmapSize=%u", 
@@ -166,48 +168,51 @@ extern void releaseRoxieHeap()
 
 void memstats(unsigned &totalpg, unsigned &freepg, unsigned &maxblk)
 {
-    CriticalBlock b(heapBitCrit);
     totalpg = heapBitmapSize * UNSIGNED_BITS;
     unsigned freePages = 0;
     unsigned maxBlock = 0;
     unsigned thisBlock = 0;
 
-    for (unsigned i = 0; i < heapBitmapSize; i++)
     {
-        unsigned t = heapBitmap[i];
-        if (t) 
+        CriticalBlock b(heapBitCrit);
+        for (unsigned i = 0; i < heapBitmapSize; i++)
         {
-            if (t==(unsigned)-1) 
+            unsigned t = heapBitmap[i];
+            if (t)
             {
-                thisBlock += UNSIGNED_BITS; 
-                freePages += UNSIGNED_BITS;
-            }
-            else 
-            {
-                do 
+                if (t==(unsigned)-1)
                 {
-                    if (t&1)
+                    thisBlock += UNSIGNED_BITS;
+                    freePages += UNSIGNED_BITS;
+                }
+                else
+                {
+                    do
                     {
-                        freePages++;
-                        thisBlock++;
-                    }
-                    else 
-                    {
-                        if (thisBlock > maxBlock)
-                            maxBlock = thisBlock;
-                        thisBlock = 0;
-                    }
-                    t >>= 1;
-                } while (t);
+                        if (t&1)
+                        {
+                            freePages++;
+                            thisBlock++;
+                        }
+                        else
+                        {
+                            if (thisBlock > maxBlock)
+                                maxBlock = thisBlock;
+                            thisBlock = 0;
+                        }
+                        t >>= 1;
+                    } while (t);
+                }
             }
-        }
-        else if (thisBlock) 
-        {
-            if (thisBlock > maxBlock)
-                maxBlock = thisBlock;
-            thisBlock = 0;
+            else if (thisBlock)
+            {
+                if (thisBlock > maxBlock)
+                    maxBlock = thisBlock;
+                thisBlock = 0;
+            }
         }
     }
+
     if (thisBlock > maxBlock)
         maxBlock = thisBlock;
 
@@ -309,21 +314,22 @@ StringBuffer &memmap(StringBuffer &stats)
 
 void *suballoc_aligned(size32_t pages)
 {
-    //MORE: Should we use cas and make this lock free?  It would avoid some contention between queries.
-    //It may be tricky because of the multiple page requirement.  That would need to remove as it found potential
-    //space, and replace if there was a problem.
-    //Would require a similar change in subfree_aligned etc.
-    if (statsCyclesInterval || (memTraceLevel >= 2))
+    //It would be tempting to make this lock free and use cas, but on reflection I suspect it will perform worse.
+    //The problem is allocating multiple pages which fit into two unsigneds.  Because they can't be covered by a
+    //single cas you are likely to livelock if two occured at the same time.
+    //It could be mitigated by starting at a "random" position, but that is likely to increase fragmentation,
+    //It can be revisited if it proves to be a bottleneck - unlikely until we have several Tb of memory.
+    if (statsCyclesInterval)
     {
-        //Avoid calling get_cycles_now if never needed, or maybe use get_cycles_now()
+        //To report on every allocation set statsCyclesInterval to 1
         unsigned __int64 cyclesNow = get_cycles_now();
-        if ((statsCyclesInterval && ((cyclesNow - lastStatsCycles) >= statsCyclesInterval)) || (memTraceLevel >= 2))
+        if ((cyclesNow - lastStatsCycles) >= statsCyclesInterval)
         {
             // No need to lock - worst that can happen is we call too often which is relatively harmless
             lastStatsCycles = cyclesNow;
             StringBuffer s;
             memstats(s);
-            s.appendf(", heapLWM %u, dataBuffersActive=%d, dataBufferPages=%d", heapLWM, atomic_read(&dataBuffersActive), atomic_read(&dataBufferPages));
+            s.appendf(", heapLWM %u..%u, dataBuffersActive=%d, dataBufferPages=%d", heapLWM, heapHWM, atomic_read(&dataBuffersActive), atomic_read(&dataBufferPages));
             DBGLOG("RoxieMemMgr: %s", s.str());
         }
     }
@@ -347,7 +353,7 @@ void *suballoc_aligned(size32_t pages)
                     ret += HEAP_ALIGNMENT_SIZE;
                     mask <<= 1;
                 }
-                heapBitmap[i] &= ~mask;
+                heapBitmap[i] = (hbi & ~mask);
                 heapLWM = i;
                 if (memTraceLevel >= 2)
                     DBGLOG("RoxieMemMgr: suballoc_aligned() 1 page ok - addr=%p", ret);
@@ -358,7 +364,7 @@ void *suballoc_aligned(size32_t pages)
     else
     {
         // Usage pattern is such that we expect normally to succeed immediately.
-        unsigned i = heapBitmapSize;
+        unsigned i = heapHWM;
         unsigned matches = 0;
         while (i)
         {
@@ -376,19 +382,23 @@ void *suballoc_aligned(size32_t pages)
                             char *ret = heapBase + (i*UNSIGNED_BITS+b-1)*HEAP_ALIGNMENT_SIZE;
                             loop
                             {
-                                heapBitmap[i] &= ~mask;
+                                hbi &= ~mask;
                                 if (!--matches)
                                     break;
                                 if (mask==TOPBITMASK)
                                 {
+                                    heapBitmap[i] = hbi;
                                     mask=1;
                                     i++;
+                                    hbi = heapBitmap[i];
                                 }
                                 else
                                     mask <<= 1;
                             }
+                            heapBitmap[i] = hbi;
                             if (memTraceLevel >= 2)
                                 DBGLOG("RoxieMemMgr: suballoc_aligned() %d page ok - addr=%p", pages, ret);
+                            heapHWM = i+1;
                             return ret;
                         }
                     }
@@ -436,32 +446,38 @@ void subfree_aligned(void *ptr, unsigned pages = 1)
     unsigned wordOffset = (unsigned) (pageOffset / UNSIGNED_BITS);
     unsigned bitOffset = (unsigned) (pageOffset % UNSIGNED_BITS);
     unsigned mask = 1<<bitOffset;
-    CriticalBlock b(heapBitCrit);
-    if (wordOffset < heapLWM)
-        heapLWM = wordOffset;
-    loop
+    unsigned nextPageOffset = (pageOffset+pages + (UNSIGNED_BITS-1)) / UNSIGNED_BITS;
     {
-        if ((heapBitmap[wordOffset] & mask) == 0)
-            heapBitmap[wordOffset] |= mask;
-        else
-            HEAPERROR("RoxieMemMgr: Page freed twice");
-        if (!--pages)
-            break;
-        if (mask==TOPBITMASK)
+        CriticalBlock b(heapBitCrit);
+        if (wordOffset < heapLWM)
+            heapLWM = wordOffset;
+        if (nextPageOffset > heapHWM)
+            heapHWM = nextPageOffset;
+        loop
         {
-            mask = 1;
-            wordOffset++;
+            unsigned prev = heapBitmap[wordOffset];
+            if ((prev & mask) == 0)
+                heapBitmap[wordOffset] = (prev|mask);
+            else
+                HEAPERROR("RoxieMemMgr: Page freed twice");
+            if (!--pages)
+                break;
+            if (mask==TOPBITMASK)
+            {
+                mask = 1;
+                wordOffset++;
+            }
+            else
+                mask <<= 1;
         }
-        else
-            mask <<= 1;
-    }
-    if (heapExhausted)
-    {
-        DBGLOG("RoxieMemMgr: Memory pool is NOT exhausted now");
-        heapExhausted = false;
+        if (heapExhausted)
+        {
+            DBGLOG("RoxieMemMgr: Memory pool is NOT exhausted now");
+            heapExhausted = false;
+        }
     }
     if (memTraceLevel >= 2)
-        DBGLOG("RoxieMemMgr: subfree_aligned() %d pages ok - addr=%p heapLWM=%u totalPages=%d", _pages, ptr, heapLWM, heapBitmapSize * UNSIGNED_BITS);
+        DBGLOG("RoxieMemMgr: subfree_aligned() %d pages ok - addr=%p heapLWM=%u..%u totalPages=%d", _pages, ptr, heapLWM, heapHWM, heapBitmapSize * UNSIGNED_BITS);
 }
 
 static inline unsigned getRealActivityId(unsigned allocatorId, const IRowAllocatorCache *allocatorCache)
@@ -585,7 +601,7 @@ public:
     }
 
 protected:
-    virtual void reportLeak(const char * block, const IContextLogger &logctx) const = 0;
+    virtual void reportLeak(const void * block, const IContextLogger &logctx) const = 0;
 
     inline char * allocateChunk()
     {
@@ -685,12 +701,12 @@ protected:
 
 class FixedSizeHeaplet : public FixedSizeHeapletBase
 {
-public:
     struct ChunkHeader
     {
         unsigned allocatorId;
         atomic_t count;  //count must be the last item in the header
     };
+public:
     enum { chunkHeaderSize = sizeof(ChunkHeader) };
 
     FixedSizeHeaplet(const IRowAllocatorCache *_allocatorCache, size32_t size) : FixedSizeHeapletBase(_allocatorCache, size, size - chunkHeaderSize)
@@ -750,14 +766,14 @@ public:
         return HEAP_ALIGNMENT_SIZE - (offsetof(FixedSizeHeaplet, data) + chunkHeaderSize);
     }
 
-    virtual void reportLeak(const char * block, const IContextLogger &logctx) const
+    virtual void reportLeak(const void * block, const IContextLogger &logctx) const
     {
         ChunkHeader * header = (ChunkHeader *)block;
         unsigned allocatorId = header->allocatorId;
         unsigned rowCount = atomic_read(&header->count);
         bool hasChildren = (rowCount & ROWCOUNT_DESTRUCTOR_FLAG) != 0;
 
-        const char * ptr = block + chunkHeaderSize;
+        const char * ptr = (const char *)block + chunkHeaderSize;
         logctx.CTXLOG("Block size %u at %p %swas allocated by activity %u and not freed (%d)", chunkSize, ptr, hasChildren ? "(with children) " : "", getActivityId(allocatorId), ROWCOUNT(rowCount));
     }
 
@@ -833,11 +849,11 @@ private:
 
 class PackedFixedSizeHeaplet : public FixedSizeHeapletBase
 {
-public:
     struct ChunkHeader
     {
         atomic_t count;
     };
+public:
     enum { chunkHeaderSize = sizeof(ChunkHeader) };
 
     PackedFixedSizeHeaplet(const IRowAllocatorCache *_allocatorCache, size32_t size, unsigned _allocatorId)
@@ -886,13 +902,13 @@ public:
         return ret;
     }
 
-    virtual void reportLeak(const char * block, const IContextLogger &logctx) const
+    virtual void reportLeak(const void * block, const IContextLogger &logctx) const
     {
         ChunkHeader * header = (ChunkHeader *)block;
         unsigned rowCount = atomic_read(&header->count);
         bool hasChildren = (rowCount & ROWCOUNT_DESTRUCTOR_FLAG) != 0;
 
-        const char * ptr = block + chunkHeaderSize;
+        const char * ptr = (const char *)block + chunkHeaderSize;
         logctx.CTXLOG("Block size %u at %p %swas allocated by activity %u and not freed (%d)", chunkSize, ptr, hasChildren ? "(with children) " : "", getActivityId(sharedAllocatorId), ROWCOUNT(rowCount));
     }
 
@@ -2588,6 +2604,7 @@ protected:
             _heapBitmap = heapBitmap;
             _heapBitmapSize = heapBitmapSize;
             _heapLWM = heapLWM;
+            _heapHWM = heapHWM;
             _heapExhausted = heapExhausted;
         }
         ~HeapPreserver()
@@ -2596,12 +2613,14 @@ protected:
             heapBitmap = _heapBitmap;
             heapBitmapSize = _heapBitmapSize;
             heapLWM = _heapLWM;
+            heapHWM = _heapHWM;
             heapExhausted = _heapExhausted;
         }
         char *_heapBase;
         unsigned *_heapBitmap;
         unsigned _heapBitmapSize;
         unsigned _heapLWM;
+        unsigned _heapHWM;
         bool _heapExhausted;
     };
     void initBitmap(unsigned size)
@@ -2611,6 +2630,7 @@ protected:
         memset(heapBitmap, 0xff, size*sizeof(unsigned));
         heapBitmapSize = size;
         heapLWM = 0;
+        heapHWM = size;
         heapExhausted = false;
     }
 
@@ -2693,7 +2713,11 @@ protected:
         delete[] heapBitmap;
     }
 
-    enum { numBitmapThreads = 20, maxBitmapSize = 32768*32 };
+#ifdef __64BIT__
+    enum { numBitmapThreads = 20, maxBitmapSize = (unsigned)(I64C(0xFFFFFFFFFF) / HEAP_ALIGNMENT_SIZE / UNSIGNED_BITS) };      // Test larger range - in case we ever reduce the granularity
+#else
+    enum { numBitmapThreads = 20, maxBitmapSize = (unsigned)(I64C(0xFFFFFFFF) / HEAP_ALIGNMENT_SIZE / UNSIGNED_BITS) };      // 4Gb
+#endif
     class BitmapAllocatorThread : public Thread
     {
     public:
@@ -2705,10 +2729,15 @@ protected:
         {
             unsigned numBitmapIter = (maxBitmapSize * 32 / size) / numBitmapThreads;
             sem.wait();
-            //Allocate two rows and then release 1 trying to trigger potential ABA problems in the cas code.
             memsize_t total = 0;
             for (unsigned i=0; i < numBitmapIter; i++)
             {
+                void * ptr1 = suballoc_aligned(size);
+                subfree_aligned(ptr1, size);
+                void * ptr2 = suballoc_aligned(size);
+                subfree_aligned(ptr2, size);
+                void * ptr3 = suballoc_aligned(size);
+                subfree_aligned(ptr3, size);
                 total ^= (memsize_t)suballoc_aligned(size);
             }
             final = total;
@@ -2719,11 +2748,8 @@ protected:
         const unsigned size;
         volatile memsize_t final;
     };
-    void testBitmapThreading()
+    void testBitmapThreading(unsigned size)
     {
-#ifndef USE_MADVISE_ON_FREE
-        //Don't run this with MADVISE enabled - I'm not sure what the calls to map out random memory are likely to do!
-        const unsigned size = 1;
         HeapPreserver preserver;
 
         initBitmap(maxBitmapSize);
@@ -2743,17 +2769,25 @@ protected:
 
         for (unsigned i4 = 0; i4 < numBitmapThreads; i4++)
             threads[i4]->Release();
-        DBGLOG("Time taken for bitmap threading = %d", endTime-startTime);
+        DBGLOG("Time taken for bitmap threading(%d) = %d", size, endTime-startTime);
 
         unsigned totalPages;
         unsigned freePages;
         unsigned maxBlock;
         memstats(totalPages, freePages, maxBlock);
         ASSERT(totalPages == maxBitmapSize * 32);
-        unsigned numAllocated = ((maxBitmapSize * 32 / size) / numBitmapThreads) * numBitmapThreads;
+        unsigned numAllocated = ((maxBitmapSize * 32 / size) / numBitmapThreads) * numBitmapThreads * size;
         ASSERT(freePages == maxBitmapSize * 32 - numAllocated);
 
         delete[] heapBitmap;
+    }
+    void testBitmapThreading()
+    {
+#ifndef USE_MADVISE_ON_FREE
+        //Don't run this with MADVISE enabled - I'm not sure what the calls to map out random memory are likely to do!
+        testBitmapThreading(1);
+        testBitmapThreading(3);
+        testBitmapThreading(11);
 #endif
     }
 
