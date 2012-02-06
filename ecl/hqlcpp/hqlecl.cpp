@@ -37,6 +37,12 @@
 #include "workunit.hpp"
 #include "thorplugin.hpp"
 
+#ifdef _DEBUG
+#define IS_DEBUG_BUILD          true
+#else
+#define IS_DEBUG_BUILD          false
+#endif
+
 #define MAIN_MODULE_TEMPLATE        "thortpl.cpp"
 #define HEADER_TEMPLATE             "thortpl.hpp"
 #define CHILD_MODULE_TEMPLATE       "childtpl.cpp"
@@ -366,8 +372,9 @@ bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
     compiler->setMaxCompileThreads(maxThreads);
 
     bool debug = wu->getDebugValueBool("debugQuery", false);
+    bool debugLibrary = debug;  // should be wu->getDebugValueBool("debugLibrary", IS_DEBUG_BUILD); change for 3.8
     compiler->setDebug(debug);
-    compiler->setDebugLibrary(debug);
+    compiler->setDebugLibrary(debugLibrary);
     if (!debug)
     {
         int optimizeLevel = wu->getDebugValueInt("optimizeLevel", targetClusterType == RoxieCluster ? 3 : -1);
