@@ -1288,13 +1288,13 @@ public:
                         if (destination) {
                             if (destination->numClusters()==1) {
                                 destination->getClusterPartDiskMapSpec(0,mspec);  
-                                if (mspec.defaultCopies<2)          
+                                if (!mspec.isReplicated())
                                     needrep = false;
                             }
                         }
                         else if (multifdesc) {
                             if (multifdesc->numClusters()==1) {
-                                if (multifdesc->queryPartDiskMapping(0).defaultCopies<2) 
+                                if (!multifdesc->queryPartDiskMapping(0).isReplicated())
                                     needrep = false;
                             }
                         }
@@ -1455,6 +1455,7 @@ public:
                     }
                     setFileRepeatOptions(*srcFile,repcluster.str(),repeatlast,onlyrepeated);
                     Owned<IFileDescriptor> fdesc = srcFile->getFileDescriptor();
+                    fdesc->ensureReplicate();
                     fsys.replicate(fdesc.get(), mode, recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid);
                     runningconn.clear();
                     if (!abortnotify.abortRequested()) {
@@ -1474,7 +1475,7 @@ public:
                         if (destination) {
                             if (destination->numClusters()==1) {
                                 destination->getClusterPartDiskMapSpec(0,mspec); 
-                                if (mspec.defaultCopies<2)   
+                                if (!mspec.isReplicated())
                                     needrep = false;
                             }
 #ifndef _DEBUG

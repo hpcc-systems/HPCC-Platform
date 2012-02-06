@@ -6410,7 +6410,7 @@ IDistributedFile *CDistributedFileDirectory::createExternal(const CDfsLogicalFil
         }
         fileDesc->setPart(i,rfn);
     }
-    fileDesc->queryPartDiskMapping(0).defaultCopies = 1;
+    fileDesc->queryPartDiskMapping(0).defaultCopies = DFD_NoCopies;
     IDistributedFile * ret = createNew(fileDesc,logicalname.get(),true);   // set modified
     if (ret&&moddtset) {
         ret->setModificationTime(moddt);    

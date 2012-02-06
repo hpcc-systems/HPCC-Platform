@@ -126,7 +126,7 @@ bool ClusterPartDiskMapSpec::calcPartLocation (unsigned part, unsigned maxparts,
     unsigned nc = numCopies(part,clusterwidth,maxparts);
     if (copy>=nc)
         return false;
-    unsigned dc=defaultCopies?defaultCopies:1;
+    unsigned dc=defaultCopies?defaultCopies:DFD_DefaultCopies;
     drv = startDrv;
     bool fw = (flags&CPDMSF_fillWidth)!=0;
     if (fw&&(maxparts>clusterwidth/2))
@@ -267,6 +267,19 @@ void ClusterPartDiskMapSpec::deserialize(MemoryBuffer &mb)
         defaultReplicateDir.clear();
 }
 
+
+void ClusterPartDiskMapSpec::ensureReplicate()
+{
+    if (defaultCopies <= DFD_NoCopies)
+        defaultCopies = DFD_DefaultCopies;
+}
+
+bool ClusterPartDiskMapSpec::isReplicated() const
+{
+    // If defaultCopies is zero (deprecated/legacy), the default value for replicated is true
+    // Else, if it has any copy (>= 2), than it is replicated
+    return defaultCopies != DFD_NoCopies;
+}
 
 unsigned ClusterPartDiskMapSpec::numCopies(unsigned part,unsigned clusterwidth, unsigned filewidth)
 {
@@ -1886,6 +1899,12 @@ public:
         }
     }
 
+    virtual void ensureReplicate()
+    {
+        for (unsigned clusterIdx = 0; clusterIdx<numClusters(); clusterIdx++)
+            queryPartDiskMapping(clusterIdx).ensureReplicate();
+    }
+
     ISuperFileDescriptor *querySuperFileDescriptor()
     {
         return NULL;
@@ -2132,7 +2151,7 @@ IFileDescriptor *createFileDescriptor(const char *lname,IGroup *grp,IPropertyTre
         res->setPart(i,rfn,NULL);
     }
     ClusterPartDiskMapSpec map; // use defaults
-    map.defaultCopies = 1;
+    map.defaultCopies = DFD_DefaultCopies;
     res->endCluster(map);
     return res;
 }
