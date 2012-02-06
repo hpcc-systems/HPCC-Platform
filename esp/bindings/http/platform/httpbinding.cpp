@@ -850,8 +850,8 @@ void EspHttpBinding::getSoapMessage(StringBuffer& soapmsg, IEspContext& ctx, CHt
     StringBuffer ns;
     soapmsg.appendf(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-        "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope\""
-          " xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding\""
+        "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\""
+          " xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\""
           " xmlns=\"%s\">"
         " <soap:Body>%s </soap:Body></soap:Envelope>",
         generateNamespace(ctx, request, serv, method, ns).str(), filtered.str()
@@ -964,8 +964,8 @@ void EspHttpBinding::getSoapMessage(StringBuffer& soapmsg, IEspContext& ctx, CHt
     
     soapmsg.appendf(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope\""
-            " xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding\""
+        "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\""
+            " xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\""
             " xmlns=\"urn:hpccsystems:ws:");
     if (serv && *serv)
         soapmsg.appendLower(strlen(serv), serv);
@@ -1251,19 +1251,6 @@ bool EspHttpBinding::getSchema(StringBuffer& schema, IEspContext &ctx, CHttpRequ
     
 
     schema.append(
-//      "<xsd:import namespace=\"http://schemas.xmlsoap.org/soap/encoding/\" schemaLocation=\"http://schemas.xmlsoap.org/soap/encoding/\"/>\n"
-/*      "<xsd:complexType name=\"EspStringArray\">"
-            "<xsd:sequence>"
-                "<xsd:element name=\"Item\" type=\"xsd:string\"  minOccurs=\"0\" maxOccurs=\"unbounded\" />"
-            "</xsd:sequence>"
-        "</xsd:complexType>\n"
-        "<xsd:complexType name=\"EspIntArray\">"
-            "<xsd:sequence>"
-                "<xsd:element name=\"Item\" type=\"xsd:int\" minOccurs=\"0\" maxOccurs=\"unbounded\"/>"
-            "</xsd:sequence>"
-        "</xsd:complexType>\n"
-*/
-        // EspException type
         "<xsd:complexType name=\"EspException\">"
             "<xsd:all>"
                 "<xsd:element name=\"Code\" type=\"xsd:string\"  minOccurs=\"0\"/>"

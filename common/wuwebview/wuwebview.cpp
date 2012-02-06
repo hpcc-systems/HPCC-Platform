@@ -49,8 +49,8 @@ public:
             buffer.append("<?xml-stylesheet type=\"text/xsl\" href=\"/esp/xslt/xmlformatter.xsl\"?>");
         if (flags & WWV_ADD_SOAP)
             buffer.append(
-                "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope\""
-                  " xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding\">"
+                "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\""
+                  " xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\">"
                     " <soap:Body>"
             );
         if (flags & WWV_ADD_RESPONSE_TAG)

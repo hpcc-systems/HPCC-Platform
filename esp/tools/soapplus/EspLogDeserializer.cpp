@@ -482,8 +482,8 @@ bool loadEspLog(const char* logFileName, HttpClient& httpClient, HttpStat& httpS
             if (bProcess)
             {
                 xml.insert( 0, "<?xml version='1.0' encoding='UTF-8'?>\n"
-                            "<soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope' \n"
-                            "  xmlns:SOAP-ENC='http://schemas.xmlsoap.org/soap/encoding' \n"
+                            "<soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/' \n"
+                            "  xmlns:SOAP-ENC='http://schemas.xmlsoap.org/soap/encoding/' \n"
                             "  xmlns='urn:hpccsystems:ws:wsaccurint'>\n  <soap:Body>\n");
                 xml.append("  </soap:Body>\n</soap:Envelope>\n");
 

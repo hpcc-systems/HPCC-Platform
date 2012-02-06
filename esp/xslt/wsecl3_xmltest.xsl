@@ -678,8 +678,8 @@ function inputReturnMethod()
       }
       
       var head = '<?xml version="1.0" encoding="UTF-8"?>'
-             + '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope"'
-             + ' xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding"'
+             + '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"'
+             + ' xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"'
              + ' xmlns="urn:hpccsystems:ecl:' + gServiceName + '">'
              + ' <soap:Body><'
              + gMethodName + 'Request>';
