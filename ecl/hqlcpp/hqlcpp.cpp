@@ -7125,6 +7125,7 @@ void HqlCppTranslator::processCppBodyDirectives(IHqlExpression * expr)
             _ATOM name = cur->queryName();
             if (name == linkAtom)
             {
+                //MORE: Add code to add the argument to the linker options.
             }
             else if (name == libraryAtom)
             {
@@ -11271,7 +11272,7 @@ void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * funcdef)
 
         StringBuffer text;
         cppBody->queryValue()->getStringValue(text);
-        //remove #option and /r so we don't end up with mixed format end of lines.
+        //remove #option, and remove /r so we don't end up with mixed format end of lines.
         text.setLength(cleanupEmbeddedCpp(text.length(), (char*)text.str()));
 
         const char * start = text.str();
