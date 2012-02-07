@@ -15657,6 +15657,17 @@ void HqlCppTranslator::buildDatasetAssignXmlProject(BuildCtx & ctx, IHqlCppDatas
 //---------------------------------------------------------------------------
 //-- no_temptable [DATASET] --
 
+void HqlCppTranslator::doBuildTempTableFlags(BuildCtx & ctx, IHqlExpression * expr, bool isConstant)
+{
+    StringBuffer flags;
+    if (expr->hasProperty(distributedAtom))
+        flags.append("|TTFdistributed");
+    if (!isConstant)
+        flags.append("|TTFnoconstant");
+    if (flags.length())
+        doBuildUnsignedFunction(ctx, "getFlags", flags.str()+1);
+}
+
 ABoundActivity * HqlCppTranslator::doBuildActivityTempTable(BuildCtx & ctx, IHqlExpression * expr)
 {
     StringBuffer s;
@@ -15768,8 +15779,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityTempTable(BuildCtx & ctx, IHql
     }
 
     doBuildUnsignedFunction(instance->startctx, "numRows", rowsExpr);
-    if (!values->isConstant())
-        doBuildBoolFunction(instance->startctx, "isConstant", false);
+
+    doBuildTempTableFlags(instance->startctx, expr, values->isConstant());
 
     buildInstanceSuffix(instance);
 
@@ -15833,8 +15844,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCreateRow(BuildCtx & ctx, IHql
     buildAssign(funcctx, self, expr);
     buildReturnRecordSize(funcctx, selfCursor);
 
-    if (!valuesAreConstant)
-        doBuildBoolFunction(instance->startctx, "isConstant", false);
+    doBuildTempTableFlags(instance->startctx, expr, valuesAreConstant);
 
     buildInstanceSuffix(instance);
 
@@ -15910,8 +15920,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityInlineTable(BuildCtx & ctx, IH
     OwnedHqlExpr rowsExpr = getSizetConstant(maxRows);
     doBuildUnsignedFunction(instance->startctx, "numRows", rowsExpr);
 
-    if (!values->isConstant())
-        doBuildBoolFunction(instance->startctx, "isConstant", false);
+    doBuildTempTableFlags(instance->startctx, expr, values->isConstant());
 
     buildInstanceSuffix(instance);
 
@@ -15945,9 +15954,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCountTransform(BuildCtx & ctx,
     // unsigned numRows() - count is guaranteed by lexer
     doBuildUnsignedFunction(instance->startctx, "numRows", count);
 
-    // bool isConstant() - default is true
-    if (!isConstantTransform(transform))
-        doBuildBoolFunction(instance->startctx, "isConstant", false);
+    doBuildTempTableFlags(instance->startctx, expr, isConstantTransform(transform));
 
     buildInstanceSuffix(instance);
 
