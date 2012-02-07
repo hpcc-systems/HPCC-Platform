@@ -2846,6 +2846,24 @@ expireAttr
                         }
     ;
 
+optDatasetFlags
+    :                   { $$.setNullExpr(); }
+    | ',' datasetFlags    { $$.inherit($2); }
+    ;
+
+datasetFlags
+    : datasetFlag
+    | datasetFlag ',' datasetFlags
+                        { $$.setExpr(createComma($1.getExpr(), $3.getExpr()), $1); }
+    ;
+
+datasetFlag
+    : DISTRIBUTED       {
+                            $$.setExpr(createExprAttribute(distributedAtom));
+                            $$.setPosition($1);
+                        }
+    ;
+
 optIndexFlags
     :                   { $$.setNullExpr(); $$.clearPosition(); }
     | ',' indexFlags    { $$.setExpr($2.getExpr()); $$.setPosition($1); }
@@ -8034,14 +8052,13 @@ simpleDataSet
                             $$.setExpr(createDataset(no_workunit_dataset, $8.getExpr(), arg));
                             $$.setPosition($1);
                         }
-    | DATASET '(' thorFilenameOrList ',' beginCounterScope transform endCounterScope ')'
+    | DATASET '(' thorFilenameOrList ',' beginCounterScope transform endCounterScope optDatasetFlags ')'
                         {
-                            // TODO: use DISTRIBUTED flag
                             parser->normalizeExpression($3, type_int, false);
                             IHqlExpression * counter = $7.getExpr();
                             if (counter)
                                 counter = createAttribute(_countProject_Atom, counter);
-                            $$.setExpr(createDataset(no_dataset_from_transform, $3.getExpr(), createComma($6.getExpr(), counter)));
+                            $$.setExpr(createDataset(no_dataset_from_transform, $3.getExpr(), createComma($6.getExpr(), counter, $8.getExpr())));
                             $$.setPosition($1);
                         }
     | ENTH '(' dataSet ',' expression optCommonAttrs ')'

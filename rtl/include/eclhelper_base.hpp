@@ -1299,7 +1299,7 @@ class CThorHashAggregateArg : public CThorArg, implements IHThorHashAggregateArg
     virtual size32_t mergeAggregate(ARowBuilder & rowBuilder, const void * src) { rtlFailUnexpected(); return 0; }
 };
 
-class CThorTempTableArg : public CThorArg, implements IHThorTempTableArg
+class CThorTempTableArg : public CThorArg, implements IHThorTempTableExtraArg
 {
 public:
     virtual void Link() const { RtlCInterface::Link(); }
@@ -1313,11 +1313,14 @@ public:
         case TAIarg:
         case TAItemptablearg_1:
             return static_cast<IHThorTempTableArg *>(this);
+        case TAItemptablearg_2:
+            return static_cast<IHThorTempTableExtraArg *>(this);
         }
         return NULL;
     }
 
-    virtual bool isConstant()                           { return true; }
+    virtual unsigned getFlags()                         { return 0; }
+    virtual bool isConstant()                           { return (getFlags() & TTFnoconstant) == 0; }
     virtual size32_t getRowSingle(ARowBuilder & rowBuilder) { return 0; }
 };
 
