@@ -534,7 +534,7 @@ function loadQueries(QueryType, Resize) {
     createQueryDataTable(QueryType);
     dt_Queries.showTableMessage(dt_Queries.get("MSG_LOADING"), dt_Queries.CLASS_LOADING);
     
-    var postBody = '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding" xmlns="http://webservices.seisint.com/ws_roxieconfig"><soap:Body><' + QueryType + '><excludeAliasNames>0</excludeAliasNames><excludeQueryNames>0</excludeQueryNames><excludeLibraryNames>0</excludeLibraryNames><excludeDataOnlyNames>1</excludeDataOnlyNames></' + QueryType + '></soap:Body></soap:Envelope>';
+    var postBody = '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns="http://webservices.seisint.com/ws_roxieconfig"><soap:Body><' + QueryType + '><excludeAliasNames>0</excludeAliasNames><excludeQueryNames>0</excludeQueryNames><excludeLibraryNames>0</excludeLibraryNames><excludeDataOnlyNames>1</excludeDataOnlyNames></' + QueryType + '></soap:Body></soap:Envelope>';
 
     YAHOO.util.Connect.initHeader("SOAPAction", "ws_roxieconfig/" + QueryType + "?ver_=" + WS_ROXIECONFIG_VER);
     YAHOO.util.Connect.initHeader("Content-Type", "text/xml");
@@ -679,7 +679,7 @@ function loadAliases(QueryName, ElementId, QueryPage, Resize) {
     createAliasDataTable(ElementId);
     dt_Aliases.showTableMessage(dt_Aliases.get("MSG_LOADING"), dt_Aliases.CLASS_LOADING);
         
-    var postBody = '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding" xmlns="http://webservices.seisint.com/ws_roxieconfig"><soap:Body><ListDeployedAliasesRequest><QueryId>' + QueryName + '</QueryId></ListDeployedAliasesRequest></soap:Body></soap:Envelope>';
+    var postBody = '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns="http://webservices.seisint.com/ws_roxieconfig"><soap:Body><ListDeployedAliasesRequest><QueryId>' + QueryName + '</QueryId></ListDeployedAliasesRequest></soap:Body></soap:Envelope>';
     YAHOO.util.Connect.initHeader("SOAPAction", "ws_roxieconfig/ListDeployedAliases?ver_=" + WS_ROXIECONFIG_VER);
     YAHOO.util.Connect.initHeader("Content-Type", "text/xml");
     YAHOO.util.Connect._use_default_post_header = false;
@@ -854,7 +854,7 @@ function loadDataFiles(QueryName, ElementId, RowsPerPage, QueryPage, Resize)
     dt_IndexFiles.showTableMessage(dt_IndexFiles.get("MSG_LOADING"), dt_IndexFiles.CLASS_LOADING);
     dt_DataFiles.showTableMessage(dt_DataFiles.get("MSG_LOADING"), dt_DataFiles.CLASS_LOADING);
         
-    var postBody = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding" xmlns="http://webservices.seisint.com/ws_roxieconfig"><soap:Body><ListFilesUsedByQueryRequest><QueryId>' + QueryName + '</QueryId><excludeSuperFileNames>1</excludeSuperFileNames><excludeDataFileNames>0</excludeDataFileNames></ListFilesUsedByQueryRequest></soap:Body></soap:Envelope>';
+    var postBody = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns="http://webservices.seisint.com/ws_roxieconfig"><soap:Body><ListFilesUsedByQueryRequest><QueryId>' + QueryName + '</QueryId><excludeSuperFileNames>1</excludeSuperFileNames><excludeDataFileNames>0</excludeDataFileNames></ListFilesUsedByQueryRequest></soap:Body></soap:Envelope>';
     YAHOO.util.Connect.initHeader("SOAPAction", "ws_roxieconfig/ListFilesUsedByQuery?ver_=" + WS_ROXIECONFIG_VER);
     YAHOO.util.Connect.initHeader("Content-Type", "text/xml");
     YAHOO.util.Connect._use_default_post_header = false;
@@ -967,7 +967,7 @@ function loadSuperFiles(QueryName, ElementId, RowsPerPage, QueryPage, Resize)
     createSuperFilesDataTable();
     dt_SuperFiles.showTableMessage(dt_SuperFiles.get("MSG_LOADING"), dt_SuperFiles.CLASS_LOADING);
         
-    var postBody = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding" xmlns="http://webservices.seisint.com/ws_roxieconfig"><soap:Body><ListFilesUsedByQueryRequest><QueryId>' + QueryName + '</QueryId><excludeSuperFileNames>0</excludeSuperFileNames><excludeDataFileNames>1</excludeDataFileNames></ListFilesUsedByQueryRequest></soap:Body></soap:Envelope>';
+    var postBody = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns="http://webservices.seisint.com/ws_roxieconfig"><soap:Body><ListFilesUsedByQueryRequest><QueryId>' + QueryName + '</QueryId><excludeSuperFileNames>0</excludeSuperFileNames><excludeDataFileNames>1</excludeDataFileNames></ListFilesUsedByQueryRequest></soap:Body></soap:Envelope>';
     YAHOO.util.Connect.initHeader("SOAPAction", "ws_roxieconfig/ListFilesUsedByQuery?ver_=" + WS_ROXIECONFIG_VER);
     YAHOO.util.Connect.initHeader("Content-Type", "text/xml");
     YAHOO.util.Connect._use_default_post_header = false;
@@ -1305,7 +1305,7 @@ function doDeleteAliases() {
     }
 
     document.getElementById('ActionProgress').innerHTML = '<img src="/esp/files/img/loading.gif" style="height:18px;" />';
-    var postBody = '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding" xmlns="http://webservices.seisint.com/ws_roxieconfig"><soap:Body>' + getSelectedAliases() + '</soap:Body></soap:Envelope>';
+    var postBody = '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns="http://webservices.seisint.com/ws_roxieconfig"><soap:Body>' + getSelectedAliases() + '</soap:Body></soap:Envelope>';
     
     YAHOO.util.Connect.initHeader("SOAPAction", "ws_roxieconfig/RemoveAliases?ver_=" + WS_ROXIECONFIG_VER);
     YAHOO.util.Connect.initHeader("Content-Type", "text/xml");
@@ -1372,7 +1372,7 @@ function loadQueriesUsingLibrary(LibraryName, ElementId)
     };
     
     document.getElementById(ElementId).innerHTML = '<img src="/esp/files/img/loading.gif" style="height:18px;" />';
-    var postBody = '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding" xmlns="http://webservices.seisint.com/ws_roxieconfig"><soap:Body><ListQueriesUsingLibraryRequest><LibraryName>' + LibraryName + '</LibraryName></ListQueriesUsingLibraryRequest></soap:Body></soap:Envelope>';
+    var postBody = '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns="http://webservices.seisint.com/ws_roxieconfig"><soap:Body><ListQueriesUsingLibraryRequest><LibraryName>' + LibraryName + '</LibraryName></ListQueriesUsingLibraryRequest></soap:Body></soap:Envelope>';
     YAHOO.util.Connect.initHeader("SOAPAction", "ws_roxieconfig/ListQueriesUsingLibrary?ver_=" + WS_ROXIECONFIG_VER);
     YAHOO.util.Connect.initHeader("Content-Type", "text/xml");
     YAHOO.util.Connect._use_default_post_header = false;
@@ -1434,7 +1434,7 @@ function modifyQueries(Operation, ElementId)
     }
 
     document.getElementById('ActionProgress').innerHTML = '<img src="/esp/files/img/loading.gif" style="height:18px;" />';
-    var postBody = '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding" xmlns="http://webservices.seisint.com/ws_roxieconfig"><soap:Body>' + getSelectedQueries(Operation) + '</soap:Body></soap:Envelope>';
+    var postBody = '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns="http://webservices.seisint.com/ws_roxieconfig"><soap:Body>' + getSelectedQueries(Operation) + '</soap:Body></soap:Envelope>';
     YAHOO.util.Connect.initHeader("SOAPAction", "ws_roxieconfig/ModifyQueries?ver_=" + WS_ROXIECONFIG_VER);
     YAHOO.util.Connect.initHeader("Content-Type", "text/xml");
     YAHOO.util.Connect._use_default_post_header = false;
@@ -1591,7 +1591,7 @@ function actionQueries(Activate) {
     } 
     
     document.getElementById('ActionProgress').innerHTML = '<img src="/esp/files/img/loading.gif" style="height:18px;" />';
-    var postBody = '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding" xmlns="http://webservices.seisint.com/ws_roxieconfig"><soap:Body>' + getActionQueries(Activate) + '</soap:Body></soap:Envelope>';
+    var postBody = '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns="http://webservices.seisint.com/ws_roxieconfig"><soap:Body>' + getActionQueries(Activate) + '</soap:Body></soap:Envelope>';
     YAHOO.util.Connect.initHeader("SOAPAction", "ws_roxieconfig/AddAliasesToQueries?ver_=" + WS_ROXIECONFIG_VER);
     YAHOO.util.Connect.initHeader("Content-Type", "text/xml");
     YAHOO.util.Connect._use_default_post_header = false;
@@ -1722,7 +1722,7 @@ function listQueriesUsingFile(SourceDt) {
         var rec = SourceDt.getRecord(rows[0]);
         var FileName = rec.getData('Name');
         document.getElementById('ActionProgress').innerHTML = '<img src="/esp/files/img/loading.gif" style="height:18px;" />';
-        var postBody = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding" xmlns="http://webservices.seisint.com/ws_roxieconfig"><soap:Body><ListQueriesUsingFileRequest><fileName>' + FileName + '</fileName></ListQueriesUsingFileRequest></soap:Body></soap:Envelope>';
+        var postBody = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns="http://webservices.seisint.com/ws_roxieconfig"><soap:Body><ListQueriesUsingFileRequest><fileName>' + FileName + '</fileName></ListQueriesUsingFileRequest></soap:Body></soap:Envelope>';
         YAHOO.util.Connect.initHeader("SOAPAction", "ws_roxieconfig/ListQueriesUsingFile?ver_=" + WS_ROXIECONFIG_VER);
         YAHOO.util.Connect.initHeader("Content-Type", "text/xml");
         YAHOO.util.Connect._use_default_post_header = false;

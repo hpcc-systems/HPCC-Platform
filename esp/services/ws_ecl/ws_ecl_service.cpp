@@ -1588,8 +1588,8 @@ void CWsEclBinding::getSoapMessage(StringBuffer& soapmsg, IEspContext &context, 
 {
     soapmsg.append(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-        "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope\""
-          " xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding\">"
+        "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\""
+          " xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\">"
             " <soap:Body>"
         );
 
@@ -2501,8 +2501,8 @@ void CWsEclBinding::handleHttpPost(CHttpRequest *request, CHttpResponse *respons
         StringBuffer soapfromjson;
         soapfromjson.append(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-            "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope\""
-              " xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding\">"
+            "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\""
+              " xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\">"
                 " <soap:Body>"
             );
         createPTreeFromJsonString(content.str(), false, soapfromjson, "Request");

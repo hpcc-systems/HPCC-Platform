@@ -1090,14 +1090,14 @@ function sendWuInfoRequest() {
 
 function getRoxieConfigRequestEnvelope(QueryName, GraphName)
 {
-    var RoxieConfigSOAPEnvelope = '<?xml version="1.0" encoding="UTF-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding" xmlns="http://webservices.seisint.com/ws_roxieconfig"><soap:Body><ShowGVCGraphRequest><QueryId>%QueryName%</QueryId><GraphName>%GraphName%</GraphName></ShowGVCGraphRequest></soap:Body></soap:Envelope>';
+    var RoxieConfigSOAPEnvelope = '<?xml version="1.0" encoding="UTF-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns="http://webservices.seisint.com/ws_roxieconfig"><soap:Body><ShowGVCGraphRequest><QueryId>%QueryName%</QueryId><GraphName>%GraphName%</GraphName></ShowGVCGraphRequest></soap:Body></soap:Envelope>';
     RoxieConfigSOAPEnvelope = RoxieConfigSOAPEnvelope.replace('%QueryName%', QueryName);
     RoxieConfigSOAPEnvelope = RoxieConfigSOAPEnvelope.replace('%GraphName%', GraphName);
     return RoxieConfigSOAPEnvelope;
 }
 
 function getWsRoxieQueryRequestEnvelope(QueryName, GraphName, Cluster) {
-    var RoxieQuerySOAPEnvelope = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding" xmlns="http://webservices.seisint.com/WsRoxieQuery"><soap:Body><ShowGVCGraphRequest><Cluster>%Cluster%</Cluster><QueryId>%QueryName%</QueryId><GraphName>%GraphName%</GraphName></ShowGVCGraphRequest></soap:Body></soap:Envelope>';
+    var RoxieQuerySOAPEnvelope = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns="http://webservices.seisint.com/WsRoxieQuery"><soap:Body><ShowGVCGraphRequest><Cluster>%Cluster%</Cluster><QueryId>%QueryName%</QueryId><GraphName>%GraphName%</GraphName></ShowGVCGraphRequest></soap:Body></soap:Envelope>';
     RoxieQuerySOAPEnvelope = RoxieQuerySOAPEnvelope.replace('%Cluster%', Cluster);
     RoxieQuerySOAPEnvelope = RoxieQuerySOAPEnvelope.replace('%QueryName%', QueryName);
     RoxieQuerySOAPEnvelope = RoxieQuerySOAPEnvelope.replace('%GraphName%', GraphName);
@@ -1106,7 +1106,7 @@ function getWsRoxieQueryRequestEnvelope(QueryName, GraphName, Cluster) {
 
 function getWsWorkunitsRequestEnvelope(wuid, GraphName, SubGraphId)
 {
-    var WsworkunitsSOAPEnvelope = '<?xml version="1.0" encoding="UTF-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding" xmlns="http://webservices.seisint.com/WsWorkunits"><soap:Body><WUGetGraphRequest><Wuid>%wuid%</Wuid><GraphName>%GraphName%</GraphName><SubGraphId>%SubGraphId%</SubGraphId></WUGetGraphRequest></soap:Body></soap:Envelope>';
+    var WsworkunitsSOAPEnvelope = '<?xml version="1.0" encoding="UTF-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns="http://webservices.seisint.com/WsWorkunits"><soap:Body><WUGetGraphRequest><Wuid>%wuid%</Wuid><GraphName>%GraphName%</GraphName><SubGraphId>%SubGraphId%</SubGraphId></WUGetGraphRequest></soap:Body></soap:Envelope>';
     WsworkunitsSOAPEnvelope = WsworkunitsSOAPEnvelope.replace('%wuid%', wuid);
     WsworkunitsSOAPEnvelope = WsworkunitsSOAPEnvelope.replace('%GraphName%', GraphName);
     WsworkunitsSOAPEnvelope = WsworkunitsSOAPEnvelope.replace('%SubGraphId%', SubGraphId);
@@ -1115,7 +1115,7 @@ function getWsWorkunitsRequestEnvelope(wuid, GraphName, SubGraphId)
 
 function getWuInfoRequestEnvelope(wuid)
 {
-    var WuInfoSOAPEnvelope = '<?xml version="1.0" encoding="UTF-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding" xmlns="http://webservices.seisint.com/WsWorkunits"><soap:Body><WUInfoRequest><Wuid>%wuid%</Wuid><Type></Type><IncludeExceptions>0</IncludeExceptions><IncludeGraphs>1</IncludeGraphs><IncludeSourceFiles>0</IncludeSourceFiles><IncludeResults>0</IncludeResults><IncludeVariables>0</IncludeVariables><IncludeTimers>0</IncludeTimers><IncludeDebugValues>0</IncludeDebugValues><IncludeApplicationValues>0</IncludeApplicationValues><IncludeWorkflows>0</IncludeWorkflows><SuppressResultSchemas>1</SuppressResultSchemas></WUInfoRequest></soap:Body></soap:Envelope>';
+    var WuInfoSOAPEnvelope = '<?xml version="1.0" encoding="UTF-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns="http://webservices.seisint.com/WsWorkunits"><soap:Body><WUInfoRequest><Wuid>%wuid%</Wuid><Type></Type><IncludeExceptions>0</IncludeExceptions><IncludeGraphs>1</IncludeGraphs><IncludeSourceFiles>0</IncludeSourceFiles><IncludeResults>0</IncludeResults><IncludeVariables>0</IncludeVariables><IncludeTimers>0</IncludeTimers><IncludeDebugValues>0</IncludeDebugValues><IncludeApplicationValues>0</IncludeApplicationValues><IncludeWorkflows>0</IncludeWorkflows><SuppressResultSchemas>1</SuppressResultSchemas></WUInfoRequest></soap:Body></soap:Envelope>';
     WuInfoSOAPEnvelope = WuInfoSOAPEnvelope.replace('%wuid%', wuid);
     return WuInfoSOAPEnvelope;
 }

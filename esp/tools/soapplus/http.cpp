@@ -1748,7 +1748,7 @@ int SimpleServer::start()
 
             if(m_response.length() == 0)
             {
-                const char* resp_body = "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding\"><soap:Body></soap:Body></soap:Envelope>";
+                const char* resp_body = "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\"><soap:Body></soap:Body></soap:Envelope>";
                 m_response.append("HTTP/1.1 200 OK\r\n");
                 m_response.append("Content-Type: text/xml; charset=UTF-8\r\n");
                 m_response.appendf("Content-Length: %d\r\n", (int) strlen(resp_body));
