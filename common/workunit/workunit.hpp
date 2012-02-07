@@ -36,6 +36,7 @@
 #include "jiface.hpp"
 #include "errorlist.h"
 #include "jtime.hpp"
+#include "jsocket.hpp"
 
 #define CHEAP_UCHAR_DEF
 #ifdef _WIN32
@@ -549,6 +550,7 @@ interface IConstWUClusterInfo : extends IInterface
     virtual IStringVal & getQuerySetName(IStringVal & str) const = 0;
     virtual IStringVal & getRoxieProcess(IStringVal & str) const = 0;
     virtual const StringArray & getThorProcesses() const = 0;
+    virtual const SocketEndpointArray & getRoxieServers() const = 0;
 };
 
 //! IWorkflowItem

@@ -547,14 +547,15 @@
             }
 
             var publishSuccess = function(o){
-                var i = o.responseText.indexOf('<h3>Exception');
                 var handleOk = function() {
                      this.hide();
                 };
 
                 var exceptionHtml = "Workunit successfully published.";
-
+                var headerText = "Workunit Published";
+                var i = o.responseText.indexOf('<h3>Exception');
                 if (i > -1) {
+                    headerText = "Error Publishing Workunit";
                     var j = o.responseText.indexOf('<table');
                     if (j > -1) {
                         var k = o.responseText.indexOf('</table>');
@@ -562,6 +563,13 @@
                             exceptionHtml = o.responseText.substring(j, k+8);
                         }
                     }
+                } else {
+                  i = o.responseText.indexOf('<ReloadFailed>1');
+                  if (i > -1)
+                  {
+                    headerText = "Error reloading cluster";
+                    exceptionHtml = "Published to Queryset.<br/>But request to update cluster failed.";
+                  }
                 }
                 var publishDialog =
                      new YAHOO.widget.SimpleDialog("publishDialog",
@@ -576,11 +584,7 @@
                         buttons: [ { text:"Ok", handler:handleOk, isDefault:true } ]
                       } );
 
-                if ( i > -1) {
-                    publishDialog.setHeader("Error Publishing Workunit.");
-                } else {
-                    publishDialog.setHeader("Workunit Published.");
-                }
+                publishDialog.setHeader(headerText);
                 publishDialog.render("publishContainer");
                 publishDialog.show();
             };
@@ -602,7 +606,7 @@
                 alert('The workunit must have a jobname to be published. \r\nEnter a jobname, then publish.');
                 return;
               }
-              var cObj = YAHOO.util.Connect.asyncRequest('POST', '/WsWorkunits/WUPublishWorkunit?Wuid=' + wuid + '&JobName=' + Jobname + '&Activate=1', publishCallback);
+              var cObj = YAHOO.util.Connect.asyncRequest('GET', '/WsWorkunits/WUPublishWorkunit?rawxml_&Wuid=' + wuid + '&JobName=' + Jobname + '&Activate=1&Wait=5000', publishCallback);
             }
 
         /*
