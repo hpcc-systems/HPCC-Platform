@@ -400,7 +400,7 @@ bool CppCompiler::compile()
     else if (!onlyCompile)
         ret = doLink();
 
-    if (!saveTemps)
+    if (!saveTemps && !onlyCompile)
     {
         removeTemporaries();
         StringBuffer temp;
