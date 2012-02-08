@@ -59,6 +59,9 @@ extern da_decl void disconnectLogMsgManagerFromDali();
 extern da_decl void connectLogMsgListenerToDali();
 extern da_decl void disconnectLogMsgListenerFromDali();
 
+// initates client session and updates dali pointed to by environment, unless daliIp supplied
+extern da_decl bool updateDaliEnv(IPropertyTree *env, bool updateDaliEnv=false, const char *daliIp=NULL);
+
 
 
 // the class below fills in the Status/Servers branch

@@ -34,7 +34,6 @@ echo $$ > run_thor.lck
 
 export SENTINEL="thor.sentinel"
 while [ 1 ]; do
-    export logpthtail="`date +%m_%d_%Y_%H_%M_%S`"  
     export logpth="$logdir/$logpthtail"
     $deploydir/start_slaves
 
@@ -69,5 +68,5 @@ while [ 1 ]; do
         echo $SENTINEL 'has been removed or thormaster did not fully start - script stopping'
         exit 0
     fi
+    export logpthtail="`date +%m_%d_%Y_%H_%M_%S`"
 done
-

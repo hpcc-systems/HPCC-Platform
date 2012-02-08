@@ -59,63 +59,6 @@ bool supportedInEEOnly()
   throw MakeStringException(-1, "This operation is supported in Enterprise and above editions only. Please contact HPCC Systems at http://www.hpccsystems.com/contactus");
 }
 
-bool updateDaliEnv(IPropertyTree *env)
-{
-  if (!env)
-    return false;
-  const char *s = env->queryName();
-  if (!s||(strcmp(s, XML_TAG_ENVIRONMENT)!=0))
-    throw MakeStringException(-1,"Environment is invalid");
-  Owned<IPropertyTreeIterator> dalis = env->getElements("Software/DaliServerProcess/Instance");
-  if (!dalis||!dalis->first())
-    throw MakeStringException(-1,"Could not find DaliServerProcess in Environment");
-  SocketEndpoint daliep;
-  const char *ps = dalis->get().queryProp("@port");
-  unsigned port = ps?atoi(ps):0;
-  if (!port)
-    port = DALI_SERVER_PORT;
-  daliep.set(dalis->get().queryProp(XML_ATTR_NETADDRESS),port);
-  if (dalis->next())
-    throw MakeStringException(-1,"Ambiguous DaliServerProcess in Environment");
-  if (daliep.isNull())
-    throw MakeStringException(-1,"Could not find DaliServerProcess instance in Environment");
-  SocketEndpointArray epa;
-  epa.append(daliep);
-  Owned<IGroup> group = createIGroup(epa);
-
-  bool ret = initClientProcess(group, DCR_Util, 0, 0, 0, 1000);
-
-  if (!ret)
-  {
-    closedownClientProcess();
-    return ret;
-  }
-
-  try {
-    Owned<IRemoteConnection> conn = querySDS().connect("/",myProcessSession(),0, INFINITE);
-    if (conn) {
-      Owned<IPropertyTree> root = conn->getRoot();
-      Owned<IPropertyTree> child = root->getPropTree(XML_TAG_ENVIRONMENT);
-      if (child.get())
-        root->removeTree(child);
-      root->addPropTree(XML_TAG_ENVIRONMENT,LINK(env));
-      root.clear();
-      conn->commit();
-      conn->close();
-      initClusterGroups();
-    }
-    else
-      throw MakeStringException(-1,"Could not connect to dali root");
-  }
-  catch (IException *) {
-    closedownClientProcess();
-    throw;
-  }
-  closedownClientProcess();
-
-  return true;
-}
-
 void substituteParameters(const IPropertyTree* pEnv, const char *xpath, IPropertyTree* pNode, StringBuffer& result) 
 {
   while (*xpath)
@@ -3145,6 +3088,41 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
       else if (!strcmp(pszCompType, XML_TAG_THORCLUSTER))
       {
         Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xml);
+        IPropertyTree* pTopoNode = pSrcTree->queryPropTree(XML_TAG_TOPOLOGY);
+
+        if (!pTopoNode)
+        {
+          pTopoNode = pSrcTree->addPropTree(XML_TAG_TOPOLOGY, createPTree());
+          IPropertyTree* pMaster = pSrcTree->queryPropTree(XML_TAG_THORMASTERPROCESS);
+
+          if (pMaster)
+          {
+            IPropertyTree* pMasterNode = createPTree(XML_TAG_NODE);
+            pMasterNode->addProp(XML_ATTR_PROCESS, pMaster->queryProp(XML_ATTR_NAME));
+            pTopoNode->addPropTree(XML_TAG_NODE, pMasterNode);
+
+            Owned<IPropertyTreeIterator> iterSlaves = pSrcTree->getElements(XML_TAG_THORSLAVEPROCESS);
+
+            ForEach (*iterSlaves)
+            {
+              IPropertyTree* pSlave = &iterSlaves->query();
+              IPropertyTree* pNode = createPTree(XML_TAG_NODE);
+              pNode->addProp(XML_ATTR_PROCESS, pSlave->queryProp(XML_ATTR_NAME));
+              pMasterNode->addPropTree(XML_TAG_NODE, pNode);
+            }
+          }
+
+          Owned<IPropertyTreeIterator> iterSpares = pSrcTree->getElements(XML_TAG_THORSPAREPROCESS);
+
+          ForEach (*iterSpares)
+          {
+            IPropertyTree* pSpare = &iterSpares->query();
+            IPropertyTree* pNode = createPTree(XML_TAG_NODE);
+            pNode->addProp(XML_ATTR_PROCESS, pSpare->queryProp(XML_ATTR_NAME));
+            pTopoNode->addPropTree(XML_TAG_NODE, pNode);
+          }
+        }
+
         xpath.clear().append("Topology/Node");
         Owned<IPropertyTreeIterator> iterMNodes = pSrcTree->getElements(xpath.str());
 
@@ -5375,14 +5353,16 @@ void CWsDeployFileInfo::saveEnvironment(IEspContext* pContext, IConstWsDeployReq
     m_constEnvRdOnly.setown(factory->loadLocalEnvironment(sXML.str()));
 
     if (valerrs.length())
-      errMsg.appendf("Save operation was successful. However the following exceptions were raised.\n%s", valerrs.str());
+      errMsg.appendf("CWsDeployFileInfo::saveEnvironment:Save operation was successful. However the following exceptions were raised.\n%s", valerrs.str());
   }
   else
   {
     try
     {
       m_Environment->commit();
-      initClusterGroups();
+      StringBuffer response;
+      if (!initClusterGroups(false, response))
+        WARNLOG("CWsDeployFileInfo::saveEnvironment: some groups clash and were not updated : %s", response.str());
     }
     catch (IException* e)
     {

@@ -30,6 +30,7 @@
 #include "jptree.ipp"
 #include "jqueue.tpp"
 #include "dautils.hpp"
+#include "dadfs.hpp"
 
 #define DEBUG_DIR "debug"
 #define DEFAULT_KEEP_LASTN_STORES 1
@@ -1909,6 +1910,7 @@ public:
     virtual IPropertyTreeIterator *getElementsRaw(const char *xpath,INode *remotedali=NULL, unsigned timeout=MP_WAIT_FOREVER);
     virtual void setConfigOpt(const char *opt, const char *value);
     virtual unsigned queryCount(const char *xpath);
+    virtual bool updateEnvironment(IPropertyTree *newEnv, bool forceGroupUpdate, StringBuffer &response);
 
 // ISubscriptionManager impl.
     virtual void add(ISubscription *subs,SubscriptionId id);
@@ -3644,6 +3646,16 @@ int CSDSTransactionServer::run()
                             manager.queryProperties().serialize(mb);
                             break;
                         }
+                        case DAMP_SDSCMD_UPDTENV:
+                        {
+                            Owned<IPropertyTree> newEnv = createPTree(mb);
+                            bool forceGroupUpdate;
+                            mb.read(forceGroupUpdate);
+                            StringBuffer response;
+                            bool result = manager.updateEnvironment(newEnv, forceGroupUpdate, response);
+                            mb.clear().append(DAMP_SDSREPLY_OK).append(result).append(response);
+                            break;
+                        }
                         default:
                             throw MakeSDSException(SDSExcpt_UnrecognisedCommand, "%d", action);
                     }
@@ -5272,7 +5284,7 @@ public:
         {
             unsigned crc = 0;
             StringBuffer tmpStoreName;
-            OwnedIFileIO iFileIOTmpStore = createUniqueFile(location, TMPSAVENAME, tmpStoreName);
+            OwnedIFileIO iFileIOTmpStore = createUniqueFile(location, TMPSAVENAME, NULL, tmpStoreName);
             OwnedIFile iFileTmpStore = createIFile(tmpStoreName);
             try
             {
@@ -7855,6 +7867,33 @@ StringBuffer &CCovenSDSManager::getUsageStats(StringBuffer &out)
     MemoryBuffer mb;
     formatUsageStats(collectUsageStats(mb), out);
     return out;
+}
+
+bool CCovenSDSManager::updateEnvironment(IPropertyTree *newEnv, bool forceGroupUpdate, StringBuffer &response)
+{
+    Owned<IRemoteConnection> conn = querySDS().connect("/",myProcessSession(),0, INFINITE);
+    if (conn)
+    {
+        Owned<IPropertyTree> root = conn->getRoot();
+        Owned<IPropertyTree> child = root->getPropTree("Environment");
+        if (child.get())
+        {
+            StringBuffer bakname;
+            Owned<IFileIO> io = createUniqueFile(NULL, "environment", "bak", bakname);
+            Owned<IFileIOStream> fstream = createBufferedIOStream(io);
+            toXML(child, *fstream);         // formatted (default)
+            root->removeTree(child);
+        }
+        root->addPropTree("Environment", LINK(newEnv));
+        root.clear();
+        conn->commit();
+        conn->close();
+        StringBuffer messages;
+        initClusterGroups(forceGroupUpdate, messages);
+        response.append(messages);
+        PROGLOG("Environment and node groups updated");
+    }
+    return true;
 }
 
 // TODO

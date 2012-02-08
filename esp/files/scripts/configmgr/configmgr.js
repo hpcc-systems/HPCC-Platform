@@ -2356,6 +2356,20 @@ function onMenuItemClickThorTopology(p_sType, p_aArgs, p_oValue) {
   var selRows = dt.getSelectedRows();
   var menuItemName = this.cfg.getProperty("text");
   var record = recSet.getRecord(selRows[0]);
+  var slavesPresent = false;
+  var recSetLen = recSet.getLength();
+  for (var i = 0; i < recSetLen; i++) {
+      var r = recSet.getRecord(i);
+      if (r.getData('process') === 'Slave') {
+        slavesPresent = true;
+        break;
+      }
+  }
+
+  var slavesPerNode = getAttrValFromArr(rows.Attributes, 'slavesPerNode');
+  if (slavesPerNode === "")
+    slavesPerNode = "1";
+
   var type;
   //use 'name' instead of '_key' for complex tables
   var recName = record.getData('name');
@@ -2368,7 +2382,7 @@ function onMenuItemClickThorTopology(p_sType, p_aArgs, p_oValue) {
     type = "Master";
   else if (menuItemName === "Add Spares...")
     type = "Spare";
-  top.document.navDT.promptThorTopology(top.document.navDT, type);
+  top.document.navDT.promptThorTopology(top.document.navDT, type, slavesPresent, slavesPerNode);
 }
 function onContextMenuBeforeShow(p_sType, p_aArgs) {
   if (!this.configContextMenuItems) {
@@ -3148,6 +3162,14 @@ function isPresentInArr(arr, val) {
     return true;
 
   return false;
+}
+
+function getAttrValFromArr(arr, attr) {
+  for (idx = 0; idx < arr.length; idx++)
+    if (arr[idx]['name'] && arr[idx]['value'] && arr[idx]['name'] === attr)
+    return arr[idx]['value'];
+
+  return "";
 }
 
 //only to be called from unload page

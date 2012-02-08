@@ -607,10 +607,10 @@ extern da_decl bool removePhysicalFiles(IGroup *grp,const char *_filemask,unsign
 
 // for server use
 interface IDaliServer;
-extern da_decl IDaliServer *createDaliDFSServer(); // called for coven members
+extern da_decl IDaliServer *createDaliDFSServer(IPropertyTree *config); // called for coven members
 
 // to initialize clustergroups after clusters change in the environment
-extern da_decl void initClusterGroups(unsigned timems=INFINITE);
+extern da_decl bool initClusterGroups(bool force, StringBuffer &response, unsigned timems=INFINITE);
 
 extern da_decl IDistributedFileTransaction *createDistributedFileTransaction(IUserDescriptor *user=NULL);
 
