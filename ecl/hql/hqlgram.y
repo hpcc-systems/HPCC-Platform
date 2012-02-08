@@ -2533,6 +2533,11 @@ actionStmt
                             parser->endList(actions);
                             $$.setExpr(createActionList(actions), $1);
                         }
+    | OUTPUT '(' action ')'
+                        {
+                            parser->reportError(ERR_EXPECTED, $3, "OUTPUT cannot be applied to an action");
+                            $$.inherit($3);
+                        }
     ;
 
 
