@@ -421,7 +421,7 @@ public:
     }
 };
 
-unsigned validateNodes(const SocketEndpointArray &eps,bool chkc,bool chkd,bool chkver,const char *script,unsigned scripttimeout,SocketEndpointArray &failures,UnsignedArray &failedcodes,StringArray &failedmessages, const char *filename)
+unsigned validateNodes(const SocketEndpointArray &eps,const char *dataDir, const char *mirrorDir, bool chkver, const char *script, unsigned scripttimeout, SocketEndpointArray &failures, UnsignedArray &failedcodes, StringArray &failedmessages, const char *filename)
 {
     // used for detecting duff nodes
     PointerIArrayOf<ISocket> sockets;
@@ -449,19 +449,16 @@ unsigned validateNodes(const SocketEndpointArray &eps,bool chkc,bool chkd,bool c
         StringArray &failedmessages;
         UnsignedArray &failedcodes;
         CriticalSection &sect;
-        bool chkc;
-        bool chkd;
+        StringAttr dataDir, mirrorDir;
         bool chkv;
         const char *filename;
         const char *script;
         unsigned scripttimeout;
 public:
-        casyncfor(const SocketEndpointArray &_eps,const PointerIArrayOf<ISocket> &_sockets,bool _chkc,bool _chkd,bool _chkv, const char *_script, unsigned _scripttimeout, const char *_filename,SocketEndpointArray &_failures, StringArray &_failedmessages,UnsignedArray &_failedcodes,CriticalSection &_sect) 
-            : eps(_eps), sockets(_sockets), 
+        casyncfor(const SocketEndpointArray &_eps,const PointerIArrayOf<ISocket> &_sockets,const char *_dataDir,const char *_mirrorDir,bool _chkv, const char *_script, unsigned _scripttimeout, const char *_filename,SocketEndpointArray &_failures, StringArray &_failedmessages,UnsignedArray &_failedcodes,CriticalSection &_sect)
+            : eps(_eps), sockets(_sockets), dataDir(_dataDir), mirrorDir(_mirrorDir),
               failures(_failures), failedmessages(_failedmessages), failedcodes(_failedcodes), sect(_sect)
         { 
-            chkc = _chkc;
-            chkd = _chkd;
             chkv = _chkv;
             filename = _filename;
             script = _script;
@@ -469,9 +466,6 @@ public:
         }
         void Do(unsigned i)
         {
-#ifdef NIGEL_TESTING            
-            IpAddress badip("10.173.34.70");
-#endif
             ISocket *sock = sockets.item(i);
             if (!sock)
                 return;
@@ -519,23 +513,25 @@ public:
                     }
                 }
             }
-            if (!code&&(chkc||chkd)) {
+            if (!code&&(dataDir.get()||mirrorDir.get())) {
                 clientAddSocketToCache(ep,sock);
-                StringBuffer path;
-                if (iswin) 
-                    path.append("c:\\");
-                else
-                    path.append("/c$/");
-                if (filename)
-                    path.append(filename);
-                else {
-                    path.append("dafs_");
-                    genUUID(path);
-                    path.append(".tmp");
-                }
-                for (unsigned drive=chkc?0:1;drive<(chkd?2U:1U);drive++) {
+                const char *drivePath = NULL;
+                const char *drivePaths[2];
+                unsigned drives=0;
+                if (mirrorDir.get()) drivePaths[drives++] = mirrorDir.get();
+                if (dataDir.get()) drivePaths[drives++] = dataDir.get();
+                do
+                {
+                    StringBuffer path(drivePaths[--drives]);
+                    addPathSepChar(path);
+                    if (filename)
+                        path.append(filename);
+                    else {
+                        path.append("dafs_");
+                        genUUID(path);
+                        path.append(".tmp");
+                    }
                     RemoteFilename rfn;
-                    setPathDrive(path,drive);   
                     rfn.setPath(ep,path);
                     Owned<IFile> file = createIFile(rfn);
                     size32_t sz;
@@ -551,9 +547,9 @@ public:
                     }
                     catch (IException *e) {
                         if (e->errorCode()==DISK_FULL_EXCEPTION_CODE)
-                            code |=  (drive?DAFS_VALIDATE_DISK_FULL_C:DAFS_VALIDATE_DISK_FULL_D);
+                            code |=  (drivePath==dataDir.get()?DAFS_VALIDATE_DISK_FULL_DATA:DAFS_VALIDATE_DISK_FULL_MIRROR);
                         else
-                            code |=  (drive?DAFS_VALIDATE_WRITE_FAIL_C:DAFS_VALIDATE_WRITE_FAIL_D);
+                            code |=  (drivePath==dataDir.get()?DAFS_VALIDATE_WRITE_FAIL_DATA:DAFS_VALIDATE_WRITE_FAIL_MIRROR);
                         if (errstr.length())
                             errstr.append(',');
                         e->errorMessage(errstr);
@@ -564,18 +560,14 @@ public:
                         Owned<IFileIO> fileio = file->open(IFOread);
                         char buf[64];
                         size32_t rd = fileio->read(0,sizeof(buf)-1,buf);
-                        if ((rd!=sz)||(memcmp(buf,ds.str(),sz)!=0)
-#ifdef NIGEL_TESTING            
-                            ||(drive&&(badip.ipequals(ep)))
-#endif
-                            ) {
+                        if ((rd!=sz)||(memcmp(buf,ds.str(),sz)!=0)) {
                             StringBuffer s;
                             ep.getIpText(s);
-                            throw MakeStringException(-1,"Data discrepancy on disk read of %c$ of %s",'c'+drive,s.str());
+                            throw MakeStringException(-1,"Data discrepancy on disk read of %s of %s",path.str(),s.str());
                         }
                     }
                     catch (IException *e) {
-                        code |=  (drive?DAFS_VALIDATE_READ_FAIL_C:DAFS_VALIDATE_READ_FAIL_D);
+                        code |=  (drivePath==dataDir.get()?DAFS_VALIDATE_READ_FAIL_DATA:DAFS_VALIDATE_READ_FAIL_MIRROR);
                         if (errstr.length())
                             errstr.append(',');
                         e->errorMessage(errstr);
@@ -590,8 +582,8 @@ public:
                             e->Release();           // supress error
                         }
                     }
-
                 }
+                while (0 != drives);
             }
             if (!code&&scripttimeout) { // use a second thread to implement script timeout
                 Owned<CScriptThread> thread = new CScriptThread(ep,script);
@@ -610,7 +602,7 @@ public:
                 failedmessages.append(errstr.str());
             }
         }
-    } afor(eps,sockets,chkc,chkd,chkver,script,scripttimeout,filename,failures,failedmessages,failedcodes,sect);
+    } afor(eps,sockets,dataDir,mirrorDir,chkver,script,scripttimeout,filename,failures,failedmessages,failedcodes,sect);
     afor.For(eps.ordinality(), 10, false, true);
     return failures.ordinality();
 }

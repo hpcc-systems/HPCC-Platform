@@ -15,16 +15,38 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-# component: swapnode,swapnodelib
-
+# Component: swapnodelib
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File swapnode and swapnodelib
+#    Cmake Input File for swapnodelib
 #####################################################
 
+project( swapnodelib )
 
-project (AllProjects)
+set (    SRCS
+         swapnodelib.cpp
+    )
 
-include ( ${CMAKE_CURRENT_SOURCE_DIR}/swapnode.cmake)
-include ( ${CMAKE_CURRENT_SOURCE_DIR}/swapnodelib.cmake)
+include_directories (
+         ./../../common/remote
+         ./../../system/mp
+         ./../../system/include
+         ./../../dali/base
+         ./../../system/jlib
+         ./../../common/environment
+         ./../../common/workunit
+    )
+
+HPCC_ADD_LIBRARY( swapnodelib SHARED ${SRCS} )
+set_target_properties(swapnodelib PROPERTIES
+    COMPILE_FLAGS -D_USRDLL
+    DEFINE_SYMBOL SWAPNODELIB_EXPORTS )
+install ( TARGETS swapnodelib DESTINATION ${OSSDIR}/lib )
+target_link_libraries ( swapnodelib
+         jlib
+         remote
+         dalibase
+         workunit
+         environment
+    )
