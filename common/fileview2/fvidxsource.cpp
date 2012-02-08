@@ -416,6 +416,26 @@ bool IndexDataSource::addFilter(unsigned column, unsigned matchLen, unsigned siz
             }
             break;
         }
+    case type_unicode:
+        {
+            const char * inbuff = (const char *)data;
+            unsigned lenData = sizeData / sizeof(UChar);
+            unsigned lenField = cur.getStringLen();
+            if (matchLen != FullStringMatch)
+            {
+                unsigned lenLow, lenHigh;
+                rtlCreateUnicodeRangeLow(lenLow, tempLow.refustr(), lenField, matchLen, lenData, (const UChar *)inbuff);
+                rtlCreateUnicodeRangeHigh(lenHigh, tempHigh.refustr(), lenField, matchLen, lenData, (const UChar *)inbuff);
+                low = tempLow.getdata();
+                high = tempHigh.getdata();
+            }
+            else
+            {
+                rtlUnicodeToUnicode(lenField, (UChar *)temp, lenData, (const UChar *)data);
+                low = high = temp;
+            }
+            break;
+        }
     default:
         assertex(sizeData == curSize);
         break;
