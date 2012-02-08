@@ -66,9 +66,6 @@
     <File name="thor.xsl" method="xslt" destName="thor.xml"/>
     <File name="setvars_linux.xsl" method="xslt" destName="setvars"/>
   </Component>
-  <Component name="ecldirect" processName='EspService' schema='esp_service_ecldirect.xsd' deployable='no'>
-    <File name="@temp/esp_service_ecldirect.xsl" method="esp_service_module"/>
-  </Component>
   <Component name="esp_wubilling" processName='EspService' schema='esp_service_wubilling.xsd' deployable='no'>
     <File name="@temp/esp_service_wubilling.xsl" method="esp_service_module"/>
   </Component>

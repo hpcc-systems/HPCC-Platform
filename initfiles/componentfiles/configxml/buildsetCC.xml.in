@@ -400,29 +400,6 @@
                              service="ws_ecl"/>
       </Properties>
     </BuildSet>
-   <BuildSet deployable="no"
-             installSet="deploy_map.xml"
-             name="ecldirect"
-             path="componentfiles/ecldirect"
-             processName="EspService"
-             schema="esp_service_ecldirect.xsd">
-    <Properties bindingType="EclDirectSoapBinding"
-                defaultPort="8008"
-                defaultResourcesBasedn="ou=EclDirectAccess,ou=EspServices,ou=ecl"
-                defaultSecurePort="18008"
-                plugin="ecldirect"
-                type="ecldirect">
-     <Authenticate access="Read"
-                   description="Root access to ECL Direct service"
-                   path="/"
-                   required="Read"
-                   resource="EclDirectAccess"/>
-     <AuthenticateFeature description="Access to ECL Direct service"
-                          path="EclDirectAccess"
-                          resource="EclDirectAccess"
-                          service="ecldirect"/>
-    </Properties>
-   </BuildSet>
   </Build>
 </Programs>
 </Environment>
