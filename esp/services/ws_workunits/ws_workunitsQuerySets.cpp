@@ -316,21 +316,20 @@ void checkRoxieControlExceptions(IPropertyTree *msg)
         throw me.getClear();
 }
 
-static inline unsigned waitSeconds(unsigned wait)
+static inline unsigned waitMsToSeconds(unsigned wait)
 {
     if (wait==0 || wait==(unsigned)-1)
         return wait;
     return wait/1000;
 }
 
-IPropertyTree *sendRoxieControlQuery(const SocketEndpoint &ep, const StringBuffer &msg, unsigned wait)
+IPropertyTree *sendRoxieControlQuery(ISocket *sock, const char *msg, unsigned wait)
 {
-    Owned<ISocket> sock = ISocket::connect_timeout(ep, wait);
-
-    size32_t len = msg.length();
+    size32_t msglen = strlen(msg);
+    size32_t len = msglen;
     _WINREV(len);
     sock->write(&len, sizeof(len));
-    sock->write(msg.str(), msg.length());
+    sock->write(msg, msglen);
 
     StringBuffer resp;
     loop
@@ -340,7 +339,7 @@ IPropertyTree *sendRoxieControlQuery(const SocketEndpoint &ep, const StringBuffe
             break;
         _WINREV(len);
         size32_t size_read;
-        sock->read(resp.reserveTruncate(len), len, len, size_read, waitSeconds(wait));
+        sock->read(resp.reserveTruncate(len), len, len, size_read, waitMsToSeconds(wait));
         if (size_read<len)
             throw MakeStringException(ECLWATCH_CONTROL_QUERY_FAILED, "Error reading roxie control message response");
     }
@@ -348,6 +347,41 @@ IPropertyTree *sendRoxieControlQuery(const SocketEndpoint &ep, const StringBuffe
     Owned<IPropertyTree> ret = createPTreeFromXMLString(resp.str());
     checkRoxieControlExceptions(ret);
     return ret.getClear();
+}
+
+bool sendRoxieControlLock(ISocket *sock, bool allOrNothing, unsigned wait)
+{
+    Owned<IPropertyTree> resp = sendRoxieControlQuery(sock, "<control:lock/>", wait);
+    if (allOrNothing)
+    {
+        int lockCount = resp->getPropInt("Lock", 0);
+        int serverCount = resp->getPropInt("NumServers", 0);
+        return (lockCount && (lockCount == serverCount));
+    }
+
+    return resp->getPropInt("Lock", 0) != 0;
+}
+
+static inline unsigned remainingMsWait(unsigned wait, unsigned start)
+{
+    if (wait==0 || wait==(unsigned)-1)
+        return wait;
+    unsigned waited = msTick()-start;
+    return (wait>waited) ? wait-waited : 0;
+}
+
+IPropertyTree *sendRoxieControlAllNodes(ISocket *sock, const char *msg, bool allOrNothing, unsigned wait)
+{
+    unsigned start = msTick();
+    if (!sendRoxieControlLock(sock, allOrNothing, wait))
+        throw MakeStringException(ECLWATCH_CONTROL_QUERY_FAILED, "Roxie control:lock failed");
+    return sendRoxieControlQuery(sock, msg, remainingMsWait(wait, start));
+}
+
+IPropertyTree *sendRoxieControlAllNodes(const SocketEndpoint &ep, const char *msg, bool allOrNothing, unsigned wait)
+{
+    Owned<ISocket> sock = ISocket::connect_timeout(ep, wait);
+    return sendRoxieControlAllNodes(sock, msg, allOrNothing, wait);
 }
 
 
@@ -411,10 +445,9 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
         const SocketEndpointArray &addrs = clusterInfo->getRoxieServers();
         if (addrs.length())
         {
-            StringBuffer msg("<control:reload/>");
             try
             {
-                Owned<IPropertyTree> result = sendRoxieControlQuery(addrs.item(0), msg, (unsigned) req.getWait());
+                Owned<IPropertyTree> result = sendRoxieControlAllNodes(addrs.item(0), "<control:reload/>", false, (unsigned) req.getWait());
                 const char *status = result->queryProp("Endpoint[1]/Status");
                 if (!status || !strieq(status, "ok"))
                     resp.setReloadFailed(true);
