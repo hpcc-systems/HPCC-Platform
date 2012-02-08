@@ -288,7 +288,10 @@ CActivityBase *createHashJoinActivityMaster(CMasterGraphElement *container)
 
 CActivityBase *createHashAggregateActivityMaster(CMasterGraphElement *container)
 {
-    return new HashDistributeActivityMaster(DM_groupaggregate, container);      
+    if (container->queryLocalOrGrouped())
+        return new CMasterActivity(container);
+    else
+        return new HashDistributeActivityMaster(DM_groupaggregate, container);      
 }
 
 CActivityBase *createKeyedDistributeActivityMaster(CMasterGraphElement *container)
