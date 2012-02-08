@@ -298,6 +298,59 @@ bool CWsWorkunitsEx::onWUCopyLogicalFiles(IEspContext &context, IEspWUCopyLogica
     return true;
 }
 
+void checkRoxieControlExceptions(IPropertyTree *msg)
+{
+    Owned<IMultiException> me = MakeMultiException();
+    Owned<IPropertyTreeIterator> endpoints = msg->getElements("Endpoint");
+    ForEach(*endpoints)
+    {
+        IPropertyTree &endp = endpoints->query();
+        Owned<IPropertyTreeIterator> exceptions = endp.getElements("Exception");
+        ForEach (*exceptions)
+        {
+            IPropertyTree &ex = exceptions->query();
+            me->append(*MakeStringException(ex.getPropInt("Code"), "Endpoint %s: %s", endp.queryProp("@ep"), ex.queryProp("Message")));
+        }
+    }
+    if (me->ordinality())
+        throw me.getClear();
+}
+
+static inline unsigned waitSeconds(unsigned wait)
+{
+    if (wait==0 || wait==(unsigned)-1)
+        return wait;
+    return wait/1000;
+}
+
+IPropertyTree *sendRoxieControlQuery(const SocketEndpoint &ep, const StringBuffer &msg, unsigned wait)
+{
+    Owned<ISocket> sock = ISocket::connect_timeout(ep, wait);
+
+    size32_t len = msg.length();
+    _WINREV(len);
+    sock->write(&len, sizeof(len));
+    sock->write(msg.str(), msg.length());
+
+    StringBuffer resp;
+    loop
+    {
+        sock->read(&len, sizeof(len));
+        if (!len)
+            break;
+        _WINREV(len);
+        size32_t size_read;
+        sock->read(resp.reserveTruncate(len), len, len, size_read, waitSeconds(wait));
+        if (size_read<len)
+            throw MakeStringException(ECLWATCH_CONTROL_QUERY_FAILED, "Error reading roxie control message response");
+    }
+
+    Owned<IPropertyTree> ret = createPTreeFromXMLString(resp.str());
+    checkRoxieControlExceptions(ret);
+    return ret.getClear();
+}
+
+
 bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWorkunitRequest & req, IEspWUPublishWorkunitResponse & resp)
 {
     if (isEmpty(req.getWuid()))
@@ -344,12 +397,43 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
         resp.setQueryId(queryId.str());
     resp.setQueryName(queryName.str());
     resp.setQuerySet(queryset.str());
+    resp.setReloadFailed(false);
 
     if (req.getCopyLocal() || req.getShowFiles())
     {
         IArrayOf<IConstWUCopyLogicalClusterFileSections> clusterfiles;
         copyWULogicalFilesToTarget(context, *clusterInfo, *cw, clusterfiles, req.getCopyLocal());
         resp.setClusterFiles(clusterfiles);
+    }
+
+    if (clusterInfo->getPlatform()==RoxieCluster)
+    {
+        const SocketEndpointArray &addrs = clusterInfo->getRoxieServers();
+        if (addrs.length())
+        {
+            StringBuffer msg("<control:reload/>");
+            try
+            {
+                Owned<IPropertyTree> result = sendRoxieControlQuery(addrs.item(0), msg, (unsigned) req.getWait());
+                const char *status = result->queryProp("Endpoint[1]/Status");
+                if (!status || !strieq(status, "ok"))
+                    resp.setReloadFailed(true);
+            }
+            catch(IMultiException *me)
+            {
+                resp.setReloadFailed(true);
+                StringBuffer err;
+                DBGLOG("ERROR control:reloading roxie query info %s", me->errorMessage(err.append(me->errorCode()).append(' ')).str());
+                me->Release();
+            }
+            catch(IException *e)
+            {
+                resp.setReloadFailed(true);
+                StringBuffer err;
+                DBGLOG("ERROR control:reloading roxie query info %s", e->errorMessage(err.append(e->errorCode()).append(' ')).str());
+                e->Release();
+            }
+        }
     }
 
     return true;

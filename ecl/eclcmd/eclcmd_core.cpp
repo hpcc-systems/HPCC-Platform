@@ -187,7 +187,7 @@ private:
 class EclCmdPublish : public EclCmdWithEclTarget
 {
 public:
-    EclCmdPublish() : optActivate(false), activateSet(false)
+    EclCmdPublish() : optActivate(false), activateSet(false), optMsToWait(10000)
     {
         optObj.accept = eclObjWuid | eclObjArchive | eclObjSharedObject;
     }
@@ -206,6 +206,8 @@ public:
             if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
                 continue;
             if (iter.matchOption(optCluster, ECLOPT_CLUSTER)||iter.matchOption(optCluster, ECLOPT_CLUSTER_S))
+                continue;
+            if (iter.matchOption(optCluster, ECLOPT_WAIT))
                 continue;
             if (iter.matchFlag(optActivate, ECLOPT_ACTIVATE)||iter.matchFlag(optActivate, ECLOPT_ACTIVATE_S))
             {
@@ -268,16 +270,20 @@ public:
             req->setJobName(optName.get());
         if (optCluster.length())
             req->setCluster(optCluster.get());
+        req->setWait(optMsToWait);
 
         Owned<IClientWUPublishWorkunitResponse> resp = client->WUPublishWorkunit(req);
-        if (resp->getExceptions().ordinality())
-            outputMultiExceptions(resp->getExceptions());
         const char *id = resp->getQueryId();
         if (id && *id)
         {
             const char *qs = resp->getQuerySet();
             fprintf(stdout, "\n%s/%s\n", qs ? qs : "", resp->getQueryId());
         }
+        if (resp->getReloadFailed())
+            fputs("\nAdded to Queryset, but request to reload queries on cluster failed\n", stderr);
+
+        if (resp->getExceptions().ordinality())
+            outputMultiExceptions(resp->getExceptions());
 
         return 0;
     }
@@ -286,7 +292,7 @@ public:
         fprintf(stdout,"\nUsage:\n\n"
             "ecl publish [--cluster=<val>] [--name=<val>] [--activate] <wuid>\n"
             "ecl publish [--cluster=<val>] [--name=<val>] [--activate] <so|dll|->\n"
-            "ecl publish --cluster=<val> --name=<val> [--activate] <archive|->\n\n"
+            "ecl publish --cluster=<val> --name=<val> [--activate] <archive|->\n"
             "ecl publish --cluster=<val> --name=<val> [--activate] <ecl_file|->\n\n"
             "   -                      specifies object should be read from stdin\n"
             "   <wuid>                 workunit to publish\n"
@@ -298,12 +304,14 @@ public:
             "                          (defaults to cluster defined inside workunit)\n"
             "   -n, --name=<val>       query name to use for published workunit\n"
             "   -A, --activate         activates query when published\n"
+            "   --wait=<ms>            maximum time to wait for cluster finish updating\n"
         );
         EclCmdWithEclTarget::usage();
     }
 private:
     StringAttr optCluster;
     StringAttr optName;
+    int optMsToWait;
     bool optActivate;
     bool activateSet;
 };
