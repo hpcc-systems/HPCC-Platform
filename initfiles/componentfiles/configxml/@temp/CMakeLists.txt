@@ -16,7 +16,6 @@
 ################################################################################
 
 FOREACH ( iFILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_ecldirect.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/wsecl_onchange.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wsecl.xsl

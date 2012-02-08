@@ -345,29 +345,6 @@
                           service="ws_ecl"/>
     </Properties>
    </BuildSet>
-   <BuildSet deployable="no"
-             installSet="deploy_map.xml"
-             name="ecldirect"
-             path="componentfiles/ecldirect"
-             processName="EspService"
-             schema="esp_service_ecldirect.xsd">
-    <Properties bindingType="EclDirectSoapBinding"
-                defaultPort="8008"
-                defaultResourcesBasedn="ou=EclDirectAccess,ou=EspServices,ou=ecl"
-                defaultSecurePort="18008"
-                plugin="ecldirect"
-                type="ecldirect">
-     <Authenticate access="Read"
-                   description="Root access to ECL Direct service"
-                   path="/"
-                   required="Read"
-                   resource="EclDirectAccess"/>
-     <AuthenticateFeature description="Access to ECL Direct service"
-                          path="EclDirectAccess"
-                          resource="EclDirectAccess"
-                          service="ecldirect"/>
-    </Properties>
-   </BuildSet>
   </Build>
  </Programs>
  <Software>
@@ -624,26 +601,6 @@
                          resource="WsEclAccess"
                          service="ws_ecl"/>
    </EspBinding>
-   <EspBinding defaultForPort="true"
-               defaultServiceVersion=""
-               name="ecldirect"
-               port="8008"
-               protocol="http"
-               resourcesBasedn="ou=EclDirectAccess,ou=EspServices,ou=ecl"
-               service="ecldirect"
-               workunitsBasedn="ou=workunits,ou=ecl"
-               wsdlServiceAddress="">
-    <Authenticate access="Read"
-                  description="Root access to ECL Direct service"
-                  path="/"
-                  required="Read"
-                  resource="EclDirectAccess"/>
-    <AuthenticateFeature authenticate="Yes"
-                         description="Access to ECL Direct service"
-                         path="EclDirectAccess"
-                         resource="EclDirectAccess"
-                         service="ecldirect"/>
-   </EspBinding>
    <HTTPS acceptSelfSigned="true"
           CA_Certificates_Path="ca.pem"
           certificateFileName="certificate.cer"
@@ -888,28 +845,6 @@
                          path="WsEclAccess"
                          resource="WsEclAccess"
                          service="ws_ecl"/>
-   </Properties>
-  </EspService>
-  <EspService build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
-              buildSet="ecldirect"
-              clusterName="hthor"
-              description="ESP service for running raw ECL queries"
-              name="ecldirect">
-   <Properties bindingType="EclDirectSoapBinding"
-               defaultPort="8008"
-               defaultResourcesBasedn="ou=EclDirectAccess,ou=EspServices,ou=ecl"
-               defaultSecurePort="18008"
-               plugin="ecldirect"
-               type="ecldirect">
-    <Authenticate access="Read"
-                  description="Root access to ECL Direct service"
-                  path="/"
-                  required="Read"
-                  resource="EclDirectAccess"/>
-    <AuthenticateFeature description="Access to ECL Direct service"
-                         path="EclDirectAccess"
-                         resource="EclDirectAccess"
-                         service="ecldirect"/>
    </Properties>
   </EspService>
   <FTSlaveProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
