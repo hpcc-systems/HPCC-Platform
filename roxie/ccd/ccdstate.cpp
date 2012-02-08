@@ -873,7 +873,11 @@ public:
         for (elems.first(); elems.isValid(); elems.next())
         {
             IMapping &cur = elems.query();
-            reply.appendf(" <Query id='%s'/>\n", queries.mapToValue(&cur)->queryQueryName());
+            IQueryFactory *query = queries.mapToValue(&cur);
+            reply.appendf(" <Query id='%s'", query->queryQueryName());
+            if (query->suspended())
+                reply.append(" suspended='1'");
+            reply.append("/>\n");
         }
         HashIterator aliasIterator(aliases);
         for (aliasIterator.first(); aliasIterator.isValid(); aliasIterator.next())
