@@ -2368,18 +2368,6 @@ public:
         }
     }
 
-    // FIXME: This is a hack. All calls to lockProperties should be followed
-    // by a subsequent unlockProperties. REMOVE this method and fix the problems
-    // where they're broken.
-    void clearLockedProperties()
-    {
-        // assumes committed
-        if (proplockcount) {
-            proplockcount = 1;
-            unlockProperties();
-        }
-    }
-
     bool getModificationTime(CDateTime &dt)
     {
         StringBuffer str;
@@ -2772,7 +2760,7 @@ public:
 
     ~CDistributedFile()
     {
-        clearLockedProperties();    // there actually shouldn't be any!
+        assert(proplockcount == 0 && "CDistributedFile destructor: Some properties are still locked");
         if (conn)
             conn->rollback();       // changes should always be done in locked properties
         killParts();
@@ -3236,7 +3224,7 @@ public:
     void detach(IDistributedFileTransaction *transaction)
     {
         assertex(!transaction); 
-        clearLockedProperties();    // there actually shouldn't be any!
+        assert(proplockcount == 0 && "CDistributedFile detach: Some properties are still locked");
         CriticalBlock block (sect);
         assertex(!isAnon()); // not attached!
         MemoryBuffer mb;
