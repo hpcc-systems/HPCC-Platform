@@ -2586,6 +2586,7 @@ void CColumnFilter::addValue(unsigned sizeText, const char * text)
         }
     case type_unicode:
         {
+            if (lenText > subLen) lenText = subLen;
             UChar * target = (UChar *)next->allocate(lenText*2);
             rtlUtf8ToUnicode(lenText, target, lenText, text);
             break;
