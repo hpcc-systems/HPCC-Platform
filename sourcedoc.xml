@@ -229,6 +229,29 @@
                     the HPCC platform up and running to execute them.
                 </para>
                 <para>
+                    In order for the regression suite to work, there are perl modules that need to be installed as well.  The easiest method is via cpan.
+                    The list of perl modules:
+
+                    Config::Simple        (Required)
+                    Cwd                   (Required)
+                    Exporter              (Required)
+                    File::Compare         (Required)
+                    File::Copy            (Required)
+                    File::Path            (Required)
+                    File::Spec::Functions (Required)
+                    Getopt::Long          (Required)
+                    IPC::Run              (Required)
+                    Pod::Usage            (Required)
+                    POSIX                 (Required - However, this is typically installed by default)
+                    Text::Diff            (Required by the Diff and DiffFull report types)
+                    HTML::Entities        (Required by the HTML report type)
+                    Text::Diff::HTML      (Required by the HTML report type)
+                    Template              (Required by the HTML report type)
+                    Term::Prompt          (Required if you do not specify a password in the configuration file)
+                    Sys::Hostname         (Recommended: if available, and it can find the hostname, the hostname will be logged)
+                    Text::Wrap            (Optional: if available, makes output of -listreports neater)
+                </para>
+                <para>
                     Step 1: Configure your regression suites. This only need to be done once.
                     <programlisting>./runregress -ini=environment.xml</programlisting>
                     The file 'environment.xml' is normally located in your '/etc/HPCCPlatform'
