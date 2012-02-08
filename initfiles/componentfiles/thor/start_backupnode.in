@@ -96,21 +96,21 @@ LOGDATE=`date +%m_%d_%Y_%H_%M_%S`
 LOGFILE="$LOGPATH/$LOGDATE".log
 mkdir -p `dirname $LOGFILE` 
 
-$DEPLOY_DIR/backupnode -O $DALISERVER $NODEGROUP $BACKUPNODE_DATA 2>&1 >> $LOGFILE
+$DEPLOY_DIR/backupnode -O $DALISERVER $NODEGROUP $BACKUPNODE_DATA >> $LOGFILE 2>&1
 if [ $? -ne 0 ]; then
   echo Backupnode failed - see $LOGFILE
   exit 1
 fi
 
-frunssh $INSTANCE_DIR/slaves "killall backupnode" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -b 2>&1 >> $LOGFILE
-frunssh $INSTANCE_DIR/slaves "/bin/sh -c 'mkdir -p `dirname $LOGPATH/${LOGDATE}_node%n.log`; mkdir -p $INSTANCE_DIR; $DEPLOY_DIR/backupnode -T -X $BACKUPNODE_REMOTEDATA $INSTANCE_DIR/slaves %n $2 > $LOGPATH/${LOGDATE}_node%n.log'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -b 2>&1 >> $LOGFILE
+frunssh $INSTANCE_DIR/slaves "killall backupnode" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -b >> $LOGFILE 2>&1
+frunssh $INSTANCE_DIR/slaves "/bin/sh -c 'mkdir -p `dirname $LOGPATH/${LOGDATE}_node%n.log`; mkdir -p $INSTANCE_DIR; $DEPLOY_DIR/backupnode -T -X $BACKUPNODE_REMOTEDATA $INSTANCE_DIR/slaves %n $2 > $LOGPATH/${LOGDATE}_node%n.log'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -b >> $LOGFILE 2>&1
 
 echo ------------------------------
 sleep 5
 echo ------------------------------
 echo Waiting for backup to complete
 
-nohup backupnode -W $INSTANCE_DIR/slaves $BACKUPNODE_DATA 2>&1 >> $LOGFILE &
+nohup backupnode -W $INSTANCE_DIR/slaves $BACKUPNODE_DATA >> $LOGFILE 2>&1 &
 pid=`${PIDOF} backupnode`
 trap "echo start_backupnode exiting, backupnode process $pid still continuing; exit 0" 2
 if [ -n "$pid" ]; then
