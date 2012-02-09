@@ -585,7 +585,7 @@ extern jlib_decl void extractBlobElements(const char * prefix, const RemoteFilen
 extern jlib_decl bool mountDrive(const char *drv,const RemoteFilename &rfn); // linux only currently
 extern jlib_decl bool unmountDrive(const char *drv); // linux only currently
 
-extern jlib_decl IFileIO *createUniqueFile(const char *dir, const char *prefix, StringBuffer &tmpName);
+extern jlib_decl IFileIO *createUniqueFile(const char *dir, const char *prefix, const char *ext, StringBuffer &tmpName);
 
 
 // used by remote copy

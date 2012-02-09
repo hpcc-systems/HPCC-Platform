@@ -737,7 +737,7 @@ public:
                     transaction->commit();
                 }
             }
-        } catch (IException *e) {
+        } catch (IException *) {
             // TODO: DFS transaction could take care of it
             if (newfile)
                 queryDistributedFileDirectory().removeEntry(superfname,user);

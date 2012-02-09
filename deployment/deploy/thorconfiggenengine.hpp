@@ -35,10 +35,6 @@ public:
 
 protected:
    void check();
-   virtual void copyInstallFiles(IPropertyTree& instanceNode, const char* destPath);
-
-private:
-   void writeComputerFile(const char* type, const char* filename, EnvMachineOS os=MachineOsUnknown);
 };
 //---------------------------------------------------------------------------
 #endif // THORCONFIGGENENGINE_HPP_INCL

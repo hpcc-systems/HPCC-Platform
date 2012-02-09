@@ -42,23 +42,9 @@
 static void usage(const char *exe)
 {
     printf("Update dali with environment.xml changes:\n");
-    printf("  %s <environment-xml-file>\n", exe);
-    printf("  %s <environment-xml-file> -i <dali-ip>\n", exe);
+    printf("  %s <environment-xml-file> [-i <dali-ip>] [-f]\n", exe);
     printf("Retrieve directory information:\n"); 
     printf("  %s <environment-xml-file> -d category component instance [-ip ip]\n", exe);
-}
-
-static void getBackSuffix(StringBuffer &out)
-{
-    out.append("environment_");
-    CDateTime dt;
-    dt.setNow();
-    dt.getString(out);
-    unsigned i;
-    for (i=0;i<out.length();i++)
-        if (out.charAt(i)==':')
-            out.setCharAt(i,'_');
-    out.append(".bak");
 }
 
 
@@ -71,6 +57,7 @@ int main(int argc, char* argv[])
         usage(argv[0]);
         return -1;
     }
+    bool forceGroupUpdate = false;
     StringBuffer filename;
     StringBuffer inst;
     StringBuffer dcat;
@@ -81,6 +68,9 @@ int main(int argc, char* argv[])
         if (argv[i][0]=='-') {
             if ((stricmp(argv[i],"-i")==0)&&(i+1<argc)) {
                 inst.append(argv[++i]);
+            }
+            else if (0==stricmp(argv[i],"-f")) {
+                forceGroupUpdate = true;
             }
             else if ((stricmp(argv[i],"-d")==0)&&(i+3<argc)) {
                 dcat.append(argv[++i]);
@@ -142,69 +132,8 @@ int main(int argc, char* argv[])
             }
         }
         else {
-            Owned<IPropertyTreeIterator> dalis = env->getElements("Software/DaliServerProcess/Instance");
-            if (!dalis||!dalis->first()) {
-                fprintf(stderr,"Could not find DaliServerProcess in %s\n",argv[1]);
-                return 1;
-            }
-            SocketEndpoint daliep;
-            loop {
-                const char *ps = dalis->get().queryProp("@port");
-                unsigned port = ps?atoi(ps):0;
-                if (!port)
-                    port = DALI_SERVER_PORT;
-                daliep.set(dalis->get().queryProp("@netAddress"),port);
-                if (inst.length()) {
-                    SocketEndpoint testep;
-                    testep.set(inst.str(),DALI_SERVER_PORT);
-                    if (testep.equals(daliep))
-                        break;
-                    daliep.set(NULL,0);
-                }   
-                if (!dalis->next())
-                    break;
-                if (!daliep.isNull()) {
-                    fprintf(stderr,"Ambiguous DaliServerProcess instance in %s\n",argv[1]);
-                    return 1;
-                }
-            }
-            if (daliep.isNull()) {
-                fprintf(stderr,"Could not find DaliServerProcess instance in %s\n",argv[1]);
-                return 1;
-            }
-            SocketEndpointArray epa;
-            epa.append(daliep);
-            Owned<IGroup> group = createIGroup(epa);
-
-
-            initClientProcess(group, DCR_Util);
-            Owned<IRemoteConnection> conn = querySDS().connect("/",myProcessSession(),0, INFINITE);
-            if (conn) {
-                Owned<IPropertyTree> root = conn->getRoot();
-                Owned<IPropertyTree> child = root->getPropTree("Environment");
-                if (child.get()) {
-                    StringBuffer bakname;
-                    getBackSuffix(bakname);
-                    Owned<IFile> f = createIFile(bakname.str());
-                    Owned<IFileIO> io = f->open(IFOcreate);
-                    Owned<IFileIOStream> fstream = createBufferedIOStream(io);
-                    toXML(child, *fstream);         // formatted (default)
-                    root->removeTree(child);
-                }
-                root->addPropTree("Environment",env.getClear());
-                root.clear();
-                conn->commit();
-                conn->close();
-                initClusterGroups();
-                StringBuffer tmp;
-                printf("Environment and node groups updated in dali at %s",daliep.getUrlStr(tmp).str());
-            }
-            else {
-                fprintf(stderr,"Could not connect to /\n");
+            if (!updateDaliEnv(env, forceGroupUpdate, inst.str()))
                 ret = 1;
-            }
-
-            closedownClientProcess();
         }
     }
     catch (IException *e) {

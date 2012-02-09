@@ -42,39 +42,3 @@ void CThorDeploymentEngine::check()
    if (!dali || !*dali )
       throw MakeStringException(0, "No dali server is defined for thor %s", m_process.queryProp("@name"));
 }
-
-
-//---------------------------------------------------------------------------
-// copyInstallFiles
-//---------------------------------------------------------------------------
-void CThorDeploymentEngine::copyInstallFiles(IPropertyTree& instanceNode, const char* destPath)
-{
-   // Copy install files
-   CDeploymentEngine::copyInstallFiles(instanceNode, destPath);
-
-   EnvMachineOS os = m_envDepEngine.lookupMachineOS(instanceNode);
-
-   if (!m_compare)
-      ensurePath(destPath);
-
-   // Create slaves and spares files
-   writeComputerFile("./ThorSlaveProcess", StringBuffer(destPath).append("slaves").str(), os);
-   writeComputerFile("./ThorSpareProcess", StringBuffer(destPath).append("spares").str(), os);
-}
-
-
-//---------------------------------------------------------------------------
-// writeComputerFile
-//---------------------------------------------------------------------------
-void CThorDeploymentEngine::writeComputerFile(const char* type, const char* filename, EnvMachineOS os/*=MachineOsUnknown*/)
-{
-   StringBuffer str;
-   Owned<IPropertyTreeIterator> iter = m_process.getElements(type);
-    for(iter->first(); iter->isValid(); iter->next())
-    {
-        StringAttr netAddress;
-      if (m_envDepEngine.lookupNetAddress(netAddress, iter->query().queryProp("@computer")).length() > 0)
-         str.appendf("%s\n", netAddress.get());
-    }
-   writeFile(filename, str.str(), os);
-}
