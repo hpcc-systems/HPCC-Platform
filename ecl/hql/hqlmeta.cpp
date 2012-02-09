@@ -446,7 +446,10 @@ IHqlExpression * getLocalSortOrder(ITypeInfo * type)
     else
         components.pop();
     if (components.ordinality())
+    {
+        removeDuplicates(components);
         return createValue(no_sortlist, makeSortListType(NULL), components);
+    }
     return NULL;
 }
 
