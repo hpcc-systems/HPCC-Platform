@@ -1048,6 +1048,21 @@ static bool sortComponentMatches(IHqlExpression * curNew, IHqlExpression * curEx
 }
 
 
+static bool isCorrectDistributionForSort(IHqlExpression * dataset, IHqlExpression * normalizedSortOrder, bool isLocal, bool ignoreGrouping)
+{
+    if (isLocal || (isGrouped(dataset) && !ignoreGrouping))
+        return true;
+    IHqlExpression * distribution = queryDistribution(dataset);
+    if (!isSortDistribution(distribution))
+        return false;
+    IHqlExpression * previousOrder = distribution->queryChild(0);           // Already normalized when it was created.
+    //MORE: We should possibly loosen this test to allow compatible casts etc.
+    //return isCompatibleSortOrder(existingOrder, normalizedSortOrder)
+    return (previousOrder == normalizedSortOrder);
+}
+
+//--------------------------------------------------------------------------------------------------------------------
+
 static bool isCompatibleSortOrder(IHqlExpression * existingOrder, IHqlExpression * normalizedOrder)
 {
     if (normalizedOrder->numChildren() == 0)
@@ -1062,19 +1077,6 @@ static bool isCompatibleSortOrder(IHqlExpression * existingOrder, IHqlExpression
             return false;
     }
     return true;
-}
-
-static bool isCorrectDistributionForSort(IHqlExpression * dataset, IHqlExpression * normalizedSortOrder, bool isLocal, bool ignoreGrouping)
-{
-    if (isLocal || (isGrouped(dataset) && !ignoreGrouping))
-        return true;
-    IHqlExpression * distribution = queryDistribution(dataset);
-    if (!isSortDistribution(distribution))
-        return false;
-    IHqlExpression * previousOrder = distribution->queryChild(0);           // Already normalized when it was created.
-    //MORE: We should possibly loosen this test to allow compatible casts etc.
-    //return isCompatibleSortOrder(existingOrder, normalizedSortOrder)
-    return (previousOrder == normalizedSortOrder);
 }
 
 static bool normalizedIsAlreadySorted(IHqlExpression * dataset, IHqlExpression * normalizedOrder, bool isLocal, bool ignoreGrouping)
@@ -1113,13 +1115,106 @@ bool isAlreadySorted(IHqlExpression * dataset, HqlExprArray & newSort, bool isLo
     return normalizedIsAlreadySorted(dataset, normalizedOrder, isLocal, ignoreGrouping);
 }
 
+
 IHqlExpression * ensureSorted(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool alwaysLocal)
 {
     if (isAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping))
         return LINK(dataset);
 
+    if (false && (isLocal || alwaysLocal))
+    {
+        unsigned partialSorted = numElementsAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping);
+        if (partialSorted != 0)
+        {
+            OwnedHqlExpr shuffled = ensureShuffled(dataset, order, isLocal, ignoreGrouping, alwaysLocal, partialSorted);
+            if (shuffled)
+                return shuffled.getClear();
+        }
+    }
+
     IHqlExpression * attr = isLocal ? createLocalAttribute() : (isGrouped(dataset) && ignoreGrouping) ? createAttribute(globalAtom) : NULL;
     return createDatasetF(no_sort, LINK(dataset), LINK(order), attr, NULL);
+}
+
+//--------------------------------------------------------------------------------------------------------------------
+
+static unsigned numCompatibleSortElements(IHqlExpression * existingOrder, IHqlExpression * normalizedOrder)
+{
+    if (!existingOrder)
+        return 0;
+    unsigned numExisting = existingOrder->numChildren();
+    unsigned numRequired = normalizedOrder->numChildren();
+    unsigned numToCompare = (numRequired > numExisting) ? numExisting : numRequired;
+    for (unsigned i=0; i < numToCompare; i++)
+    {
+        if (!sortComponentMatches(normalizedOrder->queryChild(i), existingOrder->queryChild(i)))
+            return i;
+    }
+    return numToCompare;
+}
+
+static unsigned normalizedNumSortedElements(IHqlExpression * dataset, IHqlExpression * normalizedOrder, bool isLocal, bool ignoreGrouping)
+{
+#ifdef OPTIMIZATION2
+    if (hasNoMoreRowsThan(dataset, 1))
+        return true;
+#endif
+    if (!isCorrectDistributionForSort(dataset, normalizedOrder, isLocal, ignoreGrouping))
+        return false;
+
+    //Constant items and duplicates should have been removed already.
+    OwnedHqlExpr existingOrder = getExistingSortOrder(dataset, isLocal, ignoreGrouping);
+    return numCompatibleSortElements(existingOrder, normalizedOrder);
+}
+
+unsigned numElementsAlreadySorted(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping)
+{
+#ifdef OPTIMIZATION2
+    if (hasNoMoreRowsThan(dataset, 1))
+        return order->numChildren();
+#endif
+
+    OwnedHqlExpr normalizedOrder = normalizeSortlist(order, dataset);
+    return normalizedNumSortedElements(dataset, normalizedOrder, isLocal, ignoreGrouping);
+}
+
+
+//Elements in the exprarray have already been mapped;
+unsigned numElementsAlreadySorted(IHqlExpression * dataset, HqlExprArray & newSort, bool isLocal, bool ignoreGrouping)
+{
+    HqlExprArray components;
+    normalizeComponents(components, newSort);
+    OwnedHqlExpr normalizedOrder = createValue(no_sortlist, makeSortListType(NULL), components);
+    return normalizedNumSortedElements(dataset, normalizedOrder, isLocal, ignoreGrouping);
+}
+
+IHqlExpression * ensureShuffled(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool alwaysLocal, unsigned sortedElements)
+{
+    if (sortedElements == (unsigned)-1)
+        sortedElements = numElementsAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping);
+
+#ifdef _DEBUG
+    assertex(numElementsAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping) >= sortedElements);
+#endif
+
+    if ((sortedElements == 0) || isGrouped(dataset))
+        return NULL;
+
+    HqlExprArray components;
+    unwindNormalizeSortlist(components, order, false);
+    removeDuplicates(components);
+    if (components.ordinality() == sortedElements)
+        return LINK(dataset);
+
+    OwnedHqlExpr alreadySorted = createValueSafe(no_sortlist, makeSortListType(NULL), components, 0, sortedElements);
+    OwnedHqlExpr newOrder = createValueSafe(no_sortlist, makeSortListType(NULL), components, sortedElements, components.ordinality());
+
+    OwnedHqlExpr attr = isLocal ? createLocalAttribute() : (isGrouped(dataset) && ignoreGrouping) ? createAttribute(globalAtom) : NULL;
+    OwnedHqlExpr group = createDatasetF(no_group, LINK(dataset), LINK(alreadySorted), LINK(attr));
+    OwnedHqlExpr sorted = createDatasetF(no_sort, LINK(group), LINK(newOrder), LINK(attr));
+    OwnedHqlExpr ungrouped = createDataset(no_group, LINK(sorted));
+    assertex(isAlreadySorted(ungrouped, order, isLocal||alwaysLocal, ignoreGrouping));
+    return ungrouped.getClear();
 }
 
 //-------------------------------

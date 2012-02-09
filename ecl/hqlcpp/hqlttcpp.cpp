@@ -2641,9 +2641,6 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
                     createLookup = !expr->hasProperty(_lightweight_Atom);
         }
 
-        OwnedHqlExpr newLeft = getNonThorSortedJoinInput(expr, leftDs, leftSorts);
-        OwnedHqlExpr newRight = getNonThorSortedJoinInput(expr, rightDs, rightSorts);
-
         if (isLimitedSubstringJoin)
             createLookup = false;           //doesn't support it yet
         else if (createLookup && leftSorts.ordinality() && rightSorts.ordinality())
@@ -2670,6 +2667,8 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
             return expr->clone(args);
         }
 
+        OwnedHqlExpr newLeft = getNonThorSortedJoinInput(expr, leftDs, leftSorts);
+        OwnedHqlExpr newRight = getNonThorSortedJoinInput(expr, rightDs, rightSorts);
         try
         {
             if ((leftDs != newLeft) || (rightDs != newRight))

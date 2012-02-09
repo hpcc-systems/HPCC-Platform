@@ -72,6 +72,10 @@ extern HQL_API bool isAlreadySorted(IHqlExpression * dataset, HqlExprArray & new
 extern HQL_API bool isAlreadySorted(IHqlExpression * dataset, IHqlExpression * newSort, bool isLocal, bool ignoreGrouping);
 extern HQL_API IHqlExpression * ensureSorted(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool alwaysLocal);
 
+extern HQL_API unsigned numElementsAlreadySorted(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping);
+extern HQL_API unsigned numElementsAlreadySorted(IHqlExpression * dataset, HqlExprArray & newSort, bool isLocal, bool ignoreGrouping);
+extern HQL_API IHqlExpression * ensureShuffled(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool alwaysLocal, unsigned sortedElements);
+
 extern HQL_API bool reorderMatchExistingLocalSort(HqlExprArray & sortedLeft, HqlExprArray & reorderedRight, IHqlExpression * dataset, const HqlExprArray & left, const HqlExprArray & right);
 
 extern HQL_API IHqlExpression * preserveTableInfo(IHqlExpression * newTable, IHqlExpression * original, bool loseDistribution, IHqlExpression * persistName);
