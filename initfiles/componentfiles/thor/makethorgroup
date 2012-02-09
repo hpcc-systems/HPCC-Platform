@@ -17,21 +17,36 @@
 ################################################################################
 
 
-if [ -z "$localthorportbase" ]; then
-  export localthorportbase=$THORSLAVEPORT
-fi
 if [ -z "$localthorportinc" ]; then
-  export localthorportinc=2000
+  export localthorportinc=200
 fi
 rm -f thorgroup
-lastslave=nop
-for slave in $(cat slaves); do
- if [ "$slave" != "$lastslave" ]; then
-  let "base = $localthorportbase";
- else
-  let "base += $localthorportinc";
- fi;
- echo $slave:$base >> thorgroup
- lastslave=$slave;
-done
 
+function contains() {
+    local n=$#
+    local value=${!n}
+    for ((i=1;i < ${n};i++)) {
+        if [ "${!i}" == "${value}" ]; then
+            echo "${i}"
+            return 0
+        fi
+    }
+    echo "0"
+    return 1
+}
+
+declare -a ports_used
+declare -a hosts
+for slave in $(cat slaves); do
+    p=$(contains "${hosts[@]}" "${slave}")
+    if [ 0 == ${p} ]; then
+        echo "${slave}:${THORSLAVEPORT}" >> thorgroup
+        p=$((${#hosts[@]}+1))
+        ports[${p}]=${THORSLAVEPORT}
+        hosts=(${hosts[@]} $slave)
+    else
+        newport=$((${ports[${p}]}+${localthorportinc}))
+        echo "${slave}:${newport}" >> thorgroup
+        ports[${p}]=${newport}
+    fi
+done

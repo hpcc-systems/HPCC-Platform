@@ -45,20 +45,32 @@ $deploydir/stop_thor $deploydir
 
 # ----------------------------
 
-ln -s -f $deploydir/thormaster${LCR} thormaster_$THORMASTERPORT
-
-if [ "$localthor" = "true" ]; then
-    ln -s -f $deploydir/thorslave${LCR} thorslave_$THORSLAVEPORT
-        . $deploydir/makethorgroup
-fi
-if [ "$multislaves" = "true" ]; then
-    . $deploydir/makethorgroup
-fi
-
 ulimit -n 8192
 if [ `ulimit -n` -lt 8192 ]; then
     echo 'ulimit -n failed, aborting start_thor (perhaps you are not logged is as super user?)'
     exit 0
+fi
+
+if [ ! -z ${THORPRIMARY} ]; then
+    groupName=${THORPRIMARY}
+else
+    groupName=${THORNAME}
+fi
+daliadmin $DALISERVER dfsgroup ${groupName} > slaves
+errcode=$?
+if [ 0 != ${errcode} ]; then
+    echo 'failed to lookup dali group for $groupName'
+    exit 1
+fi
+
+ln -s -f $deploydir/thormaster${LCR} thormaster_$THORMASTERPORT
+
+if [ "$localthor" = "true" ]; then
+    ln -s -f $deploydir/thorslave${LCR} thorslave_$THORSLAVEPORT
+fi
+## multislaves for bkwd compat. with old environments
+if [ ${slavespernode} -gt 1 ] || [ "$localthor" = "true" ] || [ "$multislaves" = "true" ]; then
+    . $deploydir/makethorgroup
 fi
 
 ENV_DIR=`cat ${HPCC_CONFIG} | sed -n "/\[DEFAULT\]/,/\[/p" | grep "^configs=" | sed -e 's/^configs=//'`
@@ -67,4 +79,5 @@ if [ -z "$logdir" ]; then
 export logdir="./start_logs"
 fi
 mkdir -p $logdir
-$deploydir/run_thor 1>>$logdir/start_thor_$logpthtail.log 2>>$logdir/start_thor_$logpthtail.log
+export logpthtail="`date +%m_%d_%Y_%H_%M_%S`"
+$deploydir/run_thor >> $logdir/start_thor_$logpthtail.log 2>&1

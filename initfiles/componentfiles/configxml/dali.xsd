@@ -285,6 +285,15 @@
       </xs:annotation>
     </xs:attribute>
   </xs:attributeGroup>
+   <xs:attributeGroup name="DFS">
+    <xs:attribute name="forceGroupUpdate" use="optional" default="false">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Force group updates on startup, if environment mismatch</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+   </xs:attributeGroup>
    <xs:attributeGroup name="LDAP">
     <xs:attribute name="ldapServer" type="ldapServerType" use="optional">
       <xs:annotation>

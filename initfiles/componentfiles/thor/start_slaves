@@ -32,7 +32,8 @@ if [ "$localthor" = "true" ]; then
         let "n += 1";
         done
 else
-        if [ "$multislaves" = "true" ]; then
+        ## multislaves for bkwd compat. with old environments
+        if [ ${slavespernode} -gt 1 ] || [ "$multislaves" = "true" ]; then
             let "n = 1";
             for slave in $(cat $instancedir/thorgroup); do
                 ip=${slave/:*/}
