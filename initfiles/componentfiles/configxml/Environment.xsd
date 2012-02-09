@@ -348,7 +348,7 @@
                                                 </xs:element>
                                                 <xs:element name="Topology">
                                                     <xs:annotation>
-                                                        <xs:documentation>Describes the jjjTopology of the given thor cluster</xs:documentation>
+                                                        <xs:documentation>Describes the Topology of the given thor cluster</xs:documentation>
                                                     </xs:annotation>
                                                     <xs:complexType>
                                                         <xs:sequence maxOccurs="unbounded">

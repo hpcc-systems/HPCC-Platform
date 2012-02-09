@@ -153,13 +153,6 @@
           </xsl:if>
         </xsl:for-each>
       </SSH>
-      <SwapNode>
-        <xsl:for-each select="SwapNode/@*">
-          <xsl:if test="string(.) != ''">
-            <xsl:copy-of select="."/>
-          </xsl:if>
-        </xsl:for-each>
-      </SwapNode>
     </Thor>
   </xsl:template>
 
