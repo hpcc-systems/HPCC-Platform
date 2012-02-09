@@ -399,17 +399,17 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="localThorPortInc" type="xs:nonNegativeInteger" use="optional" default="2000">
+      <xs:attribute name="slavesPerNode" type="xs:nonNegativeInteger" use="optional" default="1">
         <xs:annotation>
           <xs:appinfo>
-            <tooltip>Port increment between local thor slaves (when localThor set)</tooltip>
+            <tooltip>This allows multiple slaves to exist on each node</tooltip>
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="multiSlaves" type="xs:boolean" use="optional" default="false">
+      <xs:attribute name="localThorPortInc" type="xs:nonNegativeInteger" use="optional" default="2000">
         <xs:annotation>
           <xs:appinfo>
-            <tooltip>Generate different port number using slaveport above as base - this allows multiple slaves to exist on each node</tooltip>
+            <tooltip>Port increment between slaves on same node</tooltip>
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>

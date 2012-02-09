@@ -239,3 +239,56 @@ void disconnectLogMsgListenerFromDali()
         disconnectLogMsgListenerFromChild(&servers.queryNode(idx));
 }
 
+
+bool updateDaliEnv(IPropertyTree *env, bool forceGroupUpdate, const char *daliIp)
+{
+    Owned<IPropertyTreeIterator> dalis = env->getElements("Software/DaliServerProcess/Instance");
+    if (!dalis||!dalis->first()) {
+        fprintf(stderr,"Could not find DaliServerProcess\n");
+        return false;
+    }
+    SocketEndpoint daliep;
+    loop {
+        const char *ps = dalis->get().queryProp("@port");
+        unsigned port = ps?atoi(ps):0;
+        if (!port)
+            port = DALI_SERVER_PORT;
+        daliep.set(dalis->get().queryProp("@netAddress"),port);
+        if (daliIp && *daliIp) {
+            SocketEndpoint testep;
+            testep.set(daliIp,DALI_SERVER_PORT);
+            if (testep.equals(daliep))
+                break;
+            daliep.set(NULL,0);
+        }
+        if (!dalis->next())
+            break;
+        if (!daliep.isNull()) {
+            fprintf(stderr,"Ambiguous DaliServerProcess instance\n");
+            return false;
+        }
+    }
+    if (daliep.isNull()) {
+        fprintf(stderr,"Could not find DaliServerProcess instance\n");
+        return false;
+    }
+    SocketEndpointArray epa;
+    epa.append(daliep);
+    Owned<IGroup> group = createIGroup(epa);
+
+    bool ret = true;
+    initClientProcess(group, DCR_Util);
+    StringBuffer response;
+    if (querySDS().updateEnvironment(env, forceGroupUpdate, response))
+    {
+        StringBuffer tmp;
+        PROGLOG("Environment and node groups updated in dali at %s",daliep.getUrlStr(tmp).str());
+    }
+    else
+        ret = false;
+    if (response.length())
+        WARNLOG("%s", response.str());
+
+    closedownClientProcess();
+    return ret;
+}

@@ -86,7 +86,7 @@ void AddServers(const char *auditdir)
     servers.append(*createDaliPublisherServer());
     servers.append(*createDaliSDSServer(serverConfig));
     servers.append(*createDaliNamedQueueServer());
-    servers.append(*createDaliDFSServer());
+    servers.append(*createDaliDFSServer(serverConfig));
     servers.append(*createDaliAuditServer(auditdir));
     servers.append(*createDaliDiagnosticsServer());
     // add new coven servers here
