@@ -28,7 +28,7 @@
 #include "dafdesc.hpp"
 #include "dasds.hpp"
 #include "danqs.hpp"
-#include "swapnodemain.hpp"
+#include "swapnodelib.hpp"
 #include "dalienv.hpp"
 #ifdef _USE_ZLIB
 #include "zcrypt.hpp"
@@ -106,9 +106,9 @@ bool CWsTopologyEx::onTpSwapNode(IEspContext &context,IEspTpSwapNodeRequest  &re
         //another client (like configenv) may have updated the constant environment so reload it
         m_envFactory->validateCache();
 
-        resp.setTpSwapNodeResult(false);
-        SwapNode(req.getCluster(),req.getOldIP(),req.getNewIP(),0);
-        resp.setTpSwapNodeResult(true);
+        bool res = swapNode(req.getCluster(),req.getOldIP(),req.getNewIP());
+
+        resp.setTpSwapNodeResult(res);
 
 
         StringBuffer path;

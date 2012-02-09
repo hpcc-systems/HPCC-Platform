@@ -41,6 +41,7 @@
 #include "dautils.hpp"
 #include "dllserver.hpp"
 #include "eclhelper.hpp"
+#include "swapnodelib.hpp"
 #include "thactivitymaster.ipp"
 #include "thdemonserver.hpp"
 #include "thgraphmanager.hpp"
@@ -631,9 +632,9 @@ void CJobManager::reply(IConstWorkUnit *workunit, const char *wuid, IException *
     conversation.clear();
     handlingConversation = false;
 
-    if (checkThorNodeSwap(globals,e?wuid:NULL,(unsigned)-1))
+    Owned<IRemoteConnection> conn = querySDS().connect("/Environment", myProcessSession(), RTM_LOCK_READ, MEDIUMTIMEOUT);
+    if (checkThorNodeSwap(globals->queryProp("@name"),e?wuid:NULL,(unsigned)-1))
         abortThor(e,false);
-
 }
 
 bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, const SocketEndpoint &agentEp)
