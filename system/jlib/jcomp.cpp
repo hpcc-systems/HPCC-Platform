@@ -61,9 +61,10 @@
 static const char * CC_NAME[] =   { "\"#" PATHSEPSTR "bin" PATHSEPSTR "cl.bat\"",   "\"#" PATHSEPSTR "bin" PATHSEPSTR "g++\"" };
 static const char * LINK_NAME[] = { "\"#" PATHSEPSTR "bin" PATHSEPSTR "link.bat\"", "\"#" PATHSEPSTR "bin" PATHSEPSTR "g++\"" };
 static const char * LIB_DIR[] = { "\"#\\lib\"", "\"#/lib\"" };
+static const char * LIB_OPTION_PREFIX[] = { "", "-Wl," };
 static const char * USE_LIBPATH_FLAG[] = { "/libpath:\"", "-L" };
 static const char * USE_LIBPATH_TAIL[] = { "\"", "" };
-static const char * USE_LIBRPATH_FLAG[] = { NULL, "-Wl,-rpath -Wl," };
+static const char * USE_LIBRPATH_FLAG[] = { NULL, "-Wl,-rpath," };
 static const char * USE_LIB_FLAG[] = { "", "-l" };
 static const char * USE_LIB_TAIL[] = { ".lib", "" };
 static const char * USE_INCLUDE_FLAG[] = { "/I\"", "\"-I" };
@@ -330,7 +331,8 @@ void CppCompiler::addInclude(const char * paths)
 
 void CppCompiler::addLinkOption(const char * option)
 {
-    linkerOptions.append(' ').append(option);
+    if (option && *option)	
+        linkerOptions.append(' ').append(LIB_OPTION_PREFIX[targetCompiler]).append(option);
 }
 
 void CppCompiler::addSourceFile(const char * filename)
@@ -501,11 +503,11 @@ bool CppCompiler::doLink()
     if (createDLL)
         cmdline.append(" ").append(LINK_OPTION_CORE[targetCompiler]);
     cmdline.append(stdLibs);
-    cmdline.append(linkerOptions);
 
     ForEachItemIn(i0, allSources)
         cmdline.append(" ").append("\"").append(targetDir).append(allSources.item(i0)).append(".").append(OBJECT_FILE_EXT[targetCompiler]).append("\"");
 
+    cmdline.append(linkerOptions);
     cmdline.append(linkerLibraries);
 
     StringBuffer outName;
