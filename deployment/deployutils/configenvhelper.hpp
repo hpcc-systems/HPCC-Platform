@@ -74,7 +74,7 @@ private:
     void RemoveSlaves(IPropertyTree* pRoxie, bool bLegacySlaves/*=false*/);
     void RenameThorInstances(IPropertyTree* pThor);
     void UpdateThorAttributes(IPropertyTree* pParentNode);
-    bool AddNewNodes(IPropertyTree* pThor, const char* szType, int nPort, IPropertyTreePtrArray& computers, bool validate, bool skipExisting, StringBuffer& usageList, int slavesPerNode = 1);
+    bool AddNewNodes(IPropertyTree* pThor, const char* szType, int nPort, IPropertyTreePtrArray& computers, bool validate, bool skipExisting, StringBuffer& usageList);
     bool CheckTopologyComputerUse(IPropertyTree* pComputerNode, IPropertyTree* pParentNode, StringBuffer& usageList) const;
     IPropertyTree* GetProcessNode(IPropertyTree* pThor, const char* szProcess) const;
     Linked<IPropertyTree> m_pRoot;

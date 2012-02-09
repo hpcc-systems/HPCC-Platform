@@ -5152,7 +5152,7 @@ bool unmountDrive(const char *drv)
 
 }
 
-IFileIO *createUniqueFile(const char *dir, const char *prefix, StringBuffer &filename)
+IFileIO *createUniqueFile(const char *dir, const char *prefix, const char *ext, StringBuffer &filename)
 {
     CDateTime dt;
     dt.setNow();
@@ -5166,7 +5166,9 @@ IFileIO *createUniqueFile(const char *dir, const char *prefix, StringBuffer &fil
         filename.append(prefix);
     else
         filename.append("uniq");
-    filename.appendf("_%"I64F"x.%x.%x.tmp", (__int64)GetCurrentThreadId(), (unsigned)GetCurrentProcessId(), t);
+    if (!ext || !*ext)
+        ext = "tmp";
+    filename.appendf("_%"I64F"x.%x.%x.%s", (__int64)GetCurrentThreadId(), (unsigned)GetCurrentProcessId(), t, ext);
     OwnedIFile iFile = createIFile(filename.str());
     IFileIO *iFileIO = NULL;
     unsigned attempts = 5; // max attempts
@@ -5184,7 +5186,7 @@ IFileIO *createUniqueFile(const char *dir, const char *prefix, StringBuffer &fil
         if (0 == --attempts)
             break;
         t += getRandom();
-        filename.clear().appendf("uniq_%"I64F"x.%x.%x.tmp", (__int64)GetCurrentThreadId(), (unsigned)GetCurrentProcessId(), t);
+        filename.clear().appendf("uniq_%"I64F"x.%x.%x.%s", (__int64)GetCurrentThreadId(), (unsigned)GetCurrentProcessId(), t, ext);
         iFile.setown(createIFile(filename.str()));
     }
     return NULL;

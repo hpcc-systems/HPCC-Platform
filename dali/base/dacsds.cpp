@@ -20,6 +20,7 @@
 #include "platform.h"
 #include <typeinfo>
 #include "jlib.hpp"
+#include "jfile.hpp"
 #include "javahash.hpp"
 #include "javahash.tpp"
 #include "jptree.ipp"
@@ -30,6 +31,7 @@
 #include "daserver.hpp"
 #include "dasess.hpp"
 #include "daclient.hpp"
+#include "dadfs.hpp"
 
 #include "dasds.ipp" // common header for client/server sds
 #include "dacsds.ipp"
@@ -1950,6 +1952,67 @@ unsigned CClientSDSManager::queryCount(const char *xpath)
         throwMbException("SDS Reply Error ", mb);
     }
     return count;
+}
+
+#define MIN_UPDTENV_SVER "3.9"
+bool CClientSDSManager::updateEnvironment(IPropertyTree *newEnv, bool forceGroupUpdate, StringBuffer &response)
+{
+    CDaliVersion serverVersionNeeded(MIN_QUERYCOUNT_SVER);
+    if (queryDaliServerVersion().compare(serverVersionNeeded) < 0)
+    {
+        // have to do the old fashioned way, from client
+        Owned<IRemoteConnection> conn = querySDS().connect("/",myProcessSession(),0, INFINITE);
+        if (conn)
+        {
+            Owned<IPropertyTree> root = conn->getRoot();
+            Owned<IPropertyTree> child = root->getPropTree("Environment");
+            if (child.get())
+            {
+                StringBuffer bakname;
+                Owned<IFileIO> io = createUniqueFile(NULL, "environment", "bak", bakname);
+                Owned<IFileIOStream> fstream = createBufferedIOStream(io);
+                toXML(child, *fstream);         // formatted (default)
+                root->removeTree(child);
+            }
+            root->addPropTree("Environment", LINK(newEnv));
+            root.clear();
+            conn->commit();
+            conn->close();
+            StringBuffer messages;
+            if (!initClusterGroups(forceGroupUpdate, messages))
+                WARNLOG("CClientSDSManager::updateEnvironment: %s", messages.str());
+            PROGLOG("Environment and node groups updated");
+        }
+        return true;
+    }
+
+    CMessageBuffer mb;
+    mb.append((int)DAMP_SDSCMD_UPDTENV);
+    newEnv->serialize(mb);
+    mb.append(forceGroupUpdate);
+
+    if (!queryCoven().sendRecv(mb, RANK_RANDOM, MPTAG_DALI_SDS_REQUEST))
+        throw MakeSDSException(SDSExcpt_FailedToCommunicateWithServer, "querying sds diagnositc info");
+
+    bool result = false;
+    StringAttr resultStr;
+    SdsReply replyMsg;
+    mb.read((int &)replyMsg);
+    switch (replyMsg)
+    {
+        case DAMP_SDSREPLY_OK:
+        {
+            mb.read(result);
+            mb.read(resultStr);
+            response.append(resultStr);
+            break;
+        }
+        case DAMP_SDSREPLY_ERROR:
+            throwMbException("SDS Reply Error ", mb);
+        default:
+            assertex(false);
+    }
+    return result;
 }
 
 //////////////
