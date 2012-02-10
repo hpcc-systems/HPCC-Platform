@@ -45,6 +45,7 @@ public:
     bool onWUMultiQuerysetDetails(IEspContext &context, IEspWUMultiQuerySetDetailsRequest &req, IEspWUMultiQuerySetDetailsResponse &resp);
     bool onWUQuerysetQueryAction(IEspContext &context, IEspWUQuerySetQueryActionRequest & req, IEspWUQuerySetQueryActionResponse & resp);
     bool onWUQuerysetAliasAction(IEspContext &context, IEspWUQuerySetAliasActionRequest &req, IEspWUQuerySetAliasActionResponse &resp);
+    bool onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetCopyQueryRequest &req, IEspWUQuerySetCopyQueryResponse &resp);
     bool onWUCopyLogicalFiles(IEspContext &context, IEspWUCopyLogicalFilesRequest &req, IEspWUCopyLogicalFilesResponse &resp);
 
     bool onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEspWUInfoResponse &resp);
@@ -101,7 +102,7 @@ public:
 
 private:
     unsigned awusCacheMinutes;
-
+    StringBuffer queryDirectory;
     Owned<DataCache> dataCache;
     Owned<ArchivedWuCache> archivedWuCache;
     WUSchedule m_sched;
@@ -145,5 +146,7 @@ public:
 private:
     bool batchWatchFeaturesOnly;
 };
+
+void deploySharedObject(IEspContext &context, StringBuffer &newWuid, const char *filename, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml=NULL);
 
 #endif

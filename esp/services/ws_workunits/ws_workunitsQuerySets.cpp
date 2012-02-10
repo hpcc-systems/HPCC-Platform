@@ -40,6 +40,38 @@ bool isRoxieProcess(const char *process)
     return conn->queryRoot()->hasProp(xpath.str());
 }
 
+void fetchRemoteWorkunit(IEspContext &context, const char *netAddress, const char *queryset, const char *query, const char *wuid, StringBuffer &name, StringBuffer &xml, StringBuffer &dllname, MemoryBuffer &dll)
+{
+    Owned<IClientWsWorkunits> ws;
+    ws.setown(createWsWorkunitsClient());
+    VStringBuffer url("http://%s%s/WsWorkunits", netAddress, (!strchr(netAddress, ':')) ? ":8010" : "");
+    ws->addServiceUrl(url.str());
+
+    if (context.queryUserId() && *context.queryUserId())
+        ws->setUsernameToken(context.queryUserId(), context.queryPassword(), NULL);
+
+    Owned<IClientWULogFileRequest> req = ws->createWUFileRequest();
+    if (queryset && *queryset)
+        req->setQuerySet(queryset);
+    if (query && *query)
+        req->setQuery(query);
+    if (wuid && *wuid)
+        req->setWuid(wuid);
+    req->setType("xml");
+    Owned<IClientWULogFileResponse> resp = ws->WUFile(req);
+    if (!resp || resp->getExceptions().ordinality() || !resp->getThefile().length())
+        throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "Cannot retrieve remote workunit");
+    xml.append(resp->getThefile().length(), resp->getThefile().toByteArray());
+
+    req->setType("dll");
+    resp.setown(ws->WUFile(req));
+    if (!resp || resp->getExceptions().ordinality() || !resp->getThefile().length())
+        throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "Cannot retrieve remote workunit shared object");
+    dll.append(resp->getThefile());
+    dllname.append(resp->getFileName());
+    name.append(resp->getQueryName());
+}
+
 void doWuFileCopy(IClientFileSpray &fs, IEspWULogicalFileCopyInfo &info, const char *logicalname, const char *cluster, bool isRoxie, bool supercopy)
 {
     try
@@ -285,6 +317,44 @@ IPropertyTree *sendRoxieControlAllNodes(const SocketEndpoint &ep, const char *ms
     return sendRoxieControlAllNodes(sock, msg, allOrNothing, wait);
 }
 
+bool reloadCluster(IConstWUClusterInfo *clusterInfo, unsigned wait)
+{
+    if (clusterInfo->getPlatform()==RoxieCluster)
+    {
+        const SocketEndpointArray &addrs = clusterInfo->getRoxieServers();
+        if (addrs.length())
+        {
+            try
+            {
+                Owned<IPropertyTree> result = sendRoxieControlAllNodes(addrs.item(0), "<control:reload/>", false, wait);
+                const char *status = result->queryProp("Endpoint[1]/Status");
+                if (!status || !strieq(status, "ok"))
+                    return false;
+            }
+            catch(IMultiException *me)
+            {
+                StringBuffer err;
+                DBGLOG("ERROR control:reloading roxie query info %s", me->errorMessage(err.append(me->errorCode()).append(' ')).str());
+                me->Release();
+                return false;
+            }
+            catch(IException *e)
+            {
+                StringBuffer err;
+                DBGLOG("ERROR control:reloading roxie query info %s", e->errorMessage(err.append(e->errorCode()).append(' ')).str());
+                e->Release();
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool reloadCluster(const char *cluster, unsigned wait)
+{
+    Owned <IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster);
+    return (clusterInfo) ? reloadCluster(clusterInfo, wait) : true;
+}
 
 bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWorkunitRequest & req, IEspWUPublishWorkunitResponse & resp)
 {
@@ -332,7 +402,6 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
         resp.setQueryId(queryId.str());
     resp.setQueryName(queryName.str());
     resp.setQuerySet(queryset.str());
-    resp.setReloadFailed(false);
 
     if (req.getCopyLocal() || req.getShowFiles())
     {
@@ -341,34 +410,8 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
         resp.setClusterFiles(clusterfiles);
     }
 
-    if (clusterInfo->getPlatform()==RoxieCluster)
-    {
-        const SocketEndpointArray &addrs = clusterInfo->getRoxieServers();
-        if (addrs.length())
-        {
-            try
-            {
-                Owned<IPropertyTree> result = sendRoxieControlAllNodes(addrs.item(0), "<control:reload/>", false, (unsigned) req.getWait());
-                const char *status = result->queryProp("Endpoint[1]/Status");
-                if (!status || !strieq(status, "ok"))
-                    resp.setReloadFailed(true);
-            }
-            catch(IMultiException *me)
-            {
-                resp.setReloadFailed(true);
-                StringBuffer err;
-                DBGLOG("ERROR control:reloading roxie query info %s", me->errorMessage(err.append(me->errorCode()).append(' ')).str());
-                me->Release();
-            }
-            catch(IException *e)
-            {
-                resp.setReloadFailed(true);
-                StringBuffer err;
-                DBGLOG("ERROR control:reloading roxie query info %s", e->errorMessage(err.append(e->errorCode()).append(' ')).str());
-                e->Release();
-            }
-        }
-    }
+    bool reloaded = reloadCluster(clusterInfo, (unsigned)req.getWait());
+    resp.setReloadFailed(!reloaded);
 
     return true;
 }
@@ -688,5 +731,92 @@ bool CWsWorkunitsEx::onWUQuerysetAliasAction(IEspContext &context, IEspWUQuerySe
         results.append(*result.getClear());
     }
     resp.setResults(results);
+    return true;
+}
+
+#define QUERYPATH_SEP_CHAR '/'
+
+bool nextQueryPathNode(const char *&path, StringBuffer &node)
+{
+    if (*path==QUERYPATH_SEP_CHAR)
+        path++;
+    while (*path && *path!=QUERYPATH_SEP_CHAR)
+        node.append(*path++);
+    return (*path && *++path);
+}
+
+bool splitQueryPath(const char *path, StringBuffer &netAddress, StringBuffer &queryset, StringBuffer &query)
+{
+    if (!path || !*path)
+        return false;
+    if (*path==QUERYPATH_SEP_CHAR && path[1]==QUERYPATH_SEP_CHAR)
+    {
+        path+=2;
+        if (!nextQueryPathNode(path, netAddress))
+            return false;
+    }
+    if (!nextQueryPathNode(path, queryset))
+        return false;
+    if (nextQueryPathNode(path, query))
+        return false; //query path too deep
+    return true;
+}
+
+bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetCopyQueryRequest &req, IEspWUQuerySetCopyQueryResponse &resp)
+{
+    unsigned start = msTick();
+    const char *source = req.getSource();
+    if (!source || !*source)
+        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "No source query specified");
+    const char *target = req.getTarget();
+    if (!target || !*target)
+        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "No destination specified");
+    if (strchr(target, '/')) //for future use
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid target queryset name");
+
+    StringBuffer srcAddress, srcQuerySet, srcQuery;
+    if (!splitQueryPath(source, srcAddress, srcQuerySet, srcQuery))
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid source query path");
+
+    StringBuffer targetName;
+    StringBuffer wuid;
+    if (srcAddress.length())
+    {
+        const char *cluster = req.getCluster();
+        if (!cluster || !*cluster)
+            throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Must specify cluster to associate with workunit when copy from remote environment.");
+        StringBuffer xml;
+        MemoryBuffer dll;
+        StringBuffer dllname;
+        fetchRemoteWorkunit(context, srcAddress.str(), srcQuerySet.str(), srcQuery.str(), NULL, targetName, xml, dllname, dll);
+        deploySharedObject(context, wuid, dllname.str(), cluster, targetName.str(), dll, queryDirectory.str(), xml.str());
+    }
+    else
+    {
+        Owned<IPropertyTree> queryset = getQueryRegistry(srcQuerySet.str(), true);
+        if (!queryset)
+            throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Source Queryset %s not found", srcQuery.str());
+
+        IPropertyTree *query = resolveQueryAlias(queryset, srcQuery.str());
+        if (!query)
+            throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Source query %s not found", source);
+        wuid.set(query->queryProp("@wuid"));
+        targetName.set(query->queryProp("@name"));
+    }
+
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+    Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
+    if (!cw)
+        throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Error opening wuid %s for query %s", wuid.str(), source);
+
+    StringBuffer targetQueryId;
+    addQueryToQuerySet(cw, target, targetName.str(), NULL, (WUQueryActivationOptions)req.getActivate(), targetQueryId);
+    resp.setQueryId(targetQueryId.str());
+
+    StringArray querysetClusters;
+    getQuerySetTargetClusters(target, querysetClusters);
+    ForEachItemIn(i, querysetClusters)
+        reloadCluster(querysetClusters.item(i), remainingMsWait(req.getWait(), start));
+
     return true;
 }
