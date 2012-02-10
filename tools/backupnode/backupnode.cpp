@@ -209,9 +209,8 @@ static void usage()
 {
     printf("\nBACKUPNODE sourcepath targetpath [options]\n");
     printf("   Copies and optionally compresses files from source to target\n\n");
-    printf("BACKUPNODE -T slavesfile slaveno path1 path2 path3...\n");
-    printf("   Thor node backup mode - syncs named paths with adjacent d: drive\n\n");
-    printf("   if no paths specified use DAT files in directory specified by -X\n\n");
+    printf("BACKUPNODE -X <data-dir-path> -T slaveno numslaves myip backupip\n");
+    printf("   Thor node backup mode - syncs named paths with adjacent drive\n\n");
     printf("BACKUPNODE -W slavesfile dir\n");
     printf("   Waits for .ERR files in the specified directory then concatenates into a log file\n\n");
     printf("BACKUPNODE -O daliip cluster outdir\n");
@@ -633,18 +632,14 @@ int main(int argc, const char *argv[])
     {
         if (thorMode)
         { 
-            bool usedatfile=false;
+            if (args.ordinality()<4 || 0 == errdatdir.length())
+                usage();
+            slaveNum = atoi(args.item(0));
+            numSlaves = atoi(args.item(1));
+            const char *myIp = args.item(2);
+            const char *backupIp = args.item(3);
+
             setDaliServixSocketCaching(true); 
-            slaveNum = (args.ordinality()<2)?0:atoi(args.item(1));
-            if (args.ordinality()<3) {
-                if ((errdatdir.length()==0)||!slaveNum)
-                {
-                    printerr("-T option specified but no paths and no data dir/slave number specified");
-                    throw MakeStringException(MSGAUD_operator, 0, "-T option specified but no paths and no data dir/slave number specified");
-                }
-                usedatfile = true;
-            }
-            loadSlaves(args.item(0));
             if (!slaveNum || slaveNum>numSlaves)
             {
                 printerr("'%s' is not a valid slave number (range is 1 to %d)", args.item(1), numSlaves);
@@ -654,7 +649,7 @@ int main(int argc, const char *argv[])
             {
                 IpAddress myip;
                 GetHostIp(myip);
-                IpAddress myipfromSlaves(slaveIP[slaveNum-1]);
+                IpAddress myipfromSlaves(myIp);
                 if (!myip.ipequals(myipfromSlaves))
                 {
                     StringBuffer ips1, ips2;
@@ -664,61 +659,33 @@ int main(int argc, const char *argv[])
                     throw MakeStringException(-1, "IP address %d in slaves file %s does not match this machine %s", slaveNum, ips1.str(), ips2.str());
                 }
             }
-            if (usedatfile) {
-                StringBuffer datafile(errdatdir);
-                addPathSepChar(datafile).append(slaveNum).append(".DAT");
-                Owned<IFile> file = createIFile(datafile.str());
-                Owned<IFileIO> fio;
-                // add a slight stagger
-                Sleep(slaveNum*200);
-                for (unsigned attempt=0;attempt<10;attempt++) {
-                    try {
-                        fio.setown(file->open(IFOread));
-                        if (fio) 
-                            break;
-                    }
-                    catch (IException *e) {
-                        if (attempt==9) {
-                            StringBuffer msg;
-                            e->errorMessage(msg);
-                            printerr("%s",msg.str());
-                        }
-                        e->Release();
-                    }
-                    Sleep(5000);
+            StringBuffer datafile(errdatdir);
+            addPathSepChar(datafile).append(slaveNum).append(".DAT");
+            Owned<IFile> file = createIFile(datafile.str());
+            Owned<IFileIO> fio;
+            // add a slight stagger
+            Sleep(slaveNum*200);
+            for (unsigned attempt=0;attempt<10;attempt++) {
+                try {
+                    fio.setown(file->open(IFOread));
+                    if (fio)
+                        break;
                 }
-                if (fio) 
-                    applyPartsFile(fio,syncFile);
-                else {
-                    printerr("Could not read file %s",datafile.str());
-                    throw MakeStringException(-1, "Could not read file %s",datafile.str());
+                catch (IException *e) {
+                    if (attempt==9) {
+                        StringBuffer msg;
+                        e->errorMessage(msg);
+                        printerr("%s",msg.str());
+                    }
+                    e->Release();
                 }
+                Sleep(5000);
             }
+            if (fio)
+                applyPartsFile(fio,syncFile);
             else {
-                aindex_t numArgs = args.ordinality();
-                for (aindex_t idx = 2; idx<numArgs; ++idx)
-                {
-                    const char *arg = args.item(idx);
-
-                    StringBuffer backupDirectory;
-                    StringBuffer localDirectory;
-#ifdef _WIN32
-                    backupDirectory.append("\\\\").append(slaveIP[slaveNum]).append("\\d$\\").append(arg);
-                    localDirectory.append("\\\\").append(slaveIP[slaveNum-1]).append("\\c$\\").append(arg);
-#else
-                    if (useMirrorMount) 
-                        backupDirectory.append(unixmirror.get()).append("/").append(arg);
-                    else
-                        backupDirectory.append("//").append(slaveIP[slaveNum]).append("/d$/").append(arg);
-                    localDirectory.append("/c$/").append(arg);
-#endif
-                    if (compressExisting)
-                        CompressDirectory(localDirectory.str(), numSlaves, compress);
-                    CopyDirectory(backupDirectory.str(), localDirectory.str(), numSlaves, compress, false);
-                    if (compressExisting)
-                        CompressDirectory(backupDirectory.str(), numSlaves, compress);
-                    CopyDirectory(localDirectory.str(), backupDirectory.str(), numSlaves, compress, true);
-                }
+                printerr("Could not read file %s",datafile.str());
+                throw MakeStringException(-1, "Could not read file %s",datafile.str());
             }
         }
         else if (waitMode) {
