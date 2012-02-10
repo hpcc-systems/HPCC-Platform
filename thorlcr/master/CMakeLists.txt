@@ -54,6 +54,7 @@ include_directories (
          ./../../rtl/eclrtl 
          ./../master 
          ./../../common/thorhelper 
+         ./../../tools/swapnode
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
     )
@@ -86,6 +87,7 @@ target_link_libraries (  thormaster_lcr
          mfilemanager_lcr 
          graphmaster_lcr 
          activitymasters_lcr 
+         swapnodelib
     )
 
 

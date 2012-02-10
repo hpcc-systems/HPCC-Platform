@@ -84,15 +84,15 @@ extern REMOTE_API void setRemoteFileTimeouts(unsigned maxconnecttime,unsigned ma
 
 #define DAFS_VALIDATE_CONNECT_FAIL  (0x01)
 #define DAFS_VALIDATE_BAD_VERSION   (0x02)
-#define DAFS_VALIDATE_WRITE_FAIL_C  (0x12)
-#define DAFS_VALIDATE_READ_FAIL_C   (0x14)
-#define DAFS_VALIDATE_DISK_FULL_C   (0x18)
-#define DAFS_VALIDATE_WRITE_FAIL_D  (0x22)
-#define DAFS_VALIDATE_READ_FAIL_D   (0x24)
-#define DAFS_VALIDATE_DISK_FULL_D   (0x28)
+#define DAFS_VALIDATE_WRITE_FAIL_DATA  (0x12)
+#define DAFS_VALIDATE_READ_FAIL_DATA   (0x14)
+#define DAFS_VALIDATE_DISK_FULL_DATA   (0x18)
+#define DAFS_VALIDATE_WRITE_FAIL_MIRROR  (0x22)
+#define DAFS_VALIDATE_READ_FAIL_MIRROR   (0x24)
+#define DAFS_VALIDATE_DISK_FULL_MIRROR   (0x28)
 #define DAFS_SCRIPT_FAIL            (0x40)
                                 
-extern REMOTE_API unsigned validateNodes(const SocketEndpointArray &ep,bool chkc,bool chkd,bool chkver,const char *script,unsigned scripttimeout,SocketEndpointArray &failures,UnsignedArray &failedcodes, StringArray &failedmessages, const char *filename=NULL);
+extern REMOTE_API unsigned validateNodes(const SocketEndpointArray &eps,const char *dataDir, const char *mirrorDir, bool chkver, const char *script, unsigned scripttimeout, SocketEndpointArray &failures, UnsignedArray &failedcodes, StringArray &failedmessages, const char *filename=NULL);
 
 
 #endif
