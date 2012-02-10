@@ -3834,6 +3834,7 @@ class CEnvironmentClusterInfo: public CInterface, implements IConstWUClusterInfo
     StringAttr serverQueue;
     StringAttr agentQueue;
     StringAttr roxieProcess;
+    SocketEndpointArray roxieServers;
     StringAttr thorQueue;
     StringArray thorProcesses;
     StringAttr prefix;
@@ -3872,6 +3873,17 @@ public:
             roxieProcess.set(roxie->queryProp("@name"));
             clusterWidth = roxie->getPropInt("@numChannels", 1);
             platform = RoxieCluster;
+            Owned<IPropertyTreeIterator> servers = roxie->getElements("RoxieServerProcess");
+            ForEach(*servers)
+            {
+                IPropertyTree &server = servers->query();
+                const char *netAddress = server.queryProp("@netAddress");
+                if (netAddress && *netAddress)
+                {
+                    SocketEndpoint ep(netAddress, server.getPropInt("@port", 9876));
+                    roxieServers.append(ep);
+                }
+            }
         }
         else 
         {
@@ -3937,6 +3949,10 @@ public:
         return thorProcesses;
     }
 
+    const SocketEndpointArray & getRoxieServers() const
+    {
+        return roxieServers;
+    }
 };
 
 IStringVal &getProcessQueueNames(IStringVal &ret, const char *process, const char *type, const char *suffix)

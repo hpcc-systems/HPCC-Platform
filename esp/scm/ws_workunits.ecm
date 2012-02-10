@@ -1036,6 +1036,7 @@ ESPrequest WUPublishWorkunitRequest
     bool NotifyCluster(false);
     bool showFiles(0);
     bool CopyLocal(0);
+    int Wait(10000);
 };
 
 ESPresponse [exceptions_inline] WUPublishWorkunitResponse
@@ -1045,6 +1046,7 @@ ESPresponse [exceptions_inline] WUPublishWorkunitResponse
     string QuerySet;
     string QueryName;
     string QueryId;
+    bool ReloadFailed;
     ESParray<ESPStruct WUCopyLogicalClusterFileSections, Cluster> ClusterFiles;
 };
 
