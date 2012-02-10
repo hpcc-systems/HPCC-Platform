@@ -30,7 +30,6 @@ project( ws_topology )
 include(${HPCC_SOURCE_DIR}/esp/scm/smcscm.cmake)
 
 set (    SRCS 
-         ../../../tools/swapnode/swapnodemain.cpp 
          ${ESPSCM_GENERATED_DIR}/ws_topology_esp.cpp 
          ws_topologyPlugin.cpp 
          ws_topologyService.cpp 
@@ -80,6 +79,7 @@ target_link_libraries ( ws_topology
          SMCLib 
          LdapSecurity 
          securesocket 
+         swapnodelib
          )
          
 IF (USE_ZLIB)

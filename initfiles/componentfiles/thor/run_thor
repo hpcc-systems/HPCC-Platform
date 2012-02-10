@@ -60,6 +60,16 @@ while [ 1 ]; do
 
         echo 'stopping thor(slaves) for restart'
         $deploydir/stop_thor $deploydir keep_sentinel
+
+        if [ 0 != $autoSwapNode ]; then
+            echo "Running autoswap $THORNAME"
+            compname=`basename $PWD`
+            swapnode auto $DALISERVER $compname
+            errcode=$?
+            if [ 0 != ${errcode} ]; then
+                echo auto swap node failed, errcode=${errcode}
+            fi
+        fi
     else
         echo failed to start thormaster$LCR, pausing for 30 seconds
         sleep 30
