@@ -164,17 +164,17 @@
               </xs:appinfo>
             </xs:annotation>
           </xs:attribute>
-          <xs:attribute name="SwapNodeCheckC" type="xs:boolean" use="optional" default="true">
+          <xs:attribute name="SwapNodeCheckPrimaryDrive" type="xs:boolean" use="optional" default="true">
             <xs:annotation>
               <xs:appinfo>
-                <tooltip>C drive is checked for read/write</tooltip>
+                <tooltip>Primary drive is checked for read/write</tooltip>
               </xs:appinfo>
             </xs:annotation>
           </xs:attribute>
-          <xs:attribute name="SwapNodeCheckD" type="xs:boolean" use="optional" default="true">
+          <xs:attribute name="SwapNodeCheckMirrorDrive" type="xs:boolean" use="optional" default="true">
             <xs:annotation>
               <xs:appinfo>
-                <tooltip>D drive is checked for read/write</tooltip>
+                <tooltip>Mirror drive is checked for read/write</tooltip>
               </xs:appinfo>
             </xs:annotation>
           </xs:attribute>
