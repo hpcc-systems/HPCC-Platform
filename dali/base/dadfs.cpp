@@ -1188,6 +1188,13 @@ public:
         setUserDescriptor(udesc,user);
         isactive = false;
     }
+    ~CDistributedFileTransaction()
+    {
+        // New files should be removed automatically if not committed
+        // MORE - refactor cCreateSuperFileAction to avoid this
+        if (isactive)
+            rollback();
+    }
     void addAction(CDFAction *action)
     {
         actions.append(*action);

@@ -727,9 +727,8 @@ public:
                 else
                     superfile->addSubFile(subfiles[i],false,NULL,false,transaction);
             }
+            transaction->commit();
         }
-        // MORE - Previous behaviour would keep new super-file even if no subs were added, do we change this?
-        transaction->commit();
     }
 
 
