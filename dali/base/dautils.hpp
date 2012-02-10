@@ -368,14 +368,6 @@ interface IDaliMutex: implements IInterface
 };
 extern da_decl IDaliMutex  *createDaliMutex(const char *name);
 
-// Called from swapnode and thor
-extern da_decl bool checkThorNodeSwap(IPropertyTree *options,   // thor.xml options
-                                      const char *failedwuid,   // failed WUID or null if none
-                                      unsigned mininterval=0    // minimal interval before redoing check (mins)
-                                      ); // if returns true swap needed
-// called by swapnode
-extern da_decl bool getSwapNodeInfo(IPropertyTree *options,StringAttr &grpname,Owned<IGroup> &grp,Owned<IRemoteConnection> &conn,Owned<IPropertyTree> &info, bool create);
-
 interface IDFSredirection;
 extern da_decl IDFSredirection *createDFSredirection(); // only called by dadfs.cpp
 
