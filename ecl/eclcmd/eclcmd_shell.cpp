@@ -198,6 +198,7 @@ void EclCMDShell::usage()
            "   run         run the given ecl file, archive, dll, wuid, or query\n"
            "   activate    activate a published query\n"
            "   deactivate  deactivate the given query alias name\n"
+           "   queries     show or manipulate queries and querysets\n"
            "\nRun 'ecl help <command>' for more information on a specific command\n\n"
     );
 }
