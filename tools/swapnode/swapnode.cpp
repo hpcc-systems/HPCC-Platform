@@ -199,7 +199,7 @@ int main(int argc, const char *argv[])
             IPropertyTree *cluster = environment->queryPropTree(xpath.str());
             if (!cluster)
             {
-                PROGLOG("Unknown cluster: %s", clusterName);
+                PROGLOG("Unknown cluster: %s", clusterName.get());
                 ret = 3;
             }
             if (!ret)
@@ -303,9 +303,9 @@ int main(int argc, const char *argv[])
                             getClusterGroupName(*options, groupName);
                             VStringBuffer xpath("Thor[@group=\"%s\"]", groupName.str());
                             if (conn->queryRoot()->removeProp(xpath.str()))
-                                PROGLOG("SwapNode info for cluster %s removed", clusterName);
+                                PROGLOG("SwapNode info for cluster %s removed", clusterName.get());
                             else
-                                PROGLOG("SwapNode info for cluster %s not found", clusterName);
+                                PROGLOG("SwapNode info for cluster %s not found", clusterName.get());
                         }
                         break;
                     }
