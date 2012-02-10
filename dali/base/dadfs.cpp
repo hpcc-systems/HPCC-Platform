@@ -7630,11 +7630,11 @@ class CInitGroups
         StringBuffer prop;
         prop.appendf("Group[@name=\"%s\"]",name);
         IPropertyTree *old = root->queryPropTree(prop.str());
-        if (group) // Not sure this should happend if !realcluster
-        {
-            if (!kind || !*kind || !streq("Spare", kind)) // I think it should need this if !realcluster (as it won't be)
-                clusternames.append(name);
-        }
+
+        // JCSMORE -I suspect this check should say if (realcluster)
+        // but prevent Spare clusters being added for now.
+        if (!kind || !*kind || !streq("Spare", kind))
+            clusternames.append(name);
         bool differs=false;
         if (old) {
             // see if identical
@@ -7656,7 +7656,7 @@ class CInitGroups
             }
             else
                 differs = (dir&&*dir);
-            if (group&&!differs) {
+            if (!differs) {
                 Owned<IPropertyTreeIterator> pe = old->getElements("Node");
                 unsigned i=0;
                 ForEach(*pe) {
@@ -7685,8 +7685,6 @@ class CInitGroups
             if (!differs || force)
                 root->removeProp(prop.str());
         }
-        if (!group)
-            return false;
         if (differs && !force)
             return false;
         IPropertyTree *val = createPTree("Group");
