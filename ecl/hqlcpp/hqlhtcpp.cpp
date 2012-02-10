@@ -10742,19 +10742,8 @@ void HqlCppTranslator::generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx,
 
     assertex(dataset.querySide() == no_activetable);
     bool noNeedToSort = canRemoveSort && isAlreadySorted(dataset.queryDataset(), sorts, canRemoveSort, true);
-    if (noSortAttr)
-    {
-        IHqlExpression * child = noSortAttr->queryChild(0);
-        if (!child)
-            noNeedToSort = true;
-        else
-        {
-            if (side == no_left)
-                noNeedToSort = child->queryName() == leftAtom;
-            else if (side == no_left)
-                noNeedToSort = child->queryName() == rightAtom;
-        }
-    }
+    if (userPreventsSort(noSortAttr, side))
+        noNeedToSort = true;
     
     if (noNeedToSort || isLightweight)
     {

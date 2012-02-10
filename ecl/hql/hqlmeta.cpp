@@ -39,7 +39,9 @@
 #include "hqlmeta.hpp"
 
 //#define OPTIMIZATION2
+//#define OPTIMIZE_SORT_WITH_GROUP
 
+static IHqlExpression * cacheGroupedElement;
 static IHqlExpression * cacheUnknownAttribute;
 static IHqlExpression * cacheIndeterminateAttribute;
 static IHqlExpression * cacheUnknownSortlist;
@@ -49,11 +51,13 @@ static IHqlExpression * cached_omitted_Attribute;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
+    _ATOM groupedOrderAtom = createAtom("{group-order}");
+    cacheGroupedElement = createAttribute(groupedOrderAtom);
     cacheUnknownAttribute = createAttribute(unknownAtom);
     cacheIndeterminateAttribute = createAttribute(indeterminateAtom);
     cacheUnknownSortlist = createValue(no_sortlist, makeSortListType(NULL), LINK(cacheUnknownAttribute));
     cacheIndeterminateSortlist = createValue(no_sortlist, makeSortListType(NULL), LINK(cacheIndeterminateAttribute));
-    cacheMatchGroupOrderSortlist = createValue(no_sortlist, makeSortListType(NULL), createAttribute(groupedAtom));
+    cacheMatchGroupOrderSortlist = createValue(no_sortlist, makeSortListType(NULL), LINK(cacheGroupedElement));
     cached_omitted_Attribute = createAttribute(_omitted_Atom);
     return true;
 }
@@ -65,6 +69,7 @@ MODULE_EXIT()
     cacheUnknownSortlist->Release();
     cacheIndeterminateAttribute->Release();
     cacheUnknownAttribute->Release();
+    cacheGroupedElement->Release();
 }
 
 /*
@@ -244,6 +249,17 @@ IHqlExpression * getUnknownSortlist() { return LINK(cacheUnknownSortlist); }
 
 inline bool matchesGroupOrder(IHqlExpression * expr) { return expr == cacheMatchGroupOrderSortlist; }
 
+bool hasTrailingGroupOrder(IHqlExpression * expr)
+{
+    if (expr)
+    {
+        unsigned max = expr->numChildren();
+        if (max)
+            return expr->queryChild(max-1) == cacheGroupedElement;
+    }
+    return false;
+}
+
 //---------------------------------------------------------------------------------------------
 // Helper functions for processing the basic lists
 
@@ -266,14 +282,17 @@ bool intersectList(HqlExprArray & target, const HqlExprArray & left, const HqlEx
 }
 
 
-IHqlExpression * createSubSortlist(IHqlExpression * sortlist, unsigned from, unsigned to)
+IHqlExpression * createSubSortlist(IHqlExpression * sortlist, unsigned from, unsigned to, IHqlExpression * subsetAttr)
 {
     if (from == to)
         return NULL;
     if ((from == 0) && (to == sortlist->numChildren()))
         return LINK(sortlist);
+
     HqlExprArray components;
     unwindChildren(components, sortlist, from, to);
+    if (subsetAttr)
+        components.append(*LINK(subsetAttr));
     return createValue(no_sortlist, makeSortListType(NULL), components);
 }
 
@@ -326,7 +345,7 @@ void normalizeComponents(HqlExprArray & args, const HqlExprArray & src)
     removeDuplicates(args);
 }
 
-IHqlExpression * getIntersectingSortlist(IHqlExpression * left, IHqlExpression * right)
+IHqlExpression * getIntersectingSortlist(IHqlExpression * left, IHqlExpression * right, IHqlExpression * subsetAttr)
 {
     if (!left || !right)
         return NULL;
@@ -335,16 +354,16 @@ IHqlExpression * getIntersectingSortlist(IHqlExpression * left, IHqlExpression *
     {
         //This test also covers the case where one list is longer than the other...
         if (left->queryChild(i) != right->queryChild(i))
-            return createSubSortlist(left, 0, i);
+            return createSubSortlist(left, 0, i, subsetAttr);
     }
     return LINK(left);
 }
 
 
 //Find the intersection between left and (localOrder+groupOrder)
-IHqlExpression * getIntersectingSortlist(IHqlExpression * left, IHqlExpression * localOrder, IHqlExpression * groupOrder)
+IHqlExpression * getModifiedGlobalOrder(IHqlExpression * globalOrder, IHqlExpression * localOrder, IHqlExpression * groupOrder)
 {
-    if (!left || !localOrder)
+    if (!globalOrder || !localOrder)
         return NULL;
 
     unsigned max1=0;
@@ -353,8 +372,13 @@ IHqlExpression * getIntersectingSortlist(IHqlExpression * left, IHqlExpression *
         ForEachChild(i1, localOrder)
         {
             //This test also covers the case where one list is longer than the other...
-            if (left->queryChild(i1) != localOrder->queryChild(i1))
-                return createSubSortlist(left, 0, i1);
+            IHqlExpression * curLocal = localOrder->queryChild(i1);
+            if (globalOrder->queryChild(i1) != curLocal)
+            {
+                if (curLocal == cacheGroupedElement)
+                    break;
+                return createSubSortlist(globalOrder, 0, i1, NULL);
+            }
         }
         max1 = localOrder->numChildren();
     }
@@ -365,12 +389,12 @@ IHqlExpression * getIntersectingSortlist(IHqlExpression * left, IHqlExpression *
         ForEachChild(i2, groupOrder)
         {
             //This test also covers the case where one list is longer than the other...
-            if (left->queryChild(i2+max1) != groupOrder->queryChild(i2))
-                return createSubSortlist(left, 0, i2+max1);
+            if (globalOrder->queryChild(i2+max1) != groupOrder->queryChild(i2))
+                return createSubSortlist(globalOrder, 0, i2+max1, NULL);
         }
         max2 = groupOrder->numChildren();
     }
-    return createSubSortlist(left, 0, max1+max2);
+    return createSubSortlist(globalOrder, 0, max1+max2, NULL);
 }
 
 
@@ -397,6 +421,36 @@ inline IHqlExpression * normalizeSortlist(IHqlExpression * sortlist, IHqlExpress
 IHqlExpression * normalizeDistribution(IHqlExpression * distribution)
 {
     return LINK(distribution);
+}
+
+static bool sortComponentMatches(IHqlExpression * curNew, IHqlExpression * curExisting)
+{
+    IHqlExpression * newBody = curNew->queryBody();
+    IHqlExpression * existingBody = curExisting->queryBody();
+    if (newBody == existingBody)
+        return true;
+
+    ITypeInfo * newType = curNew->queryType();
+    ITypeInfo * existingType = curExisting->queryType();
+
+    //A local sort by (string)qstring is the same as by qstring....
+    if (isCast(curNew) && (curNew->queryChild(0)->queryBody() == existingBody))
+    {
+        if (preservesValue(newType, existingType) && preservesOrder(newType, existingType))
+            return true;
+    }
+    // a sort by qstring is the same as by (string)qstring.
+    if (isCast(curExisting) && (newBody == curExisting->queryChild(0)->queryBody()))
+    {
+        if (preservesValue(existingType, newType) && preservesOrder(existingType, newType))
+            return true;
+    }
+    // (cast:z)x should match (implicit-cast:z)x
+    if (isCast(curNew) && isCast(curExisting) && (newType==existingType))
+        if (curNew->queryChild(0)->queryBody() == curExisting->queryChild(0)->queryBody())
+            return true;
+
+    return false;
 }
 
 //---------------------------------------------------------------------------------------------
@@ -440,6 +494,9 @@ IHqlExpression * getLocalSortOrder(ITypeInfo * type)
     unwindChildren(components, localOrder);
     if (!hasUnknownComponent(components))
     {
+        if (components.length() && (&components.tos() == cacheGroupedElement))
+            components.pop();
+
         if (groupOrder)
             unwindChildren(components, groupOrder);
     }
@@ -566,15 +623,40 @@ ITypeInfo * getTypeUngroup(ITypeInfo * prev)
 }
 
 
+static bool matchesGroupBy(IHqlExpression * groupBy, IHqlExpression * cur)
+{
+    if (sortComponentMatches(groupBy, cur))
+        return true;
+    if (cur->getOperator() == no_negate)
+        return sortComponentMatches(groupBy, cur->queryChild(0));
+    return false;
+}
+
+static bool withinGroupBy(const HqlExprArray & groupBy, IHqlExpression * cur)
+{
+    ForEachItemIn(i, groupBy)
+    {
+        if (matchesGroupBy(&groupBy.item(i), cur))
+            return true;
+    }
+    return false;
+}
+
+static bool groupByWithinSortOrder(IHqlExpression * groupBy, IHqlExpression * order)
+{
+    ForEachChild(i, order)
+    {
+        if (matchesGroupBy(groupBy, order->queryChild(i)))
+            return true;
+    }
+    return false;
+}
+
 //NB: This does not handle ALL groups that is handled in createDataset()
 ITypeInfo * getTypeGrouped(ITypeInfo * prev, IHqlExpression * grouping, bool isLocal)
 {
     OwnedITypeInfo prevUngrouped = getTypeUngroup(prev);
     OwnedHqlExpr newGrouping = normalizeSortlist(grouping);
-
-    HqlExprArray groupBy;
-    if (newGrouping)
-        unwindChildren(groupBy, newGrouping);
 
     IHqlExpression * distribution = isLocal ? queryDistribution(prevUngrouped) : NULL;
     IHqlExpression * globalOrder = queryGlobalSortOrder(prevUngrouped);
@@ -584,16 +666,55 @@ ITypeInfo * getTypeGrouped(ITypeInfo * prev, IHqlExpression * grouping, bool isL
 
     if (localOrder)
     {
-        //Find the last local order component that is included in the grouping condition
-        unsigned max = localOrder->numChildren();
-        unsigned firstGroup = 0;
-        for (unsigned i=max;i--!= 0;)
+        HqlExprArray groupBy;
+        if (newGrouping)
+            unwindChildren(groupBy, newGrouping);
+
+        //The local sort order is split into two.
+        //Where depends on whether all the grouping conditions match sort elements.
+        //MORE: Is there a good way to accomplish this withit iterating both ways round?
+        bool allGroupingMatch = true;
+        ForEachItemIn(i, groupBy)
         {
-            IHqlExpression * cur = localOrder->queryChild(i);
-            if (groupBy.contains(*cur))
+            IHqlExpression * groupElement = &groupBy.item(i);
+            if (!groupByWithinSortOrder(groupElement, localOrder))
             {
-                firstGroup = i+1;
+                allGroupingMatch = false;
                 break;
+            }
+        }
+
+        unsigned max = localOrder->numChildren();
+        unsigned firstGroup;
+        if (allGroupingMatch)
+        {
+            //All grouping conditions match known sorts.  Therefore the last local order component that is included in
+            //the grouping condition is important.  The order of all elements before that will be preserved if the
+            //group is sorted.
+            firstGroup = 0;
+            for (unsigned i=max;i--!= 0;)
+            {
+                IHqlExpression * cur = localOrder->queryChild(i);
+                if (withinGroupBy(groupBy, cur))
+                {
+                    firstGroup = i+1;
+                    break;
+                }
+            }
+        }
+        else
+        {
+            //If one of the grouping conditions is not included in the sort order, and if the group is subsequently
+            //sorted then the the state of the first element that doesn't match the grouping condition will be unknown.
+            firstGroup = max;
+            for (unsigned i=0;i<max;i++)
+            {
+                IHqlExpression * cur = localOrder->queryChild(i);
+                if (!withinGroupBy(groupBy, cur))
+                {
+                    firstGroup = i;
+                    break;
+                }
             }
         }
 
@@ -605,8 +726,10 @@ ITypeInfo * getTypeGrouped(ITypeInfo * prev, IHqlExpression * grouping, bool isL
         }
         else
         {
-            newLocalOrder.setown(createSubSortlist(localOrder, 0, firstGroup));
-            newGroupOrder.setown(createSubSortlist(localOrder, firstGroup, max));
+            //Add a marker to the end of the first order if it the rest will become invalidated by a group sort
+            IHqlExpression * subsetAttr = (!allGroupingMatch && (firstGroup != max)) ? cacheGroupedElement : NULL;
+            newLocalOrder.setown(createSubSortlist(localOrder, 0, firstGroup, subsetAttr));
+            newGroupOrder.setown(createSubSortlist(localOrder, firstGroup, max, NULL));
         }
     }
 
@@ -629,7 +752,7 @@ ITypeInfo * getTypeLocalSort(ITypeInfo * prev, IHqlExpression * sortOrder)
     IHqlExpression * globalSortOrder = queryGlobalSortOrder(prev);
     OwnedHqlExpr localSortOrder = normalizeSortlist(sortOrder);
     //The global sort order is maintained as the leading components that match.
-    OwnedHqlExpr newGlobalOrder = getIntersectingSortlist(globalSortOrder, localSortOrder);
+    OwnedHqlExpr newGlobalOrder = getIntersectingSortlist(globalSortOrder, localSortOrder, NULL);
     ITypeInfo * rowType = queryRowType(prev);
     return makeTableType(LINK(rowType), LINK(distribution), newGlobalOrder.getClear(), localSortOrder.getClear());
 }
@@ -644,9 +767,22 @@ ITypeInfo * getTypeGroupSort(ITypeInfo * prev, IHqlExpression * sortOrder)
     IHqlExpression * globalOrder = queryGlobalSortOrder(prev);
     IHqlExpression * localUngroupedOrder = queryLocalUngroupedSortOrder(prev);
     //Group sort => make sure we no longer track it as the localsort
-    IHqlExpression * newLocalUngroupedOrder = matchesGroupOrder(localUngroupedOrder) ? NULL : localUngroupedOrder;
+    OwnedHqlExpr newLocalUngroupedOrder;
+    if (localUngroupedOrder && !matchesGroupOrder(localUngroupedOrder))
+    {
+        if (hasTrailingGroupOrder(localUngroupedOrder))
+        {
+            HqlExprArray components;
+            unwindChildren(components, localUngroupedOrder);
+            components.pop();
+            components.append(*getUnknownAttribute());
+            newLocalUngroupedOrder.setown(localUngroupedOrder->clone(components));
+        }
+        else
+            newLocalUngroupedOrder.set(localUngroupedOrder);
+    }
 
-    OwnedHqlExpr newGlobalOrder = getIntersectingSortlist(globalOrder, newLocalUngroupedOrder, groupedOrder);
+    OwnedHqlExpr newGlobalOrder = getModifiedGlobalOrder(globalOrder, newLocalUngroupedOrder, groupedOrder);
     ITypeInfo * prevTable = prev->queryChildType();
     ITypeInfo * tableType;
     if ((globalOrder != newGlobalOrder) || (localUngroupedOrder != newLocalUngroupedOrder))
@@ -686,21 +822,23 @@ ITypeInfo * getTypeIntersection(ITypeInfo * leftType, ITypeInfo * rightType)
     else if (leftDist && rightDist)
         newDistributeInfo.set(queryUnknownAttribute());
 
-    OwnedHqlExpr globalOrder = getIntersectingSortlist(queryGlobalSortOrder(leftType), queryGlobalSortOrder(rightType));
+    OwnedHqlExpr globalOrder = getIntersectingSortlist(queryGlobalSortOrder(leftType), queryGlobalSortOrder(rightType), NULL);
     IHqlExpression * leftLocalOrder = queryLocalUngroupedSortOrder(leftType);
     IHqlExpression * rightLocalOrder = queryLocalUngroupedSortOrder(rightType);
     IHqlExpression * leftGrouping = queryGrouping(leftType);
     IHqlExpression * rightGrouping = queryGrouping(rightType);
     OwnedHqlExpr localOrder;
     OwnedHqlExpr grouping = (leftGrouping || rightGrouping) ? getUnknownSortlist() : NULL;
+    if (leftGrouping == rightGrouping)
+        grouping.set(leftGrouping);
+
     OwnedHqlExpr groupOrder;
     if (leftLocalOrder == rightLocalOrder)
     {
         localOrder.set(leftLocalOrder);
         if (leftGrouping == rightGrouping)
         {
-            grouping.set(leftGrouping);
-            groupOrder.setown(getIntersectingSortlist(queryGroupSortOrder(leftType), queryGroupSortOrder(rightType)));
+            groupOrder.setown(getIntersectingSortlist(queryGroupSortOrder(leftType), queryGroupSortOrder(rightType), NULL));
         }
         else
         {
@@ -711,7 +849,10 @@ ITypeInfo * getTypeIntersection(ITypeInfo * leftType, ITypeInfo * rightType)
     {
         //intersect local order - not worth doing anything else
         if (!matchesGroupOrder(leftLocalOrder) && !matchesGroupOrder(rightLocalOrder))
-            localOrder.setown(getIntersectingSortlist(leftLocalOrder, rightLocalOrder));
+        {
+            IHqlExpression * extraAttr = grouping ? queryUnknownAttribute() : NULL;
+            localOrder.setown(getIntersectingSortlist(leftLocalOrder, rightLocalOrder, extraAttr));
+        }
     }
 
     ITypeInfo * rowType = queryRowType(leftType);
@@ -1017,37 +1158,6 @@ IHqlExpression * getExistingSortOrder(IHqlExpression * dataset, bool isLocal, bo
 }
 
 
-static bool sortComponentMatches(IHqlExpression * curNew, IHqlExpression * curExisting)
-{
-    IHqlExpression * newBody = curNew->queryBody();
-    IHqlExpression * existingBody = curExisting->queryBody();
-    if (newBody == existingBody)
-        return true;
-
-    ITypeInfo * newType = curNew->queryType();
-    ITypeInfo * existingType = curExisting->queryType();
-
-    //A local sort by (string)qstring is the same as by qstring....
-    if (isCast(curNew) && (curNew->queryChild(0)->queryBody() == existingBody))
-    {
-        if (preservesValue(newType, existingType) && preservesOrder(newType, existingType))
-            return true;
-    }
-    // a sort by qstring is the same as by (string)qstring.
-    if (isCast(curExisting) && (newBody == curExisting->queryChild(0)->queryBody()))
-    {
-        if (preservesValue(existingType, newType) && preservesOrder(existingType, newType))
-            return true;
-    }
-    // (cast:z)x should match (implicit-cast:z)x
-    if (isCast(curNew) && isCast(curExisting) && (newType==existingType))
-        if (curNew->queryChild(0)->queryBody() == curExisting->queryChild(0)->queryBody())
-            return true;
-
-    return false;
-}
-
-
 static bool isCorrectDistributionForSort(IHqlExpression * dataset, IHqlExpression * normalizedSortOrder, bool isLocal, bool ignoreGrouping)
 {
     if (isLocal || (isGrouped(dataset) && !ignoreGrouping))
@@ -1121,7 +1231,7 @@ IHqlExpression * ensureSorted(IHqlExpression * dataset, IHqlExpression * order, 
     if (isAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping))
         return LINK(dataset);
 
-    if (false && (isLocal || alwaysLocal))
+    if (isLocal || alwaysLocal)
     {
         unsigned partialSorted = numElementsAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping);
         if (partialSorted != 0)
@@ -1190,6 +1300,9 @@ unsigned numElementsAlreadySorted(IHqlExpression * dataset, HqlExprArray & newSo
 
 IHqlExpression * ensureShuffled(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool alwaysLocal, unsigned sortedElements)
 {
+#ifndef OPTIMIZE_SORT_WITH_GROUP
+    return NULL;
+#endif
     if (sortedElements == (unsigned)-1)
         sortedElements = numElementsAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping);
 
@@ -1210,11 +1323,37 @@ IHqlExpression * ensureShuffled(IHqlExpression * dataset, IHqlExpression * order
     OwnedHqlExpr newOrder = createValueSafe(no_sortlist, makeSortListType(NULL), components, sortedElements, components.ordinality());
 
     OwnedHqlExpr attr = isLocal ? createLocalAttribute() : (isGrouped(dataset) && ignoreGrouping) ? createAttribute(globalAtom) : NULL;
-    OwnedHqlExpr group = createDatasetF(no_group, LINK(dataset), LINK(alreadySorted), LINK(attr));
-    OwnedHqlExpr sorted = createDatasetF(no_sort, LINK(group), LINK(newOrder), LINK(attr));
+    OwnedHqlExpr group = createDatasetF(no_group, LINK(dataset), LINK(alreadySorted), LINK(attr), NULL);
+    OwnedHqlExpr sorted = createDataset(no_sort, LINK(group), LINK(newOrder));
     OwnedHqlExpr ungrouped = createDataset(no_group, LINK(sorted));
+    if (!isAlreadySorted(ungrouped, order, isLocal||alwaysLocal, ignoreGrouping))
+        dbglogExpr(ungrouped);
     assertex(isAlreadySorted(ungrouped, order, isLocal||alwaysLocal, ignoreGrouping));
     return ungrouped.getClear();
+}
+
+IHqlExpression * getShuffleSort(IHqlExpression * dataset, HqlExprArray & order, bool isLocal, bool ignoreGrouping, bool alwaysLocal)
+{
+    if (isAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping))
+        return NULL;
+
+    unsigned numSortedElements = numElementsAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping);
+    if (numSortedElements == 0)
+        return NULL;
+    OwnedHqlExpr sortlist = createValueSafe(no_sortlist, makeSortListType(NULL), order);
+    OwnedHqlExpr mappedSortlist = replaceSelector(sortlist, queryActiveTableSelector(), dataset);
+    return ensureShuffled(dataset, mappedSortlist, isLocal, ignoreGrouping, alwaysLocal, numSortedElements);
+}
+
+IHqlExpression * getShuffleSort(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool alwaysLocal)
+{
+    if (isAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping))
+        return NULL;
+
+    unsigned numSortedElements = numElementsAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping);
+    if (numSortedElements == 0)
+        return NULL;
+    return ensureShuffled(dataset, order, isLocal, ignoreGrouping, alwaysLocal, numSortedElements);
 }
 
 //-------------------------------
@@ -1407,8 +1546,14 @@ static IHqlExpression * optimizePreserveMeta(IHqlExpression * expr)
     if (expr->getOperator() != no_preservemeta)
         return LINK(expr);
     IHqlExpression * ds = expr->queryChild(0);
-    if (ds->getOperator() != no_workunit_dataset)
+    switch (ds->getOperator())
+    {
+    case no_workunit_dataset:
+    case no_getgraphresult:
+        break;
+    default:
         return LINK(expr);
+    }
     HqlExprArray args;
     unwindChildren(args, expr, 1);
 

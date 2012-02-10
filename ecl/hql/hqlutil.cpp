@@ -7659,3 +7659,20 @@ IHqlExpression * normalizeAnyDatasetAliases(IHqlExpression * expr)
         return normalizeDatasetAlias(transformed);
     return transformed.getClear();
 }
+
+bool userPreventsSort(IHqlExpression * noSortAttr, node_operator side)
+{
+    if (!noSortAttr)
+        return false;
+
+    IHqlExpression * child = noSortAttr->queryChild(0);
+    if (!child)
+        return true;
+
+    _ATOM name = child->queryName();
+    if (side == no_left)
+        return name == leftAtom;
+    if (side == no_right)
+        return name == rightAtom;
+    throwUnexpected();
+}

@@ -2491,7 +2491,8 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     }
 
     bool hasLocal = isLocalActivity(expr);
-    bool isLocal = hasLocal || !translator.targetThor();
+    bool alwaysLocal = !translator.targetThor();
+    bool isLocal = hasLocal || alwaysLocal;
     //hash,local doesn't make sense (hash is only used for distribution) => remove hash
     //but also prevent it being converted to a lookup join??
     if (isLocal && expr->hasProperty(hashAtom))
@@ -2725,6 +2726,32 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
         }
     }
 
+    if (isThorCluster(targetClusterType) && isLocal)
+    {
+        IHqlExpression * noSortAttr = expr->queryProperty(noSortAtom);
+        OwnedHqlExpr newLeft;
+        OwnedHqlExpr newRight;
+        if (!userPreventsSort(noSortAttr, no_left))
+            newLeft.setown(getShuffleSort(leftDs, leftSorts, isLocal, true, alwaysLocal));
+        if (!userPreventsSort(noSortAttr, no_right))
+            newRight.setown(getShuffleSort(rightDs, rightSorts, isLocal, true, alwaysLocal));
+        if (newLeft || newRight)
+        {
+            HqlExprArray args;
+            if (newLeft)
+                args.append(*newLeft.getClear());
+            else
+                args.append(*LINK(leftDs));
+            if (newRight)
+                args.append(*newRight.getClear());
+            else
+                args.append(*LINK(rightDs));
+            unwindChildren(args, expr, 2);
+            return expr->clone(args);
+        }
+    }
+
+
     return NULL;
 }
 
@@ -2817,11 +2844,18 @@ IHqlExpression * ThorHqlTransformer::normalizeSort(IHqlExpression * expr)
             return normalized;
     }
 
-    bool isLocal = !translator.targetThor() || expr->hasProperty(localAtom);
-    if ((op != no_assertsorted) && isAlreadySorted(dataset, sortlist, isLocal, false))
+    bool isLocal = expr->hasProperty(localAtom);
+    bool alwaysLocal = !translator.targetThor();
+    if ((op != no_assertsorted) && isAlreadySorted(dataset, sortlist, isLocal||alwaysLocal, false))
         return LINK(dataset);
     if (op == no_sorted)
         return normalizeSortSteppedIndex(expr, sortedAtom);
+    if (op != no_assertsorted)
+    {
+        OwnedHqlExpr shuffled = getShuffleSort(dataset, sortlist, isLocal, false, alwaysLocal);
+        if (shuffled)
+            return shuffled.getClear();
+    }
     return NULL;
 }
 
