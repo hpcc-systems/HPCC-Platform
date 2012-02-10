@@ -16,8 +16,8 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-deploydir=$1
-slavenum=$2
+prog=$1
+master=$2
 logpth=$3
 instancedir=$4
 slaveport=$5
@@ -33,33 +33,23 @@ source  ${INSTALL_DIR}/etc/init.d/hpcc_common
 which_pidof
 
 if [ $# -lt 8 ]; then
-  echo usage: $0 thordeploydir slaveno logdir workingdir slaveport hpcc_compname hpcc_setenv logredirect
+  echo usage: prog master logdir workingdir slaveport hpcc_compname hpcc_setenv logredirect
   exit 1
 fi
 
-sudo /etc/init.d/hpcc-init -c $hpcc_compname setup 2>/dev/null 2>/dev/null
-
+mkdir -p $instancedir
+mkdir -p `dirname $logredirect`
 exec >$logredirect 2>&1
 
 cd $instancedir
-. ./setvars
 
-slaveproc="thorslave_$THORSLAVEPORT"
-if [ "$multislaves" = "true" ] || [ "$localthor" = "true" ]; then
-    logpth=${logpth}_${slaveport}
-fi
+logpth=${logpth}_${slaveport}
 
-ln -s -f $deploydir/thorslave${LCR} $slaveproc
-export PATH=$PATH:$deploydir
 
-echo "slave $slavenum init `date`"
+echo "slave init `date`"
 
-lckfile="start_slave"
-if [ "$multislaves" = "true" ] || [ "$localthor" = "true" ]; then
-    lckfile=${lckfile}_${slaveport}
-fi
+lckfile="start_slave_${slaveport}.lck"
 
-lckfile="${lckfile}.lck"
 # prevent two slaves starting together
 while [ -e $lckfile ]; do
   echo waiting on lckfile: $lckfile
@@ -79,32 +69,18 @@ echo $$ > $lckfile
 ulimit -c unlimited
 ulimit -n 8192
 
+slaveproc="thorslave_$slaveport"
+ln -s -f `which $prog` $slaveproc
 
-if [ "$multislaves" != "true" ] && [ "$localthor" != "true" ]; then
-    # kill stubborn slave
-    oldpid=`${PIDOF} $slaveproc`
-    if [ -n "$oldpid" ]; then
-      # used hard kill as don't want unregistering
-      echo killing pid $oldpid $slaveproc
-      kill -9 $oldpid 
-    fi
-fi
+echo "slave starting `date`"
 
-if [ "$localthor" != "true" ]; then
-    ln -s -f $deploydir/thorslave${LCR} $instancedir/$slaveproc
-fi
-
-echo "slave $slavenum starting `date`"
-
-export PATH=$PATH:$BINDIR
-
-echo $instancedir/$slaveproc master=$THORMASTER:$THORMASTERPORT slave=.:$slaveport daliservers=$DALISERVER logDir=$logpth $remotedeploy
-$instancedir/$slaveproc master=$THORMASTER:$THORMASTERPORT slave=.:$slaveport daliservers=$DALISERVER logDir=$logpth $remotedeploy 2>/dev/null 1>/dev/null &
+echo $instancedir/$slaveproc master=$master slave=.:$slaveport logDir=$logpth
+$instancedir/$slaveproc master=$master slave=.:$slaveport logDir=$logpth 2>/dev/null 1>/dev/null &
 slavepid=$!
 echo $slavepid > $PID_NAME
 if [ "$slavepid" -eq "0" ]; then
-  echo "failed to start $slavenum at `date`"
+  echo "failed to start at `date`"
 else
-  echo "slave  $slavenum pid $slavepid started `date`"
+  echo "slave pid $slavepid started `date`"
 fi
 
