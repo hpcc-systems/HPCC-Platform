@@ -3478,7 +3478,7 @@ function updateParams(record, attrName, oldValue, newValue, updateAttr, prevVal,
           }
           record.setData(subrec, sub);
         }
-        else {
+        else if (sub){
           var sparams = sub.params;
           var newsparams = updateParams(null, attrName, oldValue, newValue, updateAttr, prevVal, updateVal, sparams);
           if (newsparams.length > 0)
