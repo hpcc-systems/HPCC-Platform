@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="GetSuperFileSubCount">
+  <title><emphasis role="bold">GetSuperFileSubCount</emphasis></title>
+
+  <para><emphasis role="bold">STD.File.GetSuperFileSubCount<indexterm>
+      <primary>STD.File.GetSuperFileSubCount</primary>
+    </indexterm><indexterm>
+      <primary>File.GetSuperFileSubCount</primary>
+    </indexterm><indexterm>
+      <primary>GetSuperFileSubCount</primary>
+    </indexterm>(</emphasis> <emphasis> superfile </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>superfile</emphasis></entry>
+
+          <entry>A null-terminated string containing the logical name of the
+          superfile.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>GetSuperFileSubCount returns an INTEGER4 value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">GetSuperFileSubCount </emphasis>function
+  returns the number of sub-files comprising the
+  <emphasis>superfile</emphasis>.</para>
+
+  <para>This function is not included in a superfile transaction.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">A := STD.File.GetSuperFileSubCount('~CLASS::RT::IN::SF1');</programlisting>
+</sect1>

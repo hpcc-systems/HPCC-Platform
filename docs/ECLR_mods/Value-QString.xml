@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="QSTRING">
+  <title>QSTRING<indexterm>
+      <primary>QSTRING</primary>
+    </indexterm></title>
+
+  <para><emphasis
+  role="bold">QSTRING[</emphasis><emphasis>n</emphasis><emphasis
+  role="bold">]<indexterm>
+      <primary>QSTRING value type</primary>
+    </indexterm></emphasis></para>
+
+  <para>A data-compressed variation of STRING that uses only 6-bits per
+  character to reduce storage requirements for large strings. The character
+  set is limited to capital letters A-Z, the numbers 0-9, the blank space, and
+  the following set of special characters:</para>
+
+  <programlisting>! " # $ % &amp; ' ( ) * + , - . / ; &lt; = &gt; ? @ [ \ ] ^ _</programlisting>
+
+  <para>If <emphasis>n</emphasis> is omitted, the QSTRING is variable length
+  to the size needed to contain the result of a cast or passed parameter. You
+  may use set indexing into any QSTRING to parse out a substring.</para>
+
+  <para>Example:</para>
+
+  <programlisting>QSTRING12 CompanyName := 'LEXISNEXIS';
+        // uses only 9 bytes of storage instead of 12</programlisting>
+
+  <para>See Also: <link linkend="STRING">STRING</link>, <link
+  linkend="LENGTH">LENGTH</link>, <link linkend="TRIM">TRIM</link>, <link
+  linkend="Set_Ordering_and_Indexing">Set Ordering and Indexing</link>.</para>
+</sect1>

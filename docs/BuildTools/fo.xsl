@@ -1,0 +1,337 @@
+﻿<?xml version='1.0'?>
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns:fo="http://www.w3.org/1999/XSL/Format"
+                version='1.0'>
+
+  <xsl:import href="../docbook-xsl/fo/profile-docbook.xsl"/>
+  <xsl:import href="mytitlepage.xsl"/>
+
+<xsl:param name="admon.graphics" select="1"/>
+<xsl:param name="admon.graphics.path" select="icons"/>
+<xsl:param name="chapter.autolabel" select="0"/>  
+<xsl:param name="shade.verbatim" select="1"/> 
+<!--xsl:param name="body.font.family" select="serif"/-->
+<xsl:param name="body.start.indent" select="0"/>
+<xsl:param name="callout.graphics" select="0"/>
+<xsl:param name="footer.column.widths" select="'0 3 0'"/>
+<!--xsl:param name="use.extensions" select="1"/-->
+<xsl:param name="fop1.extensions" select="1"/>
+<xsl:param name="generate.index" select="3"/>
+<xsl:param name="generate.section.toc.level" select="1"/>
+<xsl:param name="generate.toc">book toc</xsl:param>
+<xsl:param name="header.column.widths" select="'0 3 0'"/>
+<xsl:param name="paper.type" select="letter"/>
+<xsl:param name="profile.condition" select="int"/>
+<xsl:param name="qanda.inherit.numeration" select="0"/>
+<xsl:param name="section.autolabel" select="0"/>
+<!--xsl:param name="title.font.family" select="sans-serif"/-->
+<xsl:param name="toc.section.depth" select="1"/>
+
+<!--===========================SPECIAL_TOC_SAUCE======================-->
+<xsl:template name="page.number.format">
+  <xsl:param name="element" select="local-name(.)"/>
+  <xsl:choose>
+    <xsl:when test="$element = 'toc'">1</xsl:when>
+    <xsl:otherwise>1</xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+<xsl:template name="initial.page.number">
+  <xsl:param name="element" select="local-name(.)"/>
+  <xsl:param name="master-reference" select="''"/>
+
+  <!-- Select the first content that the stylesheet places
+       after the TOC -->
+  <xsl:variable name="first.book.content" 
+                select="ancestor::book/*[
+                          not(self::title or
+                              self::subtitle or
+                              self::titleabbrev or
+                              self::bookinfo or
+                              self::info or
+                              self::dedication or
+                              self::preface or
+                              self::toc or
+                              self::lot)][1]"/>
+  <xsl:choose>
+    <!-- double-sided output -->
+    <xsl:when test="$double.sided != 0">
+      <xsl:choose>
+        <xsl:when test="$element = 'toc'">auto-odd</xsl:when>
+        <xsl:when test="$element = 'book'">auto</xsl:when>
+        <!-- preface typically continues TOC roman numerals -->
+        <!-- Change page.number.format if not -->
+        <xsl:when test="$element = 'preface'">auto-odd</xsl:when>
+        <xsl:when test="($element = 'dedication' or $element = 'article') 
+                    and not(preceding::chapter
+                            or preceding::preface
+                            or preceding::appendix
+                            or preceding::article
+                            or preceding::dedication
+                            or parent::part
+                            or parent::reference)">auto</xsl:when>
+        <xsl:when test="generate-id($first.book.content) =
+                        generate-id(.)">auto</xsl:when>
+        <xsl:otherwise>auto-odd</xsl:otherwise>
+      </xsl:choose>
+    </xsl:when>
+
+    <!-- single-sided output -->
+    <xsl:otherwise>
+      <xsl:choose>
+        <xsl:when test="$element = 'toc'">auto</xsl:when>
+        <xsl:when test="$element = 'book'">1</xsl:when>
+        <xsl:when test="$element = 'preface'">auto</xsl:when>
+       <xsl:when test="($element = 'dedication' or $element = 'article') and
+                        not(preceding::chapter
+                            or preceding::preface
+                            or preceding::appendix
+                            or preceding::article
+                            or preceding::dedication
+                            or parent::part
+                            or parent::reference)">auto</xsl:when>
+        <xsl:when test="generate-id($first.book.content) =
+                        generate-id(.)">auto</xsl:when>
+        <xsl:otherwise>auto</xsl:otherwise>
+      </xsl:choose>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+<!--================ENDOFSPECIAL_tocSauce==============================-->
+
+
+<xsl:template match="processing-instruction('hard-pagebreak')">
+   <fo:block break-after='page'/>
+</xsl:template>
+  
+<xsl:template match="programlisting[@role='tab']">
+  <fo:block xsl:use-attribute-sets="monospace.verbatim.properties">
+   <xsl:attribute name="font-family">serif</xsl:attribute>
+   <xsl:attribute name="font-size">10pt</xsl:attribute>
+    <xsl:apply-templates/>
+  </fo:block>
+</xsl:template>
+
+<!--sans-serif-para-role-->
+<xsl:template match="para[@role='sans']">
+  <fo:block>
+   <xsl:attribute name="font-family">sans-serif</xsl:attribute>
+    <xsl:apply-templates/>
+  </fo:block>
+</xsl:template>
+
+<xsl:template match="para[@role='wsig']">
+  <fo:block xsl:use-attribute-sets="monospace.verbatim.properties">
+      <xsl:attribute name="font-size">10pt</xsl:attribute>
+    <xsl:apply-templates/>
+  </fo:block>
+</xsl:template>
+<xsl:template match="programlisting[@role='wsig']">
+  <fo:block xsl:use-attribute-sets="monospace.verbatim.properties">
+      <xsl:attribute name="font-size">10pt</xsl:attribute>
+    <xsl:apply-templates/>
+  </fo:block>
+</xsl:template>
+
+<xsl:attribute-set name="monospace.verbatim.properties">
+ <xsl:attribute name="font-size">
+   0.83em
+  </xsl:attribute>
+</xsl:attribute-set>
+
+<xsl:attribute-set name="section.title.level1.properties">
+ <xsl:attribute name="font-size">
+    <xsl:value-of select="$body.font.master * 2.525"></xsl:value-of>
+    <xsl:text>pt</xsl:text>
+  </xsl:attribute>
+    <xsl:attribute name="color">#A91919</xsl:attribute>
+    <xsl:attribute name="text-decoration">underline</xsl:attribute>
+</xsl:attribute-set>
+
+<xsl:attribute-set name="section.title.level2.properties">
+    <xsl:attribute name="color">#A91919</xsl:attribute>
+</xsl:attribute-set>
+
+<xsl:attribute-set name="section.level1.properties">
+  <xsl:attribute name="break-before">
+      <xsl:choose>
+        <xsl:when test="@role = 'nobrk'">auto</xsl:when>
+        <xsl:otherwise>page</xsl:otherwise>
+      </xsl:choose>
+  </xsl:attribute>
+</xsl:attribute-set>
+
+<xsl:attribute-set name="section.level2.properties">
+   <xsl:attribute name="break-before">
+        <xsl:choose>
+            <xsl:when test="@role = 'brk'">page</xsl:when>
+            <xsl:otherwise>auto</xsl:otherwise>
+        </xsl:choose>
+   </xsl:attribute>
+</xsl:attribute-set>
+
+<xsl:attribute-set name="section.level3.properties">
+   <xsl:attribute name="break-before">
+        <xsl:choose>
+            <xsl:when test="@role = 'brk'">page</xsl:when>
+            <xsl:otherwise>auto</xsl:otherwise>
+        </xsl:choose>
+   </xsl:attribute>
+</xsl:attribute-set>
+
+<xsl:attribute-set name="header.content.properties">
+    <xsl:attribute name="font-family">
+       <xsl:value-of select="$title.font.family"></xsl:value-of>
+    </xsl:attribute>
+</xsl:attribute-set>
+<xsl:attribute-set name="footer.content.properties">
+    <xsl:attribute name="font-family">
+        <xsl:value-of select="$title.font.family"></xsl:value-of>
+    </xsl:attribute>
+</xsl:attribute-set>
+
+<!--chapter-title-attrib-set-->
+<xsl:attribute-set name="component.title.properties">
+    <xsl:attribute name="text-align">right</xsl:attribute>
+</xsl:attribute-set>
+
+<xsl:template name="footer.content">
+<xsl:param name="pageclass" select="''"/>
+<xsl:param name="sequence" select="''"/>
+<xsl:param name="position" select="''"/>
+<xsl:param name="gentext-key" select="''"/>
+      <xsl:choose>
+        <xsl:when test="$double.sided = 0 and $position='center'">
+	     <fo:block>
+		     <xsl:value-of select="ancestor-or-self::book/bookinfo/releaseinfo"/> 
+	     </fo:block>
+	     <fo:block>
+		     <fo:page-number/>
+	     </fo:block>
+	 </xsl:when>
+      </xsl:choose>
+ </xsl:template>
+    
+    <xsl:template name="header.content">
+    <xsl:param name="pageclass" select="body"/>
+    <xsl:param name="sequence" select="''"/>
+    <xsl:param name="position" select="''"/>
+    <xsl:param name="gentext-key" select="''"/>
+        <xsl:choose>
+      	   <xsl:when test="$pageclass = 'titlepage' and $position='center'">
+ 	             <!--IFC-HEADER-LOGIC-->
+ 	              <fo:block>
+ 	      	     		     <xsl:value-of select="ancestor-or-self::book/bookinfo/title"/> 
+ 	       	     </fo:block>
+     	   </xsl:when>
+           <xsl:when test="$pageclass = 'lot' and $position='center'">
+                     <!--TOC-HEADER-LOGIC-->
+	       	     <fo:block>
+	       		     <xsl:value-of select="ancestor-or-self::book/bookinfo/title"/> 
+	       	     </fo:block>
+	      	 
+    	   </xsl:when>
+
+    	   <xsl:when test="$double.sided = 0 and $position='center'">
+    	     <fo:block>
+    		     <xsl:value-of select="ancestor-or-self::book/bookinfo/title"/> 
+             </fo:block>
+             <fo:block>  
+             <xsl:apply-templates select="." mode="object.title.markup"/>
+	     </fo:block>
+	    </xsl:when>
+    	</xsl:choose>
+    </xsl:template>
+    
+ <!--VarListVariation-->
+ <xsl:template match="varlistentry/term">
+        <fo:inline font-family="sans-serif" font-weight="bold">
+          <xsl:apply-templates/>
+        </fo:inline>
+ </xsl:template>
+
+    
+
+<!--COLORING-TEMPLATES-->
+<xsl:template match="emphasis[@role='bluebold']">
+       <fo:inline color="blue"  font-weight="bold">
+         <xsl:apply-templates/>
+       </fo:inline>
+</xsl:template>
+
+<xsl:template match="emphasis[@role='blueital']">
+       <fo:inline color="blue"  font-style="italic">
+         <xsl:apply-templates/>
+       </fo:inline>
+</xsl:template>
+  
+<xsl:template match="emphasis[@role='blue']">
+       <fo:inline color="blue">
+         <xsl:apply-templates/>
+       </fo:inline>
+</xsl:template>
+
+<xsl:template match="emphasis[@role='redbold']">
+       <fo:inline color="red"  font-weight="bold">
+         <xsl:apply-templates/>
+       </fo:inline>
+</xsl:template>
+
+<xsl:template match="emphasis[@role='redital']">
+       <fo:inline color="red"  font-style="italic">
+         <xsl:apply-templates/>
+       </fo:inline>
+</xsl:template>
+    
+<xsl:template match="emphasis[@role='red']">
+       <fo:inline color="red">
+         <xsl:apply-templates/>
+       </fo:inline>
+</xsl:template>
+
+<xsl:template match="emphasis[@role='greenbold']">
+       <fo:inline color="green"  font-weight="bold">
+         <xsl:apply-templates/>
+       </fo:inline>
+</xsl:template>
+
+<xsl:template match="emphasis[@role='greenital']">
+       <fo:inline color="green"  font-style="italic">
+         <xsl:apply-templates/>
+       </fo:inline>
+</xsl:template>
+  
+<xsl:template match="emphasis[@role='green']">
+       <fo:inline color="green">
+         <xsl:apply-templates/>
+       </fo:inline>
+</xsl:template>
+
+<xsl:template match="emphasis[@role='whitebold']">
+       <fo:inline color="white"  font-weight="bold">
+         <xsl:apply-templates/>
+       </fo:inline>
+</xsl:template>
+
+<xsl:template match="emphasis[@role='whiteital']">
+       <fo:inline color="white"  font-style="italic">
+         <xsl:apply-templates/>
+       </fo:inline>
+</xsl:template>
+  
+<xsl:template match="emphasis[@role='white']">
+       <fo:inline color="white">
+         <xsl:apply-templates/>
+       </fo:inline>
+</xsl:template>
+
+
+<xsl:template match="ulink">
+     <fo:inline color="blue" text-decoration="underline">
+             <xsl:apply-templates/>
+       </fo:inline>
+</xsl:template>
+
+
+</xsl:stylesheet>
+
+

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SHARED">
+  <title>SHARED</title>
+
+  <para><emphasis role="bold">SHARED<indexterm>
+      <primary>SHARED</primary>
+    </indexterm> </emphasis><emphasis>definition</emphasis></para>
+
+  <para><emphasis>definition</emphasis> An Attribute definition.</para>
+
+  <para>The <emphasis role="bold">SHARED </emphasis>keyword<indexterm>
+      <primary>SHARED keyword</primary>
+    </indexterm> indicates an Attribute that is available for use throughout
+  the module (i.e. module scope). Without either the SHARED or EXPORT
+  keywords, an Attribute's scope is limited to the next SHARED or EXPORTed
+  Attribute</para>
+
+  <para>Example:</para>
+
+  <programlisting>BadPeople := Person(EXISTS(trades(EXISTS(phr(phr_rate &gt; '4'))));
+        //local only to the GoodHouses Attribute
+SHARED GoodHouses := Household(~EXISTS(BadPeople));
+        //available all thru the module</programlisting>
+
+  <para>See Also: <link linkend="EXPORT">EXPORT</link>, <link
+  linkend="Attribute_Visibility">Attribute Visibility</link>, <link
+  linkend="MODULE_Structure">MODULE</link></para>
+</sect1>

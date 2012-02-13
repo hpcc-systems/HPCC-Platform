@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_FOR">
+  <title>#FOR</title>
+
+  <para><emphasis role="bold">#FOR<indexterm>
+      <primary>#FOR</primary>
+    </indexterm>( </emphasis><emphasis> tag </emphasis><emphasis role="bold">[
+  ( </emphasis><emphasis>filter </emphasis><emphasis role="bold">)
+  ]</emphasis><emphasis> </emphasis><emphasis
+  role="bold">)</emphasis><emphasis role="bold">
+  </emphasis><emphasis></emphasis></para>
+
+  <para><emphasis>statements</emphasis><emphasis
+  role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">#END</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="79.40pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>tag</emphasis></entry>
+
+            <entry>An XML tag.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>filter</emphasis></entry>
+
+            <entry>A logical expression indicating which specific tag
+            instances to process.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>statements</emphasis></entry>
+
+            <entry>The Template statements to execute.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>#END</emphasis></entry>
+
+            <entry>The #FOR structure terminator.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">#FOR </emphasis>structure loops through the
+  XML, searching for each instance of the <emphasis>tag</emphasis> that meets
+  the <emphasis>filter</emphasis> expression and executes the
+  <emphasis>statements </emphasis>on the data contained within that
+  <emphasis>tag</emphasis>.</para>
+
+  <para>Example:</para>
+
+  <programlisting>  // This script processes XML and generates ECL COUNT statements
+  // which run against the datasets and filters specified in the XML.
+  XMLstuff :=
+   '&lt;section&gt;'+
+       '&lt;item&gt;'+
+           '&lt;dataset&gt;people&lt;/dataset&gt;'+
+           '&lt;filter&gt;firstname = \'RICHARD\'&lt;/filter&gt;'+
+       '&lt;/item&gt;'+
+       '&lt;item&gt;'+
+           '&lt;dataset&gt;people&lt;/dataset&gt;'+
+           '&lt;filter&gt;firstname = \'JOHN\'&lt;/filter&gt;'+
+       '&lt;/item&gt;'+
+       '&lt;item&gt;'+
+           '&lt;dataset&gt;people&lt;/dataset&gt;'+
+           '&lt;filter&gt;first_name = \'HENRY\'&lt;/filter&gt;'+
+       '&lt;/item&gt;'+
+   '&lt;/section&gt;';
+  
+  LOADXML(XMLstuff);
+  #DECLARE(CountStr); // Declare CountStr
+  #SET(CountStr, '' ); // Initialize it to an empty string
+  #FOR(item)
+     #APPEND(CountStr,'COUNT(' + %'dataset'% + '(' + %'filter'% + ' ));\n');
+  #END
+  
+  OUTPUT(%'CountStr'%); // output the string just built
+  %CountStr% // then execute the generated "COUNT" actions
+  
+  // Note that the "CountStr" will have 3 COUNT actions in it:
+  //   COUNT(person(person.per_first_name = 'RICHARD'));
+  //   COUNT(person(person.per_first_name = 'JOHN'));
+  //   COUNT(person(person.per_first_name = 'HENRY'));
+</programlisting>
+
+  <para>See Also: <link linkend="_LOOP-_BREAK">#LOOP</link>, <link
+  linkend="_DECLARE">#DECLARE</link></para>
+</sect1>

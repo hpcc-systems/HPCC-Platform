@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="MonitorLogicalFileName">
+  <title><emphasis role="bold">MonitorLogicalFileName</emphasis></title>
+
+  <para><emphasis role="bold">STD.File.MonitorLogicalFileName<indexterm>
+      <primary>STD.File.MonitorLogicalFileName</primary>
+    </indexterm><indexterm>
+      <primary>File.MonitorLogicalFileName</primary>
+    </indexterm><indexterm>
+      <primary>MonitorLogicalFileName</primary>
+    </indexterm>(</emphasis> <emphasis> event, </emphasis> <emphasis
+  role="bold"> </emphasis> <emphasis>filename, </emphasis> <emphasis
+  role="bold"> [</emphasis> <emphasis>, shotcount </emphasis> <emphasis
+  role="bold">] [</emphasis> <emphasis>, espserverIPport </emphasis> <emphasis
+  role="bold">] )</emphasis> <emphasis></emphasis></para>
+
+  <para><emphasis>dfuwuid </emphasis> <emphasis role="bold">:=
+  STD.File.fMonitorLogicalFileName<indexterm>
+      <primary>STD.File.fMonitorLogicalFileName</primary>
+    </indexterm><indexterm>
+      <primary>File.fMonitorLogicalFileName</primary>
+    </indexterm><indexterm>
+      <primary>fMonitorLogicalFileName</primary>
+    </indexterm>(</emphasis> <emphasis> event, </emphasis> <emphasis
+  role="bold"> </emphasis> <emphasis>filename, </emphasis> <emphasis
+  role="bold"> [</emphasis> <emphasis>, shotcount </emphasis> <emphasis
+  role="bold">] [</emphasis> <emphasis>, espserverIPport </emphasis> <emphasis
+  role="bold">] );</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>event</emphasis></entry>
+
+          <entry>A null-terminated string containing the user-defined name of
+          the event to fire when the <emphasis>filename</emphasis> appears.
+          This value is used as the first parameter to the EVENT
+          function.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>filename</emphasis></entry>
+
+          <entry>A null-terminated string containing the name of the logical
+          file in the DFU to monitor. This may contain wildcard characters ( *
+          and ?).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>shotcount</emphasis></entry>
+
+          <entry>Optional. An integer value indicating the number of times to
+          generate the event before the monitoring job completes. A negative
+          one (-1) value indicates the monitoring job continues until manually
+          aborted. If omitted, the default is 1.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>espserverIPport</emphasis></entry>
+
+          <entry>Optional. A null-terminated string containing the protocol,
+          IP, port, and directory, or the DNS equivalent, of the ESP server
+          program. This is usually the same IP and port as ECL Watch, with
+          “/FileSpray” appended. If omitted, the default is the value
+          contained in the lib_system.ws_fs_server attribute.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>dfuwuid</emphasis></entry>
+
+          <entry>The attribute name to recieve the null-terminated string
+          containing the DFU workunit ID (DFUWUID) generated for the
+          monitoring job.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>fMonitorLogicalFileName returns a null-terminated string
+          containing the DFU workunit ID (DFUWUID).</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">MonitorLogicalFileName </emphasis>function
+  creates a file monitor job in the DFU Server. Once the job is received it
+  goes into a 'monitoring' mode (which can be seen in the eclwatch DFU
+  Workunit display), which polls at a fixed interval (settable by configenv
+  but default 15 mins). If an appropriately named file arrives in this
+  interval it will fire the <emphasis>event</emphasis> with the name of the
+  triggering object as the event subtype (see the EVENT function).</para>
+
+  <para>This process continues until either:</para>
+
+  <para>1) The <emphasis>shotcount</emphasis> number of events have been
+  generated.</para>
+
+  <para>2) The user aborts the DFU workunit.</para>
+
+  <para>The STD.File.AbortDfuWorkunit and STD.File.WaitDfuWorkunit functions
+  can be used to abort or wait for the DFU job by passing them the returned
+  <emphasis>dfuwuid</emphasis>.</para>
+
+  <para><emphasis role="bold">Note the following caveats and
+  restrictions:</emphasis></para>
+
+  <para>1) If a matching file already exists when the DFU Monitoring job is
+  started, that file will <emphasis role="underline">not</emphasis> generate
+  an event. It will only generate an event once the file has been deleted and
+  recreated.</para>
+
+  <para>2) If a file is created and then deleted (or deleted then re-created)
+  between polling intervals, it will not be seen by the monitor and will not
+  trigger an event.</para>
+
+  <para>3) Events are only generated on the polling interval.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">EventName := 'MyFileEvent';
+FileName  := 'test::myfile';
+IF (STD.File.FileExists(FileName),
+         STD.File.DeleteLogicalFile(FileName));
+STD.File.MonitorLogicalFileName(EventName,FileName);
+OUTPUT('File Created') : WHEN(EVENT(EventName,'*'),COUNT(1));
+    
+rec := RECORD
+  STRING10 key;
+  STRING10 val;
+END;
+afile := DATASET([{ 'A', '0'}], rec);
+OUTPUT(afile,,FileName);
+</programlisting>
+</sect1>

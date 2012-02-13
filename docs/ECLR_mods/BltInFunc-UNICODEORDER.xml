@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="UNICODEORDER">
+  <title>UNICODEORDER</title>
+
+  <para><emphasis role="bold">UNICODEORDER<indexterm>
+      <primary>UNICODEORDER</primary>
+    </indexterm>(</emphasis><emphasis> left, right </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>, locale </emphasis><emphasis
+  role="bold">] )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="76.10pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>left</emphasis></entry>
+
+            <entry>The left Unicode expression to evaluate.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>right</emphasis></entry>
+
+            <entry>The right Unicode expression to evaluate.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>locale</emphasis></entry>
+
+            <entry>Optional. A string constant containing a valid locale code,
+            as specified in ISO standards 639 and 3166.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>UNICODEORDER returns a single value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">UNICODEORDER </emphasis>function <indexterm>
+      <primary>UNICODEORDER function</primary>
+    </indexterm> returns either -1, 0, or 1 depending on the evaluation of the
+  <emphasis>left </emphasis>and <emphasis>right </emphasis>expressions. This
+  is equivalent to the &lt;=&gt; equivalence comparison operator<indexterm>
+      <primary>comparison operator</primary>
+    </indexterm> but taking the unicode <emphasis>locale</emphasis> as the
+  basis of determination. If <emphasis>left</emphasis> &lt; <emphasis>right
+  </emphasis>then -1 is returned, if <emphasis>left</emphasis> =
+  <emphasis>right </emphasis>then 0 is returned, if <emphasis>left</emphasis>
+  &gt; <emphasis>right </emphasis>then 1 is returned.</para>
+
+  <para>Example:</para>
+
+  <programlisting>  UNICODE1 x := u'a';
+  UNICODE1 y := u'b';
+  UNICODE1 z := u'a';
+  
+  a := UNICODEORDER(x , y, 'es'); // returns -1
+  b := UNICODEORDER(x , z, 'es'); // returns 0
+  c := UNICODEORDER(y , z, 'es'); // returns 1
+</programlisting>
+
+  <para>See Also: <link linkend="FROMUNICODE">FROMUNICODE</link>, <link linkend="TOUNICODE">TOUNICODE</link></para>
+</sect1>

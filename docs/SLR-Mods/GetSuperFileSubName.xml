@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="GetSuperFileSubName">
+  <title><emphasis role="bold">GetSuperFileSubName</emphasis></title>
+
+  <para><emphasis role="bold">STD.File.GetSuperFileSubName<indexterm>
+      <primary>STD.File.GetSuperFileSubName</primary>
+    </indexterm><indexterm>
+      <primary>File.GetSuperFileSubName</primary>
+    </indexterm><indexterm>
+      <primary>GetSuperFileSubName</primary>
+    </indexterm>(</emphasis> <emphasis> superfile, subfile </emphasis>
+  <emphasis role="bold">[,</emphasis> <emphasis>absolutepath</emphasis>
+  <emphasis role="bold">] )</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>superfile</emphasis></entry>
+
+          <entry>A null-terminated string containing the logical name of the
+          superfile.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>subfile</emphasis></entry>
+
+          <entry>An integer in the range of one (1) to the total number of
+          sub-files in the <emphasis>superfile</emphasis> specifying the
+          ordinal position of the sub-file whose name to return.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>absolutepath</emphasis></entry>
+
+          <entry>Optional. A boolean TRUE/FALSE to indicate whether to prepend
+          a tilde (~) to the resulting foreign logical file name. If omitted,
+          the default is FALSE.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>GetSuperFileSubName returns a VARSTRING value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">GetSuperFileSubName </emphasis>function
+  returns the logical name of the specified <emphasis>subfile</emphasis> in
+  the <emphasis>superfile</emphasis>.</para>
+
+  <para>This function is not included in a superfile transaction.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">A := STD.File.GetSuperFileSubName('~CLASS::RT::IN::SF1', 1);
+   //get name of first sub-file
+//this example gets the name of the first sub-file in
+// a foreign superfile
+sf := '~thor_data400::BASE::Business_Header';
+sub := STD.File.GetSuperFileSubName(  STD.File.ForeignLogicalFileName (sf,
+         '10.150.29.161',
+         TRUE),
+  1,TRUE);
+OUTPUT(STD.File.ForeignLogicalFileName(sub,''));</programlisting>
+</sect1>

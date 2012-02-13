@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="STORED_workflow_service">
+  <title>STORED - Workflow Service</title>
+
+  <para><emphasis>[</emphasis><emphasis>attribute </emphasis>:= <emphasis
+  role="bold">]</emphasis><emphasis> expression </emphasis><emphasis
+  role="bold">: STORED<indexterm>
+      <primary>STORED</primary>
+    </indexterm>( </emphasis><emphasis> storedname </emphasis><emphasis
+  role="bold">[, FEW<indexterm>
+      <primary>FEW</primary>
+    </indexterm> ] ) </emphasis><indexterm>
+      <primary>STORED workflow service</primary>
+    </indexterm>;</para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="79.45pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>attribute</emphasis></entry>
+
+            <entry>Optional. The name of the Attribute.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>The definition of the attribute.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>storedname</emphasis></entry>
+
+            <entry>A string constant containing the name of the stored
+            attribute result.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>FEW</emphasis></entry>
+
+            <entry>Optional. When the expression is a dataset or recordset,
+            FEW specifies that the dataset is stored completely within the
+            workunit. If not specified, then the dataset is stored as a THOR
+            file and the workunit contains only the name of the file. The FEW
+            option is required when using STORED in a SOAP-enabled MACRO and
+            the expected input is a dataset (such as tns:xmlDataset).</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">STORED </emphasis>service stores the result
+  of the <emphasis>expression</emphasis> with the work unit that uses the
+  <emphasis>attribute</emphasis> so that it remains available for use
+  throughout the work unit. If the <emphasis>attribute</emphasis> name is
+  omitted, then the stored value can only be accessed afterwards from outside
+  of the ECL execution. If an <emphasis>attribute </emphasis>name is provided
+  then the value of that <emphasis>attribute</emphasis> will be pulled from
+  storage, if it has not yet been set it will be computed, stored and then
+  used from storage. This service implicitly causes the
+  <emphasis>attribute</emphasis> to be evaluated at a global scope instead of
+  the enclosing scope.</para>
+
+  <para>Example:</para>
+
+  <programlisting>  COUNT(person) : STORED('myname');
+     // Name in work unit is myname,
+     // stored value accessible only outside ECL
+  fred := COUNT(person) : STORED('fred');
+     // Name in work unit is fred
+  fred := COUNT(person) : STORED('mindy');
+     // Name in work unit is mindy
+</programlisting>
+
+  <para>See Also: <link linkend="STORED">STORED function</link></para>
+</sect1>

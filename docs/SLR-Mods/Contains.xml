@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Contains">
+  <title><emphasis role="bold">Contains</emphasis></title>
+
+  <para><emphasis role="bold">STD.Str.Contains<indexterm>
+      <primary>STD.Str.Contains</primary>
+    </indexterm><indexterm>
+      <primary>Str.Contains</primary>
+    </indexterm><indexterm>
+      <primary>Contains</primary>
+    </indexterm>(</emphasis> <emphasis>source, pattern, nocase</emphasis>
+  <emphasis role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.Contains<indexterm>
+      <primary>STD.Uni.Contains</primary>
+    </indexterm><indexterm>
+      <primary>Uni.Contains</primary>
+    </indexterm>(</emphasis> <emphasis>source, pattern, nocase</emphasis>
+  <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>A string containing the data to search.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>pattern</emphasis></entry>
+
+          <entry>A string containing the characters to compare. An empty
+          string ( ‘’ ) always returns true.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>nocase</emphasis></entry>
+
+          <entry>A boolean true or false indicating whether to ignore the
+          case.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>Contains returns a BOOLEAN value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">Contains </emphasis>functions return true if
+  all the characters in the <emphasis>pattern</emphasis> appear in the
+  <emphasis>source, </emphasis>otherwise they return false.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">A := STD.Str.Contains(
+  'the quick brown fox jumps over the lazy dog',
+  'ABCdefghijklmnopqrstuvwxyz', true);
+
+B:= STD.Str.Contains(
+ 'the speedy ochre vixen leapt over the indolent retriever',
+ 'abcdefghijklmnopqrstuvwxyz', false);
+</programlisting>
+
+  <para></para>
+</sect1>

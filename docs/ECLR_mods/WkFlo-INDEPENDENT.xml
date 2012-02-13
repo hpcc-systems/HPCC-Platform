@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="INDEPENDENT">
+  <title>INDEPENDENT</title>
+
+  <para><emphasis>attribute </emphasis>:= <emphasis>expression
+  </emphasis><emphasis role="bold">: INDEPENDENT<indexterm>
+      <primary>INDEPENDENT</primary>
+    </indexterm></emphasis><indexterm>
+      <primary>INDEPENDENT workflow service</primary>
+    </indexterm>;</para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="79.65pt" />
+
+        <colspec colwidth="273.15pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>attribute</emphasis></entry>
+
+            <entry>The name of the Attribute.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>The definition of the attribute.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">INDEPENDENT </emphasis>service causes the
+  <emphasis>attribute</emphasis> to be evaluated at a global scope and forces
+  the <emphasis>attribute</emphasis> evaluation into a separate workflow item.
+  The new workflow item is evaluated before the first workflow item that uses
+  that <emphasis>attribute</emphasis>. It executes independently from other
+  workflow items, and is only executed once (including inside SEQUENTIAL where
+  it should be executed the first time it is used). It will not share any code
+  with any other workflow items.</para>
+
+  <para>One use would be to provide a mechanism for commoning up code that is
+  shared between different arguments to a SEQUENTIAL action—normally they are
+  evaluated completely independently.</para>
+
+  <para>Example:</para>
+
+  <programlisting>  File1 := 'Filename1';
+  File2 := 'Filename2';
+  
+  SrcIP := '10.150.50.14';
+  SrcPath := 'c:\\InputData\\';
+  DestPath := '~THOR::IN::';
+  ESPportIP := 'http://10.150.50.12:8010/FileSpray';
+  
+  DeleteOldFiles :=
+     PARALLEL(FileServices.DeleteLogicalFile(DestPath+File1),
+              FileServices.DeleteLogicalFile(DestPath+File2))
+                           : INDEPENDENT;
+  SprayNewFiles :=
+     PARALLEL(FileServices.SprayFixed(SrcIP,SrcPath+File1,255,
+                                      '400way',DestPath+File1,
+                                      -1,ESPportIP),
+              FileServices.SprayFixed(SrcIP,SrcPath+File2,255,
+                                     '400way',DestPath+File2,
+                                     -1,ESPportIP))
+                           : INDEPENDENT;
+  SEQUENTIAL(DeleteOldFiles,SprayNewFiles);
+</programlisting>
+
+  <para>See Also: <link linkend="GLOBAL">GLOBAL</link></para>
+</sect1>

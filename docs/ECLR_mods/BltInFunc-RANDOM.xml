@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="RANDOM">
+  <title>RANDOM</title>
+
+  <para><emphasis role="bold">RANDOM<indexterm>
+      <primary>RANDOM</primary>
+    </indexterm><indexterm>
+      <primary>RANDOM function</primary>
+    </indexterm>()</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="77.95pt" />
+
+        <colspec colwidth="274.85pt" />
+
+        <tbody>
+          <row>
+            <entry>Return:</entry>
+
+            <entry>RANDOM returns a single value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">RANDOM </emphasis>function returns a
+  pseudo-random positive integer value.</para>
+
+  <para>Example:</para>
+
+  <programlisting>MySet := DISTRIBUTE(Person,RANDOM()); //random distribution</programlisting>
+
+  <para>See Also: <link linkend="DISTRIBUTE">DISTRIBUTE</link></para>
+</sect1>

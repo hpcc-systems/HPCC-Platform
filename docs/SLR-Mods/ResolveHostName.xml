@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1
+  PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ResolveHostName">
+   <title>
+      <emphasis role="bold">ResolveHostName</emphasis>
+   </title>
+   <para>
+      <emphasis>result</emphasis>
+      <emphasis role="bold"> :=
+        STD.System.Util.ResolveHostName<indexterm>
+      <primary>STD.System.Util.ResolveHostName</primary>
+    </indexterm>
+    <indexterm>
+      <primary>System.Util.ResolveHostName</primary>
+    </indexterm>
+    <indexterm>
+      <primary>Util.ResolveHostName</primary>
+    </indexterm>
+    <indexterm>
+      <primary>ResolveHostName</primary>
+    </indexterm>(</emphasis>
+      <emphasis> host
+        </emphasis>
+      <emphasis role="bold">);</emphasis>
+   </para>
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          
+
+
+   <entry>
+      <emphasis>host</emphasis> </entry><entry>A null-terminated string containing
+        the DNS name of the remote machine.</entry>
+        </row>
+        <row>
+   <entry>Return:<emphasis> </emphasis></entry><entry>ResolveHostName returns returns a
+        VARSTRING (null-terminated) value.</entry>
+
+
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+   <para>The <emphasis role="bold">ResolveHostName </emphasis>function
+        does a DNS lookup to return the ip address for the specified
+        <emphasis>host</emphasis> name.</para>
+   <para>Example:</para>
+   <programlisting format="linespecific">host := 'dataland_dali.br.seisint.com';
+OUTPUT(STD.System.Util.ResolveHostName(host));
+</programlisting>
+</sect1>

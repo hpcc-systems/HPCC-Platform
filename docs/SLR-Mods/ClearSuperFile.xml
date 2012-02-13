@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ClearSuperFile">
+  <title>ClearSuperFile</title>
+
+  <para><emphasis role="bold">STD.File.ClearSuperFile<indexterm>
+      <primary>STD.File.ClearSuperFile</primary>
+    </indexterm><indexterm>
+      <primary>File.ClearSuperFile</primary>
+    </indexterm><indexterm>
+      <primary>ClearSuperFile</primary>
+    </indexterm>(</emphasis> <emphasis> superfile, </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>, delete </emphasis> <emphasis
+  role="bold">] )</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>superfile</emphasis></entry>
+
+          <entry>A null-terminated string containing the logical name of the
+          superfile.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>delete</emphasis></entry>
+
+          <entry>A boolean flag specifying whether to delete the sub-files
+          from disk or just remove them from the <emphasis>superfile
+          </emphasis>list of files. If omitted, the default is to just remove
+          them from the <emphasis>superfile </emphasis>list of files.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>Null.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">ClearSuperFile </emphasis>function removes
+  all sub-files from the list of files comprising the
+  <emphasis>superfile</emphasis>.</para>
+
+  <para>This function may be included in a superfile transaction.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">SEQUENTIAL(
+ STD.File.StartSuperFileTransaction(),
+ STD.File.ClearSuperFile('MySuperFile'),
+ STD.File.FinishSuperFileTransaction()
+);</programlisting>
+</sect1>

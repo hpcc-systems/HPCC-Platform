@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SprayXML">
+  <title><emphasis role="bold">SprayXML</emphasis></title>
+
+  <para><emphasis role="bold">STD.File.SprayXML<indexterm>
+      <primary>STD.File.SprayXML</primary>
+    </indexterm><indexterm>
+      <primary>File.SprayXML</primary>
+    </indexterm><indexterm>
+      <primary>SprayXML</primary>
+    </indexterm>(</emphasis> <emphasis> sourceIP </emphasis> <emphasis
+  role="bold">, </emphasis> <emphasis>sourcepath , </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis> maxrecordsize </emphasis> <emphasis
+  role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis role="bold">
+  </emphasis> <emphasis> srcRowTag </emphasis> <emphasis role="bold">
+  </emphasis> <emphasis>, </emphasis> <emphasis role="bold">[</emphasis>
+  <emphasis> srcEncoding </emphasis> <emphasis role="bold">] </emphasis>
+  <emphasis>, </emphasis> <emphasis role="bold"> </emphasis>
+  <emphasis>destinationgroup, destinationlogicalname </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>,timeout</emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis role="bold"> [</emphasis>
+  <emphasis>,espserverIPport</emphasis> <emphasis role="bold">]</emphasis>
+  <emphasis> </emphasis> <emphasis role="bold">[</emphasis>
+  <emphasis>,maxConnections</emphasis> <emphasis role="bold">]</emphasis>
+  <emphasis role="bold"> [</emphasis> <emphasis>,allowoverwrite</emphasis>
+  <emphasis role="bold">] [</emphasis> <emphasis>,replicate</emphasis>
+  <emphasis role="bold">] [</emphasis> <emphasis>, compress </emphasis>
+  <emphasis role="bold">])</emphasis></para>
+
+  <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
+  STD.File.fSprayXML<indexterm>
+      <primary>STD.File.fSprayXML</primary>
+    </indexterm><indexterm>
+      <primary>File.fSprayXML</primary>
+    </indexterm><indexterm>
+      <primary>fSprayXML</primary>
+    </indexterm>(</emphasis> <emphasis> sourceIP</emphasis> <emphasis
+  role="bold">, </emphasis> <emphasis>sourcepath, </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis> maxrecordsize </emphasis> <emphasis
+  role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis role="bold">
+  </emphasis> <emphasis>srcRowTag</emphasis> <emphasis role="bold">
+  </emphasis> <emphasis>, </emphasis> <emphasis role="bold">[</emphasis>
+  <emphasis> srcEncoding </emphasis> <emphasis role="bold">] </emphasis>
+  <emphasis>,destinationgroup,</emphasis> <emphasis> destinationlogicalname
+  </emphasis> <emphasis role="bold">[</emphasis> <emphasis>,timeout</emphasis>
+  <emphasis role="bold">] [</emphasis> <emphasis>,espserverIPport</emphasis>
+  <emphasis role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
+  role="bold"> [</emphasis> <emphasis>,maxConnections</emphasis> <emphasis
+  role="bold">] [</emphasis> <emphasis>,allowoverwrite</emphasis> <emphasis
+  role="bold">] [</emphasis> <emphasis>,replicate</emphasis> <emphasis
+  role="bold">] [</emphasis> <emphasis>, compress </emphasis> <emphasis
+  role="bold">]);</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>sourceIP</emphasis></entry>
+
+          <entry>A null-terminated string containing the IP address of the
+          file.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>sourcepath</emphasis></entry>
+
+          <entry>A null-terminated string containing the path and name of the
+          file.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>maxrecordsize</emphasis></entry>
+
+          <entry>Optional. An integer containing the maximum size of the
+          records in the file. If omitted, the default is 8192.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>srcRowTag</emphasis></entry>
+
+          <entry>A null-terminated string containing the row delimiting XML
+          tag.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>srcEncoding</emphasis></entry>
+
+          <entry>Optional. A null-terminated string containing the encoding.
+          If omitted, the default is 'utf8'</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>destinationgroup</emphasis></entry>
+
+          <entry>A null-terminated string containing the name of the specific
+          supercomputer within the target cluster.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>destinationlogicalname</emphasis></entry>
+
+          <entry>A null-terminated string containing the logical name of the
+          file.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>timeout</emphasis></entry>
+
+          <entry>Optional. An integer value indicating the timeout setting. If
+          omitted, the default is -1. If set to zero (0), execution control
+          returns immediately to the ECL workunit without waiting for the DFU
+          workunit to complete.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>espserverIPport</emphasis></entry>
+
+          <entry>Optional. A null-terminated string containing the protocol,
+          IP, port, and directory, or the DNS equivalent, of the ESP server
+          program. This is usually the same IP and port as ECL Watch, with
+          “/FileSpray” appended. If omitted, the default is the value
+          contained in the lib_system.ws_fs_server attribute.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>maxConnections</emphasis></entry>
+
+          <entry>Optional. An integer specifying the maximum number of
+          connections. If omitted, the default is one (1).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>allowoverwrite</emphasis></entry>
+
+          <entry>Optional. A boolean TRUE or FALSE flag indicating whether to
+          allow the new file to overwrite an existing file of the same name.
+          If omitted, the default is FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>replicate</emphasis></entry>
+
+          <entry>Optional. A boolean TRUE or FALSE flag indicating whether to
+          replicate the new file. If omitted, the default is FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>compress</emphasis></entry>
+
+          <entry>Optional. A boolean TRUE or FALSE flag indicating whether to
+          compress the new file. If omitted, the default is FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>dfuwuid</emphasis></entry>
+
+          <entry>The attribute name to recieve the null-terminated string
+          containing the DFU workunit ID (DFUWUID) generated for the
+          job.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>fSprayXML returns a null-terminated string containing the DFU
+          workunit ID (DFUWUID).</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">SprayXML </emphasis>function takes a
+  well-formed XML file from the landing zone and distributes it across the
+  nodes of the destination supercomputer, producing a well-formed XML file on
+  each node.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">STD.File.SprayXML('10.150.50.14','c:\\InputData\\MyFile.txt',,
+      'Row',,'400way','IN::MyFile',-1,
+      'http://10.150.50.12:8010/FileSpray');</programlisting>
+</sect1>

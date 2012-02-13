@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="RemoveSuperFile">
+  <title>RemoveSuperFile</title>
+
+  <para><emphasis role="bold">STD.File.RemoveSuperFile<indexterm>
+      <primary>STD.File.RemoveSuperFile</primary>
+    </indexterm><indexterm>
+      <primary>File.RemoveSuperFile</primary>
+    </indexterm><indexterm>
+      <primary>RemoveSuperFile</primary>
+    </indexterm>(</emphasis> <emphasis> superfile, subfile </emphasis>
+  <emphasis role="bold">[</emphasis> <emphasis>, delete</emphasis> <emphasis
+  role="bold">] [</emphasis> <emphasis>, removecontents</emphasis> <emphasis
+  role="bold">])</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>superfile</emphasis></entry>
+
+          <entry>A null-terminated string containing the logical name of the
+          superfile.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>subfile</emphasis></entry>
+
+          <entry>A null-terminated string containing the logical name of the
+          sub-file. This may be another superfile or a foreign file or
+          superfile.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>delete</emphasis></entry>
+
+          <entry>A boolean flag specifying whether to delete the
+          <emphasis>subfile</emphasis> from disk or just remove it from the
+          <emphasis>superfile </emphasis>list of files. If omitted, the
+          default is to just remove it from the <emphasis>superfile
+          </emphasis> list of files. <emphasis role="bold">This option should
+          not be used if the subfile is a foreign file or foreign
+          superfile.</emphasis></entry>
+        </row>
+
+        <row>
+          <entry><emphasis>removecontents</emphasis></entry>
+
+          <entry>A boolean flag specifying whether the contents of a
+          <emphasis>subfile</emphasis> that is itself a superfile are
+          recursively removed.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>Null.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">RemoveSuperFile </emphasis>function removes
+  the <emphasis>subfile</emphasis> from the list of files comprising the
+  <emphasis>superfile</emphasis>.</para>
+
+  <para>This function may be included in a superfile transaction.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">SEQUENTIAL(
+ STD.File.StartSuperFileTransaction(),
+ STD.File.RemoveSuperFile('MySuperFile','MySubFile'),
+ STD.File.FinishSuperFileTransaction()
+);</programlisting>
+</sect1>

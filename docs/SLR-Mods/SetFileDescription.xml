@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SetFileDescription">
+  <title><emphasis role="bold">SetFileDescription</emphasis></title>
+
+  <para><emphasis role="bold">STD.File.SetFileDescription<indexterm>
+      <primary>STD.File.SetFileDescription</primary>
+    </indexterm><indexterm>
+      <primary>File.SetFileDescription</primary>
+    </indexterm><indexterm>
+      <primary>SetFileDescription</primary>
+    </indexterm>( </emphasis> <emphasis>filename , value </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>filename</emphasis></entry>
+
+          <entry>A null-terminated string containing the logical name of the
+          file.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>value</emphasis></entry>
+
+          <entry>A null-terminated string containing the description to place
+          on the file.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">SetFileDescription </emphasis>function
+  changes the description information stored by the DFU about the specified
+  <emphasis>filename </emphasis>to the specified <emphasis>value</emphasis>.
+  This description is seen either through ECL watch or by using the
+  STD.File.GetFileDescription function.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">A := STD.File.SetFileDescription('Fred','All the Freds in the world');</programlisting>
+</sect1>

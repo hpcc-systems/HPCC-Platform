@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="LogString">
+  <title><emphasis role="bold">LogString</emphasis></title>
+
+  <para><emphasis role="bold">STD.System.Job.LogString<indexterm>
+      <primary>STD.System.Job.LogString</primary>
+    </indexterm> <indexterm>
+      <primary>System.Job.LogString</primary>
+    </indexterm> <indexterm>
+      <primary>Job.LogString</primary>
+    </indexterm> <indexterm>
+      <primary>LogString</primary>
+    </indexterm>( </emphasis> <emphasis>message </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>message </emphasis></entry>
+
+          <entry>A string expression containing the text to place in the log
+          file.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>LogString returns an INTEGER value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">LogString </emphasis>function outputs
+  “USER:” followed by the <emphasis>message</emphasis> text to the eclagent or
+  Roxie log file and returns the length of the text written to the
+  file.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">A := STD.System.Job.LogString('The text message to log');
+ //places USER:The text message to log
+ //in the log file   </programlisting>
+</sect1>

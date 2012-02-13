@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Recordset_Filtering">
+  <title>Recordset Filtering</title>
+
+  <para>Filters<indexterm>
+      <primary>Filters</primary>
+    </indexterm> are conditional expressions contained within the parentheses
+  following the Dataset or Record Set<indexterm>
+      <primary>Record Set</primary>
+    </indexterm> name. Multiple filter conditions may be specified by
+  separating each filter expression with a comma (,). All filter conditions
+  separated by commas must be TRUE for a record to be included, which makes
+  the comma an implicit AND operator (see <emphasis role="bold">Logical
+  Operators</emphasis>).</para>
+
+  <programlisting>MyRecordSet := Person(per_last_name &gt;= 'T', per_last_name &lt; 'U');
+     // MyRecordSet contains people whose last name begins with “T”
+     // the comma is an implicit AND while also functioning as
+     // an expression separator (implicit parentheses)
+
+
+MyRecordSet := Person(per_last_name &gt;= 'T' AND per_last_name &lt; 'U');
+// exactly the same logical expression as above
+
+RateGE7trds := Trades(trd_rate &gt;= '7');
+
+ValidTrades := Trades(NOT rmsTrade.Mortgage AND
+                      NOT rmsTrade.HasNarrative(rmsTrade.snClosed));</programlisting>
+
+  <para>Boolean Attribute<indexterm>
+      <primary>Boolean Attribute</primary>
+    </indexterm> definitions should be used as recordset filters for maximum
+  flexibility, readability and re-usability instead of hard-coding in a Record
+  Set definition. For example, use:</para>
+
+  <programlisting>IsRevolv := trades.trd_type = 'R'
+                OR (~ValidType(trades.trd_type)
+                   AND trades.trd_acct[1] IN ['4','5','6']);
+       
+isBank := trades.trd_ind_code IN SetBankIndCodes;
+
+IsBankCard := IsBank AND IsRevolv;
+
+WithinDate(INTEGER1 months) := ValidDate(trades.trd_drpt) AND
+                               trades.trd_drpt_mos &lt;= months;
+
+BankCardTrades := trades(isBankCard AND WithinDate(6));</programlisting>
+
+  <para>instead of:</para>
+
+  <programlisting>BankCardTrades := trades(trades.trd_ind_code IN SetBankIndCodes,
+                                         (trades.trd_type = 'R' OR
+                                         (~ValidType(trades.trd_type) AND
+                                         trades.trd_acct[1] IN ['4', '5', '6'])),
+                                         ValidDate(trades.trd_drpt),
+                                         trades.trd_drpt_mos &lt;= 6);</programlisting>
+
+  <para>Commas used to separate filter conditions in a recordset filter
+  definition act as both an implicit AND operation <emphasis
+  role="underline">and</emphasis> a set of parentheses around the individual
+  filters being separated. This results in a tighter binding than if AND is
+  used instead of a comma without parentheses. For example, the filter
+  expression in this Attribute definition::</para>
+
+  <programlisting>BankMortTrades := trades(isBankCard OR isMortgage, isOpen);</programlisting>
+
+  <para>is evaluated as if it were written:</para>
+
+  <programlisting>(isBankCard OR isMortgage) AND isOpen</programlisting>
+
+  <para>and not as:</para>
+
+  <programlisting>isBankCard OR isMortgage AND isOpen</programlisting>
+</sect1>

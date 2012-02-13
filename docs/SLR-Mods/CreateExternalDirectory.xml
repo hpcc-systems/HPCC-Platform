@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CreateExternalDirectory">
+  <title><emphasis role="bold">CreateExternalDirectory</emphasis></title>
+
+  <para><emphasis role="bold">STD.File.CreateExternalDirectory<indexterm>
+      <primary>STD.File.CreateExternalDirectory</primary>
+    </indexterm><indexterm>
+      <primary>File.CreateExternalDirectory</primary>
+    </indexterm><indexterm>
+      <primary>CreateExternalDirectory</primary>
+    </indexterm>(</emphasis> <emphasis> location, path </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>location</emphasis></entry>
+
+          <entry>A null-terminated string containing the IP address of the
+          remote machine.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>path</emphasis></entry>
+
+          <entry>A null-terminated string containing the directory path to
+          create.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">CreateExternalDirectory </emphasis>function
+  creates the <emphasis>path</emphasis> on the <emphasis>location
+  </emphasis>(if it does not already exist). The dafileserv utility program
+  must be running on the <emphasis>location</emphasis> machine.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IP   := '10.150.254.6';
+path := '/c$/training/import/NewDir';
+STD.File.CreateExternalDirectory(IP,path);
+</programlisting>
+</sect1>

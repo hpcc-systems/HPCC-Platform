@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Expressions_and_Operators" role="nobrk">
+  <title>Expressions and Operators<indexterm>
+      <primary>Operators</primary>
+    </indexterm><indexterm>
+      <primary>Expressions and Operators</primary>
+    </indexterm></title>
+
+  <para>Expressions<indexterm>
+      <primary>Expressions</primary>
+    </indexterm> are evaluated left-to-right and from the inside out (in
+  nested functions). Parentheses may be used to alter the default evaluation
+  order of precedence for all operators.</para>
+
+  <sect2 id="Arithmetic_Operators">
+    <title>Arithmetic Operators</title>
+
+    <para>Standard arithmetic operators<indexterm>
+        <primary>arithmetic operators</primary>
+      </indexterm> are supported for use in expressions, listed here in their
+    evaluation precedence:</para>
+
+    <informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup align="left" cols="2">
+        <colspec colwidth="194.80pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry>Division <indexterm>
+                <primary>Division</primary>
+              </indexterm></entry>
+
+            <entry>/</entry>
+          </row>
+
+          <row>
+            <entry>Integer Division<indexterm>
+                <primary>Integer Division</primary>
+              </indexterm></entry>
+
+            <entry>DIV</entry>
+          </row>
+
+          <row>
+            <entry>Modulus Division<indexterm>
+                <primary>Modulus Division</primary>
+              </indexterm></entry>
+
+            <entry>%</entry>
+          </row>
+
+          <row>
+            <entry>Multiplication<indexterm>
+                <primary>Multiplication</primary>
+              </indexterm></entry>
+
+            <entry>*</entry>
+          </row>
+
+          <row>
+            <entry>Addition<indexterm>
+                <primary>Addition</primary>
+              </indexterm></entry>
+
+            <entry>+</entry>
+          </row>
+
+          <row>
+            <entry>Subtraction<indexterm>
+                <primary>Subtraction</primary>
+              </indexterm></entry>
+
+            <entry>-</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>Division (all three types) by zero (0) results in zero (0)—there is
+    no “divide by zero” error.</para>
+  </sect2>
+
+  <sect2 id="Bitwise_Operators">
+    <title>Bitwise Operators</title>
+
+    <para>Bitwise operators<indexterm>
+        <primary>Bitwise operators</primary>
+      </indexterm> are supported for use in expressions, listed here in their
+    evaluation precedence:</para>
+
+    <informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup align="left" cols="2">
+        <colspec colwidth="194.80pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry>Bitwise AND<indexterm>
+                <primary>Bitwise AND</primary>
+              </indexterm></entry>
+
+            <entry>&amp;</entry>
+          </row>
+
+          <row>
+            <entry>Bitwise OR<indexterm>
+                <primary>Bitwise OR</primary>
+              </indexterm></entry>
+
+            <entry>|</entry>
+          </row>
+
+          <row>
+            <entry>Bitwise Exclusive OR<indexterm>
+                <primary>Bitwise Exclusive OR</primary>
+              </indexterm></entry>
+
+            <entry>^</entry>
+          </row>
+
+          <row>
+            <entry>Bitwise NOT<indexterm>
+                <primary>Bitwise NOT</primary>
+              </indexterm></entry>
+
+            <entry>BNOT</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para></para>
+  </sect2>
+
+  <sect2 id="Bitshift_Operators">
+    <title>Bitshift Operators</title>
+
+    <para>Bitshift operators<indexterm>
+        <primary>Bitshift operators</primary>
+      </indexterm> are supported for use in integer expressions:</para>
+
+    <informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup align="left" cols="2">
+        <colspec colwidth="194.80pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry>Bitshift Right<indexterm>
+                <primary>Bitshift Right</primary>
+              </indexterm></entry>
+
+            <entry>&gt;&gt;</entry>
+          </row>
+
+          <row>
+            <entry>Bitshift Left<indexterm>
+                <primary>Bitshift Left</primary>
+              </indexterm></entry>
+
+            <entry>&lt;&lt;</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para></para>
+  </sect2>
+
+  <sect2 id="Comparison_Operators">
+    <title>Comparison Operators</title>
+
+    <para><emphasis>The following comparison operator<indexterm>
+        <primary>comparison operator</primary>
+      </indexterm>s</emphasis> are supported:</para>
+
+    <para>Equivalence<indexterm>
+        <primary>Equivalence</primary>
+      </indexterm> = returns TRUE or FALSE</para>
+
+    <informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup align="left" cols="3">
+        <colspec colwidth="194.80pt" />
+
+        <colspec colwidth="50" />
+
+        <tbody>
+          <row>
+            <entry>Not Equal <indexterm>
+                <primary>Not Equal</primary>
+              </indexterm></entry>
+
+            <entry>&lt;&gt;</entry>
+
+            <entry>returns TRUE or FALSE</entry>
+          </row>
+
+          <row>
+            <entry>Not Equal</entry>
+
+            <entry>!=</entry>
+
+            <entry>returns TRUE or FALSE</entry>
+          </row>
+
+          <row>
+            <entry>Less Than<indexterm>
+                <primary>Less Than</primary>
+              </indexterm></entry>
+
+            <entry>&lt;</entry>
+
+            <entry>returns TRUE or FALSE</entry>
+          </row>
+
+          <row>
+            <entry>Greater Than<indexterm>
+                <primary>Greater Than</primary>
+              </indexterm></entry>
+
+            <entry>&gt;</entry>
+
+            <entry>returns TRUE or FALSE</entry>
+          </row>
+
+          <row>
+            <entry>Less Than or Equal <indexterm>
+                <primary>Less or Equal</primary>
+              </indexterm></entry>
+
+            <entry>&lt;=</entry>
+
+            <entry>returns TRUE or FALSE</entry>
+          </row>
+
+          <row>
+            <entry>Greater Than or Equal<indexterm>
+                <primary>Greater or Equal</primary>
+              </indexterm></entry>
+
+            <entry>&gt;=</entry>
+
+            <entry>returns TRUE or FALSE</entry>
+          </row>
+
+          <row>
+            <entry>Equivalence Comparison<indexterm>
+                <primary>Equivalence Comparison</primary>
+              </indexterm></entry>
+
+            <entry>&lt;=&gt;</entry>
+
+            <entry>returns -1, 0, or 1</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>The Greater Than or Equal operator <emphasis
+    role="underline">must</emphasis> have the Greater Than (&gt;) sign first.
+    For the expression a &lt;=&gt; b, the Equivalence Comparison operator
+    returns -1 if a&lt;b, 0 if a=b, and 1 if a&gt;b.</para>
+  </sect2>
+</sect1>

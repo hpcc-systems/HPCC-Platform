@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ROWS-LEFT-RIGHT">
+  <title>ROWS(LEFT)<indexterm>
+      <primary>ROWS(LEFT)</primary>
+    </indexterm> and ROWS(RIGHT)<indexterm>
+      <primary>ROWS(RIGHT)</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">ROWS(LEFT)</emphasis></para>
+
+  <para><emphasis role="bold">ROWS(RIGHT)</emphasis></para>
+
+  <para>The <emphasis role="bold">ROWS(LEFT)</emphasis> and <emphasis
+  role="bold">ROWS(RIGHT)</emphasis> keywords indicate the parameter being
+  passed to the TRANSFORM function is a record set. These are used in
+  functions where a dataset is being passed, such as COMBINE, ROLLUP, JOIN,
+  DENORMALIZE, and LOOP.</para>
+
+  <para>Example:</para>
+
+  <programlisting>NormRec := RECORD
+  STRING20 thename;
+  STRING20 addr;
+END;
+NamesRec := RECORD
+  UNSIGNED1 numRows;
+  STRING20 thename;
+  DATASET(NormRec) addresses;
+END;
+NamesTable := DATASET([ {0,'Kevin',[]},{0,'Liz',[]},
+                        {0,'Mr Nobody',[]},{0,'Anywhere',[]}],
+                      NamesRec);
+NormAddrs := DATASET([{'Kevin','10 Malt Lane'},
+                      {'Liz','10 Malt Lane'},
+                      {'Liz','3 The cottages'},
+                      {'Anywhere','Here'},
+                      {'Anywhere','There'},
+                      {'Anywhere','Near'},
+                      {'Anywhere','Far'}],NormRec);
+NamesRec DeNormThem(NamesRec L, DATASET(NormRec) R) := TRANSFORM
+  SELF.NumRows := COUNT(R);
+  SELF.addresses := R;
+  SELF := L;
+END;
+DeNormedRecs := DENORMALIZE(NamesTable, NormAddrs,
+                            LEFT.thename = RIGHT.thename,
+                            GROUP,
+                            DeNormThem(LEFT,ROWS(RIGHT)));
+OUTPUT(DeNormedRecs);</programlisting>
+
+  <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM
+  Structure</link>, <link linkend="COMBINE">COMBINE</link>, <link
+  linkend="ROLLUP">ROLLUP</link> , <link linkend="JOIN">JOIN</link>, <link
+  linkend="DENORMALIZE">DENORMALIZE</link>, <link
+  linkend="LOOP">LOOP</link></para>
+</sect1>

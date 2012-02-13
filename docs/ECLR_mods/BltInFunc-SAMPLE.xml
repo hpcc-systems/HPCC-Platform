@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SAMPLE">
+  <title>SAMPLE</title>
+
+  <para><emphasis role="bold">SAMPLE<indexterm>
+      <primary>SAMPLE</primary>
+    </indexterm><indexterm>
+      <primary>SAMPLE function</primary>
+    </indexterm>(</emphasis><emphasis>recordset, interval </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>, which </emphasis><emphasis
+  role="bold">])</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="77.90pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>The set of records to sample. This may be the name of a
+            dataset or a record set derived from some filter condition, or any
+            expression that results in a derived record set.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>interval</emphasis></entry>
+
+            <entry>The interval between records to return.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>which</emphasis></entry>
+
+            <entry>Optional. An integer specifying the ordinal number of the
+            sample set to return. This is used to obtain multiple
+            non-overlapping samples from the same recordset.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>SAMPLE returns a set of records.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">SAMPLE </emphasis>function returns a sample
+  set of records from the nominated <emphasis>recordset</emphasis>.</para>
+
+  <para>Example:</para>
+
+  <programlisting>MySample := SAMPLE(Person,10,1) // get every 10th record
+
+SomeFile := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'},
+                     {'F'},{'G'},{'H'},{'I'},{'J'},
+                     {'K'},{'L'},{'M'},{'N'},{'O'},
+                     {'P'},{'Q'},{'R'},{'S'},{'T'},
+                     {'U'},{'V'},{'W'},{'X'},{'Y'}],
+                     {STRING1 Letter});
+Set1 := SAMPLE(SomeFile,5,1); // returns A, F, K, P, U
+</programlisting>
+
+  <para>See Also: <link linkend="CHOOSEN">CHOOSEN</link>, <link linkend="ENTH">ENTH</link></para>
+</sect1>

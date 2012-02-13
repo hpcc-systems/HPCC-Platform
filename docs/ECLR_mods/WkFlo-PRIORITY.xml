@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="PRIORITY">
+  <title>PRIORITY</title>
+
+  <para><emphasis>action </emphasis><emphasis role="bold">: PRIORITY<indexterm>
+      <primary>PRIORITY</primary>
+    </indexterm>(</emphasis><emphasis> value </emphasis><emphasis
+  role="bold">) <indexterm>
+      <primary>PRIORITY workflow service</primary>
+    </indexterm></emphasis>;</para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="75.40pt" />
+
+        <colspec colwidth="277.40pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>action</emphasis></entry>
+
+            <entry>An action (typically OUTPUT) that will produce a
+            result.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>value</emphasis></entry>
+
+            <entry>An integer in the range 0-100 indicating the relative
+            importance of the action.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">PRIORITY </emphasis>service establishes the
+  relative importance of multiple <emphasis>actions</emphasis> in the
+  workunit. The higher <emphasis>value</emphasis> an
+  <emphasis>action</emphasis> has, the greater its priority. The highest
+  priority <emphasis>action</emphasis> executes first, if possible. PRIORITY
+  is not allowed on attribute definitions, it must only be associated with an
+  <emphasis>action</emphasis>. Only available if workflow services are turned
+  on (see #OPTION(workflow)).</para>
+
+  <para>Example:</para>
+
+  <programlisting>OUTPUT(Person(per_st='NY')) : PRIORITY(30);
+OUTPUT(Person(per_st='CA')) : PRIORITY(60);
+OUTPUT(Person(per_st='FL')) : PRIORITY(90);
+  //The Florida
+</programlisting>
+
+  <para>See Also: <link linkend="OUTPUT">OUTPUT</link>, <link linkend="_OPTION">#OPTION</link></para>
+</sect1>

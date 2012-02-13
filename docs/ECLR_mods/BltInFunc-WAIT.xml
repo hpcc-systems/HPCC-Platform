@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="WAIT">
+  <title>WAIT</title>
+
+  <para><emphasis role="bold">WAIT<indexterm>
+      <primary>WAIT</primary>
+    </indexterm><indexterm>
+      <primary>WAIT Function</primary>
+    </indexterm>(</emphasis><emphasis>event</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="122.40pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>event</emphasis></entry>
+
+            <entry>A string constant containing the name of the event to wait
+            for.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">WAIT </emphasis>action is similar to the
+  WHEN workflow service, but may be used within conditional code.</para>
+
+  <para>Example:</para>
+
+  <programlisting>  //You can either do this:
+  action1;
+  action2 : WHEN('expectedEvent');
+  
+  //can also be written as:
+  SEQUENTIAL(action1,WAIT('expectedEvent'),action2);
+</programlisting>
+
+  <para>See Also: <link linkend="EVENT">EVENT</link>, <link
+  linkend="NOTIFY">NOTIFY</link>, <link linkend="WHEN">WHEN</link></para>
+</sect1>

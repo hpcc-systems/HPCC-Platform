@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="DISTRIBUTION">
+  <title>DISTRIBUTION<indexterm>
+      <primary>DISTRIBUTION</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">DISTRIBUTION<indexterm>
+      <primary>DISTRIBUTION function</primary>
+    </indexterm>(</emphasis><emphasis>recordset </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>, fields</emphasis><emphasis role="bold">
+  ] [</emphasis><emphasis>,</emphasis><emphasis role="bold"> NAMED<indexterm>
+      <primary>NAMED</primary>
+    </indexterm>( </emphasis><emphasis>name</emphasis><emphasis role="bold"> )
+  ] )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="81.95pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>The set of records on which to run statistics.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>fields</emphasis></entry>
+
+            <entry>Optional. A comma-delimited list of fields in the recordset
+            to which to limit the action. If omitted, all fields are
+            included.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">NAMED</emphasis></entry>
+
+            <entry>Optional. Specifies the result name that appears in the
+            workunit.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>A string constant containing the result label.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">DISTRIBUTION</emphasis> action produces a
+  crosstab report in XML format indicating how many unique records there are
+  in the <emphasis>recordset</emphasis> for each value in each field in the
+  <emphasis>recordset</emphasis>.</para>
+
+  <para>Example:</para>
+
+  <programlisting>SomeFile := DATASET([{'C','G'},{'C','C'},{'A','X'},{'B','G'}],
+     {STRING1 Value1,STRING1 Value2});
+DISTRIBUTION(SomeFile);
+/* The result comes back looking like this:
+&lt;XML&gt;
+&lt;Field name="Value1" distinct="3"&gt;
+ &lt;Value count="1"&gt;A&lt;/Value&gt;
+ &lt;Value count="1"&gt;B&lt;/Value&gt;
+ &lt;Value count="2"&gt;C&lt;/Value&gt;
+&lt;/Field&gt;
+&lt;Field name="Value2" distinct="3"&gt;
+ &lt;Value count="1"&gt;C&lt;/Value&gt;
+ &lt;Value count="2"&gt;G&lt;/Value&gt;
+ &lt;Value count="1"&gt;X&lt;/Value&gt;
+&lt;/Field&gt;
+&lt;/XML&gt;
+*/
+
+//******************************************
+namesRecord := RECORD
+  STRING20 surname;
+  STRING10 forename;
+  INTEGER2 age;
+END;
+
+namesTable := DATASET([
+  {'Halligan','Kevin',31},
+  {'Halligan','Liz',30},
+  {'Salter','Abi',10},
+  {'X','Z'}], namesRecord);
+
+DISTRIBUTION(namesTable, surname, forename, NAMED('Stats'));
+x := DATASET(ROW(TRANSFORM({STRING line},
+       SELF.line := WORKUNIT('Stats', STRING))));
+
+/* The result comes back looking like this:
+&lt;XML&gt;
+&lt;Field name="surname" distinct="3"&gt;
+ &lt;Value count="2"&gt;Halligan&lt;/Value&gt;
+ &lt;Value count="1"&gt;X&lt;/Value&gt;
+ &lt;Value count="1"&gt;Salter&lt;/Value&gt;
+&lt;/Field&gt;
+&lt;Field name="forename" distinct="4"&gt;
+ &lt;Value count="1"&gt;Abi&lt;/Value&gt;
+ &lt;Value count="1"&gt;Kevin&lt;/Value&gt;
+ &lt;Value count="1"&gt;Liz&lt;/Value&gt;
+ &lt;Value count="1"&gt;Z&lt;/Value&gt;
+&lt;/Field&gt;
+&lt;/XML&gt;
+*/
+</programlisting>
+</sect1>

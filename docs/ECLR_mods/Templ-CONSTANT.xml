@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_CONSTANT">
+  <title>#CONSTANT</title>
+
+  <para><emphasis role="bold">#CONSTANT<indexterm>
+      <primary>#CONSTANT</primary>
+    </indexterm>( </emphasis><emphasis>name, value </emphasis><emphasis
+  role="bold">);</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="75.05pt" />
+
+        <colspec colwidth="277.75pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>A string constant containing the name of the stored
+            value.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>value</emphasis></entry>
+
+            <entry>An expression for the value to assign to the stored
+            name.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">#CONSTANT </emphasis>statement is similar to
+  #STORED in that it assigns the <emphasis>value</emphasis> to the
+  <emphasis>name</emphasis>, but #CONSTANT specifies the value is not
+  over-writable at runtime. This statement may be used outside an XML scope
+  and does not require a previous LOADXML to instantiate an XML scope.</para>
+
+  <para>Example:</para>
+
+  <programlisting>  PersonCount := 0 : STORED('myname');
+  #CONSTANT('myname',100);
+      //make stored PersonCount attribute value to 100
+</programlisting>
+
+  <para>See Also: <link linkend="_STORED">#STORED</link></para>
+</sect1>

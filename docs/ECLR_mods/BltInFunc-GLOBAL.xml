@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="GLOBAL">
+  <title>GLOBAL</title>
+
+  <para><emphasis role="bold">GLOBAL<indexterm>
+      <primary>GLOBAL</primary>
+    </indexterm><indexterm>
+      <primary>GLOBAL function</primary>
+    </indexterm>( </emphasis><emphasis>expression </emphasis><emphasis
+  role="bold">[</emphasis>,<emphasis role="bold"> FEW<indexterm>
+      <primary>FEW</primary>
+    </indexterm> | </emphasis><emphasis> </emphasis><emphasis
+  role="bold">MANY<indexterm>
+      <primary>MANY</primary>
+    </indexterm></emphasis><emphasis> </emphasis><emphasis role="bold">]
+  )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="80.30pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>The expression to evaluate at a global scope.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">FEW</emphasis></entry>
+
+            <entry>Optional. Indicates that the expression will result in
+            fewer than 10,000 records. This allows optimization to produce a
+            significantly faster result.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">MANY</emphasis></entry>
+
+            <entry>Optional. Indicates that the expression will result in many
+            records.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>GLOBAL may return scalar values or record sets.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">GLOBAL </emphasis>function evaluates the
+  <emphasis>expression</emphasis> at a global scope, similar to what the
+  GLOBAL workflow service<indexterm>
+      <primary>GLOBAL workflow service</primary>
+    </indexterm> does but without the need to define a separate
+  attribute.</para>
+
+  <para>Example:</para>
+
+  <programlisting>IMPORT doxie;
+besr := doxie.best_records;
+ssnr := doxie.ssn_records;
+
+//**** Individual record defs
+recbesr := RECORDOF(besr);
+recssnr := RECORDOF(ssnr);
+
+//**** Monster record def
+rec := RECORD, MAXLENGTH(doxie.maxlength_report)
+    DATASET(recbesr) best_information_children;
+    DATASET(recssnr) ssn_children;
+END;
+nada := DATASET([0], {INTEGER1 a});
+rec tra(nada l) := TRANSFORM
+  SELF.best_information_children := GLOBAL(besr);
+  SELF.ssn_children := GLOBAL(ssnr);
+END;
+EXPORT central_records := PROJECT(nada, tra(left));
+</programlisting>
+
+  <para>See Also: <link linkend="GLOBAL_workflow_service">GLOBAL Workflow
+  Service</link></para>
+</sect1>

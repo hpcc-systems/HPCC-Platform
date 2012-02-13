@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SuperFile_Overview" role="nobrk">
+  <title>SuperFile Overview</title>
+
+  <para>First, let's define some terms:</para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec align="left" colwidth="81.35pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">Logical File</emphasis></entry>
+
+            <entry>A single logical entity whose multiple physical parts (one
+            on each node of the cluster) are internally managed by the
+            Distributed File Utility (DFU).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">Dataset</emphasis></entry>
+
+            <entry>A Logical File declared as a DATASET.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">SuperFile</emphasis></entry>
+
+            <entry>A managed list of sub-files (Logical Files) treated as a
+            single logical entity. The sub-files do not need DATASET
+            declarations (although they may have). A SuperFile must be
+            declared as a DATASET for use in ECL, and is treated in ECL code
+            just like any other Dataset. The complexities of managing the
+            multiple sub-files are left up to the DFU (just as it manages the
+            physical parts of each sub-file).</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para><emphasis role="bold">Each sub-file in a SuperFile must have the same
+  structure type (THOR, CSV, or XML) and the same field layout.</emphasis> A
+  sub-file may itself be a SuperFile, allowing you to build multi-level
+  hierarchies that allow easy maintenance. The functions that build and
+  maintain SuperFiles are all in the File standard library (see the
+  <emphasis>Standard Library Reference</emphasis>).</para>
+
+  <para>The major advantage of using SuperFiles is the easy maintenance of the
+  set of sub-files. This means that updating the actual data a query reads can
+  be as simple as adding a new sub-file to an existing SuperFile.</para>
+
+  <sect2 id="SuperFile_Existence_Functions">
+    <title>SuperFile Existence Functions</title>
+
+    <para>The following functions govern SuperFile creation, deletion, and
+    existence detection:</para>
+
+    <programlisting>CreateSuperFile()
+DeleteSuperFile()
+SuperFileExists()</programlisting>
+
+    <para>You must first create a SuperFile using the CreateSuperFile()
+    function before you can perform any other SuperFile operations on that
+    file. The SuperFileExists() function tells you if a SuperFile with the
+    specified name exists, and DeleteSuperFile() removes a SuperFile from the
+    system.</para>
+  </sect2>
+
+  <sect2 id="SuperFile_Inquiry_Functions">
+    <title>SuperFile Inquiry Functions</title>
+
+    <para>The following functions provide information about a given
+    SuperFile:</para>
+
+    <programlisting>GetSuperFileSubCount()
+GetSuperFileSubName()
+FindSuperFileSubName()
+SuperFileContents()
+LogicalFileSuperOwners()      </programlisting>
+
+    <para>The GetSuperFileSubCount() function allows you to determine the
+    number of sub-files in a given SuperFile. The GetSuperFileSubName()
+    function returns the name of the sub-file at a given position in the list
+    of sub-files. The FindSuperFileSubName() function returns the ordinal
+    position of a given sub-file in the list of sub-files. The
+    SuperFileContents() function returns a recordset of logical sub-file names
+    contained in the SuperFile. The LogicalFileSuperOwners function returns a
+    list of all the SuperFiles that contain a specified sub-file.</para>
+  </sect2>
+
+  <sect2 id="SuperFile_Maintenance_Functions">
+    <title>SuperFile Maintenance Functions</title>
+
+    <para>The following functions allow you to maintain the list of sub-files
+    that comprise a SuperFile:</para>
+
+    <programlisting>AddSuperFile()
+RemoveSuperFile()
+ClearSuperFile()
+SwapSuperFile()
+ReplaceSuperFile()</programlisting>
+
+    <para>The AddSuperFile() function adds a sub-file to the SuperFile. The
+    RemoveSuperFile() function deletes a sub-file from the SuperFile. The
+    ClearSuperFile() function deletes all sub-files from the SuperFile. The
+    SwapSuperFile() function moves swaps all sub-files between two SuperFiles.
+    The ReplaceSuperFile() function replaces one sub-file in the SuperFile
+    with another.</para>
+
+    <para>All of these functions must be called within a transaction frame to
+    ensure there are no problems with SuperFile usage.</para>
+  </sect2>
+
+  <sect2 id="SuperFile_Transactions">
+    <title>SuperFile Transactions</title>
+
+    <para>The SuperFile Maintenance functions (only) must be called within a
+    transaction frame if there is a possibility another process may try to use
+    the superfile during sub-file maintenance. The transaction frame locks out
+    all other operations for the duration of the transaction. This way,
+    maintenance work can be accomplished without causing problems with any
+    query that might use the SuperFile. This means two things:</para>
+
+    <para>1) The SEQUENTIAL action must be used to ensure sequential execution
+    of the function calls within the transaction frame.</para>
+
+    <para>2) The StartSuperFileTransaction() and FinishSuperFileTransaction()
+    functions are used to “lock” the SuperFile during maintenance, and always
+    surround the SuperFile Maintenance function calls within the SEQUENTIAL
+    action.</para>
+
+    <para><emphasis role="bold">Any function other than the Maintenance
+    Functions listed above that might be present inside a transaction frame
+    might appear to be part of the transaction, but are not.</emphasis> This
+    can lead to confusion if you, for example, include a call to
+    ClearSuperFile() (which is valid for use within the transaction frame) and
+    follow it with a call to DeleteSuperFile() (which is <emphasis
+    role="underline">not</emphasis> valid for use within the transaction
+    frame) then you will get an error, because the delete operation will occur
+    outside the transaction frame, and before the ClearSuperFile() function
+    has a chance to do its work.</para>
+  </sect2>
+
+  <sect2 id="Other_Useful_Functions">
+    <title>Other Useful Functions</title>
+
+    <para>The following functions, while not specifically designed for
+    SuperFile use, are generally useful in creating and maintaining
+    SuperFiles:</para>
+
+    <programlisting>RemoteDirectory()
+ExternalLogicalFilename()
+LogicalFileList()
+LogicalFileSuperOwners()
+</programlisting>
+
+    <para>Use of these functions will be described in the subsequent set of
+    SuperFile articles.</para>
+  </sect2>
+</sect1>

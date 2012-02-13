@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="MIN">
+  <title>MIN</title>
+
+  <para><emphasis role="bold">MIN<indexterm>
+      <primary>MIN</primary>
+    </indexterm><indexterm>
+      <primary>MIN function</primary>
+    </indexterm>(</emphasis><emphasis>recordset, value </emphasis><emphasis
+  role="bold">[, KEYED<indexterm>
+      <primary>KEYED</primary>
+    </indexterm> ])</emphasis><emphasis role="bold"></emphasis></para>
+
+  <para><emphasis
+  role="bold">MIN(</emphasis><emphasis>valuelist</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.85pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>recordset</emphasis></entry>
+
+          <entry>The set of records to process. This may be the name of a
+          dataset or a record set derived from some filter condition, or any
+          expression that results in a derived record set. This also may be
+          the keyword GROUP to indicate finding the minimum value of the field
+          in a group, when used in a RECORD structure to generate crosstab
+          statistics.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>value</emphasis></entry>
+
+          <entry>The expression to find the minimum value of.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">KEYED</emphasis></entry>
+
+          <entry>Optional. Specifies the activity is part of an index read
+          operation, which allows the optimizer to generate optimal code for
+          the operation.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>valuelist</emphasis></entry>
+
+          <entry>A comma-delimited list of expressions to find the minimum
+          value of. This may also be a SET of values.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>MIN returns a single value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">MIN </emphasis>function either returns the
+  minimum <emphasis>value</emphasis> from the specified <emphasis>recordset
+  </emphasis>or the <emphasis>valuelist</emphasis>. It is defined to return
+  zero if the <emphasis>recordset</emphasis> is empty.</para>
+
+  <para>Example:</para>
+
+  <programlisting>MinVal1 := MIN(Trades,Trades.trd_rate);
+MinVal2 := MIN(4,8,16,2,1); //returns 1
+SetVals := [4,8,16,2,1];
+MinVal3 := MIN(SetVals); //returns 1
+</programlisting>
+
+  <para>See Also: <link linkend="MAX">MAX</link>, <link linkend="AVE">AVE</link></para>
+</sect1>

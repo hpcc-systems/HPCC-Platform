@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="IN_Operator">
+  <title>IN Operator<indexterm>
+      <primary>IN</primary>
+    </indexterm><indexterm>
+      <primary>IN Operator</primary>
+    </indexterm></title>
+
+  <para><emphasis>value </emphasis><emphasis role="bold">IN
+  </emphasis><emphasis>value_set</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>value</emphasis></entry>
+
+          <entry>The value to find in the
+          <emphasis>value_set</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>value_set</emphasis></entry>
+
+          <entry>The low value in the inclusive range.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">IN</emphasis> operator is shorthand for a
+  collection of OR conditions. It is an operator that will search an ordered
+  set to find an inclusion, resulting in a Boolean return. Using IN is much
+  more efficient than the equivalent OR expression.</para>
+
+  <para>Example:</para>
+
+  <programlisting>ABCset := ['A', 'B', 'C'];
+IsABCStatus := Person.Status IN ABCset;
+    //This code is directly equivalent to:
+    // IsABCStatus := Person.Status = 'A' OR
+    // Person.Status = 'B' OR
+    // Person.Status = 'C';
+       
+IsABCRate := Trades.trd_rate IN ABCset;
+Trades_ABCstat := Trades(IsABCRate);
+    // Trades_ABCstat is a record set definition of all those
+    // trades with a trade status of A, B, or C</programlisting>
+
+  <para>See Also: <link linkend="Basic_Attribute_Types">Basic Attribute
+  Types</link>, <link linkend="Basic_Attribute_Types">Attribute Types</link>
+  (<link linkend="Set_Attributes">Set Attributes</link>), <link
+  linkend="Logical_Operators">Logical Operators</link>, <link
+  linkend="PARSE_Pattern_Value_Types">PATTERN</link></para>
+</sect1>

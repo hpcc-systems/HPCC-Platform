@@ -1,0 +1,533 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Using_ECL_Keys-INDEX_Files">
+  <title><emphasis role="bold">Using ECL Keys (INDEX Files)</emphasis></title>
+
+  <para>The ETL (Extract, Transform, and Load—standard data ingest processing)
+  operations in ECL typically operate against all or most of the records in
+  any given dataset, which makes the use of keys (INDEX files) of little use.
+  Many queries do the same.</para>
+
+  <para>However, production data delivery to end-users rarely requires
+  accessing all records in a dataset. End-users always want “instant” access
+  to the data they're interested in, and most often that data is a very small
+  subset of the total set of records available. Therefore, using keys
+  (INDEXes) becomes a requirement.</para>
+
+  <para>The following attribute definitions used by the code examples in this
+  article are declared in the DeclareData MODULE structure attribute in the
+  DeclareData.ECL file:</para>
+
+  <programlisting>EXPORT Person := MODULE
+  EXPORT File := DATASET('~PROGGUIDE::EXAMPLEDATA::People',Layout_Person, THOR);
+  EXPORT FilePlus := DATASET('~PROGGUIDE::EXAMPLEDATA::People',
+                             {Layout_Person,
+                              UNSIGNED8 RecPos{VIRTUAL(fileposition)}}, THOR);
+END;                                          
+EXPORT Accounts := DATASET('~PROGGUIDE::EXAMPLEDATA::Accounts',
+                           {Layout_Accounts_Link,
+                            UNSIGNED8 RecPos{VIRTUAL(fileposition)}}, THOR);
+EXPORT PersonAccounts := DATASET('~PROGGUIDE::EXAMPLEDATA::PeopleAccts',
+                                 {Layout_Combined,
+                                  UNSIGNED8 RecPos{virtual(fileposition)}},THOR);
+
+EXPORT IDX_Person_PersonID := INDEX(Person.FilePlus,{PersonID,RecPos},
+                                    '~PROGGUIDE::EXAMPLEDATA::KEYS::People.PersonID');
+EXPORT IDX_Accounts_PersonID := INDEX(Accounts,{PersonID,RecPos},
+                                      '~PROGGUIDE::EXAMPLEDATA::KEYS::Accounts.PersonID');
+
+EXPORT IDX_Accounts_PersonID_Payload := 
+        INDEX(Accounts,
+              {PersonID},
+              {Account,OpenDate,IndustryCode,AcctType,
+               AcctRate,Code1,Code2,HighCredit,Balance,RecPos},
+              '~PROGGUIDE::EXAMPLEDATA::KEYS::Accounts.PersonID.Payload');
+
+EXPORT IDX_PersonAccounts_PersonID := 
+        INDEX(PersonAccounts,{PersonID,RecPos},
+              '~PROGGUIDE::EXAMPLEDATA::KEYS::PeopleAccts.PersonID');
+
+EXPORT IDX__Person_LastName_FirstName := 
+        INDEX(Person.FilePlus,{LastName,FirstName,RecPos},
+              '~PROGGUIDE::EXAMPLEDATA::KEYS::People.LastName.FirstName');
+EXPORT IDX__Person_PersonID_Payload := 
+        INDEX(Person.FilePlus,{PersonID},
+              {FirstName,LastName,MiddleInitial,
+               Gender,Street,City,State,Zip,RecPos},
+              '~PROGGUIDE::EXAMPLEDATA::KEYS::People.PersonID.Payload');
+</programlisting>
+
+  <para>Although you can use an INDEX as if it were a DATASET, there are only
+  two operations in ECL that directly use keys: FETCH and JOIN.</para>
+
+  <sect2 id="Simple_FETCH">
+    <title>Simple FETCH</title>
+
+    <para>The FETCH is the simplest use of an INDEX. Its purpose is to
+    retrieve records from a dataset by using an INDEX to directly access only
+    the specified records.</para>
+
+    <para>The example code below (contained in the IndexFetch.ECL file)
+    illustrates the usual form:</para>
+
+    <programlisting>IMPORT $;
+
+F1 := FETCH($.DeclareData.Person.FilePlus,
+            $.DeclareData.IDX_Person_PersonID(PersonID=1),  
+            RIGHT.RecPos);
+OUTPUT(F1);	</programlisting>
+
+    <para>You will note that the DATASET named as the first parameter has no
+    filter, while the INDEX named as the second parameter does have a filter.
+    This is always the case with FETCH. The purpose of an INDEX in ECL is
+    always to allow “direct” access to individual records in the base dataset,
+    therefore filtering the INDEX is always required to define the exact set
+    of records to retrieve. Given that, filtering the base dataset is
+    unnecessary.</para>
+
+    <para>As you can see, there is no TRANSFORM function in this code. For
+    most typical uses of FETCH a transform function is unnecessary, although
+    it is certainly appropriate if the result data requires formatting, as in
+    this example (also contained in the IndexFetch.ECL file):</para>
+
+    <programlisting>r := RECORD
+  STRING FullName;
+  STRING Address;
+  STRING CSZ;
+END;
+
+r Xform($.DeclareData.Person.FilePlus L) := TRANSFORM
+  SELF.Fullname := TRIM(L.Firstname) + TRIM(' ' + L.MiddleInitial) + ' ' + L.Lastname;
+  SELF.Address  := L.Street;
+  SELF.CSZ      := TRIM(L.City) + ', ' + L.State + ' ' + L.Zip;
+END;
+
+F2 := FETCH($.DeclareData.Person.FilePlus,
+            $.DeclareData.IDX_Person_PersonID(PersonID=1),
+            RIGHT.RecPos,
+            Xform(LEFT));
+OUTPUT(F2);
+</programlisting>
+
+    <para>Even with a TRANSFORM function, this code is still a very
+    straight-forward “go get me the records, please” operation.</para>
+  </sect2>
+
+  <sect2 id="Full-keyed_JOIN">
+    <title>Full-keyed JOIN</title>
+
+    <para>As simple as FETCH is, using INDEXes in JOIN operations is a little
+    more complex. The most obvious form is a "full-keyed" JOIN, specified by
+    the KEYED option, which, nominates an INDEX into the right-hand recordset
+    (the second JOIN parameter). The purpose for this form is to handle
+    situations where the left-hand recordset (named as the first parameter to
+    the JOIN) is a fairly small dataset that needs to join to a large, indexed
+    dataset (the right-hand recordset). By using the KEYED option, the JOIN
+    operation uses the specified INDEX to find the matching right-hand
+    records. This means that the join condition must use the key fields in the
+    INDEX to find matching records.</para>
+
+    <para>This example code (contained in the IndexFullKeyedJoin.ECL file)
+    illustrates the usual use of a full-keyed join:</para>
+
+    <programlisting>IMPORT $;
+
+r1 := RECORD
+  $.DeclareData.Layout_Person;
+  $.DeclareData.Layout_Accounts;
+END;
+
+r1 Xform1($.DeclareData.Person.FilePlus L, 
+          $.DeclareData.Accounts R) := TRANSFORM
+  SELF := L;
+  SELF := R;
+END;
+J1 := JOIN($.DeclareData.Person.FilePlus(PersonID BETWEEN 1 AND 100),
+           $.DeclareData.Accounts,
+           LEFT.PersonID=RIGHT.PersonID,
+           Xform1(LEFT,RIGHT),
+           KEYED($.DeclareData.IDX_Accounts_PersonID));
+
+OUTPUT(J1,ALL);
+</programlisting>
+
+    <para>The right-hand Accounts file contains five million records, and with
+    the specified filter condition the left-hand Person recordset contains
+    exactly one hundred records. A standard JOIN between these two would
+    normally require that all five million Accounts records be read to produce
+    the result. However, by using the KEYED option the INDEX’s binary tree is
+    used to find the entries with the appropriate key field values and get the
+    pointers to the exact set of Accounts records required to produce the
+    correct result. That means that the only records read from the right-hand
+    file are those actually contained in the result.</para>
+  </sect2>
+
+  <sect2 id="Half-keyed_JOIN">
+    <title>Half-keyed JOIN</title>
+
+    <para>The half-keyed JOIN is a simpler version, wherein the INDEX is the
+    right-hand recordset in the JOIN. Just as with the full-keyed JOIN, the
+    join condition must use the key fields in the INDEX to do its work. The
+    purpose of the half-keyed JOIN is the same as the full-keyed
+    version.</para>
+
+    <para>In fact, a full-keyed JOIN is, behind the curtains, actually the
+    same as a half-keyed JOIN then a FETCH to retrieve the base dataset
+    records. Therefore, a half-keyed JOIN and a FETCH are semantically and
+    functionally equivalent, as shown in this example code (contained in the
+    IndexHalfKeyedJoin.ECL file):</para>
+
+    <programlisting>IMPORT $;
+
+r1 := RECORD
+  $.DeclareData.Layout_Person;
+  $.DeclareData.Layout_Accounts;
+END;
+r2 := RECORD
+  $.DeclareData.Layout_Person;
+  UNSIGNED8 AcctRecPos;
+END;
+
+r2 Xform2($.DeclareData.Person.FilePlus L, 
+          $.DeclareData.IDX_Accounts_PersonID R) := TRANSFORM
+  SELF.AcctRecPos := R.RecPos;
+  SELF := L;
+END;
+
+J2 := JOIN($.DeclareData.Person.FilePlus(PersonID BETWEEN 1 AND 100),
+           $.DeclareData.IDX_Accounts_PersonID,
+           LEFT.PersonID=RIGHT.PersonID,
+           Xform2(LEFT,RIGHT));		
+
+r1 Xform3($.DeclareData.Accounts L, r2 R) := TRANSFORM
+  SELF := L;
+  SELF := R;
+END;
+F1 := FETCH($.DeclareData.Accounts,
+            J2,  
+            RIGHT.AcctRecPos,
+            Xform3(LEFT,RIGHT));
+
+OUTPUT(F1,ALL);
+</programlisting>
+
+    <para>This code produces the same result set as the previous
+    example.</para>
+
+    <para>The advantage of using half-keyed JOINs over the full-keyed version
+    comes in where you may need to do several JOINs to fully perform whatever
+    process is being run. Using the half-keyed form allows you to accomplish
+    all the necessary JOINs before you explicitly do the FETCH to retrieve the
+    final result records, thereby making the code more efficient.</para>
+  </sect2>
+
+  <sect2 id="Payload_INDEXes">
+    <title>Payload INDEXes</title>
+
+    <para>There is an extended form of INDEX that allows each entry to carry a
+    “payload”—additional data not included in the set of key fields. These
+    additional fields may simply be additional fields from the base dataset
+    (not required as part of the search key), or they may contain the result
+    of some preliminary computation (computed fields). Since the data in an
+    INDEX is always compressed (using LZW compression), carrying the extra
+    payload doesn't tax the system unduly.</para>
+
+    <para>A payload INDEX requires two separate RECORD structures as the
+    second and third parameters of the INDEX declaration. The second parameter
+    RECORD structure lists the key fields on which the INDEX is built (the
+    search fields), while the third parameter RECORD structure defines the
+    additional payload fields.</para>
+
+    <para>The <emphasis role="bold">virtual(fileposition)</emphasis> record
+    pointer field must always be the last field listed in any type of INDEX,
+    therefore, when you're defining a payload key it is always the last field
+    in the third parameter RECORD structure.</para>
+
+    <para>This example code (contained in the IndexHalfKeyedPayloadJoin.ECL
+    file) once again duplicates the previous results, but does so using just
+    the half-keyed JOIN (without the FETCH) by making use of a payload
+    key:</para>
+
+    <programlisting>IMPORT $;
+
+r1 := RECORD
+  $.DeclareData.Layout_Person;
+  $.DeclareData.Layout_Accounts;
+END;
+
+r1 Xform($.DeclareData.Person.FilePlus L, $.DeclareData.IDX_Accounts_PersonID_Payload R) := 
+  TRANSFORM
+    SELF := L;
+    SELF := R;
+END;
+
+J2 := JOIN($.DeclareData.Person.FilePlus(PersonID BETWEEN 1 AND 100),
+           $.DeclareData.IDX_Accounts_PersonID_Payload,
+           LEFT.PersonID=RIGHT.PersonID,
+           Xform(LEFT,RIGHT));
+ 
+OUTPUT(J2,ALL);
+</programlisting>
+
+    <para>You can see that this makes for tighter code. By eliminating the
+    FETCH operation you also eliminate the disk access associated with it,
+    making your process faster. The requirement, of course, is to pre-build
+    the payload keys so that the FETCH becomes unnecessary.</para>
+  </sect2>
+
+  <sect2 id="Computed_Fields_in_Payload_Keys">
+    <title>Computed Fields in Payload Keys</title>
+
+    <para>There is a trick to putting computed fields in the payload. Since a
+    “computed field” by definition does not exist in the dataset, the
+    technique required for their creation and use is to build the content of
+    the INDEX beforehand.</para>
+
+    <para>The following example code (contained in IndexPayloadFetch.ECL)
+    illustrates how to accomplish this by building the content of some
+    computed fields (derived from related child records) in a TABLE on which
+    the INDEX is built:</para>
+
+    <programlisting>IMPORT $;
+
+PersonFile := $.DeclareData.Person.FilePlus;
+AcctFile   := $.DeclareData.Accounts;
+IDXname := '~$.DeclareData::EXAMPLEDATA::KEYS::Person.PersonID.CompPay';
+
+r1 := RECORD
+  PersonFile.PersonID;
+  UNSIGNED8 AcctCount := 0;
+  UNSIGNED8 HighCreditSum := 0;
+  UNSIGNED8 BalanceSum := 0;
+  PersonFile.RecPos;
+END;
+
+t1 := TABLE(PersonFile,r1);
+st1 := DISTRIBUTE(t1,HASH32(PersonID));
+
+
+r2 := RECORD
+  AcctFile.PersonID;
+  UNSIGNED8 AcctCount := COUNT(GROUP);
+  UNSIGNED8 HighCreditSum := SUM(GROUP,AcctFile.HighCredit);
+  UNSIGNED8 BalanceSum := SUM(GROUP,AcctFile.Balance);
+END;
+
+t2 := TABLE(AcctFile,r2,PersonID);
+st2 := DISTRIBUTE(t2,HASH32(PersonID));
+
+r1 countem(t1 L, t2 R) := TRANSFORM
+  SELF := R;
+  SELF := L;
+END;
+
+j := JOIN(st1,st2,LEFT.PersonID=RIGHT.PersonID,countem(LEFT,RIGHT),LOCAL);
+
+Bld := BUILDINDEX(j,
+                  {PersonID},
+                  {AcctCount,HighCreditSum,BalanceSum,RecPos},
+                  IDXname,OVERWRITE);
+
+
+i := INDEX(PersonFile,
+           {PersonID},
+           {UNSIGNED8 AcctCount,UNSIGNED8 HighCreditSum,UNSIGNED8 BalanceSum,RecPos},
+           IDXname);
+
+f := FETCH(PersonFile,i(PersonID BETWEEN 1 AND 100),RIGHT.RecPos);
+
+Get := OUTPUT(f,ALL);
+
+SEQUENTIAL(Bld,Get);
+</programlisting>
+
+    <para>The first TABLE function gets all the key field values from the
+    Person dataset for the INDEX and creates empty fields to contain the
+    computed values. Note well that the RecPos virtual(fileposition) field
+    value is also retrieved at this point.</para>
+
+    <para>The second TABLE function calculates the values to go into the
+    computed fields. The values in this example are coming from the related
+    Accounts dataset. These computed field values will allow the final payload
+    INDEX into the Person dataset to produce these child recordset values
+    without any additional code (or disk access).</para>
+
+    <para>The JOIN operation moves combines the result from two TABLEs into
+    its final form. This is the data from which the INDEX is built.</para>
+
+    <para>The BUILDINDEX action writes the INDEX to disk. The tricky part then
+    is to declare the INDEX against the base dataset (not the JOIN result). So
+    the key to this technique is to build the INDEX against a derived/computed
+    set of data, then declare the INDEX against the base dataset from which
+    that data was drawn.</para>
+
+    <para>To demonstrate the use of a computed-field payload INDEX, this
+    example code just does a simple FETCH to return the combined result
+    containing all the fields from the Person dataset along with all the
+    computed field values. In “normal” use, this type of payload key would
+    generally be used in a half-keyed JOIN operation.</para>
+  </sect2>
+
+  <sect2 id="Computed_Fields_in_Search_Keys">
+    <title>Computed Fields in Search Keys</title>
+
+    <para>There is one situation where using a computed field as a search key
+    is required—when the field you want to search on is a REAL or DECIMAL data
+    type. Neither of these two is valid for use as a search key. Therefore,
+    making the search key a computed STRING field containing the value to
+    search on is a way to get around this limitation.</para>
+
+    <para>The trick to computed fields in the payload is the same for search
+    keys—build the content of the INDEX beforehand. The following example code
+    (contained in IndexREALkey.ECL) illustrates how to accomplish this by
+    building the content of computed search key fields on which the INDEX is
+    built using a TABLE and PROJECT:</para>
+
+    <programlisting>IMPORT $;
+
+r := RECORD
+  REAL8      Float := 0.0;
+  DECIMAL8_3 Dec   := 0.0; 
+  $.DeclareData.person.file;
+END;
+t := TABLE($.DeclareData.person.file,r);
+
+r XF(r L) := TRANSFORM
+  SELF.float := L.PersonID / 1000;
+  SELF.dec := L.PersonID / 1000;
+  SELF := L;
+END;
+p := PROJECT(t,XF(LEFT));
+
+DSname   := '~PROGGUIDE::EXAMPLEDATA::KEYS::dataset';
+IDX1name := '~PROGGUIDE::EXAMPLEDATA::KEYS::realkeytestIDX1';
+IDX2name := '~PROGGUIDE::EXAMPLEDATA::KEYS::realkeytestIDX2';
+OutName1 := '~PROGGUIDE::EXAMPLEDATA::KEYS::realkeytestout1';
+OutName2 := '~PROGGUIDE::EXAMPLEDATA::KEYS::realkeytestout2';
+OutName3 := '~PROGGUIDE::EXAMPLEDATA::KEYS::realkeytestout3';
+OutName4 := '~PROGGUIDE::EXAMPLEDATA::KEYS::realkeytestout4';
+OutName5 := '~PROGGUIDE::EXAMPLEDATA::KEYS::realkeytestout5';
+OutName6 := '~PROGGUIDE::EXAMPLEDATA::KEYS::realkeytestout6';
+
+DSout := OUTPUT(p,,DSname,OVERWRITE);
+
+ds := DATASET(DSname,r,THOR);
+
+idx1 := INDEX(ds,{STRING13 FloatStr := REALFORMAT(float,13,3)},{ds},IDX1name);
+idx2 := INDEX(ds,{STRING13 DecStr := (STRING13)dec},{ds},IDX2name);
+
+Bld1Out := BUILD(idx1,OVERWRITE);
+Bld2Out := BUILD(idx2,OVERWRITE);
+
+j1 := JOIN(idx1,idx2,LEFT.FloatStr = RIGHT.DecStr);
+j2 := JOIN(idx1,idx2,KEYED(LEFT.FloatStr = RIGHT.DecStr));
+j3 := JOIN(ds,idx1,KEYED((STRING10)LEFT.float = RIGHT.FloatStr));
+j4 := JOIN(ds,idx2,KEYED((STRING10)LEFT.dec = RIGHT.DecStr));
+j5 := JOIN(ds,idx1,KEYED((STRING10)LEFT.dec = RIGHT.FloatStr));
+j6 := JOIN(ds,idx2,KEYED((STRING10)LEFT.float = RIGHT.DecStr));
+
+JoinOut1 := OUTPUT(j1,,OutName1,OVERWRITE);
+JoinOut2 := OUTPUT(j2,,OutName2,OVERWRITE);
+JoinOut3 := OUTPUT(j3,,OutName3,OVERWRITE);
+JoinOut4 := OUTPUT(j4,,OutName4,OVERWRITE);
+JoinOut5 := OUTPUT(j5,,OutName5,OVERWRITE);
+JoinOut6 := OUTPUT(j6,,OutName6,OVERWRITE);
+
+SEQUENTIAL(DSout,Bld1Out,Bld2Out,JoinOut1,JoinOut2,JoinOut3,JoinOut4,JoinOut5,JoinOut6);
+</programlisting>
+
+    <para>This code starts with some filename definitions. The record
+    structure adds two fields to the existing set of fields from our base
+    dataset: a REAL8 field named “float” and a DECIMAL12_6 field named “dec.”
+    These will contain our REAL and DECIMAL data that we want to search on.
+    The PROJECT of the TABLE puts values into these two fields (in this case,
+    just dividing the PersonID file by 1000 to achieve a floating point value
+    to use that will be unique).</para>
+
+    <para>The IDX1 INDEX definition creates the REAL search key as a STRING13
+    computed field by using the REALFORMAT function to right-justify the
+    floating point value into a 13-character STRING. This formats the value
+    with exactly the number of decimal places specified in the REALFORMAT
+    function.</para>
+
+    <para>The IDX2 INDEX definition creates the DECIMAL search key as a
+    STRING13 computed field by casting the DECIMAL data to a STRING13. Using
+    the typecast operator simply left-justifies the value in the string. It
+    may also drop trailing zeros, so the number of decimal places is not
+    guaranteed to always be the same.</para>
+
+    <para>Because of the two different methods of constructing the search key
+    strings, the strings themselves are not equal, although the values used to
+    create them are the same. This means that you cannot expect to “mix and
+    match” between the two—you need to use each INDEX with the method used to
+    create it. That's why the two JOIN operations that demonstrate their usage
+    use the same method to create the string comparison value as was used to
+    create the INDEX. This way, you are guaranteed to achieve matching
+    values.</para>
+  </sect2>
+
+  <sect2 id="Using_an_INDEX_like_a_DATASET">
+    <title>Using an INDEX like a DATASET</title>
+
+    <para>Payload keys can also be used for standard DATASET-type operations.
+    In this type of usage, the INDEX acts as if it were a dataset, with the
+    advantage that it contains compressed data and a btree index. The key
+    difference in this type of use is the use of KEYED and WILD in INDEX
+    filters, which allows the INDEX read to make use of the btree instead of
+    doing a full-table scan.</para>
+
+    <para>The following example code (contained in IndexAsDataset.ECL)
+    illustrates the use of an INDEX as if it were a DATASET, and compares the
+    relative performance of INDEX versus DATASET use:</para>
+
+    <programlisting>IMPORT $;
+
+OutRec := RECORD
+  INTEGER   Seq;
+  QSTRING15 FirstName;
+  QSTRING25 LastName;
+  STRING2   State;
+END;
+
+IDX  := $.DeclareData.IDX__Person_LastName_FirstName_Payload;
+Base := $.DeclareData.Person.File;
+
+OutRec XF1(IDX L, INTEGER C) := TRANSFORM
+  SELF.Seq := C;
+  SELF := L;
+END;
+
+O1 := PROJECT(IDX(KEYED(lastname='COOLING'),
+                  KEYED(firstname='LIZZ'),
+              state='OK'),
+              XF1(LEFT,COUNTER));
+OUTPUT(O1,ALL);
+
+OutRec XF2(Base L, INTEGER C) := TRANSFORM
+  SELF.Seq := C;
+  SELF := L;
+END;
+
+O2 := PROJECT(Base(lastname='COOLING',
+                   firstname='LIZZ',
+              state='OK'),
+              XF2(LEFT,COUNTER));
+OUTPUT(O2,ALL);
+</programlisting>
+
+    <para>Both PROJECT operations will produce exactly the same result, but
+    the first one uses an INDEX and the second uses a DATASET. The only
+    significant difference between the two is the use of KEYED in the INDEX
+    filter. This indicates that the index read should use the btree to find
+    the specific set of leaf node records to read. The DATASET version must
+    read all the records in the file to find the correct one, making it a much
+    slower process.</para>
+
+    <para>If you check the workunit timings in ECL Watch, you should see a
+    difference. In this test case, the difference may not appear to be
+    significant (there's not that much test data), but in your real-world
+    applications the difference between an index read operation and a
+    full-table scan should prove meaningful.</para>
+  </sect2>
+</sect1>

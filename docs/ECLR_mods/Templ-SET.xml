@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_SET">
+  <title>#SET</title>
+
+  <para><emphasis role="bold">#SET<indexterm>
+      <primary>#SET</primary>
+    </indexterm>( </emphasis><emphasis>symbol, expression </emphasis><emphasis
+  role="bold">);</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="79.50pt" />
+
+        <colspec colwidth="273.30pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>symbol</emphasis></entry>
+
+            <entry>The name of a previously declared user-defined
+            symbol.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>The expression whose value to assign to the symbol.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">#SET </emphasis>statement assigns the value
+  of the <emphasis>expression</emphasis> to the <emphasis>symbol</emphasis>,
+  overwriting any previous value the symbol had contained.</para>
+
+  <para>Example:</para>
+
+  <programlisting>  #DECLARE(MySymbol); //declare a symbol named "MySymbol"
+  #SET(MySymbol,1);   //initialize MySymbol to 1 </programlisting>
+
+  <para>See Also: <link linkend="_DECLARE">#DECLARE</link>, <link linkend="_APPEND">#APPEND</link></para>
+</sect1>

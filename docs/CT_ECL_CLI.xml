@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book>
+  <bookinfo>
+    <title>Client Tools Component ECL CLI</title>
+
+    <author>
+      <firstname>Boca Raton</firstname>
+
+      <surname>Documentation Team</surname>
+
+      <affiliation>
+        <orgname>Lexis Nexis</orgname>
+      </affiliation>
+    </author>
+
+    <pubdate>Nov. 2011</pubdate>
+  </bookinfo>
+
+  <chapter id="ECL_CLI">
+    <title><emphasis role="bold">ECL Command Line Interface</emphasis></title>
+
+    <sect1 id="The_ECL_Command_Syntax" role="nobrk">
+      <title>The ECL Command Syntax</title>
+
+      <sect2>
+        <title></title>
+
+        <sect3 id="ecl_command_syntax">
+          <title><emphasis role="bold">ecl [</emphasis>--version<emphasis
+          role="bold">]</emphasis> &lt;command&gt; <emphasis
+          role="bold">[</emphasis>&lt;args&gt;<emphasis
+          role="bold">]</emphasis></title>
+
+          <para></para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry><emphasis>--version=</emphasis></entry>
+
+                  <entry>displays version info.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>valid &lt;command&gt;
+                  options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>deploy=</emphasis></entry>
+
+                  <entry>executes the deploy command</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>publish=</emphasis></entry>
+
+                  <entry>executes the publish command</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+        </sect3>
+
+        <sect3>
+          <title>ecl deploy</title>
+
+          <para>For example:</para>
+
+          <programlisting>ecl deploy</programlisting>
+
+          <para>Provides usage options for ecl deploy command.</para>
+
+          <para><informaltable colsep="0" frame="none" rowsep="0">
+              <tgroup cols="2">
+                <colspec align="left" colwidth="125.55pt" />
+
+                <colspec colwidth="384.85pt" />
+
+                <tbody>
+                  <row>
+                    <entry>ecl deploy</entry>
+
+                    <entry>executes the supplied ecl deploy command</entry>
+                  </row>
+
+                  <row>
+                    <entry></entry>
+                  </row>
+
+                  <row>
+                    <entry>--cluster=&lt;cluster&gt;</entry>
+
+                    <entry>cluster to associate workunit with</entry>
+                  </row>
+
+                  <row>
+                    <entry>--name=&lt;name&gt;</entry>
+
+                    <entry>workunit job name</entry>
+                  </row>
+
+                  <row>
+                    <entry>--server=&lt;ip&gt;</entry>
+
+                    <entry>ip of server running ecl services
+                    (eclwatch)</entry>
+                  </row>
+
+                  <row>
+                    <entry>--port=&lt;port&gt;</entry>
+
+                    <entry>ecl services port</entry>
+                  </row>
+
+                  <row>
+                    <entry>--username=&lt;name&gt;</entry>
+
+                    <entry>username for accessing ecl services</entry>
+                  </row>
+
+                  <row>
+                    <entry>--password=&lt;pw&gt;</entry>
+
+                    <entry>password for accessing ecl services</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </sect3>
+
+        <sect3>
+          <title>ecl publish</title>
+
+          <para>For example:</para>
+
+          <programlisting>ecl publish</programlisting>
+
+          <para>Provides usage options for ecl publish command.</para>
+
+          <para><informaltable colsep="0" frame="none" rowsep="0">
+              <tgroup cols="2">
+                <colspec align="left" colwidth="125.55pt" />
+
+                <colspec colwidth="384.85pt" />
+
+                <tbody>
+                  <row>
+                    <entry>ecl publish</entry>
+
+                    <entry>executes the supplied ecl publish command</entry>
+                  </row>
+
+                  <row>
+                    <entry></entry>
+                  </row>
+
+                  <row>
+                    <entry>--cluster=&lt;cluster&gt;</entry>
+
+                    <entry>cluster to associate workunit with</entry>
+                  </row>
+
+                  <row>
+                    <entry>--name=&lt;name&gt;</entry>
+
+                    <entry>workunit job name</entry>
+                  </row>
+
+                  <row>
+                    <entry>--wuid=&lt;wuid&gt;</entry>
+
+                    <entry>workunit id to publish</entry>
+                  </row>
+
+                  <row>
+                    <entry>--activate</entry>
+
+                    <entry>activates query when published</entry>
+                  </row>
+
+                  <row>
+                    <entry>--server=&lt;ip&gt;</entry>
+
+                    <entry>ip of server running ecl services
+                    (eclwatch)</entry>
+                  </row>
+
+                  <row>
+                    <entry>--port=&lt;port&gt;</entry>
+
+                    <entry>ecl services port</entry>
+                  </row>
+
+                  <row>
+                    <entry>--username=&lt;name&gt;</entry>
+
+                    <entry>username for accessing ecl services</entry>
+                  </row>
+
+                  <row>
+                    <entry>--password=&lt;pw&gt;</entry>
+
+                    <entry>password for accessing ecl services</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </sect3>
+      </sect2>
+    </sect1>
+  </chapter>
+</book>

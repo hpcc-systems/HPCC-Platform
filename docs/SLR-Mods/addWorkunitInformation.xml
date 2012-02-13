@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="addWorkunitInformation">
+  <title><emphasis role="bold">addWorkunitInformation</emphasis></title>
+
+  <para><emphasis role="bold">STD.System.Log.addWorkunitInformation<indexterm>
+      <primary>STD.System.Log.addWorkunitInformation</primary>
+    </indexterm> <indexterm>
+      <primary>System.Log.addWorkunitInformation</primary>
+    </indexterm> <indexterm>
+      <primary>Log.addWorkunitInformation</primary>
+    </indexterm> <indexterm>
+      <primary>addWorkunitInformation</primary>
+    </indexterm>(</emphasis> <emphasis> text </emphasis><emphasis
+  role="bold">[</emphasis> <emphasis>, code </emphasis><emphasis role="bold">]
+  )</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>text</emphasis></entry>
+
+          <entry>A string containing the text to write.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>code</emphasis></entry>
+
+          <entry>Optional. The code number to associate with the
+          <emphasis>text</emphasis>. If omitted, the default is zero
+          (0).</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>addWorkunitInformation does not return a value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">addWorkunitInformation </emphasis>function
+  writes the <emphasis>text</emphasis> string to the eclagent.log file for the
+  workunit, and also displays the <emphasis>code</emphasis> and
+  <emphasis>text</emphasis> in the Info section of the ECL Watch page for the
+  workunit.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+STD.System.Log.addWorkunitInformation('Got Here',1);    
+   //write text to log and display "1: Got Here" as Info
+</programlisting>
+</sect1>

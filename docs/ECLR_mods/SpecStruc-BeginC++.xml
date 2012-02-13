@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="BEGINCplus_Structure">
+  <title>BEGINC++ Structure<indexterm>
+      <primary>BEGINC++ Structure</primary>
+    </indexterm></title>
+
+  <para><emphasis>resulttype funcname </emphasis><emphasis
+  role="bold">(</emphasis><emphasis> parameterlist </emphasis><emphasis
+  role="bold">) := BEGINC++<indexterm>
+      <primary>BEGINC++</primary>
+    </indexterm></emphasis><emphasis role="bold">
+  </emphasis><emphasis></emphasis></para>
+
+  <para><emphasis> code</emphasis><emphasis role="bold"> </emphasis></para>
+
+  <para><emphasis role="bold">ENDC++<indexterm>
+      <primary>ENDC++</primary>
+    </indexterm>;</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>resulttype</emphasis></entry>
+
+          <entry>The ECL return value type of the C++ function.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>funcname</emphasis></entry>
+
+          <entry><para>The ECL attribute name of the function.</para></entry>
+        </row>
+
+        <row>
+          <entry><emphasis>parameterlist</emphasis></entry>
+
+          <entry>The parameters to pass to the C++ function.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>code</emphasis></entry>
+
+          <entry>The C++ function source code.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">BEGINC++ </emphasis>structure makes it
+  possible to add in-line C++ code to your ECL. This is useful where string or
+  bit processing would be complicated in ECL, and would be more easily done in
+  C++, typically for a one-off use. For more commonly used C++ code, writing a
+  plugin would be a better solution (see the <emphasis role="bold">External
+  Service Implementation</emphasis> discussion).</para>
+
+  <para><emphasis role="bold">WARNING: This feature could create memory
+  corruption and/or security issues, so great care and forethought are
+  advised—consult with Technical Support before using.</emphasis></para>
+
+  <sect2 id="ECL_to_Cplus_Mapping">
+    <title>ECL to C++ Mapping</title>
+
+    <para>Types are passed as follows:</para>
+
+    <programlisting>//The following typedefs are used below:
+typedef unsigned size32_t;
+typedef wchar_t UChar; [ unsigned short in linux ]</programlisting>
+
+    <para>The following list describes the mappings from ECL to C++. For
+    embedded C++ the parameters are always converted to lower case, and
+    capitalized in conjunctions (see below).</para>
+
+    <programlisting><emphasis role="bold">ECL                  C++ [Linux in brackets]</emphasis>
+BOOOLEAN xyz         bool xyz
+INTEGER1 xyz         signed char xyz
+INTEGER2 xyz         signed short xyz
+INTEGER4 xyz         signed int xyz
+INTEGER8 xyz         signed __int64 xyz [ long long ]
+UNSIGNED1 xyz        unsigned char xyz
+UNSIGNED2 xyz        unsigned short xyz
+UNSIGNED4 xyz        unsigned int xyz
+UNSIGNED8 xyz        unsigned __int64 xyz [ unsigned long long xyz ]
+REAL4 xyz            float xyz
+REAL/REAL8 xyz       double xyz
+DATA xyz             size32_t lenXyz, void * xyz
+STRING xyz           size32_t lenXyz, char * xyz
+VARSTRING xyz        char * xyz;
+QSTRING xyz          size32_t lenXyz, char * xyz
+UNICODE xyz          size32_t lenXyz, UChar * xyz
+VARUNICODE xyz       UChar * xyz
+DATA&lt;nn&gt; xyz         void * xyz
+STRING&lt;nn&gt; xyz       char * xyz
+QSTRING&lt;nn&gt; xyz      char * xyz
+UNICODE&lt;nn&gt; xyz      UChar * xyz
+SET OF ... xyz       bool isAllXyz, size32_t lenXyz, void *  xyz</programlisting>
+
+    <para>Note that strings of unknown length are passed differently from
+    those with a known length. A variable length input string is passed as a
+    number of characters, not the size (i.e. qstring/unicode), followed by a
+    pointer to the data, like this (size32_t is an UNSIGNED4):</para>
+
+    <programlisting>string ABC -&gt; size32_t lenAbc, const char * abc;
+unicode ABC -&gt; size32_t lenABC, const UChar * abc;</programlisting>
+
+    <para>A dataset is passed as a size/pointer pair. The length gives the
+    size of the following dataset in bytes. The same naming convention is
+    used:</para>
+
+    <programlisting>dataset(r) ABC -&gt; size32_t lenAbc, const void * abc</programlisting>
+
+    <para>NOTE: variable length strings within a record are stored as a 4 byte
+    number of characters, followed by the string data.</para>
+
+    <para>Sets are passed as a set of parameters (all, size, pointer):</para>
+
+    <programlisting>set of unsigned4 ABC -&gt; bool isAllAbc, size32_t lenAbc, const void * abc</programlisting>
+
+    <para>Return types are handled as C++ functions returning the same types
+    with some exceptions. The exceptions have some extra initial parameters to
+    return the results in:</para>
+
+    <programlisting><emphasis role="bold">ECL                C++ [Linux in brackets]</emphasis>
+DATA xyz           size32_t &amp; __lenResult, void * &amp; __result
+STRING xyz         size32_t &amp; __lenResult, char * &amp; __result
+QSTRING xyz        size32_t &amp; __lenResult, char * &amp; __result
+UNICODE xyz        size32_t &amp; __lenResult, UChar * &amp; __result
+DATA&lt;nn&gt; xyz       void * __result
+STRING&lt;nn&gt; xyz     char * __result
+QSTRING&lt;nn&gt; xyz    char * __result
+UNICODE&lt;nn&gt; xyz    UChar * __result
+SET OF ... xyz     bool __isAllResult, size32_t &amp;  __lenResult,
+                      void * &amp; __result</programlisting>
+
+    <para>For example,</para>
+
+    <programlisting>STRING process(STRING value, INTEGER4 len)</programlisting>
+
+    <para>has the prototype:</para>
+
+    <programlisting>void process(size32_t &amp; __lenResult, char * &amp; __result,
+             size32_t lenValue, char * value, int len);</programlisting>
+  </sect2>
+
+  <sect2 id="Available_Options">
+    <title>Available Options</title>
+
+    <para><emphasis role="bold">#option pure</emphasis>By default, embedded
+    C++ functions are assumed to have side-effects, which means the generated
+    code won't be as efficient as it might be since the calls can't be shared.
+    Adding #option pure inside the embedded C++ <emphasis>code</emphasis>
+    causes it to be treated as a pure function without side effects.</para>
+
+    <para><emphasis role="bold">#option once</emphasis>Indicates the function
+    has no side effects and is evaluated at query execution time, even if the
+    parameters are constant, allowing the optimizer to make more efficient
+    calls to the function in some cases.</para>
+
+    <para><emphasis role="bold">#option action</emphasis>Indicates side
+    effects, requiring the optimizer to keep all calls to the function.</para>
+
+    <para><emphasis role="bold">#body</emphasis> Delimits the beginning of
+    executable code. All <emphasis>code</emphasis> that precedes #body (such
+    as #include) is generated outside the function definition; all code that
+    follows it is generated inside the function definition.</para>
+
+    <para>Example:</para>
+
+    <programlisting>//static int add(int x,int y) {
+INTEGER4 add(INTEGER4 x, INTEGER4 y) := BEGINC++
+  #option pure
+  return x + y;
+ENDC++;
+         
+OUTPUT(add(10,20));
+          
+//static void reverseString(size32_t &amp; __lenResult,char *  &amp; __result,
+// size32_t lenValue,char * value) {
+STRING reverseString(STRING value) := BEGINC++
+   size32_t len = lenValue;
+   char * out = (char *)rtlMalloc(len);
+   for (unsigned i= 0; i &lt; len; i++)
+        out[i] = value[len-1-i];
+   __lenResult = len;
+   __result = out;
+ENDC++;
+OUTPUT(reverseString('Kevin'));
+// This is a function returning an unknown length string via the
+// special reference parameters __lenResult and  __result
+         
+//this function demonstrates #body, allowing #include to be  used
+BOOLEAN nocaseInList(STRING search,
+          SET OF STRING values) := BEGINC++
+#include &lt;string.h&gt;
+#body 
+  if (isAllValues)
+    return true; 
+  const byte * cur = (const byte *)values; 
+  const byte * end = cur + lenValues; 
+  while (cur != end) 
+  { 
+  unsigned len = *(unsigned *)cur; 
+  cur += sizeof(unsigned); 
+  if (lenSearch == len &amp;&amp; memicmp(search, cur, len) == 0) 
+      return true; 
+  cur += len; 
+  } 
+  return false;
+ENDC++;
+          
+//and another example, generating a variable number of Xes
+STRING buildString(INTEGER4 value) := BEGINC++
+   char * out = (char *)rtlMalloc(value);
+   for (unsigned i= 0; i &lt; value; i++)
+     out[i] = 'X';
+     __lenResult = value;
+     __result = out;
+ENDC++;</programlisting>
+
+    <para>See Also: <link linkend="External_Service_Implementation">External Service Implementation</link></para>
+  </sect2>
+</sect1>

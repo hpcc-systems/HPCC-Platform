@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="APPLY">
+  <title>APPLY</title>
+
+  <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
+  :=<emphasis role="bold"> ] APPLY<indexterm>
+      <primary>APPLY</primary>
+    </indexterm><indexterm>
+      <primary>APPLY function</primary>
+    </indexterm>(</emphasis><emphasis>dataset, actionlist </emphasis><emphasis
+  role="bold">[ , BEFORE<indexterm>
+      <primary>BEFORE</primary>
+    </indexterm>( </emphasis><emphasis>actionlist </emphasis><emphasis
+  role="bold">) ]</emphasis><emphasis role="bold"> [ , AFTER<indexterm>
+      <primary>AFTER</primary>
+    </indexterm>( </emphasis><emphasis>actionlist </emphasis><emphasis
+  role="bold">) ] )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="81.65pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>attrname</emphasis></entry>
+
+            <entry>Optional. The action name, which turns the action into an
+            attribute definition, therefore not executed until the
+            <emphasis>attrname</emphasis> is used as an action.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>dataset</emphasis></entry>
+
+            <entry>The set of records to apply the action to. This must be the
+            name of a physical dataset of a type that supports this
+            operation.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>actionlist</emphasis></entry>
+
+            <entry>A comma-delimited list of the operations to perform on the
+            dataset. Typically, this is an external service (see SERVICE
+            Structure<indexterm>
+                <primary>SERVICE Structure</primary>
+              </indexterm>). This may not be an OUTPUT or any function that
+            triggers a child query.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">BEFORE</emphasis></entry>
+
+            <entry>Specifies executing the enclosed
+            <emphasis>actionlist</emphasis> before the first dataset row is
+            processed. Not yet implemented in Thor, valid only in hthor and
+            Roxie.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">AFTER</emphasis></entry>
+
+            <entry>Specifies executing the enclosed
+            <emphasis>actionlist</emphasis> after the last dataset row is
+            processed. Not yet implemented in Thor, valid only in hthor and
+            Roxie.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">APPLY </emphasis>action performs all the
+  specified actions in the <emphasis>actionlist</emphasis> on each record of
+  the nominated <emphasis>dataset</emphasis>. The actions execute in the order
+  they appear in the <emphasis>actionlist</emphasis>.</para>
+
+  <para>Example:</para>
+
+  <programlisting>EXPORT x :=  SERVICE
+  echo(const string src):library='myfuncs',entrypoint='rtlEcho';
+END;
+APPLY(person,x.echo(last_name + ':' + first_name));
+ // concatenate each person's lastname and firstname and echo it
+</programlisting>
+
+  <para>See Also: <link linkend="SERVICE_Structure">SERVICE Structure</link>, <link linkend="DATASET">DATASET</link></para>
+</sect1>

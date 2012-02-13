@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="AVE">
+  <title>AVE</title>
+
+  <para><emphasis role="bold">AVE<indexterm>
+      <primary>AVE</primary>
+    </indexterm><indexterm>
+      <primary>AVE function</primary>
+    </indexterm>(</emphasis><emphasis>recordset, value </emphasis><emphasis
+  role="bold">[, KEYED<indexterm>
+      <primary>KEYED</primary>
+    </indexterm> ])</emphasis><emphasis role="bold"></emphasis></para>
+
+  <para><emphasis
+  role="bold">AVE(</emphasis><emphasis>valuelist</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="80.85pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>The set of records to process. This may be the name of a
+            dataset or a record set derived from some filter condition, or any
+            expression that results in a derived record set. This also may be
+            the keyword GROUP to indicate averaging the field values in a
+            group.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>value</emphasis></entry>
+
+            <entry>The expression to find the average value of.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">KEYED</emphasis></entry>
+
+            <entry>Optional. Specifies the activity is part of an index read
+            operation, which allows the optimizer to generate optimal code for
+            the operation.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>valuelist</emphasis></entry>
+
+            <entry>A comma-delimited list of expressions to find the average
+            value of. This may also be a SET of values.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>Return:<emphasis> </emphasis>AVE returns a single value.</para>
+
+  <para>The <emphasis role="bold">AVE </emphasis>function either returns the
+  average <emphasis>value</emphasis> (arithmetic mean) from the specified
+  <emphasis>recordset </emphasis>or the <emphasis>valuelist</emphasis>. It is
+  defined to return zero if the <emphasis>recordset</emphasis> is
+  empty.</para>
+
+  <para>Example:</para>
+
+  <programlisting>AvgBal1 := AVE(Trades,Trades.trd_bal);
+AvgVal2 := AVE(4,8,16,2,1); //returns 6.2
+SetVals := [4,8,16,2,1];
+AvgVal3 := AVE(SetVals);    //returns 6.2
+</programlisting>
+
+  <para>See Also: <link linkend="MIN">MIN</link>, <link linkend="MAX">MAX</link></para>
+</sect1>

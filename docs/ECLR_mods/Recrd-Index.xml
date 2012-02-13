@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="INDEX_record_structure">
+  <title>INDEX</title>
+
+  <para><emphasis> attr</emphasis><emphasis role="bold"> := INDEX<indexterm>
+      <primary>INDEX</primary>
+    </indexterm>([</emphasis><emphasis> baserecset, </emphasis><emphasis
+  role="bold">]</emphasis><emphasis> keys, indexfile </emphasis><emphasis
+  role="bold">[,SORTED<indexterm>
+      <primary>SORTED</primary>
+    </indexterm>] [,PRELOAD<indexterm>
+      <primary>PRELOAD</primary>
+    </indexterm>]</emphasis><emphasis role="bold"> [,OPT<indexterm>
+      <primary>OPT</primary>
+    </indexterm>] [,COMPRESSED<indexterm>
+      <primary>COMPRESSED</primary>
+    </indexterm>( LZW<indexterm>
+      <primary>LZW</primary>
+    </indexterm> | ROW<indexterm>
+      <primary>ROW</primary>
+    </indexterm> | FIRST<indexterm>
+      <primary>FIRST</primary>
+    </indexterm>) ]</emphasis><emphasis role="bold"> [,DISTRIBUTED<indexterm>
+      <primary>DISTRIBUTED</primary>
+    </indexterm>]);</emphasis><emphasis></emphasis></para>
+
+  <para><emphasis> attr</emphasis><emphasis role="bold"> :=
+  INDEX([</emphasis><emphasis> baserecset, </emphasis><emphasis
+  role="bold">]</emphasis><emphasis> keys, payload, indexfile
+  </emphasis><emphasis role="bold">[,SORTED] [,PRELOAD]</emphasis><emphasis
+  role="bold"> [,OPT] [,COMPRESSED( LZW | ROW | FIRST) ]</emphasis><emphasis
+  role="bold"> [,DISTRIBUTED]);</emphasis><emphasis></emphasis></para>
+
+  <para><emphasis> attr</emphasis><emphasis role="bold"> :=
+  INDEX(</emphasis><emphasis>index,newindexfile</emphasis><emphasis
+  role="bold">);</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>attr</emphasis></entry>
+
+          <entry>The name of the INDEX for later use in other
+          attributes.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>baserecset</emphasis></entry>
+
+          <entry>Optional. The set of data records for which the index file
+          has been created. If omitted, all fields in the
+          <emphasis>keys</emphasis>and <emphasis>payload</emphasis>parameters
+          must be fully qualified.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>keys</emphasis></entry>
+
+          <entry>The RECORD structure of the fields in the
+          <emphasis>indexfile</emphasis> that contains key and file position
+          information for referencing into the
+          <emphasis>baserecset</emphasis>. Field names and types must match
+          the <emphasis>baserecset</emphasis> fields (REAL and DECIMAL type
+          fields are not supported). This may also contain additional fields
+          not present in the <emphasis>baserecset</emphasis>(computed fields).
+          If omitted, all fields in the <emphasis>baserecset</emphasis> are
+          used.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>payload</emphasis></entry>
+
+          <entry>The RECORD structure of the <emphasis>indexfile</emphasis>
+          that contains additional fields not used as keys. If the name of the
+          <emphasis>baserecset</emphasis> is in the structure, it specifies
+          “all other fields not already named in the <emphasis>keys</emphasis>
+          parameter.” This may contain fields not present in the
+          <emphasis>baserecordset</emphasis>(computed fields). The
+          <emphasis>payload</emphasis> fields do not take up space in the
+          non-leaf nodes of the index and cannot be referenced in a KEYED()
+          filter clause.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>indexfile</emphasis></entry>
+
+          <entry>A string constant containing the logical filename of the
+          index. See the <emphasis>Scope &amp; Logical Filenames</emphasis>
+          section for more on logical filenames.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">SORTED</emphasis></entry>
+
+          <entry>Optional. Specifies that when the index is accessed the
+          records come out in the order of the <emphasis>keys</emphasis>. If
+          omitted, the returned record order is undefined.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">PRELOAD</emphasis></entry>
+
+          <entry>Optional. Specifies that the <emphasis>indexfile</emphasis>
+          is left in memory after loading (valid only for Data Delivery Engine
+          use).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">OPT</emphasis></entry>
+
+          <entry><para>Optional. Specifies that using the index when the
+          <emphasis>indexfile</emphasis> doesn’t exist results in an empty
+          recordset instead of an error condition.</para></entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">COMPRESSED</emphasis></entry>
+
+          <entry><para>Optional. Specifies the type of compression used. If
+          omitted, the default is <emphasis role="bold">LZW</emphasis>, a
+          variant of the Lempel-Ziv-Welch algorithm. Specifying <emphasis
+          role="bold">ROW</emphasis> compresses index entries based on
+          differences between contiguous rows (for use with fixed-length
+          records, only), and is recommended for use in circumstances where
+          speedier decompression time is more important than the amount of
+          compression achieved. <emphasis role="bold">FIRST</emphasis>
+          compresses common leading elements of the key (recommended only for
+          timing comparison use).</para></entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">DISTRIBUTED</emphasis></entry>
+
+          <entry>Optional. Specifies that the index was created with the
+          DISTRIBUTED option on the BUILD action<indexterm>
+              <primary>BUILD action</primary>
+            </indexterm> or the BUILD action simply referenced the INDEX
+          declaration<indexterm>
+              <primary>INDEX declaration</primary>
+            </indexterm> with the DISTRIBUTED option. The INDEX is therefore
+          accessed locally on each node (similar to the LOCAL
+          function<indexterm>
+              <primary>LOCAL function</primary>
+            </indexterm>, which is preferred), is not globally sorted, and
+          there is no root index to indicate which part of the index will
+          contain a particular entry. This may be useful in Roxie queries in
+          conjunction with ALLNODES use.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>index</emphasis></entry>
+
+          <entry><para>The name of a previously defined INDEX attribute to
+          duplicate.</para></entry>
+        </row>
+
+        <row>
+          <entry><emphasis>newindexfile</emphasis></entry>
+
+          <entry><para>A string constant containing the logical filename of
+          the new index. See the <emphasis>Scope &amp; Logical
+          Filenames</emphasis> section for more on logical
+          filenames.</para></entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para><emphasis role="bold">INDEX </emphasis>declares a previously created
+  index for use. INDEX is related to BUILD (or BUILDINDEX) in the same manner
+  that DATASET is to OUTPUT—BUILD creates an index file that INDEX then
+  defines for use in ECL code. Index files are compressed. A single index
+  record must be defined as less than 32K and result in a less than 8K page
+  after compression.</para>
+
+  <para>The Binary-tree metakey portion of the INDEX is a separate 32K file
+  part on the first node of the Thor cluster on which it was built, but
+  deployed to every node of a Roxie cluster. There are as many leaf-node file
+  parts as there are nodes to the Thor cluster on which it was built. The
+  specific distribution of the leaf-node records across execution nodes is
+  undefined in general, as it depends on the size of the cluster on which it
+  was built and the size of the cluster on which it is used.</para>
+
+  <sect2 id="Keyed_Access_INDEX">
+    <title>Keyed Access INDEX</title>
+
+    <para>This form defines an index file to allow keyed access to the
+    <emphasis>baserecset</emphasis>. The index is used primarily by the FETCH
+    and JOIN (with the KEYED option) operations.</para>
+
+    <para>Example:</para>
+
+    <programlisting>PtblRec := RECORD
+  STRING2 State := Person.per_st;
+  STRING20 City := Person.per_full_city;
+  STRING25 Lname := Person.per_last_name;
+  STRING15 Fname := Person.per_first_name;
+END;
+
+PtblOut := OUTPUT(TABLE(Person,PtblRec),,'RTTEMP::TestFetch');
+          
+Ptbl := DATASET('RTTEMP::TestFetch',
+          {PtblRec,UNSIGNED8 RecPtr {virtual(fileposition)}},
+          FLAT);
+          
+AlphaInStateCity := INDEX(Ptbl,
+                   {state,city,lname,fname,RecPtr},
+                   'RTTEMPkey::TestFetch');
+Bld := BUILDINDEX(AlphaInStateCity);</programlisting>
+  </sect2>
+
+  <sect2 id="Payload_INDEX">
+    <title>Payload INDEX</title>
+
+    <para>This form defines an index file containing extra payload fields in
+    addition to the keys. This form is used primarily by “half-key” JOIN
+    operations to eliminate the need to directly access the
+    <emphasis>baserecset</emphasis>, thus increasing performance over the
+    “full-keyed” version of the same operation (done with the KEYED option on
+    the JOIN). By default, payload fields are sorted during the BUILD
+    action<indexterm>
+        <primary>BUILD action</primary>
+      </indexterm> to minimize space on the leaf nodes of the key. This
+    sorting can be controlled by using <emphasis>sortIndexPayload</emphasis>
+    in a #OPTION statement.</para>
+
+    <para>Example:</para>
+
+    <programlisting>Vehicles := DATASET('vehicles',
+          {STRING2 st,STRING20 city,STRING20 lname,
+          UNSIGNED8 fpos{virtual(fileposition)}},FLAT);
+
+VehicleKey := INDEX(Vehicles,{st,city},{lname,fpos},'vkey::st.city'); 
+BUILDINDEX(VehicleKey);</programlisting>
+  </sect2>
+
+  <sect2 id="Duplicate_INDEX">
+    <title>Duplicate INDEX</title>
+
+    <para>This form defines a <emphasis>newindexfile </emphasis>that is
+    identical to the previously defined <emphasis>index</emphasis>.</para>
+
+    <para>Example:</para>
+
+    <programlisting>NewVehicleKey := INDEX(VehicleKey,'NEW::vkey::st.city');
+          //define NewVehicleKey like VehicleKey</programlisting>
+
+    <para>See Also: <link linkend="DATASET">DATASET</link>, <link
+    linkend="BUILD">BUILDINDEX</link>, <link linkend="JOIN">JOIN</link>, <link
+    linkend="FETCH">FETCH</link>, <link
+    linkend="KEYED-WILD">KEYED/WILD</link></para>
+  </sect2>
+</sect1>

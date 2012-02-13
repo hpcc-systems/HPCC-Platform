@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="DfuPlusExec">
+  <title>DfuPlusExec</title>
+
+  <para><emphasis role="bold">STD.File.DfuPlusExec<indexterm>
+      <primary>STD.File.DfuPlusExec</primary>
+    </indexterm><indexterm>
+      <primary>File.DfuPlusExec</primary>
+    </indexterm><indexterm>
+      <primary>DfuPlusExec</primary>
+    </indexterm>(</emphasis> <emphasis> commandline</emphasis> <emphasis
+  role="bold">] )</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>commandline</emphasis></entry>
+
+          <entry>A null-terminated string containing the DFUPlus.exe command
+          line to execute. The valid arguments are documented in the Client
+          Tools manual, in the section describing the DfuPlus.exe
+          program.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">DfuPlusExec</emphasis> action executes the
+  specified <emphasis>commandline</emphasis> just as the DfuPLus.exe program
+  would do. This simply allows you to have all the functionality of the
+  DfuPLus.exe program available within your ECL code.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+
+serv := 'server=http://10.150.50.12:8010 ';
+user := 'username=rlor ';
+pswd := 'password=password ';
+over := 'overwrite=1 ';
+repl := 'replicate=1 ';
+
+action  := 'action=despray ';
+dstip   := 'dstip=10.150.50.14 ';
+dstfile := 'dstfile=c:\\import\\despray\\timezones.txt ';
+srcname := 'srcname=RTTEMP::timezones.txt ';
+
+cmd := serv + user + pswd + over + repl + action + dstip + dstfile + srcname;
+STD.File.DfuPlusExec(cmd);
+</programlisting>
+</sect1>

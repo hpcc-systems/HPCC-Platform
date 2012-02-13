@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SORTED">
+  <title>SORTED</title>
+
+  <para><emphasis role="bold">SORTED<indexterm>
+      <primary>SORTED function</primary>
+    </indexterm>(</emphasis><emphasis>recordset,value</emphasis><emphasis
+  role="bold">)</emphasis><emphasis role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">SORTED<indexterm>
+      <primary>SORTED</primary>
+    </indexterm>(</emphasis><emphasis>index</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="77.90pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>The set of sorted records. This may be the name of a
+            dataset or a record set derived from some filter condition, or any
+            expression that results in a derived record set.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>value</emphasis></entry>
+
+            <entry>A comma-delimited list of expressions or key fields in the
+            recordset on which the recordset has been sorted, with the
+            leftmost being the most significant sort criteria. A leading minus
+            sign (-) indicates a descending-order sort on that element. You
+            may have multiple value parameters to indicate sorts within sorts.
+            You may use the keyword RECORD to indicate an ascending sort on
+            all fields, and/or you may use the keyword EXCEPT to list non-sort
+            fields in the recordset.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>index</emphasis></entry>
+
+            <entry>The attribute name of an INDEX definition. This is
+            equivalent to adding the SORTED option to the INDEX
+            definition.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>SORTED is a compiler directive that returns
+            nothing.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">SORTED </emphasis>function indicates to the
+  ECL compiler that the <emphasis>recordset</emphasis> is already sorted
+  according to the <emphasis>values</emphasis> specified. Any number of
+  <emphasis>value</emphasis> parameters may be supplied, with the leftmost
+  being the most significant sort criteria. A leading minus sign (-) on any
+  <emphasis>value</emphasis> parameter indicates a descending sort for that
+  one parameter. SORTED typically refers to a DATASET to indicate the order in
+  which the data is already sorted.</para>
+
+  <para>Example:</para>
+
+  <programlisting>InputRec := RECORD
+INTEGER4 Attr1;
+STRING20 Attr2;
+INTEGER8 Cid;
+END;
+MyFile := DATASET('filename',InputRec,FLAT)
+MySortedFile := SORTED(MyFile,MyFile.Cid)
+// Input file already sorted by Cid
+</programlisting>
+
+  <para>See Also: <link linkend="SORT">SORT</link>, <link
+  linkend="DATASET">DATASET</link>, <link linkend="RANK">RANK</link>, <link
+  linkend="RANKED">RANKED</link>, <link
+  linkend="INDEX_record_structure">INDEX</link></para>
+</sect1>

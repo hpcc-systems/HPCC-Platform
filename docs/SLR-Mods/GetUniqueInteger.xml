@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="GetUniqueInteger">
+  <title><emphasis role="bold">GetUniqueInteger</emphasis></title>
+
+  <para><emphasis>result</emphasis> <emphasis role="bold"> :=
+  STD.System.Util.GetUniqueInteger<indexterm>
+      <primary>STD.System.Util.GetUniqueInteger</primary>
+    </indexterm> <indexterm>
+      <primary>System.Util.GetUniqueInteger</primary>
+    </indexterm> <indexterm>
+      <primary>Util.GetUniqueInteger</primary>
+    </indexterm> <indexterm>
+      <primary>GetUniqueInteger</primary>
+    </indexterm>( [ </emphasis> <emphasis>dali</emphasis> <emphasis
+  role="bold"> ] );</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>dali</emphasis></entry>
+
+          <entry>Optional. A null-terminated string containing the ip address
+          of the remote dali to provide the number. If omitted, the default is
+          local.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>GetUniqueInteger returns returns an UNSIGNED8 value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">GetUniqueInteger </emphasis>function returns
+  a number that is unique across all the slave nodes of the specified
+  <emphasis>dali</emphasis>.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+
+OUTPUT(STD.System.Util.GetUniqueInteger());
+</programlisting>
+</sect1>

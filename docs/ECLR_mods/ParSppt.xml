@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Parsing_Support" role="nobrk">
+  <title>Parsing Support</title>
+
+  <para>Natural Language Parsing<indexterm>
+      <primary>Natural Language Parsing</primary>
+    </indexterm> is accomplished in ECL by combining pattern definitions with
+  an output RECORD structure (or TRANSFORM function) specifically designed to
+  receive the parsed values, then using the PARSE function to perform the
+  operation.</para>
+
+  <para>Pattern definitions are used to detect "interesting" text within the
+  data. Just as with all other attribute definitions, these patterns typically
+  define specific parsing elements and may be combined to form more complex
+  patterns, tokens, and rules.</para>
+
+  <para>The output RECORD structure (or TRANSFORM function) defines the format
+  of the resulting recordset. It typically contains specific pattern matching
+  functions that return the "interesting" text, its length or position.</para>
+
+  <para>The PARSE function implements the parsing operation. It returns a
+  recordset that may then be post-processed as needed using standard ECL
+  syntax, or simply output.</para>
+</sect1>

@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SERVICE_Structure" role="nobrk">
+  <title>SERVICE Structure<indexterm>
+      <primary>SERVICE Structure</primary>
+    </indexterm></title>
+
+  <para><emphasis>servicename </emphasis><emphasis role="bold">:= SERVICE [ :
+  </emphasis><emphasis>defaultkeywords</emphasis><emphasis role="bold">
+  ]</emphasis><emphasis role="bold"> </emphasis><emphasis></emphasis></para>
+
+  <para><emphasis> prototype </emphasis>:
+  <emphasis>keywordlist</emphasis>;<emphasis role="bold"> </emphasis></para>
+
+  <para><emphasis role="bold">END;</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="85.30pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>servicename</emphasis></entry>
+
+            <entry>The name of the service the SERVICE structure
+            provides.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>defaultkeywords</emphasis></entry>
+
+            <entry>Optional. A comma-delimited list of default keywords and
+            their values shared by all prototypes in the external
+            service.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>prototype</emphasis></entry>
+
+            <entry>The ECL name and prototype of a specific function.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>keywordlist</emphasis></entry>
+
+            <entry>A comma-delimited list of keywords and their values that
+            tell the ECL compiler how to access the external service.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">SERVICE </emphasis>structure makes it
+  possible to create external services to extend the capabilities of ECL to
+  perform any desired functionality. These external system services are
+  implemented as exported functions in a .SO (Shared Object). An ECL system
+  service .SO can contain one or more services and (possibly) a single .SO
+  initialization routine.</para>
+
+  <para>Example:</para>
+
+  <programlisting>  email := SERVICE
+    simpleSend( STRING address,
+            STRING template,
+            STRING subject) : LIBRARY='ecl2cw',
+                 INITFUNCTION='initEcl2Cw';
+    END;
+  MyAttr := COUNT(Trades): FAILURE(email.simpleSend('help@ln_risk.com',
+                          'FailTemplate',
+                          'COUNT failure'));
+  //An example of a SERVICE function returning a structured record
+  NameRecord := RECORD
+    STRING5 title;
+    STRING20 fname;
+    STRING20 mname;
+    STRING20 lname;
+    STRING5 name_suffix;
+    STRING3 name_score;
+  END;
+  
+  LocalAddrCleanLib := SERVICE
+  NameRecord dt(CONST STRING name, CONST STRING server = 'x')
+    : c,entrypoint='aclCleanPerson73',pure;
+  END;
+  
+  MyRecord := RECORD
+    UNSIGNED id;
+    STRING uncleanedName;
+    NameRecord Name;
+  END;
+  x := DATASET('x', MyRecord, THOR);
+  
+  myRecord t(myRecord L) := TRANSFORM
+      SELF.Name := LocalAddrCleanLib.dt(L.uncleanedName);
+      SELF := L;
+    END;
+  y := PROJECT(x, t(LEFT));
+  OUTPUT(y);
+
+
+  //The following two examples define the same functions:
+  TestServices1 := SERVICE
+    member(CONST STRING src)
+      : holertl,library='test',entrypoint='member',ctxmethod;
+    takesContext1(CONST STRING src)
+      : holertl,library='test',entrypoint='takesContext1',context;
+    takesContext2()
+      : holertl,library='test',entrypoint='takesContext2',context;
+    STRING takesContext3()
+      : holertl,library='test',entrypoint='takesContext3',context;
+  END;
+  
+  //this form demonstrates the use of default keywords
+  TestServices2 := SERVICE : holert,library='test'
+    member(CONST STRING src) : entrypoint='member',ctxmethod;
+    takesContext1(CONST STRING src) : entrypoint='takesContext1',context;
+    takesContext2() : entrypoint='takesContext2',context;
+    STRING takesContext3() : entrypoint='takesContext3',context;
+  END;
+</programlisting>
+
+  <para>See Also: <link linkend="External_Service_Implementation">External Service Implementation</link>, <link linkend="CONST">CONST</link></para>
+</sect1>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ForeignLogicalFileName">
+  <title><emphasis role="bold">ForeignLogicalFileName</emphasis></title>
+
+  <para><emphasis role="bold">STD.File.ForeignLogicalFileName<indexterm>
+      <primary>STD.File.ForeignLogicalFileName</primary>
+    </indexterm><indexterm>
+      <primary>STD.File.ForeignLogicalFileName</primary>
+    </indexterm><indexterm>
+      <primary>ForeignLogicalFileName</primary>
+    </indexterm>(</emphasis> <emphasis>filename </emphasis> <emphasis
+  role="bold">[,</emphasis> <emphasis>foreigndali </emphasis> <emphasis
+  role="bold">] [,</emphasis> <emphasis>absolutepath</emphasis> <emphasis
+  role="bold">] )</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>filename</emphasis></entry>
+
+          <entry>A null-terminated string containing the logical name of the
+          file.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>foreigndali</emphasis></entry>
+
+          <entry>A null-terminated string containing the IP address of the
+          foreign Dali. If omitted, the <emphasis>filename</emphasis> is
+          presumed to be a foreign logical file name, which is converted to a
+          local logical file name.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>absolutepath</emphasis></entry>
+
+          <entry>Optional. A boolean TRUE/FALSE to indicate whether to prepend
+          a tilde (~) to the resulting foreign logical file name. If omitted,
+          the default is FALSE.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>ForeignLogicalFileName returns returns a VARSTRING
+          (null-terminated) value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">ForeignLogicalFileName </emphasis>function
+  returns either a foreign logical file name (if the
+  <emphasis>foreigndali</emphasis> parameter is present) or a local logical
+  file name.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">sf := '~thor_data400::BASE::Business_Header';
+ff := STD.File.ForeignLogicalFileName(sf,'10.150.29.161',true);
+ //results in: ~foreign::10.150.29.161::thor_data400::base::business_header
+lf := STD.File.ForeignLogicalFileName(ff,'',true);
+ //results in: ~thor_data400::base::business_header</programlisting>
+</sect1>

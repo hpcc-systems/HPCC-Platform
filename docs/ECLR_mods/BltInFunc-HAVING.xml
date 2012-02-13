@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="HAVING">
+  <title>HAVING</title>
+
+  <para><emphasis role="bold">HAVING<indexterm>
+      <primary>HAVING</primary>
+    </indexterm><indexterm>
+      <primary>HAVING function</primary>
+    </indexterm>(</emphasis><emphasis> groupdataset, expression
+  </emphasis><emphasis role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="82.45pt" />
+
+        <colspec colwidth="306.35pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>groupdataset</emphasis></entry>
+
+            <entry>The name of a GROUPed record set.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>The logical expression by which to filter the
+            groups.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>HAVING returns a GROUPed record set.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">HAVING</emphasis> function returns a GROUPed
+  record set containing just those groups for which the
+  <emphasis>expression</emphasis> is true. This is similar to the HAVING
+  clause in SQL. <emphasis role="bold">Available for use only in hthor and
+  Roxie.</emphasis></para>
+
+  <para>Example:</para>
+
+  <programlisting>MyGroups := GROUP(SORT(Person,lastname),lastname);
+     //group by last name
+Filtered := HAVING(MyGroups,COUNT(ROWS(LEFT)) &gt; 10);
+     //filter out the small groups</programlisting>
+
+  <para>See Also: <link linkend="GROUP">GROUP</link></para>
+</sect1>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="KEYUNICODE">
+  <title>KEYUNICODE</title>
+
+  <para><emphasis role="bold">KEYUNICODE<indexterm>
+      <primary>KEYUNICODE</primary>
+    </indexterm><indexterm>
+      <primary>KEYUNICODE function</primary>
+    </indexterm>(</emphasis><emphasis>string</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="78.25pt" />
+
+      <colspec colwidth="310.55pt" />
+
+      <tbody>
+        <row>
+          <entry><emphasis>string</emphasis></entry>
+
+          <entry>A UNICODE string.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>KEYUNICODE returns a single DATA value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">KEYUNICODE </emphasis>function returns a
+  DATA value derived from the <emphasis>string</emphasis> parameter, such that
+  a comparison of these data values is equivalent to a locale sensitive
+  comparison of the Unicode values that generated them—and, being a simple
+  memcmp(), is significantly faster. The generating
+  <emphasis>string</emphasis> values must be of the same locale or the results
+  are unpredictable. This function is particularly useful if you're doing a
+  lot of compares on a UNICODE field in a large dataset—it can be a good idea
+  to generate a key field and do the compares on that instead.</para>
+
+  <para>Example:</para>
+
+  <programlisting>//where you might do this:
+my_record := RECORD
+   UNICODE_en_US str;
+END;
+my_dataset := DATASET('filename', my_record, FLAT);
+my_sorted  := SORT(my_dataset, str);
+//you could instead do this:
+my_record := RECORD
+   UNICODE_en_US str;
+   DATA strkey := KEYUNICODE(SELF.str);
+END;
+my_dataset := DATASET('filename', my_record, FLAT);
+my_sorted  := SORT(my_dataset, strkey);
+</programlisting>
+
+  <para>See Also: <link linkend="UNICODE">UNICODE</link>, <link
+  linkend="RECORD_Structure">LOCALE</link></para>
+</sect1>

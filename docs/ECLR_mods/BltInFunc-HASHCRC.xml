@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="HASHCRC">
+  <title>HASHCRC</title>
+
+  <para><emphasis role="bold">HASHCRC<indexterm>
+      <primary>HASHRC</primary>
+    </indexterm><indexterm>
+      <primary>HASHCRC function</primary>
+    </indexterm>(</emphasis><emphasis>expressionlist</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="83.15pt" />
+
+        <colspec colwidth="305.65pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>expressionlist</emphasis></entry>
+
+            <entry>A comma-delimited list of values.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>HASHCRC returns a single value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">HASHCRC</emphasis> function returns a CRC
+  (cyclical redundancy check) value derived from all the values in the
+  <emphasis>expressionlist</emphasis>.</para>
+
+  <para>Example:</para>
+
+  <programlisting>OUTPUT(Person,{per_ssn,HASHCRC(per_ssn)});
+    //output SSN and its CRC hash value</programlisting>
+
+  <para>See Also: <link linkend="DISTRIBUTE">DISTRIBUTE</link>, <link linkend="HASH">HASH</link>, <link linkend="HASH32">HASH32</link>, <link linkend="HASH64">HASH64</link>, <link linkend="HASHMD5">HASHMD5</link></para>
+</sect1>

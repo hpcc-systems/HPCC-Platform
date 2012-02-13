@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="IF">
+  <title>IF<indexterm>
+      <primary>IF</primary>
+    </indexterm><indexterm>
+      <primary>IFF</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">IF<indexterm>
+      <primary>IF function</primary>
+    </indexterm>(</emphasis><emphasis>expression, trueresult
+  </emphasis><emphasis role="bold">[</emphasis><emphasis>, falseresult
+  </emphasis><emphasis role="bold">])</emphasis></para>
+
+  <para><emphasis role="bold">IFF<indexterm>
+      <primary>IFF function</primary>
+    </indexterm>(</emphasis><emphasis>expression, trueresult
+  </emphasis><emphasis role="bold">[</emphasis><emphasis>, falseresult
+  </emphasis><emphasis role="bold">])</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>A conditional expression.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>trueresult</emphasis></entry>
+
+            <entry>The result to return when the expression is true. This may
+            be a single value, a SET of values, a recordset, or an action to
+            perform.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>falseresult</emphasis></entry>
+
+            <entry>The result to return when the expression is false. This may
+            be a single value, a SET of values, a recordset, or an action to
+            perform. This may be omitted only if the result is an
+            action.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>IF returns a single value, set, recordset, or
+            action.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">IF</emphasis> function evaluates the
+  <emphasis>expression</emphasis> (which must be a conditional expression with
+  a Boolean result) and returns either the <emphasis>truersult </emphasis>or
+  <emphasis>falseresult</emphasis> based on the evaluation of the
+  <emphasis>expression</emphasis>. Both the <emphasis>trueresult</emphasis>
+  and <emphasis>falseresult</emphasis> must be the same type (i.e. both
+  strings, or both recordsets, or ...). If the
+  <emphasis>trueresult</emphasis> and <emphasis>falseresult</emphasis> are
+  strings, then the size of the returned string will be the size of the
+  resultant value. If subsequent code relies on the size of the two being the
+  same, then a type cast to the required size may be required (typically to
+  cast an empty string to the proper size so subsequent string indexing will
+  not fail).</para>
+  
+  <para>The <emphasis role="bold">IFF</emphasis> function performs the same 
+  functionality as IF, but ensures that an <emphasis>expression</emphasis> 
+  containing complex boolean logic is evaluated exactly as it appears.</para>
+  
+  <para>Example:</para>
+
+  <programlisting>MyDate := IF(ValidDate(Trades.trd_dopn),Trades.trd_dopn,0);
+  // in this example, 0 is the false value and
+  // Trades.trd_dopn is the True value returned
+
+MyTrades := IF(person.per_sex = 'Male',
+     Trades(trd_bal&lt;100),
+     Trades(trd_bal&gt;1000));
+  // return low balance trades for men and high balance
+  // trades for women
+
+MyAddress := IF(person.gender = 'M',
+      cleanAddress182(person.address),
+      (STRING182)'');
+  //cleanAddress182 returns a 182-byte string
+  // so casting the empty string false result to a
+  // STRING182 ensures a proper-length string return
+</programlisting>
+
+  <para>See Also: <link linkend="MAP">MAP</link>, <link linkend="EVALUATE">EVALUATE</link>, <link linkend="CASE">CASE</link>, <link linkend="CHOOSE">CHOOSE</link>, <link linkend="SET">SET</link></para>
+</sect1>

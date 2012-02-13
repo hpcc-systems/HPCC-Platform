@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="AGGREGATE">
+  <title>AGGREGATE</title>
+
+  <para><emphasis role="bold">AGGREGATE<indexterm>
+      <primary>AGGREGATE</primary>
+    </indexterm><indexterm>
+      <primary>AGGREGATE function</primary>
+    </indexterm>(</emphasis> <emphasis>recordset,
+  resultrec,maintransform</emphasis> <emphasis role="bold">[</emphasis>
+  <emphasis>, mergetransform</emphasis> <emphasis
+  role="bold">(RIGHT1<indexterm>
+      <primary>RIGHT1</primary>
+    </indexterm>,RIGHT2<indexterm>
+      <primary>RIGHT2</primary>
+    </indexterm>) ] [,</emphasis> <emphasis>groupingfields</emphasis>
+  <emphasis role="bold">] [, LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm> | FEW<indexterm>
+      <primary>FEW</primary>
+    </indexterm> | MANY<indexterm>
+      <primary>MANY</primary>
+    </indexterm>] )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="85.75pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>The set of records to process.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>resultrec</emphasis></entry>
+
+            <entry>The RECORD structure of the result record set.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>maintransform</emphasis></entry>
+
+            <entry>The TRANSFORM function to call for each matching pair of
+            records in the <emphasis>recordset</emphasis>. This is implicitly
+            a local operation on each node.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>mergetransform</emphasis></entry>
+
+            <entry>Optional. The TRANSFORM function to call to globally merge
+            the result records from the <emphasis>maintransform</emphasis>. If
+            omitted, the compiler will attempt to deduce the merge from the
+            <emphasis>maintransform</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>groupingfields</emphasis></entry>
+
+            <entry>Optional. A comma-delimited list of fields in the
+            <emphasis>recordset</emphasis> to group by. Each field must be
+            prefaced with the keyword LEFT. If omitted, then all records
+            match.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+            <entry>Optional. Specifies the operation is performed on each
+            supercomputer node independently, without requiring interaction
+            with all other nodes to acquire data; the operation maintains the
+            distribution of any previous DISTRIBUTE. Valid only if the
+            <emphasis>mergetransform</emphasis> is omitted.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">FEW</emphasis></entry>
+
+            <entry>Optional. Indicates that the expression will result in
+            fewer than 10,000 records. This allows optimization to produce a
+            significantly faster result.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">MANY</emphasis></entry>
+
+            <entry>Optional. Indicates that the expression will result in more
+            than 10,000 records.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>AGGREGATE returns a record set.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">AGGREGATE </emphasis>function is similar to
+  ROLLUP except its output format does not need to match the input format. It
+  also has similarity to TABLE in that the <emphasis>groupingfields</emphasis>
+  (if present) determine the matching records such that you will get one
+  result for each unique value of the <emphasis>groupingfields</emphasis>. The
+  input <emphasis>recordset</emphasis> does not need to have been sorted by
+  the <emphasis>groupingfields</emphasis>.</para>
+
+  <para>The operation is implicitly local, in that the
+  <emphasis>maintransform</emphasis> is called to process records locally on
+  each node, and the result records on each node are then merged to produce
+  the global result. The </para>
+
+  <sect2 id="TRANSFORM_Function_Requirements_Aggregate">
+    <title>TRANSFORM Function Requirements - AGGREGATE</title>
+
+    <para>The <emphasis>maintransform</emphasis> must take at least two
+    parameters: a LEFT record of the same format as the input
+    <emphasis>recordset </emphasis>and a RIGHT record of the same format as
+    the <emphasis>resultrec</emphasis>. The format of the resulting record set
+    must be the <emphasis>resultrec</emphasis>. LEFT refers to the next input
+    record and RIGHT the result of the previous transform.</para>
+
+    <para>The <emphasis>mergetransform</emphasis> must take at least two
+    parameters: RIGHT1 and RIGHT2 records of the same format as the
+    <emphasis>resultrec</emphasis>. The format of the resulting record set
+    must be the <emphasis>resultrec</emphasis>. RIGHT1 refers to the result of
+    the <emphasis>maintransform</emphasis> on one node and RIGHT2 the result
+    of the <emphasis>maintransform</emphasis> on another.</para>
+
+    <para>The <emphasis>mergetransform</emphasis> is generated for expressions
+    of the form:</para>
+
+    <programlisting>  SELF.x := &lt;RIGHT.x &lt;op&gt; f(LEFT)
+  SELF.x := f(LEFT)  &lt;op&gt; RIGHT.x</programlisting>
+
+    <para>where the &lt;op&gt; is: MAX, MIN, SUM, +, &amp;, |, ^, *</para>
+  </sect2>
+
+  <sect2 id="How_Aggregate_Works">
+    <title>How AGGREGATE Works</title>
+
+    <para>In the <emphasis>maintransform</emphasis>, LEFT refers to the next
+    input record and RIGHT the result of the previous transform.</para>
+
+    <para>There are 4 interesting cases:</para>
+
+    <para>(a) If no records match (and the operation isn't grouped), the
+    output is a single record with all the fields set to blank values.</para>
+
+    <para>(b) If a single record matches, the first record that matches calls
+    the <emphasis>maintransform</emphasis> as you would expect.</para>
+
+    <para>(c) If multiple records match on a single node, subsequent records
+    that match call the <emphasis>maintransform</emphasis> but any field
+    expression in the <emphasis>maintransform</emphasis> that does not
+    reference the RIGHT record is not processed. Therefore the value for that
+    field is set by the first matching record matched instead of the
+    last.</para>
+
+    <para>(d) If multiple records match on multiple nodes, then step (c)
+    performs on each node, and then the summary records are merged. This
+    requires a <emphasis>mergetransform</emphasis> that takes two records of
+    type RIGHT. Whenever possible the code generator tries to deduce the
+    <emphasis>mergetransform</emphasis> from the
+    <emphasis>maintransform</emphasis>. If it can't, then the user will need
+    to specify one.</para>
+
+    <programlisting>inRecord := RECORD 
+  UNSIGNED box; 
+  STRING text{MAXLENGTH(10)}; 
+END; 
+inTable := DATASET('in', inRecord, THOR);
+      
+//Example 1: Produce a list of box contents by concatenating a string:
+      
+outRecord1 := RECORD 
+  UNSIGNED box; 
+  STRING contents{MAXLENGTH(200)}; 
+END; 
+outRecord1 t1(inRecord l, outRecord1 r) := TRANSFORM 
+  SELF.box := l.box; 
+  SELF.contents := r.contents + IF(r.contents &lt;&gt; '', ',', '') + l.text; 
+END; 
+      
+outRecord1 t2(outRecord1 r1, outRecord1 r2) := TRANSFORM 
+  SELF.box := r1.box; 
+  SELF.contents := r1.contents + ',' + r2.contents; 
+END; 
+OUTPUT(AGGREGATE(inTable, outRecord1, t1(LEFT, RIGHT), t2(RIGHT1, RIGHT2), LEFT.box));
+      
+//This example could eliminate the merge transform if the SELF.contents expression in
+//the t1 TRANSFORM were simpler, like this:
+//     SELF.contents := r.contents + ',' + l.text;
+//which would make the AGGREGATE function like this:
+//   OUTPUT(AGGREGATE(inTable, outRecord1, t1(LEFT, RIGHT), LEFT.box));
+
+      
+//Example 2: A PIGMIX style grouping operation:
+outRecord2 := RECORD 
+  UNSIGNED box; 
+  DATASET(inRecord) items; 
+END; 
+outRecord2 t3(inRecord l, outRecord1 r) := TRANSFORM 
+  SELF.box := l.box; 
+  SELF.items:= r.items + l; 
+END; 
+OUTPUT(AGGREGATE(inTable, outRecord1, t3(LEFT, RIGHT), LEFT.box));</programlisting>
+
+    <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM
+    Structure</link>, <link linkend="RECORD_Structure">RECORD
+    Structure</link>, <link linkend="ROLLUP">ROLLUP</link>, <link
+    linkend="TABLE">TABLE</link></para>
+  </sect2>
+</sect1>

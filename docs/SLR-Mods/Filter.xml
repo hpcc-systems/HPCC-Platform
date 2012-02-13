@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Filter">
+  <title><emphasis role="bold">Filter</emphasis></title>
+
+  <para><emphasis role="bold">STD.Str.Filter<indexterm>
+      <primary>STD.Str.Filter</primary>
+    </indexterm><indexterm>
+      <primary>Str.Filter</primary>
+    </indexterm><indexterm>
+      <primary>Filter</primary>
+    </indexterm>(</emphasis> <emphasis>source, filterstring</emphasis>
+  <emphasis role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.Filter<indexterm>
+      <primary>STD.Uni.Filter</primary>
+    </indexterm><indexterm>
+      <primary>Uni.Filter</primary>
+    </indexterm>(</emphasis> <emphasis>source, filterstring</emphasis>
+  <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>A string containing the data to filter.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>filterstring </emphasis></entry>
+
+          <entry>A string containing the characters to use as the
+          filter.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>Filter returns a STRING or UNICODE value, as
+          appropriate.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">StringFilter </emphasis>functions return the
+  <emphasis>source</emphasis> string with all the characters except those in
+  the <emphasis>filterstring </emphasis>removed.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">//all these examples result in 'Success'
+
+A := IF(STD.Str.Filter('ADCBE', 'BD') = 'DB',
+   'Success',
+   'Failure - 1');
+    
+B := IF(STD.Str.Filter('ADCBEREBD', 'BDG') = 'DBBD',
+   'Success',
+   'Failure - 2');
+    
+C := IF(STD.Str.Filter('ADCBE', '') = '',
+   'Success',
+   'Failure - 3');
+   
+D := IF(STD.Str.Filter('', 'BD') = '',
+   'Success',
+   'Failure - 4');
+    
+E := IF(STD.Str.Filter('ABCDE', 'EDCBA') = 'ABCDE',
+   'Success',
+   'Failure - 5');
+</programlisting>
+</sect1>

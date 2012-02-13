@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1>
+  <title>Configuring HPCC to use LDAP Authentication</title>
+
+  <para>This section details the steps to connect your HPCC platform to an
+  existing LDAP Server.</para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <?dbfo keep-together="always"?>
+
+    <tgroup cols="2">
+      <colspec colwidth="49.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><inlinegraphic fileref="images/caution.png" /></entry>
+
+          <entry><emphasis role="bold">You should not attempt this until you
+          have already deployed, configured, and preflighted the environment
+          you will use.</emphasis></entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <sect2>
+    <title>Connect to Configuration Manager</title>
+
+    <para>In order to change the configuration for any HPCC components, we
+    need to connect to the Configuration Manager.</para>
+
+    <orderedlist numeration="arabic">
+      <listitem>
+        <para>Stop all HPCC Components, if they are running.</para>
+      </listitem>
+
+      <listitem>
+        <para>Verify that they are stopped. You can use a single command, such
+        as : <programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init status</programlisting></para>
+      </listitem>
+
+      <listitem>
+        <para>Start Configuration Manager.</para>
+
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting></para>
+      </listitem>
+
+      <listitem>
+        <para>Connect to the Configuration Manager web interface.</para>
+
+        <para>(using the url of
+        http://<emphasis>&lt;ESP_IP_Address&gt;</emphasis>:8015, where
+        <emphasis>&lt;ESP_IP_Address&gt;</emphasis> is the IP address of your
+        ESP Server)</para>
+      </listitem>
+
+      <listitem>
+        <para>Select the Advanced View radio button.</para>
+      </listitem>
+
+      <listitem>
+        <para>Use the drop list to select an XML file for editing.</para>
+      </listitem>
+    </orderedlist>
+
+    <para><emphasis role="bold">Note:</emphasis> Configuration Manager
+    <emphasis role="bold">never</emphasis> works on the active configuration
+    file. After you finish editing you will have to copy the environment.xml
+    to the active location and push it out to all nodes.</para>
+  </sect2>
+
+  <sect2>
+    <title>Modifying the configuration</title>
+
+    <para>Follow the steps below to modify your configuration.</para>
+
+    <orderedlist numeration="arabic">
+      <listitem>
+        <para>Check the box for <emphasis role="bold">Write
+        Access.</emphasis></para>
+      </listitem>
+
+      <listitem>
+        <para>From the Navigator pane, select <emphasis
+        role="bold">Hardware</emphasis>.</para>
+      </listitem>
+
+      <listitem>
+        <para>Select the <emphasis role="bold">Computers</emphasis> tab from
+        the page on the right.</para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Rt-click on the table below computers and select <emphasis
+        role="bold">New </emphasis>from the pop up menu.</para>
+
+        <para><graphic fileref="images/LDAP_001.jpg" /></para>
+
+        <para>The <emphasis role="bold">Add New Computers</emphasis> dialog
+        displays.</para>
+      </listitem>
+
+      <listitem>
+        <para>Fill in the values for the <emphasis role="bold">Computer
+        Attributes</emphasis></para>
+
+        <para><graphic fileref="images/LDAP_002.jpg" /></para>
+      </listitem>
+    </orderedlist>
+
+    <orderedlist numeration="loweralpha">
+      <listitem>
+        <para>Provide a <emphasis role="bold">Name Prefix</emphasis>, for
+        example: <emphasis role="bluel">ldap</emphasis>. This helps you to
+        identify it among the list of computers.</para>
+      </listitem>
+
+      <listitem>
+        <para>Fill in Domain and type with the values of your domain name, as
+        well as the types of machines you are using, In the example above,
+        <emphasis role="bold">Domain</emphasis> is <emphasis
+        role="blue">localdomain</emphasis>, and the <emphasis
+        role="bold">Type</emphasis> is <emphasis
+        role="blue">linuxmachine</emphasis>. These should correspond to your
+        domain and type.</para>
+
+        <para>If you need to add a new domain or machine type to your system
+        to be able to define an existing LDAP or MySQL server, you should set
+        these up first in the other two tabs in the hardware section.</para>
+      </listitem>
+
+      <listitem>
+        <para>Add the IP address (or IP address range) as appropriate for the
+        LDAP server.</para>
+      </listitem>
+
+      <listitem>
+        <para>Press the <emphasis role="bold">Ok</emphasis> button.</para>
+      </listitem>
+
+      <listitem>
+        <para>Click on the disk icon to save.</para>
+      </listitem>
+    </orderedlist>
+  </sect2>
+
+  <sect2>
+    <title>Adding the ldapServer component</title>
+
+    <para>After the LDAP Server component has been added to the appropriate
+    Hardware configuration, you need to configure the Software component
+    definition.</para>
+
+    <orderedlist numeration="arabic">
+      <listitem>
+        <para>Rt-click on Navigator Pane and choose <emphasis role="bold">New
+        Components</emphasis> from the pop up menu, then choose <emphasis
+        role="bold">ldapServer</emphasis> from the pop up menu. <graphic
+        fileref="images/LDAP_003.jpg" /></para>
+
+        <para><emphasis role="bold">Note</emphasis>: The ldapServer component
+        is merely a definition that specifies an existing LDAP server. It does
+        not install one.</para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Fill in the <emphasis role="bold">LDAP Server Process</emphasis>
+        properties:</para>
+
+        <para><graphic fileref="images/LDAP_004.jpg" /><orderedlist
+            numeration="loweralpha">
+            <listitem>
+              <para>On the <emphasis role="bold">Instances</emphasis> tab,
+              Rt-click on the table on the right hand side, choose <emphasis
+              role="bold">Add Instances…</emphasis></para>
+
+              <para>The <emphasis role="bold">Select computers</emphasis>
+              dialog appears.</para>
+            </listitem>
+
+            <listitem>
+              <para>Select the computer to use by checking the box next to it.
+              This is the computer you added in the <emphasis
+              role="bold">Hardware</emphasis> / <emphasis role="bold">Add New
+              Computers</emphasis> portion earlier.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">Ok</emphasis>
+              button.</para>
+            </listitem>
+
+            <listitem>
+              <para>Fill in the <emphasis role="bold">Attributes</emphasis>
+              tab with the appropriate settings from your existing LDAP
+              Server.</para>
+            </listitem>
+
+            <listitem>
+              <para>Click on the disk icon to save.</para>
+            </listitem>
+          </orderedlist></para>
+      </listitem>
+    </orderedlist>
+
+    <orderedlist continuation="continues" inheritnum="inherit"
+                 numeration="arabic">
+      <listitem override="3">
+        <para>In the Navigator pane, click on <emphasis role="bold">ESP –
+        myesp</emphasis></para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>On the <emphasis role="bold">EspProcess </emphasis>page on the
+        right hand side, select the <emphasis
+        role="bold">Authentication</emphasis> tab.</para>
+
+        <para><graphic fileref="images/LDAP_005.jpg" /></para>
+
+        <para>Fill in the appropriate values:</para>
+
+        <para><orderedlist numeration="loweralpha">
+            <listitem>
+              <para>Change the <emphasis role="bold">ldapAuthMethod</emphasis>
+              to <emphasis role="blue">simple.</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Change the <emphasis
+              role="bold">ldapConnections</emphasis> to the number appropriate
+              for your system (100 is for example only, may not be necessary
+              in your environment).</para>
+            </listitem>
+
+            <listitem>
+              <para>Change <emphasis role="bold">ldapServer</emphasis> value
+              to the name you gave your ldapServer, for example: <emphasis
+              role="blue">ldapserver.</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Change the <emphasis role="bold">method</emphasis> value
+              to <emphasis role="blue">ldap.</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>For each ESP Service binding, edit the <emphasis
+              role="bold">resourcesBasedn</emphasis> and <emphasis
+              role="bold">workunitsBasedn</emphasis> to match your LDAP server
+              settings.</para>
+            </listitem>
+
+            <listitem>
+              <para>Click on the disk icon to save.</para>
+            </listitem>
+          </orderedlist></para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>In the Navigator pane, click on the <emphasis role="bold">Dali
+        Server – mydali </emphasis><graphic
+        fileref="images/LDAP_006.jpg" /></para>
+
+        <para>Fill in the values as appropriate:</para>
+
+        <para><orderedlist continuation="restarts" numeration="loweralpha">
+            <listitem>
+              <para>Select the <emphasis role="bold">LDAP</emphasis>
+              tab.</para>
+            </listitem>
+
+            <listitem>
+              <para>Change the <emphasis role="bold">authMethod</emphasis> to
+              <emphasis role="blue">simple</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Change the LDAP values as appropriate to match the
+              settings in your LDAP server.</para>
+
+              <para>For example: change the <emphasis
+              role="bold">ldapServer</emphasis> to the value you gave your
+              LDAP Server, in our example it is:
+              <emphasis>ldapserver.</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Click on the disk icon to save.</para>
+            </listitem>
+          </orderedlist></para>
+      </listitem>
+
+      <listitem>
+        <para>Deploy your environment settings (see <link
+        linkend="Multi-Node-System">Configuring a Multi-Node System</link>
+        section)</para>
+      </listitem>
+    </orderedlist>
+
+    <para></para>
+  </sect2>
+</sect1>

@@ -1,0 +1,1306 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="DATASET">
+  <title>DATASET<indexterm>
+      <primary>DATASET</primary>
+    </indexterm></title>
+
+  <para><emphasis> attr</emphasis><emphasis role="bold"> :=
+  DATASET(</emphasis><emphasis> file, struct, filetype </emphasis><emphasis
+  role="bold">);</emphasis></para>
+
+  <para><emphasis> attr</emphasis><emphasis role="bold"> :=
+  DATASET(</emphasis><emphasis> dataset, file, filetype </emphasis><emphasis
+  role="bold">);</emphasis></para>
+
+  <para><emphasis role="bold"> </emphasis><emphasis> attr</emphasis><emphasis
+  role="bold"> := DATASET(</emphasis><emphasis> </emphasis><emphasis
+  role="bold">WORKUNIT<indexterm>
+      <primary>WORKUNIT</primary>
+    </indexterm>( </emphasis>[ <emphasis>wuid ,</emphasis> ]<emphasis>
+  namedoutput </emphasis><emphasis role="bold">)</emphasis><emphasis>, struct
+  </emphasis><emphasis role="bold">);</emphasis></para>
+
+  <para><emphasis role="bold"> [ </emphasis><emphasis>attr</emphasis><emphasis
+  role="bold"> := ] DATASET(</emphasis><emphasis> recordset
+  </emphasis><emphasis role="bold">[</emphasis><emphasis>, recstruct
+  </emphasis><emphasis role="bold">] );</emphasis></para>
+
+  <para><emphasis role="bold">DATASET(</emphasis><emphasis> row
+  </emphasis><emphasis role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">DATASET(</emphasis><emphasis> childstruct
+  </emphasis><emphasis role="bold"> [</emphasis><emphasis>,
+  </emphasis><emphasis role="bold">COUNT<indexterm>
+      <primary>COUNT</primary>
+    </indexterm>(</emphasis><emphasis> count </emphasis><emphasis
+  role="bold">) | LENGTH<indexterm>
+      <primary>LENGTH</primary>
+    </indexterm>(</emphasis><emphasis> size </emphasis><emphasis role="bold">)
+  ]</emphasis><emphasis role="bold"> [</emphasis><emphasis>,
+  </emphasis><emphasis role="bold">CHOOSEN<indexterm>
+      <primary>CHOOSEN</primary>
+    </indexterm>(</emphasis><emphasis> maxrecs </emphasis><emphasis
+  role="bold">) ] )</emphasis></para>
+
+  <para><emphasis role="bold">[GROUPED<indexterm>
+      <primary>GROUPED</primary>
+    </indexterm>] DATASET<indexterm>
+      <primary>DATASET</primary>
+    </indexterm>(</emphasis><emphasis> struct </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>attr</emphasis></entry>
+
+          <entry>The name of the DATASET for later use in other
+          definitions.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>file</emphasis></entry>
+
+          <entry>A string constant containing the logical file name. See the
+          <emphasis>Scope &amp; Logical Filenames</emphasis> section for more
+          on logical filenames.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>struct</emphasis></entry>
+
+          <entry>The RECORD structure defining the layout of the fields. This
+          may use RECORDOF.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>filetype</emphasis></entry>
+
+          <entry>One of the following keywords, optionally followed by
+          relevant options for that specific type of file: THOR /FLAT, CSV,
+          XML, PIPE. Each of these is discussed in its own section,
+          below.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>dataset</emphasis></entry>
+
+          <entry>A previously-defined DATASET or recordset from which the
+          record layout is derived. This form is primarily used by the BUILD
+          action and is equivalent to: <programlisting>      ds := DATASET('filename',RECORDOF(anotherdataset), ... )</programlisting></entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">WORKUNIT</emphasis></entry>
+
+          <entry>Specifies the DATASET is the result of an OUTPUT with the
+          NAMED option within the same or another workunit.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>wuid</emphasis></entry>
+
+          <entry>Optional. A string expression that specifies the workunit
+          identifier of the job that produced the NAMED OUTPUT.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>namedoutput</emphasis><emphasis
+          role="bold"></emphasis></entry>
+
+          <entry>A string expression that specifies the name given in the
+          NAMED option.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>recordset</emphasis></entry>
+
+          <entry><para>A set of in-line data records. This can simply name a
+          previously-defined set attribute or explicitly use square brackets
+          to indicate an inline set definition. Within the square brackets
+          records are separated by commas. The records are specified by
+          either:</para><para>1) Using curly braces ({}) to surround the field
+          values for each record. The field values within each record are
+          comma-delimited.</para><para>2) A comma-delimited list of inline
+          transform functions that produce the data rows. All the transform
+          functions in the list must produce records in the same result
+          format.</para></entry>
+        </row>
+
+        <row>
+          <entry><emphasis>recstruct</emphasis></entry>
+
+          <entry>Optional. The RECORD structure of the
+          <emphasis>recordset.</emphasis> Omittable <emphasis
+          role="underline">only</emphasis> if the
+          <emphasis>recordset</emphasis> parameter is just one record or a
+          list of inline transform functions.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>row</emphasis></entry>
+
+          <entry>A single data record. This may be a single-record passed
+          parameter, or the ROW or PROJECT function that defines a 1-row
+          dataset.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>childstruct</emphasis></entry>
+
+          <entry>The RECORD structure of the child records being defined. This
+          may use the RECORDOF function.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">COUNT</emphasis></entry>
+
+          <entry>Optional. Specifies the number of child records attached to
+          the parent (for use when interfacing to external file
+          formats).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>count</emphasis></entry>
+
+          <entry>An expression defining the number of child records. This may
+          be a constant or a field in the enclosing RECORD structure
+          (addressed as SELF.<emphasis>fieldname</emphasis>).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">LENGTH</emphasis></entry>
+
+          <entry>Optional. Specifies the <emphasis>size</emphasis> of the
+          child records attached to the parent (for use when interfacing to
+          external file formats).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>size</emphasis></entry>
+
+          <entry>An expression defining the size of child records. This may be
+          a constant or a field in the enclosing RECORD structure (addressed
+          as SELF.<emphasis>fieldname</emphasis>).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">CHOOSEN</emphasis></entry>
+
+          <entry>Optional. Limits the number of child records attached to the
+          parent. This implicitly uses the CHOOSEN function wherever the child
+          dataset is read.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>maxrecs</emphasis></entry>
+
+          <entry>An expression defining the maximum number of child records
+          for a single parent.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">GROUPED</emphasis></entry>
+
+          <entry>Specifies the DATASET being passed has been grouped using the
+          GROUP function.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>struct</emphasis></entry>
+
+          <entry>The RECORD structure of the dataset field or parameter. This
+          may use the RECORDOF function.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>DATASET</emphasis></entry>
+
+          <entry>declares a new data table in the supercomputer.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">DATASET</emphasis> declaration defines a
+  file of records, on disk or in memory. The layout of the records is
+  specified by a RECORD structure (the <emphasis>struct</emphasis> or
+  <emphasis>recstruct</emphasis> parameters described above). The distribution
+  of records across execution nodes is undefined in general, as it depends on
+  how the DATASET came to be (sprayed in from a landing zone or written to
+  disk by an OUTPUT action), the size of the cluster on which it resides, and
+  the size of the cluster on which it is used (to specify distribution
+  requirements for a particular operation, see the DISTRIBUTE
+  function).</para>
+
+  <para>The first two forms are alternatives to each other and either may be
+  used with any of the <emphasis>filetypes</emphasis> described below
+  (<emphasis role="bold">THOR/FLAT, CSV, XML, PIPE</emphasis>).</para>
+
+  <para>The third form defines the result of an OUTPUT with the NAMED option
+  within the same workunit or the workunit specified by the
+  <emphasis>wuid</emphasis> (see <emphasis role="bold">Named Output
+  DATASETs</emphasis> below).</para>
+
+  <para>The fourth form defines an in-line dataset (see <emphasis
+  role="bold">In-line DATASETs</emphasis> below).</para>
+
+  <para>The fifth form is only used in an expression context to allow you to
+  in-line a single record dataset (see <emphasis role="bold">Single-row
+  DATASET Expressions</emphasis> below).</para>
+
+  <para>The sixth form is only used as a value type in a RECORD structure to
+  define a child dataset (see <emphasis role="bold">Child DATASETs</emphasis>
+  below).</para>
+
+  <para>The seventh form is only used as a value type to pass DATASET
+  parameters<indexterm>
+      <primary>DATASET parameters</primary>
+    </indexterm> (see <emphasis role="bold">DATASET as a Parameter Type
+  </emphasis>below).</para>
+
+  <sect2 id="THOR-FLAT_Files">
+    <title>THOR/FLAT Files</title>
+
+    <para><emphasis> attr</emphasis><emphasis role="bold"> :=
+    DATASET(</emphasis><emphasis> file, struct, </emphasis><emphasis
+    role="bold">THOR<indexterm>
+        <primary>THOR</primary>
+      </indexterm> [</emphasis><emphasis>,</emphasis><emphasis
+    role="bold">__COMPRESSED__<indexterm>
+        <primary>COMPRESSED</primary>
+      </indexterm><indexterm>
+        <primary>__COMPRESSED__</primary>
+      </indexterm>][,OPT<indexterm>
+        <primary>OPT</primary>
+      </indexterm> ]</emphasis><emphasis role="bold"> [,UNSORTED<indexterm>
+        <primary>UNSORTED</primary>
+      </indexterm>][,PRELOAD<indexterm>
+        <primary>PRELOAD</primary>
+      </indexterm>([</emphasis><emphasis>nbr</emphasis><emphasis
+    role="bold">])]</emphasis><emphasis role="bold"> [,ENCRYPT<indexterm>
+        <primary>ENCRYPT</primary>
+      </indexterm>(</emphasis><emphasis>key</emphasis><emphasis role="bold">)
+    ]);</emphasis></para>
+
+    <para><emphasis> attr</emphasis><emphasis role="bold"> :=
+    DATASET(</emphasis><emphasis> file, struct, </emphasis><emphasis
+    role="bold">FLAT [</emphasis><emphasis>,</emphasis><emphasis
+    role="bold">__COMPRESSED__] [,OPT]</emphasis><emphasis role="bold">
+    [,UNSORTED] [,PRELOAD([</emphasis><emphasis>nbr</emphasis><emphasis
+    role="bold">])]</emphasis><emphasis role="bold">
+    [,ENCRYPT(</emphasis><emphasis>key</emphasis><emphasis role="bold">)
+    ]);</emphasis></para>
+
+    <informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec align="left" colwidth="122.40pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">THOR</emphasis></entry>
+
+            <entry>Specifies the <emphasis>file</emphasis> is in the Data
+            Refinery (may optionally be specified as <emphasis
+            role="bold">FLAT</emphasis><indexterm>
+                <primary>FLAT</primary>
+              </indexterm>, which is synonymous with THOR in this
+            context).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">__COMPRESSED__</emphasis></entry>
+
+            <entry>Optional. Specifies that the THOR <emphasis>file</emphasis>
+            on another supercomputer cluster is compressed because it is a
+            result of the PERSIST Workflow Service.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">__GROUPED__</emphasis></entry>
+
+            <entry>Specifies the DATASET has been grouped using the GROUP
+            function.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">OPT</emphasis></entry>
+
+            <entry>Optional. Specifies that using dataset when the THOR
+            <emphasis>file</emphasis> doesn't exist results in an empty
+            recordset instead of an error condition.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSORTED</emphasis></entry>
+
+            <entry>Optional. Specifies the THOR <emphasis>file</emphasis> is
+            not sorted, as a hint to the optimizer.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PRELOAD</emphasis></entry>
+
+            <entry>Optional. Specifies the <emphasis>file</emphasis> is left
+            in memory after loading (valid only for Rapid Data Delivery Engine
+            use).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>nbr</emphasis></entry>
+
+            <entry>Optional. An integer constant specifying how many indexes
+            to create “on the fly” for speedier access to the dataset. If &gt;
+            1000, specifies the amount of memory set aside for these
+            indexes.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ENCRYPT</emphasis></entry>
+
+            <entry>Optional. Specifies the <emphasis>file</emphasis> was
+            created by OUTPUT with the ENCRYPT option.</entry>
+          </row>
+
+          <row>
+            <entry>key</entry>
+
+            <entry>A string constant containing the encryption key used to
+            create the file.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>This form defines a THOR file that exists in the Data Refinery. This
+    could contain either fixed-length or variable-length records, depending on
+    the layout specified in the RECORD <emphasis>struct</emphasis>.</para>
+
+    <para>The <emphasis>struct</emphasis> may contain an UNSIGNED8 field with
+    either <emphasis>{virtual(fileposition)}</emphasis> or
+    <emphasis>{virtual(localfileposition)}</emphasis> appended to the field
+    name. This indicates the field contains the record's position within the
+    file (or part), and is used for those instances where a usable pointer to
+    the record is needed, such as the BUILD function.</para>
+
+    <para>Example:</para>
+
+    <programlisting>PtblRec := RECORD
+  STRING2 State := Person.per_st;
+  STRING20 City := Person.per_full_city;
+  STRING25 Lname := Person.per_last_name;
+  STRING15 Fname := Person.per_first_name;
+END;
+          
+Tbl := TABLE(Person,PtblRec);
+         
+PtblOut := OUTPUT(Tbl,,'RTTEMP::TestFile');
+          //write a THOR file
+         
+Ptbl := DATASET('~Thor400::RTTEMP::TestFile',
+                {PtblRec,UNSIGNED8 __fpos {virtual(fileposition)}},
+                THOR,OPT);
+             // __fpos contains the "pointer" to each record
+             // Thor400 is the scope name and RTTEMP is the
+             // directory in which TestFile is located
+             //using ENCRYPT
+OUTPUT(Tbl,,'~Thor400::RTTEMP::TestFileEncrypted',ENCRYPT('mykey'));
+PtblE := DATASET('~Thor400::RTTEMP::TestFileEncrypted',
+                 PtblRec,
+                 THOR,OPT,ENCRYPT('mykey'));</programlisting>
+  </sect2>
+
+  <sect2 id="CSV_Files">
+    <title>CSV Files<indexterm>
+        <primary>CSV Files</primary>
+      </indexterm></title>
+
+    <para><emphasis> attr</emphasis><emphasis role="bold"> :=
+    DATASET<indexterm>
+        <primary>DATASET</primary>
+      </indexterm>(</emphasis><emphasis> file, struct, </emphasis><emphasis
+    role="bold"> CSV<indexterm>
+        <primary>CSV</primary>
+      </indexterm> [ ( [ HEADING<indexterm>
+        <primary>HEADING</primary>
+      </indexterm>( </emphasis><emphasis>n</emphasis><emphasis role="bold"> )
+    ] [, SEPARATOR<indexterm>
+        <primary>SEPARATOR</primary>
+      </indexterm>( </emphasis><emphasis>f_delimiters</emphasis><emphasis
+    role="bold"> ) ]</emphasis><emphasis role="bold"> </emphasis></para>
+
+    <para><emphasis role="bold"> [, TERMINATOR<indexterm>
+        <primary>TERMINATOR</primary>
+      </indexterm>( </emphasis><emphasis>r_delimiters</emphasis><emphasis
+    role="bold"> ) ] [, QUOTE<indexterm>
+        <primary>QUOTE</primary>
+      </indexterm>( </emphasis><emphasis>characters</emphasis><emphasis
+    role="bold"> ) ]</emphasis><emphasis role="bold"> [, MAXLENGTH<indexterm>
+        <primary>MAXLENGTH</primary>
+      </indexterm>( </emphasis><emphasis>size</emphasis><emphasis role="bold">
+    ) ]</emphasis></para>
+
+    <para><emphasis role="bold"> [ ASCII<indexterm>
+        <primary>ASCII</primary>
+      </indexterm> | EBCDIC<indexterm>
+        <primary>EBCDIC</primary>
+      </indexterm> | UNICODE<indexterm>
+        <primary>UNICODE</primary>
+      </indexterm> ]</emphasis><emphasis role="bold"> [, NOTRIM<indexterm>
+        <primary>NOTRIM</primary>
+      </indexterm> ]) ]</emphasis><emphasis role="bold"> [,ENCRYPT<indexterm>
+        <primary>ENCRYPT</primary>
+      </indexterm>(</emphasis><emphasis>key</emphasis><emphasis role="bold">)
+    ]);</emphasis></para>
+
+    <informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec align="left" colwidth="122.40pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">CSV</emphasis></entry>
+
+            <entry>Specifies the <emphasis>file</emphasis> is a “comma
+            separated values” ASCII file.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis
+            role="bold">HEADING(</emphasis><emphasis>n</emphasis><emphasis
+            role="bold">)</emphasis></entry>
+
+            <entry>Optional. The number of header records in the
+            <emphasis>file</emphasis>. If omitted, the default is zero
+            (0).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">SEPARATOR</emphasis></entry>
+
+            <entry>Optional. The field delimiter. If omitted, the default is a
+            comma (',') or the delimiter specified in the spray operation that
+            put the file on disk.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>f_delimiters</emphasis></entry>
+
+            <entry>A single string constant, or set of string constants, that
+            define the character(s) used as the field delimiter. If Unicode
+            constants are used, then the UTF8 representation of the
+            character(s) will be used.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">TERMINATOR</emphasis></entry>
+
+            <entry><para>Optional. The record delimiter. If omitted, the
+            default is a line feed ('\n') or the delimiter specified in the
+            spray operation that put the file on disk.</para></entry>
+          </row>
+
+          <row>
+            <entry><emphasis>r_delimiters</emphasis></entry>
+
+            <entry><para>A single string constant, or set of string constants,
+            that define the character(s) used as the record
+            delimiter.</para></entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">QUOTE</emphasis></entry>
+
+            <entry><para>Optional. The string quote character used. If
+            omitted, the default is a single quote ('\'') or the delimiter
+            specified in the spray operation that put the file on
+            disk.</para></entry>
+          </row>
+
+          <row>
+            <entry><emphasis>characters</emphasis></entry>
+
+            <entry><para>A single string constant, or set of string constants,
+            that define the character(s) used as the string value
+            delimiter.</para></entry>
+          </row>
+
+          <row>
+            <entry><emphasis
+            role="bold">MAXLENGTH(</emphasis><emphasis>size</emphasis><emphasis
+            role="bold">)</emphasis></entry>
+
+            <entry><para>Optional. Maximum record length in the
+            <emphasis>file</emphasis>. If omitted, the default is
+            4096.</para></entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ASCII</emphasis></entry>
+
+            <entry><para>Specifies all input is in ASCII format, including any
+            EBCDIC or UNICODE fields.</para></entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">EBCDIC</emphasis></entry>
+
+            <entry><para>Specifies all input is in EBCDIC format except the
+            SEPARATOR and TERMINATOR (which are expressed as ASCII
+            values).</para></entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNICODE</emphasis></entry>
+
+            <entry><para>Specifies all input is in Unicode UTF8
+            format.</para></entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">NOTRIM</emphasis></entry>
+
+            <entry><para>Specifies preserving all whitespace in the input data
+            (the default is to trim leading blanks).</para></entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ENCRYPT</emphasis></entry>
+
+            <entry><para>Optional. Specifies the <emphasis>file</emphasis> was
+            created by OUTPUT with the ENCRYPT option.</para></entry>
+          </row>
+
+          <row>
+            <entry><emphasis>key</emphasis></entry>
+
+            <entry><para>A string constant containing the encryption key used
+            to create the file.</para></entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>This form is used to read an ASCII CSV file. This can also be used
+    to read any variable-length record file that has a defined record
+    delimiter. If none of the ASCII, EBCDIC, or UNICODE options are specified,
+    the default input is in ASCII format with any UNICODE fields in UTF8
+    format.</para>
+
+    <para>Example:</para>
+
+    <programlisting>CSVRecord := RECORD
+  UNSIGNED4 person_id;
+  STRING20 per_surname;
+  STRING20 per_forename;
+END;
+
+file1 := DATASET('MyFile.CSV',CSVrecord,CSV);            //all defaults
+file2 := DATASET('MyFile.CSV',CSVrecord,CSV(HEADING(1)); //1 header
+file3 := DATASET('MyFile.CSV',
+                 CSVrecord,
+                 CSV(HEADING(1),
+                     SEPARATOR([',','\t']),
+                     TERMINATOR(['\n','\r\n','\n\r'])));
+          //1 header record, either comma or tab field delimiters,
+          // either LF or CR/LF or LF/CR record delimiters</programlisting>
+  </sect2>
+
+  <sect2 id="XML_Files">
+    <title>XML Files</title>
+
+    <para><emphasis> attr</emphasis><emphasis role="bold"> :=
+    DATASET(</emphasis><emphasis> file, struct, </emphasis><emphasis
+    role="bold">XML<indexterm>
+        <primary>XML</primary>
+      </indexterm>( </emphasis><emphasis>xpath</emphasis><emphasis
+    role="bold"> [, NOROOT<indexterm>
+        <primary>NOROOT</primary>
+      </indexterm> ] ) [,ENCRYPT<indexterm>
+        <primary>ENCRYPT</primary>
+      </indexterm>(</emphasis><emphasis>key</emphasis><emphasis role="bold">)
+    ]);</emphasis></para>
+
+    <informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec align="left" colwidth="122.40pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">XML</emphasis></entry>
+
+            <entry>Specifies the <emphasis>file</emphasis> is an XML
+            file.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>xpath</emphasis></entry>
+
+            <entry>A string constant containing the full XPATH to the tag that
+            delimits the records in the <emphasis>file</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">NOROOT</emphasis></entry>
+
+            <entry>Specifies the <emphasis>file</emphasis> is an XML file with
+            no file tags, only row tags.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold"><emphasis
+            role="bold">ENCRYPT</emphasis></emphasis></entry>
+
+            <entry>Optional. Specifies the <emphasis>file</emphasis> was
+            created by OUTPUT with the ENCRYPT option.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>key</emphasis></entry>
+
+            <entry>A string constant containing the encryption key used to
+            create the file.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>This form is used to read an XML file into the Data Refinery. The
+    <emphasis>xpath</emphasis> parameter defines the record delimiter tag
+    using a subset of standard XPATH (<emphasis
+    role="underline">www.w3.org/TR/xpath</emphasis>) syntax (see the <emphasis
+    role="bold">XPATH Support</emphasis> section under the RECORD structure
+    discussion for a description of the supported subset).</para>
+
+    <para>The key to getting individual field values from the XML lies in the
+    RECORD structure<indexterm>
+        <primary>RECORD structure</primary>
+      </indexterm> field definitions. If the field name exactly matches a
+    lower case XML tag containing the data, then nothing special is required.
+    Otherwise, <emphasis>{xpath(xpathtag)} </emphasis>appended to the field
+    name (where the <emphasis>xpathtag</emphasis> is a string constant
+    containing standard XPATH syntax) is required to extract the data. An
+    XPATH consisting of empty angle brackets (&lt;&gt;) indicates the field
+    receives the entire record. An absolute XPATH is used to access properties
+    of parent elements. Because XML is case sensitive, and ECL identifiers are
+    case insensitive, xpaths need to be specified if the tag contains any
+    upper case characters.</para>
+
+    <para><emphasis role="bold">NOTE:</emphasis> XML reading and parsing can
+    consume a large amount of memory, depending on the usage. In particular,
+    if the specified xpath matches a very large amount of data, then a large
+    data structure will be provided to the transform. Therefore, the more you
+    match, the more resources you consume per match. For example, if you have
+    a very large document and you match an element near the root that
+    virtually encompasses the whole thing, then the whole thing will be
+    constructed as a referenceable structure that the ECL can get at.</para>
+
+    <para>Example:</para>
+
+    <programlisting>/* an XML file called "MyFile" contains this XML data:
+&lt;library&gt;
+  &lt;book isbn="123456789X"&gt;
+    &lt;author&gt;Bayliss&lt;/author&gt;
+    &lt;title&gt;A Way Too Far&lt;/title&gt;
+  &lt;/book&gt;
+  &lt;book isbn="1234567801"&gt;
+    &lt;author&gt;Smith&lt;/author&gt;
+    &lt;title&gt;A Way Too Short&lt;/title&gt;
+  &lt;/book&gt;
+&lt;/library&gt;
+*/
+
+rform := RECORD
+  STRING author; //data from author tag -- tag name is lowercase and matches field name
+  STRING name {XPATH('title')}; //data from title tag, renaming the field
+  STRING isbn {XPATH('@isbn')}; //isbn attribute data from book tag
+tag
+END;
+books := DATASET('MyFile',rform,XML('library/book'));</programlisting>
+  </sect2>
+
+  <sect2 id="PIPE_Files">
+    <title>PIPE Files<indexterm>
+        <primary>PIPE Files</primary>
+      </indexterm></title>
+
+    <para><emphasis> attr</emphasis><emphasis role="bold"> :=
+    DATASET(</emphasis><emphasis> file, struct, </emphasis><emphasis
+    role="bold">PIPE<indexterm>
+        <primary>Pipe</primary>
+      </indexterm>(</emphasis><emphasis> command </emphasis><emphasis
+    role="bold"> [, CSV<indexterm>
+        <primary>CSV</primary>
+      </indexterm> | XML<indexterm>
+        <primary>XML</primary>
+      </indexterm> ]) );</emphasis></para>
+
+    <informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec align="left" colwidth="122.40pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">PIPE</emphasis></entry>
+
+            <entry>Specifies the <emphasis>file</emphasis>comes from the
+            <emphasis>command</emphasis>program. This is a “read”
+            pipe.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>command</emphasis></entry>
+
+            <entry>The name of the program to execute, which must output
+            records in the <emphasis>struct</emphasis> format to standard
+            output.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">CSV</emphasis></entry>
+
+            <entry>Optional. Specifies the output data format is CSV. If
+            omitted, the format is raw.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">XML</emphasis></entry>
+
+            <entry>Optional. Specifies the output data format is XML. If
+            omitted, the format is raw.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>This form uses PIPE(<emphasis>command</emphasis>) to send the
+    <emphasis>file</emphasis> to the <emphasis>command</emphasis> program,
+    which then returns the records to standard output in the
+    <emphasis>struct</emphasis> format. This is also known as an input PIPE
+    (analogous to the PIPE function<indexterm>
+        <primary>PIPE function</primary>
+      </indexterm> and PIPE option on OUTPUT).</para>
+
+    <para>Example:</para>
+
+    <programlisting>PtblRec := RECORD
+  STRING2 State;
+  STRING20 City;
+  STRING25 Lname;
+  STRING15 Fname;
+END;
+         
+Ptbl := DATASET('~Thor50::RTTEMP::TestFile',
+                PtblRec,
+                PIPE('ProcessFile'));
+          // ProcessFile is the input pipe</programlisting>
+  </sect2>
+
+  <sect2 id="Named_Output_DATASETs">
+    <title>Named Output DATASET<indexterm>
+        <primary>Named Output Dataset</primary>
+      </indexterm>s</title>
+
+    <para><emphasis> attr</emphasis><emphasis role="bold"> :=
+    DATASET(</emphasis><emphasis> </emphasis><emphasis
+    role="bold">WORKUNIT<indexterm>
+        <primary>Workunit</primary>
+      </indexterm>( </emphasis>[ <emphasis>wuid ,</emphasis> ]<emphasis>
+    namedoutput </emphasis><emphasis role="bold">)</emphasis><emphasis>,
+    struct </emphasis><emphasis role="bold">);</emphasis></para>
+
+    <para>This form allows you to use as a DATASET the result of an OUTPUT
+    with the NAMED option within the same workunit, or the workunit specified
+    by the <emphasis>wuid</emphasis> (workunit ID). This is a feature most
+    useful in the Rapid Data Delivery Engine.</para>
+
+    <para>Example:</para>
+
+    <programlisting>//Named Output DATASET in the same workunit:
+a := OUTPUT(Person(per_st='FL') ,NAMED('FloridaFolk'));
+x := DATASET(WORKUNIT('FloridaFolk'),
+             RECORDOF(Person));
+b := OUTPUT(x(per_first_name[1..4]='RICH'));
+          
+SEQUENTIAL(a,b);
+
+//Named Output DATASET in separate workunits:
+//First Workunit (wuid=W20051202-155102) contains this code:
+MyRec := {STRING1 Value1,STRING1 Value2, INTEGER1 Value3};
+SomeFile := DATASET([{'C','G',1},{'C','C',2},{'A','X',3},
+                     {'B','G',4},{'A','B',5}],MyRec);
+OUTPUT(SomeFile,NAMED('Fred'));
+
+// Second workunit contains this code, producing the same result:
+ds := DATASET(WORKUNIT('W20051202-155102','Fred'), MyRec);
+OUTPUT(ds);</programlisting>
+  </sect2>
+
+  <sect2 id="In-line_DATASETs">
+    <title>In-line DATASET<indexterm>
+        <primary>In-Line Dataset</primary>
+      </indexterm><indexterm>
+        <primary>In Line Dataset</primary>
+      </indexterm>s</title>
+
+    <para><emphasis role="bold"> [
+    </emphasis><emphasis>attr</emphasis><emphasis role="bold"> := ]
+    DATASET(</emphasis><emphasis> recordset , recstruct</emphasis><emphasis
+    role="bold"> );</emphasis></para>
+
+    <para>This form allows you to in-line a set of data<indexterm>
+        <primary>in-line a set of data</primary>
+      </indexterm> and have it treated as a file. This is useful in situations
+    where file operations are needed on dynamically generated data (such as
+    the runtime values of a set of pre-defined expressions). It is also useful
+    to test any boundary conditions for attributes by creating a small
+    well-defined set of records with constant values<indexterm>
+        <primary>constant values</primary>
+      </indexterm> that specifically exercise those boundaries. This form may
+    be used in an expression context.</para>
+
+    <para>Nested RECORD structure<indexterm>
+        <primary>RECORD structure</primary>
+      </indexterm>s may be represented by nesting records within records.
+    Nested child datasets may also be initialized inside TRANSFORM functions
+    using inline datasets (see the <emphasis role="bold">Child
+    DATASETs</emphasis> discussion).</para>
+
+    <para>Example:</para>
+
+    <programlisting>//Inline DATASET using attribute values
+myrec := {REAL diff, INTEGER1 reason};
+rms5008 := 10.0;
+rms5009 := 11.0;
+rms5010 := 12.0;
+btable := DATASET([{rms5008,72},{rms5009,7},{rms5010,65}], myrec);
+          
+//Inline DATASET with nested RECORD structures
+nameRecord := {STRING20 lname,STRING10 fname,STRING1 initial := ''};
+personRecord := RECORD
+  nameRecord primary;
+  nameRecord mother;
+  nameRecord father;
+END;
+personDataset := DATASET([{{'James','Walters','C'},
+                           {'Jessie','Blenger'},
+                           {'Horatio','Walters'}},
+                          {{'Anne','Winston'},
+                           {'Sant','Aclause'},
+                           {'Elfin','And'}}], personRecord);
+        
+        
+// Inline DATASET containing a Child DATASET
+childPersonRecord := {STRING fname,UNSIGNED1 age};
+personRecord := RECORD
+  STRING20 fname;
+  STRING20 lname;
+  UNSIGNED2 numChildren;
+  DATASET(childPersonRecord) children;
+END;
+123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
+personDataset := DATASET([{'Kevin','Hall',2,[{'Abby',2},{'Nat',2}]},
+                          {'Jon','Simms',3,[{'Jen',18},{'Ali',16},{'Andy',13}]}],
+                         personRecord);
+         
+         
+// Inline DATASET derived from a dynamic SET function
+SetIDs(STRING fname) := SET(People(firstname=fname),id);
+ds := DATASET(SetIDs('RICHARD'),{People.id});
+         
+// Inline DATASET derived from a list of transforms
+IDtype := UNSIGNED8;
+FMtype := STRING15;
+Ltype := STRING25;
+
+resultRec := RECORD
+  IDtype id;
+  FMtype firstname;
+  Ltype lastname;
+  FMtype middlename;
+END;
+          
+T1(IDtype idval,FMtype fname,Ltype lname ) :=
+  TRANSFORM(resultRec,
+            SELF.id := idval,
+            SELF.firstname := fname,
+            SELF.lastname := lname,
+            SELF := []);
+          
+T2(IDtype idval,FMtype fname,FMtype mname, Ltype lname ) :=
+  TRANSFORM(resultRec,
+            SELF.id := idval,
+            SELF.firstname := fname,
+            SELF.middlename := mname,
+            SELF.lastname := lname);
+ds := DATASET([T1(123,'Fred','Jones'),
+               T2(456,'John','Q','Public'),
+               T1(789,'Susie','Smith')]);</programlisting>
+  </sect2>
+
+  <sect2 id="Single-row_DATASET_Expressions">
+    <title>Single-row DATASET<indexterm>
+        <primary>Single-Row Dataset</primary>
+      </indexterm><indexterm>
+        <primary>Single Row Dataset</primary>
+      </indexterm> Expressions</title>
+
+    <para><emphasis role="bold"> DATASET(</emphasis><emphasis> row
+    </emphasis><emphasis role="bold">)</emphasis></para>
+
+    <para>This form is only used in an expression context. It allows you to
+    in-line a single record dataset.</para>
+
+    <para>Example:</para>
+
+    <programlisting>//the following examples demonstrate 4 ways to do the same thing:
+personRecord := RECORD
+  STRING20 surname;
+  STRING10 forename;
+  INTEGER2 age := 25;
+END;
+         
+namesRecord := RECORD
+  UNSIGNED     id;
+  personRecord;
+END;
+          
+namesTable := DATASET('RTTEST::TestRow',namesRecord,THOR);
+//simple dataset file declaration form
+         
+addressRecord := RECORD
+  UNSIGNED         id;
+  DATASET(personRecord) people;   //child dataset form
+  STRING40       street;
+  STRING40       town;
+  STRING2        st;
+END;
+         
+personRecord tc0(namesRecord L) := TRANSFORM
+  SELF := L;
+END;
+ 
+//** 1st way - using in-line dataset form in an expression  context
+addressRecord t0(namesRecord L) := TRANSFORM
+  SELF.people := PROJECT(DATASET([{L.id,L.surname,L.forename,L.age}],
+                                 namesRecord),
+                         tc0(LEFT));
+  SELF.id := L.id;
+  SELF := [];
+END;
+ 
+p0 := PROJECT(namesTable, t0(LEFT));
+OUTPUT(p0);
+ 
+//** 2nd way - using single-row dataset form
+addressRecord t1(namesRecord L) := TRANSFORM
+  SELF.people := PROJECT(DATASET(L), tc0(LEFT));
+  SELF.id := L.id;
+  SELF := [];
+END;
+
+p1 := PROJECT(namesTable, t1(LEFT));
+OUTPUT(p1);
+
+//** 3rd way - using single-row dataset form and ROW function
+addressRecord t2(namesRecord L) := TRANSFORM
+  SELF.people := DATASET(ROW(L,personRecord));
+  SELF.id := L.id;
+  SELF := [];
+END;
+
+p2 := PROJECT(namesTable, t2(LEFT));
+OUTPUT(p2);
+
+//** 4th way - using in-line dataset form in an expression context
+addressRecord t4(namesRecord l) := TRANSFORM
+  SELF.people := PROJECT(DATASET([L], namesRecord), tc0(LEFT));
+  SELF.id := L.id;
+  SELF := [];
+END;
+p3 := PROJECT(namesTable, t4(LEFT));
+OUTPUT(p3);</programlisting>
+  </sect2>
+
+  <sect2 id="Child_DATASETs">
+    <title>Child DATASET<indexterm>
+        <primary>Child Dataset</primary>
+      </indexterm>s</title>
+
+    <para><emphasis role="bold"> DATASET(</emphasis><emphasis> childstruct
+    </emphasis><emphasis role="bold"> [</emphasis><emphasis>,
+    </emphasis><emphasis role="bold">COUNT<indexterm>
+        <primary>COUNT</primary>
+      </indexterm>(</emphasis><emphasis> count </emphasis><emphasis
+    role="bold">) | LENGTH<indexterm>
+        <primary>LENGTH</primary>
+      </indexterm>(</emphasis><emphasis> size </emphasis><emphasis
+    role="bold">) ]</emphasis><emphasis role="bold"> [</emphasis><emphasis>,
+    </emphasis><emphasis role="bold">CHOOSEN<indexterm>
+        <primary>CHOOSEN</primary>
+      </indexterm>(</emphasis><emphasis> maxrecs </emphasis><emphasis
+    role="bold">) ] )</emphasis></para>
+
+    <para>This form is used as a value type inside a RECORD structure to
+    define child dataset records<indexterm>
+        <primary>child dataset records</primary>
+      </indexterm> in a non-normalized flat file. The form without COUNT or
+    LENGTH is the simplest to use, and just means that the dataset the length
+    and data are stored within myfield. The COUNT form limits the number of
+    elements to the <emphasis>count</emphasis> expression. The LENGTH form
+    specifies the <emphasis>size</emphasis> in another field instead of the
+    count. This can only be used for dataset input.</para>
+
+    <para>The following alternative syntaxes are also supported:</para>
+
+    <para><emphasis> childstruct </emphasis><emphasis role="bold">fieldname
+    [</emphasis><emphasis> </emphasis>SELF.<emphasis>count
+    </emphasis><emphasis role="bold">]</emphasis><emphasis
+    role="bold"></emphasis></para>
+
+    <para><emphasis role="bold"> DATASET newname :=
+    fieldname</emphasis></para>
+
+    <para><emphasis role="bold"> DATASET fieldname (deprecated form -- will go
+    away post-SR9)</emphasis></para>
+
+    <para>Any operation may be performed on child datasets in hthor and the
+    Rapid Data Delivery Engine (Roxie), but only the following operations are
+    supported in the Data Refinery (Thor):</para>
+
+    <para>1) PROJECT, CHOOSEN, TABLE (non-grouped), and filters on child
+    tables.</para>
+
+    <para>2) Aggregate operations are allowed on any of the above</para>
+
+    <para>3) Several aggregates can be calculated at once by using</para>
+
+    <programlisting>          summary := TABLE(x.children,{ f1 := COUNT(GROUP),
+                                        f2 := SUM(GROUP,x),
+                                        f3 := MAX(GROUP,y)});
+          summary.f1;</programlisting>
+
+    <para>4) DATASET[<emphasis>n</emphasis>] is supported to index the child
+    elements</para>
+
+    <para>5) SORT(dataset, a, b)[1] is also supported to retrieve the best
+    match.</para>
+
+    <para>6) Concatenation<indexterm>
+        <primary>Concatenation</primary>
+      </indexterm> of datasets is supported.</para>
+
+    <para>7) Temporary TABLEs can be used in conjunction.</para>
+
+    <para>8) Initialization of child datasets in temp TABLE definitions allows
+    [ ] to be used to initialize 0 elements.</para>
+
+    <para>Note that,</para>
+
+    <programlisting>TABLE(ds, { ds.id, ds.children(age != 10) });</programlisting>
+
+    <para>is not supported, because a dataset in a record definition means
+    “expand all the fields from the dataset in the output.” However adding an
+    identifier creates a form that is supported:</para>
+
+    <programlisting>TABLE(ds, { ds.id, newChildren := ds.children(age != 10); });</programlisting>
+
+    <para>Example:</para>
+
+    <programlisting>ParentRec := {INTEGER1 NameID, STRING20 Name};
+ParentTable := DATASET([{1,'Kevin'},{2,'Liz'},
+                        {3,'Mr Nobody'},{4,'Anywhere'}], ParentRec);
+ChildRec := {INTEGER1 NameID, STRING20 Addr};
+ChildTable := DATASET([ {1,'10 Malt Lane'},{2,'10 Malt Lane'},
+                        {2,'3 The cottages'},{4,'Here'},{4,'There'},
+                        {4,'Near'},{4,'Far'}],ChildRec);
+DenormedRec := RECORD
+  INTEGER1 NameID;
+  STRING20 Name;
+  UNSIGNED1 NumRows;
+  DATASET(ChildRec) Children;
+//  ChildRec Children;   //alternative syntax
+END;
+ 
+DenormedRec ParentMove(ParentRec L) := TRANSFORM
+  SELF.NumRows := 0;
+  SELF.Children := [];
+  SELF := L;
+END;
+
+ParentOnly := PROJECT(ParentTable, ParentMove(LEFT));
+DenormedRec ChildMove(DenormedRec L,ChildRec R,INTEGER C):=TRANSFORM
+  SELF.NumRows := C;
+  SELF.Children := L.Children + R;
+  SELF := L;
+END;
+DeNormedRecs := DENORMALIZE(ParentOnly, ChildTable,
+                            LEFT.NameID = RIGHT.NameID,
+                            ChildMove(LEFT,RIGHT,COUNTER<indexterm>
+        <primary>COUNTER</primary>
+      </indexterm>));
+OUTPUT(DeNormedRecs,,'RTTEMP::TestChildDatasets');
+
+// Using inline DATASET in a TRANSFORM to initialize child records
+AkaRec := {STRING20 forename,STRING20 surname};
+outputRec := RECORD
+  UNSIGNED id;
+  DATASET(AkaRec) children;
+END;
+ 
+inputRec := RECORD
+  UNSIGNED id;
+  STRING20 forename;
+  STRING20 surname;
+END;
+ 
+inPeople := DATASET([
+         {1,'Kevin','Halliday'},{1,'Kevin','Hall'},{1,'Gawain',''},
+         {2,'Liz','Halliday'},{2,'Elizabeth','Halliday'},
+         {2,'Elizabeth','MaidenName'},{3,'Lorraine','Chapman'},
+         {4,'Richard','Chapman'},{4,'John','Doe'}], inputRec);
+outputRec makeFatRecord(inputRec l) := TRANSFORM
+  SELF.id := l.id;
+  SELF.children := DATASET([{ l.forename, l.surname }], AkaRec);
+END;
+
+fatIn := PROJECT(inPeople, makeFatRecord(LEFT));
+outputRec makeChildren(outputRec l, outputRec r) := TRANSFORM
+  SELF.id := l.id;
+  SELF.children := l.children + ROW({r.children[1].forename,
+                                     r.children[1].surname},
+                                     AkaRec);
+END;
+
+r := ROLLUP(fatIn, id, makeChildren(LEFT, RIGHT));</programlisting>
+  </sect2>
+
+  <sect2 id="DATASET_as_a_Parameter_Type">
+    <title>DATASET as a Parameter Type</title>
+
+    <para><emphasis role="bold"> [GROUPED<indexterm>
+        <primary>GROUPED</primary>
+      </indexterm>] DATASET(</emphasis><emphasis> struct </emphasis><emphasis
+    role="bold">)</emphasis></para>
+
+    <para>This form is only used as a Value Type for passing
+    parameters<indexterm>
+        <primary>Passing a DATASET parameter</primary>
+      </indexterm>, specifying function return types, or defining a SET OF
+    datasets. If GROUPED is present, the passed parameter must have been
+    grouped using the GROUP function<indexterm>
+        <primary>GROUP function</primary>
+      </indexterm>.</para>
+
+    <para>Example:</para>
+
+    <programlisting>MyRec := {STRING1 Letter};
+SomeFile := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'}],MyRec);
+         
+//Passing a DATASET parameter
+FilteredDS(DATASET(MyRec) ds) := ds(Letter NOT IN ['A','C','E']);
+                  //passed dataset referenced as “ds” in expression
+          
+OUTPUT(FilteredDS(SomeFile));
+
+//*****************************************************************
+// The following example demonstrates using DATASET as both a
+// parameter type and a return type
+rec_Person := RECORD
+  STRING20 FirstName;
+  STRING20 LastName;
+END;
+
+rec_Person_exp := RECORD(rec_Person)
+  STRING20 NameOption;
+END;
+
+rec_Person_exp xfm_DisplayNames(rec_Person l, INTEGER w) :=
+    TRANSFORM
+  SELF.NameOption :=
+           CHOOSE(w,
+                  TRIM(l.FirstName) + ' ' + l.LastName,
+                  TRIM(l.LastName) + ', ' + l.FirstName,
+                  l.FirstName[1] + l.LastName[1],
+                  l.LastName);
+  SELF := l;
+END;
+
+DATASET(rec_Person_exp) prototype(DATASET(rec_Person) ds) :=
+     DATASET( [], rec_Person_exp );
+
+DATASET(rec_Person_exp) DisplayFullName(DATASET(rec_Person) ds) :=
+     PROJECT(ds, xfm_DisplayNames(LEFT,1));
+
+DATASET(rec_Person_exp) DisplayRevName(DATASET(rec_Person) ds) :=
+     PROJECT(ds, xfm_DisplayNames(LEFT,2));
+
+DATASET(rec_Person_exp) DisplayFirstName(DATASET(rec_Person) ds) :=
+     PROJECT(ds, xfm_DisplayNames(LEFT,3));
+
+DATASET(rec_Person_exp) DisplayLastName(DATASET(rec_Person) ds) :=
+     PROJECT(ds, xfm_DisplayNames(LEFT,4));
+
+DATASET(rec_Person_exp) PlayWithName(DATASET(rec_Person) ds_in,
+                                     prototype PassedFunc,
+                                     STRING1 SortOrder='A',
+                                     UNSIGNED1 FieldToSort=1,
+                                     UNSIGNED1 PrePostFlag=1) := FUNCTION
+  FieldPre := CHOOSE(FieldToSort,ds_in.FirstName,ds_in.LastName);
+  SortedDSPre(DATASET(rec_Person) ds) :=
+      IF(SortOrder='A',
+         SORT(ds,FieldPre),
+         SORT(ds,-FieldPre));
+  InDS := IF(PrePostFlag=1,SortedDSPre(ds_in),ds_in);
+  
+  PDS := PassedFunc(InDS); //call the passed function parameter
+         
+  FieldPost := CHOOSE(FieldToSort,
+                      PDS.FirstName, 
+                      PDS.LastName,
+                      PDS.NameOption);
+  SortedDSPost(DATASET(rec_Person_exp) ds) :=
+        IF(SortOrder = 'A',
+          SORT(ds,FieldPost),
+          SORT(ds,-FieldPost));
+      
+  OutDS := IF(PrePostFlag=1,PDS,SortedDSPost(PDS));
+  RETURN OutDS;
+END;
+
+    //define inline datasets to use.
+ds_names1 := DATASET( [{'John','Smith'},{'Henry','Jackson'},
+                       {'Harry','Potter'}], rec_Person );
+ds_names2 := DATASET( [ {'George','Foreman'},
+                        {'Sugar Ray','Robinson'},
+                        {'Joe','Louis'}], rec_Person );
+          
+
+//get name you want by passing the appropriate function parameter:
+s_Name1 := PlayWithName(ds_names1, DisplayFullName, 'A',1,1);
+s_Name2 := PlayWithName(ds_names2, DisplayRevName, 'D',3,2);
+a_Name := PlayWithName(ds_names1, DisplayFirstName,'A',1,1);
+b_Name := PlayWithName(ds_names2, DisplayLastName, 'D',1,1);
+OUTPUT(s_Name1);
+OUTPUT(s_Name2);
+OUTPUT(a_Name);
+OUTPUT(b_Name);</programlisting>
+
+    <para>See Also: <link linkend="OUTPUT">OUTPUT</link>, <link linkend="RECORD_Structure">RECORD Structure</link>, <link linkend="TABLE">TABLE</link>, <link linkend="ROW">ROW</link>, <link linkend="RECORDOF">RECORDOF</link>, <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link></para>
+  </sect2>
+</sect1>

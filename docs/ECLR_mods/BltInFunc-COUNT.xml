@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="COUNT">
+  <title>COUNT</title>
+
+  <para><emphasis role="bold">COUNT<indexterm>
+      <primary>COUNT function</primary>
+    </indexterm>(</emphasis><emphasis>recordset </emphasis><emphasis
+  role="bold">[ </emphasis><emphasis>, expression </emphasis><emphasis
+  role="bold">] [, KEYED<indexterm>
+      <primary>KEYED</primary>
+    </indexterm> ])</emphasis><emphasis role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">COUNT<indexterm>
+      <primary>COUNT</primary>
+    </indexterm>(</emphasis><emphasis>valuelist </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="80.85pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>The set of records to process. This may be the name of a
+            dataset or a record set derived from some filter condition, or any
+            expression that results in a derived record set. This also may be
+            the GROUP keyword to indicate counting the number of elements in a
+            group, when used in a RECORD structure to generate crosstab
+            statistics.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>Optional. A logical expression indicating which records to
+            include in the count. Valid only when the recordset parameter is
+            the keyword GROUP to indicate counting the number of elements in a
+            group.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">KEYED</emphasis></entry>
+
+            <entry>Optional. Specifies the activity is part of an index read
+            operation, which allows the optimizer to generate optimal code for
+            the operation.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>valuelist</emphasis></entry>
+
+            <entry>A comma-delimited list of expressions to count. This may
+            also be a SET of values.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>COUNT returns a single value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">COUNT</emphasis> function returns the number
+  of records in the specified <emphasis>recordset </emphasis>or
+  <emphasis>valuelist</emphasis>.</para>
+
+  <para>Example:</para>
+
+  <programlisting>MyCount := COUNT(Trades(Trades.trd_rate IN ['3', '4', '5']));
+   // count the number of records in the Trades record
+   // set whose trd_rate field contains 3, 4, or 5
+R1 := RECORD
+  person.per_st;
+  person.per_sex;
+  Number := COUNT(GROUP);
+   //total in each state/sex category
+  Hanks := COUNT(GROUP,person.per_first_name = 'HANK');
+   //total of “Hanks” in each state/sex category
+  NonHanks := COUNT(GROUP,person.per_first_name &lt;&gt; 'HANK');
+   //total of “Non-Hanks” in each state/sex category
+END;
+T1 := TABLE(person, R1,  per_st, per_sex);
+Cnt1    := COUNT(4,8,16,2,1); //returns 5
+SetVals := [4,8,16,2,1];
+Cnt2    := COUNT(SetVals); //returns 5
+</programlisting>
+
+  <para>See Also: <link linkend="SUM">SUM</link>, <link linkend="AVE">AVE</link>, <link linkend="MIN">MIN</link>, <link linkend="MAX">MAX</link>, <link linkend="GROUP">GROUP</link>, <link linkend="TABLE">TABLE</link></para>
+</sect1>

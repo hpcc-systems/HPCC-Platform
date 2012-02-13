@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Overview" role="nobrk">
+  <title>Overview</title>
+
+  <para><emphasis role="bold">E</emphasis>nterprise <emphasis
+  role="bold">C</emphasis>ontrol <emphasis role="bold">L</emphasis>anguage
+  (ECL)<indexterm>
+      <primary><emphasis role="bold">ECL</emphasis></primary>
+    </indexterm> has been designed specifically for huge data projects using
+  the LexisNexis High Performance Computer Cluster (HPCC)<indexterm>
+      <primary><emphasis role="bold">HPCC</emphasis></primary>
+    </indexterm>. ECL’s extreme scalability comes from a design that allows
+  you to leverage every query you create for re-use in subsequent queries as
+  needed. To do this, ECL takes a Dictionary approach to building queries
+  wherein each ECL definition defines an Attribute expression. Each previously
+  defined Attribute can then be used in succeeding ECL
+  definitions—<emphasis>the language extends itself as you use
+  it</emphasis>.</para>
+
+  <sect2 id="Attributes_versus_Actions">
+    <title>Definitions versus Actions</title>
+
+    <para>Functionally, there are two types of ECL code: Definitions (AKA
+    Attribute definitions) and executable Actions. Actions are not valid for
+    use in expressions because they do not return values. Most ECL code is
+    composed of Attribute definitions.</para>
+
+    <para>Attribute definitions only define <emphasis>what</emphasis> is to be
+    done, they do not actually execute. This means that the ECL programmer
+    should think in terms of writing code that specifies
+    <emphasis>what</emphasis> to do rather than <emphasis>how</emphasis> to do
+    it. This is an important concept in that, the programmer is telling the
+    supercomputer <emphasis>what</emphasis> needs to happen and not directing
+    <emphasis>how </emphasis>it must be accomplished. This frees the
+    super-computer to optimize the actual execution in any way it needs to
+    produce the desired result.</para>
+
+    <para>A second consideration is: the order that Attributes are defined in
+    source code does not define their execution order—ECL is a non-procedural
+    language<indexterm>
+        <primary>non-procedural language</primary>
+      </indexterm>. When an Action (such as OUTPUT) executes, all the
+    Attributes it needs to use (drilling down to the lowest level Attributes
+    upon which others are built) are compiled and optimized—in other words,
+    unlike other programming languages, there is no inherent execution order
+    implicit in the order that Attribute definitions appear in source code
+    (although there is a necessary order for compilation to occur without
+    error—forward reference<indexterm>
+        <primary>forward reference</primary>
+      </indexterm>s are not allowed). This concept of “orderless execution”
+    requires a different mindset from standard, order-dependent programming
+    languages because it makes the code appear to execute “all at
+    once.”</para>
+  </sect2>
+
+  <sect2 id="Syntax_Issues">
+    <title>Syntax Issues</title>
+
+    <para>ECL is not case-sensitive. White space is ignored, allowing
+    formatting for readability as needed.</para>
+
+    <para>Comments in ECL code are supported. Block comments must be delimited
+    with /* and */.</para>
+
+    <programlisting>/* this is a block comment - the terminator can be on the same line
+or any succeeding line – everything in between is ignored */</programlisting>
+
+    <para>Single-line comments must begin with //.</para>
+
+    <programlisting>// this is a one-line comment</programlisting>
+
+    <para>ECL uses the standard <emphasis>object.property</emphasis> syntax
+    used by many other programming languages (however, ECL is not an
+    object-oriented language) to qualify Attribute scope and disambiguate
+    field references within tables:</para>
+
+    <programlisting>ModuleName.Attribute //reference an attribute from another module</programlisting>
+
+    <programlisting>Dataset.Field       //reference a field in a dataset or recordset</programlisting>
+  </sect2>
+</sect1>

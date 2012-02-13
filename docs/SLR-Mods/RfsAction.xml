@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="RfsAction">
+  <title><emphasis role="bold">RfsAction</emphasis></title>
+
+  <para><emphasis role="bold">STD.File.RfsAction<indexterm>
+      <primary>STD.File.RfsAction</primary>
+    </indexterm><indexterm>
+      <primary>File.RfsAction</primary>
+    </indexterm><indexterm>
+      <primary>RfsAction</primary>
+    </indexterm>(</emphasis> <emphasis> server, query </emphasis> <emphasis
+  role="bold">);</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>server</emphasis></entry>
+
+          <entry>A null-terminated string containing the ip:port address for
+          the remote file server.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>query</emphasis></entry>
+
+          <entry>A null-terminated string containing the query to send to the
+          <emphasis>server</emphasis>.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">RfsAction </emphasis>function sends the
+  <emphasis>query</emphasis> to the <emphasis>server</emphasis>. This is used
+  when there is no expected return value</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">rfsserver := '10.173.207.1:7080';
+STD.File.RfsAction(rfsserver,'INSERT INTO xml_testnh (data) VALUES (\''+TRIM(A)+'\' )');</programlisting>
+</sect1>

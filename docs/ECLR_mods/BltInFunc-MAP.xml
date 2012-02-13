@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="MAP">
+  <title>MAP</title>
+
+  <para><emphasis role="bold">MAP<indexterm>
+      <primary>MAP</primary>
+    </indexterm><indexterm>
+      <primary>MAP function</primary>
+    </indexterm>(</emphasis><emphasis>expression</emphasis><emphasis
+  role="bold"> =&gt; </emphasis><emphasis>value</emphasis><emphasis
+  role="bold">, [</emphasis><emphasis> expression</emphasis><emphasis
+  role="bold"> =&gt; </emphasis><emphasis>value</emphasis><emphasis
+  role="bold">, ... ] [,</emphasis><emphasis> elsevalue </emphasis><emphasis
+  role="bold">] )</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="79.75pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>expression</emphasis></entry>
+
+          <entry>A conditional expression.</entry>
+        </row>
+
+        <row>
+          <entry>=&gt;</entry>
+
+          <entry>The "results in" operator—valid only in MAP, CASE, and
+          CHOOSESETS.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>value</emphasis></entry>
+
+          <entry>The value to return if the expression is true. This may be a
+          single value expression, a set of values, a record set, or an
+          action.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>elsevalue</emphasis></entry>
+
+          <entry>Optional. The value to return if all expressions are false.
+          This may be a single value expression, a set of values, a record
+          set, or an action. May be omitted if all return values are actions
+          (the default would then be no action), or all return values are
+          record sets (the default would then be an empty record set).</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>MAP returns a single <emphasis>value</emphasis>.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">MAP </emphasis>function evaluates the list
+  of <emphasis>expressions</emphasis> and returns the
+  <emphasis>value</emphasis> associated with the first true
+  <emphasis>expression</emphasis>. If none of them match, the
+  <emphasis>elsevalue</emphasis> is returned. MAP may be thought of as an "IF
+  ... ELSIF ... ELSIF ... ELSE" type of structure.</para>
+
+  <para>All return <emphasis>value</emphasis> and
+  <emphasis>elsevalue</emphasis> values must be of exactly the same type or a
+  "type mismatch" error will occur. All <emphasis>expressions</emphasis> must
+  reference the same level of dataset scoping, else an "invalid scope" error
+  will occur. Therefore, all <emphasis>expressions</emphasis> must either
+  reference fields in the same dataset or the existence of a set of related
+  child records (see EXISTS).</para>
+
+  <para>The <emphasis>expressions</emphasis> are typically evaluated in the
+  order in which they appear, but if all the return
+  <emphasis>values</emphasis> are scalar, the code optimizer may change that
+  order.</para>
+
+  <para>Example:</para>
+
+  <programlisting>Attr01 := MAP(EXISTS(Person(Person.EyeColor = 'Blue')) =&gt; 1,
+              EXISTS(Person(Person.Haircolor = 'Brown')) =&gt; 2,
+              3);
+ //If there are any blue-eyed people, Attr01 gets 1
+ //elsif there any brown-haired people, Attr01 gets 2
+ //else, Attr01 gets 3
+
+Valu6012 := MAP(NoTrades =&gt; 99,
+                NoValidTrades =&gt; 98,
+                NoValidDates =&gt; 96,
+                Count6012);
+ //If there are no trades, Valu6012 gets 99
+ //elsif there are no valid trades, Valu6012 gets 98
+ //elsif there are no valid dates, Valu6012 gets 96
+ //else, Valu6012 gets Count6012
+
+MyTrades := MAP(rms.rms14 &gt;= 93 =&gt; trades(trd_bal &gt;= 10000),
+                rms.rms14 &gt;=  2 =&gt; trades(trd_bal &gt;= 2000),
+                rms.rms14 &gt;=  1 =&gt; trades(trd_bal &gt;= 1000),
+                Trades);
+ // this example takes the value of rms.rms14 and returns a 
+ // set of trades based on that value. If the value is &lt;= 0,
+ // then all trades are returned.
+</programlisting>
+
+  <para>See Also: <link linkend="EVALUATE">EVALUATE</link>, <link
+  linkend="IF">IF</link>, <link linkend="CASE">CASE</link>, <link
+  linkend="CHOOSE">CHOOSE</link>, <link
+  linkend="CHOOSESETS">CHOOSESETS</link>, <link
+  linkend="REJECTED">REJECTED</link>, <link
+  linkend="WHICH">WHICH</link></para>
+</sect1>
