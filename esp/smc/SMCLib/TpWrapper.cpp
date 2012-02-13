@@ -87,23 +87,28 @@ bool CTpWrapper::getClusterLCR(const char* clusterType, const char* clusterName)
 
 void CTpWrapper::getClusterMachineList(const char* ClusterType,
                                        const char* ClusterPath,
-                                                     const char* ClusterDirectory,
+                                       const char* ClusterDirectory,
                                        IArrayOf<IEspTpMachine> &MachineList,
-                                                    bool& hasThorSpareProcess)
+                                       bool& hasThorSpareProcess,
+                                       const char* ClusterName)
 {
     try
     {
         StringBuffer returnStr,path;
         getAttPath(ClusterPath,path);
-      set<string> machineNames; //used for checking duplicates
+        set<string> machineNames; //used for checking duplicates
 
         if (strcmp(eqTHORMACHINES,ClusterType) == 0)
         {
+            bool multiSlaves = false;
             getMachineList(eqThorMasterProcess,path.str(),"", ClusterDirectory, MachineList);
-            getMachineList(eqThorSlaveProcess,path.str(),"", ClusterDirectory, MachineList);
+            getMachineList(ClusterName, eqThorSlaveProcess,path.str(),"", ClusterDirectory, multiSlaves, MachineList);
             unsigned count = MachineList.length();
-            getMachineList(eqThorSpareProcess,path.str(),"", ClusterDirectory, MachineList);
-            if (count < MachineList.length()) 
+            getMachineList(ClusterName, eqThorSpareProcess,path.str(),"", ClusterDirectory, multiSlaves, MachineList);
+
+            //The multiSlaves is for legacy multiSlaves environment.
+            //count < MachineList.length(): There is some node for eqThorSpareProcess being added to the MachineList.
+            if (!multiSlaves &&(count < MachineList.length()))
                 hasThorSpareProcess = true;
         }
         else if (strcmp(eqHOLEMACHINES,ClusterType) == 0)
@@ -134,13 +139,15 @@ void CTpWrapper::getClusterMachineList(const char* ClusterType,
         }
         else if (strcmp("STANDBYNNODE",ClusterType) == 0)
         {
-            getMachineList(eqThorSpareProcess,path.str(),"", ClusterDirectory, MachineList);
+            bool multiSlaves = false;
+            getMachineList(ClusterName,eqThorSpareProcess,path.str(),"", ClusterDirectory, multiSlaves, MachineList);
             getMachineList(eqHoleStandbyProcess,path.str(),"", ClusterDirectory, MachineList);
         }
         else if (strcmp("THORSPARENODES",ClusterType) == 0)
-      {
-            getMachineList(eqThorSpareProcess,path.str(),"", ClusterDirectory, MachineList);
-      }
+        {
+            bool multiSlaves = false;
+            getMachineList(ClusterName, eqThorSpareProcess,path.str(),"", ClusterDirectory, multiSlaves, MachineList);
+        }
         else if (strcmp("HOLESTANDBYNODES",ClusterType) == 0)
       {
             getMachineList(eqHoleStandbyProcess,path.str(),"", ClusterDirectory, MachineList);
@@ -995,7 +1002,7 @@ void CTpWrapper::queryTargetClusterProcess(double version, const char* processNa
     {
         bool hasThorSpareProcess = false;
         IArrayOf<IEspTpMachine> machineList;
-        getClusterMachineList(clusterType0, tmpPath.str(), dirStr.str(), machineList, hasThorSpareProcess);
+        getClusterMachineList(clusterType0, tmpPath.str(), dirStr.str(), machineList, hasThorSpareProcess, processName);
         if (machineList.length() > 0)
             clusterInfo->setTpMachines(machineList);
         if (version > 1.14)
@@ -1521,6 +1528,109 @@ void CTpWrapper::getMachineInfo(IEspTpMachine& machineInfo,IPropertyTree& machin
     StringBuffer ppath(ParentPath);
     setAttPath(ppath,machine.queryName(),"name",name,tmpPath);
     machineInfo.setPath(tmpPath.str());
+}
+
+void CTpWrapper::getMachineList(const char* clusterName,
+                                const char* MachineType,
+                                const char* ParentPath,
+                                const char* Status,
+                                const char* Directory,
+                                bool& multiSlaves,
+                                IArrayOf<IEspTpMachine> &MachineList)
+{
+    try
+    {
+        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+        Owned<IConstEnvironment> constEnv = envFactory->openEnvironmentByFile();
+        Owned<IPropertyTree> root = &constEnv->getPTree();
+        if (!root)
+            throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
+
+        StringBuffer path;
+        path.appendf("Software/ThorCluster[@name=\"%s\"]", clusterName);
+        IPropertyTree* cluster= root->getPropTree(path.str());
+        if (!cluster)
+            throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
+
+        multiSlaves = cluster->getPropBool("@multiSlaves");
+        if (multiSlaves)
+        {   //multiSlaves will be set to true for legacy multiSlaves environment
+            getMachineList(MachineType, ParentPath, Status, Directory, MachineList);
+            return;
+        }
+
+        StringBuffer groupName;
+        if (strieq(MachineType, eqThorSlaveProcess))
+            getClusterGroupName(*cluster, groupName);
+        else if (strieq(MachineType, eqThorSpareProcess))
+            getClusterSpareGroupName(*cluster, groupName);
+
+        if (groupName.length() < 1)
+            return;
+
+        Owned<IGroup> nodeGroup = queryNamedGroupStore().lookup(groupName.str());
+        if (!nodeGroup || (nodeGroup->ordinality() == 0))
+            return;
+
+        INodeIterator &gi = *nodeGroup->getIterator();
+        ForEach(gi)
+        {
+            StringBuffer netAddress;
+            gi.query().endpoint().getIpText(netAddress);
+            if (netAddress.length() == 0)
+            {
+                WARNLOG("Net address not found for a node in node group %s", groupName.str());
+                continue;
+            }
+
+            IEspTpMachine & machineInfo = *(createTpMachine("",""));
+            machineInfo.setType(MachineType);
+            machineInfo.setNetaddress(netAddress.str());
+            if (Directory && *Directory)
+                machineInfo.setDirectory(Directory);
+
+            Owned<IConstMachineInfo> pMachineInfo =  constEnv->getMachineByAddress(netAddress.str());
+            if (pMachineInfo.get())
+            {
+                SCMStringBuffer machineName;
+                pMachineInfo->getName(machineName);
+                machineInfo.setName(machineName.str());
+                machineInfo.setOS(pMachineInfo->getOS());
+
+                switch(pMachineInfo->getState())
+                {
+                    case MachineStateAvailable:
+                        machineInfo.setAvailable("Available");
+                        break;
+                    case MachineStateUnavailable:
+                        machineInfo.setAvailable("Unavailable");
+                        break;
+                    case MachineStateUnknown:
+                        machineInfo.setAvailable("Unknown");
+                        break;
+                }
+                IConstDomainInfo * pDomain = pMachineInfo->getDomain();
+                if (pDomain != 0)
+                {
+                    SCMStringBuffer sName;
+                    machineInfo.setDomain(pDomain->getName(sName).str());
+                }
+            }
+
+            MachineList.append(machineInfo);
+        }
+    }
+    catch(IException* e){
+        StringBuffer msg;
+        e->errorMessage(msg);
+        WARNLOG("%s", msg.str());
+        e->Release();
+    }
+    catch(...){
+        WARNLOG("Unknown Exception caught within CTpWrapper::getMachineList");
+    }
+
+    return;
 }
 
 void CTpWrapper::getMachineList(const char* MachineType,
