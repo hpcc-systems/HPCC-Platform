@@ -89,6 +89,9 @@ class CFRunSSH: public CInterface, implements IFRunSSH
                 case 'x': // Next Node
                     cmdbuf.append(slaves.item((nodenum+replicationoffset)%slaves.ordinality()));
                     break;
+                case 'c':
+                    cmdbuf.append(slaves.ordinality());
+                    break;
                 case 't': // Tree Node
                     if (treefrom)
                         cmdbuf.append(slaves.item(treefrom-1));
