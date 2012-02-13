@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="REGROUP">
+  <title>REGROUP</title>
+
+  <para><emphasis role="bold">REGROUP<indexterm>
+      <primary>REGROUP</primary>
+    </indexterm><indexterm>
+      <primary>REGROUP function</primary>
+    </indexterm>(</emphasis><emphasis>recset,…,recset</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="77.85pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry>recset</entry>
+
+            <entry>A grouped set of records. Each recset must be of exactly
+            the same type and must contain the same number of groups.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>REGROUP returns a record set.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">REGROUP </emphasis>function combines the
+  grouped <emphasis>recsets </emphasis>into a single grouped record set. This
+  is accomplished by combining each group in the first
+  <emphasis>recset</emphasis> with the groups in the same ordinal position
+  within each subsequent <emphasis>recset</emphasis>.</para>
+
+  <para>Example:</para>
+
+  <programlisting>inrec := {UNSIGNED6 did};
+
+outrec := RECORD(inrec)
+  STRING20 name;
+  UNSIGNED score;
+END;
+
+ds := DATASET([1,2,3,4,5,6], inrec);
+dsg := GROUP(ds, ROW);
+
+i1 := DATASET([{1, 'Kevin', 10},
+               {2, 'Richard', 5},
+               {5, 'Nigel', 2},
+               {0, '', 0}], outrec);
+i2 := DATASET([{1, 'Kevin Halligan', 12},
+               {2, 'Ricardo Chapman', 15},
+               {3, 'Jake Smith', 20},
+               {5, 'David Hicks', 100},
+               {0, '', 0}], outrec);
+i3 := DATASET([{1, 'Halligan', 8},
+               {2, 'Ricardo', 8},
+               {6, 'Pete', 4},
+               {6, 'Peter', 8},
+               {6, 'Petie', 1},
+               {0, '', 0}], outrec);
+
+j1 := JOIN(dsg, i1, LEFT.did = RIGHT.did, LEFT OUTER, MANY LOOKUP);
+j2 := JOIN(dsg, i2, LEFT.did = RIGHT.did, LEFT OUTER, MANY LOOKUP);
+j3 := JOIN(dsg, i3, LEFT.did = RIGHT.did, LEFT OUTER, MANY LOOKUP);
+  
+combined := REGROUP(j1, j2, j3);
+OUTPUT(j1);
+OUTPUT(j2);
+OUTPUT(j3);
+OUTPUT(combined);
+</programlisting>
+
+  <para>See Also: <link linkend="GROUP">GROUP</link>, <link linkend="COMBINE">COMBINE</link></para>
+</sect1>

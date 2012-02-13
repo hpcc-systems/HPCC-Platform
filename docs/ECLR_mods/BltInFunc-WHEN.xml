@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="WHEN_Function">
+  <title>WHEN</title>
+
+  <para><emphasis role="bold">WHEN<indexterm>
+      <primary>WHEN</primary>
+    </indexterm><indexterm>
+      <primary>WHEN Function</primary>
+    </indexterm>(</emphasis><emphasis>trigger, action</emphasis><emphasis
+  role="bold"> [ BEFORE | SUCCESS ] )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="122.40pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>trigger</emphasis></entry>
+
+            <entry>A dataset or action whose success triggers the
+            <emphasis>action</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>action</emphasis></entry>
+
+            <entry>The action to execute.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">BEFORE</emphasis></entry>
+
+            <entry>Optional. Specifies an <emphasis>action</emphasis> that
+            should be executed before the input is read.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">SUCCESS</emphasis></entry>
+
+            <entry>Optional. Specifies an <emphasis>action</emphasis> that
+            should only be executed on SUCCESS of the
+            <emphasis>trigger</emphasis> (e.g., no LIMITs exceeded).</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">WHEN </emphasis>function associates an
+  <emphasis>action</emphasis> with a <emphasis>trigger</emphasis> (dataset or
+  action) so that when the <emphasis>trigger</emphasis> is executed the
+  <emphasis>action</emphasis> is also executed. This allows</para>
+
+  <para>Example:</para>
+
+  <programlisting>//a FUNCTION with side-effect Action
+namesTable := FUNCTION
+   namesRecord := RECORD
+     STRING20 surname;
+     STRING10 forename;
+     INTEGER2 age := 25;
+   END;
+   o := OUTPUT('namesTable used by user &lt;x&gt;');
+   ds := DATASET([{'x','y',22}],namesRecord);
+   RETURN WHEN(ds,O);
+END;
+
+z := namesTable : PERSIST('z');
+  //the PERSIST causes the side-effect action to execute only when the PERSIST is re-built
+OUTPUT(z);
+</programlisting>
+
+  <para>See Also: <link linkend="FUNCTION_Structure">FUNCTION
+  Structure</link>, <link linkend="WHEN">WHEN</link>, <link
+  linkend="WAIT">WAIT</link></para>
+</sect1>

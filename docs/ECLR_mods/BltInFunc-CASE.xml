@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CASE">
+  <title>CASE</title>
+
+  <para><emphasis role="bold">CASE<indexterm>
+      <primary>CASE</primary>
+    </indexterm><indexterm>
+      <primary>CASE function</primary>
+    </indexterm>(</emphasis><emphasis>expression, caseval =&gt; value,
+  </emphasis><emphasis role="bold">[</emphasis><emphasis>… , caseval =&gt;
+  value </emphasis><emphasis role="bold">]</emphasis><emphasis>
+  </emphasis><emphasis role="bold">[,</emphasis><emphasis> elsevalue
+  </emphasis><emphasis role="bold">] )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="79.75pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>An expression that results in a single value.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>caseval</emphasis></entry>
+
+            <entry>A value to compare against the result of the
+            expression.</entry>
+          </row>
+
+          <row>
+            <entry>=&gt;</entry>
+
+            <entry>The “results in” operator—valid only in CASE, MAP and
+            CHOOSESETS.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>value</emphasis></entry>
+
+            <entry>The value to return. This may be a single value, a set of
+            values, a record set, or an action.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>elsevalue</emphasis></entry>
+
+            <entry>Optional. The value to return when the result of the
+            expression does not match any of the <emphasis>caseval</emphasis>
+            values. May be omitted if all return values are actions (the
+            default would then be no action), or all return values are record
+            sets (the default would then be an empty record set).</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>CASE returns a single value, a set of values, a record set,
+            or an action.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">CASE </emphasis>function evaluates the
+  <emphasis>expression</emphasis> and returns the <emphasis>value</emphasis>
+  whose <emphasis>caseval </emphasis>matches the <emphasis>expression
+  </emphasis>result. If none match, it returns the
+  <emphasis>elsevalue</emphasis>.</para>
+
+  <para>There may be as many <emphasis>caseval </emphasis>=&gt;
+  <emphasis>value</emphasis> parameters as necessary to specify all the
+  expected values of the <emphasis>expression</emphasis> (there must be at
+  least one). All return <emphasis>value </emphasis>parameters must be of the
+  same type.</para>
+
+  <para>Example:</para>
+
+  <programlisting>MyExp := 1+2;
+MyChoice := CASE(MyExp, 1 =&gt; 9, 2 =&gt; 8, 3 =&gt; 7, 4 =&gt; 6, 5);
+  // returns a value of 7 for the caseval of 3
+MyRecSet := CASE(MyExp, 1 =&gt; Person(per_st = 'FL'),
+    2 =&gt; Person(per_st = 'GA'),
+    3 =&gt; Person(per_st = 'AL'),
+    4 =&gt; Person(per_st = 'SC'),
+    Person);
+  // returns set of Alabama Persons for the caseval of 3
+MyAction := CASE(MyExp, 1 =&gt; FAIL('Failed for reason 1'),
+    2 =&gt; FAIL('Failed for reason 2'),
+    3 =&gt; FAIL('Failed for reason 3'),
+    4 =&gt; FAIL('Failed for reason 4'),    FAIL('Failed for unknown reason'));
+  // for the caseval of 3, Fails for reason 3</programlisting>
+
+  <para>See Also: <link linkend="MAP">MAP</link>, <link linkend="CHOOSE">CHOOSE</link>, <link linkend="IF">IF</link>, <link linkend="REJECTED">REJECTED</link>, <link linkend="WHICH">WHICH</link></para>
+</sect1>

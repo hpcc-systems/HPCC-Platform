@@ -1,0 +1,832 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="RECORD_Structure" role="nobrk">
+  <title>RECORD Structure<indexterm>
+      <primary>RECORD Structure</primary>
+    </indexterm></title>
+
+  <para><emphasis>attr</emphasis><emphasis role="bold"> := RECORD<indexterm>
+      <primary>RECORD</primary>
+    </indexterm> [ ( </emphasis><emphasis>baserec</emphasis><emphasis
+  role="bold"> ) ] [, MAXLENGTH<indexterm>
+      <primary>MAXLENGTH</primary>
+    </indexterm>( </emphasis><emphasis>length</emphasis><emphasis role="bold">
+  ) ] [, LOCALE<indexterm>
+      <primary>LOCALE</primary>
+    </indexterm>( </emphasis><emphasis>locale</emphasis><emphasis role="bold">
+  ) ]</emphasis><emphasis role="bold"> [, PACKED<indexterm>
+      <primary>PACKED</primary>
+    </indexterm> ]</emphasis></para>
+
+  <para><emphasis role="bold"></emphasis><emphasis role="bold">
+  </emphasis><emphasis>fields ;</emphasis></para>
+
+  <para><emphasis></emphasis><emphasis> </emphasis><emphasis role="bold"> [
+  IFBLOCK<indexterm>
+      <primary>IFBLOCK</primary>
+    </indexterm>( </emphasis><emphasis>condition</emphasis><emphasis
+  role="bold"> )</emphasis><emphasis role="bold"> </emphasis><emphasis>
+  </emphasis></para>
+
+  <para><emphasis> fields ;</emphasis><emphasis> </emphasis><emphasis
+  role="bold"> </emphasis></para>
+
+  <para><emphasis role="bold"> END; ]</emphasis></para>
+
+  <para><emphasis role="bold"></emphasis><emphasis role="bold">END;<indexterm>
+      <primary>RECORD structure</primary>
+    </indexterm></emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>attr</emphasis></entry>
+
+          <entry>The name of the RECORD structure for later use in other
+          attributes.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>baserec</emphasis></entry>
+
+          <entry>Optional. The name of a RECORD structure from which to
+          inherit all fields. Any RECORD structure that inherits the
+          <emphasis>baserec</emphasis>fields in this manner becomes compatible
+          with any TRANSFORM function defined to take a parameter of
+          <emphasis>baserec</emphasis> type (the extra
+          <emphasis>fields</emphasis> will, of course, be lost).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">MAXLENGTH</emphasis></entry>
+
+          <entry>Optional. Specifies the maximum number of characters allowed
+          in the RECORD structure or field. MAXLENGTH on the RECORD structure
+          overrides any MAXLENGTH on a field definition, which overrides any
+          MAXLENGTH specified in the TYPE structure<indexterm>
+              <primary>TYPE structure</primary>
+            </indexterm> if the <emphasis>datatype</emphasis> names an alien
+          data type. This option defines the maximum size of variable-length
+          records. If omitted, a warning is generated. The default maximum
+          size of a record containing variable-length fields is 4096 bytes
+          (this may be overridden by using
+          <emphasis>#OPTION(maxLength,####)</emphasis> to change the default).
+          The maximum record size should be set as conservatively as possible,
+          and is better set on a per-field basis (see the <emphasis
+          role="bold">Field Modifiers</emphasis>section below).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>length</emphasis></entry>
+
+          <entry>An integer constant specifying the maximum number of
+          characters allowed.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">LOCALE</emphasis></entry>
+
+          <entry>Optional. Specifies the Unicode <emphasis>locale</emphasis>
+          for any UNICODE fields.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>locale</emphasis></entry>
+
+          <entry>A string constant containing a valid locale code, as
+          specified in ISO standards 639 and 3166.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">PACKED</emphasis></entry>
+
+          <entry>Optional. Specifies the order of the
+          <emphasis>fields</emphasis> may be changed to improve efficiency
+          (such as moving variable-length fields after the fixed-length
+          fields)..</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>fields</emphasis></entry>
+
+          <entry>Field declarations. See below for the appropriate
+          syntaxes.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">IFBLOCK</emphasis></entry>
+
+          <entry>Optional. A block of <emphasis>fields</emphasis> that receive
+          “live” data only if the <emphasis>condition</emphasis> is met. The
+          IFBLOCK must be terminated by an <emphasis
+          role="bold">END</emphasis>. This is used to define variable-length
+          records. If the <emphasis>condition</emphasis> expression references
+          <emphasis>fields</emphasis> in the RECORD preceding the IFBLOCK,
+          those references must use SELF. prepended to the fieldname to
+          disambiguate the reference.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>condition</emphasis></entry>
+
+          <entry>A logical expression that defines when the
+          <emphasis>fields</emphasis> within the IFBLOCK receive “live” data.
+          If the expression is not true, the <emphasis>fields</emphasis>
+          receive their declared default values. If there's no default value,
+          the <emphasis>fields</emphasis> receive blanks or zeros.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>Record layouts are Attribute definitions whose expression is a RECORD
+  structure terminated by the END keyword. The <emphasis>attr</emphasis> name
+  creates a user-defined value type that can be used in built-in functions and
+  TRANSFORM function definitions. The delimiter between field definitions in a
+  RECORD structure can be either the semi-colon (;) or a comma (,).</para>
+
+  <sect2 id="In-line_Record_Definitions">
+    <title>In-line Record Definitions</title>
+
+    <para>Curly braces ({}) are lexical equivalents to the keywords RECORD and
+    END that can be used anywhere RECORD and END are appropriate. Either form
+    (RECORD/END or {}) can be used to create “on-the-fly” record formats
+    within those functions that require record structures (OUTPUT, TABLE,
+    DATASET etc.), instead of defining the record as a separate
+    attribute.</para>
+  </sect2>
+
+  <sect2 id="Field_Definitions">
+    <title>Field Definitions</title>
+
+    <para>All field declarations in a RECORD Structure must use one of the
+    following syntaxes:</para>
+
+    <para><emphasis> datatype identifier <emphasis role="bold">[
+    {</emphasis><emphasis>modifier</emphasis><emphasis role="bold">}
+    ]</emphasis> </emphasis><emphasis role="bold">[ :=</emphasis><emphasis>
+    defaultvalue</emphasis><emphasis role="bold">] </emphasis><emphasis
+    role="bold"> ;</emphasis><emphasis> </emphasis></para>
+
+    <para><emphasis> identifier </emphasis><emphasis role="bold"> :=
+    </emphasis><emphasis>defaultvalue</emphasis><emphasis role="bold">
+    ;</emphasis><emphasis> </emphasis></para>
+
+    <para><emphasis> defaultvalue</emphasis><emphasis role="bold">
+    ;</emphasis><emphasis role="bold"> </emphasis><emphasis></emphasis></para>
+
+    <para><emphasis> sourcefield</emphasis><emphasis role="bold">
+    ;</emphasis><emphasis> </emphasis></para>
+
+    <para><emphasis> recstruct</emphasis><emphasis role="bold"> [
+    </emphasis><emphasis>identifier </emphasis><emphasis role="bold">]
+    ;</emphasis><emphasis></emphasis></para>
+
+    <para><emphasis> sourcedataset</emphasis><emphasis role="bold">
+    ;</emphasis><emphasis> </emphasis></para>
+
+    <para><emphasis> childdataset</emphasis><emphasis role="bold">
+    </emphasis><emphasis> identifier </emphasis><emphasis role="bold">[ {
+    </emphasis><emphasis>modifier </emphasis><emphasis role="bold">}
+    ];</emphasis></para>
+
+    <informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec align="left" colwidth="122.40pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>datatype</emphasis></entry>
+
+            <entry>The value type of the data field. This may be a child
+            dataset (see DATASET). If omitted, the value type is the result
+            type of the <emphasis>defaultvalue</emphasis> expression.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>identifier</emphasis></entry>
+
+            <entry>The name of the field. If omitted, the
+            <emphasis>defaultvalue</emphasis> expression defines a column with
+            no name that may not be referenced in subsequent ECL.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>defaultvalue</emphasis></entry>
+
+            <entry>Optional. An expression defining the source of the data
+            (for operations that require a data source, such as TABLE and
+            PARSE). This may be a constant, expression, or Attribute providing
+            the value.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>modifier</emphasis></entry>
+
+            <entry>Optional. One of the keywords listed in the <emphasis
+            role="bold">Field Modifiers</emphasis>section below.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>sourcefield</emphasis></entry>
+
+            <entry>A previously defined data field, which implicitly provides
+            the <emphasis>datatype</emphasis>,
+            <emphasis>identifier</emphasis>, and
+            <emphasis>defaultvalue</emphasis> for the new field—inherited from
+            the <emphasis>sourcefield</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>recstruct</emphasis></entry>
+
+            <entry>A previously defined RECORD structure. See the <emphasis
+            role="bold">Field Inheritance</emphasis>section below.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>sourcedataset</emphasis></entry>
+
+            <entry>A previously defined DATASET or derived recordset
+            attribute. See the <emphasis role="bold">Field
+            Inheritance</emphasis>section below.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>childdataset</emphasis></entry>
+
+            <entry>A child DATASET declaration (see DATASET discussion), which
+            implicitly defines all the fields of the child at their already
+            defined <emphasis>datatype</emphasis>,
+            <emphasis>identifier</emphasis>, and
+            <emphasis>defaultvalue</emphasis> (if present in the child
+            DATASET's RECORD structure).</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>Field definitions must always define the
+    <emphasis>datatype</emphasis> and <emphasis>identifier</emphasis> of each
+    field, either implicitly or explicitly. If the RECORD structure will be
+    used by TABLE, PARSE, ROW, or any other function that creates an output
+    recordset, then the <emphasis>defaultvalue</emphasis> must also be
+    implicitly or explicitly defined for each field. In the case where a field
+    is defined in terms of a field in a dataset already in scope, you may name
+    the <emphasis>identifier</emphasis> with a name already in use in the
+    dataset already in scope as long as you explicitly define the
+    <emphasis>datatype</emphasis>.</para>
+  </sect2>
+
+  <sect2 id="Field_Inheritance">
+    <title>Field Inheritance</title>
+
+    <para>Field definitions may be inherited from a previously defined RECORD
+    structure or DATASET. When a <emphasis>recstruct</emphasis> (a RECORD
+    Structure) is specified from which to inherit the fields, the new fields
+    are implicitly defined using the <emphasis>datatype</emphasis> and
+    <emphasis>identifier</emphasis> of all the existing field definitions in
+    the <emphasis>recstruct</emphasis>. When a <emphasis>sourcedataset
+    </emphasis>(a previously defined DATASET or recordset attribute) is
+    specified to inherit the fields, the new fields are implicitly defined
+    using the <emphasis>datatype</emphasis>, <emphasis>identifier</emphasis>,
+    and <emphasis>defaultvalue</emphasis> of all the fields (making it usable
+    by operations that require a data source, such as TABLE and PARSE). Either
+    of these forms may optionally have its own <emphasis>identifier</emphasis>
+    to allow reference to the entire set of inherited fields as a single
+    entity.</para>
+
+    <para>You may also use logical operators<indexterm>
+        <primary>logical operators</primary>
+      </indexterm> (AND, OR, and NOT) to include/exclude certain fields from
+    the inheritance, as described here:</para>
+
+    <informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="3">
+        <colspec align="left" colwidth="122.40pt" />
+
+        <colspec colwidth="122" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>R1</emphasis> <emphasis role="bold">AND<indexterm>
+                <primary>AND</primary>
+              </indexterm></emphasis> <emphasis>R2</emphasis></entry>
+
+            <entry>Intersection</entry>
+
+            <entry>All fields declared in both <emphasis>R1</emphasis> and
+            <emphasis>R2</emphasis></entry>
+          </row>
+
+          <row>
+            <entry><emphasis>R1</emphasis> <emphasis
+            role="bold">OR</emphasis><indexterm>
+                <primary>OR</primary>
+              </indexterm> <emphasis>R2</emphasis></entry>
+
+            <entry>Union</entry>
+
+            <entry>All fields declared in either <emphasis>R1</emphasis> or
+            <emphasis>R2</emphasis></entry>
+          </row>
+
+          <row>
+            <entry><emphasis>R1</emphasis> <emphasis role="bold">AND
+            NOT<indexterm>
+                <primary>AND NOT</primary>
+              </indexterm></emphasis> <emphasis>R2</emphasis></entry>
+
+            <entry>Difference</entry>
+
+            <entry>All fields in <emphasis>R1</emphasis> that are not in
+            <emphasis>R2</emphasis></entry>
+          </row>
+
+          <row>
+            <entry><emphasis>R1</emphasis> <emphasis role="bold">AND
+            NOT</emphasis> <emphasis>F1</emphasis></entry>
+
+            <entry>Exception</entry>
+
+            <entry>All fields in <emphasis>R1</emphasis> except the specified
+            field (<emphasis>F1</emphasis>)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>R1</emphasis> <emphasis role="bold">AND
+            NOT</emphasis> <emphasis role="bold">[</emphasis><emphasis>F1,
+            F2</emphasis><emphasis role="bold">]</emphasis></entry>
+
+            <entry>Exception</entry>
+
+            <entry>All fields in <emphasis>R1</emphasis> except those in
+            listed in the brackets
+            (<emphasis>F1</emphasis>and<emphasis>F2</emphasis>)</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>The minus sign (-) is a synonym for AND NOT, so R1-R2 is equivalent
+    to R1 AND NOT R2.</para>
+
+    <para>It is an error if the records contain the same field names whose
+    value types don't match, or if you end up with no fields (such as: A-A).
+    You must ensure that any MAXLENGTH/MAXCOUNT is specified correctly on each
+    field in both RECORD Structures.</para>
+
+    <para>Example:</para>
+
+    <programlisting>R1 := {STRING1 F1,STRING1 F2,STRING1 F3,STRING1 F4,STRING1 F5};
+R2 := {STRING1 F4,STRING1 F5,STRING1 F6};
+R3 := {R1 AND R2}; //Intersection - fields F4 and F5  only
+R4 := {R1 OR R2}; //Union - all fields F1 - F6
+R5 := {R1 AND NOT R2}; //Difference - fields F1 - F3
+R6 := {R1 AND NOT F1}; //Exception - fields F2 - F5
+R7 := {R1 AND NOT [F1,F2]}; //Exception - fields F3 - F5
+
+//the following two RECORD structures are equivalent:
+C := RECORD,MAXLENGTH(x)
+  R1 OR R2;
+END;
+         
+D := RECORD, MAXLENGTH(x)
+  R1;
+  R2 AND NOT R1;
+END;</programlisting>
+  </sect2>
+
+  <sect2 id="Field_Modifiers">
+    <title>Field Modifiers</title>
+
+    <para>The following list of options are available for use on field
+    definitions:</para>
+
+    <para><emphasis role="bold"> { MAXLENGTH<indexterm>
+        <primary>MAXLENGTH</primary>
+      </indexterm>( </emphasis><emphasis>length</emphasis><emphasis
+    role="bold"> ) }</emphasis><emphasis role="bold"> </emphasis></para>
+
+    <para><emphasis role="bold"> { MAXCOUNT<indexterm>
+        <primary>MAXCOUNT</primary>
+      </indexterm>( </emphasis><emphasis>records</emphasis><emphasis
+    role="bold"> ) }</emphasis></para>
+
+    <para><emphasis role="bold"> { XPATH<indexterm>
+        <primary>XPATH</primary>
+      </indexterm>(</emphasis><emphasis role="bold"> </emphasis><emphasis
+    role="bold">'</emphasis><emphasis>tag</emphasis><emphasis role="bold">' )
+    }</emphasis><emphasis role="bold"> </emphasis></para>
+
+    <para><emphasis role="bold"> { VIRTUAL<indexterm>
+        <primary>Virtual</primary>
+      </indexterm><indexterm>
+        <primary>Virtual fileposition</primary>
+      </indexterm>(</emphasis><emphasis role="bold"> </emphasis><emphasis
+    role="bold">fileposition ) }</emphasis><emphasis role="bold">
+    </emphasis></para>
+
+    <para><emphasis role="bold"> { VIRTUAL<indexterm>
+        <primary>Virtual localfileposition</primary>
+      </indexterm>( localfileposition ) }</emphasis></para>
+
+    <informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec align="left" colwidth="200pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">{
+            MAXLENGTH(</emphasis><emphasis>length</emphasis> <emphasis
+            role="bold">) }</emphasis></entry>
+
+            <entry>Specifies the maximum number of characters allowed in the
+            field (see MAXLENGTH option above).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">{
+            MAXCOUNT(</emphasis><emphasis>records</emphasis> <emphasis
+            role="bold">) }</emphasis></entry>
+
+            <entry>Specifies the maximum number of
+            <emphasis>records</emphasis> allowed in a child DATASET field
+            (similar to MAXLENGTH above).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">{
+            XPATH(</emphasis>'<emphasis>tag</emphasis>'<emphasis role="bold">)
+            }</emphasis></entry>
+
+            <entry>Specifies the XML <emphasis>tag</emphasis> that contains
+            the data, in a RECORD structure that defines XML data. This
+            overrides the default <emphasis>tag</emphasis> name (the lowercase
+            field <emphasis>identifier</emphasis>). See the <emphasis
+            role="bold">XPATH Support</emphasis> section below for
+            details.</entry>
+          </row>
+
+          <row>
+            <entry><para><emphasis role="bold">{ VIRTUAL( fileposition )
+            }</emphasis></para></entry>
+
+            <entry>Specifies the field is a VIRTUAL field containing the
+            relative byte position of the record within the entire file (the
+            record pointer). This must be an UNSIGNED8 field and must be the
+            last field, because it only truly exists when the file is loaded
+            into memory from disk (hence, the “virtual”).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">{ VIRTUAL( localfileposition )
+            }</emphasis></entry>
+
+            <entry>Specifies the local byte position within a part of the
+            distributed file on a single node: the first bit is set, the next
+            15 bits specify the part number, and the last 48 bits specify the
+            relative byte position within the part. This must be an UNSIGNED8
+            field and must be the last field, because it only truly exists
+            when the file is loaded into memory from disk (hence, the
+            “virtual”).</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para><emphasis role="bold"></emphasis></para>
+  </sect2>
+
+  <sect2 id="XPATH_Support">
+    <title>XPATH Support</title>
+
+    <para>XPATH support<indexterm>
+        <primary>XPATH support</primary>
+      </indexterm> is a limited subset of the full XPATH specification,
+    basically expressed as:</para>
+
+    <para><emphasis role="bold">node[qualifier] / node[qualifier]
+    ...</emphasis></para>
+
+    <informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec align="left" colwidth="122.40pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>node </emphasis></entry>
+
+            <entry>Can contain wildcards.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>qualifier </emphasis></entry>
+
+            <entry>Can be a node or attribute, or a simple single expression
+            of equality, inequality, or numeric or alphanumeric comparisons,
+            or node index values. No functions or inline arithmetic, etc. are
+            supported. String comparison is indicated when the right hand side
+            of the expression is quoted.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>These operators are valid for comparisons: &lt;, &lt;=, &gt;, &gt;=,
+    =, !=</para>
+
+    <para>An example of a supported xpath:</para>
+
+    <programlisting>/a/*/c*/*d/e[@attr]/f[child]/g[@attr="x"]/h[child&gt;="5"]/i[@x!="2"]/j</programlisting>
+
+    <para>You can emulate AND conditions like this:</para>
+
+    <programlisting>/a/b[@x="1"][@y="2"]</programlisting>
+
+    <para>Also, there is a non-standard XPATH convention for extracting the
+    text of a match using empty angle brackets (&lt;&gt;):</para>
+
+    <programlisting>R := RECORD
+STRING blah{xpath('a/b&lt;&gt;')};
+//contains all of b, including any child attributes and values
+END;</programlisting>
+
+    <para>For XML DATASET reading and processing results of the
+    SOAPCALL<indexterm>
+        <primary>SOAPCALL</primary>
+      </indexterm> function, the following XPATH syntax is specifically
+    supported:</para>
+
+    <para>1) For simple scalar value fields, if there is an XPATH specified
+    then it is used, otherwise the lower case <emphasis>identifier</emphasis>
+    of the field is used.</para>
+
+    <programlisting>STRING name; //matches: &lt;name&gt;Kevin&lt;/name&gt;
+STRING Fname{xpath('Fname')}; //matches: &lt;Fname&gt;Kevin&lt;/Fname&gt;</programlisting>
+
+    <para>2) For a field whose type is a RECORD structure, the specified XPATH
+    is prefixed to all the fields it contains, otherwise the lower case
+    <emphasis>identifier</emphasis> of the field followed by '/' is prefixed
+    onto the fields it contains. Note that an XPATH of '' (empty single
+    quotes) will prefix nothing.</para>
+
+    <programlisting>NameRec := RECORD
+  STRING Fname{xpath('Fname')}; //matches: &lt;Fname&gt;Kevin&lt;/Fname&gt;
+  STRING Mname{xpath('Mname')}; //matches: &lt;Mname&gt;Alfonso&lt;/Mname&gt;
+  STRING Lname{xpath('Lname')}; //matches: &lt;Lname&gt;Jones&lt;/Lname&gt;
+END;
+          
+PersonRec := RECORD
+  STRING Uid{xpath('Person[@UID]')};
+  NameRec Name{xpath('Name')};
+    /*matches: &lt;Name&gt;
+              &lt;Fname&gt;Kevin&lt;/Fname&gt;
+              &lt;Mname&gt;Alfonso&lt;/Mname&gt;
+              &lt;Lname&gt;Jones&lt;/Lname&gt;
+              &lt;/Name&gt; */
+END;</programlisting>
+
+    <para>3) For a child DATASET field, the specified XPATH can have one of
+    two formats: "Container/Repeated" or "/Repeated." Each "/Repeated" tag
+    within the optional Container is iterated to provide the values. If no
+    XPATH is specified, then the default value for the Container is the lower
+    case field name, and the default value for Repeated is "Row." For example,
+    this demonstrates "Container/Repeated":</para>
+
+    <programlisting>DATASET(PeopleNames) People{xpath('people/name])};
+          /*matches: &lt;people&gt;
+                        &lt;name&gt;Gavin&lt;/name&gt;
+                        &lt;name&gt;Ricardo&lt;/name&gt;
+                    &lt;/people&gt; */</programlisting>
+
+    <para>This demonstrates "/Repeated":</para>
+
+    <programlisting>DATASET(Names) Names{xpath('/name])};
+          /*matches: &lt;name&gt;Gavin&lt;/name&gt;
+                     &lt;name&gt;Ricardo&lt;/name&gt; */</programlisting>
+
+    <para>"Container" and "Repeated" may also contain xpath filters, like
+    this:</para>
+
+    <programlisting>DATASET(doctorRec) doctors{xpath('person[@job=\'doctor\'])};
+          /*matches: &lt;person job='doctor'&gt;
+                       &lt;FName&gt;Kevin&lt;/FName&gt;
+                       &lt;LName&gt;Richards&lt;/LName&gt;
+                     &lt;/person&gt; */</programlisting>
+
+    <para>4) For a SET OF <emphasis>type</emphasis> field, an xpath attribute
+    on a set field can have one of three formats: "Repeated",
+    "Container/Repeated" or "Container/Repeated/@attr". They are processed in
+    a similar way to datasets, except for the following. If Container is
+    specified, then the XML reading checks for a tag "Container/All", and if
+    present the set contains all possible values. The third form allows you to
+    read XML attribute values.</para>
+
+    <programlisting>SET OF STRING people;
+    //matches: &lt;people&gt;&lt;All/&gt;&lt;/people&gt;
+    //or: &lt;people&gt;&lt;Item&gt;Kevin&lt;/Item&gt;&lt;Item&gt;Richard&lt;/Item&gt;&lt;/people&gt;
+         
+SET OF STRING Npeople{xpath('Name')};
+    //matches: &lt;Name&gt;Kevin&lt;/Name&gt;&lt;Name&gt;Richard&lt;/Name&gt;
+SET OF STRING Xpeople{xpath('/Name/@id')};
+    //matches: &lt;Name id='Kevin'/&gt;&lt;Name id='Richard'/&gt;</programlisting>
+
+    <para>For writing XML files using OUTPUT, the rules are similar with the
+    following exceptions:</para>
+
+    <para>1) For scalar fields, simple tag names and XML attributes are
+    supported.</para>
+
+    <para>2) For SET fields, &lt;All&gt; will only be generated if the
+    container name is specified.</para>
+
+    <para>3) xpath filters are not supported.</para>
+
+    <para>4) The "Container/Repeated/@attr" form for a SET is not
+    supported.</para>
+
+    <para>Example:</para>
+
+    <programlisting>//For DATASET or the result type of a TRANSFORM function, 
+//you need only specify the value type and 
+//name of each field in the layout:
+R1 := RECORD
+  UNSIGNED1 F1; //only value type and name required
+  UNSIGNED4 F2;
+  STRING100 F3;
+END;
+          
+D1 := DATASET('RTTEMP::SomeFile',R1,THOR);
+
+//**************************
+For "vertical slice" TABLE, you need to specify the value
+type, name, and data source for each field in the layout:
+        
+R2 := RECORD
+  UNSIGNED1 F1 := D1.F1; //value type, name, data source all explicit
+  D1.F2; //value type, name, data source all implicit
+END;
+
+T1 := TABLE(D1,R2);
+       
+//**************************
+    For "crosstab report" TABLE:
+R3 := RECORD
+  D1.F1;            //"group by" fields must come first 
+  UNSIGNED4 GrpCount := COUNT(GROUP); 
+                   //value type, column name, and aggregate
+  GrpSum := SUM(GROUP,D1.F2); //no value type -- defaults to INTEGER
+  MAX(GROUP,D1.F2); //no column name in output
+END;
+
+T2 := TABLE(D1,R3,F1);
+//**************************
+Form1 := RECORD
+    Person.per_last_name; //field name is per_last_name - size
+                         //is as declared in the person dataset
+    STRING25 LocalID := Person.per_first_name;
+                        //the name of this field is LocalID and it
+                        //gets its data from Person.per_first_name
+    INTEGER8 COUNT(Trades); //this field is unnamed in the output file
+    BOOLEAN HasBogey := FALSE; 
+                        //HasBogey defaults to false
+    REAL4    Valu8024;
+          //value from the Valu8024 attribute
+END;
+Form2 := RECORD
+     Trades; //include all fields from the Trades dataset at their
+            // already-defined names, types and sizes
+     UNSIGNED8 fpos {VIRTUAL(fileposition)};
+           //contains the relative byte position within the file
+END;
+
+Form3 := {Trades,UNSIGNED8 local_fpos {VIRTUAL(localfileposition)}};
+          //use of {} instead of RECORD/END
+          //”Trades” includes all fields from the dataset at their
+          // already-defined names, types and sizes
+          //local_fpos is the relative byte position in each part
+
+Form4 := RECORD, MAXLENGTH(10000)
+     STRING VarStringName1{MAXLENGTH(5000)};
+          //this field is variable size to a 5000 byte maximum
+ 
+     STRING VarStringName2{MAXLENGTH(4000)};
+          //this field is variable size to a 4000 byte maximum
+
+     IFBLOCK(MyCondition = TRUE) //following fields receive values
+          //only if MyCondition = TRUE
+
+     BOOLEAN HasLife := TRUE;
+          //defaults to true unless MyCondition = FALSE
+
+     INTEGER8 COUNT(Inquiries); 
+          //this field is zero if MyCondition = FALSE, even
+          //if there are inquiries to count
+
+      END;
+END;
+
+         
+//**************************
+//in-line record structures, demoing same field name use
+ds := DATASET('d', { STRING s; }, THOR);
+t := TABLE(ds, { STRING60 s := ds.s; });
+    // new “s” field is OK with value type explicitly defined
+    //**************************
+    //”Child dataset” RECORD structures
+ChildRec := RECORD
+    UNSIGNED4 person_id;
+    STRING20 per_surname;
+    STRING20 per_forename;
+END;
+ParentRecord := RECORD
+    UNSIGNED8 id;
+    STRING20 address;
+    STRING20 CSZ;
+    STRING10 postcode;
+    UNSIGNED2 numKids;
+    DATASET(ChildRec) children{MAXCOUNT(100)};
+END;
+          
+//**************************
+//an example using {XPATH('tag')}
+R := record
+     STRING10 fname;
+     STRING12 lname;
+     SET OF STRING1 MySet{XPATH('Set/Element')}; //define set tags
+END;
+B := DATASET([{'Fred','Bell',['A','B']},
+            {'George','Blanda',['C','D']},
+            {'Sam','',['E','F'] } ], R);
+         
+OUTPUT(B,,'~RTTEST::test.xml', XML);
+
+/* this example produces XML output that looks like this:
+&lt;Dataset&gt;
+&lt;Row&gt;&lt;fname&gt;Fred &lt;/fname&gt;&lt;lname&gt;Bell&lt;/lname&gt;
+ &lt;Set&gt;&lt;Element&gt;A&lt;/Element&gt;&lt;Element&gt;B&lt;/Element&gt;&lt;/Set&gt;&lt;/Row&gt;
+&lt;Row&gt;&lt;fname&gt;George&lt;/fname&gt;&lt;lname&gt;Blanda &lt;/lname&gt;
+ &lt;Set&gt;&lt;Element&gt;C&lt;/Element&gt;&lt;Element&gt;D&lt;/Element&gt;&lt;/Set&gt;&lt;/Row&gt;
+&lt;Row&gt;&lt;fname&gt;Sam &lt;/fname&gt;&lt;lname&gt; &lt;/lname&gt;
+&lt;Set&gt;&lt;Element&gt;E&lt;/Element&gt;&lt;Element&gt;F&lt;/Element&gt;&lt;/Set&gt;&lt;/Row&gt;
+&lt;/Dataset&gt;
+*/
+          
+//another XML example with a 1-field child dataset
+cr := RECORD,MAXLENGTH(1024)
+  STRING phoneEx{XPATH('')};
+END;
+r := RECORD,MAXLENGTH(4096)
+  STRING id{XPATH('COMP-ID')};
+  STRING phone{XPATH('PHONE-NUMBER')};
+  DATASET(cr) Fred{XPATH('PHONE-NUMBER-EXP')};
+END;
+         
+DS := DATASET([{'1002','1352,9493',['1352','9493']},
+            {'1003','4846,4582,0779',['4846','4582','0779']}],r);
+
+OUTPUT(ds,,'~RTTEST::XMLtest2',
+      XML('RECORD',
+          HEADING('&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;RECORDS&gt;',
+                  '&lt;/RECORDS&gt;')));
+ 
+/* this example produces XML output that looks like  this:
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+   &lt;RECORDS&gt;
+      &lt;RECORD&gt;
+         &lt;COMP-ID&gt;1002&lt;/COMP-ID&gt;
+          &lt;PHONE-NUMBER&gt;1352,9493&lt;/PHONE-NUMBER&gt;
+          &lt;PHONE-NUMBER-EXP&gt;1352&lt;/PHONE-NUMBER-EXP&gt;
+          &lt;PHONE-NUMBER-EXP&gt;9493&lt;/PHONE-NUMBER-EXP&gt;
+       &lt;/RECORD&gt;
+       &lt;RECORD&gt;
+         &lt;COMP-ID&gt;1003&lt;/COMP-ID&gt;
+          &lt;PHONE-NUMBER&gt;4846,4582,0779&lt;/PHONE-NUMBER&gt;
+          &lt;PHONE-NUMBER-EXP&gt;4846&lt;/PHONE-NUMBER-EXP&gt;
+          &lt;PHONE-NUMBER-EXP&gt;4582&lt;/PHONE-NUMBER-EXP&gt;
+          &lt;PHONE-NUMBER-EXP&gt;0779&lt;/PHONE-NUMBER-EXP&gt;
+       &lt;/RECORD&gt;
+     &lt;/RECORDS&gt;
+ */</programlisting>
+
+    <para>See Also: <link linkend="DATASET">DATASET</link>, <link
+    linkend="INDEX_record_structure">INDEX</link>, <link
+    linkend="OUTPUT">OUTPUT</link>, <link linkend="TABLE">TABLE</link>, <link
+    linkend="TRANSFORM_Structure">TRANSFORM Structure</link>, <link
+    linkend="TYPE_Structure">TYPE Structure</link>, <link
+    linkend="SOAPCALL">SOAPCALL</link></para>
+  </sect2>
+</sect1>

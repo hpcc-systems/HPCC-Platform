@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CHOOSEN">
+  <title>CHOOSEN</title>
+
+  <para><emphasis role="bold">CHOOSEN<indexterm>
+      <primary>CHOOSEN</primary>
+    </indexterm><indexterm>
+      <primary>CHOOSEN function</primary>
+    </indexterm>(</emphasis><emphasis>recordset, n </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>, startpos </emphasis><emphasis
+  role="bold">] [, FEW<indexterm>
+      <primary>FEW</primary>
+    </indexterm>])</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="78.10pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>The set of records to process. This may be the name of a
+            dataset or a record set derived from some filter condition, or any
+            expression that results in a derived record set.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>n</emphasis></entry>
+
+            <entry>The number of records to return. If zero (0), no records
+            are returned, and if ALL or CHOOSEN:ALL, all records are returned.
+            The CHOOSEN:ALL option is a constant that may be used in any
+            expression.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>startpos</emphasis></entry>
+
+            <entry>Optional. The ordinal position in the recordset of the
+            first record to return. If omitted, the default is one
+            (1).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">FEW</emphasis></entry>
+
+            <entry>Optional. Specifies internally converting to a TOPN
+            operation if n is a variable number (an attribute or passed
+            parameter) and the input recordset comes from a SORT.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>CHOOSEN returns a set of records.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">CHOOSEN </emphasis>function
+  (choose-<emphasis>n</emphasis>) returns the first <emphasis>n</emphasis>
+  number of records, beginning with the record at the
+  <emphasis>startpos</emphasis>, from the specified
+  <emphasis>recordset</emphasis>.</para>
+
+  <para>Example:</para>
+
+  <programlisting>AllRecs   := CHOOSEN(Person,ALL); // returns all recs from Person
+FirstFive := CHOOSEN(Person,5);   // returns first 5 recs from Person
+NextFive  := CHOOSEN(Person,5,6); // returns next 5 recs from Person
+LimitRecs := CHOOSEN(Person,IF(MyLimit&lt;&gt;0,MyLimit,CHOOSEN:ALL));
+</programlisting>
+
+  <para>See Also: <link linkend="SAMPLE">SAMPLE</link>, <link linkend="CHOOSESETS">CHOOSESETS</link></para>
+</sect1>

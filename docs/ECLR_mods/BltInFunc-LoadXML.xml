@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="LOADXML">
+  <title>LOADXML</title>
+
+  <para><emphasis>[</emphasis><emphasis>attributename</emphasis> :=<emphasis
+  role="bold"> ] LOADXML<indexterm>
+      <primary>LOADXML</primary>
+    </indexterm><indexterm>
+      <primary>LOADXML function</primary>
+    </indexterm>( </emphasis><emphasis> xmlstring | symbol
+  </emphasis><emphasis role="bold">[</emphasis><emphasis>, branch
+  </emphasis><emphasis role="bold">])</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="83.05pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>attributename</emphasis></entry>
+
+          <entry>Optional. The action name, which turns the action into an
+          attribute definition, therefore not executed until the
+          <emphasis>attributename</emphasis> is used as an action.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>xmlstring</emphasis></entry>
+
+          <entry>A string expression either naming an .XML file to open, or
+          containing the XML text to process inline (no carriage returns or
+          line feeds).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>symbol</emphasis></entry>
+
+          <entry>The template symbol containing the XML text to process
+          (typically loaded by #EXPORT or #EXPORTXML).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>branch</emphasis></entry>
+
+          <entry>A user-defined string naming the XML text, allowing #FOR to
+          operate.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para><emphasis role="bold">LOADXML </emphasis>opens an active XML scope for
+  Template language statements or symbols to act on. LOADXML must be the first
+  line of code to function correctly.</para>
+
+  <para>A valid XML scope is required for most Template Language<indexterm>
+      <primary>Template Language</primary>
+    </indexterm> statements to work. This is also used in "drilldown" MACRO
+  code.</para>
+
+  <para>Example:</para>
+
+  <programlisting>LOADXML('MyFile.XML')  //process the XML in MyFile.XML
+LOADXML('&lt;section&gt;&lt;item type="count"&gt;&lt;set&gt;person&lt;/set&gt;&lt;/item&gt;&lt;/section&gt;')
+     //in-line XML
+//this macro receives in-line XML as its parameter
+//and demonstrates the code for multiple row drilldown
+EXPORT id(xmlRow) :=   MACRO
+STRING myxmlText := xmlRow;
+LOADXML(myxmlText);
+#DECLARE(OutStr)
+#SET(OutStr, '' )
+#FOR(row)
+  #APPEND(OutStr,
+          'OUTPUT(FETCH(Files.People,Files.PeopleIDX(id='
+     + %'id'% + '),RIGHT.RecPos));\n' )
+  #APPEND(OutStr,
+     'ds' + %'id'%
+     + ' := FETCH(Files.Property,Files.PropertyIDX(personid= '
+     + %'id'% + '),RIGHT.RecPos);\n' )
+  #APPEND(OutStr,
+     'OUTPUT(ds' + %'id'%
+     + ',{countTaxdata := COUNT(Taxrecs), ds'
+     + %'id'% + '});\n' )
+  #APPEND(OutStr,
+     'OUTPUT(FETCH(Files.Vehicle,Files.VehicleIDX(personid= '
+         + %'id'% + '),RIGHT.RecPos));\n' )
+#END
+%OutputStr%
+ENDMACRO;
+    
+//this is an example of code for a drilldown (1 per row)
+EXPORT CountTaxdata(xmlRow) := MACRO
+LOADXML(xmlRow);
+OUTPUT(FETCH(Files.TaxData,
+   Files.TaxdataIDX(propertyid=%propertyid%),
+   RIGHT.RecPos));
+ENDMACRO;
+
+//This example uses #EXPORT to generate the XML
+LOADXML('&lt;xml/&gt;'); //"dummy" XML just to open an XML scope
+NamesRecord := RECORD
+  STRING10 first;
+  STRING20 last;
+END;
+r := RECORD
+  UNSIGNED4 dg_parentid;
+  STRING10  dg_firstname;
+  STRING    dg_lastname;
+  UNSIGNED1 dg_prange;
+  IFBLOCK(SELF.dg_prange % 2 = 0)
+    STRING20 extrafield;
+  END;
+  NamesRecord namerec;
+  DATASET(NamesRecord) childNames;
+END;
+
+ds := DATASET('~RTTEST::OUT::ds', r, thor);
+   
+//Walk a record and do some processing on it.
+#DECLARE(out)
+#EXPORT(out, r);
+LOADXML(%'out'%, 'FileStruct');
+   
+#FOR (FileStruct)
+ #FOR (Field)
+  #IF (%'{@isEnd}'% &lt;&gt; '')
+OUTPUT('END');
+  #ELSE
+OUTPUT(%'{@type}'%
+   #IF (%'{@size}'% &lt;&gt; '-15' AND
+   %'{@isRecord}'%='' AND
+   %'{@isDataset}'%='')
++ %'{@size}'%
+   #END
++ ' ' + %'{@label}'% + ';');
+  #END
+ #END
+#END
+OUTPUT('Done');
+</programlisting>
+
+  <para>See Also: <link linkend="Templates">Templates</link>, <link linkend="_EXPORT">#EXPORT</link>, <link linkend="_EXPORTXML">#EXPORTXML</link></para>
+</sect1>

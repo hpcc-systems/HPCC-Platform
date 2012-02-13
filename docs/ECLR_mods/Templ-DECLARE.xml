@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_DECLARE">
+  <title>#DECLARE</title>
+
+  <para><emphasis role="bold">#DECLARE<indexterm>
+      <primary>#DECLARE</primary>
+    </indexterm>( </emphasis><emphasis>symbol </emphasis><emphasis
+  role="bold">);</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="76.70pt" />
+
+        <colspec colwidth="276.10pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>symbol</emphasis></entry>
+
+            <entry>The name of the template variable.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">#DECLARE </emphasis>statement declares a
+  user-defined <emphasis>symbol</emphasis> for use in the template. The
+  <emphasis>symbol</emphasis> is simply created and not initialized to any
+  particular value, therefore it may be destined to contain either string or
+  numeric data.</para>
+
+  <para>Example:</para>
+
+  <programlisting>  #DECLARE(MySymbol); //declare a symbol named "MySymbol"
+  #SET(MySymbol,1); //initialize MySymbol to 1
+</programlisting>
+
+  <para>See Also: <link linkend="_SET">#SET</link>, <link linkend="_APPEND">#APPEND</link></para>
+</sect1>

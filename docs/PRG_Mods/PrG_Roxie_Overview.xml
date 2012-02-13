@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Roxie_Overview" role="nobrk">
+  <title><emphasis role="bold">Roxie Overview</emphasis></title>
+
+  <para>Let's start with some definitions:</para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec align="left" colwidth="87.45pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">Thor</emphasis></entry>
+
+            <entry>An HPCC cluster specifically designed to perform massive
+            data manipulation (ETL) processes. This is a back-office data
+            preparation tool and not meant for end-user production-level
+            queries. See the HPCC operational manuals for complete
+            documentation.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">Roxie</emphasis></entry>
+
+            <entry>An HPCC cluster specifically designed to service standard
+            queries, providing a throughput rate of a thousand-plus responses
+            per second (actual response rate for any given query is, of
+            course, dependent on its complexity). This is a production-level
+            tool designed for mission-critical application. See the HPCC
+            operational manuals for complete documentation.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">hThor</emphasis></entry>
+
+            <entry>An R&amp;D platform designed for iterative, interactive
+            development and testing of Roxie queries. This is not a separate
+            cluster, but a “piggyback” implementation of ECL Agent and Thor.
+            See the HPCC operational manuals for complete
+            documentation.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <sect2 id="Thor">
+    <title>Thor</title>
+
+    <para>Thor clusters are used to do all the “heavy lifting” data
+    preparation work to process raw data into standard formats. Once that
+    process is complete, end-users can query that standardized data to glean
+    real information. However, end-users typically want to see their results
+    “immediately or sooner”—and usually more than one end-user wants their
+    result at the same time. The Thor platform only works on one query at a
+    time, which makes it impractical for use by end-users, and that is why the
+    Roxie platform was created.</para>
+  </sect2>
+
+  <sect2 id="Roxie">
+    <title>Roxie</title>
+
+    <para>Roxie clusters can handle thousands of simultaneous end-users and
+    provide them all with the perception of “immediately or sooner” results.
+    It does this by only allowing end-users to run standard, pre-compiled
+    queries that have been developed specifically for end-user use on the
+    Roxie cluster. Typically, these queries use indexes and thus, provide
+    extremely fast performance. However, the Roxie cluster is impractical for
+    use as a development tool, since all its queries must be pre-compiled and
+    the data they use must have been previously deployed. Therefore, the
+    iterative query development and testing process is performed using
+    Doxie.</para>
+  </sect2>
+
+  <sect2 id="Doxie">
+    <title>hThor</title>
+
+    <para>hThor is not a separate cluster on its own; it is an instance of ECL
+    Agent (which operates on a single server) that emulates the operation of a
+    Roxie cluster. Just as with Thor queries, hThor queries are compiled each
+    time they are run. hThor queries access data directly from an associated
+    Thor cluster's disk drives without interfering with any Thor operations.
+    This makes it an appropriate tool for developing queries that are destined
+    for use on a Roxie cluster.</para>
+  </sect2>
+
+  <sect2 id="How_to_Structure_Roxie_Queries">
+    <title>How to Structure Roxie Queries</title>
+
+    <para>To begin developing queries for use on Roxie clusters you must start
+    by deciding what data to query and how to index that data so that
+    end-users see their result in minimum time. The process of putting the
+    data into its most useful form and indexing it is accomplished on a Thor
+    cluster. The previous articles on indexing and superfiles should guide you
+    in the right direction for that.</para>
+
+    <para>Once the data is ready to use, you can then write the query. Queries
+    for Roxie clusters always contain at least one action—usually a simple
+    OUTPUT to return the result set.</para>
+
+    <para>Roxie queries use either a SOAP (Simple Object Access Protocol) or
+    JSON (JavaScript Object Notation) interface to “pass in” data values. The
+    values passed through the interface wind up in definitions with the STORED
+    workflow service. Your ECL code then can use those definitions to
+    determine the passed values and return the appropriate result to the
+    end-user.</para>
+
+    <para>Here is a simple example of the structure of a Roxie query
+    (contained in RoxieOverview1.ECL):</para>
+
+    <programlisting>IMPORT $;
+
+EXPORT RoxieOverview1 := FUNCTION
+
+STRING30 lname_value := '' : STORED('LastName');
+STRING30 fname_value := '' : STORED('FirstName');
+
+IDX  := $.DeclareData.IDX__Person_LastName_FirstName;
+Base := $.DeclareData.Person.FilePlus;
+
+Fetched := IF(fname_value = '', 
+              FETCH(Base, IDX(LastName=lname_value), RIGHT.RecPos),
+              FETCH(Base, IDX(LastName=lname_value, FirstName=fname_value), RIGHT.RecPos));
+
+RETURN OUTPUT(CHOOSEN(Fetched,2000));
+
+END;</programlisting>
+
+    <para>Notice that the FUNCTION does not receive any parameters. Instead,
+    the lname_value and fname_value definitions both have the STORED workflow
+    service that supply storage names. The SOAP/JSON interface uses the
+    storage names to pass in values, because the STORED option opens up a
+    storage space in the workunit where the interface can place the values to
+    pass to the service.</para>
+
+    <para>This code uses FETCH because it is the simplest example of using an
+    INDEX in ECL. More typically, Roxie queries use half-keyed JOIN operations
+    with payload keys (the <emphasis>Complex Roxie Queries</emphasis> article
+    addresses this issue). Note that the OUTPUT contains a CHOOSEN as a simple
+    example of how to ensure you limit the maximum amount of data that can be
+    returned from the query to some “reasonable” amount—it doesn't make much
+    sense to have a Roxie query that could possibly return 10 billion records
+    to an end-user's PC (anybody actually needing that much data should be
+    working in Thor, not Roxie).</para>
+  </sect2>
+
+  <sect2 id="Testing_Queries_with_Doxie">
+    <title>Testing Queries</title>
+
+    <para>Once you have written your query you naturally need to test it.
+    That's where hThor comes into play. hThor is an interactive test system
+    that you can use before deploying your queries to Roxie. The easiest way
+    to describe the process is to walk through it using this simple example
+    query.</para>
+
+    <para>1. Open the Samples\ProgrammersGuide\RoxieOverview1.ECL file</para>
+
+    <para>Now you're ready to publish this query to hThor.</para>
+
+    <para>2. Select "hthor" on the Target droplist</para>
+
+    <para>3. Click the down arrow on the Submit button and select
+    Compile</para>
+
+    <para>4. Open the compiled workunit and select the ECL Watch tab</para>
+
+    <para>5. Press the Publish button</para>
+
+    <para>Open the ECL Watch web page (not using the ECL IDE — open it in
+    Internet Explorer). The IP for ECL Watch is the same as the IP you used to
+    configure the ECL IDE to access the environment you're working in. The
+    Port is 8010.</para>
+
+    <para>6. Click on <emphasis role="underline">System Servers</emphasis>
+    (it's in the Topology section)</para>
+
+    <para>7. Find the <emphasis role="bold">ESP Servers</emphasis>
+    section</para>
+
+    <para>8. Click on the ESP server's name link to display its list of
+    services and their ports</para>
+
+    <para>9. Note the port number beside the <emphasis
+    role="bold">wsecl</emphasis> Service Type (this is usually 8002, but it
+    could be set to something else)</para>
+
+    <para>Once you've know the IP and port for your wsecl service (the service
+    that makes hthor "pretend" to be a Roxie), you can go there and run the
+    query.</para>
+
+    <para>10. The easy way is to right-click on the wsecl link and open it in
+    a new tab or window (or you can Edit Internet Explorer's address bar to
+    point to the correct IP:port</para>
+
+    <para>11. Press the Enter key</para>
+
+    <para>A login dialog may appear—your login ID and password are the same as
+    the ones you use for the ECL IDE. After you've logged in, you'll see a
+    tree list of QuerySets on the left.</para>
+
+    <para>12. Click on the <emphasis role="underline">hthor</emphasis>
+    branch</para>
+
+    <para>A list of all the Queries published to your hthor appears in the
+    tree. In this case, there's only the one.</para>
+
+    <para>13. Click on the <emphasis
+    role="underline">RoxieOverview1.1</emphasis> branch</para>
+
+    <para>A web page containing two entry controls and a <emphasis
+    role="bold">Submit</emphasis> button appears.</para>
+
+    <para>14. Type in any last name from the set of last names that were used
+    by the code in GenData.ECL to generate the data files for this
+    <emphasis>Programmer's Guide</emphasis></para>
+
+    <para>COOLING is a good example to use. Note that, since this is an
+    extremely simple example, you'll need to type it in ALL CAPS, otherwise
+    the FETCH will fail to find any matching records (this is only due to the
+    simplicity of this ECL code and not any inherent lack in the
+    system).</para>
+
+    <para>15. Press the <emphasis role="bold">Submit</emphasis> button</para>
+
+    <para>Queries are pre-compiled when you Publish, so after a second you
+    should see an XML result with 1,000 records in it.</para>
+  </sect2>
+
+  <sect2 id="Deploying_Queries_to_Roxie">
+    <title>Deploying Queries to Roxie</title>
+
+    <para>Once you've done enough testing on hThor to be sure the query does
+    what you expect it to do, the only step then required is to deploy it to
+    Roxie and test it there, too (just to be completely certain that
+    everything operates the way it should). Once you've tested it on Roxie,
+    you can inform the users that the query is available for their use.</para>
+
+    <para>The Roxie deployment process is done the same way we just did for
+    hThor, except the Target droplist has to be set to Roxie.</para>
+
+    <para>Once you've deployed the query, you can test it the same way you
+    tested it on hThor, except the new service will appear under your Roxie in
+    the tree list.</para>
+  </sect2>
+
+  <sect2 id="Restrictions">
+    <title>Restrictions</title>
+
+    <para>Roxie queries may <emphasis role="underline">not</emphasis> contain
+    any code that would write a file to disk, such as:</para>
+
+    <para>OUTPUT actions that write to disk files</para>
+
+    <para>BUILD (or BUILDINDEX) actions</para>
+
+    <para>PERSISTed attributes</para>
+
+    <para>A SuperFile used in Roxie may not contain more than a single
+    sub-file (a SuperKey, however, may contain multiple payload indexes). This
+    restriction makes using SuperFiles in Roxie just an exercise in file
+    redirection. By writing queries that use SuperFiles (even though they
+    contain only a single sub-file) you have the advantage of being able to
+    update your Roxie by simply deploying new data without needing to
+    re-compile the queries that use that data simply because the sub-file name
+    changed. This saves compilation time, and in a production environment
+    (which a Roxie always is) where a data file is used by many queries, this
+    savings can be a significant amount.</para>
+  </sect2>
+</sect1>

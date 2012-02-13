@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="TRANSFORM_Structure" role="nobrk">
+  <title>TRANSFORM Structure<indexterm>
+      <primary>TRANSFORM structure</primary>
+    </indexterm></title>
+
+  <para><emphasis>resulttype funcname </emphasis><emphasis
+  role="bold">(</emphasis><emphasis> parameterlist </emphasis><emphasis
+  role="bold">) := TRANSFORM<indexterm>
+      <primary>TRANSFORM</primary>
+    </indexterm> [, SKIP<indexterm>
+      <primary>SKIP</primary>
+    </indexterm>( </emphasis><emphasis>condition</emphasis><emphasis
+  role="bold"> )]</emphasis><emphasis role="bold"> </emphasis></para>
+
+  <para><emphasis role="bold"> [ </emphasis><emphasis>locals</emphasis>
+  <emphasis role="bold">]</emphasis></para>
+
+  <para><emphasis role="bold"></emphasis><emphasis role="bold">
+  SELF</emphasis><indexterm>
+      <primary>SELF</primary>
+    </indexterm>.<emphasis>outfield</emphasis> :=
+  <emphasis>transformation</emphasis>;<emphasis role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">END;</emphasis><emphasis
+  role="bold"></emphasis></para>
+
+  <para><emphasis role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">TRANSFORM( </emphasis><emphasis>resulttype,
+  assignments </emphasis><emphasis role="bold"> )</emphasis><emphasis
+  role="bold"></emphasis></para>
+
+  <para><emphasis role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">TRANSFORM( </emphasis><emphasis>datarow
+  </emphasis><emphasis role="bold"> )</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>resulttype</emphasis></entry>
+
+          <entry>The name of a RECORD structure Attribute that specifies the
+          output format of the function. You may use TYPEOF here to specify a
+          dataset. Any implicit relationality of the input dataset is not
+          inherited.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>funcname</emphasis></entry>
+
+          <entry>The name of the function the TRANSFORM structure
+          defines.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>parameterlist</emphasis></entry>
+
+          <entry>The value types and labels of the parameters that will be
+          passed to the TRANSFORM function. These are usually the dataset
+          records or COUNTER parameters but are not limited to those.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">SKIP</emphasis></entry>
+
+          <entry>Optional. Specifies the <emphasis>condition</emphasis> under
+          which the TRANSFORM function operation is skipped.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>condition</emphasis></entry>
+
+          <entry>A logical expression defining under what circumstances the
+          TRANSFORM operation does not occur. This may use data from the
+          <emphasis>parameterlist</emphasis> in the same manner as a
+          <emphasis>transformation</emphasis> expression.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>locals</emphasis></entry>
+
+          <entry>Optional. Definitions of local Attributes useful within the
+          TRANSFORM function. These may be defined to receive parameters and
+          may use any parameters passed to the TRANSFORM.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">SELF</emphasis></entry>
+
+          <entry>Specifies the resulting output recordset from the
+          TRANSFORM.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>outfield</emphasis></entry>
+
+          <entry>The name of a field in the <emphasis>resulttype</emphasis>
+          structure.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>transformation</emphasis></entry>
+
+          <entry>An expression specifying how to produce the value for the
+          <emphasis>outfield</emphasis>. This may include other TRANSFORM
+          function operations (nested transforms).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>assignments</emphasis></entry>
+
+          <entry>A semi-colon delimited list of
+          SELF.<emphasis>outfield</emphasis>:=
+          <emphasis>transformation</emphasis> definitions.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>datarow</emphasis></entry>
+
+          <entry>A single record to transform, typically the keyword
+          LEFT.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">TRANSFORM </emphasis>structure makes
+  operations that must be performed on entire datasets (such as a JOIN) and
+  any iterative type of record processing (PROJECT, ITERATE, etc.), possible.
+  A TRANSFORM defines the specific operations that must occur on a
+  record-by-record basis. It defines the function that is called each time the
+  operation that uses the TRANSFORM needs to process record(s). One TRANSFORM
+  function may be defined in terms of another, and they may be nested.</para>
+
+  <para>The TRANSFORM structure specifies exactly how each field in the output
+  record set is to receive its value. That result value may simply be the
+  value of a field in an input record set, or it may be the result of some
+  complex calculation or conditional expression evaluation.</para>
+
+  <para>The TRANSFORM structure itself is a generic tool; each operation that
+  uses a TRANSFORM function defines what its TRANSFORM needs to receive and
+  what basic functionality it should provide. Therefore, the real key to
+  understanding TRANSFORM structures is in understanding how it is used by the
+  calling function -- each function that uses a TRANSFORM documents the type
+  of TRANSFORM required to accomplish the goal, although the TRANSFORM itself
+  may also provide extra functionality and receive extra parameters beyond
+  those required by the operation itself.</para>
+
+  <para>The SKIP option specifies the <emphasis>condition</emphasis> that
+  results in no output from that iteration of the TRANSFORM. However, COUNTER
+  values are incremented even when SKIP eliminates generating the current
+  record.</para>
+
+  <sect2 id="Transformation_Attribute_Definitions">
+    <title>Transformation Attribute Definitions</title>
+
+    <para>The attribute definitions inside the TRANSFORM structure are used to
+    convert the data passed in as parameters to the output
+    <emphasis>resulttype</emphasis> format. Every field in the
+    <emphasis>resulttype</emphasis> record layout must be fully defined in the
+    TRANSFORM. You can explicitly define each field, using the
+    <emphasis>SELF.outfield</emphasis> := <emphasis>transformation;</emphasis>
+    expression, or you can use one of these shortcuts:</para>
+
+    <programlisting>SELF := [ ];</programlisting>
+
+    <para>clears all fields in the <emphasis>resulttype</emphasis> output that
+    have not previously been defined in the transform function, while this
+    form:</para>
+
+    <programlisting>SELF.<emphasis>outfield</emphasis> := [];   //the <emphasis>outfield</emphasis> names a child DATASET in
+                       // the <emphasis>resulttype </emphasis>RECORD Structure</programlisting>
+
+    <para>clears only the child fields in the <emphasis>outfield</emphasis>,
+    and this form:</para>
+
+    <programlisting>SELF := <emphasis>label</emphasis>; //the <emphasis>label</emphasis> names a RECORD structure<indexterm>
+        <primary>RECORD structure</primary>
+      </indexterm> parameter
+// in the <emphasis>parameterlist</emphasis></programlisting>
+
+    <para>defines the output for each field in the
+    <emphasis>resulttype</emphasis> output format that has not previously been
+    defined as coming from the <emphasis>label</emphasis> parameter's matching
+    named field.</para>
+
+    <para>You may also define <emphasis>local</emphasis> attributes inside the
+    TRANSFORM structure to better organize the code. These
+    <emphasis>local</emphasis> attributes may receive parameters.</para>
+  </sect2>
+
+  <sect2 id="TRANSFORM_Functions">
+    <title>TRANSFORM Functions</title>
+
+    <para>This form of TRANSFORM must be terminated by the END keyword. The
+    <emphasis>resulttype</emphasis> must be specified, and the function itself
+    takes parameters in the <emphasis>parameterlist</emphasis>. These
+    parameters are typically RECORD structures, but may be any type of
+    parameter depending upon the type of TRANSFORM function the using function
+    expects to call. The exact form a TRANSFORM function must take is always
+    directly associated with the operation that uses it.</para>
+
+    <para>Example:</para>
+
+    <programlisting>Ages := RECORD
+  AgedRecs.id;
+  AgedRecs.id1;
+  AgedRecs.id2;
+END;
+SequencedAges := RECORD
+  Ages;
+  INTEGER4 Sequence := 0;
+END;
+
+SequencedAges AddSequence(AgedRecs L, INTEGER C) :=
+          TRANSFORM, SKIP(C % 2 = 0) //skip even recs
+  INTEGER1 rangex(UNSIGNED4 divisor) := (l.id DIV divisor) % 100;
+  SELF.id1 := rangex(10000);
+  SELF.id2 := rangex(100);
+  SELF.Sequence := C;
+  SELF := L;
+END;
+
+SequencedAgedRecs := PROJECT(AgedRecs, AddSequence(LEFT,COUNTER<indexterm>
+        <primary>COUNTER</primary>
+      </indexterm>));
+//Example of defining a TRANSFORM function in terms of another
+namesIdRecord assignId(namesRecord l, UNSIGNED value) :=  TRANSFORM
+  SELF.id := value;
+  SELF := l;
+END;
+
+assignId1(namesRecord l) := assignId(l, 1);
+         //creates an assignId1 TRANSFORM that uses assignId
+assignId2(namesRecord l) := assignId(l, 2);
+         //creates an assignId2 TRANSFORM that uses assignId</programlisting>
+  </sect2>
+
+  <sect2 id="Inline_TRANSFORMs">
+    <title>Inline TRANSFORMs<indexterm>
+        <primary>Inline TRANSFORMs</primary>
+      </indexterm></title>
+
+    <para>This form of TRANSFORM is used in-line within the operation that
+    uses it. The <emphasis>resulttype</emphasis> must be specified along with
+    all the <emphasis>assignments</emphasis>. This form is mainly for use
+    where the transform <emphasis>assignments</emphasis> are trivial (such as
+    SELF := LEFT;).</para>
+
+    <para>Example:</para>
+
+    <programlisting>namesIdRecord assignId(namesRecord L) := TRANSFORM
+  SELF := L; //more like-named fields across
+  SELF := []; //clear all other fields
+END;
+
+projected1 := PROJECT(namesTable, assignId(LEFT));
+projected2 := PROJECT(namesTable, TRANSFORM(namesIdRecord,
+          SELF := LEFT;
+          SELF := []));
+//projected1 and projected2 do the same thing</programlisting>
+  </sect2>
+
+  <sect2 id="Shorthand_Inline_TRANSFORMs">
+    <title>Shorthand Inline TRANSFORMs<indexterm>
+        <primary>Inline TRANSFORMs</primary>
+      </indexterm></title>
+
+    <para>This form of TRANSFORM is a shorthand version of Inline TRANSFORMs.
+    In this form,</para>
+
+    <programlisting>TRANSFORM(LEFT)</programlisting>
+
+    <para>is directly equivalent to</para>
+
+    <programlisting>TRANSFORM(RECORDOF(LEFT), SELF := LEFT)</programlisting>
+
+    <para>Example:</para>
+
+    <programlisting>namesIdRecord assignId(namesRecord L) := TRANSFORM
+  SELF := L; //move like-named fields across
+END;
+projected1 := PROJECT(namesTable, assignId(LEFT));
+projected2 := PROJECT(namesTable, TRANSFORM(namesIdRecord,
+              SELF := LEFT));
+projected3 := PROJECT(namesTable, TRANSFORM(LEFT));
+//projected1, projected2, and projected3 all do the same thing</programlisting>
+
+    <para>See Also: <link linkend="RECORD_Structure">RECORD Structure</link>, <link linkend="RECORDOF">RECORDOF</link>, <link linkend="TYPEOF">TYPEOF</link>, <link linkend="JOIN">JOIN</link>, <link linkend="PROJECT">PROJECT</link>, <link linkend="ITERATE">ITERATE</link>,
+    <link linkend="ROLLUP">ROLLUP</link>, <link linkend="NORMALIZE">NORMALIZE</link>, <link linkend="DENORMALIZE">DENORMALIZE</link>, <link linkend="FETCH">FETCH</link>, <link linkend="PARSE">PARSE</link>, <link linkend="ROW">ROW</link></para>
+  </sect2>
+</sect1>

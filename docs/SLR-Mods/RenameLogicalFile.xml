@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="RenameLogicalFile">
+  <title><emphasis role="bold">RenameLogicalFile</emphasis></title>
+
+  <para><emphasis role="bold">STD.File.RenameLogicalFile<indexterm>
+      <primary>STD.File.RenameLogicalFile</primary>
+    </indexterm><indexterm>
+      <primary>File.RenameLogicalFile</primary>
+    </indexterm><indexterm>
+      <primary>RenameLogicalFile</primary>
+    </indexterm>(</emphasis> <emphasis> filename, newname </emphasis>
+  <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>filename</emphasis></entry>
+
+          <entry>A null-terminated string containing the current logical name
+          of the file.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>newname</emphasis></entry>
+
+          <entry>A null-terminated string containing the new logical name for
+          the file.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">RenameLogicalFile </emphasis>function
+  changes the logical <emphasis>filename</emphasis> to the
+  <emphasis>newname</emphasis>.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">A := STD.File.RenameLogicalFile('Fred', 'Freddie');</programlisting>
+</sect1>

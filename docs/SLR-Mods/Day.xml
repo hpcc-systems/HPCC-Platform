@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Day">
+  <title><emphasis role="bold">Day</emphasis></title>
+
+  <para><emphasis role="bold">STD.Date.Day<indexterm>
+      <primary>STD.Date.Day</primary>
+    </indexterm><indexterm>
+      <primary>Date.Day</primary>
+    </indexterm>(</emphasis> <emphasis>date</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>date</emphasis></entry>
+
+          <entry>A date value in the Date_t format.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>Day returns an INTEGER value in the range of 1 through
+          31.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">Day</emphasis> function returns the Day
+  number from the <emphasis>date</emphasis> value.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+UNSIGNED4 MyDate := 20120101;   //January 1, 2012
+  
+D := STD.Date.Day(MyDate);
+    //D contains 1, representing the first of the month
+  </programlisting>
+
+  <para></para>
+</sect1>

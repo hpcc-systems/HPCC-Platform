@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Scope_and_Logical_Filenames">
+  <title>Scope<indexterm>
+      <primary>SCOPE</primary>
+    </indexterm> and Logical Filenames<indexterm>
+      <primary>LOGICAL Filenames</primary>
+    </indexterm></title>
+
+  <sect2 id="File_Scope">
+    <title>File Scope<indexterm>
+        <primary>File Scope</primary>
+      </indexterm></title>
+
+    <para><emphasis role="bold">The logical filenames used in DATASET and
+    INDEX attribute definitions and the OUTPUT and BUILD (or BUILDINDEX)
+    actions may begin with a scope name, indicated by a leading tilde (~), and
+    may contain directories. The scope and directories are delimited by double
+    colons (::). The presence of a scope in the filename allows you to
+    override the default scope name for the cluster.</emphasis></para>
+
+    <para>For example, assuming you are operating on a cluster whose default
+    scope name is “Training” then the following two OUTPUT actions result in
+    the same scope:</para>
+
+    <programlisting>OUTPUT(SomeFile,,'SomeDir::SomeFileOut1');
+OUTPUT(SomeFile,,'~Training::SomeDir::SomeFileOut2');</programlisting>
+
+    <para>The presence of the leading tilde in the filename only defines the
+    scope name and does not change the set of disks to which the data is
+    written (<emphasis role="bold">files are </emphasis><emphasis
+    role="bold">always</emphasis><emphasis role="bold"> written to the disks
+    of the cluster on which the code executes</emphasis>). The DATASET
+    declaration<indexterm>
+        <primary>DATASET declaration</primary>
+      </indexterm>s for these files might look like this:</para>
+
+    <programlisting>RecStruct := {STRING line};
+ds1 := DATASET('SomeDir::SomeFileOut1',RecStruct,THOR);
+ds2 := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlisting>
+
+    <para>These two files are in the same scope, so that when you use the
+    DATASETs in a workunit the Distributed File Utility (DFU) will look for
+    both files in the Training scope.</para>
+
+    <para>However, once you know the scope name you can reference files from
+    any other cluster within the same environment. For example, assuming you
+    are operating on a cluster whose default scope name is “Production” and
+    you want to use the data in the above two files. Then the following two
+    DATASET definitions allow you to access that data:</para>
+
+    <programlisting>FileX := DATASET('~Training::SomeDir::SomeFileOut1',RecStruct,THOR);
+FileY := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlisting>
+
+    <para>Notice the presence of the scope name in both of these definitions.
+    This is required because the files are in another scope.</para>
+  </sect2>
+
+  <sect2 id="Foreign_Files">
+    <title>Foreign Files<indexterm>
+        <primary>Foreign files</primary>
+      </indexterm></title>
+
+    <para>Similar to the scoping rules described above, you can also reference
+    files in separate environments serviced by a different Dali. This allows a
+    read-only reference to remote files (both logical files and
+    superfiles).</para>
+
+    <para>The syntax looks like this:</para>
+
+    <para><emphasis
+    role="bold">‘~foreign::&lt;dali-ip&gt;::&lt;scope&gt;::&lt;tail&gt;’</emphasis></para>
+
+    <para>For example,</para>
+
+    <programlisting>MyFile :=DATASET('~foreign::10.150.50.11::training::thor::myfile',
+                 RecStruct,FLAT);</programlisting>
+
+    <para>gives read-only access to the remote
+    <emphasis>training::thor::myfile</emphasis> file in the
+    <emphasis>10.150.50.11</emphasis> environment.</para>
+  </sect2>
+
+  <sect2 id="Landing_Zone_Files">
+    <title>Landing Zone Files<indexterm>
+        <primary>Landing Zone files</primary>
+      </indexterm></title>
+
+    <para>You can also directly read and write files on a landing zone (or any
+    other IP-addressable box) that have not been sprayed to Thor. The landing
+    zone must be running the dafileserv utility program. If the box is a
+    Windows box, dafileserv must be installed as a service.</para>
+
+    <para>The syntax looks like this:</para>
+
+    <para><emphasis
+    role="bold">‘~file::&lt;LZ-ip&gt;::&lt;path&gt;::&lt;filename&gt;’</emphasis></para>
+
+    <para>For example,</para>
+
+    <programlisting>MyFile :=DATASET('~file::10.150.50.12::c$::training::import::myfile',RecStruct,FLAT);</programlisting>
+
+    <para>gives access to the remote
+    <emphasis>c$/training/import/myfile</emphasis> file on the linux-based
+    <emphasis>10.150.50.12</emphasis> landing zone.</para>
+
+    <para>ECL logical filenames are case insensitive and physical names
+    default to lower case, which can cause problems when the landing zone is a
+    Linux box (Linux is case sensitive). The case of characters can be
+    explicitly uppercased by escaping them with a leading caret (^), as in
+    this example:</para>
+
+    <programlisting>MyFile :=DATASET('~file::10.150.50.12::c$::^Advanced^E^C^L::myfile',RecStruct,FLAT);</programlisting>
+
+    <para>gives access to the remote
+    <emphasis>c$/AdvancedECL/myfile</emphasis> file on the linux-based
+    <emphasis>10.150.50.12</emphasis> landing zone.</para>
+  </sect2>
+
+  <sect2 id="Dynamic_Files">
+    <title>Dynamic Files<indexterm>
+        <primary>Dynamic Files</primary>
+      </indexterm></title>
+
+    <para>In Roxie queries (only) you can also read files that may not exist
+    at query deployment time, but that will exist at query runtime by making
+    the filename DYNAMIC.</para>
+
+    <para>The syntax looks like this:</para>
+
+    <para><emphasis role="bold">DYNAMIC(‘&lt;filename&gt;’ )</emphasis></para>
+
+    <para>For example,</para>
+
+    <programlisting>MyFile :=DATASET(DYNAMIC('~training::import::myfile'),RecStruct,FLAT);</programlisting>
+
+    <para>This causes the file to be resolved when the query is executed
+    instead of when it is deployed.</para>
+  </sect2>
+
+  <sect2 id="Temporary_SuperFiles">
+    <title>Temporary SuperFile<indexterm>
+        <primary>Temporary SuperFile</primary>
+      </indexterm>s</title>
+
+    <para>A SuperFile<indexterm>
+        <primary>SuperFile</primary>
+      </indexterm> is a collection of logical files treated as a single entity
+    (see the <emphasis role="bold">SuperFile Overview</emphasis> article in
+    the <emphasis>Programmer's Guide</emphasis>). You can specify a temporary
+    SuperFile by naming the set of sub-files within curly braces in the string
+    that names the logical file for the DATASET declaration<indexterm>
+        <primary>DATASET declaration</primary>
+      </indexterm>. The syntax looks like this:</para>
+
+    <para><emphasis role="bold">DATASET<indexterm>
+        <primary>DATASET</primary>
+      </indexterm>( '{</emphasis><emphasis> listoffiles </emphasis><emphasis
+    role="bold">} '</emphasis>, recstruct, THOR);</para>
+
+    <para><emphasis>listoffiles</emphasis> A comma-delimited list of the set
+    of logical files to treat as a single SuperFile. The logical filenames
+    must follow the rules listed above for logical filenames with the one
+    exception that the tilde indicating scope name override may be specified
+    either on each appropriate file in the list, or outside the curly
+    braces.</para>
+
+    <para>For example, assuming the default scope name is “thor,” the
+    following examples both define the same SuperFile:</para>
+
+    <programlisting>MyFile :=DATASET('{in::file1,
+                   in::file2,
+                  ~train::in::file3}'),
+                 RecStruct,THOR);
+
+MyFile :=DATASET('~{thor::in::file1,
+                   thor::in::file2,
+                   train::in::file3}'),
+                 RecStruct,THOR);</programlisting>
+
+    <para>You cannot use this form of logical filename to do an OUTPUT or
+    PERSIST; this form is read-only.</para>
+  </sect2>
+</sect1>

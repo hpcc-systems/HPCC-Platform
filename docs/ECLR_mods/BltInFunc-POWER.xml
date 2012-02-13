@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="POWER">
+  <title>POWER</title>
+
+  <para><emphasis role="bold">POWER<indexterm>
+      <primary>POWER</primary>
+    </indexterm><indexterm>
+      <primary>POWER function</primary>
+    </indexterm>(</emphasis><emphasis>base,exponent</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="78.55pt" />
+
+        <colspec colwidth="274.25pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>base</emphasis></entry>
+
+            <entry>The real number to raise.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>exponent</emphasis></entry>
+
+            <entry>The real power to raise x to.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>POWER returns a single real value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">POWER </emphasis>function returns the result
+  of the <emphasis>base </emphasis>raised to the <emphasis>exponent
+  </emphasis>power.</para>
+
+  <para>Example:</para>
+
+  <programlisting>MyCube := POWER(2.0,3.0); // = 8
+MySquare := POWER(3.0,2.0); // = 9</programlisting>
+
+  <para>See Also: <link linkend="SQRT">SQRT</link>, <link linkend="EXP">EXP</link>, <link linkend="LN">LN</link></para>
+</sect1>

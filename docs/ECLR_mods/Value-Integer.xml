@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="INTEGER">
+  <title>INTEGER<indexterm>
+      <primary>INTEGER</primary>
+    </indexterm></title>
+
+  <para><emphasis
+  role="bold">[</emphasis><emphasis>IntType</emphasis><emphasis role="bold">]
+  [UNSIGNED] INTEGER[</emphasis><emphasis>n</emphasis><emphasis
+  role="bold">]</emphasis><emphasis role="bold"></emphasis></para>
+
+  <para><emphasis
+  role="bold">[</emphasis><emphasis>IntType</emphasis><emphasis role="bold">]
+  UNSIGNED<indexterm>
+      <primary>UNSIGNED</primary>
+    </indexterm><indexterm>
+      <primary>UNSIGNED value type</primary>
+    </indexterm><indexterm>
+      <primary>INTEGER value type</primary>
+    </indexterm></emphasis><emphasis>n</emphasis></para>
+
+  <para><emphasis role="bold">An </emphasis><emphasis>n</emphasis>-byte
+  integer value. Valid values for <emphasis>n</emphasis> are: 1, 2, 3, 4, 5,
+  6, 7,or 8. If <emphasis>n</emphasis> is not specified for the INTEGER, the
+  default is 8-bytes.</para>
+
+  <para>The optional <emphasis>IntType</emphasis> may specify either the
+  BIG_ENDIAN<indexterm>
+      <primary>BIG_ENDIAN</primary>
+    </indexterm> (Sun/UNIX-type, valid only inside a RECORD structure) or
+  LITTLE_ENDIAN<indexterm>
+      <primary>LITTLE_ENDIAN</primary>
+    </indexterm> (Intel-type) style of integers. These two
+  <emphasis>IntTypes</emphasis> have opposite internal byte orders. If the
+  <emphasis>IntType</emphasis> is missing, the integer is
+  LITTLE_ENDIAN.</para>
+
+  <para>If the optional UNSIGNED keyword is missing, the integer is signed.
+  Unsigned integer declarations may be contracted to UNSIGNED<emphasis>n
+  </emphasis>instead of UNSIGNED INTEGER<emphasis>n</emphasis>.</para>
+
+  <sect2 id="Integer_Value_Ranges">
+    <title>INTEGER Value Ranges</title>
+
+    <informaltable>
+      <tgroup cols="3">
+        <tbody>
+          <row>
+            <entry>Size</entry>
+
+            <entry>Signed Values</entry>
+
+            <entry>Unsigned Values</entry>
+          </row>
+
+          <row>
+            <entry>1-byte</entry>
+
+            <entry>-128 to 127</entry>
+
+            <entry>0 to 255</entry>
+          </row>
+
+          <row>
+            <entry>2-byte</entry>
+
+            <entry>-32,768 to 32,767</entry>
+
+            <entry>0 to 65,535</entry>
+          </row>
+
+          <row>
+            <entry>3-byte</entry>
+
+            <entry>-8,388,608 to 8,388,607</entry>
+
+            <entry>0 to 16,777,215</entry>
+          </row>
+
+          <row>
+            <entry>4-byte</entry>
+
+            <entry>-2,147,483,648 to 2,147,483,647</entry>
+
+            <entry>0 to 4,294,967,295</entry>
+          </row>
+
+          <row>
+            <entry>5-byte</entry>
+
+            <entry>-549,755,813,888 to 549,755,813,887</entry>
+
+            <entry>0 to 1,099,511,627,775</entry>
+          </row>
+
+          <row>
+            <entry>6-byte</entry>
+
+            <entry>-140,737,488,355,328 to 140,737,488,355,327</entry>
+
+            <entry>0 to 281,474,976,710,655</entry>
+          </row>
+
+          <row>
+            <entry>7-byte</entry>
+
+            <entry>-36,028,797,018,963,968 to 36,028,797,018,963,967</entry>
+
+            <entry>0 to 72,057,594,037,927,935</entry>
+          </row>
+
+          <row>
+            <entry>8-byte</entry>
+
+            <entry>-9,223,372,036,854,775,808 to
+            9,223,372,036,854,775,807</entry>
+
+            <entry>0 to 18,446,744,073,709,551,615</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>Example:</para>
+
+    <programlisting>INTEGER1 MyValue := MAP(MyString = '1' =&gt; MyString, '0');
+       //MyValue is 1 or 0, changing type from string to integer
+UNSIGNED INTEGER1 MyValue := 255; //max value possible in 1 byte
+UNSIGNED1 MyValue := 255;
+       //MyValue contains the max value possible in a single byte
+MyRec := RECORD
+  LITTLE_ENDIAN INTEGER2 MyLittleEndianValue := 1;
+  BIG_ENDIAN INTEGER2 MyBigEndianValue := 1;
+       //the physical byte-order is opposite in these two
+END</programlisting>
+  </sect2>
+</sect1>

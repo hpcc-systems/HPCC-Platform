@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="NLP_RECORD_and_TRANSFORM_Functions">
+  <title>NLP RECORD and TRANSFORM Functions</title>
+
+  <para><emphasis>The following functions are used in field definition
+  expressions within the RECORD structure<indexterm>
+      <primary>RECORD structure</primary>
+    </indexterm> or TRANSFORM function that defines the result set from the
+  PARSE function<indexterm>
+      <primary>PARSE function</primary>
+    </indexterm>:</emphasis></para>
+
+  <para><emphasis role="bold">MATCHED(</emphasis><emphasis>
+  </emphasis><emphasis role="bold">[ </emphasis><emphasis>patternreference
+  </emphasis><emphasis role="bold">] )</emphasis></para>
+
+  <para><emphasis role="bold">MATCHED</emphasis> returns true or false as to
+  whether the <emphasis>patternreference</emphasis> found a match. If the
+  <emphasis>patternreference</emphasis> is omitted, it indicates whether the
+  entire pattern matched or not (for use with the NOT MATCHED option).</para>
+
+  <para><emphasis role="bold">MATCHTEXT</emphasis><emphasis>
+  </emphasis><emphasis role="bold">[
+  (</emphasis><emphasis>patternreference</emphasis><emphasis role="bold">)
+  ]</emphasis></para>
+
+  <para><emphasis role="bold">MATCHTEXT</emphasis> returns the matching ASCII
+  text the <emphasis>patternreference</emphasis> found, or blank if not found.
+  If the <emphasis>patternreference</emphasis> is omitted, MATCHTEXT returns
+  all matching text.</para>
+
+  <para><emphasis
+  role="bold">MATCHUNICODE(</emphasis><emphasis>patternreference</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">MATCHUNICODE</emphasis> returns the matching
+  Unicode text the <emphasis>patternreference</emphasis> found, or blank if
+  not found.</para>
+
+  <para><emphasis
+  role="bold">MATCHLENGTH(</emphasis><emphasis>patternreference</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">MATCHLENGTH</emphasis> returns the number of
+  characters in the matching text the <emphasis>patternreference</emphasis>
+  found, or 0 if not found.</para>
+
+  <para><emphasis
+  role="bold">MATCHPOSITION(</emphasis><emphasis>patternreference</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">MATCHPOSITION</emphasis> returns the position
+  within the text of the first character in the matching text the
+  <emphasis>patternreference</emphasis> found, or 0 if not found.</para>
+
+  <para><emphasis
+  role="bold">MATCHROW(</emphasis><emphasis>patternreference</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">MATCHROW</emphasis> returns the entire row of
+  the matching text the <emphasis>patternreference</emphasis> found for a RULE
+  (valid only when the PARSE option is used on the PARSE function). This may
+  be used to fully qualify a field in the RECORD structure of the row.</para>
+
+  <sect2 id="Pattern_References">
+    <title>Pattern References</title>
+
+    <para>The <emphasis>patternreference</emphasis> parameter to these
+    functions is a slash-delimited (/) list of previously defined PATTERN,
+    TOKEN, or RULE attributes with or without an instance number appended in
+    square brackets.</para>
+
+    <para>If an instance number is supplied, the
+    <emphasis>patternreference</emphasis> matches a particular occurrence,
+    otherwise it matches any. The <emphasis>patternreference</emphasis>
+    provides a path through the regular expression grammar to a particular
+    result. The path to a particular attribute can either be fully or
+    partially specified.</para>
+
+    <para>Example:</para>
+
+    <programlisting>PATTERN ws := PATTERN('[ \t\r\n]');
+PATTERN arb := PATTERN('[-!.,\t a-zA-Z0-9]')+;
+PATTERN number := PATTERN('[0-9]')+;
+PATTERN age := '(' number OPT('/I') ')';
+PATTERN role := '[' arb ']';
+PATTERN m_rank := '&lt;' number '&gt;';
+PATTERN actor := arb OPT(ws '(I)' ws);
+          
+NLP_layout_actor_movie := RECORD
+  STRING30 actor_name := MATCHTEXT(actor);
+  STRING50 movie_name := MATCHTEXT(arb[2]); //2nd instance of arb
+  UNSIGNED2 movie_year := (UNSIGNED)MATCHTEXT(age/number);
+                         //number within age
+  STRING20 movie_role := MATCHTEXT(role/arb); //arb within role
+  UNSIGNED1 cast_rank := (UNSIGNED)MATCHTEXT(m_rank/number);
+END;
+          
+// This example demonstrates the use of productions in PARSE code
+//(only supported in the tomita version of PARSE).
+PATTERN ws := [' ','\t'];
+TOKEN number := PATTERN('[0-9]+');
+TOKEN plus := '+';
+TOKEN minus := '-';
+
+attrRec := RECORD
+  INTEGER val;
+END;
+
+RULE(attrRec) e0 :=
+          '(' USE(attrRec,expr)? ')' |
+          number TRANSFORM(attrRec, SELF.val := (INTEGER)$1;) |
+          '-' SELF TRANSFORM(attrRec, SELF.val := -$2.val;);
+RULE(attrRec) e1 :=
+          e0 |
+          SELF '*' e0 TRANSFORM(attrRec, SELF.val := $1.val * $3.val;) |
+          USE(attrRec, e1) '/' e0
+               TRANSFORM(attrRec, SELF.val := $1.val / $3.val;);
+RULE(attrRec) e2 :=
+          e1 |
+          SELF plus e1 TRANSFORM(attrRec, SELF.val := $1.val + $3.val;) |
+          SELF minus e1 TRANSFORM(attrRec, SELF.val := $1.val - $3.val;);
+RULE(attrRec) expr := e2;
+ 
+infile := DATASET([{'1+2*3'},{'1+2*z'},{'1+2+(3+4)*4/2'}],
+          { STRING line });
+resultsRec := RECORD
+  RECORDOF(infile);
+  attrRec;
+  STRING exprText;
+  INTEGER value3;
+END;
+
+resultsRec extractResults(infile l, attrRec attr) := TRANSFORM
+  SELF := l;
+  SELF := attr;
+  SELF.exprText := MATCHTEXT;
+  SELF.value3 := MATCHROW(e0[3]).val;
+END;
+
+OUTPUT(PARSE(infile,line,expr,extractResults(LEFT, $1),
+            FIRST,WHOLE,PARSE,SKIP(ws)));</programlisting>
+
+    <para>See Also: <link linkend="PARSE">PARSE</link>, <link
+    linkend="RECORD_Structure">RECORD Structure</link>, <link
+    linkend="TRANSFORM_Structure">TRANSFORM Structure</link></para>
+  </sect2>
+</sect1>

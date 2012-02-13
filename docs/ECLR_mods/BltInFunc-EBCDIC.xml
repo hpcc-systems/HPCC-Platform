@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="EBCDIC">
+  <title>EBCDIC<indexterm>
+      <primary>EBCDIC</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">EBCDIC<indexterm>
+      <primary>EBCDIC function</primary>
+    </indexterm>(</emphasis><emphasis>recordset</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="79.25pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>The set of records to process. This may be the name of a
+            dataset or a record set derived from some filter condition, or any
+            expression that results in a derived record set.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>EBCDIC returns a set of records</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>..</para>
+
+  <para>The <emphasis role="bold">EBCDIC </emphasis>function returns the
+  <emphasis>recordset </emphasis>with all STRING fields translated from ASCII
+  to EBCDIC.</para>
+
+  <para>Example:</para>
+
+  <programlisting>EBCDICRecs := EBCDIC(SomeASCIIInput);</programlisting>
+
+  <para>See Also: <link linkend="ASCII">ASCII</link></para>
+</sect1>

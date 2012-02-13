@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SetReadOnly">
+  <title><emphasis role="bold">SetReadOnly</emphasis></title>
+
+  <para><emphasis role="bold">STD.File.SetReadOnly<indexterm>
+      <primary>STD.File.SetReadOnly</primary>
+    </indexterm><indexterm>
+      <primary>File.SetReadOnly</primary>
+    </indexterm><indexterm>
+      <primary>SetReadOnly</primary>
+    </indexterm>(</emphasis> <emphasis> filename </emphasis> <emphasis
+  role="bold">, </emphasis> <emphasis>flag </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>filename</emphasis></entry>
+
+          <entry>A null-terminated string containing the logical name of the
+          file.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>flag</emphasis></entry>
+
+          <entry>A boolean value indicating which way to set the read-only
+          attribute of the <emphasis>filename</emphasis>.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">SetReadOnly </emphasis>function toggles the
+  read-only attribute of the filename. If the <emphasis>flag</emphasis> is
+  TRUE, read-only is set on.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">A := STD.File.SetReadOnly('Fred',TRUE);
+ //set read only flag on
+</programlisting>
+</sect1>

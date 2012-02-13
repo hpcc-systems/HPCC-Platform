@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="DeSpray">
+  <title><emphasis role="bold">DeSpray</emphasis></title>
+
+  <para><emphasis role="bold">STD.File.DeSpray<indexterm>
+      <primary>STD.File.DeSpray</primary>
+    </indexterm><indexterm>
+      <primary>File.DeSpray</primary>
+    </indexterm><indexterm>
+      <primary>DeSpray</primary>
+    </indexterm>(</emphasis> <emphasis> logicalname, destinationIP </emphasis>
+  <emphasis role="bold">, </emphasis> <emphasis>destinationpath, </emphasis>
+  <emphasis role="bold">[</emphasis> <emphasis>,timeout</emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis role="bold"> [</emphasis>
+  <emphasis>,espserverIPport </emphasis> <emphasis role="bold">] [</emphasis>
+  <emphasis>,maxConnections</emphasis> <emphasis role="bold">] [</emphasis>
+  <emphasis>,allowoverwrite</emphasis> <emphasis role="bold">])</emphasis>
+  <emphasis></emphasis></para>
+
+  <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
+  STD.File.fDeSpray<indexterm>
+      <primary>STD.File.fDeSpray</primary>
+    </indexterm><indexterm>
+      <primary>File.fDeSpray</primary>
+    </indexterm><indexterm>
+      <primary>fDeSpray</primary>
+    </indexterm>(</emphasis> <emphasis> logicalname, destinationIP </emphasis>
+  <emphasis role="bold">, </emphasis> <emphasis>destinationpath, </emphasis>
+  <emphasis role="bold"> [</emphasis> <emphasis>,timeout</emphasis> <emphasis
+  role="bold">] [</emphasis> <emphasis>,espserverIPport </emphasis> <emphasis
+  role="bold">] [</emphasis> <emphasis>,maxConnections</emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis role="bold"> [</emphasis>
+  <emphasis>,allowoverwrite</emphasis> <emphasis
+  role="bold">]);</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>logicalname</emphasis></entry>
+
+          <entry>A null-terminated string containing the logical name of the
+          file.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>destinationIP</emphasis></entry>
+
+          <entry>A null-terminated string containing the destination IP
+          address of the file.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>destinationpath</emphasis></entry>
+
+          <entry>A null-terminated string containing the path and name of the
+          file.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>timeout</emphasis></entry>
+
+          <entry>Optional. An integer value indicating the timeout setting. If
+          omitted, the default is -1. If set to zero (0), execution control
+          returns immediately to the ECL workunit without waiting for the DFU
+          workunit to complete.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>espserverIPport</emphasis></entry>
+
+          <entry>Optional. A null-terminated string containing the protocol,
+          IP, port, and directory, or the DNS equivalent, of the ESP server
+          program. This is usually the same IP and port as ECL Watch, with
+          “/FileSpray” appended. If omitted, the default is the value
+          contained in the lib_system.ws_fs_server attribute.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>maxConnections</emphasis></entry>
+
+          <entry>Optional. An integer specifying the maximum number of
+          connections. If omitted, the default is one (1).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>allowoverwrite</emphasis></entry>
+
+          <entry>Optional. A boolean TRUE or FALSE flag indicating whether to
+          allow the new file to overwrite an existing file of the same name.
+          If omitted, the default is FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>dfuwuid</emphasis></entry>
+
+          <entry>The attribute name to recieve the null-terminated string
+          containing the DFU workunit ID (DFUWUID) generated for the
+          job.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>fDeSpray returns a null-terminated string containing the DFU
+          workunit ID (DFUWUID).</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">DeSpray </emphasis>function takes a logical
+  file and desprays it (combines all parts on each supercomputer node into a
+  single physical file) to the landing zone.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">STD.File.DeSpray('OUT::MyFile',
+      '10.150.50.14',
+        'c:\\OutputData\\MyFile.txt',
+      -1,
+      'http://10.150.50.12:8010/FileSpray');
+</programlisting>
+</sect1>

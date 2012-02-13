@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Controlling_Roxie_Queries">
+  <title><emphasis role="bold">Controlling Roxie Queries</emphasis></title>
+
+  <para>There are several ECL functions that are designed specifically to help
+  optimize queries for execution on Roxie. These include PRELOAD, ALLNODES,
+  THISNODE, LOCAL, and NOLOCAL. Understanding how all these functions work
+  together can make a big difference in the performance of your Roxie
+  queries.</para>
+
+  <sect2 id="How_Graphs_Execute">
+    <title>How Graphs Execute</title>
+
+    <para>Writing efficient queries for Roxie or Thor can require an
+    understanding of how the different clusters operate. This brings up three
+    questions:</para>
+
+    <para>How does the graph execute, on a single node, or on all nodes in
+    parallel?</para>
+
+    <para>How are datasets accessed by each node executing the graph, only the
+    parts that are local to the node, or all parts on all nodes?</para>
+
+    <para>Does an operation coordinate with the same operation on other nodes,
+    or does each node operate independently?</para>
+
+    <para>Here's how queries “normally” execute on each type of
+    cluster:</para>
+
+    <para><informaltable colsep="0" frame="none" rowsep="0">
+        <tgroup cols="2">
+          <colspec colwidth="77.40pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><emphasis role="bold">Thor</emphasis></entry>
+
+              <entry>Graphs execute on multiple slave nodes in
+              parallel.</entry>
+            </row>
+
+            <row>
+              <entry></entry>
+
+              <entry>Index/disk reads are done locally by each slave
+              node.</entry>
+            </row>
+
+            <row>
+              <entry></entry>
+
+              <entry>All other disk access (FETCH, keyed JOIN, etc.) are
+              effectively accessed across all nodes.</entry>
+            </row>
+
+            <row>
+              <entry></entry>
+
+              <entry>Coordination with operations on other nodes is controlled
+              by the presence or absence of the LOCAL option on the
+              operation.</entry>
+            </row>
+
+            <row>
+              <entry></entry>
+
+              <entry>No support for child queries (this may change in future
+              releases).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">hthor</emphasis></entry>
+
+              <entry>Graphs execute on the single ECL Agent node.</entry>
+            </row>
+
+            <row>
+              <entry></entry>
+
+              <entry>All parts of the dataset/index are accessed by directly
+              accessing the disk drive of the node with the data—no other
+              interaction with the other nodes.</entry>
+            </row>
+
+            <row>
+              <entry></entry>
+
+              <entry>Child queries always execute on same node as
+              parent.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">Roxie</emphasis></entry>
+
+              <entry>Graphs execute on a single (farmer) node.</entry>
+            </row>
+
+            <row>
+              <entry></entry>
+
+              <entry>All parts of the dataset/index are accessed by directly
+              accessing the disk drive of the node with the data—no other
+              interaction with the other nodes.</entry>
+            </row>
+
+            <row>
+              <entry></entry>
+
+              <entry>Child queries might execute on a single slave node
+              instead of a farmer node.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+  </sect2>
+
+  <sect2 id="ALLNODES_vs_THISNODE">
+    <title>ALLNODES vs. THISNODE</title>
+
+    <para>In Roxie, graphs execute on a single farmer node unless the
+    ALLNODES() function is used. ALLNODES() causes the portion of the query it
+    encloses to execute on all slave nodes in parallel. The results are
+    calculated independently on each node then merged together, without
+    ordering the records. It is generally used to do some complex remote
+    processing which only requires local index access, substantially reducing
+    the network traffic between the nodes.</para>
+
+    <para>By default, everything within the ALLNODES() will be executed on all
+    the nodes, but sometimes the ALLNODES() query requires some input or
+    arguments that shouldn't be executed on all the nodes—for example, the
+    previous best guess at the results, or some information controlling the
+    parallel query. The THISNODE() function can be used to surround element
+    that are to be evaluated by the current node instead.</para>
+
+    <para>A typical usage would look like this:</para>
+
+    <programlisting>bestSearchResults := ALLNODES(doRemoteSearch(THISNODE(searchWords),THISNODE(previousResults)))
+</programlisting>
+
+    <para>Where 'searchWords' and 'previousResults' are effectively calculated
+    on the current node, and then passed as parameters to each instance of the
+    doRemoteSearch() executing in parallel on all nodes.</para>
+  </sect2>
+
+  <sect2 id="LOCAL_vs_NOLOCAL">
+    <title>LOCAL vs. NOLOCAL</title>
+
+    <para>The LOCAL option available on many functions (like JOIN, SORT, etc.)
+    and the LOCAL() and NOLOCAL() functions control whether the graphs running
+    on a particular node access all parts of a file/index or only those
+    associated with the particular node (LOCAL). Often within an ALLNODES()
+    context you only want to access local index parts from a single node
+    because each node is independently processing its associated parts.
+    Specifying that an index read or a keyed JOIN is LOCAL means that only the
+    local part is used on each node. A local read of a single part INDEX will
+    only be evaluated on the first slave node (or the farmer node if not
+    within an ALLNODES)</para>
+
+    <para>Local evaluation can be specified in two ways:</para>
+
+    <blockquote>
+      <para>1) As a dataset operation:</para>
+
+      <programlisting>LOCAL(MyIndex)(myField = searchField)</programlisting>
+
+      <para>2) As an option on the operation:</para>
+
+      <programlisting>JOIN(... ,LOCAL)
+FETCH(... ,LOCAL)</programlisting>
+    </blockquote>
+
+    <para>The LOCAL(<emphasis>dataset</emphasis>) function causes every
+    operation on the <emphasis>dataset</emphasis> to access the file/key
+    locally. For example,</para>
+
+    <programlisting>LOCAL(JOIN(index1, index2,...))</programlisting>
+
+    <para>will read index1 and index2 locally. This rule is recursively
+    applied until you reach one of the following:</para>
+
+    <blockquote>
+      <para>Use of the NOLOCAL() function</para>
+
+      <para>A non-local attribute—the operation stays non-local, but children
+      are still marked as local as necessary</para>
+
+      <para>A GLOBAL() or THISNODE() or workflow operation—since they will be
+      evaluated in a different context</para>
+
+      <para>Use of the ALLNODES() function (as in a nested child query)</para>
+    </blockquote>
+
+    <para>Note that:</para>
+
+    <para>JOIN(x, LOCAL(index1)...) is treated the same as JOIN(x, index1,
+    ..., local).</para>
+
+    <para>LOCAL is also supported as an option on an INDEX, but the LOCAL()
+    function is preferred, because it generally depends on the context an
+    index is used in whether or not access to it should be local or
+    not.</para>
+
+    <para>A non-local attribute is supported everywhere that a LOCAL attribute
+    is allowed - to override an enclosing LOCAL() function.</para>
+
+    <para>The use of LOCAL to indicate that dataset/key access is local does
+    not conflict with its use to control coordination of an operation with
+    other nodes, because there is no operation that potentially co-ordinates
+    with other nodes and also accesses indexes or datasets.</para>
+  </sect2>
+
+  <sect2 id="NOROOT_Indexes">
+    <title>NOROOT Indexes</title>
+
+    <para>The ALLNODES() function is particularly useful if there is more than
+    one index co-distributed on a particular value so that all information
+    that relates to a particular key field value is associated with the same
+    node. However generally indexes are globally sorted. <emphasis
+    role="bold">Adding a NOROOT option to a BUILD action or INDEX declaration
+    indicates that the index is </emphasis><emphasis
+    role="bold">not</emphasis><emphasis role="bold"> globally sorted, and
+    there is no root index to indicate which part of the index will contain a
+    particular entry.</emphasis></para>
+  </sect2>
+</sect1>

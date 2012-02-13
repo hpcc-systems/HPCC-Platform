@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SendEmailAttachText">
+  <title><emphasis role="bold">SendEmailAttachText</emphasis></title>
+
+  <para><emphasis role="bold">STD.System.Email.SendEmailAttachText<indexterm>
+      <primary>STD.System.Email.SendEmailAttachText</primary>
+    </indexterm> <indexterm>
+      <primary>System.Email.SendEmailAttachText</primary>
+    </indexterm> <indexterm>
+      <primary>Email.SendEmailAttachText</primary>
+    </indexterm> <indexterm>
+      <primary>SendEmailAttachText</primary>
+    </indexterm>( </emphasis> <emphasis>sendto, subject, body, attachment,
+  mimietype, filename, server, port, sender</emphasis> <emphasis role="bold">
+  )</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>sendto</emphasis></entry>
+
+          <entry>A null-terminated string containing a comma-delimited list of
+          the addresses of the intended recipients. The validity of the
+          addresses is not checked, so it is the programmer's responsibility
+          to ensure they are all valid.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>subject</emphasis></entry>
+
+          <entry>A null-terminated string containing the subject line.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>body</emphasis></entry>
+
+          <entry>A null-terminated string containing the text of the email to
+          send. This must be character encoding “ISO-8859-1 (latin1)” (the ECL
+          default character set). Text in any other character set must be sent
+          as an <emphasis>attachment</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>attachment</emphasis></entry>
+
+          <entry>A null-terminated string containing the text to
+          attach.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>mimetype</emphasis></entry>
+
+          <entry>A null-terminated string containing the MIME-type of the
+          <emphasis>attachment</emphasis>, which may include entrymeters (such
+          as ‘text/plain; charset=ISO-8859-3’).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>filename</emphasis></entry>
+
+          <entry>A null-terminated string containing the name of the
+          <emphasis>attachment</emphasis> for the mail reader to
+          display.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>server</emphasis></entry>
+
+          <entry>Optional. A null-terminated string containing the name of the
+          mail server. If omitted, defaults to the value in the SMTPserver
+          environment variable.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>port</emphasis></entry>
+
+          <entry>Optional. An UNSIGNED4 integer value containing the port
+          number. If omitted, defaults to the value in the SMTPport
+          environment variable.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>sender</emphasis></entry>
+
+          <entry>Optional. A null-terminated string containing the address of
+          the sender. If omitted, defaults to the value in the
+          emailSenderAddress environment variable.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">SendEmailAttachText </emphasis>function
+  sends an email message with a text <emphasis>attachment</emphasis>.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">STD.System.Email.SendEmailAttachText( 'me@mydomain.com', 'testing 1,2,3',
+                                 'this is a test message', 'this is a test attachment',
+                                 'text/plain; charset=ISO-8859-3',  'attachment.txt');</programlisting>
+</sect1>

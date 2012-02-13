@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="GETENV">
+  <title>GETENV</title>
+
+  <para><emphasis role="bold">GETENV<indexterm>
+      <primary>GETENV</primary>
+    </indexterm><indexterm>
+      <primary>GETENV function</primary>
+    </indexterm>( </emphasis><emphasis>name </emphasis><emphasis
+  role="bold">[, </emphasis>default<emphasis role="bold"> ]
+  )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="79.60pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>A string constant containing the name of the environment
+            variable.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>default</emphasis></entry>
+
+            <entry>Optional. A string constant containing the default value to
+            use if the environment variable does not exist.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>GETENV returns a STRING value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">GETENV</emphasis> function returns the value
+  of the <emphasis>name</emphasis>d environment variable. If the environment
+  variable does not exist or contains no value, the
+  <emphasis>default</emphasis> value is returned.</para>
+
+  <para>Example:</para>
+
+  <programlisting>g1 := GETENV('namesTable');
+g2 := GETENV('myPort','25');
+
+OUTPUT(g1);
+</programlisting>
+</sect1>

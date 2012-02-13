@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SuperFileExists">
+  <title><emphasis role="bold">SuperFileExists</emphasis></title>
+
+  <para><emphasis role="bold">STD.File.SuperFileExists<indexterm>
+      <primary>STD.File.SuperFileExists</primary>
+    </indexterm><indexterm>
+      <primary>File.SuperFileExists</primary>
+    </indexterm><indexterm>
+      <primary>SuperFileExists</primary>
+    </indexterm>(</emphasis> <emphasis> filename </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>filename</emphasis></entry>
+
+          <entry>A null-terminated string containing the logical name of the
+          superfile.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>SuperFileExists returns a BOOLEAN value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">SuperFileExists </emphasis>function returns
+  TRUE if the specified <emphasis>filename</emphasis> is present in the
+  Distributed File Utility (DFU) and is a SuperFile. It returns FALSE if the
+  <emphasis>filename</emphasis> does exist in the DFU but is not a SuperFile
+  (i.e. is a normal DATASET—use the STD.File.FileExists function to detect
+  their presence or absence).</para>
+
+  <para>This function is not included in a superfile transaction.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">A := STD.File.SuperFileExists('~CLASS::RT::IN::SF1');</programlisting>
+</sect1>

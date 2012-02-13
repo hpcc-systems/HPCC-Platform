@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="LOCAL">
+  <title>LOCAL</title>
+
+  <para><emphasis role="bold">LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm><indexterm>
+      <primary>LOCAL function</primary>
+    </indexterm>(</emphasis><emphasis>data</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="79.10pt" />
+
+      <colspec colwidth="309.70pt" />
+
+      <tbody>
+        <row>
+          <entry><emphasis>data</emphasis></entry>
+
+          <entry>The name of a DATASET or INDEX attribute.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>LOCAL returns a record set or index.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">LOCAL </emphasis>function specifies that all
+  subsequent operations on the <emphasis>data</emphasis> are performed locally
+  on each node (similar to use of the LOCAL option on a function). This is
+  typically used within an ALLNODES operation. <emphasis role="bold">Available
+  for use only in Roxie<indexterm>
+      <primary>Roxie</primary>
+    </indexterm>.</emphasis></para>
+
+  <para>Example:</para>
+
+  <programlisting>ds := JOIN(SomeData,LOCAL(SomeIndex), LEFT.ID = RIGHT.ID);</programlisting>
+
+  <para>See Also: <link linkend="ALLNODES">ALLNODES</link>, <link linkend="THISNODE">THISNODE</link>, <link linkend="NOLOCAL">NOLOCAL</link></para>
+</sect1>

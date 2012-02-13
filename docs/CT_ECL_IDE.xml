@@ -1,0 +1,3575 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book>
+  <bookinfo>
+    <title>Client Tools Overview</title>
+
+    <author>
+      <firstname>Boca Raton</firstname>
+
+      <surname>Documentation Team</surname>
+
+      <affiliation>
+        <orgname>Lexis Nexis</orgname>
+      </affiliation>
+    </author>
+
+    <pubdate>Sept. 2011</pubdate>
+  </bookinfo>
+
+  <chapter id="The_ECL_Ide">
+    <title><emphasis role="bold">The ECL IDE</emphasis></title>
+
+    <sect1 id="ECL_IDE_Introduction" role="nobrk">
+      <title>Introduction</title>
+
+      <para>ECL IDE is the simple and easy way to create Queries into your
+      data, and ECL files with which to build your queries. You build your
+      Queries and files (see the <emphasis>ECL Language Reference
+      </emphasis>and<emphasis> </emphasis>the<emphasis> ECL Programmer’s
+      Guide) </emphasis>using Enterprise Control Language (ECL). ECL has been
+      designed specifically for use in huge projects where many things can be
+      similar.</para>
+
+      <para>ECL’s extreme scalability comes from a design that allows you to
+      leverage every query you create for re-use in subsequent queries as
+      needed. To do this, ECL takes a <emphasis>dictionary</emphasis> approach
+      to building queries wherein each ECL definition defines an ECL file.
+      Each previously defined ECL file can then be used in succeeding ECL File
+      definitions—<emphasis>the language extends itself as you use
+      it</emphasis>.</para>
+
+      <para>ECL IDE is an ECL programmer's tool. Its main use is to create the
+      ECL files and is designed to make ECL coding as easy as possible.</para>
+
+      <sect2 id="ECL_Files">
+        <title>ECL files</title>
+
+        <para><emphasis role="bold">These are the basic building blocks from
+        which you create queries into your data. ECL files are extensively
+        defined in the </emphasis><emphasis>ECL Language
+        Reference.</emphasis></para>
+
+        <para>You create an ECL file by coding an expression that defines how
+        a calculation or record set derivation is to be done. Once an ECL file
+        is defined you may use it in succeeding ECL file definitions, making
+        each succeeding ECL file more and more highly leveraged upon the work
+        you have done before. This results in extremely efficient query
+        construction.</para>
+      </sect2>
+
+      <sect2 id="Built_in_Functions">
+        <title>Built-in Functions</title>
+
+        <para>ECL IDE also has all the ECL built-in functions available to you
+        for simple point-and-click use in your query construction. For
+        example, the Standard String Library (Std.Str) contains common
+        functions to operate on STRING fields such as the <emphasis
+        role="bold">ToUpperCase </emphasis> function which converts characters
+        in a string to uppercase.</para>
+
+        <para>These are installed as plug-ins and are in the ecllib folder
+        shown in the Repository window.</para>
+
+        <!-- add screen shot***-->
+      </sect2>
+
+      <sect2 id="Used_to_Build_Queries">
+        <title>How are all these used to build Queries?</title>
+
+        <para>ECL IDE allows you to mix-and-match your data with any of the
+        ECL built-in functions and/or ECL files you have defined to create
+        Queries. Because ECL files build upon each other, the resulting
+        queries can be as complex as needed to obtain the result.</para>
+
+        <para>Once the Query is built, you send it to a High Performance
+        Computing Cluster (HPCC) which processes the query and returns the
+        result—extremely quickly.</para>
+
+        <para>Complex Queries that may have taken weeks to format, program,
+        and execute using old-style mainframe data-mining tools can literally
+        execute and return the result in seconds.</para>
+      </sect2>
+
+      <sect2 id="Configuration_Files">
+        <title><emphasis>Configuration Files</emphasis></title>
+
+        <para>ECL IDE uses configuration files (.CFG) to store the information
+        for environments to which it will connect. Create multiple
+        configuration files to connect to different environments. Use the
+        <emphasis role="bold">Save As </emphasis>option on the <emphasis
+        role="bold">Preferences</emphasis> window to create a new
+        configuration file.</para>
+
+        <para>To create a configuration, you need to know the
+        following:</para>
+
+        <para><itemizedlist>
+            <listitem>
+              <para>The IP address of the ESP Server.</para>
+            </listitem>
+
+            <listitem>
+              <para>If services are not using the default ports, you will also
+              need to know the port bindings for the following ESP Web
+              services:</para>
+
+              <para><itemizedlist mark="bullet">
+                  <listitem>
+                    <para>WsTopology (default port is 8010)</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>WsWorkunits (default port is 8010)</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>WsAttributes (default port is 8145) <emphasis
+                    role="bold">Note:</emphasis> Not part of VM or Community
+                    Edition</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>WsAccount (default port is 8010)</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>WsSMC (default port is 8010)</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>WsFileSpray(default port is 8010)</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>WsDfu(default port is 8010)</para>
+                  </listitem>
+                </itemizedlist></para>
+            </listitem>
+          </itemizedlist></para>
+
+        <!-- add a screen shot here***-->
+
+        <para>You can find the ESP Server's IP address and the bindings for
+        service ports using the System Servers section in ECL Watch.</para>
+
+        <para>To create or edit configuration files:</para>
+
+        <para><graphic fileref="images/CT02.jpg" /></para>
+
+        <para>Press the <emphasis role="bold">Preferences</emphasis> button on
+        the Orb button drop menu.</para>
+
+        <para>or</para>
+
+        <para><itemizedlist>
+            <listitem>
+              <para>Press the <emphasis role="bold">Preferences</emphasis>
+              button on the Login window.</para>
+
+              <para><emphasis role="bold">Note:</emphasis> Some options, such
+              as the Server settings, can only be changed by accessing the
+              preferences through the Login window.</para>
+            </listitem>
+          </itemizedlist>The Preferences window displays:</para>
+
+        <para><itemizedlist>
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Select the <emphasis role="bold">Server</emphasis> tab and
+              enter the IP address of the ESP in the Server field, but do not
+              include the port details:</para>
+
+              <para><graphic fileref="images/CT03.jpg" /></para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Select the <emphasis role="bold">Compiler</emphasis> tab.
+              The compiler details are automatically specified:</para>
+
+              <para><graphic fileref="images/CT03a.jpg" /></para>
+            </listitem>
+
+            <listitem>
+              <para>Specify your Working Folder.</para>
+
+              <para>When you are running your locally, your queries are
+              compiled and stored in this location.</para>
+
+              <para>To compile a query locally rather than on the thor or
+              hthor of your environment, select <emphasis
+              role="bold">Local</emphasis> as the <emphasis
+              role="bold">Target</emphasis> before pressing <emphasis
+              role="bold">Submit</emphasis> on the <emphasis
+              role="bold">Builder</emphasis> window.</para>
+
+              <!-- -->
+
+              <para>If you are running under Windows and want to compile
+              locally, install the Microsoft VS 2008 C++ compiler (either
+              Express or Professional edition) and Linux users need
+              GCC.</para>
+            </listitem>
+
+            <listitem>
+              <para>Specify your ECL Folders.</para>
+
+              <para>When creating queries in ECL IDE, you must save the ECL
+              file before you can run the query. Specify the locations on your
+              computer where you want the ECL files to be saved. All folders
+              specified here are listed in the <emphasis
+              role="bold">Repository</emphasis> window in ECL IDE where you
+              can get easy access to all your files.</para>
+
+              <para>Sample ECL files which are supplied with ECL IDE are
+              automatically installed onto your computer when you download ECL
+              IDE. They are downloaded to the My Documents folder on your
+              computer and the location of this Working Folder is
+              automatically added into the configuration.</para>
+            </listitem>
+
+            <listitem>
+              <para>If you are creating a new configuration, click <emphasis
+              role="bold">New...</emphasis> and enter a name without
+              spaces.</para>
+            </listitem>
+
+            <listitem>
+              <para>If you are editing an existing configuration, click
+              <emphasis role="bold">Apply</emphasis> and then <emphasis
+              role="bold">OK</emphasis> to save your changes.</para>
+
+              <para>When you have completed your configuration changes, you
+              are prompted to relogin.</para>
+            </listitem>
+          </itemizedlist></para>
+      </sect2>
+
+      <sect2 id="Using_the_Preferences_Window">
+        <title>Using the Preferences Window</title>
+
+        <sect3>
+          <title>Server Tab</title>
+
+          <para>The <emphasis role="bold">Server tab</emphasis> has two modes
+          for setting the server information: Normal and Advanced. Use the
+          normal mode when all ESP web services are deployed using default
+          settings.</para>
+
+          <para>In normal mode, you need only supply the ESP server’s IP
+          address or DNS machine name. The remaining values are automatically
+          completed.</para>
+
+          <para>If you are creating a connection using Secure Socket Layer
+          (SSL) to connect, check the <emphasis role="bold">SSL
+          </emphasis>box. See the <emphasis>Using SSL </emphasis>section in
+          this manual for more information.</para>
+
+          <para>Use Advanced Mode to edit individual values for the ESP Server
+          connections.</para>
+
+          <para>Check the <emphasis role="bold">Advanced</emphasis> box to use
+          Advanced Mode.</para>
+
+          <para><graphic fileref="images/CT03.jpg" /></para>
+
+          <para>The Server settings, can only be changed by accessing the
+          preferences through the Login window.</para>
+
+          <para>Press <emphasis role="bold">Apply</emphasis> and then
+          <emphasis role="bold">OK</emphasis> to save the current information
+          to a new configuration file. All available configuration files are
+          shown on the <emphasis role="bold">Configurations</emphasis>
+          drop-list when you log in and you simply select the one you want ECL
+          IDE to use to connect to an HPCC environment.</para>
+
+          <informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec colwidth="52.60pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><graphic fileref="images/tip.jpg" /></entry>
+
+                  <entry>Press the <emphasis role="bold">Locate</emphasis>
+                  button to find the folder containing a configuration file
+                  which you have previously created and saved onto your
+                  computer.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+        </sect3>
+
+        <sect3>
+          <title>Editor tab</title>
+
+          <para>The <emphasis role="bold">Editor tab</emphasis> allows you to
+          configure the editor to your preference.</para>
+
+          <para></para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="122.40pt" />
+
+              <colspec colwidth="450.00pt" />
+
+              <tbody>
+                <row>
+                  <entry><emphasis role="bold">Tab Width
+                  (chars)</emphasis></entry>
+
+                  <entry>Specify the number of character spaces to use for a
+                  tab. The default is 2.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Auto Save
+                  (secs)</emphasis></entry>
+
+                  <entry>Specify automatic save interval in seconds. The
+                  default is 10.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Maintain
+                  Indent</emphasis></emphasis></entry>
+
+                  <entry>Check this box to maintain the level of indention
+                  when creating a new line in the editor.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Line Numbers</emphasis></entry>
+
+                  <entry>Check this box to display line numbers in the
+                  editor.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Tree</emphasis></emphasis></entry>
+
+                  <entry>Check this box to display code structures in a
+                  collapsible tree at the side of the editor.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold"><emphasis
+                  role="bold">Open MDI children
+                  Maximized</emphasis></emphasis></emphasis></entry>
+
+                  <entry>Check this box if you prefer child windows to open
+                  maximized within the application frame.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Tooltips</emphasis></emphasis></entry>
+
+                  <entry>Check this box to enable tooltip display.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Font
+                  </emphasis></emphasis></entry>
+
+                  <entry>Specify the font to use in the editor. The default is
+                  Courier New.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Size</emphasis></emphasis></entry>
+
+                  <entry>Specify the font size to use in the editor. The
+                  default is 10.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold"><emphasis
+                  role="bold">Keep Repository
+                  Synchronised</emphasis></emphasis></emphasis></entry>
+
+                  <entry>Check this box if you want to ensure that when an ECL
+                  file window is selected, the ECL file is auto selected in
+                  the repository.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold"><emphasis
+                  role="bold">Auto Complete on
+                  Period</emphasis></emphasis></emphasis></entry>
+
+                  <entry>Check this box to show a list of available ECL files
+                  whenever an existing folder name is typed.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold"><emphasis
+                  role="bold">Double Click Selects Qualified
+                  Label</emphasis></emphasis></emphasis></entry>
+
+                  <entry>Check this box to ensure that on a double click, the
+                  entire folder and ECL file name is selected. When unchecked,
+                  only the folder name is selected on a double click.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold"><emphasis
+                  role="bold">Tip:</emphasis> </emphasis></emphasis></entry>
+
+                  <entry>You should use a fixed-width font to maintain
+                  alignment in ECL source code.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+        </sect3>
+
+        <sect3>
+          <title>Colors tab</title>
+
+          <para>The <emphasis role="bold">Colors tab</emphasis> allows you to
+          configure the text, foreground and background colors to your
+          preference.</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="122.40pt" />
+
+              <colspec colwidth="450.00pt" />
+
+              <tbody>
+                <row>
+                  <entry><emphasis role="bold">Element</emphasis></entry>
+
+                  <entry>Specify the Element the formatting should be applied
+                  to. The drop down list shows all available elements.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Defaults</emphasis></entry>
+
+                  <entry>Press this button to reset all values to the default
+                  color settings.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Font</emphasis></entry>
+
+                  <entry>Specify the font to use in the Results window. The
+                  default is Arial.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Size</emphasis></entry>
+
+                  <entry>Specify the font size to use in the Results window.
+                  The default is 10.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Foreground</emphasis></entry>
+
+                  <entry>Select a color for the foreground from the drop down
+                  list provided.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Background</emphasis></entry>
+
+                  <entry>Select a color for the background from the drop down
+                  list provided.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Bold</emphasis></entry>
+
+                  <entry>Check this box to embolden the color of the
+                  text.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para></para>
+        </sect3>
+
+        <sect3>
+          <title>Results tab</title>
+
+          <para>The <emphasis role="bold">Results tab</emphasis> allows you to
+          configure how results display.</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="122.40pt" />
+
+              <colspec colwidth="450.00pt" />
+
+              <tbody>
+                <row>
+                  <entry><emphasis role="bold">Result Font</emphasis></entry>
+
+                  <entry>Specify the fonts to use in the Results window. The
+                  default is Arial.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Size</emphasis></entry>
+
+                  <entry>Specify the font size to use in the Results window.
+                  The default is 10.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Limit Result
+                  (rows)</emphasis></entry>
+
+                  <entry>Specify the default result limit you want to use. The
+                  system default is 100. You can override this setting by
+                  pressing the More button on the builder window and changing
+                  the value in the Limit field.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+        </sect3>
+
+        <sect3>
+          <title>Compiler tab</title>
+
+          <para>The <emphasis role="bold">Compliler tab</emphasis> allows you
+          to configure the local compiler (eclcc).</para>
+
+          <informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec colwidth="52.60pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><graphic fileref="images/tip.jpg" /></entry>
+
+                  <entry>If you are running under Windows and want to compile
+                  locally, you need to install the Microsoft VS 2008 C++
+                  compiler. (either Express or Professional edition) <emphasis
+                  role="bold">. <emphasis>Linux users</emphasis></emphasis>
+                  need GCC.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="122.40pt" />
+
+              <colspec colwidth="450.00pt" />
+
+              <tbody>
+                <row>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Compiler</emphasis></emphasis></entry>
+
+                  <entry>Specify the compiler's full path and executable
+                  name.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Arguments</emphasis></entry>
+
+                  <entry>Optional compiler arguments. See the Command Line ECL
+                  section for more info.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Working
+                  Folder</emphasis></entry>
+
+                  <entry>Specify the full path to the folder you want to use
+                  when compiling locally.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">WU Arguments</emphasis></entry>
+
+                  <entry>Optional command line parameters to pass to a locally
+                  compiling workunit.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">ECL Folder</emphasis></entry>
+
+                  <entry>Specify the full path to the folder you will use to
+                  store your ECL files. Some folders are automatically
+                  predefined when ECL IDE is installed. They are used to store
+                  ECL sample and example code.</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry>The Arrows next to the ECL Folder allow you to move
+                  folders up and down in appearance in the workspace</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Reset</emphasis></entry>
+
+                  <entry>Resets the values of all fields to the default
+                  settings.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+        </sect3>
+
+        <sect3>
+          <title>Other tab</title>
+
+          <para>The <emphasis role="bold">Other tab</emphasis> allows you to
+          configure other settings.</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="122.40pt" />
+
+              <colspec colwidth="450.00pt" />
+
+              <tbody>
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Active
+                  Workunits Refresh Interval
+                  (secs)</emphasis></emphasis></entry>
+
+                  <entry>Specify the refresh interval (in seconds). This
+                  determines how often the Active Workunit Toolbox refreshes.
+                  The default is 10.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Test GPF</emphasis></entry>
+
+                  <entry>For internal use only.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Disable
+                  Invoke</emphasis></entry>
+
+                  <entry>Check this box to disable Invoke.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Graph Search Includes
+                  Tooltips</emphasis></entry>
+
+                  <entry>Check this box to ensure that tooltips are also
+                  included in your search.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Ignore Whitespace on
+                  Compare</emphasis></entry>
+
+                  <entry>Check this box to ignore whitespace (ii.e. spaces and
+                  blank lines) when comparing ECL files.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Show CR/LF on
+                  Compare</emphasis></entry>
+
+                  <entry>Check this box to show the type of line endings in
+                  the compare window when comparing two ECL files (for
+                  example, on checkin or history).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Ignore Server
+                  Version</emphasis></entry>
+
+                  <entry>For internal use only.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">WU Fetch
+                  Limit</emphasis></entry>
+
+                  <entry>The maximum number of WUs that can be fetched, for
+                  example, when looking for workunits sent during a specific
+                  year/month etc.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">ECL Watch Graph
+                  Control</emphasis></entry>
+
+                  <entry>While the graph viewer control is built in to ECL
+                  IDE, ECL Watch requires this control to be installed so that
+                  it can display graphs properly. The currently installed
+                  version is identified and the version number of the new
+                  version shown. You should only adjust this setting if
+                  instructed to do so by customer support.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+        </sect3>
+      </sect2>
+
+      <sect2 id="Login" role="brk">
+        <title><emphasis>Login</emphasis></title>
+
+        <para>When you start the ECL IDE, the Login window
+        displays.<itemizedlist>
+            <listitem>
+              <para>If you have created a configuration file to connect to the
+              desired HPCC environment, select it from the <emphasis
+              role="bold">Configurations</emphasis> drop-list. If not, press
+              the <emphasis role="bold">Preferences</emphasis>button to create
+              one.</para>
+            </listitem>
+
+            <listitem>
+              <para>Enter your credentials (Login ID and Password) and press
+              the <emphasis role="bold">OK</emphasis>button.</para>
+
+              <para>The Login window displays errors (e.g., invalid login
+              information) if it cannot connect properly as shown
+              below.</para>
+
+              <para><graphic fileref="images/CT01a.jpg" /></para>
+            </listitem>
+          </itemizedlist></para>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec colwidth="52.60pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><graphic fileref="images/tip.jpg" /></entry>
+
+                  <entry>The title bar of the login window also displays the
+                  version of the ECL IDE.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="ECL_IDE_Workspace" role="brk">
+        <title><emphasis>The ECL IDE Workspace</emphasis></title>
+
+        <para>The ECL IDE workspace is customizable. You can choose which
+        toolboxes to display and the location to dock them. You can also move
+        toolbars to the position you choose. In addition, you can open child
+        windows in normal mode or maximized or minimize the Ribbon.</para>
+
+        <para>In this manual, you will see screen representations using the
+        locations of toolboxes pinned right.</para>
+
+        <para><graphic fileref="images/CT06.jpg" /></para>
+
+        <sect3>
+          <title>Using the Ribbon</title>
+
+          <para>The Ribbon makes the commands that you need use to complete a
+          task easy to find.</para>
+
+          <para><graphic fileref="images/CT07.jpg" /></para>
+
+          <para>Commands are organized in similar groups contained in a tab.
+          Each tab contains commands that relates to a type of activity, such
+          as Syntax Checking or Search.</para>
+
+          <para>The Ribbon reduces clutter by showing some tabs only when
+          needed. For example, the Browser Navigation tab is shown only when
+          ECL Watch is active.</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <tgroup cols="2">
+                <colspec colwidth="52.50pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry><graphic fileref="images/tip.jpg" /></entry>
+
+                    <entry>After you have learned the locations of commonly
+                    used commands, you can gain more available space by
+                    minimizing the Ribbon.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+
+          <para><emphasis role="bold">To minimize the
+          Ribbon:</emphasis></para>
+
+          <itemizedlist mark="bullet">
+            <listitem>
+              <para>Press the <inlinegraphic fileref="images/CT08.png"
+              scale="noin" /> button on the right side of the <emphasis
+              role="bold">Quick Access Toolbar. </emphasis></para>
+            </listitem>
+          </itemizedlist>
+
+          <para>The menu displays,</para>
+
+          <itemizedlist mark="bullet">
+            <listitem>
+              <para>Select <emphasis role="bold">Minimize the
+              Ribbon</emphasis>.</para>
+            </listitem>
+          </itemizedlist>
+
+          <para>To use the Ribbon while minimized, CLICK on a tab, then CLICK
+          the option or command you want.</para>
+
+          <beginpage />
+        </sect3>
+
+        <sect3>
+          <title>The Quick Access Toolbar</title>
+
+          <para>Quick Access toolbar provides shortcut buttons for commonly
+          used tasks, such as New Builder Window, Save, or Print. You can
+          customize this button to add other tasks or remove buttons you don’t
+          want on the toolbar. You can also choose to display it beneath the
+          Ribbon.</para>
+
+          <para><graphic fileref="images/CT10.jpg" /></para>
+
+          <para><emphasis role="bold">To customize the Quick Access
+          Toolbar:</emphasis></para>
+
+          <itemizedlist mark="bullet">
+            <listitem>
+              <para>Press the <inlinegraphic fileref="images/CT08.png" />
+              button on the right side of the <emphasis role="bold">Quick
+              Access Toolbar. </emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Use menu commands to customize.</para>
+            </listitem>
+          </itemizedlist>
+
+          <para></para>
+        </sect3>
+
+        <sect3 role="brk">
+          <title>Working with Toolboxes</title>
+
+          <para>Toolboxes can be docked, pinned, unpinned, grouped, or hidden.
+          In the graphic shown above, all toolboxes are shown pinned to the
+          right (a pre-configured options on the View ribbon tab).</para>
+        </sect3>
+
+        <sect3>
+          <title>Grouping, Docking, and AutoHide</title>
+
+          <para>Once grouped, the toolboxes open and close as a group until
+          ungrouped. AutoHide mode (unpinned state) also acts upon the
+          group.</para>
+
+          <para><graphic fileref="images/CT11.jpg" /></para>
+
+          <para>In the upper right corner, two toolboxes (Workunits and Active
+          Workunits) are shown grouped. Navigate between grouped toolboxes by
+          clicking on the tab for the toolbox you want to display.</para>
+
+          <para>To group toolboxes, drag a toolbox and drop it on another
+          toolbox. To ungroup, drag a toolboxes tab and drop it in another
+          area. To move a group, drag it by the title bar.</para>
+
+          <para>To autohide (unpin) a toolbox or toolbox group, press the
+          pushpin at the top of the toolbox. In autohide mode, the toolbox is
+          hidden until you place the mouse cursor over its tab.</para>
+
+          <para>To reset toolbox locations, select the desired option from the
+          <emphasis role="bold">Reset Docked Windows </emphasis>sub-menu on
+          the View menu.</para>
+
+          <para></para>
+
+          <beginpage />
+        </sect3>
+
+        <sect3 role="brk">
+          <title>Repository Toolbox</title>
+
+          <para>This toolbox displays the ECL Folders for the current
+          configuration. ECL files are organized by folders displayed in a
+          tree format. Expand any folder branch to see the ECL files within
+          it.</para>
+
+          <para><graphic fileref="images/CT12.jpg" /></para>
+
+          <para>In addition to folders, plug-in service libraries are also
+          displayed at the bottom of the repository. These special folders are
+          pre-compiled libraries of functions that you can use in your ECL
+          code. For example, the Standard Library (stringlib) contains common
+          functions to operate on STRING fields such as the <emphasis
+          role="bold">ToUpperCase</emphasis> function which converts
+          characters in a string to uppercase.</para>
+
+          <para>Plug-in service libraries are added to a system in one of
+          three ways. Several are provided as standard. Others are available
+          as optional addons. And, you can create your own and add them to a
+          system.</para>
+
+          <para>A RT-CLICK on the folders in the Repository Toolbox gives you
+          an option of <emphasis role="bold">Locate File in
+          Explorer</emphasis> which will then open that folder in a new
+          explorer window.</para>
+
+          <para>You can rearrange the order of the folders in the Repository
+          Toolbox by modifying the order they appear in the compiler tab of
+          the preferences window.<!--  --></para>
+        </sect3>
+
+        <sect3 role="brk">
+          <title>Find (Repository) Toolbox</title>
+
+          <para>This toolbox allows you to search the active Repository.
+          Results are organized by folder and displayed in a tree format.
+          Expand any folder to see the ECL files within it.</para>
+
+          <para><graphic fileref="images/CT13.jpg" /><informaltable colsep="0"
+              frame="none" rowsep="0">
+              <tgroup cols="2">
+                <colspec align="left" colwidth="122.40pt" />
+
+                <colspec colwidth="450.00pt" />
+
+                <tbody>
+                  <row>
+                    <entry><emphasis role="bold">Search</emphasis></entry>
+
+                    <entry>Type your search phrase or regular expression
+                    (depending on the mode selected).</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">User</emphasis></entry>
+
+                    <entry>Limits search to a single user.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Folder</emphasis></entry>
+
+                    <entry>Limits search to a single folder.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Mode</emphasis></entry>
+
+                    <entry>Select the search mode from the drop-list. There
+                    are several options. <programlisting role="tab"><emphasis
+                          role="bold">Wildcard match:</emphasis> allows a standard search and supports the use of ? to represent any 
+                              single character or * to represent any number of characters.
+
+<emphasis role="bold">Regular Expression:</emphasis> allows a regular expression search.</programlisting></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Sandboxed</emphasis></entry>
+
+                    <entry>Check this box to only locate ECL files which are
+                    in your sandbox.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Check out</emphasis></entry>
+
+                    <entry>Check this box to only find ECL files that have
+                    been checked out.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Locked</emphasis></entry>
+
+                    <entry>Check this box to only find ECL files that have
+                    been locked.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Orphaned</emphasis></entry>
+
+                    <entry>Check this box to only find ECL files that have
+                    been orphaned.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Modified
+                    since</emphasis></entry>
+
+                    <entry>If checked, this option enables the date and time
+                    fields. Enter the time and/or date limit (or press the
+                    lookup button to select the date from a calendar). This
+                    filters ECL files based on the date and time
+                    supplied.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold"><emphasis
+                    role="bold">Copy</emphasis></emphasis></entry>
+
+                    <entry>Press this button after the search to copy the list
+                    of found ECL files.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Search</emphasis></entry>
+
+                    <entry>Press this button to initiate the search. When
+                    completed, search results are displayed at the bottom of
+                    the toolbox.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold"><emphasis
+                    role="bold">Clear</emphasis></emphasis></entry>
+
+                    <entry>Press this button to clear the search
+                    results.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+
+          <para></para>
+        </sect3>
+
+        <sect3>
+          <title>WorkunitsToolbox</title>
+
+          <para>This toolbox displays Workunits for the environment to which
+          you are connected. Workunits are organized into “folders” by date
+          and displayed in a tree format. Expand any branch to see the
+          Workunits within it.</para>
+        </sect3>
+
+        <sect3>
+          <title>Active Workunits</title>
+
+          <para>This toolbox displays active Workunits for the environment to
+          which you are connected. Active Workunits are those which are in one
+          of the following states: submitted, compiled, running, blocked, or
+          aborting. The display is automatically refreshed based on the
+          interval specified in the <emphasis
+          role="bold">Preferences</emphasis> window.</para>
+        </sect3>
+
+        <sect3 role="brk">
+          <title>Find (Workunits) Toolbox</title>
+
+          <para>This toolbox allows you to search online Workunits in the
+          environment to which you are connected.</para>
+
+          <para><graphic fileref="images/CT14.jpg" /><informaltable colsep="0"
+              frame="none" rowsep="0">
+              <tgroup cols="2">
+                <colspec align="left" colwidth="122.40pt" />
+
+                <colspec colwidth="450.00pt" />
+
+                <tbody>
+                  <row>
+                    <entry><emphasis role="bold">User</emphasis></entry>
+
+                    <entry>If enabled, this filters on the username. Enter a
+                    user’s name to see only that user’s Workunits.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold"><emphasis
+                    role="bold">Cluster</emphasis> </emphasis></entry>
+
+                    <entry>If enabled, select a cluster from the drop-list to
+                    see only that cluster’s Workunits.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold"><emphasis
+                    role="bold">State</emphasis> </emphasis></entry>
+
+                    <entry>If enabled, select a State from the drop-list to
+                    see Workunits with that state.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold"><emphasis
+                    role="bold"><emphasis role="bold">Date
+                    Range</emphasis></emphasis></emphasis></entry>
+
+                    <entry>If enabled, this allows you to specify a range of
+                    dates/times to limit the display results</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Max Count</emphasis></entry>
+
+                    <entry>Limits the number of Workunits to display.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Search</emphasis></entry>
+
+                    <entry>Press this button to initiate the search. When
+                    completed, search results are displayed at the bottom of
+                    the toolbox.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold"><emphasis
+                    role="bold">Clear</emphasis></emphasis></entry>
+
+                    <entry>Press this button to clear the search
+                    results.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+
+          <para></para>
+        </sect3>
+
+        <sect3>
+          <title>Datasets Toolbox</title>
+
+          <para>This toolbox displays Logical files for the environment to
+          which you are connected. Logical files are are organized into
+          “folders” by scope in which they were created and displayed in a
+          tree format. Expand any branch to see the files within it. RT-CLICK
+          to copy the label of the file to paste into your code.</para>
+
+          <para></para>
+        </sect3>
+
+        <sect3>
+          <title>Find (Datasets) Toolbox</title>
+
+          <para>This toolbox allows you to search for Logical files in the
+          environment to which you are connected.</para>
+
+          <para><graphic fileref="images/CT15.jpg" /><informaltable colsep="0"
+              frame="none" rowsep="0">
+              <tgroup cols="2">
+                <colspec align="left" colwidth="122.40pt" />
+
+                <colspec colwidth="450.00pt" />
+
+                <tbody>
+                  <row>
+                    <entry><emphasis role="bold">Prefix</emphasis></entry>
+
+                    <entry>This filters on the logical file's prefix.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold"><emphasis
+                    role="bold">Cluster</emphasis> </emphasis></entry>
+
+                    <entry>This filters on a cluster. Specify a cluster name
+                    from the environment.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Logical</emphasis></entry>
+
+                    <entry>Specify all or part of a file's logical name. Use
+                    an asterisk to wildcard a name (for example, *person* find
+                    any file containing person in its logical name.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold"><emphasis
+                    role="bold"><emphasis
+                    role="bold">Description</emphasis></emphasis></emphasis></entry>
+
+                    <entry>Specify all or part of a file's description. Use an
+                    asterisk to wildcard a description (for example, *person*
+                    find any file containing person in its
+                    description.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Owner</emphasis></entry>
+
+                    <entry>Specify an Owner name to find only files created by
+                    a specific user.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </sect3>
+
+        <sect3 role="brk">
+          <title>Syntax Errors Toolbox</title>
+
+          <para>The Syntax Errors toolbox displays syntax errors and warnings
+          if any are found when conducting a Syntax Check. A syntax check is
+          also performed when submitting a job (pressing Submit or Go
+          button).</para>
+
+          <para>For example, referencing an ECL file which has not yet been
+          defined will display a syntax error as shown below.</para>
+
+          <para><graphic fileref="images/CT16.jpg" /></para>
+
+          <para>DOUBLE-CLICK on any error displayed to take you to the line
+          containing the error. If the error is in a different attribute, a
+          DOUBLE-CLICK on the error opens that attribute in an editor
+          window.</para>
+        </sect3>
+
+        <sect3>
+          <title>Error Log Toolbox</title>
+
+          <para>The Error Log toolbox displays errors and warnings from the
+          HPCC system.</para>
+
+          <para>For example, attempting to create an ECL file in a folder
+          without WRITE permission will display an access denied error as
+          shown below:</para>
+
+          <para><graphic fileref="images/CT17.png" /></para>
+
+          <para></para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="0">
+              <tgroup cols="2">
+                <colspec colwidth="52.55pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry><graphic fileref="images/tip.jpg" /></entry>
+
+                    <entry>You can copy the error message text using the
+                    RT-CLICK pop up menu option.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+
+          <para></para>
+
+          <para></para>
+
+          <beginpage />
+        </sect3>
+      </sect2>
+
+      <sect2 id="Orb_Menu">
+        <title><emphasis>Orb Menu</emphasis></title>
+
+        <sect3>
+          <title>Orb Menu</title>
+
+          <para><graphic fileref="images/CT02.jpg" /></para>
+
+          <para>The Orb button menu provides a list of basic actions enabling
+          you to create and gain access to files and workspaces. It also
+          supplies some basic administrative functions which can be used to
+          control and specify access details for the environment(s) you use.
+          It contains the following selections:</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="122.40pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><emphasis role="bold">New</emphasis></entry>
+
+                  <entry>opens a new ECL Builder window. CTRL-N</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Open</emphasis></entry>
+
+                  <entry>Provides access to the following Open submenus:
+                  <programlisting role="tab"><emphasis role="bold">Open Builder:</emphasis> opens a saved query (.ECL file) into a new ECL Builder window. CTRL-O
+<emphasis role="bold">Open Attribute:</emphasis> opens a dialog to name the attribute to open. 
+                      Enter the fully qualified attribute name, then press the <emphasis
+                        role="bold">OK </emphasis>button.
+<emphasis role="bold">Open Workunit:</emphasis> opens a dialog to name the Workunit to open. 
+                      Enter the Workunit ID (WUID), then press the <emphasis
+                        role="bold">OK</emphasis> button.</programlisting></entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Save</emphasis></entry>
+
+                  <entry>saves the contents of the window with input focus. An
+                  ECL Builder window query is saved to an .ECL file. An Editor
+                  window saves the ECL file to the Repository. CTRL-S</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Save As</emphasis></entry>
+
+                  <entry>saves the contents of the window with input focus to
+                  a new filename.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Print</emphasis></entry>
+
+                  <entry>Provides access to the following Print submenus:
+                  <programlisting role="tab"><emphasis role="bold">Print <emphasis
+                          role="bold">Setup</emphasis>:</emphasis> opens a page setup dialog where you can set margins,
+                      paper size, and orientation, etc.
+<emphasis role="bold">Print:</emphasis> prints the contents of the active window. CTRL-P
+</programlisting></entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Close</emphasis></entry>
+
+                  <entry>closes the active window. CTRL-F4</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Logout</emphasis></entry>
+
+                  <entry>closes the session and allows you to login
+                  again.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Change
+                  Password</emphasis></entry>
+
+                  <entry>allows you to change your password.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Exit</emphasis></entry>
+
+                  <entry>closes the ECL IDE.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Preferences </emphasis></emphasis></entry>
+
+                  <entry>opens the Preferences window to allow you to
+                  configure ECL IDE options.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para><emphasis role="bold"> </emphasis> <emphasis
+          role="bold"></emphasis></para>
+        </sect3>
+      </sect2>
+
+      <sect2 id="Ribbon_Tabs">
+        <title><emphasis>Ribbon Tabs</emphasis></title>
+
+        <para></para>
+
+        <sect3>
+          <title>Current Tab</title>
+
+          <para>The <emphasis role="bold">Current Tab</emphasis> contains the
+          following selections:</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="3">
+              <colspec colwidth="90pt" />
+
+              <colspec colwidth="95.00pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><graphic fileref="images/CT20.png" /></entry>
+
+                  <entry><emphasis role="bold">Submit</emphasis></entry>
+
+                  <entry>Submits the ECL code in the active Builder window.
+                  CTRL-ENTER</entry>
+                </row>
+
+                <row>
+                  <entry><graphic fileref="images/CT21.png" /></entry>
+
+                  <entry><emphasis role="bold">Locate</emphasis></entry>
+
+                  <entry>Locates the ECL file selected in a builder or editor
+                  window. F9</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+        </sect3>
+
+        <sect3>
+          <title>Clipboard Tab</title>
+
+          <para>The <emphasis role="bold">Clipboard Tab</emphasis> contains
+          the following selections:</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="3">
+              <colspec colwidth="90pt" />
+
+              <colspec colwidth="95.00pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><graphic fileref="images/CT22.png" /></entry>
+
+                  <entry><emphasis role="bold">Paste</emphasis></entry>
+
+                  <entry>Standard Windows text paste operation. CTRL-V</entry>
+                </row>
+
+                <row>
+                  <entry><graphic fileref="images/CT23.jpg" /></entry>
+
+                  <entry><emphasis role="bold">Cut</emphasis></entry>
+
+                  <entry>Standard Windows text cut operation. CTRL-X</entry>
+                </row>
+
+                <row>
+                  <entry><graphic fileref="images/CT24.jpg" /></entry>
+
+                  <entry><emphasis role="bold">Copy</emphasis></entry>
+
+                  <entry>Standard Windows text copy operation. CTRL-C</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+        </sect3>
+
+        <sect3>
+          <title>Editor Tab</title>
+
+          <para><emphasis role="bold">The </emphasis><emphasis
+          role="bold">Editor Tab</emphasis> contains the following
+          selections:</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="3">
+              <colspec colwidth="90pt" />
+
+              <colspec colwidth="95.00pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><graphic fileref="images/CT25.png" /></entry>
+
+                  <entry><emphasis role="bold">Undo</emphasis></entry>
+
+                  <entry>Restores the text to state it was in before the last
+                  change (multiple Undo calls will restore each successive
+                  change back until the text is in its original format).
+                  CTRL-Z</entry>
+                </row>
+
+                <row>
+                  <entry><graphic fileref="images/CT26.png" /></entry>
+
+                  <entry><emphasis role="bold">Redo</emphasis></entry>
+
+                  <entry>Restores the text to state it was in before the last
+                  Undo (multiple Redo calls will restore each successive
+                  change back until the text is in its final changed format).
+                  CTRL-Y</entry>
+                </row>
+
+                <row>
+                  <entry><graphic fileref="images/CT28.png" /></entry>
+
+                  <entry><emphasis role="bold">Select All</emphasis></entry>
+
+                  <entry>Highlights all text in the currently active window.
+                  CTRL-A</entry>
+                </row>
+
+                <row>
+                  <entry><graphic fileref="images/CT27.png" /></entry>
+
+                  <entry><emphasis role="bold">Delete</emphasis></entry>
+
+                  <entry>Removes selected text from the currently active
+                  window delete.</entry>
+                </row>
+
+                <row>
+                  <entry><graphic fileref="images/CT29.jpg" /></entry>
+
+                  <entry><emphasis role="bold">Record\Stop</emphasis></entry>
+
+                  <entry>Record macros for playback later.
+                  CTRL-SHIFT-R</entry>
+                </row>
+
+                <row>
+                  <entry><graphic fileref="images/CT30.jpg" /></entry>
+
+                  <entry><emphasis role="bold">Play</emphasis></entry>
+
+                  <entry>Playback recorded macro<emphasis role="bold">.
+                  </emphasis>CTRL-SHIFT-P</entry>
+                </row>
+
+                <row>
+                  <entry><graphic fileref="images/CT81.jpg"
+                  scale="50" /></entry>
+
+                  <entry><emphasis role="bold">Advanced...</emphasis></entry>
+
+                  <entry>The Advanced editor options are as follows:</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry><programlisting role="tab"><emphasis role="bold">  Complete Word</emphasis></programlisting></entry>
+
+                  <entry>A list of keywords and folders from which you can
+                  select. This allows you to complete a word by selecting from
+                  the list. CTRL-Space</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry><programlisting role="tab"><emphasis role="bold">  Match Brace</emphasis></programlisting></entry>
+
+                  <entry>When the insertion point is adjacent to a grouping
+                  character (parenthesis, square bracket, or curly brace)
+                  moves the insertion point to the matching grouping
+                  character, beginning or end. CTRL-E</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry><programlisting role="tab"><emphasis role="bold">  Select to Brace</emphasis></programlisting></entry>
+
+                  <entry>When the insertion point is adjacent to a grouping
+                  character (parenthesis, square bracket, or curly brace)
+                  selects to the matching grouping character.
+                  CTRL-SHIFT-E</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry><programlisting role="tab"><emphasis role="bold">  Toggle Comment</emphasis></programlisting></entry>
+
+                  <entry>Toggles comment characters before selected lines.
+                  CTRL-Q</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry><programlisting role="tab"><emphasis role="bold">  Box Comment</emphasis></programlisting></entry>
+
+                  <entry>Encloses selected text in a comment structure.
+                  CTRL-SHIFT-Q</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry><programlisting role="tab"><emphasis role="bold">  Uppercase</emphasis></programlisting></entry>
+
+                  <entry>Changes case of selected text to uppercase.
+                  CTRL-SHIFT-U</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry><programlisting role="tab"><emphasis role="bold">  Lowercase</emphasis></programlisting></entry>
+
+                  <entry>Changes case of selected text to lowercase.
+                  CTRL-U</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry><programlisting role="tab"><emphasis role="bold">  Line Numbers</emphasis></programlisting></entry>
+
+                  <entry>Toggles line numbers in the editor. CTRL-L</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry><programlisting role="tab"><emphasis role="bold">  Word Wrap</emphasis></programlisting></entry>
+
+                  <entry>Toggles word wrapping in the editor. CTRL-W</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry><programlisting role="tab"><emphasis role="bold">  Set Tab Size</emphasis></programlisting></entry>
+
+                  <entry>Select to set a tab width of between 1-16.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+        </sect3>
+
+        <sect3>
+          <title>Search Tab</title>
+
+          <para>The <emphasis role="bold">SearchTab</emphasis> contains the
+          following selections:</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="3">
+              <colspec colwidth="90pt" />
+
+              <colspec colwidth="95.00pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><graphic fileref="images/CT33.png" /></entry>
+
+                  <entry><emphasis role="bold">Find </emphasis></entry>
+
+                  <entry>Locates specific text in the currently active window.
+                  CTRL-F</entry>
+                </row>
+
+                <row>
+                  <entry><graphic fileref="images/CT34.png" /></entry>
+
+                  <entry><emphasis role="bold">Find Next</emphasis></entry>
+
+                  <entry>Locates the next instance of the same specific text
+                  in the currently active window. F3</entry>
+                </row>
+
+                <row>
+                  <entry><graphic fileref="images/CT35.png" /></entry>
+
+                  <entry><emphasis role="bold">Find
+                  Previous</emphasis></entry>
+
+                  <entry>Locates the previous instance of the same specific
+                  text in the currently active window. CTRL-F3</entry>
+                </row>
+
+                <row>
+                  <entry><graphic fileref="images/CT36.png" /></entry>
+
+                  <entry><emphasis role="bold">Replace</emphasis></entry>
+
+                  <entry>Locates specific text in the currently active window
+                  and replaces it with new text. CTRL-H</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+        </sect3>
+
+        <sect3>
+          <title>Syntax Tab</title>
+
+          <para>The <emphasis role="bold">SyntaxTab</emphasis> contains the
+          following selections:</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="3">
+              <colspec colwidth="90pt" />
+
+              <colspec colwidth="95.00pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><graphic fileref="images/CT37.png" /></entry>
+
+                  <entry><emphasis role="bold">Check Syntax</emphasis></entry>
+
+                  <entry>Checks the ECL code in the window with input focus
+                  for syntax errors.</entry>
+                </row>
+
+                <row>
+                  <entry><graphic fileref="images/CT38.jpg" /></entry>
+
+                  <entry><emphasis role="bold">Next Error</emphasis></entry>
+
+                  <entry>Moves the insertion point to the next error and
+                  changes the error message displayed.</entry>
+                </row>
+
+                <row>
+                  <entry><graphic fileref="images/CT39.jpg" /></entry>
+
+                  <entry><emphasis role="bold">Previous
+                  Error</emphasis></entry>
+
+                  <entry>Moves the insertion point to the previous error and
+                  changes the error message displayed.</entry>
+                </row>
+
+                <row>
+                  <entry><graphic fileref="images/CT40.jpg" /></entry>
+
+                  <entry><emphasis role="bold">Clear Errors</emphasis></entry>
+
+                  <entry>Clears the errors displayed in the Syntax Errors
+                  toolbox.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para><emphasis role="bold"> </emphasis></para>
+        </sect3>
+
+        <sect3>
+          <title>ECL Tab</title>
+
+          <para>The <emphasis role="bold">ECL Tab</emphasis> contains the
+          following selections:</para>
+
+          <para><graphic fileref="images/CT41.png" /></para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="122.40pt" />
+
+              <colspec colwidth="450.00pt" />
+
+              <tbody>
+                <row>
+                  <entry><emphasis role="bold">Show
+                  Complexity...</emphasis></entry>
+
+                  <entry>displays a complexity score. Use this option to
+                  evaluate and optimize queries.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Show
+                  Dependency...</emphasis></entry>
+
+                  <entry>displays a list of ECL files upon which the current
+                  ECL file depends.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Copy Title</emphasis></entry>
+
+                  <entry>copies the title of the active tab to the
+                  clipboard.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Locate
+                  Current</emphasis></entry>
+
+                  <entry>highlights the current ECL file in the tree</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Locate
+                  Selected</emphasis></entry>
+
+                  <entry>highlights an item in the Repository tree when its
+                  name is highlighted in a text control.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Open
+                  Selected</emphasis></entry>
+
+                  <entry>opens an item in the Builder window when its name is
+                  highlighted in a text control.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para><emphasis role="bold"> </emphasis></para>
+        </sect3>
+
+        <sect3>
+          <title>Browser Tab</title>
+
+          <para>The <emphasis role="bold">Browser </emphasis>tab is shown only
+          when the ECL Watch page is displayed for a workunit. To view the ECL
+          Watch page from within ECL IDE, simply click on the workunit ID
+          during or after it has completed running. ECL Watch is one of the
+          pages that can be viewed at this point. The Browser tab is shown at
+          the top of the Builder window and contains the following
+          selections:</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="3">
+              <colspec colwidth="90pt" />
+
+              <colspec colwidth="95.00pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><graphic fileref="images/CT45.png" /></entry>
+
+                  <entry><emphasis role="bold">Stop</emphasis></entry>
+
+                  <entry>Stops the web page from further processing.</entry>
+                </row>
+
+                <row>
+                  <entry><graphic fileref="images/CT46.png" /></entry>
+
+                  <entry><emphasis role="bold">Refresh</emphasis></entry>
+
+                  <entry>Reloads the current page to make sure you have the
+                  latest version.</entry>
+                </row>
+
+                <row>
+                  <entry><graphic fileref="images/CT42.png" /></entry>
+
+                  <entry><emphasis role="bold">Launch New
+                  Window</emphasis></entry>
+
+                  <entry>Opens the current page in a new browser
+                  window.</entry>
+                </row>
+
+                <row>
+                  <entry><graphic fileref="images/CT43.png" /></entry>
+
+                  <entry><emphasis role="bold">Back</emphasis></entry>
+
+                  <entry>Returns to the last page viewed.</entry>
+                </row>
+
+                <row>
+                  <entry><graphic fileref="images/CT44.png" /></entry>
+
+                  <entry><emphasis role="bold">Forward</emphasis></entry>
+
+                  <entry>Moves forward to the next page (only available after
+                  having moved back).</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para><emphasis role="bold"> </emphasis></para>
+        </sect3>
+
+        <sect3>
+          <title>Window Tab</title>
+
+          <para>The <emphasis role="bold">Window </emphasis>Tab contains
+          general actions for controlling open windows on the desktop.</para>
+
+          <graphic fileref="images/CT48.png" />
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="122.40pt" />
+
+              <colspec colwidth="450.00pt" />
+
+              <tbody>
+                <row>
+                  <entry><emphasis role="bold">Cascade</emphasis></entry>
+
+                  <entry>displays all open windows so that their top left
+                  corner is visible from beneath the window on top.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Tile</emphasis></entry>
+
+                  <entry>displays all open windows one above the other</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Arrange
+                  Icons</emphasis></entry>
+
+                  <entry>lines up icons for all minimized windows</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Sort</emphasis></emphasis></entry>
+
+                  <entry>sorts open windows</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Group</emphasis></entry>
+
+                  <entry>groups similar windows together</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Degroup</emphasis> </emphasis></entry>
+
+                  <entry>de-groups windows previously grouped</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para>As well as these options, there is also a Windows drop down
+          menu on this tab. These are provided to help you control specific
+          windows which are open on the desktop. All currently open windows
+          are listed on this menu and you can switch to any window listed by
+          simply clicking on the one you want to view. Other available
+          selections are:</para>
+
+          <para><informaltable colsep="0" frame="none" rowsep="0">
+              <tgroup cols="2">
+                <colspec align="left" colwidth="122.40pt" />
+
+                <colspec colwidth="450.00pt" />
+
+                <tbody>
+                  <row>
+                    <entry><emphasis role="bold">New
+                    Builder</emphasis></entry>
+
+                    <entry>Opens a new, empty builder window.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Close All</emphasis></entry>
+
+                    <entry>Closes all open windows.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Windows</emphasis></entry>
+
+                    <entry>Displays a dialog listing all currently open
+                    windows. Simply click on one or more windows to highlight
+                    them in the list and press the required button. Activate,
+                    displays the window(s) you selected, OK takes you back to
+                    where you were, Save, enables you to save the selected
+                    window(s), and Close Window(s) closes only those windows
+                    highlighted in the list.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </sect3>
+
+        <sect3 role="brk">
+          <title>Workspace(s) Tab</title>
+
+          <graphic fileref="images/CT82.jpg" />
+
+          <para>The <emphasis role="bold">Workspace Tab </emphasis>tab allows
+          you to preserve the workspace you are using for future use or remove
+          an existing workspace that you no longer need. Once you have
+          organized a workspace, use <emphasis role="bold">Add</emphasis> to
+          save it. Press <emphasis role="bold">Remove</emphasis> to delete the
+          workspace you are currently using.</para>
+
+          <para>Your saved workspace(s) are shown in the list under the
+          <emphasis role="bold">Default</emphasis> option. Selecting a
+          workspace as the default will ensure that every time ECL IDE is
+          started, the selected workspace is automatically loaded ready for
+          you to use.</para>
+        </sect3>
+
+        <sect3>
+          <title>View Tab</title>
+
+          <para><graphic fileref="images/CT47.jpg" /></para>
+
+          <para>The <emphasis role="bold">View </emphasis>tab allows you to
+          choose which toolboxes to view. In addition, it has options to reset
+          the positions of these toolboxes to any of the predefined
+          locations.</para>
+        </sect3>
+
+        <sect3>
+          <title>Help Menu</title>
+
+          <para>The <emphasis role="bold">Help </emphasis>menu contains the
+          following selections:</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="122.40pt" />
+
+              <colspec colwidth="333.00pt" />
+
+              <tbody>
+                <row>
+                  <entry><emphasis role="bold">Download
+                  Resources</emphasis></entry>
+
+                  <entry>opens the Download Resources page of ECL Watch in a
+                  browser</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">About </emphasis></entry>
+
+                  <entry>displays information about the program and the
+                  server</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para></para>
+        </sect3>
+      </sect2>
+
+      <sect2 id="Pop-Up_Menus">
+        <title><emphasis>Pop-up Menus</emphasis></title>
+
+        <sect3>
+          <title>Workunit Pop-up Menu</title>
+
+          <para>RT-CLICK on any Workunit for a Pop-up menu containing:</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="122.40pt" />
+
+              <colspec colwidth="450.00pt" />
+
+              <tbody>
+                <row>
+                  <entry><emphasis role="bold">Open Results</emphasis></entry>
+
+                  <entry>opens an ECL Builder window displaying the results
+                  tab</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Show Graph</emphasis></entry>
+
+                  <entry>displays the graph for the selected workunit</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Browse
+                  ECL Watch</emphasis></emphasis></entry>
+
+                  <entry>opens a web page of the ECL Watch tool</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">View
+                  Exceptions</emphasis></entry>
+
+                  <entry>displays the contents of the Exceptions tab for the
+                  selected workunit.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Open ECL</emphasis></entry>
+
+                  <entry>opens an ECL Builder window displaying the ECL code
+                  for the Workunit</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Save as
+                  Excel Workbook</emphasis></emphasis></entry>
+
+                  <entry>saves workunit results to an Excel workbook. Each
+                  result set is saved as a sheet in the workbook.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Copy WUID</emphasis></entry>
+
+                  <entry>copies the Workunit ID to the clipboard</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Abort</emphasis></entry>
+
+                  <entry>stops an executing Workunit</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Resubmit</emphasis></entry>
+
+                  <entry>reruns the Workunit</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Delete</emphasis></emphasis></entry>
+
+                  <entry>removes the Workunit from the system data
+                  store</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Protect</emphasis></entry>
+
+                  <entry>protects the Workunit (prevents deletion and
+                  archiving)</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Unprotect</emphasis></entry>
+
+                  <entry>removes protection from the Workunit</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Follow Up</emphasis></entry>
+
+                  <entry>enables you to mark the selected workunit so you can
+                  come back to it later. The <emphasis
+                  role="bold">Flag</emphasis> option sets the marker and
+                  <emphasis role="bold">Clear</emphasis> removes a flag that
+                  was previously set.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">SetPriority </emphasis></entry>
+
+                  <entry>allows you to set the priority in the queue for a
+                  running Workunit. You can move a workunit up or down one
+                  place in the queue, or send a workunit to the top or bottom
+                  of the queue.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">SetState</emphasis></emphasis></entry>
+
+                  <entry>allows you to set the state of a Workunit.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Refresh</emphasis></emphasis></entry>
+
+                  <entry>refreshes the display</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para><emphasis role="bold"> </emphasis></para>
+        </sect3>
+
+        <sect3>
+          <title>Repository Pop-up Menu</title>
+
+          <para>RT-CLICK in the <emphasis role="bold">Repository Window
+          </emphasis>for a Pop-up menu containing options which are available
+          depending on whether you have a folder or ECL file selected.</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="130.40pt" />
+
+              <colspec colwidth="450.00pt" />
+
+              <tbody>
+                <row>
+                  <entry><emphasis role="bold">Open in Builder
+                  Window</emphasis></entry>
+
+                  <entry>Opens the selected ECL file in an ECL Builder
+                  window</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Locate File in
+                  Explorer</emphasis></entry>
+
+                  <entry>Only valid in locally compiled workunits</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Copy
+                  "&lt;attribute_name&gt;"</emphasis></emphasis></entry>
+
+                  <entry>Copies the fully qualified ECL file name to the
+                  clipboard</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Paste
+                  Selection</emphasis></entry>
+
+                  <entry>Pastes the ECL file name you copied where the cursor
+                  is currently positioned</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Check Syntax</emphasis></entry>
+
+                  <entry>Displays a sub-menu of all available INVOKE
+                  structures for the selected ECL file</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Invoke</emphasis></entry>
+
+                  <entry>Displays a sub-menu of all available INVOKE
+                  structures for the selected ECL file</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Insert
+                  Root Module</emphasis></emphasis></entry>
+
+                  <entry>Adds a new folder at the top most level of the
+                  repository tree</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Insert
+                  Module</emphasis></entry>
+
+                  <entry>Adds a new ‘nested’ folder within the currently
+                  selected folder</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Rename
+                  Module</emphasis></entry>
+
+                  <entry>Renames the selected folder.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Delete
+                  Module</emphasis></entry>
+
+                  <entry>Deletes the selected folder.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Insert
+                  Attribute</emphasis></entry>
+
+                  <entry>Adds a new ECL file inside the selected
+                  folder.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Rename
+                  Attribute</emphasis></emphasis></entry>
+
+                  <entry>Renames the selected ECL file</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Copy
+                  Attribute</emphasis></emphasis></entry>
+
+                  <entry>Enables you to copy the selected ECL file so it can
+                  be pasted into a different folder.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Move
+                  Attribute</emphasis></emphasis></entry>
+
+                  <entry>Moves the selected ECL file to specified
+                  folder</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Delete
+                  Attribute</emphasis></emphasis></entry>
+
+                  <entry>Moves the selected ECL file to the Trash folder on
+                  your desktop</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Refresh</emphasis></emphasis></entry>
+
+                  <entry>Refreshes the repository folder display</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+        </sect3>
+
+        <sect3>
+          <title>Results Pop-up Menu</title>
+
+          <para>RT-CLICK on Results Pop-up menu containing:</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="130.40pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><emphasis role="bold">Save</emphasis></entry>
+
+                  <entry>saves the results to a file</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">SaveAs</emphasis></entry>
+
+                  <entry>saves the results to a new file</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Save As XML</emphasis></entry>
+
+                  <entry>saves the results to a file in XML format</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Cut</emphasis></entry>
+
+                  <entry>removes (from display) and copies the selected
+                  results to the clipboard</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Copy</emphasis></emphasis></entry>
+
+                  <entry>copies the selected results to the clipboard</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Paste</emphasis></entry>
+
+                  <entry>pastes contents of clipboard into result.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Copy As ECL</emphasis></entry>
+
+                  <entry>copies the selected results to the clipboard in ECL
+                  format</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Send to “”</emphasis></entry>
+
+                  <entry>sends the selected results to the application
+                  associated with CSV files (for example, Microsoft
+                  Excel)</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Select All</emphasis></entry>
+
+                  <entry>selects all results</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Select
+                  Row</emphasis></emphasis></entry>
+
+                  <entry>selects the current row</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Select
+                  Column</emphasis></emphasis></entry>
+
+                  <entry>selects the current column</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Delete
+                  Selection</emphasis></emphasis></entry>
+
+                  <entry>deletes the selected results from displayed
+                  results</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Show
+                  Column in Hex</emphasis></emphasis></entry>
+
+                  <entry>displays hex value for the current column</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Format</emphasis></emphasis></entry>
+
+                  <entry>displays a submenu with options to format selected
+                  cells.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Auto Size
+                  Column</emphasis></emphasis></entry>
+
+                  <entry>adjusts the current column width to allow all
+                  characters to display</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Auto Size
+                  All Columns</emphasis></emphasis></entry>
+
+                  <entry>adjusts the all column widths to allow all characters
+                  to display</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Find</emphasis></emphasis></entry>
+
+                  <entry>locates specific text in the results</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Find
+                  Next</emphasis></emphasis></entry>
+
+                  <entry>locates the next instance of the same specific text
+                  in the results</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Find
+                  Previous</emphasis></emphasis></entry>
+
+                  <entry>locates the previous instance of the same specific
+                  text in the results</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">GoTo</emphasis></emphasis></entry>
+
+                  <entry>positions the cursor at a specified row number in the
+                  results</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Drilldown</emphasis></emphasis></entry>
+
+                  <entry>sends the selected result rows to a previously
+                  defined Drilldown ECL file. This method sends the selected
+                  rows to an ECL file as a set.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Drilldown
+                  (1 per row)</emphasis></emphasis></entry>
+
+                  <entry>sends the selected result rows to a previously
+                  defined Drilldown ECL file. This method sends each row to
+                  the Drilldown separately.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Drilldown
+                  II</emphasis></emphasis></entry>
+
+                  <entry>generates ECL code that ends with a call to the
+                  selected MACRO ECL file.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Copy WUID
+                  </emphasis></emphasis></entry>
+
+                  <entry>copies the Workunit ID to the clipboard</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Save As
+                  Excel Workbook</emphasis></emphasis></entry>
+
+                  <entry>sends the result set to a Excel Workbook with each
+                  result set on a sheet.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Sync
+                  Workunit</emphasis></emphasis></entry>
+
+                  <entry>locates the current Workunit in the Workunit History
+                  tree</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Close
+                  Workunit</emphasis></emphasis></entry>
+
+                  <entry>closes the current Workunit</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Delete
+                  Workunit</emphasis></emphasis></entry>
+
+                  <entry>deletes the current Workunit</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+        </sect3>
+
+        <sect3>
+          <title>Using Drilldown</title>
+
+          <para>There are three different versions of drilldown: Drilldown,
+          Drilldown (1 per row), and Drilldown II.</para>
+
+          <para>Drilldown sends the selected result row(s) to the selected
+          MACRO ECL file as a single string of XML data.</para>
+
+          <para>Each selected row is contained within &lt;row&gt;&lt;/row&gt;
+          XML tags. The MACRO must use LOADXML to instantiate an XML scope and
+          should use #FOR(row) to process each separate record. Each field in
+          the record is treated as a template symbol and may be referenced in
+          the MACRO as %fieldname%.</para>
+
+          <para><emphasis role="bold">Example Drilldown
+          MACRO:</emphasis></para>
+
+          <programlisting>export TestDrilldown(xmlRow) := MACRO
+LOADXML(xmlRow);
+#DECLARE(Ctr)
+#SET(Ctr, 0 )
+#DECLARE(OutputStr)
+#SET(OutputStr, 'OUTPUT(ProgGuide.Person.file(PersonID IN ['
+          )
+#FOR(row)
+#IF(%Ctr% = 0)
+#APPEND(OutputStr, %'personid'% )
+#SET(Ctr, 1 )
+#ELSE
+#APPEND(OutputStr,',' + %'personid'% )
+#END
+#END
+#APPEND(OutputStr,']));\n')
+%OutputStr%
+ENDMACRO;
+</programlisting>
+
+          <para><emphasis role="bold">Drilldown (1 per row)</emphasis> sends
+          the selected result row(s) to the selected MACRO ECL file as XML
+          data. If multiple rows are selected, each is sent to a separate
+          MACRO call as a single string of XML data. The MACRO must use
+          LOADXML to instantiate an XML scope. Each field in the record is
+          treated as a template symbol and may be referenced in the MACRO as
+          %fieldname%.</para>
+
+          <para><emphasis role="bold">Example Drilldown (1 Per Row)
+          MACRO:</emphasis></para>
+
+          <programlisting>export TestDrilldownOnePerRow(xmlRow) := MACRO
+LOADXML(xmlRow);
+OUTPUT(ProgGuide.Person.file(PersonID = %personid%));
+ENDMACRO;
+</programlisting>
+
+          <para><emphasis role="bold">Drilldown II </emphasis>generates ECL
+          code that ends with a call to the selected MACRO ECL file. Each
+          field in the result is defined as a separate set ECL file and as a
+          field in an inline DATASET. The MACRO should be written to make use
+          of whichever of the ECL files best allows it to accomplish its task
+          (typically, to show all base data from which the result set was
+          drawn).</para>
+
+          <para><emphasis role="bold">Example Drilldown II
+          MACRO:</emphasis></para>
+
+          <programlisting>EXPORT TestDrilldownII := MACRO
+OUTPUT(ProgGuide.Person.file(personid IN
+          Set_personID));
+ENDMACRO;
+</programlisting>
+
+          <para></para>
+        </sect3>
+      </sect2>
+
+      <sect2 id="ECL_Builder_Window" role="brk">
+        <title><emphasis>ECL Builder Window</emphasis></title>
+
+        <para>This window allows you to edit, build, and run ECL Queries. It
+        also shows results and Workunit information for each Workunit created
+        by submitting the ECL code.</para>
+
+        <para><graphic fileref="images/CT49.jpg" /></para>
+
+        <para>The <emphasis role="bold">More</emphasis> button displays
+        advanced options. See the Advanced Builder Window Options section
+        below for details. An asterisk on the button indicates that advanced
+        options have been set.</para>
+
+        <para>The tabs beneath the text area represent Workunits created by
+        submitting the ECL code. Select a Workunit tab to see results, graphs,
+        and the ECL watch page for the Workunit.</para>
+
+        <para>You can save your queries to an ECL file by pressing the
+        <emphasis role="bold">Save</emphasis> button on the toolbar, or
+        selecting the <emphasis role="bold">File &gt; Save</emphasis> menu
+        selection.</para>
+
+        <para>Using CTRL+MOUSEWHEEL will grow or shrink the font size used in
+        the window.</para>
+
+        <para>There is also a RT-CLICK pop-up menu with the all the options
+        found on the <emphasis role="bold">Edit</emphasis> menu.</para>
+
+        <sect3 role="brk">
+          <title>Advanced Builder Window Options</title>
+
+          <para>Press the <emphasis role="bold">More</emphasis> button to
+          display the advanced options. Press the <emphasis
+          role="bold">Less</emphasis> button to close this area.</para>
+
+          <para><graphic fileref="images/CT50.jpg" /></para>
+
+          <para>The <emphasis role="bold">Submit </emphasis>button submits the
+          workunit. Select the options you want to use when running the
+          workunit as follows:</para>
+
+          <para>The <emphasis role="bold">Target </emphasis>drop-list shows
+          the cluster where the query will be sent. Select Local, if you want
+          to run the query locally on your computer.</para>
+
+          <para>The <emphasis role="bold">Schedule </emphasis>checkbox allows
+          you to schedule queries to run at a specific time. When enabled, the
+          <emphasis role="bold">Submit</emphasis> button becomes a <emphasis
+          role="bold">Schedule</emphasis> button. The <emphasis
+          role="bold">Schedule </emphasis>button sends a scheduled query to
+          the HPCC.</para>
+
+          <para>When the job is submitted it is assigned a workunit ID and
+          appears in the workunit list as <emphasis>scheduled</emphasis> (with
+          a clock icon). You can monitor the workunit in the same manner as a
+          submitted workunit.</para>
+
+          <para>The <emphasis role="bold">Label </emphasis>drop-list allows
+          you to select a Repository Label which specifies a previous version
+          of ECL files.</para>
+
+          <para>The <emphasis role="bold">Limit </emphasis>spinbox allows you
+          to override the default setting for result limits.</para>
+
+          <para>The <emphasis role="bold">Max Runtime </emphasis>spinbox
+          allows you to specify a timeout that will abort the job if
+          exceeded.</para>
+
+          <para>The <emphasis role="bold">Debug </emphasis>button invokes the
+          browser which enables you to step through your ECL to monitor
+          progress and identify problems.</para>
+
+          <para>The <emphasis role="bold">Archive </emphasis> button is for
+          debugging purposes and archives all ECL (including dependencies)
+          into the workunit for examination without executing the code.</para>
+
+          <para>The <emphasis role="bold">Enhanced Syntax Check
+          </emphasis>checkbox allows you to enable enhanced syntax
+          checking.</para>
+
+          <para>The <emphasis role="bold">Debug </emphasis>textbox allows you
+          to supply debug options (with our assistance) to help our developers
+          resolve issues.</para>
+        </sect3>
+      </sect2>
+
+      <sect2 id="Editing" role="brk">
+        <title><emphasis>Editing</emphasis></title>
+
+        <para>The Builder Window also supports editing ECL files.</para>
+
+        <para><graphic fileref="images/CT49.jpg" /></para>
+
+        <para>Using CTRL+MOUSEWHEEL will grow or shrink the font size used in
+        the window.</para>
+
+        <para>There is also a RT-CLICK pop-up menu with the all the options
+        found on the <emphasis role="bold">Edit</emphasis> menu.</para>
+      </sect2>
+
+      <sect2 id="Results_Viewer">
+        <title><emphasis>Results Viewer</emphasis></title>
+
+        <para>Each result is displayed on a results tab on the workunit
+        tab.</para>
+
+        <para>The results window display can be configured in Preferences.
+        Additionally, you can modify a result list display in the following
+        ways:</para>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>CLICK on a column header to sort by that column.</para>
+          </listitem>
+
+          <listitem>
+            <para>Use the Format menu or toolbar to modify selected cell font
+            or background colors.</para>
+          </listitem>
+
+          <listitem>
+            <para>Use Ribbon bar buttons or RT-CLICK popup menu Cut, Copy,
+            Paste, or Delete to remove or add cells, rows, columns to what is
+            displayed. This does not change the actual result, only the
+            display.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Autosize one column or all columns.</para>
+
+            <para><graphic fileref="images/CT53.jpg" /></para>
+          </listitem>
+        </itemizedlist>
+
+        <para>If you attempt an action that requires more data, such as
+        sorting, you are asked to confirm before the download begins. This is
+        particularly useful when large record sets are returned.</para>
+
+        <para></para>
+
+        <para><graphic fileref="images/CT54.jpg" /></para>
+
+        <beginpage />
+      </sect2>
+
+      <sect2 id="Graph_Viewer">
+        <title><emphasis>Graph Viewer </emphasis></title>
+
+        <para>A workunit’s execution graph is displayed in the Graph
+        Tab.</para>
+
+        <para>Modify the display in the following ways:</para>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Use the Ribbon bar Navigation buttons to move around a
+            graph.</para>
+          </listitem>
+
+          <listitem>
+            <para>Use the Ribbon bar Zoom options To Fit /To Width to adjust
+            how the graph is displayed.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Use the Ribbon bar Running buttons to watch the progress of
+            a running workunit, refreshing the graph as it runs. Options are
+            provided so you can Follow Active or Minimise Inactive areas of
+            the graph according to your preference .<graphic
+            fileref="images/CT55.jpg" scalefit="1" /></para>
+          </listitem>
+        </itemizedlist>
+
+        <beginpage />
+      </sect2>
+    </sect1>
+
+    <sect1 id="ECL_Debugger">
+      <title>ECL Debugger</title>
+
+      <sect2 id="ECL_Debugger_Intro">
+        <title><emphasis>Introduction</emphasis></title>
+
+        <para>The ECL Debugger provides quick and easy access to features
+        which show you exactly how your ECL query is working. It is integrated
+        into the ECL IDE, giving immediate access to the debugging process as
+        you develop your queries. It is a useful development tool helping you
+        to:</para>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Learn how the ECL Language works.</para>
+          </listitem>
+
+          <listitem>
+            <para>Develop a query to see how it works.</para>
+          </listitem>
+
+          <listitem>
+            <para>Verify that your query behaves as you expected.</para>
+          </listitem>
+
+          <listitem>
+            <para>Identify why your query is not working as you
+            expected.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>Currently the debugger shows debugging information for any query
+        which is run on an hThor or Roxie cluster.</para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec colwidth="52.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry><emphasis role="bold">Note</emphasis>:</entry>
+
+                  <entry>The ability to view debugging information for queries
+                  run against a Thor cluster is part of ongoing planned
+                  development of this tool.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="Global_and_Active_Graphs">
+        <title><emphasis>Global and Active Graphs</emphasis></title>
+
+        <para>The two graph windows are displayed side by side within the ECL
+        IDE.</para>
+
+        <para><graphic fileref="images/CT57.png" scalefit="1" /></para>
+
+        <para></para>
+
+        <para>The Global Graph shows exactly what Roxie/hThor was asked to
+        execute by the compiler. It is primarily used for navigating around
+        the graph and setting breakpoints.</para>
+
+        <para>The Active window shows what is actually being executed. The
+        graph in the Active window may change its shape during the debugging
+        process.</para>
+
+        <para>These graphs may show different information. The Global Graph
+        may not show the parts of the graph that cannot be executed, for
+        example, IF statements or when using the Graph command. The Active
+        window may show expanded sections for commands such as Graph or
+        Library.</para>
+      </sect2>
+
+      <sect2 id="Edges_and_Vertices">
+        <title><emphasis>Edges and Vertices</emphasis></title>
+
+        <para>The graphs are displayed as a series of edges and
+        vertices.</para>
+
+        <para>A vertex is an ECL keyword or activity, for example, SORT or
+        JOIN. Vertices are represented on the graphs surrounded by a
+        rectangle. When a vertex is selected and has a definition associated
+        with it, the ECL that caused it to be created is highlighted in the
+        Debug Information window.</para>
+
+        <para>An edge is shown on the graphs as a line joining two vertices
+        and represents the data flowing between them. When an edge is
+        selected, the last N rows of data are displayed in the Debug
+        Information window.</para>
+
+        <para>The Properties window shows the details associated with the
+        currently selected edge or vertex, for example, the definition, id,
+        label, name, etc.</para>
+      </sect2>
+
+      <sect2 id="Breakpoints">
+        <title><emphasis>Breakpoints</emphasis></title>
+
+        <para>Using the ECL Debugger breakpoint feature, the debugging process
+        can be paused at any point.</para>
+
+        <para>Global breakpoints stop the debugging process every time the
+        specified condition is met. Local breakpoints stop the process only
+        for that specific occurrence.</para>
+
+        <para>The debugging process pauses at the point at which the
+        breakpoint is set. Breakpoints can only be set on edges. However,
+        there are a number of ways to use breakpoints:</para>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>A simple breakpoint does not contain any specific
+            conditions. The debugging process pauses on reaching the edge
+            where the breakpoint was set.</para>
+          </listitem>
+
+          <listitem>
+            <para>A breakpoint containing conditions and a value, pauses the
+            debugging process when that condition is met.</para>
+          </listitem>
+
+          <listitem>
+            <para>A breakpoint set on the ECL code in the Debug Information
+            window, pauses the debugging process when the first row of data
+            arrives at the edge of the vertex you selected.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>There are four breakpoint modes:</para>
+
+        <informaltable colsep="0" frame="none" rowsep="0">
+          <tgroup cols="2">
+            <colspec colwidth="87.55pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><emphasis role="bold">Break</emphasis></entry>
+
+                <entry>Pauses the debugging process at the specified
+                edge.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis role="bold">Skip</emphasis></entry>
+
+                <entry>Skips any row that matches the conditions set.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis role="bold">Limit</emphasis></entry>
+
+                <entry>Only allows the specified number of rows
+                through.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis role="bold">Continue</emphasis></entry>
+
+                <entry>Temporarily disables a breakpoint that is not currently
+                needed but that might be required later.</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+
+        <para>Using the many different types of Condition settings available,
+        means you can customize the debugging process to meet your specific
+        requirements. For example, you may want to pause the debugging process
+        when a specific field contains a specific value to make sure your
+        query is behaving as you expect.</para>
+
+        <para>Using breakpoints helps you to understand how your query works
+        enabling you to focus on those areas which are not working as you
+        expected.</para>
+
+        <para>Each breakpoint you set on your graph is shown in the list in
+        the Breakpoints window showing the settings used to create each one
+        including, for example, Edge ID, Mode, Condition, etc.</para>
+
+        <beginpage />
+      </sect2>
+
+      <sect2 id="Starting_the_ECL_Debugger">
+        <title><emphasis>Starting the ECL Debugger</emphasis></title>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Login to the ECL IDE in the usual way.</para>
+          </listitem>
+
+          <listitem>
+            <para>Open or create your ECL Query in a Builder window. Make sure
+            that the Queue and Cluster you have selected point to either an
+            hThor or a Roxie cluster.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the More button located on at the top right of the
+            Builder window. Press the <emphasis role="bold">Debug</emphasis>
+            Button.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>The ECL Debugger workspace displays a graph in the Global
+        window, but the Active window is empty since the debug process has not
+        yet begun.</para>
+
+        <para></para>
+
+        <para><graphic fileref="images/CT58.png" scale="90"
+        scalefit="1" /></para>
+
+        <beginpage />
+      </sect2>
+
+      <sect2 id="Debugger_Menus">
+        <title><emphasis>Debugger Menus</emphasis></title>
+
+        <para>The Home and View menu options are identical to those on the
+        main the ECL IDE menu.</para>
+
+        <sect3>
+          <title>Basic Menu</title>
+
+          <para><emphasis role="bold">The </emphasis><emphasis
+          role="bold">Basic</emphasis> ribbon bar contains the following
+          features:</para>
+
+          <para>The <emphasis role="bold">Process</emphasis> options
+          include:</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="85.55pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><emphasis role="bold">Detach</emphasis></entry>
+
+                  <entry>Detaches from the current debugging session and
+                  allows the workunit to run to completion.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Abort</emphasis></entry>
+
+                  <entry>Aborts the current workunit which also causes the
+                  debugging session to abort.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Break</emphasis></entry>
+
+                  <entry>Pause the execution of the running workunit.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Continue</emphasis></entry>
+
+                  <entry>Continues the execution of a paused workunit</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para>The <emphasis role="bold">Graph</emphasis> options
+          include:</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="85.55pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Step</emphasis></emphasis></entry>
+
+                  <entry>Continues the debugging process until the next graph
+                  event. This is typically the start of a new active graph or
+                  the end of the current active graph.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Step Start</emphasis></entry>
+
+                  <entry>Continues the debugging process until a new active
+                  graph is about to start.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Step End</emphasis></entry>
+
+                  <entry>Continues the debugging process until the current
+                  active graph completes.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para>The <emphasis role="bold">Edge</emphasis> options
+          include:</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="85.55pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Step</emphasis></emphasis></entry>
+
+                  <entry>Continues the debugging process until a new row of
+                  data is available on any edge in the active graph.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Next</emphasis></entry>
+
+                  <entry>Continues the debugging process until a new row of
+                  data arrives at the active edge or until the current active
+                  graph completes.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para>The <emphasis role="bold">Breakpoint(s)</emphasis> options
+          include:</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="85.55pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><emphasis role="bold">Add Global</emphasis></entry>
+
+                  <entry>Adds a global conditional breakpoint.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Add</emphasis></emphasis></entry>
+
+                  <entry>Adds a local conditional breakpoint.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Clear</emphasis></entry>
+
+                  <entry>Clears all the breakpoints on the selected
+                  edge.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Clear All</emphasis></entry>
+
+                  <entry>Clears all breakpoints.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para>The <emphasis role="bold">Find</emphasis> options
+          include:</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="85.55pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><emphasis role="bold">Find</emphasis></entry>
+
+                  <entry>Locates a vertex with matching text in the graph you
+                  are currently using (Global or Active).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Next</emphasis></emphasis></entry>
+
+                  <entry>Locates the next occurrence in the graph you are
+                  currently using.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Previous</emphasis></entry>
+
+                  <entry>Locates the previous occurrence in the graph you are
+                  currently using.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Goto</emphasis></entry>
+
+                  <entry>Locates the subgraph/vertex/edge which matches the
+                  specified ID and centers it.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para>The <emphasis role="bold">View</emphasis> options
+          include:</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Zoom</emphasis></emphasis></entry>
+
+                  <entry>Resizes the graph according to your
+                  selection.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Recenter
+                  Active</emphasis></entry>
+
+                  <entry>When the graph is paused, clicking on this option
+                  takes you to the active edge on that graph.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Layout</emphasis></emphasis></entry>
+
+                  <entry>Performs a new layout on the active graph. This can
+                  be particularly useful when the label have changed. The top
+                  progress bar shows that data is being sent/received from the
+                  server. The bottom progress bar shows when the graph layout
+                  is being calculated.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+        </sect3>
+
+        <sect3>
+          <title>Advanced Menu</title>
+
+          <para>The Advanced ribbon bar contains the following
+          features:</para>
+
+          <para>The <emphasis role="bold">Global Filter</emphasis> options
+          include:</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Running
+                  Only</emphasis></emphasis></entry>
+
+                  <entry>Only shows items that have started to
+                  execute.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Search Results
+                  Only</emphasis></entry>
+
+                  <entry>Only shows items that have been found using the
+                  Search Window.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para>The <emphasis role="bold">Active Filter</emphasis> options
+          include:</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Running
+                  Only</emphasis></emphasis></entry>
+
+                  <entry>Only shows items that have started to
+                  execute.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Search Results
+                  Only</emphasis></entry>
+
+                  <entry>Only shows items that have been found using the
+                  Search Window.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+        </sect3>
+      </sect2>
+
+      <sect2 id="Stepping_through_a_query">
+        <title><emphasis>Stepping through a query</emphasis></title>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>At the start of the debugging process, Press Edge/Step. The
+            graph will continue to the next row of data available at any edge
+            of the active graph.</para>
+          </listitem>
+
+          <listitem>
+            <para>Continue pressing Edge/Step watching the debugger go through
+            each row of data until it reaches the end of that graph.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press Edge/Step again to see a new graph start.</para>
+          </listitem>
+
+          <listitem>
+            <para>Notice that contents of the Debug Information window change
+            as the debugging process passes over each edge.</para>
+          </listitem>
+
+          <listitem>
+            <para>Click on an edge or vertex and view the related details in
+            the Properties window.</para>
+          </listitem>
+
+          <listitem>
+            <para>Once the debugging process has completed, the results of
+            your query are displayed.</para>
+
+            <beginpage />
+          </listitem>
+        </itemizedlist>
+
+        <para>Navigating the graph using ECL</para>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Click on Graph/Step Start. The next active graph is
+            loaded.</para>
+          </listitem>
+
+          <listitem>
+            <para>In the Debug Information window, select the Builder
+            tab.</para>
+          </listitem>
+
+          <listitem>
+            <para>Scroll down to the line of ECL which defines what you want
+            to locate.</para>
+          </listitem>
+
+          <listitem>
+            <para>Left click on the red circle and select the number of the
+            vertex to be located.</para>
+          </listitem>
+
+          <listitem>
+            <para>Selecting the edge of the selected vertex, right click and
+            use the Continue to.. option. The debugging process will continue
+            until the first row of data arrives at the edge you
+            selected.</para>
+          </listitem>
+
+          <listitem>
+            <para>Click on Edge/Next. The debugging process continues until a
+            new row arrives at the active edge.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para><emphasis>Setting global breakpoints</emphasis></para>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Click on Breakpoint(s)/Add Global.</para>
+          </listitem>
+
+          <listitem>
+            <para>Select the Mode required.</para>
+          </listitem>
+
+          <listitem>
+            <para>Set the Conditions to be applied.</para>
+          </listitem>
+
+          <listitem>
+            <para>Click the OK button.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para></para>
+
+        <para><graphic fileref="images/CT59.png" /></para>
+
+        <beginpage />
+      </sect2>
+
+      <sect2 id="Setting_Local_Breakpoints">
+        <title><emphasis>Setting local breakpoints</emphasis></title>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Select the edge on the graph where you want the breakpoint
+            to be set.</para>
+          </listitem>
+
+          <listitem>
+            <para>Click on Breakpoint(s)/ Add, or right click and select Add
+            Breakpoint.</para>
+          </listitem>
+
+          <listitem>
+            <para>Select the Mode required.</para>
+          </listitem>
+
+          <listitem>
+            <para>Set the conditions to be applied.</para>
+          </listitem>
+
+          <listitem>
+            <para>Click the OK button. The breakpoint is shown on the graph as
+            a red dot.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para><graphic fileref="images/CT60.png" /></para>
+
+        <para></para>
+
+        <para><emphasis role="bold">Note</emphasis>: Simple breakpoints that
+        do not require any conditions to be set, are quickly added by
+        selecting an edge and using the right-click option Set Breakpoint.
+        Breakpoints set in this way use the default settings which are the
+        Mode setting Break and the Condition Always.</para>
+      </sect2>
+
+      <sect2 id="Setting_a_breakpoint_line_in_ECL">
+        <title><emphasis>Setting a breakpoint on a line of
+        ECL</emphasis></title>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Using the Debug Information window, click on the Builder
+            tab.</para>
+          </listitem>
+
+          <listitem>
+            <para>Scroll the any line which begins with a red circle.</para>
+          </listitem>
+
+          <listitem>
+            <para>Left click on the red circle and select Set Breakpoint. Two
+            breakpoints are added to the graph.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para><emphasis>Removing breakpoints</emphasis></para>
+
+        <para>To remove a single breakpoint:</para>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Highlight the edge where the breakpoint is shown and click
+            on Breakpoints/Clear, or right-click and select Clear
+            Breakpoint(s).</para>
+          </listitem>
+
+          <listitem>
+            <para>Single breakpoints can also be removed by right-clicking on
+            the breakpoint listed in the Breakpoints window and selecting
+            delete.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>To remove all breakpoints on the graph:</para>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Click on Breakpoint(s)/Clear All.</para>
+
+            <beginpage />
+          </listitem>
+        </itemizedlist>
+
+        <para><emphasis>Using the search window</emphasis></para>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Enter your search criteria in Field and Value.</para>
+          </listitem>
+
+          <listitem>
+            <para>Click on the Search button. Matches for your search are
+            located and the Edge IDs are displayed.</para>
+          </listitem>
+
+          <listitem>
+            <para>Click on the Edge IDs to locate each match on the
+            graph.</para>
+          </listitem>
+
+          <listitem>
+            <para>View the Debug Information window to see the data content
+            which shows your search criteria highlighted.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para><emphasis role="bold">Note</emphasis>: Only the last 10 rows of
+        data that flowed through any given edge are searched.</para>
+
+        <beginpage />
+      </sect2>
+    </sect1>
+  </chapter>
+</book>

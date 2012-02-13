@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="UNICODE">
+  <title>UNICODE</title>
+
+  <para><emphasis role="bold">UNICODE<indexterm>
+      <primary>UNICODE</primary>
+    </indexterm>[</emphasis><emphasis>locale</emphasis><emphasis
+  role="bold">][</emphasis><emphasis>n</emphasis><emphasis
+  role="bold">]<indexterm>
+      <primary>UNICODE value type</primary>
+    </indexterm></emphasis></para>
+
+  <para>A UTF-16 encoded unicode character string of <emphasis>n</emphasis>
+  characters, space-padded just as STRING is. If <emphasis>n </emphasis>is
+  omitted, the string is variable length to the size needed to contain the
+  result of the cast or passed parameter. The optional <emphasis>locale
+  </emphasis>specifies a valid unicode locale code, as specified in ISO
+  standards 639 and 3166 (not needed if LOCALE is specified on the RECORD
+  structure containing the field definition).</para>
+
+  <para>Type casting UNICODE to VARUNICODE, STRING, or DATA is allowed, while
+  casting to any other type will first implicitly cast to STRING and then cast
+  to the target value type.</para>
+
+  <para>Example:</para>
+
+  <programlisting>UNICODE16 MyUNIString := U'1234567890ABCDEF';
+        // utf-16-encoded string
+UNICODE4 MyUnicodeString := U'abcd';
+        // same as: (UNICODE)'abcd'
+UNICODEde5 MyUnicodeString := U'abcd\353';
+        // becomes 'abcdë' with a German locale
+UNICODEde5 MyUnicodeString := U'abcdë';
+        // same as previous example</programlisting>
+</sect1>

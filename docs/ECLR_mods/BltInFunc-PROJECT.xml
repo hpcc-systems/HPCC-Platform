@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="PROJECT">
+  <title>PROJECT</title>
+
+  <para><emphasis role="bold">PROJECT<indexterm>
+      <primary>PROJECT</primary>
+    </indexterm><indexterm>
+      <primary>PROJECT function</primary>
+    </indexterm>(</emphasis><emphasis> recordset, transform
+  </emphasis><emphasis role="bold">[, PREFETCH<indexterm>
+      <primary>PREFETCH</primary>
+    </indexterm> [ (</emphasis><emphasis>lookahead </emphasis><emphasis
+  role="bold">[, PARALLEL<indexterm>
+      <primary>PARALLEL</primary>
+    </indexterm>]) ] ]</emphasis><emphasis role="bold"> [, KEYED<indexterm>
+      <primary>KEYED</primary>
+    </indexterm> ] [, LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm> ])</emphasis><emphasis role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">PROJECT(</emphasis><emphasis> recordset, record
+  </emphasis><emphasis role="bold">[, PREFETCH<indexterm>
+      <primary>PREFETCH</primary>
+    </indexterm> [ (</emphasis><emphasis>lookahead </emphasis><emphasis
+  role="bold">[, PARALLEL]) ] ]</emphasis><emphasis role="bold"> [, KEYED ] [,
+  LOCAL ])</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="84.85pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>The set of records to process. This may be a single-record
+            in-line DATASET.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>transform</emphasis></entry>
+
+            <entry>The TRANSFORM function to call for each record in the
+            recordset.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PREFETCH</emphasis></entry>
+
+            <entry>Optional. Allows index reads within the transform to be as
+            efficient as keyed JOINs. Valid for use only in Roxie
+            queries.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>lookahead</emphasis></entry>
+
+            <entry>Optional. Specifies the number of look-ahead reads. If
+            omitted, the default is the value of the _PrefetchProjectPreload
+            tag in the submitted query. If that is omitted, then it is taken
+            from the value of defaultPrefetchProjectPreload specified in the
+            RoxieTopology file when the Roxie was deployed. If that is
+            omitted, it defaults to 10.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Optional. Specifies the lookahead is done on a separate
+            thread, in parallel with query execution.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">KEYED</emphasis></entry>
+
+            <entry>Optional. Specifies the activity is part of an index read
+            operation, which allows the optimizer to generate optimal code for
+            the operation.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+            <entry>Optional. Specifies the operation is performed on each
+            supercomputer node independently, without requiring interaction
+            with all other nodes to acquire data; the operation maintains the
+            distribution of any previous DISTRIBUTE.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>record</emphasis></entry>
+
+            <entry>The output RECORD structure<indexterm>
+                <primary>RECORD structure</primary>
+              </indexterm> to use for each record in the recordset.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>PROJECT returns a record set.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">PROJECT </emphasis>function processes
+  through all records in the <emphasis>recordset </emphasis>performing the
+  <emphasis>transform</emphasis> function on each record in turn.</para>
+
+  <para>The PROJECT(<emphasis>recordset,record</emphasis>) form is simply a
+  shorthand synonym for:</para>
+
+  <para>PROJECT(<emphasis>recordset</emphasis>,TRANSFORM(<emphasis>record</emphasis>,SELF
+  := LEFT)).</para>
+
+  <para>making it simple to move data from one structure to another without a
+  TRANSFORM as long as all the fields in the output
+  <emphasis>record</emphasis> structure are present in the input
+  <emphasis>recordset</emphasis>.</para>
+
+  <sect2 id="TRANSFORM_Function_Requirements_Project">
+    <title>TRANSFORM Function<indexterm>
+        <primary>TRANSFORM Function</primary>
+      </indexterm> Requirements<indexterm>
+        <primary>TRANSFORM Function Requirements</primary>
+      </indexterm><indexterm>
+        <primary>Transform Requirements</primary>
+      </indexterm> - PROJECT<indexterm>
+        <primary>Transform Requirement Project</primary>
+      </indexterm></title>
+
+    <para>The <emphasis>transform</emphasis> function must take at least one
+    parameter: a LEFT record of the same format as the
+    <emphasis>recordset</emphasis>. Optionally, it may take a second
+    parameter: an integer COUNTER specifying the number of times the
+    <emphasis>transform</emphasis> has been called for the <emphasis>recordset
+    </emphasis>or the current group in the <emphasis>recordset</emphasis> (see
+    the GROUP function). The second parameter form is useful for adding
+    sequence numbers. The format of the resulting record set does not need to
+    be the same as the input.</para>
+
+    <para>Example:</para>
+
+    <programlisting>//form one example **********************************
+Ages := RECORD
+  STRING15 per_first_name;
+  STRING25 per_last_name;
+  INTEGER8 Age;
+END;
+TodaysYear := 2001;
+
+
+Ages CalcAges(person l) := TRANSFORM
+  SELF.Age := TodaysYear - l.birthdate[1..4];
+  SELF := l;
+END;
+AgedRecs := PROJECT(person, CalcAges(LEFT));
+
+//COUNTER example **********************************
+SequencedAges := RECORD
+  Ages;
+  INTEGER8 Sequence := 0;
+END;
+
+SequencedAges AddSequence(Ages l, INTEGER c) :=
+          TRANSFORM
+  SELF.Sequence := c;
+  SELF := l;
+END;
+SequencedAgedRecs := PROJECT(AgedRecs,
+          AddSequence(LEFT,COUNTER));
+
+//form two example **********************************
+NewRec := RECORD
+  STRING15 firstname;
+  STRING25 lastname;
+  STRING15 middlename;
+END;
+NewRecs := PROJECT(People,NewRec);
+//equivalent to:
+//NewRecs := PROJECT(People,TRANSFORM(NewRec,SELF :=
+          LEFT));
+
+
+//LOCAL example **********************************
+MyRec := RECORD
+  STRING1 Value1;
+  STRING1 Value2;
+END;
+
+SomeFile := DATASET([{'C','G'},{'C','C'},{'A','X'},
+                     {'B','G'},{'A','B'}],MyRec);
+
+MyOutRec := RECORD
+  SomeFile.Value1;
+  SomeFile.Value2;
+  STRING6 CatValues;
+END;
+
+DistFile := DISTRIBUTE(SomeFile,HASH32(Value1,Value2));
+
+MyOutRec CatThem(SomeFile L, INTEGER C) := TRANSFORM
+  SELF.CatValues := L.Value1 + L.Value2 + '-' +
+                    (Std.System.Thorlib.Node()+1) + '-' + (STRING)C;
+  SELF := L;
+END;
+
+CatRecs := PROJECT(DistFile,CatThem(LEFT,COUNTER<indexterm>
+        <primary>COUNTER</primary>
+      </indexterm>),LOCAL);
+
+OUTPUT(CatRecs);
+
+/* CatRecs result set is:
+Rec# Value1 Value2 CatValues
+1      C      C      CC-1-1
+2      B      G      BG-2-1
+3      A      X      AX-2-2
+4      A      B      AB-3-1
+5      C      G      CG-3-2
+*/
+</programlisting>
+
+    <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link>, <link linkend="RECORD_Structure">RECORD Structure</link>, <link linkend="ROW">ROW</link>, <link linkend="DATASET">DATASET</link></para>
+  </sect2>
+
+  <sect2 id="BuiltinFunction_PROJECT">
+    <title>PROJECT - Module</title>
+
+    <para><emphasis role="bold">PROJECT<indexterm>
+        <primary>PROJECT</primary>
+      </indexterm>(</emphasis><emphasis> module, interface
+    </emphasis><emphasis role="bold">[, OPT<indexterm>
+        <primary>OPT</primary>
+      </indexterm> | </emphasis><emphasis>attributelist </emphasis><emphasis
+    role="bold">] )</emphasis></para>
+
+    <para><informaltable colsep="0" frame="none" rowsep="0">
+        <tgroup cols="2">
+          <colspec colwidth="80.20pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><emphasis>module</emphasis></entry>
+
+              <entry>The MODULE structure containing the attribute definitions
+              whose values to pass as the interface.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>interface</emphasis></entry>
+
+              <entry>The INTERFACE structure to pass.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">OPT</emphasis></entry>
+
+              <entry>Optional. Suppresses the error message that is generated
+              when an attribute defined in the interface is not also defined
+              in the module.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>attributelist</emphasis></entry>
+
+              <entry>Optional. A comma-delimited list of the specific
+              attributes in the module to supply to the interface. This allows
+              a specified list of attributes to be implemented, which is
+              useful if you want closer control, or if the types of the
+              parameters don't match.</entry>
+            </row>
+
+            <row>
+              <entry>Return:</entry>
+
+              <entry>PROJECT returns a MODULE compatible with the
+              interface.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>The <emphasis role="bold">PROJECT </emphasis>function passes a
+    <emphasis>module's</emphasis> attributes in the form of the
+    <emphasis>interface</emphasis> to a function defined to accept parameters
+    structured like the specified <emphasis>interface</emphasis>. This allows
+    you to create a module for one <emphasis>interface</emphasis> with the
+    values being provided by another interface. The attributes in the
+    <emphasis>module</emphasis> must be compatible with the attributes in the
+    <emphasis>interface</emphasis> (same type and same parameters, if any take
+    parameters).</para>
+
+    <para>Example:</para>
+
+    <programlisting>PROJECT(x,y)
+/*is broadly equivalent to
+MODULE(y)
+  SomeAttributeInY := x.someAttributeInY
+  //... repeated for all attributes in Y ...
+END;
+*/
+
+myService(myInterface myArgs) := FUNCTION
+  childArgs := MODULE(PROJECT(myArgs,Iface,isDead,did,ssn,address))
+    BOOLEAN isFCRA := myArgs.isFCRA OR myArgs.fakeFCRA
+  END;
+  RETURN childService(childArgs);
+  END;
+
+// you could directly pass PROJECT as a module parameter
+// to an attribute:
+myService(myInterface myArgs) := childService(PROJECT(myArgs, childInterface));
+</programlisting>
+
+    <para>See Also: <link linkend="MODULE_Structure">MODULE Structure</link>, <link linkend="INTERFACE_Structure">INTERFACE Structure</link>, <link linkend="FUNCTION_Structure">FUNCTION Structure</link>, <link linkend="STORED">STORED</link></para>
+  </sect2>
+</sect1>

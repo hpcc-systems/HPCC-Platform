@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SET">
+  <title>SET</title>
+
+  <para><emphasis role="bold">SET<indexterm>
+      <primary>SET</primary>
+    </indexterm><indexterm>
+      <primary>SET function</primary>
+    </indexterm>(</emphasis><emphasis>recordset,field</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="78.60pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>The set of records from which to derive the SET of
+            values.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>field</emphasis></entry>
+
+            <entry>The field in the recordset from which to obtain the
+            values.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>SET returns a SET of values of the same type as the
+            field.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">SET </emphasis>function returns a SET for
+  use in any set operation (such as the IN operator).</para>
+
+  <para>Example:</para>
+
+  <programlisting>r := {STRING1 Letter};
+SomeFile := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'},
+                     {'F'},{'G'},{'H'},{'I'},{'J'}],r);
+x := SET(SomeFile(Letter &gt; 'C'),Letter);
+y := 'A' IN x;  //results in FALSE
+z := 'D' IN x;  //results in TRUE
+</programlisting>
+
+  <para>See Also: <link linkend="Recordset_Filtering">Sets and Filters</link>,
+  <link linkend="SET_OF">SET OF</link>, <link linkend="Set_Operators">Set
+  Operators</link>, <link linkend="IN_Operator">IN Operator</link></para>
+</sect1>

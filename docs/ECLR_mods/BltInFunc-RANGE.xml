@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="RANGE">
+  <title>RANGE</title>
+
+  <para><emphasis role="bold">RANGE<indexterm>
+      <primary>RANGE</primary>
+    </indexterm><indexterm>
+      <primary>RANGE function</primary>
+    </indexterm>( </emphasis><emphasis>setofdatasets,
+  setofintegers</emphasis><emphasis role="bold"> )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="81.50pt" />
+
+        <colspec colwidth="271.30pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>setofdatasets</emphasis></entry>
+
+            <entry>A set of datasets.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>setofintegers</emphasis></entry>
+
+            <entry>A set of integers.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>RANGE returns a set of datasets.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">RANGE </emphasis>function extracts a subset
+  of the <emphasis>setofdatasets</emphasis> as a SET. The
+  <emphasis>setofintegers</emphasis> specifies which elements of the
+  <emphasis>setofdatasets</emphasis> comprise the resulting SET of datasets.
+  This is typically used in the GRAPH function.</para>
+
+  <para>Example:</para>
+
+  <programlisting>r := {STRING1 Letter};
+ds1 := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'}],r);
+ds2 := DATASET([{'F'},{'G'},{'H'},{'I'},{'J'}],r);
+ds3 := DATASET([{'K'},{'L'},{'M'},{'N'},{'O'}],r);
+ds4 := DATASET([{'P'},{'Q'},{'R'},{'S'},{'T'}],r);
+ds5 := DATASET([{'U'},{'V'},{'W'},{'X'},{'Y'}],r);
+
+SetDS := [ds1,ds2,ds3,ds4,ds5];
+outDS := RANGE(setDS,[1,3]); 
+//use only 1st and 3rd elements
+
+OUTPUT(outDS[1]); //results in A,B,C,D,E
+OUTPUT(outDS[2]); //results in K,L,M,N,O
+</programlisting>
+
+  <para>See Also: <link linkend="GRAPH">GRAPH</link></para>
+</sect1>

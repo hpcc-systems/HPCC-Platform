@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1
+  PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Group">
+   <title>
+      <emphasis role="bold">Group</emphasis>
+   </title>
+   <para>
+      <emphasis role="bold">STD.System.Thorlib.Group<indexterm>
+      <primary>STD.System.ThorLib.Group</primary>
+    </indexterm>
+    <indexterm>
+      <primary>System.ThorLib.Group</primary>
+    </indexterm>
+    <indexterm>
+      <primary>ThorLib.Group</primary>
+    </indexterm>
+    <indexterm>
+      <primary>Group</primary>
+    </indexterm>
+( )</emphasis>
+   </para>
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+
+    <entry>Return:<emphasis> </emphasis></entry><entry>Group returns a VARSTRING
+        value.</entry>
+
+
+        </row>
+
+      </tbody>
+    </tgroup>
+  </informaltable>
+   <para>The <emphasis role="bold">Group </emphasis>function returns the
+        name of the node group running the workunit. Not supported on Roxie
+        clusters. This name is used in ECL code to specify the target CLUSTER
+        for an OUTPUT action or a PERSISTed attribute.</para>
+   <para>Example:</para>
+   <programlisting format="linespecific">A := Thorlib.Group();</programlisting>
+</sect1>

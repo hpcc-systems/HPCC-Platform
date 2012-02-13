@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Cross-Tab_Reports">
+  <title><emphasis role="bold">Cross-Tab Reports</emphasis></title>
+
+  <para>Cross-Tab reports are a very useful way of discovering statistical
+  information about the data that you work with. They can be easily produced
+  using the TABLE function and the aggregate functions (COUNT, SUM, MIN, MAX,
+  AVE, VARIANCE, COVARIANCE, CORRELATION). The resulting recordset contains a
+  single record for each unique value of the “group by” fields specified in
+  the TABLE function, along with the statistics you generate with the
+  aggregate functions.</para>
+
+  <para>The TABLE function's “group by” parameters are used and duplicated as
+  the first set of fields in the RECORD structure, followed by any number of
+  aggregate function calls, all using the GROUP keyword as the replacement for
+  the recordset required by the first parameter of each of the aggregate
+  functions. The GROUP keyword specifies performing the aggregate operation on
+  the group and is the key to creating a Cross-Tab report. This creates an
+  output table containing a single row for each unique value of the “group by”
+  parameters.</para>
+
+  <sect2 id="A_Simple_Crosstab">
+    <title>A Simple CrossTab</title>
+
+    <para>The example code below (contained in the CrossTab.ECL file) produces
+    an output of State/CountAccts with counts from the nested child dataset
+    created by the GenData.ECL code (see the <emphasis role="bold">Creating
+    Example Data</emphasis> article):</para>
+
+    <programlisting>IMPORT $;
+Person := $.DeclareData.PersonAccounts;
+
+CountAccts := COUNT(Person.Accounts);
+
+MyReportFormat1 := RECORD
+  State     := Person.State;
+  A1        := CountAccts;
+ GroupCount := COUNT(GROUP);
+END;
+
+RepTable1 := TABLE(Person,MyReportFormat1,State,CountAccts );
+OUTPUT(RepTable1);
+
+/* The result set would look something like this:
+  State    A1  GroupCount
+   AK     1    7
+   AK     2    3
+   AL     1    42
+   AL     2    54
+   AR     1    103
+   AR     2    89
+   AR     3    2    */  
+</programlisting>
+
+    <para>Slight modifications allow some more sophisticated statistics to be
+    produced, such as:</para>
+
+    <programlisting>MyReportFormat2 := RECORD
+  State{cardinality(56)}  := Person.State;
+  A1          := CountAccts;
+  GroupCount  := COUNT(GROUP);
+  MaleCount   := COUNT(GROUP,Person.Gender = 'M');
+  FemaleCount := COUNT(GROUP,Person.Gender = 'F');
+ END;
+
+RepTable2 := TABLE(Person,MyReportFormat2,State,CountAccts );
+
+OUTPUT(RepTable2);
+</programlisting>
+
+    <para>This adds a breakdown of how many men and women there are in each
+    category, by using the optional second parameter to COUNT (available only
+    for use in RECORD structures where its first parameter is the GROUP
+    keyword).</para>
+
+    <para>The addition of the {cardinality(56)} to the State definition is a
+    hint to the optimizer that there are exactly 56 values possible in that
+    field, allowing it to select the best algorithm to produce the output as
+    quickly as possible.</para>
+
+    <para>The possibilities are endless for the type of statistics you can
+    generate against any set of data.</para>
+  </sect2>
+
+  <sect2 id="A_More_Complex_Example">
+    <title>A More Complex Example</title>
+
+    <para>As a slightly more complex example, the following code produces a
+    Cross-Tab result table with the average balance on a bankcard trade,
+    average high credit on a bankcard trade, and the average total balance on
+    bankcards, tabulated by state and sex.</para>
+
+    <para>This code demonstrates using separate aggregate attributes as the
+    value parameters to the aggregate function in the CrossTab.</para>
+
+    <programlisting>IsValidType(STRING1 PassedType) := PassedType IN ['O', 'R', 'I'];
+
+IsRevolv := Person.Accounts.AcctType = 'R' OR 
+        (~IsValidType(Person.Accounts.AcctType) AND 
+         Person.Accounts.Account[1] IN ['4', '5', '6']);
+
+SetBankIndCodes := ['BB', 'ON', 'FS', 'FC'];
+
+IsBank := Person.Accounts.IndustryCode IN SetBankIndCodes;
+
+IsBankCard := IsBank AND IsRevolv;
+
+AvgBal := AVE(Person.Accounts(isBankCard),Balance);
+TotBal := SUM(Person.Accounts(isBankCard),Balance);
+AvgHC  := AVE(Person.Accounts(isBankCard),HighCredit);
+
+R1 := RECORD
+  person.state;
+  person.gender;
+  Number          := COUNT(GROUP);
+  AverageBal      := AVE(GROUP,AvgBal);
+  AverageTotalBal := AVE(GROUP,TotBal);
+  AverageHC       := AVE(GROUP,AvgHC);
+END;
+
+T1 := TABLE(person, R1,  state, gender);
+
+OUTPUT(T1);
+</programlisting>
+  </sect2>
+
+  <sect2 id="A_Statistical_Example">
+    <title>A Statistical Example</title>
+
+    <para>The following example demonstrates the VARIANCE, COVARIANCE and
+    CORRELATION functions to analyze grid points. It also shows the technique
+    of putting the CrossTab into a MACRO, calling the MACRO to generate the
+    specific result for a given dataset.</para>
+
+    <programlisting>pointRec := { REAL x, REAL y };
+
+analyze( ds ) := MACRO
+  #uniquename(rec)
+  %rec% := RECORD
+    c     := COUNT(GROUP),
+    sx    := SUM(GROUP, ds.x),
+    sy    := SUM(GROUP, ds.y),
+    sxx   := SUM(GROUP, ds.x * ds.x),
+    sxy   := SUM(GROUP, ds.x * ds.y),
+    syy   := SUM(GROUP, ds.y * ds.y),
+    varx  := VARIANCE(GROUP, ds.x);
+    vary  := VARIANCE(GROUP, ds.y);
+    varxy := COVARIANCE(GROUP, ds.x, ds.y);
+    rc    := CORRELATION(GROUP, ds.x, ds.y) ;
+  END;  
+  #uniquename(stats)
+  %stats% := TABLE(ds,%rec% );
+
+  OUTPUT(%stats%);
+  OUTPUT(%stats%, { varx - (sxx-sx*sx/c)/c,
+                    vary - (syy-sy*sy/c)/c,
+                    varxy - (sxy-sx*sy/c)/c,
+                    rc - (varxy/SQRT(varx*vary)) });
+  OUTPUT(%stats%, { 'bestFit: y='+(STRING)((sy-sx*varxy/varx)/c)+' + '+(STRING)(varxy/varx)+'x' });
+ENDMACRO;
+
+ds1 := DATASET([{1,1},{2,2},{3,3},{4,4},{5,5},{6,6}], pointRec);
+ds2 := DATASET([{1.93896e+009, 2.04482e+009},
+                {1.77971e+009, 8.54858e+008},
+                {2.96181e+009, 1.24848e+009},
+                {2.7744e+009,  1.26357e+009},
+                {1.14416e+009, 4.3429e+008},
+                {3.38728e+009, 1.30238e+009},
+                {3.19538e+009, 1.71177e+009} ], pointRec);
+ds3 := DATASET([{1, 1.00039},
+                {2, 2.07702},
+                {3, 2.86158},
+                {4, 3.87114},
+                {5, 5.12417},
+                {6, 6.20283} ], pointRec);
+
+analyze(ds1);
+analyze(ds2);
+analyze(ds3); 
+</programlisting>
+
+    <para></para>
+  </sect2>
+</sect1>

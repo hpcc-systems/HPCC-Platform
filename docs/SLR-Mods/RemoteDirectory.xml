@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="RemoteDirectory">
+  <title><emphasis role="bold">RemoteDirectory</emphasis></title>
+
+  <para><emphasis role="bold">STD.File.RemoteDirectory<indexterm>
+      <primary>STD.File.RemoteDirectory</primary>
+    </indexterm><indexterm>
+      <primary>File.RemoteDirectory</primary>
+    </indexterm><indexterm>
+      <primary>RemoteDirectory</primary>
+    </indexterm>(</emphasis> <emphasis> machineIP, directory </emphasis>
+  <emphasis role="bold">[</emphasis> <emphasis>, mask </emphasis> <emphasis
+  role="bold">][</emphasis> <emphasis>, includesubs </emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>machineIP</emphasis></entry>
+
+          <entry>A null-terminated string containing the IP address of the
+          remote machine.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>directory</emphasis></entry>
+
+          <entry>A null-terminated string containing the path to the directory
+          to read. This must be in the appropriate format for the operating
+          system running on the remote machine.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>mask</emphasis></entry>
+
+          <entry>Optional. A null-terminated string containing the filemask
+          specifying which files to include in the result. If omitted,the
+          default is '*' (all files).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>includesubdir</emphasis></entry>
+
+          <entry>Optional. A boolean flag indicating whether to include files
+          from sub-directories under the <emphasis>directory</emphasis>. If
+          omitted, the default is FALSE.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>RemoteDirectory returns a dataset in the following
+          format:</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <programlisting>EXPORT FsFilenameRecord := RECORD 
+  STRING name;       //filename 
+  UNSIGNED8 size;    //filesize 
+  STRING19 modified; //date-time stamp 
+END;</programlisting>
+
+  <para>The <emphasis role="bold">RemoteDirectory </emphasis>function returns
+  a list of files as a dataset in the format listed above from the specified
+  <emphasis>machineIP</emphasis> and <emphasis>directory</emphasis>. If
+  <emphasis>includesubdir</emphasis> is set to TRUE, then the name field
+  contains the relative path to the file from the specified
+  <emphasis>directory</emphasis>.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">OUTPUT(STD.File.RemoteDirectory('edata12','\in','*.d00'));
+OUTPUT(STD.File.RemoteDirectory('10.150.254.6',
+      '/c$/training',,TRUE));</programlisting>
+</sect1>

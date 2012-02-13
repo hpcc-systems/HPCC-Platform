@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Working_with_BLOBs">
+  <title><emphasis role="bold">Working with BLOBs</emphasis></title>
+
+  <para>BLOB (Binary Large OBject) support in ECL begins with the DATA value
+  type. This type may contain any type of data, making it perfect for housing
+  BLOB data.</para>
+
+  <para>There are essentially three issues around working with BLOB
+  data:</para>
+
+  <para>1) How to get the data into the HPCC (spraying).</para>
+
+  <para>2) How to work with the data, once it is in the HPCC.</para>
+
+  <para>3) How to get the data back out of the HPCC (despraying).</para>
+
+  <sect2 id="Spraying_BLOB_Data">
+    <title>Spraying BLOB Data</title>
+
+    <para>In the HPCCClientTools.PDF there is a chapter devoted to the
+    DFUplus.exe program. This is a command line tool with specific options
+    that allow you to spray and despray files into BLOBs in the HPCC. In all
+    the examples below, we'll assume you have a DFUPLUS.INI file containing
+    the standard content described in that section of the PDF.</para>
+
+    <para>The key to making a spray operation write to BLOBs is the use of the
+    <emphasis>prefix=Filename,Filesize</emphasis> option. For example, the
+    following command line sprays all the .JPG and .BMP files from the
+    c:\import directory of the 10.150.51.26 machine into a single logical file
+    named LE::imagedb:</para>
+
+    <programlisting>C:\&gt;dfuplus action=spray srcip=10.150.51.26 srcfile=c:\import\*.jpg,c:\import\*.bmp 
+            dstcluster=le_thor dstname=LE::imagedb overwrite=1 
+            PREFIX=FILENAME,FILESIZE nosplit=1</programlisting>
+  </sect2>
+
+  <sect2 id="Working_with_BLOB_Data">
+    <title>Working with BLOB Data</title>
+
+    <para>Once you've sprayed the data into the HPCC you must define the
+    RECORD structure and DATASET. The following RECORD structure defines the
+    result of the spray above:</para>
+
+    <programlisting>imageRecord := RECORD
+  STRING filename;
+  DATA   image;   
+       //first 4 bytes contain the length of the image data
+  UNSIGNED8  RecPos{virtual(fileposition)};
+END;
+imageData := DATASET('LE::imagedb',imageRecord,FLAT);
+</programlisting>
+
+    <para>The key to this structure is the use of variable-length STRING and
+    DATA value types. The filename field receives the complete name of the
+    original .JPG or .BMP file that is now contained within the image field.
+    The first four bytes of the image field contain an integer value
+    specifying the number of bytes in the original file that are now in the
+    image field.</para>
+
+    <para>The DATA value type is used here for the BLOB field because the JPG
+    and BMP formats are essentially binary data. However, if the BLOB were to
+    contain XML data from multiple files, then it could be defined as a STRING
+    value type. In that case, the first four bytes of the field would still
+    contain an integer value specifying the number of bytes in the original
+    file, followed by the XML data from the file.</para>
+
+    <para>The addition of the RecPos field (a standard ECL “record pointer”
+    field) allows us to create an INDEX, like this:</para>
+
+    <programlisting>imageKey := INDEX(imageData,{filename,fpos},'LE::imageKey');  
+BUILDINDEX(imageKey);</programlisting>
+
+    <para>Having an INDEX allows you to work with the imageData file in keyed
+    JOIN or FETCH operations. Of course, you can also perform any operation on
+    the BLOB data files that you would do with any other file in ECL.</para>
+  </sect2>
+
+  <sect2 id="Despraying_BLOB_Data">
+    <title>Despraying BLOB Data</title>
+
+    <para>The DFUplus.exe program also allows you to despray BLOB files from
+    the HPCC, splitting them back into the separate files they originated
+    from. The key to making a despray operation write BLOBs to separate files
+    is the use of the <emphasis>splitprefix=Filename,Filesize</emphasis>
+    option. For example, the following command line desprays all the BLOB data
+    to the c:\import\despray directory of the 10.150.51.26 machine from the
+    single logical file named LE::imagedb:</para>
+
+    <programlisting>C:\&gt;dfuplus action=despray dstip=10.150.51.26 dstfile=c:\import\despray\*.* 
+            srcname=LE::imagedb PREFIX=FILENAME,FILESIZE nosplit=1</programlisting>
+
+    <para>Once this command has executed, you should have the same set of
+    files that were originally sprayed, recreated in a separate
+    directory.</para>
+  </sect2>
+</sect1>

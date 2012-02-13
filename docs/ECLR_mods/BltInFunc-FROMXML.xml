@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="FROMXML">
+  <title>FROMXML</title>
+
+  <para><emphasis role="bold">FROMXML<indexterm>
+      <primary>FROMXML</primary>
+    </indexterm><indexterm>
+      <primary>FROMXML function</primary>
+    </indexterm>(</emphasis><emphasis> record, xmlstring </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="77.95pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>record</emphasis></entry>
+
+            <entry>The RECORD structure to produce. Each field must specify
+            the XPATH to the data in the <emphasis>xmlstring</emphasis> that
+            it should hold.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>xmlstring</emphasis></entry>
+
+            <entry>A string containing the XML to convert.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>FROMXML returns a single row (record).</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">FROMXML </emphasis>function returns a single
+  row (record) in the <emphasis>record</emphasis> format from the specified
+  <emphasis>xmlstring</emphasis>. This may be used anywhere a single row can
+  be used (similar to the ROW function).</para>
+
+  <para>Example:</para>
+
+  <programlisting>namesRec := RECORD
+  UNSIGNED2 EmployeeID{xpath('EmpID')};
+  STRING10  Firstname{xpath('Name/FName')};
+  STRING10  Lastname{xpath('Name/LName')};
+END;
+x := '&lt;Row&gt;&lt;Name&gt;&lt;FName&gt;George&lt;/FName&gt;&lt;LName&gt;Jetson&lt;/LName&gt;&lt;/Name&gt;&lt;EmpID&gt;42&lt;/EmpID&gt;&lt;/Row&gt;'; 
+
+rec := FROMXML(namesRec,x);
+OUTPUT(rec);</programlisting>
+
+  <para>See Also: <link linkend="ROW">ROW</link></para>
+</sect1>

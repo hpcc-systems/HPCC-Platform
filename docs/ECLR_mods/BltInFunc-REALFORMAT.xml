@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="REALFORMAT">
+  <title>REALFORMAT<indexterm>
+      <primary>REALFORMAT</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">REALFORMAT<indexterm>
+      <primary>REALFORMAT Function</primary>
+    </indexterm>(</emphasis><emphasis>expression, width, decimals
+  </emphasis><emphasis role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="78.45pt" />
+
+        <colspec colwidth="274.35pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>The expression that specifies the REAL value to
+            format.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>width</emphasis></entry>
+
+            <entry>The size of string in which to right-justify the
+            value.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>decimals</emphasis></entry>
+
+            <entry>An integer specifying the number of decimal places.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>REALFORMAT returns a single value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">REALFORMAT </emphasis>function returns the
+  value of the <emphasis>expression</emphasis> formatted as a right-justified
+  string of <emphasis>width</emphasis> characters with the number of
+  <emphasis>decimals</emphasis> specifed.</para>
+
+  <para>Example:</para>
+
+  <programlisting>REAL8 Float := 1000.0063;
+STRING12 FloatStr12 := REALFORMAT(float,12,6);
+OUTPUT(FloatStr12); //results in ' 1000.006300'</programlisting>
+
+  <para>See Also: <link linkend="INTFORMAT">INTFORMAT</link></para>
+</sect1>

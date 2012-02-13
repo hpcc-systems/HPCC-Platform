@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="DeleteSuperFile">
+  <title><emphasis role="bold">DeleteSuperFile</emphasis></title>
+
+  <para><emphasis role="bold">STD.File.DeleteSuperFile<indexterm>
+      <primary>STD.File.DeleteSuperFile</primary>
+    </indexterm><indexterm>
+      <primary>File.DeleteSuperFile</primary>
+    </indexterm><indexterm>
+      <primary>DeleteSuperFile</primary>
+    </indexterm>(</emphasis> <emphasis> superfile </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>, subdeleteflag </emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>superfile</emphasis></entry>
+
+          <entry>A null-terminated string containing the logical name of the
+          superfile.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>subdeleteflag</emphasis></entry>
+
+          <entry>A boolean value indicating whether to delete the sub-files.
+          If omitted, the default is FALSE. <emphasis role="bold">This option
+          should not be used if the superfile contains any foreign file or
+          foreign superfile.</emphasis></entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>Null.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">DeleteSuperFile </emphasis>function deletes
+  the <emphasis>superfile</emphasis>.</para>
+
+  <para>This function is not included in a superfile transaction.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">STD.File.DeleteSuperFile('~CLASS::RT::IN::SF1');</programlisting>
+</sect1>

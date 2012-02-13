@@ -1,0 +1,509 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="BUILD">
+  <title>BUILD</title>
+
+  <para><emphasis>[</emphasis><emphasis>attrname</emphasis> :=<emphasis
+  role="bold"> ] BUILD<indexterm>
+      <primary>BUILD</primary>
+    </indexterm>(</emphasis><emphasis>baserecset</emphasis><emphasis
+  role="bold">, [</emphasis><emphasis> indexrec </emphasis><emphasis
+  role="bold">] , </emphasis><emphasis>indexfile </emphasis><emphasis
+  role="bold">[, </emphasis><emphasis>options </emphasis><emphasis
+  role="bold">] );</emphasis></para>
+
+  <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
+  :=<emphasis role="bold">
+  ]BUILD(</emphasis><emphasis>baserecset</emphasis><emphasis
+  role="bold">,</emphasis><emphasis> keys</emphasis><emphasis
+  role="bold">,</emphasis><emphasis> payload</emphasis><emphasis role="bold">,
+  </emphasis><emphasis>indexfile </emphasis><emphasis role="bold">[,
+  </emphasis><emphasis>options </emphasis><emphasis role="bold">]
+  );</emphasis></para>
+
+  <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
+  :=<emphasis role="bold"> ] BUILD(</emphasis><emphasis> indexdef
+  </emphasis><emphasis role="bold">[, </emphasis><emphasis>options
+  </emphasis><emphasis role="bold">] );</emphasis></para>
+
+  <para><emphasis role="bold">BUILD(</emphasis><emphasis> library
+  </emphasis><emphasis role="bold">);</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="78.50pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>attrname</emphasis></entry>
+
+            <entry>Optional. The action name, which turns the action into an
+            attribute definition, therefore not executed until the
+            <emphasis>attrname</emphasis> is used as an action.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>baserecset</emphasis></entry>
+
+            <entry>The set of data records for which the index file will be
+            created. This may be a record set derived from the base data with
+            the key fields and file position.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>indexrec</emphasis></entry>
+
+            <entry>Optional. The RECORD structure of the fields in the
+            indexfile that contains key and file position information for
+            referencing into the <emphasis>baserecset</emphasis>. Field names
+            and types must match the <emphasis>baserecset</emphasis> fields
+            (REAL and DECIMAL value type fields are not supported). This may
+            also contain additional fields not present in the
+            <emphasis>baserecset</emphasis> (computed fields). If omitted, all
+            fields in the <emphasis>baserecset</emphasis> are used. The last
+            field must be the name of an UNSIGNED8 field defined using the
+            {virtual(filepposition)} function in the DATASET declaration of
+            the <emphasis>baserecset</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>keys</emphasis></entry>
+
+            <entry>The RECORD structure of fields in the
+            <emphasis>indexfile</emphasis> that contains key and file position
+            information for referencing into the
+            <emphasis>baserecset</emphasis>. Field names and types must match
+            the <emphasis>baserecset</emphasis> fields (REAL and DECIMAL value
+            type fields are not supported). This may also contain additional
+            fields not present in the <emphasis>baserecset</emphasis>. If
+            omitted, all fields in the <emphasis>baserecset</emphasis> are
+            used.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>payload</emphasis></entry>
+
+            <entry>The RECORD structure of the <emphasis>indexfile</emphasis>
+            that contains additional fields not used as keys . If the name of
+            the <emphasis>baserecset</emphasis> is in the structure, it
+            specifies “all other fields not already named in the keys
+            parameter.” This may contain fields not present in the
+            <emphasis>baserecset</emphasis> (computed fields). These fields do
+            not take up space in the non-leaf nodes of the index and cannot be
+            referenced in a KEYED() filter clause</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>indexfile</emphasis></entry>
+
+            <entry>A string constant containing the logical filename of the
+            index to produce. See the Scope &amp; Logical Filenames article
+            for more on logical filenames.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>options</emphasis></entry>
+
+            <entry>Optional. One or more of the options listed below.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>indexdef</emphasis></entry>
+
+            <entry>The name of the INDEX attribute to build.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>library</emphasis></entry>
+
+            <entry>The name of a MODULE attribute with the LIBRARY
+            option.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The first three forms of the <emphasis role="bold">BUILD
+  </emphasis>action create index files. Indexes are automatically compressed,
+  minimizing overhead associated with using indexed record access. The keyword
+  BUILDINDEX may be used in place of BUILD in these forms.</para>
+
+  <para>The fourth form creates an external query library<indexterm>
+      <primary>query library</primary>
+    </indexterm>—a workunit that implements the specified
+  <emphasis>library</emphasis>. This is similar to creating a .DLL in Windows
+  programming, or a .SO in Linux.</para>
+
+  <sect2 id="Index_BUILD_Options">
+    <title>Index BUILD Options</title>
+
+    <para>The following options are available on all three INDEX forms of
+    BUILD (only):</para>
+
+    <para><emphasis role="bold">[, CLUSTER<indexterm>
+        <primary>CLUSTER</primary>
+      </indexterm>(</emphasis><emphasis> target </emphasis><emphasis
+    role="bold">)] [, SORTED<indexterm>
+        <primary>SORTED</primary>
+      </indexterm>] [, DISTRIBUTE<indexterm>
+        <primary>DISTRIBUTE</primary>
+      </indexterm>( </emphasis><emphasis>key</emphasis><emphasis role="bold">
+    ) [ , MERGE<indexterm>
+        <primary>MERGE</primary>
+      </indexterm> ] ]</emphasis><emphasis role="bold">[, DATASET<indexterm>
+        <primary>DATASET</primary>
+      </indexterm>( </emphasis><emphasis>basedataset</emphasis><emphasis
+    role="bold"> )] [, OVERWRITE<indexterm>
+        <primary>OVERWRITE</primary>
+      </indexterm>]</emphasis><emphasis role="bold">[, FEW<indexterm>
+        <primary>FEW</primary>
+      </indexterm>] [, LOCAL<indexterm>
+        <primary>LOCAL</primary>
+      </indexterm>] [, NOROOT<indexterm>
+        <primary>NOROOT</primary>
+      </indexterm>] [, DISTRIBUTED<indexterm>
+        <primary>DISTRIBUTED</primary>
+      </indexterm>]</emphasis><emphasis role="bold">[, COMPRESSED<indexterm>
+        <primary>COMPRESSION</primary>
+      </indexterm>( LZW<indexterm>
+        <primary>LZW</primary>
+      </indexterm> | ROW<indexterm>
+        <primary>ROW</primary>
+      </indexterm> | FIRST<indexterm>
+        <primary>FIRST</primary>
+      </indexterm>) ] [, WIDTH<indexterm>
+        <primary>WIDTH</primary>
+      </indexterm>(</emphasis><emphasis> nodes </emphasis><emphasis
+    role="bold">) ] [, DEDUP<indexterm>
+        <primary>DEDUP</primary>
+      </indexterm>]</emphasis></para>
+
+    <para><informaltable colsep="0" frame="none" rowsep="0">
+        <tgroup cols="2">
+          <colspec colwidth="95.85pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><emphasis role="bold">CLUSTER</emphasis></entry>
+
+              <entry>Specifies writing the <emphasis>indexfile</emphasis> to
+              the specified list of target clusters. If omitted, the
+              <emphasis>indexfile</emphasis> is written to the cluster on
+              which the workunit executes. The number of physical file parts
+              written to disk is always determined by the number of nodes in
+              the cluster on which the workunit executes, regardless of the
+              number of nodes on the target cluster(s) unless the WIDTH option
+              is also specified.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>target</emphasis></entry>
+
+              <entry>A comma-delimited list of string constants containing the
+              names of the clusters to write the
+              <emphasis>indexfile</emphasis> to. The names must be listed as
+              they appear on the ECL Watch Activity page or returned by the
+              Std.System.Thorlib.Group() function, optionally with square
+              brackets containing a comma-delimited list of node-numbers
+              (1-based) and/or ranges (specified with a dash, as in n-m) to
+              indicate the specific set of nodes to write to.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">SORTED</emphasis></entry>
+
+              <entry>Specifies that the <emphasis>baserecset</emphasis> is
+              already sorted, implying that the automatic sort based on all
+              the <emphasis>indexrec</emphasis> fields is not required before
+              the index is created.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">DISTRIBUTE</emphasis></entry>
+
+              <entry>Specifies building the <emphasis>indexfile</emphasis>
+              based on the distribution of the key.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>key</emphasis></entry>
+
+              <entry>The name of an existing INDEX attribute
+              definition.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">MERGE</emphasis></entry>
+
+              <entry>Optional. Specifies merging the resulting index into the
+              specified key.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">DATASET</emphasis></entry>
+
+              <entry>This is only needed when the
+              <emphasis>baserecset</emphasis> is the result of an operation
+              (such as a JOIN) whose result makes it ambiguous as to which
+              physical dataset is being indexed (in other words, use this
+              option only when you receive an error that it cannot be
+              deduced). Naming the <emphasis>basedataset</emphasis> ensures
+              that the proper record links are used in the index.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>basedataset</emphasis></entry>
+
+              <entry>The name of the DATASET attribute from which the
+              <emphasis>baserecset</emphasis> is derived.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">OVERWRITE</emphasis></entry>
+
+              <entry>Specifies overwriting the <emphasis>indexfile</emphasis>
+              if it already exists.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">FEW</emphasis></entry>
+
+              <entry>Specifies the <emphasis>indexfile</emphasis> is created
+              as a single one-part file. Used only for small datasets
+              (typically lookup-type files, such as 2-character state codes).
+              This option is now deprecated in favor of using the
+              WIDTH(1).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>indexdef</emphasis></entry>
+
+              <entry>The name of an existing INDEX attribute definition that
+              provides the <emphasis>baserecset</emphasis>,
+              <emphasis>indexrec</emphasis>, and
+              <emphasis>indexfile</emphasis> parameters to use.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+              <entry>Specifies the operation is performed on each
+              supercomputer node independently, without requiring interaction
+              with all other nodes to acquire data; the operation maintains
+              the distribution of any previous DISTRIBUTE function.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">NOROOT</emphasis></entry>
+
+              <entry>Specifies that the index is not globally sorted, and
+              there is no root index to indicate which part of the index will
+              contain a particular entry. This may be useful in Roxie queries
+              in conjunction with ALLNODES use.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">DISTRIBUTED</emphasis></entry>
+
+              <entry>Specifies both the LOCAL and NOROOT options (congruent
+              with the DISTRIBUTED option on an INDEX declaration, which
+              specifies the index was built with the LOCAL and NOROOT
+              options).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">COMPRESSED</emphasis></entry>
+
+              <entry>Specifies the type of compression used. If omitted, the
+              default is LZW, a variant of the Lempel-Ziv-Welch algorithm.
+              Specifying ROW compresses index entries based on differences
+              between contiguous rows (for use with fixed-length records,
+              only), and is recommended for use in circumstances where
+              speedier decompression time is more important than the amount of
+              compression achieved. FIRST compresses common leading elements
+              of the key (recommended only for timing comparison use).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">WIDTH</emphasis></entry>
+
+              <entry>Specifies writing the <emphasis>indexfile</emphasis> to a
+              different number of physical file parts than the number of nodes
+              in the cluster on which the workunit executes. If omitted, the
+              default is the number of nodes in the cluster on which the
+              workunit executes. This option is primarily to create indexes on
+              a large Thor that are destined to be deployed to a smaller Roxie
+              (making the Roxie queries more efficient).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>nodes</emphasis></entry>
+
+              <entry>The number of physical file parts to write. If set to one
+              (1), this operates exactly the same as the FEW option,
+              above.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">DEDUP</emphasis></entry>
+
+              <entry>Specifies that duplicate entries are eliminated from the
+              INDEX.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+  </sect2>
+
+  <sect2 id="BUILD_an_Access_Index">
+    <title>BUILD an Access Index</title>
+
+    <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
+    :=<emphasis role="bold"> ]
+    BUILD(</emphasis><emphasis>baserecset</emphasis><emphasis role="bold">,
+    [</emphasis><emphasis> indexrec </emphasis><emphasis role="bold">] ,
+    </emphasis><emphasis>indexfile </emphasis><emphasis role="bold">[,
+    </emphasis><emphasis>options </emphasis><emphasis role="bold">]
+    );</emphasis></para>
+
+    <para>Form 1 creates an index file to allow keyed access to the
+    <emphasis>baserecset</emphasis>. The index is used primarily by the FETCH
+    and JOIN (with the KEYED option) operations.</para>
+
+    <para>Example:</para>
+
+    <programlisting>Vehicles := DATASET('vehicles',
+     {STRING2 st,
+      STRING20 city,
+      STRING20 lname,
+      UNSIGNED8 filepos{virtual(fileposition)}},
+     FLAT);
+BUILD(Vehicles,{lname,filepos},'vkey::lname');
+ //build key into Vehicles dataset on last name
+</programlisting>
+  </sect2>
+
+  <sect2 id="BUILD_a_Payload_Index">
+    <title>BUILD a Payload Index</title>
+
+    <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
+    :=<emphasis role="bold"> ]
+    BUILD(</emphasis><emphasis>baserecset</emphasis><emphasis
+    role="bold">,</emphasis><emphasis> keys</emphasis><emphasis
+    role="bold">,</emphasis><emphasis> payload</emphasis><emphasis
+    role="bold">, </emphasis><emphasis>indexfile </emphasis><emphasis
+    role="bold">[, </emphasis><emphasis>options </emphasis><emphasis
+    role="bold">] );</emphasis></para>
+
+    <para>Form 2 creates an index file containing extra <emphasis>payload
+    </emphasis>fields in addition to the <emphasis>keys</emphasis>. This form
+    is used primarily to create indexes used by “half-key” JOIN operations to
+    eliminate the need to directly access the <emphasis>baserecset</emphasis>,
+    thus increasing performance over the “full-keyed” version of the same
+    operation (done with the KEYED option on the JOIN).</para>
+
+    <para>By default, the <emphasis>payload</emphasis> fields are sorted
+    during the BUILDINDEX operation to minimize space on the leaf nodes of the
+    key. This sorting can be controlled by using
+    <emphasis>sortIndexPayload</emphasis> in a #OPTION statement.</para>
+
+    <para>Example:</para>
+
+    <programlisting>Vehicles := DATASET('vehicles',
+     {STRING2 st,
+      STRING20 city,
+      STRING20 lname,
+      UNSIGNED8 filepos{virtual(fileposition)}},
+      FLAT);
+BUILD(Vehicles,{st,city},{lname},'vkey::st.city');
+ //build key into Vehicles dataset on state and city
+ //payload the last name</programlisting>
+  </sect2>
+
+  <sect2 id="BUILD_from_an_INDEX_Definition">
+    <title>BUILD from an INDEX Definition</title>
+
+    <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
+    :=<emphasis role="bold"> ] BUILD(</emphasis><emphasis> indexdef
+    </emphasis><emphasis role="bold">[, </emphasis><emphasis>options
+    </emphasis><emphasis role="bold">] );</emphasis></para>
+
+    <para>Form 3 creates an index file by using a previously defined INDEX
+    definition.</para>
+
+    <para>Example:</para>
+
+    <programlisting>nameKey := INDEX(mainTable,{surname,forename,filepos},'name.idx');
+BUILD(nameKey); //gets all info from the INDEX definition
+</programlisting>
+  </sect2>
+
+  <sect2 id="BUILD_a_Query_Library">
+    <title>BUILD a Query Library</title>
+
+    <para><emphasis role="bold">BUILD(</emphasis><emphasis> library
+    </emphasis><emphasis role="bold">);</emphasis></para>
+
+    <para>Form 4 creates an external query library <emphasis role="bold">for
+    use in hthor or Roxie, only</emphasis>.</para>
+
+    <para>A query library allows a set of related attributes to be packaged as
+    a self contained unit so the code can be shared between different
+    workunits. This reduces the time required to deploy a set of attributes,
+    and also reduces the memory footprint for the set of queries within Roxie
+    that use the <emphasis>library</emphasis>. Also, functionality in the
+    <emphasis>library</emphasis> can be updated without having to re-deploy
+    all the queries that use that functionality.</para>
+
+    <para>Query libraries are suitable for packaging together sets of
+    functions that are closely related. They aren't suited for including
+    attributes defined as MACROs—the meaning of a macro isn't known until its
+    parameters are substituted.</para>
+
+    <para>The name form of #WORKUNIT<indexterm>
+        <primary>#WORKUNIT</primary>
+      </indexterm> names the workunit that BUILD creates as the external
+    library. That name is the external library name used by the LIBRARY
+    function<indexterm>
+        <primary>LIBRARY function</primary>
+      </indexterm> (which provides access to the library from within the query
+    that uses the <emphasis>library</emphasis>). <emphasis role="bold">Since
+    the workunit itself is the external query library,
+    BUILD(</emphasis><emphasis role="bold">library</emphasis><emphasis
+    role="bold">) must be the only action in the workunit.</emphasis></para>
+
+    <para>Example:</para>
+
+    <programlisting>NamesRec := RECORD
+  INTEGER1  NameID;
+  STRING20  FName;
+  STRING20  LName;
+END;
+FilterLibIface1(DATASET(namesRec) ds, STRING search) := INTERFACE
+  EXPORT DATASET(namesRec) matches;
+  EXPORT DATASET(namesRec) others;
+END;
+
+FilterDsLib1(DATASET(namesRec) ds, STRING search) :=
+      MODULE,LIBRARY(FilterLibIface1)
+  EXPORT matches := ds(Lname  = search);
+  EXPORT others  := ds(Lname != search);
+END;
+#WORKUNIT('name','Ppass.FilterDsLib')
+BUILD(FilterDsLib1);
+</programlisting>
+
+    <para>See Also: <link linkend="INDEX_record_structure">INDEX</link>, <link
+    linkend="JOIN">JOIN</link>, <link linkend="FETCH">FETCH</link>, <link
+    linkend="MODULE_Structure">MODULE</link>, <link
+    linkend="INTERFACE_Structure">INTERFACE</link>, <link
+    linkend="LIBRARY">LIBRARY</link>, <link
+    linkend="DISTRIBUTE">DISTRIBUTE</link>, <link
+    linkend="_WORKUNIT">#WORKUNIT</link></para>
+  </sect2>
+</sect1>

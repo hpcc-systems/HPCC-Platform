@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CompareIgnoreCase">
+  <title><emphasis role="bold">CompareIgnoreCase</emphasis></title>
+
+  <para><emphasis role="bold">STD.Str.CompareIgnoreCase<indexterm>
+      <primary>STD.Str.CompareIgnoreCase</primary>
+    </indexterm><indexterm>
+      <primary>Str.CompareIgnoreCase</primary>
+    </indexterm><indexterm>
+      <primary>CompareIgnoreCase</primary>
+    </indexterm>(</emphasis> <emphasis>source1,source2</emphasis> <emphasis
+  role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.CompareIgnoreCase<indexterm>
+      <primary>STD.Uni.CompareIgnoreCase</primary>
+    </indexterm><indexterm>
+      <primary>Uni.CompareIgnoreCase</primary>
+    </indexterm>(</emphasis> <emphasis>source1,source2</emphasis> <emphasis
+  role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.LocaleCompareIgnoreCase<indexterm>
+      <primary>STD.Uni.LocaleCompareIgnoreCase</primary>
+    </indexterm><indexterm>
+      <primary>Uni.LocaleCompareIgnoreCase</primary>
+    </indexterm><indexterm>
+      <primary>LocaleCompareIgnoreCase</primary>
+    </indexterm>(</emphasis> <emphasis>source1,source2, locale</emphasis>
+  <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>source1</emphasis></entry>
+
+          <entry>A string containing the data to compare.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>source2</emphasis></entry>
+
+          <entry>A string containing the data to compare.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>locale</emphasis></entry>
+
+          <entry>A null-terminated string containing the language and country
+          code to use to determine correct sort order and other
+          operations.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>CompareIgnoreCase returns an INTEGER value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">CompareIgnoreCase </emphasis>functions
+  return zero (0) if the <emphasis>source1</emphasis> and
+  <emphasis>source2</emphasis> strings contain the same data, ignoring any
+  differences in the case of the letters. These functions return negative one
+  (-1) if <emphasis>source1</emphasis> &lt; <emphasis>source2</emphasis> or
+  positive one (1) if <emphasis>source1</emphasis> &gt;
+  <emphasis>source2</emphasis>.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">A := STD.Str.CompareIgnoreCase('ABCDE','abcde');
+ //A contains 0 -- they “match”
+
+B := STD.Str.CompareIgnoreCase('ABCDE','edcba');
+ //B contains -1 -- they do not “match”
+</programlisting>
+</sect1>

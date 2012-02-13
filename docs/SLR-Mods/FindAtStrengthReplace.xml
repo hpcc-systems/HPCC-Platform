@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="FindAtStrengthReplace">
+  <title><emphasis role="bold">FindAtStrengthReplace</emphasis></title>
+
+  <para><emphasis role="bold">STD.Uni.LocaleFindAtStrengthReplace<indexterm>
+      <primary>STD.Uni.LocaleFindAtStrengthReplace</primary>
+    </indexterm><indexterm>
+      <primary>Uni.LocaleFindAtStrengthReplace</primary>
+    </indexterm><indexterm>
+      <primary>LocaleFindAtStrengthReplace</primary>
+    </indexterm>(</emphasis> <emphasis>source, target,</emphasis> <emphasis>
+  replacement, locale, strength </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>A string containing the data to search.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>target </emphasis></entry>
+
+          <entry>A string containing the substring to search for.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>replacement </emphasis></entry>
+
+          <entry>A string containing the replacement data.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>locale</emphasis></entry>
+
+          <entry>A null-terminated string containing the language and country
+          code to use to determine correct sort order and other
+          operations.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>strength</emphasis></entry>
+
+          <entry>An integer value indicating how to compare. Valid values
+          are:</entry>
+        </row>
+
+        <row>
+          <entry></entry>
+
+          <entry>1 ignores accents and case, differentiating only between
+          letters.</entry>
+        </row>
+
+        <row>
+          <entry></entry>
+
+          <entry>2 ignores case but differentiates between accents.</entry>
+        </row>
+
+        <row>
+          <entry></entry>
+
+          <entry>3 differentiates between accents and case but ignores e.g.
+          differences between Hiragana and Katakana</entry>
+        </row>
+
+        <row>
+          <entry></entry>
+
+          <entry>4 differentiates between accents and case and e.g.
+          Hiragana/Katakana, but ignores e.g. Hebrew cantellation
+          marks</entry>
+        </row>
+
+        <row>
+          <entry></entry>
+
+          <entry>5 differentiates between all strings whose canonically
+          decomposed forms (NFD—Normalization Form D) are
+          non-identical</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>FindAtStrengthReplace returns a UNICODE value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">FindAtStrengthReplace </emphasis>functions
+  return the <emphasis>source</emphasis> string with the
+  <emphasis>replacement</emphasis> string substituted for all instances of the
+  <emphasis>target </emphasis>string. If the <emphasis>target</emphasis>
+  string is not in the <emphasis>source</emphasis> string, it returns the
+  <emphasis>source</emphasis> string unaltered.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">STD.Uni.LocaleFindAtStrengthReplace(u'e\u00E8E\u00C9eE',
+   u'e\u00E9', u'xyz', 'fr', 1) = u'xyzxyzxyz';
+STD.Uni.LocaleFindAtStrengthReplace(u'e\u00E8E\u00C9eE',
+   u'e\u00E9', u'xyz', 'fr', 2) = u'e\u00E8xyzeE';
+STD.Uni.LocaleFindAtStrengthReplace(u'e\u00E8E\u00C9eE',
+   u'e\u00E9', u'xyz', 'fr', 3) = u'e\u00E8E\u00C9eE';
+</programlisting>
+
+  <para></para>
+</sect1>

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="WHEN">
+  <title>WHEN</title>
+
+  <para><emphasis>action </emphasis><emphasis role="bold">: WHEN<indexterm>
+      <primary>WHEN</primary>
+    </indexterm>(</emphasis><emphasis> event </emphasis><emphasis
+  role="bold">[</emphasis><emphasis> ,</emphasis><emphasis
+  role="bold">COUNT<indexterm>
+      <primary>COUNT</primary>
+    </indexterm>(</emphasis><emphasis> repeat </emphasis><emphasis
+  role="bold">) ] ) </emphasis><indexterm>
+      <primary>WHEN workflow service</primary>
+    </indexterm>;</para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="79.45pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>action</emphasis></entry>
+
+            <entry>Any valid ECL Action to execute.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>event</emphasis></entry>
+
+            <entry>The event that triggers action execution. This may be
+            either the EVENT or CRON functions, EVENTNAME or the name of an
+            EVENT (as a shorthand for EVENT(event,'*')), or any attribute
+            defined with those functions.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>COUNT</emphasis></entry>
+
+            <entry>Optional. Specifies the number of events to trigger
+            instances of the action. If omitted, the default is unlimited
+            (continuously waiting for another event to trigger another
+            instance of the action), until the workunit is manually removed
+            from the list of workunits being monitored by the
+            scheduler.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>repeat</emphasis></entry>
+
+            <entry>An integer expression.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">WHEN </emphasis>service executes the
+  <emphasis>action </emphasis>whenever the <emphasis>event
+  </emphasis>occurs.</para>
+
+  <para>Example:</para>
+
+  <programlisting>  IF (FileServices.FileExists('test::myfile'),
+     FileServices.DeleteLogicalFile('test::myfile'));
+     //deletes the file if it already exists
+  FileServices.MonitorLogicalFileName('MyFileEvent','test::myfile');
+     //sets up monitoring and the event name
+     //to fire when the file is found
+  OUTPUT('File Created') : WHEN(EVENT('MyFileEvent','*'));
+     //this OUTPUT occurs only after the event has fired
+     //may also be coded in this shorthand form:
+     // OUTPUT('File Created') : WHEN('MyFileEvent');
+  afile := DATASET([{ 'A', '0'}], {STRING10 key,STRING10 val});
+  OUTPUT(afile,,'test::myfile');
+     //this creates a file that the DFU file monitor will find
+     //when it periodically polls
+     //**********************************
+  EXPORT events := MODULE
+    EXPORT dailyAtMidnight := CRON('0 0 * * *');
+    EXPORT dailyAt( INTEGER hour,
+                    INTEGER minute=0) :=
+          EVENT('CRON',
+               (STRING)minute + ' ' + (STRING)hour + ' * * *');
+    EXPORT dailyAtMidday := dailyAt(12, 0);
+  END;
+  BUILD(teenagers) : WHEN(events.dailyAtMidnight);
+  BUILD(oldies) : WHEN(events.dailyAt(6));
+  BUILD(oldies) : WHEN(EVENT('FileDropped', 'x'));
+</programlisting>
+
+  <para>See Also: <link linkend="EVENT">EVENT</link>, <link linkend="CRON">CRON</link>, <link linkend="NOTIFY">NOTIFY</link>, <link linkend="WAIT">WAIT</link></para>
+</sect1>

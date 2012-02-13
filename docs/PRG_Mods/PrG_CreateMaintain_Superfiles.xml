@@ -1,0 +1,372 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Creating_and_Maintaining_SuperFiles">
+  <title><emphasis role="bold">Creating and Maintaining
+  SuperFiles</emphasis></title>
+
+  <sect2 id="Creating_Data">
+    <title>Creating Data</title>
+
+    <para>First, we need to create some logical files to put into a
+    SuperFile.</para>
+
+    <para>The following filenames for the new sub-files are declared in the
+    DeclareData MODULE structure:</para>
+
+    <programlisting>EXPORT BaseFile := '~PROGGUIDE::SUPERFILE::Base';
+EXPORT SubFile1 := '~PROGGUIDE::SUPERFILE::People1';
+EXPORT SubFile2 := '~PROGGUIDE::SUPERFILE::People2';
+EXPORT SubFile3 := '~PROGGUIDE::SUPERFILE::People3';
+EXPORT SubFile4 := '~PROGGUIDE::SUPERFILE::People4';
+EXPORT SubFile5 := '~PROGGUIDE::SUPERFILE::People5';
+EXPORT SubFile6 := '~PROGGUIDE::SUPERFILE::People6';
+</programlisting>
+
+    <para>The following code (in SuperFile1.ECL) creates the files that we'll
+    use to build SuperFiles:</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+
+s1 := $.DeclareData.Person.File(firstname[1] = 'A');
+s2 := $.DeclareData.Person.File(firstname[1] BETWEEN 'B' AND 'C');
+s3 := $.DeclareData.Person.File(firstname[1] BETWEEN 'D' AND 'J');
+s4 := $.DeclareData.Person.File(firstname[1] BETWEEN 'K' AND 'N');
+s5 := $.DeclareData.Person.File(firstname[1] BETWEEN 'O' AND 'R');
+s6 := $.DeclareData.Person.File(firstname[1] BETWEEN 'S' AND 'Z');
+
+Rec := $.DeclareData.Layout_Person;
+
+IF(~Std.File.FileExists($.DeclareData.SubFile1),
+   OUTPUT(s1,,$.DeclareData.SubFile1));
+
+IF(~Std.File.FileExists($.DeclareData.SubFile2),
+   OUTPUT(s2,,$.DeclareData.SubFile2));
+
+IF(~Std.File.FileExists($.DeclareData.SubFile3),
+   OUTPUT(s3,,$.DeclareData.SubFile3));
+
+IF(~Std.File.FileExists($.DeclareData.SubFile4),
+   OUTPUT(s4,,$.DeclareData.SubFile4));
+
+IF(~Std.File.FileExists($.DeclareData.SubFile5),
+   OUTPUT(s5,,$.DeclareData.SubFile5));  
+
+IF(~Std.File.FileExists($.DeclareData.SubFile6),
+   OUTPUT(s6,,$.DeclareData.SubFile6));
+</programlisting>
+
+    <para>This code takes data from the ProgGuide.Person.File dataset (created
+    by the code in GenData.ECL and declared in the ProgGuide MODULE structure
+    attribute in the Default module) and writes six separate discrete samples
+    to their own logical files, but only if they do not already exist. We'll
+    use these logical files to build some SuperFiles.</para>
+  </sect2>
+
+  <sect2 id="A_Simple_Example">
+    <title>A Simple Example</title>
+
+    <para>We'll start with a simple example of how to create and use a
+    SuperFile. This dataset declaration is in the ProgGuide MODULE structure
+    (contained in the Default module). This declares the SuperFile as a
+    DATASET that can be referenced in ECL code:</para>
+
+    <programlisting>EXPORT SuperFile1 := DATASET(BaseFile,Layout_Person,FLAT);
+</programlisting>
+
+    <para>Then we'll create and add sub-files to a SuperFile (this code is
+    contained in SuperFile2.ECL):</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+
+SEQUENTIAL(
+  Std.File.CreateSuperFile($.DeclareData.BaseFile),
+  Std.File.StartSuperFileTransaction(),
+  Std.File.AddSuperFile($.DeclareData.BaseFile,$.DeclareData.SubFile1),
+  Std.File.AddSuperFile($.DeclareData.BaseFile,$.DeclareData.SubFile2),
+  Std.File.FinishSuperFileTransaction());
+</programlisting>
+
+    <para>If the workunit failed with a “logical name
+    progguide::superfile::base already exists” error message, then open the
+    SuperFileRestart.ECL file and run it, then re-try the above code. Once
+    you've successfully executed this code in a builder window, you've created
+    the SuperFile and added two sub-files into it.</para>
+
+    <para>The SuperFile1 DATASET declaration attribute makes the SuperFile
+    available for use just as any other DATASET would be—this is the key to
+    using SuperFiles. That means the following types of actions can be
+    executed against the SuperFile, just as with any other dataset:</para>
+
+    <programlisting>IMPORT $;
+COUNT($.DeclareData.SuperFile1(PersonID &lt;&gt; 0));
+OUTPUT($.DeclareData.SuperFile1);
+</programlisting>
+
+    <para>Given the logical files previously built, the results of the COUNT
+    should be 317,000. The filter condition will always be true, so the COUNT
+    returned will be the total number of records in the SuperFile. The
+    (PersonID &lt;&gt; 0) record filter is necessary so that the actual COUNT
+    is performed each time and the result is not a shortcut value stored
+    internally by the ECL Agent. Of course, the OUTPUT produces the first 100
+    records in the SuperFile.</para>
+  </sect2>
+
+  <sect2 id="Nesting_SuperFiles">
+    <title>Nesting SuperFiles</title>
+
+    <para>Nesting SuperFiles (a SuperFile containing a sub-file that is itself
+    another SuperFile) is a technique that allows new data coming in on a
+    periodic basis (every day, or every hour, or ....) to be “instantly”
+    available to the system. Since the ECL code that refers to a SuperFile
+    always references the DATASET declaration, the only change necessary to
+    make new data available to queries is to add the new data as a sub-file.
+    Since adding a new sub-file always takes place within a SuperFile
+    transaction, any queries are locked out while the update is in
+    progress.</para>
+
+    <para>Implicit in this technique is also the periodic roll up and
+    consolidation of the new data into composite files. This is necessary
+    because the practical limit to the number of physical files you should
+    combine into a SuperFile is about one hundred (100), since every time you
+    reference the SuperFile every sub-file must be physically opened and read
+    from disk, and the more sub-files there are the more operating system
+    resources are used just to get at the data.</para>
+
+    <para>Therefore, you need to periodically run a process that physically
+    combines all the incremental logical files and combines them into a single
+    logical file that replaces them all. Periodic SuperFile data consolidation
+    is a simple process of using OUTPUT to write the complete contents of the
+    SuperFile to a new, single logical file. Once all data is in a single
+    file, a SuperFile transaction can clear the old set of sub-files then add
+    in the new “base” logical file.</para>
+  </sect2>
+
+  <sect2 id="Nested_SuperFile_Example">
+    <title>Nested SuperFile Example</title>
+
+    <para>Here is an example of how to nest SuperFiles. This example assumes
+    you have new data coming every day. It also assumes you want to roll up
+    the new data daily and weekly. The following filenames for the new
+    sub-files are declared in the DeclareData MODULE structure
+    attribute:</para>
+
+    <programlisting>EXPORT AllPeople := '~PROGGUIDE::SUPERFILE::AllPeople';
+EXPORT WeeklyFile := '~PROGGUIDE::SUPERFILE::Weekly';
+EXPORT DailyFile := '~PROGGUIDE::SUPERFILE::Daily';
+</programlisting>
+
+    <para>Creating three more SuperFiles has to be done just once, then you
+    need to add the sub-files to them (this code is contained in
+    SuperFile3.ECL):</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+
+SEQUENTIAL(
+  Std.File.CreateSuperFile($.DeclareData.AllPeople),
+  Std.File.CreateSuperFile($.DeclareData.WeeklyFile),
+  Std.File.CreateSuperFile($.DeclareData.DailyFile),
+  Std.File.StartSuperFileTransaction(),
+  Std.File.AddSuperFile($.DeclareData.AllPeople,$.DeclareData.BaseFile),
+  Std.File.AddSuperFile($.DeclareData.AllPeople,$.DeclareData.WeeklyFile),
+  Std.File.AddSuperFile($.DeclareData.AllPeople,$.DeclareData.DailyFile),
+  Std.File.FinishSuperFileTransaction());
+</programlisting>
+
+    <para>Now the AllPeople SuperFile contains the BaseFile, WeeklyFile, and
+    DailyFile Superfiles as sub-files, creating a hierarchy of SuperFiles,
+    only one of which yet contains any actual data. The Base SuperFile
+    contains all the currently known data, as of the time of the build of the
+    logical files. The Weekly and Daily SuperFiles will contain the interim
+    data updates as they come in the door, precluding the need to rebuild the
+    entire database every time a new set of data comes in.</para>
+
+    <para>One important caveat to this scheme is that a given actual logical
+    file (real data file) should be contained in exactly one of the nested
+    SuperFiles at a time, otherwise you would have duplicate records in the
+    base SuperFile. Therefore, you have to be careful how you maintain your
+    hierarchy so as not to allow the same logical file to be referenced by
+    more than one of the nested SuperFiles at once, outside of a transaction
+    frame.</para>
+
+    <para>As you get new logical files in during the day, you can add them to
+    the Daily SuperFile like this (this code is contained in
+    SuperFile4.ECL):</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+
+SEQUENTIAL(
+  Std.File.StartSuperFileTransaction(),
+  Std.File.AddSuperFile($.DeclareData.DailyFile,$.DeclareData.SubFile3),
+  Std.File.FinishSuperFileTransaction());
+</programlisting>
+
+    <para>This appends the ProgGuide.SubFile3 logical file to the list of
+    sub-files in the DailyFile SuperFile. This means that the very next query
+    using the SuperFile1 dataset will be using the very latest
+    up-to-the-minute data.</para>
+
+    <para>This dataset declaration is in the DeclareData MODULE structure
+    (contained in the Default module). This declares the nested SuperFile as a
+    DATASET that can be referenced in ECL code:</para>
+
+    <programlisting>EXPORT SuperFile2 := DATASET(AllPeople,Layout_Person,FLAT);</programlisting>
+
+    <para>Execute the following action:</para>
+
+    <programlisting>IMPORT ProgrammersGuide AS PG;
+COUNT(PG.DeclareData.SuperFile2(PersonID &lt;&gt; 0));
+</programlisting>
+
+    <para>The result of the COUNT should now be 451,000.</para>
+
+    <para>Edit the code from SuperFile4.ECL to add in ProgGuide.SubFile4, like
+    this:</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+
+SEQUENTIAL(
+  Std.File.StartSuperFileTransaction(),
+  Std.File.AddSuperFile($.DeclareData.DailyFile,$.DeclareData.SubFile4),
+  Std.File.FinishSuperFileTransaction());
+</programlisting>
+
+    <para>Re-running the above COUNT action should now result in
+    620,000.</para>
+
+    <para>Once a day, you can roll all the sub-files up into the WeeklyFile
+    and clear out the DailyFile for the next day's data ingest processing,
+    like this (this code is contained in SuperFile5.ECL):</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+
+SEQUENTIAL(
+  Std.File.StartSuperFileTransaction(),
+  Std.File.AddSuperFile($.DeclareData.WeeklyFile,$.DeclareData.DailyFile,,TRUE),
+  Std.File.ClearSuperFile($.DeclareData.DailyFile),
+  Std.File.FinishSuperFileTransaction());
+</programlisting>
+
+    <para>This moves the references to all the sub-files from the DailyFile to
+    the WeeklyFile (the fourth parameter to the AddSuperFile function being
+    TRUE copies the references from one SuperFile to another), then clears out
+    the DailyFile.</para>
+  </sect2>
+
+  <sect2 id="Data_Consolidation">
+    <title>Data Consolidation</title>
+
+    <para>Since the practical limit to the number of logical files you should
+    combine into a SuperFile is about a hundred, you'll need to periodically
+    run a process that physically combines all the incremental logical files
+    and combines them into a single logical file that replaces them all, like
+    this:</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+
+OUTPUT($.DeclareData.SuperFile2,,'~$.DeclareData::SUPERFILE::People14',OVERWRITE);
+</programlisting>
+
+    <para>This will write a new file containing all the records from all the
+    sub-files in the SuperFile.</para>
+
+    <para>Once you've done that, you'll need to clear all the component
+    SuperFiles and add the new all-the-data-there-is data file into the
+    BaseFile, like this (this code is contained in SuperFile6.ECL):</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+SEQUENTIAL(
+  Std.File.StartSuperFileTransaction(),
+  Std.File.ClearSuperFile($.DeclareData.BaseFile),
+  Std.File.ClearSuperFile($.DeclareData.WeeklyFile),
+  Std.File.ClearSuperFile($.DeclareData.DailyFile),
+  Std.File.AddSuperFile($.DeclareData.BaseFile,'~$.DeclareData::SUPERFILE::People14'),
+  Std.File.FinishSuperFileTransaction());
+</programlisting>
+
+    <para>This action clears out the Base SuperFile, adds the reference to the
+    new all-inclusive logical file, then clears all the incremental
+    SuperFiles.</para>
+
+    <para>Re-running the above COUNT action should still result in
+    620,000.</para>
+
+    <para>Once again, edit the code from SuperFile4.ECL to add
+    ProgGuide.SubFile5 and ProgGuide.SubFile6 to the DailyFile, like
+    this:</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+
+SEQUENTIAL(
+  FileServices.StartSuperFileTransaction(),
+  FileServices.AddSuperFile($.DeclareData.DailyFile,$.DeclareData.SubFile5),  
+  FileServices.AddSuperFile($.DeclareData.DailyFile,$.DeclareData.SubFile6),
+  FileServices.FinishSuperFileTransaction());
+</programlisting>
+
+    <para>Once you've done that, re-running the above COUNT action should now
+    result in 1,000,000.</para>
+  </sect2>
+
+  <sect2 id="Getting_SuperFile_Components">
+    <title>Getting SuperFile Components</title>
+
+    <para>This macro (in the DeclareData MODULE structure attribute)
+    demonstrates one technique to list the component sub-files of a
+    SuperFile:</para>
+
+    <programlisting>EXPORT MAC_ListSFsubfiles(SuperFile) := MACRO
+
+#UNIQUENAME(SeedRec)
+%SeedRec% := DATASET([{''}], {STRING name});
+
+#UNIQUENAME(Xform)
+TYPEOF(%SeedRec%) %Xform%(%SeedRec% L, INTEGER C) :=
+          TRANSFORM
+SELF.name :=
+          FileServices.GetSuperFileSubName(SuperFile,C);
+END;
+
+OUTPUT(NORMALIZE(%SeedRec%,
+FileServices.GetSuperFileSubCount(SuperFile),
+%Xform%(LEFT,COUNTER)));
+ENDMACRO;
+</programlisting>
+
+    <para>The interesting technique here is the use of NORMALIZE to call the
+    TRANSFORM function iteratively until all sub-files in the SuperFile are
+    listed. You can call this macro in a builder window like this (this code
+    is contained in SuperFile7.ECL):</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+
+$.DeclareData.MAC_ListSFsubfiles($.DeclareData.AllPeople);</programlisting>
+
+    <para>This will return a list of all the sub-files in the specified
+    SuperFile. However, this type of code is no longer necessary, since the
+    default mode of the SuperFileContents() function now returns exactly the
+    same result, like this:</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+OUTPUT(Std.File.SuperFileContents($.DeclareData.AllPeople));</programlisting>
+
+    <para>The SuperFileContents() function has an advantage over the macro—it
+    has an option to return the sub-files from any nested SuperFile (which the
+    macro can't do). That form looks like this:</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+OUTPUT(Std.File.SuperFileContents($.DeclareData.AllPeople,TRUE));</programlisting>
+  </sect2>
+</sect1>

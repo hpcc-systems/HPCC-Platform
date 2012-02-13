@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Set_Operators">
+  <title>Set Operators</title>
+
+  <para><emphasis>The following set operators<indexterm>
+      <primary>Set Operators</primary>
+    </indexterm> are supported, listed here in their evaluation
+  precedence:</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup align="left" cols="2">
+      <colspec colwidth="94.80pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry>+</entry>
+
+          <entry>Append (all elements from both sets, without re-ordering or
+          duplicate element removal)</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+</sect1>

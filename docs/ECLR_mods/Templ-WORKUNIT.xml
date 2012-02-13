@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_WORKUNIT">
+  <title>#WORKUNIT</title>
+
+  <para><emphasis role="bold">#WORKUNIT<indexterm>
+      <primary>#WORKUNIT</primary>
+    </indexterm>( </emphasis><emphasis> option, value </emphasis><emphasis
+  role="bold">);</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="75.90pt" />
+
+        <colspec colwidth="276.90pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>option</emphasis></entry>
+
+            <entry>A string constant specifying the name of the option to
+            set.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>value</emphasis></entry>
+
+            <entry>The value to set for the option.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">#WORKUNIT </emphasis>statement sets the
+  <emphasis>option</emphasis> to the specified <emphasis>value </emphasis>for
+  the current workunit. This statement may be used outside an XML scope and
+  does not require a previous call to the LOADXML function to instantiate an
+  XML scope.</para>
+
+  <para>Valid <emphasis>option</emphasis> settings are:</para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="77.25pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>cluster</emphasis></entry>
+
+            <entry>The value parameter specifies the name of the cluster on
+            which the workunit executes.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>protect</emphasis></entry>
+
+            <entry>The value parameter specifies true to indicate the workunit
+            is protected from deletion, or false if not.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>The value parameter is a string constant specifying the
+            workunit's jobname.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>priority</emphasis></entry>
+
+            <entry>The value parameter is a string constant containing low,
+            normal, or high to indicate the workunit's execution priority
+            level, or an integer constant value (not a string) to specify how
+            far above high the priority should be ("super-high").</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>scope</emphasis></entry>
+
+            <entry>The value parameter is a string constant containing the
+            scope value to use to override the workunit's default scope (the
+            user ID of the submitting person). This is a Workunit Security
+            feature (see the supercomputer Operations Manual for a discussion
+            of this feature).</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>Example:</para>
+
+  <programlisting>#WORKUNIT('cluster',400way);   //run the job on the 400-way cluster
+#WORKUNIT('protect',true);     //disallow deletion
+#WORKUNIT('name','My Job');    //name it "My Job"
+#WORKUNIT('priority','high');  //run before other lower-priority jobs
+#WORKUNIT('priority',10);      //run before other high-priority jobs
+#WORKUNIT('scope','NewVal');   //override the default scope
+</programlisting>
+</sect1>

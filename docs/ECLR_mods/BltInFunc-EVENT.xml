@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="EVENT">
+  <title>EVENT<indexterm>
+      <primary>EVENT</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">EVENT<indexterm>
+      <primary>EVENT function</primary>
+    </indexterm>(</emphasis><emphasis> event , subtype </emphasis><emphasis
+  role="bold"> )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="79.30pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>event</emphasis></entry>
+
+            <entry>A case-insensitive string constant naming the event to
+            trap.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>subtype</emphasis></entry>
+
+            <entry>A case-insensitive string constant naming the specific type
+            of event to trap. This may contain * and ? to wildcard-match the
+            event's sub-type.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>EVENT returns a single event.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">EVENT</emphasis> function returns a trigger
+  event, which may be used within the WHEN workflow service<indexterm>
+      <primary>WHEN workflow service</primary>
+    </indexterm> or the WAIT and NOTIFY actions.</para>
+
+  <para>Example:</para>
+
+  <programlisting>EventName := 'MyFileEvent';
+FileName  := 'test::myfile';
+
+IF (FileServices.FileExists(FileName),
+ FileServices.DeleteLogicalFile(FileName));
+ //deletes the file if it already exists
+
+FileServices.MonitorLogicalFileName(EventName,FileName);
+ //sets up monitoring and the event name
+ //to fire when the file is found
+
+OUTPUT('File Created') : WHEN(EVENT(EventName,'*'),COUNT(1));
+ //this OUTPUT occurs only after the event has fired
+
+afile := DATASET([{ 'A', '0'}], {STRING10 key,STRING10 val});
+OUTPUT(afile,,FileName);
+ //this creates a file that the DFU file monitor will find
+ //when it periodically polls
+
+//**********************************
+EXPORT events := MODULE
+  EXPORT dailyAtMidnight := CRON('0 0 * * *');
+  EXPORT dailyAt( INTEGER hour,
+   INTEGER minute=0) :=
+  EVENT('CRON',
+   (STRING)minute + ' ' + (STRING)hour + ' * * *');
+  EXPORT dailyAtMidday := dailyAt(12, 0);
+END;
+BUILD(teenagers): WHEN(events.dailyAtMidnight);
+BUILD(oldies)  : WHEN(events.dailyAt(6));
+</programlisting>
+
+  <para>See Also: <link linkend="EVENTNAME">EVENTNAME</link>, <link linkend="EVENTEXTRA">EVENTEXTRA</link>, <link linkend="CRON">CRON</link>, <link linkend="WHEN">WHEN</link>, <link linkend="WAIT">WAIT</link>, <link linkend="NOTIFY">NOTIFY</link></para>
+</sect1>

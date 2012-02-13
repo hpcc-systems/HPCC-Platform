@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="LOOP">
+  <title>LOOP</title>
+
+  <para><emphasis role="bold">LOOP<indexterm>
+      <primary>LOOP</primary>
+    </indexterm><indexterm>
+      <primary>LOOP function</primary>
+    </indexterm>(</emphasis><emphasis> dataset,</emphasis><emphasis
+  role="bold"> </emphasis><emphasis>loopcount, loopbody </emphasis><emphasis
+  role="bold"> [, PARALLEL<indexterm>
+      <primary>PARALLEL</primary>
+    </indexterm>( </emphasis><emphasis>iterations </emphasis><emphasis
+  role="bold">| </emphasis><emphasis>iterationlist</emphasis><emphasis
+  role="bold"> [</emphasis><emphasis>, default </emphasis><emphasis
+  role="bold">] ) ] )</emphasis></para>
+
+  <para><emphasis role="bold">LOOP(</emphasis><emphasis>
+  dataset,</emphasis><emphasis role="bold"> </emphasis><emphasis>loopcount,
+  loopfilter, loopbody </emphasis><emphasis role="bold"> [, PARALLEL(
+  </emphasis><emphasis>iterations </emphasis><emphasis role="bold">|
+  </emphasis><emphasis>iterationlist</emphasis><emphasis role="bold">
+  [</emphasis><emphasis>, default </emphasis><emphasis role="bold">] ) ]
+  )</emphasis></para>
+
+  <para><emphasis role="bold">LOOP(</emphasis><emphasis>
+  dataset,</emphasis><emphasis role="bold"> </emphasis><emphasis>loopfilter,
+  loopbody </emphasis><emphasis role="bold">)</emphasis><emphasis
+  role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">LOOP(</emphasis><emphasis>
+  dataset,</emphasis><emphasis role="bold">
+  </emphasis><emphasis>loopcondition, loopbody </emphasis><emphasis
+  role="bold">)</emphasis><emphasis role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">LOOP(</emphasis><emphasis>
+  dataset,</emphasis><emphasis role="bold">
+  </emphasis><emphasis>loopcondition, rowfilter, loopbody </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="85.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>dataset</emphasis></entry>
+
+          <entry>The record set to process.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>loopcount<indexterm>
+              <primary>loopcount</primary>
+            </indexterm></emphasis></entry>
+
+          <entry>An integer expression specifying the number of times to
+          iterate .</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>loopbody<indexterm>
+              <primary>loopbody</primary>
+            </indexterm></emphasis></entry>
+
+          <entry>The operation to iteratively perform. This may be a PROJECT,
+          JOIN, or other such operation. ROWS(LEFT) is always used as the
+          operation's first parameter, indicating the specified dataset is the
+          input parameter.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+          <entry>Optional. Specifies parallel execution of loop iterations.
+          This option is available only on Roxie.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>iterations</emphasis></entry>
+
+          <entry>The number of parallel iterations.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>iterationlist</emphasis></entry>
+
+          <entry>A set of integers (contained in square brackets<indexterm>
+              <primary>square brackets</primary>
+            </indexterm>) specifying the number of parallel iterations for
+          each loop. The first set element specifies the parallel iterations
+          for the first loop, the second for the second, ...</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>default</emphasis></entry>
+
+          <entry>Optional. The number of parallel iterations to execute once
+          all elements in the <emphasis>iterationlist</emphasis> have been
+          used.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>loopfilter<indexterm>
+              <primary>loopfilter</primary>
+            </indexterm></emphasis></entry>
+
+          <entry>A logical expression that specifies the set of records whose
+          processing is not yet complete. The set of records not meeting the
+          condition are no longer iteratively processed and are placed into
+          the final result set. This evaluation occurs before each iteration
+          of the <emphasis>loopbody</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>loopcondition<indexterm>
+              <primary>loopcondition</primary>
+            </indexterm></emphasis></entry>
+
+          <entry>A logical expression specifying continuing
+          <emphasis>loopbody</emphasis> iteration while TRUE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>rowfilter</emphasis></entry>
+
+          <entry>A logical expression that specifies a single record whose
+          processing is complete. The record meeting the condition is no
+          longer iteratively processed and is placed into the final result
+          set. This evaluation occurs during the iteration of the
+          <emphasis>loopbody</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>LOOP returns a record set.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">LOOP </emphasis>function iteratively
+  performs the <emphasis>loopbody</emphasis> operation. The COUNTER<indexterm>
+      <primary>COUNTER</primary>
+    </indexterm> is implicit and available for use to return the current
+  iteration.</para>
+
+  <sect2 id="The_PARALLEL_Option">
+    <title>The PARALLEL Option</title>
+
+    <para>The PARALLEL option is offered to solve the following type of
+    problem: When implementing a text search (A and B and C) or (D and E),
+    where each element in the search is evaluated on an iteration of a LOOP(),
+    you want to ensure that the execution is broken in the correct places. If
+    it were split every 2 iterations, the iterations would produce:</para>
+
+    <para>(A and B)</para>
+
+    <para>(A and B and C), (D)</para>
+
+    <para>(A and B and C) or (D and E)</para>
+
+    <para>The second iteration would potentially generate a very large number
+    of temporary records. To prevent this, the number of iterations at each
+    step can be controlled. For this specific case you would probably use
+    PARALLEL([3,3]). For more complicated search criteria the numbers would be
+    different.</para>
+
+    <para>If a very large number is provided as the
+    <emphasis>iterations</emphasis> or <emphasis>default </emphasis>value,
+    then the all the iterations will execute in parallel. Doing this will
+    likely significantly reduce the number of temporary rows stored in the
+    system, but may potentially use a large amount of resources.</para>
+
+    <para>There is a restriction: ROWS(LEFT) cannot be directly used in a
+    sub-query of the <emphasis>loopbody</emphasis>.</para>
+
+    <para>Example:</para>
+
+    <programlisting>namesRec := RECORD  
+STRING20 lname;
+STRING10 fname;
+  UNSIGNED2 age := 25;
+  UNSIGNED2 ctr := 0;
+END;
+namesTable2 := DATASET([{'Flintstone','Fred',35},
+    {'Flintstone','Wilma',33},
+    {'Jetson','Georgie',10},
+    {'Mr. T','Z-man'}], namesRec);
+loopBody(DATASET(namesRec) ds, unsigned4 c) :=
+ PROJECT(ds,
+    TRANSFORM(namesRec,
+    SELF.age := LEFT.age*c;
+    SELF.ctr := COUNTER ;
+    SELF := LEFT));
+//Form 1:
+OUTPUT(LOOP(namesTable2,
+  COUNTER &lt;= 10,
+            PROJECT(ROWS(LEFT),
+     TRANSFORM(namesRec,
+     SELF.age := LEFT.age*2;
+     SELF.ctr := LEFT.ctr + COUNTER ;
+     SELF := LEFT))));
+OUTPUT(LOOP(namesTable2, 4, ROWS(LEFT) &amp; ROWS(LEFT)));
+//Form 2:
+OUTPUT(LOOP(namesTable2,
+  10,
+  LEFT.age * COUNTER &lt;= 200,
+            PROJECT(ROWS(LEFT),
+     TRANSFORM(namesRec,
+     SELF.age := LEFT.age*2;
+     SELF := LEFT))));
+//Form 3:
+OUTPUT(LOOP(namesTable2,
+  SUM(ROWS(LEFT), age) &lt; 1000 * COUNTER,
+            PROJECT(ROWS(LEFT),
+     TRANSFORM(namesRec,
+     SELF.age := LEFT.age*2;
+     SELF := LEFT))));
+//Form 4:
+OUTPUT(LOOP(namesTable2,
+  LEFT.age &lt; 100,
+  loopBody(ROWS(LEFT), COUNTER)));
+//Form 5:
+OUTPUT(LOOP(namesTable2,
+  LEFT.age &lt; 100,
+  EXISTS(ROWS(LEFT)) and SUM(ROWS(LEFT), age) &lt; 1000,
+  loopBody(ROWS(LEFT), COUNTER)));
+</programlisting>
+  </sect2>
+</sect1>

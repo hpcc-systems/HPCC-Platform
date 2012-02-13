@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ASSERT">
+  <title>ASSERT</title>
+
+  <para><emphasis role="bold">ASSERT<indexterm>
+      <primary>ASSERT</primary>
+    </indexterm>( </emphasis><emphasis>condition </emphasis><emphasis
+  role="bold">[ </emphasis><emphasis>, message </emphasis><emphasis
+  role="bold">] [ </emphasis>, <emphasis role="bold">FAIL<indexterm>
+      <primary>FAIL</primary>
+    </indexterm> ] [ </emphasis>, <emphasis role="bold">CONST<indexterm>
+      <primary>CONST</primary>
+    </indexterm> ])</emphasis><emphasis role="bold">ASSERT(
+  </emphasis><emphasis>recset, condition </emphasis><emphasis role="bold">[
+  </emphasis><emphasis>, message </emphasis><emphasis role="bold">] [
+  </emphasis>, <emphasis role="bold">FAIL ] [ </emphasis>, <emphasis
+  role="bold">CONST ])</emphasis><emphasis role="bold"><indexterm>
+      <primary>ASSERT function</primary>
+    </indexterm></emphasis></para>
+
+  <para><emphasis role="bold">ASSERT( </emphasis><emphasis>recset,
+  assertlist</emphasis><emphasis role="bold"> )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="80.65pt" />
+
+        <colspec colwidth="308.15pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>condition</emphasis></entry>
+
+            <entry>The logical expression that should be always be
+            true.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>message</emphasis></entry>
+
+            <entry>Optional. The error to display in the workunit. If omitted,
+            a message is generated from the approximate location in the code
+            and the condition being checked.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">FAIL</emphasis></entry>
+
+            <entry>Optional. Specifies an exception is generated, immediately
+            terminating the workunit.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">CONST</emphasis></entry>
+
+            <entry>Optional. Specifies the condition is evaluated during code
+            generation.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>recset</emphasis></entry>
+
+            <entry>The set of records for which to check the condition against
+            each record.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>assertlist</emphasis></entry>
+
+            <entry>A comma-delimited list of ASSERTs of the first form, used
+            to check multiple conditions against each record in the
+            <emphasis>recset</emphasis>.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">ASSERT </emphasis>action evaluates the
+  <emphasis>condition</emphasis>, and if false, posts the
+  <emphasis>message</emphasis> in the workunit. The workunit terminates
+  immediately if the FAIL option is present.</para>
+
+  <para>Form one is the scalar form, evaluating the
+  <emphasis>condition</emphasis> once. Form two evaluates the
+  <emphasis>condition</emphasis> once for each record in the
+  <emphasis>recset</emphasis>. Form three is a variant of form two that nests
+  multiple form one ASSERTs so that each condition is checked against each
+  record in the <emphasis>recset</emphasis>.</para>
+
+  <para>Example:</para>
+
+  <programlisting>val1 := 1;
+val2 := 1;
+val3 := 2;
+val4 := 2 : STORED('val4');
+ASSERT(val1 = val2);
+ASSERT(val1 = val2, 'Abc1');
+ASSERT(val1 = val3);
+ASSERT(val1 = val3, 'Abc2');
+ASSERT(val1 = val4);
+ASSERT(val1 = val4, 'Abc3');
+ds := DATASET([1,2],{INTEGER val1}) : GLOBAL;
+ // global stops advanced constant folding (if ever done)
+ds1 := ASSERT(ds, val1 = val2);
+ds2 := ASSERT(ds1, val1 = val2, 'Abc4');
+ds3 := ASSERT(ds2, val1 = val3);
+ds4 := ASSERT(ds3, val1 = val3, 'Abc5');
+ds5 := ASSERT(ds4, val1 = val4);
+ds6 := ASSERT(ds5, val1 = val4, 'Abc6');
+OUTPUT(ds6);
+ds7 := ASSERT(ds(val1 != 99),
+    ASSERT(val1 = val2),
+    ASSERT(val1 = val2, 'Abc7'),
+    ASSERT(val1 = val3),
+    ASSERT(val1 = val3, 'Abc8'),
+    ASSERT(val1 = val4),
+    ASSERT(val1 = val4, 'Abc9'));
+OUTPUT(ds7);
+rec := RECORD
+  INTEGER val1;
+  STRING text;
+END;
+rec t(ds l) := TRANSFORM
+  ASSERT(l.val1 &lt;= 3);
+  SELF.text := CASE(l.val1,1=&gt;'One',2=&gt;'Two',3=&gt;'Three','Zero');
+  SELF := l;
+END;
+OUTPUT(PROJECT(ds, t(LEFT)));
+</programlisting>
+
+  <para>See Also: <link linkend="FAIL">FAIL</link>, <link linkend="ERROR">ERROR</link></para>
+</sect1>

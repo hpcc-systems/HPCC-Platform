@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="dbglog">
+  <title><emphasis role="bold">dbglog</emphasis></title>
+
+  <para><emphasis role="bold">STD.System.Log.dbglog<indexterm>
+      <primary>STD.System.Log.dbglog</primary>
+    </indexterm> <indexterm>
+      <primary>System.Log.dbglog</primary>
+    </indexterm> <indexterm>
+      <primary>Log.dbglog</primary>
+    </indexterm> <indexterm>
+      <primary>dbglog</primary>
+    </indexterm>(</emphasis> <emphasis> text </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>text</emphasis></entry>
+
+          <entry>A string containing the text to write.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>dbglog does not return a value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">dbglog </emphasis>function writes the
+  <emphasis>text</emphasis> string to the eclagent.log file for the
+  workunit.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+STD.System.Log.dbglog('Got Here 1');    //write text to log
+</programlisting>
+</sect1>

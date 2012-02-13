@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Logical_Operators">
+  <title>Logical Operators</title>
+
+  <para><emphasis>The following </emphasis>logical operators<indexterm>
+      <primary>logical operators</primary>
+    </indexterm> are supported, listed here in their evaluation
+  precedence:</para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup align="left" cols="2">
+      <colspec colwidth="94.80pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry>NOT</entry>
+
+          <entry>Boolean NOT<indexterm>
+              <primary>Boolean NOT</primary>
+            </indexterm> operation</entry>
+        </row>
+
+        <row>
+          <entry>~</entry>
+
+          <entry>Boolean NOT<indexterm>
+              <primary>Boolean NOT</primary>
+            </indexterm> operation</entry>
+        </row>
+
+        <row>
+          <entry>AND</entry>
+
+          <entry>Boolean AND<indexterm>
+              <primary>Boolean AND</primary>
+            </indexterm> operation</entry>
+        </row>
+
+        <row>
+          <entry>OR</entry>
+
+          <entry>Boolean OR<indexterm>
+              <primary>Boolean OR</primary>
+            </indexterm> operation</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para></para>
+
+  <sect2 id="Logical_Expression_Grouping">
+    <title>Logical Expression Grouping</title>
+
+    <para>When a complex logical expression has multiple OR conditions, you
+    should group the OR conditions and order them from least complex to most
+    complex to result in the most efficient processing. If the probability of
+    occurrence is known, you should order them from the most likely to occur
+    to the least likely to occur, because once any part of a compound OR
+    condition evaluates to TRUE, the remainder of the expression is bypassed.
+    This is also true of the order of MAP function conditions.</para>
+
+    <para>Whenever AND and OR logical operations are mixed in the same
+    expression, you should use parentheses to group within the expression to
+    ensure correct evaluation and to clarify the intent of the expression. For
+    example consider the following:</para>
+
+    <programlisting>isCurrentRevolv := trades.trd_type = 'R' AND
+                   trades.trd_rate = '0' OR
+                   trades.trd_rate = '1';</programlisting>
+
+    <para>does not produce the intended result. Use of parentheses ensures
+    correct evaluation, as shown below:</para>
+
+    <programlisting>isCurrentRevolv := trades.trd_type = 'R' AND
+          (trades.trd_rate = '0' OR trades.trd_rate = '1');</programlisting>
+  </sect2>
+
+  <sect2 id="An_XOR_Operator">
+    <title>An XOR Operator<indexterm>
+        <primary>XOR Operator</primary>
+      </indexterm></title>
+
+    <para>The following function can be used to perform an XOR operation on 2
+    Boolean values:</para>
+
+    <programlisting>BOOLEAN XOR(BOOLEAN cond1, BOOLEAN cond2) :=
+          (cond1 OR cond2) AND NOT (cond1 AND cond2);</programlisting>
+  </sect2>
+</sect1>

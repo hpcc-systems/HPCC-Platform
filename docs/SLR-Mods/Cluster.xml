@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1
+  PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Target">
+   <title>
+      <emphasis role="bold">Target</emphasis>
+   </title>
+   <para>
+      <emphasis role="bold">STD.System.Thorlib.Target<indexterm>
+	<primary>STD.System.STD.System.Job.Target</primary>
+</indexterm>
+<indexterm>
+	<primary>System.STD.System.Job.Target</primary>
+</indexterm>
+<indexterm>
+	<primary>STD.System.Job.Target</primary>
+</indexterm>
+<indexterm>
+	<primary>Target</primary>
+</indexterm>
+(</emphasis>
+      <emphasis>
+        </emphasis>
+      <emphasis role="bold">)</emphasis>
+   </para>
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+
+    <entry>Return:<emphasis> </emphasis></entry><entry>Target returns a VARSTRING
+        value.</entry>
+
+
+        </row>
+
+      </tbody>
+    </tgroup>
+  </informaltable>
+   <para>The <emphasis role="bold">Target </emphasis>function returns
+        the name of the cluster running the workunit. Not supported on Roxie
+        clusters. This name is used by ECLplus.exe to specify the the target
+        cluster for a workunit.</para>
+   <para>Example:</para>
+   <programlisting format="linespecific">A := STD.System.Thorlib.Target();</programlisting>
+</sect1>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="FileExists">
+  <title><emphasis role="bold">FileExists</emphasis></title>
+
+  <para><emphasis role="bold">STD.File.FileExists<indexterm>
+      <primary>STD.File.FileExists</primary>
+    </indexterm><indexterm>
+      <primary>File.FileExists</primary>
+    </indexterm><indexterm>
+      <primary>FileExists</primary>
+    </indexterm>(</emphasis> <emphasis> filename </emphasis> <emphasis
+  role="bold">[, </emphasis> <emphasis>physicalcheck</emphasis> <emphasis
+  role="bold">] )</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>filename</emphasis></entry>
+
+          <entry>A null-terminated string containing the logical name of the
+          file.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>physicalcheck</emphasis></entry>
+
+          <entry>Optional. A boolean TRUE/FALSE to indicate whether to check
+          for the physical existence the <emphasis>filename</emphasis> on
+          disk. If omitted, the default is FALSE.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>FileExists returns a BOOLEAN value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">FileExists </emphasis>function returns TRUE
+  if the specified <emphasis>filename</emphasis> is present in the Distributed
+  File Utility (DFU) and is not a SuperFile (use the STD.File.SuperFileExists
+  function to detect their presence or absence). If
+  <emphasis>physicalcheck</emphasis> is set to TRUE, then the file’s physical
+  presence on disk is also checked.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">A := STD.File.FileExists('~CLASS::RT::IN::People');</programlisting>
+</sect1>

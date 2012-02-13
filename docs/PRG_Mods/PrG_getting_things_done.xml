@@ -1,0 +1,638 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Getting_Things_Done">
+  <title><emphasis>Getting Things Done</emphasis></title>
+
+  <sect2 id="Scanning_Landing_Zone_Files">
+    <title><emphasis role="bold">Scanning Landing Zone
+    Files</emphasis></title>
+
+    <para><emphasis>Here’s the scenario—you’ve just received a data file from
+    someone and it has been put on your landing zone. Before you spray that
+    file to your Thor cluster and start to work with it, you want to have a
+    quick look to see exactly what kind of data it contains and whether the
+    format of that data matches the format that you were given by the
+    supplier. There are a number of ways to do this, including mapping a drive
+    to your landing zone and using a text/hex editor to open the file and look
+    at the contents. </emphasis></para>
+
+    <para>This article will show you how to accomplish this from within
+    QueryBuilder using ECL. Here’s the code (contained in the
+    Default.ProgGuide MODULE attribute):</para>
+
+    <programlisting>EXPORT MAC_ScanFile(IP, infile, scansize) := MACRO
+ds := DATASET(FileServices.ExternalLogicalFileName(IP, infile),
+     {DATA1 S},
+      THOR )[1..scansize];
+OUTPUT(TABLE(ds,{hex := ds.s,txt := (STRING1)ds.s}),ALL);
+Rec := RECORD
+UNSIGNED2 C;
+DATA S {MAXLENGTH(8*1024)};
+END;
+Rec XF1(ds L,INTEGER C) := TRANSFORM
+SELF.C := C;
+SELF.S := L.s;
+END;
+
+ds2 := PROJECT(ds,XF1(LEFT,COUNTER));
+Rec XF2(Rec L,Rec R) := TRANSFORM
+SELF.S := L.S[1 .. R.C-1] + R.S[1];
+SELF := L;
+END;
+Rolled := ROLLUP(ds2,TRUE,XF2(LEFT,RIGHT));
+OUTPUT(TRANSFER(Rolled[1].S,STRING));
+ENDMACRO;
+</programlisting>
+
+    <para>This is written as a MACRO because you could have multiple Landing
+    Zones, and you certainly are going to want to look into different files
+    each time. Therefore, a MACRO that generates the standard process code to
+    scan the file is precisely what’s needed here.</para>
+
+    <para>This MACRO takes three parameters: the IP of the landing zone
+    containing the file the fully-qualified path to that file on the landing
+    zone the number of bytes to read (maximum 8K)</para>
+
+    <para>The initial DATASET declaration uses the
+    FileServices.ExternalLogicalFileName function to name the file. Defining
+    the RECORD structure as a single DATA1 field is necessary to ensure that
+    both text and binary fields can be read correctly. Specifying the DATASET
+    as a THOR file (no matter what type of file it actually is) makes it
+    simple to read as a fixed-length record file. The square brackets at the
+    end of the DATASET declaration automatically limit the number of 1-byte
+    records read to the first <emphasis>scansize</emphasis> number of bytes in
+    the file.</para>
+
+    <para>The first OUTPUT action allows you to see the raw Hexadecimal data
+    from the file.</para>
+
+    <para>The TABLE function doubles up the input data, producing a DATA1
+    displaying the Hex value and a STRING1 that type casts each byte to a
+    STRING1 for display. Viewing the raw Hex value is necessary because most
+    binary fields will not contain text-displayable characters (and those that
+    do may mislead you as to the actual contents of the field).
+    Non-displayable binary characters show up as a square box in the text
+    column display.</para>
+
+    <para>Next, we’ll construct a more text-friendly view of the data. To do
+    that we’ll start with the Rec RECORD structure, which defines a
+    byte-counter field (UNSIGNED2 C) and a variable-length field (DATA S
+    {MAXLENGTH(8*1024)} to contain the text representation of the data as a
+    single horizontal line of text.</para>
+
+    <para>The XF1 TRANSFORM and its associated PROJECT moves the data from the
+    input format into the format needed to roll up that data into a single
+    text string. Adding the byte-counter field is necessary to ensure that
+    blank spaces are not accidentally trimmed out of the final display.</para>
+
+    <para>The XF2 TRANSFORM and its associated ROLLUP function performs the
+    actual data append. The TRUE condition parameter ensures that only one
+    record will result containing all the input bytes rolled into a single
+    record.</para>
+
+    <para>The last OUTPUT action uses the TRANSFER function instead of type
+    casting to ensure that all the text characters in the original data are
+    accurately represented.</para>
+
+    <para>You call this MACRO like this:</para>
+
+    <programlisting>ProgGuide.MAC_ScanFile( '10.173.9.4',
+'C:\\training\\import\\BOCA.XML', 200)
+</programlisting>
+
+    <para>When viewing the result, the QueryBuilder Result_1 tab displays a
+    column of hexadecimal values and the text character (if any) next to it in
+    the second column. This byte-by-byte view of the data is designed to allow
+    you to see the raw Hexadecimal values of each byte alongside its text
+    representation. This is the primary view to use when looking at the
+    contents of files containing binary data.</para>
+
+    <para>The QueryBuilder Result_2 tab displays a single record with a single
+    field. You can click on that field to highlight it, right-click and select
+    “Copy” from the popup menu, then paste the text into any text editor to
+    view. Binary fields will appear as square blocks or “garbage” characters,
+    depending on their hex value. Once pasted into a text editor, you can
+    easily look for data patterns that indicate the start for fields or
+    records and validate that the data layout information provided by the data
+    vendor is accurate (or not).</para>
+  </sect2>
+
+  <sect2 id="Cartesian_Product_of_Two-Datasets">
+    <title><emphasis role="bold">Cartesian Product of Two
+    Datasets</emphasis></title>
+
+    <para><emphasis>A Cartesian Product is the product of two non-empty sets
+    in terms of ordered pairs. As an example, if we take the set of values, A,
+    B and C, and a second set of values, 1, 2, and 3, the Cartesian Product of
+    these two sets would be the set of ordered pairs, A1, A2, A3, B1, B2, B3,
+    C1, C2, C3.</emphasis></para>
+
+    <para>The ECL code to produce this kind of result from any two input
+    datasets would look like this (contained in Cartesian.ECL):</para>
+
+    <programlisting>OutFile1 := '~PROGGUIDE::OUT::CP1';
+
+rec := RECORD
+STRING1 Letter;
+  END;
+  Inds1 := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'},
+                    {'F'},{'G'},{'H'},{'I'},{'J'},
+                    {'K'},{'L'},{'M'},{'N'},{'O'},
+                    {'P'},{'Q'},{'R'},{'S'},{'T'},
+                    {'U'},{'V'},{'W'},{'X'},{'Y'}],
+                   rec);
+
+Inds2 := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'},
+                  {'F'},{'G'},{'H'},{'I'},{'J'},
+                  {'K'},{'L'},{'M'},{'N'},{'O'},
+                  {'P'},{'Q'},{'R'},{'S'},{'T'},
+                  {'U'},{'V'},{'W'},{'X'},{'Y'}],
+                 rec);
+
+CntInDS2 := COUNT(Inds2);
+SetInDS2 := SET(inds2,letter);
+outrec := RECORD
+  STRING1 LeftLetter;
+  STRING1 RightLetter;
+END;
+
+outrec CartProd(rec L, INTEGER C) := TRANSFORM
+  SELF.LeftLetter := L.Letter;
+  SELF.RightLetter := SetInDS2[C];
+END;
+
+//Run the small datasets
+CP1 := NORMALIZE(Inds1,CntInDS2,CartProd(LEFT,COUNTER));
+OUTPUT(CP1,,OutFile1,OVERWRITE);
+</programlisting>
+
+    <para>The core structure of this code is the NORMALIZE that will produce
+    the Cartesian Product. The two input datasets each have twenty-five
+    records, so the number of result records will be six hundred twenty-five
+    (twenty-five squared).</para>
+
+    <para>Each record in the LEFT input dataset to the NORMALIZE will execute
+    the TRANSFORM once for each entry in the SET of values. Making the values
+    a SET is the key to allowing NORMALIZE to perform this operation,
+    otherwise you would need to do a JOIN where the join condition is the
+    keyword TRUE to accomplish this task. However, in testing this with
+    sizable datasets (as in the next instance of this code below), the
+    NORMALIZE version was about 25% faster than using JOIN. If there is more
+    than one field, then multiple SETs may be defined and the process stays
+    the same.</para>
+
+    <para>This next example does the same operation as above, but first
+    generates two sizeable datasets to work with (also contained in
+    Cartesian.ECL):</para>
+
+    <programlisting>InFile1 := '~PROGGUIDE::IN::CP1';
+InFile2 := '~PROGGUIDE::IN::CP2';
+OutFile2 := '~PROGGUIDE::OUT::CP2';
+
+//generate data files
+rec BuildFile(rec L, INTEGER C) := TRANSFORM
+  SELF.Letter := Inds2[C].Letter;
+END;
+
+GenCP1 := NORMALIZE(InDS1,CntInDS2,BuildFile(LEFT,COUNTER));
+GenCP2 := NORMALIZE(GenCP1,CntInDS2,BuildFile(LEFT,COUNTER));
+GenCP3 := NORMALIZE(GenCP2,CntInDS2,BuildFile(LEFT,COUNTER));
+
+Out1 := OUTPUT(DISTRIBUTE(GenCP3,RANDOM()),,InFile1,OVERWRITE);
+Out2 := OUTPUT(DISTRIBUTE(GenCP2,RANDOM()),,InFile2,OVERWRITE);
+
+// Use the generated datasets in a cartesian join:
+
+ds1 := DATASET(InFile1,rec,thor);
+ds2 := DATASET(InFile2,rec,thor);
+
+CntDS2 := COUNT(ds2);
+SetDS2 := SET(ds2,letter);
+
+CP2  := NORMALIZE(ds1,CntDS2,CartProd(LEFT,COUNTER));
+Out3 := OUTPUT(CP2,,OutFile2,OVERWRITE);
+SEQUENTIAL(Out1,Out2,Out3) </programlisting>
+
+    <para>Using NORMALIZE in this case to generate the datasets is the same
+    type of usage previously described in the Creating Example Data article.
+    After that, the process to achieve the Cartesian Product is exactly the
+    same as the previous example.</para>
+
+    <para>Here’s an example of how this same operation can be done using JOIN
+    (also contained in Cartesian.ECL):</para>
+
+    <programlisting>// outrec joinEm(rec L, rec R) := TRANSFORM
+    // SELF.LeftLetter := L.Letter;
+    // SELF.RightLetter := R.Letter;
+// END;
+
+// ds4 := JOIN(ds1, ds2, TRUE, joinEM(LEFT, RIGHT), ALL);
+// OUTPUT(ds4);
+</programlisting>
+  </sect2>
+
+  <sect2 id="Records_Containing_Any_of_a-Set_of_Words">
+    <title><emphasis role="bold">Records Containing Any of a Set of
+    Words</emphasis></title>
+
+    <para><emphasis>Part of the data cleanup problem is the possible presence
+    of profanity or cartoon character names in the data. This can become an
+    issue whenever you are working with data that originated from direct input
+    by end-users to a website. The following code (contained in the
+    BadWordSearch.ECL file) will detect the presence of any of a set of “bad”
+    words in a given field:</emphasis></para>
+
+    <programlisting>SetBadWords := ['JUNK', 'GARBAGE', 'CRAP'];
+BadWordDS := DATASET(SetBadWords,{STRING10 word});
+
+SearchDS := DATASET([{1,'FRED','FLINTSTONE'},
+                     {2,'GEORGE','JETSON'},
+                     {3,'CRAPOLA','NASTYGUY'},
+                     {4,'JUNKER','JUNKEE'},
+                     {5,'GARBAGEGUY','JUNKMAN'},
+                     {6,'FREDDY','KRUEGER'},
+                     {7,'TIM','JONES'},
+                     {8,'JOHN','SMITH'},
+                     {9,'MIKE','MALARKEY'},
+                     {10,'GEORGE','KRUEGER'}
+        ],{UNSIGNED6 ID,STRING10 firstname,STRING10 lastname});
+
+        outrec := RECORD
+        SearchDS.ID;
+        SearchDS.firstname;
+        BOOLEAN FoundWord;
+END;
+
+{BOOLEAN Found} FindWord(BadWordDS L, STRING10 inword) := TRANSFORM
+ SELF.Found := StringLib.StringFind(inword,TRIM(L.word),1) &gt; 0;
+END;
+
+outrec CheckWords(SearchDS L) := TRANSFORM
+  SELF.FoundWord := EXISTS(PROJECT(BadWordDS,
+                      FindWord(LEFT,L.firstname))(Found=TRUE));
+  SELF := L;
+END;
+
+result := PROJECT(SearchDS,CheckWords(LEFT));
+
+OUTPUT(result(FoundWord=TRUE),NAMED('BadWordsInFirstName'));
+OUTPUT(result(FoundWord=FALSE),NAMED('NoBadWordsInFirstName'));
+</programlisting>
+
+    <para>This code is a simple PROJECT of each record that you want to
+    search. The result will be a record set containing the record ID field,
+    the firstname search field, and a BOOLEAN FoundWord flag field indicating
+    whether any “bad” word was found.</para>
+
+    <para>The search itself is done by a nested PROJECT of the field to be
+    searched against the DATASET of “bad” words. Using the EXISTS function to
+    detect if any records are returned from that PROJECT where the returned
+    Found field is TRUE sets the FoundWord flag field value.</para>
+
+    <para>The StringLib.StringFind function simoply detects the presence
+    anywhere within the search strin of any of the “bad” words. The OUTPUT of
+    the set of records where the FoundWord is TRUE allows post-processing to
+    evaluate whether the record is worth keeping or garbage (probably
+    requiring human intervention).</para>
+
+    <para>The above code is a specific example of this technique, but it would
+    be much more useful to have a MACRO that accomplishes this task, something
+    like this one (also contained in the BadWordSearch.ECL file):</para>
+
+    <programlisting>MAC_FindBadWords(BadWordSet,InFile,IDfld,SeekFld,ResAttr,MatchType=1)
+                 := MACRO
+  #UNIQUENAME(BadWordDS)
+  %BadWordDS% := DATASET(BadWordSet,{STRING word{MAXLENGTH(50)}});
+
+  #UNIQUENAME(outrec)
+  %outrec% := RECORD
+    InFile.IDfld;
+    InFile.SeekFld;
+    BOOLEAN FoundWord := FALSE;
+    UNSIGNED2 FoundPos := 0;
+  END;
+
+  #UNIQUENAME(ChkTbl)
+  %ChkTbl% := TABLE(InFile,%outrec%);
+
+  #UNIQUENAME(FindWord)
+  {BOOLEAN Found,UNSIGNED2 FoundPos} %FindWord%(%BadWordDS% L,
+                                            INTEGER C,
+                                            STRING inword)
+                                    := TRANSFORM
+   #IF(MatchType=1) //"contains" search
+     SELF.Found := StringLib.StringFind(inword,TRIM(L.word),1) &gt;  0;
+   #END
+   #IF(MatchType=2) //"exact match" search
+     SELF.Found := inword = L.word;
+  #END
+  #IF(MatchType=3) //"starts with" search
+     SELF.Found := StringLib.StringFind(inword,TRIM(L.word),1) = 1;
+  #END
+    SELF.FoundPos := IF(SELF.FOUND=TRUE,C,0);
+  END;
+
+  #UNIQUENAME(CheckWords)
+  %outrec% %CheckWords%(%ChkTbl% L) := TRANSFORM
+  WordDS := PROJECT(%BadWordDS%,%FindWord%(LEFT,COUNTER,L.SeekFld));
+  SELF.FoundWord := EXISTS(WordDS(Found=TRUE));
+  SELF.FoundPos := WordDS(Found=TRUE)[1].FoundPos;
+  SELF := L;
+ END;
+
+  ResAttr := PROJECT(%ChkTbl%,%CheckWords%(LEFT));
+ENDMACRO;    </programlisting>
+
+    <para>This MACRO does a bit more than the previous example. It begins by
+    passing in:</para>
+
+    <para>* The set of words to find* The file to search* The unique
+    identifier field for the search record* The field to search in* The
+    attribute name of the resulting recordset* The type of matching to do
+    (defaulting to 1)</para>
+
+    <para>Passing in the set of words to seek allows the MACRO to operate
+    against any given set of strings. Specifying the result attribute name
+    allows easy post-processing of the data.</para>
+
+    <para>Where this MACRO starts going beyond the previous example is in the
+    MatchType parameter, which allows the MACRO to use the Template Language
+    #IF function to generate three different kinds of searches from the same
+    codebase: a “contains” search (the default), an exact match, and a “starts
+    with” search.</para>
+
+    <para>It also has an expanded output RECORD structure that includes a
+    FoundPos field to contain the pointer to the first entry in the passed in
+    set that matched. This allows post processing to detect positional matches
+    within the set so that “matched pairs” of words can be detected, as in
+    this example (also contained in the BadWordSearch.ECL file):</para>
+
+    <programlisting>SetCartoonFirstNames := ['GEORGE','FRED', 'FREDDY'];
+SetCartoonLastNames := ['JETSON','FLINTSTONE','KRUEGER'];
+
+MAC_FindBadWords(SetCartoonFirstNames,SearchDS,ID,firstname,Res1,2)
+MAC_FindBadWords(SetCartoonLastNames,SearchDS,ID,lastname,Res2,2)
+
+Cartoons := JOIN(Res1(FoundWord=TRUE),
+           Res2(FoundWord=TRUE),
+           LEFT.ID=RIGHT.ID AND LEFT.FoundPos=RIGHT.FoundPos);
+
+MAC_FindBadWords(SetBadWords,SearchDS,ID,firstname,Res3,3)
+MAC_FindBadWords(SetBadWords,SearchDS,ID,lastname,Res4)
+SetBadGuys := SET(Cartoons,ID) +
+           SET(Res3(FoundWord=TRUE),ID) +
+           SET(Res4(FoundWord=TRUE),ID);
+
+GoodGuys := SearchDS(ID NOT IN SetBadGuys);
+BadGuys := SearchDS(ID IN SetBadGuys);
+OUTPUT(BadGuys,NAMED('BadGuys'));
+OUTPUT(GoodGuys,NAMED('GoodGuys'));
+</programlisting>
+
+    <para>Notice that the position of the cartoon character names in their
+    separate sets define a single character name to search for in multiple
+    passes. Calling the MACRO twice, searching for the first and last names
+    separately, allows you to post-process their results with a simple inner
+    JOIN where the same record was found in each and, most importantly, the
+    positional values of the matches are the same. This prevents “GEORGE
+    KRUEGER” from being mis-labelled a cartoon chracter name.</para>
+  </sect2>
+
+  <sect2 id="Simple_Random_Samples">
+    <title><emphasis role="bold">Simple Random Samples</emphasis></title>
+
+    <para><emphasis>There is a statistical concept called a “Simple Random
+    Sample” in which a statistically “random” (different from simply using the
+    RANDOM() function) sample of records is generated from any dataset. The
+    algorithm inmplemented in the following code example was provided by a
+    customer in one of our government agencies in Washington,
+    DC.</emphasis></para>
+
+    <para>This code is implemented as a MACRO to allow multiple samples to be
+    produced in the same workunit (contained in the SimpleRandomSamples.ECL
+    file):</para>
+
+    <programlisting>SimpleRandomSample(InFile,UID_Field,SampleSize,Result) := MACRO
+  //build a table of the UIDs
+  #UNIQUENAME(Layout_Plus_RecID)
+  %Layout_Plus_RecID% := RECORD
+     UNSIGNED8 RecID := 0;
+     InFile.UID_Field;
+  END;
+  #UNIQUENAME(InTbl)
+  %InTbl% := TABLE(InFile,%Layout_Plus_RecID%);
+
+  //then assign unique record IDs to the table entries
+  #UNIQUENAME(IDRecs)
+  %Layout_Plus_RecID% %IDRecs%(%Layout_Plus_RecID% L, INTEGER C) :=
+     TRANSFORM
+     SELF.RecID := C;
+     SELF := L;
+  END;
+  #UNIQUENAME(UID_Recs)
+  %UID_Recs% := PROJECT(%InTbl%,%IDRecs%(LEFT,COUNTER));
+
+   //discover the number of records
+   #UNIQUENAME(WholeSet)
+   %WholeSet% := COUNT(InFile) : GLOBAL;
+
+   //then generate the unique record IDs to include in the sample
+   #UNIQUENAME(BlankSet)
+   %BlankSet% := DATASET([{0}],{UNSIGNED8 seq});
+   #UNIQUENAME(SelectEm)
+   TYPEOF(%BlankSet%) %SelectEm%(%BlankSet% L, INTEGER c) := TRANSFORM
+     SELF.seq := ROUNDUP(%WholeSet% * (((RANDOM()%100000)+1)/100000));
+   END;
+   #UNIQUENAME(selected)
+   %selected% := NORMALIZE( %BlankSet%, SampleSize,
+                           %SelectEm%(LEFT, COUNTER));
+
+  //then filter the original dataset by the selected UIDs
+  #UNIQUENAME(SetSelectedRecs)
+%SetSelectedRecs% := SET(%UID_Recs%(RecID IN SET(%selected%,seq)),
+                          UID_Field);
+  result := infile(UID_Field IN %SetSelectedRecs% );
+ENDMACRO;
+</programlisting>
+
+    <para>This MACRO takes four parameters:</para>
+
+    <para>* The name of the file to sample * The name of the unique identifier
+    field in that file * The size of the sample to generate * The name of the
+    attribute for the result, so that it may be post-processed</para>
+
+    <para>The algorithm itself is fairly simple. We first create a TABLE of
+    uniquely numbered unique identifier fields. Then we use NORMALIZE to
+    produce a recordset of the candidate records. Which candidate is chosen
+    each time the TRANSFORM function is called is determined by generating a
+    “random” value between zero and one, using modulus division by one hundred
+    thousand on the return from the RANDOM() function, then multiplying that
+    result by the number of records to sample from, rounding up to the next
+    larger integer. This determines the position of the field identifier to
+    use. Once the set of positions within the TABLE is determined, they are
+    used to define the SET of unique fields to use in the final result.</para>
+
+    <para>This algorithm is designed to produce a sample “with replacement” so
+    that it is possible to have a smaller number of records returned than the
+    sample size requested. To produce exactly the size sample you need (that
+    is, a “without replacement” sample), you can request a larger sample size
+    (say, 10% larger) then use the CHOOSEN function to retrieve only the
+    actual number of records required, as in this example (also contained in
+    the SimpleRandomSamples.ECL file).</para>
+
+    <programlisting>SomeFile := DATASET([{'A1'},{'B1'},{'C1'},{'D1'},{'E1'},
+                     {'F1'},{'G1'},{'H1'},{'I1'},{'J1'},
+                     {'K1'},{'L1'},{'M1'},{'N1'},{'O1'},
+                     {'P1'},{'Q1'},{'R1'},{'S1'},{'T1'},
+                     {'U1'},{'V1'},{'W1'},{'X1'},{'Y1'},
+                     {'A2'},{'B2'},{'C2'},{'D2'},{'E2'},
+                     {'F2'},{'G2'},{'H2'},{'I2'},{'J2'},
+                     {'K2'},{'L2'},{'M2'},{'N2'},{'O2'},
+                     {'P2'},{'Q2'},{'R2'},{'S2'},{'T2'},
+                     {'U2'},{'V2'},{'W2'},{'X2'},{'Y2'},
+                     {'A3'},{'B3'},{'C3'},{'D3'},{'E3'},
+                     {'F3'},{'G3'},{'H3'},{'I3'},{'J3'},
+                     {'K3'},{'L3'},{'M3'},{'N3'},{'O3'},
+                     {'P3'},{'Q3'},{'R3'},{'S3'},{'T3'},
+                     {'U3'},{'V3'},{'W3'},{'X3'},{'Y3'},
+                     {'A4'},{'B4'},{'C4'},{'D4'},{'E4'},
+                     {'F4'},{'G4'},{'H4'},{'I4'},{'J4'},
+                     {'K4'},{'L4'},{'M4'},{'N4'},{'O4'},
+                     {'P4'},{'Q4'},{'R4'},{'S4'},{'T4'},
+                     {'U4'},{'V4'},{'W4'},{'X4'},{'Y4'}
+                     ],{STRING2 Letter});
+
+ds := DISTRIBUTE(SomeFile,HASH(letter[2]));
+SimpleRandomSample(ds,Letter,6, res1) //ask for 6
+SimpleRandomSample(ds,Letter,6, res2)
+SimpleRandomSample(ds,Letter,6, res3)
+
+OUTPUT(CHOOSEN(res1,5)); //actually need 5
+OUTPUT(CHOOSEN(res3,5));
+</programlisting>
+  </sect2>
+
+  <sect2 id="Hex_String_to_Decimal_String">
+    <title><emphasis role="bold">Hex String to Decimal
+    String</emphasis></title>
+
+    <para><emphasis>An email request came to me to suggest a way to convert a
+    string containing Hexadecimal values to a string containing the decimal
+    equivalent of that value. The problem was that this code needed to run in
+    Roxie and the StringLib.String2Data plugin library fiunction was not
+    available for use in Roxie queries at that time. Therefore, an all-ECL
+    solution was needed.</emphasis></para>
+
+    <para>This example function (contained in the Hex2Decimal.ECL file)
+    provides that functionality, while at the same time demonstrating
+    practical usage of BIG ENDIAN integers and type transfer.</para>
+
+    <programlisting>HexStr2Decimal(STRING HexIn) := FUNCTION
+
+  //type re-definitions to make code more readable below
+  BE1 := BIG_ENDIAN UNSIGNED1;
+  BE2 := BIG_ENDIAN UNSIGNED2;
+  BE3 := BIG_ENDIAN UNSIGNED3;
+  BE4 := BIG_ENDIAN UNSIGNED4;
+  BE5 := BIG_ENDIAN UNSIGNED5;
+  BE6 := BIG_ENDIAN UNSIGNED6;
+  BE7 := BIG_ENDIAN UNSIGNED7;
+  BE8 := BIG_ENDIAN UNSIGNED8;
+
+  TrimHex := TRIM(HexIn,ALL);
+  HexLen := LENGTH(TrimHex);
+  UseHex := IF(HexLen % 2 = 1,'0','') + TrimHex;
+
+  //a sub-function to translate two hex chars to a packed hex format
+  STRING1 Str2Data(STRING2 Hex) := FUNCTION
+    UNSIGNED1 N1 :=
+        CASE( Hex[1],
+            '0'=&gt;00x,'1'=&gt;10x,'2'=&gt;20x,'3'=&gt;30x,
+            '4'=&gt;40x,'5'=&gt;50x,'6'=&gt;60x,'7'=&gt;70x,
+            '8'=&gt;80x,'9'=&gt;90x,'A'=&gt;0A0x,'B'=&gt;0B0x,
+            'C'=&gt;0C0x,'D'=&gt;0D0x,'E'=&gt;0E0x,'F'=&gt;0F0x,00x);
+     UNSIGNED1 N2 :=
+        CASE( Hex[2],
+            '0'=&gt;00x,'1'=&gt;01x,'2'=&gt;02x,'3'=&gt;03x,
+            '4'=&gt;04x,'5'=&gt;05x,'6'=&gt;06x,'7'=&gt;07x,
+            '8'=&gt;08x,'9'=&gt;09x,'A'=&gt;0Ax,'B'=&gt;0Bx,
+            'C'=&gt;0Cx,'D'=&gt;0Dx,'E'=&gt;0Ex,'F'=&gt;0Fx,00x);
+     RETURN (&gt;STRING1&lt;)(N1 | N2);
+  END;
+
+  UseHexLen := LENGTH(TRIM(UseHex));
+  InHex2 := Str2Data(UseHex[1..2]);
+  InHex4 := InHex2 + Str2Data(UseHex[3..4]);
+  InHex6 := InHex4 + Str2Data(UseHex[5..6]);
+  InHex8 := InHex6 + Str2Data(UseHex[7..8]);
+  InHex10 := InHex8 + Str2Data(UseHex[9..10]);;
+  InHex12 := InHex10 + Str2Data(UseHex[11..12]);
+  InHex14 := InHex12 + Str2Data(UseHex[13..14]);
+  InHex16 := InHex14 + Str2Data(UseHex[15..16]);
+  RETURN CASE(UseHexLen,
+          2 =&gt; (STRING)(&gt;BE1&lt;)InHex2,
+          4 =&gt; (STRING)(&gt;BE2&lt;)InHex4,
+          6 =&gt; (STRING)(&gt;BE3&lt;)InHex6,
+          8 =&gt; (STRING)(&gt;BE4&lt;)InHex8,
+          10 =&gt; (STRING)(&gt;BE5&lt;)InHex10,
+          12 =&gt; (STRING)(&gt;BE6&lt;)InHex12,
+          14 =&gt; (STRING)(&gt;BE7&lt;)InHex14,
+          16 =&gt; (STRING)(&gt;BE8&lt;)InHex16,
+          'ERROR');
+END;
+</programlisting>
+
+    <para>This HexStr2Decimal FUNCTION takes a variable-length STRING
+    parameter containing the hexadecimal value to evaluate. It begins by
+    re-defining the eight possible sizes of unsigned BIG ENDIAN integers. This
+    re-definition is purely for cosmetic purposes—to make the subsequent code
+    more readable.</para>
+
+    <para>The next three attributes detect whether an even or odd number of
+    hexadecimal characters have been passed. If an odd number is passed, then
+    a “0” character is prepended to the passed value to ensure the hex values
+    are placed inthe correct nibbles.</para>
+
+    <para>The Str2Data FUNCTION takes a two-character STRING parameter and
+    translates each character into the appropriate hexadecimal value for each
+    nibble of the resulting 1-character STRING that it returns. The first
+    character defines the first nibble and the second defines the second.
+    These two values are ORed together (using the bitwise | operator) then the
+    result is type transferred to a one-character string, using the shorthand
+    syntax— (&gt;STRING1&lt;) —so that the bit pattern remains untouched. The
+    RETURN result from this FUNCTION is a STRING1 because each succeeding
+    two-character portion of the HexStr2Decimal FUNCTION’s input parameter
+    will pass through the Str2Data FUNCTION and be concatenated with all the
+    preceding results.</para>
+
+    <para>The UseHexLen attribute determines the appropriate size of BIG
+    ENDIAN integer to use to translate the hex into decimal, while the InHex2
+    through InHex16 attributes define the final packed-hexadecimal value to
+    evaluate. The CASE function then uses that UseHexLen to determine which
+    InHex attribute to use for the number of bytes of hex value passed in.
+    Only even numbers of hex characters are allowed (meaning the call to the
+    function would need to add a leading zero to any odd-numbered hex values
+    to translate) and the maximum number of characters allowed is sixteen
+    (representing an eight-byte packed hexadecimal value to translate).</para>
+
+    <para>In all cases, the result from the InHex attribute is
+    type-transferred to the appropriately sized BIG ENDIAN integer. The
+    standard type cast to STRING then performs the actual value translation
+    from the hexadecimal to decimal.</para>
+
+    <para>The following calls return the indicated results:</para>
+
+    <programlisting>OUTPUT(HexStr2Decimal('0101'));               // 257
+OUTPUT(HexStr2Decimal('FF'));                 // 255
+OUTPUT(HexStr2Decimal('FFFF'));               // 65535
+OUTPUT(HexStr2Decimal('FFFFFF'));             // 16777215
+OUTPUT(HexStr2Decimal('FFFFFFFF'));           // 4294967295
+OUTPUT(HexStr2Decimal('FFFFFFFFFF'));         // 1099511627775
+OUTPUT(HexStr2Decimal('FFFFFFFFFFFF'));       // 281474976710655
+OUTPUT(HexStr2Decimal('FFFFFFFFFFFFFF'));     // 72057594037927935
+OUTPUT(HexStr2Decimal('FFFFFFFFFFFFFFFF'));   // 18446744073709551615
+OUTPUT(HexStr2Decimal('FFFFFFFFFFFFFFFFFF')); // ERROR
+</programlisting>
+  </sect2>
+</sect1>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="BETWEEN_Operator">
+  <title>BETWEEN Operator<indexterm>
+      <primary>Between Operator</primary>
+    </indexterm></title>
+
+  <para><emphasis>SeekVal </emphasis><emphasis role="bold">BETWEEN<indexterm>
+      <primary>BETWEEN</primary>
+    </indexterm> </emphasis><emphasis>LoVal </emphasis><emphasis
+  role="bold">AND<indexterm>
+      <primary>AND</primary>
+    </indexterm> </emphasis><emphasis>HiVal </emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>SeekVal</emphasis></entry>
+
+          <entry>The value to find in the inclusive range.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>LoVal</emphasis></entry>
+
+          <entry>The low value in the inclusive range.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>HiVal</emphasis></entry>
+
+          <entry>The high value in the inclusive range.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">BETWEEN</emphasis> operator is shorthand for
+  an inclusive range check using standard comparison operators
+  (<emphasis>SeekVal </emphasis>&gt;= <emphasis>LoVal </emphasis>AND
+  <emphasis>SeekVal </emphasis>&lt;= <emphasis>HiVal). </emphasis>It may be
+  combined with NOT to reverse the logic.</para>
+
+  <para>Example:</para>
+
+  <programlisting>X := 10;
+Y := 20;
+Z := 15;
+
+IsInRange := Z BETWEEN X AND Y;
+   //This code is directly equivalent to:
+   // IsInRange := Z &gt;= X AND Z &lt;= Y;
+
+IsNotInRange := Z NOT BETWEEN X AND Y;
+   //This code is directly equivalent to: 
+   // IsInNotRange := NOT (Z &gt;= X AND Z &lt;= Y);</programlisting>
+
+  <para>See Also: <link linkend="Logical_Operators">Logical Operators</link>, <link linkend="Comparison_Operators">Comparison Operators</link></para>
+</sect1>

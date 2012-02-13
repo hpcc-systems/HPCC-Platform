@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="DEDUP">
+  <title>DEDUP<indexterm>
+      <primary>DEDUP</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">DEDUP<indexterm>
+      <primary>DEDUP function</primary>
+    </indexterm>(</emphasis><emphasis>recordset </emphasis><emphasis
+  role="bold">[,</emphasis><emphasis> condition </emphasis><emphasis
+  role="bold">[, ALL<indexterm>
+      <primary>ALL</primary>
+    </indexterm>[, HASH<indexterm>
+      <primary>HASH</primary>
+    </indexterm>]] [, KEEP<indexterm>
+      <primary>KEEP</primary>
+    </indexterm> </emphasis><emphasis>n </emphasis><emphasis role="bold">]
+  [</emphasis>,<emphasis> keeper </emphasis><emphasis role="bold">] ]
+  [</emphasis><emphasis>, </emphasis><emphasis role="bold">LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm>])</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="79.95pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>The set of records to process, typically sorted in the same
+            order that the expression will test. This may be the name of a
+            dataset or derived record set, or any expression that results in a
+            derived record set.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>condition</emphasis></entry>
+
+            <entry>Optional. A comma-delimited list of expressions or key
+            fields in the recordset that defines “duplicate” records. The
+            keywords LEFT and RIGHT may be used as dataset qualifiers for
+            fields in the recordset. If the condition is omitted, every
+            recordset field becomes the match condition. You may use the
+            keyword RECORD (or WHOLE RECORD) to indicate all fields in that
+            structure, and/or you may use the keyword EXCEPT to list non-dedup
+            fields in the structure.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALL</emphasis></entry>
+
+            <entry>Optional. Matches the condition against all records, not
+            just adjacent records. This option may change the output order of
+            the resulting records.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">HASH</emphasis></entry>
+
+            <entry>Optional. Specifies the ALL operation is performed using
+            hash tables.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">KEEP</emphasis></entry>
+
+            <entry>Optional. Specifies keeping n number of duplicate records.
+            If omitted, the default behavior is to KEEP 1. Not valid with the
+            ALL option present.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>n</emphasis></entry>
+
+            <entry>The number of duplicate records to keep.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>keeper</emphasis></entry>
+
+            <entry>Optional. The keywords LEFT or RIGHT. LEFT (the default, if
+            omitted) keeps the first record encountered and RIGHT keeps the
+            last.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+            <entry>Optional. Specifies the operation is performed on each
+            supercomputer node independently, without requiring interaction
+            with all other nodes to acquire data; the operation maintains the
+            distribution of any previous DISTRIBUTE.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>DEDUP returns a set of records.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">DEDUP</emphasis> function evaluates the
+  <emphasis>recordset</emphasis> for duplicate records, as defined by the
+  <emphasis>condition</emphasis> parameter, and returns a unique return set.
+  This is similar to the DISTINCT statement in SQL<indexterm>
+      <primary>DISTINCT statement in SQL</primary>
+    </indexterm>. The <emphasis>recordset</emphasis> should be sorted, unless
+  ALL is specified.</para>
+
+  <para>If a <emphasis>condition </emphasis>parameter is a single value
+  (<emphasis>field</emphasis>), DEDUP does a simple field-level de-dupe
+  equivalent to
+  LEFT.<emphasis>field</emphasis>=RIGHT.<emphasis>field</emphasis>. The
+  <emphasis>condition </emphasis>is evaluated for each pair of adjacent
+  records in the record set. If the <emphasis>condition </emphasis>returns
+  TRUE, the <emphasis>keeper</emphasis> record is kept and the other
+  removed.</para>
+
+  <para>The <emphasis role="bold">ALL</emphasis> option means that every
+  record pair is evaluated rather than only those pairs adjacent to each
+  other, irrespective of sort order. The evaluation is such that, for records
+  1, 2, 3, 4, the record pairs that are compared to each other are:</para>
+
+  <para>(1,2),(1,3),(1,4),(2,1),(2,3),(2,4),(3,1),(3,2),(3,4),(4,1),(4,2),(4,3)</para>
+
+  <para>This means two compares happen for each pair, allowing the
+  <emphasis>condition </emphasis>to be non-commutative.</para>
+
+  <para><emphasis role="bold">KEEP</emphasis> <emphasis>n</emphasis>
+  effectively means leaving <emphasis>n</emphasis> records of each duplicate
+  type. This is useful for sampling. The <emphasis role="bold">LEFT</emphasis>
+  <emphasis>keeper</emphasis> value (implicit if neither LEFT nor RIGHT are
+  specified) means that if the left and right records meet the de-dupe
+  criteria (that is, they “match”), the left record is kept. If the <emphasis
+  role="bold">RIGHT</emphasis> <emphasis>keeper</emphasis> appears instead,
+  the right is kept. In both cases, the next comparison involves the de-dupe
+  survivor; in this way, many duplicate records can collapse into one.</para>
+
+  <sect2 id="Complex_Record_Set_Conditions">
+    <title>Complex Record Set Conditions</title>
+
+    <para>The DEDUP function<indexterm>
+        <primary>DEDUP function</primary>
+      </indexterm> with the ALL option is useful in determining complex
+    recordset conditions between records in the same recordset. Although DEDUP
+    is traditionally used to eliminate duplicate records next to each other in
+    the recordset, the conditional expression combined with the ALL option
+    extends this capability. The ALL option causes each record to be compared
+    according to the conditional expression to every other record in the
+    recordset. This capability is most effective with small recordsets; larger
+    recordsets should also use the HASH option.</para>
+
+    <para>Example:</para>
+
+    <programlisting>LastTbl := TABLE(Person,{per_last_name});
+Lasts   := SORT(LastTbl,per_last_name);
+MySet   := DEDUP(Lasts,per_last_name);
+      // unique last names -- this is exactly equivalent to:
+      //MySet := DEDUP(Lasts,LEFT.per_last_name=RIGHT.per_last_name);
+      // also exactly equivalent to:
+      //MySet := DEDUP(Lasts);
+NamesTbl1 := TABLE(Person,{per_last_name,per_first_name});
+Names1    := SORT(NamesTbl1,per_last_name,per_first_name);
+MyNames1  := DEDUP(Names1,RECORD);
+      //dedup by all fields -- this is exactly equivalent to:
+      //MyNames1  := DEDUP(Names,per_last_name,per_first_name);
+      // also exactly equivalent to:
+      //MyNames1 := DEDUP(Names1);
+NamesTbl2 := TABLE(Person,{per_last_name,per_first_name, per_sex});
+Names2    := SORT(NamesTbl,per_last_name,per_first_name);
+MyNames2  := DEDUP(Names,RECORD, EXCEPT per_sex);
+      //dedup by all fields except per_sex
+      // this is exactly equivalent to:
+      //MyNames2 := DEDUP(Names, EXCEPT per_sex);
+
+/* In the following example, we want to determine how many ‘AN’ or ‘AU’ type inquiries 
+have occurred within 3 days of a ‘BB’ type inquiry. 
+The COUNT of inquiries in the deduped recordset is subtracted from the COUNT 
+of the inquiries in the original recordset to provide the result.*/
+INTEGER abs(INTEGER i) := IF ( i &lt; 0, -i, i );
+WithinDays(ldrpt,lday,rdrpt,rday,days) :=
+  abs(DaysAgo(ldrpt,lday)-DaysAgo(rdrpt,rday)) &lt;= days;
+DedupedInqs := DEDUP(inquiry, LEFT.inq_ind_code='BB' AND
+     RIGHT.inq_ind_code IN ['AN','AU'] AND
+                          WithinDays(LEFT.inq_drpt,
+           LEFT.inq_drpt_day,
+           RIGHT.inq_drpt,
+           RIGHT.inq_drpt_day,3),
+        ALL );
+InqCount := COUNT(Inquiry) - COUNT(DedupedInqs);
+OUTPUT(person(InqCount &gt;0),{InqCount});  </programlisting>
+
+    <para>See Also: <link linkend="SORT">SORT</link>, <link linkend="ROLLUP">ROLLUP</link>, <link linkend="TABLE">TABLE</link>, <link linkend="FUNCTION_Structure">FUNCTION Structure</link></para>
+  </sect2>
+</sect1>
