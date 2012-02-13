@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="AddSuperFile">
+  <title>AddSuperFile</title>
+
+  <para><emphasis role="bold">STD.File.AddSuperFile<indexterm>
+      <primary>STD.File.AddSuperFile</primary>
+    </indexterm><indexterm>
+      <primary>File.AddSuperFile</primary>
+    </indexterm><indexterm>
+      <primary>AddSuperFile</primary>
+    </indexterm>(</emphasis> <emphasis> superfile, subfile </emphasis>
+  <emphasis role="bold">[</emphasis> <emphasis>, atpos </emphasis> <emphasis
+  role="bold">] [</emphasis> <emphasis>, addcontents </emphasis> <emphasis
+  role="bold">] [</emphasis> <emphasis>,strict </emphasis> <emphasis
+  role="bold">])</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>superfile</emphasis></entry>
+
+          <entry>A null-terminated string containing the logical name of the
+          superfile.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>subfile</emphasis></entry>
+
+          <entry>A null-terminated string containing the logical name of the
+          sub-file. Ths may be another superfile.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>atpos</emphasis></entry>
+
+          <entry>An integer specifying the position of the
+          <emphasis>subfile</emphasis> in the <emphasis>superfile</emphasis>.
+          If omitted, the default is zero (0), which places the
+          <emphasis>subfile </emphasis>at the end of the
+          <emphasis>superfile</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>addcontents</emphasis></entry>
+
+          <entry>A boolean flag that, if set to TRUE, specifies the
+          <emphasis>subfile</emphasis> is also a superfile and the contents of
+          that superfile are added to the superfile rather than its reference.
+          If omitted, the default is to add by reference (addcontents :=
+          FALSE).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>strict</emphasis></entry>
+
+          <entry>A boolean flag specifying, in the case of a
+          <emphasis>subfile</emphasis> that is itself a superfile, whether to
+          check for the existence of the superfile<emphasis> </emphasis>and
+          raise an error if it does not. Also, if
+          <emphasis>addcontents</emphasis> is set to TRUE, it will ensure the
+          <emphasis>subfile</emphasis> that is itself a superfile is not
+          empty. If omitted, the default is false.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>Null.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">AddSuperFile </emphasis>function adds the
+  <emphasis>subfile</emphasis> to the list of files comprising the
+  <emphasis>superfile</emphasis>. All <emphasis>subfiles</emphasis> in the
+  <emphasis>superfile</emphasis> must have exactly the same structure type and
+  format.</para>
+
+  <para>This function may be included in a superfile transaction, but is not
+  required to be.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+SEQUENTIAL(
+ STD.File.StartSuperFileTransaction(),
+ STD.File.AddSuperFile('MySuperFile1','MySubFile1'),
+ STD.File.AddSuperFile('MySuperFile1','MySubFile2'),
+ STD.File.AddSuperFile('MySuperFile2','MySuperFile1'),
+ STD.File.AddSuperFile('MySuperFile3','MySuperFile1',addcontents := true),
+ STD.File.FinishSuperFileTransaction()
+);
+
+// MySuperFile1 contains { MySubFile1, MySubFile2 }
+// MySuperFile2 contains { MySuperFile1 }
+// MySuperFile3 contains { MySubFile1, MySubFile2 }
+
+</programlisting>
+</sect1>

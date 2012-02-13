@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="WUIDdaysAgo">
+  <title><emphasis role="bold">WUIDdaysAgo</emphasis></title>
+
+  <para><emphasis role="bold">STD.System.Workunit.WUIDdaysAgo    <indexterm>
+      <primary>STD.System.Workunit.WUIDdaysAgo</primary>
+    </indexterm>
+    <indexterm>
+      <primary>System.Workunit.WUIDdaysAgo</primary>
+    </indexterm>
+    <indexterm>
+      <primary>Workunit.WUIDdaysAgo</primary>
+    </indexterm>
+    <indexterm>
+      <primary>WUIDdaysAgo</primary>
+    </indexterm>
+(</emphasis>
+  <emphasis> daysago </emphasis> <emphasis role="bold"> )</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>daysago</emphasis></entry>
+
+          <entry>An unsigned integer containing the number of days to go
+          back.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>WUIDdaysAgo returns a VARSTRING value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">WUIDdaysAgo </emphasis>function returns a
+  valid WorkUnit IDentifier for a workunit that would have run within the last
+  <emphasis>daysago</emphasis> days.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">daysago := STD.System.Workunit.WUIDdaysAgo(3);
+OUTPUT(STD.System.Workunit.WorkunitList(daysago));
+ //returns a list of workunits run in the last 72 hours</programlisting>
+</sect1>

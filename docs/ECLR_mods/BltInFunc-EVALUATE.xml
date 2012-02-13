@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="EVALUATE">
+  <title>EVALUATE</title>
+
+  <sect2 id="EVALUATE_action">
+    <title>EVALUATE<indexterm>
+        <primary>EVALUATE</primary>
+      </indexterm> action</title>
+
+    <para><emphasis>[</emphasis><emphasis>attrname</emphasis> :=<emphasis
+    role="bold"> ] EVALUATE<indexterm>
+        <primary>EVALUATE action</primary>
+      </indexterm>(</emphasis><emphasis>expression</emphasis><emphasis
+    role="bold">) ;</emphasis></para>
+
+    <para><informaltable colsep="0" frame="none" rowsep="0">
+        <tgroup cols="2">
+          <colspec colwidth="80.60pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><emphasis>attrname</emphasis></entry>
+
+              <entry>Optional. The action name, which turns the action into an
+              attribute definition, therefore not executed until the
+              <emphasis>attrname</emphasis> is used as an action.</entry>
+            </row>
+
+            <row>
+              <entry>expression</entry>
+
+              <entry>The function to call in an action context.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>The <emphasis role="bold">EVALUATE</emphasis> action names an
+    <emphasis>expression</emphasis> (typically a function call) to execute in
+    an action context. This is mainly useful for calling functions that have
+    side-effects, where you don't care about the return value.</para>
+
+    <para>Example:</para>
+
+    <programlisting>myService := SERVICE
+ UNSIGNED4 doSomething(STRING text);
+END;
+
+ds := DATASET('MyFile', {STRING20 text} , THOR);
+
+APPLY(ds, EVALUATE(doSomething(ds.text)));
+ //calls the doSomething function once for each record in the ds
+ // dataset, ignoring the returned values from the function
+</programlisting>
+
+    <para>See Also: APPLY, SERVICE</para>
+  </sect2>
+
+  <sect2 id="EVALUATE_function">
+    <title>EVALUATE function</title>
+
+    <para><emphasis role="bold">EVALUATE(</emphasis><indexterm>
+        <primary>EVALUATE function</primary>
+      </indexterm><emphasis>onerecord, value</emphasis><emphasis
+    role="bold">)</emphasis></para>
+
+    <para><informaltable colsep="0" frame="none" rowsep="0">
+        <tgroup cols="2">
+          <colspec colwidth="79.15pt" />
+
+          <colspec colwidth="309.65pt" />
+
+          <tbody>
+            <row>
+              <entry><emphasis>onerecord</emphasis></entry>
+
+              <entry>A record set consisting of a single record.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>value</emphasis></entry>
+
+              <entry>The value to return. This may be any expression yielding
+              a value.</entry>
+            </row>
+
+            <row>
+              <entry>Return:</entry>
+
+              <entry>EVALUATE returns a single value.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>The <emphasis role="bold">EVALUATE</emphasis> function returns the
+    <emphasis>value</emphasis> evaluated in the context of the
+    <emphasis>onerecord</emphasis> set (which must be a single record, only).
+    This function typically uses indexing to select a single record for the
+    <emphasis>onerecord</emphasis> recordset. The usage is to return a value
+    from a specific child record when operating at the parent record's scope
+    level. The advantage that EVALUATE has over using recordset indexing into
+    a single field is that the <emphasis>value</emphasis> returned can be any
+    expression and not just a single field from the child dataset.</para>
+  </sect2>
+
+  <sect2 id="Accessing_Field-level_Data_in_a_Specific_Record">
+    <title>Accessing Field-level Data in a Specific Record</title>
+
+    <para>To access field level data in a specific record, the recordset
+    indexing capability must be used to select a single record. The SORT
+    function and recordset filters are useful in selecting and ordering the
+    recordset so that the appropriate record can be selected.</para>
+
+    <para>Example:</para>
+
+    <programlisting>WorstCard := SORT(Cards,Std.Scoring);
+MyValue   := EVALUATE(WorstCard[1],Std.Utilization);
+ // WorstCard[1] uses indexing to get the first record
+ // in the sort order, then evaluates that record
+ // returning the Std.Utilization value
+
+ValidBalTrades := trades(ValidMoney(trades.trd_bal));
+HighestBals := SORT(ValidBalTrades,-trades.trd_bal);
+Highest_HC := EVALUATE(HighestBals[1],trades.trd_hc);
+ //return trd_hc field of the trade with the highest balance
+ // could also be coded as (using indexing):
+ // Highest_HC := HighestBals[1].trades.trd_hc;
+
+OUTPUT(Person,{per_last_name,per_first_name,Highest_HC});
+ //output that Highest_HC for each person
+ //This output operates at the scope of the Person record
+ // EVALUATE is needed to get the value from a Trades record
+ // because Trades is a Child of Person
+
+IsValidInd := trades.trd_ind_code IN ['FM','RE'];
+IsMortgage := IsValidInd OR trades.trd_rate = 'G';
+SortedTrades := SORT(trades(ValidDate(trades.trd_dopn),isMortgage),
+      trades.trd_dopn_mos);
+CurrentRate := MAP(~EXISTS(SortedTrades) =&gt; ' ',
+                   EVALUATE(SortedTrades[1], trades.trd_rate));
+
+OUTPUT(person,{CurrentRate});
+</programlisting>
+
+    <para>See Also: <link linkend="SORT">SORT</link></para>
+  </sect2>
+</sect1>

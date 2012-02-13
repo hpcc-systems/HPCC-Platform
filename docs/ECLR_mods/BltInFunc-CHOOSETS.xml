@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CHOOSESETS">
+  <title>CHOOSESETS</title>
+
+  <para><emphasis role="bold">CHOOSESETS<indexterm>
+      <primary>CHOOSESETS</primary>
+    </indexterm><indexterm>
+      <primary>CHOOSESETS function</primary>
+    </indexterm>(</emphasis><emphasis> recset, condition  =&gt; n
+  </emphasis><emphasis role="bold">[</emphasis><emphasis>, o
+  </emphasis><emphasis role="bold">][ </emphasis><emphasis>,
+  </emphasis><emphasis role="bold">EXCLUSIVE</emphasis><emphasis><indexterm>
+      <primary>EXCLUSIVE</primary>
+    </indexterm> </emphasis><emphasis role="bold">|</emphasis><emphasis>
+  </emphasis><emphasis role="bold">LAST<indexterm>
+      <primary>LAST</primary>
+    </indexterm></emphasis><emphasis> </emphasis><emphasis
+  role="bold">|</emphasis><emphasis> </emphasis><emphasis
+  role="bold">ENTH<indexterm>
+      <primary>ENTH</primary>
+    </indexterm></emphasis><emphasis> </emphasis><emphasis role="bold">]
+  )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="87.05pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recset</emphasis></entry>
+
+            <entry>The set of records to process. This may be the name of a
+            dataset or a record set derived from some filter condition, or any
+            expression that results in a derived record set.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>condition</emphasis></entry>
+
+            <entry>The logical expression that defines which records to
+            include in the result set.</entry>
+          </row>
+
+          <row>
+            <entry>=&gt;</entry>
+
+            <entry>The “results in” operator—valid only in CHOOSESETS, CASE,
+            and MAP.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>n</emphasis></entry>
+
+            <entry>The maximum number of records to return. If zero (0), no
+            records that meet the condition are returned.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>o</emphasis></entry>
+
+            <entry>Optional. The maximum number of records to return that meet
+            none of the conditions specified.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">EXCLUSIVE</emphasis></entry>
+
+            <entry>Optional. Specifies the condition parameters are mutually
+            exclusive.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LAST</emphasis></entry>
+
+            <entry>Optional. Specifies choosing the last n records that meet
+            the condition instead of the first n. This option is implicitly
+            EXCLUSIVE.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ENTH</emphasis></entry>
+
+            <entry>Optional. Specifies choosing a sample of records that meet
+            the condition instead of the first n. This option is implicitly
+            EXCLUSIVE.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>CHOOSESETS returns a set of records.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">CHOOSESETS </emphasis>function returns a set
+  of records from the <emphasis>recset</emphasis>. The result set is limited
+  to <emphasis>n</emphasis> number of records that meet each
+  <emphasis>condition </emphasis>listed. CHOOSESETS may take as many
+  <emphasis>condition =&gt; n</emphasis> parameters as needed to exactly
+  specify the desired set of records. This is a shorthand way of concatenating
+  the result sets of multiple CHOOSEN function calls to the same
+  <emphasis>recset</emphasis> with different filter conditions<emphasis>,
+  </emphasis>but CHOOSESETS executes significantly faster. This technique is
+  also know as a “cutback.”</para>
+
+  <para>Example:</para>
+
+  <programlisting>MyResultSet := CHOOSESETS(Person,
+      per_first_name = 'RICHARD' =&gt; 100,
+      per_first_name = 'GWENDOLYN' =&gt; 200, 100)
+// returns a set containing 100 Richards, 200 Gwendolyns, 100 others
+</programlisting>
+
+  <para>See Also: <link linkend="CHOOSEN">CHOOSEN</link>, <link linkend="SAMPLE">SAMPLE</link></para>
+</sect1>

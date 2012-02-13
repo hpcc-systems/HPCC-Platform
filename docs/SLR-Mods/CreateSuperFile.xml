@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CreateSuperFile">
+  <title>CreateSuperFile</title>
+
+  <para><emphasis role="bold">STD.File.CreateSuperFile<indexterm>
+      <primary>STD.File.CreateSuperFile</primary>
+    </indexterm><indexterm>
+      <primary>File.CreateSuperFile</primary>
+    </indexterm><indexterm>
+      <primary>CreateSuperFile</primary>
+    </indexterm>(</emphasis> <emphasis> superfile </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>, sequentialflag </emphasis> <emphasis
+  role="bold">] [</emphasis> <emphasis>, ifdoesnotexist </emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>superfile</emphasis></entry>
+
+          <entry>A null-terminated string containing the logical name of the
+          superfile.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>sequentialflag</emphasis></entry>
+
+          <entry>Optional. A boolean value indicating whether to the sub-files
+          must be sequentially ordered. If omitted, the default is
+          FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>ifdoesnotexist</emphasis></entry>
+
+          <entry>Optional. A boolean value indicating whether to post an error
+          if the <emphasis>superfile</emphasis> already exists. If TRUE, no
+          error is posted. If omitted, the default is FALSE.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>Null.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">CreateSuperFile </emphasis>function creates
+  an empty <emphasis>superfile</emphasis>. This function is not included in a
+  superfile transaction.</para>
+
+  <para>The <emphasis>sequentialflag</emphasis> parameter set to TRUE governs
+  the unusual case where the logical numbering of sub-files must be sequential
+  (for example, where all sub-files are already globally sorted). With
+  <emphasis>sequentialflag</emphasis> FALSE (the default) the subfile parts
+  are interleaved so the parts are found locally.</para>
+
+  <para>For example, if on a 4-way cluster there are 3 files (A, B, and C)
+  then the parts are as follows:</para>
+
+  <para>A._1_of_4, B._1_of_4, and C_1_of_4 are on node 1</para>
+
+  <para>A._2_of_4, B._2_of_4, and C_2_of_4 are on node 2</para>
+
+  <para>A._3_of_4, B._3_of_4, and C_3_of_4 are on node 3</para>
+
+  <para>A._4_of_4, B._4_of_4, and C_4_of_4 are on node 4</para>
+
+  <para>Reading the superfile created with <emphasis>sequentialflag</emphasis>
+  FALSE on Thor will read the parts in the order:</para>
+
+  <para>[A1,B1,C1,] [A2,B2,C2,] [A3,B3,C3,] [A4,B4,C4]</para>
+
+  <para>so the reads will all be local (i.e. A1,B1,C1 on node 1 etc). Setting
+  <emphasis>sequentialflag</emphasis> to TRUE will read the parts in subfile
+  order, like this:</para>
+
+  <para>[A1,A2,A3,] [A4,B1,B2] [,B3,B4,C1,] [C2,C3,C4]</para>
+
+  <para>so that the global order of A,B,C,D is maintained. However, the parts
+  cannot all be read locally (e.g. A2 and A3 will be read on part 1). Because
+  of this it is much less efficient to set <emphasis>sequentialflag</emphasis>
+  true, and as it is unusual anyway to have files that are partitioned in
+  order, it becomes a very unusual option to set.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">STD.File.CreateSuperFile('~CLASS::RT::IN::SF1');</programlisting>
+</sect1>

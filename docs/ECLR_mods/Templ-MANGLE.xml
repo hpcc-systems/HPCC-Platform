@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_MANGLE">
+  <title>#MANGLE</title>
+
+  <para><emphasis role="bold">#MANGLE<indexterm>
+      <primary>#MANGLE</primary>
+    </indexterm>( </emphasis><emphasis> string </emphasis><emphasis
+  role="bold">);</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="76.15pt" />
+
+        <colspec colwidth="276.65pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>string</emphasis></entry>
+
+            <entry>A string value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">#MANGLE </emphasis>statement takes any
+  <emphasis>string</emphasis> and returns a valid ECL identifier label
+  containing only letters, numbers, and underscore (_) characters. #MANGLE
+  replaces non-alphanumeric characters with an underscore (_) followed by the
+  hex value of the character it's replacing.</para>
+
+  <para>Example:</para>
+
+  <programlisting>  #DECLARE (mstg)
+  #DECLARE (dmstg)
+  
+  #SET (mstg, #MANGLE('SECTION_STATES/AREACODES'));
+  export res1 := %'mstg'%;
+  res1;          //res1 = 'SECTION_5fSTATES_2fAREACODES'
+  
+  // Do some processing with ECL Valid Label name "mstg"
+  
+  #SET (dmstg, #DEMANGLE(%'mstg'%));
+  export res2 := %'dmstg'%;
+  res2;          //res2 = 'SECTION_STATES/AREACODES' </programlisting>
+
+  <para>See Also: <link linkend="_DEMANGLE">#DEMANGLE</link>, <link
+  linkend="Attribute_Definition">Attribute Names</link></para>
+</sect1>

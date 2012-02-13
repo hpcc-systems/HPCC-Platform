@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ALLNODES">
+  <title>ALLNODES</title>
+
+  <para><emphasis role="bold">ALLNODES<indexterm>
+      <primary>ALLNODES</primary>
+    </indexterm><indexterm>
+      <primary>ALLNODES function</primary>
+    </indexterm>(</emphasis><emphasis>operation</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="78.70pt" />
+
+        <colspec colwidth="310.10pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>operation</emphasis></entry>
+
+            <entry>The name of an attribute or in-line code that results in a
+            DATASET or INDEX.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>ALLNODES returns a record set or index.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">ALLNODES </emphasis>function specifies that
+  the <emphasis>operation</emphasis> is performed on all nodes in parallel.
+  <emphasis role="bold">Available for use only in Roxie.</emphasis></para>
+
+  <para>Example:</para>
+
+  <programlisting>ds := ALLNODES(JOIN(SomeData,LOCAL(SomeIndex), LEFT.ID = RIGHT.ID));
+</programlisting>
+
+  <para>See Also: THISNODE, LOCAL, NOLOCAL</para>
+</sect1>

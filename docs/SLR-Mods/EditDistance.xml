@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="EditDistance">
+  <title><emphasis role="bold">EditDistance</emphasis></title>
+
+  <para><emphasis role="bold">STD.Str.EditDistance<indexterm>
+      <primary>STD.Str.EditDistance</primary>
+    </indexterm><indexterm>
+      <primary>Str.EditDistance</primary>
+    </indexterm><indexterm>
+      <primary>EditDistance</primary>
+    </indexterm>(</emphasis> <emphasis>string1, string2</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.EditDistance<indexterm>
+      <primary>STD.Uni.EditDistance</primary>
+    </indexterm><indexterm>
+      <primary>Uni.EditDistance</primary>
+    </indexterm>(</emphasis> <emphasis>string1, string2, locale</emphasis>
+  <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>string1</emphasis></entry>
+
+          <entry>The first of a pair of strings to compare.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>string2</emphasis></entry>
+
+          <entry>The second of a pair of strings to compare.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>locale</emphasis></entry>
+
+          <entry>A null-terminated string containing the language and country
+          code to use to determine correct sort order and other
+          operations.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>EditDistance returns an UNSIGNED4 value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">EditDistance </emphasis>function returns a
+  standard Levenshtein distance algorithm score for the edit distance between
+  <emphasis>string1</emphasis> and <emphasis>string2</emphasis>. This score
+  i\reflects the minimum number of operations needed to transform
+  <emphasis>string1</emphasis> into <emphasis>string2</emphasis>.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">STD.Str.EditDistance('CAT','CAT');  //returns 0
+STD.Str.EditDistance('CAT','BAT');  //returns 1
+STD.Str.EditDistance('BAT','BAIT'); //returns 1
+STD.Str.EditDistance('CAT','BAIT'); //returns 2
+</programlisting>
+</sect1>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Audit">
+  <title><emphasis role="bold">Audit</emphasis></title>
+
+  <para><emphasis role="bold">STD.Audit.Audit<indexterm>
+      <primary>STD.Audit.Audit</primary>
+    </indexterm><indexterm>
+      <primary>Audit.Audit</primary>
+    </indexterm><indexterm>
+      <primary>Audit</primary>
+    </indexterm>(</emphasis> <emphasis> type, message </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>type</emphasis></entry>
+
+          <entry>A string constant containing the type of audit entry.
+          Currently, only INFO is provided.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>message</emphasis></entry>
+
+          <entry>A string containing the audit entry text.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>Audit returns a BOOLEAN value indicating whether it was
+          successful or not.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">Audit </emphasis>function writes the
+  <emphasis>message</emphasis> into the Windows event log or Linux system log
+  on the ECL Agent computer. The entries can be retrieved from the logs using
+  standard operating system tools.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">STD.Audit.Audit('INFO','Audit Message');</programlisting>
+</sect1>

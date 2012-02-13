@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="PRELOAD">
+  <title>PRELOAD</title>
+
+  <para><emphasis role="bold">PRELOAD<indexterm>
+      <primary>PRELOAD</primary>
+    </indexterm><indexterm>
+      <primary>PRELOAD function</primary>
+    </indexterm>(</emphasis><emphasis>file </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>, nbr</emphasis><emphasis role="bold"> ]
+  )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="77.90pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>file</emphasis></entry>
+
+            <entry>The name of a DATASET or INDEX definition.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>nbr</emphasis></entry>
+
+            <entry>Optional. An integer constant specifying how many indexes
+            to create "on the fly" for speedier access to the specified
+            DATASET file (only). If &gt; 1000, specifies the amount of memory
+            set aside for these indexes.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>PRELOAD returns a record set.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">PRELOAD </emphasis>function leaves the
+  <emphasis>file </emphasis>in memory after loading (valid only for Data
+  Delivery Engine use). This is exactly equivalent to using the PRELOAD option
+  on the DATASET or INDEX definition.</para>
+
+  <para>Example:</para>
+
+  <programlisting>MyFile := DATASET('MyFile',{STRING20 F1, STRING20 F2},THOR);
+  COUNT(PRELOAD(MyFile))</programlisting>
+
+  <para>See Also: <link linkend="DATASET">DATASET</link>, <link
+  linkend="INDEX_record_structure">INDEX</link></para>
+</sect1>

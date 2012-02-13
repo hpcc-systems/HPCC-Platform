@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="NORMALIZE">
+  <title>NORMALIZE</title>
+
+  <para><emphasis role="bold">NORMALIZE<indexterm>
+      <primary>NORMALIZE</primary>
+    </indexterm><indexterm>
+      <primary>NORMALIZE function</primary>
+    </indexterm>(</emphasis><emphasis>recordset, expression, transform
+  </emphasis><emphasis role="bold">)</emphasis><emphasis
+  role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">NORMALIZE(</emphasis><emphasis>recordset,
+  </emphasis><emphasis role="bold">LEFT<indexterm>
+      <primary>LEFT</primary>
+    </indexterm>.</emphasis><emphasis>childdataset, transform
+  </emphasis><emphasis role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="80.20pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>The set of records to process.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>A numeric expression specifying the total number of times
+            to call the transform for that record.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>transform</emphasis></entry>
+
+            <entry>The TRANSFORM function to call for each record in the
+            recordset.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>childdataset</emphasis></entry>
+
+            <entry>The field name of a child DATASET in the recordset. This
+            must use the keyword LEFT as its qualifier.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>NORMALIZE returns a record set.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">NORMALIZE </emphasis>function normalizes
+  child records out of a <emphasis>recordset</emphasis> where the child
+  records are appended to the end of the parent data records. The purpose is
+  to take variable-length flat-file records and split out the child
+  information. The parent information can easily be extracted using either
+  TABLE or PROJECT.</para>
+
+  <sect2 id="NORMALIZE_Form_1">
+    <title>NORMALIZE Form 1</title>
+
+    <para>Form 1 processes through all records in the <emphasis>recordset
+    </emphasis>performing the <emphasis>transform</emphasis> function the
+    <emphasis>expression</emphasis> number of times on each record in
+    turn.</para>
+  </sect2>
+
+  <sect2 id="TRANSFORM_Function_Requirements_for_Form_1">
+    <title>TRANSFORM Function Requirements for Form 1</title>
+
+    <para>The <emphasis>transform</emphasis> function must take at least two
+    parameters: a LEFT record of the same format as the
+    <emphasis>recordset,</emphasis> and an integer COUNTER specifying the
+    number of times the <emphasis>transform</emphasis> has been called for
+    that record. The resulting record set format does not need to be the same
+    as the input.</para>
+  </sect2>
+
+  <sect2 id="NORMALIZE_Form_2">
+    <title>NORMALIZE Form 2</title>
+
+    <para>Form 2 processes through all records in the <emphasis>recordset
+    </emphasis>iterating the <emphasis>transform</emphasis> function through
+    all the <emphasis>childdataset </emphasis>records in each record in
+    turn.</para>
+  </sect2>
+
+  <sect2 id="TRANSFORM_Function_Requirements_for_Form_2">
+    <title>TRANSFORM Function Requirements for Form 2</title>
+
+    <para>The <emphasis>transform</emphasis> function must take at least one
+    parameter: a RIGHT record of the same format as the
+    <emphasis>childdataset</emphasis>. The resulting record set format does
+    not need to be the same as the input.</para>
+
+    <para>Example:</para>
+
+    <programlisting>//Form 1 example
+NamesRec := RECORD
+  
+UNSIGNED1 numRows;
+STRING20 thename;
+STRING20 addr1 := '';
+STRING20 addr2 := '';
+STRING20 addr3 := '';
+STRING20 addr4 := '';
+END;
+NamesTable := DATASET([ {1,'Kevin','10 Malt Lane'},
+{2,'Liz','10 Malt Lane','3 The cottages'},
+{0,'Mr Nobody'},
+{4,'Anywhere','Here','There','Near','Far'}],
+NamesRec);
+
+OutRec := RECORD
+UNSIGNED1 numRows;
+STRING20 thename;
+STRING20 addr;
+END;
+
+OutRec NormIt(NamesRec L, INTEGER C) := TRANSFORM
+SELF := L;
+SELF.addr := CHOOSE(C, L.addr1, L.addr2, L.addr3,
+             L.addr4);
+END;
+  
+NormAddrs :=
+            NORMALIZE(namesTable,LEFT.numRows,NormIt(LEFT,COUNTER<indexterm>
+        <primary>COUNTER</primary>
+      </indexterm>));
+/* the result is: numRows thename
+            addr
+1 Kevin 10 Malt Lane
+2 Liz 10 Malt Lane
+2 Liz 3 The cottages
+4 Anywhere Here
+4 Anywhere There
+4 Anywhere Near
+4 Anywhere Far */
+//************************
+//Form 2 example
+ChildRec := RECORD
+INTEGER1 NameID;
+STRING20 Addr;
+END;
+DenormedRec := RECORD
+INTEGER1 NameID;
+STRING20 Name;
+DATASET(ChildRec) Children;
+END;
+
+ds := DATASET([ {1,'Kevin',[ {1,'10 Malt Lane'}]},
+{2,'Liz', [ {2,'10 Malt Lane'},
+{2,'3 The cottages'}]},
+{3,'Mr Nobody', []},
+{4,'Anywhere',[ {4,'Far'},
+{4,'Here'},
+{4,'There'},
+{4,'Near'}]} ],
+DenormedRec);
+ChildRec NewChildren(ChildRec R) := TRANSFORM
+SELF := R;
+END;
+NewChilds := NORMALIZE(ds,LEFT.Children,NewChildren(RIGHT));
+</programlisting>
+
+    <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link>, <link linkend="RECORD_Structure">RECORD Structure</link>, <link linkend="DENORMALIZE">DENORMALIZE</link></para>
+  </sect2>
+</sect1>

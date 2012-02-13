@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="EXPORT">
+  <title>EXPORT</title>
+
+  <para><emphasis role="bold">EXPORT<indexterm>
+      <primary>EXPORT</primary>
+    </indexterm> </emphasis><emphasis>definition</emphasis></para>
+
+  <para><emphasis>definition</emphasis> A definition.</para>
+
+  <para>The <emphasis role="bold">EXPORT </emphasis>keyword<indexterm>
+      <primary>EXPORT keyword</primary>
+    </indexterm> explicitly allows other definitions to import the specified
+  <emphasis>definition</emphasis>. Definitions not explicitly flagged for
+  export are local to the folder within which they reside. Without either the
+  SHARED or EXPORT keywords, a <emphasis>definitions's</emphasis> scope is
+  limited to the next SHARED or EXPORT.</para>
+
+  <para>Example:</para>
+
+  <programlisting>EXPORT MyAttribute := 5;
+
+// allows other definitions to use MyModule.MyAttribute if they import
+// MyModule</programlisting>
+
+  <para>See Also: <link linkend="IMPORT">IMPORT</link>, <link
+  linkend="SHARED">SHARED</link>, <link
+  linkend="Attribute_Visibility">Attribute Visibility</link>, <link
+  linkend="MODULE_Structure">MODULE</link></para>
+</sect1>

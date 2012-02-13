@@ -1,0 +1,485 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book>
+  <title>Dali Admin</title>
+
+  <bookinfo>
+    <title>Administering Dali</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Boca Raton Documentation Team</surname>
+    </author>
+
+    <legalnotice>
+      <para>We welcome your comments and feedback about this document via
+      email to <email>docfeedback@hpccsystems.com</email> Please include
+      <emphasis role="bold">Documentation Feedback</emphasis> in the subject
+      line and reference the document name, page numbers, and current Version
+      Number in the text of the message.</para>
+
+      <para>LexisNexis and the Knowledge Burst logo are registered trademarks
+      of Reed Elsevier Properties Inc., used under license. Other products,
+      logos, and services may be trademarks or registered trademarks of their
+      respective companies. All names and example data used in this manual are
+      fictitious. Any similarity to actual persons, living or dead, is purely
+      coincidental.</para>
+
+      <para></para>
+    </legalnotice>
+
+    <releaseinfo>© 2011 HPCC Systems. All rights reserved</releaseinfo>
+
+    <date>3.0.0_x</date>
+
+    <corpname>HPCC Systems</corpname>
+
+    <copyright>
+      <year>May, 2011</year>
+    </copyright>
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg" />
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter>
+    <title><emphasis role="bold">Dali Admin</emphasis></title>
+
+    <para>DaliAdmin is an administrator's command line tool to diagnose and
+    fix problems in an HPCC's System Data Store inside the Dali Server.</para>
+
+    <para>Daliadmin can be found at opt/LexisNexis/bin/, along with other
+    tools the HPCC installation package installs.</para>
+
+    <sect1>
+      <title><emphasis>Dali Admin usage</emphasis></title>
+
+      <para>Daliadmin is a command line tool to with the System Data Store in
+      your Dali server.</para>
+
+      <para>Usage:</para>
+
+      <para>daliadmin &lt;command&gt; { &lt;options&gt; }</para>
+
+      <para><programlisting>daliadmin &lt;command&gt; { &lt;options&gt; }
+</programlisting></para>
+
+      <para></para>
+
+      <para>More text and further descriptions of daliadmin to come...</para>
+
+      <para></para>
+
+      <para></para>
+
+      <para>Data Store commands:</para>
+
+      <para><informaltable>
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <tbody>
+              <row>
+                <entry>export &lt;branchxpath&gt; &lt;destfile&gt;</entry>
+
+                <entry>exports specified branches to the nominated
+                file...</entry>
+              </row>
+
+              <row>
+                <entry>import &lt;branchxpath&gt; &lt;srcfile&gt;</entry>
+
+                <entry>imports branches from the nominated file..</entry>
+              </row>
+
+              <row>
+                <entry>importadd &lt;branchxpath&gt; &lt;srcfile&gt;</entry>
+
+                <entry>Adds to import ***</entry>
+              </row>
+
+              <row>
+                <entry>delete &lt;branchxpath&gt;</entry>
+
+                <entry>deletes the specified branch</entry>
+              </row>
+
+              <row>
+                <entry>set &lt;xpath&gt; &lt;value&gt;</entry>
+
+                <entry>sets single value to a single</entry>
+              </row>
+
+              <row>
+                <entry>get &lt;xpath&gt;</entry>
+
+                <entry>get single value</entry>
+              </row>
+
+              <row>
+                <entry>bget &lt;xpath&gt; &lt;dest-file&gt;</entry>
+
+                <entry>binary property</entry>
+              </row>
+
+              <row>
+                <entry>xget &lt;xpath&gt;</entry>
+
+                <entry>(multi-value tail can have commas)</entry>
+              </row>
+
+              <row>
+                <entry>wget &lt;xpath&gt;</entry>
+
+                <entry>(gets all matching xpath)</entry>
+              </row>
+
+              <row>
+                <entry>addp &lt;xpath&gt; &lt;value&gt;</entry>
+
+                <entry>adds value</entry>
+              </row>
+
+              <row>
+                <entry>delp &lt;xpath&gt;</entry>
+
+                <entry>deletes path</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para></para>
+
+      <para>Logical File meta information command:</para>
+
+      <para><informaltable>
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <tbody>
+              <row>
+                <entry>dfsfile &lt;logicalname&gt;</entry>
+
+                <entry>get meta information for file</entry>
+              </row>
+
+              <row>
+                <entry>dfspart &lt;logicalname&gt; &lt;part-num&gt;</entry>
+
+                <entry>get meta information for part</entry>
+              </row>
+
+              <row>
+                <entry>dfscsv &lt;logicalnamemask&gt;</entry>
+
+                <entry>get csv description for files matching mask</entry>
+              </row>
+
+              <row>
+                <entry>dfsgroup &lt;logicalgroupname&gt;</entry>
+
+                <entry>get IPs for logical group (aka cluster)</entry>
+              </row>
+
+              <row>
+                <entry>dfsmap &lt;logicalname&gt;</entry>
+
+                <entry>get part files (primary and replicates)</entry>
+              </row>
+
+              <row>
+                <entry>dfsexists &lt;logicalname&gt;</entry>
+
+                <entry>sets return value to 0 if logical file exists</entry>
+              </row>
+
+              <row>
+                <entry>dfsparents &lt;logicalname&gt;</entry>
+
+                <entry>list superfiles containing file</entry>
+              </row>
+
+              <row>
+                <entry>dfssuperunlink &lt;logicalname&gt;</entry>
+
+                <entry>unlinks file from all super parents</entry>
+              </row>
+
+              <row>
+                <entry>dfsverify &lt;logicalname&gt; crc</entry>
+
+                <entry>verifies parts exist and (optionaly) match crc</entry>
+              </row>
+
+              <row>
+                <entry>setprotect &lt;logicalname&gt; &lt;id&gt;</entry>
+
+                <entry>overwrite protects logical file</entry>
+              </row>
+
+              <row>
+                <entry>unprotect &lt;logicalname&gt; &lt;id&gt;</entry>
+
+                <entry>unprotect file (if id=* then clear all)</entry>
+              </row>
+
+              <row>
+                <entry>listprotect &lt;logicalnamemask&gt;
+                &lt;id-mask&gt;</entry>
+
+                <entry>list protected files</entry>
+              </row>
+
+              <row>
+                <entry>checksuperfile &lt;superfilename&gt;</entry>
+
+                <entry>check superfile linkage consistent</entry>
+              </row>
+
+              <row>
+                <entry>checksubfile &lt;subfilename&gt;</entry>
+
+                <entry>check subfile links to parent</entry>
+              </row>
+
+              <row>
+                <entry>listexpires &lt;logicalnamemask&gt;</entry>
+
+                <entry>lists logical files with expiry value</entry>
+              </row>
+
+              <row>
+                <entry>listrelationships &lt;primary&gt; secondary&gt;</entry>
+
+                <entry>lists relations set up</entry>
+              </row>
+
+              <row>
+                <entry>dfsperm &lt;logicalname&gt;</entry>
+
+                <entry>returns LDAP permission for logical file access</entry>
+              </row>
+
+              <row>
+                <entry>dfscompratio &lt;logicalname&gt;</entry>
+
+                <entry>returns size and compression ratio of logical
+                file</entry>
+              </row>
+
+              <row>
+                <entry>dfsscopes &lt;mask&gt;</entry>
+
+                <entry>lists logical file scopes</entry>
+              </row>
+
+              <row>
+                <entry>cleanscopes &lt;mask&gt;</entry>
+
+                <entry>remove empty scopes</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para></para>
+
+      <para>Workunit commands:</para>
+
+      <para><informaltable>
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <tbody>
+              <row>
+                <entry>listworkunits &lt;workunit-mask&gt;
+                [&lt;prop&gt;=&lt;val&gt; &lt;lower&gt; &lt;upper&gt;]
+                workunittimings &lt;WUID&gt;</entry>
+
+                <entry>csv of graph timings</entry>
+              </row>
+
+              <row>
+                <entry>saveworkunitarchive &lt;WUID&gt; &lt;file&gt;</entry>
+
+                <entry>sets result to 0 if exists</entry>
+              </row>
+
+              <row>
+                <entry>loadworkunitarchive &lt;WUID&gt; &lt;file&gt;</entry>
+
+                <entry>sets result to 0 if exists</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para></para>
+
+      <para>Other dali server and misc commands:</para>
+
+      <informaltable>
+        <?dbfo keep-together="always"?>
+
+        <tgroup cols="2">
+          <tbody>
+            <row>
+              <entry>serverlist &lt;mask&gt;</entry>
+
+              <entry>list server IPs (mask optional)</entry>
+            </row>
+
+            <row>
+              <entry>clusterlist &lt;mask&gt;</entry>
+
+              <entry>list clusters (mask optional)</entry>
+            </row>
+
+            <row>
+              <entry>queuelist &lt;mask&gt;</entry>
+
+              <entry>list active queues (mask optional)</entry>
+            </row>
+
+            <row>
+              <entry>clientlist &lt;mask&gt;</entry>
+
+              <entry>list all current connected clients</entry>
+            </row>
+
+            <row>
+              <entry>getauditlog &lt;fromdate&gt; &lt;todate&gt;
+              &lt;match&gt;</entry>
+
+              <entry>get dali audit log text</entry>
+            </row>
+
+            <row>
+              <entry>storecoalesce</entry>
+
+              <entry>force dali server transaction log coalesce</entry>
+            </row>
+
+            <row>
+              <entry>mpping &lt;server-ip&gt;</entry>
+
+              <entry>time MP connect (sets result no zero if failed)</entry>
+            </row>
+
+            <row>
+              <entry>daliping</entry>
+
+              <entry>time dali client connect (sets result)</entry>
+            </row>
+
+            <row>
+              <entry>daliperf</entry>
+
+              <entry>return 'busy' measure for dali server</entry>
+            </row>
+
+            <row>
+              <entry>getxref &lt;destxmlfile&gt;</entry>
+
+              <entry>get all XREF information</entry>
+            </row>
+
+            <row>
+              <entry>dalilocks</entry>
+
+              <entry>get all locked paths (e.g. files)</entry>
+            </row>
+
+            <row>
+              <entry>daliunlock</entry>
+
+              <entry>unlocks a path</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>
+
+      <para></para>
+
+      <para>Common options:</para>
+
+      <para>(can be placed in daliadmin.ini)</para>
+
+      <para><informaltable>
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <tbody>
+              <row>
+                <entry>server=&lt;dali-server-ip&gt;</entry>
+
+                <entry>required</entry>
+              </row>
+
+              <row>
+                <entry>user=&lt;username&gt;</entry>
+
+                <entry>for file operations</entry>
+              </row>
+
+              <row>
+                <entry>password=&lt;password&gt;</entry>
+
+                <entry>for file operations</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para></para>
+
+      <para></para>
+
+      <para></para>
+
+      <sect2>
+        <title>XPATH Syntax</title>
+
+        <para>The XPATH Syntax can be entered in alternative method on the
+        command line making it easier to enter commands without having to
+        escape. Take for intsance the expression:</para>
+
+        <para><programlisting> x/y[@id="z"]</programlisting></para>
+
+        <para>This can be alternatively expressed as:</para>
+
+        <para><programlisting> x/y[@id=z] </programlisting></para>
+
+        <para>if z doesn't contain the character ']'</para>
+
+        <para>Alternatively the same statement can be constructed as :</para>
+
+        <para><programlisting>x/y[@id='z']</programlisting> another example in
+        the following statement, if z does not contain a '}]' character
+        string, you can use:</para>
+
+        <para><programlisting>x/y[@id={z}] </programlisting></para>
+
+        <para></para>
+
+        <para>The above examples make using xpaths easier from the command
+        line by removing need to always escape quotes.</para>
+
+        <para></para>
+
+        <para>LFN(&lt;logicalname&gt;) expands to file xpath for the logical
+        filename</para>
+      </sect2>
+    </sect1>
+  </chapter>
+</book>

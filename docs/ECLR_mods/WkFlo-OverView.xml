@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Workflow_Overview">
+  <title>Workflow Overview</title>
+
+  <para>Workflow control within ECL is generally handled automatically by the
+  system. It spots which processes can happen in parallel, when
+  synchronization is required, and when processes must happen in series. These
+  workflow services allow exceptions to the normal flow of execution to be
+  specified by the programmer to give extra control (such as the FAILURE
+  clause).</para>
+
+  <para>Workflow operations are implicitly evaluated in a separate global
+  scope from the code to which it is attached. Therefore, any values from the
+  code to which it is attached (such as loop counters) are unavailable to the
+  workflow service.</para>
+</sect1>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="XMLENCODE">
+  <title>XMLENCODE</title>
+
+  <para><emphasis role="bold">XMLENCODE<indexterm>
+      <primary>XMLENCODE</primary>
+    </indexterm><indexterm>
+      <primary>XMLENCODE Function</primary>
+    </indexterm>(</emphasis><emphasis> xml </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold">
+  ALL<indexterm>
+      <primary>ALL</primary>
+    </indexterm> ] )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="77.05pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>xml</emphasis></entry>
+
+            <entry>The XML to encode.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALL</emphasis></entry>
+
+            <entry>Optional. Specifies including new line characters in the
+            encoding so the text can be used in attribute definitions.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>XMLENCODE returns a single value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">XMLENCODE</emphasis> function encodes
+  special characters in an XML string (for example, &lt; is converted to
+  &amp;lt) allowing you to use the CSV option on OUTPUT to produce more
+  complex XML files than are possible by using the XML option.</para>
+
+  <para>Example:</para>
+
+  <programlisting>  d := XMLENCODE('&lt;xml version 1&gt;&lt;tag&gt;data&lt;/tag&gt;');
+  e := XMLDECODE(d);
+</programlisting>
+
+  <para>See Also: <link linkend="XMLDECODE">XMLDECODE</link></para>
+</sect1>

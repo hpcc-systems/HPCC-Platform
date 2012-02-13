@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="MERGE">
+  <title>MERGE</title>
+
+  <para><emphasis role="bold">MERGE<indexterm>
+      <primary>MERGE</primary>
+    </indexterm><indexterm>
+      <primary>MERGE function</primary>
+    </indexterm>(</emphasis><emphasis>recordsetlist </emphasis><emphasis
+  role="bold"> </emphasis><emphasis>,</emphasis><emphasis role="bold">
+  </emphasis><emphasis role="bold">SORTED<indexterm>
+      <primary>SORTED</primary>
+    </indexterm>( </emphasis><emphasis>fieldlist</emphasis><emphasis
+  role="bold"> ) [</emphasis><emphasis>, </emphasis><emphasis
+  role="bold">DEDUP<indexterm>
+      <primary>DEDUP</primary>
+    </indexterm> ] [</emphasis><emphasis>, </emphasis><emphasis
+  role="bold">LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm> ] )</emphasis></para>
+
+  <para><emphasis role="bold"></emphasis><emphasis
+  role="bold">MERGE(</emphasis><emphasis>recordsetset ,
+  fieldlist</emphasis><emphasis role="bold">
+  </emphasis><emphasis>,</emphasis><emphasis role="bold"> </emphasis><emphasis
+  role="bold">SORTED( </emphasis><emphasis>fieldlist</emphasis><emphasis
+  role="bold"> ) [</emphasis><emphasis>, </emphasis><emphasis
+  role="bold">DEDUP ] [</emphasis><emphasis>, </emphasis><emphasis
+  role="bold">LOCAL ] )</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="82.20pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>recordsetlist</emphasis></entry>
+
+          <entry>A comma-delimited list of the datasets or indexes to merge,
+          which must all be in exactly the same format and sort order.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">SORTED</emphasis></entry>
+
+          <entry>Specifies the sort order of the
+          <emphasis>recordsetlist</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>fieldlist</emphasis></entry>
+
+          <entry>A comma-delimited list of the fields that define the sort
+          order.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">DEDUP</emphasis></entry>
+
+          <entry>Optional. Specifies the result contains only records with
+          unique values in the fields that specify the sort order
+          <emphasis>fieldlist</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+          <entry>Optional. Specifies the operation is performed on each
+          supercomputer node independently, without requiring interaction with
+          all other nodes to acquire data; the operation maintains the
+          distribution of any previous DISTRIBUTE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>recordsetset</emphasis></entry>
+
+          <entry>A SET ( [ds1,ds2,ds3] ) of the datasets or indexes to merge,
+          which must all be in exactly the same format.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>MERGE returns a record set.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">MERGE </emphasis>function returns a single
+  dataset or index containing all the records from the datasets or indexes
+  named in the <emphasis>recordsetlist </emphasis>or
+  <emphasis>recordsetset</emphasis>. This is particularly useful for
+  incremental data updates as it allows you to merge a smaller set of new
+  records into an existing large dataset or index without having to re-process
+  all the source data again. The <emphasis>recordsetset</emphasis> form makes
+  merging a variable number of datasets possible when used inside a GRAPH
+  function.</para>
+
+  <para>Example:</para>
+
+  <programlisting>ds1 := SORTED(DATASET([{1,'A'},{1,'B'},{1,'C'},{1,'D'},{1,'E'},
+                       {1,'F'},{1,'G'},{1,'H'},{1,'I'},{1,'J'}],
+                      {INTEGER1 number,STRING1 Letter}),
+              letter,number);
+ds2 := SORTED(DATASET([{2,'A'},{2,'B'},{2,'C'},{2,'D'},{2,'E'},
+                       {2,'F'},{2,'G'},{2,'H'},{2,'I'},{2,'J'}],
+                      {INTEGER1 number,STRING1 Letter}),
+              letter,number);
+    
+ds3 := MERGE(ds1,ds2,SORTED(letter,number));
+SetDS := [ds1,ds2];
+ds4 := MERGE(SetDS,letter,number);
+</programlisting>
+</sect1>

@@ -1,0 +1,1390 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book lang="en_US">
+  <title>HPCC Data Tutorial</title>
+
+  <bookinfo>
+    <title>HPCC Data Tutorial</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Boca Raton Documentation Team</surname>
+    </author>
+
+    <legalnotice>
+      <para>We welcome your comments and feedback about this document via
+      email to <email>docfeedback@hpccsystems.com</email> Please include
+      <emphasis role="bold">Documentation Feedback</emphasis> in the subject
+      line and reference the document name, page numbers, and current Version
+      Number in the text of the message.</para>
+
+      <para>LexisNexis and the Knowledge Burst logo are registered trademarks
+      of Reed Elsevier Properties Inc., used under license. Other products and
+      services may be trademarks or registered trademarks of their respective
+      companies. All names and example data used in this manual are
+      fictitious. Any similarity to actual persons, living or dead, is purely
+      coincidental.</para>
+
+      <para></para>
+    </legalnotice>
+
+    <xi:include href="Version.xml" xpointer="FooterInfo"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <!--Release Info makes a running page footer: now an include! -->
+
+    <!--The following include statement pulls in the date_ver from version.xml-->
+
+    <xi:include href="Version.xml" xpointer="DateVer"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <corpname>HPCC Systems</corpname>
+
+    <!--corpname never prints-->
+
+    <xi:include href="Version.xml" xpointer="Copyright"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <!--Copyright tag inserts the symbol automatically: Now an Include!-->
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg" />
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter>
+    <title>Introduction</title>
+
+    <sect1 id="Introduction_Case-Study-and-Tutorial" role="nobrk">
+      <title>The ECL Development Process</title>
+
+      <para>This tutorial provides a walk-through of the development process,
+      from beginning to end, and is designed to be an introduction to working
+      with data on any HPCCSystems HPCC<footnote>
+          <para><emphasis role="bold">H</emphasis>igh <emphasis
+          role="bold">P</emphasis>erformance <emphasis
+          role="bold">C</emphasis>omputing <emphasis
+          role="bold">C</emphasis>luster (HPCC) is a massively parallel
+          processing computing platform that solves Big Data problems. See
+          http://www.hpccsystems.com/Why-HPCC/How-it-works for more
+          details.</para>
+        </footnote>. We will write code in ECL<footnote>
+          <para><emphasis role="bold">E</emphasis>nterprise <emphasis
+          role="bold">C</emphasis>ontrol <emphasis
+          role="bold">L</emphasis>anguage (ECL) is a declarative, data centric
+          programming language used to manage all aspects of the massive data
+          joins, sorts, and builds that truly differentiate HPCC (High
+          Performance Computing Cluster) from other technologies in its
+          ability to provide flexible data analysis on a massive scale.</para>
+        </footnote>to process our data and query it.</para>
+
+      <para>This tutorial assumes:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>You have a running HPCC. This can be a VM Edition or a single
+          or multinode HPCC platform</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>• You have the ECL IDE<footnote>
+          <para>The ECL IDE (Integrated Development Environment) is the tool
+          used to create queries into your data and ECL files with which to
+          build your queries.</para>
+        </footnote> installed and configured</para>
+
+      <para>In this tutorial, we will:</para>
+
+      <itemizedlist mark="bullet">
+        <listitem>
+          <para>Download a raw data file</para>
+
+          <para>There are links to data file available at <ulink
+          url="http://hpccsystems.com/community/docs"><emphasis
+          role="bold">http://hpccsystems.com/community/docs</emphasis></ulink></para>
+
+          <para>The download is approximately 30 MB (compressed) and is
+          available in either ZIP or .tar.gz format. Choose the appropriate
+          link.</para>
+        </listitem>
+
+        <listitem>
+          <para>Spray the file to a Data Refinery cluster HPCC clusters
+          "spray" data into file parts on each node.</para>
+
+          <para>A <emphasis>spray</emphasis> or <emphasis>import</emphasis> is
+          the relocation of a data file from one location to an HPCC cluster.
+          The term spray was adopted due to the nature of the file movement –
+          the file is partitioned across all nodes within a cluster.</para>
+        </listitem>
+
+        <listitem>
+          <para>Examine the data and determine the pre-processing we need to
+          perform</para>
+        </listitem>
+
+        <listitem>
+          <para>Pre-process the data to produce a new data file</para>
+        </listitem>
+
+        <listitem>
+          <para>Determine the types of queries we want</para>
+        </listitem>
+
+        <listitem>
+          <para>Create the queries</para>
+        </listitem>
+
+        <listitem>
+          <para>Test the queries</para>
+        </listitem>
+
+        <listitem>
+          <para>Deploy them to a Rapid Data Delivery Engine (RDDE) cluster,
+          also know as a Roxie cluster.</para>
+        </listitem>
+      </itemizedlist>
+    </sect1>
+  </chapter>
+
+  <chapter id="Working_with_Data">
+    <title>Working with Data</title>
+
+    <sect1 id="The_Original_Data" role="nobrk">
+      <title>The Original Data</title>
+
+      <para>In this scenario, we receive a structured data file containing
+      records with people's names and addresses. The HPCC also supports
+      unstructured data, but this example is simpler. This file is documented
+      in the following table:</para>
+
+      <para></para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="3">
+            <colspec colwidth="147.60pt" />
+
+            <colspec colwidth="147.60pt" />
+
+            <colspec colwidth="147.60pt" />
+
+            <thead>
+              <row>
+                <entry align="left">Field Name</entry>
+
+                <entry align="left">Type</entry>
+
+                <entry align="left">Description</entry>
+              </row>
+            </thead>
+
+            <tbody>
+              <row>
+                <entry>FirstName</entry>
+
+                <entry>15 Character String</entry>
+
+                <entry>First Name</entry>
+              </row>
+
+              <row>
+                <entry>LastName</entry>
+
+                <entry>25 Character String</entry>
+
+                <entry>Last name</entry>
+              </row>
+
+              <row>
+                <entry>MiddleName</entry>
+
+                <entry>15 Character String</entry>
+
+                <entry>Middle Name</entry>
+              </row>
+
+              <row>
+                <entry>Zip</entry>
+
+                <entry>5 Character String</entry>
+
+                <entry>ZIP Code</entry>
+              </row>
+
+              <row>
+                <entry>Street</entry>
+
+                <entry>42 Character String</entry>
+
+                <entry>Street Address</entry>
+              </row>
+
+              <row>
+                <entry>City</entry>
+
+                <entry>20 Character String</entry>
+
+                <entry>City</entry>
+              </row>
+
+              <row>
+                <entry>State</entry>
+
+                <entry>2 Character String</entry>
+
+                <entry>State</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para>This gives us a record length of 124 (the total of all field
+      lengths). You will need to know this length for the <emphasis
+      role="bold">File Spray</emphasis> process.</para>
+
+      <para></para>
+
+      <sect2 id="Uploading_a_file">
+        <title>Load the Incoming Data File to your Landing Zone</title>
+
+        <para>A Landing Zone (or Drop Zone) is a physical storage location
+        defined in your HPCC's environment. A daemon (DaFileSrv) must be
+        running on that server to enable file sprays and desprays.</para>
+
+        <para>For smaller data files, maximum of 2GB, you can use the
+        upload/download file utility in ECL Watch (a Web-based interface to
+        your HPCC platform). The sample data file is ~100 mb.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Download the sample data file from the HPCC Systems
+            portal.</para>
+
+            <para>The data file is available from links found on <ulink
+            url="http://hpccsystems.com/community/docs">http://hpccsystems.com/community/docs</ulink>.
+            The download is approximately 30 MB (compressed) and is available
+            in either ZIP or tar.gz format (<emphasis
+            role="bold">OriginalPerson.tar.gz</emphasis> or <emphasis
+            role="bold">OriginalPerson.zip</emphasis>)</para>
+          </listitem>
+
+          <listitem>
+            <para>Extract it to a folder on your local machine.</para>
+          </listitem>
+
+          <listitem>
+            <para>In your browser, go to the <emphasis role="bold">ECL
+            Watch</emphasis> URL For example, http://nnn.nnn.nnn.nnn:8010,
+            where nnn.nnn.nnn.nnn is your ESP<footnote>
+                <para>The ESP (Enterprise Services Platform) Server is the
+                communication layer server in you HPCC environment.</para>
+              </footnote> Server's IP address.</para>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="images/caution.png" /></entry>
+
+                      <entry>Your IP address could be different from the ones
+                      provided in the example images. Please use the IP
+                      address provided by <emphasis
+                      role="bold">your</emphasis> installation.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>From ECL Watch page, click on the <emphasis
+            role="bold">Upload/download File </emphasis> link in the menu on
+            the left side.</para>
+
+            <para><figure>
+                <title>Upload/download</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/LZimg03-1.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para>Once you click on the Upload/download file link, it will
+            take you to the Dropzones and Files page, where you can choose to
+            <emphasis role="bold">Browse</emphasis> your machine for a file to
+            upload:</para>
+
+            <para><figure>
+                <title>Dropzones and Files</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/LZimg04.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Browse</emphasis> button to
+            browse the files on your local machine, select the file to upload
+            and then press the <emphasis role="bold">Open</emphasis>
+            button.</para>
+
+            <para>The file you selected should appear in the <emphasis
+            role="bold">Select a file to upload:</emphasis> field. The data
+            file is named: <emphasis role="bold">OriginalPerson.
+            </emphasis></para>
+          </listitem>
+
+          <listitem>
+            <para>Press on <emphasis role="bold">Upload Now</emphasis> to
+            complete the file upload.</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 id="Spray_the_Data_File_to_your_DR-THOR_Cluster">
+        <title>Spray the Data File to your THOR Cluster</title>
+
+        <para>To use the data file in our HPCC cluster, we must first “spray”
+        it to a Thor cluster. A <emphasis>spray</emphasis> or
+        <emphasis>import</emphasis> is the relocation of a data file from one
+        location to a Thor cluster. The term spray was adopted due to the
+        nature of the file movement – the file is partitioned across all nodes
+        within a cluster.</para>
+
+        <para>In this example, the file is on your Landing Zone and is named
+        <emphasis role="bold">OriginalPerson.</emphasis></para>
+
+        <para>We are going to spray it to our Thor cluster and give it a
+        logical name of <emphasis role="bold">tutorial::</emphasis><emphasis
+        role="bold">YN</emphasis><emphasis
+        role="bold">::OriginalPerson</emphasis><emphasis role="bold">
+        </emphasis>where <emphasis role="bold">YN</emphasis> are your
+        initials. The Distrubuted File Utility maintains a list of logical
+        files and their corresponding physical file locations.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Open ECL Watch in your browser using the following
+            URL:</para>
+
+            <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp
+            </emphasis><emphasis role="bold">(where nnn.nnn.nnn.nnn is your
+            ESP Server’s IP Address and pppp is the port. The default port is
+            8010)</emphasis></para>
+          </listitem>
+
+          <listitem>
+            <para>Click on the <emphasis role="bold">Spray Fixed</emphasis>
+            hyperlink under the DFU Files menu on the left.</para>
+
+            <para>The <emphasis role="bold">DFU Spray Fixed</emphasis> page
+            displays.</para>
+          </listitem>
+
+          <listitem>
+            <para>Using the Source <emphasis
+            role="bold">Machine/dropzone</emphasis> drop-down list, select the
+            Landing Zone where the file was placed.</para>
+
+            <para>In the VM or Community Edition, there is only one Landing
+            Zone.</para>
+
+            <para>The IP Address is automatically filled and the Local Path is
+            partially filled with the default folder on your landing
+            zone.</para>
+          </listitem>
+
+          <listitem>
+            <para>Complete the <emphasis role="bold">Local Path</emphasis> to
+            include the complete file name or use the <emphasis
+            role="bold">Choose File</emphasis> button to select the file from
+            a list of files in the folder. (The file to choose is
+            <emphasis>OriginalPerson</emphasis>)</para>
+          </listitem>
+
+          <listitem>
+            <para>Fill in the <emphasis role="bold">Record Length</emphasis>
+            (124).</para>
+          </listitem>
+
+          <listitem>
+            <para>Fill in the <emphasis role="bold">Label</emphasis> using the
+            naming convention described earlier: <emphasis
+            role="bold">tutorial::</emphasis><emphasis
+            role="bold">YN</emphasis><emphasis
+            role="bold">::OriginalPerson</emphasis> (remember, <emphasis
+            role="bold">YN</emphasis> are your initials).</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Make sure the <emphasis
+            role="bold">Replicate</emphasis><emphasis role="bold">
+            </emphasis>box is checked.</para>
+
+            <para><emphasis role="bold">Note:</emphasis> If replication is
+            disabled in your Thor settings, this checkbox does not
+            appear.</para>
+
+            <para><figure>
+                <title>Dropzones and Files</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DTimg01.jpg" scale="85" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Submit<emphasis role="bold">
+            </emphasis></emphasis>button.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Click on the <emphasis role="bold">View Progress</emphasis>
+            hyperlink</para>
+
+            <para><figure>
+                <title>View Progress</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DTimg02.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure>The Workunit progress page displays.</para>
+
+            <para><figure>
+                <title>Spray Complete</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DTimg03.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure> Once the spray is complete, we can proceed.</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Begin_Coding">
+      <title>Begin Coding</title>
+
+      <para>In this portion of the tutorial, we will write ECL code to define
+      the data file and execute simple queries on it so we can evaluate it and
+      determine any necessary pre-processing.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Start the ECL IDE (Start &gt;&gt; All Programs &gt;&gt; HPCC
+          Systems &gt;&gt; ECL IDE )</para>
+        </listitem>
+
+        <listitem>
+          <para>Log in to your environment</para>
+
+          <para>For purposes of this tutorial, let’s create a folder called
+          <emphasis role="bold">Tutorial</emphasis><emphasis
+          role="bold">YourName</emphasis><emphasis> </emphasis>(where
+          <emphasis>YourName</emphasis> is your name).</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Rt-Click on the <emphasis role="bold">My Files</emphasis>
+          folder in the Repository<emphasis role="bold"></emphasis> window,
+          and select <emphasis role="bold">Insert Folder</emphasis> from the
+          pop-up menu.</para>
+
+          <para><figure>
+              <title>Insert Folder</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/DTimg04.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Enter <emphasis role="bold">Tutorial</emphasis><emphasis
+          role="bold">YourName</emphasis>(where <emphasis>YourName</emphasis>
+          is your name)<emphasis></emphasis>for the label, then press the OK
+          button.</para>
+
+          <para><figure>
+              <title>Enter Folder Label</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/DTimg05.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <para>Rt-Click on the <emphasis
+          role="bold">Tutorial</emphasis><emphasis
+          role="bold">YourName</emphasis>Folder, and select <emphasis
+          role="bold">Insert File</emphasis> from the pop-up menu.</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Enter <emphasis role="bold">Layout_People</emphasis> for the
+          label, then press the OK button.</para>
+
+          <para><figure>
+              <title>Insert File</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/DTimg06.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>A Builder Window opens.</para>
+
+          <para><figure>
+              <title>Layout People in Builder</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/DTimg07.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>Notice that some text has been written for you in the window.
+          This helps you to remember that the name of the file (Layout_People)
+          <emphasis>must always exactly match</emphasis> the name of the
+          single EXPORT definition (Layout_People) contained in that file.
+          This is a requirement -- one EXPORT definition per file, and its
+          name must match the filename.</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Write the following code in the Builder workspace:</para>
+
+          <para><programlisting>EXPORT Layout_People  := RECORD
+      STRING15 FirstName;
+      STRING25 LastName;
+      STRING15 MiddleName;
+      STRING5  Zip;
+      STRING42 Street;
+      STRING20 City;
+      STRING2  State;
+END;    </programlisting> <figure>
+              <title>Code in Builder Window</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/DTimg08.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <para>Press the syntax check button on the main toolbar (or press
+          F7).</para>
+
+          <para>It is always a good idea to check syntax before
+          submitting.</para>
+
+          <para><figure>
+              <title>Check Syntax</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/DTimg23.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>This file defines the record structure for the data file.
+          Next, we will examine the data.</para>
+        </listitem>
+      </orderedlist>
+
+      <sect2 id="Examine_the_Data" role="brk">
+        <title>Examine the Data</title>
+
+        <para>In this section, we will look at the data and determine if there
+        is any pre-processing we want to perform on the data. This is the step
+        in the development process where we convert the raw data into a form
+        we can use.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Rt-Click on the <emphasis
+            role="bold">Tutorial</emphasis><emphasis role="bold">YourName
+            </emphasis>Folder, and select <emphasis role="bold">Insert
+            File</emphasis> from the pop-up menu.</para>
+          </listitem>
+
+          <listitem>
+            <para>Enter <emphasis role="bold">File_OriginalPerson</emphasis>
+            for the label, then press the OK button.</para>
+
+            <para><figure>
+                <title>Insert File</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DTimg09.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure>A Builder Window opens.</para>
+          </listitem>
+
+          <listitem>
+            <para>Write the following code (remember to replace
+            <emphasis>YN</emphasis>with your initials):</para>
+
+            <para><programlisting>IMPORT TutorialYourName;
+EXPORT File_OriginalPerson :=
+DATASET('~tutorial::YN::OriginalPerson',TutorialYourName.Layout_People,THOR);
+</programlisting></para>
+
+            <para><figure>
+                <title>File_OriginalPerson.ecl</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DTimg10.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Press the syntax check button on the main toolbar (or press
+            F7) to check the syntax.</para>
+
+            <para>This defines the Dataset. Next, we will examine the
+            data.</para>
+          </listitem>
+
+          <listitem>
+            <para>Open a new Builder Window (CTRL+N) and write the following
+            code (remember to replace <emphasis>YourName </emphasis>with your
+            name):</para>
+
+            <programlisting>IMPORT TutorialYourName;
+COUNT(TutorialYourName.File_OriginalPerson);
+</programlisting>
+          </listitem>
+
+          <listitem>
+            <para>Press the syntax check button on the main toolbar (or press
+            F7) to check the syntax.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Make sure the selected cluster is your Thor cluster, then
+            press the <emphasis role="bold">Submit</emphasis> button. Note
+            that your target cluster might have a different name.</para>
+
+            <para><figure>
+                <title>Target Thor</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DTimg11.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>When the Workunit completes, it displays a green checkmark
+            <inlinegraphic fileref="images/DT173-15.jpg" />.</para>
+          </listitem>
+
+          <listitem>
+            <para>Select the Workunit tab (the one with the number next to the
+            checkmark) and select the <emphasis role="bold">Result
+            1</emphasis> tab (it may already be selected).</para>
+
+            <para><figure>
+                <title>Result tab</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DT173-16.png" />
+                  </imageobject>
+                </mediaobject>
+              </figure>This shows us that there are 841,400 records in the
+            data file.</para>
+          </listitem>
+
+          <listitem>
+            <para>Select the Builder tab and change COUNT to OUTPUT, as shown
+            below:</para>
+
+            <para><programlisting>IMPORT TutorialYourName;
+<emphasis role="bold">OUTPUT</emphasis>(TutorialYourName.File_OriginalPerson);</programlisting></para>
+
+            <para>Note: The modified portion is shown in <emphasis
+            role="bold">bold</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Check the syntax, if no errors, press the <emphasis
+            role="bold">Submit</emphasis> button.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>When it completes, select the Workunit tab, then select the
+            <emphasis role="bold">Result 1</emphasis> tab.</para>
+
+            <para><figure>
+                <title>Output Results</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DT173-17.png" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para>Notice the names are in mixed case.</para>
+
+            <para>For our purposes, it will be easier to have all the names in
+            all uppercase. This demonstrates one of the steps in the basic
+            process of preparing data (Extract, Transform, and Load—ETL) using
+            ECL.</para>
+          </listitem>
+
+          <listitem>
+            <para>Close the Builder Window.</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 id="Process_the_Data">
+        <title>Process the Data</title>
+
+        <para>In this section, we will write code to convert the original data
+        so that all names are in uppercase. We will then write this new file
+        to our Thor cluster.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Rt-Click on the <emphasis
+            role="bold">Tutorial</emphasis><emphasis role="bold">YourName
+            </emphasis>Folder, and select Insert File from the pop-up
+            menu.</para>
+          </listitem>
+
+          <listitem>
+            <para>Name this one <emphasis
+            role="bold">BWR_ProcessRawData</emphasis> and write the following
+            code (changing YN and YourName as before):</para>
+
+            <para><programlisting>IMPORT TutorialYourName, Std;
+    TutorialYourName.Layout_People toUpperPlease(TutorialYourName.Layout_People pInput)
+      := TRANSFORM
+     SELF.FirstName := Std.Str.ToUpperCase(pInput.FirstName);
+     SELF.LastName := Std.Str.ToUpperCase(pInput.LastName);
+     SELF.MiddleName := Std.Str.ToUpperCase(pInput.MiddleName);
+     SELF.Zip := pInput.Zip;
+     SELF.Street := pInput.Street;
+     SELF.City := pInput.City;
+     SELF.State := pInput.State;
+    END ;
+
+OrigDataset := TutorialYourName.File_OriginalPerson;
+UpperedDataset := PROJECT(OrigDataset,toUpperPlease(LEFT));
+OUTPUT(UpperedDataset,,'~tutorial::YN::TutorialPerson',OVERWRITE);
+</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Check the syntax, if no errors press the <emphasis
+            role="bold">Submit</emphasis> button.</para>
+          </listitem>
+
+          <listitem>
+            <para>When it completes, select the Workunit tab, then select the
+            Result 1 tab.</para>
+
+            <para><figure>
+                <title>Process Result</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DT173-18.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para>The results show that the process has successfully converted
+            the name fields to uppercase.</para>
+          </listitem>
+
+          <listitem>
+            <para>After you examine the results, close the Builder
+            window.</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 id="Using_our_Data">
+        <title>Using our New Data</title>
+
+        <para></para>
+
+        <para>Now that we have our data in a useful format and the file is in
+        place, we can write more code to use the new data file. We will
+        determine the indexes we will need and create them. For this tutorial,
+        let’s assume the field we need to index is the Zip code field.</para>
+
+        <para></para>
+
+        <para>In the DATASET definition, we will add a virtual field to the
+        RECORD structure for the fileposition. This is required for
+        indexes.</para>
+
+        <para></para>
+
+        <orderedlist>
+          <listitem>
+            <para>Insert a File into the <emphasis
+            role="bold">Tutorial</emphasis><emphasis
+            role="bold">YourName</emphasis><emphasis role="bold">
+            </emphasis>Folder. Name it <emphasis role="bold">
+            File_TutorialPerson </emphasis>and write this code (changing
+            <emphasis>YN </emphasis>to your initials):</para>
+
+            <para></para>
+
+            <para><programlisting>IMPORT TutorialYourName;
+EXPORT File_TutorialPerson :=
+DATASET('~tutorial::YN::TutorialPerson',
+       {TutorialYourName.Layout_People,
+        UNSIGNED8 fpos {virtual(fileposition)}},THOR);
+</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Check the syntax, if no errors press the <emphasis
+            role="bold">Submit</emphasis> button.</para>
+          </listitem>
+
+          <listitem>
+            <para>When it completes, it displays a green checkmark
+            <inlinegraphic fileref="images/DT173-15.jpg" />.</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 id="Index_the_Data">
+        <title>Index the Data</title>
+
+        <para>Next, we will define the INDEX.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Insert a File into your Tutorial Folder. Name it <emphasis
+            role="bold">IDX_PeopleByZip</emphasis><emphasis role="bold">
+            </emphasis>and write this code (changing <emphasis>YN</emphasis>
+            and <emphasis>YourName</emphasis> as before):</para>
+
+            <para><programlisting>IMPORT TutorialYourName;
+EXPORT IDX_PeopleByZIP :=
+INDEX(TutorialYourName.File_TutorialPerson,{zip,fpos},'~tutorial::YN::PeopleByZipINDEX');
+</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Check the syntax.</para>
+
+            <para>Next, we will build the index file.</para>
+          </listitem>
+
+          <listitem>
+            <para>Insert a File into the <emphasis
+            role="bold">Tutorial</emphasis><emphasis
+            role="bold">YourName</emphasis><emphasis role="bold">
+            </emphasis>Folder and name it <emphasis
+            role="bold">BWR_BuildPeopleByZip </emphasis>and write this code
+            (replacing <emphasis>YourName</emphasis> with your name):</para>
+
+            <para><programlisting>IMPORT TutorialYourName;
+BUILDINDEX(TutorialYourName.IDX_PeopleByZIP,OVERWRITE);
+</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Check the syntax and if there are no errors, press the
+            <emphasis role="bold">Submit</emphasis> button.</para>
+          </listitem>
+
+          <listitem>
+            <para>Wait for the Workunit to complete, then close the Builder
+            Window.</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 id="Query_the_Data">
+        <title>Build a Query</title>
+
+        <para>Now that we have an index file, we will write a query that uses
+        it.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Insert a File into your Tutorial Folder. Name it <emphasis
+            role="bold">BWR_FetchPeopleByZip </emphasis>and write this code
+            (changing <emphasis>YourName</emphasis> as before):</para>
+
+            <para><programlisting>IMPORT TutorialYourName;
+ZipFilter :='33024';
+FetchPeopleByZip :=
+FETCH(TutorialYourName.File_TutorialPerson,
+      TutorialYourName.IDX_PeopleByZIP(zip=ZipFilter),
+      RIGHT.fpos);
+OUTPUT(FetchPeopleByZip);
+</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Check the syntax and if there are no errors, press the
+            <emphasis role="bold">Submit</emphasis> button.</para>
+          </listitem>
+
+          <listitem>
+            <para>When it completes, select the Workunit<emphasis role="bold">
+            </emphasis>tab, then select the <emphasis
+            role="bold">Result</emphasis> tab.</para>
+          </listitem>
+
+          <listitem>
+            <para>Examine the result, then close the Builder window.</para>
+
+            <para><emphasis role="bold">Note</emphasis>: You can change the
+            value of the <emphasis role="bold">ZipValue</emphasis> field to
+            get results from different Zip codes.</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Publishing_your_Query">
+      <title>Publishing your Query</title>
+
+      <para>Now that we have created an indexed query, the next step is to
+      enable access to it through a Web interface.</para>
+
+      <para>Our STORED variables provide a means to pass values as query
+      parameters. In this example, the user can supply the ZIP code so the
+      results are people from that ZIP code.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Insert a File into the <emphasis role="bold">TutorialYourName
+          </emphasis>Folder and name it <emphasis
+          role="bold">FetchPeopleByZipService</emphasis></para>
+        </listitem>
+
+        <listitem>
+          <para>Write this code (changing <emphasis>YourName</emphasis> as
+          before):</para>
+
+          <para><programlisting>IMPORT TutorialYourName;
+STRING10 ZipFilter := '' :STORED('ZIPValue');
+resultSet :=
+            FETCH(TutorialYourName.File_TutorialPerson,
+            TutorialYourName.IDX_PeopleByZIP(zip=ZipFilter),
+            RIGHT.fpos);
+OUTPUT(resultset);
+</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Check the syntax, and save the file.</para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Submit</emphasis><emphasis
+          role="bold"> </emphasis>button.</para>
+        </listitem>
+
+        <listitem>
+          <para>When the workunit completes, select the Workunit<emphasis
+          role="bold"> </emphasis>tab, then select the ECL Watch tab.</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Press the <emphasis role="bold">Publish</emphasis> button, you
+          may need to scroll down the main window.</para>
+
+          <para><figure>
+              <title>Publish Workunit</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/DTimg12.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <para>When the workunit is published, a notice dialog
+          displays.</para>
+
+          <para><figure>
+              <title>Workunit Published</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/DT173-18b.png" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+      </orderedlist>
+
+      <sect2 id="Execute-using-the-Data-Delivery-Engine">
+        <title>Execute using WsECL</title>
+
+        <para>Now that the query is published, we can run it using the WsECL
+        Web service. WsECL provides a Web-based interface to your published
+        query. It also automatically creates an entry form to execute the
+        query.</para>
+
+        <para>Using the following URL:</para>
+
+        <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp (where
+        nnn.nnn.nnn.nnn is your ESP Server’s IP address and pppp is the port.
+        Default port is 8002)</emphasis></para>
+
+        <para></para>
+
+        <para><figure>
+            <title>WsECL</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/DTimg13.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para></para>
+
+        <orderedlist>
+          <listitem>
+            <para>Click on the + sign next to <emphasis
+            role="bold">thor</emphasis> to expand the tree.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Click on the <emphasis
+            role="bold">fetchpeoplebyzipservice.1</emphasis> hyperlink.</para>
+
+            <para>The form for the service displays.</para>
+
+            <para><figure>
+                <title>Service Form</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DTimg14a.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Provide a zip code (e.g., 33024) in the <emphasis
+            role="bold">zipvalue</emphasis> field, , select <emphasis
+            role="bold">Output Tables</emphasis> from the droplist, then press
+            the <emphasis role="bold">Submit</emphasis> button.</para>
+
+            <para>The results display.</para>
+
+            <para><figure>
+                <title>Results</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DTimg15a.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Deploy_the_Roxie_Query">
+      <title>Compile and Publish the Roxie Query</title>
+
+      <para>The final step in this process is to publish the indexed query to
+      a Rapid Data Delivery Engine (Roxie) Cluster.</para>
+
+      <para>We will recompile the code with Roxie as the target cluster, then
+      publish it to a Roxie cluster. <orderedlist>
+          <listitem>
+            <para>In the ECL IDE, select the Builder tab on the
+            FetchPeopleByZipService file builder window,</para>
+          </listitem>
+
+          <listitem>
+            <para>Using the <emphasis role="bold">Target</emphasis> droplist,
+            select Roxie as the Target cluster.</para>
+
+            <para><figure>
+                <title>Target Roxie</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DTimg16.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>In the Builder window, in the upper left corner the
+            <emphasis role="bold">Submit</emphasis> button has a drop down
+            arrow next to it. Select the arrow to expose the <emphasis
+            role="bold">Compile</emphasis> option.</para>
+
+            <figure>
+              <title>Compile</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/DTimg17.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure>
+          </listitem>
+
+          <listitem>
+            <para>Select <emphasis role="bold">Compile</emphasis></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>When the workunit finishes, it will display a green circle
+            indicating it has compiled.</para>
+
+            <para><figure>
+                <title>Compiled</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DTimg18.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+        </orderedlist></para>
+
+      <sect2 id="Deploy_the_Query_to_Roxie">
+        <title>Publish the Roxie query</title>
+
+        <para>Next we will publish the query to a Roxie Cluster.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Select the workunit tab for the FetchPeopleByZipService that
+            you just compiled.</para>
+          </listitem>
+
+          <listitem>
+            <para>Select the ECL Watch tab.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Press the <emphasis role="bold">Publish</emphasis> button
+            (you may need to scroll down the main window)</para>
+
+            <para><figure>
+                <title>Publish Query</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DTimg19.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure>When it successfully publishes, you will see:</para>
+
+            <para><figure>
+                <title>Workunit Published</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DT173-18b.png" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 id="Run_the_Roxie_Query" role="brk">
+        <title>Run the Roxie Query in WsECL</title>
+
+        <para>Now that the query is deployed to a Roxie cluster, we can run it
+        using the WS-ECL service Using the following URL:</para>
+
+        <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp (where
+        nnn.nnn.nnn.nnn is your ESP Server’s IP address and pppp is the port.
+        The default port is 8002)</emphasis></para>
+
+        <orderedlist>
+          <listitem>
+            <para>Click on the + sign next to <emphasis
+            role="bold">myroxie</emphasis> to expand the tree.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Click on the <emphasis
+            role="bold">fetchpeoplebyzipservice.1</emphasis> hyperlink.</para>
+
+            <para>The form for the service displays.</para>
+
+            <para><figure>
+                <title>RoxieECL</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DTimg21.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Provide a zip code (e.g., 33024), select <emphasis
+            role="bold">Output Tables</emphasis> from the droplist, and press
+            the Submit button.</para>
+
+            <para>The results display.</para>
+
+            <para><figure>
+                <title>RoxieResults</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DTimg22.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter id="Summary">
+    <title>Summary</title>
+
+    <para>Now that you have successfully processed raw data, sprayed it onto a
+    cluster, and deployed it to a RDDE cluster, what’s next?</para>
+
+    <!-- -->
+
+    <para>Here is a short list of suggestions on the path you might take from
+    here:</para>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Create indexes on other fields and create queries using
+        them.</para>
+      </listitem>
+    </itemizedlist>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Write client applications to access your queries using JSON or
+        SOAP interfaces.</para>
+      </listitem>
+    </itemizedlist>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Looks at the resources available on the Links tab</para>
+
+        <para><figure>
+            <title>Links</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/DTimg24.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure>The Links tab provides easy access to a form, a Sample
+        Request, a Sample Response, the WSDL, the XML Schema (XSD) and
+        more...</para>
+      </listitem>
+    </itemizedlist>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Follow the procedures in this tutorial using your own
+        data!</para>
+      </listitem>
+    </itemizedlist>
+  </chapter>
+</book>

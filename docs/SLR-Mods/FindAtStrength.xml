@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="FindAtStrength">
+  <title><emphasis role="bold">FindAtStrength</emphasis></title>
+
+  <para><emphasis role="bold">STD.Uni.LocaleFindAtStrength<indexterm>
+      <primary>STD.Uni.LocaleFindAtStrength</primary>
+    </indexterm><indexterm>
+      <primary>Uni.LocaleFindAtStrength</primary>
+    </indexterm><indexterm>
+      <primary>LocaleFindAtStrength</primary>
+    </indexterm>(</emphasis>
+  <emphasis>source,target,instance,locale,strength</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>A string containing the data to search.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>target </emphasis></entry>
+
+          <entry>A string containing the substring to search for.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>instance </emphasis></entry>
+
+          <entry>An integer specifying which occurrence of the
+          <emphasis>target</emphasis> to find.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>locale</emphasis></entry>
+
+          <entry>A null-terminated string containing the language and country
+          code to use to determine correct sort order and other
+          operations.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>strength</emphasis></entry>
+
+          <entry>An integer value indicating how to compare. Valid values
+          are:</entry>
+        </row>
+
+        <row>
+          <entry></entry>
+
+          <entry>1 ignores accents and case, differentiating only between
+          letters</entry>
+        </row>
+
+        <row>
+          <entry></entry>
+
+          <entry>2 ignores case but differentiates between accents.</entry>
+        </row>
+
+        <row>
+          <entry></entry>
+
+          <entry>3 differentiates between accents and case but ignores e.g.
+          differences between Hiragana and Katakana</entry>
+        </row>
+
+        <row>
+          <entry></entry>
+
+          <entry>4 differentiates between accents and case and e.g.
+          Hiragana/Katakana, but ignores e.g. Hebrew cantellation
+          marks</entry>
+        </row>
+
+        <row>
+          <entry></entry>
+
+          <entry>5 differentiates between all strings whose canonically
+          decomposed forms (NFD—Normalization Form D) are
+          non-identical</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>FindAtStrength returns an INTEGER value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">FindAtStrength </emphasis>function returns
+  the beginning index position within the <emphasis>source</emphasis> string
+  of the specified <emphasis>instance</emphasis> of the <emphasis>target
+  </emphasis>string. If the <emphasis>target</emphasis> is not found or the
+  specified <emphasis>instance</emphasis> is greater than the number of
+  occurrences of the <emphasis>target</emphasis> in the
+  <emphasis>source</emphasis>, StringFind returns zero (0).</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">base := u'caf\u00E9';   // U+00E9 is lowercase e with acute
+prim := u'coffee shop'; // 1st difference, different letters
+seco := u'cafe';      // 2nd difference, accents (no acute)
+tert := u'Caf\u00C9';   // 3rd, caps (U+00C9 is u/c E + acute)
+search := seco + tert + base;
+STD.Uni.LocaleFindAtStrength(search, base, 1, 'fr', 1) = 1;
+ // at strength 1, base matches seco (only secondary diffs)
+STD.Uni.LocaleFindAtStrength(search, base, 1, 'fr', 2) = 5;
+ // at strength 2, base matches tert (only tertiary diffs)
+STD.Uni.LocaleFindAtStrength(search, base, 1, 'fr', 3) = 9;
+ // at strength 3, base doesn't match either seco or tert
+STD.Uni.LocaleFindAtStrength(u'le caf\u00E9 vert',
+         u'cafe', 1, 'fr', 2) = 4;
+  // however, an accent on the source,
+STD.Uni.LocaleFindAtStrength(u'le caf\u00E9 vert',
+         u'cafe', 1, 'fr', 3) = 4;
+ // rather than on the pattern,
+STD.Uni.LocaleFindAtStrength(u'le caf\u00E9 vert',
+         u'cafe', 1, 'fr', 4) = 4;
+ // is ignored at strengths up to 4,
+STD.Uni.LocaleFindAtStrength(u'le caf\u00E9 vert',
+         u'cafe', 1, 'fr', 5) = 0;
+ // and only counts at strength 5
+</programlisting>
+</sect1>

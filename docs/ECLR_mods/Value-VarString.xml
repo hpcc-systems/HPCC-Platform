@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="VARSTRING">
+  <title>VARSTRING</title>
+
+  <para><emphasis> </emphasis><emphasis role="bold">VARSTRING<indexterm>
+      <primary>VARSTRING</primary>
+    </indexterm><indexterm>
+      <primary>VARSTRING value type</primary>
+    </indexterm>[</emphasis><emphasis>n</emphasis><emphasis
+  role="bold">]</emphasis></para>
+
+  <para>A null-terminated character string containing <emphasis>n</emphasis>
+  bytes of data. If <emphasis>n </emphasis>is omitted, the string is variable
+  length to the size needed to contain the result of the cast or passed
+  parameter. You may use set indexing into any string to parse out a
+  substring.</para>
+
+  <para>Example:</para>
+
+  <programlisting>VARSTRING3 MyString := 'ABC';
+       // declares MyString a 3-byte null-terminated string</programlisting>
+
+  <para>See Also: <link linkend="LENGTH">LENGTH</link>, <link linkend="TRIM">TRIM</link>, <link linkend="Set_Ordering_and_Indexing">Set Ordering and Indexing</link></para>
+</sect1>

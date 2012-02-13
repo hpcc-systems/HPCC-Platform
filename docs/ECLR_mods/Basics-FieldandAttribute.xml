@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Field_and_Attribute_Qualification">
+  <title>Field and Attribute Qualification</title>
+
+  <sect2 id="Imported_Attributes">
+    <title>Imported Attributes</title>
+
+    <para><emphasis role="bold">EXPORTed<indexterm>
+        <primary>EXPORTed</primary>
+      </indexterm> Attributes<indexterm>
+        <primary>EXPORTed Attributes</primary>
+      </indexterm> defined within another module and IMPORTed<indexterm>
+        <primary>IMPORTed</primary>
+      </indexterm> (see the </emphasis><emphasis role="bold">EXPORT
+    </emphasis>and <emphasis role="bold">IMPORT</emphasis> keywords) are
+    available for use in the attribute definition that contains the IMPORT.
+    Imported Attributes must be fully qualified by their Module name and
+    Attribute name, using dot syntax<indexterm>
+        <primary>dot syntax</primary>
+      </indexterm> (module.attribute).</para>
+
+    <programlisting>IMPORT abc;                //make all exported attributes in the abc module available
+EXPORT Attribute1 := 5;    //make Attribute1 available to other modules
+Attribute2 := abc.Attribute2 + Attribute1;  // object qualification needed for Attributes from abc module</programlisting>
+  </sect2>
+
+  <sect2 id="Fields_in_Datasets">
+    <title>Fields in Datasets</title>
+
+    <para>Each Dataset counts as a qualified scope and the fields within them
+    are fully qualified by their Dataset (or record set) name and Field name,
+    using dot syntax (dataset.field). Similarly, the result set of the
+    TABLE<indexterm>
+        <primary>TABLE</primary>
+      </indexterm> built-in function (see the <emphasis
+    role="bold">TABLE</emphasis> keyword) also acts as a qualified scope. The
+    name of the record set to which a field belongs is the object name:</para>
+
+    <programlisting>Young := YearOf(Person.per_dbrth) &lt; 1950;
+MySet := Person(Young);</programlisting>
+
+    <para>When naming a Dataset as part of an Attribute definition, the fields
+    of that Attribute (or record set) come into scope. If Parameterized
+    Attributes (functions) are nested, only the innermost scope is available.
+    That is, all the fields of a Dataset (or derived record set) are in scope
+    in the filter expression. This is also true for expressions parameters of
+    any built-in function that names a Dataset or derived record set as a
+    parameter.</para>
+
+    <programlisting>MySet1 := Person(YearOf(dbrth) &lt; 1950);
+// MySet1 is the set of Person records who were born before 1950</programlisting>
+
+    <para></para>
+
+    <programlisting>MySet2 := Person(EXISTS(OpenTrades(AgeOf(trd_dla) &lt; AgeOf(Person.per_dbrth))));</programlisting>
+
+    <para></para>
+
+    <programlisting>// OpenTrades is a pre-defined record set.
+//All Trades fields are in scope in the OpenTrades record set filter 
+//expression, but Person is required here to bring Person.per_dbrth
+// into scope
+//This example compares each trades' Date of Last Activity to the
+// related person’s Date Of Birth</programlisting>
+
+    <para>Any field in a Record Set <emphasis role="underline">can</emphasis>
+    be qualified with either the Dataset name the Record Set is based on, or
+    any other Record Set name based on the same base dataset. For
+    example:</para>
+
+    <programlisting>memtrade.trd_drpt
+nondup_trades.trd_drpt
+trades.trd_drpt</programlisting>
+
+    <para>all refer to the same field in the memtrade dataset.</para>
+
+    <para>For consistency, you should typically use the base dataset name for
+    qualification. You can also use the current Record Set's name in any
+    context where the base dataset name would be confusing.</para>
+  </sect2>
+
+  <sect2 id="Scope_Resolution_Operator">
+    <title>Scope Resolution Operator</title>
+
+    <para>Identifiers are looked up in the following order:</para>
+
+    <para>1. The currently active dataset, if any</para>
+
+    <para>2. The current attribute being defined, and any parameters it is
+    based on</para>
+
+    <para>3. Any attributes or parameters of any MODULE or FUNCTION structure
+    that contains the current attribute</para>
+
+    <para>This might mean that the attribute or parameter you want to access
+    isn't picked because it is hidden as in a parameter or private attribute
+    name clashing with the name of a dataset field.</para>
+
+    <para>It would be better to rename the parameter or private attribute so
+    the name clash cannot occur, but sometimes this is not possible.</para>
+
+    <para>You may direct access to a different match by qualifying the field
+    name with the scope resolution operator (the carat (^) character), using
+    it once for each step in the order listed above that you need to
+    skip.</para>
+
+    <para>This example shows the qualification order necessary to reach a
+    specific attribute/parameter:</para>
+
+    <para><programlisting>ds := DATASET([1], { INTEGER SomeValue });
+
+INTEGER SomeValue := 10; //local definition
+
+myModule(INTEGER SomeValue) := MODULE
+
+  EXPORT anotherFunction(INTEGER SomeValue) := FUNCTION
+    tbl := TABLE(ds,{SUM(GROUP, someValue), // 1 - DATASET field
+                     SUM(GROUP, ^.someValue), // 84 - FUNCTION parameter
+                     SUM(GROUP, ^^.someValue), // 42 - MODULE parameter
+                     SUM(GROUP, ^^^.someValue), // 10 - local attribute
+                 0});
+     RETURN<indexterm>
+          <primary>RETURN</primary>
+        </indexterm> tbl;
+   END;
+
+   EXPORT result := anotherFunction(84);
+   END;
+
+OUTPUT(myModule(42).result);</programlisting></para>
+
+    <para>In this example there are four instances of the name
+    "SomeValue":</para>
+
+    <para>a field in a DATASET.</para>
+
+    <para>a local attribute</para>
+
+    <para>a parameter to a MODULE structure</para>
+
+    <para>a parameter to a FUNCTION structure</para>
+
+    <para>The code in the TABLE function<indexterm>
+        <primary>TABLE function</primary>
+      </indexterm> shows how to reference each separate instance.</para>
+
+    <para>While this syntax allows exceptions where you need it, creating
+    another attribute with a different name is the preferred solution.</para>
+  </sect2>
+</sect1>

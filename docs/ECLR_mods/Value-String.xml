@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="STRING">
+  <title>STRING</title>
+
+  <para><emphasis
+  role="bold">[</emphasis><emphasis>StringType</emphasis><emphasis
+  role="bold">] STRING<indexterm>
+      <primary>STRING</primary>
+    </indexterm>[</emphasis><emphasis>n</emphasis><emphasis
+  role="bold">]</emphasis></para>
+
+  <para>A character string of <emphasis>n</emphasis> bytes, space padded (not
+  null-terminated). If <emphasis>n </emphasis>is omitted, the string is
+  variable length to the size needed to contain the result of the cast or
+  passed parameter. You may use set indexing into any string to parse out a
+  substring<indexterm>
+      <primary>STRING value type</primary>
+    </indexterm>.</para>
+
+  <para>The optional <emphasis>StringType</emphasis> may specify ASCII or
+  EBCDIC. If the <emphasis>StringType</emphasis> is missing, the data is in
+  ASCII format. Defining an EBCDIC STRING Attribute as a string constant value
+  implies an ASCII to EBCDIC conversion. However, defining an EBCDIC STRING
+  Attribute as a hexadecimal string constant value implies no conversion, as
+  the programmer is assumed to have supplied the correct hexadecimal EBCDIC
+  value.</para>
+
+  <para>Example:</para>
+
+  <programlisting>STRING1 MyString := IF(SomeAttribute &gt; 10,'1','0');
+        // declares MyString a 1-byte ASCII string
+
+EBCDIC STRING3 MyString1 := 'ABC';
+        //implicit ASCII to EBCDIC conversion
+ 
+EBCDIC STRING3 MyString2 := x'616263';
+        //NO conversion here</programlisting>
+
+  <para>See Also: <link linkend="LENGTH">LENGTH</link>, <link
+  linkend="TRIM">TRIM</link>, <link linkend="Set_Ordering_and_Indexing">Set
+  Ordering and Indexing</link>, <link linkend="String">Hexadecimal
+  String</link></para>
+</sect1>

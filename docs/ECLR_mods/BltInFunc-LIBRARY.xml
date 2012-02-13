@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="LIBRARY">
+  <title>LIBRARY</title>
+
+  <para><emphasis role="bold">LIBRARY<indexterm>
+      <primary>LIBRARY</primary>
+    </indexterm><indexterm>
+      <primary>LIBRARY function</primary>
+    </indexterm>(</emphasis><emphasis> </emphasis><emphasis
+  role="bold">INTERNAL<indexterm>
+      <primary>INTERNAL</primary>
+    </indexterm>( </emphasis><emphasis>module </emphasis><emphasis
+  role="bold">)</emphasis><emphasis>, interface </emphasis><emphasis
+  role="bold">[</emphasis><emphasis> (</emphasis><emphasis role="bold">
+  </emphasis><emphasis>parameters) </emphasis><emphasis role="bold">]
+  )</emphasis><emphasis role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">LIBRARY(</emphasis><emphasis> module , interface
+  </emphasis><emphasis role="bold">[</emphasis><emphasis>
+  (</emphasis><emphasis role="bold"> </emphasis><emphasis>parameters)
+  </emphasis><emphasis role="bold">] )</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="86.10pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis role="bold">INTERNAL</emphasis></entry>
+
+          <entry>Optional. Specifies the module is an attribute, not an
+          external library (created by the BUILD action).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>module</emphasis></entry>
+
+          <entry>The name of the query library. When INTERNAL, this is the
+          name of the MODULE attribute that implements the query library. If
+          not INTERNAL, this is a string expression containing the name of the
+          workunit that compiled the query library (typically defined with
+          #WORKUNIT).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>interface</emphasis></entry>
+
+          <entry>The name of the INTERFACE structure that defines the query
+          library.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>parameters</emphasis></entry>
+
+          <entry>Optional. The values to pass to the INTERFACE, if defined to
+          receive parameters.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>LIBRARY results in a MODULE that can be used to reference the
+          exported attributes from the specified module.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">LIBRARY </emphasis>function defines an
+  instance of a query library—the <emphasis>interface</emphasis> as
+  implemented by the <emphasis>module</emphasis> when passed the specified
+  <emphasis>parameters. </emphasis><emphasis role="bold">Query libraries are
+  only used by hthor and Roxie.</emphasis></para>
+
+  <para>INTERNAL libraries are typically used when developing queries, while
+  external libraries are best for production queries. An INTERNAL library
+  generates the library code as a separate unit, but then includes that unit
+  within the query workunit. It doesn't have the advantage of reducing compile
+  time or memory usage in Roxie that an external library would have, but it
+  does retain the library structure, and means that changes to the code cannot
+  affect anyone else using the system.</para>
+
+  <para>External libraries are created by the BUILD action and use the "name"
+  form of #WORKUNIT to specify the external name of the library. An external
+  library is pre-compiled and therefore reduces compile time for queries that
+  use it. They also reduce memory usage in Roxie</para>
+
+  <para>Example:</para>
+
+  <programlisting>NamesRec := RECORD
+    INTEGER1  NameID;
+    STRING20  FName;
+    STRING20  LName;
+END;
+NamesTable := DATASET([ {1,'Doc','Holliday'},
+                        {2,'Liz','Taylor'},
+                        {3,'Mr','Nobody'},
+                      {4,'Anywhere','but here'}],
+       NamesRec);
+FilterLibIface1(DATASET(namesRec) ds, STRING search) := INTERFACE
+ EXPORT DATASET(namesRec) matches;
+ EXPORT DATASET(namesRec) others;
+END;
+FilterDsLib1(DATASET(namesRec) ds, STRING search) :=
+      MODULE,LIBRARY(FilterLibIface1)
+ EXPORT matches := ds(Lname = search);
+ EXPORT others := ds(Lname != search);
+END;
+
+// Run this to create the 'Ppass.FilterDsLib' external library
+// #WORKUNIT('name','Ppass.FilterDsLib')
+// BUILD(FilterDsLib1);
+lib1 := LIBRARY(INTERNAL(FilterDsLib1),
+      FilterLibIface1(NamesTable, 'Holliday'));
+lib2 := LIBRARY('Ppass.FilterDsLib',
+      FilterLibIface1(NamesTable, 'Holliday'));
+IFilterArgs := INTERFACE
+  EXPORT DATASET(namesRec) ds;
+  EXPORT STRING search;
+END;
+FilterLibIface2(IFilterArgs args) := INTERFACE
+ EXPORT DATASET(namesRec) matches;
+ EXPORT DATASET(namesRec) others;
+END;
+    
+FilterDsLib2(IFilterArgs args) := MODULE,LIBRARY(FilterLibIface2)
+ EXPORT matches := args.ds(Lname = args.search);
+ EXPORT others := args.ds(Lname != args.search);
+END;
+// Run this to create the 'Ipass.FilterDsLib' external library
+// #WORKUNIT('name','Ipass.FilterDsLib')
+// BUILD(FilterDsLib2);
+SearchArgs := MODULE(IFilterArgs)
+  EXPORT DATASET(namesRec) ds := NamesTable;
+  EXPORT STRING search := 'Holliday';
+END;    
+lib3 := LIBRARY(INTERNAL(FilterDsLib2),
+      FilterLibIface2(SearchArgs));
+lib4 := LIBRARY('Ipass.FilterDsLib',
+      FilterLibIface2(SearchArgs));
+    
+OUTPUT(lib1.matches,NAMED('INTERNAL_matches_straight_parms'));
+OUTPUT(lib1.others, NAMED('INTERNAL_nonmatches_straight_parms'));
+OUTPUT(lib2.matches,NAMED('EXTERNAL_matches_straight_parms'));
+OUTPUT(lib2.others, NAMED('EXTERNAL_nonmatches_straight_parms'));
+OUTPUT(lib3.matches,NAMED('INTERNAL_matches_interface_parms'));
+OUTPUT(lib3.others, NAMED('INTERNAL_nonmatches_interface_parms'));
+OUTPUT(lib4.matches,NAMED('EXTERNAL_matches_interface_parms'));
+OUTPUT(lib4.others, NAMED('EXTERNAL_nonmatches_interface_parms'));
+</programlisting>
+</sect1>

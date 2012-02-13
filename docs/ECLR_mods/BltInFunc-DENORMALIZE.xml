@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="DENORMALIZE">
+  <title>DENORMALIZE<indexterm>
+      <primary>DENORMALIZE</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">DENORMALIZE<indexterm>
+      <primary>DENORMALIZE function</primary>
+    </indexterm>(</emphasis><emphasis>parentrecset, childrecset, condition,
+  transform </emphasis><emphasis role="bold"> [,LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm>] [,NOSORT<indexterm>
+      <primary>NOSORT</primary>
+    </indexterm>])</emphasis><emphasis role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">DENORMALIZE(</emphasis><emphasis>parentrecset,
+  childrecset, condition, </emphasis><emphasis
+  role="bold">GROUP</emphasis><emphasis><indexterm>
+      <primary>GROUP</primary>
+    </indexterm>, transform </emphasis><emphasis role="bold"> [,LOCAL]
+  [,NOSORT])</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="82.25pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>parentrecset</emphasis></entry>
+
+            <entry>The set of parent records to process, already in the format
+            that will contain the denormalized parent and child
+            records.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>childrecset</emphasis></entry>
+
+            <entry>The set of child records to process.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>condition</emphasis></entry>
+
+            <entry>An expression that specifies how to match records between
+            the <emphasis>parentrecset</emphasis> and
+            <emphasis>childrecset</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>transform</emphasis></entry>
+
+            <entry>The TRANSFORM function to call.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+            <entry>Optional. Specifies the operation is performed on each
+            supercomputer node independently, without requiring interaction
+            with all other nodes to acquire data; the operation maintains the
+            distribution of any previous DISTRIBUTE.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">NOSORT</emphasis></entry>
+
+            <entry>Optional. Specifies the operation is performed without
+            sorting the <emphasis>parentrecset</emphasis> or
+            <emphasis>childrecset</emphasis> —both must already be sorted so
+            matching records in both are in order. This allows programmer
+            control of the order of the child records.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">GROUP</emphasis></entry>
+
+            <entry>Specifies grouping the <emphasis>childrecset</emphasis>
+            records based on the join condition so all the related child
+            records are passed as a dataset parameter to the transform.
+            </entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>DENORMALIZE returns a record set.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">DENORMALIZE </emphasis>function is used to
+  form a combined record out of a parent and any number of children. It acts
+  very similar to a JOIN except that where JOIN with one parent and three
+  children would call the <emphasis>transform</emphasis> three times and
+  produce three outputs, DENORMALIZE calls the <emphasis>transform</emphasis>
+  three times where the input to the first <emphasis>transform</emphasis> is
+  the parent and one child, the input to the second
+  <emphasis>transform</emphasis> is the output of the first
+  <emphasis>transform</emphasis> and another child, and the input to the third
+  <emphasis>transform</emphasis> is the output from the second
+  <emphasis>transform</emphasis> and the remaining child. Also like JOIN, the
+  order in which the <emphasis>childrecset</emphasis> records are sent to the
+  <emphasis>transform</emphasis> is undefined.</para>
+
+  <sect2 id="TRANSFORM_Function_Requirements_Denormalize">
+    <title>DENORMALIZE TRANSFORM Function Requirements</title>
+
+    <para>For form one, the <emphasis>transform</emphasis> function must take
+    at least two parameters: a LEFT<indexterm>
+        <primary>LEFT</primary>
+      </indexterm> record of the same format as the combined
+    <emphasis>parentrecset</emphasis> and <emphasis>childrecset</emphasis>
+    (the resulting de-normalized record structure), and a RIGHT<indexterm>
+        <primary>RIGHT</primary>
+      </indexterm> record of the same format as the
+    <emphasis>childrecset</emphasis>. An optional third parameter may be
+    specified: an integer COUNTER<indexterm>
+        <primary>COUNTER</primary>
+      </indexterm> specifying the number of times the
+    <emphasis>transform</emphasis> has been called for the current set of
+    parent/child pairs (defined by the <emphasis>condition</emphasis> values).
+    The result of the <emphasis>transform</emphasis> function must be a record
+    set of the same format as the LEFT record.</para>
+
+    <para>For form two, the <emphasis>transform</emphasis> function must take
+    at least two parameters: a LEFT record of the same format as the combined
+    <emphasis>parentrecset</emphasis> and <emphasis>childrecset</emphasis>
+    (the resulting de-normalized record structure), and ROWS(RIGHT) dataset of
+    the same format as the <emphasis>childrecset</emphasis>. The result of the
+    <emphasis>transform</emphasis> function must be a record set of the same
+    format as the LEFT record.</para>
+
+    <para>Example:</para>
+
+    <programlisting>//Form 1 example:
+NormRec := RECORD
+  STRING20  thename;
+  STRING20  addr;
+END;
+NamesRec := RECORD
+  UNSIGNED1  numRows;
+  STRING20  thename; 
+  STRING20  addr1 := '';
+  STRING20  addr2 := '';
+  STRING20  addr3 := '';
+  STRING20  addr4 := '';
+END;
+NamesTable := DATASET([ {0,'Kevin'},{0,'Liz'},{0,'Mr Nobody'},
+                        {0,'Anywhere'}], NamesRec);
+NormAddrs := DATASET([{'Kevin','10 Malt Lane'},
+                      {'Liz','10 Malt Lane'},
+                      {'Liz','3 The cottages'},
+                      {'Anywhee','Here'},
+                      {'Anywhere','There'},
+                      {'Anywhere','Near'},
+                      {'Anywhere','Far'}],NormRec);
+NamesRec DeNormThem(NamesRec L, NormRec R, INTEGER C) := TRANSFORM
+    SELF.NumRows := C;
+    SELF.addr1 := IF (C=1, R.addr, L.addr1);
+    SELF.addr2 := IF (C=2, R.addr, L.addr2);
+    SELF.addr3 := IF (C=3, R.addr, L.addr3);
+    SELF.addr4 := IF (C=4, R.addr, L.addr4);
+    SELF := L;
+END;
+DeNormedRecs := DENORMALIZE(NamesTable, NormAddrs,
+                            LEFT.thename = RIGHT.thename,
+                            DeNormThem(LEFT,RIGHT,COUNTER));
+OUTPUT(DeNormedRecs);
+
+//Form 2 example:
+NormRec := RECORD
+  STRING20  thename;
+  STRING20  addr;
+END;
+NamesRec := RECORD
+  UNSIGNED1  numRows;
+  STRING20  thename;
+  DATASET(NormRec) addresses;
+END;
+NamesTable := DATASET([ {0,'Kevin',[]},{0,'Liz',[]},
+                        {0,'Mr Nobody',[]},{0,'Anywhere',[]}],
+                      NamesRec);
+NormAddrs := DATASET([{'Kevin','10 Malt Lane'},
+                      {'Liz','10 Malt Lane'},
+                      {'Liz','3 The cottages'},
+                      {'Anywhere','Here'},
+                      {'Anywhere','There'},
+                      {'Anywhere','Near'},
+                      {'Anywhere','Far'}],NormRec);
+NamesRec DeNormThem(NamesRec L, DATASET(NormRec) R) := TRANSFORM
+    SELF.NumRows := COUNT(R);
+    SELF.addresses := R;
+    SELF := L;
+END;
+DeNormedRecs := DENORMALIZE(NamesTable, NormAddrs,
+                           LEFT.thename = RIGHT.thename,
+                           GROUP,
+                           DeNormThem(LEFT,ROWS(RIGHT)));
+OUTPUT(DeNormedRecs);
+
+// NOSORT example
+MyRec := RECORD
+  STRING1 Value1;
+  STRING1 Value2;
+END;
+ParentFile := DATASET([{'A','C'},{'B','B'},{'C','A'}],MyRec);
+ChildFile  := DATASET([{'A','Z'},{'A','T'},{'B','S'},{'B','Y'},
+                       {'C','X'},{'C','W'}],MyRec);
+MyOutRec := RECORD
+  ParentFile.Value1;
+  ParentFile.Value2;
+  STRING1 CVal2_1 := '';
+  STRING1 CVal2_2 := '';
+END;
+P_Recs := TABLE(ParentFile, MyOutRec);
+MyOutRec DeNormThem(MyOutRec L, MyRec R, INTEGER C) := TRANSFORM
+ SELF.CVal2_1 := IF(C = 1, R.Value2, L.CVal2_1);
+ SELF.CVal2_2 := IF(C = 2, R.Value2, L.CVal2_2);
+ SELF := L;
+END;
+DeNormedRecs := DENORMALIZE(P_Recs, ChildFile,
+                            LEFT.Value1 = RIGHT.Value1,
+                            DeNormThem(LEFT,RIGHT,COUNTER),NOSORT);
+OUTPUT(DeNormedRecs);
+/* DeNormedRecs result set is:
+ Rec#  Value1 PVal2  CVal2_1  CVal2_2
+ 1       A      C      Z         T
+ 2       B      B      Y         S
+ 3       C      A      X         W
+ */
+</programlisting>
+
+    <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM
+    Structure</link>, <link
+    linkend="RECORD_Structure">RECORD Structure</link>, <link
+    linkend="NORMALIZE">NORMALIZE</link></para>
+  </sect2>
+</sect1>

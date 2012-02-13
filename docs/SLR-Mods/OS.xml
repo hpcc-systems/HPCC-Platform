@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="OS">
+  <title><emphasis role="bold">OS</emphasis></title>
+
+  <para><emphasis role="bold">STD.System.Job.OS<indexterm>
+      <primary>STD.System.Job.OS</primary>
+    </indexterm> <indexterm>
+      <primary>System.Job.OS</primary>
+    </indexterm> <indexterm>
+      <primary>Job.OS</primary>
+    </indexterm> <indexterm>
+      <primary>OS</primary>
+    </indexterm>(</emphasis> <emphasis> </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>OS returns a VARSTRING value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">OS </emphasis>function returns the operating
+  system (windows or Linux) of the cluster running the workunit.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">A := STD.System.Job.OS();</programlisting>
+</sect1>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="String_Operators">
+  <title>String Operators</title>
+
+  <para>The following string operator<indexterm>
+      <primary>string operator</primary>
+    </indexterm> is supported:</para>
+
+    <informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup align="left" cols="2">
+        <colspec colwidth="94.80pt" />
+
+        <colspec />
+      <tbody>
+        <row>
+          <entry>+</entry>
+
+          <entry>Concatenation<indexterm>
+              <primary>Concatenation</primary>
+            </indexterm></entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+</sect1>

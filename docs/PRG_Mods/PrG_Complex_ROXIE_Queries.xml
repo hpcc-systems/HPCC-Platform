@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Complex_Roxie_Query_Techniques">
+  <title><emphasis role="bold">Complex Roxie Query
+  Techniques</emphasis></title>
+
+  <para>The ECL coding techniques used in Roxie queries can be quite complex,
+  making use of multiple keys, payload keys, half-keyed JOINs, the KEYDIFF
+  function, and various other ECL language features. All these techniques
+  share a single focus, though—to maximize the performance of the query so its
+  result is delivered as efficiently as possible, thereby maximizing the total
+  transaction throughput rate possible for the Roxie that services the
+  query.</para>
+
+  <sect2 id="Key_Selection_Based_on_Input">
+    <title>Key Selection Based on Input</title>
+
+    <para>It all starts with the architecture of your data and the keys you
+    build from it. Typically, a single dataset would have multiple indexes
+    into it so as to provide multiple access methods into the data. Therefore,
+    one of the key techniques used in Roxie queries is to detect which of the
+    set of possible values have been passed to the query, and based on those
+    values, choose the correct INDEX to use.</para>
+
+    <para>The basis for detecting which values have been passed to the query
+    is determined by the STORED attributes defined to receive the passed
+    values. The SOAP Interface automatically populates these attributes with
+    whatever values have been passed to the query. That means the query code
+    need simply interrogate those parameters for the presence of values other
+    than their defaults.</para>
+
+    <para>This example demonstrates the technique:</para>
+
+    <programlisting>IMPORT $;
+EXPORT PeopleSearchService() := FUNCTION
+  STRING30 lname_value := '' : STORED('LastName');
+  STRING30 fname_value := '' : STORED('FirstName');
+  IDX  := $.IDX__Person_LastName_FirstName;
+  Base := $.Person.FilePlus;
+     
+  Fetched := IF(fname_value = '',
+                FETCH(Base,IDX(LastName=lname_value),RIGHT.RecPos),
+                FETCH(Base,IDX(LastName=lname_value,FirstName=fname_value),RIGHT.RecPos));
+  RETURN OUTPUT(CHOOSEN(Fetched,2000));
+END;</programlisting>
+
+    <para>This query is written assuming that the LastName parameter will
+    always be passed, so the IF needs only to detect whether a FirstName was
+    also entered by the user. If so, then the filter on the index parameter to
+    the FETCH needs to include that value, otherwise the FETCH just needs to
+    filter the index with the LastName value.</para>
+
+    <para>There are several ways this code could have been written. Here's an
+    alternative:</para>
+
+    <programlisting>IMPORT $;
+EXPORT PeopleSearchService() := FUNCTION
+  STRING30 lname_value := '' : STORED('LastName');
+  STRING30 fname_value := '' : STORED('FirstName');
+  IDX  := $.IDX__Person_LastName_FirstName;
+  Base := $.Person.FilePlus;
+  IndxFilter := IF(fname_value = '',
+                   IDX.LastName=lname_value,
+                   IDX.LastName=lname_value AND IDX.FirstName=fname_value);
+  Fetched := FETCH(Base,IDX(IndxFilter),RIGHT.RecPos);
+  RETURN OUTPUT(CHOOSEN(Fetched,2000));
+END;</programlisting>
+
+    <para>In this example, the IF simply builds the correct filter expression
+    for the FETCH to use. Using this form makes the code easier to read and
+    maintain by separating out the multiple possible forms of the filter logic
+    from the function that uses it.</para>
+  </sect2>
+
+  <sect2 id="Keyed_Joins">
+    <title>Keyed Joins</title>
+
+    <para>Although the FETCH function was specifically designed for indexed
+    access to data, in practice the half-keyed JOIN operation is more commonly
+    used in Roxie queries. A major reason for this is the flexibility that is
+    possible with JOIN.</para>
+
+    <para>The advantages of using keyed JOIN operations in any query is fully
+    discussed in the <emphasis>Using ECL Keys (INDEX Files)</emphasis>
+    article. These advantages really benefit Roxie queries tremendously.
+    Because of the nature of Roxie, the best advantage from keyed JOINs comes
+    from the use of half-keyed JOINs that utilize payload keys (eliminating
+    the need for additional FETCH operations).</para>
+  </sect2>
+
+  <sect2 id="Limiting_Output">
+    <title>Limiting Output</title>
+
+    <para>One major consideration for developing a Roxie query is the amount
+    of data that may possibly be returned from the query. Since JOIN
+    operations can possibly result in huge datasets, care should be taken to
+    limit the number of records any given query may return to a number that is
+    “reasonable” for that specific type of query. Here are some techniques to
+    help accomplish that goal:</para>
+
+    <para><informaltable colsep="0" frame="none" rowsep="0">
+        <tgroup cols="2">
+          <colspec colwidth="61.60pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry>*</entry>
+
+              <entry>The CHOOSEN and LIMIT functions should be used to limit
+              index reads to some maximum number.</entry>
+            </row>
+
+            <row>
+              <entry>*</entry>
+
+              <entry>Keyed JOINs should use the ATMOST, KEEP, or LIMIT
+              option.</entry>
+            </row>
+
+            <row>
+              <entry>*</entry>
+
+              <entry>When a nested child dataset is defined, it should have a
+              MAXCOUNT option defined on the child DATASET field in the RECORD
+              structure, and the code that builds the nested child dataset
+              should use CHOOSEN with a value that exactly matches the
+              MAXCOUNT.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>All of these techniques will help to ensure that, when the end-user
+    expects to get around ten results, that they don't end up with ten
+    million.</para>
+  </sect2>
+</sect1>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="DISTRIBUTED">
+  <title>DISTRIBUTED<indexterm>
+      <primary>DISTRIBUTED</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">DISTRIBUTED<indexterm>
+      <primary>DISTRIBUTED function</primary>
+    </indexterm>(</emphasis><emphasis>recordset </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>, expression </emphasis><emphasis
+  role="bold">] )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="79.75pt" />
+
+        <colspec colwidth="309.05pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>The set of distributed records.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>Optional. An expression that specifies how the recordset is
+            distributed.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>DISTRIBUTED returns a set of records.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">DISTRIBUTED</emphasis> function is a
+  compiler directive indicating that the records from the
+  <emphasis>recordset</emphasis> are already distributed across the nodes of
+  the Data Refinery based on the specified <emphasis>expression</emphasis>.
+  Records for which the <emphasis>expression</emphasis> evaluates the same are
+  on the same node.</para>
+
+  <para>If the <emphasis>expression</emphasis> is omitted, the function just
+  suppresses a warning that is sometimes generated that the
+  <emphasis>recordset</emphasis> hasn't been distributed</para>
+
+  <para>Example:</para>
+
+  <programlisting>MySet := DISTRIBUTED(Person,HASH32(Person.per_ssn));
+        //all people with the same SSN are already on the same node</programlisting>
+
+  <para>See Also: <link linkend="HASH32">HASH32</link>, <link linkend="DISTRIBUTE">DISTRIBUTE</link></para>
+</sect1>

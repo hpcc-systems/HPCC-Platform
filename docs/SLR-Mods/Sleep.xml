@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Sleep">
+  <title><emphasis role="bold">Sleep</emphasis></title>
+
+  <para><emphasis role="bold">STD.System.Debug.Sleep<indexterm>
+      <primary>STD.System.Debug.Sleep</primary>
+    </indexterm> <indexterm>
+      <primary>System.Debug.Sleep</primary>
+    </indexterm> <indexterm>
+      <primary>Debug.Sleep</primary>
+    </indexterm> <indexterm>
+      <primary>Sleep</primary>
+    </indexterm>(</emphasis> <emphasis> duration </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>duration</emphasis></entry>
+
+          <entry>An integer value specifying the length of the sleep period,
+          in milliseconds.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>Sleep does not return a value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">Sleep </emphasis>function pauses processing
+  for <emphasis>duration</emphasis> milliseconds.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+STD.System.Debug.Sleep(1000);    //pause for one second before continuing
+</programlisting>
+</sect1>

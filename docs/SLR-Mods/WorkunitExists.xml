@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="WorkunitExists">
+  <title><emphasis role="bold">WorkunitExists</emphasis></title>
+
+  <para><emphasis role="bold">STD.System.Workunit.WorkunitExists(</emphasis>
+  <emphasis> wuid </emphasis> <emphasis role="bold">[</emphasis> <emphasis>,
+  online </emphasis> <emphasis role="bold">] [</emphasis> <emphasis>, archived
+  </emphasis> <emphasis role="bold">] )</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>wuid</emphasis></entry>
+
+          <entry>A null-terminated string containing the WorkUnit IDentifier
+          to locate.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>online</emphasis></entry>
+
+          <entry>Optional. A Boolean true/false value specifying whether the
+          search is performed online. If omitted, the default is TRUE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>archived</emphasis></entry>
+
+          <entry>Optional. A Boolean true/false value specifying whether the
+          search is performed in the archives. If omitted, the default is
+          FALSE.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>WorkunitExists returns a BOOLEAN value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">WorkunitExists </emphasis>function returns
+  whether the <emphasis>wuid</emphasis> exists.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">OUTPUT(STD.System.Workunit.WorkunitExists('W20070308-164946'));</programlisting>
+</sect1>

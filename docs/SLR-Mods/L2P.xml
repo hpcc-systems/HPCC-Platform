@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1
+  PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="LogicalToPhysical">
+   <title>
+      <emphasis role="bold">LogicalToPhysical</emphasis>
+   </title>
+   <para>
+      <emphasis role="bold">STD.System.Thorlib.LogicalToPhysical    <indexterm>
+      <primary>STD.System.ThorLib.LogicalToPhysical</primary>
+    </indexterm>
+    <indexterm>
+      <primary>System.ThorLib.LogicalToPhysical</primary>
+    </indexterm>
+    <indexterm>
+      <primary>ThorLib.LogicalToPhysical</primary>
+    </indexterm>
+    <indexterm>
+      <primary>LogicalToPhysical</primary>
+    </indexterm>
+(</emphasis>
+      <emphasis> filename
+        </emphasis>
+      <emphasis role="bold">[</emphasis>
+      <emphasis>, createflag
+        </emphasis>
+      <emphasis role="bold">]</emphasis>
+      <emphasis>
+        </emphasis>
+      <emphasis role="bold">)</emphasis>
+   </para>
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+
+        </row>
+        <row>
+   
+
+   <entry>
+      <emphasis>filename</emphasis> </entry><entry>A null-terminated string
+        containing the logical name of the file.</entry>
+   <entry>
+      <emphasis>createflag</emphasis> </entry><entry>A boolean value indicating
+        whether to create the <emphasis>filename</emphasis>. If omitted, the
+        default is FALSE.</entry>
+   <entry>Return:<emphasis> </emphasis></entry><entry>LogicalToPhysical returns a VARSTRING
+        value.</entry>
+
+
+        </row>
+
+      </tbody>
+    </tgroup>
+  </informaltable>
+   <para>The <emphasis role="bold">LogicalToPhysical </emphasis>function (Logical to
+        Physical) returns the physical name of the file represented by the
+        logical <emphasis>filename</emphasis>.</para>
+   <para>Example:</para>
+   <programlisting format="linespecific">A := STD.System.Thorlib.LogicalToPhysical('Fred');</programlisting>
+</sect1>

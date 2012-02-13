@@ -1,0 +1,341 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Type_Casting">
+  <title>Type Casting<indexterm>
+      <primary>Type Casting</primary>
+    </indexterm></title>
+
+  <sect2 id="Explicit_Casting">
+    <title>Explicit Casting<indexterm>
+        <primary>Explicit Casting</primary>
+      </indexterm></title>
+
+    <para>The most common use of value types is to explicitly cast from one
+    type to another in expressions. To do this, you simply place the value
+    type in parentheses in the expression immediately preceding the element to
+    cast. This converts the data from its original form to the new form (to
+    keep the same bit-pattern, see the <emphasis
+    role="bold">TRANSFER</emphasis> built-in function).</para>
+
+    <programlisting>MyBoolean := (BOOLEAN) IF(SomeAttribute &gt; 10,1,0);
+          // casts the INTEGER values 1 and 0 to a BOOLEAN TRUE or FALSE
+MyString := (STRING1) IF(SomeAttribute &gt; 10,1,0);
+          // casts the INTEGER values 1 and 0 to a 1-character string
+          // containing '1' or '0'
+MyValue := (INTEGER) MAP(MyString = '1' =&gt; MyString, '0');
+          // casts the STRING values '1' and '0' to an INTEGER 1 or 0
+MySet := (SET OF INTEGER1) [1,2,3,4,5,6,7,8,9,10];
+          //casts from a SET OF INTEGER8 (the default) to SET OF INTEGER1</programlisting>
+  </sect2>
+
+  <sect2 id="Implicit_Casting">
+    <title>Implicit Casting<indexterm>
+        <primary>Implicit Casting</primary>
+      </indexterm></title>
+
+    <para>During expression evaluation, different value types may be
+    implicitly cast in order to properly evaluate the expression. Implicit
+    casting always means promoting one value type to another: INTEGER to
+    STRING or INTEGER to REAL. BOOLEAN types may not be involved in mixed mode
+    expressions. For example, when evaluating an expression using both INTEGER
+    and REAL values, the INTEGER is promoted to REAL at the point where the
+    two mix, and the result is a REAL value.</para>
+
+    <para>INTEGER and REAL may be freely mixed in expressions. At the point of
+    contact between them the expression is treated as REAL.
+    <emphasis>Until</emphasis> that point of contact the expression may be
+    evaluated at INTEGER width. Division on INTEGER values implicitly promotes
+    both operands to REAL before performing the division.</para>
+
+    <para>The following expression: (1+2+3+4)*(1.0*5)</para>
+
+    <para>evaluates as:
+    (REAL)((INTEGER)1+(INTEGER)2+(INTEGER)3+(INTEGER)4)*(1.0*(REAL)5)</para>
+
+    <para>and: 5/2+4+5 evaluates as: (REAL)5/(REAL)2+(REAL)4+(REAL)5</para>
+
+    <para>while: '5' + 4 evaluates as: 5 + (STRING)4 //concatenation</para>
+
+    <para>Comparison operators are treated as any other mixed mode expression.
+    Built-in Functions that take multiple values, any of which may be returned
+    (such as MAP or IF), are treated as mixed mode expressions and will return
+    the common base type. This common type must be reachable by standard
+    implicit conversions.</para>
+  </sect2>
+
+  <sect2 id="Type_Transfer">
+    <title>Type Transfer<indexterm>
+        <primary>Type Transfer</primary>
+      </indexterm></title>
+
+    <para>Type casting converts data from its original form to the new form.
+    To keep the same bit-pattern you must use either the <emphasis
+    role="bold">TRANSFER</emphasis> built-in function or the type transfer
+    syntax, which is similar to type casting syntax with the addition of angle
+    brackets (&gt;<emphasis>valuetype</emphasis>&lt;).</para>
+
+    <programlisting>INTEGER1 MyInt := 65; //MyInt is an integer value 65
+STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)</programlisting>
+  </sect2>
+
+  <sect2 id="Casting_Rules">
+    <title>Casting Rules<indexterm>
+        <primary>Casting Rules</primary>
+      </indexterm></title>
+
+    <informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="3">
+        <colspec colwidth="90pt" />
+
+        <colspec colwidth="95.00pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">From</emphasis></entry>
+
+            <entry><emphasis role="bold">To</emphasis></entry>
+
+            <entry><emphasis role="bold">Results in</emphasis></entry>
+          </row>
+
+          <row>
+            <entry>INTEGER</entry>
+
+            <entry>STRING</entry>
+
+            <entry>ASCII or EBCDIC representation of the value</entry>
+          </row>
+
+          <row>
+            <entry>DECIMAL</entry>
+
+            <entry>STRING</entry>
+
+            <entry>ASCII or EBCDIC representation of the value, including
+            decimal and sign</entry>
+          </row>
+
+          <row>
+            <entry>REAL</entry>
+
+            <entry>STRING</entry>
+
+            <entry>ASCII or EBCDIC representation of the value, including
+            decimal and sign—may be expressed in scientific notation</entry>
+          </row>
+
+          <row>
+            <entry>UNICODE</entry>
+
+            <entry>STRING</entry>
+
+            <entry>ASCII or EBCDIC representation with any non-existent
+            characters appearing as the SUBstitute control code (0x1A in ASCII
+            or 0x3F in EBCDIC) and any non-valid ASCII or EBCDIC characters
+            appearing as the substitution codepoint (0xFFFD)</entry>
+          </row>
+
+          <row>
+            <entry>STRING</entry>
+
+            <entry>QSTRING</entry>
+
+            <entry>Uppercase ASCII representation</entry>
+          </row>
+
+          <row>
+            <entry>INTEGER</entry>
+
+            <entry>UNICODE</entry>
+
+            <entry>UNICODE representation of the value</entry>
+          </row>
+
+          <row>
+            <entry>DECIMAL</entry>
+
+            <entry>UNICODE</entry>
+
+            <entry>UNICODE representation of the value, including decimal and
+            sign</entry>
+          </row>
+
+          <row>
+            <entry>REAL</entry>
+
+            <entry>UNICODE</entry>
+
+            <entry>UNICODE representation of the value, including decimal and
+            sign—may be expressed in scientific notation</entry>
+          </row>
+
+          <row>
+            <entry>INTEGER</entry>
+
+            <entry>REAL</entry>
+
+            <entry>Value is cast with loss of precision when the value is
+            greater than 15 significant digits</entry>
+          </row>
+
+          <row>
+            <entry>INTEGER</entry>
+
+            <entry>REAL4</entry>
+
+            <entry>Value is cast with loss of precision when the value is
+            greater than 7 significant digits</entry>
+          </row>
+
+          <row>
+            <entry>STRING</entry>
+
+            <entry>REAL</entry>
+
+            <entry>Sign, integer, and decimal portion of the string
+            value</entry>
+          </row>
+
+          <row>
+            <entry>DECIMAL</entry>
+
+            <entry>REAL</entry>
+
+            <entry>Value is cast with loss of precision when the value is
+            greater than 15 significant digits</entry>
+          </row>
+
+          <row>
+            <entry>DECIMAL</entry>
+
+            <entry>REAL4</entry>
+
+            <entry>Value is cast with loss of precision when the value is
+            greater than 7 significant digits</entry>
+          </row>
+
+          <row>
+            <entry>INTEGER</entry>
+
+            <entry>DECIMAL</entry>
+
+            <entry>Loss of precision if the DECIMAL is too small</entry>
+          </row>
+
+          <row>
+            <entry>REAL</entry>
+
+            <entry>DECIMAL</entry>
+
+            <entry>Loss of precision if the DECIMAL is too small</entry>
+          </row>
+
+          <row>
+            <entry>STRING</entry>
+
+            <entry>DECIMAL</entry>
+
+            <entry>Sign, integer, and decimal portion of the string
+            value</entry>
+          </row>
+
+          <row>
+            <entry>STRING</entry>
+
+            <entry>INTEGER</entry>
+
+            <entry>Sign and integer portions of the string value</entry>
+          </row>
+
+          <row>
+            <entry>REAL</entry>
+
+            <entry>INTEGER</entry>
+
+            <entry>Integer value, only—decimal portion is truncated</entry>
+          </row>
+
+          <row>
+            <entry>DECIMAL</entry>
+
+            <entry>INTEGER</entry>
+
+            <entry>Integer value, only—decimal portion is truncated</entry>
+          </row>
+
+          <row>
+            <entry>INTEGER</entry>
+
+            <entry>BOOLEAN</entry>
+
+            <entry>0 = FALSE, anything else = TRUE</entry>
+          </row>
+
+          <row>
+            <entry>BOOLEAN</entry>
+
+            <entry>INTEGER</entry>
+
+            <entry>FALSE = 0, TRUE = 1</entry>
+          </row>
+
+          <row>
+            <entry>STRING</entry>
+
+            <entry>BOOLEAN</entry>
+
+            <entry>'' = FALSE, anything else = TRUE</entry>
+          </row>
+
+          <row>
+            <entry>BOOLEAN</entry>
+
+            <entry>STRING</entry>
+
+            <entry>FALSE = '', TRUE = '1'</entry>
+          </row>
+
+          <row>
+            <entry>DATA</entry>
+
+            <entry>STRING</entry>
+
+            <entry>Value is cast with no translation</entry>
+          </row>
+
+          <row>
+            <entry>STRING</entry>
+
+            <entry>DATA</entry>
+
+            <entry>Value is cast with no translation</entry>
+          </row>
+
+          <row>
+            <entry>DATA</entry>
+
+            <entry>UNICODE</entry>
+
+            <entry>Value is cast with no translation</entry>
+          </row>
+
+          <row>
+            <entry>UNICODE</entry>
+
+            <entry>DATA</entry>
+
+            <entry>Value is cast with no translation</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para><emphasis role="bold"> </emphasis>The casting rules for STRING to
+    and from any numeric type apply equally to all string types, also. All
+    casting rules apply equally to sets (using the SET OF
+    <emphasis>type</emphasis> syntax).</para>
+  </sect2>
+</sect1>

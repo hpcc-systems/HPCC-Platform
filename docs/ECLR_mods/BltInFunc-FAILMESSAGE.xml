@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="FAILMESSAGE">
+  <title>FAILMESSAGE<indexterm>
+      <primary>FAILMESSAGE</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">FAILMESSAGE<indexterm>
+      <primary>FAILMESSAGE function</primary>
+    </indexterm> [( </emphasis><emphasis>tag</emphasis><emphasis role="bold">
+  )]</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="74.15pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>tag</emphasis></entry>
+
+            <entry>A string constant defining the name of XML tag containing
+            the text to return, typically extra information returned by
+            SOAPCALL. If omitted, the default is ‘text.’</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">FAILMESSAGE </emphasis>function returns the
+  last failure message for use in the FAILURE workflow service or the
+  TRANSFORM structure<indexterm>
+      <primary>TRANSFORM structure</primary>
+    </indexterm> referenced in the ONFAIL option of SOAPCALL.</para>
+
+  <para>Example:</para>
+
+  <programlisting>SPeople := SORT(Person,Person.per_first_name);
+nUniques := COUNT(DEDUP(sPeople,Person.per_first_name ANDPerson.address))
+:FAILURE(Email.simpleSend(SystemsPersonnel,
+        SystemsPersonel.email,FAILMESSAGE));</programlisting>
+
+  <para>See Also: <link linkend="RECOVERY">RECOVERY</link>, <link linkend="FAILCODE">FAILCODE</link>, <link linkend="SOAPCALL">SOAPCALL</link></para>
+</sect1>

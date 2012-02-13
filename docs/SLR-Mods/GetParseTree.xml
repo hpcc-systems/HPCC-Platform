@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="GetParseTree">
+  <title><emphasis role="bold">GetParseTree</emphasis></title>
+
+  <para><emphasis role="bold">STD.System.Debug.GetParseTree<indexterm>
+      <primary>STD.System.Debug.GetParseTree</primary>
+    </indexterm> <indexterm>
+      <primary>System.Debug.GetParseTree</primary>
+    </indexterm> <indexterm>
+      <primary>Debug.GetParseTree</primary>
+    </indexterm> <indexterm>
+      <primary>GetParseTree</primary>
+    </indexterm>(</emphasis> <emphasis> </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>GetParseTree returns a STRING value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">GetParseTree </emphasis>function returns a
+  textual representation of the match that occurred, using square brackets
+  (such as: a[b[c]d] ) to indicate nesting. This function is only used within
+  the RECORD or TRANSFORM structure that defines the result of a PARSE
+  operation. This function is useful for debugging PARSE operations.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+
+r := {string150 line};
+d := dataset([
+{'Ge 34:2 And when Shechem the son of Hamor the Hivite, '+
+ 'prince of the country, saw her, he took her, and lay with her, '+
+ 'and defiled her.'},
+{'Ge 36:10 These are the names of Esaus sons; Eliphaz the son of '+
+ 'Adah the wife of Esau, Reuel the son of Bashemath the wife of '+
+ 'Esau.'}
+],r);
+PATTERN ws := [' ','\t',',']*;
+PATTERN patStart := FIRST | ws;
+PATTERN patEnd := LAST | ws;
+PATTERN article := ['A','The','Thou','a','the','thou'];
+TOKEN patWord := PATTERN('[a-zA-Z]+');
+TOKEN Name := PATTERN('[A-Z][a-zA-Z]+');
+RULE Namet := name OPT(ws 'the' ws name);
+PATTERN produced_by := OPT(article ws) ['son of','daughter of'];
+PATTERN produces_with := OPT(article ws) ['wife of'];
+RULE progeny := namet ws ( produced_by | produces_with ) ws namet;
+results := RECORD
+  STRING LeftName   := MATCHTEXT(Namet[1]);
+  STRING RightName  := MATCHTEXT(Namet[2]);
+  STRING LinkPhrase := IF(MATCHTEXT(produced_by[1])&lt;&gt;'',
+                         MATCHTEXT(produced_by[1]),
+                         MATCHTEXT(produces_with[1]));
+  STRING Tree       := 'Tree: ' + STD.System.Debug.getParseTree();
+END;
+outfile1 := PARSE(d,line,progeny,results,SCAN ALL);
+/* the Tree field output looks like this:
+Tree: [namet[name"Shechem"] ws" " produced_by"the son of" ws" " namet[name"Hamor"]]
+*/</programlisting>
+</sect1>

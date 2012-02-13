@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Attribute_Creation" role="nobrk">
+  <title>Attribute Creation</title>
+
+  <sect2 id="Similarities_and_Differences">
+    <title>Similarities and Differences</title>
+
+    <para>The similarities come from the fundamental requirement of solving
+    any data processing problem: First, understand the problem.</para>
+
+    <para>After that, in many programming environments, you use a “top-down”
+    approach to map out the most direct line of logic to get your input
+    transformed into the desired output. This is where the process diverges in
+    ECL, because the tool itself requires a different way of thinking about
+    forming the solution, and the direct route is not always the fastest. ECL
+    requires a “bottom-up” approach to problem solving.</para>
+  </sect2>
+
+  <sect2 id="Atomic_Programming">
+    <title>“Atomic” Programming</title>
+
+    <para>In ECL, once you understand what the end result needs to be, you
+    ignore the direct line from problem input to end result and instead start
+    by breaking the issue into as many pieces as possible—the smaller the
+    better. By creating “atomic” bits of ECL code, you've done all the known
+    and easy bits of the problem. This usually gets you 80% of the way to the
+    solution without having to do anything terribly difficult.</para>
+
+    <para>Once you've taken all the bits and made them as atomic as possible,
+    you can then start combining them to go the other 20% of the way to
+    produce your final solution. In other words, you start by doing the little
+    bits that you know you can easily do, then use those bits in combination
+    to produce increasingly complex logic that builds the solution
+    organically.</para>
+  </sect2>
+
+  <sect2 id="Growing_Solutions">
+    <title>Growing Solutions</title>
+
+    <para>The basic Attribute building blocks in ECL are the Set, Boolean,
+    Recordset, and Value Attribute types. Each of these can be made as
+    “atomic” as needed so that they may be used in combination to produce
+    “molecules” of more complex logic that may then be further combined to
+    produce a complete “organism” that produces the final result.</para>
+
+    <para>For example, assume you have a problem that requires you to produce
+    a set of records wherein a particular field in your output must contain
+    one of several specified values (say, 1, 3, 4, or 7). In many programming
+    languages, the pseudo-code to produce that output would look something
+    like this:</para>
+
+    <programlisting>Start at top of MyFile
+Loop through MyFile records
+ If MyField = 1 or MyField = 3 or MyField = 4 or MyField = 7 
+  Include record in output set
+ Else
+  Throw out record and go back to top of loop
+end if and loop
+</programlisting>
+
+    <para>While in ECL, the actual code would be:</para>
+
+    <programlisting>SetValidValues := [1,3,4,7];                    //Set Definition
+IsValidRec := MyFile.MyField IN SetValidValues; //Boolean
+ValRecsMyFile := MyFile(IsValidRec);            //filtered Recordset 
+OUTPUT(ValRecsMyFile);
+</programlisting>
+
+    <para>The thought process behind writing this code is:</para>
+
+    <para>“I know I have a set of constant values in the spec, so I can start
+    by creating a Set attribute of the valid values...</para>
+
+    <para>“And now that I have a Set defined, I can use that Set to create a
+    Boolean Attribute to test whether the field I'm interested in contains one
+    of the valid values...</para>
+
+    <para>“And now that I have a Boolean defined, I can use that Boolean as
+    the filter condition to produce the Recordset I need to output.”</para>
+
+    <para>The process starts with creating the Set Attribute “atom,” then
+    using it to build the Boolean “molecule,” then using the Boolean to grow
+    the “organism”—the final solution.</para>
+  </sect2>
+
+  <sect2 id="Ugly_ECL_is_Possible_Too">
+    <title>“Ugly” ECL is Possible, Too</title>
+
+    <para>Of course, that particular set of ECL could have been written like
+    this (following a more top down thinking process):</para>
+
+    <programlisting>OUTPUT(MyFile(MyField IN [1,3,4,7]));</programlisting>
+
+    <para>The end result, in this case, would be the same.</para>
+
+    <para>However, the overall usefulness of this code is drastically reduced
+    because, in the first form, all the “atomic” bits are available for re-use
+    elsewhere when similar problems come along. In this second form, they are
+    not. And in all programming styles, code re-use is considered to be a good
+    thing.</para>
+  </sect2>
+
+  <sect2 id="Easy_Optimization">
+    <title>Easy Optimization</title>
+
+    <para>Most importantly, by breaking your ECL code into its smallest
+    possible components, you allow ECL’s optimizing compiler to do the best
+    job possible of determining how to accomplish your desired result. This
+    leads to another dichotomy between ECL and other programming languages:
+    usually, the less code you write, the more “elegant” the solution; but in
+    ECL, the <emphasis role="underline">more</emphasis> code you write, the
+    better and more elegant the solution is generated for you. Remember, your
+    Attributes are just <emphasis role="bold">definitions</emphasis> telling
+    the compiler <emphasis role="underline">what</emphasis> to do, not
+    <emphasis role="underline">how</emphasis> to do it. The more you break
+    down the problem into its component pieces, the more leeway you give the
+    optimizer to produce the fastest, most efficient executable code.</para>
+  </sect2>
+</sect1>

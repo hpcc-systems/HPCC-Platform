@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="LIMIT">
+  <title>LIMIT</title>
+
+  <para><emphasis role="bold">LIMIT<indexterm>
+      <primary>LIMIT</primary>
+    </indexterm><indexterm>
+      <primary>LIMIT function</primary>
+    </indexterm>(</emphasis><emphasis>recset, maxrecs</emphasis><emphasis
+  role="bold"> [</emphasis><emphasis>, failclause </emphasis><emphasis
+  role="bold">] [</emphasis><emphasis>, </emphasis><emphasis
+  role="bold">KEYED<indexterm>
+      <primary>KEYED</primary>
+    </indexterm></emphasis><emphasis> </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>, </emphasis><emphasis
+  role="bold">COUNT<indexterm>
+      <primary>COUNT</primary>
+    </indexterm></emphasis><emphasis> </emphasis><emphasis role="bold">] ]
+  [</emphasis><emphasis>, </emphasis><emphasis role="bold">SKIP<indexterm>
+      <primary>SKIP</primary>
+    </indexterm></emphasis><emphasis> </emphasis><emphasis role="bold">]
+  )</emphasis></para>
+
+  <para><emphasis role="bold">LIMIT(</emphasis><emphasis>recset,
+  maxrecs</emphasis><emphasis role="bold"> [</emphasis><emphasis>,
+  </emphasis><emphasis role="bold">ONFAIL<indexterm>
+      <primary>ONFAIL</primary>
+    </indexterm>(</emphasis><emphasis>transform</emphasis><emphasis
+  role="bold">)</emphasis><emphasis> </emphasis><emphasis role="bold">]
+  [</emphasis><emphasis>, </emphasis><emphasis role="bold">KEYED<indexterm>
+      <primary>KEYED</primary>
+    </indexterm></emphasis><emphasis> </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>, </emphasis><emphasis
+  role="bold">COUNT<indexterm>
+      <primary>COUNT</primary>
+    </indexterm></emphasis><emphasis> </emphasis><emphasis role="bold">] ]
+  )</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="81.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>recset</emphasis></entry>
+
+          <entry>The set of records to limit. This may be an INDEX or any
+          expression that produces a recordset result.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>maxrecs</emphasis></entry>
+
+          <entry>The maximum number of records allowed on a single
+          supercomputer node.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>failclause</emphasis></entry>
+
+          <entry>Optional. A standard FAIL workflow service call.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">KEYED</emphasis></entry>
+
+          <entry>Optional. Specifies limiting the keyed portion of an INDEX
+          read.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">COUNT</emphasis></entry>
+
+          <entry>Optional. Specifies the KEYED limit is pre-checked using
+          keyspan.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">SKIP</emphasis></entry>
+
+          <entry>Optional. Specifies that when the limit is exceeded it is
+          simply eliminated from any result instead of failing the
+          workunit.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">ONFAIL</emphasis></entry>
+
+          <entry>Optional. Specifies outputting a single record produced by
+          the transform instead of failing the workunit.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>transform</emphasis></entry>
+
+          <entry>The TRANSFORM function to call to produce the single output
+          record.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">LIMIT </emphasis>function causes the
+  attribute to fail with an exception if the <emphasis>recset
+  </emphasis>contains more records than <emphasis>maxrecs</emphasis> on any
+  single node of the supercomputer (unless the SKIP option is used for an
+  index read or the ONFAIL option is present). If the <emphasis>failclause
+  </emphasis>is present, it specifies the exception number and message. This
+  is typically used to control "runaway" queries in the Rapid Data Delivery
+  Engine supercomputer.</para>
+
+  <para>Example:</para>
+
+  <programlisting>RecStruct := RECORD
+  INTEGER1 Number;
+  STRING1  Letter;
+END;
+SomeFile := DATASET([{1,'A'},{1,'B'},{1,'C'},{1,'D'},{1,'E'},
+                     {1,'F'},{1,'G'},{1,'H'},{1,'I'},{1,'J'},
+                     {2,'K'},{2,'L'},{2,'M'},{2,'N'},{2,'O'},
+                     {2,'P'},{2,'Q'},{2,'R'},{2,'S'},{2,'T'},
+                     {2,'U'},{2,'V'},{2,'W'},{2,'X'},{2,'Y'}],
+     RecStruct);
+//throw an exception
+X := LIMIT(SomeFile,10, FAIL(99,'error!'));
+//single record output
+Y := LIMIT(SomeFile,10,
+      ONFAIL(TRANSFORM(RecStruct,
+        SELF := ROW({0,''},RecStruct)));
+//no exception, just no record
+Z := LIMIT(SomeFile,10,SKIP);
+</programlisting>
+
+  <para>See Also: <link linkend="FAIL">FAIL</link>, <link
+  linkend="TRANSFORM_Structure">TRANSFORM</link></para>
+</sect1>

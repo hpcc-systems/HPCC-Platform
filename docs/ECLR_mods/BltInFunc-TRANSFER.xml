@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="TRANSFER">
+  <title>TRANSFER</title>
+
+  <para><emphasis role="bold">TRANSFER<indexterm>
+      <primary>TRANSFER</primary>
+    </indexterm><indexterm>
+      <primary>TRANSFER Function</primary>
+    </indexterm>(</emphasis><emphasis>value,type</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="77.70pt" />
+
+        <colspec colwidth="275.10pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>value</emphasis></entry>
+
+            <entry>An expression containing the bitmap to return.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>type</emphasis></entry>
+
+            <entry>The value type to return.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>TRANSFER returns a single value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">TRANSFER </emphasis>function returns the
+  <emphasis>value </emphasis>in the requested <emphasis>type</emphasis>. This
+  is not a type cast because the bit-pattern stays the same.</para>
+
+  <para>Example:</para>
+
+  <programlisting>INTEGER1 MyInt := 65; //MyInt is an integer whose value is 65
+  
+STRING1 MyVal := TRANSFER(MyInt,STRING1); //MyVal is "A" (ASCII 65)
+  
+INTEGER1 MyVal2 := (INTEGER)MyVal; //MyVal2 is 0 (zero) because
+          "A" is not a numeric character
+</programlisting>
+
+  <para>See Also: <link linkend="Type_Casting">Type Casting</link></para>
+</sect1>

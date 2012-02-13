@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="LEFT-RIGHT">
+  <title>LEFT<indexterm>
+      <primary>LEFT</primary>
+    </indexterm> and RIGHT<indexterm>
+      <primary>RIGHT</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">LEFT</emphasis></para>
+
+  <para><emphasis role="bold">RIGHT</emphasis></para>
+
+  <para>The <emphasis role="bold">LEFT</emphasis> and <emphasis
+  role="bold">RIGHT</emphasis> keywords indicate the left and right records of
+  a record set. These may be used to substitute as parameters passed to
+  TRANSFORM functions or in expressions in functions where a left and right
+  record are implicit, such as DEDUP and JOIN.</para>
+
+  <para>Example:</para>
+
+  <programlisting>dup_flags := JOIN(person,person,
+               LEFT.current_address_key=RIGHT.current_address_key
+               AND fuzzy_equal,req_output(LEFT,RIGHT));</programlisting>
+
+  <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link>, <link linkend="DEDUP">DEDUP</link></para>
+</sect1>

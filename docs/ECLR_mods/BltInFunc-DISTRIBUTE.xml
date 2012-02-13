@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="DISTRIBUTE">
+  <title>DISTRIBUTE<indexterm>
+      <primary>DISTRIBUTE</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">DISTRIBUTE<indexterm>
+      <primary>DISTRIBUTE function</primary>
+    </indexterm>(</emphasis><emphasis>recordset </emphasis><emphasis
+  role="bold">)</emphasis><emphasis role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset,
+  expression </emphasis><emphasis role="bold">)</emphasis><emphasis
+  role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset, index
+  </emphasis><emphasis role="bold">[</emphasis><emphasis>, joincondition
+  </emphasis><emphasis role="bold">] )</emphasis><emphasis
+  role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset,
+  </emphasis><emphasis role="bold"> SKEW<indexterm>
+      <primary>SKEW</primary>
+    </indexterm>(</emphasis><emphasis> minskew </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>, maxskew</emphasis><emphasis role="bold">
+  ] ) )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="82.20pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>The set of records to distribute.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>An integer expression that specifies how to distribute the
+            recordset, usually using one the HASH functions for
+            efficiency.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>index</emphasis></entry>
+
+            <entry>The name of an INDEX attribute definition, which provides
+            the appropriate distribution.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>joincondition</emphasis></entry>
+
+            <entry>Optional. A logical expression that specifies how to link
+            the records in the recordset and the index. The keywords LEFT and
+            RIGHT may be used as dataset qualifiers for fields in the
+            recordset and index.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">SKEW</emphasis></entry>
+
+            <entry>Specifies the allowable data skew values.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>minskew</emphasis></entry>
+
+            <entry>A floating point number in the range of zero (0.0) to one
+            (1.0) specifying the minimum skew to allow (0.1=10%).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>maxskew</emphasis></entry>
+
+            <entry>Optional. A floating point number in the range of zero
+            (0.0) to one (1.0) specifying the maximum skew to allow
+            (0.1=10%).</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>DISTRIBUTE returns a set of records.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">DISTRIBUTE</emphasis> function
+  re-distributes records from the <emphasis>recordset</emphasis> across all
+  the nodes of the cluster.</para>
+
+  <sect2 id="Random_DISTRIBUTE">
+    <title>“Random” DISTRIBUTE</title>
+
+    <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset
+    </emphasis><emphasis role="bold">)</emphasis></para>
+
+    <para>This form redistributes the <emphasis>recordset</emphasis>
+    “randomly” so there is no data skew across nodes, but without the
+    disadvantages the RANDOM() function could introduce. This is functionally
+    equivalent to distributing by a hash of the entire record.</para>
+  </sect2>
+
+  <sect2 id="Expression_DISTRIBUTE">
+    <title>Expression DISTRIBUTE</title>
+
+    <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset,
+    expression </emphasis><emphasis role="bold">)</emphasis></para>
+
+    <para>This form redistributes the <emphasis>recordset</emphasis> based on
+    the specified <emphasis>expression, </emphasis>typically one of the HASH
+    functions. Only the bottom 32-bits of the <emphasis>expression</emphasis>
+    value are used, so either HASH or HASH32 are the optimal choices. Records
+    for which the <emphasis>expression</emphasis> evaluates the same will end
+    up on the same node. DISTRIBUTE implicitly performs a modulus operation if
+    an <emphasis>expression</emphasis> value is not in the range of the number
+    of nodes available.</para>
+  </sect2>
+
+  <sect2 id="Index-based_DISTRIBUTE">
+    <title>Index-based DISTRIBUTE</title>
+
+    <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset,
+    index </emphasis><emphasis role="bold">[</emphasis><emphasis>,
+    joincondition </emphasis><emphasis role="bold">] )</emphasis></para>
+
+    <para>This form redistributes the <emphasis>recordset</emphasis> based on
+    the existing distribution of the specified <emphasis>index</emphasis>,
+    where the linkage between the two is determined by the
+    <emphasis>joincondition</emphasis>. Records for which the
+    <emphasis>joncondition</emphasis> is true will end up on the same
+    node.</para>
+  </sect2>
+
+  <sect2 id="Skew-based_DISTRIBUTE">
+    <title>Skew-based DISTRIBUTE</title>
+
+    <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset,
+    </emphasis><emphasis role="bold">SKEW(</emphasis><emphasis> minskew
+    </emphasis><emphasis role="bold">[</emphasis><emphasis>,
+    maxskew</emphasis><emphasis role="bold"> ] ) )</emphasis></para>
+
+    <para>This form redistributes the <emphasis>recordset,</emphasis> but only
+    if necessary. The purpose of this form is to replace the use of
+    DISTRIBUTE(<emphasis>recordset</emphasis>,RANDOM()) to simply obtain a
+    relatively even distribution of data across the nodes. This form will
+    always try to minimize the amount of data redistributed between the
+    nodes.</para>
+
+    <para>The skew of a dataset is calculated as:</para>
+
+    <para>MAX(ABS(AvgPartSize-PartSize[node])/AvgPartSize)</para>
+
+    <para>If the <emphasis>recordset</emphasis> is skewed less than
+    <emphasis>minskew </emphasis>then the DISTRIBUTE is a no-op. If
+    <emphasis>maxskew</emphasis> is specified and the skew on any node exceeds
+    this, the job fails with an error message (specifying the first node
+    number exceeding skew), otherwise the data is redistributed to ensure that
+    the data is distributed with less skew than
+    <emphasis>minskew</emphasis>.</para>
+
+    <para>Example:</para>
+
+    <programlisting>MySet1 := DISTRIBUTE(Person); //”random” distribution - no skew
+MySet2 := DISTRIBUTE(Person,HASH32(Person.per_ssn));
+ //all people with the same SSN end up on the same node
+ //INDEX example:
+mainRecord := RECORD
+  INTEGER8 sequence;
+  STRING20 forename; 
+  STRING20 surname;
+  UNSIGNED8 filepos{virtual(fileposition)};
+END;
+mainTable := DATASET('~keyed.d00',mainRecord,THOR);
+nameKey := INDEX(mainTable, {surname,forename,filepos}, 'name.idx');
+incTable := DATASET('~inc.d00',mainRecord,THOR);
+x := DISTRIBUTE(incTable, nameKey,
+                LEFT.surname = RIGHT.surname AND
+                LEFT.forename = RIGHT.forename);
+OUTPUT(x);
+
+//SKEW example:
+Jds := JOIN(somedata,otherdata,LEFT.sysid=RIGHT.sysid);
+Jds_dist1 := DISTRIBUTE(Jds,SKEW(0.1));
+ //ensures skew is less than 10%
+Jds_dist2 := DISTRIBUTE(Jds,SKEW(0.1,0.5));
+ //ensures skew is less than 10%
+ //and fails if skew exceeds 50% on any node
+</programlisting>
+
+    <para>See Also: <link linkend="HASH32">HASH32</link>, <link
+    linkend="DISTRIBUTED">DISTRIBUTED</link>, <link
+    linkend="INDEX_record_structure">INDEX</link></para>
+  </sect2>
+</sect1>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ALL" role="nobrk">
+  <title>ALL<indexterm>
+      <primary>ALL</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">ALL</emphasis></para>
+
+  <para>The <emphasis role="bold">ALL </emphasis>keyword<indexterm>
+      <primary>ALL keyword</primary>
+    </indexterm> specifies the set of all possible values when used as the
+  default value for a passed SET parameter or as a substitute for a SET in
+  operations that expect a defined SET of values.</para>
+
+  <para>Example:</para>
+
+  <programlisting>MyFunc(STRING1 val, SET OF STRING1 S=ALL) := val IN S;
+      //check for presence in passed set, if passed
+ 
+SET OF INTEGER4 MySet := IF(SomeCondition=TRUE,
+      [88888,99999,66666,33333,55555],ALL);
+MyRecs := MyFile(Zip IN MySet);</programlisting>
+
+  <para>See Also: <link linkend="SET_OF">SET OF</link>, <link
+  linkend="Function_Attributes__Parameter_Passing">Attribute Functions
+  (Parameter Passing</link>)</para>
+</sect1>

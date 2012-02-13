@@ -1,0 +1,1908 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book lang="en_US">
+  <title>Running HPCC in a Virtual Machine</title>
+
+  <bookinfo>
+    <title>HPCC in a Virtual Machine</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Boca Raton Documentation Team</surname>
+    </author>
+
+    <legalnotice>
+      <para>We welcome your comments and feedback about this document via
+      email to <email>docfeedback@hpccsystems.com</email> Please include
+      <emphasis role="bold">Documentation Feedback</emphasis> in the subject
+      line and reference the document name, page numbers, and current Version
+      Number in the text of the message.</para>
+
+      <para>LexisNexis and the Knowledge Burst logo are registered trademarks
+      of Reed Elsevier Properties Inc., used under license. Other products,
+      logos, and services may be trademarks or registered trademarks of their
+      respective companies. All names and example data used in this manual are
+      fictitious. Any similarity to actual persons, living or dead, is purely
+      coincidental.</para>
+
+      <para></para>
+    </legalnotice>
+
+   <xi:include href="Version.xml" xpointer="FooterInfo"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+
+    <xi:include href="Version.xml" xpointer="DateVer"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <corpname>HPCC Systems</corpname>
+
+   <xi:include href="Version.xml" xpointer="Copyright"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg" />
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter>
+    <title>Introduction</title>
+
+    <para>These instructions will guide you through installing and running an
+    HPCC<footnote>
+        <para><emphasis role="bold">H</emphasis>igh <emphasis
+        role="bold">P</emphasis>erformance <emphasis
+        role="bold">C</emphasis>omputing <emphasis
+        role="bold">C</emphasis>luster (HPCC) is a massively parallel
+        processing computing platform that solves Big Data problems. See
+        <ulink
+        url="http://hpccsystems.com/Why-HPCC/How-it-works">http://hpccsystems.com/Why-HPCC/How-it-works</ulink>
+        for more details.</para>
+      </footnote> System on a single node inside a Linux virtual machine
+    running on a Windows host.</para>
+
+    <para>Packaged to run inside a virtual machine, this version provides a
+    hands-on experience with an HPCC system. You can experiment with it and
+    even create real-world data analytics applications-all on your desktop or
+    laptop PC.</para>
+
+    <para>This version includes the tools and functionality of an HPCC without
+    the need for a physical cluster of servers. It provides enough for you to
+    evaluate an HPCC system and learn to use ECL<footnote>
+        <para><emphasis role="bold">E</emphasis>nterprise <emphasis
+        role="bold">C</emphasis>ontrol <emphasis
+        role="bold">L</emphasis>anguage (ECL) is a declarative, data-centric
+        programming language used to manage all aspects of the massive data
+        joins, sorts, and builds that truly differentiate HPCC (High
+        Performance Computing Cluster) from other technologies in its ability
+        to provide flexible data analysis on a massive scale.</para>
+      </footnote>. Naturally, you do not get the power of parallel processing,
+    but you can use this version as an evaluation, learning, and
+    experimentation tool.</para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <?dbfo keep-together="always"?>
+
+        <tgroup cols="2">
+          <colspec colwidth="49.50pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
+
+              <entry>Reading this document in its entirety before beginning.
+              The steps in this document can take an hour or two, depending on
+              your download speed.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <sect1>
+      <title>System Requirements</title>
+
+      <para>Running HPCC in a virtual machine requires (at minimum):</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>A personal computer running Windows XP, Vista, Windows 7
+          (either 32- or 64-bit)</para>
+        </listitem>
+
+        <listitem>
+          <para>A minimum of 2 GB ram, with at least 1.5 GB of free memory
+          available. We recommend 4 GB or more</para>
+        </listitem>
+
+        <listitem>
+          <para>Intel Pentium D (or better) or AMD Athlon64/Opteron/Phenom
+          processor</para>
+        </listitem>
+
+        <listitem>
+          <para>Minimum 5 GB of available disk space, we recommend 20
+          GB</para>
+        </listitem>
+
+        <listitem>
+          <para>VMWare<superscript>®</superscript> Player or Server (version
+          3.0 or later)</para>
+        </listitem>
+
+        <listitem>
+          <para>Internet Explorer<superscript>®</superscript> 7, Google Chrome
+          10, or Firefox™ 3.0 (or later)</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>Users should have familiarity with installing and running Windows
+      applications.</para>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Getting the Tools and the VM Image</title>
+
+    <para>To run this version of the HPCC System, you need the VM player
+    (version 3.0 or later) from VMWare<superscript>®</superscript>.</para>
+
+    <para>In the following sections, you will:</para>
+
+    <para><itemizedlist>
+        <listitem>
+          <para>Download and install the VM Player</para>
+        </listitem>
+
+        <listitem>
+          <para>Download the HPCC virtual machine image from HPCC
+          Systems.</para>
+        </listitem>
+
+        <listitem>
+          <para>Open the image in the VM Player</para>
+        </listitem>
+      </itemizedlist>Once you have completed these steps, you can evaluate the
+    HPCC Platform and learn how to use it. .</para>
+
+    <sect1>
+      <title>Download and Install the VMWare player</title>
+
+      <para>If you already have VMPlayer (version 3.0 or later) installed, you
+      can skip this section and go to <xref linkend="get_hpcc" />.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Go to the VMWare site: <ulink
+          url="http://www.vmware.com/products/player/">http://www.vmware.com/products/player/</ulink>.</para>
+        </listitem>
+
+        <listitem>
+          <para>Click on download link, then follow the instructions to
+          download the version for 32-bit and 64-bit Windows.</para>
+
+          <para>Registration is required, but the player is free.</para>
+        </listitem>
+
+        <listitem>
+          <para>Download the VMWare Player (save to a folder on your
+          machine).</para>
+        </listitem>
+
+        <listitem>
+          <para>Follow VMWare's on-screen instructions and install the VM
+          Player.</para>
+        </listitem>
+      </orderedlist>
+    </sect1>
+
+    <?hard-pagebreak ?>
+
+    <sect1>
+      <title id="get_hpcc">Get the latest HPCC Virtual Image File</title>
+
+      <para><orderedlist>
+          <listitem>
+            <para>Download the latest HPCC virtual machine image file
+            from:</para>
+
+            <para><ulink
+            url="http://HPCCsystems.com/download/hpcc-vm-image">http://hpccsystems.com/download/hpcc-vm-image</ulink></para>
+
+            <para>Note: You may need to register and login.</para>
+          </listitem>
+
+          <listitem>
+            <para>Save the .zip file to a folder on your machine, and extract
+            the contents to a folder on your machine.</para>
+          </listitem>
+
+          <listitem>
+            <para>Go to the folder where you extracted the files and
+            double-click on the .vmx. file
+            (HPCCSystemsVM-<emphasis>n.n.n.n</emphasis>.vmx , where n.n.n.n is
+            the version number).</para>
+
+            <para>The .vmx file should open in the VMWare player. If your
+            VMPlayer is not installed correctly, the .vmx file will not open.
+            Please check your VMPlayer installation.</para>
+          </listitem>
+
+          <listitem>
+            <para>Wait for the HPCC virtual machine to load to the desktop in
+            the VM player. This may take a few minutes.</para>
+
+            <para><emphasis role="bold">Note</emphasis>: The first time you
+            use the VM Player, you must accept the license agreement. You may
+            also be prompted to install add-ons, but they are not necessary
+            for the HPCC virtual machine.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Once the VM initialization completes, you will see a window
+            similar to the following:</para>
+
+            <figure id="welcometovm">
+              <title xreflabel="welc">VM Welcome Screen</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/vmimg01.JPG" />
+                </imageobject>
+              </mediaobject>
+            </figure>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="images/caution.png" /></entry>
+
+                      <entry>Your virtual IP address could be different from
+                      the ones provided in the example images. Please use the
+                      IP address provided by <emphasis
+                      role="bold">your</emphasis> installation.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+
+            <para>Do not resize this window, you will not interact with it. In
+            addition, there is no need to Login, Configure Network, or Set
+            Timezone.</para>
+          </listitem>
+        </orderedlist></para>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Running the HPCC VM</title>
+
+    <para>In this section, we will access the HPCC using the web-based
+    interface: ECL Watch<footnote>
+        <para>ECL Watch is a Web-based interface to your HPCC system. It
+        enables you to examine and manage many aspects of the HPCC and allows
+        you to see information about jobs you run, data files, and system
+        metrics.</para>
+      </footnote>.From ECL Watch, we will download the ECL IDE<footnote>
+        <para>The ECL IDE (Integrated Development Environment) is the tool
+        used to create queries into your data and ECL files with which to
+        build your queries. This is a Windows application.</para>
+      </footnote>. If you already have the ECL IDE installed, you can skip
+    this section and continue at <emphasis>Running the HPCC ECL IDE when you
+    had a previous version installed</emphasis>.</para>
+
+    <para><orderedlist>
+        <listitem>
+          <para>In your browser, go to the <emphasis role="bold">ECL
+          Watch</emphasis> URL displayed (circled in red) in <xref
+          linkend="welcometovm" />. For example, http://nnn.nnn.nnn.nnn:8010,
+          where nnn.nnn.nnn.nnn is your Virtual Machine's IP address. .</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry><inlinegraphic
+                    fileref="images/caution.png" /></entry>
+
+                    <entry>Your virtual IP address could be different from the
+                    ones provided in the example images. Please use the IP
+                    address provided by <emphasis role="bold">your</emphasis>
+                    installation.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>From ECL Watch page, click on the <emphasis
+          role="bold">Resources </emphasis> link in the menu on the left
+          side.</para>
+
+          <para><figure>
+              <title>ECL Watch Resource Page</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/vmimg07aa3.JPG" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para><emphasis role="bold">Note: The order of items on the page may
+          vary depending on the order in which optional packages are
+          installed.</emphasis></para>
+        </listitem>
+
+        <listitem>
+          <para>Click on the ECL IDE Installer link. When prompted save this
+          file to your PC and then run it—do not run directly from your
+          browser. This is a Windows installer for a Windows
+          application.</para>
+        </listitem>
+
+        <listitem>
+          <para>You can close your browser, if desired.</para>
+        </listitem>
+
+        <listitem>
+          <para>Install the ECL IDE, following the prompts in the installer.
+          Once the ECL IDE is installed successfully, you can proceed.</para>
+        </listitem>
+      </orderedlist></para>
+
+    <sect1>
+      <title>Running the ECL IDE for the first time</title>
+
+      <para>In this section, we will configure the ECL IDE.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Open the ECL IDE, from your start menu. (Start <emphasis
+          role="bold">&gt;&gt;</emphasis> All Programs <emphasis
+          role="bold">&gt;&gt;</emphasis> HPCCSystems <emphasis
+          role="bold">&gt;&gt;</emphasis> ECL IDE).</para>
+
+          <informaltable colsep="1" frame="all" rowsep="1">
+            <?dbfo keep-together="always"?>
+
+            <tgroup cols="2">
+              <colspec colwidth="49.50pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
+
+                  <entry>You can create a shortcut on your desktop to provide
+                  quick access to the ECL IDE.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+        </listitem>
+
+        <listitem>
+          <para>Enter the IP Address shown in <xref linkend="welcometovm" />
+          for the server in the <emphasis role="bold">Server </emphasis>box
+          (as shown in <xref linkend="Preferences" />) and press the <emphasis
+          role="bold">OK</emphasis> button.</para>
+
+          <para><figure id="Preferences">
+              <title>ECL IDE Preferences</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/vmimg06.JPG" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Enter the <emphasis role="bold">Login ID</emphasis> and
+          <emphasis role="bold">Password</emphasis> provided in the Login
+          dialog.</para>
+
+          <informaltable colsep="1" rowsep="1">
+            <tgroup cols="2">
+              <colspec colwidth="80pt" />
+
+              <colspec colwidth="100pt" />
+
+              <tbody>
+                <row>
+                  <entry>Login ID</entry>
+
+                  <entry>hpccdemo</entry>
+                </row>
+
+                <row>
+                  <entry>Password</entry>
+
+                  <entry>hpccdemo</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <figure>
+            <title>Login Window</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/vmimg06a.JPG" />
+              </imageobject>
+            </mediaobject>
+          </figure>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">OK</emphasis> button.</para>
+
+          <para>At this point you are now connected and ready to work with the
+          HPCC!</para>
+        </listitem>
+      </orderedlist>
+    </sect1>
+
+    <sect1>
+      <title>Running the HPCC ECL IDE when you had a previous version
+      installed</title>
+
+      <orderedlist>
+        <listitem>
+          <para>Open the ECL IDE, from your Start menu. (Start <emphasis
+          role="bold">&gt;&gt;</emphasis> All Programs <emphasis
+          role="bold">&gt;&gt;</emphasis> HPCCSystems <emphasis
+          role="bold">&gt;&gt;</emphasis> ECL IDE <emphasis
+          role="bold">&gt;&gt;</emphasis> ECL IDE)</para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Preferences</emphasis> button
+          in the Login dialog that displays upon start up.</para>
+
+          <para></para>
+
+          <para><figure>
+              <title>Login Window</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/vmimg05.JPG" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Enter the IP Address shown in <xref linkend="welcometovm" />
+          for the server in the <emphasis role="bold">Server</emphasis> box
+          (as shown in <xref linkend="Preferences2" />) and press the
+          <emphasis role="bold">OK</emphasis> button.</para>
+
+          <para><figure id="Preferences2">
+              <title>ECL IDE Preferences</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/vmimg06.JPG" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Enter the <emphasis role="bold">Login ID</emphasis> and
+          <emphasis role="bold">Password</emphasis> provided in the Login
+          dialog.</para>
+
+          <informaltable colsep="1" rowsep="1">
+            <tgroup cols="2">
+              <colspec colwidth="80pt" />
+
+              <colspec colwidth="100pt" />
+
+              <tbody>
+                <row>
+                  <entry>Login ID</entry>
+
+                  <entry>hpccdemo</entry>
+                </row>
+
+                <row>
+                  <entry>Password</entry>
+
+                  <entry>hpccdemo</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <figure>
+            <title>Login Window</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/vmimg06a.JPG" />
+              </imageobject>
+            </mediaobject>
+          </figure>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">OK</emphasis> button.</para>
+
+          <para>You are now connected and ready to work with the HPCC!</para>
+
+          <para></para>
+
+          <para></para>
+        </listitem>
+      </orderedlist>
+    </sect1>
+
+    <sect1>
+      <title>Write some ECL</title>
+
+      <para>Let's write, compile, and execute a simple "Hello World" program
+      on our HPCC.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Open ECL IDE, from your Start menu. (Start <emphasis
+          role="bold">&gt;&gt;</emphasis> All Programs <emphasis
+          role="bold">&gt;&gt;</emphasis> HPCCSystems <emphasis
+          role="bold">&gt;&gt;</emphasis> ECL IDE or use the desktop shortcut,
+          if you have created one.)</para>
+
+          <para>The Login Window displays.</para>
+
+          <para><figure>
+              <title>Login Window</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/vmimg06a.JPG" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <para>Provide your credentials (hpccdemo) then press the <emphasis
+          role="bold">OK</emphasis> button.</para>
+
+          <para></para>
+        </listitem>
+
+        <listitem>
+          <para>Open a new <emphasis role="bold">Builder Window</emphasis>
+          (CTRL+N) and write the following code:<programlisting>OUTPUT('Hello World');
+</programlisting></para>
+
+          <para>This could also be written as:</para>
+
+          <para><programlisting>'Hello World';
+</programlisting>In the second program listing, the OUTPUT keyword is omitted.
+          This is possible because the language is declarative and the OUTPUT
+          action is implicit.</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Select <emphasis role="bold">thor</emphasis> as your target
+          cluster.</para>
+
+          <para><emphasis role="bold">Thor</emphasis> is the Data Refinery
+          component of your HPCC. It is a massively parallel computer cluster,
+          optimized for sorting, manipulating, and transforming massive data.
+          This process is also known as ETL (Extract, Transform, and
+          Load)</para>
+
+          <para><figure>
+              <title>Select target</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/vmimg10.JPG" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Press the syntax check button on the main toolbar (or press
+          F7).</para>
+
+          <para><figure>
+              <title>Syntax Check</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/vmimg09.JPG" />
+                </imageobject>
+              </mediaobject>
+            </figure>A successful syntax check displays the "No Errors"
+          message.</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Press the <emphasis role="bold">Submit</emphasis> button (or
+          press CTRL+ENTER).</para>
+
+          <para><figure>
+              <title>Completed job</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/vmimg11.JPG" />
+                </imageobject>
+              </mediaobject>
+            </figure>The green check mark indicates successful
+          completion.</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Click on the workunit number tab and then on the Result 1 tab
+          to see the output.</para>
+
+          <para><figure>
+              <title>Completed job output</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/vmimg12.JPG" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+      </orderedlist>
+    </sect1>
+
+    <sect1>
+      <title>Working with ECL</title>
+
+      <para>Now that you have submitted some ECL code, it's time to try some
+      more complex operations.</para>
+
+      <para>The following examples are provided to get you started.</para>
+
+      <sect2>
+        <title>ECL Example: Anagram1</title>
+
+        <para>This example takes a STRING and produces every possible anagram
+        from it. This code is the basis for a second example which evaluates
+        which of these are actual words using a word list data file.</para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Open a new <emphasis role="bold">Builder Window</emphasis>
+              (CTRL+N) and write the following code:<programlisting>STRING Word := 'FRED' :STORED('Word');
+R := RECORD
+        STRING SoFar {MAXLENGTH(200)};
+        STRING Rest {MAXLENGTH(200)};
+     END;
+Init := DATASET([{'',Word}],R);
+R Pluck1(DATASET(R) infile) := FUNCTION
+R TakeOne(R le, UNSIGNED1 c) := TRANSFORM
+                SELF.SoFar := le.SoFar + le.Rest[c];
+                SELF.Rest := le.Rest[..c-1]+le.Rest[c+1..]; 
+// Boundary Conditions handled automatically
+  END;
+RETURN NORMALIZE(infile,LENGTH(LEFT.Rest),TakeOne(LEFT,COUNTER));
+  END;
+L := LOOP(Init,LENGTH(TRIM(Word)),Pluck1(ROWS(LEFT)));
+OUTPUT(L);</programlisting></para>
+            </listitem>
+
+            <listitem>
+              <para>Select <emphasis role="bold">thor</emphasis> as your
+              target cluster.</para>
+
+              <para></para>
+            </listitem>
+
+            <listitem>
+              <para>Press the syntax check button on the main toolbar (or
+              press F7)</para>
+
+              <para></para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Press the <emphasis role="bold">Submit</emphasis> button
+              (or press CTRL+ENTER).</para>
+
+              <para><figure>
+                  <title>Completed job</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/vmimg11a.JPG" />
+                    </imageobject>
+                  </mediaobject>
+                </figure>The green check mark indicates successful
+              completion.</para>
+
+              <para></para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Click on the workunit number tab and then on the Result 1
+              tab to see the output.</para>
+
+              <para><figure>
+                  <title>Completed job output</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/vmimg11b.JPG" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+          </orderedlist></para>
+
+        <para></para>
+      </sect2>
+
+      <?hard-pagebreak ?>
+
+      <sect2>
+        <title>Roxie Example: Anagram2</title>
+
+        <para>In this example, we will download an open source data file of
+        dictionary words, spray that file to our Thor cluster, then validate
+        our anagrams against that file so that we determine which are valid
+        words. The validation step uses a JOIN of the anagram list to the
+        dictionary file. Using an index and a keyed join would be more
+        efficient, but this serves as a simple example.</para>
+
+        <sect3>
+          <title>Download the word list</title>
+
+          <para>We will download the word list from <ulink
+          url="http://wordlist.sourceforge.net/">http://wordlist.sourceforge.net/</ulink></para>
+
+          <para><orderedlist>
+              <listitem>
+                <para>Download the <emphasis>Official 12 Dicts
+                </emphasis>Package</para>
+              </listitem>
+
+              <listitem>
+                <para>Extract the <emphasis role="bold">2of12.txt</emphasis>
+                file to a folder on your local machine. The files are
+                available in tar.gz or ZIP format.</para>
+              </listitem>
+            </orderedlist></para>
+        </sect3>
+
+        <sect3 id="Load_the_Incoming_Data">
+          <title>Load the Dictionary File to your Landing Zone</title>
+
+          <para>In this step, you will copy the data files to a location from
+          which it can be sprayed to your HPCC cluster. A Landing Zone is a
+          storage location attached to your HPCC. It has a utility running to
+          facilitate file spraying to a cluster.</para>
+
+          <para>For smaller data files, maximum of 2GB, you can use the
+          upload/download file utility in ECL Watch. This data file is only
+          ~400 kb.</para>
+
+          <para>Next you will distribute (or Spray) the dataset to all the
+          nodes in the HPCC cluster. The power of the HPCC comes from its
+          ability to assign multiple processors to work on different portions
+          of the data file in parallel. Even though the VM Edition only has a
+          single node, the data must be sprayed to the cluster.</para>
+
+          <orderedlist>
+            <listitem>
+              <para>In your browser, go to the <emphasis role="bold">ECL
+              Watch</emphasis> URL For example, http://nnn.nnn.nnn.nnn:8010,
+              where nnn.nnn.nnn.nnn is your ESP Server's IP address.</para>
+
+              <para><informaltable colsep="1" frame="all" rowsep="1">
+                  <?dbfo keep-together="always"?>
+
+                  <tgroup cols="2">
+                    <colspec colwidth="49.50pt" />
+
+                    <colspec />
+
+                    <tbody>
+                      <row>
+                        <entry><inlinegraphic
+                        fileref="images/caution.png" /></entry>
+
+                        <entry>Your IP address could be different from the
+                        ones provided in the example images. Please use the IP
+                        address provided by <emphasis
+                        role="bold">your</emphasis> installation.</entry>
+                      </row>
+                    </tbody>
+                  </tgroup>
+                </informaltable></para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>From ECL Watch page, click on the <emphasis
+              role="bold">Upload/download File </emphasis> link in the menu on
+              the left side.</para>
+
+              <para><figure>
+                  <title>Upload/download</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/LZimg03-1.jpg" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+
+              <para>Once you click on the Upload/download file link, it will
+              take you to the Dropzones and Files page, where you can choose
+              to <emphasis role="bold">Browse</emphasis> your machine for a
+              file to upload:</para>
+
+              <para><figure>
+                  <title>Dropzones and Files</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/LZimg04.jpg" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">Browse</emphasis> button
+              to browse the files on your local machine, select the file to
+              upload and then press the <emphasis role="bold">Open</emphasis>
+              button.</para>
+
+              <para>The file you selected should appear in the <emphasis
+              role="bold">Select a file to upload:</emphasis> field. The data
+              file is named: <emphasis
+              role="bold">2of12.txt</emphasis>.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press on <emphasis role="bold">Upload Now</emphasis> to
+              complete the file upload.</para>
+            </listitem>
+          </orderedlist>
+        </sect3>
+
+        <sect3 id="Spray_the_Data_to_THOR">
+          <title>Spray the Data File to your <emphasis>Data Refinery (Thor)
+          Cluster</emphasis></title>
+
+          <para>To use the data file in our HPCC system, we must “spray” it to
+          all the nodes. A <emphasis>spray</emphasis> or
+          <emphasis>import</emphasis> is the relocation of a data file from
+          one location (such as a Landing Zone) to multiple file parts on
+          nodes in a cluster.</para>
+
+          <para>The distributed or sprayed file is given a
+          <emphasis>logical-file-name</emphasis> as follows<emphasis
+          role="bold">: thor::word_list_csv </emphasis> The system maintains a
+          list of logical files and the corresponding physical file locations
+          of the file parts.</para>
+
+          <para></para>
+
+          <orderedlist>
+            <listitem>
+              <para>Open ECL Watch using the following URL:</para>
+
+              <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp(where
+              nnn.nnn.nnn.nnn is your ESP Server’s IP Address and pppp is the
+              port. The default port is 8010)</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>CLICK on the Spray CSV hyperlink under the DFU Files menu
+              on the left.</para>
+
+              <para><figure>
+                  <title>Spray CSV</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/IMDB_01.jpg" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+
+              <para>The <emphasis role="bold">DFU Spray CSV</emphasis> page
+              displays.</para>
+            </listitem>
+
+            <listitem>
+              <para>Select mydropzone in the Source <emphasis
+              role="bold">Machine/dropzone</emphasis> drop-list.</para>
+
+              <para>The IP Address is automatically filled and the Local Path
+              is partially filled with the default folder on your landing
+              zone. Note: The VM and Community Edition typically only has one
+              landing zone defined.</para>
+            </listitem>
+
+            <listitem>
+              <para>Complete the Local Path to include the complete file name
+              or use the <emphasis role="bold">Choose File</emphasis> button
+              to select the file from a list of files in the folder. The file
+              is <emphasis role="bold">2of12.txt</emphasis>.<emphasis
+              role="bold"></emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Fill in the rest of the parameters (if they are not filled
+              in already).</para>
+
+              <para><itemizedlist>
+                  <listitem>
+                    <para>Max Record Length 8192</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>Separator \,</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>Line Terminator \n,\r\n</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>Quote: '</para>
+                  </listitem>
+                </itemizedlist></para>
+            </listitem>
+
+            <listitem>
+              <para>Fill in the Label using the Logical File name desired:
+              <emphasis role="bold">thor::word_list_csv</emphasis><emphasis
+              role="bold"> </emphasis></para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Make sure the <emphasis role="bold">Overwrite</emphasis>
+              and <emphasis role="bold">Replicate</emphasis><emphasis
+              role="bold"> </emphasis>boxes are checked.</para>
+
+              <para><figure>
+                  <title>Spray the File</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/VM1000.jpg" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Press the Submit<emphasis role="bold">
+              </emphasis>button</para>
+
+              <para><figure>
+                  <title>View Progress</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/VM1001.jpg" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <para>Click the View Progress link</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>The Workunit progress page displays.</para>
+
+              <figure>
+                <title>Workunit Progress</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/VM1002.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure>
+            </listitem>
+          </orderedlist>
+        </sect3>
+
+        <sect3>
+          <title>Run the query on Thor<parameter></parameter></title>
+
+          <para><orderedlist>
+              <listitem>
+                <para>Open a new <emphasis role="bold">Builder
+                Window</emphasis> (CTRL+N) and write the following
+                code:<programlisting>IMPORT Std;
+layout_word_list := record
+  string word;
+end;
+File_Word_List := dataset('~thor::word_list_csv', layout_word_list,
+                          CSV(heading(1),separator(','),quote('')));
+STRING Word := 'teacher' :STORED('Word');
+STRING SortString(STRING input) := FUNCTION
+  OneChar := RECORD
+    STRING c;
+  END;
+  OneChar MakeSingle(OneChar L, unsigned pos) := TRANSFORM
+    SELF.c := L.c[pos];
+  END;
+  Split := NORMALIZE(DATASET([input],OneChar), LENGTH(input),
+  MakeSingle(LEFT,COUNTER));
+  SortedSplit := SORT(Split, c);
+  OneChar Recombine(OneChar L, OneChar R) := TRANSFORM
+    SELF.c := L.c+R.c;
+  END;
+  Recombined := ROLLUP(SortedSplit, Recombine(LEFT, RIGHT),ALL);
+  RETURN Recombined[1].c;
+END;
+
+STRING CleanedWord := SortString(TRIM(Std.Str.ToUpperCase(Word)));
+
+R := RECORD
+  STRING SoFar {MAXLENGTH(200)};
+  STRING Rest {MAXLENGTH(200)};
+END;
+Init := DATASET([{'',CleanedWord}],R);
+R Pluck1(DATASET(R) infile) := FUNCTION
+  R TakeOne(R le, UNSIGNED1 c) := TRANSFORM
+    SELF.SoFar := le.SoFar + le.Rest[c];
+    SELF.Rest := le.Rest[..c-1]+le.Rest[c+1..];
+    // Boundary Conditions
+    // handled automatically
+  END;
+  RETURN DEDUP(NORMALIZE(infile,LENGTH(LEFT.Rest),TakeOne(LEFT,COUNTER)));
+END;
+L := LOOP(Init,LENGTH(CleanedWord),Pluck1(ROWS(LEFT)));
+ValidWords := JOIN(L,File_Word_List,
+LEFT.SoFar=Std.Str.ToUpperCase(RIGHT.Word),TRANSFORM(LEFT));
+OUTPUT(CleanedWord);
+COUNT(ValidWords);
+OUTPUT(ValidWords)
+</programlisting></para>
+              </listitem>
+
+              <listitem>
+                <para>Select <emphasis role="bold">thor</emphasis> as your
+                target cluster.</para>
+              </listitem>
+
+              <listitem>
+                <para>Press the syntax check button on the main toolbar (or
+                press F7)</para>
+              </listitem>
+
+              <listitem>
+                <para>Press the <emphasis
+                role="bold">Submit</emphasis><emphasis role="bold">
+                </emphasis>button.</para>
+              </listitem>
+
+              <listitem>
+                <para>When it completes, select the Workunit<emphasis
+                role="bold"> </emphasis>tab, then select the Result
+                tab.</para>
+              </listitem>
+
+              <listitem>
+                <para>Examine the result.</para>
+              </listitem>
+            </orderedlist></para>
+        </sect3>
+
+        <?hard-pagebreak ?>
+
+        <sect3>
+          <title>Compile and Publish the query to
+          Roxie<parameter></parameter></title>
+
+          <para><orderedlist>
+              <listitem>
+                <?dbfo keep-together="always"?>
+
+                <para>RT-CLICK on the <emphasis role="bold">MyFIles</emphasis>
+                folder in the Repository<emphasis role="bold"></emphasis>
+                window, and select <emphasis role="bold">Insert
+                Folder</emphasis> from the pop-up menu.</para>
+
+                <para><figure>
+                    <title>Insert Folder</title>
+
+                    <mediaobject>
+                      <imageobject>
+                        <imagedata fileref="images/DTimg04.jpg" />
+                      </imageobject>
+                    </mediaobject>
+                  </figure></para>
+
+                <para></para>
+              </listitem>
+
+              <listitem>
+                <para>Enter <emphasis role="bold">Anagram</emphasis> for the
+                label, then press the OK button.</para>
+
+                <para></para>
+
+                <para><figure>
+                    <title>Enter Folder Label</title>
+
+                    <mediaobject>
+                      <imageobject>
+                        <imagedata fileref="images/VM1005.jpg" />
+                      </imageobject>
+                    </mediaobject>
+                  </figure></para>
+
+                <para></para>
+              </listitem>
+
+              <listitem>
+                <para>RT-CLICK on the <emphasis role="bold">Anagram
+                </emphasis>Folder, and select <emphasis role="bold">Insert
+                File</emphasis> from the pop-up menu.</para>
+              </listitem>
+
+              <listitem>
+                <?dbfo keep-together="always"?>
+
+                <para>Enter <emphasis role="bold">ValidateAnagrams</emphasis>
+                for the label, then press the OK button.</para>
+
+                <para>A Builder Window opens.</para>
+
+                <para><figure>
+                    <title>Builder Window</title>
+
+                    <mediaobject>
+                      <imageobject>
+                        <imagedata fileref="images/VM1006.jpg" />
+                      </imageobject>
+                    </mediaobject>
+                  </figure></para>
+              </listitem>
+
+              <listitem>
+                <para>Write the following code (you can copy the code from the
+                other builder window):<programlisting>IMPORT Std;
+layout_word_list := record
+  string word;
+end;
+File_Word_List := dataset('~thor::word_list_csv', layout_word_list,
+                          CSV(heading(1),separator(','),quote('')));
+STRING Word := 'teacher' :STORED('Word');
+STRING SortString(STRING input) := FUNCTION
+  OneChar := RECORD
+    STRING c;
+  END;
+  OneChar MakeSingle(OneChar L, unsigned pos) := TRANSFORM
+    SELF.c := L.c[pos];
+  END;
+  Split := NORMALIZE(DATASET([input],OneChar), LENGTH(input),
+  MakeSingle(LEFT,COUNTER));
+  SortedSplit := SORT(Split, c);
+  OneChar Recombine(OneChar L, OneChar R) := TRANSFORM
+    SELF.c := L.c+R.c;
+  END;
+  Recombined := ROLLUP(SortedSplit, Recombine(LEFT, RIGHT),ALL);
+  RETURN Recombined[1].c;
+END;
+
+STRING CleanedWord := SortString(TRIM(Std.Str.ToUpperCase(Word)));
+
+R := RECORD
+  STRING SoFar {MAXLENGTH(200)};
+  STRING Rest {MAXLENGTH(200)};
+END;
+Init := DATASET([{'',CleanedWord}],R);
+R Pluck1(DATASET(R) infile) := FUNCTION
+  R TakeOne(R le, UNSIGNED1 c) := TRANSFORM
+    SELF.SoFar := le.SoFar + le.Rest[c];
+    SELF.Rest := le.Rest[..c-1]+le.Rest[c+1..];
+    // Boundary Conditions
+    // handled automatically
+  END;
+  RETURN DEDUP(NORMALIZE(infile,LENGTH(LEFT.Rest),TakeOne(LEFT,COUNTER)));
+END;
+L := LOOP(Init,LENGTH(CleanedWord),Pluck1(ROWS(LEFT)));
+ValidWords := JOIN(L,File_Word_List,
+LEFT.SoFar=Std.Str.ToUpperCase(RIGHT.Word),TRANSFORM(LEFT));
+OUTPUT(CleanedWord);
+COUNT(ValidWords);
+OUTPUT(ValidWords)
+</programlisting></para>
+              </listitem>
+
+              <listitem>
+                <para>Select <emphasis role="bold">Roxie</emphasis> as your
+                target cluster.</para>
+              </listitem>
+
+              <listitem>
+                <para>Press the syntax check button on the main toolbar (or
+                press F7)</para>
+              </listitem>
+
+              <listitem>
+                <?dbfo keep-together="always"?>
+
+                <para>In the Builder window, in the upper left corner the
+                <emphasis role="bold">Submit</emphasis> button has a drop down
+                arrow next to it. Select the arrow to expose the <emphasis
+                role="bold">Compile</emphasis> option.</para>
+
+                <figure>
+                  <title>Compile</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/DTimg17.jpg" />
+                    </imageobject>
+                  </mediaobject>
+                </figure>
+              </listitem>
+
+              <listitem>
+                <para>Select <emphasis role="bold">Compile</emphasis></para>
+              </listitem>
+
+              <listitem>
+                <para>When it completes, select the Workunit<emphasis
+                role="bold"> </emphasis>tab, then select the Result
+                tab.</para>
+              </listitem>
+
+              <listitem>
+                <?dbfo keep-together="always"?>
+
+                <para>When the workunit finishes, it will display a green
+                circle indicating it has compiled.</para>
+
+                <para><figure>
+                    <title>Compiled</title>
+
+                    <mediaobject>
+                      <imageobject>
+                        <imagedata fileref="images/VM1007.jpg" />
+                      </imageobject>
+                    </mediaobject>
+                  </figure></para>
+              </listitem>
+            </orderedlist></para>
+        </sect3>
+
+        <sect3 id="Deploy_the_Query_to_Roxie">
+          <title>Publish the Roxie query</title>
+
+          <para>Next we will publish the query to a Roxie Cluster.</para>
+
+          <orderedlist>
+            <listitem>
+              <para>Select the workunit tab for the ValidateAnagrams that you
+              just compiled.</para>
+            </listitem>
+
+            <listitem>
+              <para>Select the ECL Watch tab.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Press the <emphasis role="bold">Publish</emphasis> button
+              (you may need to scroll down the main window)</para>
+
+              <para><figure>
+                  <title>Publish Query</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/VM1008.jpg" />
+                    </imageobject>
+                  </mediaobject>
+                </figure>When it successfully publishes, you will see:</para>
+
+              <para><figure>
+                  <title>Workunit Published</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/DT173-18b.png" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+          </orderedlist>
+        </sect3>
+
+        <sect3 id="Run_the_Roxie_Query">
+          <title>Run the Roxie Query in WsECL</title>
+
+          <para>Now that the query is published to a Roxie cluster, we can run
+          it using the WsECL service Using the following URL:</para>
+
+          <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp (where
+          nnn.nnn.nnn.nnn is your ESP Server’s IP address and pppp is the
+          port. The default port is 8002)</emphasis></para>
+
+          <orderedlist>
+            <listitem>
+              <para>Click on the + sign next to <emphasis
+              role="bold">myroxie</emphasis> to expand the tree.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Click on the <emphasis
+              role="bold">ValidateAnagrams.1</emphasis> hyperlink.</para>
+
+              <para>The form for the service displays.</para>
+
+              <para><figure>
+                  <title>RoxieECL</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/VM1009.jpg" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <para>Select Output Tables in the drop-list.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Provide a word to make anagrams from (e.g., TEACHER), then
+              press the Submit button.</para>
+
+              <para>The results display.</para>
+
+              <para><figure>
+                  <title>RoxieResults</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/VM1010.jpg" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+          </orderedlist>
+        </sect3>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Working_with_a_data_file">
+      <title>Working with data files</title>
+
+      <para>Once you start working with your HPCC system, you will want to
+      process some real data, this section shows you how to load data to your
+      HPCC system.</para>
+
+      <sect2 id="Cautions_and_Warnings">
+        <title>Before you begin</title>
+
+        <para>A typical production HPCC system would have much more data
+        capacity than using a virtual system for testing purposes. The size of
+        the file you wish to work with is limited by the size of your virtual
+        machine.</para>
+
+        <para><itemizedlist>
+            <listitem>
+              <para>The virtual machine has a limit of 20GB.</para>
+            </listitem>
+
+            <listitem>
+              <para>The size of the file(s) you can work with in your virtual
+              machine is also limited by your machine's available disk space.
+              Make sure you have adequate disk space available.</para>
+            </listitem>
+          </itemizedlist></para>
+
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec colwidth="49.50pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><inlinegraphic fileref="images/caution.png" /></entry>
+
+                <entry>If you exceed the file size limits your VM state will
+                not be saved and you risk losing your work. Make sure that you
+                have ample space to not only store your data, but your virtual
+                machine's "state" to be able to save your work.</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+
+        <para></para>
+      </sect2>
+
+      <?hard-pagebreak ?>
+
+      <sect2 id="Uploading_a_file">
+        <title>Uploading a file</title>
+
+        <para>For smaller data files, maximum of 2GB, you can use the
+        upload/download file utility in ECL Watch.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>In your browser, go to the <emphasis role="bold">ECL
+            Watch</emphasis> URL displayed (circled in red) in <xref
+            linkend="welcometovm" />. For example,
+            http://nnn.nnn.nnn.nnn:8010, where nnn.nnn.nnn.nnn is your Virtual
+            Machine's IP address.</para>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="images/caution.png" /></entry>
+
+                      <entry>Your virtual IP address could be different from
+                      the ones provided in the example images. Please use the
+                      IP address provided by <emphasis
+                      role="bold">your</emphasis> installation.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>From ECL Watch page, click on the <emphasis
+            role="bold">Upload/download File </emphasis> link in the menu on
+            the left side.</para>
+
+            <para><figure>
+                <title>Upload/download</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/LZimg03-1.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para><phrase> </phrase>Once you click on the Upload/download file
+            link, it will take you to the dropzones and files page, where you
+            can choose to <emphasis role="bold">Browse</emphasis> your machine
+            for a file to upload:</para>
+
+            <para><figure>
+                <title>Dropzones</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/LZimg04.jpg" scale="90" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Browse</emphasis> button to
+            browse the files on your local machine, select the file to upload
+            and then click <emphasis role="bold">Open</emphasis>
+            button.</para>
+
+            <para>The file you selected should appear in the <emphasis
+            role="bold">Select a file to upload</emphasis> field.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press on <emphasis role="bold">Upload Now</emphasis> to
+            complete the file upload.</para>
+          </listitem>
+
+          <listitem>
+            <para>Now that the file is on your Landing Zone, you can spray the
+            file to your cluster and write ECL code to process it.</para>
+          </listitem>
+        </orderedlist>
+
+        <para></para>
+
+        <para></para>
+      </sect2>
+
+      <sect2 id="Uploading_files_w_secure_client">
+        <title>Uploading files with a Secure Copy Client</title>
+
+        <para>To upload a large file for processing to your virtual machine,
+        you will need a tool that supports the secure copy protocol. In this
+        section, we discuss using WinSCP. There are other tools available, but
+        the steps are similar.</para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Open the WinSCP tool, and login to your Virtual Machine's
+              IP address using the username and password given.</para>
+
+              <para><informaltable colsep="1" rowsep="1">
+                  <tgroup cols="2">
+                    <colspec colwidth="80pt" />
+
+                    <colspec colwidth="100pt" />
+
+                    <tbody>
+                      <row>
+                        <entry>Login ID:</entry>
+
+                        <entry>hpccdemo</entry>
+                      </row>
+
+                      <row>
+                        <entry>Password:</entry>
+
+                        <entry>hpccdemo</entry>
+                      </row>
+                    </tbody>
+                  </tgroup>
+                </informaltable></para>
+            </listitem>
+
+            <listitem>
+              <para>Once logged in, it should, navigate automatically to the
+              landing zone folder. (/var/lib/HPCCSystems/mydropzone)</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Navigate to where your local file is in the left part of
+              the window.</para>
+
+              <para><figure>
+                  <title>WinSCP</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/LZimg05.jpg" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <para>Select the data file to send and copy it to the landing
+              zone, using drag-and-drop.</para>
+            </listitem>
+
+            <listitem>
+              <para>Now that the file is on your Landing Zone, you can spray
+              the file to your cluster and write ECL code to process
+              it.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+    </sect1>
+
+    <sect1>
+      <title>Next Steps</title>
+
+      <para>Available from the menu in ECL Watch are several documents which
+      provide details on various aspects of the HPCC.</para>
+
+      <figure>
+        <title>ECL Watch Resource Page</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/vmimg07aa.JPG" />
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para></para>
+
+      <para>You can also access them from the help menu: Help <emphasis
+      role="bold">&gt;&gt;</emphasis> Download Resources.</para>
+
+      <para><figure>
+          <title>Help Menu</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/vmimg07.JPG" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>To familiarize yourself with what your system can do, we
+      recommend:</para>
+
+      <para><itemizedlist>
+          <listitem>
+            <para>The <emphasis role="bold">HPCC Data
+            Tutorial</emphasis></para>
+
+            <para>This is a simple, step-by-step tutorial that shows the
+            end-to-end process from receiving a receiving a raw data file to
+            publishing a web-based query to search the data. Along the way,
+            you will learn how to process the data, index it, then write and
+            publish a query to search the data. The self-led tutorial and
+            accompanying data file is available on the ECL Watch Resource
+            Page.</para>
+          </listitem>
+
+          <listitem>
+            <para>The <emphasis role="bold">Six Degrees of Kevin Bacon
+            Example</emphasis></para>
+
+            <para>This is a more complex example (*also available on the ECL
+            Watch Resource Page) that uses a database of movie data to find
+            the degree of separation between actors in films.</para>
+          </listitem>
+
+          <listitem>
+            <para>The HPCC Systems Portal (<ulink
+            url="http://hpccsystems.com">http://hpccsystems.com</ulink>) is
+            another valuable resource for more information including:</para>
+
+            <itemizedlist>
+              <listitem>
+                <para>Video Tutorials</para>
+              </listitem>
+
+              <listitem>
+                <para>Additional examples</para>
+              </listitem>
+
+              <listitem>
+                <para>White Papers</para>
+              </listitem>
+
+              <listitem>
+                <para>Documentation</para>
+              </listitem>
+
+              <listitem>
+                <para>Support Forums</para>
+              </listitem>
+            </itemizedlist>
+          </listitem>
+        </itemizedlist></para>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Frequently Asked Questions</title>
+
+    <para></para>
+
+    <qandaset defaultlabel="number">
+      <qandadiv>
+        <qandaentry>
+          <question>
+            <para>Can I run the VM while connected to my network using a
+            Virtual Private network (VPN)?</para>
+          </question>
+
+          <answer>
+            <para>No. Most VPN clients take control of your network device and
+            routing and do not allow split tunnels.</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>Can I install this virtual machine on multiple nodes?</para>
+          </question>
+
+          <answer>
+            <para>No. If you want to evaluate a multi-node system, you should
+            use the Community version available from the HPCC Systems Portal
+            at <ulink
+            url="http://hpccsystems.com">http://hpccsystems.com</ulink>.</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>What are the limits of this version?</para>
+          </question>
+
+          <answer>
+            <para>The HPCC VM Edition runs on a single node, has a limit of 20
+            GB in it workspace, and doesn't support custom
+            configurations.</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>Can I run the VM on my Linux machine?</para>
+          </question>
+
+          <answer>
+            <para>You can run the HPCC VM using the Linux VM Player. The HPCC
+            ECL IDE is a Windows application, but can run under WINE. See the
+            Client Tools Manual for details.</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>Can I run the VM on my Mac?</para>
+          </question>
+
+          <answer>
+            <para>Not at this time. There is no Mac version of the VM
+            Player.</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>Can I run the VM on my Windows Server?</para>
+          </question>
+
+          <answer>
+            <para>Yes, You can run on Windows Server 2003 or 2008, providing
+            you have access to it using Remote Desktop Protocol (RDP).</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>Do I need a 64-bit processor to run the VM Edition?</para>
+          </question>
+
+          <answer>
+            <para>No. The VM Player runs in either 32- or 64-bit environments
+            and does not require a 64-bit processor.</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>Do I need a 64-bit processor to run the Community
+            Edition?</para>
+          </question>
+
+          <answer>
+            <para>Yes. Community Edition binaries run natively on 64-bit Linux
+            server(s). You can access that HPCC from any Windows workstation
+            (32- or 64-bit) that can run the ECL IDE and a supported
+            browser.</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>What happens to my work when I close the virtual
+            machine?</para>
+          </question>
+
+          <answer>
+            <para>The VM Player saves the state of your system when it closes.
+            It saves all of your workunit information, data files, and
+            published query sets as long as there is available space. The
+            maximum size of the saved session is 20 GB.</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>Why won't my VM allow access to my network interface?</para>
+          </question>
+
+          <answer>
+            <para>Check your Firewall settings. You may need to disable the
+            Firewall for your VM's network interface.</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>Will this version utilize my multi-core processor?</para>
+          </question>
+
+          <answer>
+            <para>This VM is designed to utilize a single core.</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>Where can I find more information?</para>
+          </question>
+
+          <answer>
+            <para>Visit the HPCC Systems Portal at
+            http://HPCCsystems.com.</para>
+          </answer>
+        </qandaentry>
+      </qandadiv>
+    </qandaset>
+  </chapter>
+</book>

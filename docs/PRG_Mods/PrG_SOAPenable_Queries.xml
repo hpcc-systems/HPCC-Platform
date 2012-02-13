@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SOAP-enabling_Queries">
+  <title><emphasis role="bold">SOAP-enabling Queries</emphasis></title>
+
+  <para>Queries destined for use in Roxie are SOAP-enabled first. The required
+  ECL code to accomplish this is the STORED workflow service. Roxie queries
+  may be contained in the FUNCTION structure or may simply be an executable
+  query.</para>
+
+  <sect2 id="The_ECL_Key_to_SOAP">
+    <title>The ECL Key to SOAP</title>
+
+    <para>The ECL code requirement for SOAP-enabled input parameters is the
+    use of the STORED workflow service. Each SOAP parameter name must be the
+    STORED name for an ECL definition. The STORED workflow service creates a
+    data storage space in the workunit that the SOAP interface uses to
+    populate the “passed” data. The ECL code simply uses those STORED
+    definitions to determine whether data was passed from that “parameter” and
+    what that data is. The data type of the passed SOAP parameter is implied
+    by the STORED definition.</para>
+
+    <para>For the following code example, you must create two definitions with
+    STORED names duplicating the SOAP parameter name, like this:</para>
+
+    <programlisting>STRING30 lname_value := '' : STORED('LastName');
+  
+STRING30 fname_value := '' : STORED('FirstName');
+</programlisting>
+
+    <para>These default to blank and the STORED workflow service opens a space
+    in the workunit to store the value. The Enterprise Service Platform (ESP)
+    handles the SOAP interface chores by plugging in the appropriate values
+    into the storage space created by STORED. Therefore, the ECL code only
+    needs to use the definitions (in this case, Lname and Fname) to accomplish
+    the query. This makes the ECL side of the equation very simple.</para>
+  </sect2>
+
+  <sect2 id="Putting_It_All_Together">
+    <title>Putting It All Together</title>
+
+    <para>Once you understand the requirements, a SOAP-enabled query would
+    look like this (contained in SOAPenabling.ECL):</para>
+
+    <programlisting>IMPORT ProgrammersGuide.DeclareData AS ProgGuide;
+     
+EXPORT SOAPenabling() := FUNCTION
+  STRING30 lname_value := '' : STORED('LastName');
+  STRING30 fname_value := '' : STORED('FirstName');
+  IDX  := ProgGuide.IDX__Person_LastName_FirstName;
+  Base := ProgGuide.Person.FilePlus;
+  Fetched := IF(fname_value = '',
+           FETCH(Base,IDX(LastName=lname_value),RIGHT.RecPos),
+                FETCH(Base,IDX(LastName=lname_value,
+      FirstName=fname_value),RIGHT.RecPos));
+  RETURN OUTPUT(CHOOSEN(Fetched,2000));
+END;</programlisting>
+
+    <para></para>
+  </sect2>
+</sect1>

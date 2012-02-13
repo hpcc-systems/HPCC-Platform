@@ -1,0 +1,424 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Query_Libraries">
+  <title><emphasis role="bold">Query Libraries</emphasis></title>
+
+  <para>A Query Library is a set of attributes, packaged together in a self
+  contained unit, which allows the code to be shared between different
+  workunits. This reduces the time required to deploy a set of attributes, and
+  can reduce the memory footprint for the set of queries within Roxie that use
+  the library. It is also possible to update a query library without having to
+  re-deploy all the queries that use it.</para>
+
+  <para>Query libraries are not supported in Thor, but may be in the
+  future.</para>
+
+  <para>A Query Library is defined by two structures—an INTERFACE to define
+  the parameters to pass, and a MODULE that implements the INTERFACE.</para>
+
+  <sect2 id="Library_INTERFACE_Definition">
+    <title>Library INTERFACE Definition</title>
+
+    <para>To create a Query Library, the first requirement is a definition of
+    its input parameters with an INTERFACE structure that receives the
+    parameters:</para>
+
+    <programlisting>NamesRec := RECORD
+  INTEGER1  NameID;
+  STRING20  FName;
+  STRING20  LName;
+END;
+     
+FilterLibIface1(DATASET(namesRec) ds, STRING search) := INTERFACE
+  EXPORT DATASET(namesRec) matches;
+  EXPORT DATASET(namesRec) others;
+END;</programlisting>
+
+    <para>This example defines the INTERFACE for a library that takes two
+    inputs—a DATASET (with the specified layout format) and a STRING—and which
+    gives you the ability to output two DATASET results.</para>
+
+    <para>For most library queries it may be preferable to also use a separate
+    INTERFACE to define the input parameters. Using an INTERFACE makes the
+    passed parameters clearer and makes it easier to keep the interface and
+    implementation in sync. This example defines the same library interface as
+    above:</para>
+
+    <programlisting>NamesRec := RECORD
+    INTEGER1  NameID;
+    STRING20  FName;
+    STRING20  LName;
+END;
+
+IFilterArgs := INTERFACE //defines passed parameters
+  EXPORT DATASET(namesRec) ds;
+  EXPORT STRING search;
+END;
+FilterLibIface2(IFilterArgs args) := INTERFACE
+  EXPORT DATASET(namesRec) matches;
+  EXPORT DATASET(namesRec) others;
+END;</programlisting>
+  </sect2>
+
+  <sect2 id="Library_MODULE_Definitions">
+    <title>Library MODULE Definitions</title>
+
+    <para>A query library is a MODULE structure definition that implements a
+    particular library INTERFACE definition. The parameters passed to the
+    MODULE must exactly match the parameters for the library INTERFACE
+    definition, and the MODULE must contain compatible EXPORT attribute
+    definitions for each of the results specified in the library INTERFACE.
+    The LIBRARY option on the MODULE definition specifies the library
+    INTERFACE being implemented. This example defines an implementation for
+    the INTERFACEs above:</para>
+
+    <programlisting>FilterDsLib1(DATASET(namesRec) ds,
+             STRING search) := MODULE,LIBRARY(FilterLibIface1)
+  EXPORT matches := ds(Lname = search);
+  EXPORT others := ds(Lname != search);
+END;</programlisting>
+
+    <para>and for the variety that takes an INTERFACE as its single
+    parameter:</para>
+
+    <programlisting>FilterDsLib2(IFilterArgs args) := MODULE,LIBRARY(FilterLibIface2)
+  EXPORT matches := args.ds(Lname = args.search);
+  EXPORT others := args.ds(Lname != args.search);
+END;</programlisting>
+  </sect2>
+
+  <sect2 id="Building_an_External_library">
+    <title>Building an External library</title>
+
+    <para>A query library may be either internal or external. An internal
+    library would be primarily used in hthor queries for testing and debugging
+    before deploying to Roxie. Although you can use internal query libraries
+    in Roxie queries, the advantages come from using the external
+    version.</para>
+
+    <para>An external query library is created by the BUILD action, which
+    compiles the query library into its own workunit. The name of the library
+    is the job name associated with the workunit. Therefore, the #WORKUNIT
+    would normally be used to give the workunit a meaningful job name, as in
+    this example:</para>
+
+    <programlisting>#WORKUNIT('name','Ppass.FilterDsLib');
+BUILD(FilterDsLib1);</programlisting>
+
+    <para>This code builds the library for the INTERFACE parameter version of
+    the code above:</para>
+
+    <programlisting>#WORKUNIT('name','Ipass.FilterDsLib');
+BUILD(FilterDsLib2);</programlisting>
+
+    <para>The system maintains a catalog of the latest versions of each query
+    library that is updated whenever a library is built. Hthor uses this to
+    resolve query libraries when running a query (as will Thor, when it
+    eventually supports query libraries). Roxie uses the query aliasing
+    mechanism in the same way.</para>
+  </sect2>
+
+  <sect2 id="Using_a_Query_Library">
+    <title>Using a Query Library</title>
+
+    <para>The syntax for using a query library is slightly different depending
+    on whether the library is internal or external. However, both methods use
+    the LIBRARY function.</para>
+
+    <para>The LIBRARY function returns a MODULE implementation with the proper
+    parameters passed for the instance in which you want to use it, which may
+    be used to access the EXPORT attributes from the library.</para>
+
+    <sect3>
+      <title>Internal Libraries</title>
+
+      <para>An internal library generates the library code as a separate unit,
+      but then includes that unit within the query workunit. It doesn't have
+      the advantage of reducing compile time or memory usage in Roxie, but it
+      does retain the library structure, which means that changes to the code
+      cannot affect anyone else using the system. That makes internal
+      libraries a perfect testing method.</para>
+
+      <para>The syntax for using an internal query library simply passes the
+      library MODULE attribute's name inside an INTERNAL function call in the
+      first parameter to the LIBRARY function, as in this example (for the
+      version that does not take an INTERFACE as its parameter):</para>
+
+      <programlisting>NamesTable := DATASET([ {1,'Doc','Holliday'},
+                        {2,'Liz','Taylor'},
+                        {3,'Mr','Nobody'},
+                        {4,'Anywhere','but here'}],
+                      NamesRec);
+lib1 := LIBRARY(INTERNAL(FilterDsLib1),FilterLibIface1(NamesTable, 'Holliday'));
+</programlisting>
+
+      <para>In this case, result is a MODULE with two EXPORTed
+      attributes—matches and others—that can be used just like any other
+      MODULE, as in this example:</para>
+
+      <programlisting>OUTPUT(lib1.matches);
+OUTPUT(lib1.others);</programlisting>
+
+      <para>and the code changes to this for the variety that takes an
+      INTERFACE:</para>
+
+      <programlisting>NamesTable := DATASET([ {1,'Doc','Holliday'},
+                        {2,'Liz','Taylor'},
+                        {3,'Mr','Nobody'},
+                        {4,'Anywhere','but here'}],
+                      NamesRec);
+SearchArgs := MODULE(IFilterArgs)
+  EXPORT DATASET(namesRec) ds := NamesTable;
+  EXPORT STRING search := 'Holliday';
+END;
+lib3 := LIBRARY(INTERNAL(FilterDsLib2),FilterLibIface2(SearchArgs));
+OUTPUT(lib3.matches);
+OUTPUT(lib3.others);</programlisting>
+    </sect3>
+
+    <sect3>
+      <title><emphasis role="bold">External Libraries</emphasis></title>
+
+      <para>Once the library is implemented as an external library (using the
+      BUILD action to create the library is done in a separate workunit) the
+      LIBRARY function no longer requires the use of the INTERNAL function to
+      specify the library. Instead, it takes a string constant containing the
+      name of the workunit created by BUILD as its first parameter, like
+      this:</para>
+
+      <programlisting>NamesTable := DATASET([ {1,'Doc','Holliday'},
+                        {2,'Liz','Taylor'},
+                        {3,'Mr','Nobody'},
+                        {4,'Anywhere','but here'}],
+                    NamesRec);
+lib2 := LIBRARY('Ppass.FilterDsLib',FilterLibIface1(NamesTable, 'Holliday'));
+OUTPUT(lib2.matches);
+OUTPUT(lib2.others);</programlisting>
+
+      <para>Or, for the INTERFACE version:</para>
+
+      <programlisting>NamesTable := DATASET([ {1,'Doc','Holliday'},
+                        {2,'Liz','Taylor'},
+                        {3,'Mr','Nobody'},
+                        {4,'Anywhere','but here'}],
+                     NamesRec);
+  
+SearchArgs := MODULE(IFilterArgs)
+  EXPORT DATASET(namesRec) ds := NamesTable;
+  EXPORT STRING search := 'Holliday';
+END;
+      
+lib4 := LIBRARY('Ipass.FilterDsLib',FilterLibIface2(SearchArgs));
+OUTPUT(lib4.matches);
+OUTPUT(lib4.others);
+</programlisting>
+
+      <para>A couple of words of warning about using external libraries: If
+      you are developing an attribute inside a library that is shared by other
+      people, then you need to make sure that your development changes don't
+      invalidate other queries. This means you need to use a different library
+      name while developing. The simplest method is probably to use a
+      different attribute for the library implementation while you are
+      developing. Another way to avoid this is to develop/test with internal
+      libraries and only build and implement the external library when you are
+      ready to put the query into production.</para>
+
+      <para>If libraries are nested then it gets more complicated. If you are
+      working on a libraryC, which is called from a libraryA, which is then
+      called from a query, then you will need to use different library names
+      for libraryC and libraryA. Otherwise you will either not call your
+      modified code in libraryC, or everyone using libraryA will call your
+      modified code. You may prefer to make libraryA and libraryC internal
+      instead, but you won't gain from the reduced compile time associated
+      with external libraries.</para>
+
+      <para>Also remember your changes are occurring in the library, not in
+      the query. It's not uncommon to wonder why changes to the ECL aren't
+      having any effect, and then realize that you've been
+      rebuilding/deploying the wrong item.</para>
+    </sect3>
+  </sect2>
+
+  <sect2 id="Query_Library_Tips">
+    <title>Query Library Tips</title>
+
+    <para>You can make your code cleaner by making the LIBRARY call a function
+    attribute, like this:</para>
+
+    <programlisting>FilterDataset(DATASET(namesRecord) ds,
+              STRING search) := LIBRARY('Ppass.FilterDsLib',FilterLibIface1(ds, search));
+</programlisting>
+
+    <para>The use of the library then becomes:</para>
+
+    <programlisting>FilterDataset(myNames, 'Holliday');</programlisting>
+
+    <para>The library name (specified as the first parameter to the LIBRARY
+    function) does not have to be a constant value, but it must not change
+    while the query is running. This means you can conditionally select
+    between different versions of a library.</para>
+
+    <para>For example, it is likely that you will want separate libraries for
+    handling FCRA and non-FCRA data, since combining the two could generate
+    inefficient or un-processable code. The code for selecting between the two
+    implementations would look like this:</para>
+
+    <programlisting>LibToUse := IF(isFCRA,'special.lookupFRCA','special.lookupNoFCRA);
+MyResults := LIBRARY(LibToUse, InterfaceCommonToBoth(args));
+</programlisting>
+  </sect2>
+
+  <sect2 id="Query_Library_Restrictions">
+    <title>Restrictions</title>
+
+    <para>The system will report an error if you attempt to use an
+    implementation of a query library that has a different INTERFACE from the
+    one specified in the LIBRARY function.</para>
+
+    <para>There is one particularly notable restriction on the ECL that can be
+    included within a library: they cannot include workflow services such as
+    INDEPENDENT, PERSIST, SUCCESS, and especially, STORED. STORED attributes
+    don't make sense inside a query library because a query library should be
+    independent of both the queries that use it, and other query libraries.
+    Instead of using STORED attributes (like SOAP-enabled Roxie queries use)
+    to pass parameters to the library queries, the parameters must be
+    explicitly passed into the query library—either as an individual
+    parameter, or as part of an INTERFACE definition that provides the
+    arguments. The query that uses the query library can use stored variables,
+    and then map those stored variables to the parameters expected by the
+    query libraries.</para>
+
+    <para>Query libraries can currently only EXPORT datasets, datarows, and
+    single-valued expressions. In particular they cannot EXPORT actions (like
+    OUTPUT), TRANSFORM structures, or other MODULE structures.</para>
+  </sect2>
+
+  <sect2 id="Notes_on_the_implementation">
+    <title>Notes on the implementation</title>
+
+    <para>There are a couple of items that may be worth noting about the
+    implementation. In Roxie, before executing the query, all library graphs
+    are expanded into the query graph. Any datasets that are supplied as
+    parameters to the library (or a dataset inside an interface parameter) are
+    directly connected to the place they are used in the query library, and
+    only results that are used are evaluated. This means that using a query
+    library should have very little overhead compared with including the ECL
+    code directly in the query. NOTE: Datasets inside row parameters aren't
+    streamed, so passing a ROW containing a dataset as a parameter to the
+    library is not as efficient as using an INTERFACE.</para>
+
+    <para>The implementation in hthor is not as efficient. Dataset parameters
+    are fully evaluated, and passed to the library as a complete unit block
+    and all results are evaluated. Thor does not yet support query
+    libraries.</para>
+
+    <para>The other item of note is that if libraryA uses libraryC, and
+    libraryB also uses libraryC with the same parameters, the calls from
+    different libraries will not be commoned up. However if an attribute
+    exported from an instance of libraryC is passed to libraryA and libraryB,
+    then the calls to libraryC will be commoned up. The way attributes
+    currently tend to be structured in the repository, e.g., calculating
+    get_Dids() and passing that into other attributes means this is unlikely
+    to cause any issues in practice.</para>
+  </sect2>
+
+  <sect2 id="Suggested_Structure">
+    <title>Suggested Structure</title>
+
+    <para>Before writing a lot of libraries, it is worth spending some time
+    working out how the attributes for a library are structured, so all the
+    libraries in the system are consistent. Here are some guidelines to use
+    during your query library design phase:</para>
+
+    <sect3>
+      <title>Naming Conventions</title>
+
+      <para>I would also suggest coming up with a consistent naming convention
+      before developing lots of libraries. In particular, you need a
+      convention for the names of the library arguments, library definition,
+      implementing module, library implementation and the attribute that wraps
+      the use of the library. (E.g., something like IXArgs, Xinterface, DoX,
+      Xlibrary, and X()).</para>
+    </sect3>
+
+    <sect3>
+      <title>Use an INTERFACE to define parameters</title>
+
+      <para>This mechanism (example shown below) provides documentation for
+      the parameters required by a service. It means the code inside the
+      implementation will access them as args.xxx or options.xxx, so it will
+      be clear when parameters are being accessed. It also makes some of the
+      following suggestions simpler.</para>
+    </sect3>
+
+    <sect3>
+      <title>Hide the LIBRARY</title>
+
+      <para>Making the LIBRARY function call a functional attribute (example
+      also shown below) means you can easily modify all uses of a library if
+      you are developing a new version. Similarly you can easily switch to use
+      an internal library instead by changing just the one line of
+      code.</para>
+    </sect3>
+
+    <sect3>
+      <title>Use MODULE Inheritance</title>
+
+      <para>Use a MODULE structure (without the LIBRARY option) that
+      implements the library's INTERFACE, and a separate MODULE derived from
+      the first to implement the LIBRARY using that service module. By hiding
+      the LIBRARY and using a separate MODULE implementation you can easily
+      remove the library all together. Also, using a separate implementation
+      from the library definitions means you can easily generate multiple
+      variants of the same library from the same definition.</para>
+
+      <programlisting>NamesRec := RECORD
+    INTEGER1  NameID;
+    STRING20  FName;
+    STRING20  LName;
+END;
+NamesTable := DATASET([ {1,'Doc','Holliday'},
+                        {2,'Liz','Taylor'},
+                        {3,'Mr','Nobody'},
+                        {4,'Anywhere','but here'}],
+                      NamesRec);
+      
+ //define an INTERFACE for the passed parameters
+IFilterArgs := INTERFACE
+  EXPORT DATASET(namesRec) ds;
+  EXPORT STRING search;
+END;
+
+ //then define an INTERFACE for the query library
+FilterLibIface2(IFilterArgs args) := INTERFACE
+  EXPORT DATASET(namesRec) matches;
+  EXPORT DATASET(namesRec) others;
+END;
+
+ //implement the INTERFACE
+FilterDsLib(IFilterArgs args) := MODULE
+  EXPORT matches := args.ds(Lname = args.search);
+  EXPORT others := args.ds(Lname != args.search);
+END;
+
+ //then derive that MODULE to implement the LIBRARY
+FilterDsLib2(IFilterArgs args) := MODULE(FilterDsLib(args)),LIBRARY(FilterLibIface2)
+END;
+
+ //make the LIBRARY call a function
+FilterDs(IFilterArgs args) := LIBRARY(INTERNAL(FilterDsLib2),FilterLibIface2(args));
+ //easily modified to eliminate the LIBRARY, if desired
+ // FilterDs(IFilterArgs args) := FilterDsLib2(args));
+ //define the parameters to pass as the interface
+SearchArgs := MODULE(IFilterArgs)
+  EXPORT DATASET(namesRec) ds := NamesTable;
+  EXPORT STRING search := 'Holliday';
+END;
+      
+ //use the LIBRARY, passing the parameters
+OUTPUT(FilterDs(SearchArgs).matches);
+OUTPUT(FilterDs(SearchArgs).others);</programlisting>
+    </sect3>
+  </sect2>
+</sect1>

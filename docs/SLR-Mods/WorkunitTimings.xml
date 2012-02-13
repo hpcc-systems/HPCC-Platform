@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="WorkunitTimings">
+  <title><emphasis role="bold">WorkunitTimings</emphasis></title>
+
+  <para><emphasis role="bold">STD.System.Workunit.WorkunitTimings    <indexterm>
+      <primary>STD.System.Workunit.WorkunitTimings</primary>
+    </indexterm>
+    <indexterm>
+      <primary>System.Workunit.WorkunitTimings</primary>
+    </indexterm>
+    <indexterm>
+      <primary>Workunit.WorkunitTimings</primary>
+    </indexterm>
+    <indexterm>
+      <primary>WorkunitTimings</primary>
+    </indexterm>
+(</emphasis>
+  <emphasis> wuid </emphasis> <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>wuid</emphasis></entry>
+
+          <entry>A null-terminated string containing the WorkUnit
+          IDentifier.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>WorkunitTimings returns a DATASET value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">WorkunitTimings </emphasis>function returns
+  a DATASET with this format:</para>
+
+  <programlisting>EXPORT WsTiming := RECORD
+  UNSIGNED4 count;
+  UNSIGNED4 duration;
+  UNSIGNED4 max;
+  STRING name{MAXLENGTH(64)};
+END;</programlisting>
+
+  <para>Each record in the returned dataset specifies a timing for the
+  workunit.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">OUTPUT(STD.System.Workunit.WorkunitTimings('W20070308-164946'));
+/* produces results that look like this
+'1','4','4','EclServer: tree transform'
+'1','0','0','EclServer: tree transform: normalize.scope'
+'1','1','1','EclServer: tree transform: normalize.initial'
+'1','18','18','EclServer: write c++'
+'1','40','40','EclServer: generate code'
+'1','1010','1010','EclServer: compile code'
+'1','33288','33288','Graph graph1 - 1 (1)'
+'1','33629','33629','Total thor time: '
+'2','1','698000','WorkUnit_lockRemote'
+'1','2','2679000','SDS_Initialize'
+'1','0','439000','Environment_Initialize'
+'1','33775','3710788928','Process'
+'1','1','1942000','WorkUnit_unlockRemote'
+*/</programlisting>
+</sect1>

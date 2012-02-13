@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1
+  PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="WUIDonDate">
+   <title>
+      <emphasis role="bold">WUIDonDate</emphasis>
+   </title>
+   <para>
+      <emphasis role="bold">STD.System.Workunit.WUIDonDate    <indexterm>
+      <primary>STD.System.Workunit.WUIDonDate</primary>
+    </indexterm>
+    <indexterm>
+      <primary>System.Workunit.WUIDonDate</primary>
+    </indexterm>
+    <indexterm>
+      <primary>Workunit.WUIDonDate</primary>
+    </indexterm>
+    <indexterm>
+      <primary>WUIDonDate</primary>
+    </indexterm>
+(</emphasis>
+      <emphasis> year,
+        month, day, hour, minute </emphasis>
+      <emphasis role="bold">
+        )</emphasis>
+   </para>
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+
+   <entry>
+      <emphasis>year</emphasis> </entry><entry>An unsigned integer containing the
+        year value.</entry>
+        </row>
+        <row>
+   <entry>
+      <emphasis>month</emphasis> </entry><entry>An unsigned integer containing the
+        month value.</entry>
+        </row>
+        <row>
+   <entry>
+      <emphasis>day</emphasis> </entry><entry>An unsigned integer containing the day
+        value.</entry>
+        </row>
+        <row>
+   <entry>
+      <emphasis>hour</emphasis> </entry><entry>An unsigned integer containing the
+        hour value.</entry>
+        </row>
+        <row>
+   <entry>
+      <emphasis>minute</emphasis> </entry><entry>An unsigned integer containing the
+        minute value.</entry>
+        </row>
+        <row>
+   <entry>Return:<emphasis> </emphasis></entry><entry>WUIDonDate returns a VARSTRING
+        value.</entry>
+
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+   <para>The <emphasis role="bold">WUIDonDate </emphasis>function returns
+        a valid WorkUnit IDentifier for a workunit that meets the passed
+        parameters.</para>
+   <para>Example:</para>
+   <programlisting format="linespecific">lowwuid  := STD.System.Workunit.WUIDonDate(2008,02,13,13,00);
+highwuid := STD.System.Workunit.WUIDonDate(2008,02,13,14,00);
+OUTPUT(STD.System.Workunit.WorkunitList(lowwuid,highwuid));
+ //returns a list of workunits between 1 &amp; 2 PM on 2/13/08</programlisting>
+</sect1>
