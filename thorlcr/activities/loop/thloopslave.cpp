@@ -459,7 +459,10 @@ public:
         curRow = 0;
         abortSoon = false;
         assertex(container.queryResultsGraph());
-        Owned<CGraphBase> graph = container.queryOwner().queryJob().getGraph(container.queryResultsGraph()->queryGraphId());
+        graph_id resultGraphId = container.queryXGMML().getPropInt("att[@name=\"_graphId\"]/@value");
+        if (!resultGraphId)
+            resultGraphId = container.queryResultsGraph()->queryGraphId();
+        Owned<CGraphBase> graph = container.queryOwner().queryJob().getGraph(resultGraphId);
         Owned<IThorResult> result = graph->getResult(helper->querySequence());
         resultStream.setown(result->getRowStream());
         dataLinkStart("LOCALRESULTREAD", container.queryId());
@@ -1136,7 +1139,10 @@ public:
         if ((int)sequence >= 0)
         {
             assertex(container.queryResultsGraph());
-            Owned<CGraphBase> graph = container.queryOwner().queryJob().getGraph(container.queryResultsGraph()->queryGraphId());
+            graph_id resultGraphId = container.queryXGMML().getPropInt("att[@name=\"_graphId\"]/@value");
+            if (!resultGraphId)
+                resultGraphId = container.queryResultsGraph()->queryGraphId();
+            Owned<CGraphBase> graph = container.queryOwner().queryJob().getGraph(resultGraphId);
             Owned<IThorResult> result = graph->getGraphLoopResult(sequence);
             resultStream.setown(result->getRowStream());
         }
